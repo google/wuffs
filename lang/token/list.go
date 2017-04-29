@@ -116,7 +116,16 @@ func init() {
 	}
 }
 
-var operators = [256]ID{
+var builtInsImplicitSemicolons = [256]bool{
+	IDCloseParen:   true,
+	IDCloseBracket: true,
+	IDCloseCurly:   true,
+
+	// TODO: break, continue, fallthrough, return, a la Go.
+}
+
+// squiggles are built-in tokens that aren't alpha-numeric.
+var squiggles = [256]ID{
 	'(': IDOpenParen,
 	')': IDCloseParen,
 	'[': IDOpenBracket,
