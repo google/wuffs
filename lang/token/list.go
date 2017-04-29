@@ -3,6 +3,28 @@
 
 package token
 
+// nBuiltIns is the number of built-in IDs. The packing is:
+//	- Zero is invalid.
+//	- [0x001, 0x03F] are squiggly punctuation, such as "(", ")" and ";".
+//	- [0x040, 0x05F] are squiggly assignments, such as "=" and "+=".
+//	- [0x060, 0x07F] are squiggly operators, such as "+" and "==".
+//	- [0x080, 0x09F] are alpha-numeric operators, such as "and" and "as".
+//	- [0x0A0, 0x0CF] are keywords, such as "if" and "return".
+//	- [0x0D0, 0x0DF] are literals, such as "false" and "true".
+//	- [0x0E0, 0x0FF] are identifiers, such as "bool" and "u32".
+//	- [0x100, 0x1FF] aren't returned by Tokenize. The space encodes ambiguous
+//	  1-byte squiggles. For example, & might be the start of &^ or &=.
+//
+// "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
+// "&=". Their IDs range in [0x001, 0x07F].
+const nBuiltIns = 512
+
+type ID uint32
+
+func (x ID) IsBuiltIn() bool { return x < nBuiltIns }
+
+func (x ID) implicitSemicolon() bool { return x >= nBuiltIns || builtInsImplicitSemicolons[x&0xFF] }
+
 const (
 	IDInvalid = ID(0x00)
 
@@ -19,17 +41,6 @@ const (
 	IDColon     = ID(0x23)
 	IDSemicolon = ID(0x24)
 
-	IDPlus   = ID(0x31)
-	IDMinus  = ID(0x32)
-	IDStar   = ID(0x33)
-	IDSlash  = ID(0x34)
-	IDShiftL = ID(0x35)
-	IDShiftR = ID(0x36)
-	IDAmp    = ID(0x37)
-	IDAmpHat = ID(0x38)
-	IDPipe   = ID(0x39)
-	IDHat    = ID(0x3A)
-
 	IDEq       = ID(0x40)
 	IDPlusEq   = ID(0x41)
 	IDMinusEq  = ID(0x42)
@@ -42,17 +53,50 @@ const (
 	IDPipeEq   = ID(0x49)
 	IDHatEq    = ID(0x4A)
 
-	IDNotEq       = ID(0x50)
-	IDLessThan    = ID(0x51)
-	IDLessEq      = ID(0x52)
-	IDEqEq        = ID(0x53)
-	IDGreaterEq   = ID(0x54)
-	IDGreaterThan = ID(0x55)
+	IDPlus   = ID(0x61)
+	IDMinus  = ID(0x62)
+	IDStar   = ID(0x63)
+	IDSlash  = ID(0x64)
+	IDShiftL = ID(0x65)
+	IDShiftR = ID(0x66)
+	IDAmp    = ID(0x67)
+	IDAmpHat = ID(0x68)
+	IDPipe   = ID(0x69)
+	IDHat    = ID(0x6A)
 
-	// TODO: sort these keywords by name, when the list has stabilized.
+	IDNotEq       = ID(0x70)
+	IDLessThan    = ID(0x71)
+	IDLessEq      = ID(0x72)
+	IDEqEq        = ID(0x73)
+	IDGreaterEq   = ID(0x74)
+	IDGreaterThan = ID(0x75)
+
+	// TODO: sort these by name, when the list has stabilized.
 	IDAnd = ID(0x80)
 	IDOr  = ID(0x81)
 	IDNot = ID(0x82)
+	IDAs  = ID(0x83)
+
+	// TODO: sort these by name, when the list has stabilized.
+	IDFunc = ID(0xA0)
+
+	IDFalse = ID(0xD0)
+	IDTrue  = ID(0xD1)
+
+	IDI8    = ID(0xE0)
+	IDI16   = ID(0xE1)
+	IDI32   = ID(0xE2)
+	IDI64   = ID(0xE3)
+	IDU8    = ID(0xE4)
+	IDU16   = ID(0xE5)
+	IDU32   = ID(0xE6)
+	IDU64   = ID(0xE7)
+	IDUsize = ID(0xE8)
+	IDBool  = ID(0xE9)
+	IDBuf1  = ID(0xEA)
+	IDBuf2  = ID(0xEB)
+
+	IDUnderscore = ID(0xFF)
 
 	lexerBase = ID(0x100)
 )
@@ -71,17 +115,6 @@ var builtInsByID = [nBuiltIns]string{
 	IDColon:     ":",
 	IDSemicolon: ";",
 
-	IDPlus:   "+",
-	IDMinus:  "-",
-	IDStar:   "*",
-	IDSlash:  "/",
-	IDShiftL: "<<",
-	IDShiftR: ">>",
-	IDAmp:    "&",
-	IDAmpHat: "&^",
-	IDPipe:   "|",
-	IDHat:    "^",
-
 	IDEq:       "=",
 	IDPlusEq:   "+=",
 	IDMinusEq:  "-=",
@@ -94,6 +127,17 @@ var builtInsByID = [nBuiltIns]string{
 	IDPipeEq:   "|=",
 	IDHatEq:    "^=",
 
+	IDPlus:   "+",
+	IDMinus:  "-",
+	IDStar:   "*",
+	IDSlash:  "/",
+	IDShiftL: "<<",
+	IDShiftR: ">>",
+	IDAmp:    "&",
+	IDAmpHat: "&^",
+	IDPipe:   "|",
+	IDHat:    "^",
+
 	IDNotEq:       "!=",
 	IDLessThan:    "<",
 	IDLessEq:      "<=",
@@ -104,6 +148,27 @@ var builtInsByID = [nBuiltIns]string{
 	IDAnd: "and",
 	IDOr:  "or",
 	IDNot: "not",
+	IDAs:  "as",
+
+	IDFunc: "func",
+
+	IDFalse: "false",
+	IDTrue:  "true",
+
+	IDI8:    "i8",
+	IDI16:   "i16",
+	IDI32:   "i32",
+	IDI64:   "i64",
+	IDU8:    "u8",
+	IDU16:   "u16",
+	IDU32:   "u32",
+	IDU64:   "u64",
+	IDUsize: "usize",
+	IDBool:  "bool",
+	IDBuf1:  "buf1",
+	IDBuf2:  "buf2",
+
+	IDUnderscore: "_",
 }
 
 var builtInsByName = map[string]ID{}
@@ -198,11 +263,13 @@ var lexers = [256][]suffixLexer{
 		{"", IDEq},
 	},
 	'<': {
+		{"<=", IDShiftLEq},
 		{"<", IDShiftL},
 		{"=", IDLessEq},
 		{"", IDLessThan},
 	},
 	'>': {
+		{">=", IDShiftREq},
 		{">", IDShiftR},
 		{"=", IDGreaterEq},
 		{"", IDGreaterThan},

@@ -8,19 +8,6 @@ import (
 	"fmt"
 )
 
-// nBuiltIns is the number of built-in IDs:
-//	- The first 128 are squiggles, such as operators and parentheses.
-//	- The next 128 are keywords.
-//	- The last 256 aren't returned by Tokenize. The space encodes ambiguous
-//	  1-byte operators. For example, & might be the start of &^ or &=.
-const nBuiltIns = 512
-
-type ID uint32
-
-func (t ID) isBuiltIn() bool { return t < nBuiltIns }
-
-func (t ID) implicitSemicolon() bool { return t >= nBuiltIns || builtInsImplicitSemicolons[t&0xFF] }
-
 type IDMap struct {
 	byName map[string]ID
 	byID   []string
