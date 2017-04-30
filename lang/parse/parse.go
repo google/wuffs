@@ -10,18 +10,6 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-func isIdentifier(name string) bool {
-	if name == "" {
-		return false
-	}
-	// It suffices to check the first byte. A numeric literal will start with
-	// [0-9].
-	//
-	// TODO: how does this interact with comment tokens?
-	c := name[0]
-	return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_')
-}
-
 func ParseFile(src []t.Token, m *t.IDMap, filename string) (*a.Node, error) {
 	p := &parser{
 		src:      src,
@@ -136,8 +124,8 @@ func (p *parser) parseIdent() (t.ID, error) {
 		return 0, fmt.Errorf("parse: expected identifier at %s:%d", p.filename, p.line())
 	}
 	x := p.src[0]
-	name := p.m.ByID(x.ID)
-	if x.ID.IsBuiltIn() || !isIdentifier(name) {
+	if !x.ID.IsIdent() {
+		name := p.m.ByKey(x.ID.Key())
 		return 0, fmt.Errorf("parse: expected identifier, got %q at %s:%d", name, p.filename, p.line())
 	}
 	p.src = p.src[1:]

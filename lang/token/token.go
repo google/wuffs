@@ -10,29 +10,37 @@ import (
 
 type IDMap struct {
 	byName map[string]ID
-	byID   []string
+	byKey  []string
 }
 
 func (m *IDMap) insert(name string) (ID, error) {
 	if name == "" {
 		return 0, nil
 	}
-	if t, ok := builtInsByName[name]; ok {
-		return t, nil
+	if id, ok := builtInsByName[name]; ok {
+		return id, nil
 	}
 	if m.byName == nil {
 		m.byName = map[string]ID{}
 	}
-	if t, ok := m.byName[name]; ok {
-		return t, nil
+	if id, ok := m.byName[name]; ok {
+		return id, nil
 	}
-	if uint32(len(m.byID)) == (1<<32)-nBuiltIns {
+
+	key := nBuiltInKeys + Key(len(m.byKey))
+	if key > maxKey {
 		return 0, errors.New("token: too many distinct tokens")
 	}
-	t := nBuiltIns + ID(len(m.byID))
-	m.byName[name] = t
-	m.byID = append(m.byID, name)
-	return t, nil
+	flags := FlagsImplicitSemicolon
+	if numeric(name[0]) {
+		flags |= FlagsLiteral
+	} else {
+		flags |= FlagsIdent
+	}
+	id := ID(key<<idShift) | ID(flags)
+	m.byName[name] = id
+	m.byKey = append(m.byKey, name)
+	return id, nil
 }
 
 func (m *IDMap) ByName(name string) ID {
@@ -42,13 +50,13 @@ func (m *IDMap) ByName(name string) ID {
 	return 0
 }
 
-func (m *IDMap) ByID(id ID) string {
-	if id < nBuiltIns {
-		return builtInsByID[id]
+func (m *IDMap) ByKey(k Key) string {
+	if k < nBuiltInKeys {
+		return builtInsByKey[k].name
 	}
-	id -= nBuiltIns
-	if uint(id) < uint(len(m.byID)) {
-		return m.byID[id]
+	k -= nBuiltInKeys
+	if uint(k) < uint(len(m.byKey)) {
+		return m.byKey[k]
 	}
 	return ""
 }
@@ -119,7 +127,7 @@ loop:
 
 		if c <= ' ' {
 			if c == '\n' {
-				if len(tokens) > 0 && tokens[len(tokens)-1].ID.implicitSemicolon() {
+				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon() {
 					tokens = append(tokens, Token{IDSemicolon, line})
 				}
 				line++
@@ -170,11 +178,11 @@ loop:
 
 		if id := squiggles[c]; id != 0 {
 			i++
-			if id < lexerBase {
+			if id.Flags() != 0 {
 				tokens = append(tokens, Token{id, line})
 				continue
 			}
-			for _, x := range lexers[id&0xFF] {
+			for _, x := range lexers[c] {
 				if hasPrefix(src[i:], x.suffix) {
 					i += len(x.suffix)
 					tokens = append(tokens, Token{x.id, line})

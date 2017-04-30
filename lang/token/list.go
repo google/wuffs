@@ -3,193 +3,224 @@
 
 package token
 
-// nBuiltIns is the number of built-in IDs. The packing is:
-//	- Zero is invalid.
-//	- [0x001, 0x03F] are squiggly punctuation, such as "(", ")" and ";".
-//	- [0x040, 0x05F] are squiggly assignments, such as "=" and "+=".
-//	- [0x060, 0x07F] are squiggly operators, such as "+" and "==".
-//	- [0x080, 0x09F] are alpha-numeric operators, such as "and" and "as".
-//	- [0x0A0, 0x0CF] are keywords, such as "if" and "return".
-//	- [0x0D0, 0x0DF] are literals, such as "false" and "true".
-//	- [0x0E0, 0x0FF] are identifiers, such as "bool" and "u32".
-//	- [0x100, 0x1FF] aren't returned by Tokenize. The space encodes ambiguous
-//	  1-byte squiggles. For example, & might be the start of &^ or &=.
+// Flags are the low 8 bits of an ID. For example, they signify whether a token
+// is an operator, an identifier, etc.
 //
-// "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
-// "&=". Their IDs range in [0x001, 0x07F].
-const nBuiltIns = 512
-
-type ID uint32
-
-func (x ID) IsBuiltIn() bool { return x < nBuiltIns }
-
-func (x ID) implicitSemicolon() bool { return x >= nBuiltIns || builtInsImplicitSemicolons[x&0xFF] }
+// The flags are not exclusive. For example, the "+" token is both a unary and
+// binary operator. It is also associative: (a + b) + c equals a + (b + c).
+//
+// A valid token will have non-zero flags. If none of the other flags apply,
+// the FlagsOther bit will be set.
+type Flags uint32
 
 const (
-	IDInvalid = ID(0x00)
-
-	IDOpenParen    = ID(0x10)
-	IDCloseParen   = ID(0x11)
-	IDOpenBracket  = ID(0x12)
-	IDCloseBracket = ID(0x13)
-	IDOpenCurly    = ID(0x14)
-	IDCloseCurly   = ID(0x15)
-
-	IDDot       = ID(0x20)
-	IDComma     = ID(0x21)
-	IDQuestion  = ID(0x22)
-	IDColon     = ID(0x23)
-	IDSemicolon = ID(0x24)
-
-	IDEq       = ID(0x40)
-	IDPlusEq   = ID(0x41)
-	IDMinusEq  = ID(0x42)
-	IDStarEq   = ID(0x43)
-	IDSlashEq  = ID(0x44)
-	IDShiftLEq = ID(0x45)
-	IDShiftREq = ID(0x46)
-	IDAmpEq    = ID(0x47)
-	IDAmpHatEq = ID(0x48)
-	IDPipeEq   = ID(0x49)
-	IDHatEq    = ID(0x4A)
-
-	IDPlus   = ID(0x61)
-	IDMinus  = ID(0x62)
-	IDStar   = ID(0x63)
-	IDSlash  = ID(0x64)
-	IDShiftL = ID(0x65)
-	IDShiftR = ID(0x66)
-	IDAmp    = ID(0x67)
-	IDAmpHat = ID(0x68)
-	IDPipe   = ID(0x69)
-	IDHat    = ID(0x6A)
-
-	IDNotEq       = ID(0x70)
-	IDLessThan    = ID(0x71)
-	IDLessEq      = ID(0x72)
-	IDEqEq        = ID(0x73)
-	IDGreaterEq   = ID(0x74)
-	IDGreaterThan = ID(0x75)
-
-	// TODO: sort these by name, when the list has stabilized.
-	IDAnd = ID(0x80)
-	IDOr  = ID(0x81)
-	IDNot = ID(0x82)
-	IDAs  = ID(0x83)
-
-	// TODO: sort these by name, when the list has stabilized.
-	IDFunc = ID(0xA0)
-
-	IDFalse = ID(0xD0)
-	IDTrue  = ID(0xD1)
-
-	IDI8    = ID(0xE0)
-	IDI16   = ID(0xE1)
-	IDI32   = ID(0xE2)
-	IDI64   = ID(0xE3)
-	IDU8    = ID(0xE4)
-	IDU16   = ID(0xE5)
-	IDU32   = ID(0xE6)
-	IDU64   = ID(0xE7)
-	IDUsize = ID(0xE8)
-	IDBool  = ID(0xE9)
-	IDBuf1  = ID(0xEA)
-	IDBuf2  = ID(0xEB)
-
-	IDUnderscore = ID(0xFF)
-
-	lexerBase = ID(0x100)
+	FlagsOther             = Flags(0x01)
+	FlagsUnaryOp           = Flags(0x02)
+	FlagsBinaryOp          = Flags(0x04)
+	FlagsAssociative       = Flags(0x08)
+	FlagsAssign            = Flags(0x10)
+	FlagsLiteral           = Flags(0x20)
+	FlagsIdent             = Flags(0x40)
+	FlagsImplicitSemicolon = Flags(0x80)
 )
 
-var builtInsByID = [nBuiltIns]string{
-	IDOpenParen:    "(",
-	IDCloseParen:   ")",
-	IDOpenBracket:  "[",
-	IDCloseBracket: "]",
-	IDOpenCurly:    "{",
-	IDCloseCurly:   "}",
+// Key is the high 24 bits of an ID. It is the map key for an IDMap.
+type Key uint32
 
-	IDDot:       ".",
-	IDComma:     ",",
-	IDQuestion:  "?",
-	IDColon:     ":",
-	IDSemicolon: ";",
+const (
+	idShift = 8
+	idMask  = 1<<8 - 1
+	maxKey  = 1<<24 - 1
+)
 
-	IDEq:       "=",
-	IDPlusEq:   "+=",
-	IDMinusEq:  "-=",
-	IDStarEq:   "*=",
-	IDSlashEq:  "/=",
-	IDShiftLEq: "<<=",
-	IDShiftREq: ">>=",
-	IDAmpEq:    "&=",
-	IDAmpHatEq: "&^=",
-	IDPipeEq:   "|=",
-	IDHatEq:    "^=",
+// ID combines a Key and Flags.
+type ID uint32
 
-	IDPlus:   "+",
-	IDMinus:  "-",
-	IDStar:   "*",
-	IDSlash:  "/",
-	IDShiftL: "<<",
-	IDShiftR: ">>",
-	IDAmp:    "&",
-	IDAmpHat: "&^",
-	IDPipe:   "|",
-	IDHat:    "^",
+func (x ID) Key() Key     { return Key(x >> idShift) }
+func (x ID) Flags() Flags { return Flags(x & idMask) }
 
-	IDNotEq:       "!=",
-	IDLessThan:    "<",
-	IDLessEq:      "<=",
-	IDEqEq:        "==",
-	IDGreaterEq:   ">=",
-	IDGreaterThan: ">",
+func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
+func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
+func (x ID) IsAssociative() bool       { return Flags(x)&FlagsAssociative != 0 }
+func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
+func (x ID) IsLiteral() bool           { return Flags(x)&FlagsLiteral != 0 }
+func (x ID) IsIdent() bool             { return Flags(x)&FlagsIdent != 0 }
+func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
 
-	IDAnd: "and",
-	IDOr:  "or",
-	IDNot: "not",
-	IDAs:  "as",
+// nBuiltInKeys is the number of built-in Keys. The packing is:
+//  - Zero is invalid.
+//  - [0x01, 0x3F] are squiggly punctuation, such as "(", ")" and ";".
+//  - [0x40, 0x5F] are squiggly assignments, such as "=" and "+=".
+//  - [0x60, 0x7F] are squiggly operators, such as "+" and "==".
+//  - [0x80, 0x9F] are alpha-numeric operators, such as "and" and "as".
+//  - [0xA0, 0xCF] are keywords, such as "if" and "return".
+//  - [0xD0, 0xDF] are literals, such as "false" and "true".
+//  - [0xE0, 0xFF] are identifiers, such as "bool" and "u32".
+//
+// "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
+// "&=". Their Keys range in [0x01, 0x7F].
+const nBuiltInKeys = 256
 
-	IDFunc: "func",
+const (
+	IDInvalid = ID(0)
 
-	IDFalse: "false",
-	IDTrue:  "true",
+	IDOpenParen    = ID(0x10<<idShift | FlagsOther)
+	IDCloseParen   = ID(0x11<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDOpenBracket  = ID(0x12<<idShift | FlagsOther)
+	IDCloseBracket = ID(0x13<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDOpenCurly    = ID(0x14<<idShift | FlagsOther)
+	IDCloseCurly   = ID(0x15<<idShift | FlagsOther | FlagsImplicitSemicolon)
 
-	IDI8:    "i8",
-	IDI16:   "i16",
-	IDI32:   "i32",
-	IDI64:   "i64",
-	IDU8:    "u8",
-	IDU16:   "u16",
-	IDU32:   "u32",
-	IDU64:   "u64",
-	IDUsize: "usize",
-	IDBool:  "bool",
-	IDBuf1:  "buf1",
-	IDBuf2:  "buf2",
+	IDDot       = ID(0x20<<idShift | FlagsOther)
+	IDComma     = ID(0x21<<idShift | FlagsOther)
+	IDQuestion  = ID(0x22<<idShift | FlagsOther)
+	IDColon     = ID(0x23<<idShift | FlagsOther)
+	IDSemicolon = ID(0x24<<idShift | FlagsOther)
 
-	IDUnderscore: "_",
+	IDEq       = ID(0x40<<idShift | FlagsAssign)
+	IDPlusEq   = ID(0x41<<idShift | FlagsAssign)
+	IDMinusEq  = ID(0x42<<idShift | FlagsAssign)
+	IDStarEq   = ID(0x43<<idShift | FlagsAssign)
+	IDSlashEq  = ID(0x44<<idShift | FlagsAssign)
+	IDShiftLEq = ID(0x45<<idShift | FlagsAssign)
+	IDShiftREq = ID(0x46<<idShift | FlagsAssign)
+	IDAmpEq    = ID(0x47<<idShift | FlagsAssign)
+	IDAmpHatEq = ID(0x48<<idShift | FlagsAssign)
+	IDPipeEq   = ID(0x49<<idShift | FlagsAssign)
+	IDHatEq    = ID(0x4A<<idShift | FlagsAssign)
+
+	IDPlus   = ID(0x61<<idShift | FlagsBinaryOp | FlagsUnaryOp | FlagsAssociative)
+	IDMinus  = ID(0x62<<idShift | FlagsBinaryOp | FlagsUnaryOp)
+	IDStar   = ID(0x63<<idShift | FlagsBinaryOp | FlagsAssociative)
+	IDSlash  = ID(0x64<<idShift | FlagsBinaryOp)
+	IDShiftL = ID(0x65<<idShift | FlagsBinaryOp)
+	IDShiftR = ID(0x66<<idShift | FlagsBinaryOp)
+	IDAmp    = ID(0x67<<idShift | FlagsBinaryOp | FlagsAssociative)
+	IDAmpHat = ID(0x68<<idShift | FlagsBinaryOp)
+	IDPipe   = ID(0x69<<idShift | FlagsBinaryOp | FlagsAssociative)
+	IDHat    = ID(0x6A<<idShift | FlagsBinaryOp | FlagsAssociative)
+
+	IDNotEq       = ID(0x70<<idShift | FlagsBinaryOp)
+	IDLessThan    = ID(0x71<<idShift | FlagsBinaryOp)
+	IDLessEq      = ID(0x72<<idShift | FlagsBinaryOp)
+	IDEqEq        = ID(0x73<<idShift | FlagsBinaryOp)
+	IDGreaterEq   = ID(0x74<<idShift | FlagsBinaryOp)
+	IDGreaterThan = ID(0x75<<idShift | FlagsBinaryOp)
+
+	// TODO: sort these by name, when the list has stabilized.
+	IDAnd = ID(0x80<<idShift | FlagsBinaryOp)
+	IDOr  = ID(0x81<<idShift | FlagsBinaryOp)
+	IDNot = ID(0x82<<idShift | FlagsUnaryOp)
+	IDAs  = ID(0x83<<idShift | FlagsBinaryOp)
+
+	// TODO: sort these by name, when the list has stabilized.
+	IDFunc = ID(0xA0<<idShift | FlagsOther)
+
+	IDFalse = ID(0xD0<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDTrue  = ID(0xD1<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
+
+	IDI8    = ID(0xE0<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI16   = ID(0xE1<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI32   = ID(0xE2<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI64   = ID(0xE3<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDU8    = ID(0xE4<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDU16   = ID(0xE5<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDU32   = ID(0xE6<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDU64   = ID(0xE7<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDUsize = ID(0xE8<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBool  = ID(0xE9<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf1  = ID(0xEA<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf2  = ID(0xEB<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+
+	IDUnderscore = ID(0xF0<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDThis       = ID(0xF1<<idShift | FlagsIdent | FlagsImplicitSemicolon)
+)
+
+var builtInsByKey = [nBuiltInKeys]struct {
+	name string
+	id   ID
+}{
+	IDOpenParen >> idShift:    {"(", IDOpenParen},
+	IDCloseParen >> idShift:   {")", IDCloseParen},
+	IDOpenBracket >> idShift:  {"[", IDOpenBracket},
+	IDCloseBracket >> idShift: {"]", IDCloseBracket},
+	IDOpenCurly >> idShift:    {"{", IDOpenCurly},
+	IDCloseCurly >> idShift:   {"}", IDCloseCurly},
+
+	IDDot >> idShift:       {".", IDDot},
+	IDComma >> idShift:     {",", IDComma},
+	IDQuestion >> idShift:  {"?", IDQuestion},
+	IDColon >> idShift:     {":", IDColon},
+	IDSemicolon >> idShift: {";", IDSemicolon},
+
+	IDEq >> idShift:       {"=", IDEq},
+	IDPlusEq >> idShift:   {"+=", IDPlusEq},
+	IDMinusEq >> idShift:  {"-=", IDMinusEq},
+	IDStarEq >> idShift:   {"*=", IDStarEq},
+	IDSlashEq >> idShift:  {"/=", IDSlashEq},
+	IDShiftLEq >> idShift: {"<<=", IDShiftLEq},
+	IDShiftREq >> idShift: {">>=", IDShiftREq},
+	IDAmpEq >> idShift:    {"&=", IDAmpEq},
+	IDAmpHatEq >> idShift: {"&^=", IDAmpHatEq},
+	IDPipeEq >> idShift:   {"|=", IDPipeEq},
+	IDHatEq >> idShift:    {"^=", IDHatEq},
+
+	IDPlus >> idShift:   {"+", IDPlus},
+	IDMinus >> idShift:  {"-", IDMinus},
+	IDStar >> idShift:   {"*", IDStar},
+	IDSlash >> idShift:  {"/", IDSlash},
+	IDShiftL >> idShift: {"<<", IDShiftL},
+	IDShiftR >> idShift: {">>", IDShiftR},
+	IDAmp >> idShift:    {"&", IDAmp},
+	IDAmpHat >> idShift: {"&^", IDAmpHat},
+	IDPipe >> idShift:   {"|", IDPipe},
+	IDHat >> idShift:    {"^", IDHat},
+
+	IDNotEq >> idShift:       {"!=", IDNotEq},
+	IDLessThan >> idShift:    {"<", IDLessThan},
+	IDLessEq >> idShift:      {"<=", IDLessEq},
+	IDEqEq >> idShift:        {"==", IDEqEq},
+	IDGreaterEq >> idShift:   {">=", IDGreaterEq},
+	IDGreaterThan >> idShift: {">", IDGreaterThan},
+
+	IDAnd >> idShift: {"and", IDAnd},
+	IDOr >> idShift:  {"or", IDOr},
+	IDNot >> idShift: {"not", IDNot},
+	IDAs >> idShift:  {"as", IDAs},
+
+	IDFunc >> idShift: {"func", IDFunc},
+
+	IDFalse >> idShift: {"false", IDFalse},
+	IDTrue >> idShift:  {"true", IDTrue},
+
+	IDI8 >> idShift:    {"i8", IDI8},
+	IDI16 >> idShift:   {"i16", IDI16},
+	IDI32 >> idShift:   {"i32", IDI32},
+	IDI64 >> idShift:   {"i64", IDI64},
+	IDU8 >> idShift:    {"u8", IDU8},
+	IDU16 >> idShift:   {"u16", IDU16},
+	IDU32 >> idShift:   {"u32", IDU32},
+	IDU64 >> idShift:   {"u64", IDU64},
+	IDUsize >> idShift: {"usize", IDUsize},
+	IDBool >> idShift:  {"bool", IDBool},
+	IDBuf1 >> idShift:  {"buf1", IDBuf1},
+	IDBuf2 >> idShift:  {"buf2", IDBuf2},
+
+	IDUnderscore >> idShift: {"_", IDUnderscore},
+	IDThis >> idShift:       {"this", IDThis},
 }
 
 var builtInsByName = map[string]ID{}
 
 func init() {
-	for i, s := range builtInsByID {
-		if s != "" {
-			builtInsByName[s] = ID(i)
+	for _, x := range builtInsByKey {
+		if x.name != "" {
+			builtInsByName[x.name] = x.id
 		}
 	}
 }
 
-var builtInsImplicitSemicolons = [256]bool{
-	IDCloseParen:   true,
-	IDCloseBracket: true,
-	IDCloseCurly:   true,
-
-	// TODO: break, continue, fallthrough, return, a la Go.
-}
-
-// squiggles are built-in tokens that aren't alpha-numeric.
+// squiggles are built-in IDs that aren't alpha-numeric.
 var squiggles = [256]ID{
 	'(': IDOpenParen,
 	')': IDCloseParen,
@@ -204,16 +235,19 @@ var squiggles = [256]ID{
 	':': IDColon,
 	';': IDSemicolon,
 
-	'&': lexerBase + '&',
-	'|': lexerBase + '|',
-	'^': lexerBase + '^',
-	'+': lexerBase + '+',
-	'-': lexerBase + '-',
-	'*': lexerBase + '*',
-	'/': lexerBase + '/',
-	'=': lexerBase + '=',
-	'<': lexerBase + '<',
-	'>': lexerBase + '>',
+	// 1<<idShift is a non-zero ID with zero Flags. It is an invalid ID,
+	// signifying that lookup should continue in the lexers array below.
+
+	'&': 1 << idShift,
+	'|': 1 << idShift,
+	'^': 1 << idShift,
+	'+': 1 << idShift,
+	'-': 1 << idShift,
+	'*': 1 << idShift,
+	'/': 1 << idShift,
+	'=': 1 << idShift,
+	'<': 1 << idShift,
+	'>': 1 << idShift,
 }
 
 type suffixLexer struct {
@@ -221,9 +255,11 @@ type suffixLexer struct {
 	id     ID
 }
 
+// lexers lex ambiguous 1-byte squiggles. For example, "&" might be the start
+// of "&^" or "&=".
+//
 // The order of the []suffixLexer elements matters. The first match wins. Since
 // we want to lex greedily, longer suffixes should be earlier in the slice.
-
 var lexers = [256][]suffixLexer{
 	'!': {
 		{"=", IDNotEq},
