@@ -94,31 +94,6 @@ func hasPrefix(a []byte, s string) bool {
 	return true
 }
 
-func containingLine(src []byte, i int) []byte {
-	j := i
-	for ; j < len(src) && src[j] != '\n'; j++ {
-	}
-	for ; i > 0 && src[i-1] != '\n'; i-- {
-	}
-	return src[i:j]
-}
-
-func trim(b []byte) []byte {
-	// Trim the back.
-	i := len(b)
-	for ; i > 0 && b[i-1] <= ' '; i-- {
-	}
-	b = b[:i]
-
-	// Trim the front.
-	i = 0
-	for ; i < len(b) && b[i] <= ' '; i++ {
-	}
-	b = b[i:]
-
-	return b
-}
-
 func Tokenize(src []byte, m *IDMap, filename string) (tokens []Token, retErr error) {
 	line := int32(1)
 loop:
@@ -197,11 +172,7 @@ loop:
 		} else {
 			msg = fmt.Sprintf("non-ASCII byte '\\x%02X'", c)
 		}
-		if filename == "" {
-			filename = "line"
-		}
-		return nil, fmt.Errorf("token: unrecognized %s at %s:%d. line contents: %q",
-			msg, filename, line, trim(containingLine(src, i)))
+		return nil, fmt.Errorf("token: unrecognized %s at %s:%d", msg, filename, line)
 	}
 	return tokens, nil
 }
