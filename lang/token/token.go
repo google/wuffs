@@ -61,11 +61,6 @@ func (m *IDMap) ByKey(k Key) string {
 	return ""
 }
 
-type Token struct {
-	ID   ID
-	Line uint32
-}
-
 func alpha(c byte) bool {
 	return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_')
 }
@@ -102,7 +97,7 @@ loop:
 
 		if c <= ' ' {
 			if c == '\n' {
-				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon() {
+				if len(tokens) > 0 && tokens[len(tokens)-1].IsImplicitSemicolon() {
 					tokens = append(tokens, Token{IDSemicolon, line})
 				}
 				if line == 1<<32-1 {

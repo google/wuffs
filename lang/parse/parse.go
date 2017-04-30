@@ -124,8 +124,8 @@ func (p *parser) parseIdent() (t.ID, error) {
 		return 0, fmt.Errorf("parse: expected identifier at %s:%d", p.filename, p.line())
 	}
 	x := p.src[0]
-	if !x.ID.IsIdent() {
-		name := p.m.ByKey(x.ID.Key())
+	if !x.IsIdent() {
+		name := p.m.ByKey(x.Key())
 		return 0, fmt.Errorf("parse: expected identifier, got %q at %s:%d", name, p.filename, p.line())
 	}
 	p.src = p.src[1:]

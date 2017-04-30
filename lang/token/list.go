@@ -39,13 +39,22 @@ type ID uint32
 func (x ID) Key() Key     { return Key(x >> idShift) }
 func (x ID) Flags() Flags { return Flags(x & idMask) }
 
-func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
-func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
-func (x ID) IsAssociative() bool       { return Flags(x)&FlagsAssociative != 0 }
-func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
-func (x ID) IsLiteral() bool           { return Flags(x)&FlagsLiteral != 0 }
-func (x ID) IsIdent() bool             { return Flags(x)&FlagsIdent != 0 }
-func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
+// Token combines an ID and the line number it was seen.
+type Token struct {
+	ID   ID
+	Line uint32
+}
+
+func (t Token) Key() Key     { return Key(t.ID >> idShift) }
+func (t Token) Flags() Flags { return Flags(t.ID & idMask) }
+
+func (t Token) IsUnaryOp() bool           { return Flags(t.ID)&FlagsUnaryOp != 0 }
+func (t Token) IsBinaryOp() bool          { return Flags(t.ID)&FlagsBinaryOp != 0 }
+func (t Token) IsAssociative() bool       { return Flags(t.ID)&FlagsAssociative != 0 }
+func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
+func (t Token) IsLiteral() bool           { return Flags(t.ID)&FlagsLiteral != 0 }
+func (t Token) IsIdent() bool             { return Flags(t.ID)&FlagsIdent != 0 }
+func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
