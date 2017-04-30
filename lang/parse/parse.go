@@ -3,6 +3,8 @@
 
 package parse
 
+// TODO: write a formal grammar for the language.
+
 import (
 	"fmt"
 

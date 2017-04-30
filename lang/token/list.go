@@ -3,8 +3,8 @@
 
 package token
 
-// Flags are the low 8 bits of an ID. For example, they signify whether a token
-// is an operator, an identifier, etc.
+// Flags are the low 12 bits of an ID. For example, they signify whether a
+// token is an operator, an identifier, etc.
 //
 // The flags are not exclusive. For example, the "+" token is both a unary and
 // binary operator. It is also associative: (a + b) + c equals a + (b + c).
@@ -14,23 +14,27 @@ package token
 type Flags uint32
 
 const (
-	FlagsOther             = Flags(0x01)
-	FlagsUnaryOp           = Flags(0x02)
-	FlagsBinaryOp          = Flags(0x04)
-	FlagsAssociative       = Flags(0x08)
-	FlagsAssign            = Flags(0x10)
-	FlagsLiteral           = Flags(0x20)
-	FlagsIdent             = Flags(0x40)
-	FlagsImplicitSemicolon = Flags(0x80)
+	FlagsOther             = Flags(0x001)
+	FlagsUnaryOp           = Flags(0x002)
+	FlagsBinaryOp          = Flags(0x004)
+	FlagsAssociative       = Flags(0x008)
+	FlagsAssign            = Flags(0x010)
+	FlagsLiteral           = Flags(0x020)
+	FlagsIdent             = Flags(0x040)
+	FlagsImplicitSemicolon = Flags(0x080)
+	FlagsOpen              = Flags(0x100)
+	FlagsClose             = Flags(0x200)
+	FlagsTightLeft         = Flags(0x400)
+	FlagsTightRight        = Flags(0x800)
 )
 
-// Key is the high 24 bits of an ID. It is the map key for an IDMap.
+// Key is the high 20 bits of an ID. It is the map key for an IDMap.
 type Key uint32
 
 const (
-	idShift = 8
-	idMask  = 1<<8 - 1
-	maxKey  = 1<<24 - 1
+	idShift = 12
+	idMask  = 1<<12 - 1
+	maxKey  = 1<<20 - 1
 )
 
 // ID combines a Key and Flags.
@@ -55,6 +59,10 @@ func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 
 func (t Token) IsLiteral() bool           { return Flags(t.ID)&FlagsLiteral != 0 }
 func (t Token) IsIdent() bool             { return Flags(t.ID)&FlagsIdent != 0 }
 func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
+func (t Token) IsOpen() bool              { return Flags(t.ID)&FlagsOpen != 0 }
+func (t Token) IsClose() bool             { return Flags(t.ID)&FlagsClose != 0 }
+func (t Token) IsTightLeft() bool         { return Flags(t.ID)&FlagsTightLeft != 0 }
+func (t Token) IsTightRight() bool        { return Flags(t.ID)&FlagsTightRight != 0 }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
@@ -73,16 +81,16 @@ const nBuiltInKeys = 256
 const (
 	IDInvalid = ID(0)
 
-	IDOpenParen    = ID(0x10<<idShift | FlagsOther)
-	IDCloseParen   = ID(0x11<<idShift | FlagsOther | FlagsImplicitSemicolon)
-	IDOpenBracket  = ID(0x12<<idShift | FlagsOther)
-	IDCloseBracket = ID(0x13<<idShift | FlagsOther | FlagsImplicitSemicolon)
-	IDOpenCurly    = ID(0x14<<idShift | FlagsOther)
-	IDCloseCurly   = ID(0x15<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDOpenParen    = ID(0x10<<idShift | FlagsOpen | FlagsTightRight)
+	IDCloseParen   = ID(0x11<<idShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
+	IDOpenBracket  = ID(0x12<<idShift | FlagsOpen | FlagsTightLeft | FlagsTightRight)
+	IDCloseBracket = ID(0x13<<idShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
+	IDOpenCurly    = ID(0x14<<idShift | FlagsOpen)
+	IDCloseCurly   = ID(0x15<<idShift | FlagsClose | FlagsImplicitSemicolon)
 
-	IDDot       = ID(0x20<<idShift | FlagsOther)
-	IDComma     = ID(0x21<<idShift | FlagsOther)
-	IDQuestion  = ID(0x22<<idShift | FlagsOther)
+	IDDot       = ID(0x20<<idShift | FlagsOther | FlagsTightLeft | FlagsTightRight)
+	IDComma     = ID(0x21<<idShift | FlagsOther | FlagsTightLeft)
+	IDQuestion  = ID(0x22<<idShift | FlagsOther | FlagsUnaryOp)
 	IDColon     = ID(0x23<<idShift | FlagsOther)
 	IDSemicolon = ID(0x24<<idShift | FlagsOther)
 
