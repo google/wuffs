@@ -26,10 +26,10 @@ type parser struct {
 	src      []t.Token
 	m        *t.IDMap
 	filename string
-	lastLine int32
+	lastLine uint32
 }
 
-func (p *parser) line() int32 {
+func (p *parser) line() uint32 {
 	if len(p.src) != 0 {
 		return p.src[0].Line
 	}

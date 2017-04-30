@@ -63,7 +63,7 @@ func (m *IDMap) ByKey(k Key) string {
 
 type Token struct {
 	ID   ID
-	Line int32
+	Line uint32
 }
 
 func alpha(c byte) bool {
@@ -95,7 +95,7 @@ func hasPrefix(a []byte, s string) bool {
 }
 
 func Tokenize(src []byte, m *IDMap, filename string) (tokens []Token, retErr error) {
-	line := int32(1)
+	line := uint32(1)
 loop:
 	for i := 0; i < len(src); {
 		c := src[i]
@@ -104,6 +104,9 @@ loop:
 			if c == '\n' {
 				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon() {
 					tokens = append(tokens, Token{IDSemicolon, line})
+				}
+				if line == 1<<32-1 {
+					return nil, fmt.Errorf("token: too many lines in %q", filename)
 				}
 				line++
 			}
