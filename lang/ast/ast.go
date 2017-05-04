@@ -16,10 +16,10 @@ const (
 	KInvalid = Kind(iota)
 
 	// KExpr is an expression, such as "i", "+j" or "k + l[m].n".
-	//	- ID0:   <0|operator|IDOpenBracket|IDDot>
-	//	- ID2:   <0|identifier name|literal>
-	//	- LHS:   <nil|KExpr>
-	//	- RHS:   <nil|KExpr|KType>
+	//  - ID0:   <0|operator|IDOpenBracket|IDDot>
+	//  - ID2:   <0|identifier name|literal>
+	//  - LHS:   <nil|KExpr>
+	//  - RHS:   <nil|KExpr|KType>
 	//
 	// A zero ID0 means an identifier or literal in ID2, like "foo" or "42".
 	//
@@ -37,21 +37,21 @@ const (
 	KExpr
 
 	// KAssign is "Left = Right".
-	//	- LHS:   Left
-	//	- RHS:   Right
+	//  - LHS:   Left
+	//  - RHS:   Right
 	KAssign
 
 	// KParam is a "name type" parameter:
-	//	- ID0:   name
-	//	- RHS:   <KType>
+	//  - ID0:   name
+	//  - RHS:   <KType>
 	KParam
 
 	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T".
-	//	- ID0:   <0|IDPtr>
-	//	- ID1:   <0|package name>
-	//	- ID2:   <0|type name>
-	//	- LHS:   TODO.
-	//	- RHS:   <nil|KType>
+	//  - ID0:   <0|IDPtr>
+	//  - ID1:   <0|package name>
+	//  - ID2:   <0|type name>
+	//  - LHS:   TODO.
+	//  - RHS:   <nil|KType>
 	//
 	// A zero ID0 means an undecorated type like "u32" or "pkg.foo". ID1 is
 	// zero or "pkg". ID2 is "u32" or "foo". RHS is nil.
@@ -64,16 +64,16 @@ const (
 	KType
 
 	// KFunc is "func ID0.ID1 (List0) (List1) { List2 }":
-	//	- ID0:   <0|receiver>
-	//	- ID1:   name
-	//	- List0: <KParam> in-parameters
-	//	- List1: <KParam> out-parameters
-	//	- List2: <KAssign> function body
-	//	- FlagsSuspendible is (List1) vs ?(List1)
+	//  - ID0:   <0|receiver>
+	//  - ID1:   name
+	//  - List0: <KParam> in-parameters
+	//  - List1: <KParam> out-parameters
+	//  - List2: <KAssign> function body
+	//  - FlagsSuspendible is (List1) vs ?(List1)
 	KFunc
 
 	// KFile is a file of source code.
-	//	- List0: <KFunc> top-level declarations
+	//  - List0: <KFunc> top-level declarations
 	KFile
 )
 
