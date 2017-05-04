@@ -81,12 +81,17 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 
 		// Render the lineTokens.
 		numOpens := len(opens)
-		prevID := token.ID(0)
+		prevID, prevIsTightRight := token.ID(0), false
 		for _, t := range lineTokens {
-			if prevID != 0 && !prevID.IsTightRight() && !t.IsTightLeft() {
+			const (
+				flagsUB  = token.FlagsUnaryOp | token.FlagsBinaryOp
+				flagsLIC = token.FlagsLiteral | token.FlagsIdent | token.FlagsClose
+			)
+
+			if prevID != 0 && !prevIsTightRight && !t.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if t.ID != token.IDOpenParen || prevID.IsBinaryOp() {
+				if t.ID != token.IDOpenParen || prevID.Flags()&flagsLIC == 0 {
 					buf = append(buf, ' ')
 				}
 			}
@@ -103,6 +108,15 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 					return errors.New("render: too many close tokens")
 				}
 				opens = opens[:len(opens)-1]
+			}
+
+			prevIsTightRight = t.ID.IsTightRight()
+			// The "+" and "-" tokens' tight-right-ness is context dependent.
+			// The unary flavor is tight-right, the binary flavor is not.
+			if prevID != 0 && t.ID.Flags()&flagsUB == flagsUB {
+				// Token-based (not ast.Node-based) heuristic for whether the
+				// operator looks unary instead of binary.
+				prevIsTightRight = prevID.Flags() & flagsLIC == 0
 			}
 
 			prevID = t.ID
