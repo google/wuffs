@@ -296,7 +296,17 @@ func (p *parser) parseExpr() (*a.Node, error) {
 func (p *parser) parseOperand() (*a.Node, error) {
 	switch x := p.peekID(); {
 	case x == t.IDOpenParen:
-		// TODO: parse "(x + y)".
+		p.src = p.src[1:]
+		expr, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if x := p.peekID(); x != t.IDCloseParen {
+			got := p.m.ByKey(x.Key())
+			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		return expr, nil
 
 	case x.IsUnaryOp():
 		p.src = p.src[1:]
