@@ -8,6 +8,8 @@ import (
 	"fmt"
 )
 
+const maxTokenSize = 1023
+
 type IDMap struct {
 	byName map[string]ID
 	byKey  []string
@@ -111,7 +113,11 @@ loop:
 
 		if alpha(c) {
 			j := i + 1
-			for ; j < len(src) && alphaNumeric(src[j]); j++ {
+			for j < len(src) && alphaNumeric(src[j]) {
+				j++
+				if j-i > maxTokenSize {
+					return nil, fmt.Errorf("token: identifier too long at %s:%d", filename, line)
+				}
 			}
 			id, err := m.insert(string(src[i:j]))
 			if err != nil {
@@ -129,7 +135,11 @@ loop:
 			//
 			// TODO: save numbers in a separate map, not the IDMap??
 			j := i + 1
-			for ; j < len(src) && numeric(src[j]); j++ {
+			for j < len(src) && numeric(src[j]) {
+				j++
+				if j-i > maxTokenSize {
+					return nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
+				}
 			}
 			id, err := m.insert(string(src[i:j]))
 			if err != nil {
