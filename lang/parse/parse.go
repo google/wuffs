@@ -69,7 +69,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		inParams, err := p.parseParamList()
+		inParams, err := p.parseList("parameter", (*parser).parseParam)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		outParams, err := p.parseParamList()
+		outParams, err := p.parseList("parameter", (*parser).parseParam)
 		if err != nil {
 			return nil, err
 		}
@@ -135,40 +135,40 @@ func (p *parser) parseIdent() (t.ID, error) {
 	return x.ID, nil
 }
 
-func (p *parser) parseParamList() ([]*a.Node, error) {
+func (p *parser) parseList(element string, parseFunc func(*parser) (*a.Node, error)) ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenParen {
 		got := p.m.ByKey(x.Key())
-		return nil, fmt.Errorf("parse: expected \"(\", got %q for parameter list at %s:%d",
-			got, p.filename, p.line())
+		return nil, fmt.Errorf("parse: expected \"(\", got %q for %s list at %s:%d",
+			got, element, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
-	params := []*a.Node(nil)
+	ret := []*a.Node(nil)
 	for len(p.src) > 0 {
 		if p.src[0].ID == t.IDCloseParen {
 			p.src = p.src[1:]
-			return params, nil
+			return ret, nil
 		}
 
-		param, err := p.parseParam()
+		elem, err := parseFunc(p)
 		if err != nil {
 			return nil, err
 		}
-		params = append(params, param)
+		ret = append(ret, elem)
 
 		switch x := p.peekID(); x {
 		case t.IDCloseParen:
 			p.src = p.src[1:]
-			return params, nil
+			return ret, nil
 		case t.IDComma:
 			p.src = p.src[1:]
 		default:
 			got := p.m.ByKey(x.Key())
-			return nil, fmt.Errorf("parse: expected \")\", got %q for parameter list at %s:%d",
-				got, p.filename, p.line())
+			return nil, fmt.Errorf("parse: expected \")\", got %q for %s list at %s:%d",
+				got, element, p.filename, p.line())
 		}
 	}
-	return nil, fmt.Errorf("parse: expected \")\" for parameter list at %s:%d", p.filename, p.line())
+	return nil, fmt.Errorf("parse: expected \")\" for %s list at %s:%d", element, p.filename, p.line())
 }
 
 func (p *parser) parseParam() (*a.Node, error) {
@@ -343,7 +343,16 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			return lhs, nil
 
 		case t.IDOpenParen:
-			// TODO: parse "f(i)".
+			list0, err := p.parseList("argument", (*parser).parseExpr)
+			if err != nil {
+				return nil, err
+			}
+			lhs = &a.Node{
+				Kind:  a.KExpr,
+				ID0:   t.IDOpenParen,
+				LHS:   lhs,
+				List0: list0,
+			}
 
 		case t.IDOpenBracket:
 			p.src = p.src[1:]
@@ -356,12 +365,12 @@ func (p *parser) parseOperand() (*a.Node, error) {
 				return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return &a.Node{
+			lhs = &a.Node{
 				Kind: a.KExpr,
 				ID0:  t.IDOpenBracket,
 				LHS:  lhs,
 				RHS:  rhs,
-			}, nil
+			}
 
 		case t.IDDot:
 			p.src = p.src[1:]

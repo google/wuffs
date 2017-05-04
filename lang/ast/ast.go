@@ -15,11 +15,12 @@ type Kind uint32
 const (
 	KInvalid = Kind(iota)
 
-	// KExpr is an expression, such as "i", "+j" or "k + l[m].n".
+	// KExpr is an expression, such as "i", "+j" or "k + l[m(n, o)].p".
 	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDot>
 	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
+	//  - List0: <KExpr> function call arguments
 	//
 	// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
 	//
@@ -29,7 +30,7 @@ const (
 	// operands. The LHS may be null for the "-" and "+" operators, which are
 	// also unary operators.
 	//
-	// For function calls, like "lhs(rhs)", ID0 is IDOpenParen.
+	// For function calls, like "lhs(list0)", ID0 is IDOpenParen.
 	//
 	// For indexes, like "lhs[rhs]", ID0 is IDOpenBracket.
 	//

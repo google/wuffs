@@ -102,7 +102,7 @@ const (
 
 	IDDot       = ID(0x20<<idShift | FlagsOther | FlagsTightLeft | FlagsTightRight)
 	IDComma     = ID(0x21<<idShift | FlagsOther | FlagsTightLeft)
-	IDQuestion  = ID(0x22<<idShift | FlagsOther | FlagsUnaryOp)
+	IDQuestion  = ID(0x22<<idShift | FlagsOther | FlagsTightRight | FlagsUnaryOp)
 	IDColon     = ID(0x23<<idShift | FlagsOther)
 	IDSemicolon = ID(0x24<<idShift | FlagsOther)
 

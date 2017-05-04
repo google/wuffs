@@ -81,11 +81,16 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 
 		// Render the lineTokens.
 		numOpens := len(opens)
-		prevIsTightRight := true
+		prevID := token.ID(0)
 		for _, t := range lineTokens {
-			if !t.IsTightLeft() && !prevIsTightRight {
-				buf = append(buf, ' ')
+			if prevID != 0 && !prevID.IsTightRight() && !t.IsTightLeft() {
+				// The "(" token's tight-left-ness is context dependent. For
+				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
+				if t.ID != token.IDOpenParen || prevID.IsBinaryOp() {
+					buf = append(buf, ' ')
+				}
 			}
+
 			buf = append(buf, m.ByKey(t.Key())...)
 
 			if t.IsOpen() {
@@ -100,7 +105,7 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 				opens = opens[:len(opens)-1]
 			}
 
-			prevIsTightRight = t.IsTightRight()
+			prevID = t.ID
 		}
 		if numOpens != len(opens) {
 			indent++
