@@ -316,8 +316,8 @@ func (p *parser) parseStatement() (*a.Node, error) {
 			return nil, err
 		}
 		return &a.Node{
-			Kind: a.KFor,
-			LHS: lhs,
+			Kind:  a.KFor,
+			LHS:   lhs,
 			List2: block,
 		}, nil
 	}
@@ -327,9 +327,11 @@ func (p *parser) parseStatement() (*a.Node, error) {
 		return nil, err
 	}
 
-	if x := p.peekID(); x != t.IDEq {
-		got := p.m.ByKey(x.Key())
-		return nil, fmt.Errorf("parse: expected \"=\", got %q for statement at %s:%d", got, p.filename, p.line())
+	op := p.peekID()
+	if !op.IsAssign() {
+		got := p.m.ByKey(op.Key())
+		return nil, fmt.Errorf("parse: expected assignment, got %q for statement at %s:%d",
+			got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -340,6 +342,7 @@ func (p *parser) parseStatement() (*a.Node, error) {
 
 	return &a.Node{
 		Kind: a.KAssign,
+		ID0:  op,
 		LHS:  lhs,
 		RHS:  rhs,
 	}, nil

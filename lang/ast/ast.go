@@ -41,7 +41,8 @@ const (
 	//  - RHS:   <KExpr>
 	KAssert
 
-	// KAssign is "LHS = RHS":
+	// KAssign is "LHS = RHS" or "LHS op= RHS:
+	//  - ID0:   operator
 	//  - LHS:   <KExpr>
 	//  - RHS:   <KExpr>
 	KAssign
