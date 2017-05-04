@@ -346,7 +346,22 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			// TODO: parse "f(i)".
 
 		case t.IDOpenBracket:
-			// TODO: parse "a[i]".
+			p.src = p.src[1:]
+			rhs, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if x := p.peekID(); x != t.IDCloseBracket {
+				got := p.m.ByKey(x.Key())
+				return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return &a.Node{
+				Kind: a.KExpr,
+				ID0:  t.IDOpenBracket,
+				LHS:  lhs,
+				RHS:  rhs,
+			}, nil
 
 		case t.IDDot:
 			p.src = p.src[1:]
