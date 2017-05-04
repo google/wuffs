@@ -17,11 +17,11 @@ const (
 
 	// KExpr is an expression, such as "i", "+j" or "k + l[m].n".
 	//  - ID0:   <0|operator|IDOpenBracket|IDDot>
-	//  - ID2:   <0|identifier name|literal>
+	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
 	//
-	// A zero ID0 means an identifier or literal in ID2, like "foo" or "42".
+	// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
 	//
 	// For unary operators, ID0 is the operator and RHS is the operand.
 	//
@@ -47,19 +47,21 @@ const (
 	KParam
 
 	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T".
-	//  - ID0:   <0|IDPtr>
-	//  - ID1:   <0|package name>
-	//  - ID2:   <0|type name>
-	//  - LHS:   TODO.
+	//  - ID0:   <0|package name|IDPtr>
+	//  - ID1:   <0|type name>
+	//  - LHS:   <nil|KExpr>
 	//  - RHS:   <nil|KType>
 	//
-	// A zero ID0 means an undecorated type like "u32" or "pkg.foo". ID1 is
-	// zero or "pkg". ID2 is "u32" or "foo". RHS is nil.
+	// A zero ID0 means an undecorated type like "u32" or "foo". ID1 is
+	// zero or "pkg". ID1 is "u32" or "foo". RHS is nil.
 	//
-	// A non-zero ID0 means a decorated type like "ptr T" or "[8] T". ID0 is
-	// the decoration. LHS is nil or "8". RHS is the T. ID1 and ID2 are zero.
+	// An IDPtr ID0 means "ptr RHS".
 	//
-	// TODO: LHS for arrays (and slices?), such as "[8] T".
+	// An IDOpenBracket ID0 means "[LHS] RHS".
+	//
+	// Other ID0 values mean a package-qualified type like "pkg.foo". ID0 is
+	// the "pkg", ID1 is the "foo".
+	//
 	// TODO: refinements, such as "u32~[:4096]".
 	KType
 
@@ -105,7 +107,6 @@ type Node struct {
 	Flags Flags
 	ID0   token.ID
 	ID1   token.ID
-	ID2   token.ID
 	LHS   *Node // Left Hand Side.
 	RHS   *Node // Right Hand Side.
 	List0 []*Node

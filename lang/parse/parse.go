@@ -202,14 +202,14 @@ func (p *parser) parseType() (*a.Node, error) {
 		}, nil
 	}
 
-	id1, id2, err := p.parseQualifiedIdent()
+	id0, id1, err := p.parseQualifiedIdent()
 	if err != nil {
 		return nil, err
 	}
 	return &a.Node{
 		Kind: a.KType,
+		ID0:  id0,
 		ID1:  id1,
-		ID2:  id2,
 	}, nil
 }
 
@@ -327,6 +327,6 @@ func (p *parser) parseOperand() (*a.Node, error) {
 
 	return &a.Node{
 		Kind: a.KExpr,
-		ID2:  id,
+		ID1:  id,
 	}, nil
 }
