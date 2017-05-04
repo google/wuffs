@@ -290,7 +290,18 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 }
 
 func (p *parser) parseStatement() (*a.Node, error) {
-	// TODO: parse statements other than x = y.
+	switch x := p.peekID(); x {
+	case t.IDAssert:
+		p.src = p.src[1:]
+		rhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KAssert,
+			RHS:  rhs,
+		}, nil
+	}
 
 	lhs, err := p.parseExpr()
 	if err != nil {

@@ -15,7 +15,7 @@ type Kind uint32
 const (
 	KInvalid = Kind(iota)
 
-	// KExpr is an expression, such as "i", "+j" or "k + l[m(n, o)].p".
+	// KExpr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
 	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDot>
 	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
@@ -37,9 +37,13 @@ const (
 	// For selectors, like "lhs.id1", ID0 is IDDot.
 	KExpr
 
-	// KAssign is "Left = Right".
-	//  - LHS:   Left
-	//  - RHS:   Right
+	// KAssert is "assert RHS":
+	//  - RHS:   <KExpr>
+	KAssert
+
+	// KAssign is "LHS = RHS":
+	//  - LHS:   <KExpr>
+	//  - RHS:   <KExpr>
 	KAssign
 
 	// KParam is a "name type" parameter:
@@ -47,7 +51,7 @@ const (
 	//  - RHS:   <KType>
 	KParam
 
-	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T".
+	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T":
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
 	//  - LHS:   <nil|KExpr>
@@ -72,7 +76,7 @@ const (
 	//  - FlagsSuspendible is (List1) vs ?(List1)
 	KFunc
 
-	// KFile is a file of source code.
+	// KFile is a file of source code:
 	//  - List0: <KFunc> top-level declarations
 	KFile
 )
@@ -85,6 +89,7 @@ func (k Kind) String() string {
 }
 
 var kindStrings = [...]string{
+	KAssert:  "KAssert",
 	KAssign:  "KAssign",
 	KExpr:    "KExpr",
 	KFile:    "KFile",
