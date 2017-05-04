@@ -28,14 +28,30 @@ const (
 	//	- RHS:   Right
 	KAssign
 
-	// KParam is a "name package.type" parameter:
+	// KParam is a "name type" parameter:
 	//	- ID0:   name
-	//	- ID1:   package (optional)
-	//	- ID2:   type
+	//	- RHS:   <KType>
 	KParam
 
+	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T".
+	//	- ID0:   <0|IDPtr>
+	//	- ID1:   <0|package name>
+	//	- ID2:   <0|type name>
+	//	- LHS:   TODO.
+	//	- RHS:   <nil|KType>
+	//
+	// A zero ID0 means an undecorated type like "u32" or "pkg.foo". ID1 is
+	// zero or "pkg". ID2 is "u32" or "foo". RHS is nil.
+	//
+	// A non-zero ID0 means a decorated type like "ptr T" or "[8] T". ID0 is
+	// the decoration. LHS is nil or "8". RHS is the T. ID1 and ID2 are zero.
+	//
+	// TODO: LHS for arrays (and slices?), such as "[8] T".
+	// TODO: refinements, such as "u32~[:4096]".
+	KType
+
 	// KFunc is "func ID0.ID1 (List0) (List1) { List2 }":
-	//	- ID0:   receiver (optional)
+	//	- ID0:   <0|receiver>
 	//	- ID1:   name
 	//	- List0: <KParam> in-parameters
 	//	- List1: <KParam> out-parameters
@@ -63,6 +79,7 @@ var kindStrings = [...]string{
 	KInvalid: "KInvalid",
 	KLiteral: "KLiteral",
 	KParam:   "KParam",
+	KType:    "KType",
 }
 
 type Flags uint32

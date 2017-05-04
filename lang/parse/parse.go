@@ -167,17 +167,42 @@ func (p *parser) parseParamList() ([]*a.Node, error) {
 }
 
 func (p *parser) parseParam() (*a.Node, error) {
-	id0, err := p.parseIdent()
+	id, err := p.parseIdent()
 	if err != nil {
 		return nil, err
 	}
-	id1, id2, err := p.parseQualifiedIdent()
+	rhs, err := p.parseType()
 	if err != nil {
 		return nil, err
 	}
 	return &a.Node{
 		Kind: a.KParam,
-		ID0:  id0,
+		ID0:  id,
+		RHS:  rhs,
+	}, nil
+}
+
+func (p *parser) parseType() (*a.Node, error) {
+	switch p.peekID() {
+	case t.IDPtr:
+		p.src = p.src[1:]
+		rhs, err := p.parseType()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KType,
+			ID0:  t.IDPtr,
+			RHS:  rhs,
+		}, nil
+	}
+
+	id1, id2, err := p.parseQualifiedIdent()
+	if err != nil {
+		return nil, err
+	}
+	return &a.Node{
+		Kind: a.KType,
 		ID1:  id1,
 		ID2:  id2,
 	}, nil
