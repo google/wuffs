@@ -310,7 +310,7 @@ func (p *parser) parseOperand() (*a.Node, error) {
 
 	case x.IsUnaryOp():
 		p.src = p.src[1:]
-		rhs, err := p.parseExpr()
+		rhs, err := p.parseOperand()
 		if err != nil {
 			return nil, err
 		}
@@ -325,18 +325,34 @@ func (p *parser) parseOperand() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	switch p.peekID() {
-	case t.IDOpenParen:
-		// TODO: parse "f(i)".
-	case t.IDOpenBracket:
-		// TODO: parse "a[i]".
-	case t.IDDot:
-		// TODO: parse "x.y".
-	}
-
-	return &a.Node{
+	lhs := &a.Node{
 		Kind: a.KExpr,
 		ID1:  id,
-	}, nil
+	}
+
+	for {
+		switch p.peekID() {
+		default:
+			return lhs, nil
+
+		case t.IDOpenParen:
+			// TODO: parse "f(i)".
+
+		case t.IDOpenBracket:
+			// TODO: parse "a[i]".
+
+		case t.IDDot:
+			p.src = p.src[1:]
+			id, err := p.parseIdent()
+			if err != nil {
+				return nil, err
+			}
+			lhs = &a.Node{
+				Kind: a.KExpr,
+				ID0:  t.IDDot,
+				ID1:  id,
+				LHS:  lhs,
+			}
+		}
+	}
 }

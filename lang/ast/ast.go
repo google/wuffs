@@ -16,7 +16,7 @@ const (
 	KInvalid = Kind(iota)
 
 	// KExpr is an expression, such as "i", "+j" or "k + l[m].n".
-	//  - ID0:   <0|operator|IDOpenBracket|IDDot>
+	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDot>
 	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
@@ -33,7 +33,7 @@ const (
 	//
 	// For indexes, like "lhs[rhs]", ID0 is IDOpenBracket.
 	//
-	// For selectors, like "lhs.rhs", ID0 is IDDot.
+	// For selectors, like "lhs.id1", ID0 is IDDot.
 	KExpr
 
 	// KAssign is "Left = Right".
