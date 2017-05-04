@@ -51,6 +51,11 @@ const (
 	//  - RHS:   <KType>
 	KParam
 
+	// KFor is "for { List2 }" or "for LHS { List2 }":
+	//  - LHS:   <nil|KExpr>
+	//  - List2: <*> loop body
+	KFor
+
 	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T":
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
@@ -72,7 +77,7 @@ const (
 	//  - ID1:   name
 	//  - List0: <KParam> in-parameters
 	//  - List1: <KParam> out-parameters
-	//  - List2: <KAssign> function body
+	//  - List2: <*> function body
 	//  - FlagsSuspendible is (List1) vs ?(List1)
 	KFunc
 
@@ -93,6 +98,7 @@ var kindStrings = [...]string{
 	KAssign:  "KAssign",
 	KExpr:    "KExpr",
 	KFile:    "KFile",
+	KFor:     "KFor",
 	KFunc:    "KFunc",
 	KInvalid: "KInvalid",
 	KParam:   "KParam",

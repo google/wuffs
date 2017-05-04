@@ -301,6 +301,25 @@ func (p *parser) parseStatement() (*a.Node, error) {
 			Kind: a.KAssert,
 			RHS:  rhs,
 		}, nil
+
+	case t.IDFor:
+		p.src = p.src[1:]
+		lhs, err := (*a.Node)(nil), error(nil)
+		if p.peekID() != t.IDOpenCurly {
+			lhs, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		block, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KFor,
+			LHS: lhs,
+			List2: block,
+		}, nil
 	}
 
 	lhs, err := p.parseExpr()
