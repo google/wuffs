@@ -57,6 +57,13 @@ const (
 	//  - List2: <*> loop body
 	KFor
 
+	// KIf is "if LHS { List1 } else RHS" or "if LHS { List1 } else { List2 }":
+	//  - LHS:   <KExpr>
+	//  - RHS:   <nil|KIf>
+	//  - List1: <*> if-true body
+	//  - List2: <*> if-false body
+	KIf
+
 	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T":
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
@@ -101,6 +108,7 @@ var kindStrings = [...]string{
 	KFile:    "KFile",
 	KFor:     "KFor",
 	KFunc:    "KFunc",
+	KIf:      "KIf",
 	KInvalid: "KInvalid",
 	KParam:   "KParam",
 	KType:    "KType",

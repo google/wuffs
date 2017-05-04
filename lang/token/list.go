@@ -147,6 +147,8 @@ const (
 	IDPtr    = ID(0xA1<<idShift | FlagsOther)
 	IDAssert = ID(0xA2<<idShift | FlagsOther)
 	IDFor    = ID(0xA3<<idShift | FlagsOther)
+	IDIf     = ID(0xA4<<idShift | FlagsOther)
+	IDElse   = ID(0xA5<<idShift | FlagsOther)
 
 	IDFalse = ID(0xD0<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0xD1<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -224,6 +226,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDPtr >> idShift:    {"ptr", IDPtr},
 	IDAssert >> idShift: {"assert", IDAssert},
 	IDFor >> idShift:    {"for", IDFor},
+	IDIf >> idShift:     {"if", IDIf},
+	IDElse >> idShift:   {"else", IDElse},
 
 	IDFalse >> idShift: {"false", IDFalse},
 	IDTrue >> idShift:  {"true", IDTrue},

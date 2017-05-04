@@ -320,6 +320,9 @@ func (p *parser) parseStatement() (*a.Node, error) {
 			LHS:   lhs,
 			List2: block,
 		}, nil
+
+	case t.IDIf:
+		return p.parseIf()
 	}
 
 	lhs, err := p.parseExpr()
@@ -345,6 +348,44 @@ func (p *parser) parseStatement() (*a.Node, error) {
 		ID0:  op,
 		LHS:  lhs,
 		RHS:  rhs,
+	}, nil
+}
+
+func (p *parser) parseIf() (*a.Node, error) {
+	if x := p.peekID(); x != t.IDIf {
+		got := p.m.ByKey(x.Key())
+		return nil, fmt.Errorf("parse: expected \"if\", got %q at %s:%d", got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+	lhs, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	list1, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+	rhs, list2 := (*a.Node)(nil), ([]*a.Node)(nil)
+	if p.peekID() == t.IDElse {
+		p.src = p.src[1:]
+		if p.peekID() == t.IDIf {
+			rhs, err = p.parseIf()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			list2, err = p.parseBlock()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return &a.Node{
+		Kind:  a.KIf,
+		LHS:   lhs,
+		RHS:   rhs,
+		List1: list1,
+		List2: list2,
 	}, nil
 }
 
