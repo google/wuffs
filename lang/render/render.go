@@ -23,12 +23,12 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 		return nil
 	}
 
-	const maxOpens = 0xFFFF
-	opens := make([]uint32, 0, 256)
-	indent := uint32(0)
+	const maxIndent = 0xFFFF
+	indent := 0
 	buf := make([]byte, 0, 1024)
 	prevLine := src[0].Line - 1
 	prevLineEndedWithOpen := false
+	prevLineHanging := false
 
 	for len(src) > 0 {
 		// Find the tokens in this line.
@@ -43,7 +43,10 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 		src = src[i:]
 
 		// Strip any trailing semi-colons.
+		hanging := prevLineHanging
+		prevLineHanging = true
 		for len(lineTokens) > 0 && lineTokens[len(lineTokens)-1].ID == token.IDSemicolon {
+			prevLineHanging = false
 			lineTokens = lineTokens[:len(lineTokens)-1]
 		}
 		if len(lineTokens) == 0 {
@@ -60,19 +63,17 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 		}
 
 		// Render any leading indentation. If this line starts with a close
-		// token, indent it so that it aligns vertically with the line
-		// containing the matching open token.
+		// curly, outdent it so that it hopefully aligns vertically with the
+		// line containing the matching open curly.
 		buf = buf[:0]
-		if lineTokens[0].IsClose() {
-			if len(opens) > 0 {
-				indent = opens[len(opens)-1]
-			} else {
-				indent = 0
-			}
+		indentAdjustment := 0
+		if lineTokens[0].ID == token.IDCloseCurly {
+			indentAdjustment--
+		} else if hanging {
+			indentAdjustment++
 		}
-		if indent != 0 {
+		if n := indent + indentAdjustment; n > 0 {
 			const tabs = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
-			n := int(indent)
 			for ; n > len(tabs); n -= len(tabs) {
 				buf = append(buf, tabs...)
 			}
@@ -80,7 +81,6 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 		}
 
 		// Render the lineTokens.
-		numOpens := len(opens)
 		prevID, prevIsTightRight := token.ID(0), false
 		for _, t := range lineTokens {
 			const (
@@ -98,16 +98,16 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 
 			buf = append(buf, m.ByKey(t.Key())...)
 
-			if t.IsOpen() {
-				if len(opens) == maxOpens {
-					return errors.New("render: too many open tokens")
+			if t.ID == token.IDOpenCurly {
+				if indent == maxIndent {
+					return errors.New("render: too many \"{\" tokens")
 				}
-				opens = append(opens, indent)
-			} else if t.IsClose() {
-				if len(opens) == 0 {
-					return errors.New("render: too many close tokens")
+				indent++
+			} else if t.ID == token.IDCloseCurly {
+				if indent == 0 {
+					return errors.New("render: too many \"}\" tokens")
 				}
-				opens = opens[:len(opens)-1]
+				indent--
 			}
 
 			prevIsTightRight = t.ID.IsTightRight()
@@ -116,13 +116,10 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 			if prevID != 0 && t.ID.Flags()&flagsUB == flagsUB {
 				// Token-based (not ast.Node-based) heuristic for whether the
 				// operator looks unary instead of binary.
-				prevIsTightRight = prevID.Flags() & flagsLIC == 0
+				prevIsTightRight = prevID.Flags()&flagsLIC == 0
 			}
 
 			prevID = t.ID
-		}
-		if numOpens != len(opens) {
-			indent++
 		}
 
 		buf = append(buf, '\n')
@@ -130,7 +127,9 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 			return err
 		}
 		prevLine = line
-		prevLineEndedWithOpen = lineTokens[len(lineTokens)-1].IsOpen()
+		lastID := lineTokens[len(lineTokens)-1].ID
+		prevLineEndedWithOpen = lastID.IsOpen()
+		prevLineHanging = prevLineHanging && lastID != token.IDOpenCurly
 	}
 
 	return nil
