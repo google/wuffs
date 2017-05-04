@@ -319,6 +319,13 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			ID0:  x,
 			RHS:  rhs,
 		}, nil
+
+	case x.IsLiteral():
+		p.src = p.src[1:]
+		return &a.Node{
+			Kind: a.KExpr,
+			ID1:  x,
+		}, nil
 	}
 
 	id, err := p.parseIdent()
