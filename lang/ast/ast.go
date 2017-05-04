@@ -21,6 +21,7 @@ const (
 	//  - LHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
 	//  - List0: <KExpr> function call arguments
+	//  - FlagsSuspendible is "f(x)" vs "f?(x)"
 	//
 	// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
 	//
@@ -98,7 +99,7 @@ const (
 	//  - List0: <KParam> in-parameters
 	//  - List1: <KParam> out-parameters
 	//  - List2: <*> function body
-	//  - FlagsSuspendible is (List1) vs ?(List1)
+	//  - FlagsSuspendible is "(List1)" vs "?(List1)"
 	KFunc
 
 	// KFile is a file of source code:

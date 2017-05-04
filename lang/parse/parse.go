@@ -353,25 +353,21 @@ func (p *parser) parseStatement() (*a.Node, error) {
 		return nil, err
 	}
 
-	op := p.peekID()
-	if !op.IsAssign() {
-		got := p.m.ByKey(op.Key())
-		return nil, fmt.Errorf("parse: expected assignment, got %q for statement at %s:%d",
-			got, p.filename, p.line())
+	if op := p.peekID(); op.IsAssign() {
+		p.src = p.src[1:]
+		rhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KAssign,
+			ID0:  op,
+			LHS:  lhs,
+			RHS:  rhs,
+		}, nil
 	}
-	p.src = p.src[1:]
 
-	rhs, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-
-	return &a.Node{
-		Kind: a.KAssign,
-		ID0:  op,
-		LHS:  lhs,
-		RHS:  rhs,
-	}, nil
+	return lhs, nil
 }
 
 func (p *parser) parseIf() (*a.Node, error) {
@@ -482,9 +478,15 @@ func (p *parser) parseOperand() (*a.Node, error) {
 	}
 
 	for {
+		flags := a.Flags(0)
 		switch p.peekID() {
 		default:
 			return lhs, nil
+
+		case t.IDQuestion:
+			p.src = p.src[1:]
+			flags |= a.FlagsSuspendible
+			fallthrough
 
 		case t.IDOpenParen:
 			list0, err := p.parseList("argument", (*parser).parseExpr)
@@ -493,6 +495,7 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			}
 			lhs = &a.Node{
 				Kind:  a.KExpr,
+				Flags: flags,
 				ID0:   t.IDOpenParen,
 				LHS:   lhs,
 				List0: list0,

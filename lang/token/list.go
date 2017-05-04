@@ -102,7 +102,7 @@ const (
 
 	IDDot       = ID(0x20<<idShift | FlagsTightLeft | FlagsTightRight)
 	IDComma     = ID(0x21<<idShift | FlagsTightLeft)
-	IDQuestion  = ID(0x22<<idShift | FlagsTightRight | FlagsUnaryOp)
+	IDQuestion  = ID(0x22<<idShift | FlagsTightLeft | FlagsTightRight)
 	IDColon     = ID(0x23<<idShift | FlagsTightLeft | FlagsTightRight)
 	IDSemicolon = ID(0x24<<idShift | FlagsTightLeft)
 
@@ -137,8 +137,8 @@ const (
 	IDGreaterThan = ID(0x75<<idShift | FlagsBinaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDAnd = ID(0x80<<idShift | FlagsBinaryOp)
-	IDOr  = ID(0x81<<idShift | FlagsBinaryOp)
+	IDAnd = ID(0x80<<idShift | FlagsBinaryOp | FlagsAssociative)
+	IDOr  = ID(0x81<<idShift | FlagsBinaryOp | FlagsAssociative)
 	IDNot = ID(0x82<<idShift | FlagsUnaryOp)
 	IDAs  = ID(0x83<<idShift | FlagsBinaryOp)
 
