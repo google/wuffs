@@ -51,19 +51,16 @@ const (
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
 	//  - LHS:   <nil|KExpr>
-	//  - RHS:   <nil|KType>
+	//  - RHS:   <nil|KExpr|KType>
 	//
-	// A zero ID0 means an undecorated type like "u32" or "foo". ID1 is
-	// zero or "pkg". ID1 is "u32" or "foo". RHS is nil.
+	// An IDPtr ID0 means "ptr RHS". RHS is a KType.
 	//
-	// An IDPtr ID0 means "ptr RHS".
+	// An IDOpenBracket ID0 means "[LHS] RHS". RHS is a KType.
 	//
-	// An IDOpenBracket ID0 means "[LHS] RHS".
-	//
-	// Other ID0 values mean a package-qualified type like "pkg.foo". ID0 is
-	// the "pkg", ID1 is the "foo".
-	//
-	// TODO: refinements, such as "u32~[:4096]".
+	// Other ID0 values mean a (possibly package-qualified) type like "pkg.foo"
+	// or "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
+	// refined as "pkg.foo[LHS:RHS]". LHS and RHS are KExpr's, possibly nil.
+	// For example, the LHS for "u32[:4096]" is nil.
 	KType
 
 	// KFunc is "func ID0.ID1 (List0) (List1) { List2 }":

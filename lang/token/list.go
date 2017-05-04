@@ -100,11 +100,11 @@ const (
 	IDOpenCurly    = ID(0x14<<idShift | FlagsOpen)
 	IDCloseCurly   = ID(0x15<<idShift | FlagsClose | FlagsImplicitSemicolon)
 
-	IDDot       = ID(0x20<<idShift | FlagsOther | FlagsTightLeft | FlagsTightRight)
-	IDComma     = ID(0x21<<idShift | FlagsOther | FlagsTightLeft)
-	IDQuestion  = ID(0x22<<idShift | FlagsOther | FlagsTightRight | FlagsUnaryOp)
-	IDColon     = ID(0x23<<idShift | FlagsOther)
-	IDSemicolon = ID(0x24<<idShift | FlagsOther)
+	IDDot       = ID(0x20<<idShift | FlagsTightLeft | FlagsTightRight)
+	IDComma     = ID(0x21<<idShift | FlagsTightLeft)
+	IDQuestion  = ID(0x22<<idShift | FlagsTightRight | FlagsUnaryOp)
+	IDColon     = ID(0x23<<idShift | FlagsTightLeft | FlagsTightRight)
+	IDSemicolon = ID(0x24<<idShift | FlagsTightLeft)
 
 	IDEq       = ID(0x40<<idShift | FlagsAssign)
 	IDPlusEq   = ID(0x41<<idShift | FlagsAssign)

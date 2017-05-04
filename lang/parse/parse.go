@@ -206,11 +206,58 @@ func (p *parser) parseType() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	lhs, rhs := (*a.Node)(nil), (*a.Node)(nil)
+	if x := p.peekID(); x == t.IDOpenBracket {
+		lhs, rhs, err = p.parseRange()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &a.Node{
 		Kind: a.KType,
 		ID0:  id0,
 		ID1:  id1,
+		LHS:  lhs,
+		RHS:  rhs,
 	}, nil
+}
+
+func (p *parser) parseRange() (lhs *a.Node, rhs *a.Node, err error) {
+	if x := p.peekID(); x != t.IDOpenBracket {
+		got := p.m.ByKey(x.Key())
+		return nil, nil, fmt.Errorf("parse: expected \"[\", got %q for range at %s:%d", got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if p.peekID() != t.IDColon {
+		lhs, err = p.parseExpr()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if x := p.peekID(); x != t.IDColon {
+		got := p.m.ByKey(x.Key())
+		return nil, nil, fmt.Errorf("parse: expected \":\", got %q for range at %s:%d", got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if p.peekID() != t.IDCloseBracket {
+		rhs, err = p.parseExpr()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if x := p.peekID(); x != t.IDCloseBracket {
+		got := p.m.ByKey(x.Key())
+		return nil, nil, fmt.Errorf("parse: expected \"]\", got %q for range at %s:%d", got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	return lhs, rhs, nil
 }
 
 func (p *parser) parseBlock() ([]*a.Node, error) {
