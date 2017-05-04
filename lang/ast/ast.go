@@ -93,13 +93,13 @@ const (
 	// For example, the LHS for "u32[:4096]" is nil.
 	KType
 
-	// KFunc is "func ID0.ID1 (List0) (List1) { List2 }":
+	// KFunc is "func ID0.ID1(List0) (List1) { List2 }":
 	//  - ID0:   <0|receiver>
 	//  - ID1:   name
 	//  - List0: <KParam> in-parameters
 	//  - List1: <KParam> out-parameters
 	//  - List2: <*> function body
-	//  - FlagsSuspendible is "(List1)" vs "?(List1)"
+	//  - FlagsSuspendible is "ID1" vs "ID1?"
 	KFunc
 
 	// KFile is a file of source code:

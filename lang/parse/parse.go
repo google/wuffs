@@ -69,13 +69,13 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		inParams, err := p.parseList("parameter", (*parser).parseParam)
-		if err != nil {
-			return nil, err
-		}
 		if p.peekID() == t.IDQuestion {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
+		}
+		inParams, err := p.parseList("parameter", (*parser).parseParam)
+		if err != nil {
+			return nil, err
 		}
 		outParams, err := p.parseList("parameter", (*parser).parseParam)
 		if err != nil {
