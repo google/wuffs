@@ -43,6 +43,18 @@ type ID uint32
 func (x ID) Key() Key     { return Key(x >> idShift) }
 func (x ID) Flags() Flags { return Flags(x & idMask) }
 
+func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
+func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
+func (x ID) IsAssociative() bool       { return Flags(x)&FlagsAssociative != 0 }
+func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
+func (x ID) IsLiteral() bool           { return Flags(x)&FlagsLiteral != 0 }
+func (x ID) IsIdent() bool             { return Flags(x)&FlagsIdent != 0 }
+func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
+func (x ID) IsOpen() bool              { return Flags(x)&FlagsOpen != 0 }
+func (x ID) IsClose() bool             { return Flags(x)&FlagsClose != 0 }
+func (x ID) IsTightLeft() bool         { return Flags(x)&FlagsTightLeft != 0 }
+func (x ID) IsTightRight() bool        { return Flags(x)&FlagsTightRight != 0 }
+
 // Token combines an ID and the line number it was seen.
 type Token struct {
 	ID   ID

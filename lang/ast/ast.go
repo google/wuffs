@@ -15,13 +15,26 @@ type Kind uint32
 const (
 	KInvalid = Kind(iota)
 
-	// KLiteral is a literal value.
-	//	- ID0:   value
-	KLiteral
-
-	// KIdent is an identifier.
-	//	- ID0:   name
-	KIdent
+	// KExpr is an expression, such as "i", "+j" or "k + l[m].n".
+	//	- ID0:   <0|operator|IDOpenBracket|IDDot>
+	//	- ID2:   <0|identifier name|literal>
+	//	- LHS:   <nil|KExpr>
+	//	- RHS:   <nil|KExpr|KType>
+	//
+	// A zero ID0 means an identifier or literal in ID2, like "foo" or "42".
+	//
+	// For unary operators, ID0 is the operator and RHS is the operand.
+	//
+	// For binary operators, ID0 is the operator and LHS and RHS are the
+	// operands. The LHS may be null for the "-" and "+" operators, which are
+	// also unary operators.
+	//
+	// For function calls, like "lhs(rhs)", ID0 is IDOpenParen.
+	//
+	// For indexes, like "lhs[rhs]", ID0 is IDOpenBracket.
+	//
+	// For selectors, like "lhs.rhs", ID0 is IDDot.
+	KExpr
 
 	// KAssign is "Left = Right".
 	//	- LHS:   Left
@@ -73,11 +86,10 @@ func (k Kind) String() string {
 
 var kindStrings = [...]string{
 	KAssign:  "KAssign",
+	KExpr:    "KExpr",
 	KFile:    "KFile",
 	KFunc:    "KFunc",
-	KIdent:   "KIdent",
 	KInvalid: "KInvalid",
-	KLiteral: "KLiteral",
 	KParam:   "KParam",
 	KType:    "KType",
 }

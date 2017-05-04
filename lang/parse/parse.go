@@ -261,13 +261,64 @@ func (p *parser) parseStatement() (*a.Node, error) {
 }
 
 func (p *parser) parseExpr() (*a.Node, error) {
-	// TODO: parse other expressions, such as x.y, unop x and x binop y.
+	lhs, err := p.parseOperand()
+	if err != nil {
+		return nil, err
+	}
+	if x := p.peekID(); x.IsBinaryOp() {
+		p.src = p.src[1:]
+		parseFunc := (*parser).parseOperand
+		if x == t.IDAs {
+			parseFunc = (*parser).parseType
+		}
+		rhs, err := parseFunc(p)
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KExpr,
+			ID0:  x,
+			LHS:  lhs,
+			RHS:  rhs,
+		}, nil
+	}
+	return lhs, nil
+}
+
+func (p *parser) parseOperand() (*a.Node, error) {
+	switch x := p.peekID(); {
+	case x == t.IDOpenParen:
+		// TODO: parse "(x + y)".
+
+	case x.IsUnaryOp():
+		p.src = p.src[1:]
+		rhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KExpr,
+			ID0:  x,
+			RHS:  rhs,
+		}, nil
+	}
+
 	id, err := p.parseIdent()
 	if err != nil {
 		return nil, err
 	}
+
+	switch p.peekID() {
+	case t.IDOpenParen:
+		// TODO: parse "f(i)".
+	case t.IDOpenBracket:
+		// TODO: parse "a[i]".
+	case t.IDDot:
+		// TODO: parse "x.y".
+	}
+
 	return &a.Node{
-		Kind: a.KIdent,
-		ID0:  id,
+		Kind: a.KExpr,
+		ID2:  id,
 	}, nil
 }
