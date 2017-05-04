@@ -302,6 +302,18 @@ func (p *parser) parseStatement() (*a.Node, error) {
 			RHS:  rhs,
 		}, nil
 
+	case t.IDBreak:
+		p.src = p.src[1:]
+		return &a.Node{
+			Kind: a.KBreak,
+		}, nil
+
+	case t.IDContinue:
+		p.src = p.src[1:]
+		return &a.Node{
+			Kind: a.KContinue,
+		}, nil
+
 	case t.IDFor:
 		p.src = p.src[1:]
 		lhs, err := (*a.Node)(nil), error(nil)
@@ -323,6 +335,17 @@ func (p *parser) parseStatement() (*a.Node, error) {
 
 	case t.IDIf:
 		return p.parseIf()
+
+	case t.IDReturn:
+		p.src = p.src[1:]
+		lhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KReturn,
+			LHS:  lhs,
+		}, nil
 	}
 
 	lhs, err := p.parseExpr()

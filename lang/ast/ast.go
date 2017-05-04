@@ -64,6 +64,18 @@ const (
 	//  - List2: <*> if-false body
 	KIf
 
+	// KReturn is "return LHS":
+	//  - LHS:   <KExpr>
+	KReturn
+
+	// KBreak is "break":
+	// TODO: label?
+	KBreak
+
+	// KContinue is "continue":
+	// TODO: label?
+	KContinue
+
 	// KType is a type, such as "u32", "pkg.foo", "ptr T" or "[8] T":
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
@@ -102,16 +114,19 @@ func (k Kind) String() string {
 }
 
 var kindStrings = [...]string{
-	KAssert:  "KAssert",
-	KAssign:  "KAssign",
-	KExpr:    "KExpr",
-	KFile:    "KFile",
-	KFor:     "KFor",
-	KFunc:    "KFunc",
-	KIf:      "KIf",
-	KInvalid: "KInvalid",
-	KParam:   "KParam",
-	KType:    "KType",
+	KAssert:   "KAssert",
+	KAssign:   "KAssign",
+	KBreak:    "KBreak",
+	KContinue: "KContinue",
+	KExpr:     "KExpr",
+	KFile:     "KFile",
+	KFor:      "KFor",
+	KFunc:     "KFunc",
+	KIf:       "KIf",
+	KInvalid:  "KInvalid",
+	KParam:    "KParam",
+	KReturn:   "KReturn",
+	KType:     "KType",
 }
 
 type Flags uint32

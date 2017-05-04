@@ -143,12 +143,15 @@ const (
 	IDAs  = ID(0x83<<idShift | FlagsBinaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDFunc   = ID(0xA0<<idShift | FlagsOther)
-	IDPtr    = ID(0xA1<<idShift | FlagsOther)
-	IDAssert = ID(0xA2<<idShift | FlagsOther)
-	IDFor    = ID(0xA3<<idShift | FlagsOther)
-	IDIf     = ID(0xA4<<idShift | FlagsOther)
-	IDElse   = ID(0xA5<<idShift | FlagsOther)
+	IDFunc     = ID(0xA0<<idShift | FlagsOther)
+	IDPtr      = ID(0xA1<<idShift | FlagsOther)
+	IDAssert   = ID(0xA2<<idShift | FlagsOther)
+	IDFor      = ID(0xA3<<idShift | FlagsOther)
+	IDIf       = ID(0xA4<<idShift | FlagsOther)
+	IDElse     = ID(0xA5<<idShift | FlagsOther)
+	IDReturn   = ID(0xA6<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDBreak    = ID(0xA7<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDContinue = ID(0xA8<<idShift | FlagsOther | FlagsImplicitSemicolon)
 
 	IDFalse = ID(0xD0<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0xD1<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -222,12 +225,15 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDNot >> idShift: {"not", IDNot},
 	IDAs >> idShift:  {"as", IDAs},
 
-	IDFunc >> idShift:   {"func", IDFunc},
-	IDPtr >> idShift:    {"ptr", IDPtr},
-	IDAssert >> idShift: {"assert", IDAssert},
-	IDFor >> idShift:    {"for", IDFor},
-	IDIf >> idShift:     {"if", IDIf},
-	IDElse >> idShift:   {"else", IDElse},
+	IDFunc >> idShift:     {"func", IDFunc},
+	IDPtr >> idShift:      {"ptr", IDPtr},
+	IDAssert >> idShift:   {"assert", IDAssert},
+	IDFor >> idShift:      {"for", IDFor},
+	IDIf >> idShift:       {"if", IDIf},
+	IDElse >> idShift:     {"else", IDElse},
+	IDReturn >> idShift:   {"return", IDReturn},
+	IDBreak >> idShift:    {"break", IDBreak},
+	IDContinue >> idShift: {"continue", IDContinue},
 
 	IDFalse >> idShift: {"false", IDFalse},
 	IDTrue >> idShift:  {"true", IDTrue},
