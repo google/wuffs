@@ -7,8 +7,6 @@ package render
 // allow automated refactoring tools, not just automated formatting. For now,
 // rendering tokens is easier, especially with respect to tracking comments.
 
-// TODO: handle comments.
-
 import (
 	"errors"
 	"io"
@@ -43,9 +41,13 @@ func RenderFile(w io.Writer, src []token.Token, comments []string, m *token.IDMa
 		src = src[i:]
 
 		// Print any previous comments.
+		commentIndent := indent
+		if prevLineHanging {
+			commentIndent++
+		}
 		for ; commentLine < line; commentLine++ {
 			buf = buf[:0]
-			buf = appendComment(buf, comments, commentLine, indent, true)
+			buf = appendComment(buf, comments, commentLine, commentIndent, true)
 			if len(buf) == 0 {
 				continue
 			}
@@ -80,11 +82,11 @@ func RenderFile(w io.Writer, src []token.Token, comments []string, m *token.IDMa
 		}
 
 		// Render any leading indentation. If this line starts with a close
-		// curly, outdent it so that it hopefully aligns vertically with the
-		// line containing the matching open curly.
+		// token, outdent it so that it hopefully aligns vertically with the
+		// line containing the matching open token.
 		buf = buf[:0]
 		indentAdjustment := 0
-		if lineTokens[0].ID == token.IDCloseCurly {
+		if lineTokens[0].ID.IsClose() {
 			indentAdjustment--
 		} else if hanging {
 			indentAdjustment++

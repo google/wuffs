@@ -152,6 +152,7 @@ const (
 	IDReturn   = ID(0xA6<<idShift | FlagsOther | FlagsImplicitSemicolon)
 	IDBreak    = ID(0xA7<<idShift | FlagsOther | FlagsImplicitSemicolon)
 	IDContinue = ID(0xA8<<idShift | FlagsOther | FlagsImplicitSemicolon)
+	IDStruct   = ID(0xA9<<idShift | FlagsOther)
 
 	IDFalse = ID(0xD0<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0xD1<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -234,6 +235,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDReturn >> idShift:   {"return", IDReturn},
 	IDBreak >> idShift:    {"break", IDBreak},
 	IDContinue >> idShift: {"continue", IDContinue},
+	IDStruct >> idShift:   {"struct", IDStruct},
 
 	IDFalse >> idShift: {"false", IDFalse},
 	IDTrue >> idShift:  {"true", IDTrue},

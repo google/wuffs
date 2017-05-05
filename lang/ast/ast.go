@@ -106,8 +106,14 @@ const (
 	//  - FlagsSuspendible is "ID1" vs "ID1?"
 	KFunc
 
+	// KStruct is "struct ID1(List0)":
+	//  - ID1:   name
+	//  - List0: <KParam> fields
+	//  - FlagsSuspendible is "ID1" vs "ID1?"
+	KStruct
+
 	// KFile is a file of source code:
-	//  - List0: <KFunc> top-level declarations
+	//  - List0: <KFunc|KStruct> top-level declarations
 	KFile
 )
 
@@ -131,6 +137,7 @@ var kindStrings = [...]string{
 	KInvalid:  "KInvalid",
 	KParam:    "KParam",
 	KReturn:   "KReturn",
+	KStruct:   "KStruct",
 	KType:     "KType",
 }
 

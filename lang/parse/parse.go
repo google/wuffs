@@ -99,6 +99,33 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			List1: outParams,
 			List2: block,
 		}, nil
+
+	case t.IDStruct:
+		flags := a.Flags(0)
+		p.src = p.src[1:]
+		id1, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+		if p.peekID() == t.IDQuestion {
+			flags |= a.FlagsSuspendible
+			p.src = p.src[1:]
+		}
+		list0, err := p.parseList((*parser).parseParam)
+		if err != nil {
+			return nil, err
+		}
+		if x := p.peekID(); x != t.IDSemicolon {
+			got := p.m.ByKey(x.Key())
+			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		return &a.Node{
+			Kind:  a.KStruct,
+			Flags: flags,
+			ID1:   id1,
+			List0: list0,
+		}, nil
 	}
 	return nil, fmt.Errorf("parse: unrecognized top level declaration at %s:%d", p.filename, p.src[0].Line)
 }
