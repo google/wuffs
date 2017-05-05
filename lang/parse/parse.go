@@ -73,11 +73,11 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		inParams, err := p.parseList("parameter", (*parser).parseParam)
+		inParams, err := p.parseList((*parser).parseParam)
 		if err != nil {
 			return nil, err
 		}
-		outParams, err := p.parseList("parameter", (*parser).parseParam)
+		outParams, err := p.parseList((*parser).parseParam)
 		if err != nil {
 			return nil, err
 		}
@@ -135,11 +135,10 @@ func (p *parser) parseIdent() (t.ID, error) {
 	return x.ID, nil
 }
 
-func (p *parser) parseList(element string, parseFunc func(*parser) (*a.Node, error)) ([]*a.Node, error) {
+func (p *parser) parseList(parseFunc func(*parser) (*a.Node, error)) ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenParen {
 		got := p.m.ByKey(x.Key())
-		return nil, fmt.Errorf("parse: expected \"(\", got %q for %s list at %s:%d",
-			got, element, p.filename, p.line())
+		return nil, fmt.Errorf("parse: expected \"(\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -164,11 +163,10 @@ func (p *parser) parseList(element string, parseFunc func(*parser) (*a.Node, err
 			p.src = p.src[1:]
 		default:
 			got := p.m.ByKey(x.Key())
-			return nil, fmt.Errorf("parse: expected \")\", got %q for %s list at %s:%d",
-				got, element, p.filename, p.line())
+			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
 		}
 	}
-	return nil, fmt.Errorf("parse: expected \")\" for %s list at %s:%d", element, p.filename, p.line())
+	return nil, fmt.Errorf("parse: expected \")\" at %s:%d", p.filename, p.line())
 }
 
 func (p *parser) parseParam() (*a.Node, error) {
@@ -277,7 +275,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *
 func (p *parser) parseBlock() ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenCurly {
 		got := p.m.ByKey(x.Key())
-		return nil, fmt.Errorf("parse: expected \"{\", got %q for block at %s:%d", got, p.filename, p.line())
+		return nil, fmt.Errorf("parse: expected \"{\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -300,7 +298,7 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 		}
 		p.src = p.src[1:]
 	}
-	return nil, fmt.Errorf("parse: expected \"}\" for block at %s:%d", p.filename, p.line())
+	return nil, fmt.Errorf("parse: expected \"}\" at %s:%d", p.filename, p.line())
 }
 
 func (p *parser) parseStatement() (*a.Node, error) {
@@ -503,7 +501,7 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			fallthrough
 
 		case t.IDOpenParen:
-			list0, err := p.parseList("argument", (*parser).parseExpr)
+			list0, err := p.parseList((*parser).parseExpr)
 			if err != nil {
 				return nil, err
 			}
