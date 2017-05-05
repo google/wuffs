@@ -227,6 +227,29 @@ func (p *parser) parseType() (*a.Node, error) {
 		}, nil
 	}
 
+	if x := p.peekID(); x == t.IDOpenBracket {
+		p.src = p.src[1:]
+		lhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		if x := p.peekID(); x != t.IDCloseBracket {
+			got := p.m.ByKey(x.Key())
+			return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		rhs, err := p.parseType()
+		if err != nil {
+			return nil, err
+		}
+		return &a.Node{
+			Kind: a.KType,
+			ID0:  t.IDOpenBracket,
+			LHS:  lhs,
+			RHS:  rhs,
+		}, nil
+	}
+
 	id0, id1, err := p.parseQualifiedIdent()
 	if err != nil {
 		return nil, err
