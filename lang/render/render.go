@@ -27,7 +27,6 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 	indent := 0
 	buf := make([]byte, 0, 1024)
 	prevLine := src[0].Line - 1
-	prevLineEndedWithOpen := false
 	prevLineHanging := false
 
 	for len(src) > 0 {
@@ -53,10 +52,8 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 			continue
 		}
 
-		// Collapse one or more blank lines to just one. Collapse them to zero
-		// if the previous line ended with an open token (such as an open curly
-		// brace) or this line started with a close token.
-		if prevLine < line-1 && !prevLineEndedWithOpen && !lineTokens[0].IsClose() {
+		// Collapse one or more blank lines to just one.
+		if prevLine < line-1 {
 			if _, err = w.Write(newLine); err != nil {
 				return err
 			}
@@ -127,9 +124,7 @@ func RenderFile(w io.Writer, src []token.Token, m *token.IDMap) (err error) {
 			return err
 		}
 		prevLine = line
-		lastID := lineTokens[len(lineTokens)-1].ID
-		prevLineEndedWithOpen = lastID.IsOpen()
-		prevLineHanging = prevLineHanging && lastID != token.IDOpenCurly
+		prevLineHanging = prevLineHanging && lineTokens[len(lineTokens)-1].ID != token.IDOpenCurly
 	}
 
 	return nil
