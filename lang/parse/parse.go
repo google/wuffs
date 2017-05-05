@@ -505,10 +505,14 @@ func (p *parser) parseExpr() (*a.Node, error) {
 			return nil, err
 		}
 
-		if !x.IsAssociative() || x != p.peekID() {
+		if !x.IsAssociativeOp() || x != p.peekID() {
+			id0 := x.BinaryForm()
+			if id0 == 0 {
+				return nil, fmt.Errorf("parse: internal error: no binary form for token.Key 0x%#02x", x.Key())
+			}
 			return &a.Node{
 				Kind: a.KExpr,
-				ID0:  x,
+				ID0:  id0,
 				LHS:  lhs,
 				RHS:  rhs,
 			}, nil
@@ -523,9 +527,13 @@ func (p *parser) parseExpr() (*a.Node, error) {
 			}
 			list0 = append(list0, arg)
 		}
+		id0 := x.AssociativeForm()
+		if id0 == 0 {
+			return nil, fmt.Errorf("parse: internal error: no associative form for token.Key 0x%#02x", x.Key())
+		}
 		return &a.Node{
 			Kind:  a.KExpr,
-			ID0:   x,
+			ID0:   id0,
 			List0: list0,
 		}, nil
 	}
@@ -553,9 +561,13 @@ func (p *parser) parseOperand() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		id0 := x.UnaryForm()
+		if id0 == 0 {
+			return nil, fmt.Errorf("parse: internal error: no unary form for token.Key 0x%#02x", x.Key())
+		}
 		return &a.Node{
 			Kind: a.KExpr,
-			ID0:  x,
+			ID0:  id0,
 			RHS:  rhs,
 		}, nil
 

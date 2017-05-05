@@ -16,7 +16,7 @@ const (
 	KInvalid = Kind(iota)
 
 	// KExpr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDot>
+	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
 	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
 	//  - MHS:   <nil|KExpr>
@@ -29,11 +29,13 @@ const (
 	// For unary operators, ID0 is the operator and RHS is the operand.
 	//
 	// For binary operators, ID0 is the operator and LHS and RHS are the
-	// operands. The LHS may be null for the "-" and "+" operators, which are
-	// also unary operators.
+	// operands.
 	//
-	// For associative binary operators, both LHS and RHS may be null, and
-	// multiple operands are in List0.
+	// For associative operators, ID0 is the operator and List0 holds the
+	// operands.
+	//
+	// The ID0 operator is in disambiguous form. For example, IDUnaryPlus,
+	// IDBinaryPlus or IDAssociativePlus, not a bare IDPlus.
 	//
 	// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 	//
