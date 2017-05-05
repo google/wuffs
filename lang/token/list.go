@@ -3,7 +3,7 @@
 
 package token
 
-// Flags are the low 12 bits of an ID. For example, they signify whether a
+// Flags are the low 14 bits of an ID. For example, they signify whether a
 // token is an operator, an identifier, etc.
 //
 // The flags are not exclusive. For example, the "+" token is both a unary and
@@ -14,27 +14,29 @@ package token
 type Flags uint32
 
 const (
-	FlagsOther             = Flags(0x001)
-	FlagsUnaryOp           = Flags(0x002)
-	FlagsBinaryOp          = Flags(0x004)
-	FlagsAssociative       = Flags(0x008)
-	FlagsAssign            = Flags(0x010)
-	FlagsLiteral           = Flags(0x020)
-	FlagsIdent             = Flags(0x040)
-	FlagsImplicitSemicolon = Flags(0x080)
-	FlagsOpen              = Flags(0x100)
-	FlagsClose             = Flags(0x200)
-	FlagsTightLeft         = Flags(0x400)
-	FlagsTightRight        = Flags(0x800)
+	FlagsOther             = Flags(0x0001)
+	FlagsUnaryOp           = Flags(0x0002)
+	FlagsBinaryOp          = Flags(0x0004)
+	FlagsAssociative       = Flags(0x0008)
+	FlagsLiteral           = Flags(0x0010)
+	FlagsNumLiteral        = Flags(0x0020)
+	FlagsStrLiteral        = Flags(0x0040)
+	FlagsIdent             = Flags(0x0080)
+	FlagsOpen              = Flags(0x0100)
+	FlagsClose             = Flags(0x0200)
+	FlagsTightLeft         = Flags(0x0400)
+	FlagsTightRight        = Flags(0x0800)
+	FlagsAssign            = Flags(0x1000)
+	FlagsImplicitSemicolon = Flags(0x2000)
 )
 
-// Key is the high 20 bits of an ID. It is the map key for an IDMap.
+// Key is the high 18 bits of an ID. It is the map key for an IDMap.
 type Key uint32
 
 const (
-	idShift = 12
-	idMask  = 1<<12 - 1
-	maxKey  = 1<<20 - 1
+	idShift = 14
+	idMask  = 1<<14 - 1
+	maxKey  = 1<<18 - 1
 )
 
 // ID combines a Key and Flags.
@@ -46,14 +48,16 @@ func (x ID) Flags() Flags { return Flags(x & idMask) }
 func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
 func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
 func (x ID) IsAssociative() bool       { return Flags(x)&FlagsAssociative != 0 }
-func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
 func (x ID) IsLiteral() bool           { return Flags(x)&FlagsLiteral != 0 }
+func (x ID) IsNumLiteral() bool        { return Flags(x)&FlagsNumLiteral != 0 }
+func (x ID) IsStrLiteral() bool        { return Flags(x)&FlagsStrLiteral != 0 }
 func (x ID) IsIdent() bool             { return Flags(x)&FlagsIdent != 0 }
-func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
 func (x ID) IsOpen() bool              { return Flags(x)&FlagsOpen != 0 }
 func (x ID) IsClose() bool             { return Flags(x)&FlagsClose != 0 }
 func (x ID) IsTightLeft() bool         { return Flags(x)&FlagsTightLeft != 0 }
 func (x ID) IsTightRight() bool        { return Flags(x)&FlagsTightRight != 0 }
+func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
+func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
 
 // Token combines an ID and the line number it was seen.
 type Token struct {
@@ -67,14 +71,16 @@ func (t Token) Flags() Flags { return Flags(t.ID & idMask) }
 func (t Token) IsUnaryOp() bool           { return Flags(t.ID)&FlagsUnaryOp != 0 }
 func (t Token) IsBinaryOp() bool          { return Flags(t.ID)&FlagsBinaryOp != 0 }
 func (t Token) IsAssociative() bool       { return Flags(t.ID)&FlagsAssociative != 0 }
-func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
 func (t Token) IsLiteral() bool           { return Flags(t.ID)&FlagsLiteral != 0 }
+func (t Token) IsNumLiteral() bool        { return Flags(t.ID)&FlagsNumLiteral != 0 }
+func (t Token) IsStrLiteral() bool        { return Flags(t.ID)&FlagsStrLiteral != 0 }
 func (t Token) IsIdent() bool             { return Flags(t.ID)&FlagsIdent != 0 }
-func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
 func (t Token) IsOpen() bool              { return Flags(t.ID)&FlagsOpen != 0 }
 func (t Token) IsClose() bool             { return Flags(t.ID)&FlagsClose != 0 }
 func (t Token) IsTightLeft() bool         { return Flags(t.ID)&FlagsTightLeft != 0 }
 func (t Token) IsTightRight() bool        { return Flags(t.ID)&FlagsTightRight != 0 }
+func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
+func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
@@ -153,6 +159,7 @@ const (
 	IDBreak    = ID(0xA7<<idShift | FlagsOther | FlagsImplicitSemicolon)
 	IDContinue = ID(0xA8<<idShift | FlagsOther | FlagsImplicitSemicolon)
 	IDStruct   = ID(0xA9<<idShift | FlagsOther)
+	IDUse      = ID(0xAA<<idShift | FlagsOther)
 
 	IDFalse = ID(0xD0<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0xD1<<idShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -236,6 +243,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDBreak >> idShift:    {"break", IDBreak},
 	IDContinue >> idShift: {"continue", IDContinue},
 	IDStruct >> idShift:   {"struct", IDStruct},
+	IDUse >> idShift:      {"use", IDUse},
 
 	IDFalse >> idShift: {"false", IDFalse},
 	IDTrue >> idShift:  {"true", IDTrue},

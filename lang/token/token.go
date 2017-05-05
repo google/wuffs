@@ -38,7 +38,9 @@ func (m *IDMap) insert(name string) (ID, error) {
 	}
 	flags := FlagsImplicitSemicolon
 	if numeric(name[0]) {
-		flags |= FlagsLiteral
+		flags |= FlagsLiteral | FlagsNumLiteral
+	} else if name[0] == '"' {
+		flags |= FlagsLiteral | FlagsStrLiteral
 	} else {
 		flags |= FlagsIdent
 	}
@@ -114,11 +116,44 @@ loop:
 			continue
 		}
 
+		// TODO: recognize escapes such as `\t`, `\"` and `\\`. For now, we
+		// assume that strings don't contain control bytes or backslashes.
+		// Neither should be necessary to parse `use "foo/bar"` lines.
+		if c == '"' {
+			j := i + 1
+			for ; j < len(src); j++ {
+				c = src[j]
+				if c == '"' {
+					j++
+					break
+				}
+				if c == '\\' {
+					return nil, nil, fmt.Errorf("token: backslash in string at %s:%d", filename, line)
+				}
+				if c == '\n' {
+					return nil, nil, fmt.Errorf("token: expected final '\"' in string at %s:%d", filename, line)
+				}
+				if c < ' ' {
+					return nil, nil, fmt.Errorf("token: control character in string at %s:%d", filename, line)
+				}
+				// The -1 is because we still haven't seen the final '"'.
+				if j-i == maxTokenSize-1 {
+					return nil, nil, fmt.Errorf("token: string too long at %s:%d", filename, line)
+				}
+			}
+			id, err := m.insert(string(src[i:j]))
+			if err != nil {
+				return nil, nil, err
+			}
+			tokens = append(tokens, Token{id, line})
+			i = j
+			continue
+		}
+
 		if alpha(c) {
 			j := i + 1
-			for j < len(src) && alphaNumeric(src[j]) {
-				j++
-				if j-i > maxTokenSize {
+			for ; j < len(src) && alphaNumeric(src[j]); j++ {
+				if j-i == maxTokenSize {
 					return nil, nil, fmt.Errorf("token: identifier too long at %s:%d", filename, line)
 				}
 			}
@@ -135,12 +170,9 @@ loop:
 			// TODO: 0x12 hex and 0b11 binary numbers.
 			//
 			// TODO: allow underscores like 0b1000_0000_1111?
-			//
-			// TODO: save numbers in a separate map, not the IDMap??
 			j := i + 1
-			for j < len(src) && numeric(src[j]) {
-				j++
-				if j-i > maxTokenSize {
+			for ; j < len(src) && numeric(src[j]); j++ {
+				if j-i == maxTokenSize {
 					return nil, nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
 				}
 			}

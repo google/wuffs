@@ -126,6 +126,25 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			ID1:   id1,
 			List0: list0,
 		}, nil
+
+	case t.IDUse:
+		p.src = p.src[1:]
+		id1 := p.peekID()
+		if !id1.IsStrLiteral() {
+			got := p.m.ByKey(id1.Key())
+			return nil, fmt.Errorf("parse: expected string literal, got %q at %s:%d", got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		if x := p.peekID(); x != t.IDSemicolon {
+			got := p.m.ByKey(x.Key())
+			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		return &a.Node{
+			Kind:  a.KUse,
+			ID1:   id1,
+		}, nil
+
 	}
 	return nil, fmt.Errorf("parse: unrecognized top level declaration at %s:%d", p.filename, p.src[0].Line)
 }

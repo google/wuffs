@@ -112,8 +112,12 @@ const (
 	//  - FlagsSuspendible is "ID1" vs "ID1?"
 	KStruct
 
+	// KUse is "use ID1":
+	//  - ID1:   <string literal> package path
+	KUse
+
 	// KFile is a file of source code:
-	//  - List0: <KFunc|KStruct> top-level declarations
+	//  - List0: <KFunc|KStruct|KUse> top-level declarations
 	KFile
 )
 
@@ -139,6 +143,7 @@ var kindStrings = [...]string{
 	KReturn:   "KReturn",
 	KStruct:   "KStruct",
 	KType:     "KType",
+	KUse:      "KUse",
 }
 
 type Flags uint32
