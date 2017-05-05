@@ -207,9 +207,9 @@ func (p *parser) parseType() (*a.Node, error) {
 		return nil, err
 	}
 
-	lhs, rhs := (*a.Node)(nil), (*a.Node)(nil)
+	mhs, rhs := (*a.Node)(nil), (*a.Node)(nil)
 	if x := p.peekID(); x == t.IDOpenBracket {
-		lhs, rhs, err = p.parseRange()
+		_, mhs, rhs, err = p.parseRangeOrIndex(false)
 		if err != nil {
 			return nil, err
 		}
@@ -219,45 +219,59 @@ func (p *parser) parseType() (*a.Node, error) {
 		Kind: a.KType,
 		ID0:  id0,
 		ID1:  id1,
-		LHS:  lhs,
+		MHS:  mhs,
 		RHS:  rhs,
 	}, nil
 }
 
-func (p *parser) parseRange() (lhs *a.Node, rhs *a.Node, err error) {
+// parseRangeOrIndex parses "[i:j]", "[i:]", "[:j]" and "[:]". If allowIndex,
+// it also parses "[x]". The returned op is t.IDColon for a range and
+// t.IDOpenBracket for an index.
+func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *a.Node, err error) {
 	if x := p.peekID(); x != t.IDOpenBracket {
 		got := p.m.ByKey(x.Key())
-		return nil, nil, fmt.Errorf("parse: expected \"[\", got %q for range at %s:%d", got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf("parse: expected \"[\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
 	if p.peekID() != t.IDColon {
-		lhs, err = p.parseExpr()
+		mhs, err = p.parseExpr()
 		if err != nil {
-			return nil, nil, err
+			return 0, nil, nil, err
 		}
 	}
 
-	if x := p.peekID(); x != t.IDColon {
+	switch x := p.peekID(); {
+	case x == t.IDColon:
+		p.src = p.src[1:]
+
+	case x == t.IDCloseBracket && allowIndex:
+		p.src = p.src[1:]
+		return t.IDOpenBracket, nil, mhs, nil
+
+	default:
+		expected := `":"`
+		if allowIndex {
+			expected = `":" or "]"`
+		}
 		got := p.m.ByKey(x.Key())
-		return nil, nil, fmt.Errorf("parse: expected \":\", got %q for range at %s:%d", got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf("parse: expected %s, got %q at %s:%d", expected, got, p.filename, p.line())
 	}
-	p.src = p.src[1:]
 
 	if p.peekID() != t.IDCloseBracket {
 		rhs, err = p.parseExpr()
 		if err != nil {
-			return nil, nil, err
+			return 0, nil, nil, err
 		}
 	}
 
 	if x := p.peekID(); x != t.IDCloseBracket {
 		got := p.m.ByKey(x.Key())
-		return nil, nil, fmt.Errorf("parse: expected \"]\", got %q for range at %s:%d", got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
-	return lhs, rhs, nil
+	return t.IDColon, mhs, rhs, nil
 }
 
 func (p *parser) parseBlock() ([]*a.Node, error) {
@@ -502,20 +516,15 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			}
 
 		case t.IDOpenBracket:
-			p.src = p.src[1:]
-			rhs, err := p.parseExpr()
+			id0, mhs, rhs, err := p.parseRangeOrIndex(true)
 			if err != nil {
 				return nil, err
 			}
-			if x := p.peekID(); x != t.IDCloseBracket {
-				got := p.m.ByKey(x.Key())
-				return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
-			}
-			p.src = p.src[1:]
 			lhs = &a.Node{
 				Kind: a.KExpr,
-				ID0:  t.IDOpenBracket,
+				ID0:  id0,
 				LHS:  lhs,
+				MHS:  mhs,
 				RHS:  rhs,
 			}
 

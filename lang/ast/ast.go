@@ -19,6 +19,7 @@ const (
 	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDot>
 	//  - ID1:   <0|identifier name|literal>
 	//  - LHS:   <nil|KExpr>
+	//  - MHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
 	//  - List0: <KExpr> function call arguments
 	//  - FlagsSuspendible is "f(x)" vs "f?(x)"
@@ -31,11 +32,13 @@ const (
 	// operands. The LHS may be null for the "-" and "+" operators, which are
 	// also unary operators.
 	//
-	// For function calls, like "lhs(list0)", ID0 is IDOpenParen.
+	// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 	//
-	// For indexes, like "lhs[rhs]", ID0 is IDOpenBracket.
+	// For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
 	//
-	// For selectors, like "lhs.id1", ID0 is IDDot.
+	// For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
+	//
+	// For selectors, like "LHS.ID1", ID0 is IDDot.
 	KExpr
 
 	// KAssert is "assert RHS":
@@ -81,6 +84,7 @@ const (
 	//  - ID0:   <0|package name|IDPtr>
 	//  - ID1:   <0|type name>
 	//  - LHS:   <nil|KExpr>
+	//  - MHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
 	//
 	// An IDPtr ID0 means "ptr RHS". RHS is a KType.
@@ -89,8 +93,8 @@ const (
 	//
 	// Other ID0 values mean a (possibly package-qualified) type like "pkg.foo"
 	// or "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-	// refined as "pkg.foo[LHS:RHS]". LHS and RHS are KExpr's, possibly nil.
-	// For example, the LHS for "u32[:4096]" is nil.
+	// refined as "pkg.foo[MHS:RHS]". MHS and RHS are KExpr's, possibly nil.
+	// For example, the MHS for "u32[:4096]" is nil.
 	KType
 
 	// KFunc is "func ID0.ID1(List0) (List1) { List2 }":
@@ -142,6 +146,7 @@ type Node struct {
 	ID0   token.ID
 	ID1   token.ID
 	LHS   *Node // Left Hand Side.
+	MHS   *Node // Middle Hand Side.
 	RHS   *Node // Right Hand Side.
 	List0 []*Node
 	List1 []*Node
