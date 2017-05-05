@@ -141,8 +141,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 		return &a.Node{
-			Kind:  a.KUse,
-			ID1:   id1,
+			Kind: a.KUse,
+			ID1:  id1,
 		}, nil
 
 	}
@@ -504,11 +504,29 @@ func (p *parser) parseExpr() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if !x.IsAssociative() || x != p.peekID() {
+			return &a.Node{
+				Kind: a.KExpr,
+				ID0:  x,
+				LHS:  lhs,
+				RHS:  rhs,
+			}, nil
+		}
+
+		list0 := []*a.Node{lhs, rhs}
+		for p.peekID() == x {
+			p.src = p.src[1:]
+			arg, err := p.parseOperand()
+			if err != nil {
+				return nil, err
+			}
+			list0 = append(list0, arg)
+		}
 		return &a.Node{
-			Kind: a.KExpr,
-			ID0:  x,
-			LHS:  lhs,
-			RHS:  rhs,
+			Kind:  a.KExpr,
+			ID0:   x,
+			List0: list0,
 		}, nil
 	}
 	return lhs, nil

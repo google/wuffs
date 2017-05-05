@@ -21,7 +21,7 @@ const (
 	//  - LHS:   <nil|KExpr>
 	//  - MHS:   <nil|KExpr>
 	//  - RHS:   <nil|KExpr|KType>
-	//  - List0: <KExpr> function call arguments
+	//  - List0: <KExpr> function call arguments or associative op arguments
 	//  - FlagsSuspendible is "f(x)" vs "f?(x)"
 	//
 	// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
@@ -31,6 +31,9 @@ const (
 	// For binary operators, ID0 is the operator and LHS and RHS are the
 	// operands. The LHS may be null for the "-" and "+" operators, which are
 	// also unary operators.
+	//
+	// For associative binary operators, both LHS and RHS may be null, and
+	// multiple operands are in List0.
 	//
 	// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 	//
