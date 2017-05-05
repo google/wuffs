@@ -1,0 +1,16 @@
+use "std/io"
+
+struct lzw_decoder?(
+	// TODO: default values??
+	literal_width u32[2:9],
+	stack[4096] u8,
+	suffixes[4096] u8,
+	prefixes[4096] u16,
+)
+
+func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
+	bits = 0 as u32
+	nBits = 0 as u32
+
+	// TODO: implement.
+}
