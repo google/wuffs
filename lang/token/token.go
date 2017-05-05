@@ -8,7 +8,10 @@ import (
 	"fmt"
 )
 
-const maxTokenSize = 1023
+const (
+	maxLine      = 1048575
+	maxTokenSize = 1023
+)
 
 type IDMap struct {
 	byName map[string]ID
@@ -91,7 +94,7 @@ func hasPrefix(a []byte, s string) bool {
 	return true
 }
 
-func Tokenize(src []byte, m *IDMap, filename string) (tokens []Token, retErr error) {
+func Tokenize(src []byte, m *IDMap, filename string) (tokens []Token, comments []string, retErr error) {
 	line := uint32(1)
 loop:
 	for i := 0; i < len(src); {
@@ -102,8 +105,8 @@ loop:
 				if len(tokens) > 0 && tokens[len(tokens)-1].IsImplicitSemicolon() {
 					tokens = append(tokens, Token{IDSemicolon, line})
 				}
-				if line == 1<<32-1 {
-					return nil, fmt.Errorf("token: too many lines in %q", filename)
+				if line == maxLine {
+					return nil, nil, fmt.Errorf("token: too many lines in %q", filename)
 				}
 				line++
 			}
@@ -116,12 +119,12 @@ loop:
 			for j < len(src) && alphaNumeric(src[j]) {
 				j++
 				if j-i > maxTokenSize {
-					return nil, fmt.Errorf("token: identifier too long at %s:%d", filename, line)
+					return nil, nil, fmt.Errorf("token: identifier too long at %s:%d", filename, line)
 				}
 			}
 			id, err := m.insert(string(src[i:j]))
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			tokens = append(tokens, Token{id, line})
 			i = j
@@ -138,12 +141,12 @@ loop:
 			for j < len(src) && numeric(src[j]) {
 				j++
 				if j-i > maxTokenSize {
-					return nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
+					return nil, nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
 				}
 			}
 			id, err := m.insert(string(src[i:j]))
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			tokens = append(tokens, Token{id, line})
 			i = j
@@ -151,11 +154,14 @@ loop:
 		}
 
 		if c == '/' && i+1 < len(src) && src[i+1] == '/' {
-			// TODO: save comments, dont' just skip them. We'll need to render
-			// them for puffsfmt.
+			h := i
 			i += 2
 			for ; i < len(src) && src[i] != '\n'; i++ {
 			}
+			for uint32(len(comments)) < line {
+				comments = append(comments, "")
+			}
+			comments = append(comments, string(src[h:i]))
 			continue
 		}
 
@@ -180,7 +186,7 @@ loop:
 		} else {
 			msg = fmt.Sprintf("non-ASCII byte '\\x%02X'", c)
 		}
-		return nil, fmt.Errorf("token: unrecognized %s at %s:%d", msg, filename, line)
+		return nil, nil, fmt.Errorf("token: unrecognized %s at %s:%d", msg, filename, line)
 	}
-	return tokens, nil
+	return tokens, comments, nil
 }
