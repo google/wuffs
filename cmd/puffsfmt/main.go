@@ -1,6 +1,13 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+// puffsfmt formats Puffs programs.
+//
+// Without explicit paths, it rewrites the standard input to standard output.
+// Otherwise, the -l or -w or both flags must be given. Given a file path, it
+// operates on that file; given a directory path, it operates on all .puffs
+// files in that directory, recursively. Files starting with a period are
+// ignored.
 package main
 
 import (
