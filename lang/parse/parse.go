@@ -88,7 +88,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, err
 		}
 		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -120,7 +120,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, err
 		}
 		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -137,12 +137,12 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		p.src = p.src[1:]
 		id1 := p.peekID()
 		if !id1.IsStrLiteral() {
-			got := p.m.ByKey(id1.Key())
+			got := p.m.ByID(id1)
 			return nil, fmt.Errorf("parse: expected string literal, got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -182,7 +182,7 @@ func (p *parser) parseIdent() (t.ID, error) {
 	}
 	x := p.src[0]
 	if !x.IsIdent() {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByToken(x)
 		return 0, fmt.Errorf("parse: expected identifier, got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -191,7 +191,7 @@ func (p *parser) parseIdent() (t.ID, error) {
 
 func (p *parser) parseList(parseFunc func(*parser) (*a.Node, error)) ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenParen {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return nil, fmt.Errorf("parse: expected \"(\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -216,7 +216,7 @@ func (p *parser) parseList(parseFunc func(*parser) (*a.Node, error)) ([]*a.Node,
 		case t.IDComma:
 			p.src = p.src[1:]
 		default:
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
 		}
 	}
@@ -261,7 +261,7 @@ func (p *parser) parseType() (*a.Node, error) {
 			return nil, err
 		}
 		if x := p.peekID(); x != t.IDCloseBracket {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -304,7 +304,7 @@ func (p *parser) parseType() (*a.Node, error) {
 // t.IDOpenBracket for an index.
 func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *a.Node, err error) {
 	if x := p.peekID(); x != t.IDOpenBracket {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return 0, nil, nil, fmt.Errorf("parse: expected \"[\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -329,7 +329,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *
 		if allowIndex {
 			expected = `":" or "]"`
 		}
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return 0, nil, nil, fmt.Errorf("parse: expected %s, got %q at %s:%d", expected, got, p.filename, p.line())
 	}
 
@@ -341,7 +341,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *
 	}
 
 	if x := p.peekID(); x != t.IDCloseBracket {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return 0, nil, nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -351,7 +351,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Node, rhs *
 
 func (p *parser) parseBlock() ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenCurly {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return nil, fmt.Errorf("parse: expected \"{\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -370,7 +370,7 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 		block = append(block, s)
 
 		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -477,7 +477,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 func (p *parser) parseIf() (*a.Node, error) {
 	if x := p.peekID(); x != t.IDIf {
-		got := p.m.ByKey(x.Key())
+		got := p.m.ByID(x)
 		return nil, fmt.Errorf("parse: expected \"if\", got %q at %s:%d", got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -573,7 +573,7 @@ func (p *parser) parseOperand() (*a.Node, error) {
 			return nil, err
 		}
 		if x := p.peekID(); x != t.IDCloseParen {
-			got := p.m.ByKey(x.Key())
+			got := p.m.ByID(x)
 			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]

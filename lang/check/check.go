@@ -288,7 +288,7 @@ func (c *Checker) checkType(n *a.Node) error {
 				return nil
 			}
 			// TODO: see if n.ID1 refers to a struct type.
-			return fmt.Errorf("check: %q is not a type", c.idMap.ByKey(n.ID1.Key()))
+			return fmt.Errorf("check: %q is not a type", c.idMap.ByID(n.ID1))
 
 		case t.IDPtr:
 			n = n.RHS

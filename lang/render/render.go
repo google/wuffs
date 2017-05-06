@@ -109,7 +109,7 @@ func RenderFile(w io.Writer, src []token.Token, comments []string, m *token.IDMa
 				}
 			}
 
-			buf = append(buf, m.ByKey(t.Key())...)
+			buf = append(buf, m.ByToken(t)...)
 
 			if t.ID == token.IDOpenCurly {
 				if indent == maxIndent {

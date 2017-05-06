@@ -57,6 +57,9 @@ func (m *IDMap) ByName(name string) ID {
 	return 0
 }
 
+func (m *IDMap) ByID(x ID) string       { return m.ByKey(Key(x >> KeyShift)) }
+func (m *IDMap) ByToken(t Token) string { return m.ByKey(Key(t.ID >> KeyShift)) }
+
 func (m *IDMap) ByKey(k Key) string {
 	if k < nBuiltInKeys {
 		return builtInsByKey[k].name
