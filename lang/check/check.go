@@ -102,7 +102,7 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	p := scope{}
 	for _, m := range n.List2 {
 		if err := c.checkStatement(m, p); err != nil {
-			return err
+			return fmt.Errorf("%v at %s:%d", err, m.Filename, m.Line)
 		}
 	}
 	c.funcScopes[n] = p
