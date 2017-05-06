@@ -16,12 +16,45 @@ var (
 	// DummyTypeFoo are dummy values for the a.Node.Type field:
 	//  - DummyTypeType means that n is itself a type.
 	//  - DummyTypeNumber means that n is an ideal numeric constant.
-	DummyTypeType        = &a.Node{}
-	DummyTypeIdealNumber = &a.Node{}
+	DummyTypeType        = &a.Node{Kind: a.KType}
+	DummyTypeIdealNumber = &a.Node{Kind: a.KType}
 )
 
-// scope maps from names to types.
-type scope map[t.ID]*a.Node
+// TypeString returns a string form of the type n.
+func TypeString(n *a.Node, m *t.IDMap) string {
+	if n == nil {
+		return "!nil!"
+	}
+	if n.Kind != a.KType {
+		return "!not_a_type!"
+	}
+	switch n {
+	case DummyTypeType:
+		return "!invalid_type!"
+	case DummyTypeIdealNumber:
+		return "!ideal!"
+	}
+	switch n.ID0 {
+	case 0:
+		return m.ByID(n.ID1)
+	case t.IDPtr:
+		return "ptr " + TypeString(n.RHS, m)
+	case t.IDOpenBracket:
+		// TODO.
+	default:
+		return m.ByID(n.ID0) + "." + m.ByID(n.ID1)
+	}
+	return "!invalid_type!"
+}
+
+// TypeMap maps from variable names (as token IDs) to types.
+type TypeMap map[t.ID]*a.Node
+
+type Func struct {
+	QID       t.QID
+	Node      *a.Node
+	LocalVars TypeMap
+}
 
 func Check(m *t.IDMap, files ...*a.Node) (*Checker, error) {
 	for _, f := range files {
@@ -44,8 +77,8 @@ func Check(m *t.IDMap, files ...*a.Node) (*Checker, error) {
 	}
 
 	c := &Checker{
-		idMap:      m,
-		funcScopes: map[*a.Node]scope{},
+		idMap: m,
+		funcs: map[t.QID]Func{},
 	}
 	for _, phase := range phases {
 		for _, f := range files {
@@ -67,9 +100,11 @@ var phases = [...]func(*Checker, *a.Node) error{
 }
 
 type Checker struct {
-	idMap      *t.IDMap
-	funcScopes map[*a.Node]scope
+	idMap *t.IDMap
+	funcs map[t.QID]Func
 }
+
+func (c *Checker) Funcs() map[t.QID]Func { return c.funcs }
 
 func (c *Checker) checkUse(n *a.Node) error {
 	if n.Kind != a.KUse {
@@ -99,17 +134,22 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	if n.Kind != a.KFunc {
 		return nil
 	}
-	p := scope{}
+	p := TypeMap{}
 	for _, m := range n.List2 {
 		if err := c.checkStatement(m, p); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Filename, m.Line)
 		}
 	}
-	c.funcScopes[n] = p
+	qid := t.QID{n.ID0, n.ID1}
+	c.funcs[qid] = Func{
+		QID:       qid,
+		Node:      n,
+		LocalVars: p,
+	}
 	return nil
 }
 
-func (c *Checker) checkStatement(n *a.Node, p scope) error {
+func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
 	if n == nil {
 		return nil
 	}

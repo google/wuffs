@@ -70,6 +70,10 @@ func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
 func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
 func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
 
+// QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
+// "bar"'s. QID[0] may be 0 for a plain "bar".
+type QID [2]ID
+
 // Token combines an ID and the line number it was seen.
 type Token struct {
 	ID   ID
