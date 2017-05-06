@@ -74,7 +74,7 @@ const (
 	KIf
 
 	// KReturn is "return LHS":
-	//  - LHS:   <KExpr>
+	//  - LHS:   <nil|KExpr>
 	KReturn
 
 	// KBreak is "break":

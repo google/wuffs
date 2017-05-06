@@ -419,9 +419,12 @@ func (p *parser) parseStatement() (*a.Node, error) {
 
 	case t.IDReturn:
 		p.src = p.src[1:]
-		lhs, err := p.parseExpr()
-		if err != nil {
-			return nil, err
+		lhs, err := (*a.Node)(nil), error(nil)
+		if p.peekID() != t.IDSemicolon {
+			lhs, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
 		}
 		return &a.Node{
 			Kind: a.KReturn,
