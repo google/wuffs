@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/google/puffs/lang/ast"
 	"github.com/google/puffs/lang/parse"
 	"github.com/google/puffs/lang/token"
 )
@@ -70,4 +71,45 @@ func TestCheck(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\ngot  %v\nwant %v", got, want)
 	}
+
+	walk(node, func(n *ast.Node) error {
+		if n.Kind == ast.KExpr && n.Type == nil {
+			t.Errorf("expression node has no type: n=%v", n)
+		}
+		return nil
+	})
+}
+
+func walk(n *ast.Node, f func(*ast.Node) error) error {
+	if n == nil {
+		return nil
+	}
+	if err := f(n); err != nil {
+		return err
+	}
+	if err := walk(n.LHS, f); err != nil {
+		return err
+	}
+	if err := walk(n.MHS, f); err != nil {
+		return err
+	}
+	if err := walk(n.RHS, f); err != nil {
+		return err
+	}
+	for _, c := range n.List0 {
+		if err := walk(c, f); err != nil {
+			return err
+		}
+	}
+	for _, c := range n.List1 {
+		if err := walk(c, f); err != nil {
+			return err
+		}
+	}
+	for _, c := range n.List2 {
+		if err := walk(c, f); err != nil {
+			return err
+		}
+	}
+	return nil
 }
