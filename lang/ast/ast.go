@@ -34,8 +34,8 @@ const (
 	// For associative operators, ID0 is the operator and List0 holds the
 	// operands.
 	//
-	// The ID0 operator is in disambiguous form. For example, IDUnaryPlus,
-	// IDBinaryPlus or IDAssociativePlus, not a bare IDPlus.
+	// The ID0 operator is in disambiguous form. For example, IDXUnaryPlus,
+	// IDXBinaryPlus or IDXAssociativePlus, not a bare IDPlus.
 	//
 	// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 	//
@@ -160,6 +160,8 @@ const (
 type Node struct {
 	Kind  Kind
 	Flags Flags
+
+	Type *Node
 
 	Filename string
 	Line     uint32

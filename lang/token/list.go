@@ -3,7 +3,7 @@
 
 package token
 
-// Flags are the low 14 bits of an ID. For example, they signify whether a
+// Flags are the low 16 bits of an ID. For example, they signify whether a
 // token is an operator, an identifier, etc.
 //
 // The flags are not exclusive. For example, the "+" token is both a unary and
@@ -28,13 +28,15 @@ const (
 	FlagsTightRight        = Flags(0x0800)
 	FlagsAssign            = Flags(0x1000)
 	FlagsImplicitSemicolon = Flags(0x2000)
+	FlagsNumType           = Flags(0x4000)
+	flagsUnused            = Flags(0x8000)
 )
 
-// Key is the high 18 bits of an ID. It is the map key for an IDMap.
+// Key is the high 16 bits of an ID. It is the map key for an IDMap.
 type Key uint32
 
 const (
-	FlagsBits = 14
+	FlagsBits = 16
 	FlagsMask = 1<<FlagsBits - 1
 	KeyBits   = 32 - FlagsBits
 	KeyShift  = FlagsBits
@@ -51,6 +53,8 @@ func (x ID) AssociativeForm() ID { return associativeForms[0xFF&(x>>KeyShift)] }
 func (x ID) Key() Key     { return Key(x >> KeyShift) }
 func (x ID) Flags() Flags { return Flags(x & FlagsMask) }
 
+func (x ID) IsBuiltIn() bool { return Key(x>>KeyShift) < nBuiltInKeys }
+
 func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
 func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
 func (x ID) IsAssociativeOp() bool     { return Flags(x)&FlagsAssociativeOp != 0 }
@@ -64,6 +68,7 @@ func (x ID) IsTightLeft() bool         { return Flags(x)&FlagsTightLeft != 0 }
 func (x ID) IsTightRight() bool        { return Flags(x)&FlagsTightRight != 0 }
 func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
 func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
+func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
 
 // Token combines an ID and the line number it was seen.
 type Token struct {
@@ -73,6 +78,8 @@ type Token struct {
 
 func (t Token) Key() Key     { return Key(t.ID >> KeyShift) }
 func (t Token) Flags() Flags { return Flags(t.ID & FlagsMask) }
+
+func (t Token) IsBuiltIn() bool { return Key(t.ID>>KeyShift) < nBuiltInKeys }
 
 func (t Token) IsUnaryOp() bool           { return Flags(t.ID)&FlagsUnaryOp != 0 }
 func (t Token) IsBinaryOp() bool          { return Flags(t.ID)&FlagsBinaryOp != 0 }
@@ -87,6 +94,7 @@ func (t Token) IsTightLeft() bool         { return Flags(t.ID)&FlagsTightLeft !=
 func (t Token) IsTightRight() bool        { return Flags(t.ID)&FlagsTightRight != 0 }
 func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
 func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
+func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0 }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
@@ -100,7 +108,7 @@ func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemi
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Their Keys range in [0x01, 0x7F].
-const nBuiltInKeys = 256
+const nBuiltInKeys = Key(256)
 
 const (
 	IDInvalid = ID(0)
@@ -170,15 +178,15 @@ const (
 	IDFalse = ID(0x90<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x91<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 
-	IDI8    = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDI16   = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDI32   = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDI64   = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDU8    = ID(0xA4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDU16   = ID(0xA5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDU32   = ID(0xA6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDU64   = ID(0xA7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDUsize = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI8    = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI16   = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI32   = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI64   = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU8    = ID(0xA4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU16   = ID(0xA5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU32   = ID(0xA6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU64   = ID(0xA7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDUsize = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDBool  = ID(0xA9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDBuf1  = ID(0xAA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDBuf2  = ID(0xAB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
