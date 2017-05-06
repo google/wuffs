@@ -44,7 +44,7 @@ func (m *IDMap) insert(name string) (ID, error) {
 	} else {
 		flags |= FlagsIdent
 	}
-	id := ID(key<<idShift) | ID(flags)
+	id := ID(key<<KeyShift) | ID(flags)
 	m.byName[name] = id
 	m.byKey = append(m.byKey, name)
 	return id, nil
