@@ -160,6 +160,10 @@ const (
 type Node struct {
 	Kind  Kind
 	Flags Flags
+
+	Filename string
+	Line     uint32
+
 	ID0   token.ID
 	ID1   token.ID
 	LHS   *Node // Left Hand Side.

@@ -55,12 +55,14 @@ func (p *parser) parseFile() (*a.Node, error) {
 		decls = append(decls, d)
 	}
 	return &a.Node{
-		Kind:  a.KFile,
-		List0: decls,
+		Kind:     a.KFile,
+		Filename: p.filename,
+		List0:    decls,
 	}, nil
 }
 
 func (p *parser) parseTopLevelDecl() (*a.Node, error) {
+	line := p.src[0].Line
 	switch p.src[0].ID {
 	case t.IDFunc:
 		flags := a.Flags(0)
@@ -91,13 +93,15 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 		return &a.Node{
-			Kind:  a.KFunc,
-			Flags: flags,
-			ID0:   id0,
-			ID1:   id1,
-			List0: inParams,
-			List1: outParams,
-			List2: block,
+			Kind:     a.KFunc,
+			Flags:    flags,
+			Filename: p.filename,
+			Line:     line,
+			ID0:      id0,
+			ID1:      id1,
+			List0:    inParams,
+			List1:    outParams,
+			List2:    block,
 		}, nil
 
 	case t.IDStruct:
@@ -121,10 +125,12 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 		return &a.Node{
-			Kind:  a.KStruct,
-			Flags: flags,
-			ID1:   id1,
-			List0: list0,
+			Kind:     a.KStruct,
+			Flags:    flags,
+			Filename: p.filename,
+			Line:     line,
+			ID1:      id1,
+			List0:    list0,
 		}, nil
 
 	case t.IDUse:
@@ -141,8 +147,10 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 		return &a.Node{
-			Kind: a.KUse,
-			ID1:  id1,
+			Kind:     a.KUse,
+			Filename: p.filename,
+			Line:     line,
+			ID1:      id1,
 		}, nil
 
 	}
@@ -371,6 +379,19 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 }
 
 func (p *parser) parseStatement() (*a.Node, error) {
+	line := uint32(0)
+	if len(p.src) > 0 {
+		line = p.src[0].Line
+	}
+	n, err := p.parseStatement1()
+	if n != nil {
+		n.Filename = p.filename
+		n.Line = line
+	}
+	return n, err
+}
+
+func (p *parser) parseStatement1() (*a.Node, error) {
 	switch x := p.peekID(); x {
 	case t.IDAssert:
 		p.src = p.src[1:]
