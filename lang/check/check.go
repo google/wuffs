@@ -135,16 +135,57 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 		return nil
 	}
 	p := TypeMap{}
+
+	for _, m := range n.List2 {
+		if err := c.checkVars(m, p); err != nil {
+			return fmt.Errorf("%v at %s:%d", err, m.Filename, m.Line)
+		}
+	}
 	for _, m := range n.List2 {
 		if err := c.checkStatement(m, p); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Filename, m.Line)
 		}
 	}
+
 	qid := t.QID{n.ID0, n.ID1}
+	if _, ok := c.funcs[qid]; ok {
+		if qid[0] == 0 {
+			return fmt.Errorf(`check: duplicate function "%s"`, c.idMap.ByID(qid[1]))
+		} else {
+			return fmt.Errorf(`check: duplicate function "%s.%s"`, c.idMap.ByID(qid[0]), c.idMap.ByID(qid[1]))
+		}
+	}
 	c.funcs[qid] = Func{
 		QID:       qid,
 		Node:      n,
 		LocalVars: p,
+	}
+	return nil
+}
+
+func (c *Checker) checkVars(n *a.Node, p TypeMap) error {
+	if n == nil {
+		return nil
+	}
+	if n.Kind == a.KVar {
+		if _, ok := p[n.ID1]; ok {
+			return fmt.Errorf("check: duplicate var %q", c.idMap.ByID(n.ID1))
+		}
+		if err := c.checkType(n.LHS); err != nil {
+			return err
+		}
+		if n.RHS != nil {
+			// TODO: check that n.RHS doesn't mention the variable itself.
+		}
+		p[n.ID1] = n.LHS
+		return nil
+	}
+	for _, l := range [...][]*a.Node{n.List0, n.List1, n.List2} {
+		for _, m := range l {
+			if err := c.checkVars(m, p); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -164,23 +205,22 @@ func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
 		return nil
 
 	case a.KAssign:
+		if err := c.checkExpr(n.LHS); err != nil {
+			return err
+		}
 		if err := c.checkExpr(n.RHS); err != nil {
 			return err
 		}
+		// TODO: check that n.RHS.Type is assignable to n.LHS.Type.
 		// TODO, look at the op (n.ID0).
-		if id := isUserDefinedIdent(n.LHS); id != 0 {
-			if previouslyInferredType, ok := p[id]; ok {
-				// TODO: check that n.RHS.Type is assignable to previouslyInferredType.
-				n.LHS.Type = previouslyInferredType
-			} else {
-				p[id] = n.RHS.Type
-				n.LHS.Type = n.RHS.Type
-			}
-		} else {
-			if err := c.checkExpr(n.LHS); err != nil {
+		return nil
+
+	case a.KVar:
+		if n.RHS != nil {
+			if err := c.checkExpr(n.RHS); err != nil {
 				return err
 			}
-			// TODO: check that n.RHS.Type is assignable to n.LHS.Type.
+			// TODO: check that n.RHS.Type is assignable to n.LHS.
 		}
 		return nil
 
@@ -379,10 +419,3 @@ var numTypeRanges = [256][2]*big.Int{
 }
 
 var zero = big.NewInt(0)
-
-func isUserDefinedIdent(n *a.Node) t.ID {
-	if n != nil && n.Kind == a.KExpr && n.ID0 == 0 && n.ID1.IsIdent() && !n.ID1.IsBuiltIn() {
-		return n.ID1
-	}
-	return 0
-}

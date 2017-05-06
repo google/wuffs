@@ -9,8 +9,8 @@ struct lzw_decoder?(
 )
 
 func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
-	bits = 0 as u32
-	nBits = 0 as u32
+	var bits u32
+	var nBits u32
 
 	// TODO: implement.
 }

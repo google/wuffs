@@ -228,14 +228,14 @@ func (p *parser) parseParam() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	rhs, err := p.parseType()
+	lhs, err := p.parseType()
 	if err != nil {
 		return nil, err
 	}
 	return &a.Node{
 		Kind: a.KParam,
-		ID0:  id,
-		RHS:  rhs,
+		ID1:  id,
+		LHS:  lhs,
 	}, nil
 }
 
@@ -450,6 +450,31 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return &a.Node{
 			Kind: a.KReturn,
 			LHS:  lhs,
+		}, nil
+
+	case t.IDVar:
+		p.src = p.src[1:]
+		id, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+		lhs, err := p.parseType()
+		if err != nil {
+			return nil, err
+		}
+		rhs := (*a.Node)(nil)
+		if p.peekID() == t.IDEq {
+			p.src = p.src[1:]
+			rhs, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &a.Node{
+			Kind: a.KVar,
+			ID1:  id,
+			LHS:  lhs,
+			RHS:  rhs,
 		}, nil
 	}
 

@@ -17,8 +17,8 @@ func TestCheck(t *testing.T) {
 	const filename = "foo.puffs"
 	const src = `
 		func bar()() {
-			x = 1 as u8
-			y = 2 as i32
+			var x u8
+			var y i32 = 2
 		}
 	`
 

@@ -50,15 +50,21 @@ const (
 	//  - RHS:   <KExpr>
 	KAssert
 
-	// KAssign is "LHS = RHS" or "LHS op= RHS:
+	// KAssign is "LHS = RHS" or "LHS op= RHS":
 	//  - ID0:   operator
 	//  - LHS:   <KExpr>
 	//  - RHS:   <KExpr>
 	KAssign
 
+	// KVar is "var ID1 LHS" or "var ID1 LHS = RHS":
+	//  - ID1:   name
+	//  - LHS:   <KType>
+	//  - RHS:   <nil|KExpr>
+	KVar
+
 	// KParam is a "name type" parameter:
-	//  - ID0:   name
-	//  - RHS:   <KType>
+	//  - ID1:   name
+	//  - LHS:   <KType>
 	KParam
 
 	// KFor is "for { List2 }" or "for LHS { List2 }":
@@ -149,6 +155,7 @@ var kindStrings = [...]string{
 	KStruct:   "KStruct",
 	KType:     "KType",
 	KUse:      "KUse",
+	KVar:      "KVar",
 }
 
 type Flags uint32
