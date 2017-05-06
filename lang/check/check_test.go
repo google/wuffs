@@ -87,28 +87,16 @@ func walk(n *ast.Node, f func(*ast.Node) error) error {
 	if err := f(n); err != nil {
 		return err
 	}
-	if err := walk(n.LHS, f); err != nil {
-		return err
-	}
-	if err := walk(n.MHS, f); err != nil {
-		return err
-	}
-	if err := walk(n.RHS, f); err != nil {
-		return err
-	}
-	for _, c := range n.List0 {
-		if err := walk(c, f); err != nil {
+	for _, m := range [...]*ast.Node{n.LHS, n.MHS, n.RHS} {
+		if err := walk(m, f); err != nil {
 			return err
 		}
 	}
-	for _, c := range n.List1 {
-		if err := walk(c, f); err != nil {
-			return err
-		}
-	}
-	for _, c := range n.List2 {
-		if err := walk(c, f); err != nil {
-			return err
+	for _, l := range [...][]*ast.Node{n.List0, n.List1, n.List2} {
+		for _, m := range l {
+			if err := walk(m, f); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
