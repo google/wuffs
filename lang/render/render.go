@@ -16,7 +16,7 @@ import (
 
 var newLine = []byte{'\n'}
 
-func RenderFile(w io.Writer, src []token.Token, comments []string, m *token.IDMap) (err error) {
+func Render(w io.Writer, m *token.IDMap, src []token.Token, comments []string) (err error) {
 	if len(src) == 0 {
 		return nil
 	}

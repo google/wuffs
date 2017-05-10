@@ -24,14 +24,14 @@ func TestCheck(t *testing.T) {
 
 	idMap := &token.IDMap{}
 
-	tokens, _, err := token.Tokenize([]byte(src), idMap, filename)
+	tokens, _, err := token.Tokenize(idMap, filename, []byte(src))
 	if err != nil {
 		t.Fatalf("Tokenize: %v", err)
 	}
 
-	node, err := parse.ParseFile(tokens, idMap, filename)
+	node, err := parse.Parse(idMap, filename, tokens)
 	if err != nil {
-		t.Fatalf("ParseFile: %v", err)
+		t.Fatalf("Parse: %v", err)
 	}
 
 	c, err := Check(idMap, node)
@@ -57,7 +57,7 @@ func TestCheck(t *testing.T) {
 	for id, typ := range bar.LocalVars {
 		got = append(got, [2]string{
 			idMap.ByID(id),
-			TypeString(typ, idMap),
+			TypeString(idMap, typ),
 		})
 	}
 	sort.Slice(got, func(i, j int) bool {

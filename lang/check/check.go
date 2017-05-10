@@ -21,7 +21,7 @@ var (
 )
 
 // TypeString returns a string form of the type n.
-func TypeString(n *a.Node, m *t.IDMap) string {
+func TypeString(m *t.IDMap, n *a.Node) string {
 	if n == nil {
 		return "!nil!"
 	}
@@ -38,7 +38,7 @@ func TypeString(n *a.Node, m *t.IDMap) string {
 	case 0:
 		return m.ByID(n.ID1)
 	case t.IDPtr:
-		return "ptr " + TypeString(n.RHS, m)
+		return "ptr " + TypeString(m, n.RHS)
 	case t.IDOpenBracket:
 		// TODO.
 	default:

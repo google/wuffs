@@ -12,7 +12,7 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-func ParseFile(src []t.Token, m *t.IDMap, filename string) (*a.Node, error) {
+func Parse(m *t.IDMap, filename string, src []t.Token) (*a.Node, error) {
 	p := &parser{
 		src:      src,
 		m:        m,

@@ -99,7 +99,7 @@ func hasPrefix(a []byte, s string) bool {
 	return true
 }
 
-func Tokenize(src []byte, m *IDMap, filename string) (tokens []Token, comments []string, retErr error) {
+func Tokenize(m *IDMap, filename string, src []byte) (tokens []Token, comments []string, retErr error) {
 	line := uint32(1)
 loop:
 	for i := 0; i < len(src); {
