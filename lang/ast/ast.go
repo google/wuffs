@@ -4,6 +4,8 @@
 package ast
 
 import (
+	"math/big"
+
 	t "github.com/google/puffs/lang/token"
 )
 
@@ -73,7 +75,8 @@ type Node struct {
 	kind  Kind
 	flags Flags
 
-	mType *TypeExpr
+	constValue *big.Int
+	mType      *TypeExpr
 
 	filename string
 	line     uint32
@@ -158,16 +161,18 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 // For selectors, like "LHS.ID1", ID0 is IDDot.
 type Expr Node
 
-func (n *Expr) Node() *Node      { return (*Node)(n) }
-func (n *Expr) MType() *TypeExpr { return n.mType }
-func (n *Expr) ID0() t.ID        { return n.id0 }
-func (n *Expr) ID1() t.ID        { return n.id1 }
-func (n *Expr) LHS() *Node       { return n.lhs }
-func (n *Expr) MHS() *Node       { return n.mhs }
-func (n *Expr) RHS() *Node       { return n.rhs }
-func (n *Expr) Args() []*Node    { return n.list0 }
+func (n *Expr) Node() *Node          { return (*Node)(n) }
+func (n *Expr) ConstValue() *big.Int { return n.constValue }
+func (n *Expr) MType() *TypeExpr     { return n.mType }
+func (n *Expr) ID0() t.ID            { return n.id0 }
+func (n *Expr) ID1() t.ID            { return n.id1 }
+func (n *Expr) LHS() *Node           { return n.lhs }
+func (n *Expr) MHS() *Node           { return n.mhs }
+func (n *Expr) RHS() *Node           { return n.rhs }
+func (n *Expr) Args() []*Node        { return n.list0 }
 
-func (n *Expr) SetMType(x *TypeExpr) { n.mType = x }
+func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
+func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 
 func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	return &Expr{
@@ -344,24 +349,26 @@ func NewContinue() *Continue {
 //
 // Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
 // "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-// refined as "pkg.foo[LHS:MHS]". LHS and MHS are Expr's, possibly nil. For
+// refined as "foo[LHS:MHS]". LHS and MHS are Expr's, possibly nil. For
 // example, the MHS for "u32[:4096]" is nil.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
-func (n *TypeExpr) LHS() *Expr               { return n.lhs.Expr() }
-func (n *TypeExpr) MHS() *Expr               { return n.mhs.Expr() }
+func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }
+func (n *TypeExpr) Bounds() [2]*Expr         { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
+func (n *TypeExpr) InclMin() *Expr           { return n.lhs.Expr() }
+func (n *TypeExpr) ExclMax() *Expr           { return n.mhs.Expr() }
 func (n *TypeExpr) Inner() *TypeExpr         { return n.rhs.TypeExpr() }
 
-func NewTypeExpr(pkgOrDec t.ID, name t.ID, lhs *Expr, mhs *Expr, inner *TypeExpr) *TypeExpr {
+func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthInclMin *Expr, exclMax *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,
 		id0:  pkgOrDec,
 		id1:  name,
-		lhs:  lhs.Node(),
-		mhs:  mhs.Node(),
+		lhs:  arrayLengthInclMin.Node(),
+		mhs:  exclMax.Node(),
 		rhs:  inner.Node(),
 	}
 }

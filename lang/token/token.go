@@ -173,6 +173,8 @@ loop:
 			// TODO: 0x12 hex and 0b11 binary numbers.
 			//
 			// TODO: allow underscores like 0b1000_0000_1111?
+			//
+			// TODO: reject 0755 octal numbers.
 			j := i + 1
 			for ; j < len(src) && numeric(src[j]); j++ {
 				if j-i == maxTokenSize {

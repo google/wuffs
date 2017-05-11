@@ -19,6 +19,7 @@ func TestCheck(t *testing.T) {
 		func bar()() {
 			var x u8
 			var y i32 = 2
+			var z u64[:123]
 		}
 	`
 
@@ -57,7 +58,7 @@ func TestCheck(t *testing.T) {
 	for id, typ := range bar.LocalVars {
 		got = append(got, [2]string{
 			idMap.ByID(id),
-			TypeString(idMap, typ),
+			TypeExprString(idMap, typ),
 		})
 	}
 	sort.Slice(got, func(i, j int) bool {
@@ -67,6 +68,7 @@ func TestCheck(t *testing.T) {
 	want := [][2]string{
 		{"x", "u8"},
 		{"y", "i32"},
+		{"z", "u64[:123]"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\ngot  %v\nwant %v", got, want)

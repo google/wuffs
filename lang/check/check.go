@@ -16,23 +16,6 @@ import (
 // is an ideal numeric constant.
 var DummyTypeIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
 
-// TypeString returns a string form of the type n.
-func TypeString(m *t.IDMap, n *a.TypeExpr) string {
-	if n != nil {
-		switch n.PackageOrDecorator() {
-		case 0:
-			return m.ByID(n.Name())
-		case t.IDPtr:
-			return "ptr " + TypeString(m, n.Inner())
-		case t.IDOpenBracket:
-			// TODO.
-		default:
-			return m.ByID(n.PackageOrDecorator()) + "." + m.ByID(n.Name())
-		}
-	}
-	return "!invalid_type!"
-}
-
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
 
@@ -277,6 +260,12 @@ func (c *Checker) checkExprOther(n *a.Expr) error {
 	case 0:
 		// n is an identifier or a literal.
 		if n.ID1().IsNumLiteral() {
+			z := big.NewInt(0)
+			s := c.idMap.ByID(n.ID1())
+			if _, ok := z.SetString(s, 0); !ok {
+				return fmt.Errorf("check: invalid numeric literal %q", s)
+			}
+			n.SetConstValue(z)
 			n.SetMType(DummyTypeIdealNumber)
 			return nil
 		}
@@ -336,22 +325,41 @@ func (c *Checker) checkExprAssociativeOp(n *a.Expr) error {
 }
 
 func (c *Checker) checkTypeExpr(n *a.TypeExpr) error {
-	for n != nil {
+	for ; n != nil; n = n.Inner() {
 		switch n.PackageOrDecorator() {
 		case 0:
 			name := n.Name()
 			if name.IsNumType() || name == t.IDBool {
+				for _, bound := range n.Bounds() {
+					if bound == nil {
+						continue
+					}
+					if err := c.checkExpr(bound); err != nil {
+						return err
+					}
+					if bound.ConstValue() == nil {
+						return fmt.Errorf("check: %q is not constant", ExprString(c.idMap, bound))
+					}
+				}
 				return nil
+			}
+			if n.InclMin() != nil || n.ExclMax() != nil {
+				// TODO: reject.
 			}
 			// TODO: see if name refers to a struct type.
 			return fmt.Errorf("check: %q is not a type", c.idMap.ByID(name))
 
 		case t.IDPtr:
-			n = n.Inner()
+			// No-op.
 
 		case t.IDOpenBracket:
-			// TODO.
-			fallthrough
+			aLen := n.ArrayLength()
+			if err := c.checkExpr(aLen); err != nil {
+				return err
+			}
+			if aLen.ConstValue() == nil {
+				return fmt.Errorf("check: %q is not constant", ExprString(c.idMap, aLen))
+			}
 
 		default:
 			return fmt.Errorf("check: unrecognized node for checkTypeExpr")
