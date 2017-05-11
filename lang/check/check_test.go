@@ -29,12 +29,12 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("Tokenize: %v", err)
 	}
 
-	node, err := parse.Parse(idMap, filename, tokens)
+	file, err := parse.Parse(idMap, filename, tokens)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	c, err := Check(idMap, node)
+	c, err := Check(idMap, file)
 	if err != nil {
 		t.Fatalf("Check: %v", err)
 	}
@@ -72,30 +72,31 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("\ngot  %v\nwant %v", got, want)
 	}
 
-	walk(node, func(n *ast.Node) error {
-		if n.Kind == ast.KExpr && n.Type == nil {
-			t.Errorf("expression node has no type: n=%v", n)
+	walk(file.Node(), func(n *ast.Node) error {
+		if n.Kind() == ast.KExpr && n.Expr().MType() == nil {
+			t.Errorf("expression node has no (implicit) type: n=%v", n)
 		}
 		return nil
 	})
 }
 
 func walk(n *ast.Node, f func(*ast.Node) error) error {
-	if n == nil {
-		return nil
-	}
 	if err := f(n); err != nil {
 		return err
 	}
-	for _, m := range [...]*ast.Node{n.LHS, n.MHS, n.RHS} {
-		if err := walk(m, f); err != nil {
-			return err
-		}
-	}
-	for _, l := range [...][]*ast.Node{n.List0, n.List1, n.List2} {
-		for _, m := range l {
+	for _, m := range n.Raw().SubNodes() {
+		if m != nil {
 			if err := walk(m, f); err != nil {
 				return err
+			}
+		}
+	}
+	for _, l := range n.Raw().SubLists() {
+		for _, m := range l {
+			if m != nil {
+				if err := walk(m, f); err != nil {
+					return err
+				}
 			}
 		}
 	}
