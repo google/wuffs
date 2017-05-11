@@ -111,24 +111,9 @@ func (c *Checker) checkStruct(n *a.Node) error {
 }
 
 func (c *Checker) checkFuncSignature(n *a.Node) error {
-	// TODO.
-	return nil
-}
-
-func (c *Checker) checkFuncBody(n *a.Node) error {
 	f := n.Func()
-	p := TypeMap{}
 
-	for _, m := range f.Body() {
-		if err := c.checkVars(m, p); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
-		}
-	}
-	for _, m := range f.Body() {
-		if err := c.checkStatement(m, p); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
-		}
-	}
+	// TODO: check the in and out params.
 
 	qid := f.QID()
 	if _, ok := c.funcs[qid]; ok {
@@ -141,7 +126,23 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	c.funcs[qid] = Func{
 		QID:       qid,
 		Func:      f,
-		LocalVars: p,
+		LocalVars: TypeMap{},
+	}
+	return nil
+}
+
+func (c *Checker) checkFuncBody(n *a.Node) error {
+	f := n.Func()
+	p := c.funcs[f.QID()].LocalVars
+	for _, m := range f.Body() {
+		if err := c.checkVars(m, p); err != nil {
+			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
+		}
+	}
+	for _, m := range f.Body() {
+		if err := c.checkStatement(m, p); err != nil {
+			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
+		}
 	}
 	return nil
 }
