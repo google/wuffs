@@ -20,6 +20,7 @@ func TestCheck(t *testing.T) {
 			var x u8
 			var y i32 = 2
 			var z u64[:123]
+			var a [4]u8
 		}
 	`
 
@@ -66,6 +67,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	want := [][2]string{
+		{"a", "[4] u8"},
 		{"x", "u8"},
 		{"y", "i32"},
 		{"z", "u64[:123]"},

@@ -29,7 +29,7 @@ func TypeExprString(m *t.IDMap, n *a.TypeExpr) string {
 		case t.IDPtr:
 			return "ptr " + TypeExprString(m, n.Inner())
 		case t.IDOpenBracket:
-			// TODO.
+			return "[" + ExprString(m, n.ArrayLength()) + "] " + TypeExprString(m, n.Inner())
 		default:
 			s = m.ByID(n.PackageOrDecorator()) + "." + m.ByID(n.Name())
 		}
