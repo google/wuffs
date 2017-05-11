@@ -179,6 +179,7 @@ const (
 	IDStruct   = ID(0x69<<KeyShift | FlagsOther)
 	IDUse      = ID(0x6A<<KeyShift | FlagsOther)
 	IDVar      = ID(0x6B<<KeyShift | FlagsOther)
+	IDIdeal    = ID(0x6C<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x90<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x91<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -303,6 +304,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDStruct >> KeyShift:   {"struct", IDStruct},
 	IDUse >> KeyShift:      {"use", IDUse},
 	IDVar >> KeyShift:      {"var", IDVar},
+	IDIdeal >> KeyShift:    {"ideal", IDIdeal},
 
 	IDFalse >> KeyShift: {"false", IDFalse},
 	IDTrue >> KeyShift:  {"true", IDTrue},

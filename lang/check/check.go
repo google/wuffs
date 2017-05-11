@@ -12,18 +12,13 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-// DummyTypeIdealNumber is an a.Node.MType field that means that n is an ideal
-// numeric constant.
-//
-// TODO: change 1 to a named constant.
-var DummyTypeIdealNumber = a.NewTypeExpr(0, 1, nil, nil, nil)
+// DummyTypeIdealNumber is an *ast.Node MType (implicit type) that means that n
+// is an ideal numeric constant.
+var DummyTypeIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
 
 // TypeString returns a string form of the type n.
 func TypeString(m *t.IDMap, n *a.TypeExpr) string {
 	if n != nil {
-		if n == DummyTypeIdealNumber {
-			return "!ideal!"
-		}
 		switch n.PackageOrDecorator() {
 		case 0:
 			return m.ByID(n.Name())

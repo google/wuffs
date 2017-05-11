@@ -67,6 +67,14 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if id0 != 0 && id0.IsBuiltIn() {
+			return nil, fmt.Errorf("parse: built-in %q used for func receiver at %s:%d",
+				p.m.ByID(id0), p.filename, p.line())
+		}
+		if id1.IsBuiltIn() {
+			return nil, fmt.Errorf("parse: built-in %q used for func name at %s:%d",
+				p.m.ByID(id1), p.filename, p.line())
+		}
 		if p.peekID() == t.IDQuestion {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
@@ -96,6 +104,10 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		name, err := p.parseIdent()
 		if err != nil {
 			return nil, err
+		}
+		if name.IsBuiltIn() {
+			return nil, fmt.Errorf("parse: built-in %q used for struct name at %s:%d",
+				p.m.ByID(name), p.filename, p.line())
 		}
 		if p.peekID() == t.IDQuestion {
 			flags |= a.FlagsSuspendible
