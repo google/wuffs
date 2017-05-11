@@ -19,122 +19,21 @@ type Kind uint32
 const (
 	KInvalid = Kind(iota)
 
-	// KExpr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-	//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
-	//  - ID1:   <0|identifier name|literal>
-	//  - LHS:   <nil|KExpr>
-	//  - MHS:   <nil|KExpr>
-	//  - RHS:   <nil|KExpr|KTypeExpr>
-	//  - List0: <KExpr> function call arguments or associative op arguments
-	//  - FlagsSuspendible is "f(x)" vs "f?(x)"
-	//
-	// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
-	//
-	// For unary operators, ID0 is the operator and RHS is the operand.
-	//
-	// For binary operators, ID0 is the operator and LHS and RHS are the
-	// operands.
-	//
-	// For associative operators, ID0 is the operator and List0 holds the
-	// operands.
-	//
-	// The ID0 operator is in disambiguous form. For example, IDXUnaryPlus,
-	// IDXBinaryPlus or IDXAssociativePlus, not a bare IDPlus.
-	//
-	// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
-	//
-	// For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
-	//
-	// For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
-	//
-	// For selectors, like "LHS.ID1", ID0 is IDDot.
-	KExpr
-
-	// KAssert is "assert RHS":
-	//  - RHS:   <KExpr>
 	KAssert
-
-	// KAssign is "LHS = RHS" or "LHS op= RHS":
-	//  - ID0:   operator
-	//  - LHS:   <KExpr>
-	//  - RHS:   <KExpr>
 	KAssign
-
-	// KVar is "var ID1 LHS" or "var ID1 LHS = RHS":
-	//  - ID1:   name
-	//  - LHS:   <KTypeExpr>
-	//  - RHS:   <nil|KExpr>
-	KVar
-
-	// KParam is a "name type" parameter:
-	//  - ID1:   name
-	//  - LHS:   <KTypeExpr>
-	KParam
-
-	// KFor is "for { List2 }" or "for LHS { List2 }":
-	//  - LHS:   <nil|KExpr>
-	//  - List2: <*> loop body
-	KFor
-
-	// KIf is "if LHS { List1 } else RHS" or "if LHS { List1 } else { List2 }":
-	//  - LHS:   <KExpr>
-	//  - RHS:   <nil|KIf>
-	//  - List1: <*> if-true body
-	//  - List2: <*> if-false body
-	KIf
-
-	// KReturn is "return LHS":
-	//  - LHS:   <nil|KExpr>
-	KReturn
-
-	// KBreak is "break":
-	// TODO: label?
 	KBreak
-
-	// KContinue is "continue":
-	// TODO: label?
 	KContinue
-
-	// KTypeExpr is a type expression, such as "u32", "pkg.foo", "ptr T" or
-	// "[8] T":
-	//  - ID0:   <0|package name|IDPtr|IDOpenBracket>
-	//  - ID1:   <0|type name>
-	//  - LHS:   <nil|KExpr>
-	//  - MHS:   <nil|KExpr>
-	//  - RHS:   <nil|KExpr|KTypeExpr>
-	//
-	// An IDPtr ID0 means "ptr RHS". RHS is a KTypeExpr.
-	//
-	// An IDOpenBracket ID0 means "[LHS] RHS". RHS is a KTypeExpr.
-	//
-	// Other ID0 values mean a (possibly package-qualified) type like "pkg.foo"
-	// or "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-	// refined as "pkg.foo[MHS:RHS]". MHS and RHS are KExpr's, possibly nil.
-	// For example, the MHS for "u32[:4096]" is nil.
-	KTypeExpr
-
-	// KFunc is "func ID0.ID1(List0) (List1) { List2 }":
-	//  - ID0:   <0|receiver>
-	//  - ID1:   name
-	//  - List0: <KParam> in-parameters
-	//  - List1: <KParam> out-parameters
-	//  - List2: <*> function body
-	//  - FlagsSuspendible is "ID1" vs "ID1?"
-	KFunc
-
-	// KStruct is "struct ID1(List0)":
-	//  - ID1:   name
-	//  - List0: <KParam> fields
-	//  - FlagsSuspendible is "ID1" vs "ID1?"
-	KStruct
-
-	// KUse is "use ID1":
-	//  - ID1:   <string literal> package path
-	KUse
-
-	// KFile is a file of source code:
-	//  - List0: <KFunc|KStruct|KUse> top-level declarations
+	KExpr
 	KFile
+	KFor
+	KFunc
+	KIf
+	KParam
+	KReturn
+	KStruct
+	KTypeExpr
+	KUse
+	KVar
 )
 
 func (k Kind) String() string {
@@ -145,6 +44,8 @@ func (k Kind) String() string {
 }
 
 var kindStrings = [...]string{
+	KInvalid: "KInvalid",
+
 	KAssert:   "KAssert",
 	KAssign:   "KAssign",
 	KBreak:    "KBreak",
@@ -154,7 +55,6 @@ var kindStrings = [...]string{
 	KFor:      "KFor",
 	KFunc:     "KFunc",
 	KIf:       "KIf",
-	KInvalid:  "KInvalid",
 	KParam:    "KParam",
 	KReturn:   "KReturn",
 	KStruct:   "KStruct",
@@ -229,6 +129,33 @@ func (n *Raw) List2() []*Node                 { return n.list2 }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
+// Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
+//  - FlagsSuspendible is "f(x)" vs "f?(x)"
+//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
+//  - ID1:   <0|identifier name|literal>
+//  - LHS:   <nil|Expr>
+//  - MHS:   <nil|Expr>
+//  - RHS:   <nil|Expr|TypeExpr>
+//  - List0: <Expr> function call arguments or associative op arguments
+//
+// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
+//
+// For unary operators, ID0 is the operator and RHS is the operand.
+//
+// For binary operators, ID0 is the operator and LHS and RHS are the operands.
+//
+// For associative operators, ID0 is the operator and List0 holds the operands.
+//
+// The ID0 operator is in disambiguous form. For example, IDXUnaryPlus,
+// IDXBinaryPlus or IDXAssociativePlus, not a bare IDPlus.
+//
+// For function calls, like "LHS(List0)", ID0 is IDOpenParen.
+//
+// For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
+//
+// For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
+//
+// For selectors, like "LHS.ID1", ID0 is IDDot.
 type Expr Node
 
 func (n *Expr) Node() *Node      { return (*Node)(n) }
@@ -255,6 +182,8 @@ func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mh
 	}
 }
 
+// Assert is "assert RHS":
+//  - RHS:   <Expr>
 type Assert Node
 
 func (n *Assert) Node() *Node      { return (*Node)(n) }
@@ -267,6 +196,10 @@ func NewAssert(condition *Expr) *Assert {
 	}
 }
 
+// Assign is "LHS = RHS" or "LHS op= RHS":
+//  - ID0:   operator
+//  - LHS:   <Expr>
+//  - RHS:   <Expr>
 type Assign Node
 
 func (n *Assign) Node() *Node    { return (*Node)(n) }
@@ -283,6 +216,10 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
+// Var is "var ID1 LHS" or "var ID1 LHS = RHS":
+//  - ID1:   name
+//  - LHS:   <TypeExpr>
+//  - RHS:   <nil|Expr>
 type Var Node
 
 func (n *Var) Node() *Node      { return (*Node)(n) }
@@ -299,6 +236,9 @@ func NewVar(name t.ID, xType *TypeExpr, value *Expr) *Var {
 	}
 }
 
+// Param is a "name type" parameter:
+//  - ID1:   name
+//  - LHS:   <TypeExpr>
 type Param Node
 
 func (n *Param) Node() *Node      { return (*Node)(n) }
@@ -313,6 +253,9 @@ func NewParam(name t.ID, xType *TypeExpr) *Param {
 	}
 }
 
+// For is "for { List2 }" or "for LHS { List2 }":
+//  - LHS:   <nil|Expr>
+//  - List2: <*> loop body
 type For Node
 
 func (n *For) Node() *Node      { return (*Node)(n) }
@@ -327,6 +270,11 @@ func NewFor(condition *Expr, body []*Node) *For {
 	}
 }
 
+// If is "if LHS { List1 } else RHS" or "if LHS { List1 } else { List2 }":
+//  - LHS:   <Expr>
+//  - RHS:   <nil|If>
+//  - List1: <*> if-true body
+//  - List2: <*> if-false body
 type If Node
 
 func (n *If) Node() *Node          { return (*Node)(n) }
@@ -345,6 +293,8 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 	}
 }
 
+// Return is "return LHS":
+//  - LHS:   <nil|Expr>
 type Return Node
 
 func (n *Return) Node() *Node  { return (*Node)(n) }
@@ -357,6 +307,8 @@ func NewReturn(value *Expr) *Return {
 	}
 }
 
+// Break is "break":
+// TODO: label?
 type Break Node
 
 func (n *Break) Node() *Node { return (*Node)(n) }
@@ -367,6 +319,8 @@ func NewBreak() *Break {
 	}
 }
 
+// Continue is "continue":
+// TODO: label?
 type Continue Node
 
 func (n *Continue) Node() *Node { return (*Node)(n) }
@@ -377,6 +331,21 @@ func NewContinue() *Continue {
 	}
 }
 
+// TypeExpr is a type expression, such as "u32", "pkg.foo", "ptr T" or "[8] T":
+//  - ID0:   <0|package name|IDPtr|IDOpenBracket>
+//  - ID1:   <0|type name>
+//  - LHS:   <nil|Expr>
+//  - MHS:   <nil|Expr>
+//  - RHS:   <nil|Expr|TypeExpr>
+//
+// An IDPtr ID0 means "ptr RHS". RHS is a TypeExpr.
+//
+// An IDOpenBracket ID0 means "[LHS] RHS". RHS is a TypeExpr.
+//
+// Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
+// "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
+// refined as "pkg.foo[MHS:RHS]". MHS and RHS are Expr's, possibly nil. For
+// example, the MHS for "u32[:4096]" is nil.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
@@ -399,6 +368,13 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, lhs *Node, mhs *Node, rhs *Node) *Typ
 	}
 }
 
+// Func is "func ID0.ID1(List0) (List1) { List2 }":
+//  - FlagsSuspendible is "ID1" vs "ID1?"
+//  - ID0:   <0|receiver>
+//  - ID1:   name
+//  - List0: <Param> in-parameters
+//  - List1: <Param> out-parameters
+//  - List2: <*> function body
 type Func Node
 
 func (n *Func) Node() *Node        { return (*Node)(n) }
@@ -426,6 +402,10 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 	}
 }
 
+// Struct is "struct ID1(List0)":
+//  - FlagsSuspendible is "ID1" vs "ID1?"
+//  - ID1:   name
+//  - List0: <Param> fields
 type Struct Node
 
 func (n *Struct) Node() *Node       { return (*Node)(n) }
@@ -446,6 +426,8 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 	}
 }
 
+// Use is "use ID1":
+//  - ID1:   <string literal> package path
 type Use Node
 
 func (n *Use) Node() *Node      { return (*Node)(n) }
@@ -462,6 +444,8 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 	}
 }
 
+// File is a file of source code:
+//  - List0: <Func|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) Node() *Node            { return (*Node)(n) }
