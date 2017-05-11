@@ -192,7 +192,7 @@ func (n *Assert) Condition() *Expr { return n.rhs.Expr() }
 func NewAssert(condition *Expr) *Assert {
 	return &Assert{
 		kind: KAssert,
-		lhs:  condition.Node(),
+		rhs:  condition.Node(),
 	}
 }
 
