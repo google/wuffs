@@ -165,7 +165,7 @@ func (n *Expr) ID1() t.ID        { return n.id1 }
 func (n *Expr) LHS() *Node       { return n.lhs }
 func (n *Expr) MHS() *Node       { return n.mhs }
 func (n *Expr) RHS() *Node       { return n.rhs }
-func (n *Expr) List() []*Node    { return n.list0 }
+func (n *Expr) Args() []*Node    { return n.list0 }
 
 func (n *Expr) SetMType(x *TypeExpr) { n.mType = x }
 
