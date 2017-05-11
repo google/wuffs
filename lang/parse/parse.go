@@ -229,7 +229,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(t.IDPtr, 0, nil, nil, rhs.Node()), nil
+		return a.NewTypeExpr(t.IDPtr, 0, nil, nil, rhs), nil
 	}
 
 	if x := p.peekID(); x == t.IDOpenBracket {
@@ -247,7 +247,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(t.IDOpenBracket, 0, lhs.Node(), nil, rhs.Node()), nil
+		return a.NewTypeExpr(t.IDOpenBracket, 0, lhs, nil, rhs), nil
 	}
 
 	pkg, name, err := p.parseQualifiedIdent()
@@ -255,21 +255,21 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		return nil, err
 	}
 
-	mhs, rhs := (*a.Expr)(nil), (*a.Expr)(nil)
+	lhs, mhs := (*a.Expr)(nil), (*a.Expr)(nil)
 	if x := p.peekID(); x == t.IDOpenBracket {
-		_, mhs, rhs, err = p.parseRangeOrIndex(false)
+		_, lhs, mhs, err = p.parseRangeOrIndex(false)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return a.NewTypeExpr(pkg, name, nil, mhs.Node(), rhs.Node()), nil
+	return a.NewTypeExpr(pkg, name, lhs, mhs, nil), nil
 }
 
 // parseRangeOrIndex parses "[i:j]", "[i:]", "[:j]" and "[:]". If allowIndex,
 // it also parses "[x]". The returned op is t.IDColon for a range and
 // t.IDOpenBracket for an index.
-func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Expr, rhs *a.Expr, err error) {
+func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
 	if x := p.peekID(); x != t.IDOpenBracket {
 		got := p.m.ByID(x)
 		return 0, nil, nil, fmt.Errorf("parse: expected \"[\", got %q at %s:%d", got, p.filename, p.line())
@@ -277,7 +277,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Expr, rhs *
 	p.src = p.src[1:]
 
 	if p.peekID() != t.IDColon {
-		mhs, err = p.parseExpr()
+		ei, err = p.parseExpr()
 		if err != nil {
 			return 0, nil, nil, err
 		}
@@ -289,7 +289,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Expr, rhs *
 
 	case x == t.IDCloseBracket && allowIndex:
 		p.src = p.src[1:]
-		return t.IDOpenBracket, nil, mhs, nil
+		return t.IDOpenBracket, nil, ei, nil
 
 	default:
 		expected := `":"`
@@ -301,7 +301,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Expr, rhs *
 	}
 
 	if p.peekID() != t.IDCloseBracket {
-		rhs, err = p.parseExpr()
+		ej, err = p.parseExpr()
 		if err != nil {
 			return 0, nil, nil, err
 		}
@@ -313,7 +313,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, mhs *a.Expr, rhs *
 	}
 	p.src = p.src[1:]
 
-	return t.IDColon, mhs, rhs, nil
+	return t.IDColon, ei, ej, nil
 }
 
 func (p *parser) parseBlock() ([]*a.Node, error) {

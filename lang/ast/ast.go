@@ -336,35 +336,33 @@ func NewContinue() *Continue {
 //  - ID1:   <0|type name>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
-//  - RHS:   <nil|Expr|TypeExpr>
+//  - RHS:   <nil|TypeExpr>
 //
-// An IDPtr ID0 means "ptr RHS". RHS is a TypeExpr.
+// An IDPtr ID0 means "ptr RHS". RHS is the inner type.
 //
-// An IDOpenBracket ID0 means "[LHS] RHS". RHS is a TypeExpr.
+// An IDOpenBracket ID0 means "[LHS] RHS". RHS is the inner type.
 //
 // Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
 // "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-// refined as "pkg.foo[MHS:RHS]". MHS and RHS are Expr's, possibly nil. For
+// refined as "pkg.foo[LHS:MHS]". LHS and MHS are Expr's, possibly nil. For
 // example, the MHS for "u32[:4096]" is nil.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
-func (n *TypeExpr) LHS() *Node               { return n.lhs }
-func (n *TypeExpr) MHS() *Node               { return n.mhs }
-func (n *TypeExpr) RHS() *Node               { return n.rhs }
+func (n *TypeExpr) LHS() *Expr               { return n.lhs.Expr() }
+func (n *TypeExpr) MHS() *Expr               { return n.mhs.Expr() }
+func (n *TypeExpr) Inner() *TypeExpr         { return n.rhs.TypeExpr() }
 
-// TODO: tighten the types here.
-
-func NewTypeExpr(pkgOrDec t.ID, name t.ID, lhs *Node, mhs *Node, rhs *Node) *TypeExpr {
+func NewTypeExpr(pkgOrDec t.ID, name t.ID, lhs *Expr, mhs *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,
 		id0:  pkgOrDec,
 		id1:  name,
-		lhs:  lhs,
-		mhs:  mhs,
-		rhs:  rhs,
+		lhs:  lhs.Node(),
+		mhs:  mhs.Node(),
+		rhs:  inner.Node(),
 	}
 }
 

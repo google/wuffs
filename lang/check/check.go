@@ -23,7 +23,7 @@ func TypeString(m *t.IDMap, n *a.TypeExpr) string {
 		case 0:
 			return m.ByID(n.Name())
 		case t.IDPtr:
-			return "ptr " + TypeString(m, n.RHS().TypeExpr())
+			return "ptr " + TypeString(m, n.Inner())
 		case t.IDOpenBracket:
 			// TODO.
 		default:
@@ -347,7 +347,7 @@ func (c *Checker) checkTypeExpr(n *a.TypeExpr) error {
 			return fmt.Errorf("check: %q is not a type", c.idMap.ByID(name))
 
 		case t.IDPtr:
-			n = n.RHS().TypeExpr()
+			n = n.Inner()
 
 		case t.IDOpenBracket:
 			// TODO.
