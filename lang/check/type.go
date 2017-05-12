@@ -56,14 +56,21 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 
 	case a.KAssign:
 		o := n.Assign()
-		if err := c.checkExpr(o.LHS()); err != nil {
+		l := o.LHS()
+		r := o.RHS()
+		if err := c.checkExpr(l); err != nil {
 			return err
 		}
-		if err := c.checkExpr(o.RHS()); err != nil {
+		if err := c.checkExpr(r); err != nil {
 			return err
 		}
-		// TODO: check that o.RHS().Type is assignable to o.LHS().Type.
+		lTyp := l.MType()
+		rTyp := r.MType()
 		// TODO, look at o.Operator().
+		if !lTyp.Eq(rTyp) {
+			return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
+				r.String(c.idMap), rTyp.String(c.idMap), l.String(c.idMap), lTyp.String(c.idMap))
+		}
 		return nil
 
 	case a.KVar:
