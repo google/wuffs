@@ -140,8 +140,11 @@ var opStrings = [256]string{
 // node, including the sum nodes, has a ConstValue), both sums will have the
 // same value and will compare equal.
 func (n *Expr) Eq(o *Expr) bool {
+	if n == o {
+		return true
+	}
 	if n == nil || o == nil {
-		return n == nil && o == nil
+		return false
 	}
 	if n.constValue != nil && o.constValue != nil {
 		return n.constValue.Cmp(o.constValue) == 0
@@ -201,8 +204,11 @@ func (n *TypeExpr) String(m *t.IDMap) string {
 // Eq returns whether n and o are equal.
 func (n *TypeExpr) Eq(o *TypeExpr) bool {
 	for {
+		if n == o {
+			return true
+		}
 		if n == nil || o == nil {
-			return n == nil && o == nil
+			return false
 		}
 		if n.id0 != o.id0 || n.id1 != o.id1 ||
 			!n.lhs.Expr().Eq(o.lhs.Expr()) ||

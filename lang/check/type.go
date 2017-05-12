@@ -67,7 +67,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 		lTyp := l.MType()
 		rTyp := r.MType()
 		// TODO, look at o.Operator().
-		if (rTyp == DummyTypeIdealNumber && lTyp.IsNumType()) || lTyp.Eq(rTyp) {
+		if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.Eq(rTyp) {
 			return nil
 		}
 		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
@@ -157,24 +157,40 @@ func (c *typeChecker) checkExpr(n *a.Expr) error {
 func (c *typeChecker) checkExprOther(n *a.Expr) error {
 	switch n.ID0() {
 	case 0:
-		if n.ID1().IsNumLiteral() {
+		switch id1 := n.ID1(); {
+		case id1.IsNumLiteral():
 			z := big.NewInt(0)
-			s := c.idMap.ByID(n.ID1())
+			s := c.idMap.ByID(id1)
 			if _, ok := z.SetString(s, 0); !ok {
 				return fmt.Errorf("check: invalid numeric literal %q", s)
 			}
 			n.SetConstValue(z)
-			n.SetMType(DummyTypeIdealNumber)
+			n.SetMType(TypeExprIdealNumber)
 			return nil
-		}
 
-		if n.ID1().IsIdent() {
-			if typ, ok := c.typeMap[n.ID1()]; ok {
+		case id1.IsIdent():
+			if typ, ok := c.typeMap[id1]; ok {
 				n.SetMType(typ)
 				return nil
 			}
 			// TODO: look for (global) names (constants, funcs, structs).
-			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(n.ID1()))
+			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(id1))
+
+		case id1 == t.IDFalse:
+			n.SetConstValue(zero)
+			n.SetMType(TypeExprBoolean)
+			return nil
+
+		case id1 == t.IDTrue:
+			n.SetConstValue(one)
+			n.SetMType(TypeExprBoolean)
+			return nil
+
+		case id1 == t.IDUnderscore:
+			// TODO.
+
+		case id1 == t.IDThis:
+			// TODO.
 		}
 
 	case t.IDOpenParen:
@@ -205,19 +221,26 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 
 	switch n.ID0() {
 	case t.IDXUnaryPlus, t.IDXUnaryMinus:
-		if rTyp != DummyTypeIdealNumber && !rTyp.IsNumType() {
+		if rTyp != TypeExprIdealNumber && !rTyp.IsNumType() {
 			op := '+'
 			if n.ID0() == t.IDXUnaryMinus {
 				op = '-'
 			}
-			return fmt.Errorf("check: unary '%c': %q, of type %q, does not have a numeric type",
+			return fmt.Errorf(`check: unary "%c": %q, of type %q, does not have a numeric type`,
 				op, rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
+		// TODO: SetConstValue.
 		n.SetMType(rTyp)
 		return nil
 
 	case t.IDXUnaryNot:
-		// TODO: check for bool.
+		if !rTyp.Eq(TypeExprBoolean) {
+			return fmt.Errorf(`check: unary "not": %q, of type %q, does not have a boolean type`,
+				rhs.String(c.idMap), rTyp.String(c.idMap))
+		}
+		// TODO: SetConstValue.
+		n.SetMType(TypeExprBoolean)
+		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
 }
@@ -233,7 +256,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if (lTyp == DummyTypeIdealNumber || lTyp.IsNumType()) && rhs.IsNumType() {
+		if (lTyp == TypeExprIdealNumber || lTyp.IsNumType()) && rhs.IsNumType() {
 			n.SetMType(rhs)
 			return nil
 		}

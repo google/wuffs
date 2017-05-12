@@ -12,9 +12,12 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-// DummyTypeIdealNumber is an *ast.Node MType (implicit type) that means that n
-// is an ideal numeric constant.
-var DummyTypeIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
+// TypeExprFoo is an *ast.Node MType (implicit type) that means that n is a
+// boolean or a ideal numeric constant.
+var (
+	TypeExprBoolean     = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
+	TypeExprIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
+)
 
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
@@ -152,4 +155,7 @@ var numTypeRanges = [256][2]*big.Int{
 	t.IDUsize >> t.KeyShift: {zero, zero},
 }
 
-var zero = big.NewInt(0)
+var (
+	zero = big.NewInt(0)
+	one  = big.NewInt(1)
+)
