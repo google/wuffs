@@ -24,6 +24,18 @@ func Parse(m *t.IDMap, filename string, src []t.Token) (*a.File, error) {
 	return p.parseFile()
 }
 
+func ParseExpr(m *t.IDMap, filename string, src []t.Token) (*a.Expr, error) {
+	p := &parser{
+		src:      src,
+		m:        m,
+		filename: filename,
+	}
+	if len(src) > 0 {
+		p.lastLine = src[len(src)-1].Line
+	}
+	return p.parseExpr()
+}
+
 type parser struct {
 	src      []t.Token
 	m        *t.IDMap

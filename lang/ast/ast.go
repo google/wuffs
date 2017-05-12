@@ -162,6 +162,7 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 type Expr Node
 
 func (n *Expr) Node() *Node          { return (*Node)(n) }
+func (n *Expr) Suspendible() bool    { return n.flags&FlagsSuspendible != 0 }
 func (n *Expr) ConstValue() *big.Int { return n.constValue }
 func (n *Expr) MType() *TypeExpr     { return n.mType }
 func (n *Expr) ID0() t.ID            { return n.id0 }

@@ -16,10 +16,35 @@ func TestString(t *testing.T) {
 		"1",
 		"x",
 
+		"f()",
+		"f(i)",
+		"f(i, j)",
+		"f(i, j) + 1",
+		"f(i, j)(k)",
+		"f(i, j)(k, l, m + 2) + 3",
+
+		"x[i]",
+		"x[i][j]",
+		"x[i:j]",
+		"x[i](j)",
+		"x(i)[j]",
+
+		"x.y",
+		"x.y.z.a",
+
+		"+x",
+		"-(x + y)",
+		"not x",
+		"not not x",
+		"+++-x",
+
 		"x + 42",
 		"x and (y < z)",
 		"x & (y as u8)",
 		"x * ((a / b) - (i / j))",
+
+		"x + y + z",
+		"x + (i * j.k[l] * (-m << 4) * (n & o(p, q[:r.s + 5]))) + z",
 
 		"x as bool",
 		"x as u32",
