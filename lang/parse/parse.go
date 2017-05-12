@@ -585,7 +585,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			return a.NewExpr(flags, t.IDOpenParen, 0, lhs.Node(), nil, nil, args), nil
+			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.Node(), nil, nil, args)
 
 		case t.IDOpenBracket:
 			id0, mhs, rhs, err := p.parseRangeOrIndex(true)
