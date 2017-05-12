@@ -21,6 +21,7 @@ func TestCheck(t *testing.T) {
 			var y i32 = 2
 			var z u64[:123]
 			var a [4]u8
+			y = x as i32
 		}
 	`
 

@@ -13,8 +13,8 @@ func ExprString(m *t.IDMap, n *a.Expr) string {
 	if n == nil {
 		return ""
 	}
-	if v := n.ConstValue(); v != nil {
-		return v.String()
+	if n.ID0() == 0 {
+		return m.ByID(n.ID1())
 	}
 	return "ExprString.TODO"
 }

@@ -111,25 +111,35 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 
 func (c *Checker) checkFuncBody(n *a.Node) error {
 	f := n.Func()
-	p := c.funcs[f.QID()].LocalVars
+	tc := &typeChecker{
+		c:       c,
+		idMap:   c.idMap,
+		typeMap: c.funcs[f.QID()].LocalVars,
+	}
 	for _, m := range f.Body() {
-		if err := c.checkVars(m, p); err != nil {
+		if err := tc.checkVars(m); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
 		}
 	}
 	for _, m := range f.Body() {
-		if err := c.checkStatement(m, p); err != nil {
+		if err := tc.checkStatement(m); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
 		}
 	}
 	return nil
 }
 
-func (c *Checker) checkVars(n *a.Node, p TypeMap) error {
+type typeChecker struct {
+	c       *Checker
+	idMap   *t.IDMap
+	typeMap TypeMap
+}
+
+func (c *typeChecker) checkVars(n *a.Node) error {
 	if n.Kind() == a.KVar {
 		v := n.Var()
 		name := v.Name()
-		if _, ok := p[name]; ok {
+		if _, ok := c.typeMap[name]; ok {
 			return fmt.Errorf("check: duplicate var %q", c.idMap.ByID(name))
 		}
 		if err := c.checkTypeExpr(v.XType()); err != nil {
@@ -138,12 +148,12 @@ func (c *Checker) checkVars(n *a.Node, p TypeMap) error {
 		if value := v.Value(); value != nil {
 			// TODO: check that value doesn't mention the variable itself.
 		}
-		p[name] = v.XType()
+		c.typeMap[name] = v.XType()
 		return nil
 	}
 	for _, l := range n.Raw().SubLists() {
 		for _, m := range l {
-			if err := c.checkVars(m, p); err != nil {
+			if err := c.checkVars(m); err != nil {
 				return err
 			}
 		}
@@ -151,7 +161,7 @@ func (c *Checker) checkVars(n *a.Node, p TypeMap) error {
 	return nil
 }
 
-func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
+func (c *typeChecker) checkStatement(n *a.Node) error {
 	switch n.Kind() {
 	case a.KAssert:
 		o := n.Assert()
@@ -193,7 +203,7 @@ func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
 			// TODO: check cond has type bool.
 		}
 		for _, m := range o.Body() {
-			if err := c.checkStatement(m, p); err != nil {
+			if err := c.checkStatement(m); err != nil {
 				return err
 			}
 		}
@@ -206,12 +216,12 @@ func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
 			}
 			// TODO: check o.Condition() has type bool.
 			for _, m := range o.BodyIfTrue() {
-				if err := c.checkStatement(m, p); err != nil {
+				if err := c.checkStatement(m); err != nil {
 					return err
 				}
 			}
 			for _, m := range o.BodyIfFalse() {
-				if err := c.checkStatement(m, p); err != nil {
+				if err := c.checkStatement(m); err != nil {
 					return err
 				}
 			}
@@ -241,7 +251,7 @@ func (c *Checker) checkStatement(n *a.Node, p TypeMap) error {
 	return fmt.Errorf("check: unrecognized ast.Kind (%d) for checkStatement", n.Kind())
 }
 
-func (c *Checker) checkExpr(n *a.Expr) error {
+func (c *typeChecker) checkExpr(n *a.Expr) error {
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
 		return c.checkExprOther(n)
@@ -255,10 +265,9 @@ func (c *Checker) checkExpr(n *a.Expr) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExpr", n.ID0().Key())
 }
 
-func (c *Checker) checkExprOther(n *a.Expr) error {
+func (c *typeChecker) checkExprOther(n *a.Expr) error {
 	switch n.ID0() {
 	case 0:
-		// n is an identifier or a literal.
 		if n.ID1().IsNumLiteral() {
 			z := big.NewInt(0)
 			s := c.idMap.ByID(n.ID1())
@@ -269,7 +278,15 @@ func (c *Checker) checkExprOther(n *a.Expr) error {
 			n.SetMType(DummyTypeIdealNumber)
 			return nil
 		}
-		// TODO.
+
+		if n.ID1().IsIdent() {
+			if typ, ok := c.typeMap[n.ID1()]; ok {
+				n.SetMType(typ)
+				return nil
+			}
+			// TODO: look for (global) names (constants, funcs, structs).
+			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(n.ID1()))
+		}
 
 	case t.IDOpenParen:
 		// n is a function call.
@@ -290,12 +307,12 @@ func (c *Checker) checkExprOther(n *a.Expr) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
 }
 
-func (c *Checker) checkExprUnaryOp(n *a.Expr) error {
+func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 	// TODO.
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
 }
 
-func (c *Checker) checkExprBinaryOp(n *a.Expr) error {
+func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 	if err := c.checkExpr(n.LHS().Expr()); err != nil {
 		return err
 	}
@@ -319,12 +336,12 @@ func (c *Checker) checkExprBinaryOp(n *a.Expr) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprBinaryOp", n.ID0().Key())
 }
 
-func (c *Checker) checkExprAssociativeOp(n *a.Expr) error {
+func (c *typeChecker) checkExprAssociativeOp(n *a.Expr) error {
 	// TODO.
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprAssociativeOp", n.ID0().Key())
 }
 
-func (c *Checker) checkTypeExpr(n *a.TypeExpr) error {
+func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 	for ; n != nil; n = n.Inner() {
 		switch n.PackageOrDecorator() {
 		case 0:
@@ -368,19 +385,37 @@ func (c *Checker) checkTypeExpr(n *a.TypeExpr) error {
 	return nil
 }
 
-func (c *Checker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
+func (c *typeChecker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
+	eTyp := e.MType()
+	if eTyp == nil {
+		return fmt.Errorf("check: expression %q has no inferred type", ExprString(c.idMap, e))
+	}
+
 	if typ.PackageOrDecorator() == 0 {
 		if name := typ.Name(); name.IsBuiltIn() && name.IsNumType() {
-			if minMax := numTypeRanges[0xFF&(name>>t.KeyShift)]; minMax[0] != nil {
-				if e.MType() == DummyTypeIdealNumber {
-					// TODO: check that the val is in typ's bounds.
-					return nil
+			if eTyp == DummyTypeIdealNumber {
+				minMax := numTypeRanges[0xFF&(name>>t.KeyShift)]
+				if minMax[0] == nil {
+					return fmt.Errorf("check: unknown range for built-in numeric type %q",
+						TypeExprString(c.idMap, typ))
 				}
+				// TODO: update minMax for typ.Bounds().
+				//
+				// TODO: compare val to minMax. Or does that belong in a
+				// separate bounds checking phase instead of type checking?
+				return nil
+			} else {
+				// TODO: check that eTyp is a numeric type, not e.g. a struct.
+				return nil
 			}
 		}
 	}
 
-	return fmt.Errorf("check: typeConvertible: cannot convert expression %v to type %v", e, typ)
+	return fmt.Errorf("check: cannot convert expression %q of type %q to type %q",
+		ExprString(c.idMap, e),
+		TypeExprString(c.idMap, eTyp),
+		TypeExprString(c.idMap, typ),
+	)
 }
 
 var numTypeRanges = [256][2]*big.Int{
