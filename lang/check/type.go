@@ -229,7 +229,12 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 			return fmt.Errorf(`check: unary "%c": %q, of type %q, does not have a numeric type`,
 				op, rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
-		// TODO: SetConstValue.
+		if cv := rhs.ConstValue(); cv != nil {
+			if n.ID0() == t.IDXUnaryMinus {
+				cv = big.NewInt(0).Neg(cv)
+			}
+			n.SetConstValue(cv)
+		}
 		n.SetMType(rTyp)
 		return nil
 
@@ -238,7 +243,14 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 			return fmt.Errorf(`check: unary "not": %q, of type %q, does not have a boolean type`,
 				rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
-		// TODO: SetConstValue.
+		if cv := rhs.ConstValue(); cv != nil {
+			if cv.Cmp(zero) == 0 {
+				cv = one
+			} else {
+				cv = zero
+			}
+			n.SetConstValue(cv)
+		}
 		n.SetMType(TypeExprBoolean)
 		return nil
 	}

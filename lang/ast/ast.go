@@ -115,6 +115,7 @@ type Raw Node
 func (n *Raw) Node() *Node                    { return (*Node)(n) }
 func (n *Raw) Kind() Kind                     { return n.kind }
 func (n *Raw) Flags() Flags                   { return n.flags }
+func (n *Raw) ConstValue() *big.Int           { return n.constValue }
 func (n *Raw) MType() *TypeExpr               { return n.mType }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
 func (n *Raw) Filename() string               { return n.filename }

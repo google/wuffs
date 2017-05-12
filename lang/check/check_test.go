@@ -18,7 +18,7 @@ func TestCheck(t *testing.T) {
 	const src = `
 		func bar()() {
 			var x u8
-			var y i32 = 2
+			var y i32 = +2
 			var z u64[:123]
 			var a [4]u8
 			var b bool
@@ -85,8 +85,13 @@ func TestCheck(t *testing.T) {
 	}
 
 	walk(file.Node(), func(n *ast.Node) error {
-		if n.Kind() == ast.KExpr && n.Expr().MType() == nil {
-			t.Errorf("expression node has no (implicit) type: n=%v", n)
+		if n.Kind() == ast.KExpr {
+			e := n.Expr()
+			if typ := e.MType(); typ == nil {
+				t.Errorf("expression node %q has no (implicit) type", n.Expr().String(idMap))
+			} else if typ == TypeExprIdealNumber && e.ConstValue() == nil {
+				t.Errorf("expression node %q has ideal number type but no const value", n.Expr().String(idMap))
+			}
 		}
 		return nil
 	})
