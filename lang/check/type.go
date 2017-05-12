@@ -197,7 +197,28 @@ func (c *typeChecker) checkExprOther(n *a.Expr) error {
 }
 
 func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
-	// TODO.
+	rhs := n.RHS().Expr()
+	if err := c.checkExpr(rhs); err != nil {
+		return err
+	}
+	rTyp := rhs.MType()
+
+	switch n.ID0() {
+	case t.IDXUnaryPlus, t.IDXUnaryMinus:
+		if rTyp != DummyTypeIdealNumber && !rTyp.IsNumType() {
+			op := '+'
+			if n.ID0() == t.IDXUnaryMinus {
+				op = '-'
+			}
+			return fmt.Errorf("check: unary '%c': %q, of type %q, does not have a numeric type",
+				op, rhs.String(c.idMap), rTyp.String(c.idMap))
+		}
+		n.SetMType(rTyp)
+		return nil
+
+	case t.IDXUnaryNot:
+		// TODO: check for bool.
+	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
 }
 
