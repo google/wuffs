@@ -355,6 +355,7 @@ func NewContinue() *Continue {
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
+func (n *TypeExpr) IsNumType() bool          { return n.id0 == 0 && n.id1.IsNumType() }
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
 func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }

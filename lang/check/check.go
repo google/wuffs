@@ -138,6 +138,8 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	return nil
 }
 
+// TODO: use numTypeRanges.
+
 var numTypeRanges = [256][2]*big.Int{
 	t.IDI8 >> t.KeyShift:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
 	t.IDI16 >> t.KeyShift:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},

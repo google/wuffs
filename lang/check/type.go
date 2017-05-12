@@ -67,11 +67,11 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 		lTyp := l.MType()
 		rTyp := r.MType()
 		// TODO, look at o.Operator().
-		if !lTyp.Eq(rTyp) {
-			return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-				r.String(c.idMap), rTyp.String(c.idMap), l.String(c.idMap), lTyp.String(c.idMap))
+		if (rTyp == DummyTypeIdealNumber && lTyp.IsNumType()) || lTyp.Eq(rTyp) {
+			return nil
 		}
-		return nil
+		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
+			r.String(c.idMap), rTyp.String(c.idMap), l.String(c.idMap), lTyp.String(c.idMap))
 
 	case a.KVar:
 		o := n.Var()
@@ -202,22 +202,25 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 }
 
 func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
-	if err := c.checkExpr(n.LHS().Expr()); err != nil {
+	lhs := n.LHS().Expr()
+	if err := c.checkExpr(lhs); err != nil {
 		return err
 	}
 	if n.ID0() == t.IDXBinaryAs {
-		lhs := n.LHS().Expr()
 		rhs := n.RHS().TypeExpr()
 		if err := c.checkTypeExpr(rhs); err != nil {
 			return err
 		}
-		if err := c.typeConvertible(lhs, rhs); err != nil {
-			return err
+		lTyp := lhs.MType()
+		if (lTyp == DummyTypeIdealNumber || lTyp.IsNumType()) && rhs.IsNumType() {
+			n.SetMType(rhs)
+			return nil
 		}
-		n.SetMType(rhs)
-		return nil
+		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",
+			lhs.String(c.idMap), lTyp.String(c.idMap), rhs.String(c.idMap))
 	}
-	if err := c.checkExpr(n.RHS().Expr()); err != nil {
+	rhs := n.RHS().Expr()
+	if err := c.checkExpr(rhs); err != nil {
 		return err
 	}
 	// TODO: check lhs and rhs have compatible types, then call n.SetMType.
@@ -272,33 +275,4 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 		}
 	}
 	return nil
-}
-
-func (c *typeChecker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
-	eTyp := e.MType()
-	if eTyp == nil {
-		return fmt.Errorf("check: expression %q has no inferred type", e.String(c.idMap))
-	}
-
-	if typ.PackageOrDecorator() == 0 {
-		if name := typ.Name(); name.IsBuiltIn() && name.IsNumType() {
-			if eTyp == DummyTypeIdealNumber {
-				minMax := numTypeRanges[0xFF&(name>>t.KeyShift)]
-				if minMax[0] == nil {
-					return fmt.Errorf("check: unknown range for built-in numeric type %q", typ.String(c.idMap))
-				}
-				// TODO: update minMax for typ.Bounds().
-				//
-				// TODO: compare val to minMax. Or does that belong in a
-				// separate bounds checking phase instead of type checking?
-				return nil
-			} else {
-				// TODO: check that eTyp is a numeric type, not e.g. a struct.
-				return nil
-			}
-		}
-	}
-
-	return fmt.Errorf("check: cannot convert expression %q of type %q to type %q",
-		e.String(c.idMap), eTyp.String(c.idMap), typ.String(c.idMap))
 }
