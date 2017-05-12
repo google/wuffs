@@ -4,23 +4,52 @@
 package check
 
 import (
+	"bytes"
+	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/google/puffs/lang/ast"
 	"github.com/google/puffs/lang/parse"
+	"github.com/google/puffs/lang/render"
 	"github.com/google/puffs/lang/token"
 )
 
+func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, src string) error {
+	buf := &bytes.Buffer{}
+	if err := render.Render(buf, idMap, tokens, nil); err != nil {
+		return err
+	}
+	got := strings.Split(buf.String(), "\n")
+	want := strings.Split(src, "\n")
+	for line := 1; len(got) != 0 || len(want) != 0; line++ {
+		if len(got) == 0 {
+			w := strings.TrimSpace(want[0])
+			return fmt.Errorf("difference at line %d:\n%s\n%s", line, "", w)
+		}
+		if len(want) == 0 {
+			g := strings.TrimSpace(got[0])
+			return fmt.Errorf("difference at line %d:\n%s\n%s", line, g, "")
+		}
+		if g, w := strings.TrimSpace(got[0]), strings.TrimSpace(want[0]); g != w {
+			return fmt.Errorf("difference at line %d:\n%s\n%s", line, g, w)
+		}
+		got = got[1:]
+		want = want[1:]
+	}
+	return nil
+}
+
 func TestCheck(t *testing.T) {
 	const filename = "foo.puffs"
-	const src = `
+	src := strings.TrimSpace(`
 		func bar()() {
 			var x u8
 			var y i32 = +2
 			var z u64[:123]
-			var a [4]u8
+			var a[4] u8
 			var b bool
 
 			x = 0
@@ -29,7 +58,7 @@ func TestCheck(t *testing.T) {
 
 			y = x as i32
 		}
-	`
+	`) + "\n"
 
 	idMap := &token.IDMap{}
 
@@ -41,6 +70,10 @@ func TestCheck(t *testing.T) {
 	file, err := parse.Parse(idMap, filename, tokens)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
+	}
+
+	if err := compareToPuffsfmt(idMap, tokens, src); err != nil {
+		t.Fatalf("compareToPuffsfmt: %v", err)
 	}
 
 	c, err := Check(idMap, file)
