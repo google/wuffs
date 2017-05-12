@@ -19,6 +19,8 @@ var (
 	TypeExprIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
 )
 
+func numeric(n *a.TypeExpr) bool { return n == TypeExprIdealNumber || n.IsNumType() }
+
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
 
@@ -158,4 +160,12 @@ var numTypeRanges = [256][2]*big.Int{
 var (
 	zero = big.NewInt(0)
 	one  = big.NewInt(1)
+	ffff = big.NewInt(0xFFFF)
 )
+
+func btoi(b bool) *big.Int {
+	if b {
+		return one
+	}
+	return zero
+}

@@ -221,13 +221,9 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 
 	switch n.ID0() {
 	case t.IDXUnaryPlus, t.IDXUnaryMinus:
-		if rTyp != TypeExprIdealNumber && !rTyp.IsNumType() {
-			op := '+'
-			if n.ID0() == t.IDXUnaryMinus {
-				op = '-'
-			}
-			return fmt.Errorf(`check: unary "%c": %q, of type %q, does not have a numeric type`,
-				op, rhs.String(c.idMap), rTyp.String(c.idMap))
+		if !numeric(rTyp) {
+			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
+				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			if n.ID0() == t.IDXUnaryMinus {
@@ -240,16 +236,11 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {
 
 	case t.IDXUnaryNot:
 		if !rTyp.Eq(TypeExprBoolean) {
-			return fmt.Errorf(`check: unary "not": %q, of type %q, does not have a boolean type`,
-				rhs.String(c.idMap), rTyp.String(c.idMap))
+			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
+				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
-			if cv.Cmp(zero) == 0 {
-				cv = one
-			} else {
-				cv = zero
-			}
-			n.SetConstValue(cv)
+			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
 		}
 		n.SetMType(TypeExprBoolean)
 		return nil
@@ -262,13 +253,14 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 	if err := c.checkExpr(lhs); err != nil {
 		return err
 	}
-	if n.ID0() == t.IDXBinaryAs {
+	lTyp := lhs.MType()
+	op := n.ID0()
+	if op == t.IDXBinaryAs {
 		rhs := n.RHS().TypeExpr()
 		if err := c.checkTypeExpr(rhs); err != nil {
 			return err
 		}
-		lTyp := lhs.MType()
-		if (lTyp == TypeExprIdealNumber || lTyp.IsNumType()) && rhs.IsNumType() {
+		if numeric(lTyp) && rhs.IsNumType() {
 			n.SetMType(rhs)
 			return nil
 		}
@@ -279,9 +271,104 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 	if err := c.checkExpr(rhs); err != nil {
 		return err
 	}
-	// TODO: check lhs and rhs have compatible types, then call n.SetMType.
-	// TODO: other checks.
-	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprBinaryOp", n.ID0().Key())
+	rTyp := rhs.MType()
+
+	switch op {
+	default:
+		if !numeric(lTyp) {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
+				c.idMap.ByID(op.AmbiguousForm()), lhs.String(c.idMap), lTyp.String(c.idMap))
+		}
+		if !numeric(rTyp) {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
+				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+		}
+	case t.IDXBinaryNotEq, t.IDXBinaryEqEq:
+		// No-op.
+	case t.IDXBinaryAnd, t.IDXBinaryOr:
+		if lTyp != TypeExprBoolean {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
+				c.idMap.ByID(op.AmbiguousForm()), lhs.String(c.idMap), lTyp.String(c.idMap))
+		}
+		if rTyp != TypeExprBoolean {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
+				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+		}
+	}
+	if op != t.IDXBinaryShiftL && op != t.IDXBinaryShiftR && !lTyp.Eq(rTyp) {
+		return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, does not have matching types",
+			c.idMap.ByID(op.AmbiguousForm()),
+			lhs.String(c.idMap), rhs.String(c.idMap),
+			lTyp.String(c.idMap), rTyp.String(c.idMap),
+		)
+	}
+
+	if l, r := lhs.ConstValue(), rhs.ConstValue(); l != nil && r != nil {
+		if err := c.setConstValueBinaryOp(n, l, r); err != nil {
+			return err
+		}
+	}
+	if comparisonOps[0xFF&op.Key()] {
+		n.SetMType(TypeExprBoolean)
+	} else {
+		n.SetMType(lTyp)
+	}
+	return nil
+}
+
+func (c *typeChecker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
+	switch n.ID0() {
+	case t.IDXBinaryPlus:
+		n.SetConstValue(big.NewInt(0).Add(l, r))
+	case t.IDXBinaryMinus:
+		n.SetConstValue(big.NewInt(0).Sub(l, r))
+	case t.IDXBinaryStar:
+		n.SetConstValue(big.NewInt(0).Mul(l, r))
+	case t.IDXBinarySlash:
+		if r.Cmp(zero) == 0 {
+			return fmt.Errorf("check: division by zero in const expression %q", n.String(c.idMap))
+		}
+		// TODO: decide on Euclidean division vs other definitions. See "go doc
+		// math/big int.divmod" for details.
+		n.SetConstValue(big.NewInt(0).Div(l, r))
+	case t.IDXBinaryShiftL:
+		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
+			return fmt.Errorf("check: shift %q out of range in const expression %q",
+				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
+		}
+		n.SetConstValue(big.NewInt(0).Lsh(l, uint(r.Uint64())))
+	case t.IDXBinaryShiftR:
+		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
+			return fmt.Errorf("check: shift %q out of range in const expression %q",
+				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
+		}
+		n.SetConstValue(big.NewInt(0).Rsh(l, uint(r.Uint64())))
+	case t.IDXBinaryAmp:
+		n.SetConstValue(big.NewInt(0).And(l, r))
+	case t.IDXBinaryAmpHat:
+		n.SetConstValue(big.NewInt(0).AndNot(l, r))
+	case t.IDXBinaryPipe:
+		n.SetConstValue(big.NewInt(0).Or(l, r))
+	case t.IDXBinaryHat:
+		n.SetConstValue(big.NewInt(0).Xor(l, r))
+	case t.IDXBinaryNotEq:
+		n.SetConstValue(btoi(l.Cmp(r) != 0))
+	case t.IDXBinaryLessThan:
+		n.SetConstValue(btoi(l.Cmp(r) < 0))
+	case t.IDXBinaryLessEq:
+		n.SetConstValue(btoi(l.Cmp(r) <= 0))
+	case t.IDXBinaryEqEq:
+		n.SetConstValue(btoi(l.Cmp(r) == 0))
+	case t.IDXBinaryGreaterEq:
+		n.SetConstValue(btoi(l.Cmp(r) >= 0))
+	case t.IDXBinaryGreaterThan:
+		n.SetConstValue(btoi(l.Cmp(r) > 0))
+	case t.IDXBinaryAnd:
+		n.SetConstValue(btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)))
+	case t.IDXBinaryOr:
+		n.SetConstValue(btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)))
+	}
+	return nil
 }
 
 func (c *typeChecker) checkExprAssociativeOp(n *a.Expr) error {
@@ -331,4 +418,13 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 		}
 	}
 	return nil
+}
+
+var comparisonOps = [256]bool{
+	t.IDXBinaryNotEq >> t.KeyShift:       true,
+	t.IDXBinaryLessThan >> t.KeyShift:    true,
+	t.IDXBinaryLessEq >> t.KeyShift:      true,
+	t.IDXBinaryEqEq >> t.KeyShift:        true,
+	t.IDXBinaryGreaterEq >> t.KeyShift:   true,
+	t.IDXBinaryGreaterThan >> t.KeyShift: true,
 }

@@ -46,6 +46,7 @@ const (
 // ID combines a Key and Flags.
 type ID uint32
 
+func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&(x>>KeyShift)] }
 func (x ID) UnaryForm() ID       { return unaryForms[0xFF&(x>>KeyShift)] }
 func (x ID) BinaryForm() ID      { return binaryForms[0xFF&(x>>KeyShift)] }
 func (x ID) AssociativeForm() ID { return associativeForms[0xFF&(x>>KeyShift)] }
@@ -354,6 +355,7 @@ var squiggles = [256]ID{
 	// 1<<KeyShift is a non-zero ID with zero Flags. It is an invalid ID,
 	// signifying that lookup should continue in the lexers array below.
 
+	'!': 1 << KeyShift,
 	'&': 1 << KeyShift,
 	'|': 1 << KeyShift,
 	'^': 1 << KeyShift,
@@ -426,6 +428,40 @@ var lexers = [256][]suffixLexer{
 		{"=", IDGreaterEq},
 		{"", IDGreaterThan},
 	},
+}
+
+var ambiguousForms = [256]ID{
+	IDXUnaryPlus >> KeyShift:  IDPlus,
+	IDXUnaryMinus >> KeyShift: IDMinus,
+	IDXUnaryNot >> KeyShift:   IDNot,
+
+	IDXBinaryPlus >> KeyShift:        IDPlus,
+	IDXBinaryMinus >> KeyShift:       IDMinus,
+	IDXBinaryStar >> KeyShift:        IDStar,
+	IDXBinarySlash >> KeyShift:       IDSlash,
+	IDXBinaryShiftL >> KeyShift:      IDShiftL,
+	IDXBinaryShiftR >> KeyShift:      IDShiftR,
+	IDXBinaryAmp >> KeyShift:         IDAmp,
+	IDXBinaryAmpHat >> KeyShift:      IDAmpHat,
+	IDXBinaryPipe >> KeyShift:        IDPipe,
+	IDXBinaryHat >> KeyShift:         IDHat,
+	IDXBinaryNotEq >> KeyShift:       IDNotEq,
+	IDXBinaryLessThan >> KeyShift:    IDLessThan,
+	IDXBinaryLessEq >> KeyShift:      IDLessEq,
+	IDXBinaryEqEq >> KeyShift:        IDEqEq,
+	IDXBinaryGreaterEq >> KeyShift:   IDGreaterEq,
+	IDXBinaryGreaterThan >> KeyShift: IDGreaterThan,
+	IDXBinaryAnd >> KeyShift:         IDAnd,
+	IDXBinaryOr >> KeyShift:          IDOr,
+	IDXBinaryAs >> KeyShift:          IDAs,
+
+	IDXAssociativePlus >> KeyShift: IDPlus,
+	IDXAssociativeStar >> KeyShift: IDStar,
+	IDXAssociativeAmp >> KeyShift:  IDAmp,
+	IDXAssociativePipe >> KeyShift: IDPipe,
+	IDXAssociativeHat >> KeyShift:  IDHat,
+	IDXAssociativeAnd >> KeyShift:  IDAnd,
+	IDXAssociativeOr >> KeyShift:   IDOr,
 }
 
 var unaryForms = [256]ID{
