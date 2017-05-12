@@ -355,7 +355,7 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 						return err
 					}
 					if bound.ConstValue() == nil {
-						return fmt.Errorf("check: %q is not constant", ExprString(c.idMap, bound))
+						return fmt.Errorf("check: %q is not constant", bound.String(c.idMap))
 					}
 				}
 				return nil
@@ -375,7 +375,7 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 				return err
 			}
 			if aLen.ConstValue() == nil {
-				return fmt.Errorf("check: %q is not constant", ExprString(c.idMap, aLen))
+				return fmt.Errorf("check: %q is not constant", aLen.String(c.idMap))
 			}
 
 		default:
@@ -388,7 +388,7 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr) error {
 func (c *typeChecker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
 	eTyp := e.MType()
 	if eTyp == nil {
-		return fmt.Errorf("check: expression %q has no inferred type", ExprString(c.idMap, e))
+		return fmt.Errorf("check: expression %q has no inferred type", e.String(c.idMap))
 	}
 
 	if typ.PackageOrDecorator() == 0 {
@@ -396,8 +396,7 @@ func (c *typeChecker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
 			if eTyp == DummyTypeIdealNumber {
 				minMax := numTypeRanges[0xFF&(name>>t.KeyShift)]
 				if minMax[0] == nil {
-					return fmt.Errorf("check: unknown range for built-in numeric type %q",
-						TypeExprString(c.idMap, typ))
+					return fmt.Errorf("check: unknown range for built-in numeric type %q", typ.String(c.idMap))
 				}
 				// TODO: update minMax for typ.Bounds().
 				//
@@ -412,10 +411,7 @@ func (c *typeChecker) typeConvertible(e *a.Expr, typ *a.TypeExpr) error {
 	}
 
 	return fmt.Errorf("check: cannot convert expression %q of type %q to type %q",
-		ExprString(c.idMap, e),
-		TypeExprString(c.idMap, eTyp),
-		TypeExprString(c.idMap, typ),
-	)
+		e.String(c.idMap), eTyp.String(c.idMap), typ.String(c.idMap))
 }
 
 var numTypeRanges = [256][2]*big.Int{

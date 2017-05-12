@@ -60,7 +60,7 @@ func TestCheck(t *testing.T) {
 	for id, typ := range bar.LocalVars {
 		got = append(got, [2]string{
 			idMap.ByID(id),
-			TypeExprString(idMap, typ),
+			typ.String(idMap),
 		})
 	}
 	sort.Slice(got, func(i, j int) bool {
