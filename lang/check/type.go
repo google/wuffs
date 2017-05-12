@@ -295,12 +295,25 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
 	}
-	if op != t.IDXBinaryShiftL && op != t.IDXBinaryShiftR && !lTyp.Eq(rTyp) {
-		return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, does not have matching types",
-			c.idMap.ByID(op.AmbiguousForm()),
-			lhs.String(c.idMap), rhs.String(c.idMap),
-			lTyp.String(c.idMap), rTyp.String(c.idMap),
-		)
+
+	switch op {
+	default:
+		if !lTyp.Eq(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
+			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, does not have compatible types",
+				c.idMap.ByID(op.AmbiguousForm()),
+				lhs.String(c.idMap), rhs.String(c.idMap),
+				lTyp.String(c.idMap), rTyp.String(c.idMap),
+			)
+		}
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
+		if (lTyp == TypeExprIdealNumber) && (rTyp != TypeExprIdealNumber) {
+			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
+				"cannot shift an ideal number by a non-ideal number",
+				c.idMap.ByID(op.AmbiguousForm()),
+				lhs.String(c.idMap), rhs.String(c.idMap),
+				lTyp.String(c.idMap), rTyp.String(c.idMap),
+			)
+		}
 	}
 
 	if l, r := lhs.ConstValue(), rhs.ConstValue(); l != nil && r != nil {
@@ -308,11 +321,15 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 			return err
 		}
 	}
+
 	if comparisonOps[0xFF&op.Key()] {
 		n.SetMType(TypeExprBoolean)
-	} else {
+	} else if lTyp != TypeExprIdealNumber {
 		n.SetMType(lTyp)
+	} else {
+		n.SetMType(rTyp)
 	}
+
 	return nil
 }
 

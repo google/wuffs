@@ -54,7 +54,7 @@ func TestCheck(t *testing.T) {
 			var b bool
 
 			x = 0
-			x = 1 + 2
+			x = 1 + x
 			y = -y
 			b = not true
 
