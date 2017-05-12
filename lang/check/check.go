@@ -116,16 +116,25 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 		idMap:   c.idMap,
 		typeMap: c.funcs[f.QID()].LocalVars,
 	}
+
+	// Fill in the TypeMap with all local variables. Note that they have
+	// function scope and can be hoisted, JavaScript style, a la
+	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
 	for _, m := range f.Body() {
 		if err := tc.checkVars(m); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
 		}
 	}
+
+	// Assign ConstValue's (if applicable) and MType's to each Expr.
 	for _, m := range f.Body() {
 		if err := tc.checkStatement(m); err != nil {
 			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
 		}
 	}
+
+	// TODO: bounds and assertion checking.
+
 	return nil
 }
 
