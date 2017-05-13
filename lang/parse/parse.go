@@ -91,11 +91,11 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		inParams, err := p.parseList((*parser).parseParamNode)
+		inFields, err := p.parseList((*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
-		outParams, err := p.parseList((*parser).parseParamNode)
+		outFields, err := p.parseList((*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
@@ -108,8 +108,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		in := a.NewStruct(0, p.filename, line, t.IDIn, inParams)
-		out := a.NewStruct(0, p.filename, line, t.IDOut, outParams)
+		in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
+		out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
 		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, body).Node(), nil
 
 	case t.IDStruct:
@@ -127,7 +127,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		fields, err := p.parseList((*parser).parseParamNode)
+		fields, err := p.parseList((*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func (p *parser) parseList(parseElem func(*parser) (*a.Node, error)) ([]*a.Node,
 	return nil, fmt.Errorf("parse: expected \")\" at %s:%d", p.filename, p.line())
 }
 
-func (p *parser) parseParamNode() (*a.Node, error) {
+func (p *parser) parseFieldNode() (*a.Node, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (p *parser) parseParamNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewParam(name, typ).Node(), nil
+	return a.NewField(name, typ).Node(), nil
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {

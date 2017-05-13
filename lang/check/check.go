@@ -105,14 +105,14 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 	}
 	fieldNames := map[t.ID]bool{}
 	for _, n := range fields {
-		p := n.Param()
-		if _, ok := fieldNames[p.Name()]; ok {
-			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(p.Name()))
+		f := n.Field()
+		if _, ok := fieldNames[f.Name()]; ok {
+			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(f.Name()))
 		}
-		if err := tc.checkTypeExpr(p.XType()); err != nil {
-			return fmt.Errorf("%v in field %q", err, c.idMap.ByID(p.Name()))
+		if err := tc.checkTypeExpr(f.XType()); err != nil {
+			return fmt.Errorf("%v in field %q", err, c.idMap.ByID(f.Name()))
 		}
-		fieldNames[p.Name()] = true
+		fieldNames[f.Name()] = true
 	}
 	return nil
 }

@@ -26,10 +26,10 @@ const (
 	KBreak
 	KContinue
 	KExpr
+	KField
 	KFile
 	KFunc
 	KIf
-	KParam
 	KReturn
 	KStruct
 	KTypeExpr
@@ -53,10 +53,10 @@ var kindStrings = [...]string{
 	KBreak:    "KBreak",
 	KContinue: "KContinue",
 	KExpr:     "KExpr",
+	KField:    "KField",
 	KFile:     "KFile",
 	KFunc:     "KFunc",
 	KIf:       "KIf",
-	KParam:    "KParam",
 	KReturn:   "KReturn",
 	KStruct:   "KStruct",
 	KTypeExpr: "KTypeExpr",
@@ -97,10 +97,10 @@ func (n *Node) Assign() *Assign     { return (*Assign)(n) }
 func (n *Node) Break() *Break       { return (*Break)(n) }
 func (n *Node) Continue() *Continue { return (*Continue)(n) }
 func (n *Node) Expr() *Expr         { return (*Expr)(n) }
+func (n *Node) Field() *Field       { return (*Field)(n) }
 func (n *Node) File() *File         { return (*File)(n) }
 func (n *Node) Func() *Func         { return (*Func)(n) }
 func (n *Node) If() *If             { return (*If)(n) }
-func (n *Node) Param() *Param       { return (*Param)(n) }
 func (n *Node) Raw() *Raw           { return (*Raw)(n) }
 func (n *Node) Return() *Return     { return (*Return)(n) }
 func (n *Node) Struct() *Struct     { return (*Struct)(n) }
@@ -263,18 +263,18 @@ func NewVar(name t.ID, xType *TypeExpr, value *Expr) *Var {
 	}
 }
 
-// Param is a "name type" parameter:
+// Field is a "name type" struct field:
 //  - ID1:   name
 //  - LHS:   <TypeExpr>
-type Param Node
+type Field Node
 
-func (n *Param) Node() *Node      { return (*Node)(n) }
-func (n *Param) Name() t.ID       { return n.id1 }
-func (n *Param) XType() *TypeExpr { return n.lhs.TypeExpr() }
+func (n *Field) Node() *Node      { return (*Node)(n) }
+func (n *Field) Name() t.ID       { return n.id1 }
+func (n *Field) XType() *TypeExpr { return n.lhs.TypeExpr() }
 
-func NewParam(name t.ID, xType *TypeExpr) *Param {
-	return &Param{
-		kind: KParam,
+func NewField(name t.ID, xType *TypeExpr) *Field {
+	return &Field{
+		kind: KField,
 		id1:  name,
 		lhs:  xType.Node(),
 	}
@@ -434,7 +434,7 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 // Struct is "struct ID1(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - ID1:   name
-//  - List0: <Param> fields
+//  - List0: <Field> fields
 type Struct Node
 
 func (n *Struct) Node() *Node       { return (*Node)(n) }
