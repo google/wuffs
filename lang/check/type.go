@@ -47,10 +47,14 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 	switch n.Kind() {
 	case a.KAssert:
 		o := n.Assert()
-		if err := c.checkExpr(o.Condition()); err != nil {
+		cond := o.Condition()
+		if err := c.checkExpr(cond); err != nil {
 			return err
 		}
-		// TODO: check that o.Condition() has type bool.
+		if !cond.MType().Eq(TypeExprBoolean) {
+			return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
+				cond.String(c.idMap), cond.MType().String(c.idMap))
+		}
 		// TODO: check the actual assertion.
 		return nil
 
