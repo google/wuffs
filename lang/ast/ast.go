@@ -27,7 +27,6 @@ const (
 	KContinue
 	KExpr
 	KFile
-	KFor
 	KFunc
 	KIf
 	KParam
@@ -36,6 +35,7 @@ const (
 	KTypeExpr
 	KUse
 	KVar
+	KWhile
 )
 
 func (k Kind) String() string {
@@ -54,7 +54,6 @@ var kindStrings = [...]string{
 	KContinue: "KContinue",
 	KExpr:     "KExpr",
 	KFile:     "KFile",
-	KFor:      "KFor",
 	KFunc:     "KFunc",
 	KIf:       "KIf",
 	KParam:    "KParam",
@@ -63,6 +62,7 @@ var kindStrings = [...]string{
 	KTypeExpr: "KTypeExpr",
 	KUse:      "KUse",
 	KVar:      "KVar",
+	KWhile:    "KWhile",
 }
 
 type Flags uint32
@@ -99,7 +99,6 @@ func (n *Node) Break() *Break       { return (*Break)(n) }
 func (n *Node) Continue() *Continue { return (*Continue)(n) }
 func (n *Node) Expr() *Expr         { return (*Expr)(n) }
 func (n *Node) File() *File         { return (*File)(n) }
-func (n *Node) For() *For           { return (*For)(n) }
 func (n *Node) Func() *Func         { return (*Func)(n) }
 func (n *Node) If() *If             { return (*If)(n) }
 func (n *Node) Param() *Param       { return (*Param)(n) }
@@ -109,6 +108,7 @@ func (n *Node) Struct() *Struct     { return (*Struct)(n) }
 func (n *Node) TypeExpr() *TypeExpr { return (*TypeExpr)(n) }
 func (n *Node) Use() *Use           { return (*Use)(n) }
 func (n *Node) Var() *Var           { return (*Var)(n) }
+func (n *Node) While() *While       { return (*While)(n) }
 
 func (n *Node) Walk(f func(*Node) error) error {
 	if n != nil {
@@ -281,18 +281,18 @@ func NewParam(name t.ID, xType *TypeExpr) *Param {
 	}
 }
 
-// For is "for { List2 }" or "for LHS { List2 }":
+// While is "while { List2 }" or "while LHS { List2 }":
 //  - LHS:   <nil|Expr>
 //  - List2: <*> loop body
-type For Node
+type While Node
 
-func (n *For) Node() *Node      { return (*Node)(n) }
-func (n *For) Condition() *Expr { return n.lhs.Expr() }
-func (n *For) Body() []*Node    { return n.list2 }
+func (n *While) Node() *Node      { return (*Node)(n) }
+func (n *While) Condition() *Expr { return n.lhs.Expr() }
+func (n *While) Body() []*Node    { return n.list2 }
 
-func NewFor(condition *Expr, body []*Node) *For {
-	return &For{
-		kind:  KFor,
+func NewWhile(condition *Expr, body []*Node) *While {
+	return &While{
+		kind:  KWhile,
 		lhs:   condition.Node(),
 		list2: body,
 	}

@@ -63,7 +63,7 @@ func TestCheck(t *testing.T) {
 			var i i32
 			var j i32[0:8]
 
-			for i == j {
+			while i == j {
 			}
 		}
 	`) + "\n"

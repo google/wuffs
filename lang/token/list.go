@@ -171,7 +171,7 @@ const (
 	IDFunc     = ID(0x60<<KeyShift | FlagsOther)
 	IDPtr      = ID(0x61<<KeyShift | FlagsOther)
 	IDAssert   = ID(0x62<<KeyShift | FlagsOther)
-	IDFor      = ID(0x63<<KeyShift | FlagsOther)
+	IDWhile    = ID(0x63<<KeyShift | FlagsOther)
 	IDIf       = ID(0x64<<KeyShift | FlagsOther)
 	IDElse     = ID(0x65<<KeyShift | FlagsOther)
 	IDReturn   = ID(0x66<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
@@ -296,7 +296,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	IDFunc >> KeyShift:     {"func", IDFunc},
 	IDPtr >> KeyShift:      {"ptr", IDPtr},
 	IDAssert >> KeyShift:   {"assert", IDAssert},
-	IDFor >> KeyShift:      {"for", IDFor},
+	IDWhile >> KeyShift:    {"while", IDWhile},
 	IDIf >> KeyShift:       {"if", IDIf},
 	IDElse >> KeyShift:     {"else", IDElse},
 	IDReturn >> KeyShift:   {"return", IDReturn},

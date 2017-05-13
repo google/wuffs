@@ -78,8 +78,8 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 		}
 		return nil
 
-	case a.KFor:
-		o := n.For()
+	case a.KWhile:
+		o := n.While()
 		if cond := o.Condition(); cond != nil {
 			if err := c.checkExpr(cond); err != nil {
 				return err

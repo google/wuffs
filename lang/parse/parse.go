@@ -387,7 +387,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		p.src = p.src[1:]
 		return a.NewContinue().Node(), nil
 
-	case t.IDFor:
+	case t.IDWhile:
 		p.src = p.src[1:]
 		condition, err := (*a.Expr)(nil), error(nil)
 		if p.peekID() != t.IDOpenCurly {
@@ -400,7 +400,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewFor(condition, body).Node(), nil
+		return a.NewWhile(condition, body).Node(), nil
 
 	case t.IDIf:
 		o, err := p.parseIf()
