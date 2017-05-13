@@ -211,6 +211,8 @@ const (
 
 	IDUnderscore = ID(0xB0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDThis       = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIn         = ID(0xB2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDOut        = ID(0xB3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -336,6 +338,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 
 	IDUnderscore >> KeyShift: {"_", IDUnderscore},
 	IDThis >> KeyShift:       {"this", IDThis},
+	IDIn >> KeyShift:         {"in", IDIn},
+	IDOut >> KeyShift:        {"out", IDOut},
 }
 
 var builtInsByName = map[string]ID{}

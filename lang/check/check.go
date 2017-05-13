@@ -95,8 +95,8 @@ func (c *Checker) checkUse(n *a.Node) error {
 	return nil
 }
 
-func (c *Checker) checkParams(params []*a.Node) error {
-	if len(params) == 0 {
+func (c *Checker) checkFields(fields []*a.Node) error {
+	if len(fields) == 0 {
 		return nil
 	}
 	tc := &typeChecker{
@@ -104,7 +104,7 @@ func (c *Checker) checkParams(params []*a.Node) error {
 		idMap: c.idMap,
 	}
 	fieldNames := map[t.ID]bool{}
-	for _, n := range params {
+	for _, n := range fields {
 		p := n.Param()
 		if _, ok := fieldNames[p.Name()]; ok {
 			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(p.Name()))
@@ -119,7 +119,7 @@ func (c *Checker) checkParams(params []*a.Node) error {
 
 func (c *Checker) checkStruct(n *a.Node) error {
 	s := n.Struct()
-	if err := c.checkParams(s.Fields()); err != nil {
+	if err := c.checkFields(s.Fields()); err != nil {
 		return fmt.Errorf("%v in struct %q at %s:%d", err, c.idMap.ByID(s.Name()), s.Filename(), s.Line())
 	}
 	id := s.Name()
@@ -136,11 +136,11 @@ func (c *Checker) checkStruct(n *a.Node) error {
 
 func (c *Checker) checkFuncSignature(n *a.Node) error {
 	f := n.Func()
-	if err := c.checkParams(f.InParams()); err != nil {
+	if err := c.checkFields(f.In().Fields()); err != nil {
 		return fmt.Errorf("%v in in-params for func %q at %s:%d",
 			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
 	}
-	if err := c.checkParams(f.OutParams()); err != nil {
+	if err := c.checkFields(f.Out().Fields()); err != nil {
 		return fmt.Errorf("%v in out-params for func %q at %s:%d",
 			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
 	}

@@ -88,7 +88,6 @@ type Node struct {
 	rhs   *Node // Right Hand Side.
 	list0 []*Node
 	list1 []*Node
-	list2 []*Node
 }
 
 func (n *Node) Kind() Kind { return n.kind }
@@ -141,16 +140,16 @@ func (n *Raw) MType() *TypeExpr               { return n.mType }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
 func (n *Raw) Filename() string               { return n.filename }
 func (n *Raw) Line() uint32                   { return n.line }
+func (n *Raw) QID() t.QID                     { return t.QID{n.id0, n.id1} }
 func (n *Raw) ID0() t.ID                      { return n.id0 }
 func (n *Raw) ID1() t.ID                      { return n.id1 }
 func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.rhs} }
 func (n *Raw) LHS() *Node                     { return n.lhs }
 func (n *Raw) MHS() *Node                     { return n.mhs }
 func (n *Raw) RHS() *Node                     { return n.rhs }
-func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
+func (n *Raw) SubLists() [2][]*Node           { return [2][]*Node{n.list0, n.list1} }
 func (n *Raw) List0() []*Node                 { return n.list0 }
 func (n *Raw) List1() []*Node                 { return n.list1 }
-func (n *Raw) List2() []*Node                 { return n.list2 }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
@@ -281,43 +280,43 @@ func NewParam(name t.ID, xType *TypeExpr) *Param {
 	}
 }
 
-// While is "while { List2 }" or "while LHS { List2 }":
+// While is "while { List1 }" or "while LHS { List1 }":
 //  - LHS:   <nil|Expr>
-//  - List2: <*> loop body
+//  - List1: <*> loop body
 type While Node
 
 func (n *While) Node() *Node      { return (*Node)(n) }
 func (n *While) Condition() *Expr { return n.lhs.Expr() }
-func (n *While) Body() []*Node    { return n.list2 }
+func (n *While) Body() []*Node    { return n.list1 }
 
 func NewWhile(condition *Expr, body []*Node) *While {
 	return &While{
 		kind:  KWhile,
 		lhs:   condition.Node(),
-		list2: body,
+		list1: body,
 	}
 }
 
-// If is "if LHS { List1 } else RHS" or "if LHS { List1 } else { List2 }":
+// If is "if LHS { List0 } else RHS" or "if LHS { List0 } else { List1 }":
 //  - LHS:   <Expr>
 //  - RHS:   <nil|If>
-//  - List1: <*> if-true body
-//  - List2: <*> if-false body
+//  - List0: <*> if-true body
+//  - List1: <*> if-false body
 type If Node
 
 func (n *If) Node() *Node          { return (*Node)(n) }
 func (n *If) Condition() *Expr     { return n.lhs.Expr() }
 func (n *If) ElseIf() *If          { return n.rhs.If() }
-func (n *If) BodyIfTrue() []*Node  { return n.list1 }
-func (n *If) BodyIfFalse() []*Node { return n.list2 }
+func (n *If) BodyIfTrue() []*Node  { return n.list0 }
+func (n *If) BodyIfFalse() []*Node { return n.list1 }
 
 func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node) *If {
 	return &If{
 		kind:  KIf,
 		lhs:   condition.Node(),
 		rhs:   elseIf.Node(),
-		list1: bodyIfTrue,
-		list2: bodyIfFalse,
+		list0: bodyIfTrue,
+		list1: bodyIfFalse,
 	}
 }
 
@@ -398,27 +397,27 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthInclMin *Expr, exclMax *Ex
 	}
 }
 
-// Func is "func ID0.ID1(List0) (List1) { List2 }":
+// Func is "func ID0.ID1(LHS)(RHS) { List1 }":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - ID0:   <0|receiver>
 //  - ID1:   name
-//  - List0: <Param> in-parameters
-//  - List1: <Param> out-parameters
-//  - List2: <*> function body
+//  - LHS:   <Struct> in-parameters
+//  - RHS:   <Struct> out-parameters
+//  - List1: <*> function body
 type Func Node
 
-func (n *Func) Node() *Node        { return (*Node)(n) }
-func (n *Func) Suspendible() bool  { return n.flags&FlagsSuspendible != 0 }
-func (n *Func) Filename() string   { return n.filename }
-func (n *Func) Line() uint32       { return n.line }
-func (n *Func) QID() t.QID         { return t.QID{n.id0, n.id1} }
-func (n *Func) Receiver() t.ID     { return n.id0 }
-func (n *Func) Name() t.ID         { return n.id1 }
-func (n *Func) InParams() []*Node  { return n.list0 }
-func (n *Func) OutParams() []*Node { return n.list1 }
-func (n *Func) Body() []*Node      { return n.list2 }
+func (n *Func) Node() *Node       { return (*Node)(n) }
+func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
+func (n *Func) Filename() string  { return n.filename }
+func (n *Func) Line() uint32      { return n.line }
+func (n *Func) QID() t.QID        { return t.QID{n.id0, n.id1} }
+func (n *Func) Receiver() t.ID    { return n.id0 }
+func (n *Func) Name() t.ID        { return n.id1 }
+func (n *Func) In() *Struct       { return n.lhs.Struct() }
+func (n *Func) Out() *Struct      { return n.rhs.Struct() }
+func (n *Func) Body() []*Node     { return n.list1 }
 
-func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, inParams []*Node, outParams []*Node, body []*Node) *Func {
+func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, in *Struct, out *Struct, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
 		flags:    flags,
@@ -426,9 +425,9 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 		line:     line,
 		id0:      receiver,
 		id1:      name,
-		list0:    inParams,
-		list1:    outParams,
-		list2:    body,
+		lhs:      in.Node(),
+		rhs:      out.Node(),
+		list1:    body,
 	}
 }
 

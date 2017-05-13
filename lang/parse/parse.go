@@ -108,7 +108,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		return a.NewFunc(flags, p.filename, line, id0, id1, inParams, outParams, body).Node(), nil
+		in := a.NewStruct(0, p.filename, line, t.IDIn, inParams)
+		out := a.NewStruct(0, p.filename, line, t.IDOut, outParams)
+		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, body).Node(), nil
 
 	case t.IDStruct:
 		flags := a.Flags(0)
