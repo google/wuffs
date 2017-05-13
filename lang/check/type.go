@@ -60,22 +60,47 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 
 	case a.KAssign:
 		o := n.Assign()
-		l := o.LHS()
-		r := o.RHS()
-		if err := c.checkExpr(l); err != nil {
+		lhs := o.LHS()
+		rhs := o.RHS()
+		if err := c.checkExpr(lhs); err != nil {
 			return err
 		}
-		if err := c.checkExpr(r); err != nil {
+		if err := c.checkExpr(rhs); err != nil {
 			return err
 		}
-		lTyp := l.MType()
-		rTyp := r.MType()
-		// TODO, look at o.Operator().
-		if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+		lTyp := lhs.MType()
+		rTyp := rhs.MType()
+
+		if o.Operator() == t.IDEq {
+			if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+				return nil
+			}
+			return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
+				rhs.String(c.idMap), rTyp.String(c.idMap), lhs.String(c.idMap), lTyp.String(c.idMap))
+		}
+
+		if !lTyp.IsNumType() {
+			return fmt.Errorf("check: assignment %q: assignee %q, of type %q, does not have numeric type",
+				c.idMap.ByID(o.Operator()), lhs.String(c.idMap), lTyp.String(c.idMap))
+		}
+
+		switch o.Operator() {
+		case t.IDShiftLEq, t.IDShiftREq:
+			if rTyp.IsNumType() {
+				return nil
+			}
+			return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
+				c.idMap.ByID(o.Operator()), rhs.String(c.idMap), rTyp.String(c.idMap))
+		}
+
+		if rTyp == TypeExprIdealNumber || lTyp.EqIgnoringRefinements(rTyp) {
 			return nil
 		}
-		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-			r.String(c.idMap), rTyp.String(c.idMap), l.String(c.idMap), lTyp.String(c.idMap))
+		return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
+			c.idMap.ByID(o.Operator()),
+			lhs.String(c.idMap), rhs.String(c.idMap),
+			lTyp.String(c.idMap), rTyp.String(c.idMap),
+		)
 
 	case a.KVar:
 		o := n.Var()
