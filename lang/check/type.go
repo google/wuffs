@@ -91,10 +91,14 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 
 	case a.KIf:
 		for o := n.If(); o != nil; o = o.ElseIf() {
-			if err := c.checkExpr(o.Condition()); err != nil {
+			cond := o.Condition()
+			if err := c.checkExpr(cond); err != nil {
 				return err
 			}
-			// TODO: check o.Condition() has type bool.
+			if !cond.MType().Eq(TypeExprBoolean) {
+				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
+					cond.String(c.idMap), cond.MType().String(c.idMap))
+			}
 			for _, m := range o.BodyIfTrue() {
 				if err := c.checkStatement(m); err != nil {
 					return err
