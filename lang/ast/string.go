@@ -203,6 +203,16 @@ func (n *TypeExpr) String(m *t.IDMap) string {
 
 // Eq returns whether n and o are equal.
 func (n *TypeExpr) Eq(o *TypeExpr) bool {
+	return n.eq(o, false)
+}
+
+// EqIgnoringRefinements returns whether n and o are equal, ignoring the
+// "[i:j]" in "u32[i:j]".
+func (n *TypeExpr) EqIgnoringRefinements(o *TypeExpr) bool {
+	return n.eq(o, true)
+}
+
+func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 	for {
 		if n == o {
 			return true
@@ -210,10 +220,13 @@ func (n *TypeExpr) Eq(o *TypeExpr) bool {
 		if n == nil || o == nil {
 			return false
 		}
-		if n.id0 != o.id0 || n.id1 != o.id1 ||
-			!n.lhs.Expr().Eq(o.lhs.Expr()) ||
-			!n.mhs.Expr().Eq(o.mhs.Expr()) {
+		if n.id0 != o.id0 || n.id1 != o.id1 {
 			return false
+		}
+		if n.id0 == t.IDOpenBracket || !ignoreRefinements {
+			if !n.lhs.Expr().Eq(o.lhs.Expr()) || !n.mhs.Expr().Eq(o.mhs.Expr()) {
+				return false
+			}
 		}
 		if n.rhs == nil && o.rhs == nil {
 			return true

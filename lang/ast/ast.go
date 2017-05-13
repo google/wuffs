@@ -359,7 +359,8 @@ func NewContinue() *Continue {
 	}
 }
 
-// TypeExpr is a type expression, such as "u32", "pkg.foo", "ptr T" or "[8] T":
+// TypeExpr is a type expression, such as "u32", "u32[:8]", "pkg.foo", "ptr T"
+// or "[8] T":
 //  - ID0:   <0|package name|IDPtr|IDOpenBracket>
 //  - ID1:   <0|type name>
 //  - LHS:   <nil|Expr>

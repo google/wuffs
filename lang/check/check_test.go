@@ -60,7 +60,10 @@ func TestCheck(t *testing.T) {
 
 			y = x as i32
 
-			for x > 0 {
+			var i i32
+			var j i32[0:8]
+
+			for i == j {
 			}
 		}
 	`) + "\n"
@@ -114,6 +117,8 @@ func TestCheck(t *testing.T) {
 	want := [][2]string{
 		{"a", "[4] u8"},
 		{"b", "bool"},
+		{"i", "i32"},
+		{"j", "i32[0:8]"},
 		{"x", "u8"},
 		{"y", "i32"},
 		{"z", "u64[:123]"},

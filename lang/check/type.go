@@ -67,7 +67,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 		lTyp := l.MType()
 		rTyp := r.MType()
 		// TODO, look at o.Operator().
-		if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.Eq(rTyp) {
+		if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
 			return nil
 		}
 		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
@@ -301,8 +301,8 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr) error {
 
 	switch op {
 	default:
-		if !lTyp.Eq(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
-			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, does not have compatible types",
+		if !lTyp.EqIgnoringRefinements(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
+			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
 				c.idMap.ByID(op.AmbiguousForm()),
 				lhs.String(c.idMap), rhs.String(c.idMap),
 				lTyp.String(c.idMap), rTyp.String(c.idMap),
