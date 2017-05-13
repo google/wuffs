@@ -118,41 +118,6 @@ func TestCheck(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\ngot  %v\nwant %v", got, want)
 	}
-
-	walk(file.Node(), func(n *ast.Node) error {
-		if n.Kind() == ast.KExpr {
-			e := n.Expr()
-			if typ := e.MType(); typ == nil {
-				t.Errorf("expression node %q has no (implicit) type", n.Expr().String(idMap))
-			} else if typ == TypeExprIdealNumber && e.ConstValue() == nil {
-				t.Errorf("expression node %q has ideal number type but no const value", n.Expr().String(idMap))
-			}
-		}
-		return nil
-	})
-}
-
-func walk(n *ast.Node, f func(*ast.Node) error) error {
-	if err := f(n); err != nil {
-		return err
-	}
-	for _, m := range n.Raw().SubNodes() {
-		if m != nil {
-			if err := walk(m, f); err != nil {
-				return err
-			}
-		}
-	}
-	for _, l := range n.Raw().SubLists() {
-		for _, m := range l {
-			if m != nil {
-				if err := walk(m, f); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func TestConstValues(t *testing.T) {

@@ -110,6 +110,27 @@ func (n *Node) TypeExpr() *TypeExpr { return (*TypeExpr)(n) }
 func (n *Node) Use() *Use           { return (*Use)(n) }
 func (n *Node) Var() *Var           { return (*Var)(n) }
 
+func (n *Node) Walk(f func(*Node) error) error {
+	if n != nil {
+		if err := f(n); err != nil {
+			return err
+		}
+		for _, m := range n.Raw().SubNodes() {
+			if err := m.Walk(f); err != nil {
+				return err
+			}
+		}
+		for _, l := range n.Raw().SubLists() {
+			for _, m := range l {
+				if err := m.Walk(f); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 type Raw Node
 
 func (n *Raw) Node() *Node                    { return (*Node)(n) }

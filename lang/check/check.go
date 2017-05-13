@@ -137,6 +137,21 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
 		}
 	}
+	if err := f.Node().Walk(func(n *a.Node) error {
+		if n.Kind() == a.KExpr {
+			e := n.Expr()
+			if typ := e.MType(); typ == nil {
+				return fmt.Errorf("check: internal error: expression node %q has no (implicit) type",
+					e.String(tc.idMap))
+			} else if typ == TypeExprIdealNumber && e.ConstValue() == nil {
+				return fmt.Errorf("check: internal error: expression node %q has ideal number type "+
+					"but no const value", e.String(tc.idMap))
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
 
 	// TODO: bounds and assertion checking.
 
