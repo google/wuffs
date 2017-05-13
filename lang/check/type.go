@@ -89,7 +89,10 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 			if err := c.checkExpr(cond); err != nil {
 				return err
 			}
-			// TODO: check cond has type bool.
+			if !cond.MType().Eq(TypeExprBoolean) {
+				return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
+					cond.String(c.idMap), cond.MType().String(c.idMap))
+			}
 		}
 		for _, m := range o.Body() {
 			if err := c.checkStatement(m); err != nil {

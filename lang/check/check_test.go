@@ -59,6 +59,9 @@ func TestCheck(t *testing.T) {
 			b = not true
 
 			y = x as i32
+
+			for x > 0 {
+			}
 		}
 	`) + "\n"
 
