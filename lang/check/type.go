@@ -12,9 +12,9 @@ import (
 )
 
 type typeChecker struct {
-	c       *Checker
-	idMap   *t.IDMap
-	typeMap TypeMap
+	c     *Checker
+	idMap *t.IDMap
+	f     Func
 
 	errFilename string
 	errLine     uint32
@@ -26,7 +26,7 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 	if n.Kind() == a.KVar {
 		v := n.Var()
 		name := v.Name()
-		if _, ok := c.typeMap[name]; ok {
+		if _, ok := c.f.LocalVars[name]; ok {
 			return fmt.Errorf("check: duplicate var %q", c.idMap.ByID(name))
 		}
 		if err := c.checkTypeExpr(v.XType()); err != nil {
@@ -35,7 +35,7 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 		if value := v.Value(); value != nil {
 			// TODO: check that value doesn't mention the variable itself.
 		}
-		c.typeMap[name] = v.XType()
+		c.f.LocalVars[name] = v.XType()
 		return nil
 	}
 	for _, l := range n.Raw().SubLists() {
@@ -215,8 +215,8 @@ func (c *typeChecker) checkExprOther(n *a.Expr) error {
 			return nil
 
 		case id1.IsIdent():
-			if c.typeMap != nil {
-				if typ, ok := c.typeMap[id1]; ok {
+			if c.f.LocalVars != nil {
+				if typ, ok := c.f.LocalVars[id1]; ok {
 					n.SetMType(typ)
 					return nil
 				}
@@ -254,10 +254,50 @@ func (c *typeChecker) checkExprOther(n *a.Expr) error {
 		// TODO.
 
 	case t.IDDot:
-		// n is a selector.
-		// TODO.
+		return c.checkDot(n)
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
+}
+
+func (c *typeChecker) checkDot(n *a.Expr) error {
+	lhs := n.LHS().Expr()
+	if err := c.checkExpr(lhs); err != nil {
+		return err
+	}
+	lTyp := lhs.MType()
+	for ; lTyp.PackageOrDecorator() == t.IDPtr; lTyp = lTyp.Inner() {
+	}
+
+	if lTyp.PackageOrDecorator() != 0 {
+		// TODO.
+		return fmt.Errorf("check: unsupported package-or-decorator for checkDot")
+	}
+
+	s := (*a.Struct)(nil)
+	if c.f.Func != nil {
+		switch name := lTyp.Name(); name {
+		case t.IDIn:
+			s = c.f.Func.In()
+		case t.IDOut:
+			s = c.f.Func.Out()
+		default:
+			s = c.c.structs[name].Struct
+		}
+	}
+	if s == nil {
+		return fmt.Errorf("check: no struct type %q found for expression %q",
+			lTyp.Name().String(c.idMap), lhs.String(c.idMap))
+	}
+
+	for _, field := range s.Fields() {
+		f := field.Field()
+		if f.Name() == n.ID1() {
+			n.SetMType(f.XType())
+			return nil
+		}
+	}
+	return fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
+		n.ID1().String(c.idMap), lTyp.Name().String(c.idMap), n.String(c.idMap))
 }
 
 func (c *typeChecker) checkExprUnaryOp(n *a.Expr) error {

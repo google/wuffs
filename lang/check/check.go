@@ -149,10 +149,21 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 		return fmt.Errorf("check: duplicate function %q at %s:%d and %s:%d",
 			qid.String(c.idMap), other.Func.Filename(), other.Func.Line(), f.Filename(), f.Line())
 	}
+	localVars := TypeMap{
+		t.IDIn:  a.NewTypeExpr(0, f.In().Name(), nil, nil, nil),
+		t.IDOut: a.NewTypeExpr(0, f.Out().Name(), nil, nil, nil),
+	}
+	if qid[0] != 0 {
+		if _, ok := c.structs[qid[0]]; !ok {
+			return fmt.Errorf("check: no receiver struct defined for function %q at %s:%d",
+				qid.String(c.idMap), f.Filename(), f.Line())
+		}
+		localVars[t.IDThis] = a.NewTypeExpr(t.IDPtr, 0, nil, nil, a.NewTypeExpr(0, qid[0], nil, nil, nil))
+	}
 	c.funcs[qid] = Func{
 		QID:       qid,
 		Func:      f,
-		LocalVars: TypeMap{},
+		LocalVars: localVars,
 	}
 	return nil
 }
@@ -160,9 +171,9 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 func (c *Checker) checkFuncBody(n *a.Node) error {
 	f := n.Func()
 	tc := &typeChecker{
-		c:       c,
-		idMap:   c.idMap,
-		typeMap: c.funcs[f.QID()].LocalVars,
+		c:     c,
+		idMap: c.idMap,
+		f:     c.funcs[f.QID()],
 	}
 
 	// Fill in the TypeMap with all local variables. Note that they have

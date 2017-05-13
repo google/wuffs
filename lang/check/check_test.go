@@ -46,7 +46,11 @@ func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, src string) err
 func TestCheck(t *testing.T) {
 	const filename = "test.puffs"
 	src := strings.TrimSpace(`
-		func foo()() {
+		struct foo(
+			i i32,
+		)
+
+		func foo.bar()() {
 			var x u8
 			var y i32 = +2
 			var z u64[:123]
@@ -56,14 +60,15 @@ func TestCheck(t *testing.T) {
 			x = 0
 			x = 1 + x
 			y = -y
+			y = this.i
 			b = not true
 
 			y = x as i32
 
-			var i i32
-			var j i32[0:8]
+			var p i32
+			var q i32[0:8]
 
-			while i == j {
+			while p == q {
 			}
 		}
 	`) + "\n"
@@ -93,18 +98,18 @@ func TestCheck(t *testing.T) {
 	if len(funcs) != 1 {
 		t.Fatalf("Funcs: got %d elements, want 1", len(funcs))
 	}
-	foo := Func{}
+	fooBar := Func{}
 	for _, f := range funcs {
-		foo = f
+		fooBar = f
 		break
 	}
 
-	if got, want := idMap.ByID(foo.QID[1]), "foo"; got != want {
+	if got, want := fooBar.QID.String(idMap), "foo.bar"; got != want {
 		t.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
-	for id, typ := range foo.LocalVars {
+	for id, typ := range fooBar.LocalVars {
 		got = append(got, [2]string{
 			idMap.ByID(id),
 			typ.String(idMap),
@@ -117,8 +122,11 @@ func TestCheck(t *testing.T) {
 	want := [][2]string{
 		{"a", "[4] u8"},
 		{"b", "bool"},
-		{"i", "i32"},
-		{"j", "i32[0:8]"},
+		{"in", "in"},
+		{"out", "out"},
+		{"p", "i32"},
+		{"q", "i32[0:8]"},
+		{"this", "ptr foo"},
 		{"x", "u8"},
 		{"y", "i32"},
 		{"z", "u64[:123]"},
