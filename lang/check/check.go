@@ -24,6 +24,11 @@ func numeric(n *a.TypeExpr) bool { return n == TypeExprIdealNumber || n.IsNumTyp
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
 
+type Struct struct {
+	ID     t.ID
+	Struct *a.Struct
+}
+
 type Func struct {
 	QID       t.QID
 	Func      *a.Func
@@ -48,8 +53,9 @@ func Check(m *t.IDMap, files ...*a.File) (*Checker, error) {
 	}
 
 	c := &Checker{
-		idMap: m,
-		funcs: map[t.QID]Func{},
+		idMap:   m,
+		structs: map[t.ID]Struct{},
+		funcs:   map[t.QID]Func{},
 	}
 	for _, phase := range phases {
 		for _, f := range files {
@@ -77,8 +83,9 @@ var phases = [...]struct {
 }
 
 type Checker struct {
-	idMap *t.IDMap
-	funcs map[t.QID]Func
+	idMap   *t.IDMap
+	structs map[t.ID]Struct
+	funcs   map[t.QID]Func
 }
 
 func (c *Checker) Funcs() map[t.QID]Func { return c.funcs }
@@ -88,23 +95,59 @@ func (c *Checker) checkUse(n *a.Node) error {
 	return nil
 }
 
+func (c *Checker) checkParams(params []*a.Node) error {
+	if len(params) == 0 {
+		return nil
+	}
+	tc := &typeChecker{
+		c:     c,
+		idMap: c.idMap,
+	}
+	fieldNames := map[t.ID]bool{}
+	for _, n := range params {
+		p := n.Param()
+		if _, ok := fieldNames[p.Name()]; ok {
+			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(p.Name()))
+		}
+		if err := tc.checkTypeExpr(p.XType()); err != nil {
+			return fmt.Errorf("%v in field %q", err, c.idMap.ByID(p.Name()))
+		}
+		fieldNames[p.Name()] = true
+	}
+	return nil
+}
+
 func (c *Checker) checkStruct(n *a.Node) error {
-	// TODO.
+	s := n.Struct()
+	if err := c.checkParams(s.Fields()); err != nil {
+		return fmt.Errorf("%v in struct %q at %s:%d", err, c.idMap.ByID(s.Name()), s.Filename(), s.Line())
+	}
+	id := s.Name()
+	if other, ok := c.structs[id]; ok {
+		return fmt.Errorf("check: duplicate struct %q at %s:%d and %s:%d",
+			c.idMap.ByID(id), other.Struct.Filename(), other.Struct.Line(), s.Filename(), s.Line())
+	}
+	c.structs[id] = Struct{
+		ID:     id,
+		Struct: s,
+	}
 	return nil
 }
 
 func (c *Checker) checkFuncSignature(n *a.Node) error {
 	f := n.Func()
-
-	// TODO: check the in and out params.
-
+	if err := c.checkParams(f.InParams()); err != nil {
+		return fmt.Errorf("%v in in-params for func %q at %s:%d",
+			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
+	}
+	if err := c.checkParams(f.OutParams()); err != nil {
+		return fmt.Errorf("%v in out-params for func %q at %s:%d",
+			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
+	}
 	qid := f.QID()
-	if _, ok := c.funcs[qid]; ok {
-		if qid[0] == 0 {
-			return fmt.Errorf(`check: duplicate function "%s"`, c.idMap.ByID(qid[1]))
-		} else {
-			return fmt.Errorf(`check: duplicate function "%s.%s"`, c.idMap.ByID(qid[0]), c.idMap.ByID(qid[1]))
-		}
+	if other, ok := c.funcs[qid]; ok {
+		return fmt.Errorf("check: duplicate function %q at %s:%d and %s:%d",
+			qid.String(c.idMap), other.Func.Filename(), other.Func.Line(), f.Filename(), f.Line())
 	}
 	c.funcs[qid] = Func{
 		QID:       qid,

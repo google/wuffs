@@ -215,9 +215,11 @@ func (c *typeChecker) checkExprOther(n *a.Expr) error {
 			return nil
 
 		case id1.IsIdent():
-			if typ, ok := c.typeMap[id1]; ok {
-				n.SetMType(typ)
-				return nil
+			if c.typeMap != nil {
+				if typ, ok := c.typeMap[id1]; ok {
+					n.SetMType(typ)
+					return nil
+				}
 			}
 			// TODO: look for (global) names (constants, funcs, structs).
 			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(id1))

@@ -46,6 +46,9 @@ const (
 // ID combines a Key and Flags.
 type ID uint32
 
+// String returns a string form of x.
+func (x ID) String(m *IDMap) string { return m.ByID(x) }
+
 func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&(x>>KeyShift)] }
 func (x ID) UnaryForm() ID       { return unaryForms[0xFF&(x>>KeyShift)] }
 func (x ID) BinaryForm() ID      { return binaryForms[0xFF&(x>>KeyShift)] }
@@ -74,6 +77,14 @@ func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
+
+// String returns a string form of x.
+func (x QID) String(m *IDMap) string {
+	if x[0] == 0 {
+		return m.ByID(x[1])
+	}
+	return m.ByID(x[0]) + "." + m.ByID(x[1])
+}
 
 // Token combines an ID and the line number it was seen.
 type Token struct {
