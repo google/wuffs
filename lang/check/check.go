@@ -127,14 +127,14 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
 	for _, m := range f.Body() {
 		if err := tc.checkVars(m); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
+			return fmt.Errorf("%v at %s:%d", err, tc.errFilename, tc.errLine)
 		}
 	}
 
 	// Assign ConstValue's (if applicable) and MType's to each Expr.
 	for _, m := range f.Body() {
 		if err := tc.checkStatement(m); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, m.Raw().Filename(), m.Raw().Line())
+			return fmt.Errorf("%v at %s:%d", err, tc.errFilename, tc.errLine)
 		}
 	}
 	if err := f.Node().Walk(func(n *a.Node) error {

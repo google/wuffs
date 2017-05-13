@@ -15,9 +15,14 @@ type typeChecker struct {
 	c       *Checker
 	idMap   *t.IDMap
 	typeMap TypeMap
+
+	errFilename string
+	errLine     uint32
 }
 
 func (c *typeChecker) checkVars(n *a.Node) error {
+	c.errFilename, c.errLine = n.Raw().FilenameLine()
+
 	if n.Kind() == a.KVar {
 		v := n.Var()
 		name := v.Name()
@@ -44,6 +49,8 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 }
 
 func (c *typeChecker) checkStatement(n *a.Node) error {
+	c.errFilename, c.errLine = n.Raw().FilenameLine()
+
 	switch n.Kind() {
 	case a.KAssert:
 		o := n.Assert()
