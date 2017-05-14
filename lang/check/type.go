@@ -70,14 +70,13 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 
 	case a.KWhile:
 		o := n.While()
-		if cond := o.Condition(); cond != nil {
-			if err := c.checkExpr(cond); err != nil {
-				return err
-			}
-			if !cond.MType().Eq(TypeExprBoolean) {
-				return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
-					cond.String(c.idMap), cond.MType().String(c.idMap))
-			}
+		cond := o.Condition()
+		if err := c.checkExpr(cond); err != nil {
+			return err
+		}
+		if !cond.MType().Eq(TypeExprBoolean) {
+			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
+				cond.String(c.idMap), cond.MType().String(c.idMap))
 		}
 		for _, m := range o.Asserts() {
 			if err := c.checkAssert(m.Assert()); err != nil {
@@ -146,6 +145,7 @@ func (c *typeChecker) checkAssert(n *a.Assert) error {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
 			cond.String(c.idMap), cond.MType().String(c.idMap))
 	}
+	// TODO: check that there are no side effects.
 	// TODO: check the actual assertion.
 	return nil
 }

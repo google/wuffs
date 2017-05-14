@@ -413,20 +413,12 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDWhile:
 		p.src = p.src[1:]
-		condition, asserts, err := (*a.Expr)(nil), []*a.Node(nil), error(nil)
-		switch p.peekID() {
-		case t.IDOpenCurly:
-			// No-op.
-		default:
-			condition, err = p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
-			if p.peekID() != t.IDComma {
-				break
-			}
-			fallthrough
-		case t.IDComma:
+		condition, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		asserts := []*a.Node(nil)
+		if p.peekID() == t.IDComma {
 			p.src = p.src[1:]
 			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
 			if err != nil {

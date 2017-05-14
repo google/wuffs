@@ -283,8 +283,8 @@ func NewField(name t.ID, xType *TypeExpr) *Field {
 	}
 }
 
-// While is "while { List1 }" or "while LHS { List1 }":
-//  - LHS:   <nil|Expr>
+// While is "while LHS, List0 { List1 }":
+//  - LHS:   <Expr>
 //  - List0: <Assert> asserts
 //  - List1: <*> loop body
 type While Node
