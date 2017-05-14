@@ -23,13 +23,12 @@ const (
 
 	KAssert
 	KAssign
-	KBreak
-	KContinue
 	KExpr
 	KField
 	KFile
 	KFunc
 	KIf
+	KJump
 	KReturn
 	KStruct
 	KTypeExpr
@@ -50,13 +49,12 @@ var kindStrings = [...]string{
 
 	KAssert:   "KAssert",
 	KAssign:   "KAssign",
-	KBreak:    "KBreak",
-	KContinue: "KContinue",
 	KExpr:     "KExpr",
 	KField:    "KField",
 	KFile:     "KFile",
 	KFunc:     "KFunc",
 	KIf:       "KIf",
+	KJump:     "KJump",
 	KReturn:   "KReturn",
 	KStruct:   "KStruct",
 	KTypeExpr: "KTypeExpr",
@@ -94,13 +92,12 @@ func (n *Node) Kind() Kind { return n.kind }
 
 func (n *Node) Assert() *Assert     { return (*Assert)(n) }
 func (n *Node) Assign() *Assign     { return (*Assign)(n) }
-func (n *Node) Break() *Break       { return (*Break)(n) }
-func (n *Node) Continue() *Continue { return (*Continue)(n) }
 func (n *Node) Expr() *Expr         { return (*Expr)(n) }
 func (n *Node) Field() *Field       { return (*Field)(n) }
 func (n *Node) File() *File         { return (*File)(n) }
 func (n *Node) Func() *Func         { return (*Func)(n) }
 func (n *Node) If() *If             { return (*If)(n) }
+func (n *Node) Jump() *Jump         { return (*Jump)(n) }
 func (n *Node) Raw() *Raw           { return (*Raw)(n) }
 func (n *Node) Return() *Return     { return (*Return)(n) }
 func (n *Node) Struct() *Struct     { return (*Struct)(n) }
@@ -340,27 +337,17 @@ func NewReturn(value *Expr) *Return {
 	}
 }
 
-// Break is "break":
+// Jump is "break" or "continue":
 // TODO: label?
-type Break Node
+type Jump Node
 
-func (n *Break) Node() *Node { return (*Node)(n) }
+func (n *Jump) Node() *Node   { return (*Node)(n) }
+func (n *Jump) Keyword() t.ID { return n.id0 }
 
-func NewBreak() *Break {
-	return &Break{
-		kind: KBreak,
-	}
-}
-
-// Continue is "continue":
-// TODO: label?
-type Continue Node
-
-func (n *Continue) Node() *Node { return (*Node)(n) }
-
-func NewContinue() *Continue {
-	return &Continue{
-		kind: KContinue,
+func NewJump(keyword t.ID) *Jump {
+	return &Jump{
+		kind: KJump,
+		id0:  keyword,
 	}
 }
 

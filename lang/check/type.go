@@ -124,11 +124,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 		}
 		return nil
 
-	case a.KBreak:
-		// TODO: check that we're in a for loop.
-		return nil
-
-	case a.KContinue:
+	case a.KJump:
 		// TODO: check that we're in a for loop.
 		return nil
 	}

@@ -403,13 +403,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 	case t.IDAssert, t.IDPre, t.IDPost:
 		return p.parseAssertNode()
 
-	case t.IDBreak:
+	case t.IDBreak, t.IDContinue:
 		p.src = p.src[1:]
-		return a.NewBreak().Node(), nil
-
-	case t.IDContinue:
-		p.src = p.src[1:]
-		return a.NewContinue().Node(), nil
+		return a.NewJump(x).Node(), nil
 
 	case t.IDWhile:
 		p.src = p.src[1:]
