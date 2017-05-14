@@ -106,6 +106,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
+			if err := p.assertsSorted(asserts); err != nil {
+				return nil, err
+			}
 		}
 		body, err := p.parseBlock()
 		if err != nil {
@@ -373,6 +376,31 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 	return nil, fmt.Errorf("parse: expected \"}\" at %s:%d", p.filename, p.line())
 }
 
+func (p *parser) assertsSorted(asserts []*a.Node) error {
+	seenAssert, seenPost := false, false
+	for _, a := range asserts {
+		switch a.Assert().Keyword() {
+		case t.IDPre:
+			if seenPost || seenAssert {
+				break
+			}
+			continue
+		case t.IDAssert:
+			if seenPost {
+				break
+			}
+			seenAssert = true
+			continue
+		default:
+			seenPost = true
+			continue
+		}
+		return fmt.Errorf(`parse: assertion chain not in "pre", "assert", "post" order at %s:%d`,
+			p.filename, p.line())
+	}
+	return nil
+}
+
 func (p *parser) parseAssertNode() (*a.Node, error) {
 	switch x := p.peekID(); x {
 	case t.IDAssert, t.IDPre, t.IDPost:
@@ -418,6 +446,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			p.src = p.src[1:]
 			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
 			if err != nil {
+				return nil, err
+			}
+			if err := p.assertsSorted(asserts); err != nil {
 				return nil, err
 			}
 		}
