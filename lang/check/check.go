@@ -12,6 +12,22 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
+type Error struct {
+	Err           error
+	Filename      string
+	Line          uint32
+	OtherFilename string
+	OtherLine     uint32
+}
+
+func (e *Error) Error() string {
+	if e.OtherFilename != "" || e.OtherLine != 0 {
+		return fmt.Sprintf("%s at %s:%d and %s:%d",
+			e.Err, e.Filename, e.Line, e.OtherFilename, e.OtherLine)
+	}
+	return fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
+}
+
 // TypeExprFoo is an *ast.Node MType (implicit type) that means that n is a
 // boolean or a ideal numeric constant.
 var (
@@ -121,12 +137,21 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 func (c *Checker) checkStruct(n *a.Node) error {
 	s := n.Struct()
 	if err := c.checkFields(s.Fields()); err != nil {
-		return fmt.Errorf("%v in struct %q at %s:%d", err, c.idMap.ByID(s.Name()), s.Filename(), s.Line())
+		return &Error{
+			Err:      fmt.Errorf("%v in struct %q", err, c.idMap.ByID(s.Name())),
+			Filename: s.Filename(),
+			Line:     s.Line(),
+		}
 	}
 	id := s.Name()
 	if other, ok := c.structs[id]; ok {
-		return fmt.Errorf("check: duplicate struct %q at %s:%d and %s:%d",
-			c.idMap.ByID(id), other.Struct.Filename(), other.Struct.Line(), s.Filename(), s.Line())
+		return &Error{
+			Err:           fmt.Errorf("check: duplicate struct %q", c.idMap.ByID(id)),
+			Filename:      s.Filename(),
+			Line:          s.Line(),
+			OtherFilename: other.Struct.Filename(),
+			OtherLine:     other.Struct.Line(),
+		}
 	}
 	c.structs[id] = Struct{
 		ID:     id,
@@ -138,17 +163,28 @@ func (c *Checker) checkStruct(n *a.Node) error {
 func (c *Checker) checkFuncSignature(n *a.Node) error {
 	f := n.Func()
 	if err := c.checkFields(f.In().Fields()); err != nil {
-		return fmt.Errorf("%v in in-params for func %q at %s:%d",
-			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
+		return &Error{
+			Err:      fmt.Errorf("%v in in-params for func %q", err, c.idMap.ByID(f.Name())),
+			Filename: f.Filename(),
+			Line:     f.Line(),
+		}
 	}
 	if err := c.checkFields(f.Out().Fields()); err != nil {
-		return fmt.Errorf("%v in out-params for func %q at %s:%d",
-			err, c.idMap.ByID(f.Name()), f.Filename(), f.Line())
+		return &Error{
+			Err:      fmt.Errorf("%v in out-params for func %q", err, c.idMap.ByID(f.Name())),
+			Filename: f.Filename(),
+			Line:     f.Line(),
+		}
 	}
 	qid := f.QID()
 	if other, ok := c.funcs[qid]; ok {
-		return fmt.Errorf("check: duplicate function %q at %s:%d and %s:%d",
-			qid.String(c.idMap), other.Func.Filename(), other.Func.Line(), f.Filename(), f.Line())
+		return &Error{
+			Err:           fmt.Errorf("check: duplicate function %q", qid.String(c.idMap)),
+			Filename:      f.Filename(),
+			Line:          f.Line(),
+			OtherFilename: other.Func.Filename(),
+			OtherLine:     other.Func.Line(),
+		}
 	}
 	localVars := TypeMap{
 		t.IDIn:  a.NewTypeExpr(0, f.In().Name(), nil, nil, nil),
@@ -156,8 +192,11 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 	}
 	if qid[0] != 0 {
 		if _, ok := c.structs[qid[0]]; !ok {
-			return fmt.Errorf("check: no receiver struct defined for function %q at %s:%d",
-				qid.String(c.idMap), f.Filename(), f.Line())
+			return &Error{
+				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.String(c.idMap)),
+				Filename: f.Filename(),
+				Line:     f.Line(),
+			}
 		}
 		localVars[t.IDThis] = a.NewTypeExpr(t.IDPtr, 0, nil, nil, a.NewTypeExpr(0, qid[0], nil, nil, nil))
 	}
@@ -199,14 +238,22 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
 	for _, m := range f.Body() {
 		if err := tc.checkVars(m); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, tc.errFilename, tc.errLine)
+			return &Error{
+				Err:      err,
+				Filename: tc.errFilename,
+				Line:     tc.errLine,
+			}
 		}
 	}
 
 	// Assign ConstValue's (if applicable) and MType's to each Expr.
 	for _, m := range f.Body() {
 		if err := tc.checkStatement(m); err != nil {
-			return fmt.Errorf("%v at %s:%d", err, tc.errFilename, tc.errLine)
+			return &Error{
+				Err:      err,
+				Filename: tc.errFilename,
+				Line:     tc.errLine,
+			}
 		}
 	}
 	if err := f.Node().Walk(func(n *a.Node) error {
