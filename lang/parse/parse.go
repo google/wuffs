@@ -80,11 +80,11 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, err
 		}
 		if id0 != 0 && id0.IsBuiltIn() {
-			return nil, fmt.Errorf("parse: built-in %q used for func receiver at %s:%d",
+			return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
 				p.m.ByID(id0), p.filename, p.line())
 		}
 		if id1.IsBuiltIn() {
-			return nil, fmt.Errorf("parse: built-in %q used for func name at %s:%d",
+			return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
 				p.m.ByID(id1), p.filename, p.line())
 		}
 		if p.peekID() == t.IDQuestion {
@@ -116,7 +116,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		if x := p.peekID(); x != t.IDSemicolon {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
@@ -131,7 +131,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, err
 		}
 		if name.IsBuiltIn() {
-			return nil, fmt.Errorf("parse: built-in %q used for struct name at %s:%d",
+			return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
 				p.m.ByID(name), p.filename, p.line())
 		}
 		if p.peekID() == t.IDQuestion {
@@ -144,7 +144,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		if x := p.peekID(); x != t.IDSemicolon {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		return a.NewStruct(flags, p.filename, line, name, fields).Node(), nil
@@ -154,18 +154,18 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		path := p.peekID()
 		if !path.IsStrLiteral() {
 			got := p.m.ByID(path)
-			return nil, fmt.Errorf("parse: expected string literal, got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		if x := p.peekID(); x != t.IDSemicolon {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		return a.NewUse(p.filename, line, path).Node(), nil
 
 	}
-	return nil, fmt.Errorf("parse: unrecognized top level declaration at %s:%d", p.filename, p.src[0].Line)
+	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, p.src[0].Line)
 }
 
 // parseQualifiedIdent parses "foo.bar" or "bar".
@@ -189,12 +189,12 @@ func (p *parser) parseQualifiedIdent() (t.ID, t.ID, error) {
 
 func (p *parser) parseIdent() (t.ID, error) {
 	if len(p.src) == 0 {
-		return 0, fmt.Errorf("parse: expected identifier at %s:%d", p.filename, p.line())
+		return 0, fmt.Errorf(`parse: expected identifier at %s:%d`, p.filename, p.line())
 	}
 	x := p.src[0]
 	if !x.IsIdent() {
 		got := p.m.ByToken(x)
-		return 0, fmt.Errorf("parse: expected identifier, got %q at %s:%d", got, p.filename, p.line())
+		return 0, fmt.Errorf(`parse: expected identifier, got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 	return x.ID, nil
@@ -233,11 +233,11 @@ func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) 
 		case t.IDComma:
 			p.src = p.src[1:]
 		default:
-			return nil, fmt.Errorf("parse: expected %q, got %q at %s:%d",
+			return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`,
 				p.m.ByID(stop), p.m.ByID(x), p.filename, p.line())
 		}
 	}
-	return nil, fmt.Errorf("parse: expected %q at %s:%d", p.m.ByID(stop), p.filename, p.line())
+	return nil, fmt.Errorf(`parse: expected %q at %s:%d`, p.m.ByID(stop), p.filename, p.line())
 }
 
 func (p *parser) parseFieldNode() (*a.Node, error) {
@@ -271,7 +271,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		}
 		if x := p.peekID(); x != t.IDCloseBracket {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		rhs, err := p.parseTypeExpr()
@@ -303,7 +303,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
 	if x := p.peekID(); x != t.IDOpenBracket {
 		got := p.m.ByID(x)
-		return 0, nil, nil, fmt.Errorf("parse: expected \"[\", got %q at %s:%d", got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -328,7 +328,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 			expected = `":" or "]"`
 		}
 		got := p.m.ByID(x)
-		return 0, nil, nil, fmt.Errorf("parse: expected %s, got %q at %s:%d", expected, got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf(`parse: expected %s, got %q at %s:%d`, expected, got, p.filename, p.line())
 	}
 
 	if p.peekID() != t.IDCloseBracket {
@@ -340,7 +340,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 
 	if x := p.peekID(); x != t.IDCloseBracket {
 		got := p.m.ByID(x)
-		return 0, nil, nil, fmt.Errorf("parse: expected \"]\", got %q at %s:%d", got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -350,7 +350,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 func (p *parser) parseBlock() ([]*a.Node, error) {
 	if x := p.peekID(); x != t.IDOpenCurly {
 		got := p.m.ByID(x)
-		return nil, fmt.Errorf("parse: expected \"{\", got %q at %s:%d", got, p.filename, p.line())
+		return nil, fmt.Errorf(`parse: expected "{", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -369,11 +369,11 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 
 		if x := p.peekID(); x != t.IDSemicolon {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected (implicit) \";\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 	}
-	return nil, fmt.Errorf("parse: expected \"}\" at %s:%d", p.filename, p.line())
+	return nil, fmt.Errorf(`parse: expected "}" at %s:%d`, p.filename, p.line())
 }
 
 func (p *parser) assertsSorted(asserts []*a.Node) error {
@@ -514,7 +514,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 func (p *parser) parseIf() (*a.If, error) {
 	if x := p.peekID(); x != t.IDIf {
 		got := p.m.ByID(x)
-		return nil, fmt.Errorf("parse: expected \"if\", got %q at %s:%d", got, p.filename, p.line())
+		return nil, fmt.Errorf(`parse: expected "if", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 	condition, err := p.parseExpr()
@@ -573,7 +573,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		if !x.IsAssociativeOp() || x != p.peekID() {
 			op := x.BinaryForm()
 			if op == 0 {
-				return nil, fmt.Errorf("parse: internal error: no binary form for token.Key 0x%#02x", x.Key())
+				return nil, fmt.Errorf(`parse: internal error: no binary form for token.Key 0x%#02x`, x.Key())
 			}
 			return a.NewExpr(0, op, 0, lhs.Node(), nil, rhs, nil), nil
 		}
@@ -589,7 +589,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		}
 		op := x.AssociativeForm()
 		if op == 0 {
-			return nil, fmt.Errorf("parse: internal error: no associative form for token.Key 0x%#02x", x.Key())
+			return nil, fmt.Errorf(`parse: internal error: no associative form for token.Key 0x%#02x`, x.Key())
 		}
 		return a.NewExpr(0, op, 0, nil, nil, nil, args), nil
 	}
@@ -606,7 +606,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		}
 		if x := p.peekID(); x != t.IDCloseParen {
 			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		return expr, nil
@@ -619,7 +619,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		}
 		op := x.UnaryForm()
 		if op == 0 {
-			return nil, fmt.Errorf("parse: internal error: no unary form for token.Key 0x%#02x", x.Key())
+			return nil, fmt.Errorf(`parse: internal error: no unary form for token.Key 0x%#02x`, x.Key())
 		}
 		return a.NewExpr(0, op, 0, nil, nil, rhs.Node(), nil), nil
 
