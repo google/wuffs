@@ -209,16 +209,19 @@ func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mh
 	}
 }
 
-// Assert is "assert RHS":
+// Assert is "assert RHS", "pre RHS" or "post RHS":
+//  - ID0:   <IDAssert|IDPre|IDPost>
 //  - RHS:   <Expr>
 type Assert Node
 
 func (n *Assert) Node() *Node      { return (*Node)(n) }
+func (n *Assert) Keyword() t.ID    { return n.id0 }
 func (n *Assert) Condition() *Expr { return n.rhs.Expr() }
 
-func NewAssert(condition *Expr) *Assert {
+func NewAssert(keyword t.ID, condition *Expr) *Assert {
 	return &Assert{
 		kind: KAssert,
+		id0:  keyword,
 		rhs:  condition.Node(),
 	}
 }
@@ -282,17 +285,20 @@ func NewField(name t.ID, xType *TypeExpr) *Field {
 
 // While is "while { List1 }" or "while LHS { List1 }":
 //  - LHS:   <nil|Expr>
+//  - List0: <Assert> asserts
 //  - List1: <*> loop body
 type While Node
 
 func (n *While) Node() *Node      { return (*Node)(n) }
 func (n *While) Condition() *Expr { return n.lhs.Expr() }
+func (n *While) Asserts() []*Node { return n.list0 }
 func (n *While) Body() []*Node    { return n.list1 }
 
-func NewWhile(condition *Expr, body []*Node) *While {
+func NewWhile(condition *Expr, asserts []*Node, body []*Node) *While {
 	return &While{
 		kind:  KWhile,
 		lhs:   condition.Node(),
+		list0: asserts,
 		list1: body,
 	}
 }
@@ -403,6 +409,7 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthInclMin *Expr, exclMax *Ex
 //  - ID1:   name
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
+//  - List0: <Assert> asserts
 //  - List1: <*> function body
 type Func Node
 
@@ -415,9 +422,10 @@ func (n *Func) Receiver() t.ID    { return n.id0 }
 func (n *Func) Name() t.ID        { return n.id1 }
 func (n *Func) In() *Struct       { return n.lhs.Struct() }
 func (n *Func) Out() *Struct      { return n.rhs.Struct() }
+func (n *Func) Asserts() []*Node  { return n.list0 }
 func (n *Func) Body() []*Node     { return n.list1 }
 
-func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, in *Struct, out *Struct, body []*Node) *Func {
+func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, in *Struct, out *Struct, asserts []*Node, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
 		flags:    flags,
@@ -427,6 +435,7 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 		id1:      name,
 		lhs:      in.Node(),
 		rhs:      out.Node(),
+		list0:    asserts,
 		list1:    body,
 	}
 }

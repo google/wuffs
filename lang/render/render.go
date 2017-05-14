@@ -88,7 +88,7 @@ func Render(w io.Writer, m *token.IDMap, src []token.Token, comments []string) (
 		indentAdjustment := 0
 		if lineTokens[0].ID.IsClose() {
 			indentAdjustment--
-		} else if hanging {
+		} else if hanging && lineTokens[0].ID != token.IDOpenCurly {
 			indentAdjustment++
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)

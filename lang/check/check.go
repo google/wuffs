@@ -79,6 +79,7 @@ var phases = [...]struct {
 	{a.KUse, (*Checker).checkUse},
 	{a.KStruct, (*Checker).checkStruct},
 	{a.KFunc, (*Checker).checkFuncSignature},
+	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncBody},
 }
 
@@ -164,6 +165,23 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 		QID:       qid,
 		Func:      f,
 		LocalVars: localVars,
+	}
+	return nil
+}
+
+func (c *Checker) checkFuncContract(n *a.Node) error {
+	as := n.Func().Asserts()
+	if len(as) == 0 {
+		return nil
+	}
+	tc := &typeChecker{
+		c:     c,
+		idMap: c.idMap,
+	}
+	for _, a := range as {
+		if err := tc.checkAssert(a.Assert()); err != nil {
+			return err
+		}
 	}
 	return nil
 }

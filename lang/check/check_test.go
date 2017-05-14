@@ -68,7 +68,9 @@ func TestCheck(t *testing.T) {
 			var p i32
 			var q i32[0:8]
 
-			while p == q {
+			while p == q,
+				post p != q,
+			{
 			}
 		}
 	`) + "\n"

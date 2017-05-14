@@ -91,13 +91,21 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		inFields, err := p.parseList((*parser).parseFieldNode)
+		inFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
-		outFields, err := p.parseList((*parser).parseFieldNode)
+		outFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
+		}
+		asserts := []*a.Node(nil)
+		if p.peekID() == t.IDComma {
+			p.src = p.src[1:]
+			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
+			if err != nil {
+				return nil, err
+			}
 		}
 		body, err := p.parseBlock()
 		if err != nil {
@@ -110,7 +118,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		p.src = p.src[1:]
 		in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
 		out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
-		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, body).Node(), nil
+		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
 
 	case t.IDStruct:
 		flags := a.Flags(0)
@@ -127,7 +135,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		fields, err := p.parseList((*parser).parseFieldNode)
+		fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
@@ -189,17 +197,21 @@ func (p *parser) parseIdent() (t.ID, error) {
 	return x.ID, nil
 }
 
-func (p *parser) parseList(parseElem func(*parser) (*a.Node, error)) ([]*a.Node, error) {
-	if x := p.peekID(); x != t.IDOpenParen {
-		got := p.m.ByID(x)
-		return nil, fmt.Errorf("parse: expected \"(\", got %q at %s:%d", got, p.filename, p.line())
+func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) ([]*a.Node, error) {
+	if stop == t.IDCloseParen {
+		if x := p.peekID(); x != t.IDOpenParen {
+			return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`,
+				p.m.ByID(x), p.filename, p.line())
+		}
+		p.src = p.src[1:]
 	}
-	p.src = p.src[1:]
 
 	ret := []*a.Node(nil)
 	for len(p.src) > 0 {
-		if p.src[0].ID == t.IDCloseParen {
-			p.src = p.src[1:]
+		if p.src[0].ID == stop {
+			if stop == t.IDCloseParen {
+				p.src = p.src[1:]
+			}
 			return ret, nil
 		}
 
@@ -210,17 +222,19 @@ func (p *parser) parseList(parseElem func(*parser) (*a.Node, error)) ([]*a.Node,
 		ret = append(ret, elem)
 
 		switch x := p.peekID(); x {
-		case t.IDCloseParen:
-			p.src = p.src[1:]
+		case stop:
+			if stop == t.IDCloseParen {
+				p.src = p.src[1:]
+			}
 			return ret, nil
 		case t.IDComma:
 			p.src = p.src[1:]
 		default:
-			got := p.m.ByID(x)
-			return nil, fmt.Errorf("parse: expected \")\", got %q at %s:%d", got, p.filename, p.line())
+			return nil, fmt.Errorf("parse: expected %q, got %q at %s:%d",
+				p.m.ByID(stop), p.m.ByID(x), p.filename, p.line())
 		}
 	}
-	return nil, fmt.Errorf("parse: expected \")\" at %s:%d", p.filename, p.line())
+	return nil, fmt.Errorf("parse: expected %q at %s:%d", p.m.ByID(stop), p.filename, p.line())
 }
 
 func (p *parser) parseFieldNode() (*a.Node, error) {
@@ -359,6 +373,19 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 	return nil, fmt.Errorf("parse: expected \"}\" at %s:%d", p.filename, p.line())
 }
 
+func (p *parser) parseAssertNode() (*a.Node, error) {
+	switch x := p.peekID(); x {
+	case t.IDAssert, t.IDPre, t.IDPost:
+		p.src = p.src[1:]
+		rhs, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewAssert(x, rhs).Node(), nil
+	}
+	return nil, fmt.Errorf(`parse: expected "assert", "pre" or "post" at %s:%d`, p.filename, p.line())
+}
+
 func (p *parser) parseStatement() (*a.Node, error) {
 	line := uint32(0)
 	if len(p.src) > 0 {
@@ -373,13 +400,8 @@ func (p *parser) parseStatement() (*a.Node, error) {
 
 func (p *parser) parseStatement1() (*a.Node, error) {
 	switch x := p.peekID(); x {
-	case t.IDAssert:
-		p.src = p.src[1:]
-		rhs, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		return a.NewAssert(rhs).Node(), nil
+	case t.IDAssert, t.IDPre, t.IDPost:
+		return p.parseAssertNode()
 
 	case t.IDBreak:
 		p.src = p.src[1:]
@@ -391,9 +413,22 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDWhile:
 		p.src = p.src[1:]
-		condition, err := (*a.Expr)(nil), error(nil)
-		if p.peekID() != t.IDOpenCurly {
+		condition, asserts, err := (*a.Expr)(nil), []*a.Node(nil), error(nil)
+		switch p.peekID() {
+		case t.IDOpenCurly:
+			// No-op.
+		default:
 			condition, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if p.peekID() != t.IDComma {
+				break
+			}
+			fallthrough
+		case t.IDComma:
+			p.src = p.src[1:]
+			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
 			if err != nil {
 				return nil, err
 			}
@@ -402,7 +437,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewWhile(condition, body).Node(), nil
+		return a.NewWhile(condition, asserts, body).Node(), nil
 
 	case t.IDIf:
 		o, err := p.parseIf()
@@ -592,7 +627,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			fallthrough
 
 		case t.IDOpenParen:
-			args, err := p.parseList(func(p *parser) (*a.Node, error) {
+			args, err := p.parseList(t.IDCloseParen, func(p *parser) (*a.Node, error) {
 				n, err := p.parseExpr()
 				return n.Node(), err
 			})
