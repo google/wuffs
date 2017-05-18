@@ -127,6 +127,129 @@ func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0
 const nBuiltInKeys = Key(256)
 
 const (
+	KeyInvalid = Key(0)
+
+	KeyOpenParen    = Key(IDOpenParen >> KeyShift)
+	KeyCloseParen   = Key(IDCloseParen >> KeyShift)
+	KeyOpenBracket  = Key(IDOpenBracket >> KeyShift)
+	KeyCloseBracket = Key(IDCloseBracket >> KeyShift)
+	KeyOpenCurly    = Key(IDOpenCurly >> KeyShift)
+	KeyCloseCurly   = Key(IDCloseCurly >> KeyShift)
+
+	KeyDot       = Key(IDDot >> KeyShift)
+	KeyComma     = Key(IDComma >> KeyShift)
+	KeyQuestion  = Key(IDQuestion >> KeyShift)
+	KeyColon     = Key(IDColon >> KeyShift)
+	KeySemicolon = Key(IDSemicolon >> KeyShift)
+
+	KeyEq       = Key(IDEq >> KeyShift)
+	KeyPlusEq   = Key(IDPlusEq >> KeyShift)
+	KeyMinusEq  = Key(IDMinusEq >> KeyShift)
+	KeyStarEq   = Key(IDStarEq >> KeyShift)
+	KeySlashEq  = Key(IDSlashEq >> KeyShift)
+	KeyShiftLEq = Key(IDShiftLEq >> KeyShift)
+	KeyShiftREq = Key(IDShiftREq >> KeyShift)
+	KeyAmpEq    = Key(IDAmpEq >> KeyShift)
+	KeyAmpHatEq = Key(IDAmpHatEq >> KeyShift)
+	KeyPipeEq   = Key(IDPipeEq >> KeyShift)
+	KeyHatEq    = Key(IDHatEq >> KeyShift)
+
+	KeyPlus   = Key(IDPlus >> KeyShift)
+	KeyMinus  = Key(IDMinus >> KeyShift)
+	KeyStar   = Key(IDStar >> KeyShift)
+	KeySlash  = Key(IDSlash >> KeyShift)
+	KeyShiftL = Key(IDShiftL >> KeyShift)
+	KeyShiftR = Key(IDShiftR >> KeyShift)
+	KeyAmp    = Key(IDAmp >> KeyShift)
+	KeyAmpHat = Key(IDAmpHat >> KeyShift)
+	KeyPipe   = Key(IDPipe >> KeyShift)
+	KeyHat    = Key(IDHat >> KeyShift)
+
+	KeyNotEq       = Key(IDNotEq >> KeyShift)
+	KeyLessThan    = Key(IDLessThan >> KeyShift)
+	KeyLessEq      = Key(IDLessEq >> KeyShift)
+	KeyEqEq        = Key(IDEqEq >> KeyShift)
+	KeyGreaterEq   = Key(IDGreaterEq >> KeyShift)
+	KeyGreaterThan = Key(IDGreaterThan >> KeyShift)
+
+	// TODO: sort these by name, when the list has stabilized.
+	KeyAnd = Key(IDAnd >> KeyShift)
+	KeyOr  = Key(IDOr >> KeyShift)
+	KeyNot = Key(IDNot >> KeyShift)
+	KeyAs  = Key(IDAs >> KeyShift)
+
+	// TODO: sort these by name, when the list has stabilized.
+	KeyFunc     = Key(IDFunc >> KeyShift)
+	KeyPtr      = Key(IDPtr >> KeyShift)
+	KeyAssert   = Key(IDAssert >> KeyShift)
+	KeyWhile    = Key(IDWhile >> KeyShift)
+	KeyIf       = Key(IDIf >> KeyShift)
+	KeyElse     = Key(IDElse >> KeyShift)
+	KeyReturn   = Key(IDReturn >> KeyShift)
+	KeyBreak    = Key(IDBreak >> KeyShift)
+	KeyContinue = Key(IDContinue >> KeyShift)
+	KeyStruct   = Key(IDStruct >> KeyShift)
+	KeyUse      = Key(IDUse >> KeyShift)
+	KeyVar      = Key(IDVar >> KeyShift)
+	KeyIdeal    = Key(IDIdeal >> KeyShift)
+	KeyPre      = Key(IDPre >> KeyShift)
+	KeyPost     = Key(IDPost >> KeyShift)
+
+	KeyFalse = Key(IDFalse >> KeyShift)
+	KeyTrue  = Key(IDTrue >> KeyShift)
+
+	KeyI8    = Key(IDI8 >> KeyShift)
+	KeyI16   = Key(IDI16 >> KeyShift)
+	KeyI32   = Key(IDI32 >> KeyShift)
+	KeyI64   = Key(IDI64 >> KeyShift)
+	KeyU8    = Key(IDU8 >> KeyShift)
+	KeyU16   = Key(IDU16 >> KeyShift)
+	KeyU32   = Key(IDU32 >> KeyShift)
+	KeyU64   = Key(IDU64 >> KeyShift)
+	KeyUsize = Key(IDUsize >> KeyShift)
+	KeyBool  = Key(IDBool >> KeyShift)
+	KeyBuf1  = Key(IDBuf1 >> KeyShift)
+	KeyBuf2  = Key(IDBuf2 >> KeyShift)
+
+	KeyUnderscore = Key(IDUnderscore >> KeyShift)
+	KeyThis       = Key(IDThis >> KeyShift)
+	KeyIn         = Key(IDIn >> KeyShift)
+	KeyOut        = Key(IDOut >> KeyShift)
+
+	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
+	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
+	KeyXUnaryNot   = Key(IDXUnaryNot >> KeyShift)
+
+	KeyXBinaryPlus        = Key(IDXBinaryPlus >> KeyShift)
+	KeyXBinaryMinus       = Key(IDXBinaryMinus >> KeyShift)
+	KeyXBinaryStar        = Key(IDXBinaryStar >> KeyShift)
+	KeyXBinarySlash       = Key(IDXBinarySlash >> KeyShift)
+	KeyXBinaryShiftL      = Key(IDXBinaryShiftL >> KeyShift)
+	KeyXBinaryShiftR      = Key(IDXBinaryShiftR >> KeyShift)
+	KeyXBinaryAmp         = Key(IDXBinaryAmp >> KeyShift)
+	KeyXBinaryAmpHat      = Key(IDXBinaryAmpHat >> KeyShift)
+	KeyXBinaryPipe        = Key(IDXBinaryPipe >> KeyShift)
+	KeyXBinaryHat         = Key(IDXBinaryHat >> KeyShift)
+	KeyXBinaryNotEq       = Key(IDXBinaryNotEq >> KeyShift)
+	KeyXBinaryLessThan    = Key(IDXBinaryLessThan >> KeyShift)
+	KeyXBinaryLessEq      = Key(IDXBinaryLessEq >> KeyShift)
+	KeyXBinaryEqEq        = Key(IDXBinaryEqEq >> KeyShift)
+	KeyXBinaryGreaterEq   = Key(IDXBinaryGreaterEq >> KeyShift)
+	KeyXBinaryGreaterThan = Key(IDXBinaryGreaterThan >> KeyShift)
+	KeyXBinaryAnd         = Key(IDXBinaryAnd >> KeyShift)
+	KeyXBinaryOr          = Key(IDXBinaryOr >> KeyShift)
+	KeyXBinaryAs          = Key(IDXBinaryAs >> KeyShift)
+
+	KeyXAssociativePlus = Key(IDXAssociativePlus >> KeyShift)
+	KeyXAssociativeStar = Key(IDXAssociativeStar >> KeyShift)
+	KeyXAssociativeAmp  = Key(IDXAssociativeAmp >> KeyShift)
+	KeyXAssociativePipe = Key(IDXAssociativePipe >> KeyShift)
+	KeyXAssociativeHat  = Key(IDXAssociativeHat >> KeyShift)
+	KeyXAssociativeAnd  = Key(IDXAssociativeAnd >> KeyShift)
+	KeyXAssociativeOr   = Key(IDXAssociativeOr >> KeyShift)
+)
+
+const (
 	IDInvalid = ID(0)
 
 	IDOpenParen    = ID(0x10<<KeyShift | FlagsOpen | FlagsTightRight)
@@ -260,90 +383,90 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	name string
 	id   ID
 }{
-	IDOpenParen >> KeyShift:    {"(", IDOpenParen},
-	IDCloseParen >> KeyShift:   {")", IDCloseParen},
-	IDOpenBracket >> KeyShift:  {"[", IDOpenBracket},
-	IDCloseBracket >> KeyShift: {"]", IDCloseBracket},
-	IDOpenCurly >> KeyShift:    {"{", IDOpenCurly},
-	IDCloseCurly >> KeyShift:   {"}", IDCloseCurly},
+	KeyOpenParen:    {"(", IDOpenParen},
+	KeyCloseParen:   {")", IDCloseParen},
+	KeyOpenBracket:  {"[", IDOpenBracket},
+	KeyCloseBracket: {"]", IDCloseBracket},
+	KeyOpenCurly:    {"{", IDOpenCurly},
+	KeyCloseCurly:   {"}", IDCloseCurly},
 
-	IDDot >> KeyShift:       {".", IDDot},
-	IDComma >> KeyShift:     {",", IDComma},
-	IDQuestion >> KeyShift:  {"?", IDQuestion},
-	IDColon >> KeyShift:     {":", IDColon},
-	IDSemicolon >> KeyShift: {";", IDSemicolon},
+	KeyDot:       {".", IDDot},
+	KeyComma:     {",", IDComma},
+	KeyQuestion:  {"?", IDQuestion},
+	KeyColon:     {":", IDColon},
+	KeySemicolon: {";", IDSemicolon},
 
-	IDEq >> KeyShift:       {"=", IDEq},
-	IDPlusEq >> KeyShift:   {"+=", IDPlusEq},
-	IDMinusEq >> KeyShift:  {"-=", IDMinusEq},
-	IDStarEq >> KeyShift:   {"*=", IDStarEq},
-	IDSlashEq >> KeyShift:  {"/=", IDSlashEq},
-	IDShiftLEq >> KeyShift: {"<<=", IDShiftLEq},
-	IDShiftREq >> KeyShift: {">>=", IDShiftREq},
-	IDAmpEq >> KeyShift:    {"&=", IDAmpEq},
-	IDAmpHatEq >> KeyShift: {"&^=", IDAmpHatEq},
-	IDPipeEq >> KeyShift:   {"|=", IDPipeEq},
-	IDHatEq >> KeyShift:    {"^=", IDHatEq},
+	KeyEq:       {"=", IDEq},
+	KeyPlusEq:   {"+=", IDPlusEq},
+	KeyMinusEq:  {"-=", IDMinusEq},
+	KeyStarEq:   {"*=", IDStarEq},
+	KeySlashEq:  {"/=", IDSlashEq},
+	KeyShiftLEq: {"<<=", IDShiftLEq},
+	KeyShiftREq: {">>=", IDShiftREq},
+	KeyAmpEq:    {"&=", IDAmpEq},
+	KeyAmpHatEq: {"&^=", IDAmpHatEq},
+	KeyPipeEq:   {"|=", IDPipeEq},
+	KeyHatEq:    {"^=", IDHatEq},
 
-	IDPlus >> KeyShift:   {"+", IDPlus},
-	IDMinus >> KeyShift:  {"-", IDMinus},
-	IDStar >> KeyShift:   {"*", IDStar},
-	IDSlash >> KeyShift:  {"/", IDSlash},
-	IDShiftL >> KeyShift: {"<<", IDShiftL},
-	IDShiftR >> KeyShift: {">>", IDShiftR},
-	IDAmp >> KeyShift:    {"&", IDAmp},
-	IDAmpHat >> KeyShift: {"&^", IDAmpHat},
-	IDPipe >> KeyShift:   {"|", IDPipe},
-	IDHat >> KeyShift:    {"^", IDHat},
+	KeyPlus:   {"+", IDPlus},
+	KeyMinus:  {"-", IDMinus},
+	KeyStar:   {"*", IDStar},
+	KeySlash:  {"/", IDSlash},
+	KeyShiftL: {"<<", IDShiftL},
+	KeyShiftR: {">>", IDShiftR},
+	KeyAmp:    {"&", IDAmp},
+	KeyAmpHat: {"&^", IDAmpHat},
+	KeyPipe:   {"|", IDPipe},
+	KeyHat:    {"^", IDHat},
 
-	IDNotEq >> KeyShift:       {"!=", IDNotEq},
-	IDLessThan >> KeyShift:    {"<", IDLessThan},
-	IDLessEq >> KeyShift:      {"<=", IDLessEq},
-	IDEqEq >> KeyShift:        {"==", IDEqEq},
-	IDGreaterEq >> KeyShift:   {">=", IDGreaterEq},
-	IDGreaterThan >> KeyShift: {">", IDGreaterThan},
+	KeyNotEq:       {"!=", IDNotEq},
+	KeyLessThan:    {"<", IDLessThan},
+	KeyLessEq:      {"<=", IDLessEq},
+	KeyEqEq:        {"==", IDEqEq},
+	KeyGreaterEq:   {">=", IDGreaterEq},
+	KeyGreaterThan: {">", IDGreaterThan},
 
-	IDAnd >> KeyShift: {"and", IDAnd},
-	IDOr >> KeyShift:  {"or", IDOr},
-	IDNot >> KeyShift: {"not", IDNot},
-	IDAs >> KeyShift:  {"as", IDAs},
+	KeyAnd: {"and", IDAnd},
+	KeyOr:  {"or", IDOr},
+	KeyNot: {"not", IDNot},
+	KeyAs:  {"as", IDAs},
 
-	IDFunc >> KeyShift:     {"func", IDFunc},
-	IDPtr >> KeyShift:      {"ptr", IDPtr},
-	IDAssert >> KeyShift:   {"assert", IDAssert},
-	IDWhile >> KeyShift:    {"while", IDWhile},
-	IDIf >> KeyShift:       {"if", IDIf},
-	IDElse >> KeyShift:     {"else", IDElse},
-	IDReturn >> KeyShift:   {"return", IDReturn},
-	IDBreak >> KeyShift:    {"break", IDBreak},
-	IDContinue >> KeyShift: {"continue", IDContinue},
-	IDStruct >> KeyShift:   {"struct", IDStruct},
-	IDUse >> KeyShift:      {"use", IDUse},
-	IDVar >> KeyShift:      {"var", IDVar},
-	IDIdeal >> KeyShift:    {"ideal", IDIdeal},
-	IDPre >> KeyShift:      {"pre", IDPre},
-	IDPost >> KeyShift:     {"post", IDPost},
+	KeyFunc:     {"func", IDFunc},
+	KeyPtr:      {"ptr", IDPtr},
+	KeyAssert:   {"assert", IDAssert},
+	KeyWhile:    {"while", IDWhile},
+	KeyIf:       {"if", IDIf},
+	KeyElse:     {"else", IDElse},
+	KeyReturn:   {"return", IDReturn},
+	KeyBreak:    {"break", IDBreak},
+	KeyContinue: {"continue", IDContinue},
+	KeyStruct:   {"struct", IDStruct},
+	KeyUse:      {"use", IDUse},
+	KeyVar:      {"var", IDVar},
+	KeyIdeal:    {"ideal", IDIdeal},
+	KeyPre:      {"pre", IDPre},
+	KeyPost:     {"post", IDPost},
 
-	IDFalse >> KeyShift: {"false", IDFalse},
-	IDTrue >> KeyShift:  {"true", IDTrue},
+	KeyFalse: {"false", IDFalse},
+	KeyTrue:  {"true", IDTrue},
 
-	IDI8 >> KeyShift:    {"i8", IDI8},
-	IDI16 >> KeyShift:   {"i16", IDI16},
-	IDI32 >> KeyShift:   {"i32", IDI32},
-	IDI64 >> KeyShift:   {"i64", IDI64},
-	IDU8 >> KeyShift:    {"u8", IDU8},
-	IDU16 >> KeyShift:   {"u16", IDU16},
-	IDU32 >> KeyShift:   {"u32", IDU32},
-	IDU64 >> KeyShift:   {"u64", IDU64},
-	IDUsize >> KeyShift: {"usize", IDUsize},
-	IDBool >> KeyShift:  {"bool", IDBool},
-	IDBuf1 >> KeyShift:  {"buf1", IDBuf1},
-	IDBuf2 >> KeyShift:  {"buf2", IDBuf2},
+	KeyI8:    {"i8", IDI8},
+	KeyI16:   {"i16", IDI16},
+	KeyI32:   {"i32", IDI32},
+	KeyI64:   {"i64", IDI64},
+	KeyU8:    {"u8", IDU8},
+	KeyU16:   {"u16", IDU16},
+	KeyU32:   {"u32", IDU32},
+	KeyU64:   {"u64", IDU64},
+	KeyUsize: {"usize", IDUsize},
+	KeyBool:  {"bool", IDBool},
+	KeyBuf1:  {"buf1", IDBuf1},
+	KeyBuf2:  {"buf2", IDBuf2},
 
-	IDUnderscore >> KeyShift: {"_", IDUnderscore},
-	IDThis >> KeyShift:       {"this", IDThis},
-	IDIn >> KeyShift:         {"in", IDIn},
-	IDOut >> KeyShift:        {"out", IDOut},
+	KeyUnderscore: {"_", IDUnderscore},
+	KeyThis:       {"this", IDThis},
+	KeyIn:         {"in", IDIn},
+	KeyOut:        {"out", IDOut},
 }
 
 var builtInsByName = map[string]ID{}
@@ -450,73 +573,73 @@ var lexers = [256][]suffixLexer{
 }
 
 var ambiguousForms = [256]ID{
-	IDXUnaryPlus >> KeyShift:  IDPlus,
-	IDXUnaryMinus >> KeyShift: IDMinus,
-	IDXUnaryNot >> KeyShift:   IDNot,
+	KeyXUnaryPlus:  IDPlus,
+	KeyXUnaryMinus: IDMinus,
+	KeyXUnaryNot:   IDNot,
 
-	IDXBinaryPlus >> KeyShift:        IDPlus,
-	IDXBinaryMinus >> KeyShift:       IDMinus,
-	IDXBinaryStar >> KeyShift:        IDStar,
-	IDXBinarySlash >> KeyShift:       IDSlash,
-	IDXBinaryShiftL >> KeyShift:      IDShiftL,
-	IDXBinaryShiftR >> KeyShift:      IDShiftR,
-	IDXBinaryAmp >> KeyShift:         IDAmp,
-	IDXBinaryAmpHat >> KeyShift:      IDAmpHat,
-	IDXBinaryPipe >> KeyShift:        IDPipe,
-	IDXBinaryHat >> KeyShift:         IDHat,
-	IDXBinaryNotEq >> KeyShift:       IDNotEq,
-	IDXBinaryLessThan >> KeyShift:    IDLessThan,
-	IDXBinaryLessEq >> KeyShift:      IDLessEq,
-	IDXBinaryEqEq >> KeyShift:        IDEqEq,
-	IDXBinaryGreaterEq >> KeyShift:   IDGreaterEq,
-	IDXBinaryGreaterThan >> KeyShift: IDGreaterThan,
-	IDXBinaryAnd >> KeyShift:         IDAnd,
-	IDXBinaryOr >> KeyShift:          IDOr,
-	IDXBinaryAs >> KeyShift:          IDAs,
+	KeyXBinaryPlus:        IDPlus,
+	KeyXBinaryMinus:       IDMinus,
+	KeyXBinaryStar:        IDStar,
+	KeyXBinarySlash:       IDSlash,
+	KeyXBinaryShiftL:      IDShiftL,
+	KeyXBinaryShiftR:      IDShiftR,
+	KeyXBinaryAmp:         IDAmp,
+	KeyXBinaryAmpHat:      IDAmpHat,
+	KeyXBinaryPipe:        IDPipe,
+	KeyXBinaryHat:         IDHat,
+	KeyXBinaryNotEq:       IDNotEq,
+	KeyXBinaryLessThan:    IDLessThan,
+	KeyXBinaryLessEq:      IDLessEq,
+	KeyXBinaryEqEq:        IDEqEq,
+	KeyXBinaryGreaterEq:   IDGreaterEq,
+	KeyXBinaryGreaterThan: IDGreaterThan,
+	KeyXBinaryAnd:         IDAnd,
+	KeyXBinaryOr:          IDOr,
+	KeyXBinaryAs:          IDAs,
 
-	IDXAssociativePlus >> KeyShift: IDPlus,
-	IDXAssociativeStar >> KeyShift: IDStar,
-	IDXAssociativeAmp >> KeyShift:  IDAmp,
-	IDXAssociativePipe >> KeyShift: IDPipe,
-	IDXAssociativeHat >> KeyShift:  IDHat,
-	IDXAssociativeAnd >> KeyShift:  IDAnd,
-	IDXAssociativeOr >> KeyShift:   IDOr,
+	KeyXAssociativePlus: IDPlus,
+	KeyXAssociativeStar: IDStar,
+	KeyXAssociativeAmp:  IDAmp,
+	KeyXAssociativePipe: IDPipe,
+	KeyXAssociativeHat:  IDHat,
+	KeyXAssociativeAnd:  IDAnd,
+	KeyXAssociativeOr:   IDOr,
 }
 
 var unaryForms = [256]ID{
-	IDPlus >> KeyShift:  IDXUnaryPlus,
-	IDMinus >> KeyShift: IDXUnaryMinus,
-	IDNot >> KeyShift:   IDXUnaryNot,
+	KeyPlus:  IDXUnaryPlus,
+	KeyMinus: IDXUnaryMinus,
+	KeyNot:   IDXUnaryNot,
 }
 
 var binaryForms = [256]ID{
-	IDPlus >> KeyShift:        IDXBinaryPlus,
-	IDMinus >> KeyShift:       IDXBinaryMinus,
-	IDStar >> KeyShift:        IDXBinaryStar,
-	IDSlash >> KeyShift:       IDXBinarySlash,
-	IDShiftL >> KeyShift:      IDXBinaryShiftL,
-	IDShiftR >> KeyShift:      IDXBinaryShiftR,
-	IDAmp >> KeyShift:         IDXBinaryAmp,
-	IDAmpHat >> KeyShift:      IDXBinaryAmpHat,
-	IDPipe >> KeyShift:        IDXBinaryPipe,
-	IDHat >> KeyShift:         IDXBinaryHat,
-	IDNotEq >> KeyShift:       IDXBinaryNotEq,
-	IDLessThan >> KeyShift:    IDXBinaryLessThan,
-	IDLessEq >> KeyShift:      IDXBinaryLessEq,
-	IDEqEq >> KeyShift:        IDXBinaryEqEq,
-	IDGreaterEq >> KeyShift:   IDXBinaryGreaterEq,
-	IDGreaterThan >> KeyShift: IDXBinaryGreaterThan,
-	IDAnd >> KeyShift:         IDXBinaryAnd,
-	IDOr >> KeyShift:          IDXBinaryOr,
-	IDAs >> KeyShift:          IDXBinaryAs,
+	KeyPlus:        IDXBinaryPlus,
+	KeyMinus:       IDXBinaryMinus,
+	KeyStar:        IDXBinaryStar,
+	KeySlash:       IDXBinarySlash,
+	KeyShiftL:      IDXBinaryShiftL,
+	KeyShiftR:      IDXBinaryShiftR,
+	KeyAmp:         IDXBinaryAmp,
+	KeyAmpHat:      IDXBinaryAmpHat,
+	KeyPipe:        IDXBinaryPipe,
+	KeyHat:         IDXBinaryHat,
+	KeyNotEq:       IDXBinaryNotEq,
+	KeyLessThan:    IDXBinaryLessThan,
+	KeyLessEq:      IDXBinaryLessEq,
+	KeyEqEq:        IDXBinaryEqEq,
+	KeyGreaterEq:   IDXBinaryGreaterEq,
+	KeyGreaterThan: IDXBinaryGreaterThan,
+	KeyAnd:         IDXBinaryAnd,
+	KeyOr:          IDXBinaryOr,
+	KeyAs:          IDXBinaryAs,
 }
 
 var associativeForms = [256]ID{
-	IDPlus >> KeyShift: IDXAssociativePlus,
-	IDStar >> KeyShift: IDXAssociativeStar,
-	IDAmp >> KeyShift:  IDXAssociativeAmp,
-	IDPipe >> KeyShift: IDXAssociativePipe,
-	IDHat >> KeyShift:  IDXAssociativeHat,
-	IDAnd >> KeyShift:  IDXAssociativeAnd,
-	IDOr >> KeyShift:   IDXAssociativeOr,
+	KeyPlus: IDXAssociativePlus,
+	KeyStar: IDXAssociativeStar,
+	KeyAmp:  IDXAssociativeAmp,
+	KeyPipe: IDXAssociativePipe,
+	KeyHat:  IDXAssociativeHat,
+	KeyAnd:  IDXAssociativeAnd,
+	KeyOr:   IDXAssociativeOr,
 }

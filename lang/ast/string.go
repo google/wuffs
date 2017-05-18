@@ -27,11 +27,11 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 	if n != nil {
 		switch n.id0.Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 		case 0:
-			switch n.id0 {
+			switch n.id0.Key() {
 			case 0:
 				buf = append(buf, m.ByID(n.id1)...)
 
-			case t.IDOpenParen:
+			case t.KeyOpenParen:
 				buf = n.lhs.Expr().appendString(buf, m, true, depth)
 				if n.flags&FlagsSuspendible != 0 {
 					buf = append(buf, '?')
@@ -45,13 +45,13 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 				}
 				buf = append(buf, ')')
 
-			case t.IDOpenBracket:
+			case t.KeyOpenBracket:
 				buf = n.lhs.Expr().appendString(buf, m, true, depth)
 				buf = append(buf, '[')
 				buf = n.rhs.Expr().appendString(buf, m, false, depth)
 				buf = append(buf, ']')
 
-			case t.IDColon:
+			case t.KeyColon:
 				buf = n.lhs.Expr().appendString(buf, m, true, depth)
 				buf = append(buf, '[')
 				buf = n.mhs.Expr().appendString(buf, m, false, depth)
@@ -59,7 +59,7 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 				buf = n.rhs.Expr().appendString(buf, m, false, depth)
 				buf = append(buf, ']')
 
-			case t.IDDot:
+			case t.KeyDot:
 				buf = n.lhs.Expr().appendString(buf, m, true, depth)
 				buf = append(buf, '.')
 				buf = append(buf, m.ByID(n.id1)...)
@@ -75,7 +75,7 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 			}
 			buf = n.lhs.Expr().appendString(buf, m, true, depth)
 			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
-			if n.id0 == t.IDXBinaryAs {
+			if n.id0.Key() == t.KeyXBinaryAs {
 				buf = append(buf, n.rhs.TypeExpr().String(m)...)
 			} else {
 				buf = n.rhs.Expr().appendString(buf, m, true, depth)
@@ -105,37 +105,37 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 }
 
 var opStrings = [256]string{
-	t.IDXUnaryPlus >> t.KeyShift:  "+",
-	t.IDXUnaryMinus >> t.KeyShift: "-",
-	t.IDXUnaryNot >> t.KeyShift:   "not ",
+	t.KeyXUnaryPlus:  "+",
+	t.KeyXUnaryMinus: "-",
+	t.KeyXUnaryNot:   "not ",
 
-	t.IDXBinaryPlus >> t.KeyShift:        " + ",
-	t.IDXBinaryMinus >> t.KeyShift:       " - ",
-	t.IDXBinaryStar >> t.KeyShift:        " * ",
-	t.IDXBinarySlash >> t.KeyShift:       " / ",
-	t.IDXBinaryShiftL >> t.KeyShift:      " << ",
-	t.IDXBinaryShiftR >> t.KeyShift:      " >> ",
-	t.IDXBinaryAmp >> t.KeyShift:         " & ",
-	t.IDXBinaryAmpHat >> t.KeyShift:      " &^ ",
-	t.IDXBinaryPipe >> t.KeyShift:        " | ",
-	t.IDXBinaryHat >> t.KeyShift:         " ^ ",
-	t.IDXBinaryNotEq >> t.KeyShift:       " != ",
-	t.IDXBinaryLessThan >> t.KeyShift:    " < ",
-	t.IDXBinaryLessEq >> t.KeyShift:      " <= ",
-	t.IDXBinaryEqEq >> t.KeyShift:        " == ",
-	t.IDXBinaryGreaterEq >> t.KeyShift:   " >= ",
-	t.IDXBinaryGreaterThan >> t.KeyShift: " > ",
-	t.IDXBinaryAnd >> t.KeyShift:         " and ",
-	t.IDXBinaryOr >> t.KeyShift:          " or ",
-	t.IDXBinaryAs >> t.KeyShift:          " as ",
+	t.KeyXBinaryPlus:        " + ",
+	t.KeyXBinaryMinus:       " - ",
+	t.KeyXBinaryStar:        " * ",
+	t.KeyXBinarySlash:       " / ",
+	t.KeyXBinaryShiftL:      " << ",
+	t.KeyXBinaryShiftR:      " >> ",
+	t.KeyXBinaryAmp:         " & ",
+	t.KeyXBinaryAmpHat:      " &^ ",
+	t.KeyXBinaryPipe:        " | ",
+	t.KeyXBinaryHat:         " ^ ",
+	t.KeyXBinaryNotEq:       " != ",
+	t.KeyXBinaryLessThan:    " < ",
+	t.KeyXBinaryLessEq:      " <= ",
+	t.KeyXBinaryEqEq:        " == ",
+	t.KeyXBinaryGreaterEq:   " >= ",
+	t.KeyXBinaryGreaterThan: " > ",
+	t.KeyXBinaryAnd:         " and ",
+	t.KeyXBinaryOr:          " or ",
+	t.KeyXBinaryAs:          " as ",
 
-	t.IDXAssociativePlus >> t.KeyShift: " + ",
-	t.IDXAssociativeStar >> t.KeyShift: " * ",
-	t.IDXAssociativeAmp >> t.KeyShift:  " & ",
-	t.IDXAssociativePipe >> t.KeyShift: " | ",
-	t.IDXAssociativeHat >> t.KeyShift:  " ^ ",
-	t.IDXAssociativeAnd >> t.KeyShift:  " and ",
-	t.IDXAssociativeOr >> t.KeyShift:   " or ",
+	t.KeyXAssociativePlus: " + ",
+	t.KeyXAssociativeStar: " * ",
+	t.KeyXAssociativeAmp:  " & ",
+	t.KeyXAssociativePipe: " | ",
+	t.KeyXAssociativeHat:  " ^ ",
+	t.KeyXAssociativeAnd:  " and ",
+	t.KeyXAssociativeOr:   " or ",
 }
 
 // String returns a string form of n.
@@ -158,13 +158,13 @@ func (n *TypeExpr) appendString(buf []byte, m *t.IDMap, depth uint32) []byte {
 		return append(buf, "!invalid_type!"...)
 	}
 
-	switch n.PackageOrDecorator() {
+	switch n.PackageOrDecorator().Key() {
 	case 0:
 		buf = append(buf, m.ByID(n.Name())...)
-	case t.IDPtr:
+	case t.KeyPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendString(buf, m, depth)
-	case t.IDOpenBracket:
+	case t.KeyOpenBracket:
 		buf = append(buf, '[')
 		buf = n.ArrayLength().appendString(buf, m, false, 0)
 		buf = append(buf, "] "...)

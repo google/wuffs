@@ -50,7 +50,7 @@ func (p *parser) line() uint32 {
 	return p.lastLine
 }
 
-func (p *parser) peekID() t.ID {
+func (p *parser) peek() t.ID {
 	if len(p.src) > 0 {
 		return p.src[0].ID
 	}
@@ -71,8 +71,8 @@ func (p *parser) parseFile() (*a.File, error) {
 
 func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	line := p.src[0].Line
-	switch p.src[0].ID {
-	case t.IDFunc:
+	switch p.src[0].ID.Key() {
+	case t.KeyFunc:
 		flags := a.Flags(0)
 		p.src = p.src[1:]
 		id0, id1, err := p.parseQualifiedIdent()
@@ -87,22 +87,22 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
 				p.m.ByID(id1), p.filename, p.line())
 		}
-		if p.peekID() == t.IDQuestion {
+		if p.peek().Key() == t.KeyQuestion {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		inFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
+		inFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
-		outFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
+		outFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
 		asserts := []*a.Node(nil)
-		if p.peekID() == t.IDComma {
+		if p.peek().Key() == t.KeyComma {
 			p.src = p.src[1:]
-			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
+			asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode)
 			if err != nil {
 				return nil, err
 			}
@@ -114,8 +114,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeySemicolon {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -123,7 +123,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
 		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
 
-	case t.IDStruct:
+	case t.KeyStruct:
 		flags := a.Flags(0)
 		p.src = p.src[1:]
 		name, err := p.parseIdent()
@@ -134,31 +134,31 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
 				p.m.ByID(name), p.filename, p.line())
 		}
-		if p.peekID() == t.IDQuestion {
+		if p.peek().Key() == t.KeyQuestion {
 			flags |= a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
-		fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
+		fields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
 		if err != nil {
 			return nil, err
 		}
-		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeySemicolon {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		return a.NewStruct(flags, p.filename, line, name, fields).Node(), nil
 
-	case t.IDUse:
+	case t.KeyUse:
 		p.src = p.src[1:]
-		path := p.peekID()
+		path := p.peek()
 		if !path.IsStrLiteral() {
 			got := p.m.ByID(path)
 			return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeySemicolon {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -175,7 +175,7 @@ func (p *parser) parseQualifiedIdent() (t.ID, t.ID, error) {
 		return 0, 0, err
 	}
 
-	if p.peekID() != t.IDDot {
+	if p.peek().Key() != t.KeyDot {
 		return 0, x, nil
 	}
 	p.src = p.src[1:]
@@ -200,19 +200,19 @@ func (p *parser) parseIdent() (t.ID, error) {
 	return x.ID, nil
 }
 
-func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) ([]*a.Node, error) {
-	if stop == t.IDCloseParen {
-		if x := p.peekID(); x != t.IDOpenParen {
+func (p *parser) parseList(stop t.Key, parseElem func(*parser) (*a.Node, error)) ([]*a.Node, error) {
+	if stop == t.KeyCloseParen {
+		if x := p.peek().Key(); x != t.KeyOpenParen {
 			return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`,
-				p.m.ByID(x), p.filename, p.line())
+				p.m.ByKey(x), p.filename, p.line())
 		}
 		p.src = p.src[1:]
 	}
 
 	ret := []*a.Node(nil)
 	for len(p.src) > 0 {
-		if p.src[0].ID == stop {
-			if stop == t.IDCloseParen {
+		if p.src[0].ID.Key() == stop {
+			if stop == t.KeyCloseParen {
 				p.src = p.src[1:]
 			}
 			return ret, nil
@@ -224,20 +224,20 @@ func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) 
 		}
 		ret = append(ret, elem)
 
-		switch x := p.peekID(); x {
+		switch x := p.peek().Key(); x {
 		case stop:
-			if stop == t.IDCloseParen {
+			if stop == t.KeyCloseParen {
 				p.src = p.src[1:]
 			}
 			return ret, nil
-		case t.IDComma:
+		case t.KeyComma:
 			p.src = p.src[1:]
 		default:
 			return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`,
-				p.m.ByID(stop), p.m.ByID(x), p.filename, p.line())
+				p.m.ByKey(stop), p.m.ByKey(x), p.filename, p.line())
 		}
 	}
-	return nil, fmt.Errorf(`parse: expected %q at %s:%d`, p.m.ByID(stop), p.filename, p.line())
+	return nil, fmt.Errorf(`parse: expected %q at %s:%d`, p.m.ByKey(stop), p.filename, p.line())
 }
 
 func (p *parser) parseFieldNode() (*a.Node, error) {
@@ -253,8 +253,7 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
-	switch p.peekID() {
-	case t.IDPtr:
+	if p.peek().Key() == t.KeyPtr {
 		p.src = p.src[1:]
 		rhs, err := p.parseTypeExpr()
 		if err != nil {
@@ -263,14 +262,14 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		return a.NewTypeExpr(t.IDPtr, 0, nil, nil, rhs), nil
 	}
 
-	if x := p.peekID(); x == t.IDOpenBracket {
+	if p.peek().Key() == t.KeyOpenBracket {
 		p.src = p.src[1:]
 		lhs, err := p.parseExpr()
 		if err != nil {
 			return nil, err
 		}
-		if x := p.peekID(); x != t.IDCloseBracket {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeyCloseBracket {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -287,7 +286,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	}
 
 	lhs, mhs := (*a.Expr)(nil), (*a.Expr)(nil)
-	if x := p.peekID(); x == t.IDOpenBracket {
+	if p.peek().Key() == t.KeyOpenBracket {
 		_, lhs, mhs, err = p.parseRangeOrIndex(false)
 		if err != nil {
 			return nil, err
@@ -301,24 +300,24 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 // it also parses "[x]". The returned op is t.IDColon for a range and
 // t.IDOpenBracket for an index.
 func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
-	if x := p.peekID(); x != t.IDOpenBracket {
-		got := p.m.ByID(x)
+	if x := p.peek().Key(); x != t.KeyOpenBracket {
+		got := p.m.ByKey(x)
 		return 0, nil, nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
-	if p.peekID() != t.IDColon {
+	if p.peek().Key() != t.KeyColon {
 		ei, err = p.parseExpr()
 		if err != nil {
 			return 0, nil, nil, err
 		}
 	}
 
-	switch x := p.peekID(); {
-	case x == t.IDColon:
+	switch x := p.peek().Key(); {
+	case x == t.KeyColon:
 		p.src = p.src[1:]
 
-	case x == t.IDCloseBracket && allowIndex:
+	case x == t.KeyCloseBracket && allowIndex:
 		p.src = p.src[1:]
 		return t.IDOpenBracket, nil, ei, nil
 
@@ -327,19 +326,19 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 		if allowIndex {
 			expected = `":" or "]"`
 		}
-		got := p.m.ByID(x)
+		got := p.m.ByKey(x)
 		return 0, nil, nil, fmt.Errorf(`parse: expected %s, got %q at %s:%d`, expected, got, p.filename, p.line())
 	}
 
-	if p.peekID() != t.IDCloseBracket {
+	if p.peek().Key() != t.KeyCloseBracket {
 		ej, err = p.parseExpr()
 		if err != nil {
 			return 0, nil, nil, err
 		}
 	}
 
-	if x := p.peekID(); x != t.IDCloseBracket {
-		got := p.m.ByID(x)
+	if x := p.peek().Key(); x != t.KeyCloseBracket {
+		got := p.m.ByKey(x)
 		return 0, nil, nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -348,15 +347,15 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 }
 
 func (p *parser) parseBlock() ([]*a.Node, error) {
-	if x := p.peekID(); x != t.IDOpenCurly {
-		got := p.m.ByID(x)
+	if x := p.peek().Key(); x != t.KeyOpenCurly {
+		got := p.m.ByKey(x)
 		return nil, fmt.Errorf(`parse: expected "{", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
 	block := []*a.Node(nil)
 	for len(p.src) > 0 {
-		if p.src[0].ID == t.IDCloseCurly {
+		if p.src[0].ID.Key() == t.KeyCloseCurly {
 			p.src = p.src[1:]
 			return block, nil
 		}
@@ -367,8 +366,8 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 		}
 		block = append(block, s)
 
-		if x := p.peekID(); x != t.IDSemicolon {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeySemicolon {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -379,13 +378,13 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 func (p *parser) assertsSorted(asserts []*a.Node) error {
 	seenAssert, seenPost := false, false
 	for _, a := range asserts {
-		switch a.Assert().Keyword() {
-		case t.IDPre:
+		switch a.Assert().Keyword().Key() {
+		case t.KeyPre:
 			if seenPost || seenAssert {
 				break
 			}
 			continue
-		case t.IDAssert:
+		case t.KeyAssert:
 			if seenPost {
 				break
 			}
@@ -402,8 +401,8 @@ func (p *parser) assertsSorted(asserts []*a.Node) error {
 }
 
 func (p *parser) parseAssertNode() (*a.Node, error) {
-	switch x := p.peekID(); x {
-	case t.IDAssert, t.IDPre, t.IDPost:
+	switch x := p.peek(); x.Key() {
+	case t.KeyAssert, t.KeyPre, t.KeyPost:
 		p.src = p.src[1:]
 		rhs, err := p.parseExpr()
 		if err != nil {
@@ -427,24 +426,24 @@ func (p *parser) parseStatement() (*a.Node, error) {
 }
 
 func (p *parser) parseStatement1() (*a.Node, error) {
-	switch x := p.peekID(); x {
-	case t.IDAssert, t.IDPre, t.IDPost:
+	switch x := p.peek(); x.Key() {
+	case t.KeyAssert, t.KeyPre, t.KeyPost:
 		return p.parseAssertNode()
 
-	case t.IDBreak, t.IDContinue:
+	case t.KeyBreak, t.KeyContinue:
 		p.src = p.src[1:]
 		return a.NewJump(x).Node(), nil
 
-	case t.IDWhile:
+	case t.KeyWhile:
 		p.src = p.src[1:]
 		condition, err := p.parseExpr()
 		if err != nil {
 			return nil, err
 		}
 		asserts := []*a.Node(nil)
-		if p.peekID() == t.IDComma {
+		if p.peek().Key() == t.KeyComma {
 			p.src = p.src[1:]
-			asserts, err = p.parseList(t.IDOpenCurly, (*parser).parseAssertNode)
+			asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode)
 			if err != nil {
 				return nil, err
 			}
@@ -458,14 +457,14 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewWhile(condition, asserts, body).Node(), nil
 
-	case t.IDIf:
+	case t.KeyIf:
 		o, err := p.parseIf()
 		return o.Node(), err
 
-	case t.IDReturn:
+	case t.KeyReturn:
 		p.src = p.src[1:]
 		value, err := (*a.Expr)(nil), error(nil)
-		if p.peekID() != t.IDSemicolon {
+		if p.peek().Key() != t.KeySemicolon {
 			value, err = p.parseExpr()
 			if err != nil {
 				return nil, err
@@ -473,7 +472,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewReturn(value).Node(), nil
 
-	case t.IDVar:
+	case t.KeyVar:
 		p.src = p.src[1:]
 		id, err := p.parseIdent()
 		if err != nil {
@@ -484,7 +483,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, err
 		}
 		value := (*a.Expr)(nil)
-		if p.peekID() == t.IDEq {
+		if p.peek().Key() == t.KeyEq {
 			p.src = p.src[1:]
 			value, err = p.parseExpr()
 			if err != nil {
@@ -499,7 +498,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return nil, err
 	}
 
-	if op := p.peekID(); op.IsAssign() {
+	if op := p.peek(); op.IsAssign() {
 		p.src = p.src[1:]
 		rhs, err := p.parseExpr()
 		if err != nil {
@@ -512,8 +511,8 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 }
 
 func (p *parser) parseIf() (*a.If, error) {
-	if x := p.peekID(); x != t.IDIf {
-		got := p.m.ByID(x)
+	if x := p.peek().Key(); x != t.KeyIf {
+		got := p.m.ByKey(x)
 		return nil, fmt.Errorf(`parse: expected "if", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -526,9 +525,9 @@ func (p *parser) parseIf() (*a.If, error) {
 		return nil, err
 	}
 	elseIf, bodyIfFalse := (*a.If)(nil), ([]*a.Node)(nil)
-	if p.peekID() == t.IDElse {
+	if p.peek().Key() == t.KeyElse {
 		p.src = p.src[1:]
-		if p.peekID() == t.IDIf {
+		if p.peek().Key() == t.KeyIf {
 			elseIf, err = p.parseIf()
 			if err != nil {
 				return nil, err
@@ -553,10 +552,10 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if x := p.peekID(); x.IsBinaryOp() {
+	if x := p.peek(); x.IsBinaryOp() {
 		p.src = p.src[1:]
 		rhs := (*a.Node)(nil)
-		if x == t.IDAs {
+		if x.Key() == t.KeyAs {
 			o, err := p.parseTypeExpr()
 			if err != nil {
 				return nil, err
@@ -570,7 +569,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 			rhs = o.Node()
 		}
 
-		if !x.IsAssociativeOp() || x != p.peekID() {
+		if !x.IsAssociativeOp() || x != p.peek() {
 			op := x.BinaryForm()
 			if op == 0 {
 				return nil, fmt.Errorf(`parse: internal error: no binary form for token.Key 0x%#02x`, x.Key())
@@ -579,7 +578,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		}
 
 		args := []*a.Node{lhs.Node(), rhs}
-		for p.peekID() == x {
+		for p.peek() == x {
 			p.src = p.src[1:]
 			arg, err := p.parseOperand()
 			if err != nil {
@@ -597,15 +596,15 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 }
 
 func (p *parser) parseOperand() (*a.Expr, error) {
-	switch x := p.peekID(); {
-	case x == t.IDOpenParen:
+	switch x := p.peek(); {
+	case x.Key() == t.KeyOpenParen:
 		p.src = p.src[1:]
 		expr, err := p.parseExpr()
 		if err != nil {
 			return nil, err
 		}
-		if x := p.peekID(); x != t.IDCloseParen {
-			got := p.m.ByID(x)
+		if x := p.peek().Key(); x != t.KeyCloseParen {
+			got := p.m.ByKey(x)
 			return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
@@ -636,17 +635,17 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 
 	for {
 		flags := a.Flags(0)
-		switch p.peekID() {
+		switch p.peek().Key() {
 		default:
 			return lhs, nil
 
-		case t.IDQuestion:
+		case t.KeyQuestion:
 			p.src = p.src[1:]
 			flags |= a.FlagsSuspendible
 			fallthrough
 
-		case t.IDOpenParen:
-			args, err := p.parseList(t.IDCloseParen, func(p *parser) (*a.Node, error) {
+		case t.KeyOpenParen:
+			args, err := p.parseList(t.KeyCloseParen, func(p *parser) (*a.Node, error) {
 				n, err := p.parseExpr()
 				return n.Node(), err
 			})
@@ -655,14 +654,14 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			}
 			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.Node(), nil, nil, args)
 
-		case t.IDOpenBracket:
+		case t.KeyOpenBracket:
 			id0, mhs, rhs, err := p.parseRangeOrIndex(true)
 			if err != nil {
 				return nil, err
 			}
 			lhs = a.NewExpr(0, id0, 0, lhs.Node(), mhs.Node(), rhs.Node(), nil)
 
-		case t.IDDot:
+		case t.KeyDot:
 			p.src = p.src[1:]
 			selector, err := p.parseIdent()
 			if err != nil {

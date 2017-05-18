@@ -12,15 +12,15 @@ import (
 )
 
 var numTypeBounds = [256][2]*big.Int{
-	t.IDI8 >> t.KeyShift:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
-	t.IDI16 >> t.KeyShift:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
-	t.IDI32 >> t.KeyShift:   {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
-	t.IDI64 >> t.KeyShift:   {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
-	t.IDU8 >> t.KeyShift:    {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
-	t.IDU16 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
-	t.IDU32 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
-	t.IDU64 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
-	t.IDUsize >> t.KeyShift: {zero, zero},
+	t.KeyI8:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
+	t.KeyI16:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
+	t.KeyI32:   {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
+	t.KeyI64:   {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
+	t.KeyU8:    {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
+	t.KeyU16:   {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
+	t.KeyU32:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
+	t.KeyU64:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
+	t.KeyUsize: {zero, zero},
 }
 
 var (
@@ -70,15 +70,15 @@ func (c *typeChecker) bcheckStatement(n *a.Node) error {
 }
 
 func (c *typeChecker) bcheckAssignment(lTyp *a.TypeExpr, rhs *a.Expr) error {
-	switch lTyp.PackageOrDecorator() {
-	case t.IDPtr:
+	switch lTyp.PackageOrDecorator().Key() {
+	case t.KeyPtr:
 		// TODO: handle.
 		return nil
-	case t.IDOpenBracket:
+	case t.KeyOpenBracket:
 		// TODO: handle.
 		return nil
 	}
-	if lTyp.Name() == t.IDBool {
+	if lTyp.Name().Key() == t.KeyBool {
 		return nil
 	}
 
@@ -145,27 +145,27 @@ func (c *typeChecker) bcheckExprBinaryOp(n *a.Expr, depth uint32) (*big.Int, *bi
 		return nil, nil, err
 	}
 
-	switch n.ID0() {
-	case t.IDXBinaryPlus:
+	switch n.ID0().Key() {
+	case t.KeyXBinaryPlus:
 		return big.NewInt(0).Add(l0, r0), big.NewInt(0).Add(l1, r1), nil
-	case t.IDXBinaryMinus:
-	case t.IDXBinaryStar:
-	case t.IDXBinarySlash:
-	case t.IDXBinaryShiftL:
-	case t.IDXBinaryShiftR:
-	case t.IDXBinaryAmp:
-	case t.IDXBinaryAmpHat:
-	case t.IDXBinaryPipe:
-	case t.IDXBinaryHat:
-	case t.IDXBinaryNotEq:
-	case t.IDXBinaryLessThan:
-	case t.IDXBinaryLessEq:
-	case t.IDXBinaryEqEq:
-	case t.IDXBinaryGreaterEq:
-	case t.IDXBinaryGreaterThan:
-	case t.IDXBinaryAnd:
-	case t.IDXBinaryOr:
-	case t.IDXBinaryAs:
+	case t.KeyXBinaryMinus:
+	case t.KeyXBinaryStar:
+	case t.KeyXBinarySlash:
+	case t.KeyXBinaryShiftL:
+	case t.KeyXBinaryShiftR:
+	case t.KeyXBinaryAmp:
+	case t.KeyXBinaryAmpHat:
+	case t.KeyXBinaryPipe:
+	case t.KeyXBinaryHat:
+	case t.KeyXBinaryNotEq:
+	case t.KeyXBinaryLessThan:
+	case t.KeyXBinaryLessEq:
+	case t.KeyXBinaryEqEq:
+	case t.KeyXBinaryGreaterEq:
+	case t.KeyXBinaryGreaterThan:
+	case t.KeyXBinaryAnd:
+	case t.KeyXBinaryOr:
+	case t.KeyXBinaryAs:
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", n.ID0().Key())
 }

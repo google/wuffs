@@ -378,9 +378,11 @@ const MaxTypeExprDepth = 63
 // example, the MHS for "u32[:4096]" is nil.
 type TypeExpr Node
 
-func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
-func (n *TypeExpr) IsNumType() bool          { return n.id0 == 0 && n.id1.IsNumType() }
-func (n *TypeExpr) IsRefined() bool          { return n.id0 != t.IDOpenBracket && (n.lhs != nil || n.mhs != nil) }
+func (n *TypeExpr) Node() *Node     { return (*Node)(n) }
+func (n *TypeExpr) IsNumType() bool { return n.id0 == 0 && n.id1.IsNumType() }
+func (n *TypeExpr) IsRefined() bool {
+	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
+}
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
 func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }

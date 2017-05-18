@@ -162,7 +162,7 @@ func (c *typeChecker) checkAssign(n *a.Assign) error {
 	lTyp := lhs.MType()
 	rTyp := rhs.MType()
 
-	if n.Operator() == t.IDEq {
+	if n.Operator().Key() == t.KeyEq {
 		if (rTyp == TypeExprIdealNumber && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
 			return nil
 		}
@@ -175,8 +175,8 @@ func (c *typeChecker) checkAssign(n *a.Assign) error {
 			c.idMap.ByID(n.Operator()), lhs.String(c.idMap), lTyp.String(c.idMap))
 	}
 
-	switch n.Operator() {
-	case t.IDShiftLEq, t.IDShiftREq:
+	switch n.Operator().Key() {
+	case t.KeyShiftLEq, t.KeyShiftREq:
 		if rTyp.IsNumType() {
 			return nil
 		}
@@ -225,10 +225,10 @@ func (c *typeChecker) checkExpr(n *a.Expr, depth uint32) error {
 }
 
 func (c *typeChecker) checkExprOther(n *a.Expr, depth uint32) error {
-	switch n.ID0() {
+	switch n.ID0().Key() {
 	case 0:
-		switch id1 := n.ID1(); {
-		case id1.IsNumLiteral():
+		id1 := n.ID1()
+		if id1.IsNumLiteral() {
 			z := big.NewInt(0)
 			s := c.idMap.ByID(id1)
 			if _, ok := z.SetString(s, 0); !ok {
@@ -238,7 +238,7 @@ func (c *typeChecker) checkExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(TypeExprIdealNumber)
 			return nil
 
-		case id1.IsIdent():
+		} else if id1.IsIdent() {
 			if c.f.LocalVars != nil {
 				if typ, ok := c.f.LocalVars[id1]; ok {
 					n.SetMType(typ)
@@ -247,37 +247,38 @@ func (c *typeChecker) checkExprOther(n *a.Expr, depth uint32) error {
 			}
 			// TODO: look for (global) names (constants, funcs, structs).
 			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(id1))
-
-		case id1 == t.IDFalse:
+		}
+		switch id1.Key() {
+		case t.KeyFalse:
 			n.SetConstValue(zero)
 			n.SetMType(TypeExprBoolean)
 			return nil
 
-		case id1 == t.IDTrue:
+		case t.KeyTrue:
 			n.SetConstValue(one)
 			n.SetMType(TypeExprBoolean)
 			return nil
 
-		case id1 == t.IDUnderscore:
+		case t.KeyUnderscore:
 			// TODO.
 
-		case id1 == t.IDThis:
+		case t.KeyThis:
 			// TODO.
 		}
 
-	case t.IDOpenParen:
+	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO.
 
-	case t.IDOpenBracket:
+	case t.KeyOpenBracket:
 		// n is an index.
 		// TODO.
 
-	case t.IDColon:
+	case t.KeyColon:
 		// n is a slice.
 		// TODO.
 
-	case t.IDDot:
+	case t.KeyDot:
 		return c.checkDot(n, depth)
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
@@ -289,7 +290,7 @@ func (c *typeChecker) checkDot(n *a.Expr, depth uint32) error {
 		return err
 	}
 	lTyp := lhs.MType()
-	for ; lTyp.PackageOrDecorator() == t.IDPtr; lTyp = lTyp.Inner() {
+	for ; lTyp.PackageOrDecorator().Key() == t.KeyPtr; lTyp = lTyp.Inner() {
 	}
 
 	if lTyp.PackageOrDecorator() != 0 {
@@ -299,10 +300,10 @@ func (c *typeChecker) checkDot(n *a.Expr, depth uint32) error {
 
 	s := (*a.Struct)(nil)
 	if c.f.Func != nil {
-		switch name := lTyp.Name(); name {
-		case t.IDIn:
+		switch name := lTyp.Name(); name.Key() {
+		case t.KeyIn:
 			s = c.f.Func.In()
-		case t.IDOut:
+		case t.KeyOut:
 			s = c.f.Func.Out()
 		default:
 			s = c.c.structs[name].Struct
@@ -331,14 +332,14 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr, depth uint32) error {
 	}
 	rTyp := rhs.MType()
 
-	switch n.ID0() {
-	case t.IDXUnaryPlus, t.IDXUnaryMinus:
+	switch n.ID0().Key() {
+	case t.KeyXUnaryPlus, t.KeyXUnaryMinus:
 		if !numeric(rTyp) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
 				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
-			if n.ID0() == t.IDXUnaryMinus {
+			if n.ID0().Key() == t.KeyXUnaryMinus {
 				cv = big.NewInt(0).Neg(cv)
 			}
 			n.SetConstValue(cv)
@@ -346,7 +347,7 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr, depth uint32) error {
 		n.SetMType(rTyp)
 		return nil
 
-	case t.IDXUnaryNot:
+	case t.KeyXUnaryNot:
 		if !rTyp.Eq(TypeExprBoolean) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
 				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
@@ -367,7 +368,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 	}
 	lTyp := lhs.MType()
 	op := n.ID0()
-	if op == t.IDXBinaryAs {
+	if op.Key() == t.KeyXBinaryAs {
 		rhs := n.RHS().TypeExpr()
 		if err := c.checkTypeExpr(rhs, 0); err != nil {
 			return err
@@ -385,7 +386,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 	}
 	rTyp := rhs.MType()
 
-	switch op {
+	switch op.Key() {
 	default:
 		if !numeric(lTyp) {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
@@ -395,9 +396,9 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
 				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
 		}
-	case t.IDXBinaryNotEq, t.IDXBinaryEqEq:
+	case t.KeyXBinaryNotEq, t.KeyXBinaryEqEq:
 		// No-op.
-	case t.IDXBinaryAnd, t.IDXBinaryOr:
+	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		if lTyp != TypeExprBoolean {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
 				c.idMap.ByID(op.AmbiguousForm()), lhs.String(c.idMap), lTyp.String(c.idMap))
@@ -408,7 +409,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 		}
 	}
 
-	switch op {
+	switch op.Key() {
 	default:
 		if !lTyp.EqIgnoringRefinements(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
@@ -417,7 +418,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 				lTyp.String(c.idMap), rTyp.String(c.idMap),
 			)
 		}
-	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
+	case t.KeyXBinaryShiftL, t.KeyXBinaryShiftR:
 		if (lTyp == TypeExprIdealNumber) && (rTyp != TypeExprIdealNumber) {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
@@ -446,55 +447,55 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 }
 
 func (c *typeChecker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
-	switch n.ID0() {
-	case t.IDXBinaryPlus:
+	switch n.ID0().Key() {
+	case t.KeyXBinaryPlus:
 		n.SetConstValue(big.NewInt(0).Add(l, r))
-	case t.IDXBinaryMinus:
+	case t.KeyXBinaryMinus:
 		n.SetConstValue(big.NewInt(0).Sub(l, r))
-	case t.IDXBinaryStar:
+	case t.KeyXBinaryStar:
 		n.SetConstValue(big.NewInt(0).Mul(l, r))
-	case t.IDXBinarySlash:
+	case t.KeyXBinarySlash:
 		if r.Cmp(zero) == 0 {
 			return fmt.Errorf("check: division by zero in const expression %q", n.String(c.idMap))
 		}
 		// TODO: decide on Euclidean division vs other definitions. See "go doc
 		// math/big int.divmod" for details.
 		n.SetConstValue(big.NewInt(0).Div(l, r))
-	case t.IDXBinaryShiftL:
+	case t.KeyXBinaryShiftL:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return fmt.Errorf("check: shift %q out of range in const expression %q",
 				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
 		}
 		n.SetConstValue(big.NewInt(0).Lsh(l, uint(r.Uint64())))
-	case t.IDXBinaryShiftR:
+	case t.KeyXBinaryShiftR:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return fmt.Errorf("check: shift %q out of range in const expression %q",
 				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
 		}
 		n.SetConstValue(big.NewInt(0).Rsh(l, uint(r.Uint64())))
-	case t.IDXBinaryAmp:
+	case t.KeyXBinaryAmp:
 		n.SetConstValue(big.NewInt(0).And(l, r))
-	case t.IDXBinaryAmpHat:
+	case t.KeyXBinaryAmpHat:
 		n.SetConstValue(big.NewInt(0).AndNot(l, r))
-	case t.IDXBinaryPipe:
+	case t.KeyXBinaryPipe:
 		n.SetConstValue(big.NewInt(0).Or(l, r))
-	case t.IDXBinaryHat:
+	case t.KeyXBinaryHat:
 		n.SetConstValue(big.NewInt(0).Xor(l, r))
-	case t.IDXBinaryNotEq:
+	case t.KeyXBinaryNotEq:
 		n.SetConstValue(btoi(l.Cmp(r) != 0))
-	case t.IDXBinaryLessThan:
+	case t.KeyXBinaryLessThan:
 		n.SetConstValue(btoi(l.Cmp(r) < 0))
-	case t.IDXBinaryLessEq:
+	case t.KeyXBinaryLessEq:
 		n.SetConstValue(btoi(l.Cmp(r) <= 0))
-	case t.IDXBinaryEqEq:
+	case t.KeyXBinaryEqEq:
 		n.SetConstValue(btoi(l.Cmp(r) == 0))
-	case t.IDXBinaryGreaterEq:
+	case t.KeyXBinaryGreaterEq:
 		n.SetConstValue(btoi(l.Cmp(r) >= 0))
-	case t.IDXBinaryGreaterThan:
+	case t.KeyXBinaryGreaterThan:
 		n.SetConstValue(btoi(l.Cmp(r) > 0))
-	case t.IDXBinaryAnd:
+	case t.KeyXBinaryAnd:
 		n.SetConstValue(btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)))
-	case t.IDXBinaryOr:
+	case t.KeyXBinaryOr:
 		n.SetConstValue(btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)))
 	}
 	return nil
@@ -511,9 +512,9 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 	}
 	depth++
 
-	switch n.PackageOrDecorator() {
+	switch n.PackageOrDecorator().Key() {
 	case 0:
-		if name := n.Name(); name.IsNumType() || name == t.IDBool {
+		if name := n.Name(); name.IsNumType() || name.Key() == t.KeyBool {
 			for _, bound := range n.Bounds() {
 				if bound == nil {
 					continue
@@ -533,12 +534,12 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 		// TODO: see if name refers to a struct type.
 		return fmt.Errorf("check: %q is not a type", c.idMap.ByID(n.Name()))
 
-	case t.IDPtr:
+	case t.KeyPtr:
 		if err := c.checkTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}
 
-	case t.IDOpenBracket:
+	case t.KeyOpenBracket:
 		aLen := n.ArrayLength()
 		if err := c.checkExpr(aLen, 0); err != nil {
 			return err
@@ -563,10 +564,10 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 }
 
 var comparisonOps = [256]bool{
-	t.IDXBinaryNotEq >> t.KeyShift:       true,
-	t.IDXBinaryLessThan >> t.KeyShift:    true,
-	t.IDXBinaryLessEq >> t.KeyShift:      true,
-	t.IDXBinaryEqEq >> t.KeyShift:        true,
-	t.IDXBinaryGreaterEq >> t.KeyShift:   true,
-	t.IDXBinaryGreaterThan >> t.KeyShift: true,
+	t.KeyXBinaryNotEq:       true,
+	t.KeyXBinaryLessThan:    true,
+	t.KeyXBinaryLessEq:      true,
+	t.KeyXBinaryEqEq:        true,
+	t.KeyXBinaryGreaterEq:   true,
+	t.KeyXBinaryGreaterThan: true,
 }

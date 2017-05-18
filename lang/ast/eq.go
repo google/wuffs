@@ -34,7 +34,7 @@ func (n *Expr) Eq(o *Expr) bool {
 		return false
 	}
 
-	if n.id0 == t.IDXBinaryAs {
+	if n.id0.Key() == t.KeyXBinaryAs {
 		if !n.rhs.TypeExpr().Eq(o.rhs.TypeExpr()) {
 			return false
 		}
@@ -75,7 +75,7 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 		if n.id0 != o.id0 || n.id1 != o.id1 {
 			return false
 		}
-		if n.id0 == t.IDOpenBracket || !ignoreRefinements {
+		if n.id0.Key() == t.KeyOpenBracket || !ignoreRefinements {
 			if !n.lhs.Expr().Eq(o.lhs.Expr()) || !n.mhs.Expr().Eq(o.mhs.Expr()) {
 				return false
 			}
