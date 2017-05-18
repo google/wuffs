@@ -10,11 +10,15 @@ struct lzw_decoder?(
 
 func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
 	var bits u32
-	var nBits u32
+	var n_bits u32
 
 	// TODO: set clear_code, end_code, etc.
 
-	var width u32[:13] = 12
+	var width u32[:13] = this.literal_width + 1
 
 	// TODO: implement.
+
+	while n_bits < width {
+		// TODO.
+	}
 }
