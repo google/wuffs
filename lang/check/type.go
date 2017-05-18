@@ -551,6 +551,11 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 		}
 
 	default:
+		// TODO: delete this hack.
+		if n.PackageOrDecorator() == c.idMap.ByName("io") && n.Name() == c.idMap.ByName("buf1") {
+			break
+		}
+
 		return fmt.Errorf("check: unrecognized node for checkTypeExpr")
 	}
 	n.Node().SetTypeChecked()

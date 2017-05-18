@@ -51,6 +51,9 @@ func (m *IDMap) insert(name string) (ID, error) {
 }
 
 func (m *IDMap) ByName(name string) ID {
+	if id, ok := builtInsByName[name]; ok {
+		return id
+	}
 	if m.byName != nil {
 		return m.byName[name]
 	}

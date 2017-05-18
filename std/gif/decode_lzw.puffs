@@ -12,5 +12,9 @@ func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
 	var bits u32
 	var nBits u32
 
+	// TODO: set clear_code, end_code, etc.
+
+	var width u32[:13] = 12
+
 	// TODO: implement.
 }

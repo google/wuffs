@@ -380,6 +380,7 @@ type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
 func (n *TypeExpr) IsNumType() bool          { return n.id0 == 0 && n.id1.IsNumType() }
+func (n *TypeExpr) IsRefined() bool          { return n.id0 != t.IDOpenBracket && (n.lhs != nil || n.mhs != nil) }
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
 func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }

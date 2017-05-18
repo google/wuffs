@@ -6,7 +6,6 @@ package check
 import (
 	"errors"
 	"fmt"
-	"math/big"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
@@ -117,6 +116,7 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 	if len(fields) == 0 {
 		return nil
 	}
+
 	tc := &typeChecker{
 		c:     c,
 		idMap: c.idMap,
@@ -133,6 +133,9 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 		fieldNames[f.Name()] = true
 		f.Node().SetTypeChecked()
 	}
+
+	// TODO: bounds checking.
+
 	return nil
 }
 
@@ -274,8 +277,18 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 		}
 	}
 
-	f.Node().SetTypeChecked()
+	// Run bounds checks.
+	for _, m := range f.Body() {
+		if err := tc.bcheckStatement(m); err != nil {
+			return &Error{
+				Err:      err,
+				Filename: tc.errFilename,
+				Line:     tc.errLine,
+			}
+		}
+	}
 
+	f.Node().SetTypeChecked()
 	if err := f.Node().Walk(func(n *a.Node) error {
 		if !n.TypeChecked() {
 			return fmt.Errorf("check: internal error: unchecked %s node", n.Kind())
@@ -295,34 +308,5 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 		return err
 	}
 
-	// TODO: bounds and assertion checking.
-
 	return nil
-}
-
-// TODO: use numTypeRanges.
-
-var numTypeRanges = [256][2]*big.Int{
-	t.IDI8 >> t.KeyShift:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
-	t.IDI16 >> t.KeyShift:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
-	t.IDI32 >> t.KeyShift:   {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
-	t.IDI64 >> t.KeyShift:   {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
-	t.IDU8 >> t.KeyShift:    {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
-	t.IDU16 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
-	t.IDU32 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
-	t.IDU64 >> t.KeyShift:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
-	t.IDUsize >> t.KeyShift: {zero, zero},
-}
-
-var (
-	zero = big.NewInt(0)
-	one  = big.NewInt(1)
-	ffff = big.NewInt(0xFFFF)
-)
-
-func btoi(b bool) *big.Int {
-	if b {
-		return one
-	}
-	return zero
 }
