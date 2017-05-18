@@ -67,6 +67,7 @@ type Flags uint32
 
 const (
 	FlagsSuspendible = Flags(0x00000001)
+	FlagsTypeChecked = Flags(0x00000002)
 )
 
 type Node struct {
@@ -88,7 +89,9 @@ type Node struct {
 	list1 []*Node
 }
 
-func (n *Node) Kind() Kind { return n.kind }
+func (n *Node) Kind() Kind        { return n.kind }
+func (n *Node) TypeChecked() bool { return n.flags&FlagsTypeChecked != 0 }
+func (n *Node) SetTypeChecked()   { n.flags |= FlagsTypeChecked }
 
 func (n *Node) Assert() *Assert     { return (*Assert)(n) }
 func (n *Node) Assign() *Assign     { return (*Assign)(n) }
@@ -149,6 +152,9 @@ func (n *Raw) List0() []*Node                 { return n.list0 }
 func (n *Raw) List1() []*Node                 { return n.list1 }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
+
+// MaxExprDepth is an advisory limit for an Expr's recursion depth.
+const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
 //  - FlagsSuspendible is "f(x)" vs "f?(x)"
@@ -350,6 +356,9 @@ func NewJump(keyword t.ID) *Jump {
 		id0:  keyword,
 	}
 }
+
+// MaxTypeExprDepth is an advisory limit for a TypeExpr's recursion depth.
+const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "u32", "u32[:8]", "pkg.foo", "ptr T"
 // or "[8] T":
