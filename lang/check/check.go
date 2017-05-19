@@ -117,7 +117,7 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 		return nil
 	}
 
-	tc := &typeChecker{
+	q := &checker{
 		c:     c,
 		idMap: c.idMap,
 	}
@@ -127,7 +127,7 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 		if _, ok := fieldNames[f.Name()]; ok {
 			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(f.Name()))
 		}
-		if err := tc.checkTypeExpr(f.XType(), 0); err != nil {
+		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
 			return fmt.Errorf("%v in field %q", err, c.idMap.ByID(f.Name()))
 		}
 		fieldNames[f.Name()] = true
@@ -231,12 +231,12 @@ func (c *Checker) checkFuncContract(n *a.Node) error {
 	if len(as) == 0 {
 		return nil
 	}
-	tc := &typeChecker{
+	q := &checker{
 		c:     c,
 		idMap: c.idMap,
 	}
 	for _, a := range as {
-		if err := tc.checkAssert(a.Assert()); err != nil {
+		if err := q.tcheckAssert(a.Assert()); err != nil {
 			return err
 		}
 	}
@@ -245,7 +245,7 @@ func (c *Checker) checkFuncContract(n *a.Node) error {
 
 func (c *Checker) checkFuncBody(n *a.Node) error {
 	f := n.Func()
-	tc := &typeChecker{
+	q := &checker{
 		c:     c,
 		idMap: c.idMap,
 		f:     c.funcs[f.QID()],
@@ -255,11 +255,11 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	// function scope and can be hoisted, JavaScript style, a la
 	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
 	for _, m := range f.Body() {
-		if err := tc.checkVars(m); err != nil {
+		if err := q.tcheckVars(m); err != nil {
 			return &Error{
 				Err:      err,
-				Filename: tc.errFilename,
-				Line:     tc.errLine,
+				Filename: q.errFilename,
+				Line:     q.errLine,
 			}
 		}
 	}
@@ -268,22 +268,22 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 
 	// Assign ConstValue's (if applicable) and MType's to each Expr.
 	for _, m := range f.Body() {
-		if err := tc.checkStatement(m); err != nil {
+		if err := q.tcheckStatement(m); err != nil {
 			return &Error{
 				Err:      err,
-				Filename: tc.errFilename,
-				Line:     tc.errLine,
+				Filename: q.errFilename,
+				Line:     q.errLine,
 			}
 		}
 	}
 
 	// Run bounds checks.
 	for _, m := range f.Body() {
-		if err := tc.bcheckStatement(m); err != nil {
+		if err := q.bcheckStatement(m); err != nil {
 			return &Error{
 				Err:      err,
-				Filename: tc.errFilename,
-				Line:     tc.errLine,
+				Filename: q.errFilename,
+				Line:     q.errLine,
 			}
 		}
 	}
@@ -297,10 +297,10 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 			e := n.Expr()
 			if typ := e.MType(); typ == nil {
 				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
-					e.String(tc.idMap))
+					e.String(q.idMap))
 			} else if typ == TypeExprIdealNumber && e.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", e.String(tc.idMap))
+					"but no const value", e.String(q.idMap))
 			}
 		}
 		return nil
@@ -309,4 +309,13 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	}
 
 	return nil
+}
+
+type checker struct {
+	c     *Checker
+	idMap *t.IDMap
+	f     Func
+
+	errFilename string
+	errLine     uint32
 }

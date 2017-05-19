@@ -44,7 +44,7 @@ func neg(i *big.Int) *big.Int {
 	return big.NewInt(0).Neg(i)
 }
 
-func (c *typeChecker) bcheckStatement(n *a.Node) error {
+func (c *checker) bcheckStatement(n *a.Node) error {
 	c.errFilename, c.errLine = n.Raw().FilenameLine()
 
 	switch n.Kind() {
@@ -91,7 +91,7 @@ func (c *typeChecker) bcheckStatement(n *a.Node) error {
 	return nil
 }
 
-func (c *typeChecker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+func (c *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	switch lTyp.PackageOrDecorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
@@ -142,7 +142,7 @@ func (c *typeChecker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, r
 	return nil
 }
 
-func (c *typeChecker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	if depth > a.MaxExprDepth {
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -168,7 +168,7 @@ func (c *typeChecker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, e
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
 }
 
-func (c *typeChecker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (c *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	r0, r1, err := c.bcheckExpr(n.RHS().Expr(), depth)
 	if err != nil {
 		return nil, nil, err
@@ -186,7 +186,7 @@ func (c *typeChecker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
 }
 
-func (c *typeChecker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (c *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	l0, l1, err := c.bcheckExpr(lhs, depth)
 	if err != nil {
 		return nil, nil, err
@@ -226,11 +226,11 @@ func (c *typeChecker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, dep
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }
 
-func (c *typeChecker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (c *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
 }
 
-func (c *typeChecker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
+func (c *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	b := [2]*big.Int{}
 	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]

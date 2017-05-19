@@ -11,16 +11,7 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-type typeChecker struct {
-	c     *Checker
-	idMap *t.IDMap
-	f     Func
-
-	errFilename string
-	errLine     uint32
-}
-
-func (c *typeChecker) checkVars(n *a.Node) error {
+func (c *checker) tcheckVars(n *a.Node) error {
 	c.errFilename, c.errLine = n.Raw().FilenameLine()
 
 	if n.Kind() == a.KVar {
@@ -29,7 +20,7 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 		if _, ok := c.f.LocalVars[name]; ok {
 			return fmt.Errorf("check: duplicate var %q", c.idMap.ByID(name))
 		}
-		if err := c.checkTypeExpr(v.XType(), 0); err != nil {
+		if err := c.tcheckTypeExpr(v.XType(), 0); err != nil {
 			return err
 		}
 		c.f.LocalVars[name] = v.XType()
@@ -37,7 +28,7 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 	}
 	for _, l := range n.Raw().SubLists() {
 		for _, m := range l {
-			if err := c.checkVars(m); err != nil {
+			if err := c.tcheckVars(m); err != nil {
 				return err
 			}
 		}
@@ -45,17 +36,17 @@ func (c *typeChecker) checkVars(n *a.Node) error {
 	return nil
 }
 
-func (c *typeChecker) checkStatement(n *a.Node) error {
+func (c *checker) tcheckStatement(n *a.Node) error {
 	c.errFilename, c.errLine = n.Raw().FilenameLine()
 
 	switch n.Kind() {
 	case a.KAssert:
-		if err := c.checkAssert(n.Assert()); err != nil {
+		if err := c.tcheckAssert(n.Assert()); err != nil {
 			return err
 		}
 
 	case a.KAssign:
-		if err := c.checkAssign(n.Assign()); err != nil {
+		if err := c.tcheckAssign(n.Assign()); err != nil {
 			return err
 		}
 
@@ -65,7 +56,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 			return fmt.Errorf("check: internal error: unchecked type expression %q", o.XType().String(c.idMap))
 		}
 		if value := o.Value(); value != nil {
-			if err := c.checkExpr(value, 0); err != nil {
+			if err := c.tcheckExpr(value, 0); err != nil {
 				return err
 			}
 			// TODO: check that value.Type is assignable to o.TypeExpr().
@@ -74,7 +65,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 	case a.KWhile:
 		o := n.While()
 		cond := o.Condition()
-		if err := c.checkExpr(cond, 0); err != nil {
+		if err := c.tcheckExpr(cond, 0); err != nil {
 			return err
 		}
 		if !cond.MType().Eq(TypeExprBoolean) {
@@ -82,13 +73,13 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 				cond.String(c.idMap), cond.MType().String(c.idMap))
 		}
 		for _, m := range o.Asserts() {
-			if err := c.checkAssert(m.Assert()); err != nil {
+			if err := c.tcheckAssert(m.Assert()); err != nil {
 				return err
 			}
 			m.SetTypeChecked()
 		}
 		for _, m := range o.Body() {
-			if err := c.checkStatement(m); err != nil {
+			if err := c.tcheckStatement(m); err != nil {
 				return err
 			}
 		}
@@ -96,7 +87,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 	case a.KIf:
 		for o := n.If(); o != nil; o = o.ElseIf() {
 			cond := o.Condition()
-			if err := c.checkExpr(cond, 0); err != nil {
+			if err := c.tcheckExpr(cond, 0); err != nil {
 				return err
 			}
 			if !cond.MType().Eq(TypeExprBoolean) {
@@ -104,12 +95,12 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 					cond.String(c.idMap), cond.MType().String(c.idMap))
 			}
 			for _, m := range o.BodyIfTrue() {
-				if err := c.checkStatement(m); err != nil {
+				if err := c.tcheckStatement(m); err != nil {
 					return err
 				}
 			}
 			for _, m := range o.BodyIfFalse() {
-				if err := c.checkStatement(m); err != nil {
+				if err := c.tcheckStatement(m); err != nil {
 					return err
 				}
 			}
@@ -118,7 +109,7 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 	case a.KReturn:
 		o := n.Return()
 		if value := o.Value(); value != nil {
-			if err := c.checkExpr(value, 0); err != nil {
+			if err := c.tcheckExpr(value, 0); err != nil {
 				return err
 			}
 			// TODO: type-check that value is assignable to the return value.
@@ -136,9 +127,9 @@ func (c *typeChecker) checkStatement(n *a.Node) error {
 	return nil
 }
 
-func (c *typeChecker) checkAssert(n *a.Assert) error {
+func (c *checker) tcheckAssert(n *a.Assert) error {
 	cond := n.Condition()
-	if err := c.checkExpr(cond, 0); err != nil {
+	if err := c.tcheckExpr(cond, 0); err != nil {
 		return err
 	}
 	if !cond.MType().Eq(TypeExprBoolean) {
@@ -150,13 +141,13 @@ func (c *typeChecker) checkAssert(n *a.Assert) error {
 	return nil
 }
 
-func (c *typeChecker) checkAssign(n *a.Assign) error {
+func (c *checker) tcheckAssign(n *a.Assign) error {
 	lhs := n.LHS()
 	rhs := n.RHS()
-	if err := c.checkExpr(lhs, 0); err != nil {
+	if err := c.tcheckExpr(lhs, 0); err != nil {
 		return err
 	}
-	if err := c.checkExpr(rhs, 0); err != nil {
+	if err := c.tcheckExpr(rhs, 0); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
@@ -194,7 +185,7 @@ func (c *typeChecker) checkAssign(n *a.Assign) error {
 	)
 }
 
-func (c *typeChecker) checkExpr(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -202,19 +193,19 @@ func (c *typeChecker) checkExpr(n *a.Expr, depth uint32) error {
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		if err := c.checkExprOther(n, depth); err != nil {
+		if err := c.tcheckExprOther(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsUnaryOp:
-		if err := c.checkExprUnaryOp(n, depth); err != nil {
+		if err := c.tcheckExprUnaryOp(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsBinaryOp:
-		if err := c.checkExprBinaryOp(n, depth); err != nil {
+		if err := c.tcheckExprBinaryOp(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsAssociativeOp:
-		if err := c.checkExprAssociativeOp(n, depth); err != nil {
+		if err := c.tcheckExprAssociativeOp(n, depth); err != nil {
 			return err
 		}
 	default:
@@ -224,7 +215,7 @@ func (c *typeChecker) checkExpr(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (c *typeChecker) checkExprOther(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	switch n.ID0().Key() {
 	case 0:
 		id1 := n.ID1()
@@ -279,14 +270,14 @@ func (c *typeChecker) checkExprOther(n *a.Expr, depth uint32) error {
 		// TODO.
 
 	case t.KeyDot:
-		return c.checkDot(n, depth)
+		return c.tcheckDot(n, depth)
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
 }
 
-func (c *typeChecker) checkDot(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
-	if err := c.checkExpr(lhs, depth); err != nil {
+	if err := c.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
@@ -325,9 +316,9 @@ func (c *typeChecker) checkDot(n *a.Expr, depth uint32) error {
 		n.ID1().String(c.idMap), lTyp.Name().String(c.idMap), n.String(c.idMap))
 }
 
-func (c *typeChecker) checkExprUnaryOp(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	rhs := n.RHS().Expr()
-	if err := c.checkExpr(rhs, depth); err != nil {
+	if err := c.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
 	rTyp := rhs.MType()
@@ -361,16 +352,16 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr, depth uint32) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
 }
 
-func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
-	if err := c.checkExpr(lhs, depth); err != nil {
+	if err := c.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
 	op := n.ID0()
 	if op.Key() == t.KeyXBinaryAs {
 		rhs := n.RHS().TypeExpr()
-		if err := c.checkTypeExpr(rhs, 0); err != nil {
+		if err := c.tcheckTypeExpr(rhs, 0); err != nil {
 			return err
 		}
 		if numeric(lTyp) && rhs.IsNumType() {
@@ -381,7 +372,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 			lhs.String(c.idMap), lTyp.String(c.idMap), rhs.String(c.idMap))
 	}
 	rhs := n.RHS().Expr()
-	if err := c.checkExpr(rhs, depth); err != nil {
+	if err := c.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
 	rTyp := rhs.MType()
@@ -446,7 +437,7 @@ func (c *typeChecker) checkExprBinaryOp(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (c *typeChecker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
+func (c *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
 	switch n.ID0().Key() {
 	case t.KeyXBinaryPlus:
 		n.SetConstValue(big.NewInt(0).Add(l, r))
@@ -501,12 +492,12 @@ func (c *typeChecker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) e
 	return nil
 }
 
-func (c *typeChecker) checkExprAssociativeOp(n *a.Expr, depth uint32) error {
+func (c *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 	// TODO.
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprAssociativeOp", n.ID0().Key())
 }
 
-func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
+func (c *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 	if depth > a.MaxTypeExprDepth {
 		return fmt.Errorf("check: type expression recursion depth too large")
 	}
@@ -519,7 +510,7 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 				if bound == nil {
 					continue
 				}
-				if err := c.checkExpr(bound, 0); err != nil {
+				if err := c.tcheckExpr(bound, 0); err != nil {
 					return err
 				}
 				if bound.ConstValue() == nil {
@@ -535,19 +526,19 @@ func (c *typeChecker) checkTypeExpr(n *a.TypeExpr, depth uint32) error {
 		return fmt.Errorf("check: %q is not a type", c.idMap.ByID(n.Name()))
 
 	case t.KeyPtr:
-		if err := c.checkTypeExpr(n.Inner(), depth); err != nil {
+		if err := c.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}
 
 	case t.KeyOpenBracket:
 		aLen := n.ArrayLength()
-		if err := c.checkExpr(aLen, 0); err != nil {
+		if err := c.tcheckExpr(aLen, 0); err != nil {
 			return err
 		}
 		if aLen.ConstValue() == nil {
 			return fmt.Errorf("check: %q is not constant", aLen.String(c.idMap))
 		}
-		if err := c.checkTypeExpr(n.Inner(), depth); err != nil {
+		if err := c.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}
 
