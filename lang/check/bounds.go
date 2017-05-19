@@ -36,6 +36,10 @@ func btoi(b bool) *big.Int {
 	return zero
 }
 
+func add1(i *big.Int) *big.Int {
+	return big.NewInt(0).Add(i, one)
+}
+
 func sub1(i *big.Int) *big.Int {
 	return big.NewInt(0).Sub(i, one)
 }
@@ -49,7 +53,8 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 
 	switch n.Kind() {
 	case a.KAssert:
-		// TODO.
+		// TODO: check the assertion.
+		c.facts = append(c.facts, n.Assert().Condition())
 
 	case a.KAssign:
 		o := n.Assign()
@@ -60,20 +65,7 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 		return c.bcheckAssignment(nil, o.XType(), t.IDEq, o.Value())
 
 	case a.KWhile:
-		o := n.While()
-		cond := o.Condition()
-		if _, _, err := c.bcheckExpr(cond, 0); err != nil {
-			return err
-		}
-		for _, m := range o.Asserts() {
-			// TODO
-			_ = m
-		}
-		for _, m := range o.Body() {
-			if err := c.bcheckStatement(m); err != nil {
-				return err
-			}
-		}
+		return c.bcheckWhile(n.While())
 
 	case a.KIf:
 		// TODO.
@@ -92,6 +84,14 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 }
 
 func (c *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+	if err := c.bcheckAssignment1(lhs, lTyp, op, rhs); err != nil {
+		return err
+	}
+	// TODO: drop any facts involving lhs.
+	return nil
+}
+
+func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	switch lTyp.PackageOrDecorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
@@ -142,6 +142,48 @@ func (c *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *
 	return nil
 }
 
+func (c *checker) bcheckWhile(n *a.While) error {
+	if _, _, err := c.bcheckExpr(n.Condition(), 0); err != nil {
+		return err
+	}
+
+	// Check the pre and assert conditions on entry.
+	for _, m := range n.Asserts() {
+		if m.Assert().Keyword().Key() == t.KeyPost {
+			continue
+		}
+		// TODO
+	}
+
+	// Assume the pre and assert conditions, and the while condition. Check
+	// the body.
+	c.facts = c.facts[:0]
+	for _, m := range n.Asserts() {
+		if m.Assert().Keyword().Key() == t.KeyPost {
+			continue
+		}
+		c.facts = append(c.facts, m.Assert().Condition())
+	}
+	c.facts = append(c.facts, n.Condition())
+	for _, m := range n.Body() {
+		if err := c.bcheckStatement(m); err != nil {
+			return err
+		}
+	}
+
+	// TODO: check the assert and post conditions on exit.
+
+	// Assume the assert and post conditions.
+	c.facts = c.facts[:0]
+	for _, m := range n.Asserts() {
+		if m.Assert().Keyword().Key() == t.KeyPre {
+			continue
+		}
+		c.facts = append(c.facts, m.Assert().Condition())
+	}
+	return nil
+}
+
 func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	if depth > a.MaxExprDepth {
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
@@ -153,7 +195,24 @@ func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		return c.bcheckTypeExpr(n.MType())
+		n0, n1, err := c.bcheckTypeExpr(n.MType())
+		if err != nil {
+			return nil, nil, err
+		}
+		if n.ID0() == 0 && n.ID1().IsIdent() {
+			for _, f := range c.facts {
+				f0, f1 := binds(f, n.ID1())
+				if f0 != nil && n0.Cmp(f0) < 0 {
+					n0 = f0
+				}
+				if f1 != nil && n1.Cmp(f1) > 0 {
+					n1 = f1
+				}
+			}
+		} else {
+			// TODO: propagate facts about e.g. "this.foo".
+		}
+		return n0, n1, nil
 	case t.FlagsUnaryOp:
 		return c.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:

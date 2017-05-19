@@ -17,14 +17,29 @@ type Error struct {
 	Line          uint32
 	OtherFilename string
 	OtherLine     uint32
+
+	IDMap *t.IDMap
+	Facts []*a.Expr
 }
 
 func (e *Error) Error() string {
+	s := ""
 	if e.OtherFilename != "" || e.OtherLine != 0 {
-		return fmt.Sprintf("%s at %s:%d and %s:%d",
+		s = fmt.Sprintf("%s at %s:%d and %s:%d",
 			e.Err, e.Filename, e.Line, e.OtherFilename, e.OtherLine)
+	} else {
+		s = fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
 	}
-	return fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
+	if e.IDMap == nil {
+		return s
+	}
+	b := append([]byte(s), ". Facts:\n"...)
+	for _, f := range e.Facts {
+		b = append(b, '\t')
+		b = append(b, f.String(e.IDMap)...)
+		b = append(b, '\n')
+	}
+	return string(b)
 }
 
 // TypeExprFoo is an *ast.Node MType (implicit type) that means that n is a
@@ -284,6 +299,8 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 				Err:      err,
 				Filename: q.errFilename,
 				Line:     q.errLine,
+				IDMap:    c.idMap,
+				Facts:    q.facts,
 			}
 		}
 	}
@@ -318,4 +335,6 @@ type checker struct {
 
 	errFilename string
 	errLine     uint32
+
+	facts []*a.Expr
 }
