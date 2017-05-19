@@ -613,6 +613,17 @@ var unaryForms = [256]ID{
 }
 
 var binaryForms = [256]ID{
+	KeyPlusEq:   IDXBinaryPlus,
+	KeyMinusEq:  IDXBinaryMinus,
+	KeyStarEq:   IDXBinaryStar,
+	KeySlashEq:  IDXBinarySlash,
+	KeyShiftLEq: IDXBinaryShiftL,
+	KeyShiftREq: IDXBinaryShiftR,
+	KeyAmpEq:    IDXBinaryAmp,
+	KeyAmpHatEq: IDXBinaryAmpHat,
+	KeyPipeEq:   IDXBinaryPipe,
+	KeyHatEq:    IDXBinaryHat,
+
 	KeyPlus:        IDXBinaryPlus,
 	KeyMinus:       IDXBinaryMinus,
 	KeyStar:        IDXBinaryStar,

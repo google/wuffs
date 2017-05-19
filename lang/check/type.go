@@ -340,7 +340,7 @@ func (c *typeChecker) checkExprUnaryOp(n *a.Expr, depth uint32) error {
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			if n.ID0().Key() == t.KeyXUnaryMinus {
-				cv = big.NewInt(0).Neg(cv)
+				cv = neg(cv)
 			}
 			n.SetConstValue(cv)
 		}

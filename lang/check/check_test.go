@@ -58,8 +58,8 @@ func TestCheck(t *testing.T) {
 			var b bool
 
 			x = 0
-			x = 1 + x
-			y = -y
+			x = 1 + (x * 0)
+			y = -y - 1
 			y = this.i
 			b = not true
 

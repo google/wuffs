@@ -20,5 +20,6 @@ func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
 
 	while n_bits < width {
 		// TODO.
+		// n_bits += width
 	}
 }

@@ -36,6 +36,14 @@ func btoi(b bool) *big.Int {
 	return zero
 }
 
+func sub1(i *big.Int) *big.Int {
+	return big.NewInt(0).Sub(i, one)
+}
+
+func neg(i *big.Int) *big.Int {
+	return big.NewInt(0).Neg(i)
+}
+
 func (c *typeChecker) bcheckStatement(n *a.Node) error {
 	c.errFilename, c.errLine = n.Raw().FilenameLine()
 
@@ -44,14 +52,28 @@ func (c *typeChecker) bcheckStatement(n *a.Node) error {
 		// TODO.
 
 	case a.KAssign:
-		// TODO.
+		o := n.Assign()
+		return c.bcheckAssignment(o.LHS(), o.LHS().MType(), o.Operator(), o.RHS())
 
 	case a.KVar:
 		o := n.Var()
-		return c.bcheckAssignment(o.XType(), o.Value())
+		return c.bcheckAssignment(nil, o.XType(), t.IDEq, o.Value())
 
 	case a.KWhile:
-		// TODO.
+		o := n.While()
+		cond := o.Condition()
+		if _, _, err := c.bcheckExpr(cond, 0); err != nil {
+			return err
+		}
+		for _, m := range o.Asserts() {
+			// TODO
+			_ = m
+		}
+		for _, m := range o.Body() {
+			if err := c.bcheckStatement(m); err != nil {
+				return err
+			}
+		}
 
 	case a.KIf:
 		// TODO.
@@ -69,7 +91,7 @@ func (c *typeChecker) bcheckStatement(n *a.Node) error {
 	return nil
 }
 
-func (c *typeChecker) bcheckAssignment(lTyp *a.TypeExpr, rhs *a.Expr) error {
+func (c *typeChecker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	switch lTyp.PackageOrDecorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
@@ -82,31 +104,42 @@ func (c *typeChecker) bcheckAssignment(lTyp *a.TypeExpr, rhs *a.Expr) error {
 		return nil
 	}
 
-	lBounds0, lBounds1, err := c.bcheckTypeExpr(lTyp)
+	l0, l1, err := c.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
 
-	cv := zero
-	if rhs != nil {
-		cv = rhs.ConstValue()
-	}
-	if cv != nil {
-		if cv.Cmp(lBounds0) >= 0 && cv.Cmp(lBounds1) <= 0 {
+	r0, r1 := (*big.Int)(nil), (*big.Int)(nil)
+	if op == t.IDEq {
+		cv := zero
+		// rhs might be nil because "var x T" has an implicit "= 0".
+		if rhs != nil {
+			cv = rhs.ConstValue()
+		}
+		if cv != nil {
+			if cv.Cmp(l0) < 0 || cv.Cmp(l1) > 0 {
+				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, l0, l1)
+			}
 			return nil
 		}
-		return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, lBounds0, lBounds1)
+		r0, r1, err = c.bcheckExpr(rhs, 0)
+	} else {
+		r0, r1, err = c.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
 	}
-
-	rBounds0, rBounds1, err := c.bcheckExpr(rhs, 0)
 	if err != nil {
 		return err
 	}
-	if rBounds0.Cmp(lBounds0) >= 0 && rBounds1.Cmp(lBounds1) <= 0 {
-		return nil
+	if r0.Cmp(l0) < 0 || r1.Cmp(l1) > 0 {
+		if op == t.IDEq {
+			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
+				rhs.String(c.idMap), r0, r1, l0, l1)
+		} else {
+			return fmt.Errorf("check: assignment %q bounds [%v..%v] is not within bounds [%v..%v]",
+				lhs.String(c.idMap)+" "+op.String(c.idMap)+" "+rhs.String(c.idMap),
+				r0, r1, l0, l1)
+		}
 	}
-	return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-		rhs.String(c.idMap), rBounds0, rBounds1, lBounds0, lBounds1)
+	return nil
 }
 
 func (c *typeChecker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
@@ -114,17 +147,21 @@ func (c *typeChecker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, e
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
 	}
 	depth++
+	if cv := n.ConstValue(); cv != nil {
+		return cv, cv, nil
+	}
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		if cv := n.ConstValue(); cv != nil {
-			return cv, cv, nil
-		}
 		return c.bcheckTypeExpr(n.MType())
 	case t.FlagsUnaryOp:
 		return c.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:
-		return c.bcheckExprBinaryOp(n, depth)
+		if n.ID0().Key() == t.KeyXBinaryAs {
+			// TODO.
+			return zero, zero, nil
+		}
+		return c.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
 		return c.bcheckExprAssociativeOp(n, depth)
 	}
@@ -132,24 +169,46 @@ func (c *typeChecker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, e
 }
 
 func (c *typeChecker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
-}
-
-func (c *typeChecker) bcheckExprBinaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	l0, l1, err := c.bcheckExpr(n.LHS().Expr(), depth)
-	if err != nil {
-		return nil, nil, err
-	}
 	r0, r1, err := c.bcheckExpr(n.RHS().Expr(), depth)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	switch n.ID0().Key() {
+	case t.KeyXUnaryPlus:
+		return r0, r1, nil
+	case t.KeyXUnaryMinus:
+		return neg(r1), neg(r0), nil
+	case t.KeyXUnaryNot:
+		return zero, one, nil
+	}
+
+	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
+}
+
+func (c *typeChecker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	l0, l1, err := c.bcheckExpr(lhs, depth)
+	if err != nil {
+		return nil, nil, err
+	}
+	r0, r1, err := c.bcheckExpr(rhs, depth)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch op {
 	case t.KeyXBinaryPlus:
 		return big.NewInt(0).Add(l0, r0), big.NewInt(0).Add(l1, r1), nil
 	case t.KeyXBinaryMinus:
+		return big.NewInt(0).Sub(l0, r0), big.NewInt(0).Sub(l1, r1), nil
 	case t.KeyXBinaryStar:
+		// TODO.
+		if cv := lhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
+			return zero, zero, nil
+		}
+		if cv := rhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
+			return zero, zero, nil
+		}
 	case t.KeyXBinarySlash:
 	case t.KeyXBinaryShiftL:
 	case t.KeyXBinaryShiftR:
@@ -157,17 +216,14 @@ func (c *typeChecker) bcheckExprBinaryOp(n *a.Expr, depth uint32) (*big.Int, *bi
 	case t.KeyXBinaryAmpHat:
 	case t.KeyXBinaryPipe:
 	case t.KeyXBinaryHat:
-	case t.KeyXBinaryNotEq:
-	case t.KeyXBinaryLessThan:
-	case t.KeyXBinaryLessEq:
-	case t.KeyXBinaryEqEq:
-	case t.KeyXBinaryGreaterEq:
-	case t.KeyXBinaryGreaterThan:
-	case t.KeyXBinaryAnd:
-	case t.KeyXBinaryOr:
+
+	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq, t.KeyXBinaryEqEq,
+		t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan, t.KeyXBinaryAnd, t.KeyXBinaryOr:
+		return zero, one, nil
+
 	case t.KeyXBinaryAs:
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", n.ID0().Key())
+	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }
 
 func (c *typeChecker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
@@ -190,7 +246,7 @@ func (c *typeChecker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) 
 		}
 		if x := n.ExclMax(); x != nil {
 			if cv := x.ConstValue(); cv != nil && b[1].Cmp(cv) > 0 {
-				b[1] = big.NewInt(0).Sub(cv, one)
+				b[1] = sub1(cv)
 			}
 		}
 	}
