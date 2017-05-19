@@ -404,11 +404,25 @@ func (p *parser) parseAssertNode() (*a.Node, error) {
 	switch x := p.peek1(); x.Key() {
 	case t.KeyAssert, t.KeyPre, t.KeyPost:
 		p.src = p.src[1:]
-		rhs, err := p.parseExpr()
+		condition, err := p.parseExpr()
 		if err != nil {
 			return nil, err
 		}
-		return a.NewAssert(x, rhs).Node(), nil
+		reason, args := t.ID(0), []*a.Node(nil)
+		if p.peek1().Key() == t.KeyVia {
+			p.src = p.src[1:]
+			reason = p.peek1()
+			if !reason.IsStrLiteral() {
+				got := p.m.ByID(reason)
+				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			args, err = p.parseList(t.KeyCloseParen, (*parser).parseArgNode)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return a.NewAssert(x, condition, reason, args).Node(), nil
 	}
 	return nil, fmt.Errorf(`parse: expected "assert", "pre" or "post" at %s:%d`, p.filename, p.line())
 }
@@ -542,9 +556,21 @@ func (p *parser) parseIf() (*a.If, error) {
 	return a.NewIf(condition, elseIf, bodyIfTrue, bodyIfFalse), nil
 }
 
-func (p *parser) parseExprNode() (*a.Node, error) {
-	n, err := p.parseExpr()
-	return n.Node(), err
+func (p *parser) parseArgNode() (*a.Node, error) {
+	name, err := p.parseIdent()
+	if err != nil {
+		return nil, err
+	}
+	if x := p.peek1().Key(); x != t.KeyColon {
+		got := p.m.ByKey(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+	value, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return a.NewArg(name, value).Node(), nil
 }
 
 func (p *parser) parseExpr() (*a.Expr, error) {
@@ -645,10 +671,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			fallthrough
 
 		case t.KeyOpenParen:
-			args, err := p.parseList(t.KeyCloseParen, func(p *parser) (*a.Node, error) {
-				n, err := p.parseExpr()
-				return n.Node(), err
-			})
+			args, err := p.parseList(t.KeyCloseParen, (*parser).parseArgNode)
 			if err != nil {
 				return nil, err
 			}

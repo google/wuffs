@@ -136,8 +136,13 @@ func (c *checker) tcheckAssert(n *a.Assert) error {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
 			cond.String(c.idMap), cond.MType().String(c.idMap))
 	}
+	for _, a := range n.Args() {
+		if err := c.tcheckExpr(a.Arg().Value(), 0); err != nil {
+			return err
+		}
+		a.SetTypeChecked()
+	}
 	// TODO: check that there are no side effects.
-	// TODO: check the actual assertion.
 	return nil
 }
 

@@ -21,6 +21,7 @@ type Kind uint32
 const (
 	KInvalid = Kind(iota)
 
+	KArg
 	KAssert
 	KAssign
 	KExpr
@@ -47,6 +48,7 @@ func (k Kind) String() string {
 var kindStrings = [...]string{
 	KInvalid: "KInvalid",
 
+	KArg:      "KArg",
 	KAssert:   "KAssert",
 	KAssign:   "KAssign",
 	KExpr:     "KExpr",
@@ -93,6 +95,7 @@ func (n *Node) Kind() Kind        { return n.kind }
 func (n *Node) TypeChecked() bool { return n.flags&FlagsTypeChecked != 0 }
 func (n *Node) SetTypeChecked()   { n.flags |= FlagsTypeChecked }
 
+func (n *Node) Arg() *Arg           { return (*Arg)(n) }
 func (n *Node) Assert() *Assert     { return (*Assert)(n) }
 func (n *Node) Assign() *Assign     { return (*Assign)(n) }
 func (n *Node) Expr() *Expr         { return (*Expr)(n) }
@@ -159,11 +162,11 @@ const MaxExprDepth = 255
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
 //  - FlagsSuspendible is "f(x)" vs "f?(x)"
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
-//  - ID1:   <0|identifier name|literal>
+//  - ID1:   <0|ident|literal>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
 //  - RHS:   <nil|Expr|TypeExpr>
-//  - List0: <Expr> function call arguments or associative op arguments
+//  - List0: <Arg|Expr> function call arguments or associative op arguments
 //
 // A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
 //
@@ -212,20 +215,43 @@ func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mh
 	}
 }
 
-// Assert is "assert RHS", "pre RHS" or "post RHS":
+// Assert is "assert RHS via ID1(args)", "pre etc" or "post etc":
 //  - ID0:   <IDAssert|IDPre|IDPost>
+//  - ID1:   <string literal> reason
 //  - RHS:   <Expr>
+//  - List0: <Arg> reason arguments
 type Assert Node
 
 func (n *Assert) Node() *Node      { return (*Node)(n) }
 func (n *Assert) Keyword() t.ID    { return n.id0 }
+func (n *Assert) Reason() t.ID     { return n.id1 }
 func (n *Assert) Condition() *Expr { return n.rhs.Expr() }
+func (n *Assert) Args() []*Node    { return n.list0 }
 
-func NewAssert(keyword t.ID, condition *Expr) *Assert {
+func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert {
 	return &Assert{
-		kind: KAssert,
-		id0:  keyword,
-		rhs:  condition.Node(),
+		kind:  KAssert,
+		id0:   keyword,
+		id1:   reason,
+		rhs:   condition.Node(),
+		list0: args,
+	}
+}
+
+// Arg is "name:value".
+//  - ID1:   <ident> name
+//  - RHS:   <Expr> value
+type Arg Node
+
+func (n *Arg) Node() *Node  { return (*Node)(n) }
+func (n *Arg) Name() t.ID   { return n.id1 }
+func (n *Arg) Value() *Expr { return n.rhs.Expr() }
+
+func NewArg(name t.ID, value *Expr) *Arg {
+	return &Arg{
+		kind: KArg,
+		id1:  name,
+		rhs:  value.Node(),
 	}
 }
 

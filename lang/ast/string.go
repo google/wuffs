@@ -41,7 +41,9 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 					if i != 0 {
 						buf = append(buf, ", "...)
 					}
-					buf = o.Expr().appendString(buf, m, false, depth)
+					buf = append(buf, m.ByID(o.Arg().Name())...)
+					buf = append(buf, ':')
+					buf = o.Arg().Value().appendString(buf, m, false, depth)
 				}
 				buf = append(buf, ')')
 
