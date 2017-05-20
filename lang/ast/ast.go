@@ -404,11 +404,7 @@ const MaxTypeExprDepth = 63
 // example, the LHS for "u32[..4095]" is nil.
 type TypeExpr Node
 
-func (n *TypeExpr) Node() *Node     { return (*Node)(n) }
-func (n *TypeExpr) IsNumType() bool { return n.id0 == 0 && n.id1.IsNumType() }
-func (n *TypeExpr) IsRefined() bool {
-	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
-}
+func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
 func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
 func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }
@@ -416,6 +412,18 @@ func (n *TypeExpr) Bounds() [2]*Expr         { return [2]*Expr{n.lhs.Expr(), n.m
 func (n *TypeExpr) Min() *Expr               { return n.lhs.Expr() }
 func (n *TypeExpr) Max() *Expr               { return n.mhs.Expr() }
 func (n *TypeExpr) Inner() *TypeExpr         { return n.rhs.TypeExpr() }
+
+func (n *TypeExpr) IsBool() bool {
+	return n.id0 == 0 && n.id1.Key() == t.KeyBool && n.lhs == nil && n.mhs == nil && n.rhs == nil
+}
+
+func (n *TypeExpr) IsNumType() bool {
+	return n.id0 == 0 && n.id1.IsNumType()
+}
+
+func (n *TypeExpr) IsRefined() bool {
+	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
+}
 
 func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{

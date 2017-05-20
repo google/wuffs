@@ -48,36 +48,44 @@ func neg(i *big.Int) *big.Int {
 	return big.NewInt(0).Neg(i)
 }
 
+func invert(m *t.IDMap, n *a.Expr) (*a.Expr, error) {
+	if !n.MType().IsBool() {
+		return nil, fmt.Errorf("check: invert(%q) called on non-bool-typed expression", n.String(m))
+	}
+	if cv := n.ConstValue(); cv != nil {
+		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.String(m))
+	}
+	id0, lhs, rhs := n.ID0(), n.LHS().Expr(), n.RHS().Expr()
+	switch id0.Key() {
+	case t.KeyXUnaryNot:
+		return rhs, nil
+	case t.KeyXBinaryNotEq:
+		id0 = t.IDXBinaryEqEq
+	case t.KeyXBinaryLessThan:
+		id0 = t.IDXBinaryGreaterEq
+	case t.KeyXBinaryLessEq:
+		id0 = t.IDXBinaryGreaterThan
+	case t.KeyXBinaryEqEq:
+		id0 = t.IDXBinaryNotEq
+	case t.KeyXBinaryGreaterEq:
+		id0 = t.IDXBinaryLessThan
+	case t.KeyXBinaryGreaterThan:
+		id0 = t.IDXBinaryLessEq
+	default:
+		// TODO: De Morgan's law for t.IDXBinaryAnd, t.IDXBinaryOr?
+		id0, lhs, rhs = t.IDXUnaryNot, nil, n
+	}
+	o := a.NewExpr(n.Node().Raw().Flags(), id0, 0, lhs.Node(), nil, rhs.Node(), nil)
+	o.SetMType(n.MType())
+	return o, nil
+}
+
 func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	switch n.Kind() {
 	case a.KAssert:
-		n := n.Assert()
-		condition := n.Condition()
-		err := errFailed
-		if cv := condition.ConstValue(); cv != nil {
-			if cv.Cmp(one) == 0 {
-				err = nil
-			}
-		} else if reasonID := n.Reason(); reasonID != 0 {
-			if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
-				err = reasonFunc(q, n)
-			} else {
-				err = fmt.Errorf("no such reason %s", reasonID.String(q.idMap))
-			}
-		} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
-			if q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
-				err = nil
-			}
-		}
-		if err != nil {
-			if err == errFailed {
-				return fmt.Errorf("check: cannot prove %q", condition.String(q.idMap))
-			}
-			return fmt.Errorf("check: cannot prove %q: %v", condition.String(q.idMap), err)
-		}
-		q.facts.appendFact(condition)
+		return q.bcheckAssert(n.Assert())
 
 	case a.KAssign:
 		n := n.Assign()
@@ -103,6 +111,34 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return fmt.Errorf("check: unrecognized ast.Kind (%d) for checkStatement", n.Kind())
 	}
 
+	return nil
+}
+
+func (q *checker) bcheckAssert(n *a.Assert) error {
+	condition := n.Condition()
+	err := errFailed
+	if cv := condition.ConstValue(); cv != nil {
+		if cv.Cmp(one) == 0 {
+			err = nil
+		}
+	} else if reasonID := n.Reason(); reasonID != 0 {
+		if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
+			err = reasonFunc(q, n)
+		} else {
+			err = fmt.Errorf("no such reason %s", reasonID.String(q.idMap))
+		}
+	} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
+		if q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
+			err = nil
+		}
+	}
+	if err != nil {
+		if err == errFailed {
+			return fmt.Errorf("check: cannot prove %q", condition.String(q.idMap))
+		}
+		return fmt.Errorf("check: cannot prove %q: %v", condition.String(q.idMap), err)
+	}
+	q.facts.appendFact(condition)
 	return nil
 }
 
@@ -166,6 +202,8 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 }
 
 func (q *checker) bcheckWhile(n *a.While) error {
+	// TODO: check that n.Condition() has no side effects.
+
 	if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 		return err
 	}
@@ -178,23 +216,71 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// TODO
 	}
 
-	// Assume the pre and assert conditions, and the while condition. Check
-	// the body.
-	q.facts = q.facts[:0]
-	for _, o := range n.Asserts() {
-		if o.Assert().Keyword().Key() == t.KeyPost {
-			continue
+	// Check the post conditions on exit, assuming only the pre and assert
+	// conditions and the inverted while condition.
+	//
+	// We don't need to check the assert conditions, even though we add them to
+	// the facts after the while loop, since we have already proven each assert
+	// condition on entry, and below, proven them on each explicit continue and
+	// on the implicit continue after the body.
+	if cv := n.Condition().ConstValue(); cv != nil && cv.Cmp(one) == 0 {
+		// We effectively have a "while true { etc }" loop. There's no need to
+		// prove the post conditions here, since we won't ever exit the while
+		// loop naturally. We only exit on an explicit break.
+	} else {
+		q.facts = q.facts[:0]
+		for _, o := range n.Asserts() {
+			if o.Assert().Keyword().Key() == t.KeyPost {
+				continue
+			}
+			q.facts.appendFact(o.Assert().Condition())
 		}
-		q.facts.appendFact(o.Assert().Condition())
-	}
-	q.facts.appendFact(n.Condition())
-	for _, o := range n.Body() {
-		if err := q.bcheckStatement(o); err != nil {
+		if inverse, err := invert(q.idMap, n.Condition()); err != nil {
 			return err
+		} else {
+			q.facts.appendFact(inverse)
+		}
+		for _, o := range n.Asserts() {
+			if o.Assert().Keyword().Key() == t.KeyPost {
+				if err := q.bcheckAssert(o.Assert()); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
-	// TODO: check the assert and post conditions on exit.
+	if cv := n.Condition().ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
+		// We effectively have a "while false { etc }" loop. There's no need to
+		// check the body.
+	} else {
+		// Assume the pre and assert conditions, and the while condition. Check
+		// the body.
+		q.facts = q.facts[:0]
+		for _, o := range n.Asserts() {
+			if o.Assert().Keyword().Key() == t.KeyPost {
+				continue
+			}
+			q.facts.appendFact(o.Assert().Condition())
+		}
+		q.facts.appendFact(n.Condition())
+		for _, o := range n.Body() {
+			if err := q.bcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		// Check the pre and assert conditions on the implicit continue after the
+		// body.
+		for _, o := range n.Asserts() {
+			if o.Assert().Keyword().Key() == t.KeyPost {
+				continue
+			}
+			// TODO
+		}
+
+		// TODO: check the pre and assert conditions for each continue.
+
+		// TODO: check the assert and post conditions for each break.
+	}
 
 	// Assume the assert and post conditions.
 	q.facts = q.facts[:0]
