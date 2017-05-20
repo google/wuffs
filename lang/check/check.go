@@ -82,11 +82,19 @@ func Check(m *t.IDMap, files ...*a.File) (*Checker, error) {
 		}
 	}
 
-	c := &Checker{
-		idMap:   m,
-		structs: map[t.ID]Struct{},
-		funcs:   map[t.QID]Func{},
+	rMap := reasonMap{}
+	for _, r := range reasons {
+		if id := m.ByName(r.s); id != 0 {
+			rMap[id.Key()] = r.r
+		}
 	}
+	c := &Checker{
+		idMap:     m,
+		reasonMap: rMap,
+		structs:   map[t.ID]Struct{},
+		funcs:     map[t.QID]Func{},
+	}
+
 	for _, phase := range phases {
 		for _, f := range files {
 			for _, n := range f.TopLevelDecls() {
@@ -115,9 +123,10 @@ var phases = [...]struct {
 }
 
 type Checker struct {
-	idMap   *t.IDMap
-	structs map[t.ID]Struct
-	funcs   map[t.QID]Func
+	idMap     *t.IDMap
+	reasonMap reasonMap
+	structs   map[t.ID]Struct
+	funcs     map[t.QID]Func
 }
 
 func (c *Checker) Funcs() map[t.QID]Func { return c.funcs }
@@ -261,9 +270,10 @@ func (c *Checker) checkFuncContract(n *a.Node) error {
 func (c *Checker) checkFuncBody(n *a.Node) error {
 	f := n.Func()
 	q := &checker{
-		c:     c,
-		idMap: c.idMap,
-		f:     c.funcs[f.QID()],
+		c:         c,
+		idMap:     c.idMap,
+		reasonMap: c.reasonMap,
+		f:         c.funcs[f.QID()],
 	}
 
 	// Fill in the TypeMap with all local variables. Note that they have
@@ -329,12 +339,13 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 }
 
 type checker struct {
-	c     *Checker
-	idMap *t.IDMap
-	f     Func
+	c         *Checker
+	idMap     *t.IDMap
+	reasonMap reasonMap
+	f         Func
 
 	errFilename string
 	errLine     uint32
 
-	facts []*a.Expr
+	facts facts
 }

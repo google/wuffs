@@ -53,8 +53,27 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 
 	switch n.Kind() {
 	case a.KAssert:
-		// TODO: check the assertion.
-		c.facts = append(c.facts, n.Assert().Condition())
+		o := n.Assert()
+		condition := o.Condition()
+		err := errFailed
+		if reasonID := o.Reason(); reasonID != 0 {
+			if reasonFunc := c.reasonMap[reasonID.Key()]; reasonFunc != nil {
+				err = reasonFunc(c, o)
+			} else {
+				err = fmt.Errorf("no such reason %s", reasonID.String(c.idMap))
+			}
+		} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
+			if c.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
+				err = nil
+			}
+		}
+		if err != nil {
+			if err == errFailed {
+				return fmt.Errorf("check: cannot prove %q", condition.String(c.idMap))
+			}
+			return fmt.Errorf("check: cannot prove %q: %v", condition.String(c.idMap), err)
+		}
+		c.facts.appendFact(condition)
 
 	case a.KAssign:
 		o := n.Assign()
@@ -162,9 +181,9 @@ func (c *checker) bcheckWhile(n *a.While) error {
 		if m.Assert().Keyword().Key() == t.KeyPost {
 			continue
 		}
-		c.facts = append(c.facts, m.Assert().Condition())
+		c.facts.appendFact(m.Assert().Condition())
 	}
-	c.facts = append(c.facts, n.Condition())
+	c.facts.appendFact(n.Condition())
 	for _, m := range n.Body() {
 		if err := c.bcheckStatement(m); err != nil {
 			return err
@@ -179,7 +198,7 @@ func (c *checker) bcheckWhile(n *a.While) error {
 		if m.Assert().Keyword().Key() == t.KeyPre {
 			continue
 		}
-		c.facts = append(c.facts, m.Assert().Condition())
+		c.facts.appendFact(m.Assert().Condition())
 	}
 	return nil
 }
@@ -199,19 +218,7 @@ func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 		if err != nil {
 			return nil, nil, err
 		}
-		if n.ID0() == 0 && n.ID1().IsIdent() {
-			for _, f := range c.facts {
-				f0, f1 := binds(f, n.ID1())
-				if f0 != nil && n0.Cmp(f0) < 0 {
-					n0 = f0
-				}
-				if f1 != nil && n1.Cmp(f1) > 0 {
-					n1 = f1
-				}
-			}
-		} else {
-			// TODO: propagate facts about e.g. "this.foo".
-		}
+		n0, n1 = c.facts.refine(n, n0, n1)
 		return n0, n1, nil
 	case t.FlagsUnaryOp:
 		return c.bcheckExprUnaryOp(n, depth)
