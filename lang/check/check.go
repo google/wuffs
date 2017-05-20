@@ -131,7 +131,7 @@ type Checker struct {
 
 func (c *Checker) Funcs() map[t.QID]Func { return c.funcs }
 
-func (c *Checker) checkUse(n *a.Node) error {
+func (c *Checker) checkUse(node *a.Node) error {
 	// TODO.
 	return nil
 }
@@ -163,66 +163,66 @@ func (c *Checker) checkFields(fields []*a.Node) error {
 	return nil
 }
 
-func (c *Checker) checkStruct(n *a.Node) error {
-	s := n.Struct()
-	if err := c.checkFields(s.Fields()); err != nil {
+func (c *Checker) checkStruct(node *a.Node) error {
+	n := node.Struct()
+	if err := c.checkFields(n.Fields()); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, c.idMap.ByID(s.Name())),
-			Filename: s.Filename(),
-			Line:     s.Line(),
+			Err:      fmt.Errorf("%v in struct %q", err, c.idMap.ByID(n.Name())),
+			Filename: n.Filename(),
+			Line:     n.Line(),
 		}
 	}
-	id := s.Name()
+	id := n.Name()
 	if other, ok := c.structs[id]; ok {
 		return &Error{
 			Err:           fmt.Errorf("check: duplicate struct %q", c.idMap.ByID(id)),
-			Filename:      s.Filename(),
-			Line:          s.Line(),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
 			OtherFilename: other.Struct.Filename(),
 			OtherLine:     other.Struct.Line(),
 		}
 	}
 	c.structs[id] = Struct{
 		ID:     id,
-		Struct: s,
+		Struct: n,
 	}
-	s.Node().SetTypeChecked()
+	n.Node().SetTypeChecked()
 	return nil
 }
 
-func (c *Checker) checkFuncSignature(n *a.Node) error {
-	f := n.Func()
-	if err := c.checkFields(f.In().Fields()); err != nil {
+func (c *Checker) checkFuncSignature(node *a.Node) error {
+	n := node.Func()
+	if err := c.checkFields(n.In().Fields()); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in in-params for func %q", err, c.idMap.ByID(f.Name())),
-			Filename: f.Filename(),
-			Line:     f.Line(),
+			Err:      fmt.Errorf("%v in in-params for func %q", err, c.idMap.ByID(n.Name())),
+			Filename: n.Filename(),
+			Line:     n.Line(),
 		}
 	}
-	f.In().Node().SetTypeChecked()
-	if err := c.checkFields(f.Out().Fields()); err != nil {
+	n.In().Node().SetTypeChecked()
+	if err := c.checkFields(n.Out().Fields()); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %q", err, c.idMap.ByID(f.Name())),
-			Filename: f.Filename(),
-			Line:     f.Line(),
+			Err:      fmt.Errorf("%v in out-params for func %q", err, c.idMap.ByID(n.Name())),
+			Filename: n.Filename(),
+			Line:     n.Line(),
 		}
 	}
-	f.Out().Node().SetTypeChecked()
+	n.Out().Node().SetTypeChecked()
 
-	qid := f.QID()
+	qid := n.QID()
 	if other, ok := c.funcs[qid]; ok {
 		return &Error{
 			Err:           fmt.Errorf("check: duplicate function %q", qid.String(c.idMap)),
-			Filename:      f.Filename(),
-			Line:          f.Line(),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
 			OtherFilename: other.Func.Filename(),
 			OtherLine:     other.Func.Line(),
 		}
 	}
 
-	inTyp := a.NewTypeExpr(0, f.In().Name(), nil, nil, nil)
+	inTyp := a.NewTypeExpr(0, n.In().Name(), nil, nil, nil)
 	inTyp.Node().SetTypeChecked()
-	outTyp := a.NewTypeExpr(0, f.Out().Name(), nil, nil, nil)
+	outTyp := a.NewTypeExpr(0, n.Out().Name(), nil, nil, nil)
 	outTyp.Node().SetTypeChecked()
 	localVars := TypeMap{
 		t.IDIn:  inTyp,
@@ -232,8 +232,8 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 		if _, ok := c.structs[qid[0]]; !ok {
 			return &Error{
 				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.String(c.idMap)),
-				Filename: f.Filename(),
-				Line:     f.Line(),
+				Filename: n.Filename(),
+				Line:     n.Line(),
 			}
 		}
 		sTyp := a.NewTypeExpr(0, qid[0], nil, nil, nil)
@@ -244,43 +244,43 @@ func (c *Checker) checkFuncSignature(n *a.Node) error {
 	}
 	c.funcs[qid] = Func{
 		QID:       qid,
-		Func:      f,
+		Func:      n,
 		LocalVars: localVars,
 	}
 	return nil
 }
 
-func (c *Checker) checkFuncContract(n *a.Node) error {
-	as := n.Func().Asserts()
-	if len(as) == 0 {
+func (c *Checker) checkFuncContract(node *a.Node) error {
+	n := node.Func()
+	if len(n.Asserts()) == 0 {
 		return nil
 	}
 	q := &checker{
 		c:     c,
 		idMap: c.idMap,
 	}
-	for _, a := range as {
-		if err := q.tcheckAssert(a.Assert()); err != nil {
+	for _, o := range n.Asserts() {
+		if err := q.tcheckAssert(o.Assert()); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *Checker) checkFuncBody(n *a.Node) error {
-	f := n.Func()
+func (c *Checker) checkFuncBody(node *a.Node) error {
+	n := node.Func()
 	q := &checker{
 		c:         c,
 		idMap:     c.idMap,
 		reasonMap: c.reasonMap,
-		f:         c.funcs[f.QID()],
+		f:         c.funcs[n.QID()],
 	}
 
 	// Fill in the TypeMap with all local variables. Note that they have
 	// function scope and can be hoisted, JavaScript style, a la
 	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
-	for _, m := range f.Body() {
-		if err := q.tcheckVars(m); err != nil {
+	for _, o := range n.Body() {
+		if err := q.tcheckVars(o); err != nil {
 			return &Error{
 				Err:      err,
 				Filename: q.errFilename,
@@ -292,8 +292,8 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	// TODO: check that variables are never used before they're initialized.
 
 	// Assign ConstValue's (if applicable) and MType's to each Expr.
-	for _, m := range f.Body() {
-		if err := q.tcheckStatement(m); err != nil {
+	for _, o := range n.Body() {
+		if err := q.tcheckStatement(o); err != nil {
 			return &Error{
 				Err:      err,
 				Filename: q.errFilename,
@@ -303,8 +303,8 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 	}
 
 	// Run bounds checks.
-	for _, m := range f.Body() {
-		if err := q.bcheckStatement(m); err != nil {
+	for _, o := range n.Body() {
+		if err := q.bcheckStatement(o); err != nil {
 			return &Error{
 				Err:      err,
 				Filename: q.errFilename,
@@ -315,19 +315,19 @@ func (c *Checker) checkFuncBody(n *a.Node) error {
 		}
 	}
 
-	f.Node().SetTypeChecked()
-	if err := f.Node().Walk(func(n *a.Node) error {
-		if !n.TypeChecked() {
-			return fmt.Errorf("check: internal error: unchecked %s node", n.Kind())
+	n.Node().SetTypeChecked()
+	if err := n.Node().Walk(func(o *a.Node) error {
+		if !o.TypeChecked() {
+			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
-		if n.Kind() == a.KExpr {
-			e := n.Expr()
-			if typ := e.MType(); typ == nil {
+		if o.Kind() == a.KExpr {
+			o := o.Expr()
+			if typ := o.MType(); typ == nil {
 				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
-					e.String(q.idMap))
-			} else if typ == TypeExprIdealNumber && e.ConstValue() == nil {
+					o.String(q.idMap))
+			} else if typ == TypeExprIdealNumber && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", e.String(q.idMap))
+					"but no const value", o.String(q.idMap))
 			}
 		}
 		return nil

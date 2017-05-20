@@ -53,12 +53,12 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	switch n.Kind() {
 	case a.KAssert:
-		o := n.Assert()
-		condition := o.Condition()
+		n := n.Assert()
+		condition := n.Condition()
 		err := errFailed
-		if reasonID := o.Reason(); reasonID != 0 {
+		if reasonID := n.Reason(); reasonID != 0 {
 			if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
-				err = reasonFunc(q, o)
+				err = reasonFunc(q, n)
 			} else {
 				err = fmt.Errorf("no such reason %s", reasonID.String(q.idMap))
 			}
@@ -76,12 +76,12 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		q.facts.appendFact(condition)
 
 	case a.KAssign:
-		o := n.Assign()
-		return q.bcheckAssignment(o.LHS(), o.LHS().MType(), o.Operator(), o.RHS())
+		n := n.Assign()
+		return q.bcheckAssignment(n.LHS(), n.LHS().MType(), n.Operator(), n.RHS())
 
 	case a.KVar:
-		o := n.Var()
-		return q.bcheckAssignment(nil, o.XType(), t.IDEq, o.Value())
+		n := n.Var()
+		return q.bcheckAssignment(nil, n.XType(), t.IDEq, n.Value())
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
@@ -167,8 +167,8 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	}
 
 	// Check the pre and assert conditions on entry.
-	for _, m := range n.Asserts() {
-		if m.Assert().Keyword().Key() == t.KeyPost {
+	for _, o := range n.Asserts() {
+		if o.Assert().Keyword().Key() == t.KeyPost {
 			continue
 		}
 		// TODO
@@ -177,15 +177,15 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	// Assume the pre and assert conditions, and the while condition. Check
 	// the body.
 	q.facts = q.facts[:0]
-	for _, m := range n.Asserts() {
-		if m.Assert().Keyword().Key() == t.KeyPost {
+	for _, o := range n.Asserts() {
+		if o.Assert().Keyword().Key() == t.KeyPost {
 			continue
 		}
-		q.facts.appendFact(m.Assert().Condition())
+		q.facts.appendFact(o.Assert().Condition())
 	}
 	q.facts.appendFact(n.Condition())
-	for _, m := range n.Body() {
-		if err := q.bcheckStatement(m); err != nil {
+	for _, o := range n.Body() {
+		if err := q.bcheckStatement(o); err != nil {
 			return err
 		}
 	}
@@ -194,11 +194,11 @@ func (q *checker) bcheckWhile(n *a.While) error {
 
 	// Assume the assert and post conditions.
 	q.facts = q.facts[:0]
-	for _, m := range n.Asserts() {
-		if m.Assert().Keyword().Key() == t.KeyPre {
+	for _, o := range n.Asserts() {
+		if o.Assert().Keyword().Key() == t.KeyPre {
 			continue
 		}
-		q.facts.appendFact(m.Assert().Condition())
+		q.facts.appendFact(o.Assert().Condition())
 	}
 	return nil
 }

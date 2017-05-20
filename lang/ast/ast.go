@@ -117,14 +117,14 @@ func (n *Node) Walk(f func(*Node) error) error {
 		if err := f(n); err != nil {
 			return err
 		}
-		for _, m := range n.Raw().SubNodes() {
-			if err := m.Walk(f); err != nil {
+		for _, o := range n.Raw().SubNodes() {
+			if err := o.Walk(f); err != nil {
 				return err
 			}
 		}
 		for _, l := range n.Raw().SubLists() {
-			for _, m := range l {
-				if err := m.Walk(f); err != nil {
+			for _, o := range l {
+				if err := o.Walk(f); err != nil {
 					return err
 				}
 			}

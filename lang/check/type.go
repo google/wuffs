@@ -15,15 +15,15 @@ func (q *checker) tcheckVars(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	if n.Kind() == a.KVar {
-		v := n.Var()
-		name := v.Name()
+		n := n.Var()
+		name := n.Name()
 		if _, ok := q.f.LocalVars[name]; ok {
 			return fmt.Errorf("check: duplicate var %q", q.idMap.ByID(name))
 		}
-		if err := q.tcheckTypeExpr(v.XType(), 0); err != nil {
+		if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
 			return err
 		}
-		q.f.LocalVars[name] = v.XType()
+		q.f.LocalVars[name] = n.XType()
 		return nil
 	}
 	for _, l := range n.Raw().SubLists() {
@@ -51,20 +51,20 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KVar:
-		o := n.Var()
-		if !o.XType().Node().TypeChecked() {
-			return fmt.Errorf("check: internal error: unchecked type expression %q", o.XType().String(q.idMap))
+		n := n.Var()
+		if !n.XType().Node().TypeChecked() {
+			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().String(q.idMap))
 		}
-		if value := o.Value(); value != nil {
+		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
-			// TODO: check that value.Type is assignable to o.TypeExpr().
+			// TODO: check that value.Type is assignable to n.TypeExpr().
 		}
 
 	case a.KWhile:
-		o := n.While()
-		cond := o.Condition()
+		n := n.While()
+		cond := n.Condition()
 		if err := q.tcheckExpr(cond, 0); err != nil {
 			return err
 		}
@@ -72,21 +72,21 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
 				cond.String(q.idMap), cond.MType().String(q.idMap))
 		}
-		for _, m := range o.Asserts() {
-			if err := q.tcheckAssert(m.Assert()); err != nil {
+		for _, o := range n.Asserts() {
+			if err := q.tcheckAssert(o.Assert()); err != nil {
 				return err
 			}
-			m.SetTypeChecked()
+			o.SetTypeChecked()
 		}
-		for _, m := range o.Body() {
-			if err := q.tcheckStatement(m); err != nil {
+		for _, o := range n.Body() {
+			if err := q.tcheckStatement(o); err != nil {
 				return err
 			}
 		}
 
 	case a.KIf:
-		for o := n.If(); o != nil; o = o.ElseIf() {
-			cond := o.Condition()
+		for n := n.If(); n != nil; n = n.ElseIf() {
+			cond := n.Condition()
 			if err := q.tcheckExpr(cond, 0); err != nil {
 				return err
 			}
@@ -94,21 +94,21 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
 					cond.String(q.idMap), cond.MType().String(q.idMap))
 			}
-			for _, m := range o.BodyIfTrue() {
-				if err := q.tcheckStatement(m); err != nil {
+			for _, o := range n.BodyIfTrue() {
+				if err := q.tcheckStatement(o); err != nil {
 					return err
 				}
 			}
-			for _, m := range o.BodyIfFalse() {
-				if err := q.tcheckStatement(m); err != nil {
+			for _, o := range n.BodyIfFalse() {
+				if err := q.tcheckStatement(o); err != nil {
 					return err
 				}
 			}
 		}
 
 	case a.KReturn:
-		o := n.Return()
-		if value := o.Value(); value != nil {
+		n := n.Return()
+		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
@@ -136,11 +136,11 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
 			cond.String(q.idMap), cond.MType().String(q.idMap))
 	}
-	for _, a := range n.Args() {
-		if err := q.tcheckExpr(a.Arg().Value(), 0); err != nil {
+	for _, o := range n.Args() {
+		if err := q.tcheckExpr(o.Arg().Value(), 0); err != nil {
 			return err
 		}
-		a.SetTypeChecked()
+		o.SetTypeChecked()
 	}
 	// TODO: check that there are no side effects.
 	return nil
@@ -511,15 +511,15 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 	switch n.PackageOrDecorator().Key() {
 	case 0:
 		if name := n.Name(); name.IsNumType() || name.Key() == t.KeyBool {
-			for _, bound := range n.Bounds() {
-				if bound == nil {
+			for _, b := range n.Bounds() {
+				if b == nil {
 					continue
 				}
-				if err := q.tcheckExpr(bound, 0); err != nil {
+				if err := q.tcheckExpr(b, 0); err != nil {
 					return err
 				}
-				if bound.ConstValue() == nil {
-					return fmt.Errorf("check: %q is not constant", bound.String(q.idMap))
+				if b.ConstValue() == nil {
+					return fmt.Errorf("check: %q is not constant", b.String(q.idMap))
 				}
 			}
 			break
