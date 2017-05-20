@@ -123,12 +123,12 @@ func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return nil
 	}
 
-	l0, l1, err := c.bcheckTypeExpr(lTyp)
+	lMin, lMax, err := c.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
 
-	r0, r1 := (*big.Int)(nil), (*big.Int)(nil)
+	rMin, rMax := (*big.Int)(nil), (*big.Int)(nil)
 	if op == t.IDEq {
 		cv := zero
 		// rhs might be nil because "var x T" has an implicit "= 0".
@@ -136,26 +136,26 @@ func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 			cv = rhs.ConstValue()
 		}
 		if cv != nil {
-			if cv.Cmp(l0) < 0 || cv.Cmp(l1) > 0 {
-				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, l0, l1)
+			if cv.Cmp(lMin) < 0 || cv.Cmp(lMax) > 0 {
+				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, lMin, lMax)
 			}
 			return nil
 		}
-		r0, r1, err = c.bcheckExpr(rhs, 0)
+		rMin, rMax, err = c.bcheckExpr(rhs, 0)
 	} else {
-		r0, r1, err = c.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
+		rMin, rMax, err = c.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
 	}
 	if err != nil {
 		return err
 	}
-	if r0.Cmp(l0) < 0 || r1.Cmp(l1) > 0 {
+	if rMin.Cmp(lMin) < 0 || rMax.Cmp(lMax) > 0 {
 		if op == t.IDEq {
 			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-				rhs.String(c.idMap), r0, r1, l0, l1)
+				rhs.String(c.idMap), rMin, rMax, lMin, lMax)
 		} else {
 			return fmt.Errorf("check: assignment %q bounds [%v..%v] is not within bounds [%v..%v]",
 				lhs.String(c.idMap)+" "+op.String(c.idMap)+" "+rhs.String(c.idMap),
-				r0, r1, l0, l1)
+				rMin, rMax, lMin, lMax)
 		}
 	}
 	return nil
@@ -214,12 +214,12 @@ func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		n0, n1, err := c.bcheckTypeExpr(n.MType())
+		nMin, nMax, err := c.bcheckTypeExpr(n.MType())
 		if err != nil {
 			return nil, nil, err
 		}
-		n0, n1 = c.facts.refine(n, n0, n1)
-		return n0, n1, nil
+		nMin, nMax = c.facts.refine(n, nMin, nMax)
+		return nMin, nMax, nil
 	case t.FlagsUnaryOp:
 		return c.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:
@@ -235,16 +235,16 @@ func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 }
 
 func (c *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	r0, r1, err := c.bcheckExpr(n.RHS().Expr(), depth)
+	rMin, rMax, err := c.bcheckExpr(n.RHS().Expr(), depth)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	switch n.ID0().Key() {
 	case t.KeyXUnaryPlus:
-		return r0, r1, nil
+		return rMin, rMax, nil
 	case t.KeyXUnaryMinus:
-		return neg(r1), neg(r0), nil
+		return neg(rMax), neg(rMin), nil
 	case t.KeyXUnaryNot:
 		return zero, one, nil
 	}
@@ -253,20 +253,20 @@ func (c *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 }
 
 func (c *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	l0, l1, err := c.bcheckExpr(lhs, depth)
+	lMin, lMax, err := c.bcheckExpr(lhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
-	r0, r1, err := c.bcheckExpr(rhs, depth)
+	rMin, rMax, err := c.bcheckExpr(rhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	switch op {
 	case t.KeyXBinaryPlus:
-		return big.NewInt(0).Add(l0, r0), big.NewInt(0).Add(l1, r1), nil
+		return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
 	case t.KeyXBinaryMinus:
-		return big.NewInt(0).Sub(l0, r0), big.NewInt(0).Sub(l1, r1), nil
+		return big.NewInt(0).Sub(lMin, rMin), big.NewInt(0).Sub(lMax, rMax), nil
 	case t.KeyXBinaryStar:
 		// TODO.
 		if cv := lhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {

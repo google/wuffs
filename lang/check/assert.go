@@ -24,22 +24,22 @@ func (z *facts) appendFact(x *a.Expr) {
 	*z = append(*z, x)
 }
 
-func (z facts) refine(n *a.Expr, min *big.Int, max *big.Int) (*big.Int, *big.Int) {
+func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int) (*big.Int, *big.Int) {
 	if n.ID0() != 0 || !n.ID1().IsIdent() {
 		// TODO.
-		return min, max
+		return nMin, nMax
 	}
 
 	for _, f := range z {
-		f0, f1 := refine(f, n.ID1())
-		if f0 != nil && min.Cmp(f0) < 0 {
-			min = f0
+		fMin, fMax := refine(f, n.ID1())
+		if fMin != nil && nMin.Cmp(fMin) < 0 {
+			nMin = fMin
 		}
-		if f1 != nil && max.Cmp(f1) > 0 {
-			max = f1
+		if fMax != nil && nMax.Cmp(fMax) > 0 {
+			nMax = fMax
 		}
 	}
-	return min, max
+	return nMin, nMax
 }
 
 // refine returns fact's lower or upper bound for id.
