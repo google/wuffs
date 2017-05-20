@@ -145,7 +145,7 @@ func (n *TypeExpr) String(m *t.IDMap) string {
 	if n == nil {
 		return ""
 	}
-	if n.PackageOrDecorator() == 0 && n.InclMin() == nil && n.ExclMax() == nil {
+	if n.PackageOrDecorator() == 0 && n.Min() == nil && n.Max() == nil {
 		return m.ByID(n.Name())
 	}
 	return string(n.appendString(nil, m, 0))
@@ -176,11 +176,11 @@ func (n *TypeExpr) appendString(buf []byte, m *t.IDMap, depth uint32) []byte {
 		buf = append(buf, '.')
 		buf = append(buf, m.ByID(n.Name())...)
 	}
-	if n.InclMin() != nil || n.ExclMax() != nil {
+	if n.Min() != nil || n.Max() != nil {
 		buf = append(buf, '[')
-		buf = n.InclMin().appendString(buf, m, false, 0)
-		buf = append(buf, ':')
-		buf = n.ExclMax().appendString(buf, m, false, 0)
+		buf = n.Min().appendString(buf, m, false, 0)
+		buf = append(buf, ".."...)
+		buf = n.Max().appendString(buf, m, false, 0)
 		buf = append(buf, ']')
 	}
 	return buf

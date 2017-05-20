@@ -400,8 +400,8 @@ const MaxTypeExprDepth = 63
 //
 // Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
 // "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-// refined as "foo[LHS:MHS]". LHS and MHS are Expr's, possibly nil. For
-// example, the MHS for "u32[:4096]" is nil.
+// refined as "foo[LHS..MHS]". LHS and MHS are Expr's, possibly nil. For
+// example, the LHS for "u32[..4095]" is nil.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node     { return (*Node)(n) }
@@ -413,17 +413,17 @@ func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
 func (n *TypeExpr) Name() t.ID               { return n.id1 }
 func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }
 func (n *TypeExpr) Bounds() [2]*Expr         { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
-func (n *TypeExpr) InclMin() *Expr           { return n.lhs.Expr() }
-func (n *TypeExpr) ExclMax() *Expr           { return n.mhs.Expr() }
+func (n *TypeExpr) Min() *Expr               { return n.lhs.Expr() }
+func (n *TypeExpr) Max() *Expr               { return n.mhs.Expr() }
 func (n *TypeExpr) Inner() *TypeExpr         { return n.rhs.TypeExpr() }
 
-func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthInclMin *Expr, exclMax *Expr, inner *TypeExpr) *TypeExpr {
+func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,
 		id0:  pkgOrDec,
 		id1:  name,
-		lhs:  arrayLengthInclMin.Node(),
-		mhs:  exclMax.Node(),
+		lhs:  arrayLengthMin.Node(),
+		mhs:  max.Node(),
 		rhs:  inner.Node(),
 	}
 }

@@ -287,7 +287,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 
 	lhs, mhs := (*a.Expr)(nil), (*a.Expr)(nil)
 	if p.peek1().Key() == t.KeyOpenBracket {
-		_, lhs, mhs, err = p.parseRangeOrIndex(false)
+		_, lhs, mhs, err = p.parseBracket(t.IDDotDot)
 		if err != nil {
 			return nil, err
 		}
@@ -296,17 +296,18 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	return a.NewTypeExpr(pkg, name, lhs, mhs, nil), nil
 }
 
-// parseRangeOrIndex parses "[i:j]", "[i:]", "[:j]" and "[:]". If allowIndex,
-// it also parses "[x]". The returned op is t.IDColon for a range and
+// parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A double dot replaces
+// the colon if sep is t.IDDotDot instead of t.IDColon. If sep is t.IDColon, it
+// also parses "[x]". The returned op is sep for a range or refinement and
 // t.IDOpenBracket for an index.
-func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
+func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
 	if x := p.peek1().Key(); x != t.KeyOpenBracket {
 		got := p.m.ByKey(x)
 		return 0, nil, nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
-	if p.peek1().Key() != t.KeyColon {
+	if p.peek1() != sep {
 		ei, err = p.parseExpr()
 		if err != nil {
 			return 0, nil, nil, err
@@ -314,20 +315,21 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 	}
 
 	switch x := p.peek1().Key(); {
-	case x == t.KeyColon:
+	case x == sep.Key():
 		p.src = p.src[1:]
 
-	case x == t.KeyCloseBracket && allowIndex:
+	case x == t.KeyCloseBracket && sep.Key() == t.KeyColon:
 		p.src = p.src[1:]
 		return t.IDOpenBracket, nil, ei, nil
 
 	default:
-		expected := `":"`
-		if allowIndex {
-			expected = `":" or "]"`
+		extra := ``
+		if sep.Key() == t.KeyColon {
+			extra = ` or "]"`
 		}
 		got := p.m.ByKey(x)
-		return 0, nil, nil, fmt.Errorf(`parse: expected %s, got %q at %s:%d`, expected, got, p.filename, p.line())
+		return 0, nil, nil, fmt.Errorf(`parse: expected %q%s, got %q at %s:%d`,
+			sep.String(p.m), extra, got, p.filename, p.line())
 	}
 
 	if p.peek1().Key() != t.KeyCloseBracket {
@@ -343,7 +345,7 @@ func (p *parser) parseRangeOrIndex(allowIndex bool) (op t.ID, ei *a.Expr, ej *a.
 	}
 	p.src = p.src[1:]
 
-	return t.IDColon, ei, ej, nil
+	return sep, ei, ej, nil
 }
 
 func (p *parser) parseBlock() ([]*a.Node, error) {
@@ -678,7 +680,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.Node(), nil, nil, args)
 
 		case t.KeyOpenBracket:
-			id0, mhs, rhs, err := p.parseRangeOrIndex(true)
+			id0, mhs, rhs, err := p.parseBracket(t.IDColon)
 			if err != nil {
 				return nil, err
 			}

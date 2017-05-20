@@ -50,13 +50,13 @@ func TestString(t *testing.T) {
 		"x as u32",
 		"x as T",
 		"x as T",
-		"x as T[i:]",
-		"x as T[:j]",
-		"x as T[i:j]",
+		"x as T[i..]",
+		"x as T[..j]",
+		"x as T[i..j]",
 		"x as pkg.T",
 		"x as ptr T",
 		"x as [4] T",
-		"x as [8 + (2 * N)] ptr [4] ptr pkg.T[i:j]",
+		"x as [8 + (2 * N)] ptr [4] ptr pkg.T[i..j]",
 	}
 
 	idMap := &token.IDMap{}

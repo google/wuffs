@@ -137,6 +137,7 @@ const (
 	KeyCloseCurly   = Key(IDCloseCurly >> KeyShift)
 
 	KeyDot       = Key(IDDot >> KeyShift)
+	KeyDotDot    = Key(IDDotDot >> KeyShift)
 	KeyComma     = Key(IDComma >> KeyShift)
 	KeyQuestion  = Key(IDQuestion >> KeyShift)
 	KeyColon     = Key(IDColon >> KeyShift)
@@ -261,10 +262,11 @@ const (
 	IDCloseCurly   = ID(0x15<<KeyShift | FlagsClose | FlagsImplicitSemicolon)
 
 	IDDot       = ID(0x20<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDComma     = ID(0x21<<KeyShift | FlagsTightLeft)
-	IDQuestion  = ID(0x22<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDColon     = ID(0x23<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDSemicolon = ID(0x24<<KeyShift | FlagsTightLeft)
+	IDDotDot    = ID(0x21<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDComma     = ID(0x22<<KeyShift | FlagsTightLeft)
+	IDQuestion  = ID(0x23<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDColon     = ID(0x24<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDSemicolon = ID(0x25<<KeyShift | FlagsTightLeft)
 
 	IDEq       = ID(0x30<<KeyShift | FlagsAssign)
 	IDPlusEq   = ID(0x31<<KeyShift | FlagsAssign)
@@ -393,6 +395,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyCloseCurly:   {"}", IDCloseCurly},
 
 	KeyDot:       {".", IDDot},
+	KeyDotDot:    {"..", IDDotDot},
 	KeyComma:     {",", IDComma},
 	KeyQuestion:  {"?", IDQuestion},
 	KeyColon:     {":", IDColon},
@@ -491,7 +494,6 @@ var squiggles = [256]ID{
 	'{': IDOpenCurly,
 	'}': IDCloseCurly,
 
-	'.': IDDot,
 	',': IDComma,
 	'?': IDQuestion,
 	':': IDColon,
@@ -500,6 +502,7 @@ var squiggles = [256]ID{
 	// 1<<KeyShift is a non-zero ID with zero Flags. It is an invalid ID,
 	// signifying that lookup should continue in the lexers array below.
 
+	'.': 1 << KeyShift,
 	'!': 1 << KeyShift,
 	'&': 1 << KeyShift,
 	'|': 1 << KeyShift,
@@ -524,6 +527,10 @@ type suffixLexer struct {
 // The order of the []suffixLexer elements matters. The first match wins. Since
 // we want to lex greedily, longer suffixes should be earlier in the slice.
 var lexers = [256][]suffixLexer{
+	'.': {
+		{".", IDDotDot},
+		{"", IDDot},
+	},
 	'!': {
 		{"=", IDNotEq},
 	},

@@ -53,7 +53,7 @@ func TestCheck(t *testing.T) {
 		func foo.bar()() {
 			var x u8
 			var y i32 = +2
-			var z u64[:123]
+			var z u64[..123]
 			var a[4] u8
 			var b bool
 
@@ -66,7 +66,7 @@ func TestCheck(t *testing.T) {
 			y = x as i32
 
 			var p i32
-			var q i32[0:8]
+			var q i32[0..8]
 
 			assert true
 
@@ -129,11 +129,11 @@ func TestCheck(t *testing.T) {
 		{"in", "in"},
 		{"out", "out"},
 		{"p", "i32"},
-		{"q", "i32[0:8]"},
+		{"q", "i32[0..8]"},
 		{"this", "ptr foo"},
 		{"x", "u8"},
 		{"y", "i32"},
-		{"z", "u64[:123]"},
+		{"z", "u64[..123]"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\ngot  %v\nwant %v", got, want)

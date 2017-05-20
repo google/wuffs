@@ -524,7 +524,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 			}
 			break
 		}
-		if n.InclMin() != nil || n.ExclMax() != nil {
+		if n.Min() != nil || n.Max() != nil {
 			// TODO: reject.
 		}
 		// TODO: see if name refers to a struct type.

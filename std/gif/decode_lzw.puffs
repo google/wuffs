@@ -2,7 +2,7 @@ use "std/io"
 
 struct lzw_decoder?(
 	// TODO: default values??
-	literal_width u32[2:9],
+	literal_width u32[2..8],
 	stack[4096] u8,
 	suffixes[4096] u8,
 	prefixes[4096] u16,
@@ -14,7 +14,7 @@ func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
 
 	// TODO: set clear_code, end_code, etc.
 
-	var width u32[:13] = this.literal_width + 1
+	var width u32[..12] = this.literal_width + 1
 
 	// TODO: implement.
 

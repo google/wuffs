@@ -348,14 +348,14 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 		return nil, nil, fmt.Errorf("check: internal error: unknown bounds for %q", n.String(q.idMap))
 	}
 	if n.IsRefined() {
-		if x := n.InclMin(); x != nil {
+		if x := n.Min(); x != nil {
 			if cv := x.ConstValue(); cv != nil && b[0].Cmp(cv) < 0 {
 				b[0] = cv
 			}
 		}
-		if x := n.ExclMax(); x != nil {
+		if x := n.Max(); x != nil {
 			if cv := x.ConstValue(); cv != nil && b[1].Cmp(cv) > 0 {
-				b[1] = sub1(cv)
+				b[1] = cv
 			}
 		}
 	}
