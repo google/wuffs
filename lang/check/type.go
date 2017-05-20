@@ -11,24 +11,24 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-func (c *checker) tcheckVars(n *a.Node) error {
-	c.errFilename, c.errLine = n.Raw().FilenameLine()
+func (q *checker) tcheckVars(n *a.Node) error {
+	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	if n.Kind() == a.KVar {
 		v := n.Var()
 		name := v.Name()
-		if _, ok := c.f.LocalVars[name]; ok {
-			return fmt.Errorf("check: duplicate var %q", c.idMap.ByID(name))
+		if _, ok := q.f.LocalVars[name]; ok {
+			return fmt.Errorf("check: duplicate var %q", q.idMap.ByID(name))
 		}
-		if err := c.tcheckTypeExpr(v.XType(), 0); err != nil {
+		if err := q.tcheckTypeExpr(v.XType(), 0); err != nil {
 			return err
 		}
-		c.f.LocalVars[name] = v.XType()
+		q.f.LocalVars[name] = v.XType()
 		return nil
 	}
 	for _, l := range n.Raw().SubLists() {
 		for _, m := range l {
-			if err := c.tcheckVars(m); err != nil {
+			if err := q.tcheckVars(m); err != nil {
 				return err
 			}
 		}
@@ -36,27 +36,27 @@ func (c *checker) tcheckVars(n *a.Node) error {
 	return nil
 }
 
-func (c *checker) tcheckStatement(n *a.Node) error {
-	c.errFilename, c.errLine = n.Raw().FilenameLine()
+func (q *checker) tcheckStatement(n *a.Node) error {
+	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	switch n.Kind() {
 	case a.KAssert:
-		if err := c.tcheckAssert(n.Assert()); err != nil {
+		if err := q.tcheckAssert(n.Assert()); err != nil {
 			return err
 		}
 
 	case a.KAssign:
-		if err := c.tcheckAssign(n.Assign()); err != nil {
+		if err := q.tcheckAssign(n.Assign()); err != nil {
 			return err
 		}
 
 	case a.KVar:
 		o := n.Var()
 		if !o.XType().Node().TypeChecked() {
-			return fmt.Errorf("check: internal error: unchecked type expression %q", o.XType().String(c.idMap))
+			return fmt.Errorf("check: internal error: unchecked type expression %q", o.XType().String(q.idMap))
 		}
 		if value := o.Value(); value != nil {
-			if err := c.tcheckExpr(value, 0); err != nil {
+			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
 			// TODO: check that value.Type is assignable to o.TypeExpr().
@@ -65,21 +65,21 @@ func (c *checker) tcheckStatement(n *a.Node) error {
 	case a.KWhile:
 		o := n.While()
 		cond := o.Condition()
-		if err := c.tcheckExpr(cond, 0); err != nil {
+		if err := q.tcheckExpr(cond, 0); err != nil {
 			return err
 		}
 		if !cond.MType().Eq(TypeExprBoolean) {
 			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
-				cond.String(c.idMap), cond.MType().String(c.idMap))
+				cond.String(q.idMap), cond.MType().String(q.idMap))
 		}
 		for _, m := range o.Asserts() {
-			if err := c.tcheckAssert(m.Assert()); err != nil {
+			if err := q.tcheckAssert(m.Assert()); err != nil {
 				return err
 			}
 			m.SetTypeChecked()
 		}
 		for _, m := range o.Body() {
-			if err := c.tcheckStatement(m); err != nil {
+			if err := q.tcheckStatement(m); err != nil {
 				return err
 			}
 		}
@@ -87,20 +87,20 @@ func (c *checker) tcheckStatement(n *a.Node) error {
 	case a.KIf:
 		for o := n.If(); o != nil; o = o.ElseIf() {
 			cond := o.Condition()
-			if err := c.tcheckExpr(cond, 0); err != nil {
+			if err := q.tcheckExpr(cond, 0); err != nil {
 				return err
 			}
 			if !cond.MType().Eq(TypeExprBoolean) {
 				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
-					cond.String(c.idMap), cond.MType().String(c.idMap))
+					cond.String(q.idMap), cond.MType().String(q.idMap))
 			}
 			for _, m := range o.BodyIfTrue() {
-				if err := c.tcheckStatement(m); err != nil {
+				if err := q.tcheckStatement(m); err != nil {
 					return err
 				}
 			}
 			for _, m := range o.BodyIfFalse() {
-				if err := c.tcheckStatement(m); err != nil {
+				if err := q.tcheckStatement(m); err != nil {
 					return err
 				}
 			}
@@ -109,7 +109,7 @@ func (c *checker) tcheckStatement(n *a.Node) error {
 	case a.KReturn:
 		o := n.Return()
 		if value := o.Value(); value != nil {
-			if err := c.tcheckExpr(value, 0); err != nil {
+			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
 			// TODO: type-check that value is assignable to the return value.
@@ -127,17 +127,17 @@ func (c *checker) tcheckStatement(n *a.Node) error {
 	return nil
 }
 
-func (c *checker) tcheckAssert(n *a.Assert) error {
+func (q *checker) tcheckAssert(n *a.Assert) error {
 	cond := n.Condition()
-	if err := c.tcheckExpr(cond, 0); err != nil {
+	if err := q.tcheckExpr(cond, 0); err != nil {
 		return err
 	}
 	if !cond.MType().Eq(TypeExprBoolean) {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
-			cond.String(c.idMap), cond.MType().String(c.idMap))
+			cond.String(q.idMap), cond.MType().String(q.idMap))
 	}
 	for _, a := range n.Args() {
-		if err := c.tcheckExpr(a.Arg().Value(), 0); err != nil {
+		if err := q.tcheckExpr(a.Arg().Value(), 0); err != nil {
 			return err
 		}
 		a.SetTypeChecked()
@@ -146,13 +146,13 @@ func (c *checker) tcheckAssert(n *a.Assert) error {
 	return nil
 }
 
-func (c *checker) tcheckAssign(n *a.Assign) error {
+func (q *checker) tcheckAssign(n *a.Assign) error {
 	lhs := n.LHS()
 	rhs := n.RHS()
-	if err := c.tcheckExpr(lhs, 0); err != nil {
+	if err := q.tcheckExpr(lhs, 0); err != nil {
 		return err
 	}
-	if err := c.tcheckExpr(rhs, 0); err != nil {
+	if err := q.tcheckExpr(rhs, 0); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
@@ -163,12 +163,12 @@ func (c *checker) tcheckAssign(n *a.Assign) error {
 			return nil
 		}
 		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-			rhs.String(c.idMap), rTyp.String(c.idMap), lhs.String(c.idMap), lTyp.String(c.idMap))
+			rhs.String(q.idMap), rTyp.String(q.idMap), lhs.String(q.idMap), lTyp.String(q.idMap))
 	}
 
 	if !lTyp.IsNumType() {
 		return fmt.Errorf("check: assignment %q: assignee %q, of type %q, does not have numeric type",
-			c.idMap.ByID(n.Operator()), lhs.String(c.idMap), lTyp.String(c.idMap))
+			q.idMap.ByID(n.Operator()), lhs.String(q.idMap), lTyp.String(q.idMap))
 	}
 
 	switch n.Operator().Key() {
@@ -177,20 +177,20 @@ func (c *checker) tcheckAssign(n *a.Assign) error {
 			return nil
 		}
 		return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
-			c.idMap.ByID(n.Operator()), rhs.String(c.idMap), rTyp.String(c.idMap))
+			q.idMap.ByID(n.Operator()), rhs.String(q.idMap), rTyp.String(q.idMap))
 	}
 
 	if rTyp == TypeExprIdealNumber || lTyp.EqIgnoringRefinements(rTyp) {
 		return nil
 	}
 	return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
-		c.idMap.ByID(n.Operator()),
-		lhs.String(c.idMap), rhs.String(c.idMap),
-		lTyp.String(c.idMap), rTyp.String(c.idMap),
+		q.idMap.ByID(n.Operator()),
+		lhs.String(q.idMap), rhs.String(q.idMap),
+		lTyp.String(q.idMap), rTyp.String(q.idMap),
 	)
 }
 
-func (c *checker) tcheckExpr(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -198,19 +198,19 @@ func (c *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		if err := c.tcheckExprOther(n, depth); err != nil {
+		if err := q.tcheckExprOther(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsUnaryOp:
-		if err := c.tcheckExprUnaryOp(n, depth); err != nil {
+		if err := q.tcheckExprUnaryOp(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsBinaryOp:
-		if err := c.tcheckExprBinaryOp(n, depth); err != nil {
+		if err := q.tcheckExprBinaryOp(n, depth); err != nil {
 			return err
 		}
 	case t.FlagsAssociativeOp:
-		if err := c.tcheckExprAssociativeOp(n, depth); err != nil {
+		if err := q.tcheckExprAssociativeOp(n, depth); err != nil {
 			return err
 		}
 	default:
@@ -220,13 +220,13 @@ func (c *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (c *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	switch n.ID0().Key() {
 	case 0:
 		id1 := n.ID1()
 		if id1.IsNumLiteral() {
 			z := big.NewInt(0)
-			s := c.idMap.ByID(id1)
+			s := q.idMap.ByID(id1)
 			if _, ok := z.SetString(s, 0); !ok {
 				return fmt.Errorf("check: invalid numeric literal %q", s)
 			}
@@ -235,14 +235,14 @@ func (c *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 
 		} else if id1.IsIdent() {
-			if c.f.LocalVars != nil {
-				if typ, ok := c.f.LocalVars[id1]; ok {
+			if q.f.LocalVars != nil {
+				if typ, ok := q.f.LocalVars[id1]; ok {
 					n.SetMType(typ)
 					return nil
 				}
 			}
 			// TODO: look for (global) names (constants, funcs, structs).
-			return fmt.Errorf("check: unrecognized identifier %q", c.idMap.ByID(id1))
+			return fmt.Errorf("check: unrecognized identifier %q", q.idMap.ByID(id1))
 		}
 		switch id1.Key() {
 		case t.KeyFalse:
@@ -275,14 +275,14 @@ func (c *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// TODO.
 
 	case t.KeyDot:
-		return c.tcheckDot(n, depth)
+		return q.tcheckDot(n, depth)
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
 }
 
-func (c *checker) tcheckDot(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
-	if err := c.tcheckExpr(lhs, depth); err != nil {
+	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
@@ -295,19 +295,19 @@ func (c *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	s := (*a.Struct)(nil)
-	if c.f.Func != nil {
+	if q.f.Func != nil {
 		switch name := lTyp.Name(); name.Key() {
 		case t.KeyIn:
-			s = c.f.Func.In()
+			s = q.f.Func.In()
 		case t.KeyOut:
-			s = c.f.Func.Out()
+			s = q.f.Func.Out()
 		default:
-			s = c.c.structs[name].Struct
+			s = q.c.structs[name].Struct
 		}
 	}
 	if s == nil {
 		return fmt.Errorf("check: no struct type %q found for expression %q",
-			lTyp.Name().String(c.idMap), lhs.String(c.idMap))
+			lTyp.Name().String(q.idMap), lhs.String(q.idMap))
 	}
 
 	for _, field := range s.Fields() {
@@ -318,12 +318,12 @@ func (c *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		}
 	}
 	return fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
-		n.ID1().String(c.idMap), lTyp.Name().String(c.idMap), n.String(c.idMap))
+		n.ID1().String(q.idMap), lTyp.Name().String(q.idMap), n.String(q.idMap))
 }
 
-func (c *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	rhs := n.RHS().Expr()
-	if err := c.tcheckExpr(rhs, depth); err != nil {
+	if err := q.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
 	rTyp := rhs.MType()
@@ -332,7 +332,7 @@ func (c *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryPlus, t.KeyXUnaryMinus:
 		if !numeric(rTyp) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
-				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+				q.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			if n.ID0().Key() == t.KeyXUnaryMinus {
@@ -346,7 +346,7 @@ func (c *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryNot:
 		if !rTyp.Eq(TypeExprBoolean) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
-				c.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+				q.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
@@ -357,16 +357,16 @@ func (c *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
 }
 
-func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
-	if err := c.tcheckExpr(lhs, depth); err != nil {
+	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
 	op := n.ID0()
 	if op.Key() == t.KeyXBinaryAs {
 		rhs := n.RHS().TypeExpr()
-		if err := c.tcheckTypeExpr(rhs, 0); err != nil {
+		if err := q.tcheckTypeExpr(rhs, 0); err != nil {
 			return err
 		}
 		if numeric(lTyp) && rhs.IsNumType() {
@@ -374,10 +374,10 @@ func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",
-			lhs.String(c.idMap), lTyp.String(c.idMap), rhs.String(c.idMap))
+			lhs.String(q.idMap), lTyp.String(q.idMap), rhs.String(q.idMap))
 	}
 	rhs := n.RHS().Expr()
-	if err := c.tcheckExpr(rhs, depth); err != nil {
+	if err := q.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
 	rTyp := rhs.MType()
@@ -386,22 +386,22 @@ func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !numeric(lTyp) {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				c.idMap.ByID(op.AmbiguousForm()), lhs.String(c.idMap), lTyp.String(c.idMap))
+				q.idMap.ByID(op.AmbiguousForm()), lhs.String(q.idMap), lTyp.String(q.idMap))
 		}
 		if !numeric(rTyp) {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+				q.idMap.ByID(op.AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 	case t.KeyXBinaryNotEq, t.KeyXBinaryEqEq:
 		// No-op.
 	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		if lTyp != TypeExprBoolean {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				c.idMap.ByID(op.AmbiguousForm()), lhs.String(c.idMap), lTyp.String(c.idMap))
+				q.idMap.ByID(op.AmbiguousForm()), lhs.String(q.idMap), lTyp.String(q.idMap))
 		}
 		if rTyp != TypeExprBoolean {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				c.idMap.ByID(op.AmbiguousForm()), rhs.String(c.idMap), rTyp.String(c.idMap))
+				q.idMap.ByID(op.AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 	}
 
@@ -409,24 +409,24 @@ func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !lTyp.EqIgnoringRefinements(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
-				c.idMap.ByID(op.AmbiguousForm()),
-				lhs.String(c.idMap), rhs.String(c.idMap),
-				lTyp.String(c.idMap), rTyp.String(c.idMap),
+				q.idMap.ByID(op.AmbiguousForm()),
+				lhs.String(q.idMap), rhs.String(q.idMap),
+				lTyp.String(q.idMap), rTyp.String(q.idMap),
 			)
 		}
 	case t.KeyXBinaryShiftL, t.KeyXBinaryShiftR:
 		if (lTyp == TypeExprIdealNumber) && (rTyp != TypeExprIdealNumber) {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
-				c.idMap.ByID(op.AmbiguousForm()),
-				lhs.String(c.idMap), rhs.String(c.idMap),
-				lTyp.String(c.idMap), rTyp.String(c.idMap),
+				q.idMap.ByID(op.AmbiguousForm()),
+				lhs.String(q.idMap), rhs.String(q.idMap),
+				lTyp.String(q.idMap), rTyp.String(q.idMap),
 			)
 		}
 	}
 
 	if l, r := lhs.ConstValue(), rhs.ConstValue(); l != nil && r != nil {
-		if err := c.setConstValueBinaryOp(n, l, r); err != nil {
+		if err := q.setConstValueBinaryOp(n, l, r); err != nil {
 			return err
 		}
 	}
@@ -442,7 +442,7 @@ func (c *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (c *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
+func (q *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
 	switch n.ID0().Key() {
 	case t.KeyXBinaryPlus:
 		n.SetConstValue(big.NewInt(0).Add(l, r))
@@ -452,7 +452,7 @@ func (c *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error
 		n.SetConstValue(big.NewInt(0).Mul(l, r))
 	case t.KeyXBinarySlash:
 		if r.Cmp(zero) == 0 {
-			return fmt.Errorf("check: division by zero in const expression %q", n.String(c.idMap))
+			return fmt.Errorf("check: division by zero in const expression %q", n.String(q.idMap))
 		}
 		// TODO: decide on Euclidean division vs other definitions. See "go doc
 		// math/big int.divmod" for details.
@@ -460,13 +460,13 @@ func (c *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error
 	case t.KeyXBinaryShiftL:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
+				n.RHS().Expr().String(q.idMap), n.String(q.idMap))
 		}
 		n.SetConstValue(big.NewInt(0).Lsh(l, uint(r.Uint64())))
 	case t.KeyXBinaryShiftR:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(c.idMap), n.String(c.idMap))
+				n.RHS().Expr().String(q.idMap), n.String(q.idMap))
 		}
 		n.SetConstValue(big.NewInt(0).Rsh(l, uint(r.Uint64())))
 	case t.KeyXBinaryAmp:
@@ -497,12 +497,12 @@ func (c *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error
 	return nil
 }
 
-func (c *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
+func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 	// TODO.
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprAssociativeOp", n.ID0().Key())
 }
 
-func (c *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
+func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 	if depth > a.MaxTypeExprDepth {
 		return fmt.Errorf("check: type expression recursion depth too large")
 	}
@@ -515,11 +515,11 @@ func (c *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 				if bound == nil {
 					continue
 				}
-				if err := c.tcheckExpr(bound, 0); err != nil {
+				if err := q.tcheckExpr(bound, 0); err != nil {
 					return err
 				}
 				if bound.ConstValue() == nil {
-					return fmt.Errorf("check: %q is not constant", bound.String(c.idMap))
+					return fmt.Errorf("check: %q is not constant", bound.String(q.idMap))
 				}
 			}
 			break
@@ -528,28 +528,28 @@ func (c *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 			// TODO: reject.
 		}
 		// TODO: see if name refers to a struct type.
-		return fmt.Errorf("check: %q is not a type", c.idMap.ByID(n.Name()))
+		return fmt.Errorf("check: %q is not a type", q.idMap.ByID(n.Name()))
 
 	case t.KeyPtr:
-		if err := c.tcheckTypeExpr(n.Inner(), depth); err != nil {
+		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}
 
 	case t.KeyOpenBracket:
 		aLen := n.ArrayLength()
-		if err := c.tcheckExpr(aLen, 0); err != nil {
+		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
 		}
 		if aLen.ConstValue() == nil {
-			return fmt.Errorf("check: %q is not constant", aLen.String(c.idMap))
+			return fmt.Errorf("check: %q is not constant", aLen.String(q.idMap))
 		}
-		if err := c.tcheckTypeExpr(n.Inner(), depth); err != nil {
+		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}
 
 	default:
 		// TODO: delete this hack.
-		if n.PackageOrDecorator() == c.idMap.ByName("io") && n.Name() == c.idMap.ByName("buf1") {
+		if n.PackageOrDecorator() == q.idMap.ByName("io") && n.Name() == q.idMap.ByName("buf1") {
 			break
 		}
 

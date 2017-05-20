@@ -48,8 +48,8 @@ func neg(i *big.Int) *big.Int {
 	return big.NewInt(0).Neg(i)
 }
 
-func (c *checker) bcheckStatement(n *a.Node) error {
-	c.errFilename, c.errLine = n.Raw().FilenameLine()
+func (q *checker) bcheckStatement(n *a.Node) error {
+	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	switch n.Kind() {
 	case a.KAssert:
@@ -57,34 +57,34 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 		condition := o.Condition()
 		err := errFailed
 		if reasonID := o.Reason(); reasonID != 0 {
-			if reasonFunc := c.reasonMap[reasonID.Key()]; reasonFunc != nil {
-				err = reasonFunc(c, o)
+			if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
+				err = reasonFunc(q, o)
 			} else {
-				err = fmt.Errorf("no such reason %s", reasonID.String(c.idMap))
+				err = fmt.Errorf("no such reason %s", reasonID.String(q.idMap))
 			}
 		} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
-			if c.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
+			if q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
 				err = nil
 			}
 		}
 		if err != nil {
 			if err == errFailed {
-				return fmt.Errorf("check: cannot prove %q", condition.String(c.idMap))
+				return fmt.Errorf("check: cannot prove %q", condition.String(q.idMap))
 			}
-			return fmt.Errorf("check: cannot prove %q: %v", condition.String(c.idMap), err)
+			return fmt.Errorf("check: cannot prove %q: %v", condition.String(q.idMap), err)
 		}
-		c.facts.appendFact(condition)
+		q.facts.appendFact(condition)
 
 	case a.KAssign:
 		o := n.Assign()
-		return c.bcheckAssignment(o.LHS(), o.LHS().MType(), o.Operator(), o.RHS())
+		return q.bcheckAssignment(o.LHS(), o.LHS().MType(), o.Operator(), o.RHS())
 
 	case a.KVar:
 		o := n.Var()
-		return c.bcheckAssignment(nil, o.XType(), t.IDEq, o.Value())
+		return q.bcheckAssignment(nil, o.XType(), t.IDEq, o.Value())
 
 	case a.KWhile:
-		return c.bcheckWhile(n.While())
+		return q.bcheckWhile(n.While())
 
 	case a.KIf:
 		// TODO.
@@ -102,15 +102,15 @@ func (c *checker) bcheckStatement(n *a.Node) error {
 	return nil
 }
 
-func (c *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
-	if err := c.bcheckAssignment1(lhs, lTyp, op, rhs); err != nil {
+func (q *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+	if err := q.bcheckAssignment1(lhs, lTyp, op, rhs); err != nil {
 		return err
 	}
 	// TODO: drop any facts involving lhs.
 	return nil
 }
 
-func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	switch lTyp.PackageOrDecorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
@@ -123,7 +123,7 @@ func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return nil
 	}
 
-	lMin, lMax, err := c.bcheckTypeExpr(lTyp)
+	lMin, lMax, err := q.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
@@ -141,9 +141,9 @@ func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 			}
 			return nil
 		}
-		rMin, rMax, err = c.bcheckExpr(rhs, 0)
+		rMin, rMax, err = q.bcheckExpr(rhs, 0)
 	} else {
-		rMin, rMax, err = c.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
+		rMin, rMax, err = q.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
 	}
 	if err != nil {
 		return err
@@ -151,18 +151,18 @@ func (c *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 	if rMin.Cmp(lMin) < 0 || rMax.Cmp(lMax) > 0 {
 		if op == t.IDEq {
 			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-				rhs.String(c.idMap), rMin, rMax, lMin, lMax)
+				rhs.String(q.idMap), rMin, rMax, lMin, lMax)
 		} else {
 			return fmt.Errorf("check: assignment %q bounds [%v..%v] is not within bounds [%v..%v]",
-				lhs.String(c.idMap)+" "+op.String(c.idMap)+" "+rhs.String(c.idMap),
+				lhs.String(q.idMap)+" "+op.String(q.idMap)+" "+rhs.String(q.idMap),
 				rMin, rMax, lMin, lMax)
 		}
 	}
 	return nil
 }
 
-func (c *checker) bcheckWhile(n *a.While) error {
-	if _, _, err := c.bcheckExpr(n.Condition(), 0); err != nil {
+func (q *checker) bcheckWhile(n *a.While) error {
+	if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 		return err
 	}
 
@@ -176,16 +176,16 @@ func (c *checker) bcheckWhile(n *a.While) error {
 
 	// Assume the pre and assert conditions, and the while condition. Check
 	// the body.
-	c.facts = c.facts[:0]
+	q.facts = q.facts[:0]
 	for _, m := range n.Asserts() {
 		if m.Assert().Keyword().Key() == t.KeyPost {
 			continue
 		}
-		c.facts.appendFact(m.Assert().Condition())
+		q.facts.appendFact(m.Assert().Condition())
 	}
-	c.facts.appendFact(n.Condition())
+	q.facts.appendFact(n.Condition())
 	for _, m := range n.Body() {
-		if err := c.bcheckStatement(m); err != nil {
+		if err := q.bcheckStatement(m); err != nil {
 			return err
 		}
 	}
@@ -193,17 +193,17 @@ func (c *checker) bcheckWhile(n *a.While) error {
 	// TODO: check the assert and post conditions on exit.
 
 	// Assume the assert and post conditions.
-	c.facts = c.facts[:0]
+	q.facts = q.facts[:0]
 	for _, m := range n.Asserts() {
 		if m.Assert().Keyword().Key() == t.KeyPre {
 			continue
 		}
-		c.facts.appendFact(m.Assert().Condition())
+		q.facts.appendFact(m.Assert().Condition())
 	}
 	return nil
 }
 
-func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	if depth > a.MaxExprDepth {
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -214,28 +214,28 @@ func (c *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		nMin, nMax, err := c.bcheckTypeExpr(n.MType())
+		nMin, nMax, err := q.bcheckTypeExpr(n.MType())
 		if err != nil {
 			return nil, nil, err
 		}
-		nMin, nMax = c.facts.refine(n, nMin, nMax)
+		nMin, nMax = q.facts.refine(n, nMin, nMax)
 		return nMin, nMax, nil
 	case t.FlagsUnaryOp:
-		return c.bcheckExprUnaryOp(n, depth)
+		return q.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:
 		if n.ID0().Key() == t.KeyXBinaryAs {
 			// TODO.
 			return zero, zero, nil
 		}
-		return c.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
+		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
-		return c.bcheckExprAssociativeOp(n, depth)
+		return q.bcheckExprAssociativeOp(n, depth)
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
 }
 
-func (c *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	rMin, rMax, err := c.bcheckExpr(n.RHS().Expr(), depth)
+func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	rMin, rMax, err := q.bcheckExpr(n.RHS().Expr(), depth)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -252,12 +252,12 @@ func (c *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
 }
 
-func (c *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	lMin, lMax, err := c.bcheckExpr(lhs, depth)
+func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	lMin, lMax, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
-	rMin, rMax, err := c.bcheckExpr(rhs, depth)
+	rMin, rMax, err := q.bcheckExpr(rhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -292,17 +292,17 @@ func (c *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }
 
-func (c *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
 }
 
-func (c *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	b := [2]*big.Int{}
 	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]
 	}
 	if b[0] == nil || b[1] == nil {
-		return nil, nil, fmt.Errorf("check: internal error: unknown bounds for %q", n.String(c.idMap))
+		return nil, nil, fmt.Errorf("check: internal error: unknown bounds for %q", n.String(q.idMap))
 	}
 	if n.IsRefined() {
 		if x := n.InclMin(); x != nil {
