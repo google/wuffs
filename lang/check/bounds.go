@@ -214,17 +214,17 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		nMin, nMax, err := q.bcheckTypeExpr(n.MType())
-		if err != nil {
-			return nil, nil, err
-		}
-		nMin, nMax = q.facts.refine(n, nMin, nMax)
-		return nMin, nMax, nil
+		return q.bcheckExprOther(n, depth)
 	case t.FlagsUnaryOp:
 		return q.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:
 		if n.ID0().Key() == t.KeyXBinaryAs {
+			lMin, lMax, err := q.bcheckExpr(n.LHS().Expr(), depth)
+			if err != nil {
+				return nil, nil, err
+			}
 			// TODO.
+			_, _ = lMin, lMax
 			return zero, zero, nil
 		}
 		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
@@ -232,6 +232,40 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
+}
+
+func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	switch n.ID0().Key() {
+	case 0:
+		// No-op.
+
+	case t.KeyOpenParen:
+		// TODO.
+		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+
+	case t.KeyOpenBracket:
+		// TODO.
+		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+
+	case t.KeyColon:
+		// TODO.
+		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+
+	case t.KeyDot:
+		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
+			return nil, nil, err
+		}
+
+	default:
+		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+	}
+
+	nMin, nMax, err := q.bcheckTypeExpr(n.MType())
+	if err != nil {
+		return nil, nil, err
+	}
+	nMin, nMax = q.facts.refine(n, nMin, nMax)
+	return nMin, nMax, nil
 }
 
 func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
@@ -297,6 +331,11 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 }
 
 func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
+	switch n.PackageOrDecorator().Key() {
+	case t.KeyPtr, t.KeyOpenBracket:
+		return nil, nil, nil
+	}
+
 	b := [2]*big.Int{}
 	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]
