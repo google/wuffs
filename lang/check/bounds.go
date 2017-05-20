@@ -56,7 +56,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		n := n.Assert()
 		condition := n.Condition()
 		err := errFailed
-		if reasonID := n.Reason(); reasonID != 0 {
+		if cv := condition.ConstValue(); cv != nil {
+			if cv.Cmp(one) == 0 {
+				err = nil
+			}
+		} else if reasonID := n.Reason(); reasonID != 0 {
 			if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
 				err = reasonFunc(q, n)
 			} else {
