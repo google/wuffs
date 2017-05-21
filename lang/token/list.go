@@ -498,22 +498,6 @@ var squiggles = [256]ID{
 	'?': IDQuestion,
 	':': IDColon,
 	';': IDSemicolon,
-
-	// 1<<KeyShift is a non-zero ID with zero Flags. It is an invalid ID,
-	// signifying that lookup should continue in the lexers array below.
-
-	'.': 1 << KeyShift,
-	'!': 1 << KeyShift,
-	'&': 1 << KeyShift,
-	'|': 1 << KeyShift,
-	'^': 1 << KeyShift,
-	'+': 1 << KeyShift,
-	'-': 1 << KeyShift,
-	'*': 1 << KeyShift,
-	'/': 1 << KeyShift,
-	'=': 1 << KeyShift,
-	'<': 1 << KeyShift,
-	'>': 1 << KeyShift,
 }
 
 type suffixLexer struct {

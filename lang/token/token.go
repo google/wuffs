@@ -207,16 +207,14 @@ loop:
 
 		if id := squiggles[c]; id != 0 {
 			i++
-			if id.Flags() != 0 {
-				tokens = append(tokens, Token{id, line})
-				continue
-			}
-			for _, x := range lexers[c] {
-				if hasPrefix(src[i:], x.suffix) {
-					i += len(x.suffix)
-					tokens = append(tokens, Token{x.id, line})
-					continue loop
-				}
+			tokens = append(tokens, Token{id, line})
+			continue
+		}
+		for _, x := range lexers[c] {
+			if hasPrefix(src[i+1:], x.suffix) {
+				i += len(x.suffix) + 1
+				tokens = append(tokens, Token{x.id, line})
+				continue loop
 			}
 		}
 
