@@ -23,6 +23,7 @@ var (
 type Generator interface {
 	WritePreamble(w *bytes.Buffer) error
 	WritePostamble(w *bytes.Buffer) error
+	Format([]byte) ([]byte, error)
 }
 
 func Main(g Generator) error {
@@ -51,7 +52,11 @@ func Main(g Generator) error {
 	if err := g.WritePostamble(b); err != nil {
 		return err
 	}
-	if _, err := os.Stdout.Write(b.Bytes()); err != nil {
+	formatted, err := g.Format(b.Bytes())
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stdout.Write(formatted); err != nil {
 		return err
 	}
 	return nil

@@ -13,7 +13,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"os/exec"
 
 	"github.com/google/puffs/lang/generate"
 )
@@ -37,4 +39,21 @@ func (gen) WritePreamble(w *bytes.Buffer) error {
 func (gen) WritePostamble(w *bytes.Buffer) error {
 	w.WriteString("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n")
 	return nil
+}
+
+func (gen) Format(in []byte) ([]byte, error) {
+	cmd := exec.Command("clang-format", "-style=Chromium")
+	cmd.Stdin = bytes.NewReader(in)
+	out, err := cmd.CombinedOutput()
+	if _, ok := err.(*exec.ExitError); ok && len(out) > 0 {
+		// Go error messages usually don't end in "\n". The caller, who sees
+		// the error we return here, usually adds the "\n" themselves.
+		if out[len(out)-1] == '\n' {
+			out = out[:len(out)-1]
+		}
+		// The exec.ExitError's Error message doesn't include stderr, so we
+		// return that explicitly.
+		return nil, errors.New(string(out))
+	}
+	return out, err
 }
