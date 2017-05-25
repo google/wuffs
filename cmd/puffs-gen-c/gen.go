@@ -27,9 +27,18 @@ func main() {
 }
 
 func main1() error {
-	in, err := ioutil.ReadFile("preamble.h")
+	const inFilename = "preamble.h"
+	in, err := ioutil.ReadFile(inFilename)
 	if err != nil {
 		return err
+	}
+
+	const afterEditing = "// After editing this file,"
+	if !bytes.HasPrefix(in, []byte(afterEditing)) {
+		return fmt.Errorf("%s's contents do not start with %q", inFilename, afterEditing)
+	}
+	if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
+		in = in[i+2:]
 	}
 
 	out := &bytes.Buffer{}
