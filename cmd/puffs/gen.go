@@ -8,9 +8,9 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/google/puffs/lang/ast"
@@ -40,8 +40,8 @@ func doGen(puffsRoot string, args []string) error {
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		arg = filepath.FromSlash(arg)
-		if err := gen(puffsRoot, filepath.Join(puffsRoot, arg), langs, recursive); err != nil {
+		arg = filepath.Join(puffsRoot, filepath.FromSlash(arg))
+		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
 			return err
 		}
 	}
@@ -49,32 +49,17 @@ func doGen(puffsRoot string, args []string) error {
 }
 
 func gen(puffsRoot, dirname string, langs []string, recursive bool) error {
-	filenames, subDirs := []string(nil), []string(nil)
-	infos, err := readdir(dirname)
+	filenames, dirnames, err := listDir(dirname, recursive)
 	if err != nil {
 		return err
 	}
-	for _, o := range infos {
-		name := o.Name()
-		if o.IsDir() {
-			if recursive {
-				subDirs = append(subDirs, name)
-			}
-		} else if strings.HasSuffix(name, ".puffs") {
-			filenames = append(filenames, name)
-		}
-	}
-
 	if len(filenames) > 0 {
-		sort.Strings(filenames)
 		if err := genDir(puffsRoot, dirname, filenames, langs); err != nil {
 			return err
 		}
 	}
-
-	if len(subDirs) > 0 {
-		sort.Strings(subDirs)
-		for _, d := range subDirs {
+	if len(dirnames) > 0 {
+		for _, d := range dirnames {
 			if err := gen(puffsRoot, filepath.Join(dirname, d), langs, recursive); err != nil {
 				return err
 			}
@@ -84,6 +69,9 @@ func gen(puffsRoot, dirname string, langs []string, recursive bool) error {
 }
 
 func genDir(puffsRoot string, dirname string, filenames []string, langs []string) error {
+	// TODO: skip the generation if the output file already exists and its
+	// mtime is newer than all inputs and the puffs-gen-foo command.
+
 	idMap := &token.IDMap{}
 	files := []*ast.File(nil)
 	buf := &bytes.Buffer{}
@@ -113,31 +101,28 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 
 	for _, lang := range langs {
 		command := "puffs-gen-" + lang
+		stdout := &bytes.Buffer{}
 		cmd := exec.Command(command, "-assume_already_checked")
 		cmd.Stdin = bytes.NewReader(combinedSrc)
-		out, err := cmd.CombinedOutput()
-		if _, ok := err.(*exec.ExitError); ok && len(out) > 0 {
-			// Go error messages usually don't end in "\n". The caller, who sees
-			// the error we return here, usually adds the "\n" themselves.
-			if out[len(out)-1] == '\n' {
-				out = out[:len(out)-1]
-			}
-			// The exec.ExitError's Error message doesn't include stderr, so we
-			// return that explicitly.
-			return fmt.Errorf("%s: %s", command, out)
+		cmd.Stdout = stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err == nil {
+			// No-op.
+		} else if _, ok := err.(*exec.ExitError); ok {
+			return fmt.Errorf("%s: failed", command)
+		} else {
+			return err
 		}
-		if err != nil {
-			return fmt.Errorf("%s: %v", command, err)
-		}
+		out := stdout.Bytes()
 		outFilename := filepath.Join(puffsRoot, "gen", lang, filepath.Base(dirname)+"."+lang)
 		if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
-			fmt.Println("unchanged:", outFilename)
+			fmt.Println("gen unchanged: ", outFilename)
 			continue
 		}
 		if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
 			return err
 		}
-		fmt.Println("wrote:    ", outFilename)
+		fmt.Println("gen wrote:     ", outFilename)
 	}
 	return nil
 }

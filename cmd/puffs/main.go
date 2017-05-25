@@ -11,6 +11,7 @@ import (
 	"go/build"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -19,6 +20,7 @@ var commands = []struct {
 	do   func(puffsRoot string, args []string) error
 }{
 	{"gen", doGen},
+	{"test", doTest},
 }
 
 func main() {
@@ -59,13 +61,31 @@ func findPuffsRoot() (string, error) {
 	return "", errors.New("could not find Puffs root directory")
 }
 
-func readdir(dirname string) ([]os.FileInfo, error) {
+func listDir(dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
 	f, err := os.Open(dirname)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer f.Close()
-	return f.Readdir(-1)
+
+	infos, err := f.Readdir(-1)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, o := range infos {
+		name := o.Name()
+		if o.IsDir() {
+			if returnSubdirs {
+				dirnames = append(dirnames, name)
+			}
+		} else if strings.HasSuffix(name, ".puffs") {
+			filenames = append(filenames, name)
+		}
+	}
+
+	sort.Strings(filenames)
+	sort.Strings(dirnames)
+	return filenames, dirnames, nil
 }
 
 func usage() {
