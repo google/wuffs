@@ -39,7 +39,7 @@ func usage() {
 
 func main() {
 	if err := main1(); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
 	}
 }
