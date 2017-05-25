@@ -130,10 +130,14 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return fmt.Errorf("%s: %v", command, err)
 		}
 		outFilename := filepath.Join(puffsRoot, "gen", lang, filepath.Base(dirname)+"."+lang)
+		if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
+			fmt.Println("unchanged:", outFilename)
+			continue
+		}
 		if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
 			return err
 		}
-		fmt.Println(outFilename)
+		fmt.Println("wrote:    ", outFilename)
 	}
 	return nil
 }
