@@ -10,15 +10,10 @@
 package main
 
 import (
-	"os"
-
 	"github.com/google/puffs/cmd/internal/cgen"
 	"github.com/google/puffs/lang/generate"
 )
 
 func main() {
-	if err := generate.Main(&cgen.Generator{Extension: 'h'}); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(1)
-	}
+	generate.Main(&cgen.Generator{Extension: 'h'})
 }

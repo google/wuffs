@@ -26,7 +26,14 @@ type Generator interface {
 	Format(rawSource []byte) ([]byte, error)
 }
 
-func Main(g Generator) error {
+func Main(g Generator) {
+	if err := main1(g); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func main1(g Generator) error {
 	flag.Parse()
 	idMap := &token.IDMap{}
 	files, err := parseFiles(idMap)
