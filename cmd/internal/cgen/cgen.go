@@ -29,10 +29,14 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	b.WriteString("\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 
 	b.WriteString("// ---------------- Status Codes\n\n")
+	b.WriteString("// Status codes are non-positive integers.\n")
+	b.WriteString("//\n")
+	b.WriteString("// The least significant bit indicates a fatal status code: an error.\n")
 	b.WriteString("typedef enum {\n")
 	fmt.Fprintf(b, "puffs_%s_status_ok = 0,\n", pkgName)
-	fmt.Fprintf(b, "puffs_%s_status_short_dst = -1,\n", pkgName)
-	fmt.Fprintf(b, "puffs_%s_status_short_src = -2,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_error_bad_version = -1,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_dst = -4,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_src = -6,\n", pkgName)
 	fmt.Fprintf(b, "} puffs_%s_status;\n\n", pkgName)
 
 	b.WriteString("// ---------------- Structs\n\n")
@@ -92,14 +96,22 @@ func writeStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error
 	return nil
 }
 
+func writeCtorSignature(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct, ctor string) {
+	structName := n.Name().String(m)
+	fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self", pkgName, structName, ctor, pkgName, structName)
+	if ctor == "constructor" {
+		fmt.Fprintf(b, ", uint32_t puffs_version")
+	}
+	fmt.Fprintf(b, ")")
+}
+
 func writeCtorPrototypes(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	structName := n.Name().String(m)
 	for _, ctor := range []string{"constructor", "destructor"} {
-		fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self);\n\n",
-			pkgName, structName, ctor, pkgName, structName)
+		writeCtorSignature(b, pkgName, m, n, ctor)
+		b.WriteString(";\n\n")
 	}
 	return nil
 }
@@ -108,14 +120,20 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 	if !n.Suspendible() {
 		return nil
 	}
-	structName := n.Name().String(m)
 	for _, ctor := range []string{"constructor", "destructor"} {
-		fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self) {\n",
-			pkgName, structName, ctor, pkgName, structName)
+		writeCtorSignature(b, pkgName, m, n, ctor)
+		fmt.Fprintf(b, "{\n")
+
 		if ctor == "constructor" {
+			fmt.Fprintf(b, "if (puffs_version != PUFFS_VERSION) {\n")
+			fmt.Fprintf(b, "self->status = puffs_%s_error_bad_version;\n", pkgName)
+			fmt.Fprintf(b, "return;\n")
+			fmt.Fprintf(b, "}\n")
+
 			b.WriteString("memset(self, 0, sizeof(*self));\n")
 			// TODO: set any non-zero default values.
 		}
+
 		// TODO: call any ctor/dtors on sub-structures.
 		b.WriteString("}\n\n")
 	}

@@ -14,3 +14,14 @@
 #if __WORDSIZE < 32
 #error "Puffs requires a word size of at least 32 bits"
 #endif
+
+// PUFFS_VERSION is the major.minor version number as a uint32. The major
+// number is the high 16 bits. The minor number is the low 16 bits.
+//
+// The intention is to bump the version number at least on every API / ABI
+// backwards incompatible change.
+//
+// For now, the API and ABI are simply unstable and can change at any time.
+//
+// TODO: don't hard code this in preamble.h.
+#define PUFFS_VERSION (0x00001)

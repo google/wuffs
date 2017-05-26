@@ -15,16 +15,31 @@
 #error "Puffs requires a word size of at least 32 bits"
 #endif
 
+// PUFFS_VERSION is the major.minor version number as a uint32. The major
+// number is the high 16 bits. The minor number is the low 16 bits.
+//
+// The intention is to bump the version number at least on every API / ABI
+// backwards incompatible change.
+//
+// For now, the API and ABI are simply unstable and can change at any time.
+//
+// TODO: don't hard code this in preamble.h.
+#define PUFFS_VERSION (0x00001)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // ---------------- Status Codes
 
+// Status codes are non-positive integers.
+//
+// The least significant bit indicates a fatal status code: an error.
 typedef enum {
   puffs_gif_status_ok = 0,
-  puffs_gif_status_short_dst = -1,
-  puffs_gif_status_short_src = -2,
+  puffs_gif_error_bad_version = -1,
+  puffs_gif_status_short_dst = -4,
+  puffs_gif_status_short_src = -6,
 } puffs_gif_status;
 
 // ---------------- Structs
@@ -39,7 +54,8 @@ typedef struct {
 
 // ---------------- Constructor and Destructor Prototypes
 
-void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self);
+void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
+                                       uint32_t puffs_version);
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
@@ -49,7 +65,12 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
 // ---------------- Constructor and Destructor Implementations
 
-void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self) {
+void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
+                                       uint32_t puffs_version) {
+  if (puffs_version != PUFFS_VERSION) {
+    self->status = puffs_gif_error_bad_version;
+    return;
+  }
   memset(self, 0, sizeof(*self));
 }
 
