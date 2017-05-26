@@ -23,7 +23,7 @@ var (
 type Generator interface {
 	WritePreamble(w *bytes.Buffer) error
 	WritePostamble(w *bytes.Buffer) error
-	Format([]byte) ([]byte, error)
+	Format(rawSource []byte) ([]byte, error)
 }
 
 func Main(g Generator) error {

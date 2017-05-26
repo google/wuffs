@@ -22,7 +22,7 @@ import (
 
 func doGen(puffsRoot string, args []string) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
-	langsStr := flags.String("langs", "c", langsUsage)
+	langsStr := flags.String("langs", "c,h", langsUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -114,10 +114,14 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 		out := stdout.Bytes()
-		outFilename := filepath.Join(puffsRoot, "gen", lang, filepath.Base(dirname)+"."+lang)
+		outDirname := filepath.Join(puffsRoot, "gen", lang)
+		outFilename := filepath.Join(outDirname, filepath.Base(dirname)+"."+lang)
 		if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
 			fmt.Println("gen unchanged: ", outFilename)
 			continue
+		}
+		if err := os.MkdirAll(outDirname, 0755); err != nil {
+			return err
 		}
 		if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
 			return err

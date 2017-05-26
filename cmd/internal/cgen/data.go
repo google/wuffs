@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-package main
+package cgen
 
 const preamble = "" +
 	"// Use of this source code is governed by a BSD-style license that can be found\n// in the LICENSE file.\n\n#include <stdint.h>\n\n#if __WORDSIZE < 32\n#error \"Puffs requires a word size of at least 32 bits\"\n#endif\n" +

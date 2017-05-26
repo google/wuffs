@@ -101,7 +101,7 @@ The commands are:
 `)
 }
 
-const langsUsage = `comma-separated list of target languages, e.g. "c,go,rs"`
+const langsUsage = `comma-separated list of target languages (file extensions), e.g. "c,h,go,rs"`
 
 func parseLangs(commaSeparated string) ([]string, error) {
 	ret := []string(nil)
