@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #if __WORDSIZE < 32
@@ -12,6 +13,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct {
+  uint32_t literal_width;
+  uint8_t stack[4096];
+  uint8_t suffixes[4096];
+  uint16_t prefixes[4096];
+} puffs_gif_lzw_decoder;
 
 #ifdef __cplusplus
 }  // extern "C"

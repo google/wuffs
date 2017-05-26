@@ -11,6 +11,12 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
+type Flags uint32
+
+const (
+	FlagsOnlyTypeCheck = Flags(0x0001)
+)
+
 type Error struct {
 	Err           error
 	Filename      string
@@ -65,7 +71,7 @@ type Func struct {
 	LocalVars TypeMap
 }
 
-func Check(m *t.IDMap, files ...*a.File) (*Checker, error) {
+func Check(m *t.IDMap, flags Flags, files ...*a.File) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {
 			return nil, errors.New("check: Check given a nil *ast.File")
@@ -89,6 +95,7 @@ func Check(m *t.IDMap, files ...*a.File) (*Checker, error) {
 		}
 	}
 	c := &Checker{
+		flags:     flags,
 		idMap:     m,
 		reasonMap: rMap,
 		structs:   map[t.ID]Struct{},
@@ -123,6 +130,7 @@ var phases = [...]struct {
 }
 
 type Checker struct {
+	flags     Flags
 	idMap     *t.IDMap
 	reasonMap reasonMap
 	structs   map[t.ID]Struct
@@ -303,14 +311,16 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	}
 
 	// Run bounds checks.
-	for _, o := range n.Body() {
-		if err := q.bcheckStatement(o); err != nil {
-			return &Error{
-				Err:      err,
-				Filename: q.errFilename,
-				Line:     q.errLine,
-				IDMap:    c.idMap,
-				Facts:    q.facts,
+	if c.flags&FlagsOnlyTypeCheck == 0 {
+		for _, o := range n.Body() {
+			if err := q.bcheckStatement(o); err != nil {
+				return &Error{
+					Err:      err,
+					Filename: q.errFilename,
+					Line:     q.errLine,
+					IDMap:    c.idMap,
+					Facts:    q.facts,
+				}
 			}
 		}
 	}

@@ -4,7 +4,6 @@
 package generate
 
 import (
-	"bytes"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -18,13 +17,13 @@ import (
 
 var (
 	assumeAlreadyChecked = flag.Bool("assume_already_checked", false,
-		"whether to skip type- and bounds-checking; unsafe unless some other program checks the inputs")
+		"whether to skip bounds-checking; unsafe unless some other program checks the inputs")
+
+	packageName = flag.String("package_name", "", "the package name of the Puffs input code")
 )
 
 type Generator interface {
-	WritePreamble(w *bytes.Buffer) error
-	WritePostamble(w *bytes.Buffer) error
-	Format(rawSource []byte) ([]byte, error)
+	Generate(packageName string, m *token.IDMap, files []*ast.File) ([]byte, error)
 }
 
 func Main(g Generator) {
@@ -43,30 +42,23 @@ func main1(g Generator) error {
 	if err != nil {
 		return err
 	}
-	if !*assumeAlreadyChecked {
-		for _, f := range files {
-			if _, err := check.Check(idMap, f); err != nil {
-				return err
-			}
-		}
+
+	// Even if we can skip the bounds-checking, we still need to type-check to
+	// evaluate e.g. the constant N expression in the type "[N]u8".
+	checkFlags := check.Flags(0)
+	if *assumeAlreadyChecked {
+		checkFlags |= check.FlagsOnlyTypeCheck
+	}
+	if _, err := check.Check(idMap, checkFlags, files...); err != nil {
+		return err
 	}
 
-	b := &bytes.Buffer{}
-	if err := g.WritePreamble(b); err != nil {
-		return err
-	}
-	for _, f := range files {
-		// TODO: call g.WriteFoo methods.
-		_ = f
-	}
-	if err := g.WritePostamble(b); err != nil {
-		return err
-	}
-	formatted, err := g.Format(b.Bytes())
+	out, err := g.Generate(*packageName, idMap, files)
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stdout.Write(formatted); err != nil {
+
+	if _, err := os.Stdout.Write(out); err != nil {
 		return err
 	}
 	return nil

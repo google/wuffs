@@ -94,15 +94,16 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 	}
-	if _, err := check.Check(idMap, files...); err != nil {
+	if _, err := check.Check(idMap, 0, files...); err != nil {
 		return err
 	}
 	combinedSrc := buf.Bytes()
 
+	packageName := filepath.Base(dirname)
 	for _, lang := range langs {
 		command := "puffs-gen-" + lang
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command(command, "-assume_already_checked")
+		cmd := exec.Command(command, "-assume_already_checked", "-package_name", packageName)
 		cmd.Stdin = bytes.NewReader(combinedSrc)
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr
@@ -115,7 +116,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 		}
 		out := stdout.Bytes()
 		outDirname := filepath.Join(puffsRoot, "gen", lang)
-		outFilename := filepath.Join(outDirname, filepath.Base(dirname)+"."+lang)
+		outFilename := filepath.Join(outDirname, packageName+"."+lang)
 		if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
 			fmt.Println("gen unchanged: ", outFilename)
 			continue
