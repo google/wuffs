@@ -7,8 +7,8 @@ package cgen
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -34,18 +34,13 @@ func (g *Generator) WritePostamble(w *bytes.Buffer) error {
 }
 
 func (g *Generator) Format(rawSource []byte) ([]byte, error) {
+	stdout := &bytes.Buffer{}
 	cmd := exec.Command("clang-format", "-style=Chromium")
 	cmd.Stdin = bytes.NewReader(rawSource)
-	out, err := cmd.CombinedOutput()
-	if _, ok := err.(*exec.ExitError); ok && len(out) > 0 {
-		// Go error messages usually don't end in "\n". The caller, who sees
-		// the error we return here, usually adds the "\n" themselves.
-		if out[len(out)-1] == '\n' {
-			out = out[:len(out)-1]
-		}
-		// The exec.ExitError's Error message doesn't include stderr, so we
-		// return that explicitly.
-		return nil, errors.New(string(out))
+	cmd.Stdout = stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return nil, err
 	}
-	return out, err
+	return stdout.Bytes(), nil
 }

@@ -8,6 +8,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"os/exec"
 
 	"github.com/google/puffs/lang/ast"
 	"github.com/google/puffs/lang/check"
@@ -28,7 +29,9 @@ type Generator interface {
 
 func Main(g Generator) {
 	if err := main1(g); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
+		if _, ok := err.(*exec.ExitError); !ok {
+			os.Stderr.WriteString(err.Error() + "\n")
+		}
 		os.Exit(1)
 	}
 }
