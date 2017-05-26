@@ -106,16 +106,22 @@ const langsUsage = `comma-separated list of target languages (file extensions), 
 func parseLangs(commaSeparated string) ([]string, error) {
 	ret := []string(nil)
 	for _, s := range strings.Split(commaSeparated, ",") {
-		if len(s) == 0 {
-			return nil, fmt.Errorf(`invalid empty lang ""`)
-		}
-		for _, c := range s {
-			if ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') {
-				continue
-			}
+		if !validName(s) {
 			return nil, fmt.Errorf(`invalid lang %q, not in [a-z0-9]+`, s)
 		}
 		ret = append(ret, s)
 	}
 	return ret, nil
+}
+
+func validName(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || '9' < c) && (c < 'a' || 'z' < c) {
+			return false
+		}
+	}
+	return true
 }

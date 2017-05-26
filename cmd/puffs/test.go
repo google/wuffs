@@ -79,9 +79,14 @@ func test(puffsRoot, dirname string, langs []string, recursive bool) (failed boo
 }
 
 func testDir(puffsRoot string, dirname string, langs []string) (failed bool, err error) {
+	packageName := filepath.Base(dirname)
+	if !validName(packageName) {
+		return false, fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
+	}
+
 	for _, lang := range langs {
 		command := "puffs-test-" + lang
-		testDirname := filepath.Join(puffsRoot, "test", lang, filepath.Base(dirname))
+		testDirname := filepath.Join(puffsRoot, "test", lang, packageName)
 		fmt.Println("test:          ", testDirname)
 		cmd := exec.Command(command, testDirname)
 		cmd.Stdout = os.Stdout

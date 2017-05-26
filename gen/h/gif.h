@@ -18,11 +18,18 @@
 extern "C" {
 #endif
 
+typedef enum {
+  puffs_gif_status_ok = 0,
+  puffs_gif_status_short_dst = -1,
+  puffs_gif_status_short_src = -2,
+} puffs_gif_status;
+
 typedef struct {
-  uint32_t literal_width;
-  uint8_t stack[4096];
-  uint8_t suffixes[4096];
-  uint16_t prefixes[4096];
+  puffs_gif_status status;
+  uint32_t f_literal_width;
+  uint8_t f_stack[4096];
+  uint8_t f_suffixes[4096];
+  uint16_t f_prefixes[4096];
 } puffs_gif_lzw_decoder;
 
 #ifdef __cplusplus

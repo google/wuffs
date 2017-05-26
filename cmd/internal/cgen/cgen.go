@@ -31,6 +31,13 @@ func (g *Generator) Generate(packageName string, m *t.IDMap, files []*a.File) ([
 		b.WriteString("#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 	}
 
+	// Write status codes.
+	b.WriteString("typedef enum {\n")
+	fmt.Fprintf(b, "puffs_%s_status_ok = 0,\n", packageName)
+	fmt.Fprintf(b, "puffs_%s_status_short_dst = -1,\n", packageName)
+	fmt.Fprintf(b, "puffs_%s_status_short_src = -2,\n", packageName)
+	fmt.Fprintf(b, "} puffs_%s_status;\n\n", packageName)
+
 	// Write structs.
 	for _, f := range files {
 		for _, n := range f.TopLevelDecls() {
@@ -52,6 +59,9 @@ func (g *Generator) Generate(packageName string, m *t.IDMap, files []*a.File) ([
 
 func writeStruct(b *bytes.Buffer, packageName string, m *t.IDMap, n *a.Struct) error {
 	fmt.Fprintf(b, "typedef struct {\n")
+	if n.Suspendible() {
+		fmt.Fprintf(b, "puffs_%s_status status;\n", packageName)
+	}
 	for _, f := range n.Fields() {
 		if err := writeField(b, m, f.Field()); err != nil {
 			return err
@@ -86,6 +96,7 @@ func writeField(b *bytes.Buffer, m *t.IDMap, n *a.Field) error {
 		return fmt.Errorf("cannot convert Puffs type %q to C", n.XType().String(m))
 	}
 
+	b.WriteString("f_")
 	b.WriteString(n.Name().String(m))
 
 	for x := n.XType(); x != nil; x = x.Inner() {

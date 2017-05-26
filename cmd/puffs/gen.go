@@ -100,6 +100,10 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	combinedSrc := buf.Bytes()
 
 	packageName := filepath.Base(dirname)
+	if !validName(packageName) {
+		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
+	}
+
 	for _, lang := range langs {
 		command := "puffs-gen-" + lang
 		stdout := &bytes.Buffer{}
