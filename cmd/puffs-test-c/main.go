@@ -66,7 +66,6 @@ func listDir(dirname string) (filenames []string, err error) {
 }
 
 func do(dirname string, filename string) (failed bool, err error) {
-	fmt.Printf("    %s:\n", filename)
 	workDir, err := ioutil.TempDir("", "puffs-test-c")
 	if err != nil {
 		return false, err
@@ -76,7 +75,6 @@ func do(dirname string, filename string) (failed bool, err error) {
 	for _, cc := range []string{"clang", "gcc"} {
 		in := filepath.Join(dirname, filename)
 		out := filepath.Join(workDir, cc+".out")
-		fmt.Printf("        %-8s", cc+":")
 
 		ccCmd := exec.Command(cc, "-std=c99", "-Wall", "-Werror", "-o", out, in)
 		ccCmd.Stdout = os.Stdout
