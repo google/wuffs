@@ -11,15 +11,26 @@ for cc in clang gcc; do
 done
 
 It should print:
-clang:  PASS
-gcc:    PASS
+clang:  PASS (N tests run)
+gcc:    PASS (N tests run)
+for some value of N.
 */
 
-#include <stdio.h>
+#include "../testlib/testlib.c"
 
 #include "../../../gen/c/gif.c"
 
-int main(int argc, char** argv) {
-  printf("PASS\n");
-  return 0;
+void test_default_literal_width() {
+  puffs_gif_lzw_decoder dec;
+  puffs_gif_lzw_decoder_constructor(&dec);
+  if (dec.f_literal_width != 0) {
+    FAIL("test_default_literal_width: got %d, want %d", dec.f_literal_width, 0);
+    puffs_gif_lzw_decoder_destructor(&dec);
+    return;
+  }
+  puffs_gif_lzw_decoder_destructor(&dec);
 }
+
+test tests[] = {
+    test_default_literal_width, NULL,
+};
