@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 // Puffs requires a word size of at least 32 bits because it assumes that
 // converting a u32 to usize will never overflow. For example, the size of a
@@ -14,11 +15,15 @@
 #error "Puffs requires a word size of at least 32 bits"
 #endif
 
+// ---------------- Status Codes
+
 typedef enum {
   puffs_gif_status_ok = 0,
   puffs_gif_status_short_dst = -1,
   puffs_gif_status_short_src = -2,
 } puffs_gif_status;
+
+// ---------------- Structs
 
 typedef struct {
   puffs_gif_status status;
@@ -27,3 +32,17 @@ typedef struct {
   uint8_t f_suffixes[4096];
   uint16_t f_prefixes[4096];
 } puffs_gif_lzw_decoder;
+
+// ---------------- Constructor and Destructor Prototypes
+
+void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self);
+
+void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
+
+// ---------------- Constructor and Destructor Implementations
+
+void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self) {
+  memset(self, 0, sizeof(*self));
+}
+
+void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {}

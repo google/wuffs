@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 // Puffs requires a word size of at least 32 bits because it assumes that
 // converting a u32 to usize will never overflow. For example, the size of a

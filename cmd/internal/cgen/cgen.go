@@ -20,7 +20,7 @@ type Generator struct {
 	Extension byte
 }
 
-func (g *Generator) Generate(packageName string, m *t.IDMap, files []*a.File) ([]byte, error) {
+func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byte, error) {
 	b := &bytes.Buffer{}
 
 	// Write preamble.
@@ -31,19 +31,43 @@ func (g *Generator) Generate(packageName string, m *t.IDMap, files []*a.File) ([
 		b.WriteString("#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 	}
 
-	// Write status codes.
+	b.WriteString("// ---------------- Status Codes\n\n")
 	b.WriteString("typedef enum {\n")
-	fmt.Fprintf(b, "puffs_%s_status_ok = 0,\n", packageName)
-	fmt.Fprintf(b, "puffs_%s_status_short_dst = -1,\n", packageName)
-	fmt.Fprintf(b, "puffs_%s_status_short_src = -2,\n", packageName)
-	fmt.Fprintf(b, "} puffs_%s_status;\n\n", packageName)
+	fmt.Fprintf(b, "puffs_%s_status_ok = 0,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_dst = -1,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_src = -2,\n", pkgName)
+	fmt.Fprintf(b, "} puffs_%s_status;\n\n", pkgName)
 
-	// Write structs.
+	b.WriteString("// ---------------- Structs\n\n")
 	for _, f := range files {
 		for _, n := range f.TopLevelDecls() {
 			if n.Kind() == a.KStruct {
-				if err := writeStruct(b, packageName, m, n.Struct()); err != nil {
+				if err := writeStruct(b, pkgName, m, n.Struct()); err != nil {
 					return nil, err
+				}
+			}
+		}
+	}
+
+	b.WriteString("// ---------------- Constructor and Destructor Prototypes\n\n")
+	for _, f := range files {
+		for _, n := range f.TopLevelDecls() {
+			if n.Kind() == a.KStruct {
+				if err := writeCtorPrototypes(b, pkgName, m, n.Struct()); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	if g.Extension != 'h' {
+		b.WriteString("// ---------------- Constructor and Destructor Implementations\n\n")
+		for _, f := range files {
+			for _, n := range f.TopLevelDecls() {
+				if n.Kind() == a.KStruct {
+					if err := writeCtorImpls(b, pkgName, m, n.Struct()); err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
@@ -57,17 +81,48 @@ func (g *Generator) Generate(packageName string, m *t.IDMap, files []*a.File) ([
 	return format(b)
 }
 
-func writeStruct(b *bytes.Buffer, packageName string, m *t.IDMap, n *a.Struct) error {
+func writeStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+	structName := n.Name().String(m)
 	fmt.Fprintf(b, "typedef struct {\n")
 	if n.Suspendible() {
-		fmt.Fprintf(b, "puffs_%s_status status;\n", packageName)
+		fmt.Fprintf(b, "puffs_%s_status status;\n", pkgName)
 	}
 	for _, f := range n.Fields() {
 		if err := writeField(b, m, f.Field()); err != nil {
 			return err
 		}
 	}
-	fmt.Fprintf(b, "} puffs_%s_%s;\n", packageName, n.Name().String(m))
+	fmt.Fprintf(b, "} puffs_%s_%s;\n\n", pkgName, structName)
+	return nil
+}
+
+func writeCtorPrototypes(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+	if !n.Suspendible() {
+		return nil
+	}
+	structName := n.Name().String(m)
+	for _, ctor := range []string{"constructor", "destructor"} {
+		fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self);\n\n",
+			pkgName, structName, ctor, pkgName, structName)
+	}
+	return nil
+}
+
+func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+	if !n.Suspendible() {
+		return nil
+	}
+	structName := n.Name().String(m)
+	for _, ctor := range []string{"constructor", "destructor"} {
+		fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self) {\n",
+			pkgName, structName, ctor, pkgName, structName)
+		if ctor == "constructor" {
+			b.WriteString("memset(self, 0, sizeof(*self));\n")
+			// TODO: set any non-zero default values.
+		}
+		// TODO: call any ctor/dtors on sub-structures.
+		b.WriteString("}\n\n")
+	}
 	return nil
 }
 
