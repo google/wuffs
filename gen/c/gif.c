@@ -15,6 +15,10 @@
 #error "Puffs requires a word size of at least 32 bits"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ---------------- Status Codes
 
 typedef enum {
@@ -38,6 +42,10 @@ typedef struct {
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self);
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // ---------------- Constructor and Destructor Implementations
 
