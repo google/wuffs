@@ -60,6 +60,10 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
+// ---------------- Public Function Prototypes
+
+puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

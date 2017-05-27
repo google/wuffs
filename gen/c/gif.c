@@ -60,6 +60,10 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
+// ---------------- Public Function Prototypes
+
+puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -67,6 +71,8 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 // ---------------- Private Structs
 
 // ---------------- Private Constructor and Destructor Prototypes
+
+// ---------------- Private Function Prototypes
 
 // ---------------- Constructor and Destructor Implementations
 
@@ -88,3 +94,10 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
 }
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {}
+
+// ---------------- Function Implementations
+
+puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
+  puffs_gif_status ret = puffs_gif_status_ok;
+  return ret;
+}

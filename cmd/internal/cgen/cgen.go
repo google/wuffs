@@ -57,6 +57,11 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 		return nil, err
 	}
 
+	b.WriteString("// ---------------- Public Function Prototypes\n\n")
+	if err := forEachFunc(b, pkgName, m, files, pubOnly, writeFuncPrototype); err != nil {
+		return nil, err
+	}
+
 	// Finish up the header, which is also the first part of the .c file.
 	b.WriteString("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	if g.Extension == 'h' {
@@ -73,6 +78,11 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 		return nil, err
 	}
 
+	b.WriteString("// ---------------- Private Function Prototypes\n\n")
+	if err := forEachFunc(b, pkgName, m, files, priOnly, writeFuncPrototype); err != nil {
+		return nil, err
+	}
+
 	b.WriteString("// ---------------- Constructor and Destructor Implementations\n\n")
 	b.WriteString("// PUFFS_MAGIC is a magic number to check that constructors are called. It's\n")
 	b.WriteString("// not foolproof, given C doesn't automatically zero memory before use, but it\n")
@@ -84,7 +94,30 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 		return nil, err
 	}
 
+	b.WriteString("// ---------------- Function Implementations\n\n")
+	if err := forEachFunc(b, pkgName, m, files, bothPubPri, writeFuncImpl); err != nil {
+		return nil, err
+	}
+
 	return format(b)
+}
+
+func forEachFunc(b *bytes.Buffer, pkgName string, m *t.IDMap, files []*a.File, v visibility,
+	f func(*bytes.Buffer, string, *t.IDMap, *a.Func) error) error {
+
+	for _, file := range files {
+		for _, n := range file.TopLevelDecls() {
+			if n.Kind() != a.KFunc ||
+				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
+				continue
+			}
+			if err := f(b, pkgName, m, n.Func()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func forEachStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, files []*a.File, v visibility,
@@ -164,6 +197,46 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 		// TODO: call any ctor/dtors on sub-structures.
 		b.WriteString("}\n\n")
 	}
+	return nil
+}
+
+func writeFuncSignature(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) {
+	if n.Suspendible() {
+		fmt.Fprintf(b, "puffs_%s_status", pkgName)
+	} else {
+		fmt.Fprintf(b, "void")
+	}
+	fmt.Fprintf(b, " puffs_%s", pkgName)
+	if r := n.Receiver(); r != 0 {
+		fmt.Fprintf(b, "_%s", r.String(m))
+	}
+	fmt.Fprintf(b, "_%s(", n.Name().String(m))
+	if r := n.Receiver(); r != 0 {
+		fmt.Fprintf(b, "puffs_%s_%s *self", pkgName, r.String(m))
+	}
+	// TODO: write n's args.
+	fmt.Fprintf(b, ")")
+}
+
+func writeFuncPrototype(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error {
+	writeFuncSignature(b, pkgName, m, n)
+	b.WriteString(";\n\n")
+	return nil
+}
+
+func writeFuncImpl(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error {
+	writeFuncSignature(b, pkgName, m, n)
+	b.WriteString("{\n")
+
+	if n.Suspendible() {
+		fmt.Fprintf(b, "puffs_%s_status ret = puffs_%s_status_ok;\n", pkgName, pkgName)
+	}
+	// TODO: generate the function body.
+	if n.Suspendible() {
+		fmt.Fprintf(b, "return ret;\n")
+	}
+
+	b.WriteString("}\n\n")
 	return nil
 }
 
