@@ -46,6 +46,7 @@ typedef enum {
 
 typedef struct {
   puffs_gif_status status;
+  uint32_t magic;
   uint32_t f_literal_width;
   uint8_t f_stack[4096];
   uint8_t f_suffixes[4096];
@@ -65,6 +66,13 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
 // ---------------- Constructor and Destructor Implementations
 
+// PUFFS_MAGIC is a magic number to check that constructors are called. It's
+// not foolproof, given C doesn't automatically zero memory before use, but it
+// should catch 99.99% of cases.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("puffs").
+#define PUFFS_MAGIC (0xCB3699CCU)
+
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
                                        uint32_t puffs_version) {
   if (puffs_version != PUFFS_VERSION) {
@@ -72,6 +80,7 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     return;
   }
   memset(self, 0, sizeof(*self));
+  self->magic = PUFFS_MAGIC;
 }
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {}

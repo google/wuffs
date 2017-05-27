@@ -46,6 +46,7 @@ typedef enum {
 
 typedef struct {
   puffs_gif_status status;
+  uint32_t magic;
   uint32_t f_literal_width;
   uint8_t f_stack[4096];
   uint8_t f_suffixes[4096];

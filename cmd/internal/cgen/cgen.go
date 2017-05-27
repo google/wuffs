@@ -68,6 +68,12 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	}
 
 	b.WriteString("// ---------------- Constructor and Destructor Implementations\n\n")
+	b.WriteString("// PUFFS_MAGIC is a magic number to check that constructors are called. It's\n")
+	b.WriteString("// not foolproof, given C doesn't automatically zero memory before use, but it\n")
+	b.WriteString("// should catch 99.99% of cases.\n")
+	b.WriteString("//\n")
+	b.WriteString("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
+	b.WriteString("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
 	for _, f := range files {
 		for _, n := range f.TopLevelDecls() {
 			if n.Kind() == a.KStruct {
@@ -86,6 +92,7 @@ func writeStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error
 	fmt.Fprintf(b, "typedef struct {\n")
 	if n.Suspendible() {
 		fmt.Fprintf(b, "puffs_%s_status status;\n", pkgName)
+		fmt.Fprintf(b, "uint32_t magic;\n")
 	}
 	for _, f := range n.Fields() {
 		if err := writeField(b, m, f.Field()); err != nil {
@@ -131,6 +138,8 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 			fmt.Fprintf(b, "}\n")
 
 			b.WriteString("memset(self, 0, sizeof(*self));\n")
+			b.WriteString("self->magic = PUFFS_MAGIC;\n")
+
 			// TODO: set any non-zero default values.
 		}
 
