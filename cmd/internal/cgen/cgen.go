@@ -40,25 +40,13 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	fmt.Fprintf(b, "} puffs_%s_status;\n\n", pkgName)
 
 	b.WriteString("// ---------------- Structs\n\n")
-	for _, f := range files {
-		for _, n := range f.TopLevelDecls() {
-			if n.Kind() == a.KStruct {
-				if err := writeStruct(b, pkgName, m, n.Struct()); err != nil {
-					return nil, err
-				}
-			}
-		}
+	if err := forEachStruct(b, pkgName, m, files, writeStruct); err != nil {
+		return nil, err
 	}
 
 	b.WriteString("// ---------------- Constructor and Destructor Prototypes\n\n")
-	for _, f := range files {
-		for _, n := range f.TopLevelDecls() {
-			if n.Kind() == a.KStruct {
-				if err := writeCtorPrototypes(b, pkgName, m, n.Struct()); err != nil {
-					return nil, err
-				}
-			}
-		}
+	if err := forEachStruct(b, pkgName, m, files, writeCtorPrototypes); err != nil {
+		return nil, err
 	}
 
 	// Finish up the header, which is also the first part of the .c file.
@@ -74,17 +62,26 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	b.WriteString("//\n")
 	b.WriteString("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
 	b.WriteString("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
-	for _, f := range files {
-		for _, n := range f.TopLevelDecls() {
+	if err := forEachStruct(b, pkgName, m, files, writeCtorImpls); err != nil {
+		return nil, err
+	}
+
+	return format(b)
+}
+
+func forEachStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, files []*a.File,
+	f func(*bytes.Buffer, string, *t.IDMap, *a.Struct) error) error {
+
+	for _, file := range files {
+		for _, n := range file.TopLevelDecls() {
 			if n.Kind() == a.KStruct {
-				if err := writeCtorImpls(b, pkgName, m, n.Struct()); err != nil {
-					return nil, err
+				if err := f(b, pkgName, m, n.Struct()); err != nil {
+					return err
 				}
 			}
 		}
 	}
-
-	return format(b)
+	return nil
 }
 
 func writeStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
