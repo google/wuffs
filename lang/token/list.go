@@ -139,6 +139,7 @@ const (
 	KeyDot       = Key(IDDot >> KeyShift)
 	KeyDotDot    = Key(IDDotDot >> KeyShift)
 	KeyComma     = Key(IDComma >> KeyShift)
+	KeyExclam    = Key(IDExclam >> KeyShift)
 	KeyQuestion  = Key(IDQuestion >> KeyShift)
 	KeyColon     = Key(IDColon >> KeyShift)
 	KeySemicolon = Key(IDSemicolon >> KeyShift)
@@ -264,9 +265,10 @@ const (
 	IDDot       = ID(0x20<<KeyShift | FlagsTightLeft | FlagsTightRight)
 	IDDotDot    = ID(0x21<<KeyShift | FlagsTightLeft | FlagsTightRight)
 	IDComma     = ID(0x22<<KeyShift | FlagsTightLeft)
-	IDQuestion  = ID(0x23<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDColon     = ID(0x24<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDSemicolon = ID(0x25<<KeyShift | FlagsTightLeft)
+	IDExclam    = ID(0x23<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDQuestion  = ID(0x24<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDColon     = ID(0x25<<KeyShift | FlagsTightLeft | FlagsTightRight)
+	IDSemicolon = ID(0x26<<KeyShift | FlagsTightLeft)
 
 	IDEq       = ID(0x30<<KeyShift | FlagsAssign)
 	IDPlusEq   = ID(0x31<<KeyShift | FlagsAssign)
@@ -397,6 +399,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyDot:       {".", IDDot},
 	KeyDotDot:    {"..", IDDotDot},
 	KeyComma:     {",", IDComma},
+	KeyExclam:    {"!", IDExclam},
 	KeyQuestion:  {"?", IDQuestion},
 	KeyColon:     {":", IDColon},
 	KeySemicolon: {";", IDSemicolon},
@@ -517,6 +520,7 @@ var lexers = [256][]suffixLexer{
 	},
 	'!': {
 		{"=", IDNotEq},
+		{"", IDExclam},
 	},
 	'&': {
 		{"^=", IDAmpHatEq},

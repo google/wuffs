@@ -87,8 +87,12 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
 				p.m.ByID(id1), p.filename, p.line())
 		}
-		if p.peek1().Key() == t.KeyQuestion {
-			flags |= a.FlagsSuspendible
+		switch p.peek1().Key() {
+		case t.KeyExclam:
+			flags |= a.FlagsImpure
+			p.src = p.src[1:]
+		case t.KeyQuestion:
+			flags |= a.FlagsImpure | a.FlagsSuspendible
 			p.src = p.src[1:]
 		}
 		inFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
@@ -667,9 +671,13 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		default:
 			return lhs, nil
 
-		case t.KeyQuestion:
+		case t.KeyExclam, t.KeyQuestion:
+			if p.src[0].Key() == t.KeyExclam {
+				flags |= a.FlagsImpure
+			} else {
+				flags |= a.FlagsImpure | a.FlagsSuspendible
+			}
 			p.src = p.src[1:]
-			flags |= a.FlagsSuspendible
 			fallthrough
 
 		case t.KeyOpenParen:

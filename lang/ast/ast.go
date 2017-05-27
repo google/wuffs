@@ -68,8 +68,9 @@ var kindStrings = [...]string{
 type Flags uint32
 
 const (
-	FlagsSuspendible = Flags(0x00000001)
-	FlagsTypeChecked = Flags(0x00000002)
+	FlagsImpure      = Flags(0x00000001)
+	FlagsSuspendible = Flags(0x00000002)
+	FlagsTypeChecked = Flags(0x00000004)
 )
 
 type Node struct {
@@ -160,7 +161,8 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-//  - FlagsSuspendible is "f(x)" vs "f?(x)"
+//  - FlagsImpure      is "f(x)" vs "f!(x)"
+//  - FlagsSuspendible is "f(x)" vs "f?(x)", it implies FlagsImpure
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
 //  - ID1:   <0|ident|literal>
 //  - LHS:   <nil|Expr>
@@ -189,6 +191,7 @@ const MaxExprDepth = 255
 type Expr Node
 
 func (n *Expr) Node() *Node          { return (*Node)(n) }
+func (n *Expr) Impure() bool         { return n.flags&FlagsImpure != 0 }
 func (n *Expr) Suspendible() bool    { return n.flags&FlagsSuspendible != 0 }
 func (n *Expr) ConstValue() *big.Int { return n.constValue }
 func (n *Expr) MType() *TypeExpr     { return n.mType }
@@ -437,7 +440,8 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inne
 }
 
 // Func is "func ID0.ID1(LHS)(RHS) { List1 }":
-//  - FlagsSuspendible is "ID1" vs "ID1?"
+//  - FlagsImpure      is "ID1" vs "ID1!"
+//  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - ID0:   <0|receiver>
 //  - ID1:   name
 //  - LHS:   <Struct> in-parameters
@@ -447,6 +451,7 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inne
 type Func Node
 
 func (n *Func) Node() *Node       { return (*Node)(n) }
+func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
 func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Func) Filename() string  { return n.filename }
 func (n *Func) Line() uint32      { return n.line }
