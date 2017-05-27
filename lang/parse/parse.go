@@ -70,89 +70,9 @@ func (p *parser) parseFile() (*a.File, error) {
 }
 
 func (p *parser) parseTopLevelDecl() (*a.Node, error) {
+	flags := a.Flags(0)
 	line := p.src[0].Line
-	switch p.src[0].ID.Key() {
-	case t.KeyFunc:
-		flags := a.Flags(0)
-		p.src = p.src[1:]
-		id0, id1, err := p.parseQualifiedIdent()
-		if err != nil {
-			return nil, err
-		}
-		if id0 != 0 && id0.IsBuiltIn() {
-			return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
-				p.m.ByID(id0), p.filename, p.line())
-		}
-		if id1.IsBuiltIn() {
-			return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
-				p.m.ByID(id1), p.filename, p.line())
-		}
-		switch p.peek1().Key() {
-		case t.KeyExclam:
-			flags |= a.FlagsImpure
-			p.src = p.src[1:]
-		case t.KeyQuestion:
-			flags |= a.FlagsImpure | a.FlagsSuspendible
-			p.src = p.src[1:]
-		}
-		inFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
-		if err != nil {
-			return nil, err
-		}
-		outFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
-		if err != nil {
-			return nil, err
-		}
-		asserts := []*a.Node(nil)
-		if p.peek1().Key() == t.KeyComma {
-			p.src = p.src[1:]
-			asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode)
-			if err != nil {
-				return nil, err
-			}
-			if err := p.assertsSorted(asserts); err != nil {
-				return nil, err
-			}
-		}
-		body, err := p.parseBlock()
-		if err != nil {
-			return nil, err
-		}
-		if x := p.peek1().Key(); x != t.KeySemicolon {
-			got := p.m.ByKey(x)
-			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-		in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
-		out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
-		return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
-
-	case t.KeyStruct:
-		flags := a.Flags(0)
-		p.src = p.src[1:]
-		name, err := p.parseIdent()
-		if err != nil {
-			return nil, err
-		}
-		if name.IsBuiltIn() {
-			return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
-				p.m.ByID(name), p.filename, p.line())
-		}
-		if p.peek1().Key() == t.KeyQuestion {
-			flags |= a.FlagsSuspendible
-			p.src = p.src[1:]
-		}
-		fields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
-		if err != nil {
-			return nil, err
-		}
-		if x := p.peek1().Key(); x != t.KeySemicolon {
-			got := p.m.ByKey(x)
-			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-		return a.NewStruct(flags, p.filename, line, name, fields).Node(), nil
-
+	switch p.peek1().Key() {
 	case t.KeyUse:
 		p.src = p.src[1:]
 		path := p.peek1()
@@ -168,8 +88,93 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		p.src = p.src[1:]
 		return a.NewUse(p.filename, line, path).Node(), nil
 
+	case t.KeyPub:
+		flags |= a.FlagsPublic
+		fallthrough
+	case t.KeyPri:
+		p.src = p.src[1:]
+		switch p.peek1().Key() {
+		case t.KeyFunc:
+			p.src = p.src[1:]
+			id0, id1, err := p.parseQualifiedIdent()
+			if err != nil {
+				return nil, err
+			}
+			if id0 != 0 && id0.IsBuiltIn() {
+				return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
+					p.m.ByID(id0), p.filename, p.line())
+			}
+			if id1.IsBuiltIn() {
+				return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
+					p.m.ByID(id1), p.filename, p.line())
+			}
+			switch p.peek1().Key() {
+			case t.KeyExclam:
+				flags |= a.FlagsImpure
+				p.src = p.src[1:]
+			case t.KeyQuestion:
+				flags |= a.FlagsImpure | a.FlagsSuspendible
+				p.src = p.src[1:]
+			}
+			inFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
+			if err != nil {
+				return nil, err
+			}
+			outFields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
+			if err != nil {
+				return nil, err
+			}
+			asserts := []*a.Node(nil)
+			if p.peek1().Key() == t.KeyComma {
+				p.src = p.src[1:]
+				asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode)
+				if err != nil {
+					return nil, err
+				}
+				if err := p.assertsSorted(asserts); err != nil {
+					return nil, err
+				}
+			}
+			body, err := p.parseBlock()
+			if err != nil {
+				return nil, err
+			}
+			if x := p.peek1().Key(); x != t.KeySemicolon {
+				got := p.m.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
+			out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
+			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
+
+		case t.KeyStruct:
+			p.src = p.src[1:]
+			name, err := p.parseIdent()
+			if err != nil {
+				return nil, err
+			}
+			if name.IsBuiltIn() {
+				return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
+					p.m.ByID(name), p.filename, p.line())
+			}
+			if p.peek1().Key() == t.KeyQuestion {
+				flags |= a.FlagsSuspendible
+				p.src = p.src[1:]
+			}
+			fields, err := p.parseList(t.KeyCloseParen, (*parser).parseFieldNode)
+			if err != nil {
+				return nil, err
+			}
+			if x := p.peek1().Key(); x != t.KeySemicolon {
+				got := p.m.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return a.NewStruct(flags, p.filename, line, name, fields).Node(), nil
+		}
 	}
-	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, p.src[0].Line)
+	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, line)
 }
 
 // parseQualifiedIdent parses "foo.bar" or "bar".

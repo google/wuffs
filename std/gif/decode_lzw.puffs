@@ -1,6 +1,6 @@
 use "std/io"
 
-struct lzw_decoder?(
+pub struct lzw_decoder?(
 	// TODO: default values??
 	literal_width u32[2..8],
 	stack[4096] u8,
@@ -8,7 +8,7 @@ struct lzw_decoder?(
 	prefixes[4096] u16,
 )
 
-func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
+pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)() {
 	var bits u32
 	var n_bits u32
 

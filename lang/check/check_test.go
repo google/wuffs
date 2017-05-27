@@ -46,11 +46,11 @@ func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, src string) err
 func TestCheck(t *testing.T) {
 	const filename = "test.puffs"
 	src := strings.TrimSpace(`
-		struct foo(
+		pri struct foo(
 			i i32,
 		)
 
-		func foo.bar()() {
+		pri func foo.bar()() {
 			var x u8
 			var y i32 = +2
 			var z u64[..123]
@@ -176,7 +176,7 @@ func TestConstValues(t *testing.T) {
 
 	idMap := &token.IDMap{}
 	for s, wantInt64 := range testCases {
-		src := "func foo()() {\n\t" + s + "\n}\n"
+		src := "pri func foo()() {\n\t" + s + "\n}\n"
 
 		tokens, _, err := token.Tokenize(idMap, filename, []byte(src))
 		if err != nil {

@@ -70,7 +70,8 @@ type Flags uint32
 const (
 	FlagsImpure      = Flags(0x00000001)
 	FlagsSuspendible = Flags(0x00000002)
-	FlagsTypeChecked = Flags(0x00000004)
+	FlagsPublic      = Flags(0x00000004)
+	FlagsTypeChecked = Flags(0x00000008)
 )
 
 type Node struct {
@@ -442,6 +443,7 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inne
 // Func is "func ID0.ID1(LHS)(RHS) { List1 }":
 //  - FlagsImpure      is "ID1" vs "ID1!"
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
+//  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   <0|receiver>
 //  - ID1:   name
 //  - LHS:   <Struct> in-parameters
@@ -453,6 +455,7 @@ type Func Node
 func (n *Func) Node() *Node       { return (*Node)(n) }
 func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
 func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
+func (n *Func) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Func) Filename() string  { return n.filename }
 func (n *Func) Line() uint32      { return n.line }
 func (n *Func) QID() t.QID        { return t.QID{n.id0, n.id1} }
@@ -480,12 +483,14 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 
 // Struct is "struct ID1(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
+//  - FlagsPublic      is "pub" vs "pri"
 //  - ID1:   name
 //  - List0: <Field> fields
 type Struct Node
 
 func (n *Struct) Node() *Node       { return (*Node)(n) }
 func (n *Struct) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
+func (n *Struct) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string  { return n.filename }
 func (n *Struct) Line() uint32      { return n.line }
 func (n *Struct) Name() t.ID        { return n.id1 }
