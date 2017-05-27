@@ -98,6 +98,7 @@ Usage:
 The commands are:
 
 	gen     generate code for packages and dependencies
+	test    test packages
 `)
 }
 
