@@ -15,6 +15,14 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
+type visibility uint32
+
+const (
+	bothPubPri visibility = iota
+	pubOnly
+	priOnly
+)
+
 type Generator struct {
 	// Extension should be either 'c' or 'h'.
 	Extension byte
@@ -39,13 +47,13 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	fmt.Fprintf(b, "puffs_%s_status_short_src = -6,\n", pkgName)
 	fmt.Fprintf(b, "} puffs_%s_status;\n\n", pkgName)
 
-	b.WriteString("// ---------------- Structs\n\n")
-	if err := forEachStruct(b, pkgName, m, files, writeStruct); err != nil {
+	b.WriteString("// ---------------- Public Structs\n\n")
+	if err := forEachStruct(b, pkgName, m, files, pubOnly, writeStruct); err != nil {
 		return nil, err
 	}
 
-	b.WriteString("// ---------------- Constructor and Destructor Prototypes\n\n")
-	if err := forEachStruct(b, pkgName, m, files, writeCtorPrototypes); err != nil {
+	b.WriteString("// ---------------- Public Constructor and Destructor Prototypes\n\n")
+	if err := forEachStruct(b, pkgName, m, files, pubOnly, writeCtorPrototypes); err != nil {
 		return nil, err
 	}
 
@@ -55,6 +63,16 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 		return format(b)
 	}
 
+	b.WriteString("// ---------------- Private Structs\n\n")
+	if err := forEachStruct(b, pkgName, m, files, priOnly, writeStruct); err != nil {
+		return nil, err
+	}
+
+	b.WriteString("// ---------------- Private Constructor and Destructor Prototypes\n\n")
+	if err := forEachStruct(b, pkgName, m, files, priOnly, writeCtorPrototypes); err != nil {
+		return nil, err
+	}
+
 	b.WriteString("// ---------------- Constructor and Destructor Implementations\n\n")
 	b.WriteString("// PUFFS_MAGIC is a magic number to check that constructors are called. It's\n")
 	b.WriteString("// not foolproof, given C doesn't automatically zero memory before use, but it\n")
@@ -62,22 +80,25 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	b.WriteString("//\n")
 	b.WriteString("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
 	b.WriteString("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
-	if err := forEachStruct(b, pkgName, m, files, writeCtorImpls); err != nil {
+	if err := forEachStruct(b, pkgName, m, files, bothPubPri, writeCtorImpls); err != nil {
 		return nil, err
 	}
 
 	return format(b)
 }
 
-func forEachStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, files []*a.File,
+func forEachStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, files []*a.File, v visibility,
 	f func(*bytes.Buffer, string, *t.IDMap, *a.Struct) error) error {
 
 	for _, file := range files {
 		for _, n := range file.TopLevelDecls() {
-			if n.Kind() == a.KStruct {
-				if err := f(b, pkgName, m, n.Struct()); err != nil {
-					return err
-				}
+			if n.Kind() != a.KStruct ||
+				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
+				continue
+			}
+			if err := f(b, pkgName, m, n.Struct()); err != nil {
+				return err
 			}
 		}
 	}

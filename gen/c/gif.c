@@ -42,7 +42,7 @@ typedef enum {
   puffs_gif_status_short_src = -6,
 } puffs_gif_status;
 
-// ---------------- Structs
+// ---------------- Public Structs
 
 typedef struct {
   puffs_gif_status status;
@@ -53,7 +53,7 @@ typedef struct {
   uint16_t f_prefixes[4096];
 } puffs_gif_lzw_decoder;
 
-// ---------------- Constructor and Destructor Prototypes
+// ---------------- Public Constructor and Destructor Prototypes
 
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
                                        uint32_t puffs_version);
@@ -63,6 +63,10 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+// ---------------- Private Structs
+
+// ---------------- Private Constructor and Destructor Prototypes
 
 // ---------------- Constructor and Destructor Implementations
 
