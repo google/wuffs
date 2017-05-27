@@ -39,12 +39,13 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	b.WriteString("// ---------------- Status Codes\n\n")
 	b.WriteString("// Status codes are non-positive integers.\n")
 	b.WriteString("//\n")
-	b.WriteString("// The least significant bit indicates a fatal status code: an error.\n")
+	b.WriteString("// The least significant bit indicates a non-recoverable status code: an error.\n")
 	b.WriteString("typedef enum {\n")
 	fmt.Fprintf(b, "puffs_%s_status_ok = 0,\n", pkgName)
-	fmt.Fprintf(b, "puffs_%s_error_bad_version = -1,\n", pkgName)
-	fmt.Fprintf(b, "puffs_%s_status_short_dst = -4,\n", pkgName)
-	fmt.Fprintf(b, "puffs_%s_status_short_src = -6,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_error_bad_version = -2 + 1,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_error_null_receiver = -4 + 1,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_dst = -6,\n", pkgName)
+	fmt.Fprintf(b, "puffs_%s_status_short_src = -8,\n", pkgName)
 	fmt.Fprintf(b, "} puffs_%s_status;\n\n", pkgName)
 
 	b.WriteString("// ---------------- Public Structs\n\n")
@@ -181,6 +182,7 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 	for _, ctor := range []string{"constructor", "destructor"} {
 		writeCtorSignature(b, pkgName, m, n, ctor)
 		fmt.Fprintf(b, "{\n")
+		fmt.Fprintf(b, "if (!self) { return; }\n")
 
 		if ctor == "constructor" {
 			fmt.Fprintf(b, "if (puffs_version != PUFFS_VERSION) {\n")
@@ -228,12 +230,32 @@ func writeFuncImpl(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error
 	writeFuncSignature(b, pkgName, m, n)
 	b.WriteString("{\n")
 
-	if n.Suspendible() {
-		fmt.Fprintf(b, "puffs_%s_status ret = puffs_%s_status_ok;\n", pkgName, pkgName)
+	// Check the previous status and the args.
+	if n.Public() {
+		if n.Receiver() != 0 {
+			fmt.Fprintf(b, "if (!self) { return puffs_%s_error_null_receiver; }\n", pkgName)
+		}
 	}
-	// TODO: generate the function body.
 	if n.Suspendible() {
-		fmt.Fprintf(b, "return ret;\n")
+		fmt.Fprintf(b, "puffs_%s_status status = ", pkgName)
+		if n.Receiver() != 0 {
+			fmt.Fprintf(b, "self->status;\n")
+		} else {
+			fmt.Fprintf(b, "puffs_%s_status_ok;\n", pkgName)
+		}
+	} else if r := n.Receiver(); r != 0 {
+		// TODO: fix this.
+		return fmt.Errorf(`cannot convert Puffs function "%s.%s" to C`, r.String(m), n.Name().String(m))
+	}
+	if n.Public() {
+		fmt.Fprintf(b, "if (status & 1) { return status; }")
+	}
+	// TODO: check the args.
+
+	// TODO: generate the function body.
+
+	if n.Suspendible() {
+		fmt.Fprintf(b, "return status;\n")
 	}
 
 	b.WriteString("}\n\n")

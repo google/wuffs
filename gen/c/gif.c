@@ -34,12 +34,13 @@ extern "C" {
 
 // Status codes are non-positive integers.
 //
-// The least significant bit indicates a fatal status code: an error.
+// The least significant bit indicates a non-recoverable status code: an error.
 typedef enum {
   puffs_gif_status_ok = 0,
-  puffs_gif_error_bad_version = -1,
-  puffs_gif_status_short_dst = -4,
-  puffs_gif_status_short_src = -6,
+  puffs_gif_error_bad_version = -2 + 1,
+  puffs_gif_error_null_receiver = -4 + 1,
+  puffs_gif_status_short_dst = -6,
+  puffs_gif_status_short_src = -8,
 } puffs_gif_status;
 
 // ---------------- Public Structs
@@ -85,6 +86,9 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
 
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
                                        uint32_t puffs_version) {
+  if (!self) {
+    return;
+  }
   if (puffs_version != PUFFS_VERSION) {
     self->status = puffs_gif_error_bad_version;
     return;
@@ -93,11 +97,21 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
   self->magic = PUFFS_MAGIC;
 }
 
-void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {}
+void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {
+  if (!self) {
+    return;
+  }
+}
 
 // ---------------- Function Implementations
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
-  puffs_gif_status ret = puffs_gif_status_ok;
-  return ret;
+  if (!self) {
+    return puffs_gif_error_null_receiver;
+  }
+  puffs_gif_status status = self->status;
+  if (status & 1) {
+    return status;
+  }
+  return status;
 }

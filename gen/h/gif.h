@@ -34,12 +34,13 @@ extern "C" {
 
 // Status codes are non-positive integers.
 //
-// The least significant bit indicates a fatal status code: an error.
+// The least significant bit indicates a non-recoverable status code: an error.
 typedef enum {
   puffs_gif_status_ok = 0,
-  puffs_gif_error_bad_version = -1,
-  puffs_gif_status_short_dst = -4,
-  puffs_gif_status_short_src = -6,
+  puffs_gif_error_bad_version = -2 + 1,
+  puffs_gif_error_null_receiver = -4 + 1,
+  puffs_gif_status_short_dst = -6,
+  puffs_gif_status_short_src = -8,
 } puffs_gif_status;
 
 // ---------------- Public Structs
