@@ -39,8 +39,9 @@ typedef enum {
   puffs_gif_status_ok = 0,
   puffs_gif_error_bad_version = -2 + 1,
   puffs_gif_error_null_receiver = -4 + 1,
-  puffs_gif_status_short_dst = -6,
-  puffs_gif_status_short_src = -8,
+  puffs_gif_error_constructor_not_called = -6 + 1,
+  puffs_gif_status_short_dst = -8,
+  puffs_gif_status_short_src = -10,
 } puffs_gif_status;
 
 // ---------------- Public Structs

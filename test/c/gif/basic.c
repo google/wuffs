@@ -17,6 +17,15 @@ Each edition should print "PASS", amongst other information, and exit(0).
 
 const char* test_filename = "gif/basic.c";
 
+void test_constructor_not_called() {
+  puffs_gif_lzw_decoder dec;
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec);
+  if (status != puffs_gif_error_constructor_not_called) {
+    FAIL("test_null_receiver: status: got %d, want %d", status,
+         puffs_gif_error_constructor_not_called);
+  }
+}
+
 void test_null_receiver() {
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL);
   if (status != puffs_gif_error_null_receiver) {
@@ -56,8 +65,9 @@ cleanup0:
 
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
-    test_null_receiver,       //
-    test_puffs_version_bad,   //
-    test_puffs_version_good,  //
-    NULL,                     //
+    test_constructor_not_called,  //
+    test_null_receiver,           //
+    test_puffs_version_bad,       //
+    test_puffs_version_good,      //
+    NULL,                         //
 };
