@@ -48,6 +48,29 @@ func neg(i *big.Int) *big.Int {
 	return big.NewInt(0).Neg(i)
 }
 
+func roundUpToPowerOf2Minus1(i *big.Int) *big.Int {
+	if i.Cmp(zero) < 0 {
+		panic("unreachable")
+	}
+	bitLen := i.BitLen()
+	switch bitLen {
+	case 0:
+		return zero
+	case 1:
+		return one
+	case 8:
+		return numTypeBounds[t.KeyU8][1]
+	case 16:
+		return numTypeBounds[t.KeyU16][1]
+	case 32:
+		return numTypeBounds[t.KeyU32][1]
+	case 64:
+		return numTypeBounds[t.KeyU64][1]
+	}
+	z := big.NewInt(0).Lsh(one, uint(bitLen))
+	return z.Sub(z, one)
+}
+
 func invert(m *t.IDMap, n *a.Expr) (*a.Expr, error) {
 	if !n.MType().IsBool() {
 		return nil, fmt.Errorf("check: invert(%q) called on non-bool-typed expression", n.String(m))
@@ -423,9 +446,29 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 	case t.KeyXBinarySlash:
 	case t.KeyXBinaryShiftL:
 	case t.KeyXBinaryShiftR:
-	case t.KeyXBinaryAmp:
+	case t.KeyXBinaryAmp, t.KeyXBinaryPipe:
+		// TODO: should type-checking ensure that bitwise ops only apply to
+		// *unsigned* integer types?
+		if lMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.String(q.idMap))
+		}
+		if lMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.String(q.idMap))
+		}
+		if rMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.String(q.idMap))
+		}
+		if rMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.String(q.idMap))
+		}
+		max := lMax
+		if max.Cmp(rMax) < 0 {
+			max = rMax
+		}
+		// Round up max to the next-power-of-2-minus-1, and return [0, max].
+		// This is conservative, but works fine in practice.
+		return zero, roundUpToPowerOf2Minus1(max), nil
 	case t.KeyXBinaryAmpHat:
-	case t.KeyXBinaryPipe:
 	case t.KeyXBinaryHat:
 
 	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq, t.KeyXBinaryEqEq,

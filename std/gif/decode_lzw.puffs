@@ -21,7 +21,7 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 		post n_bits >= width,
 	{
 		assert n_bits < 12 via "a < b: a < c <= b"(c:width)
-		// TODO.
+		bits |= 0  // TODO.
 		n_bits += 8
 	}
 }

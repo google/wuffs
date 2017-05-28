@@ -224,3 +224,41 @@ func TestConstValues(t *testing.T) {
 		}
 	}
 }
+
+func TestRoundUpToPowerOf2Minus1(t *testing.T) {
+	testCases := [][2]uint64{
+		{0, 0},
+		{1, 1},
+		{2, 3},
+		{3, 3},
+		{4, 7},
+		{5, 7},
+		{50, 63},
+		{500, 511},
+		{5000, 8191},
+		{50000, 65535},
+		{500000, 524287},
+		{1<<7 - 2, 1<<7 - 1},
+		{1<<7 - 1, 1<<7 - 1},
+		{1<<7 + 0, 1<<8 - 1},
+		{1<<7 + 1, 1<<8 - 1},
+		{1<<8 - 2, 1<<8 - 1},
+		{1<<8 - 1, 1<<8 - 1},
+		{1<<8 + 0, 1<<9 - 1},
+		{1<<8 + 1, 1<<9 - 1},
+		{1<<32 - 2, 1<<32 - 1},
+		{1<<32 - 1, 1<<32 - 1},
+		{1<<32 + 0, 1<<33 - 1},
+		{1<<32 + 1, 1<<33 - 1},
+		{1<<64 - 2, 1<<64 - 1},
+		{1<<64 - 1, 1<<64 - 1},
+	}
+
+	for _, tc := range testCases {
+		got := roundUpToPowerOf2Minus1(big.NewInt(0).SetUint64(tc[0]))
+		want := big.NewInt(0).SetUint64(tc[1])
+		if got.Cmp(want) != 0 {
+			t.Errorf("roundUpToPowerOf2Minus1(%v): got %v, want %v", tc[0], got, tc[1])
+		}
+	}
+}
