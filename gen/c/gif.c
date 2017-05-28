@@ -141,6 +141,19 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
     goto cleanup0;
   }
 
+  uint32_t bits;
+  bits = 0;
+  if (bits) {
+  }
+  uint32_t n_bits;
+  n_bits = 0;
+  if (n_bits) {
+  }
+  uint32_t width;
+  width = 0;
+  if (width) {
+  }
+
 cleanup0:
   self->status = status;
   return status;

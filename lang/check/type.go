@@ -27,8 +27,8 @@ func (q *checker) tcheckVars(n *a.Node) error {
 		return nil
 	}
 	for _, l := range n.Raw().SubLists() {
-		for _, m := range l {
-			if err := q.tcheckVars(m); err != nil {
+		for _, o := range l {
+			if err := q.tcheckVars(o); err != nil {
 				return err
 			}
 		}

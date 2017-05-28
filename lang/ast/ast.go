@@ -443,6 +443,9 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inne
 	}
 }
 
+// MaxBodyDepth is an advisory limit for a function body's recursion depth.
+const MaxBodyDepth = 255
+
 // Func is "func ID0.ID1(LHS)(RHS) { List1 }":
 //  - FlagsImpure      is "ID1" vs "ID1!"
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure

@@ -289,7 +289,7 @@ func writeFuncImpl(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error
 		}
 		if n.Public() {
 			fmt.Fprintf(b, "if (self->magic != PUFFS_MAGIC) {"+
-				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }", pkgName)
+				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", pkgName)
 			cleanup0 = true
 		}
 	} else if r := n.Receiver(); r != 0 {
@@ -297,6 +297,12 @@ func writeFuncImpl(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error
 		return fmt.Errorf(`cannot convert Puffs function "%s.%s" to C`, r.String(m), n.Name().String(m))
 	}
 	// TODO: check the args.
+	b.WriteString("\n")
+
+	// Generate the local variables.
+	if err := writeVars(b, pkgName, m, n.Node(), 0); err != nil {
+		return err
+	}
 	b.WriteString("\n")
 
 	// TODO: generate the function body.
@@ -350,6 +356,38 @@ func writeField(b *bytes.Buffer, m *t.IDMap, n *a.Field) error {
 	}
 
 	b.WriteString(";\n")
+	return nil
+}
+
+func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uint32) error {
+	if depth > a.MaxBodyDepth {
+		return fmt.Errorf("cgen: body recursion depth too large")
+	}
+	depth++
+
+	if n.Kind() == a.KVar {
+		x := n.Var().XType()
+		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
+			if s := cTypeNames[k]; s != "" {
+				fmt.Fprintf(b, "%s %s;\n", s, n.Var().Name().String(m))
+				// TODO: remove this hack for "unused variable" warning. In the
+				// long term, we want unused variables to fail noisily.
+				name := n.Var().Name().String(m)
+				fmt.Fprintf(b, "%s = 0; if (%s) {}\n", name, name)
+				return nil
+			}
+		}
+		// TODO: fix this.
+		return fmt.Errorf("cgen: cannot convert Puffs type %q to C", x.String(m))
+	}
+
+	for _, l := range n.Raw().SubLists() {
+		for _, o := range l {
+			if err := writeVars(b, pkgName, m, o, depth); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
