@@ -346,7 +346,7 @@ func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err er
 		}
 		got := p.m.ByKey(x)
 		return 0, nil, nil, fmt.Errorf(`parse: expected %q%s, got %q at %s:%d`,
-			sep.String(p.m), extra, got, p.filename, p.line())
+			p.m.ByID(sep), extra, got, p.filename, p.line())
 	}
 
 	if p.peek1().Key() != t.KeyCloseBracket {

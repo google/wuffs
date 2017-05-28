@@ -115,7 +115,7 @@ func TestCheck(t *testing.T) {
 	got := [][2]string(nil)
 	for id, typ := range fooBar.LocalVars {
 		got = append(got, [2]string{
-			idMap.ByID(id),
+			id.String(idMap),
 			typ.String(idMap),
 		})
 	}

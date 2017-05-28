@@ -157,24 +157,24 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 	for _, n := range fields {
 		f := n.Field()
 		if _, ok := fieldNames[f.Name()]; ok {
-			return fmt.Errorf("check: duplicate field %q", c.idMap.ByID(f.Name()))
+			return fmt.Errorf("check: duplicate field %q", f.Name().String(c.idMap))
 		}
 		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
-			return fmt.Errorf("%v in field %q", err, c.idMap.ByID(f.Name()))
+			return fmt.Errorf("%v in field %q", err, f.Name().String(c.idMap))
 		}
 		if banPtrTypes {
 			for x := f.XType(); x.Inner() != nil; x = x.Inner() {
 				if x.PackageOrDecorator().Key() == t.KeyPtr {
 					// TODO: implement nptr (nullable pointer) types.
 					return fmt.Errorf("check: ptr type %q not allowed for field %q; use nptr instead",
-						x.String(c.idMap), c.idMap.ByID(f.Name()))
+						x.String(c.idMap), f.Name().String(c.idMap))
 				}
 			}
 		}
 		if dv := f.DefaultValue(); dv != nil {
 			if f.XType().PackageOrDecorator() != 0 {
 				return fmt.Errorf("check: cannot set default value for qualified type %q for field %q",
-					f.XType().String(c.idMap), c.idMap.ByID(f.Name()))
+					f.XType().String(c.idMap), f.Name().String(c.idMap))
 			}
 			if err := q.tcheckExpr(dv, 0); err != nil {
 				return err
@@ -196,7 +196,7 @@ func (c *Checker) checkStruct(node *a.Node) error {
 	n := node.Struct()
 	if err := c.checkFields(n.Fields(), true); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, c.idMap.ByID(n.Name())),
+			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.idMap)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -204,7 +204,7 @@ func (c *Checker) checkStruct(node *a.Node) error {
 	id := n.Name()
 	if other, ok := c.structs[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %q", c.idMap.ByID(id)),
+			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.idMap)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Struct.Filename(),
@@ -223,7 +223,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.Func()
 	if err := c.checkFields(n.In().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in in-params for func %q", err, c.idMap.ByID(n.Name())),
+			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().String(c.idMap)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -231,7 +231,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %q", err, c.idMap.ByID(n.Name())),
+			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().String(c.idMap)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}

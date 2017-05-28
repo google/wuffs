@@ -18,7 +18,7 @@ func (q *checker) tcheckVars(n *a.Node) error {
 		n := n.Var()
 		name := n.Name()
 		if _, ok := q.f.LocalVars[name]; ok {
-			return fmt.Errorf("check: duplicate var %q", q.idMap.ByID(name))
+			return fmt.Errorf("check: duplicate var %q", name.String(q.idMap))
 		}
 		if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
 			return err
@@ -168,7 +168,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 
 	if !lTyp.IsNumType() {
 		return fmt.Errorf("check: assignment %q: assignee %q, of type %q, does not have numeric type",
-			q.idMap.ByID(n.Operator()), lhs.String(q.idMap), lTyp.String(q.idMap))
+			n.Operator().String(q.idMap), lhs.String(q.idMap), lTyp.String(q.idMap))
 	}
 
 	switch n.Operator().Key() {
@@ -177,14 +177,14 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 			return nil
 		}
 		return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
-			q.idMap.ByID(n.Operator()), rhs.String(q.idMap), rTyp.String(q.idMap))
+			n.Operator().String(q.idMap), rhs.String(q.idMap), rTyp.String(q.idMap))
 	}
 
 	if rTyp == TypeExprIdealNumber || lTyp.EqIgnoringRefinements(rTyp) {
 		return nil
 	}
 	return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
-		q.idMap.ByID(n.Operator()),
+		n.Operator().String(q.idMap),
 		lhs.String(q.idMap), rhs.String(q.idMap),
 		lTyp.String(q.idMap), rTyp.String(q.idMap),
 	)
@@ -226,7 +226,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		id1 := n.ID1()
 		if id1.IsNumLiteral() {
 			z := big.NewInt(0)
-			s := q.idMap.ByID(id1)
+			s := id1.String(q.idMap)
 			if _, ok := z.SetString(s, 0); !ok {
 				return fmt.Errorf("check: invalid numeric literal %q", s)
 			}
@@ -242,7 +242,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				}
 			}
 			// TODO: look for (global) names (constants, funcs, structs).
-			return fmt.Errorf("check: unrecognized identifier %q", q.idMap.ByID(id1))
+			return fmt.Errorf("check: unrecognized identifier %q", id1.String(q.idMap))
 		}
 		switch id1.Key() {
 		case t.KeyFalse:
@@ -332,7 +332,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryPlus, t.KeyXUnaryMinus:
 		if !numeric(rTyp) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
-				q.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
+				n.ID0().AmbiguousForm().String(q.idMap), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			if n.ID0().Key() == t.KeyXUnaryMinus {
@@ -346,7 +346,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryNot:
 		if !rTyp.Eq(TypeExprBoolean) {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
-				q.idMap.ByID(n.ID0().AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
+				n.ID0().AmbiguousForm().String(q.idMap), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
@@ -386,22 +386,22 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !numeric(lTyp) {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				q.idMap.ByID(op.AmbiguousForm()), lhs.String(q.idMap), lTyp.String(q.idMap))
+				op.AmbiguousForm().String(q.idMap), lhs.String(q.idMap), lTyp.String(q.idMap))
 		}
 		if !numeric(rTyp) {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				q.idMap.ByID(op.AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
+				op.AmbiguousForm().String(q.idMap), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 	case t.KeyXBinaryNotEq, t.KeyXBinaryEqEq:
 		// No-op.
 	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		if lTyp != TypeExprBoolean {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				q.idMap.ByID(op.AmbiguousForm()), lhs.String(q.idMap), lTyp.String(q.idMap))
+				op.AmbiguousForm().String(q.idMap), lhs.String(q.idMap), lTyp.String(q.idMap))
 		}
 		if rTyp != TypeExprBoolean {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				q.idMap.ByID(op.AmbiguousForm()), rhs.String(q.idMap), rTyp.String(q.idMap))
+				op.AmbiguousForm().String(q.idMap), rhs.String(q.idMap), rTyp.String(q.idMap))
 		}
 	}
 
@@ -409,7 +409,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !lTyp.EqIgnoringRefinements(rTyp) && lTyp != TypeExprIdealNumber && rTyp != TypeExprIdealNumber {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
-				q.idMap.ByID(op.AmbiguousForm()),
+				op.AmbiguousForm().String(q.idMap),
 				lhs.String(q.idMap), rhs.String(q.idMap),
 				lTyp.String(q.idMap), rTyp.String(q.idMap),
 			)
@@ -418,7 +418,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		if (lTyp == TypeExprIdealNumber) && (rTyp != TypeExprIdealNumber) {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
-				q.idMap.ByID(op.AmbiguousForm()),
+				op.AmbiguousForm().String(q.idMap),
 				lhs.String(q.idMap), rhs.String(q.idMap),
 				lTyp.String(q.idMap), rTyp.String(q.idMap),
 			)
@@ -528,7 +528,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 			// TODO: reject.
 		}
 		// TODO: see if name refers to a struct type.
-		return fmt.Errorf("check: %q is not a type", q.idMap.ByID(n.Name()))
+		return fmt.Errorf("check: %q is not a type", n.Name().String(q.idMap))
 
 	case t.KeyPtr:
 		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
