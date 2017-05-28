@@ -59,7 +59,7 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	}
 
 	b.WriteString("// ---------------- Public Constructor and Destructor Prototypes\n\n")
-	if err := forEachStruct(b, pkgName, m, files, pubOnly, writeCtorPrototypes); err != nil {
+	if err := forEachStruct(b, pkgName, m, files, pubOnly, writeCtorPrototypesPub); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +81,7 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	}
 
 	b.WriteString("// ---------------- Private Constructor and Destructor Prototypes\n\n")
-	if err := forEachStruct(b, pkgName, m, files, priOnly, writeCtorPrototypes); err != nil {
+	if err := forEachStruct(b, pkgName, m, files, priOnly, writeCtorPrototypesPri); err != nil {
 		return nil, err
 	}
 
@@ -97,6 +97,12 @@ func (g *Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byt
 	b.WriteString("//\n")
 	b.WriteString("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
 	b.WriteString("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
+	b.WriteString("// PUFFS_ALREADY_ZEROED is passed from a container struct's constructor to a\n")
+	b.WriteString("// containee struct's constructor when the container has already zeroed the\n")
+	b.WriteString("// containee's memory.\n")
+	b.WriteString("//\n")
+	b.WriteString("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
+	b.WriteString("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
 	if err := forEachStruct(b, pkgName, m, files, bothPubPri, writeCtorImpls); err != nil {
 		return nil, err
 	}
@@ -161,21 +167,41 @@ func writeStruct(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error
 	return nil
 }
 
-func writeCtorSignature(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct, ctor string) {
+func writeCtorSignature(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct, public bool, ctor bool) {
 	structName := n.Name().String(m)
-	fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self", pkgName, structName, ctor, pkgName, structName)
-	if ctor == "constructor" {
-		fmt.Fprintf(b, ", uint32_t puffs_version")
+	ctorName := "destructor"
+	if ctor {
+		ctorName = "constructor"
+		if public {
+			fmt.Fprintf(b, "// puffs_%s_%s_%s is a constructor function.\n", pkgName, structName, ctorName)
+			fmt.Fprintf(b, "//\n")
+			fmt.Fprintf(b, "// It should be called before any other puffs_%s_%s_* function.\n",
+				pkgName, structName)
+			fmt.Fprintf(b, "//\n")
+			fmt.Fprintf(b, "// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
+		}
+	}
+	fmt.Fprintf(b, "void puffs_%s_%s_%s(puffs_%s_%s *self", pkgName, structName, ctorName, pkgName, structName)
+	if ctor {
+		fmt.Fprintf(b, ", uint32_t puffs_version, uint32_t for_internal_use_only")
 	}
 	fmt.Fprintf(b, ")")
 }
 
-func writeCtorPrototypes(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+func writeCtorPrototypesPub(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+	return writeCtorPrototypes(b, pkgName, m, n, true)
+}
+
+func writeCtorPrototypesPri(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) error {
+	return writeCtorPrototypes(b, pkgName, m, n, false)
+}
+
+func writeCtorPrototypes(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct, public bool) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	for _, ctor := range []string{"constructor", "destructor"} {
-		writeCtorSignature(b, pkgName, m, n, ctor)
+	for _, ctor := range []bool{true, false} {
+		writeCtorSignature(b, pkgName, m, n, public, ctor)
 		b.WriteString(";\n\n")
 	}
 	return nil
@@ -185,18 +211,19 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 	if !n.Suspendible() {
 		return nil
 	}
-	for _, ctor := range []string{"constructor", "destructor"} {
-		writeCtorSignature(b, pkgName, m, n, ctor)
+	for _, ctor := range []bool{true, false} {
+		writeCtorSignature(b, pkgName, m, n, false, ctor)
 		fmt.Fprintf(b, "{\n")
 		fmt.Fprintf(b, "if (!self) { return; }\n")
 
-		if ctor == "constructor" {
+		if ctor {
 			fmt.Fprintf(b, "if (puffs_version != PUFFS_VERSION) {\n")
 			fmt.Fprintf(b, "self->status = puffs_%s_error_bad_version;\n", pkgName)
 			fmt.Fprintf(b, "return;\n")
 			fmt.Fprintf(b, "}\n")
 
-			b.WriteString("memset(self, 0, sizeof(*self));\n")
+			b.WriteString("if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {" +
+				"memset(self, 0, sizeof(*self)); }\n")
 			b.WriteString("self->magic = PUFFS_MAGIC;\n")
 
 			// TODO: set any non-zero default values.

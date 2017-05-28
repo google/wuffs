@@ -60,8 +60,14 @@ typedef struct {
 
 // ---------------- Public Constructor and Destructor Prototypes
 
+// puffs_gif_lzw_decoder_constructor is a constructor function.
+//
+// It should be called before any other puffs_gif_lzw_decoder_* function.
+//
+// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version);
+                                       uint32_t puffs_version,
+                                       uint32_t for_internal_use_only);
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
@@ -90,8 +96,16 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
 #define PUFFS_MAGIC (0xCB3699CCU)
 
+// PUFFS_ALREADY_ZEROED is passed from a container struct's constructor to a
+// containee struct's constructor when the container has already zeroed the
+// containee's memory.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("zeroed").
+#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
+
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version) {
+                                       uint32_t puffs_version,
+                                       uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -99,7 +113,9 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     self->status = puffs_gif_error_bad_version;
     return;
   }
-  memset(self, 0, sizeof(*self));
+  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+    memset(self, 0, sizeof(*self));
+  }
   self->magic = PUFFS_MAGIC;
 }
 

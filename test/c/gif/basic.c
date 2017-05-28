@@ -36,7 +36,7 @@ void test_null_receiver() {
 
 void test_puffs_version_bad() {
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, 0);  // 0 is not PUFFS_VERSION.
+  puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
   if (dec.status != puffs_gif_error_bad_version) {
     FAIL("test_puffs_version_bad: status: got %d, want %d", dec.status,
          puffs_gif_error_bad_version);
@@ -48,7 +48,7 @@ cleanup0:
 
 void test_puffs_version_good() {
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION);
+  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   if (dec.magic != PUFFS_MAGIC) {
     FAIL("test_puffs_version_good: magic: got %u, want %u", dec.magic,
          PUFFS_MAGIC);

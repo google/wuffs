@@ -60,8 +60,14 @@ typedef struct {
 
 // ---------------- Public Constructor and Destructor Prototypes
 
+// puffs_gif_lzw_decoder_constructor is a constructor function.
+//
+// It should be called before any other puffs_gif_lzw_decoder_* function.
+//
+// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
 void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version);
+                                       uint32_t puffs_version,
+                                       uint32_t for_internal_use_only);
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
