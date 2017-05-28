@@ -48,6 +48,20 @@ func neg(i *big.Int) *big.Int {
 	return big.NewInt(0).Neg(i)
 }
 
+func min(i, j *big.Int) *big.Int {
+	if i.Cmp(j) < 0 {
+		return i
+	}
+	return j
+}
+
+func max(i, j *big.Int) *big.Int {
+	if i.Cmp(j) > 0 {
+		return i
+	}
+	return j
+}
+
 func roundUpToPowerOf2Minus1(i *big.Int) *big.Int {
 	if i.Cmp(zero) < 0 {
 		panic("unreachable")
@@ -107,19 +121,19 @@ func bcheckField(idMap *t.IDMap, n *a.Field) error {
 	x := n.XType()
 	for ; x.Inner() != nil; x = x.Inner() {
 	}
-	dv, min, max := zero, zero, zero
+	dv, nMin, nMax := zero, zero, zero
 	if o := n.DefaultValue(); o != nil {
 		dv = o.ConstValue()
 	}
 	if o := x.Min(); o != nil {
-		min = o.ConstValue()
+		nMin = o.ConstValue()
 	}
 	if o := x.Max(); o != nil {
-		max = o.ConstValue()
+		nMax = o.ConstValue()
 	}
-	if dv.Cmp(min) < 0 || dv.Cmp(max) > 0 {
+	if dv.Cmp(nMin) < 0 || dv.Cmp(nMax) > 0 {
 		return fmt.Errorf("check: default value %v is not within bounds [%v..%v] for field %q",
-			dv, min, max, n.Name().String(idMap))
+			dv, nMin, nMax, n.Name().String(idMap))
 	}
 	return nil
 }
@@ -461,13 +475,15 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 		if rMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.String(q.idMap))
 		}
-		max := lMax
-		if max.Cmp(rMax) < 0 {
-			max = rMax
+		z := (*big.Int)(nil)
+		if op == t.KeyXBinaryAmp {
+			z = min(lMax, rMax)
+		} else {
+			z = max(lMax, rMax)
 		}
-		// Round up max to the next-power-of-2-minus-1, and return [0, max].
-		// This is conservative, but works fine in practice.
-		return zero, roundUpToPowerOf2Minus1(max), nil
+		// Round up z to the next-power-of-2-minus-1, and return [0, z]. This
+		// is conservative, but works fine in practice.
+		return zero, roundUpToPowerOf2Minus1(z), nil
 	case t.KeyXBinaryAmpHat:
 	case t.KeyXBinaryHat:
 
