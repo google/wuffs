@@ -135,21 +135,21 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		n := n.Assign()
 		return q.bcheckAssignment(n.LHS(), n.LHS().MType(), n.Operator(), n.RHS())
 
+	case a.KIf:
+		// TODO.
+
+	case a.KJump:
+		// No-op.
+
+	case a.KReturn:
+		// TODO.
+
 	case a.KVar:
 		n := n.Var()
 		return q.bcheckAssignment(nil, n.XType(), t.IDEq, n.Value())
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
-
-	case a.KIf:
-		// TODO.
-
-	case a.KReturn:
-		// TODO.
-
-	case a.KJump:
-		// No-op.
 
 	default:
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())

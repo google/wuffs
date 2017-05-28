@@ -50,6 +50,41 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 
+	case a.KIf:
+		for n := n.If(); n != nil; n = n.ElseIf() {
+			cond := n.Condition()
+			if err := q.tcheckExpr(cond, 0); err != nil {
+				return err
+			}
+			if !cond.MType().Eq(TypeExprBoolean) {
+				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
+					cond.String(q.idMap), cond.MType().String(q.idMap))
+			}
+			for _, o := range n.BodyIfTrue() {
+				if err := q.tcheckStatement(o); err != nil {
+					return err
+				}
+			}
+			for _, o := range n.BodyIfFalse() {
+				if err := q.tcheckStatement(o); err != nil {
+					return err
+				}
+			}
+		}
+
+	case a.KJump:
+		// TODO: check that we're in a for loop.
+
+	case a.KReturn:
+		n := n.Return()
+		if value := n.Value(); value != nil {
+			if err := q.tcheckExpr(value, 0); err != nil {
+				return err
+			}
+			// TODO: type-check that value is assignable to the return value.
+			// This needs the context of what func we're in.
+		}
+
 	case a.KVar:
 		n := n.Var()
 		if !n.XType().Node().TypeChecked() {
@@ -83,41 +118,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				return err
 			}
 		}
-
-	case a.KIf:
-		for n := n.If(); n != nil; n = n.ElseIf() {
-			cond := n.Condition()
-			if err := q.tcheckExpr(cond, 0); err != nil {
-				return err
-			}
-			if !cond.MType().Eq(TypeExprBoolean) {
-				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
-					cond.String(q.idMap), cond.MType().String(q.idMap))
-			}
-			for _, o := range n.BodyIfTrue() {
-				if err := q.tcheckStatement(o); err != nil {
-					return err
-				}
-			}
-			for _, o := range n.BodyIfFalse() {
-				if err := q.tcheckStatement(o); err != nil {
-					return err
-				}
-			}
-		}
-
-	case a.KReturn:
-		n := n.Return()
-		if value := n.Value(); value != nil {
-			if err := q.tcheckExpr(value, 0); err != nil {
-				return err
-			}
-			// TODO: type-check that value is assignable to the return value.
-			// This needs the context of what func we're in.
-		}
-
-	case a.KJump:
-		// TODO: check that we're in a for loop.
 
 	default:
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())
