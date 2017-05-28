@@ -225,7 +225,7 @@ func TestConstValues(t *testing.T) {
 	}
 }
 
-func TestRoundUpToPowerOf2Minus1(t *testing.T) {
+func TestBitMask(t *testing.T) {
 	testCases := [][2]uint64{
 		{0, 0},
 		{1, 1},
@@ -255,7 +255,7 @@ func TestRoundUpToPowerOf2Minus1(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := roundUpToPowerOf2Minus1(big.NewInt(0).SetUint64(tc[0]))
+		got := bitMask(big.NewInt(0).SetUint64(tc[0]).BitLen())
 		want := big.NewInt(0).SetUint64(tc[1])
 		if got.Cmp(want) != 0 {
 			t.Errorf("roundUpToPowerOf2Minus1(%v): got %v, want %v", tc[0], got, tc[1])

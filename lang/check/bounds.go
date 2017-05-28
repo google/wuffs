@@ -62,12 +62,9 @@ func max(i, j *big.Int) *big.Int {
 	return j
 }
 
-func roundUpToPowerOf2Minus1(i *big.Int) *big.Int {
-	if i.Cmp(zero) < 0 {
-		panic("unreachable")
-	}
-	bitLen := i.BitLen()
-	switch bitLen {
+// bitMask returns (1<<nBits - 1) as a big integer.
+func bitMask(nBits int) *big.Int {
+	switch nBits {
 	case 0:
 		return zero
 	case 1:
@@ -81,7 +78,7 @@ func roundUpToPowerOf2Minus1(i *big.Int) *big.Int {
 	case 64:
 		return numTypeBounds[t.KeyU64][1]
 	}
-	z := big.NewInt(0).Lsh(one, uint(bitLen))
+	z := big.NewInt(0).Lsh(one, uint(nBits))
 	return z.Sub(z, one)
 }
 
@@ -481,9 +478,9 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 		} else {
 			z = max(lMax, rMax)
 		}
-		// Round up z to the next-power-of-2-minus-1, and return [0, z]. This
-		// is conservative, but works fine in practice.
-		return zero, roundUpToPowerOf2Minus1(z), nil
+		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
+		// conservative, but works fine in practice.
+		return zero, bitMask(z.BitLen()), nil
 	case t.KeyXBinaryAmpHat:
 	case t.KeyXBinaryHat:
 
