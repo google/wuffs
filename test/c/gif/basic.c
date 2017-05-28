@@ -54,9 +54,9 @@ void test_puffs_version_good() {
          PUFFS_MAGIC);
     goto cleanup0;
   }
-  if (dec.f_literal_width != 0) {
+  if (dec.f_literal_width != 8) {
     FAIL("test_puffs_version_good: f_literal_width: got %u, want %u",
-         dec.f_literal_width, 0);
+         dec.f_literal_width, 8);
     goto cleanup0;
   }
 cleanup0:

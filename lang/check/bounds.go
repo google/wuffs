@@ -80,6 +80,27 @@ func invert(m *t.IDMap, n *a.Expr) (*a.Expr, error) {
 	return o, nil
 }
 
+func bcheckField(idMap *t.IDMap, n *a.Field) error {
+	x := n.XType()
+	for ; x.Inner() != nil; x = x.Inner() {
+	}
+	dv, min, max := zero, zero, zero
+	if o := n.DefaultValue(); o != nil {
+		dv = o.ConstValue()
+	}
+	if o := x.Min(); o != nil {
+		min = o.ConstValue()
+	}
+	if o := x.Max(); o != nil {
+		max = o.ConstValue()
+	}
+	if dv.Cmp(min) < 0 || dv.Cmp(max) > 0 {
+		return fmt.Errorf("check: default value %v is not within bounds [%v..%v] for field %q",
+			dv, min, max, n.Name().String(idMap))
+	}
+	return nil
+}
+
 func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 

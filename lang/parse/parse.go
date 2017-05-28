@@ -258,7 +258,15 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewField(name, typ).Node(), nil
+	defaultValue := (*a.Expr)(nil)
+	if p.peek1().Key() == t.KeyEq {
+		p.src = p.src[1:]
+		defaultValue, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return a.NewField(name, typ, defaultValue).Node(), nil
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {

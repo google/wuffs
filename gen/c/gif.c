@@ -117,6 +117,7 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->magic = PUFFS_MAGIC;
+  self->f_literal_width = 8;
 }
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {

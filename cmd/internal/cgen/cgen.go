@@ -226,7 +226,13 @@ func writeCtorImpls(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Struct) er
 				"memset(self, 0, sizeof(*self)); }\n")
 			b.WriteString("self->magic = PUFFS_MAGIC;\n")
 
-			// TODO: set any non-zero default values.
+			for _, f := range n.Fields() {
+				f := f.Field()
+				if dv := f.DefaultValue(); dv != nil {
+					// TODO: set default values for array types.
+					fmt.Fprintf(b, "self->f_%s = %d;\n", f.Name().String(m), dv.ConstValue())
+				}
+			}
 		}
 
 		// TODO: call any ctor/dtors on sub-structures.
