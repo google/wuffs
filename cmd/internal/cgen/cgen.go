@@ -305,9 +305,14 @@ func writeFuncImpl(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Func) error
 	}
 	b.WriteString("\n")
 
-	// TODO: generate the function body.
-
+	// Generate the function body.
+	for _, o := range n.Body() {
+		if err := writeStatement(b, pkgName, m, o, 0); err != nil {
+			return err
+		}
+	}
 	b.WriteString("\n")
+
 	if cleanup0 {
 		fmt.Fprintf(b, "cleanup0: self->status = status;\n")
 	}
@@ -369,11 +374,7 @@ func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uin
 		x := n.Var().XType()
 		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
-				fmt.Fprintf(b, "%s %s;\n", s, n.Var().Name().String(m))
-				// TODO: remove this hack for "unused variable" warning. In the
-				// long term, we want unused variables to fail noisily.
-				name := n.Var().Name().String(m)
-				fmt.Fprintf(b, "%s = 0; if (%s) {}\n", name, name)
+				fmt.Fprintf(b, "%s v_%s;\n", s, n.Var().Name().String(m))
 				return nil
 			}
 		}
@@ -388,6 +389,175 @@ func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uin
 			}
 		}
 	}
+	return nil
+}
+
+func writeStatement(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uint32) error {
+	if depth > a.MaxBodyDepth {
+		return fmt.Errorf("cgen: body recursion depth too large")
+	}
+	depth++
+
+	switch n.Kind() {
+	case a.KAssert:
+		// Assertions only apply at compile-time.
+		return nil
+
+	case a.KAssign:
+		n := n.Assign()
+		if err := writeExpr(b, pkgName, m, n.LHS(), depth); err != nil {
+			return err
+		}
+		// TODO: does KeyAmpHatEq need special consideration?
+		b.WriteString(cOpNames[0xFF&n.Operator().Key()])
+		if err := writeExpr(b, pkgName, m, n.RHS(), depth); err != nil {
+			return err
+		}
+		b.WriteString(";\n")
+		return nil
+
+	case a.KIf:
+		// TODO.
+
+	case a.KJump:
+		// TODO.
+
+	case a.KReturn:
+		// TODO.
+
+	case a.KVar:
+		n := n.Var()
+		fmt.Fprintf(b, "v_%s = ", n.Name().String(m))
+		if v := n.Value(); v != nil {
+			if err := writeExpr(b, pkgName, m, v, 0); err != nil {
+				return err
+			}
+		} else {
+			b.WriteByte('0')
+		}
+		b.WriteString(";\n")
+		return nil
+
+	case a.KWhile:
+		n := n.While()
+		b.WriteString("while (")
+		if err := writeExpr(b, pkgName, m, n.Condition(), 0); err != nil {
+			return err
+		}
+		b.WriteString(") {\n")
+		for _, o := range n.Body() {
+			if err := writeStatement(b, pkgName, m, o, depth); err != nil {
+				return err
+			}
+		}
+		b.WriteString("}\n")
+		return nil
+		// TODO.
+
+	}
+	return fmt.Errorf("cgen: unrecognized ast.Kind (%s) for writeStatement", n.Kind())
+}
+
+func writeExpr(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
+	if depth > a.MaxExprDepth {
+		return fmt.Errorf("cgen: expression recursion depth too large")
+	}
+	depth++
+
+	if cv := n.ConstValue(); cv != nil {
+		// TODO: write false/true instead of 0/1 if n.MType() is bool?
+		b.WriteString(cv.String())
+		return nil
+	}
+
+	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
+	case 0:
+		if err := writeExprOther(b, pkgName, m, n, depth); err != nil {
+			return err
+		}
+	case t.FlagsUnaryOp:
+		if err := writeExprUnaryOp(b, pkgName, m, n, depth); err != nil {
+			return err
+		}
+	case t.FlagsBinaryOp:
+		if err := writeExprBinaryOp(b, pkgName, m, n, depth); err != nil {
+			return err
+		}
+	case t.FlagsAssociativeOp:
+		if err := writeExprAssociativeOp(b, pkgName, m, n, depth); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("cgen: unrecognized token.Key (0x%X) for writeExpr", n.ID0().Key())
+	}
+
+	return nil
+}
+
+func writeExprOther(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
+	switch n.ID0().Key() {
+	case 0:
+		if id1 := n.ID1(); id1.Key() == t.KeyThis {
+			b.WriteString("self")
+		} else {
+			// TODO: don't assume that the v_ prefix is necessary.
+			b.WriteString("v_")
+			b.WriteString(id1.String(m))
+		}
+		return nil
+
+	case t.KeyOpenParen:
+	// n is a function call.
+	// TODO.
+
+	case t.KeyOpenBracket:
+	// n is an index.
+	// TODO.
+
+	case t.KeyColon:
+	// n is a slice.
+	// TODO.
+
+	case t.KeyDot:
+		if err := writeExpr(b, pkgName, m, n.LHS().Expr(), depth); err != nil {
+			return err
+		}
+		// TODO: choose between . vs -> operators.
+		//
+		// TODO: don't assume that the f_ prefix is necessary.
+		b.WriteString("->f_")
+		b.WriteString(n.ID1().String(m))
+		return nil
+	}
+	return fmt.Errorf("cgen: unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
+}
+
+func writeExprUnaryOp(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
+	// TODO.
+	return nil
+}
+
+func writeExprBinaryOp(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
+	op := n.ID0()
+	if op.Key() == t.KeyXBinaryAs {
+		// TODO.
+		return nil
+	}
+	b.WriteByte('(')
+	if err := writeExpr(b, pkgName, m, n.LHS().Expr(), depth); err != nil {
+		return err
+	}
+	// TODO: does KeyXBinaryAmpHat need special consideration?
+	b.WriteString(cOpNames[0xFF&op.Key()])
+	if err := writeExpr(b, pkgName, m, n.RHS().Expr(), depth); err != nil {
+		return err
+	}
+	b.WriteByte(')')
+	return nil
+}
+
+func writeExprAssociativeOp(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
+	// TODO.
 	return nil
 }
 
@@ -414,4 +584,50 @@ var cTypeNames = [...]string{
 	t.KeyU64:   "uint64_t",
 	t.KeyUsize: "size_t",
 	t.KeyBool:  "bool",
+}
+
+var cOpNames = [256]string{
+	t.KeyEq:       " = ",
+	t.KeyPlusEq:   " += ",
+	t.KeyMinusEq:  " -= ",
+	t.KeyStarEq:   " *= ",
+	t.KeySlashEq:  " /= ",
+	t.KeyShiftLEq: " <<= ",
+	t.KeyShiftREq: " >>= ",
+	t.KeyAmpEq:    " &= ",
+	t.KeyAmpHatEq: " no_such_amp_hat_C_operator ",
+	t.KeyPipeEq:   " |= ",
+	t.KeyHatEq:    " ^= ",
+
+	t.KeyXUnaryPlus:  "+",
+	t.KeyXUnaryMinus: "-",
+	t.KeyXUnaryNot:   "!",
+
+	t.KeyXBinaryPlus:        " + ",
+	t.KeyXBinaryMinus:       " - ",
+	t.KeyXBinaryStar:        " * ",
+	t.KeyXBinarySlash:       " / ",
+	t.KeyXBinaryShiftL:      " << ",
+	t.KeyXBinaryShiftR:      " >> ",
+	t.KeyXBinaryAmp:         " & ",
+	t.KeyXBinaryAmpHat:      " no_such_amp_hat_C_operator ",
+	t.KeyXBinaryPipe:        " | ",
+	t.KeyXBinaryHat:         " ^ ",
+	t.KeyXBinaryNotEq:       " != ",
+	t.KeyXBinaryLessThan:    " < ",
+	t.KeyXBinaryLessEq:      " <= ",
+	t.KeyXBinaryEqEq:        " == ",
+	t.KeyXBinaryGreaterEq:   " >= ",
+	t.KeyXBinaryGreaterThan: " > ",
+	t.KeyXBinaryAnd:         " && ",
+	t.KeyXBinaryOr:          " || ",
+	t.KeyXBinaryAs:          " no_such_as_C_operator ",
+
+	t.KeyXAssociativePlus: " + ",
+	t.KeyXAssociativeStar: " * ",
+	t.KeyXAssociativeAmp:  " & ",
+	t.KeyXAssociativePipe: " | ",
+	t.KeyXAssociativeHat:  " ^ ",
+	t.KeyXAssociativeAnd:  " && ",
+	t.KeyXAssociativeOr:   " || ",
 }

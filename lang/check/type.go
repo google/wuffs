@@ -120,7 +120,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		// TODO: check that we're in a for loop.
 
 	default:
-		return fmt.Errorf("check: unrecognized ast.Kind (%d) for checkStatement", n.Kind())
+		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())
 	}
 
 	n.SetTypeChecked()

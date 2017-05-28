@@ -322,7 +322,7 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 // While is "while LHS, List0 { List1 }":
 //  - LHS:   <Expr>
 //  - List0: <Assert> asserts
-//  - List1: <*> loop body
+//  - List1: <Statement> loop body
 type While Node
 
 func (n *While) Node() *Node      { return (*Node)(n) }
@@ -342,8 +342,8 @@ func NewWhile(condition *Expr, asserts []*Node, body []*Node) *While {
 // If is "if LHS { List0 } else RHS" or "if LHS { List0 } else { List1 }":
 //  - LHS:   <Expr>
 //  - RHS:   <nil|If>
-//  - List0: <*> if-true body
-//  - List1: <*> if-false body
+//  - List0: <Statement> if-true body
+//  - List1: <Statement> if-false body
 type If Node
 
 func (n *If) Node() *Node          { return (*Node)(n) }
@@ -455,7 +455,16 @@ const MaxBodyDepth = 255
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
 //  - List0: <Assert> asserts
-//  - List1: <*> function body
+//  - List1: <Statement> function body
+//
+// Statement means one of:
+//  - Assert
+//  - Assign
+//  - If
+//  - Jump
+//  - Return
+//  - Var
+//  - While
 type Func Node
 
 func (n *Func) Node() *Node       { return (*Node)(n) }

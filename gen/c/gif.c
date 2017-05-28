@@ -141,17 +141,16 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
     goto cleanup0;
   }
 
-  uint32_t bits;
-  bits = 0;
-  if (bits) {
-  }
-  uint32_t n_bits;
-  n_bits = 0;
-  if (n_bits) {
-  }
-  uint32_t width;
-  width = 0;
-  if (width) {
+  uint32_t v_bits;
+  uint32_t v_n_bits;
+  uint32_t v_width;
+
+  v_bits = 0;
+  v_n_bits = 0;
+  v_width = (self->f_literal_width + 1);
+  while ((v_n_bits < v_width)) {
+    v_bits |= 0;
+    v_n_bits += 8;
   }
 
 cleanup0:

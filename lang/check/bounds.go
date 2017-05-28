@@ -152,7 +152,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// No-op.
 
 	default:
-		return fmt.Errorf("check: unrecognized ast.Kind (%d) for checkStatement", n.Kind())
+		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())
 	}
 
 	return nil
