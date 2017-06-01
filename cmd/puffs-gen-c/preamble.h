@@ -1,5 +1,8 @@
 // After editing this file, run "go generate" in this directory.
 
+#ifndef PUFFS_BASE_H
+#define PUFFS_BASE_H
+
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
@@ -25,3 +28,5 @@
 //
 // TODO: don't hard code this in preamble.h.
 #define PUFFS_VERSION (0x00001)
+
+#endif  // PUFFS_BASE_H
