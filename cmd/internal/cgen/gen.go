@@ -3,11 +3,11 @@
 
 // +build ignore
 
+package main
+
 // gen.go converts preamble.h to data.go.
 //
 // Invoke it via "go generate".
-
-package main
 
 import (
 	"bytes"
