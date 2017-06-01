@@ -22,11 +22,11 @@ import (
 
 func doGen(puffsRoot string, args []string) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
-	langsStr := flags.String("langs", "c,h", langsUsage)
+	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	langs, err := parseLangs(*langsStr)
+	langs, err := parseLangs(*langsFlag)
 	if err != nil {
 		return err
 	}
@@ -119,19 +119,41 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 		out := stdout.Bytes()
-		outDirname := filepath.Join(puffsRoot, "gen", lang)
-		outFilename := filepath.Join(outDirname, packageName+"."+lang)
-		if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
-			fmt.Println("gen unchanged: ", outFilename)
+		if err := genFile(puffsRoot, packageName, lang, out); err != nil {
+			return err
+		}
+
+		// Special-case the "c" generator to also write a .h file.
+		if lang != "c" {
 			continue
 		}
-		if err := os.MkdirAll(outDirname, 0755); err != nil {
+		if i := bytes.Index(out, cHeaderEndsHere); i < 0 {
+			return fmt.Errorf("%s: output did not contain %q", command, cHeaderEndsHere)
+		} else {
+			out = out[:i]
+		}
+		if err := genFile(puffsRoot, packageName, "h", out); err != nil {
 			return err
 		}
-		if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
-			return err
-		}
-		fmt.Println("gen wrote:     ", outFilename)
 	}
+	return nil
+}
+
+var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
+
+func genFile(puffsRoot string, packageName string, lang string, out []byte) error {
+	outDirname := filepath.Join(puffsRoot, "gen", lang)
+	outFilename := filepath.Join(outDirname, packageName+"."+lang)
+	if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
+		fmt.Println("gen unchanged: ", outFilename)
+		return nil
+	}
+	if err := os.MkdirAll(outDirname, 0755); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
+		return err
+	}
+	fmt.Println("gen wrote:     ", outFilename)
 	return nil
 }

@@ -15,11 +15,11 @@ import (
 
 func doTest(puffsRoot string, args []string) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
-	langsStr := flags.String("langs", "c", langsUsage)
+	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	langs, err := parseLangs(*langsStr)
+	langs, err := parseLangs(*langsFlag)
 	if err != nil {
 		return err
 	}

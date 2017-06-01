@@ -15,5 +15,5 @@ import (
 )
 
 func main() {
-	generate.Main(&cgen.Generator{Extension: 'c'})
+	generate.Main(&cgen.Generator{})
 }

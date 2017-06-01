@@ -81,6 +81,8 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
 
 #endif  // PUFFS_GIF_H
 
+// C HEADER ENDS HERE.
+
 // ---------------- Private Structs
 
 // ---------------- Private Constructor and Destructor Prototypes
