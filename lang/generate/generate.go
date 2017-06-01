@@ -22,9 +22,7 @@ var (
 	packageName = flag.String("package_name", "", "the package name of the Puffs input code")
 )
 
-type Generator interface {
-	Generate(packageName string, m *token.IDMap, files []*ast.File) ([]byte, error)
-}
+type Generator func(packageName string, m *token.IDMap, files []*ast.File) ([]byte, error)
 
 func Main(g Generator) {
 	if err := main1(g); err != nil {
@@ -53,7 +51,7 @@ func main1(g Generator) error {
 		return err
 	}
 
-	out, err := g.Generate(*packageName, idMap, files)
+	out, err := g(*packageName, idMap, files)
 	if err != nil {
 		return err
 	}
