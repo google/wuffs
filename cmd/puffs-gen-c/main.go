@@ -55,15 +55,31 @@ const (
 )
 
 type gen struct {
-	buffer  bytes.Buffer
-	pkgName string
-	idMap   *t.IDMap
-	files   []*a.File
+	buffer      bytes.Buffer
+	pkgName     string
+	idMap       *t.IDMap
+	files       []*a.File
+	jumpTargets map[*a.While]uint32
 }
 
 func (g *gen) printf(format string, args ...interface{}) { fmt.Fprintf(&g.buffer, format, args...) }
 func (g *gen) writeb(b byte)                             { g.buffer.WriteByte(b) }
 func (g *gen) writes(s string)                           { g.buffer.WriteString(s) }
+
+func (g *gen) jumpTarget(n *a.While) (uint32, error) {
+	if g.jumpTargets == nil {
+		g.jumpTargets = map[*a.While]uint32{}
+	}
+	if jt, ok := g.jumpTargets[n]; ok {
+		return jt, nil
+	}
+	jt := uint32(len(g.jumpTargets))
+	if jt == 1000000 {
+		return 0, fmt.Errorf("too many jump targets")
+	}
+	g.jumpTargets[n] = jt
+	return jt, nil
+}
 
 func (g *gen) generate() error {
 	includeGuard := "PUFFS_" + strings.ToUpper(g.pkgName) + "_H"
@@ -295,6 +311,7 @@ func (g *gen) writeFuncPrototype(n *a.Func) error {
 }
 
 func (g *gen) writeFuncImpl(n *a.Func) error {
+	g.jumpTargets = nil
 	g.writeFuncSignature(n)
 	g.writes("{\n")
 
@@ -450,7 +467,14 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		// TODO.
 
 	case a.KJump:
-		// TODO.
+		n := n.Jump()
+		jt := g.jumpTargets[n.JumpTarget()]
+		keyword := "continue"
+		if n.Keyword().Key() == t.KeyBreak {
+			keyword = "break"
+		}
+		g.printf("goto label_%d_%s;\n", jt, keyword)
+		return nil
 
 	case a.KReturn:
 		// TODO.
@@ -470,6 +494,14 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KWhile:
 		n := n.While()
+
+		if n.HasContinue() {
+			jt, err := g.jumpTarget(n)
+			if err != nil {
+				return err
+			}
+			g.printf("label_%d_continue:;\n", jt)
+		}
 		g.writes("while (")
 		if err := g.writeExpr(n.Condition(), 0); err != nil {
 			return err
@@ -481,8 +513,14 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			}
 		}
 		g.writes("}\n")
+		if n.HasBreak() {
+			jt, err := g.jumpTarget(n)
+			if err != nil {
+				return err
+			}
+			g.printf("label_%d_break:;\n", jt)
+		}
 		return nil
-		// TODO.
 
 	}
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())

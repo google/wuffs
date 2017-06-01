@@ -17,11 +17,16 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 
 	// TODO: implement.
 
-	while n_bits < width,
-		post n_bits >= width,
-	{
-		assert n_bits < 12 via "a < b: a < c <= b"(c:width)
-		bits |= 0  // TODO.
-		n_bits += 8
+	while true {
+		while n_bits < width,
+			post n_bits >= width,
+		{
+			assert n_bits < 12 via "a < b: a < c <= b"(c:width)
+			bits |= 0  // TODO.
+			n_bits += 8
+		}
+
+		// TODO: implement.
+		break
 	}
 }

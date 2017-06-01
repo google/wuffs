@@ -72,6 +72,8 @@ const (
 	FlagsSuspendible = Flags(0x00000002)
 	FlagsPublic      = Flags(0x00000004)
 	FlagsTypeChecked = Flags(0x00000008)
+	FlagsHasBreak    = Flags(0x00000010)
+	FlagsHasContinue = Flags(0x00000020)
 )
 
 type Node struct {
@@ -80,6 +82,7 @@ type Node struct {
 
 	constValue *big.Int
 	mType      *TypeExpr
+	jumpTarget *While
 
 	filename string
 	line     uint32
@@ -320,17 +323,24 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 }
 
 // While is "while:ID1 LHS, List0 { List1 }":
+//  - FlagsHasBreak    is the while has an explicit break
+//  - FlagsHasContinue is the while has an explicit continue
 //  - ID1:   <0|label>
 //  - LHS:   <Expr>
 //  - List0: <Assert> asserts
 //  - List1: <Statement> loop body
 type While Node
 
-func (n *While) Node() *Node      { return (*Node)(n) }
-func (n *While) Label() t.ID      { return n.id1 }
-func (n *While) Condition() *Expr { return n.lhs.Expr() }
-func (n *While) Asserts() []*Node { return n.list0 }
-func (n *While) Body() []*Node    { return n.list1 }
+func (n *While) Node() *Node       { return (*Node)(n) }
+func (n *While) HasBreak() bool    { return n.flags&FlagsHasBreak != 0 }
+func (n *While) HasContinue() bool { return n.flags&FlagsHasContinue != 0 }
+func (n *While) Label() t.ID       { return n.id1 }
+func (n *While) Condition() *Expr  { return n.lhs.Expr() }
+func (n *While) Asserts() []*Node  { return n.list0 }
+func (n *While) Body() []*Node     { return n.list1 }
+
+func (n *While) SetHasBreak()    { n.flags |= FlagsHasBreak }
+func (n *While) SetHasContinue() { n.flags |= FlagsHasContinue }
 
 func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While {
 	return &While{
@@ -384,9 +394,12 @@ func NewReturn(value *Expr) *Return {
 //  - ID1:   <0|label>
 type Jump Node
 
-func (n *Jump) Node() *Node   { return (*Node)(n) }
-func (n *Jump) Keyword() t.ID { return n.id0 }
-func (n *Jump) Label() t.ID   { return n.id1 }
+func (n *Jump) Node() *Node        { return (*Node)(n) }
+func (n *Jump) JumpTarget() *While { return n.jumpTarget }
+func (n *Jump) Keyword() t.ID      { return n.id0 }
+func (n *Jump) Label() t.ID        { return n.id1 }
+
+func (n *Jump) SetJumpTarget(o *While) { n.jumpTarget = o }
 
 func NewJump(keyword t.ID, label t.ID) *Jump {
 	return &Jump{

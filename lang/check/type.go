@@ -73,7 +73,32 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KJump:
-		// TODO: check that we're in a for loop.
+		n := n.Jump()
+		jumpTarget := (*a.While)(nil)
+		if id := n.Label(); id != 0 {
+			for i := len(q.jumpTargets) - 1; i >= 0; i-- {
+				if w := q.jumpTargets[i]; w.Label() == id {
+					jumpTarget = w
+					break
+				}
+			}
+		} else if nj := len(q.jumpTargets); nj > 0 {
+			jumpTarget = q.jumpTargets[nj-1]
+		}
+		if jumpTarget == nil {
+			sepStr, labelStr := "", ""
+			if id := n.Label(); id != 0 {
+				sepStr, labelStr = ":", id.String(q.idMap)
+			}
+			return fmt.Errorf("no matching while statement for %s%s%s",
+				n.Keyword().String(q.idMap), sepStr, labelStr)
+		}
+		if n.Keyword().Key() == t.KeyBreak {
+			jumpTarget.SetHasBreak()
+		} else {
+			jumpTarget.SetHasContinue()
+		}
+		n.SetJumpTarget(jumpTarget)
 
 	case a.KReturn:
 		n := n.Return()
@@ -113,6 +138,10 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 			o.SetTypeChecked()
 		}
+		q.jumpTargets = append(q.jumpTargets, n)
+		defer func() {
+			q.jumpTargets = q.jumpTargets[:len(q.jumpTargets)-1]
+		}()
 		for _, o := range n.Body() {
 			if err := q.tcheckStatement(o); err != nil {
 				return err

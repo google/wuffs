@@ -378,5 +378,7 @@ type checker struct {
 	errFilename string
 	errLine     uint32
 
+	jumpTargets []*a.While
+
 	facts facts
 }

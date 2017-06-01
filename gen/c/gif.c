@@ -162,10 +162,14 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
   v_bits = 0;
   v_n_bits = 0;
   v_width = (self->f_literal_width + 1);
-  while ((v_n_bits < v_width)) {
-    v_bits |= 0;
-    v_n_bits += 8;
+  while (1) {
+    while ((v_n_bits < v_width)) {
+      v_bits |= 0;
+      v_n_bits += 8;
+    }
+    goto label_0_break;
   }
+label_0_break:;
 
 cleanup0:
   self->status = status;
