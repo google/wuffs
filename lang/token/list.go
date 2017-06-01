@@ -195,6 +195,7 @@ const (
 	KeyVar      = Key(IDVar >> KeyShift)
 	KeyIdeal    = Key(IDIdeal >> KeyShift)
 	KeyPre      = Key(IDPre >> KeyShift)
+	KeyInv      = Key(IDInv >> KeyShift)
 	KeyPost     = Key(IDPost >> KeyShift)
 	KeyVia      = Key(IDVia >> KeyShift)
 	KeyPub      = Key(IDPub >> KeyShift)
@@ -323,10 +324,11 @@ const (
 	IDVar      = ID(0x6B<<KeyShift | FlagsOther)
 	IDIdeal    = ID(0x6C<<KeyShift | FlagsOther)
 	IDPre      = ID(0x6D<<KeyShift | FlagsOther)
-	IDPost     = ID(0x6E<<KeyShift | FlagsOther)
-	IDVia      = ID(0x6F<<KeyShift | FlagsOther)
-	IDPub      = ID(0x70<<KeyShift | FlagsOther)
-	IDPri      = ID(0x71<<KeyShift | FlagsOther)
+	IDInv      = ID(0x6E<<KeyShift | FlagsOther)
+	IDPost     = ID(0x6F<<KeyShift | FlagsOther)
+	IDVia      = ID(0x70<<KeyShift | FlagsOther)
+	IDPub      = ID(0x71<<KeyShift | FlagsOther)
+	IDPri      = ID(0x72<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x90<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x91<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -457,6 +459,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyVar:      {"var", IDVar},
 	KeyIdeal:    {"ideal", IDIdeal},
 	KeyPre:      {"pre", IDPre},
+	KeyInv:      {"inv", IDInv},
 	KeyPost:     {"post", IDPost},
 	KeyVia:      {"via", IDVia},
 	KeyPub:      {"pub", IDPub},

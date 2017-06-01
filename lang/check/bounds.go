@@ -263,7 +263,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		return err
 	}
 
-	// Check the pre and assert conditions on entry.
+	// Check the pre and inv conditions on entry.
 	for _, o := range n.Asserts() {
 		if o.Assert().Keyword().Key() == t.KeyPost {
 			continue
@@ -271,11 +271,11 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// TODO
 	}
 
-	// Check the post conditions on exit, assuming only the pre and assert
-	// conditions and the inverted while condition.
+	// Check the post conditions on exit, assuming only the pre and inv
+	// (invariant) conditions and the inverted while condition.
 	//
-	// We don't need to check the assert conditions, even though we add them to
-	// the facts after the while loop, since we have already proven each assert
+	// We don't need to check the inv conditions, even though we add them to
+	// the facts after the while loop, since we have already proven each inv
 	// condition on entry, and below, proven them on each explicit continue and
 	// on the implicit continue after the body.
 	if cv := n.Condition().ConstValue(); cv != nil && cv.Cmp(one) == 0 {
@@ -308,7 +308,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// We effectively have a "while false { etc }" loop. There's no need to
 		// check the body.
 	} else {
-		// Assume the pre and assert conditions, and the while condition. Check
+		// Assume the pre and inv conditions, and the while condition. Check
 		// the body.
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
@@ -323,7 +323,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 				return err
 			}
 		}
-		// Check the pre and assert conditions on the implicit continue after the
+		// Check the pre and inv conditions on the implicit continue after the
 		// body.
 		for _, o := range n.Asserts() {
 			if o.Assert().Keyword().Key() == t.KeyPost {
@@ -332,12 +332,12 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			// TODO
 		}
 
-		// TODO: check the pre and assert conditions for each continue.
+		// TODO: check the pre and inv conditions for each continue.
 
-		// TODO: check the assert and post conditions for each break.
+		// TODO: check the inv and post conditions for each break.
 	}
 
-	// Assume the assert and post conditions.
+	// Assume the inv and post conditions.
 	q.facts = q.facts[:0]
 	for _, o := range n.Asserts() {
 		if o.Assert().Keyword().Key() == t.KeyPre {

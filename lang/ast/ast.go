@@ -219,8 +219,8 @@ func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mh
 	}
 }
 
-// Assert is "assert RHS via ID1(args)", "pre etc" or "post etc":
-//  - ID0:   <IDAssert|IDPre|IDPost>
+// Assert is "assert RHS via ID1(args)", "pre etc", "inv etc" or "post etc":
+//  - ID0:   <IDAssert|IDPre|IDInv|IDPost>
 //  - ID1:   <string literal> reason
 //  - RHS:   <Expr>
 //  - List0: <Arg> reason arguments

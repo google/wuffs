@@ -71,6 +71,8 @@ func TestCheck(t *testing.T) {
 			assert true
 
 			while p == q,
+				pre true,
+				inv true,
 				post p != q,
 			{
 			}

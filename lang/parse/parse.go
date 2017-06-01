@@ -395,25 +395,28 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 }
 
 func (p *parser) assertsSorted(asserts []*a.Node) error {
-	seenAssert, seenPost := false, false
+	seenInv, seenPost := false, false
 	for _, a := range asserts {
 		switch a.Assert().Keyword().Key() {
+		case t.KeyAssert:
+			return fmt.Errorf(`parse: assertion chain cannot contain "assert", `+
+				`only "pre", "inv" and "post" at %s:%d`, p.filename, p.line())
 		case t.KeyPre:
-			if seenPost || seenAssert {
+			if seenPost || seenInv {
 				break
 			}
 			continue
-		case t.KeyAssert:
+		case t.KeyInv:
 			if seenPost {
 				break
 			}
-			seenAssert = true
+			seenInv = true
 			continue
 		default:
 			seenPost = true
 			continue
 		}
-		return fmt.Errorf(`parse: assertion chain not in "pre", "assert", "post" order at %s:%d`,
+		return fmt.Errorf(`parse: assertion chain not in "pre", "inv", "post" order at %s:%d`,
 			p.filename, p.line())
 	}
 	return nil
@@ -421,7 +424,7 @@ func (p *parser) assertsSorted(asserts []*a.Node) error {
 
 func (p *parser) parseAssertNode() (*a.Node, error) {
 	switch x := p.peek1(); x.Key() {
-	case t.KeyAssert, t.KeyPre, t.KeyPost:
+	case t.KeyAssert, t.KeyPre, t.KeyInv, t.KeyPost:
 		p.src = p.src[1:]
 		condition, err := p.parseExpr()
 		if err != nil {
