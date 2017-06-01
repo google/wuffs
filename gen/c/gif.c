@@ -168,6 +168,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self) {
       v_n_bits += 8;
     }
     goto label_0_break;
+    v_n_bits = 0;
   }
 label_0_break:;
 

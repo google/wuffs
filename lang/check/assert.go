@@ -24,6 +24,22 @@ func (z *facts) appendFact(x *a.Expr) {
 	*z = append(*z, x)
 }
 
+// drop drops any facts that mention x. They are replaced with a nil *a.Expr,
+// and then the slice is compacted to remove all nils.
+func (z *facts) drop(x *a.Expr) {
+	i := 0
+	for _, f := range *z {
+		if !f.Mentions(x) {
+			(*z)[i] = f
+			i++
+		}
+	}
+	for j := i; j < len(*z); j++ {
+		(*z)[j] = nil
+	}
+	*z = (*z)[:i]
+}
+
 func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int) (*big.Int, *big.Int) {
 	if n.ID0() != 0 || !n.ID1().IsIdent() {
 		// TODO.
@@ -137,30 +153,55 @@ func proveBinaryOpConstValues(op t.Key, lMin *big.Int, lMax *big.Int, rMin *big.
 }
 
 func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) (ok bool) {
-	if cv := lhs.ConstValue(); cv != nil {
+	lhsCV := lhs.ConstValue()
+	if lhsCV != nil {
 		rMin, rMax, err := q.bcheckExpr(rhs, 0)
 		if err != nil {
 			// TODO: should this function return the error?
 			return false
 		}
-		if proveBinaryOpConstValues(op, cv, cv, rMin, rMax) {
+		if proveBinaryOpConstValues(op, lhsCV, lhsCV, rMin, rMax) {
 			return true
 		}
 	}
-	if cv := rhs.ConstValue(); cv != nil {
+	rhsCV := rhs.ConstValue()
+	if rhsCV != nil {
 		lMin, lMax, err := q.bcheckExpr(lhs, 0)
 		if err != nil {
 			// TODO: should this function return the error?
 			return false
 		}
-		if proveBinaryOpConstValues(op, lMin, lMax, cv, cv) {
+		if proveBinaryOpConstValues(op, lMin, lMax, rhsCV, rhsCV) {
 			return true
 		}
 	}
 
 	for _, f := range q.facts {
-		if f.ID0().Key() == op && f.LHS().Expr().Eq(lhs) && f.RHS().Expr().Eq(rhs) {
+		if !f.LHS().Expr().Eq(lhs) {
+			continue
+		}
+		factOp := f.ID0().Key()
+		if factOp == op && f.RHS().Expr().Eq(rhs) {
 			return true
+		}
+
+		if factOp == t.KeyXBinaryEqEq && rhsCV != nil {
+			if factCV := f.RHS().Expr().ConstValue(); factCV != nil {
+				switch op {
+				case t.KeyXBinaryNotEq:
+					return factCV.Cmp(rhsCV) != 0
+				case t.KeyXBinaryLessThan:
+					return factCV.Cmp(rhsCV) < 0
+				case t.KeyXBinaryLessEq:
+					return factCV.Cmp(rhsCV) <= 0
+				case t.KeyXBinaryEqEq:
+					return factCV.Cmp(rhsCV) == 0
+				case t.KeyXBinaryGreaterEq:
+					return factCV.Cmp(rhsCV) >= 0
+				case t.KeyXBinaryGreaterThan:
+					return factCV.Cmp(rhsCV) > 0
+				}
+			}
 		}
 	}
 	return false

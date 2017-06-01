@@ -17,7 +17,9 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 
 	// TODO: implement.
 
-	while true {
+	while true,
+		pre n_bits < 8,
+	{
 		while n_bits < width,
 			post n_bits >= width,
 		{
@@ -28,5 +30,9 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 
 		// TODO: implement.
 		break
+
+		// TODO: process n_bits further so that (n_bits < 8) and remove this
+		// temporary hack.
+		n_bits = 0
 	}
 }

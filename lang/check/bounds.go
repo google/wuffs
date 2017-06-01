@@ -144,7 +144,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KAssign:
 		n := n.Assign()
-		return q.bcheckAssignment(n.LHS(), n.LHS().MType(), n.Operator(), n.RHS())
+		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
 
 	case a.KIf:
 		// TODO.
@@ -157,7 +157,17 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KVar:
 		n := n.Var()
-		return q.bcheckAssignment(nil, n.XType(), t.IDEq, n.Value())
+		lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
+		lhs.SetMType(n.XType())
+		rhs := n.Value()
+		// "var x T" has an implicit "= _".
+		if rhs == nil {
+			rhs = a.NewExpr(a.FlagsTypeChecked, 0, t.IDUnderscore, nil, nil, nil, nil)
+			// TODO: check that T is an integer type.
+			rhs.SetConstValue(zero)
+			rhs.SetMType(TypeExprIdealNumber)
+		}
+		return q.bcheckAssignment(lhs, t.IDEq, rhs)
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
@@ -197,16 +207,26 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 	return nil
 }
 
-func (q *checker) bcheckAssignment(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
-	if err := q.bcheckAssignment1(lhs, lTyp, op, rhs); err != nil {
+func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
+	if err := q.bcheckAssignment1(lhs, op, rhs); err != nil {
 		return err
 	}
-	// TODO: drop any facts involving lhs.
+	// TODO: check lhs and rhs are pure expressions.
+	if op == t.IDEq {
+		// Drop any facts involving lhs.
+		q.facts.drop(lhs)
+
+		o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, lhs.Node(), nil, rhs.Node(), nil)
+		o.SetMType(lhs.MType())
+		q.facts.appendFact(o)
+	} else {
+		// TODO: update any facts involving lhs.
+	}
 	return nil
 }
 
-func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
-	switch lTyp.PackageOrDecorator().Key() {
+func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
+	switch lhs.MType().PackageOrDecorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
 		return nil
@@ -214,23 +234,18 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		// TODO: handle.
 		return nil
 	}
-	if lTyp.Name().Key() == t.KeyBool {
+	if lhs.MType().Name().Key() == t.KeyBool {
 		return nil
 	}
 
-	lMin, lMax, err := q.bcheckTypeExpr(lTyp)
+	lMin, lMax, err := q.bcheckTypeExpr(lhs.MType())
 	if err != nil {
 		return err
 	}
 
 	rMin, rMax := (*big.Int)(nil), (*big.Int)(nil)
 	if op == t.IDEq {
-		cv := zero
-		// rhs might be nil because "var x T" has an implicit "= 0".
-		if rhs != nil {
-			cv = rhs.ConstValue()
-		}
-		if cv != nil {
+		if cv := rhs.ConstValue(); cv != nil {
 			if cv.Cmp(lMin) < 0 || cv.Cmp(lMax) > 0 {
 				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, lMin, lMax)
 			}
@@ -257,18 +272,21 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 }
 
 func (q *checker) bcheckWhile(n *a.While) error {
-	// TODO: check that n.Condition() has no side effects.
-
-	if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
-		return err
-	}
-
 	// Check the pre and inv conditions on entry.
 	for _, o := range n.Asserts() {
 		if o.Assert().Keyword().Key() == t.KeyPost {
 			continue
 		}
-		// TODO
+		if err := q.bcheckAssert(o.Assert()); err != nil {
+			return err
+		}
+	}
+
+	// Check the while condition.
+	//
+	// TODO: check that n.Condition() has no side effects.
+	if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
+		return err
 	}
 
 	// Check the post conditions on exit, assuming only the pre and inv
@@ -329,7 +347,9 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			if o.Assert().Keyword().Key() == t.KeyPost {
 				continue
 			}
-			// TODO
+			if err := q.bcheckAssert(o.Assert()); err != nil {
+				return err
+			}
 		}
 
 		// TODO: check the pre and inv conditions for each continue.

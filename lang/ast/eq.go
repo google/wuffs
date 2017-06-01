@@ -53,6 +53,24 @@ func (n *Expr) Eq(o *Expr) bool {
 	return true
 }
 
+func (n *Expr) Mentions(o *Expr) bool {
+	if n == nil {
+		return false
+	}
+	if n.Eq(o) ||
+		n.lhs.Expr().Mentions(o) ||
+		n.mhs.Expr().Mentions(o) ||
+		(n.id0.Key() != t.KeyXBinaryAs && n.rhs.Expr().Mentions(o)) {
+		return true
+	}
+	for _, x := range n.list0 {
+		if x.Expr().Mentions(o) {
+			return true
+		}
+	}
+	return false
+}
+
 // Eq returns whether n and o are equal.
 func (n *TypeExpr) Eq(o *TypeExpr) bool {
 	return n.eq(o, false)
