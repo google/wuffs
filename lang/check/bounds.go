@@ -326,8 +326,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// We effectively have a "while false { etc }" loop. There's no need to
 		// check the body.
 	} else {
-		// Assume the pre and inv conditions, and the while condition. Check
-		// the body.
+		// Assume the pre and inv conditions...
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
 			if o.Assert().Keyword().Key() == t.KeyPost {
@@ -335,7 +334,11 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			}
 			q.facts.appendFact(o.Assert().Condition())
 		}
-		q.facts.appendFact(n.Condition())
+		// ...and the while condition, unless it is the redundant "true".
+		if cv == nil {
+			q.facts.appendFact(n.Condition())
+		}
+		// Check the body.
 		for _, o := range n.Body() {
 			if err := q.bcheckStatement(o); err != nil {
 				return err
