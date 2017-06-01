@@ -217,7 +217,24 @@ var reasons = [...]struct {
 	s string
 	r reason
 }{
-	{`"a < b: a < c <= b"`, func(q *checker, n *a.Assert) error {
+	{`"a < (b + c): a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
+		op, a, bc := parseBinaryOp(n.Condition())
+		if op != t.KeyXBinaryLessThan {
+			return errFailed
+		}
+		op, b, c := parseBinaryOp(bc)
+		if op != t.KeyXBinaryPlus {
+			return errFailed
+		}
+		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
+			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.idMap), c.String(q.idMap))
+		}
+		if !q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, b) {
+			return fmt.Errorf("cannot prove \"%s <= %s\"", zeroExpr.String(q.idMap), b.String(q.idMap))
+		}
+		return nil
+	}},
+	{`"a < b: a < c; c <= b"`, func(q *checker, n *a.Assert) error {
 		c := argValue(q.idMap, n.Args(), "c")
 		if c == nil {
 			return errFailed

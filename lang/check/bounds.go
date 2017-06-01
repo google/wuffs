@@ -27,7 +27,14 @@ var (
 	zero = big.NewInt(0)
 	one  = big.NewInt(1)
 	ffff = big.NewInt(0xFFFF)
+
+	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, t.IDUnderscore, nil, nil, nil, nil)
 )
+
+func init() {
+	zeroExpr.SetConstValue(zero)
+	zeroExpr.SetMType(TypeExprIdealNumber)
+}
 
 func btoi(b bool) *big.Int {
 	if b {
@@ -160,12 +167,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
 		lhs.SetMType(n.XType())
 		rhs := n.Value()
-		// "var x T" has an implicit "= _".
 		if rhs == nil {
-			rhs = a.NewExpr(a.FlagsTypeChecked, 0, t.IDUnderscore, nil, nil, nil, nil)
+			// "var x T" has an implicit "= _".
+			//
 			// TODO: check that T is an integer type.
-			rhs.SetConstValue(zero)
-			rhs.SetMType(TypeExprIdealNumber)
+			rhs = zeroExpr
 		}
 		return q.bcheckAssignment(lhs, t.IDEq, rhs)
 
