@@ -1,7 +1,7 @@
 // After editing this file, run "go generate" in this directory.
 
-#ifndef PUFFS_BASE_H
-#define PUFFS_BASE_H
+#ifndef PUFFS_BASE_HEADER_H
+#define PUFFS_BASE_HEADER_H
 
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
@@ -26,7 +26,7 @@
 //
 // For now, the API and ABI are simply unstable and can change at any time.
 //
-// TODO: don't hard code this in preamble.h.
+// TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-#endif  // PUFFS_BASE_H
+#endif  // PUFFS_BASE_HEADER_H

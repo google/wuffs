@@ -5,7 +5,7 @@
 
 package main
 
-// gen.go converts preamble.h to data.go.
+// gen.go converts base.* to data.go.
 //
 // Invoke it via "go generate".
 
@@ -27,18 +27,11 @@ func main() {
 }
 
 func main1() error {
-	const inFilename = "preamble.h"
-	in, err := ioutil.ReadFile(inFilename)
-	if err != nil {
-		return err
-	}
-
-	const afterEditing = "// After editing this file,"
-	if !bytes.HasPrefix(in, []byte(afterEditing)) {
-		return fmt.Errorf("%s's contents do not start with %q", inFilename, afterEditing)
-	}
-	if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
-		in = in[i+2:]
+	files := []struct {
+		filename, varname string
+	}{
+		{"base-header.h", "baseHeader"},
+		{"base-impl.h", "baseImpl"},
 	}
 
 	out := &bytes.Buffer{}
@@ -49,16 +42,32 @@ func main1() error {
 	out.WriteString("\n")
 	out.WriteString("package main\n")
 	out.WriteString("\n")
-	out.WriteString("const preamble = \"\" +\n")
-	for len(in) > 0 {
-		s := in
-		if len(s) > columns {
-			s = s[:columns]
+
+	for _, f := range files {
+		in, err := ioutil.ReadFile(f.filename)
+		if err != nil {
+			return err
 		}
-		in = in[len(s):]
-		fmt.Fprintf(out, "%q +\n", s)
+
+		const afterEditing = "// After editing this file,"
+		if !bytes.HasPrefix(in, []byte(afterEditing)) {
+			return fmt.Errorf("%s's contents do not start with %q", f.filename, afterEditing)
+		}
+		if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
+			in = in[i+2:]
+		}
+
+		fmt.Fprintf(out, "const %s = \"\" +\n", f.varname)
+		for len(in) > 0 {
+			s := in
+			if len(s) > columns {
+				s = s[:columns]
+			}
+			in = in[len(s):]
+			fmt.Fprintf(out, "%q +\n", s)
+		}
+		out.WriteString("\"\"\n\n")
 	}
-	out.WriteString("\"\"\n")
 
 	formatted, err := format.Source(out.Bytes())
 	if err != nil {
