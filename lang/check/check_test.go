@@ -18,9 +18,9 @@ import (
 	"github.com/google/puffs/lang/token"
 )
 
-func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, src string) error {
+func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, comments []string, src string) error {
 	buf := &bytes.Buffer{}
-	if err := render.Render(buf, idMap, tokens, nil); err != nil {
+	if err := render.Render(buf, idMap, tokens, comments); err != nil {
 		return err
 	}
 	got := strings.Split(buf.String(), "\n")
@@ -70,18 +70,20 @@ func TestCheck(t *testing.T) {
 
 			assert true
 
-			while p == q,
+			while:label p == q,
 				pre true,
 				inv true,
 				post p != q,
 			{
+				// Redundant, but shows the labeled jump syntax.
+				continue:label
 			}
 		}
 	`) + "\n"
 
 	idMap := &token.IDMap{}
 
-	tokens, _, err := token.Tokenize(idMap, filename, []byte(src))
+	tokens, comments, err := token.Tokenize(idMap, filename, []byte(src))
 	if err != nil {
 		t.Fatalf("Tokenize: %v", err)
 	}
@@ -91,7 +93,7 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	if err := compareToPuffsfmt(idMap, tokens, src); err != nil {
+	if err := compareToPuffsfmt(idMap, tokens, comments, src); err != nil {
 		t.Fatalf("compareToPuffsfmt: %v", err)
 	}
 

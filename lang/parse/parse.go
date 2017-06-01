@@ -461,6 +461,14 @@ func (p *parser) parseStatement() (*a.Node, error) {
 	return n, err
 }
 
+func (p *parser) parseLabel() (t.ID, error) {
+	if p.peek1().Key() == t.KeyColon {
+		p.src = p.src[1:]
+		return p.parseIdent()
+	}
+	return 0, nil
+}
+
 func (p *parser) parseStatement1() (*a.Node, error) {
 	switch x := p.peek1(); x.Key() {
 	case t.KeyAssert, t.KeyPre, t.KeyPost:
@@ -468,10 +476,18 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyBreak, t.KeyContinue:
 		p.src = p.src[1:]
-		return a.NewJump(x).Node(), nil
+		label, err := p.parseLabel()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewJump(x, label).Node(), nil
 
 	case t.KeyWhile:
 		p.src = p.src[1:]
+		label, err := p.parseLabel()
+		if err != nil {
+			return nil, err
+		}
 		condition, err := p.parseExpr()
 		if err != nil {
 			return nil, err
@@ -491,7 +507,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewWhile(condition, asserts, body).Node(), nil
+		return a.NewWhile(label, condition, asserts, body).Node(), nil
 
 	case t.KeyIf:
 		o, err := p.parseIf()

@@ -319,20 +319,23 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 	}
 }
 
-// While is "while LHS, List0 { List1 }":
+// While is "while:ID1 LHS, List0 { List1 }":
+//  - ID1:   <0|label>
 //  - LHS:   <Expr>
 //  - List0: <Assert> asserts
 //  - List1: <Statement> loop body
 type While Node
 
 func (n *While) Node() *Node      { return (*Node)(n) }
+func (n *While) Label() t.ID      { return n.id1 }
 func (n *While) Condition() *Expr { return n.lhs.Expr() }
 func (n *While) Asserts() []*Node { return n.list0 }
 func (n *While) Body() []*Node    { return n.list1 }
 
-func NewWhile(condition *Expr, asserts []*Node, body []*Node) *While {
+func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While {
 	return &While{
 		kind:  KWhile,
+		id1:   label,
 		lhs:   condition.Node(),
 		list0: asserts,
 		list1: body,
@@ -376,17 +379,20 @@ func NewReturn(value *Expr) *Return {
 	}
 }
 
-// Jump is "break" or "continue":
-// TODO: label?
+// Jump is "break" or "continue", with an optional label, "break:label":
+//  - ID0:   <IDBreak|IDContinue>
+//  - ID1:   <0|label>
 type Jump Node
 
 func (n *Jump) Node() *Node   { return (*Node)(n) }
 func (n *Jump) Keyword() t.ID { return n.id0 }
+func (n *Jump) Label() t.ID   { return n.id1 }
 
-func NewJump(keyword t.ID) *Jump {
+func NewJump(keyword t.ID, label t.ID) *Jump {
 	return &Jump{
 		kind: KJump,
 		id0:  keyword,
+		id1:  label,
 	}
 }
 
