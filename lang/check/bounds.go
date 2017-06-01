@@ -28,7 +28,7 @@ var (
 	one  = big.NewInt(1)
 	ffff = big.NewInt(0xFFFF)
 
-	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, t.IDUnderscore, nil, nil, nil, nil)
+	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, t.IDZero, nil, nil, nil, nil)
 )
 
 func init() {
@@ -168,7 +168,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		lhs.SetMType(n.XType())
 		rhs := n.Value()
 		if rhs == nil {
-			// "var x T" has an implicit "= _".
+			// "var x T" has an implicit "= 0".
 			//
 			// TODO: check that T is an integer type.
 			rhs = zeroExpr

@@ -203,6 +203,7 @@ const (
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
+	KeyZero  = Key(IDZero >> KeyShift)
 
 	KeyI8    = Key(IDI8 >> KeyShift)
 	KeyI16   = Key(IDI16 >> KeyShift)
@@ -332,6 +333,7 @@ const (
 
 	IDFalse = ID(0x90<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x91<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDZero  = ID(0x92<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
 
 	IDI8    = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDI16   = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
@@ -467,6 +469,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
+	KeyZero:  {"0", IDZero},
 
 	KeyI8:    {"i8", IDI8},
 	KeyI16:   {"i16", IDI16},
