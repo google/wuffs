@@ -3,7 +3,7 @@
 
 //go:generate go run gen.go
 
-package cgen
+package main
 
 import (
 	"bytes"
@@ -24,10 +24,10 @@ const (
 	priOnly
 )
 
-type Generator struct {
+type gen struct {
 }
 
-func (*Generator) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byte, error) {
+func (gen) Generate(pkgName string, m *t.IDMap, files []*a.File) ([]byte, error) {
 	b := &bytes.Buffer{}
 
 	includeGuard := "PUFFS_" + strings.ToUpper(pkgName) + "_H"
@@ -362,7 +362,7 @@ func writeField(b *bytes.Buffer, m *t.IDMap, n *a.Field) error {
 
 func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
-		return fmt.Errorf("cgen: body recursion depth too large")
+		return fmt.Errorf("body recursion depth too large")
 	}
 	depth++
 
@@ -375,7 +375,7 @@ func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uin
 			}
 		}
 		// TODO: fix this.
-		return fmt.Errorf("cgen: cannot convert Puffs type %q to C", x.String(m))
+		return fmt.Errorf("cannot convert Puffs type %q to C", x.String(m))
 	}
 
 	for _, l := range n.Raw().SubLists() {
@@ -390,7 +390,7 @@ func writeVars(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uin
 
 func writeStatement(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
-		return fmt.Errorf("cgen: body recursion depth too large")
+		return fmt.Errorf("body recursion depth too large")
 	}
 	depth++
 
@@ -451,12 +451,12 @@ func writeStatement(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Node, dept
 		// TODO.
 
 	}
-	return fmt.Errorf("cgen: unrecognized ast.Kind (%s) for writeStatement", n.Kind())
+	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
 func writeExpr(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
-		return fmt.Errorf("cgen: expression recursion depth too large")
+		return fmt.Errorf("expression recursion depth too large")
 	}
 	depth++
 
@@ -484,7 +484,7 @@ func writeExpr(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uin
 			return err
 		}
 	default:
-		return fmt.Errorf("cgen: unrecognized token.Key (0x%X) for writeExpr", n.ID0().Key())
+		return fmt.Errorf("unrecognized token.Key (0x%X) for writeExpr", n.ID0().Key())
 	}
 
 	return nil
@@ -525,7 +525,7 @@ func writeExprOther(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, dept
 		b.WriteString(n.ID1().String(m))
 		return nil
 	}
-	return fmt.Errorf("cgen: unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
+	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }
 
 func writeExprUnaryOp(b *bytes.Buffer, pkgName string, m *t.IDMap, n *a.Expr, depth uint32) error {

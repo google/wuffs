@@ -10,10 +10,9 @@
 package main
 
 import (
-	"github.com/google/puffs/cmd/internal/cgen"
 	"github.com/google/puffs/lang/generate"
 )
 
 func main() {
-	generate.Main(&cgen.Generator{})
+	generate.Main(gen{})
 }
