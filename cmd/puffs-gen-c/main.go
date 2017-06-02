@@ -46,6 +46,22 @@ func main() {
 	})
 }
 
+var builtInStatuses = [...]string{
+	// For API/ABI compatibility, the very first two status values must be
+	// status_ok (with generated value 0) and error_bad_version (with generated
+	// value -2 + 1). This lets caller code check the constructor return value
+	// for error_bad_version even if the caller and callee were built with
+	// different versions.
+	"status_ok",
+	"error_bad_version",
+	// The order of the remaining status values is less important.
+	"error_bad_receiver",
+	"error_bad_argument",
+	"error_constructor_not_called",
+	"status_short_dst",
+	"status_short_src",
+}
+
 type visibility uint32
 
 const (
@@ -94,13 +110,13 @@ func (g *gen) generate() error {
 	g.writes("//\n")
 	g.writes("// The least significant bit indicates a non-recoverable status code: an error.\n")
 	g.writes("typedef enum {\n")
-	g.printf("puffs_%s_status_ok = 0,\n", g.pkgName)
-	g.printf("puffs_%s_error_bad_version = -2 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_error_bad_receiver = -4 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_error_bad_argument = -6 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_error_constructor_not_called= -8 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_status_short_dst = -10,\n", g.pkgName)
-	g.printf("puffs_%s_status_short_src = -12,\n", g.pkgName)
+	for i, s := range builtInStatuses {
+		nudge := ""
+		if strings.HasPrefix(s, "error_") {
+			nudge = "+1"
+		}
+		g.printf("puffs_%s_%s = %d%s,\n", g.pkgName, s, -2*i, nudge)
+	}
 	g.printf("} puffs_%s_status;\n\n", g.pkgName)
 
 	g.writes("// ---------------- Public Structs\n\n")
@@ -198,6 +214,11 @@ func (g *gen) forEachStruct(v visibility, f func(*gen, *a.Struct) error) error {
 }
 
 func (g *gen) writeStruct(n *a.Struct) error {
+	// For API/ABI compatibility, the very first field in the struct must be
+	// the status code. This lets the constructor callee set "this->status =
+	// etc_error_bad_version;" regardless of the sizeof(*this) struct reserved
+	// by the caller and even if the caller and callee were built with
+	// different versions.
 	structName := n.Name().String(g.idMap)
 	g.printf("typedef struct {\n")
 	if n.Suspendible() {
