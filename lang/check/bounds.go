@@ -24,9 +24,10 @@ var numTypeBounds = [256][2]*big.Int{
 }
 
 var (
-	zero = big.NewInt(0)
-	one  = big.NewInt(1)
-	ffff = big.NewInt(0xFFFF)
+	minusOne = big.NewInt(-1)
+	zero     = big.NewInt(+0)
+	one      = big.NewInt(+1)
+	ffff     = big.NewInt(0xFFFF)
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
@@ -414,6 +415,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 	if cv := n.ConstValue(); cv != nil {
 		return cv, cv, nil
 	}
+	// TODO: look in q.facts for "n == constantValue".
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
@@ -502,8 +504,28 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 	switch op {
 	case t.KeyXBinaryPlus:
 		return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
+
 	case t.KeyXBinaryMinus:
-		return big.NewInt(0).Sub(lMin, rMax), big.NewInt(0).Sub(lMax, rMin), nil
+		nMin := big.NewInt(0).Sub(lMin, rMax)
+		nMax := big.NewInt(0).Sub(lMax, rMin)
+		for _, x := range q.facts {
+			xOp, xLHS, xRHS := parseBinaryOp(x)
+			if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
+				continue
+			}
+			switch xOp.Key() {
+			case t.KeyXBinaryLessThan:
+				nMax = min(nMax, minusOne)
+			case t.KeyXBinaryLessEq:
+				nMax = min(nMax, zero)
+			case t.KeyXBinaryGreaterEq:
+				nMin = max(nMin, zero)
+			case t.KeyXBinaryGreaterThan:
+				nMin = max(nMin, one)
+			}
+		}
+		return nMin, nMax, nil
+
 	case t.KeyXBinaryStar:
 		// TODO.
 		if cv := lhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
