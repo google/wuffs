@@ -20,7 +20,10 @@ const char* test_filename = "gif/lzw.c";
 void test_lzw_decode() {
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec);
+  puffs_base_buf1 dst = {0};
+  puffs_base_buf1 src = {0};
+  puffs_gif_status status =
+      puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_status_ok) {
     FAIL("test_lzw_decode: status: got %d, want %d", status,
          puffs_gif_status_ok);

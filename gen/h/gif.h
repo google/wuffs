@@ -32,6 +32,17 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
+// puffs_base_buf1 is a 1-dimensional buffer (a pointer and capacity) plus
+// additional indexes into that buffer.
+//
+// A value with all fields NULL or zero is a valid, empty buffer.
+typedef struct {
+  uint8_t* ptr;  // Pointer.
+  size_t cap;    // Capacity.
+  size_t wi;     // Write index. Invariant: wi <= cap.
+  size_t ri;     // Read  index. Invariant: ri <= wi.
+} puffs_base_buf1;
+
 #endif  // PUFFS_BASE_HEADER_H
 
 #ifdef __cplusplus
@@ -78,7 +89,10 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
 // ---------------- Public Function Prototypes
 
-puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self);
+puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
+                                              puffs_base_buf1* a_dst,
+                                              puffs_base_buf1* a_src,
+                                              bool a_src_final);
 
 #ifdef __cplusplus
 }  // extern "C"

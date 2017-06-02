@@ -204,9 +204,10 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		g.printf("uint32_t magic;\n")
 	}
 	for _, f := range n.Fields() {
-		if err := g.writeField(f.Field()); err != nil {
+		if err := g.writeField(f.Field(), "f_"); err != nil {
 			return err
 		}
+		g.writes(";\n")
 	}
 	g.printf("} puffs_%s_%s;\n\n", g.pkgName, structName)
 	return nil
@@ -286,7 +287,8 @@ func (g *gen) writeCtorImpls(n *a.Struct) error {
 	return nil
 }
 
-func (g *gen) writeFuncSignature(n *a.Func) {
+func (g *gen) writeFuncSignature(n *a.Func) error {
+	// TODO: write n's return values.
 	if n.Suspendible() {
 		g.printf("puffs_%s_status", g.pkgName)
 	} else {
@@ -297,22 +299,39 @@ func (g *gen) writeFuncSignature(n *a.Func) {
 		g.printf("_%s", r.String(g.idMap))
 	}
 	g.printf("_%s(", n.Name().String(g.idMap))
+
+	comma := false
 	if r := n.Receiver(); r != 0 {
 		g.printf("puffs_%s_%s *self", g.pkgName, r.String(g.idMap))
+		comma = true
 	}
-	// TODO: write n's args.
+	for _, o := range n.In().Fields() {
+		if comma {
+			g.writeb(',')
+		}
+		comma = true
+		if err := g.writeField(o.Field(), "a_"); err != nil {
+			return err
+		}
+	}
+
 	g.printf(")")
+	return nil
 }
 
 func (g *gen) writeFuncPrototype(n *a.Func) error {
-	g.writeFuncSignature(n)
+	if err := g.writeFuncSignature(n); err != nil {
+		return err
+	}
 	g.writes(";\n\n")
 	return nil
 }
 
 func (g *gen) writeFuncImpl(n *a.Func) error {
 	g.jumpTargets = nil
-	g.writeFuncSignature(n)
+	if err := g.writeFuncSignature(n); err != nil {
+		return err
+	}
 	g.writes("{\n")
 
 	cleanup0 := false
@@ -371,15 +390,22 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	return nil
 }
 
-func (g *gen) writeField(n *a.Field) error {
-	convertible := true
+func (g *gen) writeField(n *a.Field, namePrefix string) error {
+	const maxNPtr = 16
+
+	convertible, nPtr := true, 0
 	for x := n.XType(); x != nil; x = x.Inner() {
-		if p := x.PackageOrDecorator(); p != 0 && p != t.IDOpenBracket {
+		if p := x.PackageOrDecorator().Key(); p == t.KeyPtr {
+			if nPtr == maxNPtr {
+				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.XType().String(g.idMap))
+			}
+			nPtr++
+			continue
+		} else if p == t.KeyOpenBracket {
+			continue
+		} else if p != 0 {
 			convertible = false
 			break
-		}
-		if x.Inner() != nil {
-			continue
 		}
 		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
@@ -396,7 +422,10 @@ func (g *gen) writeField(n *a.Field) error {
 		return fmt.Errorf("cannot convert Puffs type %q to C", n.XType().String(g.idMap))
 	}
 
-	g.writes("f_")
+	for i := 0; i < nPtr; i++ {
+		g.writeb('*')
+	}
+	g.writes(namePrefix)
 	g.writes(n.Name().String(g.idMap))
 
 	for x := n.XType(); x != nil; x = x.Inner() {
@@ -407,7 +436,6 @@ func (g *gen) writeField(n *a.Field) error {
 		}
 	}
 
-	g.writes(";\n")
 	return nil
 }
 
@@ -640,6 +668,8 @@ var cTypeNames = [...]string{
 	t.KeyU64:   "uint64_t",
 	t.KeyUsize: "size_t",
 	t.KeyBool:  "bool",
+	t.KeyBuf1:  "puffs_base_buf1",
+	t.KeyBuf2:  "puffs_base_buf2",
 }
 
 var cOpNames = [256]string{

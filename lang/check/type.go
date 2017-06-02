@@ -539,7 +539,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 
 	switch n.PackageOrDecorator().Key() {
 	case 0:
-		if name := n.Name(); name.IsNumType() || name.Key() == t.KeyBool {
+		if n.Name().IsNumType() {
 			for _, b := range n.Bounds() {
 				if b == nil {
 					continue
@@ -555,6 +555,9 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 		}
 		if n.Min() != nil || n.Max() != nil {
 			// TODO: reject.
+		}
+		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyBuf1 {
+			break
 		}
 		// TODO: see if name refers to a struct type.
 		return fmt.Errorf("check: %q is not a type", n.Name().String(q.idMap))
@@ -577,11 +580,6 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 		}
 
 	default:
-		// TODO: delete this hack.
-		if n.PackageOrDecorator() == q.idMap.ByName("io") && n.Name() == q.idMap.ByName("buf1") {
-			break
-		}
-
 		return fmt.Errorf("check: unrecognized node for checkTypeExpr")
 	}
 	n.Node().SetTypeChecked()

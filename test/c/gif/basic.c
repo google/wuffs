@@ -19,7 +19,10 @@ const char* test_filename = "gif/basic.c";
 
 void test_constructor_not_called() {
   puffs_gif_lzw_decoder dec;
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec);
+  puffs_base_buf1 dst = {0};
+  puffs_base_buf1 src = {0};
+  puffs_gif_status status =
+      puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_error_constructor_not_called) {
     FAIL("test_null_receiver: status: got %d, want %d", status,
          puffs_gif_error_constructor_not_called);
@@ -27,7 +30,10 @@ void test_constructor_not_called() {
 }
 
 void test_null_receiver() {
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL);
+  puffs_base_buf1 dst = {0};
+  puffs_base_buf1 src = {0};
+  puffs_gif_status status =
+      puffs_gif_lzw_decoder_decode(NULL, &dst, &src, false);
   if (status != puffs_gif_error_null_receiver) {
     FAIL("test_null_receiver: status: got %d, want %d", status,
          puffs_gif_error_null_receiver);
