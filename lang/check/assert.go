@@ -112,6 +112,29 @@ func refine(fact *a.Expr, id t.ID) (*big.Int, *big.Int) {
 	return nil, nil
 }
 
+// simplify returns a simplified form of n. For example, (x - x) becomes 0.
+func simplify(n *a.Expr) *a.Expr {
+	// TODO: be rigorous about this, not ad hoc.
+	switch op, lhs, rhs := parseBinaryOp(n); op.Key() {
+	case t.KeyXBinaryPlus:
+		// TODO: constant folding, so ((x + 1) + 1) becomes (x + 2).
+
+	case t.KeyXBinaryMinus:
+		if lhs.Eq(rhs) {
+			return zeroExpr
+		}
+		if lOp, lLHS, lRHS := parseBinaryOp(lhs); lOp.Key() == t.KeyXBinaryPlus {
+			if lLHS.Eq(rhs) {
+				return lRHS
+			}
+			if lRHS.Eq(rhs) {
+				return lLHS
+			}
+		}
+	}
+	return n
+}
+
 func argValue(m *t.IDMap, args []*a.Node, name string) *a.Expr {
 	if x := m.ByName(name); x != 0 {
 		for _, a := range args {

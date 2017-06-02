@@ -247,11 +247,10 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 				return nil
 			}
 			switch op.Key() {
-			case t.KeyPlusEq:
-				// TODO: fold constants, so that ((x + 1) + 1) becomes (x + 2)?
-				oRHS := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryPlus, 0, xRHS.Node(), nil, rhs.Node(), nil)
+			case t.KeyPlusEq, t.KeyMinusEq:
+				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, xRHS.Node(), nil, rhs.Node(), nil)
 				oRHS.SetMType(xRHS.MType())
-				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, oRHS.Node(), nil)
+				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, simplify(oRHS).Node(), nil)
 				o.SetMType(x.MType())
 				return o
 			}
