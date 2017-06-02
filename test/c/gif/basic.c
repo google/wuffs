@@ -80,6 +80,39 @@ cleanup0:
   puffs_gif_lzw_decoder_destructor(&dec);
 }
 
+void test_status_is_error() {
+  if (puffs_gif_status_is_error(puffs_gif_status_ok)) {
+    FAIL("test_status_is_error: is_error(ok) returned true");
+    return;
+  }
+  if (!puffs_gif_status_is_error(puffs_gif_error_bad_version)) {
+    FAIL("test_status_is_error: is_error(bad_version) returned false");
+    return;
+  }
+  if (puffs_gif_status_is_error(puffs_gif_status_short_dst)) {
+    FAIL("test_status_is_error: is_error(short_dst) returned true");
+    return;
+  }
+}
+
+void test_status_strings() {
+  const char* s0 = puffs_gif_status_string(puffs_gif_status_ok);
+  if (strcmp(s0, "gif: ok")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: ok\"", s0);
+    return;
+  }
+  const char* s1 = puffs_gif_status_string(puffs_gif_error_bad_version);
+  if (strcmp(s1, "gif: bad version")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: bad version\"", s1);
+    return;
+  }
+  const char* s2 = puffs_gif_status_string(puffs_gif_status_short_dst);
+  if (strcmp(s2, "gif: short dst")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: short dst\"", s2);
+    return;
+  }
+}
+
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
     test_constructor_not_called,  //
@@ -87,5 +120,7 @@ test tests[] = {
     test_bad_receiver,            //
     test_puffs_version_bad,       //
     test_puffs_version_good,      //
+    test_status_is_error,         //
+    test_status_strings,          //
     NULL,                         //
 };

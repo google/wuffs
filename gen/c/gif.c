@@ -64,6 +64,10 @@ typedef enum {
   puffs_gif_status_short_src = -12,
 } puffs_gif_status;
 
+bool puffs_gif_status_is_error(puffs_gif_status s);
+
+const char* puffs_gif_status_string(puffs_gif_status s);
+
 // ---------------- Public Structs
 
 typedef struct {
@@ -109,6 +113,30 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
 
 #endif  // PUFFS_BASE_IMPL_H
+
+// ---------------- Status Codes Implementations
+
+bool puffs_gif_status_is_error(puffs_gif_status s) {
+  return s & 1;
+}
+
+const char* puffs_gif_status_strings[7] = {
+    "gif: ok",
+    "gif: bad version",
+    "gif: bad receiver",
+    "gif: bad argument",
+    "gif: constructor not called",
+    "gif: short dst",
+    "gif: short src",
+};
+
+const char* puffs_gif_status_string(puffs_gif_status s) {
+  s = -(s >> 1);
+  if ((0 <= s) && (s < 7)) {
+    return puffs_gif_status_strings[s];
+  }
+  return "";
+}
 
 // ---------------- Private Structs
 

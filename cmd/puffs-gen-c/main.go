@@ -118,6 +118,8 @@ func (g *gen) generate() error {
 		g.printf("puffs_%s_%s = %d%s,\n", g.pkgName, s, -2*i, nudge)
 	}
 	g.printf("} puffs_%s_status;\n\n", g.pkgName)
+	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
+	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 
 	g.writes("// ---------------- Public Structs\n\n")
 	if err := g.forEachStruct(pubOnly, (*gen).writeStruct); err != nil {
@@ -140,6 +142,27 @@ func (g *gen) generate() error {
 	g.writes("// C HEADER ENDS HERE.\n\n")
 	g.writes(baseImpl)
 	g.writes("\n")
+
+	g.writes("// ---------------- Status Codes Implementations\n\n")
+	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s) {"+
+		"return s & 1; }\n\n", g.pkgName, g.pkgName)
+	g.printf("const char* puffs_%s_status_strings[%d] = {\n", g.pkgName, len(builtInStatuses))
+	for _, s := range builtInStatuses {
+		if strings.HasPrefix(s, "status_") {
+			s = s[len("status_"):]
+		} else if strings.HasPrefix(s, "error_") {
+			s = s[len("error_"):]
+		}
+		s = g.pkgName + ": " + strings.Replace(s, "_", " ", -1)
+		g.printf("%q,", s)
+	}
+	g.writes("};\n\n")
+	g.printf("const char* puffs_%s_status_string(puffs_%s_status s) {\n", g.pkgName, g.pkgName)
+	g.writes("s = -(s >> 1);")
+	g.printf("if ((0 <= s) && (s < %d)) { return puffs_%s_status_strings[s]; }\n",
+		len(builtInStatuses), g.pkgName)
+	g.writes("return \"\";\n")
+	g.writes("}\n\n")
 
 	g.writes("// ---------------- Private Structs\n\n")
 	if err := g.forEachStruct(priOnly, (*gen).writeStruct); err != nil {

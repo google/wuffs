@@ -64,6 +64,10 @@ typedef enum {
   puffs_gif_status_short_src = -12,
 } puffs_gif_status;
 
+bool puffs_gif_status_is_error(puffs_gif_status s);
+
+const char* puffs_gif_status_string(puffs_gif_status s);
+
 // ---------------- Public Structs
 
 typedef struct {
