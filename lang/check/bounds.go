@@ -503,7 +503,7 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 	case t.KeyXBinaryPlus:
 		return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
 	case t.KeyXBinaryMinus:
-		return big.NewInt(0).Sub(lMin, rMin), big.NewInt(0).Sub(lMax, rMax), nil
+		return big.NewInt(0).Sub(lMin, rMax), big.NewInt(0).Sub(lMax, rMin), nil
 	case t.KeyXBinaryStar:
 		// TODO.
 		if cv := lhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
