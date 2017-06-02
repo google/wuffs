@@ -96,10 +96,11 @@ func (g *gen) generate() error {
 	g.writes("typedef enum {\n")
 	g.printf("puffs_%s_status_ok = 0,\n", g.pkgName)
 	g.printf("puffs_%s_error_bad_version = -2 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_error_null_receiver = -4 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_error_constructor_not_called= -6 + 1,\n", g.pkgName)
-	g.printf("puffs_%s_status_short_dst = -8,\n", g.pkgName)
-	g.printf("puffs_%s_status_short_src = -10,\n", g.pkgName)
+	g.printf("puffs_%s_error_bad_receiver = -4 + 1,\n", g.pkgName)
+	g.printf("puffs_%s_error_bad_argument = -6 + 1,\n", g.pkgName)
+	g.printf("puffs_%s_error_constructor_not_called= -8 + 1,\n", g.pkgName)
+	g.printf("puffs_%s_status_short_dst = -10,\n", g.pkgName)
+	g.printf("puffs_%s_status_short_src = -12,\n", g.pkgName)
 	g.printf("} puffs_%s_status;\n\n", g.pkgName)
 
 	g.writes("// ---------------- Public Structs\n\n")
@@ -339,7 +340,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	// Check the previous status and the args.
 	if n.Public() {
 		if n.Receiver() != 0 {
-			g.printf("if (!self) { return puffs_%s_error_null_receiver; }\n", g.pkgName)
+			g.printf("if (!self) { return puffs_%s_error_bad_receiver; }\n", g.pkgName)
 		}
 	}
 	if n.Suspendible() {
@@ -362,7 +363,32 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		return fmt.Errorf(`cannot convert Puffs function "%s.%s" to C`,
 			r.String(g.idMap), n.Name().String(g.idMap))
 	}
-	// TODO: check the args.
+	if n.Public() {
+		badArg := false
+		for _, o := range n.In().Fields() {
+			o := o.Field()
+			if o.XType().PackageOrDecorator().Key() != t.KeyPtr {
+				// TODO: check for type refinements: u32[..4095] instead of
+				// u32. Also check for types, for array-typed arguments.
+				continue
+			}
+			if badArg {
+				g.writes(" || ")
+			} else {
+				g.writes("if (")
+			}
+			g.printf("!a_%s", o.Name().String(g.idMap))
+			badArg = true
+		}
+		if badArg {
+			g.writes(") {")
+			if n.Suspendible() {
+				g.printf("status = puffs_%s_error_bad_argument; goto cleanup0; }\n", g.pkgName)
+			} else {
+				g.printf("return puffs_%s_error_bad_argument; }\n", g.pkgName)
+			}
+		}
+	}
 	g.writes("\n")
 
 	// Generate the local variables.

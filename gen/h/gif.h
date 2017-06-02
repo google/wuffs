@@ -57,10 +57,11 @@ extern "C" {
 typedef enum {
   puffs_gif_status_ok = 0,
   puffs_gif_error_bad_version = -2 + 1,
-  puffs_gif_error_null_receiver = -4 + 1,
-  puffs_gif_error_constructor_not_called = -6 + 1,
-  puffs_gif_status_short_dst = -8,
-  puffs_gif_status_short_src = -10,
+  puffs_gif_error_bad_receiver = -4 + 1,
+  puffs_gif_error_bad_argument = -6 + 1,
+  puffs_gif_error_constructor_not_called = -8 + 1,
+  puffs_gif_status_short_dst = -10,
+  puffs_gif_status_short_src = -12,
 } puffs_gif_status;
 
 // ---------------- Public Structs

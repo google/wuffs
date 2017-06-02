@@ -24,19 +24,30 @@ void test_constructor_not_called() {
   puffs_gif_status status =
       puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_error_constructor_not_called) {
-    FAIL("test_null_receiver: status: got %d, want %d", status,
+    FAIL("test_constructor_not_called: status: got %d, want %d", status,
          puffs_gif_error_constructor_not_called);
   }
 }
 
-void test_null_receiver() {
+void test_bad_argument() {
+  puffs_gif_lzw_decoder dec;
+  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_status status =
+      puffs_gif_lzw_decoder_decode(&dec, NULL, NULL, false);
+  if (status != puffs_gif_error_bad_argument) {
+    FAIL("test_bad_argument: status: got %d, want %d", status,
+         puffs_gif_error_bad_argument);
+  }
+}
+
+void test_bad_receiver() {
   puffs_base_buf1 dst = {0};
   puffs_base_buf1 src = {0};
   puffs_gif_status status =
       puffs_gif_lzw_decoder_decode(NULL, &dst, &src, false);
-  if (status != puffs_gif_error_null_receiver) {
-    FAIL("test_null_receiver: status: got %d, want %d", status,
-         puffs_gif_error_null_receiver);
+  if (status != puffs_gif_error_bad_receiver) {
+    FAIL("test_bad_receiver: status: got %d, want %d", status,
+         puffs_gif_error_bad_receiver);
   }
 }
 
@@ -72,7 +83,8 @@ cleanup0:
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
     test_constructor_not_called,  //
-    test_null_receiver,           //
+    test_bad_argument,            //
+    test_bad_receiver,            //
     test_puffs_version_bad,       //
     test_puffs_version_good,      //
     NULL,                         //
