@@ -14,14 +14,14 @@ import (
 
 type facts []*a.Expr
 
-func (z *facts) appendFact(x *a.Expr) {
+func (z *facts) appendFact(fact *a.Expr) {
 	// TODO: make this faster than O(N) by keeping facts sorted somehow?
-	for _, f := range *z {
-		if f.Eq(x) {
+	for _, x := range *z {
+		if x.Eq(fact) {
 			return
 		}
 	}
-	*z = append(*z, x)
+	*z = append(*z, fact)
 }
 
 // update applies f to each fact, replacing the slice element with the result
@@ -47,13 +47,13 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int) (*big.Int, *big.I
 		return nMin, nMax
 	}
 
-	for _, f := range z {
-		fMin, fMax := refine(f, n.ID1())
-		if fMin != nil && nMin.Cmp(fMin) < 0 {
-			nMin = fMin
+	for _, x := range z {
+		xMin, xMax := refine(x, n.ID1())
+		if xMin != nil && nMin.Cmp(xMin) < 0 {
+			nMin = xMin
 		}
-		if fMax != nil && nMax.Cmp(fMax) > 0 {
-			nMax = fMax
+		if xMax != nil && nMax.Cmp(xMax) > 0 {
+			nMax = xMax
 		}
 	}
 	return nMin, nMax
@@ -177,17 +177,17 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) (ok bool) {
 		}
 	}
 
-	for _, f := range q.facts {
-		if !f.LHS().Expr().Eq(lhs) {
+	for _, x := range q.facts {
+		if !x.LHS().Expr().Eq(lhs) {
 			continue
 		}
-		factOp := f.ID0().Key()
-		if factOp == op && f.RHS().Expr().Eq(rhs) {
+		factOp := x.ID0().Key()
+		if factOp == op && x.RHS().Expr().Eq(rhs) {
 			return true
 		}
 
 		if factOp == t.KeyXBinaryEqEq && rhsCV != nil {
-			if factCV := f.RHS().Expr().ConstValue(); factCV != nil {
+			if factCV := x.RHS().Expr().ConstValue(); factCV != nil {
 				switch op {
 				case t.KeyXBinaryNotEq:
 					return factCV.Cmp(rhsCV) != 0
