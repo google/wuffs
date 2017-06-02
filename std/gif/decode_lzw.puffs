@@ -22,6 +22,7 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 	{
 		assert n_bits < (width + 8) via "a < (b + c): a < c; 0 <= b"()
 		while n_bits < width,
+			inv n_bits < (width + 8),
 			post n_bits >= width,
 		{
 			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)

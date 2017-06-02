@@ -220,13 +220,40 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	// TODO: check lhs and rhs are pure expressions.
 	if op == t.IDEq {
 		// Drop any facts involving lhs.
-		q.facts.drop(lhs)
+		q.facts.update(func(x *a.Expr) *a.Expr {
+			if x.Mentions(lhs) {
+				return nil
+			}
+			return x
+		})
 
 		o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, lhs.Node(), nil, rhs.Node(), nil)
 		o.SetMType(lhs.MType())
 		q.facts.appendFact(o)
 	} else {
-		// TODO: update any facts involving lhs.
+		// Update any facts involving lhs.
+		q.facts.update(func(x *a.Expr) *a.Expr {
+			xOp, xLHS, xRHS := parseBinaryOp(x)
+			if xOp == 0 || !xLHS.Eq(lhs) {
+				if x.Mentions(lhs) {
+					return nil
+				}
+				return x
+			}
+			if xRHS.Mentions(lhs) {
+				return nil
+			}
+			switch op.Key() {
+			case t.KeyPlusEq:
+				// TODO: fold constants, so that ((x + 1) + 1) becomes (x + 2)?
+				oRHS := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryPlus, 0, xRHS.Node(), nil, rhs.Node(), nil)
+				oRHS.SetMType(xRHS.MType())
+				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, oRHS.Node(), nil)
+				o.SetMType(x.MType())
+				return o
+			}
+			return nil
+		})
 	}
 	return nil
 }

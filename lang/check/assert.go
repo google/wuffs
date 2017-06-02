@@ -24,13 +24,14 @@ func (z *facts) appendFact(x *a.Expr) {
 	*z = append(*z, x)
 }
 
-// drop drops any facts that mention x. They are replaced with a nil *a.Expr,
-// and then the slice is compacted to remove all nils.
-func (z *facts) drop(x *a.Expr) {
+// update applies f to each fact, replacing the slice element with the result
+// of the function call. The slice is then compacted to remove all nils.
+func (z *facts) update(f func(*a.Expr) *a.Expr) {
 	i := 0
-	for _, f := range *z {
-		if !f.Mentions(x) {
-			(*z)[i] = f
+	for _, x := range *z {
+		x = f(x)
+		if x != nil {
+			(*z)[i] = x
 			i++
 		}
 	}
@@ -123,12 +124,12 @@ func argValue(m *t.IDMap, args []*a.Node, name string) *a.Expr {
 }
 
 // parseBinaryOp parses n as "lhs op rhs".
-func parseBinaryOp(n *a.Expr) (op t.Key, lhs *a.Expr, rhs *a.Expr) {
+func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
 	if !n.ID0().IsBinaryOp() {
 		return 0, nil, nil
 	}
-	op = n.ID0().Key()
-	if op == t.KeyAs {
+	op = n.ID0()
+	if op.Key() == t.KeyAs {
 		return 0, nil, nil
 	}
 	return op, n.LHS().Expr(), n.RHS().Expr()
@@ -219,11 +220,11 @@ var reasons = [...]struct {
 }{
 	{`"a < (b + c): a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
 		op, a, bc := parseBinaryOp(n.Condition())
-		if op != t.KeyXBinaryLessThan {
+		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
 		op, b, c := parseBinaryOp(bc)
-		if op != t.KeyXBinaryPlus {
+		if op.Key() != t.KeyXBinaryPlus {
 			return errFailed
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
@@ -240,7 +241,7 @@ var reasons = [...]struct {
 			return errFailed
 		}
 		op, a, b := parseBinaryOp(n.Condition())
-		if op != t.KeyXBinaryLessThan {
+		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
