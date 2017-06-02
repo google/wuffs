@@ -29,6 +29,8 @@ pub func lzw_decoder.decode?(dst ptr io.buf1, src ptr io.buf1, src_final bool)()
 			bits |= 0  // TODO.
 			n_bits += 8
 		}
+		// TODO: var code u32[..4095] = bits.low_bits(width)
+		bits >>= width
 
 		// TODO: implement.
 		break

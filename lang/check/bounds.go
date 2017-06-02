@@ -28,6 +28,8 @@ var (
 	one  = big.NewInt(1)
 	ffff = big.NewInt(0xFFFF)
 
+	maxIntBits = big.NewInt(t.MaxIntBits)
+
 	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, t.IDZero, nil, nil, nil, nil)
 )
 
@@ -511,8 +513,25 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 			return zero, zero, nil
 		}
 	case t.KeyXBinarySlash:
+
 	case t.KeyXBinaryShiftL:
+
 	case t.KeyXBinaryShiftR:
+		if lMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.String(q.idMap))
+		}
+		if rMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.String(q.idMap))
+		}
+		if rMin.Cmp(maxIntBits) >= 0 {
+			return zero, zero, nil
+		}
+		nMax := big.NewInt(0).Rsh(lMax, uint(rMin.Uint64()))
+		if rMax.Cmp(maxIntBits) >= 0 {
+			return zero, nMax, nil
+		}
+		return big.NewInt(0).Rsh(lMin, uint(rMax.Uint64())), nMax, nil
+
 	case t.KeyXBinaryAmp, t.KeyXBinaryPipe:
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
@@ -537,6 +556,7 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
 		// conservative, but works fine in practice.
 		return zero, bitMask(z.BitLen()), nil
+
 	case t.KeyXBinaryAmpHat:
 	case t.KeyXBinaryHat:
 

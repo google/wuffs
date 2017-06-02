@@ -3,6 +3,10 @@
 
 package token
 
+// MaxIntBits is the largest size (in bits) of the i8, u8, i16, u16, etc.
+// integer types.
+const MaxIntBits = 64
+
 // Flags are the low 16 bits of an ID. For example, they signify whether a
 // token is an operator, an identifier, etc.
 //
@@ -470,6 +474,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
 	KeyZero:  {"0", IDZero},
+
+	// Change MaxIntBits if a future update adds an i128 or u128 type.
 
 	KeyI8:    {"i8", IDI8},
 	KeyI16:   {"i16", IDI16},
