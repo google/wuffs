@@ -121,9 +121,9 @@ func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0
 //  - [0x01, 0x2F] are squiggly punctuation, such as "(", ")" and ";".
 //  - [0x30, 0x3F] are squiggly assignments, such as "=" and "+=".
 //  - [0x40, 0x5F] are operators, such as "+", "==" and "not".
-//  - [0x60, 0x8F] are keywords, such as "if" and "return".
-//  - [0x90, 0x9F] are literals, such as "false" and "true".
-//  - [0xA0, 0xBF] are identifiers, such as "bool" and "u32".
+//  - [0x60, 0x7F] are keywords, such as "if" and "return".
+//  - [0x80, 0x8F] are literals, such as "false" and "true".
+//  - [0x90, 0xBF] are identifiers, such as "bool" and "u32".
 //  - [0xC0, 0xFF] are disambiguation forms, e.g. unary "+" vs binary "+".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
@@ -226,6 +226,21 @@ const (
 	KeyThis       = Key(IDThis >> KeyShift)
 	KeyIn         = Key(IDIn >> KeyShift)
 	KeyOut        = Key(IDOut >> KeyShift)
+
+	KeyReadU8     = Key(IDReadU8 >> KeyShift)
+	KeyReadU16BE  = Key(IDReadU16BE >> KeyShift)
+	KeyReadU16LE  = Key(IDReadU16LE >> KeyShift)
+	KeyReadU32BE  = Key(IDReadU32BE >> KeyShift)
+	KeyReadU32LE  = Key(IDReadU32LE >> KeyShift)
+	KeyReadU64BE  = Key(IDReadU64BE >> KeyShift)
+	KeyReadU64LE  = Key(IDReadU64LE >> KeyShift)
+	KeyWriteU8    = Key(IDWriteU8 >> KeyShift)
+	KeyWriteU16BE = Key(IDWriteU16BE >> KeyShift)
+	KeyWriteU16LE = Key(IDWriteU16LE >> KeyShift)
+	KeyWriteU32BE = Key(IDWriteU32BE >> KeyShift)
+	KeyWriteU32LE = Key(IDWriteU32LE >> KeyShift)
+	KeyWriteU64BE = Key(IDWriteU64BE >> KeyShift)
+	KeyWriteU64LE = Key(IDWriteU64LE >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -335,27 +350,42 @@ const (
 	IDPub      = ID(0x71<<KeyShift | FlagsOther)
 	IDPri      = ID(0x72<<KeyShift | FlagsOther)
 
-	IDFalse = ID(0x90<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDTrue  = ID(0x91<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDZero  = ID(0x92<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
+	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDZero  = ID(0x82<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
 
-	IDI8    = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI16   = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI32   = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI64   = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU8    = ID(0xA4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU16   = ID(0xA5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU32   = ID(0xA6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU64   = ID(0xA7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDUsize = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDBool  = ID(0xA9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf1  = ID(0xAA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf2  = ID(0xAB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI8    = ID(0x90<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI16   = ID(0x91<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI32   = ID(0x92<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI64   = ID(0x93<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU8    = ID(0x94<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU16   = ID(0x95<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU32   = ID(0x96<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU64   = ID(0x97<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDUsize = ID(0x98<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDBool  = ID(0x99<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf1  = ID(0x9A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf2  = ID(0x9B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
-	IDUnderscore = ID(0xB0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDThis       = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIn         = ID(0xB2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDOut        = ID(0xB3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDUnderscore = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDThis       = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIn         = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDOut        = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+
+	IDReadU8     = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU16BE  = ID(0xB2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU16LE  = ID(0xB3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU32BE  = ID(0xB4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU32LE  = ID(0xB5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU64BE  = ID(0xB6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReadU64LE  = ID(0xB7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU8    = ID(0xB9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU16BE = ID(0xBA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU16LE = ID(0xBB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU32BE = ID(0xBC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU32LE = ID(0xBD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU64BE = ID(0xBE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriteU64LE = ID(0xBF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -499,6 +529,21 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyThis:       {"this", IDThis},
 	KeyIn:         {"in", IDIn},
 	KeyOut:        {"out", IDOut},
+
+	KeyReadU8:     {"read_u8", IDReadU8},
+	KeyReadU16BE:  {"read_u16be", IDReadU16BE},
+	KeyReadU16LE:  {"read_u16le", IDReadU16LE},
+	KeyReadU32BE:  {"read_u32be", IDReadU32BE},
+	KeyReadU32LE:  {"read_u32le", IDReadU32LE},
+	KeyReadU64BE:  {"read_u64be", IDReadU64BE},
+	KeyReadU64LE:  {"read_u64le", IDReadU64LE},
+	KeyWriteU8:    {"write_u8", IDWriteU8},
+	KeyWriteU16BE: {"write_u16be", IDWriteU16BE},
+	KeyWriteU16LE: {"write_u16le", IDWriteU16LE},
+	KeyWriteU32BE: {"write_u32be", IDWriteU32BE},
+	KeyWriteU32LE: {"write_u32le", IDWriteU32LE},
+	KeyWriteU64BE: {"write_u64be", IDWriteU64BE},
+	KeyWriteU64LE: {"write_u64le", IDWriteU64LE},
 }
 
 var builtInsByName = map[string]ID{}
