@@ -24,6 +24,14 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
+// Prefixes are prepended to names to form a namespace and to avoid e.g.
+// "double" being a valid Puffs variable name but not a valid C one.
+const (
+	aPrefix = "a_" // Function argument.
+	fPrefix = "f_" // Struct field.
+	vPrefix = "v_" // Local variable.
+)
+
 func main() {
 	generate.Main(func(pkgName string, idMap *t.IDMap, files []*a.File) ([]byte, error) {
 		g := &gen{
@@ -249,7 +257,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		g.printf("uint32_t magic;\n")
 	}
 	for _, f := range n.Fields() {
-		if err := g.writeField(f.Field(), "f_"); err != nil {
+		if err := g.writeField(f.Field(), fPrefix); err != nil {
 			return err
 		}
 		g.writes(";\n")
@@ -321,7 +329,7 @@ func (g *gen) writeCtorImpls(n *a.Struct) error {
 				f := f.Field()
 				if dv := f.DefaultValue(); dv != nil {
 					// TODO: set default values for array types.
-					g.printf("self->f_%s = %d;\n", f.Name().String(g.idMap), dv.ConstValue())
+					g.printf("self->%s%s = %d;\n", fPrefix, f.Name().String(g.idMap), dv.ConstValue())
 				}
 			}
 		}
@@ -355,7 +363,7 @@ func (g *gen) writeFuncSignature(n *a.Func) error {
 			g.writeb(',')
 		}
 		comma = true
-		if err := g.writeField(o.Field(), "a_"); err != nil {
+		if err := g.writeField(o.Field(), aPrefix); err != nil {
 			return err
 		}
 	}
@@ -421,7 +429,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			} else {
 				g.writes("if (")
 			}
-			g.printf("!a_%s", o.Name().String(g.idMap))
+			g.printf("!%s%s", aPrefix, o.Name().String(g.idMap))
 			badArg = true
 		}
 		if badArg {
@@ -519,7 +527,7 @@ func (g *gen) writeVars(n *a.Node, depth uint32) error {
 		x := n.Var().XType()
 		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
-				g.printf("%s v_%s;\n", s, n.Var().Name().String(g.idMap))
+				g.printf("%s %s%s;\n", s, vPrefix, n.Var().Name().String(g.idMap))
 				return nil
 			}
 		}
@@ -579,7 +587,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KVar:
 		n := n.Var()
-		g.printf("v_%s = ", n.Name().String(g.idMap))
+		g.printf("%s%s = ", vPrefix, n.Name().String(g.idMap))
 		if v := n.Value(); v != nil {
 			if err := g.writeExpr(v, 0); err != nil {
 				return err
@@ -666,8 +674,8 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
 			g.writes("self")
 		} else {
-			// TODO: don't assume that the v_ prefix is necessary.
-			g.writes("v_")
+			// TODO: don't assume that the vPrefix is necessary.
+			g.writes(vPrefix)
 			g.writes(id1.String(g.idMap))
 		}
 		return nil
@@ -695,8 +703,9 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 		}
 		// TODO: choose between . vs -> operators.
 		//
-		// TODO: don't assume that the f_ prefix is necessary.
-		g.writes("->f_")
+		// TODO: don't assume that the fPrefix is necessary.
+		g.writes("->")
+		g.writes(fPrefix)
 		g.writes(n.ID1().String(g.idMap))
 		return nil
 	}
