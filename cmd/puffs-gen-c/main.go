@@ -706,8 +706,7 @@ func (g *gen) writeExprUnaryOp(n *a.Expr, depth uint32) error {
 func (g *gen) writeExprBinaryOp(n *a.Expr, depth uint32) error {
 	op := n.ID0()
 	if op.Key() == t.KeyXBinaryAs {
-		// TODO.
-		return nil
+		return g.writeExprAs(n.LHS().Expr(), n.RHS().TypeExpr(), depth)
 	}
 	g.writeb('(')
 	if err := g.writeExpr(n.LHS().Expr(), depth); err != nil {
@@ -719,6 +718,28 @@ func (g *gen) writeExprBinaryOp(n *a.Expr, depth uint32) error {
 		return err
 	}
 	g.writeb(')')
+	return nil
+}
+
+func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
+	g.writes("((")
+	for {
+		if rhs.PackageOrDecorator() == 0 {
+			if k := rhs.Name().Key(); k < t.Key(len(cTypeNames)) {
+				if s := cTypeNames[k]; s != "" {
+					g.writes(s)
+					break
+				}
+			}
+		}
+		// TODO: fix this.
+		return fmt.Errorf("cannot convert Puffs type %q to C", rhs.String(g.idMap))
+	}
+	g.writes(")(")
+	if err := g.writeExpr(lhs, depth); err != nil {
+		return err
+	}
+	g.writes("))")
 	return nil
 }
 

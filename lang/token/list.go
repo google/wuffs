@@ -438,6 +438,10 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyAmpHat: {"&^", IDAmpHat},
 	KeyPipe:   {"|", IDPipe},
 	KeyHat:    {"^", IDHat},
+	// TODO: tilde-ops such as ~+ for ignoring overflow. Swift defines overflow
+	// ops for +, - and *. Swift syntax uses a leading &. Puffs uses a leading
+	// ~ as it is less ambiguous with the &^ operator (and any potential use of
+	// & as address-of) and ~ is otherwise unused.
 
 	KeyNotEq:       {"!=", IDNotEq},
 	KeyLessThan:    {"<", IDLessThan},
@@ -450,6 +454,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyOr:  {"or", IDOr},
 	KeyNot: {"not", IDNot},
 	KeyAs:  {"as", IDAs},
+	// TODO: do we need a "~as" form of the as operator, similar to "~+".
 
 	KeyFunc:     {"func", IDFunc},
 	KeyPtr:      {"ptr", IDPtr},
