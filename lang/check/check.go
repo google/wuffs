@@ -50,12 +50,12 @@ func (e *Error) Error() string {
 
 // TypeExprFoo is an *ast.Node MType (implicit type).
 var (
-	TypeExprBoolean     = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
-	TypeExprIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
-	TypeExprU8          = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
+	TypeExprBool  = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
+	TypeExprIdeal = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
+	TypeExprU8    = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
 )
 
-func numeric(n *a.TypeExpr) bool { return n == TypeExprIdealNumber || n.IsNumType() }
+func numeric(n *a.TypeExpr) bool { return n == TypeExprIdeal || n.IsNumType() }
 
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
@@ -364,7 +364,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 			if typ := o.MType(); typ == nil {
 				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
 					o.String(q.idMap))
-			} else if typ == TypeExprIdealNumber && o.ConstValue() == nil {
+			} else if typ == TypeExprIdeal && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
 					"but no const value", o.String(q.idMap))
 			}

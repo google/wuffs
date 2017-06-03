@@ -36,7 +36,7 @@ var (
 
 func init() {
 	zeroExpr.SetConstValue(zero)
-	zeroExpr.SetMType(TypeExprIdealNumber)
+	zeroExpr.SetMType(TypeExprIdeal)
 }
 
 func btoi(b bool) *big.Int {
