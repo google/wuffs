@@ -5,13 +5,14 @@
 
 package main
 
-// extract-palette-indexes.go extracts the 1-byte-per-pixel indexes and the
-// 3-byte-per-entry RGB palette of a paletted GIF and PNG image. It checks that
-// the GIF and PNG encode equivalent images.
+// extract-palette-indexes.go extracts the 1-byte-per-pixel indexes and, for
+// paletted images, the 3-byte-per-entry RGB palette of a paletted or gray GIF
+// and PNG image. It checks that the GIF and PNG encode equivalent images.
 //
 // Usage: go run extract-palette-indexes.go foo.gif foo.png
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/gif"
@@ -19,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 )
 
 func main() {
@@ -30,41 +30,40 @@ func main() {
 }
 
 func main1() error {
-	baseFilename, img := "", (*image.Paletted)(nil)
+	baseFilename, bPalette, bIndexes := "", []byte(nil), []byte(nil)
 	for i, a := range os.Args[1:] {
 		b := a[:len(a)-len(filepath.Ext(a))]
-		m, err := decode(a)
+		palette, indexes, err := decode(a)
 		if err != nil {
 			return err
 		}
 		if i == 0 {
-			baseFilename, img = b, m
+			baseFilename, bPalette, bIndexes = b, palette, indexes
 		} else if baseFilename != b {
 			return fmt.Errorf("arguments do not have a common base path")
-		} else if !reflect.DeepEqual(img, m) {
-			return fmt.Errorf("images are not equivalent")
+		} else if !bytes.Equal(bPalette, palette) {
+			return fmt.Errorf("palettes are not equivalent")
+		} else if !bytes.Equal(bIndexes, indexes) {
+			return fmt.Errorf("indexes are not equivalent")
 		}
 	}
-	palette := make([]byte, 3*256)
-	for i, c := range img.Palette {
-		r, g, b, _ := c.RGBA()
-		palette[3*i+0] = uint8(r >> 8)
-		palette[3*i+1] = uint8(g >> 8)
-		palette[3*i+2] = uint8(b >> 8)
+	if bPalette != nil {
+		if err := ioutil.WriteFile(baseFilename+".palette", bPalette, 0644); err != nil {
+			return err
+		}
 	}
-	if err := ioutil.WriteFile(baseFilename+".indexes", img.Pix, 0644); err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(baseFilename+".palette", palette, 0644); err != nil {
-		return err
+	if bIndexes != nil {
+		if err := ioutil.WriteFile(baseFilename+".indexes", bIndexes, 0644); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func decode(filename string) (*image.Paletted, error) {
+func decode(filename string) (palette []byte, indexes []byte, err error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer f.Close()
 
@@ -75,13 +74,31 @@ func decode(filename string) (*image.Paletted, error) {
 	case ".png":
 		m, err = png.Decode(f)
 	default:
-		return nil, fmt.Errorf("unsupported filename extension %q", ext)
+		return nil, nil, fmt.Errorf("unsupported filename extension %q", ext)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if p, ok := m.(*image.Paletted); ok {
-		return p, nil
+	switch m := m.(type) {
+	case *image.Gray:
+		return nil, m.Pix, nil
+	case *image.Paletted:
+		palette = make([]byte, 3*256)
+		allGray := true
+		for i, c := range m.Palette {
+			r, g, b, _ := c.RGBA()
+			palette[3*i+0] = uint8(r >> 8)
+			palette[3*i+1] = uint8(g >> 8)
+			palette[3*i+2] = uint8(b >> 8)
+			if allGray {
+				y := uint32(i)
+				allGray = r>>8 == y && g>>8 == y && b>>8 == y
+			}
+		}
+		if allGray {
+			return nil, m.Pix, nil
+		}
+		return palette, m.Pix, nil
 	}
-	return nil, fmt.Errorf("decoded image type: got %T, want *image.Paletted", m)
+	return nil, nil, fmt.Errorf("decoded image type: got %T, want *image.Paletted", m)
 }
