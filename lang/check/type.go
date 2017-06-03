@@ -293,7 +293,14 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenParen:
 		// n is a function call.
-		// TODO.
+		// TODO: delete this hack that only matches "in.src.read_u8?()".
+		if isInSrcReadU8(q.idMap, n.LHS().Expr()) && len(n.Args()) == 0 {
+			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
+				return err
+			}
+			n.SetMType(TypeExprU8)
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 		// n is an index.
@@ -307,6 +314,18 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		return q.tcheckDot(n, depth)
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprOther", n.ID0().Key())
+}
+
+func isInSrcReadU8(m *t.IDMap, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != m.ByName("src") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
@@ -330,6 +349,14 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			s = q.f.Func.In()
 		case t.KeyOut:
 			s = q.f.Func.Out()
+		case t.KeyBuf1:
+			// TODO: remove this hack and be more principled about the built-in
+			// buf1 type.
+			//
+			// Another hack is using TypeExprU8 until a TypeExpr can represent
+			// function types.
+			n.SetMType(TypeExprU8)
+			return nil
 		default:
 			s = q.c.structs[name].Struct
 		}

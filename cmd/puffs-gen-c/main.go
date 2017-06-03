@@ -673,8 +673,13 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 		return nil
 
 	case t.KeyOpenParen:
-	// n is a function call.
-	// TODO.
+		// n is a function call.
+		// TODO: delete this hack that only matches "in.src.read_u8?()".
+		if isInSrcReadU8(g.idMap, n.LHS().Expr()) && len(n.Args()) == 0 {
+			// TODO.
+			g.writes("42")
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 	// n is an index.
@@ -696,6 +701,18 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 		return nil
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
+}
+
+func isInSrcReadU8(m *t.IDMap, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != m.ByName("src") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
 func (g *gen) writeExprUnaryOp(n *a.Expr, depth uint32) error {

@@ -428,6 +428,8 @@ const MaxTypeExprDepth = 63
 // "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
 // refined as "foo[LHS..MHS]". LHS and MHS are Expr's, possibly nil. For
 // example, the LHS for "u32[..4095]" is nil.
+//
+// TODO: function / method types.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node              { return (*Node)(n) }

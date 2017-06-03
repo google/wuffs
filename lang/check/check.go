@@ -48,11 +48,11 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
-// TypeExprFoo is an *ast.Node MType (implicit type) that means that n is a
-// boolean or a ideal numeric constant.
+// TypeExprFoo is an *ast.Node MType (implicit type).
 var (
 	TypeExprBoolean     = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
 	TypeExprIdealNumber = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
+	TypeExprU8          = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
 )
 
 func numeric(n *a.TypeExpr) bool { return n == TypeExprIdealNumber || n.IsNumType() }
@@ -349,6 +349,14 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	n.Node().SetTypeChecked()
 	if err := n.Node().Walk(func(o *a.Node) error {
 		if !o.TypeChecked() {
+			switch o.Kind() {
+			case a.KExpr:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Expr().String(q.idMap))
+			case a.KTypeExpr:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.TypeExpr().String(q.idMap))
+			}
 			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
 		if o.Kind() == a.KExpr {
