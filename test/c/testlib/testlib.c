@@ -1,7 +1,9 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 char fail_msg[65536] = {0};
 
@@ -38,3 +40,39 @@ int main(int argc, char** argv) {
   printf("%-16s%-8sPASS (%d tests run)\n", test_filename, cc, tests_run);
   return 0;
 }
+
+#ifdef PUFFS_BASE_HEADER_H
+// PUFFS_BASE_HEADER_H is where puffs_base_buf1 is defined.
+bool read_file(puffs_base_buf1* dst, const char* path) {
+  FILE* f = fopen(path, "r");
+  if (!f) {
+    FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno), errno);
+    return false;
+  }
+  uint8_t* ptr = dst->ptr + dst->wi;
+  size_t cap = dst->cap - dst->wi;
+  while (true) {
+    size_t n = fread(ptr, 1, cap, f);
+    ptr += n;
+    cap -= n;
+    dst->wi += n;
+    if (feof(f)) {
+      break;
+    }
+    int err = ferror(f);
+    if (err == EINTR) {
+      clearerr(f);
+      continue;
+    }
+    if (err) {
+      FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(err), err);
+    } else {
+      FAIL("read_file(\"%s\"): EOF not reached", path);
+    }
+    fclose(f);
+    return false;
+  }
+  fclose(f);
+  return true;
+}
+#endif  // PUFFS_BASE_HEADER_H

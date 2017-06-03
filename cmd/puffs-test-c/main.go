@@ -86,6 +86,7 @@ func do(dirname string, filename string) (failed bool, err error) {
 		outCmd := exec.Command(out)
 		outCmd.Stdout = os.Stdout
 		outCmd.Stderr = os.Stderr
+		outCmd.Dir = dirname
 		if err := outCmd.Run(); err == nil {
 			// No-op.
 		} else if _, ok := err.(*exec.ExitError); ok {
