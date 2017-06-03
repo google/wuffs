@@ -182,7 +182,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return q.bcheckWhile(n.While())
 
 	default:
-		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())
+		return fmt.Errorf("check: unrecognized ast.Kind (%s) for bcheckStatement", n.Kind())
 	}
 
 	return nil

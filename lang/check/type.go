@@ -149,7 +149,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	default:
-		return fmt.Errorf("check: unrecognized ast.Kind (%s) for checkStatement", n.Kind())
+		return fmt.Errorf("check: unrecognized ast.Kind (%s) for tcheckStatement", n.Kind())
 	}
 
 	n.SetTypeChecked()
@@ -243,7 +243,7 @@ func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExpr", n.ID0().Key())
+		return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExpr", n.ID0().Key())
 	}
 	n.Node().SetTypeChecked()
 	return nil
@@ -306,7 +306,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyDot:
 		return q.tcheckDot(n, depth)
 	}
-	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprOther", n.ID0().Key())
+	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprOther", n.ID0().Key())
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
@@ -320,7 +320,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 
 	if lTyp.PackageOrDecorator() != 0 {
 		// TODO.
-		return fmt.Errorf("check: unsupported package-or-decorator for checkDot")
+		return fmt.Errorf("check: unsupported package-or-decorator for tcheckDot")
 	}
 
 	s := (*a.Struct)(nil)
@@ -383,7 +383,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 		n.SetMType(TypeExprBoolean)
 		return nil
 	}
-	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprUnaryOp", n.ID0().Key())
+	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprUnaryOp", n.ID0().Key())
 }
 
 func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
@@ -528,7 +528,7 @@ func (q *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error
 
 func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 	// TODO.
-	return fmt.Errorf("check: unrecognized token.Key (0x%X) for checkExprAssociativeOp", n.ID0().Key())
+	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprAssociativeOp", n.ID0().Key())
 }
 
 func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
@@ -580,7 +580,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 		}
 
 	default:
-		return fmt.Errorf("check: unrecognized node for checkTypeExpr")
+		return fmt.Errorf("check: unrecognized node for tcheckTypeExpr")
 	}
 	n.Node().SetTypeChecked()
 	return nil
