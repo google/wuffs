@@ -62,6 +62,7 @@ typedef enum {
   puffs_gif_error_constructor_not_called = -8 + 1,
   puffs_gif_status_short_dst = -10,
   puffs_gif_status_short_src = -12,
+  puffs_gif_status_short_buffer = -14,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -120,7 +121,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[7] = {
+const char* puffs_gif_status_strings[8] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -128,11 +129,12 @@ const char* puffs_gif_status_strings[7] = {
     "gif: constructor not called",
     "gif: short dst",
     "gif: short src",
+    "gif: short buffer",
 };
 
 const char* puffs_gif_status_string(puffs_gif_status s) {
   s = -(s >> 1);
-  if ((0 <= s) && (s < 7)) {
+  if ((0 <= s) && (s < 8)) {
     return puffs_gif_status_strings[s];
   }
   return "";
@@ -214,6 +216,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   v_width = (self->f_literal_width + 1);
   while (1) {
     while ((v_n_bits < v_width)) {
+      if (a_src->ri >= a_src->wi) {
+        return puffs_gif_status_short_src;
+      }
+      uint8_t t_0 = a_src->ptr[a_src->ri++];
+      if (t_0) {
+      }
       v_bits |= ((uint32_t)(42));
       v_n_bits += 8;
     }

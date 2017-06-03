@@ -17,11 +17,20 @@ Each edition should print "PASS", amongst other information, and exit(0).
 
 const char* test_filename = "gif/lzw.c";
 
+#define BUFFER_SIZE (1024 * 1024)
+
+uint8_t global_dst_buffer[BUFFER_SIZE];
+uint8_t global_src_buffer[BUFFER_SIZE];
+
 void test_lzw_decode() {
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_base_buf1 dst = {0};
-  puffs_base_buf1 src = {0};
+
+  puffs_base_buf1 dst = {.ptr = global_dst_buffer, .cap = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .cap = BUFFER_SIZE};
+  global_src_buffer[src.wi++] = 0x80;
+  global_src_buffer[src.wi++] = 0x81;
+
   puffs_gif_status status =
       puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_status_ok) {

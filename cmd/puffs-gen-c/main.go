@@ -29,6 +29,7 @@ import (
 const (
 	aPrefix = "a_" // Function argument.
 	fPrefix = "f_" // Struct field.
+	tPrefix = "t_" // Temporary local variable.
 	vPrefix = "v_" // Local variable.
 )
 
@@ -68,6 +69,7 @@ var builtInStatuses = [...]string{
 	"error_constructor_not_called",
 	"status_short_dst",
 	"status_short_src",
+	"status_short_buffer",
 }
 
 type visibility uint32
@@ -78,12 +80,20 @@ const (
 	priOnly
 )
 
-type gen struct {
-	buffer      bytes.Buffer
-	pkgName     string
-	idMap       *t.IDMap
-	files       []*a.File
+const maxTemp = 10000
+
+type perFunc struct {
 	jumpTargets map[*a.While]uint32
+	tempW       uint32
+	tempR       uint32
+}
+
+type gen struct {
+	buffer  bytes.Buffer
+	pkgName string
+	idMap   *t.IDMap
+	files   []*a.File
+	perFunc perFunc
 }
 
 func (g *gen) printf(format string, args ...interface{}) { fmt.Fprintf(&g.buffer, format, args...) }
@@ -91,17 +101,17 @@ func (g *gen) writeb(b byte)                             { g.buffer.WriteByte(b)
 func (g *gen) writes(s string)                           { g.buffer.WriteString(s) }
 
 func (g *gen) jumpTarget(n *a.While) (uint32, error) {
-	if g.jumpTargets == nil {
-		g.jumpTargets = map[*a.While]uint32{}
+	if g.perFunc.jumpTargets == nil {
+		g.perFunc.jumpTargets = map[*a.While]uint32{}
 	}
-	if jt, ok := g.jumpTargets[n]; ok {
+	if jt, ok := g.perFunc.jumpTargets[n]; ok {
 		return jt, nil
 	}
-	jt := uint32(len(g.jumpTargets))
+	jt := uint32(len(g.perFunc.jumpTargets))
 	if jt == 1000000 {
 		return 0, fmt.Errorf("too many jump targets")
 	}
-	g.jumpTargets[n] = jt
+	g.perFunc.jumpTargets[n] = jt
 	return jt, nil
 }
 
@@ -381,7 +391,7 @@ func (g *gen) writeFuncPrototype(n *a.Func) error {
 }
 
 func (g *gen) writeFuncImpl(n *a.Func) error {
-	g.jumpTargets = nil
+	g.perFunc = perFunc{}
 	if err := g.writeFuncSignature(n); err != nil {
 		return err
 	}
@@ -469,6 +479,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 }
 
 func (g *gen) writeField(n *a.Field, namePrefix string) error {
+	// TODO: use g.writeCTypeName.
 	const maxNPtr = 16
 
 	convertible, nPtr := true, 0
@@ -525,6 +536,7 @@ func (g *gen) writeVars(n *a.Node, depth uint32) error {
 
 	if n.Kind() == a.KVar {
 		x := n.Var().XType()
+		// TODO: use g.writeCTypeName.
 		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
 				g.printf("%s %s%s;\n", s, vPrefix, n.Var().Name().String(g.idMap))
@@ -558,6 +570,12 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KAssign:
 		n := n.Assign()
+		if err := g.writeSuspendibles(n.LHS()); err != nil {
+			return err
+		}
+		if err := g.writeSuspendibles(n.RHS()); err != nil {
+			return err
+		}
 		if err := g.writeExpr(n.LHS(), depth); err != nil {
 			return err
 		}
@@ -570,11 +588,11 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KIf:
-		// TODO.
+		// TODO, including considering suspendible calls.
 
 	case a.KJump:
 		n := n.Jump()
-		jt := g.jumpTargets[n.JumpTarget()]
+		jt := g.perFunc.jumpTargets[n.JumpTarget()]
 		keyword := "continue"
 		if n.Keyword().Key() == t.KeyBreak {
 			keyword = "break"
@@ -583,10 +601,11 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KReturn:
-		// TODO.
+		// TODO, including considering suspendible calls.
 
 	case a.KVar:
 		n := n.Var()
+		// TODO: consider suspendible calls.
 		g.printf("%s%s = ", vPrefix, n.Name().String(g.idMap))
 		if v := n.Value(); v != nil {
 			if err := g.writeExpr(v, 0); err != nil {
@@ -600,6 +619,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KWhile:
 		n := n.While()
+		// TODO: consider suspendible calls.
 
 		if n.HasContinue() {
 			jt, err := g.jumpTarget(n)
@@ -630,6 +650,59 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	}
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
+}
+
+func (g *gen) writeSuspendibles(n *a.Expr) error {
+	if !n.Suspendible() {
+		return nil
+	}
+	return g.writeCallSuspendibles(n)
+}
+
+func (g *gen) writeCallSuspendibles(n *a.Expr) error {
+	// The evaluation order for suspendible calls (which can have side effects)
+	// is important here: LHS, MHS, RHS, Args and finally the node itself.
+	if !n.CallSuspendible() {
+		for _, o := range n.Node().Raw().SubNodes() {
+			if o != nil && o.Kind() == a.KExpr {
+				if err := g.writeCallSuspendibles(o.Expr()); err != nil {
+					return err
+				}
+			}
+		}
+		for _, o := range n.Args() {
+			if o != nil && o.Kind() == a.KExpr {
+				if err := g.writeCallSuspendibles(o.Expr()); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+
+	if g.perFunc.tempW > maxTemp {
+		return fmt.Errorf("too many temporary variables required")
+	}
+	temp := g.perFunc.tempW
+	g.perFunc.tempW++
+
+	// TODO: delete this hack that only matches "in.src.read_u8?()".
+	if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
+		// TODO: suspend coroutine state.
+		g.printf("if (%ssrc->ri >= %ssrc->wi) { return puffs_%s_status_short_src; }",
+			aPrefix, aPrefix, g.pkgName)
+		if err := g.writeCTypeName(n.MType()); err != nil {
+			return err
+		}
+		g.printf(" %s%d = %ssrc->ptr[%ssrc->ri++];\n", tPrefix, temp, aPrefix, aPrefix)
+		// TODO: have writeExpr substitute in t_0 for suspendible calls. For
+		// now, generate a no-op to suppress an "unused variable" warning.
+		g.printf("if (%s%d) {}\n", tPrefix, temp)
+	} else {
+		// TODO: fix this.
+		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.idMap))
+	}
+	return nil
 }
 
 func (g *gen) writeExpr(n *a.Expr, depth uint32) error {
@@ -749,17 +822,8 @@ func (g *gen) writeExprBinaryOp(n *a.Expr, depth uint32) error {
 
 func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
 	g.writes("((")
-	for {
-		if rhs.PackageOrDecorator() == 0 {
-			if k := rhs.Name().Key(); k < t.Key(len(cTypeNames)) {
-				if s := cTypeNames[k]; s != "" {
-					g.writes(s)
-					break
-				}
-			}
-		}
-		// TODO: fix this.
-		return fmt.Errorf("cannot convert Puffs type %q to C", rhs.String(g.idMap))
+	if err := g.writeCTypeName(rhs); err != nil {
+		return err
 	}
 	g.writes(")(")
 	if err := g.writeExpr(lhs, depth); err != nil {
@@ -772,6 +836,19 @@ func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
 func (g *gen) writeExprAssociativeOp(n *a.Expr, depth uint32) error {
 	// TODO.
 	return nil
+}
+
+func (g *gen) writeCTypeName(n *a.TypeExpr) error {
+	if n.PackageOrDecorator() == 0 {
+		if k := n.Name().Key(); k < t.Key(len(cTypeNames)) {
+			if s := cTypeNames[k]; s != "" {
+				g.writes(s)
+				return nil
+			}
+		}
+	}
+	// TODO: fix this.
+	return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.idMap))
 }
 
 var cTypeNames = [...]string{

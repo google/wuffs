@@ -62,6 +62,7 @@ typedef enum {
   puffs_gif_error_constructor_not_called = -8 + 1,
   puffs_gif_status_short_dst = -10,
   puffs_gif_status_short_src = -12,
+  puffs_gif_status_short_buffer = -14,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
