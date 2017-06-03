@@ -72,10 +72,17 @@ var builtInStatuses = [...]string{
 	"status_short_buffer",
 }
 
+type replacementPolicy bool
+
+const (
+	replaceNothing          = replacementPolicy(false)
+	replaceCallSuspendibles = replacementPolicy(true)
+)
+
 type visibility uint32
 
 const (
-	bothPubPri visibility = iota
+	bothPubPri = visibility(iota)
 	pubOnly
 	priOnly
 )
@@ -576,12 +583,12 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		if err := g.writeSuspendibles(n.RHS()); err != nil {
 			return err
 		}
-		if err := g.writeExpr(n.LHS(), depth); err != nil {
+		if err := g.writeExpr(n.LHS(), replaceCallSuspendibles, depth); err != nil {
 			return err
 		}
 		// TODO: does KeyAmpHatEq need special consideration?
 		g.writes(cOpNames[0xFF&n.Operator().Key()])
-		if err := g.writeExpr(n.RHS(), depth); err != nil {
+		if err := g.writeExpr(n.RHS(), replaceCallSuspendibles, depth); err != nil {
 			return err
 		}
 		g.writes(";\n")
@@ -608,7 +615,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		// TODO: consider suspendible calls.
 		g.printf("%s%s = ", vPrefix, n.Name().String(g.idMap))
 		if v := n.Value(); v != nil {
-			if err := g.writeExpr(v, 0); err != nil {
+			if err := g.writeExpr(v, replaceCallSuspendibles, 0); err != nil {
 				return err
 			}
 		} else {
@@ -629,7 +636,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			g.printf("label_%d_continue:;\n", jt)
 		}
 		g.writes("while (")
-		if err := g.writeExpr(n.Condition(), 0); err != nil {
+		if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, 0); err != nil {
 			return err
 		}
 		g.writes(") {\n")
@@ -695,21 +702,31 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 			return err
 		}
 		g.printf(" %s%d = %ssrc->ptr[%ssrc->ri++];\n", tPrefix, temp, aPrefix, aPrefix)
-		// TODO: have writeExpr substitute in t_0 for suspendible calls. For
-		// now, generate a no-op to suppress an "unused variable" warning.
-		g.printf("if (%s%d) {}\n", tPrefix, temp)
 	} else {
 		// TODO: fix this.
+		//
+		// This might involve calling g.writeExpr with replaceNothing??
 		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.idMap))
 	}
 	return nil
 }
 
-func (g *gen) writeExpr(n *a.Expr, depth uint32) error {
+func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
 	depth++
+
+	if rp == replaceCallSuspendibles && n.CallSuspendible() {
+		if g.perFunc.tempR >= g.perFunc.tempW {
+			return fmt.Errorf("internal error: temporary variable count out of sync")
+		}
+		// TODO: check that this works with nested call-suspendibles:
+		// "foo?().bar().qux?()(p?(), q?())".
+		g.printf("%s%d", tPrefix, g.perFunc.tempR)
+		g.perFunc.tempR++
+		return nil
+	}
 
 	if cv := n.ConstValue(); cv != nil {
 		// TODO: write false/true instead of 0/1 if n.MType() is bool?
@@ -719,19 +736,19 @@ func (g *gen) writeExpr(n *a.Expr, depth uint32) error {
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		if err := g.writeExprOther(n, depth); err != nil {
+		if err := g.writeExprOther(n, rp, depth); err != nil {
 			return err
 		}
 	case t.FlagsUnaryOp:
-		if err := g.writeExprUnaryOp(n, depth); err != nil {
+		if err := g.writeExprUnaryOp(n, rp, depth); err != nil {
 			return err
 		}
 	case t.FlagsBinaryOp:
-		if err := g.writeExprBinaryOp(n, depth); err != nil {
+		if err := g.writeExprBinaryOp(n, rp, depth); err != nil {
 			return err
 		}
 	case t.FlagsAssociativeOp:
-		if err := g.writeExprAssociativeOp(n, depth); err != nil {
+		if err := g.writeExprAssociativeOp(n, rp, depth); err != nil {
 			return err
 		}
 	default:
@@ -741,7 +758,7 @@ func (g *gen) writeExpr(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
+func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) error {
 	switch n.ID0().Key() {
 	case 0:
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
@@ -755,12 +772,7 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenParen:
 		// n is a function call.
-		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
-			// TODO.
-			g.writes("42")
-			return nil
-		}
+		// TODO.
 
 	case t.KeyOpenBracket:
 	// n is an index.
@@ -771,7 +783,7 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 	// TODO.
 
 	case t.KeyDot:
-		if err := g.writeExpr(n.LHS().Expr(), depth); err != nil {
+		if err := g.writeExpr(n.LHS().Expr(), rp, depth); err != nil {
 			return err
 		}
 		// TODO: choose between . vs -> operators.
@@ -797,43 +809,43 @@ func isInSrcReadU8(m *t.IDMap, n *a.Expr) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func (g *gen) writeExprUnaryOp(n *a.Expr, depth uint32) error {
+func (g *gen) writeExprUnaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
 	// TODO.
 	return nil
 }
 
-func (g *gen) writeExprBinaryOp(n *a.Expr, depth uint32) error {
+func (g *gen) writeExprBinaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
 	op := n.ID0()
 	if op.Key() == t.KeyXBinaryAs {
-		return g.writeExprAs(n.LHS().Expr(), n.RHS().TypeExpr(), depth)
+		return g.writeExprAs(n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
 	}
 	g.writeb('(')
-	if err := g.writeExpr(n.LHS().Expr(), depth); err != nil {
+	if err := g.writeExpr(n.LHS().Expr(), rp, depth); err != nil {
 		return err
 	}
 	// TODO: does KeyXBinaryAmpHat need special consideration?
 	g.writes(cOpNames[0xFF&op.Key()])
-	if err := g.writeExpr(n.RHS().Expr(), depth); err != nil {
+	if err := g.writeExpr(n.RHS().Expr(), rp, depth); err != nil {
 		return err
 	}
 	g.writeb(')')
 	return nil
 }
 
-func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, depth uint32) error {
+func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, rp replacementPolicy, depth uint32) error {
 	g.writes("((")
 	if err := g.writeCTypeName(rhs); err != nil {
 		return err
 	}
 	g.writes(")(")
-	if err := g.writeExpr(lhs, depth); err != nil {
+	if err := g.writeExpr(lhs, rp, depth); err != nil {
 		return err
 	}
 	g.writes("))")
 	return nil
 }
 
-func (g *gen) writeExprAssociativeOp(n *a.Expr, depth uint32) error {
+func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
 	// TODO.
 	return nil
 }

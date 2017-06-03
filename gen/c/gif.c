@@ -220,9 +220,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         return puffs_gif_status_short_src;
       }
       uint8_t t_0 = a_src->ptr[a_src->ri++];
-      if (t_0) {
-      }
-      v_bits |= ((uint32_t)(42));
+      v_bits |= ((uint32_t)(t_0));
       v_n_bits += 8;
     }
     v_bits >>= v_width;
