@@ -68,12 +68,14 @@ var kindStrings = [...]string{
 type Flags uint32
 
 const (
-	FlagsImpure      = Flags(0x00000001)
-	FlagsSuspendible = Flags(0x00000002)
-	FlagsPublic      = Flags(0x00000004)
-	FlagsTypeChecked = Flags(0x00000008)
-	FlagsHasBreak    = Flags(0x00000010)
-	FlagsHasContinue = Flags(0x00000020)
+	FlagsImpure          = Flags(0x00000001)
+	FlagsSuspendible     = Flags(0x00000002)
+	FlagsCallImpure      = Flags(0x00000004)
+	FlagsCallSuspendible = Flags(0x00000008)
+	FlagsPublic          = Flags(0x00000010)
+	FlagsTypeChecked     = Flags(0x00000020)
+	FlagsHasBreak        = Flags(0x00000040)
+	FlagsHasContinue     = Flags(0x00000080)
 )
 
 type Node struct {
@@ -165,8 +167,10 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-//  - FlagsImpure      is "f(x)" vs "f!(x)"
-//  - FlagsSuspendible is "f(x)" vs "f?(x)", it implies FlagsImpure
+//  - FlagsImpure          is if it or a sub-expr is FlagsCallImpure
+//  - FlagsSuspendible     is if it or a sub-expr is FlagsCallSuspendible
+//  - FlagsCallImpure      is "f(x)" vs "f!(x)"
+//  - FlagsCallSuspendible is "f(x)" vs "f?(x)", it implies FlagsCallImpure
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
 //  - ID1:   <0|ident|literal>
 //  - LHS:   <nil|Expr>
@@ -194,22 +198,37 @@ const MaxExprDepth = 255
 // For selectors, like "LHS.ID1", ID0 is IDDot.
 type Expr Node
 
-func (n *Expr) Node() *Node          { return (*Node)(n) }
-func (n *Expr) Impure() bool         { return n.flags&FlagsImpure != 0 }
-func (n *Expr) Suspendible() bool    { return n.flags&FlagsSuspendible != 0 }
-func (n *Expr) ConstValue() *big.Int { return n.constValue }
-func (n *Expr) MType() *TypeExpr     { return n.mType }
-func (n *Expr) ID0() t.ID            { return n.id0 }
-func (n *Expr) ID1() t.ID            { return n.id1 }
-func (n *Expr) LHS() *Node           { return n.lhs }
-func (n *Expr) MHS() *Node           { return n.mhs }
-func (n *Expr) RHS() *Node           { return n.rhs }
-func (n *Expr) Args() []*Node        { return n.list0 }
+func (n *Expr) Node() *Node           { return (*Node)(n) }
+func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
+func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
+func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
+func (n *Expr) CallSuspendible() bool { return n.flags&FlagsCallSuspendible != 0 }
+func (n *Expr) ConstValue() *big.Int  { return n.constValue }
+func (n *Expr) MType() *TypeExpr      { return n.mType }
+func (n *Expr) ID0() t.ID             { return n.id0 }
+func (n *Expr) ID1() t.ID             { return n.id1 }
+func (n *Expr) LHS() *Node            { return n.lhs }
+func (n *Expr) MHS() *Node            { return n.mhs }
+func (n *Expr) RHS() *Node            { return n.rhs }
+func (n *Expr) Args() []*Node         { return n.list0 }
 
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 
 func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
+	if lhs != nil {
+		flags |= lhs.flags & (FlagsImpure | FlagsSuspendible)
+	}
+	if mhs != nil {
+		flags |= mhs.flags & (FlagsImpure | FlagsSuspendible)
+	}
+	if rhs != nil {
+		flags |= rhs.flags & (FlagsImpure | FlagsSuspendible)
+	}
+	for _, o := range args {
+		flags |= o.flags & (FlagsImpure | FlagsSuspendible)
+	}
+
 	return &Expr{
 		kind:  KExpr,
 		flags: flags,

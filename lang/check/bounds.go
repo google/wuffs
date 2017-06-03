@@ -445,7 +445,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.KeyOpenParen:
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.idMap, n.LHS().Expr()) && len(n.Args()) == 0 {
+		if isInSrcReadU8(q.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 			break
 		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())

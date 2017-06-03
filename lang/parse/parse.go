@@ -704,10 +704,9 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			return lhs, nil
 
 		case t.KeyExclam, t.KeyQuestion:
-			if p.src[0].Key() == t.KeyExclam {
-				flags |= a.FlagsImpure
-			} else {
-				flags |= a.FlagsImpure | a.FlagsSuspendible
+			flags |= a.FlagsImpure | a.FlagsCallImpure
+			if p.src[0].Key() == t.KeyQuestion {
+				flags |= a.FlagsSuspendible | a.FlagsCallSuspendible
 			}
 			p.src = p.src[1:]
 			fallthrough

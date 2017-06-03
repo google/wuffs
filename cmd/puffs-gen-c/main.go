@@ -683,7 +683,7 @@ func (g *gen) writeExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(g.idMap, n.LHS().Expr()) && len(n.Args()) == 0 {
+		if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 			// TODO.
 			g.writes("42")
 			return nil

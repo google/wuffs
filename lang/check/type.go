@@ -294,7 +294,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.idMap, n.LHS().Expr()) && len(n.Args()) == 0 {
+		if isInSrcReadU8(q.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
 			}
