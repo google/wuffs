@@ -89,8 +89,8 @@ void test_status_is_error() {
     FAIL("test_status_is_error: is_error(bad_version) returned false");
     return;
   }
-  if (puffs_gif_status_is_error(puffs_gif_status_short_dst)) {
-    FAIL("test_status_is_error: is_error(short_dst) returned true");
+  if (puffs_gif_status_is_error(puffs_gif_status_short_write)) {
+    FAIL("test_status_is_error: is_error(short_write) returned true");
     return;
   }
 }
@@ -106,9 +106,9 @@ void test_status_strings() {
     FAIL("test_status_strings: got \"%s\", want \"gif: bad version\"", s1);
     return;
   }
-  const char* s2 = puffs_gif_status_string(puffs_gif_status_short_dst);
-  if (strcmp(s2, "gif: short dst")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: short dst\"", s2);
+  const char* s2 = puffs_gif_status_string(puffs_gif_status_short_write);
+  if (strcmp(s2, "gif: short write")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: short write\"", s2);
     return;
   }
 }

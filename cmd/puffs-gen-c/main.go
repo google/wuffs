@@ -56,20 +56,20 @@ func main() {
 }
 
 var builtInStatuses = [...]string{
-	// For API/ABI compatibility, the very first two status values must be
-	// status_ok (with generated value 0) and error_bad_version (with generated
+	// For API/ABI compatibility, the very first two statuses must be "status
+	// ok" (with generated value 0) and "error bad version" (with generated
 	// value -2 + 1). This lets caller code check the constructor return value
-	// for error_bad_version even if the caller and callee were built with
+	// for "error bad version" even if the caller and callee were built with
 	// different versions.
-	"status_ok",
-	"error_bad_version",
-	// The order of the remaining status values is less important.
-	"error_bad_receiver",
-	"error_bad_argument",
-	"error_constructor_not_called",
-	"status_short_dst",
-	"status_short_src",
-	"status_short_buffer",
+	"status ok",
+	"error bad version",
+	// The order of the remaining statuses is less important.
+	"error bad receiver",
+	"error bad argument",
+	"error constructor not called",
+	"error unexpected EOF", // Used if read foo passed final == true.
+	"status short read",    // Used if read foo passed final == false.
+	"status short write",
 }
 
 type replacementPolicy bool
@@ -138,9 +138,11 @@ func (g *gen) generate() error {
 	g.writes("typedef enum {\n")
 	for i, s := range builtInStatuses {
 		nudge := ""
-		if strings.HasPrefix(s, "error_") {
+		if strings.HasPrefix(s, "error ") {
 			nudge = "+1"
 		}
+		s = strings.Replace(s, " ", "_", -1)
+		s = strings.ToLower(s)
 		g.printf("puffs_%s_%s = %d%s,\n", g.pkgName, s, -2*i, nudge)
 	}
 	g.printf("} puffs_%s_status;\n\n", g.pkgName)
@@ -174,12 +176,12 @@ func (g *gen) generate() error {
 		"return s & 1; }\n\n", g.pkgName, g.pkgName)
 	g.printf("const char* puffs_%s_status_strings[%d] = {\n", g.pkgName, len(builtInStatuses))
 	for _, s := range builtInStatuses {
-		if strings.HasPrefix(s, "status_") {
-			s = s[len("status_"):]
-		} else if strings.HasPrefix(s, "error_") {
-			s = s[len("error_"):]
+		if strings.HasPrefix(s, "status ") {
+			s = s[len("status "):]
+		} else if strings.HasPrefix(s, "error ") {
+			s = s[len("error "):]
 		}
-		s = g.pkgName + ": " + strings.Replace(s, "_", " ", -1)
+		s = g.pkgName + ": " + s
 		g.printf("%q,", s)
 	}
 	g.writes("};\n\n")
@@ -695,7 +697,10 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 	// TODO: delete this hack that only matches "in.src.read_u8?()".
 	if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 		// TODO: suspend coroutine state.
-		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = puffs_%s_status_short_src;",
+		//
+		// TODO: choose error_unexpected_eof versus status_short_read based on
+		// src_final.
+		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = puffs_%s_status_short_read;",
 			aPrefix, aPrefix, g.pkgName)
 		if g.perFunc.cleanup0 {
 			g.writes("goto cleanup0;")

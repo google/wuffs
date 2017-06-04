@@ -60,9 +60,9 @@ typedef enum {
   puffs_gif_error_bad_receiver = -4 + 1,
   puffs_gif_error_bad_argument = -6 + 1,
   puffs_gif_error_constructor_not_called = -8 + 1,
-  puffs_gif_status_short_dst = -10,
-  puffs_gif_status_short_src = -12,
-  puffs_gif_status_short_buffer = -14,
+  puffs_gif_error_unexpected_eof = -10 + 1,
+  puffs_gif_status_short_read = -12,
+  puffs_gif_status_short_write = -14,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -127,9 +127,9 @@ const char* puffs_gif_status_strings[8] = {
     "gif: bad receiver",
     "gif: bad argument",
     "gif: constructor not called",
-    "gif: short dst",
-    "gif: short src",
-    "gif: short buffer",
+    "gif: unexpected EOF",
+    "gif: short read",
+    "gif: short write",
 };
 
 const char* puffs_gif_status_string(puffs_gif_status s) {
@@ -217,7 +217,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   while (1) {
     while ((v_n_bits < v_width)) {
       if (a_src->ri >= a_src->wi) {
-        status = puffs_gif_status_short_src;
+        status = puffs_gif_status_short_read;
         goto cleanup0;
       }
       uint8_t t_0 = a_src->ptr[a_src->ri++];
