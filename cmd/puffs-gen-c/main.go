@@ -723,6 +723,9 @@ func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, depth uint32) error {
 		}
 		// TODO: check that this works with nested call-suspendibles:
 		// "foo?().bar().qux?()(p?(), q?())".
+		//
+		// Also be aware of evaluation order in the presence of side effects:
+		// in "foo(a?(), b!(), c?())", b should be called between a and c.
 		g.printf("%s%d", tPrefix, g.perFunc.tempR)
 		g.perFunc.tempR++
 		return nil
