@@ -93,6 +93,7 @@ type perFunc struct {
 	jumpTargets map[*a.While]uint32
 	tempW       uint32
 	tempR       uint32
+	cleanup0    bool
 }
 
 type gen struct {
@@ -404,8 +405,6 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 	g.writes("{\n")
 
-	cleanup0 := false
-
 	// Check the previous status and the args.
 	if n.Public() {
 		if n.Receiver() != 0 {
@@ -425,7 +424,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		if n.Public() {
 			g.printf("if (self->magic != PUFFS_MAGIC) {"+
 				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", g.pkgName)
-			cleanup0 = true
+			g.perFunc.cleanup0 = true
 		}
 	} else if r := n.Receiver(); r != 0 {
 		// TODO: fix this.
@@ -474,7 +473,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 	g.writes("\n")
 
-	if cleanup0 {
+	if g.perFunc.cleanup0 {
 		g.printf("cleanup0: self->status = status;\n")
 	}
 	if n.Suspendible() {
@@ -696,8 +695,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 	// TODO: delete this hack that only matches "in.src.read_u8?()".
 	if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 		// TODO: suspend coroutine state.
-		g.printf("if (%ssrc->ri >= %ssrc->wi) { return puffs_%s_status_short_src; }",
+		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = puffs_%s_status_short_src;",
 			aPrefix, aPrefix, g.pkgName)
+		if g.perFunc.cleanup0 {
+			g.writes("goto cleanup0;")
+		} else {
+			g.writes("return status;")
+		}
+		g.writes("}\n")
 		if err := g.writeCTypeName(n.MType()); err != nil {
 			return err
 		}

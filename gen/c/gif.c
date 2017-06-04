@@ -217,7 +217,8 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   while (1) {
     while ((v_n_bits < v_width)) {
       if (a_src->ri >= a_src->wi) {
-        return puffs_gif_status_short_src;
+        status = puffs_gif_status_short_src;
+        goto cleanup0;
       }
       uint8_t t_0 = a_src->ptr[a_src->ri++];
       v_bits |= ((uint32_t)(t_0));
