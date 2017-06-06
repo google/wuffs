@@ -39,9 +39,11 @@ void test_lzw_decode() {
          (int)(src.ptr[0]), 0x08);
     goto cleanup0;
   }
+  src.ri++;
 
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  // TODO: call puffs_gif_lzw_decoder_set_literal_width.
   puffs_gif_status status =
       puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_status_ok) {
