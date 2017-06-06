@@ -596,7 +596,36 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KIf:
-		// TODO, including considering suspendible calls.
+		// TODO: consider suspendible calls.
+		n := n.If()
+		for {
+			g.writes("if (")
+			if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, 0); err != nil {
+				return err
+			}
+			g.writes(") {\n")
+			for _, o := range n.BodyIfTrue() {
+				if err := g.writeStatement(o, depth); err != nil {
+					return err
+				}
+			}
+			if bif := n.BodyIfFalse(); len(bif) > 0 {
+				g.writes("} else {")
+				for _, o := range bif {
+					if err := g.writeStatement(o, depth); err != nil {
+						return err
+					}
+				}
+				break
+			}
+			n = n.ElseIf()
+			if n == nil {
+				break
+			}
+			g.writes("} else ")
+		}
+		g.writes("}\n")
+		return nil
 
 	case a.KJump:
 		n := n.Jump()

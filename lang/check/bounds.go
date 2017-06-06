@@ -157,7 +157,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
 
 	case a.KIf:
-		// TODO.
+		return q.bcheckIf(n.If())
 
 	case a.KJump:
 		// No-op.
@@ -303,6 +303,112 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 				rMin, rMax, lMin, lMax)
 		}
 	}
+	return nil
+}
+
+// terminates returns whether a block of statements terminates. In other words,
+// whether the block is non-empty and its final statement is a "return",
+// "break", "continue" or an "if-else" chain where all branches terminate.
+//
+// TODO: strengthen this to include "while" statements? For inspiration, the Go
+// spec has https://golang.org/ref/spec#Terminating_statements
+func terminates(body []*a.Node) bool {
+	if len(body) > 0 {
+		n := body[len(body)-1]
+		switch n.Kind() {
+		case a.KReturn, a.KJump:
+			return true
+		case a.KIf:
+			n := n.If()
+			for {
+				if !terminates(n.BodyIfTrue()) {
+					return false
+				}
+				if bif := n.BodyIfFalse(); len(bif) > 0 && !terminates(bif) {
+					return false
+				}
+				n = n.ElseIf()
+				if n == nil {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return false
+}
+
+func snapshot(facts []*a.Expr) []*a.Expr {
+	return append([]*a.Expr(nil), facts...)
+}
+
+func unify(dst []*a.Expr, branches [][]*a.Expr) ([]*a.Expr, error) {
+	switch len(branches) {
+	case 0:
+		// No-op.
+	case 1:
+		dst = append(dst, branches[0]...)
+	default:
+		return nil, fmt.Errorf("TODO: unify multiple if branches")
+	}
+	return dst, nil
+}
+
+func (q *checker) bcheckIf(n *a.If) error {
+	branches := [][]*a.Expr(nil)
+	for n != nil {
+		snap := snapshot(q.facts)
+		// Check the if condition.
+		//
+		// TODO: check that n.Condition() has no side effects.
+		if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
+			return err
+		}
+
+		if cv := n.Condition().ConstValue(); cv != nil {
+			return fmt.Errorf("TODO: bcheckIf for \"if true\" or \"if false\"")
+		}
+
+		// Check the if-true branch, assuming the if condition.
+		q.facts.appendFact(n.Condition())
+		for _, o := range n.BodyIfTrue() {
+			if err := q.bcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		if !terminates(n.BodyIfTrue()) {
+			branches = append(branches, snapshot(q.facts))
+		}
+
+		// Check the if-false branch, assuming the inverted if condition.
+		q.facts = append(q.facts[:0], snap...)
+		if inverse, err := invert(q.idMap, n.Condition()); err != nil {
+			return err
+		} else {
+			q.facts.appendFact(inverse)
+		}
+		if bif := n.BodyIfFalse(); len(bif) > 0 {
+			for _, o := range bif {
+				if err := q.bcheckStatement(o); err != nil {
+					return err
+				}
+			}
+			if !terminates(bif) {
+				branches = append(branches, snapshot(q.facts))
+			}
+			break
+		}
+		n = n.ElseIf()
+		if n == nil {
+			branches = append(branches, snapshot(q.facts))
+			break
+		}
+	}
+	u, err := unify(q.facts[:0], branches)
+	if err != nil {
+		return err
+	}
+	q.facts = u
 	return nil
 }
 
