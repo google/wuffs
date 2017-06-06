@@ -427,9 +427,17 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 			if err != nil {
 				return nil, nil, err
 			}
-			// TODO.
-			_, _ = lMin, lMax
-			return zero, zero, nil
+			rMin, rMax, err := q.bcheckTypeExpr(n.RHS().TypeExpr())
+			if err != nil {
+				return nil, nil, err
+			}
+			nMin, nMax := max(lMin, rMin), min(lMax, rMax)
+			// TODO: check if nMin > nMax.
+			//
+			// TODO: should it be a compile time error if "x as T" can narrow
+			// the range? Do we want a separate "~as" operator that ignores
+			// overflow?
+			return nMin, nMax, nil
 		}
 		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
@@ -539,6 +547,16 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 	case t.KeyXBinarySlash:
 
 	case t.KeyXBinaryShiftL:
+		if lMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.String(q.idMap))
+		}
+		if rMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.String(q.idMap))
+		}
+		if rMax.Cmp(ffff) > 0 {
+			return nil, nil, fmt.Errorf("check: shift %q out of range", rhs.String(q.idMap))
+		}
+		return big.NewInt(0).Lsh(lMin, uint(rMin.Uint64())), big.NewInt(0).Lsh(lMax, uint(rMax.Uint64())), nil
 
 	case t.KeyXBinaryShiftR:
 		if lMin.Cmp(zero) < 0 {
