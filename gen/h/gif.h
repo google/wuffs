@@ -32,14 +32,14 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and capacity) plus
+// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length) plus
 // additional indexes into that buffer.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
 typedef struct {
   uint8_t* ptr;  // Pointer.
-  size_t cap;    // Capacity.
-  size_t wi;     // Write index. Invariant: wi <= cap.
+  size_t len;    // Length.
+  size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
 } puffs_base_buf1;
 

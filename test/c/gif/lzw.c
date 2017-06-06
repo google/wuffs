@@ -23,8 +23,8 @@ uint8_t global_dst_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
 
 void test_lzw_decode() {
-  puffs_base_buf1 dst = {.ptr = global_dst_buffer, .cap = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .cap = BUFFER_SIZE};
+  puffs_base_buf1 dst = {.ptr = global_dst_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, "../../testdata/bricks-nodither.giflzw")) {
     goto cleanup0;
   }

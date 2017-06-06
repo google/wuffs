@@ -50,11 +50,11 @@ bool read_file(puffs_base_buf1* dst, const char* path) {
     return false;
   }
   uint8_t* ptr = dst->ptr + dst->wi;
-  size_t cap = dst->cap - dst->wi;
+  size_t len = dst->len - dst->wi;
   while (true) {
-    size_t n = fread(ptr, 1, cap, f);
+    size_t n = fread(ptr, 1, len, f);
     ptr += n;
-    cap -= n;
+    len -= n;
     dst->wi += n;
     if (feof(f)) {
       break;
