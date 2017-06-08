@@ -160,7 +160,21 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return q.bcheckIf(n.If())
 
 	case a.KJump:
-		// No-op.
+		n := n.Jump()
+		skip := t.KeyPost
+		if n.Keyword().Key() == t.KeyBreak {
+			skip = t.KeyPre
+		}
+		for _, o := range n.JumpTarget().Asserts() {
+			if o.Assert().Keyword().Key() == skip {
+				continue
+			}
+			if err := q.bcheckAssert(o.Assert()); err != nil {
+				return err
+			}
+		}
+		q.facts = q.facts[:0]
+		return nil
 
 	case a.KReturn:
 		// TODO.
@@ -487,18 +501,16 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		}
 		// Check the pre and inv conditions on the implicit continue after the
 		// body.
-		for _, o := range n.Asserts() {
-			if o.Assert().Keyword().Key() == t.KeyPost {
-				continue
-			}
-			if err := q.bcheckAssert(o.Assert()); err != nil {
-				return err
+		if !terminates(n.Body()) {
+			for _, o := range n.Asserts() {
+				if o.Assert().Keyword().Key() == t.KeyPost {
+					continue
+				}
+				if err := q.bcheckAssert(o.Assert()); err != nil {
+					return err
+				}
 			}
 		}
-
-		// TODO: check the pre and inv conditions for each continue.
-
-		// TODO: check the inv and post conditions for each break.
 	}
 
 	// Assume the inv and post conditions.
