@@ -105,7 +105,8 @@ type perFunc struct {
 	jumpTargets map[*a.While]uint32
 	tempW       uint32
 	tempR       uint32
-	cleanup0    bool
+	public      bool
+	suspendible bool
 }
 
 type gen struct {
@@ -421,11 +422,13 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 
 	// Check the previous status and the args.
 	if n.Public() {
+		g.perFunc.public = true
 		if n.Receiver() != 0 {
 			g.printf("if (!self) { return puffs_%s_error_bad_receiver; }\n", g.pkgName)
 		}
 	}
 	if n.Suspendible() {
+		g.perFunc.suspendible = true
 		g.printf("puffs_%s_status status = ", g.pkgName)
 		if n.Receiver() != 0 {
 			g.printf("self->status;\n")
@@ -438,7 +441,6 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		if n.Public() {
 			g.printf("if (self->magic != PUFFS_MAGIC) {"+
 				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", g.pkgName)
-			g.perFunc.cleanup0 = true
 		}
 	} else if r := n.Receiver(); r != 0 {
 		// TODO: fix this.
@@ -487,10 +489,10 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 	g.writes("\n")
 
-	if g.perFunc.cleanup0 {
-		g.printf("cleanup0: self->status = status;\n")
-	}
-	if n.Suspendible() {
+	if g.perFunc.suspendible {
+		if g.perFunc.public {
+			g.printf("cleanup0: self->status = status;\n")
+		}
 		g.printf("return status;\n")
 	}
 
@@ -650,7 +652,16 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KReturn:
-		// TODO, including considering suspendible calls.
+		if !g.perFunc.suspendible {
+			// TODO: consider the return values, especially if they involve
+			// suspendible function calls.
+			g.writes("return;\n")
+		} else if g.perFunc.public {
+			g.printf("status = puffs_%s_status_ok; goto cleanup0;\n", g.pkgName)
+		} else {
+			g.printf("return puffs_%s_status_ok;\n", g.pkgName)
+		}
+		return nil
 
 	case a.KVar:
 		n := n.Var()
@@ -743,7 +754,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 		// src_final.
 		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = puffs_%s_status_short_read;",
 			aPrefix, aPrefix, g.pkgName)
-		if g.perFunc.cleanup0 {
+		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
 		} else {
 			g.writes("return status;")

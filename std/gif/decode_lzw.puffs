@@ -8,8 +8,8 @@ pub struct lzw_decoder?(
 pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 	var bits u32
 	var n_bits u32
-	var clear_code u32 = (1 as u32) << this.literal_width
-	// TODO: set end_code.
+	var clear_code u32[4..256] = (1 as u32) << this.literal_width
+	var end_code u32[5..257] = clear_code + 1
 	var width u32[..12] = this.literal_width + 1
 
 	// TODO: implement.
@@ -33,7 +33,10 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 		if code < clear_code {
 			break
 		} else if code == clear_code {
+			width = this.literal_width + 1
 			continue
+		} else if code == end_code {
+			return
 		}
 
 		// TODO: implement.
