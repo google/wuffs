@@ -211,6 +211,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_n_bits;
   uint32_t v_clear_code;
   uint32_t v_width;
+  uint32_t v_code;
 
   v_bits = 0;
   v_n_bits = 0;
@@ -226,9 +227,10 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       v_bits |= (((uint32_t)(t_0)) << v_n_bits);
       v_n_bits += 8;
     }
+    v_code = PUFFS_LOW_BITS(v_bits, v_width);
     v_bits >>= v_width;
     v_n_bits -= v_width;
-    if ((v_bits < v_clear_code)) {
+    if ((v_code < v_clear_code)) {
       goto label_0_break;
     }
     goto label_0_break;

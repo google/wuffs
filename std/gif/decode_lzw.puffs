@@ -26,12 +26,11 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			bits |= (in.src.read_u8?() as u32) << n_bits  // TODO: read_u8 should take src_final.
 			n_bits += 8
 		}
-		// TODO: var code u32[..4095] = bits.low_bits(width)
+		var code u32[..4095] = bits.low_bits(n:width)
 		bits >>= width
 		n_bits -= width
 
-		// TODO: s/bits/code/
-		if bits < clear_code {
+		if code < clear_code {
 			break
 		}
 

@@ -219,6 +219,14 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	)
 }
 
+func (q *checker) tcheckArg(n *a.Arg, depth uint32) error {
+	if err := q.tcheckExpr(n.Value(), depth); err != nil {
+		return err
+	}
+	n.Node().SetTypeChecked()
+	return nil
+}
+
 func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("check: expression recursion depth too large")
@@ -298,7 +306,23 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
 			}
-			n.SetMType(TypeExprU8)
+			n.SetMType(TypeExprU8) // HACK.
+			return nil
+		}
+		// TODO: delete this hack that only matches "foo.low_bits(etc)".
+		if isLowBits(q.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(TypeExprU8) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(foo.MType())
 			return nil
 		}
 
@@ -326,6 +350,11 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+}
+
+func isLowBits(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(n:bar)".
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {

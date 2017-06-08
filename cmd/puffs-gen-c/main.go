@@ -814,6 +814,19 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 
 	case t.KeyOpenParen:
 		// n is a function call.
+		// TODO: delete this hack that only matches "foo.low_bits(etc)".
+		if isLowBits(g.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+			g.printf("PUFFS_LOW_BITS(")
+			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, depth); err != nil {
+				return err
+			}
+			g.writes(",")
+			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, depth); err != nil {
+				return err
+			}
+			g.writes(")")
+			return nil
+		}
 		// TODO.
 
 	case t.KeyOpenBracket:
@@ -849,6 +862,11 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+}
+
+func isLowBits(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(n:bar)".
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
 }
 
 func (g *gen) writeExprUnaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {

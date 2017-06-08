@@ -24,10 +24,11 @@ var numTypeBounds = [256][2]*big.Int{
 }
 
 var (
-	minusOne = big.NewInt(-1)
-	zero     = big.NewInt(+0)
-	one      = big.NewInt(+1)
-	ffff     = big.NewInt(0xFFFF)
+	minusOne  = big.NewInt(-1)
+	zero      = big.NewInt(+0)
+	one       = big.NewInt(+1)
+	sixtyFour = big.NewInt(+64)
+	ffff      = big.NewInt(0xFFFF)
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
@@ -579,6 +580,24 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
 		if isInSrcReadU8(q.tm, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 			break
+		}
+		// TODO: delete this hack that only matches "foo.low_bits(etc)".
+		if isLowBits(q.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+			a := n.Args()[0].Arg().Value()
+			aMin, aMax, err := q.bcheckExpr(a, depth)
+			if err != nil {
+				return nil, nil, err
+			}
+			if aMin.Cmp(zero) < 0 {
+				// TODO: error, but a better check than aMin < 0 is that
+				// a.MType() is u32. Checking this properly should fall out
+				// when a *a.TypeExpr can express function types.
+			}
+			// TODO: sixtyFour should actually be sizeof(n.LHS().Expr()).
+			if aMax.Cmp(sixtyFour) > 0 {
+				return nil, nil, fmt.Errorf("check: low_bits argument %q is possibly too large", a.String(q.tm))
+			}
+			return zero, bitMask(int(aMax.Int64())), nil
 		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
