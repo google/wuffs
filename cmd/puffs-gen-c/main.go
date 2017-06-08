@@ -67,8 +67,8 @@ var builtInStatuses = [...]string{
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
-	"error unexpected EOF", // Used if read foo passed final == true.
-	"status short read",    // Used if read foo passed final == false.
+	"error unexpected EOF", // Used if read_foo passed final == true.
+	"status short read",    // Used if read_foo passed final == false.
 	"status short write",
 }
 
