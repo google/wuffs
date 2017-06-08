@@ -32,6 +32,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 
 		if code < clear_code {
 			break
+		} else if code == clear_code {
+			continue
 		}
 
 		// TODO: implement.

@@ -71,6 +71,10 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				}
 			}
 		}
+		for n := n.If(); n != nil; n = n.ElseIf() {
+			n.Node().SetTypeChecked()
+		}
+		return nil
 
 	case a.KJump:
 		n := n.Jump()

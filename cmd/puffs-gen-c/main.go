@@ -79,6 +79,18 @@ const (
 	replaceCallSuspendibles = replacementPolicy(true)
 )
 
+// parenthesesPolicy controls whether to print the outer parentheses in an
+// expression like "(x + y)". An "if" or "while" will print their own
+// parentheses for "if (expr)" because they need to be able to say "if (x)".
+// But a double-parenthesized expression like "if ((x == y))" is a clang
+// warning (-Wparentheses-equality) and we like to compile with -Wall -Werror.
+type parenthesesPolicy bool
+
+const (
+	parenthesesMandatory = parenthesesPolicy(false)
+	parenthesesOptional  = parenthesesPolicy(true)
+)
+
 type visibility uint32
 
 const (
@@ -584,12 +596,12 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		if err := g.writeSuspendibles(n.RHS()); err != nil {
 			return err
 		}
-		if err := g.writeExpr(n.LHS(), replaceCallSuspendibles, depth); err != nil {
+		if err := g.writeExpr(n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		// TODO: does KeyAmpHatEq need special consideration?
 		g.writes(cOpNames[0xFF&n.Operator().Key()])
-		if err := g.writeExpr(n.RHS(), replaceCallSuspendibles, depth); err != nil {
+		if err := g.writeExpr(n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		g.writes(";\n")
@@ -600,7 +612,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		n := n.If()
 		for {
 			g.writes("if (")
-			if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, 0); err != nil {
+			if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
 				return err
 			}
 			g.writes(") {\n")
@@ -645,7 +657,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		// TODO: consider suspendible calls.
 		g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 		if v := n.Value(); v != nil {
-			if err := g.writeExpr(v, replaceCallSuspendibles, 0); err != nil {
+			if err := g.writeExpr(v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 				return err
 			}
 		} else {
@@ -666,7 +678,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			g.printf("label_%d_continue:;\n", jt)
 		}
 		g.writes("while (")
-		if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, 0); err != nil {
+		if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
 			return err
 		}
 		g.writes(") {\n")
@@ -750,7 +762,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 	return nil
 }
 
-func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
@@ -786,7 +798,7 @@ func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, depth uint32) error {
 			return err
 		}
 	case t.FlagsBinaryOp:
-		if err := g.writeExprBinaryOp(n, rp, depth); err != nil {
+		if err := g.writeExprBinaryOp(n, rp, pp, depth); err != nil {
 			return err
 		}
 	case t.FlagsAssociativeOp:
@@ -817,11 +829,11 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
 		if isLowBits(g.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
 			g.printf("PUFFS_LOW_BITS(")
-			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, depth); err != nil {
+			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			g.writes(",")
-			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			g.writes(")")
@@ -838,7 +850,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	// TODO.
 
 	case t.KeyDot:
-		if err := g.writeExpr(n.LHS().Expr(), rp, depth); err != nil {
+		if err := g.writeExpr(n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		// TODO: choose between . vs -> operators.
@@ -874,21 +886,25 @@ func (g *gen) writeExprUnaryOp(n *a.Expr, rp replacementPolicy, depth uint32) er
 	return nil
 }
 
-func (g *gen) writeExprBinaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeExprBinaryOp(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	op := n.ID0()
 	if op.Key() == t.KeyXBinaryAs {
 		return g.writeExprAs(n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
 	}
-	g.writeb('(')
-	if err := g.writeExpr(n.LHS().Expr(), rp, depth); err != nil {
+	if pp == parenthesesMandatory {
+		g.writeb('(')
+	}
+	if err := g.writeExpr(n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
 	// TODO: does KeyXBinaryAmpHat need special consideration?
 	g.writes(cOpNames[0xFF&op.Key()])
-	if err := g.writeExpr(n.RHS().Expr(), rp, depth); err != nil {
+	if err := g.writeExpr(n.RHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
-	g.writeb(')')
+	if pp == parenthesesMandatory {
+		g.writeb(')')
+	}
 	return nil
 }
 
@@ -898,7 +914,7 @@ func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, rp replacementPolicy, de
 		return err
 	}
 	g.writes(")(")
-	if err := g.writeExpr(lhs, rp, depth); err != nil {
+	if err := g.writeExpr(lhs, rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
 	g.writes("))")
