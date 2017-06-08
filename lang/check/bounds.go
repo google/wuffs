@@ -145,6 +145,18 @@ func bcheckField(idMap *t.IDMap, n *a.Field) error {
 	return nil
 }
 
+func (q *checker) bcheckBlock(block []*a.Node) error {
+	for _, o := range block {
+		if err := q.bcheckStatement(o); err != nil {
+			return err
+		}
+		if k := o.Kind(); k == a.KJump || k == a.KReturn {
+			break
+		}
+	}
+	return nil
+}
+
 func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
@@ -385,10 +397,8 @@ func (q *checker) bcheckIf(n *a.If) error {
 
 		// Check the if-true branch, assuming the if condition.
 		q.facts.appendFact(n.Condition())
-		for _, o := range n.BodyIfTrue() {
-			if err := q.bcheckStatement(o); err != nil {
-				return err
-			}
+		if err := q.bcheckBlock(n.BodyIfTrue()); err != nil {
+			return err
 		}
 		if !terminates(n.BodyIfTrue()) {
 			branches = append(branches, snapshot(q.facts))
@@ -402,10 +412,8 @@ func (q *checker) bcheckIf(n *a.If) error {
 			q.facts.appendFact(inverse)
 		}
 		if bif := n.BodyIfFalse(); len(bif) > 0 {
-			for _, o := range bif {
-				if err := q.bcheckStatement(o); err != nil {
-					return err
-				}
+			if err := q.bcheckBlock(bif); err != nil {
+				return err
 			}
 			if !terminates(bif) {
 				branches = append(branches, snapshot(q.facts))
@@ -494,10 +502,8 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			q.facts.appendFact(n.Condition())
 		}
 		// Check the body.
-		for _, o := range n.Body() {
-			if err := q.bcheckStatement(o); err != nil {
-				return err
-			}
+		if err := q.bcheckBlock(n.Body()); err != nil {
+			return err
 		}
 		// Check the pre and inv conditions on the implicit continue after the
 		// body.

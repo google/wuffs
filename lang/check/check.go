@@ -333,15 +333,13 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 
 	// Run bounds checks.
 	if c.flags&FlagsOnlyTypeCheck == 0 {
-		for _, o := range n.Body() {
-			if err := q.bcheckStatement(o); err != nil {
-				return &Error{
-					Err:      err,
-					Filename: q.errFilename,
-					Line:     q.errLine,
-					IDMap:    c.idMap,
-					Facts:    q.facts,
-				}
+		if err := q.bcheckBlock(n.Body()); err != nil {
+			return &Error{
+				Err:      err,
+				Filename: q.errFilename,
+				Line:     q.errLine,
+				IDMap:    c.idMap,
+				Facts:    q.facts,
 			}
 		}
 	}
