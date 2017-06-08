@@ -1,3 +1,6 @@
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file.
+
 pub struct lzw_decoder?(
 	literal_width u32[2..8] = 8,
 	stack[4096] u8,
