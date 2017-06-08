@@ -118,7 +118,8 @@ func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
-//  - [0x01, 0x2F] are squiggly punctuation, such as "(", ")" and ";".
+//  - [0x01, 0x0F] are reserved for implementation details.
+//  - [0x10, 0x2F] are squiggly punctuation, such as "(", ")" and ";".
 //  - [0x30, 0x3F] are squiggly assignments, such as "=" and "+=".
 //  - [0x40, 0x5F] are operators, such as "+", "==" and "not".
 //  - [0x60, 0x7F] are keywords, such as "if" and "return".
@@ -132,6 +133,8 @@ const nBuiltInKeys = Key(256)
 
 const (
 	KeyInvalid = Key(0)
+
+	KeyDoubleZ = Key(IDDoubleZ >> KeyShift)
 
 	KeyOpenParen    = Key(IDOpenParen >> KeyShift)
 	KeyCloseParen   = Key(IDCloseParen >> KeyShift)
@@ -204,7 +207,6 @@ const (
 	KeyVia      = Key(IDVia >> KeyShift)
 	KeyPub      = Key(IDPub >> KeyShift)
 	KeyPri      = Key(IDPri >> KeyShift)
-	KeyIdeal    = Key(IDIdeal >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -279,6 +281,8 @@ const (
 const (
 	IDInvalid = ID(0)
 
+	IDDoubleZ = ID(0x01<<KeyShift | FlagsOther)
+
 	IDOpenParen    = ID(0x10<<KeyShift | FlagsOpen | FlagsTightRight)
 	IDCloseParen   = ID(0x11<<KeyShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
 	IDOpenBracket  = ID(0x12<<KeyShift | FlagsOpen | FlagsTightLeft | FlagsTightRight)
@@ -350,7 +354,6 @@ const (
 	IDVia      = ID(0x70<<KeyShift | FlagsOther)
 	IDPub      = ID(0x71<<KeyShift | FlagsOther)
 	IDPri      = ID(0x72<<KeyShift | FlagsOther)
-	IDIdeal    = ID(0x73<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -433,6 +436,17 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	name string
 	id   ID
 }{
+	// KeyDoubleZ (and IDDoubleZ) are never returned by the tokenizer, as the
+	// tokenizer rejects non-ASCII input. It is used by the type checker as a
+	// dummy-valued built-in Key to represent an ideal integer type (in
+	// mathematical terms, the integer ring ℤ), as opposed to a realized
+	// integer type whose range is restricted. For example, the u16 type is
+	// restricted to [0x0000, 0xFFFF].
+	//
+	// The string representation "ℤ" is specifically non-ASCII so that no
+	// user-defined (non built-in) identifier will conflict with this.
+	KeyDoubleZ: {"ℤ", IDDoubleZ}, // U+2124 DOUBLE-STRUCK CAPITAL Z
+
 	KeyOpenParen:    {"(", IDOpenParen},
 	KeyCloseParen:   {")", IDCloseParen},
 	KeyOpenBracket:  {"[", IDOpenBracket},
@@ -507,7 +521,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyVia:      {"via", IDVia},
 	KeyPub:      {"pub", IDPub},
 	KeyPri:      {"pri", IDPri},
-	KeyIdeal:    {"ideal", IDIdeal},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},

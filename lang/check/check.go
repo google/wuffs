@@ -51,7 +51,7 @@ func (e *Error) Error() string {
 // TypeExprFoo is an *ast.Node MType (implicit type).
 var (
 	TypeExprBool  = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
-	TypeExprIdeal = a.NewTypeExpr(0, t.IDIdeal, nil, nil, nil)
+	TypeExprIdeal = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
 	TypeExprU8    = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
 )
 
