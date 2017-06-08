@@ -197,13 +197,14 @@ const (
 	KeyStruct   = Key(IDStruct >> KeyShift)
 	KeyUse      = Key(IDUse >> KeyShift)
 	KeyVar      = Key(IDVar >> KeyShift)
-	KeyIdeal    = Key(IDIdeal >> KeyShift)
+	KeyNptr     = Key(IDNptr >> KeyShift)
 	KeyPre      = Key(IDPre >> KeyShift)
 	KeyInv      = Key(IDInv >> KeyShift)
 	KeyPost     = Key(IDPost >> KeyShift)
 	KeyVia      = Key(IDVia >> KeyShift)
 	KeyPub      = Key(IDPub >> KeyShift)
 	KeyPri      = Key(IDPri >> KeyShift)
+	KeyIdeal    = Key(IDIdeal >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -342,13 +343,14 @@ const (
 	IDStruct   = ID(0x69<<KeyShift | FlagsOther)
 	IDUse      = ID(0x6A<<KeyShift | FlagsOther)
 	IDVar      = ID(0x6B<<KeyShift | FlagsOther)
-	IDIdeal    = ID(0x6C<<KeyShift | FlagsOther)
+	IDNptr     = ID(0x6C<<KeyShift | FlagsOther)
 	IDPre      = ID(0x6D<<KeyShift | FlagsOther)
 	IDInv      = ID(0x6E<<KeyShift | FlagsOther)
 	IDPost     = ID(0x6F<<KeyShift | FlagsOther)
 	IDVia      = ID(0x70<<KeyShift | FlagsOther)
 	IDPub      = ID(0x71<<KeyShift | FlagsOther)
 	IDPri      = ID(0x72<<KeyShift | FlagsOther)
+	IDIdeal    = ID(0x73<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -498,13 +500,14 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyStruct:   {"struct", IDStruct},
 	KeyUse:      {"use", IDUse},
 	KeyVar:      {"var", IDVar},
-	KeyIdeal:    {"ideal", IDIdeal},
+	KeyNptr:     {"nptr", IDNptr},
 	KeyPre:      {"pre", IDPre},
 	KeyInv:      {"inv", IDInv},
 	KeyPost:     {"post", IDPost},
 	KeyVia:      {"via", IDVia},
 	KeyPub:      {"pub", IDPub},
 	KeyPri:      {"pri", IDPri},
+	KeyIdeal:    {"ideal", IDIdeal},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
