@@ -8,17 +8,17 @@ import (
 )
 
 // String returns a string form of n.
-func (n *Expr) String(m *t.IDMap) string {
+func (n *Expr) String(tm *t.Map) string {
 	if n == nil {
 		return ""
 	}
 	if n.id0 == 0 {
-		return m.ByID(n.id1)
+		return tm.ByID(n.id1)
 	}
-	return string(n.appendString(nil, m, false, 0))
+	return string(n.appendString(nil, tm, false, 0))
 }
 
-func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uint32) []byte {
+func (n *Expr) appendString(buf []byte, tm *t.Map, parenthesize bool, depth uint32) []byte {
 	if depth > MaxExprDepth {
 		return append(buf, "!expr_recursion_depth_too_large!"...)
 	}
@@ -29,10 +29,10 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 		case 0:
 			switch n.id0.Key() {
 			case 0:
-				buf = append(buf, m.ByID(n.id1)...)
+				buf = append(buf, tm.ByID(n.id1)...)
 
 			case t.KeyOpenParen:
-				buf = n.lhs.Expr().appendString(buf, m, true, depth)
+				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				if n.flags&FlagsSuspendible != 0 {
 					buf = append(buf, '?')
 				}
@@ -41,46 +41,46 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 					if i != 0 {
 						buf = append(buf, ", "...)
 					}
-					buf = append(buf, m.ByID(o.Arg().Name())...)
+					buf = append(buf, tm.ByID(o.Arg().Name())...)
 					buf = append(buf, ':')
-					buf = o.Arg().Value().appendString(buf, m, false, depth)
+					buf = o.Arg().Value().appendString(buf, tm, false, depth)
 				}
 				buf = append(buf, ')')
 
 			case t.KeyOpenBracket:
-				buf = n.lhs.Expr().appendString(buf, m, true, depth)
+				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				buf = append(buf, '[')
-				buf = n.rhs.Expr().appendString(buf, m, false, depth)
+				buf = n.rhs.Expr().appendString(buf, tm, false, depth)
 				buf = append(buf, ']')
 
 			case t.KeyColon:
-				buf = n.lhs.Expr().appendString(buf, m, true, depth)
+				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				buf = append(buf, '[')
-				buf = n.mhs.Expr().appendString(buf, m, false, depth)
+				buf = n.mhs.Expr().appendString(buf, tm, false, depth)
 				buf = append(buf, ':')
-				buf = n.rhs.Expr().appendString(buf, m, false, depth)
+				buf = n.rhs.Expr().appendString(buf, tm, false, depth)
 				buf = append(buf, ']')
 
 			case t.KeyDot:
-				buf = n.lhs.Expr().appendString(buf, m, true, depth)
+				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				buf = append(buf, '.')
-				buf = append(buf, m.ByID(n.id1)...)
+				buf = append(buf, tm.ByID(n.id1)...)
 			}
 
 		case t.FlagsUnaryOp:
 			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
-			buf = n.rhs.Expr().appendString(buf, m, true, depth)
+			buf = n.rhs.Expr().appendString(buf, tm, true, depth)
 
 		case t.FlagsBinaryOp:
 			if parenthesize {
 				buf = append(buf, '(')
 			}
-			buf = n.lhs.Expr().appendString(buf, m, true, depth)
+			buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
 			if n.id0.Key() == t.KeyXBinaryAs {
-				buf = append(buf, n.rhs.TypeExpr().String(m)...)
+				buf = append(buf, n.rhs.TypeExpr().String(tm)...)
 			} else {
-				buf = n.rhs.Expr().appendString(buf, m, true, depth)
+				buf = n.rhs.Expr().appendString(buf, tm, true, depth)
 			}
 			if parenthesize {
 				buf = append(buf, ')')
@@ -95,7 +95,7 @@ func (n *Expr) appendString(buf []byte, m *t.IDMap, parenthesize bool, depth uin
 				if i != 0 {
 					buf = append(buf, op...)
 				}
-				buf = o.Expr().appendString(buf, m, true, depth)
+				buf = o.Expr().appendString(buf, tm, true, depth)
 			}
 			if parenthesize {
 				buf = append(buf, ')')
@@ -141,17 +141,17 @@ var opStrings = [256]string{
 }
 
 // String returns a string form of n.
-func (n *TypeExpr) String(m *t.IDMap) string {
+func (n *TypeExpr) String(tm *t.Map) string {
 	if n == nil {
 		return ""
 	}
 	if n.PackageOrDecorator() == 0 && n.Min() == nil && n.Max() == nil {
-		return m.ByID(n.Name())
+		return tm.ByID(n.Name())
 	}
-	return string(n.appendString(nil, m, 0))
+	return string(n.appendString(nil, tm, 0))
 }
 
-func (n *TypeExpr) appendString(buf []byte, m *t.IDMap, depth uint32) []byte {
+func (n *TypeExpr) appendString(buf []byte, tm *t.Map, depth uint32) []byte {
 	if depth > MaxTypeExprDepth {
 		return append(buf, "!type_expr_recursion_depth_too_large!"...)
 	}
@@ -162,25 +162,25 @@ func (n *TypeExpr) appendString(buf []byte, m *t.IDMap, depth uint32) []byte {
 
 	switch n.PackageOrDecorator().Key() {
 	case 0:
-		buf = append(buf, m.ByID(n.Name())...)
+		buf = append(buf, tm.ByID(n.Name())...)
 	case t.KeyPtr:
 		buf = append(buf, "ptr "...)
-		return n.Inner().appendString(buf, m, depth)
+		return n.Inner().appendString(buf, tm, depth)
 	case t.KeyOpenBracket:
 		buf = append(buf, '[')
-		buf = n.ArrayLength().appendString(buf, m, false, 0)
+		buf = n.ArrayLength().appendString(buf, tm, false, 0)
 		buf = append(buf, "] "...)
-		return n.Inner().appendString(buf, m, depth)
+		return n.Inner().appendString(buf, tm, depth)
 	default:
-		buf = append(buf, m.ByID(n.PackageOrDecorator())...)
+		buf = append(buf, tm.ByID(n.PackageOrDecorator())...)
 		buf = append(buf, '.')
-		buf = append(buf, m.ByID(n.Name())...)
+		buf = append(buf, tm.ByID(n.Name())...)
 	}
 	if n.Min() != nil || n.Max() != nil {
 		buf = append(buf, '[')
-		buf = n.Min().appendString(buf, m, false, 0)
+		buf = n.Min().appendString(buf, tm, false, 0)
 		buf = append(buf, ".."...)
-		buf = n.Max().appendString(buf, m, false, 0)
+		buf = n.Max().appendString(buf, tm, false, 0)
 		buf = append(buf, ']')
 	}
 	return buf

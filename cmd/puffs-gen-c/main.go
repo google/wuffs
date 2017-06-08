@@ -34,10 +34,10 @@ const (
 )
 
 func main() {
-	generate.Main(func(pkgName string, idMap *t.IDMap, files []*a.File) ([]byte, error) {
+	generate.Main(func(pkgName string, tm *t.Map, files []*a.File) ([]byte, error) {
 		g := &gen{
 			pkgName: pkgName,
-			idMap:   idMap,
+			tm:      tm,
 			files:   files,
 		}
 		if err := g.generate(); err != nil {
@@ -99,7 +99,7 @@ type perFunc struct {
 type gen struct {
 	buffer  bytes.Buffer
 	pkgName string
-	idMap   *t.IDMap
+	tm      *t.Map
 	files   []*a.File
 	perFunc perFunc
 }
@@ -270,7 +270,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 	// etc_error_bad_version;" regardless of the sizeof(*this) struct reserved
 	// by the caller and even if the caller and callee were built with
 	// different versions.
-	structName := n.Name().String(g.idMap)
+	structName := n.Name().String(g.tm)
 	g.printf("typedef struct {\n")
 	if n.Suspendible() {
 		g.printf("puffs_%s_status status;\n", g.pkgName)
@@ -287,7 +287,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 }
 
 func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) {
-	structName := n.Name().String(g.idMap)
+	structName := n.Name().String(g.tm)
 	ctorName := "destructor"
 	if ctor {
 		ctorName = "constructor"
@@ -349,7 +349,7 @@ func (g *gen) writeCtorImpls(n *a.Struct) error {
 				f := f.Field()
 				if dv := f.DefaultValue(); dv != nil {
 					// TODO: set default values for array types.
-					g.printf("self->%s%s = %d;\n", fPrefix, f.Name().String(g.idMap), dv.ConstValue())
+					g.printf("self->%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
 				}
 			}
 		}
@@ -369,13 +369,13 @@ func (g *gen) writeFuncSignature(n *a.Func) error {
 	}
 	g.printf(" puffs_%s", g.pkgName)
 	if r := n.Receiver(); r != 0 {
-		g.printf("_%s", r.String(g.idMap))
+		g.printf("_%s", r.String(g.tm))
 	}
-	g.printf("_%s(", n.Name().String(g.idMap))
+	g.printf("_%s(", n.Name().String(g.tm))
 
 	comma := false
 	if r := n.Receiver(); r != 0 {
-		g.printf("puffs_%s_%s *self", g.pkgName, r.String(g.idMap))
+		g.printf("puffs_%s_%s *self", g.pkgName, r.String(g.tm))
 		comma = true
 	}
 	for _, o := range n.In().Fields() {
@@ -431,7 +431,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	} else if r := n.Receiver(); r != 0 {
 		// TODO: fix this.
 		return fmt.Errorf(`cannot convert Puffs function "%s.%s" to C`,
-			r.String(g.idMap), n.Name().String(g.idMap))
+			r.String(g.tm), n.Name().String(g.tm))
 	}
 	if n.Public() {
 		badArg := false
@@ -447,7 +447,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			} else {
 				g.writes("if (")
 			}
-			g.printf("!%s%s", aPrefix, o.Name().String(g.idMap))
+			g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
 			badArg = true
 		}
 		if badArg {
@@ -494,7 +494,7 @@ func (g *gen) writeField(n *a.Field, namePrefix string) error {
 	for x := n.XType(); x != nil; x = x.Inner() {
 		if p := x.PackageOrDecorator().Key(); p == t.KeyPtr {
 			if nPtr == maxNPtr {
-				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.XType().String(g.idMap))
+				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.XType().String(g.tm))
 			}
 			nPtr++
 			continue
@@ -516,14 +516,14 @@ func (g *gen) writeField(n *a.Field, namePrefix string) error {
 	}
 	if !convertible {
 		// TODO: fix this.
-		return fmt.Errorf("cannot convert Puffs type %q to C", n.XType().String(g.idMap))
+		return fmt.Errorf("cannot convert Puffs type %q to C", n.XType().String(g.tm))
 	}
 
 	for i := 0; i < nPtr; i++ {
 		g.writeb('*')
 	}
 	g.writes(namePrefix)
-	g.writes(n.Name().String(g.idMap))
+	g.writes(n.Name().String(g.tm))
 
 	for x := n.XType(); x != nil; x = x.Inner() {
 		if x.PackageOrDecorator() == t.IDOpenBracket {
@@ -547,12 +547,12 @@ func (g *gen) writeVars(n *a.Node, depth uint32) error {
 		// TODO: use g.writeCTypeName.
 		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
-				g.printf("%s %s%s;\n", s, vPrefix, n.Var().Name().String(g.idMap))
+				g.printf("%s %s%s;\n", s, vPrefix, n.Var().Name().String(g.tm))
 				return nil
 			}
 		}
 		// TODO: fix this.
-		return fmt.Errorf("cannot convert Puffs type %q to C", x.String(g.idMap))
+		return fmt.Errorf("cannot convert Puffs type %q to C", x.String(g.tm))
 	}
 
 	for _, l := range n.Raw().SubLists() {
@@ -643,7 +643,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 	case a.KVar:
 		n := n.Var()
 		// TODO: consider suspendible calls.
-		g.printf("%s%s = ", vPrefix, n.Name().String(g.idMap))
+		g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 		if v := n.Value(); v != nil {
 			if err := g.writeExpr(v, replaceCallSuspendibles, 0); err != nil {
 				return err
@@ -724,7 +724,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 	g.perFunc.tempW++
 
 	// TODO: delete this hack that only matches "in.src.read_u8?()".
-	if isInSrcReadU8(g.idMap, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
+	if isInSrcReadU8(g.tm, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: choose error_unexpected_eof versus status_short_read based on
@@ -745,7 +745,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 		// TODO: fix this.
 		//
 		// This might involve calling g.writeExpr with replaceNothing??
-		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.idMap))
+		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
 	}
 	return nil
 }
@@ -808,7 +808,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		} else {
 			// TODO: don't assume that the vPrefix is necessary.
 			g.writes(vPrefix)
-			g.writes(id1.String(g.idMap))
+			g.writes(id1.String(g.tm))
 		}
 		return nil
 
@@ -833,18 +833,18 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// TODO: don't assume that the fPrefix is necessary.
 		g.writes("->")
 		g.writes(fPrefix)
-		g.writes(n.ID1().String(g.idMap))
+		g.writes(n.ID1().String(g.tm))
 		return nil
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }
 
-func isInSrcReadU8(m *t.IDMap, n *a.Expr) bool {
+func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != m.ByName("src") {
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("src") {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -902,7 +902,7 @@ func (g *gen) writeCTypeName(n *a.TypeExpr) error {
 		}
 	}
 	// TODO: fix this.
-	return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.idMap))
+	return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.tm))
 }
 
 var cTypeNames = [...]string{

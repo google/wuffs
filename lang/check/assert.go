@@ -135,8 +135,8 @@ func simplify(n *a.Expr) *a.Expr {
 	return n
 }
 
-func argValue(m *t.IDMap, args []*a.Node, name string) *a.Expr {
-	if x := m.ByName(name); x != 0 {
+func argValue(tm *t.Map, args []*a.Node, name string) *a.Expr {
+	if x := tm.ByName(name); x != 0 {
 		for _, a := range args {
 			if a.Arg().Name() == x {
 				return a.Arg().Value()
@@ -251,15 +251,15 @@ var reasons = [...]struct {
 			return errFailed
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
-			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.idMap), c.String(q.idMap))
+			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.tm), c.String(q.tm))
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, b) {
-			return fmt.Errorf("cannot prove \"%s <= %s\"", zeroExpr.String(q.idMap), b.String(q.idMap))
+			return fmt.Errorf("cannot prove \"%s <= %s\"", zeroExpr.String(q.tm), b.String(q.tm))
 		}
 		return nil
 	}},
 	{`"a < b: a < c; c <= b"`, func(q *checker, n *a.Assert) error {
-		c := argValue(q.idMap, n.Args(), "c")
+		c := argValue(q.tm, n.Args(), "c")
 		if c == nil {
 			return errFailed
 		}
@@ -268,10 +268,10 @@ var reasons = [...]struct {
 			return errFailed
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
-			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.idMap), c.String(q.idMap))
+			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.tm), c.String(q.tm))
 		}
 		if !q.proveBinaryOp(t.KeyXBinaryLessEq, c, b) {
-			return fmt.Errorf("cannot prove \"%s <= %s\"", c.String(q.idMap), b.String(q.idMap))
+			return fmt.Errorf("cannot prove \"%s <= %s\"", c.String(q.tm), b.String(q.tm))
 		}
 		return nil
 	}},

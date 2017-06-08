@@ -72,7 +72,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	// TODO: skip the generation if the output file already exists and its
 	// mtime is newer than all inputs and the puffs-gen-foo command.
 
-	idMap := &token.IDMap{}
+	tm := &token.Map{}
 	files := []*ast.File(nil)
 	buf := &bytes.Buffer{}
 	for _, filename := range filenames {
@@ -81,20 +81,20 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 		if err != nil {
 			return err
 		}
-		tokens, _, err := token.Tokenize(idMap, filename, src)
+		tokens, _, err := token.Tokenize(tm, filename, src)
 		if err != nil {
 			return err
 		}
-		f, err := parse.Parse(idMap, filename, tokens)
+		f, err := parse.Parse(tm, filename, tokens)
 		if err != nil {
 			return err
 		}
 		files = append(files, f)
-		if err := render.Render(buf, idMap, tokens, nil); err != nil {
+		if err := render.Render(buf, tm, tokens, nil); err != nil {
 			return err
 		}
 	}
-	if _, err := check.Check(idMap, 0, files...); err != nil {
+	if _, err := check.Check(tm, 0, files...); err != nil {
 		return err
 	}
 	combinedSrc := buf.Bytes()

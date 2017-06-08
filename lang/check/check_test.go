@@ -18,9 +18,9 @@ import (
 	"github.com/google/puffs/lang/token"
 )
 
-func compareToPuffsfmt(idMap *token.IDMap, tokens []token.Token, comments []string, src string) error {
+func compareToPuffsfmt(tm *token.Map, tokens []token.Token, comments []string, src string) error {
 	buf := &bytes.Buffer{}
-	if err := render.Render(buf, idMap, tokens, comments); err != nil {
+	if err := render.Render(buf, tm, tokens, comments); err != nil {
 		return err
 	}
 	got := strings.Split(buf.String(), "\n")
@@ -81,23 +81,23 @@ func TestCheck(t *testing.T) {
 		}
 	`) + "\n"
 
-	idMap := &token.IDMap{}
+	tm := &token.Map{}
 
-	tokens, comments, err := token.Tokenize(idMap, filename, []byte(src))
+	tokens, comments, err := token.Tokenize(tm, filename, []byte(src))
 	if err != nil {
 		t.Fatalf("Tokenize: %v", err)
 	}
 
-	file, err := parse.Parse(idMap, filename, tokens)
+	file, err := parse.Parse(tm, filename, tokens)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	if err := compareToPuffsfmt(idMap, tokens, comments, src); err != nil {
+	if err := compareToPuffsfmt(tm, tokens, comments, src); err != nil {
 		t.Fatalf("compareToPuffsfmt: %v", err)
 	}
 
-	c, err := Check(idMap, 0, file)
+	c, err := Check(tm, 0, file)
 	if err != nil {
 		t.Fatalf("Check: %v", err)
 	}
@@ -112,15 +112,15 @@ func TestCheck(t *testing.T) {
 		break
 	}
 
-	if got, want := fooBar.QID.String(idMap), "foo.bar"; got != want {
+	if got, want := fooBar.QID.String(tm), "foo.bar"; got != want {
 		t.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
 	for id, typ := range fooBar.LocalVars {
 		got = append(got, [2]string{
-			id.String(idMap),
-			typ.String(idMap),
+			id.String(tm),
+			typ.String(tm),
 		})
 	}
 	sort.Slice(got, func(i, j int) bool {
@@ -178,23 +178,23 @@ func TestConstValues(t *testing.T) {
 		"var b bool = false  or true": 1,
 	}
 
-	idMap := &token.IDMap{}
+	tm := &token.Map{}
 	for s, wantInt64 := range testCases {
 		src := "pri func foo()() {\n\t" + s + "\n}\n"
 
-		tokens, _, err := token.Tokenize(idMap, filename, []byte(src))
+		tokens, _, err := token.Tokenize(tm, filename, []byte(src))
 		if err != nil {
 			t.Errorf("%q: Tokenize: %v", s, err)
 			continue
 		}
 
-		file, err := parse.Parse(idMap, filename, tokens)
+		file, err := parse.Parse(tm, filename, tokens)
 		if err != nil {
 			t.Errorf("%q: Parse: %v", s, err)
 			continue
 		}
 
-		c, err := Check(idMap, 0, file)
+		c, err := Check(tm, 0, file)
 		if err != nil {
 			t.Errorf("%q: Check: %v", s, err)
 			continue

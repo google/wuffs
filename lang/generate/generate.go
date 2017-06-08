@@ -22,7 +22,7 @@ var (
 	packageName = flag.String("package_name", "", "the package name of the Puffs input code")
 )
 
-type Generator func(packageName string, m *token.IDMap, files []*ast.File) ([]byte, error)
+type Generator func(packageName string, tm *token.Map, files []*ast.File) ([]byte, error)
 
 func Main(g Generator) {
 	if err := main1(g); err != nil {
@@ -35,8 +35,8 @@ func Main(g Generator) {
 
 func main1(g Generator) error {
 	flag.Parse()
-	idMap := &token.IDMap{}
-	files, err := parseFiles(idMap)
+	tm := &token.Map{}
+	files, err := parseFiles(tm)
 	if err != nil {
 		return err
 	}
@@ -47,11 +47,11 @@ func main1(g Generator) error {
 	if *assumeAlreadyChecked {
 		checkFlags |= check.FlagsOnlyTypeCheck
 	}
-	if _, err := check.Check(idMap, checkFlags, files...); err != nil {
+	if _, err := check.Check(tm, checkFlags, files...); err != nil {
 		return err
 	}
 
-	out, err := g(*packageName, idMap, files)
+	out, err := g(*packageName, tm, files)
 	if err != nil {
 		return err
 	}
@@ -62,18 +62,18 @@ func main1(g Generator) error {
 	return nil
 }
 
-func parseFiles(idMap *token.IDMap) (files []*ast.File, err error) {
+func parseFiles(tm *token.Map) (files []*ast.File, err error) {
 	if len(flag.Args()) == 0 {
 		const filename = "stdin"
 		src, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			return nil, err
 		}
-		tokens, _, err := token.Tokenize(idMap, filename, src)
+		tokens, _, err := token.Tokenize(tm, filename, src)
 		if err != nil {
 			return nil, err
 		}
-		f, err := parse.Parse(idMap, filename, tokens)
+		f, err := parse.Parse(tm, filename, tokens)
 		if err != nil {
 			return nil, err
 		}
@@ -85,11 +85,11 @@ func parseFiles(idMap *token.IDMap) (files []*ast.File, err error) {
 		if err != nil {
 			return nil, err
 		}
-		tokens, _, err := token.Tokenize(idMap, filename, src)
+		tokens, _, err := token.Tokenize(tm, filename, src)
 		if err != nil {
 			return nil, err
 		}
-		f, err := parse.Parse(idMap, filename, tokens)
+		f, err := parse.Parse(tm, filename, tokens)
 		if err != nil {
 			return nil, err
 		}

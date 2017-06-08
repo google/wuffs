@@ -24,7 +24,7 @@ type Error struct {
 	OtherFilename string
 	OtherLine     uint32
 
-	IDMap *t.IDMap
+	TMap  *t.Map
 	Facts []*a.Expr
 }
 
@@ -36,13 +36,13 @@ func (e *Error) Error() string {
 	} else {
 		s = fmt.Sprintf("%s at %s:%d", e.Err, e.Filename, e.Line)
 	}
-	if e.IDMap == nil {
+	if e.TMap == nil {
 		return s
 	}
 	b := append([]byte(s), ". Facts:\n"...)
 	for _, f := range e.Facts {
 		b = append(b, '\t')
-		b = append(b, f.String(e.IDMap)...)
+		b = append(b, f.String(e.TMap)...)
 		b = append(b, '\n')
 	}
 	return string(b)
@@ -71,7 +71,7 @@ type Func struct {
 	LocalVars TypeMap
 }
 
-func Check(m *t.IDMap, flags Flags, files ...*a.File) (*Checker, error) {
+func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {
 			return nil, errors.New("check: Check given a nil *ast.File")
@@ -90,13 +90,13 @@ func Check(m *t.IDMap, flags Flags, files ...*a.File) (*Checker, error) {
 
 	rMap := reasonMap{}
 	for _, r := range reasons {
-		if id := m.ByName(r.s); id != 0 {
+		if id := tm.ByName(r.s); id != 0 {
 			rMap[id.Key()] = r.r
 		}
 	}
 	c := &Checker{
 		flags:     flags,
-		idMap:     m,
+		tm:        tm,
 		reasonMap: rMap,
 		structs:   map[t.ID]Struct{},
 		funcs:     map[t.QID]Func{},
@@ -131,7 +131,7 @@ var phases = [...]struct {
 
 type Checker struct {
 	flags     Flags
-	idMap     *t.IDMap
+	tm        *t.Map
 	reasonMap reasonMap
 	structs   map[t.ID]Struct
 	funcs     map[t.QID]Func
@@ -150,38 +150,38 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 	}
 
 	q := &checker{
-		c:     c,
-		idMap: c.idMap,
+		c:  c,
+		tm: c.tm,
 	}
 	fieldNames := map[t.ID]bool{}
 	for _, n := range fields {
 		f := n.Field()
 		if _, ok := fieldNames[f.Name()]; ok {
-			return fmt.Errorf("check: duplicate field %q", f.Name().String(c.idMap))
+			return fmt.Errorf("check: duplicate field %q", f.Name().String(c.tm))
 		}
 		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
-			return fmt.Errorf("%v in field %q", err, f.Name().String(c.idMap))
+			return fmt.Errorf("%v in field %q", err, f.Name().String(c.tm))
 		}
 		if banPtrTypes {
 			for x := f.XType(); x.Inner() != nil; x = x.Inner() {
 				if x.PackageOrDecorator().Key() == t.KeyPtr {
 					// TODO: implement nptr (nullable pointer) types.
 					return fmt.Errorf("check: ptr type %q not allowed for field %q; use nptr instead",
-						x.String(c.idMap), f.Name().String(c.idMap))
+						x.String(c.tm), f.Name().String(c.tm))
 				}
 			}
 		}
 		if dv := f.DefaultValue(); dv != nil {
 			if f.XType().PackageOrDecorator() != 0 {
 				return fmt.Errorf("check: cannot set default value for qualified type %q for field %q",
-					f.XType().String(c.idMap), f.Name().String(c.idMap))
+					f.XType().String(c.tm), f.Name().String(c.tm))
 			}
 			if err := q.tcheckExpr(dv, 0); err != nil {
 				return err
 			}
 		}
 		if c.flags&FlagsOnlyTypeCheck == 0 {
-			if err := bcheckField(c.idMap, f); err != nil {
+			if err := bcheckField(c.tm, f); err != nil {
 				return err
 			}
 		}
@@ -196,7 +196,7 @@ func (c *Checker) checkStruct(node *a.Node) error {
 	n := node.Struct()
 	if err := c.checkFields(n.Fields(), true); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.idMap)),
+			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -204,7 +204,7 @@ func (c *Checker) checkStruct(node *a.Node) error {
 	id := n.Name()
 	if other, ok := c.structs[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.idMap)),
+			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Struct.Filename(),
@@ -223,7 +223,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.Func()
 	if err := c.checkFields(n.In().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().String(c.idMap)),
+			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().String(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -231,7 +231,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().String(c.idMap)),
+			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().String(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -241,7 +241,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	qid := n.QID()
 	if other, ok := c.funcs[qid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate function %q", qid.String(c.idMap)),
+			Err:           fmt.Errorf("check: duplicate function %q", qid.String(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Func.Filename(),
@@ -260,7 +260,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	if qid[0] != 0 {
 		if _, ok := c.structs[qid[0]]; !ok {
 			return &Error{
-				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.String(c.idMap)),
+				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.String(c.tm)),
 				Filename: n.Filename(),
 				Line:     n.Line(),
 			}
@@ -285,8 +285,8 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 		return nil
 	}
 	q := &checker{
-		c:     c,
-		idMap: c.idMap,
+		c:  c,
+		tm: c.tm,
 	}
 	for _, o := range n.Asserts() {
 		if err := q.tcheckAssert(o.Assert()); err != nil {
@@ -300,7 +300,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	n := node.Func()
 	q := &checker{
 		c:         c,
-		idMap:     c.idMap,
+		tm:        c.tm,
 		reasonMap: c.reasonMap,
 		f:         c.funcs[n.QID()],
 	}
@@ -338,7 +338,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 				Err:      err,
 				Filename: q.errFilename,
 				Line:     q.errLine,
-				IDMap:    c.idMap,
+				TMap:     c.tm,
 				Facts:    q.facts,
 			}
 		}
@@ -350,10 +350,10 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 			switch o.Kind() {
 			case a.KExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Expr().String(q.idMap))
+					o.Kind(), o.Expr().String(q.tm))
 			case a.KTypeExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.TypeExpr().String(q.idMap))
+					o.Kind(), o.TypeExpr().String(q.tm))
 			}
 			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
@@ -361,10 +361,10 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 			o := o.Expr()
 			if typ := o.MType(); typ == nil {
 				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
-					o.String(q.idMap))
+					o.String(q.tm))
 			} else if typ == TypeExprIdeal && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", o.String(q.idMap))
+					"but no const value", o.String(q.tm))
 			}
 		}
 		return nil
@@ -377,7 +377,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 
 type checker struct {
 	c         *Checker
-	idMap     *t.IDMap
+	tm        *t.Map
 	reasonMap reasonMap
 	f         Func
 

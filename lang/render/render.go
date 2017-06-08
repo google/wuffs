@@ -16,7 +16,7 @@ import (
 
 var newLine = []byte{'\n'}
 
-func Render(w io.Writer, m *token.IDMap, src []token.Token, comments []string) (err error) {
+func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (err error) {
 	if len(src) == 0 {
 		return nil
 	}
@@ -109,7 +109,7 @@ func Render(w io.Writer, m *token.IDMap, src []token.Token, comments []string) (
 				}
 			}
 
-			buf = append(buf, m.ByToken(t)...)
+			buf = append(buf, tm.ByToken(t)...)
 
 			if t.ID.Key() == token.KeyOpenCurly {
 				if indent == maxIndent {

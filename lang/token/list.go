@@ -36,7 +36,7 @@ const (
 	flagsUnused            = Flags(0x8000)
 )
 
-// Key is the high 16 bits of an ID. It is the map key for an IDMap.
+// Key is the high 16 bits of an ID. It is the map key for a Map.
 type Key uint32
 
 const (
@@ -51,7 +51,7 @@ const (
 type ID uint32
 
 // String returns a string form of x.
-func (x ID) String(m *IDMap) string { return m.ByID(x) }
+func (x ID) String(m *Map) string { return m.ByID(x) }
 
 func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&(x>>KeyShift)] }
 func (x ID) UnaryForm() ID       { return unaryForms[0xFF&(x>>KeyShift)] }
@@ -83,7 +83,7 @@ func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
 type QID [2]ID
 
 // String returns a string form of x.
-func (x QID) String(m *IDMap) string {
+func (x QID) String(m *Map) string {
 	if x[0] == 0 {
 		return m.ByID(x[1])
 	}

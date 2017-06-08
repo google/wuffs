@@ -59,19 +59,19 @@ func TestString(t *testing.T) {
 		"x as [8 + (2 * N)] ptr [4] ptr pkg.T[i..j]",
 	}
 
-	idMap := &token.IDMap{}
+	tm := &token.Map{}
 	for _, tc := range testCases {
-		tokens, _, err := token.Tokenize(idMap, filename, []byte(tc))
+		tokens, _, err := token.Tokenize(tm, filename, []byte(tc))
 		if err != nil {
 			t.Errorf("Tokenize(%q): %v", tc, err)
 			continue
 		}
-		expr, err := parse.ParseExpr(idMap, filename, tokens)
+		expr, err := parse.ParseExpr(tm, filename, tokens)
 		if err != nil {
 			t.Errorf("ParseExpr(%q): %v", tc, err)
 			continue
 		}
-		got := expr.String(idMap)
+		got := expr.String(tm)
 		if got != tc {
 			t.Errorf("got %q, want %q", got, tc)
 			continue

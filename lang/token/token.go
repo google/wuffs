@@ -13,12 +13,12 @@ const (
 	maxTokenSize = 1023
 )
 
-type IDMap struct {
+type Map struct {
 	byName map[string]ID
 	byKey  []string
 }
 
-func (m *IDMap) insert(name string) (ID, error) {
+func (m *Map) insert(name string) (ID, error) {
 	if name == "" {
 		return 0, nil
 	}
@@ -50,7 +50,7 @@ func (m *IDMap) insert(name string) (ID, error) {
 	return id, nil
 }
 
-func (m *IDMap) ByName(name string) ID {
+func (m *Map) ByName(name string) ID {
 	if id, ok := builtInsByName[name]; ok {
 		return id
 	}
@@ -60,10 +60,10 @@ func (m *IDMap) ByName(name string) ID {
 	return 0
 }
 
-func (m *IDMap) ByID(x ID) string       { return m.ByKey(Key(x >> KeyShift)) }
-func (m *IDMap) ByToken(t Token) string { return m.ByKey(Key(t.ID >> KeyShift)) }
+func (m *Map) ByID(x ID) string       { return m.ByKey(Key(x >> KeyShift)) }
+func (m *Map) ByToken(t Token) string { return m.ByKey(Key(t.ID >> KeyShift)) }
 
-func (m *IDMap) ByKey(k Key) string {
+func (m *Map) ByKey(k Key) string {
 	if k < nBuiltInKeys {
 		return builtInsByKey[k].name
 	}
@@ -102,7 +102,7 @@ func hasPrefix(a []byte, s string) bool {
 	return true
 }
 
-func Tokenize(m *IDMap, filename string, src []byte) (tokens []Token, comments []string, retErr error) {
+func Tokenize(m *Map, filename string, src []byte) (tokens []Token, comments []string, retErr error) {
 	line := uint32(1)
 loop:
 	for i := 0; i < len(src); {

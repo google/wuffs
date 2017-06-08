@@ -107,18 +107,18 @@ func do(r io.Reader, filename string) error {
 		return err
 	}
 
-	idMap := &token.IDMap{}
-	tokens, comments, err := token.Tokenize(idMap, filename, src)
+	tm := &token.Map{}
+	tokens, comments, err := token.Tokenize(tm, filename, src)
 	if err != nil {
 		return err
 	}
 	// We don't need the AST node to pretty-print, but it's worth puffsfmt
 	// rejecting syntax errors. This is just a parse, not a full type check.
-	if _, err := parse.Parse(idMap, filename, tokens); err != nil {
+	if _, err := parse.Parse(tm, filename, tokens); err != nil {
 		return err
 	}
 	buf := &bytes.Buffer{}
-	if err := render.Render(buf, idMap, tokens, comments); err != nil {
+	if err := render.Render(buf, tm, tokens, comments); err != nil {
 		return err
 	}
 	dst := buf.Bytes()
