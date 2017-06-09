@@ -44,6 +44,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 		n_bits -= width
 
 		if code < clear_code {
+			assert code < 256 via "a < b: a < c; c <= b"(c:clear_code)
 			in.dst.write_u8?(x:code as u8)
 			if use_save_code {
 				this.suffixes[save_code] = code as u8

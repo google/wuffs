@@ -576,13 +576,12 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 			if err != nil {
 				return nil, nil, err
 			}
-			nMin, nMax := max(lMin, rMin), min(lMax, rMax)
-			// TODO: check if nMin > nMax.
-			//
-			// TODO: should it be a compile time error if "x as T" can narrow
-			// the range? Do we want a separate "~as" operator that ignores
-			// overflow?
-			return nMin, nMax, nil
+			if lMin.Cmp(rMin) < 0 || lMax.Cmp(rMax) > 0 {
+				return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
+					n.LHS().Expr().String(q.tm), lMin, lMax, rMin, rMax,
+				)
+			}
+			return lMin, lMax, nil
 		}
 		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
