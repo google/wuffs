@@ -246,7 +246,6 @@ label_0_continue:;
     v_bits >>= v_width;
     v_n_bits -= v_width;
     if (v_code < v_clear_code) {
-      goto label_0_break;
     } else if (v_code == v_clear_code) {
       v_use_save_code = false;
       v_save_code = v_end_code;
@@ -256,8 +255,6 @@ label_0_continue:;
       status = puffs_gif_status_ok;
       goto cleanup0;
     } else if (v_code <= v_save_code) {
-      status = puffs_gif_status_ok;
-      goto cleanup0;
     } else {
       status = puffs_gif_error_bad_gif_image;
       goto cleanup0;
@@ -267,13 +264,9 @@ label_0_continue:;
       v_save_code += 1;
       if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
         v_width += 1;
-        goto label_0_break;
       }
-      goto label_0_break;
     }
-    goto label_0_break;
   }
-label_0_break:;
 
 cleanup0:
   self->status = status;

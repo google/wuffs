@@ -44,16 +44,19 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 
 		if code < clear_code {
 			// TODO: if use_save_code { etc }
-			break
+
 		} else if code == clear_code {
 			use_save_code = false
 			save_code = end_code
 			width = this.literal_width + 1
 			continue
+
 		} else if code == end_code {
 			return
+
 		} else if code <= save_code {
-			return
+			// TODO: implement.
+
 		} else {
 			return error "bad GIF image"
 		}
@@ -63,10 +66,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			save_code += 1
 			if (save_code == ((1 as u32) << width)) and (width < 12) {
 				width += 1
-				break  // TODO: remove.
 			}
-			break  // TODO: remove.
 		}
-		break  // TODO: remove.
 	}
 }

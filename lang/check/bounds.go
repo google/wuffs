@@ -369,16 +369,33 @@ func snapshot(facts []*a.Expr) []*a.Expr {
 	return append([]*a.Expr(nil), facts...)
 }
 
-func unify(dst []*a.Expr, branches [][]*a.Expr) ([]*a.Expr, error) {
-	switch len(branches) {
-	case 0:
-		// No-op.
-	case 1:
-		dst = append(dst, branches[0]...)
-	default:
-		return nil, fmt.Errorf("TODO: unify multiple if branches")
+func (q *checker) unify(branches [][]*a.Expr) error {
+	q.facts = q.facts[:0]
+	if len(branches) == 0 {
+		return nil
 	}
-	return dst, nil
+	q.facts = append(q.facts[:0], branches[0]...)
+	if len(branches) == 1 {
+		return nil
+	}
+	if len(branches) > 10000 {
+		return fmt.Errorf("too many if-else branches")
+	}
+
+	m := map[string]int{}
+	for _, b := range branches {
+		for _, f := range b {
+			m[f.String(q.tm)]++
+		}
+	}
+
+	q.facts.update(func(n *a.Expr) *a.Expr {
+		if m[n.String(q.tm)] == len(branches) {
+			return n
+		}
+		return nil
+	})
+	return nil
 }
 
 func (q *checker) bcheckIf(n *a.If) error {
@@ -427,12 +444,7 @@ func (q *checker) bcheckIf(n *a.If) error {
 			break
 		}
 	}
-	u, err := unify(q.facts[:0], branches)
-	if err != nil {
-		return err
-	}
-	q.facts = u
-	return nil
+	return q.unify(branches)
 }
 
 func (q *checker) bcheckWhile(n *a.While) error {
