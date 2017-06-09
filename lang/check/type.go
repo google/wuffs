@@ -349,7 +349,26 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenBracket:
 		// n is an index.
-		// TODO.
+		lhs := n.LHS().Expr()
+		if err := q.tcheckExpr(lhs, depth); err != nil {
+			return err
+		}
+		rhs := n.RHS().Expr()
+		if err := q.tcheckExpr(rhs, depth); err != nil {
+			return err
+		}
+		lTyp := lhs.MType()
+		if lTyp.PackageOrDecorator().Key() != t.KeyOpenBracket {
+			return fmt.Errorf("%s is an array-index expression but %s has type %s, not an array type",
+				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+		}
+		rTyp := rhs.MType()
+		if !rTyp.IsNumType() {
+			return fmt.Errorf("%s is an array-index expression but %s has type %s, not a numeric type",
+				n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+		}
+		n.SetMType(lTyp.Inner())
+		return nil
 
 	case t.KeyColon:
 		// n is a slice.

@@ -304,6 +304,10 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		return nil
 	}
 
+	_, _, err := q.bcheckExpr(lhs, 0)
+	if err != nil {
+		return err
+	}
 	lMin, lMax, err := q.bcheckTypeExpr(lhs.MType())
 	if err != nil {
 		return err
@@ -630,8 +634,25 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
 	case t.KeyOpenBracket:
-		// TODO.
-		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+		lhs := n.LHS().Expr()
+		_, _, err := q.bcheckExpr(lhs, depth)
+		if err != nil {
+			return nil, nil, err
+		}
+		rhs := n.RHS().Expr()
+		rMin, rMax, err := q.bcheckExpr(rhs, depth)
+		if err != nil {
+			return nil, nil, err
+		}
+		cv := lhs.MType().ArrayLength().ConstValue()
+		if cv == nil {
+			return nil, nil, fmt.Errorf("check: cannot determine constant array length for %q",
+				lhs.MType().String(q.tm))
+		}
+		if rMin.Cmp(zero) < 0 || rMax.Cmp(cv) >= 0 {
+			return nil, nil, fmt.Errorf("check: array index %q (of range %v..%v) out of range",
+				rhs.String(q.tm), rMin, rMax)
+		}
 
 	case t.KeyColon:
 		// TODO.

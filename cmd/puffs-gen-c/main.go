@@ -997,8 +997,16 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// TODO.
 
 	case t.KeyOpenBracket:
-	// n is an index.
-	// TODO.
+		// n is an index.
+		if err := g.writeExpr(n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writeb('[')
+		if err := g.writeExpr(n.RHS().Expr(), rp, parenthesesOptional, depth); err != nil {
+			return err
+		}
+		g.writeb(']')
+		return nil
 
 	case t.KeyColon:
 	// n is a slice.

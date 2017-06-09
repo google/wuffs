@@ -219,6 +219,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_end_code;
   bool v_use_save_code;
   uint32_t v_save_code;
+  uint32_t v_prev_code;
   uint32_t v_width;
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -228,6 +229,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   v_end_code = (v_clear_code + 1);
   v_use_save_code = 0;
   v_save_code = v_end_code;
+  v_prev_code = 0;
   v_width = (self->f_literal_width + 1);
   v_bits = 0;
   v_n_bits = 0;
@@ -251,9 +253,14 @@ label_0_continue:;
         goto cleanup0;
       }
       a_dst->ptr[a_dst->wi++] = ((uint8_t)(v_code));
+      if (v_use_save_code) {
+        self->f_suffixes[v_save_code] = ((uint8_t)(v_code));
+        self->f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
+      }
     } else if (v_code == v_clear_code) {
       v_use_save_code = false;
       v_save_code = v_end_code;
+      v_prev_code = 0;
       v_width = (self->f_literal_width + 1);
       goto label_0_continue;
     } else if (v_code == v_end_code) {
@@ -271,6 +278,7 @@ label_0_continue:;
         v_width += 1;
       }
     }
+    v_prev_code = v_code;
   }
 
 cleanup0:

@@ -9,7 +9,7 @@ pub struct lzw_decoder?(
 	literal_width u32[2..8] = 8,
 	stack[4096] u8,
 	suffixes[4096] u8,
-	prefixes[4096] u16,
+	prefixes[4096] u16[..4095],
 )
 
 pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
@@ -20,6 +20,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 	// These variables do change.
 	var use_save_code bool
 	var save_code u32[..4095] = end_code
+	var prev_code u32[..4095]
 	var width u32[..12] = this.literal_width + 1
 
 	// These variables yield src's bits in Least Significant Bits order.
@@ -44,11 +45,15 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 
 		if code < clear_code {
 			in.dst.write_u8?(x:code as u8)
-			// TODO: if use_save_code { etc }
+			if use_save_code {
+				this.suffixes[save_code] = code as u8
+				this.prefixes[save_code] = prev_code as u16
+			}
 
 		} else if code == clear_code {
 			use_save_code = false
 			save_code = end_code
+			prev_code = 0
 			width = this.literal_width + 1
 			continue
 
@@ -69,5 +74,6 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 				width += 1
 			}
 		}
+		prev_code = code
 	}
 }
