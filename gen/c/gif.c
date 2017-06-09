@@ -217,6 +217,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
   uint32_t v_clear_code;
   uint32_t v_end_code;
+  bool v_use_save_code;
   uint32_t v_save_code;
   uint32_t v_width;
   uint32_t v_bits;
@@ -225,12 +226,13 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
   v_clear_code = (((uint32_t)(1)) << self->f_literal_width);
   v_end_code = (v_clear_code + 1);
+  v_use_save_code = 0;
   v_save_code = v_end_code;
   v_width = (self->f_literal_width + 1);
   v_bits = 0;
   v_n_bits = 0;
 label_0_continue:;
-  while (1) {
+  while (true) {
     while (v_n_bits < v_width) {
       if (a_src->ri >= a_src->wi) {
         status = puffs_gif_status_short_read;
@@ -246,6 +248,7 @@ label_0_continue:;
     if (v_code < v_clear_code) {
       goto label_0_break;
     } else if (v_code == v_clear_code) {
+      v_use_save_code = false;
       v_save_code = v_end_code;
       v_width = (self->f_literal_width + 1);
       goto label_0_continue;
@@ -258,6 +261,15 @@ label_0_continue:;
     } else {
       status = puffs_gif_error_bad_gif_image;
       goto cleanup0;
+    }
+    v_use_save_code = (v_save_code < 4095);
+    if (v_use_save_code) {
+      v_save_code += 1;
+      if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
+        v_width += 1;
+        goto label_0_break;
+      }
+      goto label_0_break;
     }
     goto label_0_break;
   }

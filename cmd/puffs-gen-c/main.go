@@ -14,6 +14,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 	"strings"
@@ -22,6 +23,11 @@ import (
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
+)
+
+var (
+	zero = big.NewInt(0)
+	one  = big.NewInt(1)
 )
 
 // Prefixes are prepended to names to form a namespace and to avoid e.g.
@@ -890,8 +896,15 @@ func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, d
 	}
 
 	if cv := n.ConstValue(); cv != nil {
-		// TODO: write false/true instead of 0/1 if n.MType() is bool?
-		g.writes(cv.String())
+		if nTyp := n.MType(); nTyp.PackageOrDecorator() != 0 || nTyp.Name().Key() != t.KeyBool {
+			g.writes(cv.String())
+		} else if cv.Cmp(zero) == 0 {
+			g.writes("false")
+		} else if cv.Cmp(one) == 0 {
+			g.writes("true")
+		} else {
+			return fmt.Errorf("%v has type bool but constant value %v is neither 0 or 1", n.String(g.tm), cv)
+		}
 		return nil
 	}
 

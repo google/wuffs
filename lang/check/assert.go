@@ -21,6 +21,27 @@ func (z *facts) appendFact(fact *a.Expr) {
 			return
 		}
 	}
+
+	switch fact.ID0().Key() {
+	case 0:
+		for _, f := range *z {
+			if f.ID0().Key() != t.KeyXBinaryEqEq {
+				continue
+			}
+			if fact.Eq(f.LHS().Expr()) {
+				z.appendFact(f.RHS().Expr())
+			} else if fact.Eq(f.RHS().Expr()) {
+				z.appendFact(f.LHS().Expr())
+			}
+		}
+	case t.KeyXBinaryAnd:
+		z.appendFact(fact.LHS().Expr())
+		z.appendFact(fact.RHS().Expr())
+		return
+	case t.KeyXAssociativeAnd:
+		// TODO.
+	}
+
 	*z = append(*z, fact)
 }
 

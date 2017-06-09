@@ -765,7 +765,9 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	b := [2]*big.Int{}
-	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
+	if key := n.Name().Key(); key == t.KeyBool {
+		b = [2]*big.Int{zero, one}
+	} else if key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]
 	}
 	if b[0] == nil || b[1] == nil {
