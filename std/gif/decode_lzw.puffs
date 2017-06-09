@@ -1,6 +1,10 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+// TODO: some mechanism for fixing the error code's value, such as a trailing
+// "= 100", to maintain API stability.
+pub error "bad GIF image"
+
 pub struct lzw_decoder?(
 	literal_width u32[2..8] = 8,
 	stack[4096] u8,
@@ -40,6 +44,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			continue
 		} else if code == end_code {
 			return
+		} else {
+			return error "bad GIF image"
 		}
 
 		// TODO: implement.

@@ -63,6 +63,7 @@ typedef enum {
   puffs_gif_error_unexpected_eof = -10 + 1,
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
+  puffs_gif_error_bad_gif_image = -256 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -121,7 +122,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[8] = {
+const char* puffs_gif_status_strings[9] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -130,14 +131,21 @@ const char* puffs_gif_status_strings[8] = {
     "gif: unexpected EOF",
     "gif: short read",
     "gif: short write",
+    "gif: bad GIF image",
 };
 
 const char* puffs_gif_status_string(puffs_gif_status s) {
   s = -(s >> 1);
-  if ((0 <= s) && (s < 8)) {
-    return puffs_gif_status_strings[s];
+  if (0 <= s) {
+    if (s < 8) {
+      return puffs_gif_status_strings[s];
+    }
+    s -= 120;
+    if ((8 <= s) && (s < 9)) {
+      return puffs_gif_status_strings[s];
+    }
   }
-  return "";
+  return "gif: unknown status";
 }
 
 // ---------------- Private Structs
@@ -240,6 +248,9 @@ label_0_continue:;
       goto label_0_continue;
     } else if (v_code == v_end_code) {
       status = puffs_gif_status_ok;
+      goto cleanup0;
+    } else {
+      status = puffs_gif_error_bad_gif_image;
       goto cleanup0;
     }
     goto label_0_break;

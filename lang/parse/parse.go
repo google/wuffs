@@ -148,6 +148,22 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
 
+		case t.KeyError, t.KeyStatus:
+			keyword := p.src[0].ID
+			p.src = p.src[1:]
+			message := p.peek1()
+			if !message.IsStrLiteral() {
+				got := p.tm.ByID(message)
+				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			if x := p.peek1().Key(); x != t.KeySemicolon {
+				got := p.tm.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return a.NewStatus(flags, p.filename, line, keyword, message).Node(), nil
+
 		case t.KeyStruct:
 			p.src = p.src[1:]
 			name, err := p.parseIdent()
@@ -515,14 +531,26 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyReturn:
 		p.src = p.src[1:]
-		value, err := (*a.Expr)(nil), error(nil)
-		if p.peek1().Key() != t.KeySemicolon {
+		keyword, message, value, err := t.ID(0), t.ID(0), (*a.Expr)(nil), error(nil)
+		switch x := p.peek1(); x.Key() {
+		case t.KeySemicolon:
+			// No-op.
+		case t.KeyError, t.KeyStatus:
+			keyword = x
+			p.src = p.src[1:]
+			message = p.peek1()
+			if !message.IsStrLiteral() {
+				got := p.tm.ByID(message)
+				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+		default:
 			value, err = p.parseExpr()
 			if err != nil {
 				return nil, err
 			}
 		}
-		return a.NewReturn(value).Node(), nil
+		return a.NewReturn(keyword, message, value).Node(), nil
 
 	case t.KeyVar:
 		p.src = p.src[1:]

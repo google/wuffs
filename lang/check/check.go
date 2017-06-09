@@ -48,6 +48,13 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
+func trimQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
 // TypeExprFoo is an *ast.Node MType (implicit type).
 var (
 	TypeExprBool  = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
@@ -60,15 +67,20 @@ func numeric(n *a.TypeExpr) bool { return n == TypeExprIdeal || n.IsNumType() }
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
 
-type Struct struct {
-	ID     t.ID
-	Struct *a.Struct
-}
-
 type Func struct {
-	QID       t.QID
+	QID       t.QID // Qualified ID of the func name.
 	Func      *a.Func
 	LocalVars TypeMap
+}
+
+type Status struct {
+	ID     t.ID // ID of the status message.
+	Status *a.Status
+}
+
+type Struct struct {
+	ID     t.ID // ID of the struct name.
+	Struct *a.Struct
 }
 
 func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
@@ -98,8 +110,9 @@ func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
 		flags:     flags,
 		tm:        tm,
 		reasonMap: rMap,
-		structs:   map[t.ID]Struct{},
 		funcs:     map[t.QID]Func{},
+		statuses:  map[t.ID]Status{},
+		structs:   map[t.ID]Struct{},
 	}
 
 	for _, phase := range phases {
@@ -123,6 +136,7 @@ var phases = [...]struct {
 	check func(*Checker, *a.Node) error
 }{
 	{a.KUse, (*Checker).checkUse},
+	{a.KStatus, (*Checker).checkStatus},
 	{a.KStruct, (*Checker).checkStruct},
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
@@ -133,14 +147,37 @@ type Checker struct {
 	flags     Flags
 	tm        *t.Map
 	reasonMap reasonMap
-	structs   map[t.ID]Struct
 	funcs     map[t.QID]Func
+	statuses  map[t.ID]Status
+	structs   map[t.ID]Struct
 }
 
-func (c *Checker) Funcs() map[t.QID]Func { return c.funcs }
+func (c *Checker) Funcs() map[t.QID]Func     { return c.funcs }
+func (c *Checker) Statuses() map[t.ID]Status { return c.statuses }
+func (c *Checker) Structs() map[t.ID]Struct  { return c.structs }
 
 func (c *Checker) checkUse(node *a.Node) error {
 	// TODO.
+	return nil
+}
+
+func (c *Checker) checkStatus(node *a.Node) error {
+	n := node.Status()
+	id := n.Message()
+	if other, ok := c.statuses[id]; ok {
+		return &Error{
+			Err:           fmt.Errorf("check: duplicate status %q", trimQuotes(id.String(c.tm))),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
+			OtherFilename: other.Status.Filename(),
+			OtherLine:     other.Status.Line(),
+		}
+	}
+	c.statuses[id] = Status{
+		ID:     id,
+		Status: n,
+	}
+	n.Node().SetTypeChecked()
 	return nil
 }
 

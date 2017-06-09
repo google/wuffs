@@ -106,7 +106,15 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KReturn:
 		n := n.Return()
-		if value := n.Value(); value != nil {
+		if nk := n.Keyword(); nk != 0 {
+			if s, ok := q.c.statuses[n.Message()]; !ok {
+				return fmt.Errorf("check: no error or status with message %q",
+					trimQuotes(n.Message().String(q.tm)))
+			} else if sk := s.Status.Keyword(); nk != sk {
+				return fmt.Errorf("check: return statement says %q but declaration says %q",
+					nk.String(q.tm), sk.String(q.tm))
+			}
+		} else if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}

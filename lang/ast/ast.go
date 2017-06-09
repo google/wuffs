@@ -31,6 +31,7 @@ const (
 	KIf
 	KJump
 	KReturn
+	KStatus
 	KStruct
 	KTypeExpr
 	KUse
@@ -58,6 +59,7 @@ var kindStrings = [...]string{
 	KIf:       "KIf",
 	KJump:     "KJump",
 	KReturn:   "KReturn",
+	KStatus:   "KStatus",
 	KStruct:   "KStruct",
 	KTypeExpr: "KTypeExpr",
 	KUse:      "KUse",
@@ -113,6 +115,7 @@ func (n *Node) If() *If             { return (*If)(n) }
 func (n *Node) Jump() *Jump         { return (*Jump)(n) }
 func (n *Node) Raw() *Raw           { return (*Raw)(n) }
 func (n *Node) Return() *Return     { return (*Return)(n) }
+func (n *Node) Status() *Status     { return (*Status)(n) }
 func (n *Node) Struct() *Struct     { return (*Struct)(n) }
 func (n *Node) TypeExpr() *TypeExpr { return (*TypeExpr)(n) }
 func (n *Node) Use() *Use           { return (*Use)(n) }
@@ -394,16 +397,22 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 	}
 }
 
-// Return is "return LHS":
+// Return is "return LHS", "return error ID1" or "return status ID1":
+//  - ID0:   <0|IDError|IDStatus>
+//  - ID1:   message
 //  - LHS:   <nil|Expr>
 type Return Node
 
-func (n *Return) Node() *Node  { return (*Node)(n) }
-func (n *Return) Value() *Expr { return n.lhs.Expr() }
+func (n *Return) Node() *Node   { return (*Node)(n) }
+func (n *Return) Keyword() t.ID { return n.id0 }
+func (n *Return) Message() t.ID { return n.id1 }
+func (n *Return) Value() *Expr  { return n.lhs.Expr() }
 
-func NewReturn(value *Expr) *Return {
+func NewReturn(keyword t.ID, message t.ID, value *Expr) *Return {
 	return &Return{
 		kind: KReturn,
+		id0:  keyword,
+		id1:  message,
 		lhs:  value.Node(),
 	}
 }
@@ -536,6 +545,30 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 	}
 }
 
+// Status is "error ID1" or "status ID1":
+//  - FlagsPublic      is "pub" vs "pri"
+//  - ID0:   <IDError|IDStatus>
+//  - ID1:   message
+type Status Node
+
+func (n *Status) Node() *Node      { return (*Node)(n) }
+func (n *Status) Public() bool     { return n.flags&FlagsPublic != 0 }
+func (n *Status) Filename() string { return n.filename }
+func (n *Status) Line() uint32     { return n.line }
+func (n *Status) Keyword() t.ID    { return n.id0 }
+func (n *Status) Message() t.ID    { return n.id1 }
+
+func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message t.ID) *Status {
+	return &Status{
+		kind:     KStatus,
+		flags:    flags,
+		filename: filename,
+		line:     line,
+		id0:      keyword,
+		id1:      message,
+	}
+}
+
 // Struct is "struct ID1(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - FlagsPublic      is "pub" vs "pri"
@@ -581,7 +614,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 }
 
 // File is a file of source code:
-//  - List0: <Func|Struct|Use> top-level declarations
+//  - List0: <Func|Status|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) Node() *Node            { return (*Node)(n) }

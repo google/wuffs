@@ -93,6 +93,10 @@ void test_status_is_error() {
     FAIL("test_status_is_error: is_error(short_write) returned true");
     return;
   }
+  if (!puffs_gif_status_is_error(puffs_gif_error_bad_gif_image)) {
+    FAIL("test_status_is_error: is_error(bad_gif_image) returned false");
+    return;
+  }
 }
 
 void test_status_strings() {
@@ -109,6 +113,16 @@ void test_status_strings() {
   const char* s2 = puffs_gif_status_string(puffs_gif_status_short_write);
   if (strcmp(s2, "gif: short write")) {
     FAIL("test_status_strings: got \"%s\", want \"gif: short write\"", s2);
+    return;
+  }
+  const char* s3 = puffs_gif_status_string(puffs_gif_error_bad_gif_image);
+  if (strcmp(s3, "gif: bad GIF image")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: bad GIF image\"", s3);
+    return;
+  }
+  const char* s4 = puffs_gif_status_string(-254);
+  if (strcmp(s4, "gif: unknown status")) {
+    FAIL("test_status_strings: got \"%s\", want \"gif: unknown status\"", s4);
     return;
   }
 }

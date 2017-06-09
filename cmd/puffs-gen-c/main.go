@@ -55,21 +55,31 @@ func main() {
 	})
 }
 
+const userDefinedStatusBase = 128
+
 var builtInStatuses = [...]string{
-	// For API/ABI compatibility, the very first two statuses must be "status
-	// ok" (with generated value 0) and "error bad version" (with generated
-	// value -2 + 1). This lets caller code check the constructor return value
-	// for "error bad version" even if the caller and callee were built with
-	// different versions.
+	// For API/ABI forwards and backwards compatibility, the very first two
+	// statuses must be "status ok" (with generated value 0) and "error bad
+	// version" (with generated value -2 + 1). This lets caller code check the
+	// constructor return value for "error bad version" even if the caller and
+	// callee were built with different versions.
 	"status ok",
 	"error bad version",
-	// The order of the remaining statuses is less important.
+	// The order of the remaining statuses is less important, but should remain
+	// stable for API/ABI backwards compatibility, where additional built in
+	// status codes don't affect existing ones.
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
 	"error unexpected EOF", // Used if read_foo passed final == true.
 	"status short read",    // Used if read_foo passed final == false.
 	"status short write",
+}
+
+func init() {
+	if len(builtInStatuses) > userDefinedStatusBase {
+		panic("too many builtInStatuses")
+	}
 }
 
 type replacementPolicy bool
@@ -101,6 +111,12 @@ const (
 
 const maxTemp = 10000
 
+type status struct {
+	name    string
+	msg     string
+	isError bool
+}
+
 type perFunc struct {
 	jumpTargets map[*a.While]uint32
 	tempW       uint32
@@ -110,11 +126,13 @@ type perFunc struct {
 }
 
 type gen struct {
-	buffer  bytes.Buffer
-	pkgName string
-	tm      *t.Map
-	files   []*a.File
-	perFunc perFunc
+	buffer     bytes.Buffer
+	pkgName    string
+	tm         *t.Map
+	files      []*a.File
+	statusList []status
+	statusMap  map[t.ID]status
+	perFunc    perFunc
 }
 
 func (g *gen) printf(format string, args ...interface{}) { fmt.Fprintf(&g.buffer, format, args...) }
@@ -137,6 +155,11 @@ func (g *gen) jumpTarget(n *a.While) (uint32, error) {
 }
 
 func (g *gen) generate() error {
+	g.statusMap = map[t.ID]status{}
+	if err := g.forEachStatus(bothPubPri, (*gen).gatherStatuses); err != nil {
+		return err
+	}
+
 	includeGuard := "PUFFS_" + strings.ToUpper(g.pkgName) + "_H"
 	g.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
@@ -154,9 +177,14 @@ func (g *gen) generate() error {
 		if strings.HasPrefix(s, "error ") {
 			nudge = "+1"
 		}
-		s = strings.Replace(s, " ", "_", -1)
-		s = strings.ToLower(s)
-		g.printf("puffs_%s_%s = %d%s,\n", g.pkgName, s, -2*i, nudge)
+		g.printf("%s = %d%s,\n", g.cName(s), -2*i, nudge)
+	}
+	for i, s := range g.statusList {
+		nudge := ""
+		if s.isError {
+			nudge = "+1"
+		}
+		g.printf("%s = %d%s,\n", s.name, -2*(userDefinedStatusBase+i), nudge)
 	}
 	g.printf("} puffs_%s_status;\n\n", g.pkgName)
 	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
@@ -187,7 +215,7 @@ func (g *gen) generate() error {
 	g.writes("// ---------------- Status Codes Implementations\n\n")
 	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s) {"+
 		"return s & 1; }\n\n", g.pkgName, g.pkgName)
-	g.printf("const char* puffs_%s_status_strings[%d] = {\n", g.pkgName, len(builtInStatuses))
+	g.printf("const char* puffs_%s_status_strings[%d] = {\n", g.pkgName, len(builtInStatuses)+len(g.statusList))
 	for _, s := range builtInStatuses {
 		if strings.HasPrefix(s, "status ") {
 			s = s[len("status "):]
@@ -197,12 +225,19 @@ func (g *gen) generate() error {
 		s = g.pkgName + ": " + s
 		g.printf("%q,", s)
 	}
+	for _, s := range g.statusList {
+		g.printf("%q,", g.pkgName+": "+s.msg)
+	}
 	g.writes("};\n\n")
+
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s) {\n", g.pkgName, g.pkgName)
-	g.writes("s = -(s >> 1);")
-	g.printf("if ((0 <= s) && (s < %d)) { return puffs_%s_status_strings[s]; }\n",
+	g.writes("s = -(s >> 1); if (0 <= s) {\n")
+	g.printf("if (s < %d) { return puffs_%s_status_strings[s]; }\n",
 		len(builtInStatuses), g.pkgName)
-	g.writes("return \"\";\n")
+	g.printf("s -= %d;\n", userDefinedStatusBase-len(builtInStatuses))
+	g.printf("if ((%d <= s) && (s < %d)) { return puffs_%s_status_strings[s]; }\n",
+		len(builtInStatuses), len(builtInStatuses)+len(g.statusList), g.pkgName)
+	g.printf("}\nreturn \"%s: unknown status\";\n", g.pkgName)
 	g.writes("}\n\n")
 
 	g.writes("// ---------------- Private Structs\n\n")
@@ -261,6 +296,22 @@ func (g *gen) forEachFunc(v visibility, f func(*gen, *a.Func) error) error {
 	return nil
 }
 
+func (g *gen) forEachStatus(v visibility, f func(*gen, *a.Status) error) error {
+	for _, file := range g.files {
+		for _, n := range file.TopLevelDecls() {
+			if n.Kind() != a.KStatus ||
+				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
+				continue
+			}
+			if err := f(g, n.Status()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (g *gen) forEachStruct(v visibility, f func(*gen, *a.Struct) error) error {
 	for _, file := range g.files {
 		for _, n := range file.TopLevelDecls() {
@@ -274,6 +325,44 @@ func (g *gen) forEachStruct(v visibility, f func(*gen, *a.Struct) error) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (g *gen) cName(name string) string {
+	b := []byte(nil)
+	b = append(b, "puffs_"...)
+	b = append(b, g.pkgName...)
+	b = append(b, '_')
+	for _, r := range name {
+		if 'A' <= r && r <= 'Z' {
+			b = append(b, byte(r+'a'-'A'))
+		} else if ('a' <= r && r <= 'z') || ('0' <= r && r <= '9') || ('_' == r) {
+			b = append(b, byte(r))
+		} else if ' ' == r {
+			b = append(b, '_')
+		}
+	}
+	return string(b)
+}
+
+func (g *gen) gatherStatuses(n *a.Status) error {
+	msg := n.Message().String(g.tm)
+	if len(msg) < 2 || msg[0] != '"' || msg[len(msg)-1] != '"' {
+		return fmt.Errorf("bad status message %q", msg)
+	}
+	msg = msg[1 : len(msg)-1]
+	prefix := "status "
+	isError := n.Keyword().Key() == t.KeyError
+	if isError {
+		prefix = "error "
+	}
+	s := status{
+		name:    g.cName(prefix + msg),
+		msg:     msg,
+		isError: isError,
+	}
+	g.statusList = append(g.statusList, s)
+	g.statusMap[n.Message()] = s
 	return nil
 }
 
@@ -652,14 +741,21 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KReturn:
+		n := n.Return()
+		ret := ""
+		if n.Keyword() == 0 {
+			ret = fmt.Sprintf("puffs_%s_status_ok", g.pkgName)
+		} else {
+			ret = g.statusMap[n.Message()].name
+		}
 		if !g.perFunc.suspendible {
 			// TODO: consider the return values, especially if they involve
 			// suspendible function calls.
 			g.writes("return;\n")
 		} else if g.perFunc.public {
-			g.printf("status = puffs_%s_status_ok; goto cleanup0;\n", g.pkgName)
+			g.printf("status = %s; goto cleanup0;\n", ret)
 		} else {
-			g.printf("return puffs_%s_status_ok;\n", g.pkgName)
+			g.printf("return %s;\n", ret)
 		}
 		return nil
 
