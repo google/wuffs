@@ -687,10 +687,10 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KAssign:
 		n := n.Assign()
-		if err := g.writeSuspendibles(n.LHS()); err != nil {
+		if err := g.writeSuspendibles(n.LHS(), depth); err != nil {
 			return err
 		}
-		if err := g.writeSuspendibles(n.RHS()); err != nil {
+		if err := g.writeSuspendibles(n.RHS(), depth); err != nil {
 			return err
 		}
 		if err := g.writeExpr(n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
@@ -703,6 +703,16 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		}
 		g.writes(";\n")
 		return nil
+
+	case a.KExpr:
+		n := n.Expr()
+		if err := g.writeSuspendibles(n, depth); err != nil {
+			return err
+		}
+		if n.CallSuspendible() {
+			return nil
+		}
+		return fmt.Errorf("TODO: generate code for foo() when foo is not a ? call-suspendible")
 
 	case a.KIf:
 		// TODO: consider suspendible calls.
@@ -814,27 +824,32 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeSuspendibles(n *a.Expr) error {
+func (g *gen) writeSuspendibles(n *a.Expr, depth uint32) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	return g.writeCallSuspendibles(n)
+	return g.writeCallSuspendibles(n, depth)
 }
 
-func (g *gen) writeCallSuspendibles(n *a.Expr) error {
+func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	// The evaluation order for suspendible calls (which can have side effects)
 	// is important here: LHS, MHS, RHS, Args and finally the node itself.
 	if !n.CallSuspendible() {
+		if depth > a.MaxExprDepth {
+			return fmt.Errorf("expression recursion depth too large")
+		}
+		depth++
+
 		for _, o := range n.Node().Raw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(o.Expr()); err != nil {
+				if err := g.writeCallSuspendibles(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(o.Expr()); err != nil {
+				if err := g.writeCallSuspendibles(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
@@ -866,6 +881,26 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 			return err
 		}
 		g.printf(" %s%d = %ssrc->ptr[%ssrc->ri++];\n", tPrefix, temp, aPrefix, aPrefix)
+
+		// TODO: delete this hack that only matches "in.dst.write_u8?()".
+	} else if isInDstWriteU8(g.tm, n) {
+		// TODO: suspend coroutine state.
+		g.printf("if (%sdst->wi >= %sdst->len) { status = puffs_%s_status_short_write;",
+			aPrefix, aPrefix, g.pkgName)
+		if g.perFunc.public && g.perFunc.suspendible {
+			g.writes("goto cleanup0;")
+		} else {
+			g.writes("return status;")
+		}
+		g.writes("}\n")
+		g.printf("%sdst->ptr[%sdst->wi++] = ", aPrefix, aPrefix)
+		x := n.Args()[0].Arg().Value()
+		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(";\n")
+		return nil
+
 	} else {
 		// TODO: fix this.
 		//
@@ -994,6 +1029,23 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("src") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+}
+
+func isInDstWriteU8(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(x:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyWriteU8 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("dst") {
 		return false
 	}
 	n = n.LHS().Expr()

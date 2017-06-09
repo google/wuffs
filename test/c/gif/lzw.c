@@ -30,7 +30,7 @@ void test_lzw_decode() {
   }
   // That .giflzw file should be 13382 bytes long.
   if (src.wi != 13382) {
-    FAIL("test_lzw_decode: file size: got %d, want %d", (int)(src.wi), 13382);
+    FAIL("test_lzw_decode: src size: got %d, want %d", (int)(src.wi), 13382);
     goto cleanup0;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
@@ -51,6 +51,21 @@ void test_lzw_decode() {
          puffs_gif_status_ok);
     goto cleanup1;
   }
+
+  // The decoded per-pixel indexes should be 3982 bytes long.
+  //
+  // TODO: s/3982/19200/ as 19200 = 160 * 120.
+  if (dst.wi != 3982) {
+    FAIL("test_lzw_decode: dst size: got %d, want %d", (int)(dst.wi), 3982);
+    goto cleanup1;
+  }
+  // The first decoded byte should be 0xDC.
+  if (dst.ptr[0] != 0xDC) {
+    FAIL("test_lzw_decode: first decoded byte: got 0x%02x, want 0x%02x",
+         (int)(dst.ptr[0]), 0xDC);
+    goto cleanup1;
+  }
+
 cleanup1:
   puffs_gif_lzw_decoder_destructor(&dec);
 cleanup0:;

@@ -509,6 +509,7 @@ const MaxBodyDepth = 255
 // Statement means one of:
 //  - Assert
 //  - Assign
+//  - Expr
 //  - If
 //  - Jump
 //  - Return

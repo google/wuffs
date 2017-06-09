@@ -50,6 +50,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 
+	case a.KExpr:
+		return q.tcheckExpr(n.Expr(), 0)
+
 	case a.KIf:
 		for n := n.If(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
@@ -313,10 +316,16 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenParen:
 		// n is a function call.
-		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.tm, n) {
+		// TODO: delete this hack that only matches "in.src.read_u8?()" and
+		// "in.dst.write_u8?(x:bar)".
+		if isInSrcReadU8(q.tm, n) || isInDstWriteU8(q.tm, n) {
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
+			}
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
 			}
 			n.SetMType(TypeExprU8) // HACK.
 			return nil
@@ -362,6 +371,23 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("src") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+}
+
+func isInDstWriteU8(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(x:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyWriteU8 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("dst") {
 		return false
 	}
 	n = n.LHS().Expr()

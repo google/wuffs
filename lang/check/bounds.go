@@ -169,6 +169,10 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		n := n.Assign()
 		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
 
+	case a.KExpr:
+		_, _, err := q.bcheckExpr(n.Expr(), 0)
+		return err
+
 	case a.KIf:
 		return q.bcheckIf(n.If())
 
@@ -589,8 +593,20 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// No-op.
 
 	case t.KeyOpenParen:
-		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.tm, n) {
+		// TODO: delete this hack that only matches "in.src.read_u8?()" and
+		// "in.dst.write_u8?(x:bar)".
+		if isInSrcReadU8(q.tm, n) || isInDstWriteU8(q.tm, n) {
+			for _, o := range n.Args() {
+				// TODO: check that the arg range at the caller and the
+				// signature are compatible.
+				oMin, oMax, err := q.bcheckExpr(o.Arg().Value(), depth)
+				if err != nil {
+					return nil, nil, err
+				}
+				// TODO: check that oMin and oMax is within the function's
+				// declared arg bounds.
+				_, _ = oMin, oMax
+			}
 			break
 		}
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".

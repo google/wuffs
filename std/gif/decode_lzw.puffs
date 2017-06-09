@@ -43,6 +43,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 		n_bits -= width
 
 		if code < clear_code {
+			in.dst.write_u8?(x:code as u8)
 			// TODO: if use_save_code { etc }
 
 		} else if code == clear_code {

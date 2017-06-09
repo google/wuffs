@@ -246,6 +246,11 @@ label_0_continue:;
     v_bits >>= v_width;
     v_n_bits -= v_width;
     if (v_code < v_clear_code) {
+      if (a_dst->wi >= a_dst->len) {
+        status = puffs_gif_status_short_write;
+        goto cleanup0;
+      }
+      a_dst->ptr[a_dst->wi++] = ((uint8_t)(v_code));
     } else if (v_code == v_clear_code) {
       v_use_save_code = false;
       v_save_code = v_end_code;
