@@ -849,7 +849,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr) error {
 	g.perFunc.tempW++
 
 	// TODO: delete this hack that only matches "in.src.read_u8?()".
-	if isInSrcReadU8(g.tm, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
+	if isInSrcReadU8(g.tm, n) {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: choose error_unexpected_eof versus status_short_read based on
@@ -947,7 +947,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(g.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+		if isLowBits(g.tm, n) {
 			g.printf("PUFFS_LOW_BITS(")
 			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 				return err
@@ -985,6 +985,10 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 }
 
 func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 0 {
+		return false
+	}
+	n = n.LHS().Expr()
 	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
 		return false
 	}
@@ -998,6 +1002,10 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 
 func isLowBits(tm *t.Map, n *a.Expr) bool {
 	// TODO: check that n.Args() is "(n:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
 }
 

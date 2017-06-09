@@ -590,11 +590,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.KeyOpenParen:
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.tm, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
+		if isInSrcReadU8(q.tm, n) {
 			break
 		}
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(q.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+		if isLowBits(q.tm, n) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {

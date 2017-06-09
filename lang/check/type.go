@@ -314,7 +314,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()".
-		if isInSrcReadU8(q.tm, n.LHS().Expr()) && n.CallSuspendible() && len(n.Args()) == 0 {
+		if isInSrcReadU8(q.tm, n) {
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
 			}
@@ -322,7 +322,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(q.tm, n.LHS().Expr()) && !n.CallImpure() && len(n.Args()) == 1 {
+		if isLowBits(q.tm, n) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -353,6 +353,10 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 }
 
 func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 0 {
+		return false
+	}
+	n = n.LHS().Expr()
 	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
 		return false
 	}
@@ -366,6 +370,10 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 
 func isLowBits(tm *t.Map, n *a.Expr) bool {
 	// TODO: check that n.Args() is "(n:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
 }
 
