@@ -215,18 +215,20 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     goto cleanup0;
   }
 
-  uint32_t v_bits;
-  uint32_t v_n_bits;
   uint32_t v_clear_code;
   uint32_t v_end_code;
+  uint32_t v_save_code;
   uint32_t v_width;
+  uint32_t v_bits;
+  uint32_t v_n_bits;
   uint32_t v_code;
 
-  v_bits = 0;
-  v_n_bits = 0;
   v_clear_code = (((uint32_t)(1)) << self->f_literal_width);
   v_end_code = (v_clear_code + 1);
+  v_save_code = v_end_code;
   v_width = (self->f_literal_width + 1);
+  v_bits = 0;
+  v_n_bits = 0;
 label_0_continue:;
   while (1) {
     while (v_n_bits < v_width) {
@@ -244,9 +246,13 @@ label_0_continue:;
     if (v_code < v_clear_code) {
       goto label_0_break;
     } else if (v_code == v_clear_code) {
+      v_save_code = v_end_code;
       v_width = (self->f_literal_width + 1);
       goto label_0_continue;
     } else if (v_code == v_end_code) {
+      status = puffs_gif_status_ok;
+      goto cleanup0;
+    } else if (v_code <= v_save_code) {
       status = puffs_gif_status_ok;
       goto cleanup0;
     } else {
