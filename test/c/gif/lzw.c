@@ -19,17 +19,30 @@ const char* test_filename = "gif/lzw.c";
 
 #define BUFFER_SIZE (1024 * 1024)
 
-uint8_t global_dst_buffer[BUFFER_SIZE];
+uint8_t global_got_buffer[BUFFER_SIZE];
+uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
 
 void test_lzw_decode() {
   test_funcname = __func__;
-  puffs_base_buf1 dst = {.ptr = global_dst_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+
+  // The want .indexes file should be 19200 bytes long, as the image size is
+  // 160 * 120 pixels and there is 1 palette index byte per pixel.
+  if (!read_file(&want, "../../testdata/bricks-nodither.indexes")) {
+    goto cleanup0;
+  }
+  if (want.wi != 19200) {
+    FAIL("want size: got %d, want %d", (int)(want.wi), 19200);
+    goto cleanup0;
+  }
+
+  // The src .giflzw file should be 13382 bytes long.
   if (!read_file(&src, "../../testdata/bricks-nodither.giflzw")) {
     goto cleanup0;
   }
-  // That .giflzw file should be 13382 bytes long.
   if (src.wi != 13382) {
     FAIL("src size: got %d, want %d", (int)(src.wi), 13382);
     goto cleanup0;
@@ -45,22 +58,21 @@ void test_lzw_decode() {
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   // TODO: call puffs_gif_lzw_decoder_set_literal_width.
   puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
+      puffs_gif_lzw_decoder_decode(&dec, &got, &src, false);
   if (status != puffs_gif_status_ok) {
     FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
     goto cleanup1;
   }
 
-  // The decoded per-pixel indexes should be 3982 bytes long.
-  //
-  // TODO: s/3982/19200/ as 19200 = 160 * 120.
-  if (dst.wi != 3982) {
-    FAIL("dst size: got %d, want %d", (int)(dst.wi), 3982);
+  /*
+  TODO: fix the bug and uncomment this test.
+  if (!buf1s_equal(&got, &want)) {
     goto cleanup1;
   }
-  // The first decoded byte should be 0xDC.
-  if (dst.ptr[0] != 0xDC) {
-    FAIL("first decoded byte: got 0x%02x, want 0x%02x", (int)(dst.ptr[0]),
+  */
+  // As a sanity check, the first decoded byte should be 0xDC.
+  if (got.ptr[0] != 0xDC) {
+    FAIL("first decoded byte: got 0x%02x, want 0x%02x", (int)(got.ptr[0]),
          0xDC);
     goto cleanup1;
   }

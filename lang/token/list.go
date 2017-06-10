@@ -241,6 +241,7 @@ const (
 	KeyReadU32LE  = Key(IDReadU32LE >> KeyShift)
 	KeyReadU64BE  = Key(IDReadU64BE >> KeyShift)
 	KeyReadU64LE  = Key(IDReadU64LE >> KeyShift)
+	KeyWrite      = Key(IDWrite >> KeyShift)
 	KeyWriteU8    = Key(IDWriteU8 >> KeyShift)
 	KeyWriteU16BE = Key(IDWriteU16BE >> KeyShift)
 	KeyWriteU16LE = Key(IDWriteU16LE >> KeyShift)
@@ -392,6 +393,7 @@ const (
 	IDReadU32LE  = ID(0xB5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64BE  = ID(0xB6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64LE  = ID(0xB7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWrite      = ID(0xB8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU8    = ID(0xB9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16BE = ID(0xBA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16LE = ID(0xBB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -565,6 +567,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyReadU32LE:  {"read_u32le", IDReadU32LE},
 	KeyReadU64BE:  {"read_u64be", IDReadU64BE},
 	KeyReadU64LE:  {"read_u64le", IDReadU64LE},
+	KeyWrite:      {"write", IDWrite},
 	KeyWriteU8:    {"write_u8", IDWriteU8},
 	KeyWriteU16BE: {"write_u16be", IDWriteU16BE},
 	KeyWriteU16LE: {"write_u16le", IDWriteU16LE},

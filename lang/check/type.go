@@ -326,9 +326,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenParen:
 		// n is a function call.
-		// TODO: delete this hack that only matches "in.src.read_u8?()" and
-		// "in.dst.write_u8?(x:bar)".
-		if isInSrcReadU8(q.tm, n) || isInDstWriteU8(q.tm, n) {
+		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
+		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) {
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
 			}
@@ -406,13 +405,13 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isInDstWriteU8(tm *t.Map, n *a.Expr) bool {
+func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyWriteU8 {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()

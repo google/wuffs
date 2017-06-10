@@ -598,9 +598,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// No-op.
 
 	case t.KeyOpenParen:
-		// TODO: delete this hack that only matches "in.src.read_u8?()" and
-		// "in.dst.write_u8?(x:bar)".
-		if isInSrcReadU8(q.tm, n) || isInDstWriteU8(q.tm, n) {
+		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
+		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) {
 			for _, o := range n.Args() {
 				// TODO: check that the arg range at the caller and the
 				// signature are compatible.

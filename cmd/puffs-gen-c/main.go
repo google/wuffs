@@ -877,7 +877,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	temp := g.perFunc.tempW
 	g.perFunc.tempW++
 
-	// TODO: delete this hack that only matches "in.src.read_u8?()".
+	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	if isInSrcReadU8(g.tm, n) {
 		// TODO: suspend coroutine state.
 		//
@@ -896,8 +896,22 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.printf(" %s%d = %ssrc->ptr[%ssrc->ri++];\n", tPrefix, temp, aPrefix, aPrefix)
 
-		// TODO: delete this hack that only matches "in.dst.write_u8?()".
-	} else if isInDstWriteU8(g.tm, n) {
+	} else if isInDst(g.tm, n, t.KeyWrite) {
+		// TODO: suspend coroutine state.
+		//
+		// TODO: don't assume that the argument is "this.stack[s:]".
+		g.printf("if ((%sdst->len - %sdst->wi) < (sizeof(self->f_stack) - v_s)) {", aPrefix, aPrefix)
+		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
+		if g.perFunc.public && g.perFunc.suspendible {
+			g.writes("goto cleanup0;")
+		} else {
+			g.writes("return status;")
+		}
+		g.writes("}\n")
+		g.printf("memmove(a_dst->ptr + a_dst->wi, self->f_stack + v_s, sizeof(self->f_stack) - v_s);\n")
+		g.printf("a_dst->wi += sizeof(self->f_stack) - v_s;\n")
+
+	} else if isInDst(g.tm, n, t.KeyWriteU8) {
 		// TODO: suspend coroutine state.
 		g.printf("if (%sdst->wi >= %sdst->len) { status = puffs_%s_status_short_write;",
 			aPrefix, aPrefix, g.pkgName)
@@ -913,7 +927,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			return err
 		}
 		g.writes(";\n")
-		return nil
 
 	} else {
 		// TODO: fix this.
@@ -1057,13 +1070,13 @@ func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isInDstWriteU8(tm *t.Map, n *a.Expr) bool {
+func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyWriteU8 {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()

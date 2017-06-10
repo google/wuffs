@@ -88,7 +88,10 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 				this.stack[4095] = c as u8
 			}
 
-			// TODO: in.dst.write?(this.stack[s:])
+			// TODO: the "x:s" arg is a placeholder, and should be something
+			// like (this.stack[s:]), which means defining a slice type (and
+			// type checking, bounds checking and code generation for it).
+			in.dst.write?(x:s)
 
 			if use_save_code {
 				this.suffixes[save_code] = this.stack[4095]
