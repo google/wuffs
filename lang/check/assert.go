@@ -12,6 +12,19 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
+// eqEqOtherHandSide returns the other hand side when n is an expression like
+// "thisHS == thatHS" or "thatHS == thisHS". If not, it returns nil.
+func eqEqOtherHandSide(n *a.Expr, thisHS *a.Expr) (thatHS *a.Expr) {
+	if n.ID0().Key() == t.KeyXBinaryEqEq {
+		if thisHS.Eq(n.LHS().Expr()) {
+			return n.RHS().Expr()
+		} else if thisHS.Eq(n.RHS().Expr()) {
+			return n.LHS().Expr()
+		}
+	}
+	return nil
+}
+
 type facts []*a.Expr
 
 func (z *facts) appendFact(fact *a.Expr) {
@@ -24,14 +37,9 @@ func (z *facts) appendFact(fact *a.Expr) {
 
 	switch fact.ID0().Key() {
 	case 0:
-		for _, f := range *z {
-			if f.ID0().Key() != t.KeyXBinaryEqEq {
-				continue
-			}
-			if fact.Eq(f.LHS().Expr()) {
-				z.appendFact(f.RHS().Expr())
-			} else if fact.Eq(f.RHS().Expr()) {
-				z.appendFact(f.LHS().Expr())
+		for _, x := range *z {
+			if other := eqEqOtherHandSide(x, fact); other != nil {
+				z.appendFact(other)
 			}
 		}
 	case t.KeyXBinaryAnd:
