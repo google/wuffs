@@ -93,36 +93,44 @@ void test_status_is_error() {
     FAIL("test_status_is_error: is_error(short_write) returned true");
     return;
   }
-  if (!puffs_gif_status_is_error(puffs_gif_error_bad_gif_image)) {
-    FAIL("test_status_is_error: is_error(bad_gif_image) returned false");
+  if (!puffs_gif_status_is_error(puffs_gif_error_lzw_code_is_out_of_range)) {
+    FAIL(
+        "test_status_is_error: is_error(lzw_code_is_out_of_range) returned "
+        "false");
     return;
   }
 }
 
 void test_status_strings() {
   const char* s0 = puffs_gif_status_string(puffs_gif_status_ok);
-  if (strcmp(s0, "gif: ok")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: ok\"", s0);
+  const char* t0 = "gif: ok";
+  if (strcmp(s0, t0)) {
+    FAIL("test_status_strings: got \"%s\", want \"%s\"", s0, t0);
     return;
   }
   const char* s1 = puffs_gif_status_string(puffs_gif_error_bad_version);
-  if (strcmp(s1, "gif: bad version")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: bad version\"", s1);
+  const char* t1 = "gif: bad version";
+  if (strcmp(s1, t1)) {
+    FAIL("test_status_strings: got \"%s\", want \"%s\"", s1, t1);
     return;
   }
   const char* s2 = puffs_gif_status_string(puffs_gif_status_short_write);
-  if (strcmp(s2, "gif: short write")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: short write\"", s2);
+  const char* t2 = "gif: short write";
+  if (strcmp(s2, t2)) {
+    FAIL("test_status_strings: got \"%s\", want \"%s\"", s2, t2);
     return;
   }
-  const char* s3 = puffs_gif_status_string(puffs_gif_error_bad_gif_image);
-  if (strcmp(s3, "gif: bad GIF image")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: bad GIF image\"", s3);
+  const char* s3 =
+      puffs_gif_status_string(puffs_gif_error_lzw_code_is_out_of_range);
+  const char* t3 = "gif: LZW code is out of range";
+  if (strcmp(s3, t3)) {
+    FAIL("test_status_strings: got \"%s\", want \"%s\"", s3, t3);
     return;
   }
   const char* s4 = puffs_gif_status_string(-254);
-  if (strcmp(s4, "gif: unknown status")) {
-    FAIL("test_status_strings: got \"%s\", want \"gif: unknown status\"", s4);
+  const char* t4 = "gif: unknown status";
+  if (strcmp(s4, t4)) {
+    FAIL("test_status_strings: got \"%s\", want \"%s\"", s4, t4);
     return;
   }
 }

@@ -373,7 +373,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
 		rTyp := rhs.MType()
-		if !rTyp.IsNumType() {
+		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("%s is an array-index expression but %s has type %s, not a numeric type",
 				n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}

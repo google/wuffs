@@ -3,7 +3,8 @@
 
 // TODO: some mechanism for fixing the error code's value, such as a trailing
 // "= 100", to maintain API stability.
-pub error "bad GIF image"
+pub error "LZW code is out of range"
+pub error "LZW prefix chain is cyclical"
 
 pub struct lzw_decoder?(
 	literal_width u32[2..8] = 8,
@@ -63,21 +64,39 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 
 		} else if code <= save_code {
 			var s u32[..4095] = 4095
+			var c u32[..4095] = code
 
-			while true,
-				inv n_bits < 8,
-			{
-				if s == 0 {
-					return error "bad GIF image"
-				}
+			if (code == save_code) and use_save_code {
 				s -= 1
-				break
+				c = prev_code
 			}
 
-			// TODO: implement.
+			while c >= clear_code,
+				inv n_bits < 8,
+				post c < 256 via "a < b: a < c; c <= b"(c:clear_code),
+			{
+				this.stack[s] = this.suffixes[c]
+				if s == 0 {
+					return error "LZW prefix chain is cyclical"
+				}
+				s -= 1
+				c = this.prefixes[c] as u32
+			}
+			this.stack[s] = c as u8
+
+			if (code == save_code) and use_save_code {
+				this.stack[4095] = c as u8
+			}
+
+			// TODO: in.dst.write?(this.stack[s:])
+
+			if use_save_code {
+				this.suffixes[save_code] = this.stack[4095]
+				this.prefixes[save_code] = prev_code as u16
+			}
 
 		} else {
-			return error "bad GIF image"
+			return error "LZW code is out of range"
 		}
 
 		use_save_code = save_code < 4095

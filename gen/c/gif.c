@@ -63,7 +63,8 @@ typedef enum {
   puffs_gif_error_unexpected_eof = -10 + 1,
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
-  puffs_gif_error_bad_gif_image = -256 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -122,7 +123,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[9] = {
+const char* puffs_gif_status_strings[10] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -131,7 +132,8 @@ const char* puffs_gif_status_strings[9] = {
     "gif: unexpected EOF",
     "gif: short read",
     "gif: short write",
-    "gif: bad GIF image",
+    "gif: LZW code is out of range",
+    "gif: LZW prefix chain is cyclical",
 };
 
 const char* puffs_gif_status_string(puffs_gif_status s) {
@@ -141,7 +143,7 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
       return puffs_gif_status_strings[s];
     }
     s -= 120;
-    if ((8 <= s) && (s < 9)) {
+    if ((8 <= s) && (s < 10)) {
       return puffs_gif_status_strings[s];
     }
   }
@@ -225,6 +227,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_n_bits;
   uint32_t v_code;
   uint32_t v_s;
+  uint32_t v_c;
 
   v_clear_code = (((uint32_t)(1)) << self->f_literal_width);
   v_end_code = (v_clear_code + 1);
@@ -269,17 +272,30 @@ label_0_continue:;
       goto cleanup0;
     } else if (v_code <= v_save_code) {
       v_s = 4095;
-      while (true) {
+      v_c = v_code;
+      if ((v_code == v_save_code) && v_use_save_code) {
+        v_s -= 1;
+        v_c = v_prev_code;
+      }
+      while (v_c >= v_clear_code) {
+        self->f_stack[v_s] = self->f_suffixes[v_c];
         if (v_s == 0) {
-          status = puffs_gif_error_bad_gif_image;
+          status = puffs_gif_error_lzw_prefix_chain_is_cyclical;
           goto cleanup0;
         }
         v_s -= 1;
-        goto label_1_break;
+        v_c = ((uint32_t)(self->f_prefixes[v_c]));
       }
-    label_1_break:;
+      self->f_stack[v_s] = ((uint8_t)(v_c));
+      if ((v_code == v_save_code) && v_use_save_code) {
+        self->f_stack[4095] = ((uint8_t)(v_c));
+      }
+      if (v_use_save_code) {
+        self->f_suffixes[v_save_code] = self->f_stack[4095];
+        self->f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
+      }
     } else {
-      status = puffs_gif_error_bad_gif_image;
+      status = puffs_gif_error_lzw_code_is_out_of_range;
       goto cleanup0;
     }
     v_use_save_code = (v_save_code < 4095);

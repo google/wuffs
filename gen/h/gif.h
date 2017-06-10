@@ -63,7 +63,8 @@ typedef enum {
   puffs_gif_error_unexpected_eof = -10 + 1,
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
-  puffs_gif_error_bad_gif_image = -256 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
