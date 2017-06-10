@@ -94,7 +94,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			in.dst.write?(x:s)
 
 			if use_save_code {
-				this.suffixes[save_code] = this.stack[4095]
+				this.suffixes[save_code] = c as u8
 				this.prefixes[save_code] = prev_code as u16
 			}
 

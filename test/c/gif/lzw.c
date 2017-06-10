@@ -64,12 +64,9 @@ void test_lzw_decode() {
     goto cleanup1;
   }
 
-  /*
-  TODO: fix the bug and uncomment this test.
   if (!buf1s_equal(&got, &want)) {
     goto cleanup1;
   }
-  */
   // As a sanity check, the first decoded byte should be 0xDC.
   if (got.ptr[0] != 0xDC) {
     FAIL("first decoded byte: got 0x%02x, want 0x%02x", (int)(got.ptr[0]),

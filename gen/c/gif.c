@@ -298,7 +298,7 @@ label_0_continue:;
               sizeof(self->f_stack) - v_s);
       a_dst->wi += sizeof(self->f_stack) - v_s;
       if (v_use_save_code) {
-        self->f_suffixes[v_save_code] = self->f_stack[4095];
+        self->f_suffixes[v_save_code] = ((uint8_t)(v_c));
         self->f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
       }
     } else {
