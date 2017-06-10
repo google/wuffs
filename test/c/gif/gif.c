@@ -5,7 +5,7 @@
 To manually run this test:
 
 for cc in clang gcc; do
-  $cc -std=c99 -Wall -Werror lzw.c && ./a.out
+  $cc -std=c99 -Wall -Werror gif.c && ./a.out
   rm -f a.out
 done
 
@@ -15,7 +15,7 @@ Each edition should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/gif.c"
 #include "../testlib/testlib.c"
 
-const char* test_filename = "gif/lzw.c";
+const char* test_filename = "gif/gif.c";
 
 #define BUFFER_SIZE (1024 * 1024)
 
