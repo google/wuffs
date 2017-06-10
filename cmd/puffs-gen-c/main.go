@@ -373,13 +373,21 @@ func (g *gen) gatherStatuses(n *a.Status) error {
 }
 
 func (g *gen) writeStruct(n *a.Struct) error {
-	// For API/ABI compatibility, the very first field in the struct must be
-	// the status code. This lets the constructor callee set "this->status =
-	// etc_error_bad_version;" regardless of the sizeof(*this) struct reserved
-	// by the caller and even if the caller and callee were built with
-	// different versions.
+	// For API/ABI compatibility, the very first field in the struct's
+	// private_impl must be the status code. This lets the constructor callee
+	// set "self->private_impl.status = etc_error_bad_version;" regardless of
+	// the sizeof(*self) struct reserved by the caller and even if the caller
+	// and callee were built with different versions.
 	structName := n.Name().String(g.tm)
-	g.printf("typedef struct {\n")
+	g.writes("typedef struct {\n")
+	g.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
+	g.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
+	g.printf("// puffs_%s_%s_etc functions.\n", g.pkgName, structName)
+	g.writes("//\n")
+	g.writes("// In C++, these fields would be \"private\", but C does not support that.\n")
+	g.writes("//\n")
+	g.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
+	g.writes("struct {\n")
 	if n.Suspendible() {
 		g.printf("puffs_%s_status status;\n", g.pkgName)
 		g.printf("uint32_t magic;\n")
@@ -390,7 +398,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		}
 		g.writes(";\n")
 	}
-	g.printf("} puffs_%s_%s;\n\n", g.pkgName, structName)
+	g.printf("} private_impl;\n } puffs_%s_%s;\n\n", g.pkgName, structName)
 	return nil
 }
 
@@ -445,19 +453,19 @@ func (g *gen) writeCtorImpls(n *a.Struct) error {
 
 		if ctor {
 			g.printf("if (puffs_version != PUFFS_VERSION) {\n")
-			g.printf("self->status = puffs_%s_error_bad_version;\n", g.pkgName)
+			g.printf("self->private_impl.status = puffs_%s_error_bad_version;\n", g.pkgName)
 			g.printf("return;\n")
 			g.printf("}\n")
 
 			g.writes("if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {" +
 				"memset(self, 0, sizeof(*self)); }\n")
-			g.writes("self->magic = PUFFS_MAGIC;\n")
+			g.writes("self->private_impl.magic = PUFFS_MAGIC;\n")
 
 			for _, f := range n.Fields() {
 				f := f.Field()
 				if dv := f.DefaultValue(); dv != nil {
 					// TODO: set default values for array types.
-					g.printf("self->%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
+					g.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
 				}
 			}
 		}
@@ -526,7 +534,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		g.perFunc.suspendible = true
 		g.printf("puffs_%s_status status = ", g.pkgName)
 		if n.Receiver() != 0 {
-			g.printf("self->status;\n")
+			g.printf("self->private_impl.status;\n")
 			if n.Public() {
 				g.printf("if (status & 1) { return status; }")
 			}
@@ -534,7 +542,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			g.printf("puffs_%s_status_ok;\n", g.pkgName)
 		}
 		if n.Public() {
-			g.printf("if (self->magic != PUFFS_MAGIC) {"+
+			g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
 				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", g.pkgName)
 		}
 	} else if r := n.Receiver(); r != 0 {
@@ -586,7 +594,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 
 	if g.perFunc.suspendible {
 		if g.perFunc.public {
-			g.printf("cleanup0: self->status = status;\n")
+			g.printf("cleanup0: self->private_impl.status = status;\n")
 		}
 		g.printf("return status;\n")
 	}
@@ -900,7 +908,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: don't assume that the argument is "this.stack[s:]".
-		g.printf("if ((%sdst->len - %sdst->wi) < (sizeof(self->f_stack) - v_s)) {", aPrefix, aPrefix)
+		g.printf("if ((%sdst->len - %sdst->wi) < (sizeof(self->private_impl.f_stack) - v_s)) {", aPrefix, aPrefix)
 		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
@@ -908,8 +916,11 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("memmove(a_dst->ptr + a_dst->wi, self->f_stack + v_s, sizeof(self->f_stack) - v_s);\n")
-		g.printf("a_dst->wi += sizeof(self->f_stack) - v_s;\n")
+		g.printf("memmove(" +
+			"a_dst->ptr + a_dst->wi," +
+			"self->private_impl.f_stack + v_s," +
+			"sizeof(self->private_impl.f_stack) - v_s);\n")
+		g.printf("a_dst->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8) {
 		// TODO: suspend coroutine state.
@@ -998,7 +1009,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	switch n.ID0().Key() {
 	case 0:
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
-			g.writes("self")
+			g.writes("self->private_impl")
 		} else {
 			// TODO: don't assume that the vPrefix is necessary.
 			g.writes(vPrefix)
@@ -1046,7 +1057,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// TODO: choose between . vs -> operators.
 		//
 		// TODO: don't assume that the fPrefix is necessary.
-		g.writes("->")
+		g.writes(".")
 		g.writes(fPrefix)
 		g.writes(n.ID1().String(g.tm))
 		return nil

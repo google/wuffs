@@ -74,12 +74,21 @@ const char* puffs_gif_status_string(puffs_gif_status s);
 // ---------------- Public Structs
 
 typedef struct {
-  puffs_gif_status status;
-  uint32_t magic;
-  uint32_t f_literal_width;
-  uint8_t f_stack[4096];
-  uint8_t f_suffixes[4096];
-  uint16_t f_prefixes[4096];
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_gif_lzw_decoder_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_gif_status status;
+    uint32_t magic;
+    uint32_t f_literal_width;
+    uint8_t f_stack[4096];
+    uint8_t f_suffixes[4096];
+    uint16_t f_prefixes[4096];
+  } private_impl;
 } puffs_gif_lzw_decoder;
 
 // ---------------- Public Constructor and Destructor Prototypes
@@ -179,14 +188,14 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->status = puffs_gif_error_bad_version;
+    self->private_impl.status = puffs_gif_error_bad_version;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->magic = PUFFS_MAGIC;
-  self->f_literal_width = 8;
+  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.f_literal_width = 8;
 }
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {
@@ -204,11 +213,11 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   if (!self) {
     return puffs_gif_error_bad_receiver;
   }
-  puffs_gif_status status = self->status;
+  puffs_gif_status status = self->private_impl.status;
   if (status & 1) {
     return status;
   }
-  if (self->magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_MAGIC) {
     status = puffs_gif_error_constructor_not_called;
     goto cleanup0;
   }
@@ -229,12 +238,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_s;
   uint32_t v_c;
 
-  v_clear_code = (((uint32_t)(1)) << self->f_literal_width);
+  v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
   v_end_code = (v_clear_code + 1);
   v_use_save_code = 0;
   v_save_code = v_end_code;
   v_prev_code = 0;
-  v_width = (self->f_literal_width + 1);
+  v_width = (self->private_impl.f_literal_width + 1);
   v_bits = 0;
   v_n_bits = 0;
 label_0_continue:;
@@ -258,14 +267,14 @@ label_0_continue:;
       }
       a_dst->ptr[a_dst->wi++] = ((uint8_t)(v_code));
       if (v_use_save_code) {
-        self->f_suffixes[v_save_code] = ((uint8_t)(v_code));
-        self->f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
+        self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_code));
+        self->private_impl.f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
       }
     } else if (v_code == v_clear_code) {
       v_use_save_code = false;
       v_save_code = v_end_code;
       v_prev_code = 0;
-      v_width = (self->f_literal_width + 1);
+      v_width = (self->private_impl.f_literal_width + 1);
       goto label_0_continue;
     } else if (v_code == v_end_code) {
       status = puffs_gif_status_ok;
@@ -278,28 +287,29 @@ label_0_continue:;
         v_c = v_prev_code;
       }
       while (v_c >= v_clear_code) {
-        self->f_stack[v_s] = self->f_suffixes[v_c];
+        self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
         if (v_s == 0) {
           status = puffs_gif_error_lzw_prefix_chain_is_cyclical;
           goto cleanup0;
         }
         v_s -= 1;
-        v_c = ((uint32_t)(self->f_prefixes[v_c]));
+        v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
       }
-      self->f_stack[v_s] = ((uint8_t)(v_c));
+      self->private_impl.f_stack[v_s] = ((uint8_t)(v_c));
       if ((v_code == v_save_code) && v_use_save_code) {
-        self->f_stack[4095] = ((uint8_t)(v_c));
+        self->private_impl.f_stack[4095] = ((uint8_t)(v_c));
       }
-      if ((a_dst->len - a_dst->wi) < (sizeof(self->f_stack) - v_s)) {
+      if ((a_dst->len - a_dst->wi) <
+          (sizeof(self->private_impl.f_stack) - v_s)) {
         status = puffs_gif_status_short_write;
         goto cleanup0;
       }
-      memmove(a_dst->ptr + a_dst->wi, self->f_stack + v_s,
-              sizeof(self->f_stack) - v_s);
-      a_dst->wi += sizeof(self->f_stack) - v_s;
+      memmove(a_dst->ptr + a_dst->wi, self->private_impl.f_stack + v_s,
+              sizeof(self->private_impl.f_stack) - v_s);
+      a_dst->wi += sizeof(self->private_impl.f_stack) - v_s;
       if (v_use_save_code) {
-        self->f_suffixes[v_save_code] = ((uint8_t)(v_c));
-        self->f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
+        self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_c));
+        self->private_impl.f_prefixes[v_save_code] = ((uint16_t)(v_prev_code));
       }
     } else {
       status = puffs_gif_error_lzw_code_is_out_of_range;
@@ -316,6 +326,6 @@ label_0_continue:;
   }
 
 cleanup0:
-  self->status = status;
+  self->private_impl.status = status;
   return status;
 }

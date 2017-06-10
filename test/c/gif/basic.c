@@ -56,8 +56,9 @@ void test_puffs_version_bad() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
-  if (dec.status != puffs_gif_error_bad_version) {
-    FAIL("status: got %d, want %d", dec.status, puffs_gif_error_bad_version);
+  if (dec.private_impl.status != puffs_gif_error_bad_version) {
+    FAIL("status: got %d, want %d", dec.private_impl.status,
+         puffs_gif_error_bad_version);
     goto cleanup0;
   }
 cleanup0:
@@ -68,12 +69,13 @@ void test_puffs_version_good() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  if (dec.magic != PUFFS_MAGIC) {
-    FAIL("magic: got %u, want %u", dec.magic, PUFFS_MAGIC);
+  if (dec.private_impl.magic != PUFFS_MAGIC) {
+    FAIL("magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
     goto cleanup0;
   }
-  if (dec.f_literal_width != 8) {
-    FAIL("f_literal_width: got %u, want %u", dec.f_literal_width, 8);
+  if (dec.private_impl.f_literal_width != 8) {
+    FAIL("f_literal_width: got %u, want %u", dec.private_impl.f_literal_width,
+         8);
     goto cleanup0;
   }
 cleanup0:

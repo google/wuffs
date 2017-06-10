@@ -74,12 +74,21 @@ const char* puffs_gif_status_string(puffs_gif_status s);
 // ---------------- Public Structs
 
 typedef struct {
-  puffs_gif_status status;
-  uint32_t magic;
-  uint32_t f_literal_width;
-  uint8_t f_stack[4096];
-  uint8_t f_suffixes[4096];
-  uint16_t f_prefixes[4096];
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_gif_lzw_decoder_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_gif_status status;
+    uint32_t magic;
+    uint32_t f_literal_width;
+    uint8_t f_stack[4096];
+    uint8_t f_suffixes[4096];
+    uint16_t f_prefixes[4096];
+  } private_impl;
 } puffs_gif_lzw_decoder;
 
 // ---------------- Public Constructor and Destructor Prototypes
