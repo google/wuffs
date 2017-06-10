@@ -571,7 +571,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	g.writes("\n")
 
 	// Generate the local variables.
-	if err := g.writeVars(n.Node(), 0); err != nil {
+	if err := g.writeVars(n.Body(), 0); err != nil {
 		return err
 	}
 	g.writes("\n")
@@ -645,28 +645,39 @@ func (g *gen) writeField(n *a.Field, namePrefix string) error {
 	return nil
 }
 
-func (g *gen) writeVars(n *a.Node, depth uint32) error {
+func (g *gen) writeVars(block []*a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
 	depth++
 
-	if n.Kind() == a.KVar {
-		x := n.Var().XType()
-		// TODO: use g.writeCTypeName.
-		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
-			if s := cTypeNames[k]; s != "" {
-				g.printf("%s %s%s;\n", s, vPrefix, n.Var().Name().String(g.tm))
-				return nil
+	for _, o := range block {
+		switch o.Kind() {
+		case a.KIf:
+			for o := o.If(); o != nil; o = o.ElseIf() {
+				if err := g.writeVars(o.BodyIfTrue(), depth); err != nil {
+					return err
+				}
+				if err := g.writeVars(o.BodyIfFalse(), depth); err != nil {
+					return err
+				}
 			}
-		}
-		// TODO: fix this.
-		return fmt.Errorf("cannot convert Puffs type %q to C", x.String(g.tm))
-	}
 
-	for _, l := range n.Raw().SubLists() {
-		for _, o := range l {
-			if err := g.writeVars(o, depth); err != nil {
+		case a.KVar:
+			o := o.Var()
+			x := o.XType()
+			// TODO: use g.writeCTypeName.
+			if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
+				if s := cTypeNames[k]; s != "" {
+					g.printf("%s %s%s;\n", s, vPrefix, o.Name().String(g.tm))
+					continue
+				}
+			}
+			// TODO: fix this.
+			return fmt.Errorf("cannot convert Puffs type %q to C", x.String(g.tm))
+
+		case a.KWhile:
+			if err := g.writeVars(o.While().Body(), depth); err != nil {
 				return err
 			}
 		}

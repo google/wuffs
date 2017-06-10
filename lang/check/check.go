@@ -343,13 +343,11 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	// Fill in the TypeMap with all local variables. Note that they have
 	// function scope and can be hoisted, JavaScript style, a la
 	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
-	for _, o := range n.Body() {
-		if err := q.tcheckVars(o); err != nil {
-			return &Error{
-				Err:      err,
-				Filename: q.errFilename,
-				Line:     q.errLine,
-			}
+	if err := q.tcheckVars(n.Body()); err != nil {
+		return &Error{
+			Err:      err,
+			Filename: q.errFilename,
+			Line:     q.errLine,
 		}
 	}
 

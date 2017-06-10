@@ -62,6 +62,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			return
 
 		} else if code <= save_code {
+			var s u32[..4095] = 4095
+			s = 0 * s
 			// TODO: implement.
 
 		} else {

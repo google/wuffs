@@ -11,24 +11,34 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-func (q *checker) tcheckVars(n *a.Node) error {
-	q.errFilename, q.errLine = n.Raw().FilenameLine()
+func (q *checker) tcheckVars(block []*a.Node) error {
+	for _, o := range block {
+		q.errFilename, q.errLine = o.Raw().FilenameLine()
 
-	if n.Kind() == a.KVar {
-		n := n.Var()
-		name := n.Name()
-		if _, ok := q.f.LocalVars[name]; ok {
-			return fmt.Errorf("check: duplicate var %q", name.String(q.tm))
-		}
-		if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
-			return err
-		}
-		q.f.LocalVars[name] = n.XType()
-		return nil
-	}
-	for _, l := range n.Raw().SubLists() {
-		for _, o := range l {
-			if err := q.tcheckVars(o); err != nil {
+		switch o.Kind() {
+		case a.KIf:
+			for o := o.If(); o != nil; o = o.ElseIf() {
+				if err := q.tcheckVars(o.BodyIfTrue()); err != nil {
+					return err
+				}
+				if err := q.tcheckVars(o.BodyIfFalse()); err != nil {
+					return err
+				}
+			}
+
+		case a.KVar:
+			o := o.Var()
+			name := o.Name()
+			if _, ok := q.f.LocalVars[name]; ok {
+				return fmt.Errorf("check: duplicate var %q", name.String(q.tm))
+			}
+			if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
+				return err
+			}
+			q.f.LocalVars[name] = o.XType()
+
+		case a.KWhile:
+			if err := q.tcheckVars(o.While().Body()); err != nil {
 				return err
 			}
 		}

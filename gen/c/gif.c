@@ -224,6 +224,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_bits;
   uint32_t v_n_bits;
   uint32_t v_code;
+  uint32_t v_s;
 
   v_clear_code = (((uint32_t)(1)) << self->f_literal_width);
   v_end_code = (v_clear_code + 1);
@@ -267,6 +268,8 @@ label_0_continue:;
       status = puffs_gif_status_ok;
       goto cleanup0;
     } else if (v_code <= v_save_code) {
+      v_s = 4095;
+      v_s = (0 * v_s);
     } else {
       status = puffs_gif_error_bad_gif_image;
       goto cleanup0;
