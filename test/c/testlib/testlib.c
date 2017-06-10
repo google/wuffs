@@ -16,6 +16,7 @@ typedef void (*test)();
 test tests[];
 
 const char* test_filename;
+const char* test_funcname = "";
 
 int main(int argc, char** argv) {
 // The order matters here. Clang also defines "__GNUC__".
@@ -32,7 +33,8 @@ int main(int argc, char** argv) {
   for (test* t = tests; *t; t++) {
     (*t)();
     if (fail_msg[0]) {
-      printf("%-16s%-8sFAIL %s\n", test_filename, cc, fail_msg);
+      printf("%-16s%-8sFAIL %s: %s\n", test_filename, cc, test_funcname,
+             fail_msg);
       return 1;
     }
     tests_run++;

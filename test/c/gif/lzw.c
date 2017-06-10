@@ -23,6 +23,7 @@ uint8_t global_dst_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
 
 void test_lzw_decode() {
+  test_funcname = __func__;
   puffs_base_buf1 dst = {.ptr = global_dst_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, "../../testdata/bricks-nodither.giflzw")) {
@@ -30,13 +31,12 @@ void test_lzw_decode() {
   }
   // That .giflzw file should be 13382 bytes long.
   if (src.wi != 13382) {
-    FAIL("test_lzw_decode: src size: got %d, want %d", (int)(src.wi), 13382);
+    FAIL("src size: got %d, want %d", (int)(src.wi), 13382);
     goto cleanup0;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
   if (src.ptr[0] != 0x08) {
-    FAIL("test_lzw_decode: LZW literal width: got %d, want %d",
-         (int)(src.ptr[0]), 0x08);
+    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
     goto cleanup0;
   }
   src.ri++;
@@ -47,8 +47,7 @@ void test_lzw_decode() {
   puffs_gif_status status =
       puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
   if (status != puffs_gif_status_ok) {
-    FAIL("test_lzw_decode: status: got %d, want %d", status,
-         puffs_gif_status_ok);
+    FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
     goto cleanup1;
   }
 
@@ -56,13 +55,13 @@ void test_lzw_decode() {
   //
   // TODO: s/3982/19200/ as 19200 = 160 * 120.
   if (dst.wi != 3982) {
-    FAIL("test_lzw_decode: dst size: got %d, want %d", (int)(dst.wi), 3982);
+    FAIL("dst size: got %d, want %d", (int)(dst.wi), 3982);
     goto cleanup1;
   }
   // The first decoded byte should be 0xDC.
   if (dst.ptr[0] != 0xDC) {
-    FAIL("test_lzw_decode: first decoded byte: got 0x%02x, want 0x%02x",
-         (int)(dst.ptr[0]), 0xDC);
+    FAIL("first decoded byte: got 0x%02x, want 0x%02x", (int)(dst.ptr[0]),
+         0xDC);
     goto cleanup1;
   }
 
