@@ -64,13 +64,14 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 		} else if code <= save_code {
 			var s u32[..4095] = 4095
 
-			while s != 0,
+			while true,
 				inv n_bits < 8,
 			{
 				if s == 0 {
 					return error "bad GIF image"
 				}
 				s -= 1
+				break
 			}
 
 			// TODO: implement.

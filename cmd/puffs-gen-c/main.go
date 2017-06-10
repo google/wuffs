@@ -759,7 +759,10 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KJump:
 		n := n.Jump()
-		jt := g.perFunc.jumpTargets[n.JumpTarget()]
+		jt, err := g.jumpTarget(n.JumpTarget())
+		if err != nil {
+			return err
+		}
 		keyword := "continue"
 		if n.Keyword().Key() == t.KeyBreak {
 			keyword = "break"

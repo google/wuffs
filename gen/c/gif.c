@@ -269,13 +269,15 @@ label_0_continue:;
       goto cleanup0;
     } else if (v_code <= v_save_code) {
       v_s = 4095;
-      while (v_s != 0) {
+      while (true) {
         if (v_s == 0) {
           status = puffs_gif_error_bad_gif_image;
           goto cleanup0;
         }
         v_s -= 1;
+        goto label_1_break;
       }
+    label_1_break:;
     } else {
       status = puffs_gif_error_bad_gif_image;
       goto cleanup0;
