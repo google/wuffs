@@ -470,11 +470,19 @@ func (n *TypeExpr) Max() *Expr         { return n.mhs.Expr() }
 func (n *TypeExpr) Inner() *TypeExpr   { return n.rhs.TypeExpr() }
 
 func (n *TypeExpr) IsBool() bool {
-	return n.id0 == 0 && n.id1.Key() == t.KeyBool && n.lhs == nil && n.mhs == nil && n.rhs == nil
+	return n.id0 == 0 && n.id1.Key() == t.KeyBool
+}
+
+func (n *TypeExpr) IsIdeal() bool {
+	return n.id0 == 0 && n.id1.Key() == t.KeyDoubleZ
 }
 
 func (n *TypeExpr) IsNumType() bool {
 	return n.id0 == 0 && n.id1.IsNumType()
+}
+
+func (n *TypeExpr) IsNumTypeOrIdeal() bool {
+	return n.id0 == 0 && (n.id1.IsNumType() || n.id1.Key() == t.KeyDoubleZ)
 }
 
 func (n *TypeExpr) IsRefined() bool {

@@ -38,7 +38,7 @@ var (
 
 func init() {
 	zeroExpr.SetConstValue(zero)
-	zeroExpr.SetMType(TypeExprIdeal)
+	zeroExpr.SetMType(typeExprIdeal)
 }
 
 func btoi(b bool) *big.Int {
@@ -815,7 +815,8 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 }
 
 func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
-	if n.Eq(TypeExprIdeal) {
+	if n.IsIdeal() {
+		// TODO: can an ideal type be refined??
 		return nil, nil, nil
 	}
 

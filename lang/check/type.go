@@ -59,7 +59,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if err := q.tcheckExpr(cond, 0); err != nil {
 				return err
 			}
-			if !cond.MType().Eq(TypeExprBool) {
+			if !cond.MType().IsBool() {
 				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
 					cond.String(q.tm), cond.MType().String(q.tm))
 			}
@@ -143,7 +143,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if err := q.tcheckExpr(cond, 0); err != nil {
 			return err
 		}
-		if !cond.MType().Eq(TypeExprBool) {
+		if !cond.MType().IsBool() {
 			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
 				cond.String(q.tm), cond.MType().String(q.tm))
 		}
@@ -176,7 +176,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 	if err := q.tcheckExpr(cond, 0); err != nil {
 		return err
 	}
-	if !cond.MType().Eq(TypeExprBool) {
+	if !cond.MType().IsBool() {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
 			cond.String(q.tm), cond.MType().String(q.tm))
 	}
@@ -203,7 +203,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	rTyp := rhs.MType()
 
 	if n.Operator().Key() == t.KeyEq {
-		if (rTyp == TypeExprIdeal && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+		if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
 			return nil
 		}
 		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
@@ -224,7 +224,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 			n.Operator().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 	}
 
-	if rTyp == TypeExprIdeal || lTyp.EqIgnoringRefinements(rTyp) {
+	if rTyp.IsIdeal() || lTyp.EqIgnoringRefinements(rTyp) {
 		return nil
 	}
 	return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
@@ -283,7 +283,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				return fmt.Errorf("check: invalid numeric literal %q", s)
 			}
 			n.SetConstValue(z)
-			n.SetMType(TypeExprIdeal)
+			n.SetMType(typeExprIdeal)
 			return nil
 
 		} else if id1.IsIdent() {
@@ -299,12 +299,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		switch id1.Key() {
 		case t.KeyFalse:
 			n.SetConstValue(zero)
-			n.SetMType(TypeExprBool)
+			n.SetMType(typeExprBool)
 			return nil
 
 		case t.KeyTrue:
 			n.SetConstValue(one)
-			n.SetMType(TypeExprBool)
+			n.SetMType(typeExprBool)
 			return nil
 
 		case t.KeyUnderscore:
@@ -327,7 +327,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			n.SetMType(TypeExprU8) // HACK.
+			n.SetMType(typeExprU8) // HACK.
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
@@ -337,7 +337,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				return err
 			}
 			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(TypeExprU8) // HACK.
+			n.LHS().Expr().SetMType(typeExprU8) // HACK.
 			for _, o := range n.Args() {
 				if err := q.tcheckArg(o.Arg(), depth); err != nil {
 					return err
@@ -449,7 +449,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			//
 			// Another hack is using TypeExprU8 until a TypeExpr can represent
 			// function types.
-			n.SetMType(TypeExprU8)
+			n.SetMType(typeExprU8)
 			return nil
 		default:
 			s = q.c.structs[name].Struct
@@ -480,7 +480,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 
 	switch n.ID0().Key() {
 	case t.KeyXUnaryPlus, t.KeyXUnaryMinus:
-		if !numeric(rTyp) {
+		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
 				n.ID0().AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
@@ -494,14 +494,14 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 		return nil
 
 	case t.KeyXUnaryNot:
-		if !rTyp.Eq(TypeExprBool) {
+		if !rTyp.IsBool() {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
 				n.ID0().AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
 		}
-		n.SetMType(TypeExprBool.Unrefined())
+		n.SetMType(typeExprBool)
 		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprUnaryOp", n.ID0().Key())
@@ -519,7 +519,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		if err := q.tcheckTypeExpr(rhs, 0); err != nil {
 			return err
 		}
-		if numeric(lTyp) && rhs.IsNumType() {
+		if lTyp.IsNumTypeOrIdeal() && rhs.IsNumType() {
 			n.SetMType(rhs)
 			return nil
 		}
@@ -534,22 +534,22 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 
 	switch op.Key() {
 	default:
-		if !numeric(lTyp) {
+		if !lTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
 				op.AmbiguousForm().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
-		if !numeric(rTyp) {
+		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
 				op.AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
 	case t.KeyXBinaryNotEq, t.KeyXBinaryEqEq:
 		// No-op.
 	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
-		if lTyp != TypeExprBool {
+		if !lTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
 				op.AmbiguousForm().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
-		if rTyp != TypeExprBool {
+		if !rTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
 				op.AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
@@ -557,7 +557,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 
 	switch op.Key() {
 	default:
-		if !lTyp.EqIgnoringRefinements(rTyp) && lTyp != TypeExprIdeal && rTyp != TypeExprIdeal {
+		if !lTyp.EqIgnoringRefinements(rTyp) && !lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
 				op.AmbiguousForm().String(q.tm),
 				lhs.String(q.tm), rhs.String(q.tm),
@@ -565,7 +565,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			)
 		}
 	case t.KeyXBinaryShiftL, t.KeyXBinaryShiftR:
-		if (lTyp == TypeExprIdeal) && (rTyp != TypeExprIdeal) {
+		if lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
 				op.AmbiguousForm().String(q.tm),
@@ -582,8 +582,8 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	}
 
 	if comparisonOps[0xFF&op.Key()] {
-		n.SetMType(TypeExprBool)
-	} else if lTyp != TypeExprIdeal {
+		n.SetMType(typeExprBool)
+	} else if !lTyp.IsIdeal() {
 		n.SetMType(lTyp.Unrefined())
 	} else {
 		n.SetMType(rTyp.Unrefined())
