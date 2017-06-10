@@ -343,7 +343,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			n.SetMType(foo.MType())
+			n.SetMType(foo.MType().Unrefined())
 			return nil
 		}
 
@@ -490,7 +490,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 			}
 			n.SetConstValue(cv)
 		}
-		n.SetMType(rTyp)
+		n.SetMType(rTyp.Unrefined())
 		return nil
 
 	case t.KeyXUnaryNot:
@@ -501,7 +501,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 		if cv := rhs.ConstValue(); cv != nil {
 			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
 		}
-		n.SetMType(TypeExprBool)
+		n.SetMType(TypeExprBool.Unrefined())
 		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprUnaryOp", n.ID0().Key())
@@ -584,9 +584,9 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	if comparisonOps[0xFF&op.Key()] {
 		n.SetMType(TypeExprBool)
 	} else if lTyp != TypeExprIdeal {
-		n.SetMType(lTyp)
+		n.SetMType(lTyp.Unrefined())
 	} else {
-		n.SetMType(rTyp)
+		n.SetMType(rTyp.Unrefined())
 	}
 
 	return nil

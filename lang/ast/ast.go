@@ -481,6 +481,16 @@ func (n *TypeExpr) IsRefined() bool {
 	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
 }
 
+func (n *TypeExpr) Unrefined() *TypeExpr {
+	if !n.IsRefined() {
+		return n
+	}
+	o := *n
+	o.lhs = nil
+	o.mhs = nil
+	return &o
+}
+
 func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,

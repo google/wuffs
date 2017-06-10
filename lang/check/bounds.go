@@ -549,43 +549,47 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	return nil
 }
 
-func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (nMin *big.Int, nMax *big.Int, retErr error) {
 	if depth > a.MaxExprDepth {
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
 	}
 	depth++
-	if cv := n.ConstValue(); cv != nil {
-		return cv, cv, nil
-	}
-	// TODO: look in q.facts for "n == constantValue".
 
-	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-	case 0:
-		return q.bcheckExprOther(n, depth)
-	case t.FlagsUnaryOp:
-		return q.bcheckExprUnaryOp(n, depth)
-	case t.FlagsBinaryOp:
-		if n.ID0().Key() == t.KeyXBinaryAs {
-			lMin, lMax, err := q.bcheckExpr(n.LHS().Expr(), depth)
-			if err != nil {
-				return nil, nil, err
+	if cv := n.ConstValue(); cv != nil {
+		nMin, nMax = cv, cv
+	} else {
+		// TODO: look in q.facts for "n == constantValue".
+		switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
+		case 0:
+			nMin, nMax, retErr = q.bcheckExprOther(n, depth)
+		case t.FlagsUnaryOp:
+			nMin, nMax, retErr = q.bcheckExprUnaryOp(n, depth)
+		case t.FlagsBinaryOp:
+			if n.ID0().Key() == t.KeyXBinaryAs {
+				nMin, nMax, retErr = q.bcheckExpr(n.LHS().Expr(), depth)
+			} else {
+				nMin, nMax, retErr = q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
 			}
-			rMin, rMax, err := q.bcheckTypeExpr(n.RHS().TypeExpr())
-			if err != nil {
-				return nil, nil, err
-			}
-			if lMin.Cmp(rMin) < 0 || lMax.Cmp(rMax) > 0 {
-				return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-					n.LHS().Expr().String(q.tm), lMin, lMax, rMin, rMax,
-				)
-			}
-			return lMin, lMax, nil
+		case t.FlagsAssociativeOp:
+			nMin, nMax, retErr = q.bcheckExprAssociativeOp(n, depth)
+
+		default:
+			return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
 		}
-		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
-	case t.FlagsAssociativeOp:
-		return q.bcheckExprAssociativeOp(n, depth)
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
+	if retErr != nil {
+		return nil, nil, retErr
+	}
+
+	tMin, tMax, err := q.bcheckTypeExpr(n.MType())
+	if err != nil {
+		return nil, nil, err
+	}
+	if (nMin != nil && tMin != nil && nMin.Cmp(tMin) < 0) || (nMax != nil && tMax != nil && nMax.Cmp(tMax) > 0) {
+		return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
+			n.String(q.tm), nMin, nMax, tMin, tMax)
+	}
+	return nMin, nMax, nil
 }
 
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
@@ -805,6 +809,10 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 }
 
 func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
+	if n.Eq(TypeExprIdeal) {
+		return nil, nil, nil
+	}
+
 	switch n.Decorator().Key() {
 	case t.KeyPtr, t.KeyOpenBracket:
 		return nil, nil, nil
