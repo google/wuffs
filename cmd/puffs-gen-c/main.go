@@ -546,7 +546,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		badArg := false
 		for _, o := range n.In().Fields() {
 			o := o.Field()
-			if o.XType().PackageOrDecorator().Key() != t.KeyPtr {
+			if o.XType().Decorator().Key() != t.KeyPtr {
 				// TODO: check for type refinements: u32[..4095] instead of
 				// u32. Also check for types, for array-typed arguments.
 				continue
@@ -601,7 +601,7 @@ func (g *gen) writeField(n *a.Field, namePrefix string) error {
 
 	convertible, nPtr := true, 0
 	for x := n.XType(); x != nil; x = x.Inner() {
-		if p := x.PackageOrDecorator().Key(); p == t.KeyPtr {
+		if p := x.Decorator().Key(); p == t.KeyPtr {
 			if nPtr == maxNPtr {
 				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.XType().String(g.tm))
 			}
@@ -635,7 +635,7 @@ func (g *gen) writeField(n *a.Field, namePrefix string) error {
 	g.writes(n.Name().String(g.tm))
 
 	for x := n.XType(); x != nil; x = x.Inner() {
-		if x.PackageOrDecorator() == t.IDOpenBracket {
+		if x.Decorator() == t.IDOpenBracket {
 			g.writeb('[')
 			g.writes(x.ArrayLength().ConstValue().String())
 			g.writeb(']')
@@ -1115,7 +1115,7 @@ func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint
 }
 
 func (g *gen) writeCTypeName(n *a.TypeExpr) error {
-	if n.PackageOrDecorator() == 0 {
+	if n.Decorator() == 0 {
 		if k := n.Name().Key(); k < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[k]; s != "" {
 				g.writes(s)

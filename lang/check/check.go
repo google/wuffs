@@ -201,7 +201,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 		}
 		if banPtrTypes {
 			for x := f.XType(); x.Inner() != nil; x = x.Inner() {
-				if x.PackageOrDecorator().Key() == t.KeyPtr {
+				if x.Decorator().Key() == t.KeyPtr {
 					// TODO: implement nptr (nullable pointer) types.
 					return fmt.Errorf("check: ptr type %q not allowed for field %q; use nptr instead",
 						x.String(c.tm), f.Name().String(c.tm))
@@ -209,7 +209,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 			}
 		}
 		if dv := f.DefaultValue(); dv != nil {
-			if f.XType().PackageOrDecorator() != 0 {
+			if f.XType().Decorator() != 0 {
 				return fmt.Errorf("check: cannot set default value for qualified type %q for field %q",
 					f.XType().String(c.tm), f.Name().String(c.tm))
 			}

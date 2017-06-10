@@ -293,7 +293,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 }
 
 func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	switch lhs.MType().PackageOrDecorator().Key() {
+	switch lhs.MType().Decorator().Key() {
 	case t.KeyPtr:
 		// TODO: handle.
 		return nil
@@ -805,7 +805,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 }
 
 func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
-	switch n.PackageOrDecorator().Key() {
+	switch n.Decorator().Key() {
 	case t.KeyPtr, t.KeyOpenBracket:
 		return nil, nil, nil
 	}

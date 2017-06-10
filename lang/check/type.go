@@ -358,7 +358,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if lTyp.PackageOrDecorator().Key() != t.KeyOpenBracket {
+		if lTyp.Decorator().Key() != t.KeyOpenBracket {
 			return fmt.Errorf("%s is an array-index expression but %s has type %s, not an array type",
 				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
@@ -428,10 +428,10 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return err
 	}
 	lTyp := lhs.MType()
-	for ; lTyp.PackageOrDecorator().Key() == t.KeyPtr; lTyp = lTyp.Inner() {
+	for ; lTyp.Decorator().Key() == t.KeyPtr; lTyp = lTyp.Inner() {
 	}
 
-	if lTyp.PackageOrDecorator() != 0 {
+	if lTyp.Decorator() != 0 {
 		// TODO.
 		return fmt.Errorf("check: unsupported package-or-decorator for tcheckDot")
 	}
@@ -658,7 +658,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 	}
 	depth++
 
-	switch n.PackageOrDecorator().Key() {
+	switch n.Decorator().Key() {
 	case 0:
 		if n.Name().IsNumType() {
 			for _, b := range n.Bounds() {

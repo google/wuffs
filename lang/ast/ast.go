@@ -440,7 +440,7 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 // MaxTypeExprDepth is an advisory limit for a TypeExpr's recursion depth.
 const MaxTypeExprDepth = 63
 
-// TypeExpr is a type expression, such as "u32", "u32[:8]", "pkg.foo", "ptr T"
+// TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr T"
 // or "[8] T":
 //  - ID0:   <0|package name|IDPtr|IDOpenBracket>
 //  - ID1:   <0|type name>
@@ -460,14 +460,14 @@ const MaxTypeExprDepth = 63
 // TODO: function / method types.
 type TypeExpr Node
 
-func (n *TypeExpr) Node() *Node              { return (*Node)(n) }
-func (n *TypeExpr) PackageOrDecorator() t.ID { return n.id0 }
-func (n *TypeExpr) Name() t.ID               { return n.id1 }
-func (n *TypeExpr) ArrayLength() *Expr       { return n.lhs.Expr() }
-func (n *TypeExpr) Bounds() [2]*Expr         { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
-func (n *TypeExpr) Min() *Expr               { return n.lhs.Expr() }
-func (n *TypeExpr) Max() *Expr               { return n.mhs.Expr() }
-func (n *TypeExpr) Inner() *TypeExpr         { return n.rhs.TypeExpr() }
+func (n *TypeExpr) Node() *Node        { return (*Node)(n) }
+func (n *TypeExpr) Decorator() t.ID    { return n.id0 }
+func (n *TypeExpr) Name() t.ID         { return n.id1 }
+func (n *TypeExpr) ArrayLength() *Expr { return n.lhs.Expr() }
+func (n *TypeExpr) Bounds() [2]*Expr   { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
+func (n *TypeExpr) Min() *Expr         { return n.lhs.Expr() }
+func (n *TypeExpr) Max() *Expr         { return n.mhs.Expr() }
+func (n *TypeExpr) Inner() *TypeExpr   { return n.rhs.TypeExpr() }
 
 func (n *TypeExpr) IsBool() bool {
 	return n.id0 == 0 && n.id1.Key() == t.KeyBool && n.lhs == nil && n.mhs == nil && n.rhs == nil
