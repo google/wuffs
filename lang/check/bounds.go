@@ -21,6 +21,7 @@ var numTypeBounds = [256][2]*big.Int{
 	t.KeyU32:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
 	t.KeyU64:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
 	t.KeyUsize: {zero, zero},
+	t.KeyBool:  {zero, one},
 }
 
 var (
@@ -298,9 +299,6 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		return nil
 	case t.KeyOpenBracket:
 		// TODO: handle.
-		return nil
-	}
-	if lhs.MType().Name().Key() == t.KeyBool {
 		return nil
 	}
 
@@ -813,9 +811,7 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	b := [2]*big.Int{}
-	if key := n.Name().Key(); key == t.KeyBool {
-		b = [2]*big.Int{zero, one}
-	} else if key < t.Key(len(numTypeBounds)) {
+	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]
 	}
 	if b[0] == nil || b[1] == nil {

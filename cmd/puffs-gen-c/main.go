@@ -931,7 +931,7 @@ func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, d
 	}
 
 	if cv := n.ConstValue(); cv != nil {
-		if nTyp := n.MType(); nTyp.PackageOrDecorator() != 0 || nTyp.Name().Key() != t.KeyBool {
+		if !n.MType().IsBool() {
 			g.writes(cv.String())
 		} else if cv.Cmp(zero) == 0 {
 			g.writes("false")
