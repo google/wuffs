@@ -234,9 +234,7 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 			err = fmt.Errorf("no such reason %s", reasonID.String(q.tm))
 		}
 	} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
-		if q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr()) {
-			err = nil
-		}
+		err = q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr())
 	}
 	if err != nil {
 		if err == errFailed {
@@ -559,6 +557,10 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 	if err != nil {
 		return nil, nil, err
 	}
+	nMin, nMax, err = q.facts.refine(n, nMin, nMax, q.tm)
+	if err != nil {
+		return nil, nil, err
+	}
 	tMin, tMax, err := q.bcheckTypeExpr(n.MType())
 	if err != nil {
 		return nil, nil, err
@@ -573,14 +575,6 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	if cv := n.ConstValue(); cv != nil {
 		return cv, cv, nil
-	}
-	// Look in the known facts for "n == constValue".
-	for _, x := range q.facts {
-		if other := eqEqOtherHandSide(x, n); other != nil {
-			if cv := other.ConstValue(); cv != nil {
-				return cv, cv, nil
-			}
-		}
 	}
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
@@ -673,13 +667,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 	default:
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 	}
-
-	nMin, nMax, err := q.bcheckTypeExpr(n.MType())
-	if err != nil {
-		return nil, nil, err
-	}
-	nMin, nMax = q.facts.refine(n, nMin, nMax)
-	return nMin, nMax, nil
+	return q.bcheckTypeExpr(n.MType())
 }
 
 func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {

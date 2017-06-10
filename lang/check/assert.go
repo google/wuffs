@@ -12,17 +12,37 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-// eqEqOtherHandSide returns the other hand side when n is an expression like
-// "thisHS == thatHS" or "thatHS == thisHS". If not, it returns nil.
-func eqEqOtherHandSide(n *a.Expr, thisHS *a.Expr) (thatHS *a.Expr) {
-	if n.ID0().Key() == t.KeyXBinaryEqEq {
+// otherHandSide returns the operator and other hand side when n is an
+// binary-op expression like "thisHS == thatHS" or "thatHS < thisHS" (which is
+// equivalent to "thisHS > thatHS"). If not, it returns (0, nil).
+func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
+	op = n.ID0()
+
+	reverseOp := t.ID(0)
+	switch op.Key() {
+	case t.KeyXBinaryNotEq:
+		reverseOp = t.IDXBinaryNotEq
+	case t.KeyXBinaryLessThan:
+		reverseOp = t.IDXBinaryGreaterEq
+	case t.KeyXBinaryLessEq:
+		reverseOp = t.IDXBinaryGreaterThan
+	case t.KeyXBinaryEqEq:
+		reverseOp = t.IDXBinaryEqEq
+	case t.KeyXBinaryGreaterEq:
+		reverseOp = t.IDXBinaryLessThan
+	case t.KeyXBinaryGreaterThan:
+		reverseOp = t.IDXBinaryLessEq
+	}
+
+	if reverseOp != 0 {
 		if thisHS.Eq(n.LHS().Expr()) {
-			return n.RHS().Expr()
-		} else if thisHS.Eq(n.RHS().Expr()) {
-			return n.LHS().Expr()
+			return op, n.RHS().Expr()
+		}
+		if thisHS.Eq(n.RHS().Expr()) {
+			return reverseOp, n.LHS().Expr()
 		}
 	}
-	return nil
+	return 0, nil
 }
 
 type facts []*a.Expr
@@ -38,7 +58,7 @@ func (z *facts) appendFact(fact *a.Expr) {
 	switch fact.ID0().Key() {
 	case 0:
 		for _, x := range *z {
-			if other := eqEqOtherHandSide(x, fact); other != nil {
+			if op, other := otherHandSide(x, fact); op.Key() == t.KeyXBinaryEqEq {
 				z.appendFact(other)
 			}
 		}
@@ -70,75 +90,63 @@ func (z *facts) update(f func(*a.Expr) *a.Expr) {
 	*z = (*z)[:i]
 }
 
-func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int) (*big.Int, *big.Int) {
-	if n.ID0() != 0 || !n.ID1().IsIdent() {
-		// TODO.
-		return nMin, nMax
+func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.Int, *big.Int, error) {
+	if nMin == nil || nMax == nil {
+		return nMin, nMax, nil
 	}
 
 	for _, x := range z {
-		xMin, xMax := refine(x, n.ID1())
-		if xMin != nil && nMin.Cmp(xMin) < 0 {
-			nMin = xMin
+		op, other := otherHandSide(x, n)
+		if op == 0 {
+			continue
 		}
-		if xMax != nil && nMax.Cmp(xMax) > 0 {
-			nMax = xMax
+		cv := other.ConstValue()
+		if cv == nil {
+			continue
 		}
-	}
-	return nMin, nMax
-}
 
-// refine returns fact's lower or upper bound for id.
-func refine(fact *a.Expr, id t.ID) (*big.Int, *big.Int) {
-	op := fact.ID0()
-	if !op.IsBinaryOp() || op.Key() == t.KeyAs {
-		return nil, nil
-	}
+		originalNMin, originalNMax, changed := nMin, nMax, false
+		switch op.Key() {
+		case t.KeyXBinaryNotEq:
+			if nMin.Cmp(cv) == 0 {
+				nMin = add1(nMin)
+				changed = true
+			} else if nMax.Cmp(cv) == 0 {
+				nMax = sub1(nMax)
+				changed = true
+			}
+		case t.KeyXBinaryLessThan:
+			if nMax.Cmp(cv) >= 0 {
+				nMax = sub1(cv)
+				changed = true
+			}
+		case t.KeyXBinaryLessEq:
+			if nMax.Cmp(cv) > 0 {
+				nMax = cv
+				changed = true
+			}
+		case t.KeyXBinaryEqEq:
+			nMin, nMax = cv, cv
+			changed = true
+		case t.KeyXBinaryGreaterEq:
+			if nMin.Cmp(cv) < 0 {
+				nMin = cv
+				changed = true
+			}
+		case t.KeyXBinaryGreaterThan:
+			if nMin.Cmp(cv) <= 0 {
+				nMin = add1(cv)
+				changed = true
+			}
+		}
 
-	lhs := fact.LHS().Expr()
-	rhs := fact.RHS().Expr()
-	cv := (*big.Int)(nil)
-	idLeft := lhs.ID0() == 0 && lhs.ID1() == id
-	if idLeft {
-		cv = rhs.ConstValue()
-	} else {
-		if rhs.ID0() != 0 || rhs.ID1() != id {
-			return nil, nil
-		}
-		cv = lhs.ConstValue()
-	}
-	if cv == nil {
-		return nil, nil
-	}
-
-	switch op.Key() {
-	case t.KeyXBinaryLessThan:
-		if idLeft {
-			return nil, sub1(cv)
-		} else {
-			return add1(cv), nil
-		}
-	case t.KeyXBinaryLessEq:
-		if idLeft {
-			return nil, cv
-		} else {
-			return cv, nil
-		}
-	case t.KeyXBinaryGreaterEq:
-		if idLeft {
-			return cv, nil
-		} else {
-			return nil, cv
-		}
-	case t.KeyXBinaryGreaterThan:
-		if idLeft {
-			return add1(cv), nil
-		} else {
-			return nil, sub1(cv)
+		if changed && nMin.Cmp(nMax) > 0 {
+			return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] inconsistent with fact %q",
+				n.String(tm), originalNMin, originalNMax, x.String(tm))
 		}
 	}
 
-	return nil, nil
+	return nMin, nMax, nil
 }
 
 // simplify returns a simplified form of n. For example, (x - x) becomes 0.
@@ -205,27 +213,25 @@ func proveBinaryOpConstValues(op t.Key, lMin *big.Int, lMax *big.Int, rMin *big.
 	return false
 }
 
-func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) (ok bool) {
+func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 	lhsCV := lhs.ConstValue()
 	if lhsCV != nil {
 		rMin, rMax, err := q.bcheckExpr(rhs, 0)
 		if err != nil {
-			// TODO: should this function return the error?
-			return false
+			return err
 		}
 		if proveBinaryOpConstValues(op, lhsCV, lhsCV, rMin, rMax) {
-			return true
+			return nil
 		}
 	}
 	rhsCV := rhs.ConstValue()
 	if rhsCV != nil {
 		lMin, lMax, err := q.bcheckExpr(lhs, 0)
 		if err != nil {
-			// TODO: should this function return the error?
-			return false
+			return err
 		}
 		if proveBinaryOpConstValues(op, lMin, lMax, rhsCV, rhsCV) {
-			return true
+			return nil
 		}
 	}
 
@@ -235,29 +241,36 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) (ok bool) {
 		}
 		factOp := x.ID0().Key()
 		if factOp == op && x.RHS().Expr().Eq(rhs) {
-			return true
+			return nil
 		}
 
 		if factOp == t.KeyXBinaryEqEq && rhsCV != nil {
 			if factCV := x.RHS().Expr().ConstValue(); factCV != nil {
 				switch op {
 				case t.KeyXBinaryNotEq:
-					return factCV.Cmp(rhsCV) != 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) != 0)
 				case t.KeyXBinaryLessThan:
-					return factCV.Cmp(rhsCV) < 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) < 0)
 				case t.KeyXBinaryLessEq:
-					return factCV.Cmp(rhsCV) <= 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) <= 0)
 				case t.KeyXBinaryEqEq:
-					return factCV.Cmp(rhsCV) == 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) == 0)
 				case t.KeyXBinaryGreaterEq:
-					return factCV.Cmp(rhsCV) >= 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) >= 0)
 				case t.KeyXBinaryGreaterThan:
-					return factCV.Cmp(rhsCV) > 0
+					return errFailedOrNil(factCV.Cmp(rhsCV) > 0)
 				}
 			}
 		}
 	}
-	return false
+	return errFailed
+}
+
+func errFailedOrNil(ok bool) error {
+	if ok {
+		return nil
+	}
+	return errFailed
 }
 
 var errFailed = errors.New("failed")
@@ -279,11 +292,11 @@ var reasons = [...]struct {
 		if op.Key() != t.KeyXBinaryPlus {
 			return errFailed
 		}
-		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
-			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.tm), c.String(q.tm))
+		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, a, c); err != nil {
+			return fmt.Errorf("cannot prove \"%s < %s\": %v", a.String(q.tm), c.String(q.tm), err)
 		}
-		if !q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, b) {
-			return fmt.Errorf("cannot prove \"%s <= %s\"", zeroExpr.String(q.tm), b.String(q.tm))
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, b); err != nil {
+			return fmt.Errorf("cannot prove \"%s <= %s\": %v", zeroExpr.String(q.tm), b.String(q.tm), err)
 		}
 		return nil
 	}},
@@ -296,11 +309,11 @@ var reasons = [...]struct {
 		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
-		if !q.proveBinaryOp(t.KeyXBinaryLessThan, a, c) {
-			return fmt.Errorf("cannot prove \"%s < %s\"", a.String(q.tm), c.String(q.tm))
+		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, a, c); err != nil {
+			return fmt.Errorf("cannot prove \"%s < %s\": %v", a.String(q.tm), c.String(q.tm), err)
 		}
-		if !q.proveBinaryOp(t.KeyXBinaryLessEq, c, b) {
-			return fmt.Errorf("cannot prove \"%s <= %s\"", c.String(q.tm), b.String(q.tm))
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, c, b); err != nil {
+			return fmt.Errorf("cannot prove \"%s <= %s\": %v", c.String(q.tm), b.String(q.tm), err)
 		}
 		return nil
 	}},
