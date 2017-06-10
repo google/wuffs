@@ -549,49 +549,16 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	return nil
 }
 
-func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (nMin *big.Int, nMax *big.Int, retErr error) {
+func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	if depth > a.MaxExprDepth {
 		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
 	}
 	depth++
 
-	if cv := n.ConstValue(); cv != nil {
-		nMin, nMax = cv, cv
-	} else {
-		// Look in the known facts for "n == constantValue".
-		for _, x := range q.facts {
-			if other := eqEqOtherHandSide(x, n); other != nil {
-				if cv := other.ConstValue(); cv != nil {
-					nMin, nMax = cv, cv
-					break
-				}
-			}
-		}
-
-		if nMin == nil {
-			switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-			case 0:
-				nMin, nMax, retErr = q.bcheckExprOther(n, depth)
-			case t.FlagsUnaryOp:
-				nMin, nMax, retErr = q.bcheckExprUnaryOp(n, depth)
-			case t.FlagsBinaryOp:
-				if n.ID0().Key() == t.KeyXBinaryAs {
-					nMin, nMax, retErr = q.bcheckExpr(n.LHS().Expr(), depth)
-				} else {
-					nMin, nMax, retErr = q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
-				}
-			case t.FlagsAssociativeOp:
-				nMin, nMax, retErr = q.bcheckExprAssociativeOp(n, depth)
-
-			default:
-				return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
-			}
-		}
+	nMin, nMax, err := q.bcheckExpr1(n, depth)
+	if err != nil {
+		return nil, nil, err
 	}
-	if retErr != nil {
-		return nil, nil, retErr
-	}
-
 	tMin, tMax, err := q.bcheckTypeExpr(n.MType())
 	if err != nil {
 		return nil, nil, err
@@ -601,6 +568,34 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (nMin *big.Int, nMax *big.
 			n.String(q.tm), nMin, nMax, tMin, tMax)
 	}
 	return nMin, nMax, nil
+}
+
+func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	if cv := n.ConstValue(); cv != nil {
+		return cv, cv, nil
+	}
+	// Look in the known facts for "n == constValue".
+	for _, x := range q.facts {
+		if other := eqEqOtherHandSide(x, n); other != nil {
+			if cv := other.ConstValue(); cv != nil {
+				return cv, cv, nil
+			}
+		}
+	}
+	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
+	case 0:
+		return q.bcheckExprOther(n, depth)
+	case t.FlagsUnaryOp:
+		return q.bcheckExprUnaryOp(n, depth)
+	case t.FlagsBinaryOp:
+		if n.ID0().Key() == t.KeyXBinaryAs {
+			return q.bcheckExpr(n.LHS().Expr(), depth)
+		}
+		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
+	case t.FlagsAssociativeOp:
+		return q.bcheckExprAssociativeOp(n, depth)
+	}
+	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
 }
 
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
