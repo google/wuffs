@@ -593,7 +593,8 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 }
 
 func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
-	badArg := false
+	checks := []string(nil)
+
 	for _, o := range n.In().Fields() {
 		o := o.Field()
 		oTyp := o.XType()
@@ -601,15 +602,11 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 			// TODO: Also check elements, for array-typed arguments.
 			continue
 		}
+
 		switch {
 		case oTyp.Decorator().Key() == t.KeyPtr:
-			if badArg {
-				g.writes(" || ")
-			} else {
-				g.writes("if (")
-			}
-			g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
-			badArg = true
+			checks = append(checks, fmt.Sprintf("!%s%s", aPrefix, o.Name().String(g.tm)))
+
 		case oTyp.IsRefined():
 			bounds := [2]*big.Int{}
 			for i, b := range oTyp.Bounds() {
@@ -629,33 +626,37 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 				}
 			}
 			for i, b := range bounds {
-				if badArg {
-					g.writes(" || ")
-				} else {
-					g.writes("if (")
+				if b != nil {
+					op := '<'
+					if i != 0 {
+						op = '>'
+					}
+					checks = append(checks, fmt.Sprintf("%s%s %c %s", aPrefix, o.Name().String(g.tm), op, b))
 				}
-				g.printf("%s%s", aPrefix, o.Name().String(g.tm))
-				if i == 0 {
-					g.writeb('<')
-				} else {
-					g.writeb('>')
-				}
-				g.printf("%s", b)
-				badArg = true
 			}
 		}
 	}
-	if badArg {
-		g.writes(") {")
-		if n.Suspendible() {
-			g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
-		} else if n.Receiver() != 0 {
-			g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
-		} else {
-			g.printf("return;")
-		}
-		g.writes("}\n")
+
+	if len(checks) == 0 {
+		return nil
 	}
+
+	g.writes("if (")
+	for i, c := range checks {
+		if i != 0 {
+			g.writes(" || ")
+		}
+		g.writes(c)
+	}
+	g.writes(") {")
+	if n.Suspendible() {
+		g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
+	} else if n.Receiver() != 0 {
+		g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
+	} else {
+		g.printf("return;")
+	}
+	g.writes("}\n")
 	return nil
 }
 
