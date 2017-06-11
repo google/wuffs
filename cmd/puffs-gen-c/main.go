@@ -558,70 +558,11 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			"self->private_impl.status = puffs_%s_error_constructor_not_called; return; }\n", g.pkgName)
 	}
 
-	// For public functions, check the other args for bounds and null-ness.
+	// For public functions, check (at runtime) the other args for bounds and
+	// null-ness. For private functions, those checks are done at compile time.
 	if n.Public() {
-		badArg := false
-		for _, o := range n.In().Fields() {
-			o := o.Field()
-			oTyp := o.XType()
-			if oTyp.Decorator().Key() != t.KeyPtr && !oTyp.IsRefined() {
-				// TODO: Also check elements, for array-typed arguments.
-				continue
-			}
-			switch {
-			case oTyp.Decorator().Key() == t.KeyPtr:
-				if badArg {
-					g.writes(" || ")
-				} else {
-					g.writes("if (")
-				}
-				g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
-				badArg = true
-			case oTyp.IsRefined():
-				bounds := [2]*big.Int{}
-				for i, b := range oTyp.Bounds() {
-					if b != nil {
-						if cv := b.ConstValue(); cv != nil {
-							bounds[i] = cv
-						}
-					}
-				}
-				if key := oTyp.Name().Key(); key < t.Key(len(numTypeBounds)) {
-					ntb := numTypeBounds[key]
-					for i := 0; i < 2; i++ {
-						if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
-							bounds[i] = nil
-							continue
-						}
-					}
-				}
-				for i, b := range bounds {
-					if badArg {
-						g.writes(" || ")
-					} else {
-						g.writes("if (")
-					}
-					g.printf("%s%s", aPrefix, o.Name().String(g.tm))
-					if i == 0 {
-						g.writeb('<')
-					} else {
-						g.writeb('>')
-					}
-					g.printf("%s", b)
-					badArg = true
-				}
-			}
-		}
-		if badArg {
-			g.writes(") {")
-			if n.Suspendible() {
-				g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
-			} else if n.Receiver() != 0 {
-				g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
-			} else {
-				g.printf("return;")
-			}
-			g.writes("}\n")
+		if err := g.writeFuncImplArgChecks(n); err != nil {
+			return err
 		}
 	}
 	g.writes("\n")
@@ -648,6 +589,73 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	g.writes("}\n\n")
+	return nil
+}
+
+func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
+	badArg := false
+	for _, o := range n.In().Fields() {
+		o := o.Field()
+		oTyp := o.XType()
+		if oTyp.Decorator().Key() != t.KeyPtr && !oTyp.IsRefined() {
+			// TODO: Also check elements, for array-typed arguments.
+			continue
+		}
+		switch {
+		case oTyp.Decorator().Key() == t.KeyPtr:
+			if badArg {
+				g.writes(" || ")
+			} else {
+				g.writes("if (")
+			}
+			g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
+			badArg = true
+		case oTyp.IsRefined():
+			bounds := [2]*big.Int{}
+			for i, b := range oTyp.Bounds() {
+				if b != nil {
+					if cv := b.ConstValue(); cv != nil {
+						bounds[i] = cv
+					}
+				}
+			}
+			if key := oTyp.Name().Key(); key < t.Key(len(numTypeBounds)) {
+				ntb := numTypeBounds[key]
+				for i := 0; i < 2; i++ {
+					if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
+						bounds[i] = nil
+						continue
+					}
+				}
+			}
+			for i, b := range bounds {
+				if badArg {
+					g.writes(" || ")
+				} else {
+					g.writes("if (")
+				}
+				g.printf("%s%s", aPrefix, o.Name().String(g.tm))
+				if i == 0 {
+					g.writeb('<')
+				} else {
+					g.writeb('>')
+				}
+				g.printf("%s", b)
+				badArg = true
+			}
+		}
+	}
+	if badArg {
+		g.writes(") {")
+		if n.Suspendible() {
+			g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
+		} else if n.Receiver() != 0 {
+			g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
+		} else {
+			g.printf("return;")
+		}
+		g.writes("}\n")
+	}
 	return nil
 }
 
