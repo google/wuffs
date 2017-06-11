@@ -336,7 +336,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			n.SetMType(typeExprU8) // HACK.
+			n.SetMType(typeExprPlaceholder) // HACK.
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
@@ -346,7 +346,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				return err
 			}
 			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprU8) // HACK.
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
 				if err := q.tcheckArg(o.Arg(), depth); err != nil {
 					return err
@@ -456,9 +456,9 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			// TODO: remove this hack and be more principled about the built-in
 			// buf1 type.
 			//
-			// Another hack is using TypeExprU8 until a TypeExpr can represent
-			// function types.
-			n.SetMType(typeExprU8)
+			// Another hack is using typeExprPlaceholder until a TypeExpr can
+			// represent function types.
+			n.SetMType(typeExprPlaceholder)
 			return nil
 		default:
 			s = q.c.structs[name].Struct
