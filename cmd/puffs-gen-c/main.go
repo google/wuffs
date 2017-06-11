@@ -523,20 +523,27 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 	g.writes("{\n")
 
-	// Check the previous status and the args.
+	// Check the previous status and the "self" arg.
 	if n.Public() {
 		g.perFunc.public = true
 		if n.Receiver() != 0 {
-			g.printf("if (!self) { return puffs_%s_error_bad_receiver; }\n", g.pkgName)
+			g.writes("if (!self) {\n")
+			if n.Suspendible() {
+				g.printf("return puffs_%s_error_bad_receiver;", g.pkgName)
+			} else {
+				g.printf("return;")
+			}
+			g.writes("}\n")
 		}
 	}
+
 	if n.Suspendible() {
 		g.perFunc.suspendible = true
 		g.printf("puffs_%s_status status = ", g.pkgName)
 		if n.Receiver() != 0 {
-			g.printf("self->private_impl.status;\n")
+			g.writes("self->private_impl.status;\n")
 			if n.Public() {
-				g.printf("if (status & 1) { return status; }")
+				g.writes("if (status & 1) { return status; }")
 			}
 		} else {
 			g.printf("puffs_%s_status_ok;\n", g.pkgName)
@@ -545,35 +552,76 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
 				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", g.pkgName)
 		}
-	} else if r := n.Receiver(); r != 0 {
-		// TODO: fix this.
-		return fmt.Errorf(`cannot convert Puffs function "%s.%s" to C`,
-			r.String(g.tm), n.Name().String(g.tm))
+	} else if n.Receiver() != 0 && n.Public() {
+		g.writes("if (self->private_impl.status & 1) { return; }")
+		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
+			"self->private_impl.status = puffs_%s_error_constructor_not_called; return; }\n", g.pkgName)
 	}
+
+	// For public functions, check the other args for bounds and null-ness.
 	if n.Public() {
 		badArg := false
 		for _, o := range n.In().Fields() {
 			o := o.Field()
-			if o.XType().Decorator().Key() != t.KeyPtr {
-				// TODO: check for type refinements: u32[..4095] instead of
-				// u32. Also check for types, for array-typed arguments.
+			oTyp := o.XType()
+			if oTyp.Decorator().Key() != t.KeyPtr && !oTyp.IsRefined() {
+				// TODO: Also check elements, for array-typed arguments.
 				continue
 			}
-			if badArg {
-				g.writes(" || ")
-			} else {
-				g.writes("if (")
+			switch {
+			case oTyp.Decorator().Key() == t.KeyPtr:
+				if badArg {
+					g.writes(" || ")
+				} else {
+					g.writes("if (")
+				}
+				g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
+				badArg = true
+			case oTyp.IsRefined():
+				bounds := [2]*big.Int{}
+				for i, b := range oTyp.Bounds() {
+					if b != nil {
+						if cv := b.ConstValue(); cv != nil {
+							bounds[i] = cv
+						}
+					}
+				}
+				if key := oTyp.Name().Key(); key < t.Key(len(numTypeBounds)) {
+					ntb := numTypeBounds[key]
+					for i := 0; i < 2; i++ {
+						if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
+							bounds[i] = nil
+							continue
+						}
+					}
+				}
+				for i, b := range bounds {
+					if badArg {
+						g.writes(" || ")
+					} else {
+						g.writes("if (")
+					}
+					g.printf("%s%s", aPrefix, o.Name().String(g.tm))
+					if i == 0 {
+						g.writeb('<')
+					} else {
+						g.writeb('>')
+					}
+					g.printf("%s", b)
+					badArg = true
+				}
 			}
-			g.printf("!%s%s", aPrefix, o.Name().String(g.tm))
-			badArg = true
 		}
 		if badArg {
 			g.writes(") {")
 			if n.Suspendible() {
-				g.printf("status = puffs_%s_error_bad_argument; goto cleanup0; }\n", g.pkgName)
+				g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
+			} else if n.Receiver() != 0 {
+				g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
 			} else {
-				g.printf("return puffs_%s_error_bad_argument; }\n", g.pkgName)
+				g.printf("return;")
 			}
+			g.writes("}\n")
 		}
 	}
 	g.writes("\n")
@@ -1051,6 +1099,12 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	// TODO.
 
 	case t.KeyDot:
+		if n.LHS().Expr().ID1().Key() == t.KeyIn {
+			g.writes(aPrefix)
+			g.writes(n.ID1().String(g.tm))
+			return nil
+		}
+
 		if err := g.writeExpr(n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
@@ -1163,6 +1217,19 @@ func (g *gen) writeCTypeName(n *a.TypeExpr) error {
 	}
 	// TODO: fix this.
 	return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.tm))
+}
+
+var numTypeBounds = [256][2]*big.Int{
+	t.KeyI8:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
+	t.KeyI16:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
+	t.KeyI32:   {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
+	t.KeyI64:   {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
+	t.KeyU8:    {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
+	t.KeyU16:   {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
+	t.KeyU32:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
+	t.KeyU64:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
+	t.KeyUsize: {zero, zero},
+	t.KeyBool:  {zero, one},
 }
 
 var cTypeNames = [...]string{

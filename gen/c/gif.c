@@ -106,6 +106,9 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
 // ---------------- Public Function Prototypes
 
+void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
+                                             uint32_t a_lw);
+
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,
                                               puffs_base_buf1* a_src,
@@ -205,6 +208,26 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {
 }
 
 // ---------------- Function Implementations
+
+void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
+                                             uint32_t a_lw) {
+  if (!self) {
+    return;
+  }
+  if (self->private_impl.status & 1) {
+    return;
+  }
+  if (self->private_impl.magic != PUFFS_MAGIC) {
+    self->private_impl.status = puffs_gif_error_constructor_not_called;
+    return;
+  }
+  if (a_lw < 2 || a_lw > 8) {
+    self->private_impl.status = puffs_gif_error_bad_argument;
+    return;
+  }
+
+  self->private_impl.f_literal_width = a_lw;
+}
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,

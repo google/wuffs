@@ -457,7 +457,7 @@ const MaxTypeExprDepth = 63
 // refined as "foo[LHS..MHS]". LHS and MHS are Expr's, possibly nil. For
 // example, the LHS for "u32[..4095]" is nil.
 //
-// TODO: function / method types.
+// TODO: function / method types, struct types.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node        { return (*Node)(n) }

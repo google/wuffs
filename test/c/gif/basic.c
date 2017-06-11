@@ -30,7 +30,7 @@ void test_constructor_not_called() {
   }
 }
 
-void test_bad_argument() {
+void test_bad_argument_null() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -38,6 +38,33 @@ void test_bad_argument() {
       puffs_gif_lzw_decoder_decode(&dec, NULL, NULL, false);
   if (status != puffs_gif_error_bad_argument) {
     FAIL("status: got %d, want %d", status, puffs_gif_error_bad_argument);
+  }
+}
+
+void test_bad_argument_out_of_range() {
+  test_funcname = __func__;
+  puffs_gif_lzw_decoder dec;
+  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+
+  // Setting to 8 is in the [2..8] range.
+  puffs_gif_lzw_decoder_set_literal_width(&dec, 8);
+  if (dec.private_impl.status != puffs_gif_status_ok) {
+    FAIL("status: got %d, want %d", dec.private_impl.status,
+         puffs_gif_status_ok);
+  }
+
+  // Setting to 999 is out of range.
+  puffs_gif_lzw_decoder_set_literal_width(&dec, 999);
+  if (dec.private_impl.status != puffs_gif_error_bad_argument) {
+    FAIL("status: got %d, want %d", dec.private_impl.status,
+         puffs_gif_error_bad_argument);
+  }
+
+  // That error status code should be sticky.
+  puffs_gif_lzw_decoder_set_literal_width(&dec, 8);
+  if (dec.private_impl.status != puffs_gif_error_bad_argument) {
+    FAIL("status: got %d, want %d", dec.private_impl.status,
+         puffs_gif_error_bad_argument);
   }
 }
 
@@ -139,12 +166,13 @@ void test_status_strings() {
 
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
-    test_constructor_not_called,  //
-    test_bad_argument,            //
-    test_bad_receiver,            //
-    test_puffs_version_bad,       //
-    test_puffs_version_good,      //
-    test_status_is_error,         //
-    test_status_strings,          //
-    NULL,                         //
+    test_constructor_not_called,     //
+    test_bad_argument_null,          //
+    test_bad_argument_out_of_range,  //
+    test_bad_receiver,               //
+    test_puffs_version_bad,          //
+    test_puffs_version_good,         //
+    test_status_is_error,            //
+    test_status_strings,             //
+    NULL,                            //
 };

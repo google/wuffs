@@ -659,6 +659,19 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
 	case t.KeyDot:
+		// TODO: delete this hack that only matches "in".
+		if n.LHS().Expr().ID1().Key() == t.KeyIn {
+			for _, o := range q.f.Func.In().Fields() {
+				o := o.Field()
+				if o.Name() == n.ID1() {
+					return q.bcheckTypeExpr(o.XType())
+				}
+			}
+			lTyp := n.LHS().Expr().MType()
+			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
+				n.ID1().String(q.tm), lTyp.Name().String(q.tm), n.String(q.tm))
+		}
+
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
 			return nil, nil, err
 		}

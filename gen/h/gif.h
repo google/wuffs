@@ -106,6 +106,9 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 
 // ---------------- Public Function Prototypes
 
+void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
+                                             uint32_t a_lw);
+
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,
                                               puffs_base_buf1* a_src,
