@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 #endif
 
   for (test* t = tests; *t; t++) {
+    test_funcname = "unknown_test_funcname";
     (*t)();
     if (fail_msg[0]) {
       printf("%-16s%-8sFAIL %s: %s\n", test_filename, cc, test_funcname,
