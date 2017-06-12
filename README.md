@@ -452,7 +452,7 @@ via "a < b: a < c; c <= b"(c:width)` makes the assertion `n_bits < 12` by
 applying that transitivity rule, where `a` is `n_bits`, `b` is `12` and `c` is
 `width`. The trailing `(c:width)` syntax is deliberately similar to a function
 call (recall that when calling a function, each argument must be named), but
-the `"a < b: a < c; c <= b" named rule is not a function-typed expression.
+the `"a < b: a < c; c <= b"` named rule is not a function-typed expression.
 
 TODO: specify these built-in `via` rules, again after more experience.
 
