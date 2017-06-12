@@ -355,12 +355,13 @@ func terminates(body []*a.Node) bool {
 				if !terminates(n.BodyIfTrue()) {
 					return false
 				}
-				if bif := n.BodyIfFalse(); len(bif) > 0 && !terminates(bif) {
+				bif := n.BodyIfFalse()
+				if len(bif) > 0 && !terminates(bif) {
 					return false
 				}
 				n = n.ElseIf()
 				if n == nil {
-					return true
+					return len(bif) > 0
 				}
 			}
 		}
