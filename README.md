@@ -26,6 +26,12 @@ Puffs is not a general purpose programming language. While technically
 possible, it is unlikely that a Puffs compiler would be worth writing in Puffs.
 
 
+# What Does It Look Like?
+
+The `std/gif/decode_lzw.puffs` file is a good example. See the "Your First
+Edit" section below for more guidance.
+
+
 # Background
 
 Parsing untrusted data, such as images downloaded from across the web, have a
