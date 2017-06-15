@@ -139,6 +139,8 @@ type gen struct {
 	files      []*a.File
 	statusList []status
 	statusMap  map[t.ID]status
+	structList []*a.Struct
+	structMap  map[t.ID]*a.Struct
 	perFunc    perFunc
 }
 
@@ -176,19 +178,24 @@ func (g *gen) generate() error {
 			}
 		}
 	}
-	structs, ok := a.TopologicalSortStructs(unsortedStructs)
+	var ok bool
+	g.structList, ok = a.TopologicalSortStructs(unsortedStructs)
 	if !ok {
 		return fmt.Errorf("cyclical struct definitions")
 	}
+	g.structMap = map[t.ID]*a.Struct{}
+	for _, n := range g.structList {
+		g.structMap[n.Name()] = n
+	}
 
-	if err := g.genHeader(structs); err != nil {
+	if err := g.genHeader(); err != nil {
 		return err
 	}
 	g.writes("// C HEADER ENDS HERE.\n\n")
-	return g.genImpl(structs)
+	return g.genImpl()
 }
 
-func (g *gen) genHeader(structs []*a.Struct) error {
+func (g *gen) genHeader() error {
 	includeGuard := "PUFFS_" + strings.ToUpper(g.pkgName) + "_H"
 	g.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
@@ -220,14 +227,14 @@ func (g *gen) genHeader(structs []*a.Struct) error {
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 
 	g.writes("// ---------------- Structs\n\n")
-	for _, n := range structs {
+	for _, n := range g.structList {
 		if err := g.writeStruct(n); err != nil {
 			return err
 		}
 	}
 
 	g.writes("// ---------------- Public Constructor and Destructor Prototypes\n\n")
-	for _, n := range structs {
+	for _, n := range g.structList {
 		if n.Public() {
 			if err := g.writeCtorPrototype(n); err != nil {
 				return err
@@ -245,7 +252,7 @@ func (g *gen) genHeader(structs []*a.Struct) error {
 	return nil
 }
 
-func (g *gen) genImpl(structs []*a.Struct) error {
+func (g *gen) genImpl() error {
 	g.writes(baseImpl)
 	g.writes("\n")
 
@@ -278,7 +285,7 @@ func (g *gen) genImpl(structs []*a.Struct) error {
 	g.writes("}\n\n")
 
 	g.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")
-	for _, n := range structs {
+	for _, n := range g.structList {
 		if !n.Public() {
 			if err := g.writeCtorPrototype(n); err != nil {
 				return err
@@ -304,7 +311,7 @@ func (g *gen) genImpl(structs []*a.Struct) error {
 	g.writes("//\n")
 	g.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
 	g.writes("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
-	for _, n := range structs {
+	for _, n := range g.structList {
 		if err := g.writeCtorImpl(n); err != nil {
 			return err
 		}
@@ -478,7 +485,27 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 			}
 		}
 
-		// TODO: call any ctor/dtors on sub-structures.
+		// Call any ctor/dtors on sub-structs.
+		for _, f := range n.Fields() {
+			f := f.Field()
+			x := f.XType()
+			if x != x.Innermost() {
+				// TODO: arrays of sub-structs.
+				continue
+			}
+			if g.structMap[x.Name()] == nil {
+				continue
+			}
+			if ctor {
+				g.printf("puffs_%s_%s_constructor(&self->private_impl.%s%s,"+
+					"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
+					g.pkgName, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+			} else {
+				g.printf("puffs_%s_%s_destructor(&self->private_impl.%s%s);\n",
+					g.pkgName, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+			}
+		}
+
 		g.writes("}\n\n")
 	}
 	return nil

@@ -247,12 +247,15 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = PUFFS_MAGIC;
+  puffs_gif_lzw_decoder_constructor(&self->private_impl.f_lzw, PUFFS_VERSION,
+                                    PUFFS_ALREADY_ZEROED);
 }
 
 void puffs_gif_decoder_destructor(puffs_gif_decoder* self) {
   if (!self) {
     return;
   }
+  puffs_gif_lzw_decoder_destructor(&self->private_impl.f_lzw);
 }
 
 // ---------------- Function Implementations

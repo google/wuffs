@@ -161,6 +161,23 @@ void test_status_strings() {
   }
 }
 
+void test_sub_struct_constructor() {
+  test_funcname = __func__;
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  if (dec.private_impl.magic != PUFFS_MAGIC) {
+    FAIL("outer magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
+    goto cleanup0;
+  }
+  if (dec.private_impl.f_lzw.private_impl.magic != PUFFS_MAGIC) {
+    FAIL("inner magic: got %u, want %u",
+         dec.private_impl.f_lzw.private_impl.magic, PUFFS_MAGIC);
+    goto cleanup0;
+  }
+cleanup0:
+  puffs_gif_decoder_destructor(&dec);
+}
+
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
     test_constructor_not_called,     //
@@ -171,5 +188,6 @@ test tests[] = {
     test_puffs_version_good,         //
     test_status_is_error,            //
     test_status_strings,             //
+    test_sub_struct_constructor,     //
     NULL,                            //
 };
