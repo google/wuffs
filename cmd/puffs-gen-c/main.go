@@ -221,7 +221,7 @@ func (g *gen) generate() error {
 	g.writes("// ---------------- Public Constructor and Destructor Prototypes\n\n")
 	for _, n := range structs {
 		if n.Public() {
-			if err := g.writeCtorPrototypesPub(n); err != nil {
+			if err := g.writeCtorPrototype(n); err != nil {
 				return err
 			}
 		}
@@ -270,7 +270,7 @@ func (g *gen) generate() error {
 	g.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")
 	for _, n := range structs {
 		if !n.Public() {
-			if err := g.writeCtorPrototypesPri(n); err != nil {
+			if err := g.writeCtorPrototype(n); err != nil {
 				return err
 			}
 		}
@@ -295,7 +295,7 @@ func (g *gen) generate() error {
 	g.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
 	g.writes("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
 	for _, n := range structs {
-		if err := g.writeCtorImpls(n); err != nil {
+		if err := g.writeCtorImpl(n); err != nil {
 			return err
 		}
 	}
@@ -429,26 +429,18 @@ func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) {
 	g.printf(")")
 }
 
-func (g *gen) writeCtorPrototypesPub(n *a.Struct) error {
-	return g.writeCtorPrototypes(n, true)
-}
-
-func (g *gen) writeCtorPrototypesPri(n *a.Struct) error {
-	return g.writeCtorPrototypes(n, false)
-}
-
-func (g *gen) writeCtorPrototypes(n *a.Struct, public bool) error {
+func (g *gen) writeCtorPrototype(n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
 	for _, ctor := range []bool{true, false} {
-		g.writeCtorSignature(n, public, ctor)
+		g.writeCtorSignature(n, n.Public(), ctor)
 		g.writes(";\n\n")
 	}
 	return nil
 }
 
-func (g *gen) writeCtorImpls(n *a.Struct) error {
+func (g *gen) writeCtorImpl(n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
