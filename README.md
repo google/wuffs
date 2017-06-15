@@ -42,8 +42,6 @@ For example, making this one-line edit to the GIF codec leads to a compile time
 error. `puffs gen` fails to generate the C code, i.e. fails to compile
 (transpile) the Puffs code to C code:
 
----
-
     $ git diff
     diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
     index f878c5e..f10dcee 100644
@@ -66,12 +64,8 @@ error. `puffs gen` fails to generate the C code, i.e. fails to compile
         this.stack[s] == (c as u8)
         use_save_code
 
----
-
 In comparison, this two-line edit will compile (but the "does it decode GIF
 correctly" tests then fail):
-
----
 
     $ git diff
     diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
@@ -124,8 +118,6 @@ correctly" tests then fail):
 
     puffs-test-c: some tests failed
     puffs test: some tests failed
-
----
 
 
 # Background
