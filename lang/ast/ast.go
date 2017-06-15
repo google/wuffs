@@ -469,6 +469,12 @@ func (n *TypeExpr) Min() *Expr         { return n.lhs.Expr() }
 func (n *TypeExpr) Max() *Expr         { return n.mhs.Expr() }
 func (n *TypeExpr) Inner() *TypeExpr   { return n.rhs.TypeExpr() }
 
+func (n *TypeExpr) Innermost() *TypeExpr {
+	for ; n != nil && n.Inner() != nil; n = n.Inner() {
+	}
+	return n
+}
+
 func (n *TypeExpr) IsBool() bool {
 	return n.id0 == 0 && n.id1.Key() == t.KeyBool
 }

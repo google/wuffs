@@ -73,7 +73,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s);
 
 const char* puffs_gif_status_string(puffs_gif_status s);
 
-// ---------------- Public Structs
+// ---------------- Structs
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -93,6 +93,21 @@ typedef struct {
   } private_impl;
 } puffs_gif_lzw_decoder;
 
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_gif_decoder_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_gif_status status;
+    uint32_t magic;
+    puffs_gif_lzw_decoder f_lzw;
+  } private_impl;
+} puffs_gif_decoder;
+
 // ---------------- Public Constructor and Destructor Prototypes
 
 // puffs_gif_lzw_decoder_constructor is a constructor function.
@@ -105,6 +120,17 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
                                        uint32_t for_internal_use_only);
 
 void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
+
+// puffs_gif_decoder_constructor is a constructor function.
+//
+// It should be called before any other puffs_gif_decoder_* function.
+//
+// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
+void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
+                                   uint32_t puffs_version,
+                                   uint32_t for_internal_use_only);
+
+void puffs_gif_decoder_destructor(puffs_gif_decoder* self);
 
 // ---------------- Public Function Prototypes
 

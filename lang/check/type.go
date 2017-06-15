@@ -667,6 +667,7 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 	}
 	depth++
 
+swtch:
 	switch n.Decorator().Key() {
 	case 0:
 		if n.Name().IsNumType() {
@@ -684,12 +685,16 @@ func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
 			break
 		}
 		if n.Min() != nil || n.Max() != nil {
-			// TODO: reject.
+			// TODO: reject. You can only refine numeric types.
 		}
 		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyBuf1 {
 			break
 		}
-		// TODO: see if name refers to a struct type.
+		for _, s := range q.c.structs {
+			if s.ID == n.Name() {
+				break swtch
+			}
+		}
 		return fmt.Errorf("check: %q is not a type", n.Name().String(q.tm))
 
 	case t.KeyPtr:

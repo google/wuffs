@@ -127,9 +127,8 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 }
 
 func bcheckField(tm *t.Map, n *a.Field) error {
-	x := n.XType()
-	for ; x.Inner() != nil; x = x.Inner() {
-	}
+	// TODO: check if x is a numeric type? What if n.XType() is "ptr T"?
+	x := n.XType().Innermost()
 	dv, nMin, nMax := zero, zero, zero
 	if o := n.DefaultValue(); o != nil {
 		dv = o.ConstValue()

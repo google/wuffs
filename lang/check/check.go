@@ -117,6 +117,12 @@ func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
 
 	for _, phase := range phases {
 		for _, f := range files {
+			if phase.kind == a.KInvalid {
+				if err := phase.check(c, nil); err != nil {
+					return nil, err
+				}
+				continue
+			}
 			for _, n := range f.TopLevelDecls() {
 				if n.Kind() != phase.kind {
 					continue
@@ -137,7 +143,9 @@ var phases = [...]struct {
 }{
 	{a.KUse, (*Checker).checkUse},
 	{a.KStatus, (*Checker).checkStatus},
-	{a.KStruct, (*Checker).checkStruct},
+	{a.KStruct, (*Checker).checkStructDecl},
+	{a.KInvalid, (*Checker).checkStructCycles},
+	{a.KStruct, (*Checker).checkStructFields},
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncBody},
@@ -147,9 +155,12 @@ type Checker struct {
 	flags     Flags
 	tm        *t.Map
 	reasonMap reasonMap
-	funcs     map[t.QID]Func
-	statuses  map[t.ID]Status
-	structs   map[t.ID]Struct
+
+	funcs    map[t.QID]Func
+	statuses map[t.ID]Status
+	structs  map[t.ID]Struct
+
+	unsortedStructs []*a.Struct
 }
 
 func (c *Checker) Funcs() map[t.QID]Func     { return c.funcs }
@@ -229,15 +240,8 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 	return nil
 }
 
-func (c *Checker) checkStruct(node *a.Node) error {
+func (c *Checker) checkStructDecl(node *a.Node) error {
 	n := node.Struct()
-	if err := c.checkFields(n.Fields(), true); err != nil {
-		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
-			Filename: n.Filename(),
-			Line:     n.Line(),
-		}
-	}
 	id := n.Name()
 	if other, ok := c.structs[id]; ok {
 		return &Error{
@@ -251,6 +255,26 @@ func (c *Checker) checkStruct(node *a.Node) error {
 	c.structs[id] = Struct{
 		ID:     id,
 		Struct: n,
+	}
+	c.unsortedStructs = append(c.unsortedStructs, n)
+	return nil
+}
+
+func (c *Checker) checkStructCycles(_ *a.Node) error {
+	if _, ok := a.TopologicalSortStructs(c.unsortedStructs); !ok {
+		return fmt.Errorf("check: cyclical struct definitions")
+	}
+	return nil
+}
+
+func (c *Checker) checkStructFields(node *a.Node) error {
+	n := node.Struct()
+	if err := c.checkFields(n.Fields(), true); err != nil {
+		return &Error{
+			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
 	}
 	n.Node().SetTypeChecked()
 	return nil

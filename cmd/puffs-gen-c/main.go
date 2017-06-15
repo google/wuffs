@@ -167,6 +167,20 @@ func (g *gen) generate() error {
 		return err
 	}
 
+	// Make a topologically sorted list of structs.
+	unsortedStructs := []*a.Struct(nil)
+	for _, file := range g.files {
+		for _, n := range file.TopLevelDecls() {
+			if n.Kind() == a.KStruct {
+				unsortedStructs = append(unsortedStructs, n.Struct())
+			}
+		}
+	}
+	structs, ok := a.TopologicalSortStructs(unsortedStructs)
+	if !ok {
+		return fmt.Errorf("cyclical struct definitions")
+	}
+
 	includeGuard := "PUFFS_" + strings.ToUpper(g.pkgName) + "_H"
 	g.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
@@ -197,14 +211,20 @@ func (g *gen) generate() error {
 	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 
-	g.writes("// ---------------- Public Structs\n\n")
-	if err := g.forEachStruct(pubOnly, (*gen).writeStruct); err != nil {
-		return err
+	g.writes("// ---------------- Structs\n\n")
+	for _, n := range structs {
+		if err := g.writeStruct(n); err != nil {
+			return err
+		}
 	}
 
 	g.writes("// ---------------- Public Constructor and Destructor Prototypes\n\n")
-	if err := g.forEachStruct(pubOnly, (*gen).writeCtorPrototypesPub); err != nil {
-		return err
+	for _, n := range structs {
+		if n.Public() {
+			if err := g.writeCtorPrototypesPub(n); err != nil {
+				return err
+			}
+		}
 	}
 
 	g.writes("// ---------------- Public Function Prototypes\n\n")
@@ -247,14 +267,13 @@ func (g *gen) generate() error {
 	g.printf("}\nreturn \"%s: unknown status\";\n", g.pkgName)
 	g.writes("}\n\n")
 
-	g.writes("// ---------------- Private Structs\n\n")
-	if err := g.forEachStruct(priOnly, (*gen).writeStruct); err != nil {
-		return err
-	}
-
 	g.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")
-	if err := g.forEachStruct(priOnly, (*gen).writeCtorPrototypesPri); err != nil {
-		return err
+	for _, n := range structs {
+		if !n.Public() {
+			if err := g.writeCtorPrototypesPri(n); err != nil {
+				return err
+			}
+		}
 	}
 
 	g.writes("// ---------------- Private Function Prototypes\n\n")
@@ -275,8 +294,10 @@ func (g *gen) generate() error {
 	g.writes("//\n")
 	g.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
 	g.writes("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
-	if err := g.forEachStruct(bothPubPri, (*gen).writeCtorImpls); err != nil {
-		return err
+	for _, n := range structs {
+		if err := g.writeCtorImpls(n); err != nil {
+			return err
+		}
 	}
 
 	g.writes("// ---------------- Function Implementations\n\n")
@@ -312,22 +333,6 @@ func (g *gen) forEachStatus(v visibility, f func(*gen, *a.Status) error) error {
 				continue
 			}
 			if err := f(g, n.Status()); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (g *gen) forEachStruct(v visibility, f func(*gen, *a.Struct) error) error {
-	for _, file := range g.files {
-		for _, n := range file.TopLevelDecls() {
-			if n.Kind() != a.KStruct ||
-				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
-				continue
-			}
-			if err := f(g, n.Struct()); err != nil {
 				return err
 			}
 		}
@@ -662,50 +667,22 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 }
 
 func (g *gen) writeField(n *a.Field, namePrefix string) error {
-	// TODO: use g.writeCTypeName.
-	const maxNPtr = 16
-
-	convertible, nPtr := true, 0
-	for x := n.XType(); x != nil; x = x.Inner() {
-		if p := x.Decorator().Key(); p == t.KeyPtr {
-			if nPtr == maxNPtr {
-				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.XType().String(g.tm))
-			}
-			nPtr++
-			continue
-		} else if p == t.KeyOpenBracket {
-			continue
-		} else if p != 0 {
-			convertible = false
-			break
-		}
-		if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
-			if s := cTypeNames[k]; s != "" {
-				g.writes(s)
-				g.writeb(' ')
-				continue
-			}
-		}
-		convertible = false
-		break
-	}
-	if !convertible {
-		// TODO: fix this.
-		return fmt.Errorf("cannot convert Puffs type %q to C", n.XType().String(g.tm))
+	x := n.XType()
+	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
 	}
 
-	for i := 0; i < nPtr; i++ {
-		g.writeb('*')
+	if err := g.writeCTypeName(x); err != nil {
+		return err
 	}
+	g.writeb(' ')
 	g.writes(namePrefix)
 	g.writes(n.Name().String(g.tm))
 
-	for x := n.XType(); x != nil; x = x.Inner() {
-		if x.Decorator() == t.IDOpenBracket {
-			g.writeb('[')
-			g.writes(x.ArrayLength().ConstValue().String())
-			g.writeb(']')
-		}
+	x = n.XType()
+	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
+		g.writeb('[')
+		g.writes(x.ArrayLength().ConstValue().String())
+		g.writeb(']')
 	}
 
 	return nil
@@ -1222,16 +1199,37 @@ func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint
 }
 
 func (g *gen) writeCTypeName(n *a.TypeExpr) error {
-	if n.Decorator() == 0 {
-		if k := n.Name().Key(); k < t.Key(len(cTypeNames)) {
-			if s := cTypeNames[k]; s != "" {
-				g.writes(s)
-				return nil
+	const maxNPtr = 16
+
+	numPointers, innermost := 0, n
+	for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
+		// TODO: "nptr T", not just "ptr T".
+		if p := innermost.Decorator().Key(); p == t.KeyPtr {
+			if numPointers == maxNPtr {
+				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.String(g.tm))
 			}
+			numPointers++
+			continue
+		}
+		// TODO: fix this.
+		return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.tm))
+	}
+
+	fallback := true
+	if k := innermost.Name().Key(); k < t.Key(len(cTypeNames)) {
+		if s := cTypeNames[k]; s != "" {
+			g.writes(s)
+			fallback = false
 		}
 	}
-	// TODO: fix this.
-	return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.tm))
+	if fallback {
+		g.printf("puffs_%s_%s", g.pkgName, n.Name().String(g.tm))
+	}
+
+	for i := 0; i < numPointers; i++ {
+		g.writeb('*')
+	}
+	return nil
 }
 
 var numTypeBounds = [256][2]*big.Int{
