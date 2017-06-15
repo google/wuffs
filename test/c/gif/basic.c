@@ -22,8 +22,7 @@ void test_constructor_not_called() {
   puffs_gif_lzw_decoder dec;
   puffs_base_buf1 dst = {0};
   puffs_base_buf1 src = {0};
-  puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(&dec, &dst, &src, false);
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, &dst, &src);
   if (status != puffs_gif_error_constructor_not_called) {
     FAIL("status: got %d, want %d", status,
          puffs_gif_error_constructor_not_called);
@@ -34,8 +33,7 @@ void test_bad_argument_null() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(&dec, NULL, NULL, false);
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, NULL, NULL);
   if (status != puffs_gif_error_bad_argument) {
     FAIL("status: got %d, want %d", status, puffs_gif_error_bad_argument);
   }
@@ -72,8 +70,7 @@ void test_bad_receiver() {
   test_funcname = __func__;
   puffs_base_buf1 dst = {0};
   puffs_base_buf1 src = {0};
-  puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(NULL, &dst, &src, false);
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL, &dst, &src);
   if (status != puffs_gif_error_bad_receiver) {
     FAIL("status: got %d, want %d", status, puffs_gif_error_bad_receiver);
   }

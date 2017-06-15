@@ -41,6 +41,7 @@ typedef struct {
   size_t len;    // Length.
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
+  bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
 #endif  // PUFFS_BASE_HEADER_H
@@ -63,6 +64,7 @@ typedef enum {
   puffs_gif_error_unexpected_eof = -10 + 1,
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
+  puffs_gif_error_closed_for_writes = -16 + 1,
   puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
   puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
 } puffs_gif_status;
@@ -111,8 +113,7 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,
-                                              puffs_base_buf1* a_src,
-                                              bool a_src_final);
+                                              puffs_base_buf1* a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -135,7 +136,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[10] = {
+const char* puffs_gif_status_strings[11] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -144,6 +145,7 @@ const char* puffs_gif_status_strings[10] = {
     "gif: unexpected EOF",
     "gif: short read",
     "gif: short write",
+    "gif: closed for writes",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -151,11 +153,11 @@ const char* puffs_gif_status_strings[10] = {
 const char* puffs_gif_status_string(puffs_gif_status s) {
   s = -(s >> 1);
   if (0 <= s) {
-    if (s < 8) {
+    if (s < 9) {
       return puffs_gif_status_strings[s];
     }
-    s -= 120;
-    if ((8 <= s) && (s < 10)) {
+    s -= 119;
+    if ((9 <= s) && (s < 11)) {
       return puffs_gif_status_strings[s];
     }
   }
@@ -231,8 +233,7 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,
-                                              puffs_base_buf1* a_src,
-                                              bool a_src_final) {
+                                              puffs_base_buf1* a_src) {
   if (!self) {
     return puffs_gif_error_bad_receiver;
   }
@@ -273,7 +274,8 @@ label_0_continue:;
   while (true) {
     while (v_n_bits < v_width) {
       if (a_src->ri >= a_src->wi) {
-        status = puffs_gif_status_short_read;
+        status = a_src->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
         goto cleanup0;
       }
       uint8_t t_0 = a_src->ptr[a_src->ri++];
@@ -321,6 +323,10 @@ label_0_continue:;
       self->private_impl.f_stack[v_s] = ((uint8_t)(v_c));
       if ((v_code == v_save_code) && v_use_save_code) {
         self->private_impl.f_stack[4095] = ((uint8_t)(v_c));
+      }
+      if (a_dst->closed) {
+        status = puffs_gif_error_closed_for_writes;
+        goto cleanup0;
       }
       if ((a_dst->len - a_dst->wi) <
           (sizeof(self->private_impl.f_stack) - v_s)) {

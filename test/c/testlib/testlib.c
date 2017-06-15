@@ -54,6 +54,10 @@ bool read_file(puffs_base_buf1* dst, const char* path) {
     FAIL("read_file: NULL argument");
     return false;
   }
+  if (dst->closed) {
+    FAIL("read_file: dst buffer closed for writes");
+    return false;
+  }
   FILE* f = fopen(path, "r");
   if (!f) {
     FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno), errno);
@@ -83,6 +87,7 @@ bool read_file(puffs_base_buf1* dst, const char* path) {
     return false;
   }
   fclose(f);
+  dst->closed = true;
   return true;
 }
 

@@ -77,9 +77,10 @@ var builtInStatuses = [...]string{
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
-	"error unexpected EOF", // Used if read_foo passed final == true.
-	"status short read",    // Used if read_foo passed final == false.
+	"error unexpected EOF", // Used if reading when closed == true.
+	"status short read",    // Used if reading when closed == false.
 	"status short write",
+	"error closed for writes",
 }
 
 func init() {
@@ -945,11 +946,9 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	if isInSrcReadU8(g.tm, n) {
 		// TODO: suspend coroutine state.
-		//
-		// TODO: choose error_unexpected_eof versus status_short_read based on
-		// src_final.
-		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = puffs_%s_status_short_read;",
-			aPrefix, aPrefix, g.pkgName)
+		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = "+
+			"%ssrc->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
 		} else {
@@ -965,6 +964,13 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: don't assume that the argument is "this.stack[s:]".
+		g.printf("if (%sdst->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
+		if g.perFunc.public && g.perFunc.suspendible {
+			g.writes("goto cleanup0;")
+		} else {
+			g.writes("return status;")
+		}
+		g.writes("}\n")
 		g.printf("if ((%sdst->len - %sdst->wi) < (sizeof(self->private_impl.f_stack) - v_s)) {", aPrefix, aPrefix)
 		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {

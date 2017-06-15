@@ -41,6 +41,7 @@ typedef struct {
   size_t len;    // Length.
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
+  bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
 #endif  // PUFFS_BASE_HEADER_H
@@ -63,6 +64,7 @@ typedef enum {
   puffs_gif_error_unexpected_eof = -10 + 1,
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
+  puffs_gif_error_closed_for_writes = -16 + 1,
   puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
   puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
 } puffs_gif_status;
@@ -111,8 +113,7 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_buf1* a_dst,
-                                              puffs_base_buf1* a_src,
-                                              bool a_src_final);
+                                              puffs_base_buf1* a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

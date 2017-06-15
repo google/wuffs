@@ -38,6 +38,7 @@ typedef struct {
   size_t len;    // Length.
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
+  bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
 #endif  // PUFFS_BASE_HEADER_H

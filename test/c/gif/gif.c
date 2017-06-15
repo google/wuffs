@@ -58,8 +58,7 @@ void test_lzw_decode() {
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   puffs_gif_lzw_decoder_set_literal_width(&dec, literal_width);
-  puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(&dec, &got, &src, false);
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, &got, &src);
   if (status != puffs_gif_status_ok) {
     FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
     goto cleanup1;

@@ -17,7 +17,7 @@ pub func lzw_decoder.set_literal_width(lw u32[2..8] = 8)() {
 	this.literal_width = in.lw
 }
 
-pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
+pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1)() {
 	// These variables don't change over the lifetime of this func.
 	var clear_code u32[4..256] = (1 as u32) << this.literal_width
 	var end_code u32[5..257] = clear_code + 1
@@ -41,7 +41,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
 			post n_bits >= width,
 		{
 			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
-			bits |= (in.src.read_u8?() as u32) << n_bits  // TODO: read_u8 should take src_final.
+			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
 		var code u32[..4095] = bits.low_bits(n:width)
