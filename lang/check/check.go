@@ -192,6 +192,46 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	return nil
 }
 
+func (c *Checker) checkStructDecl(node *a.Node) error {
+	n := node.Struct()
+	id := n.Name()
+	if other, ok := c.structs[id]; ok {
+		return &Error{
+			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.tm)),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
+			OtherFilename: other.Struct.Filename(),
+			OtherLine:     other.Struct.Line(),
+		}
+	}
+	c.structs[id] = Struct{
+		ID:     id,
+		Struct: n,
+	}
+	c.unsortedStructs = append(c.unsortedStructs, n)
+	return nil
+}
+
+func (c *Checker) checkStructCycles(_ *a.Node) error {
+	if _, ok := a.TopologicalSortStructs(c.unsortedStructs); !ok {
+		return fmt.Errorf("check: cyclical struct definitions")
+	}
+	return nil
+}
+
+func (c *Checker) checkStructFields(node *a.Node) error {
+	n := node.Struct()
+	if err := c.checkFields(n.Fields(), true); err != nil {
+		return &Error{
+			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
+	}
+	n.Node().SetTypeChecked()
+	return nil
+}
+
 func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 	if len(fields) == 0 {
 		return nil
@@ -237,46 +277,6 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 		f.Node().SetTypeChecked()
 	}
 
-	return nil
-}
-
-func (c *Checker) checkStructDecl(node *a.Node) error {
-	n := node.Struct()
-	id := n.Name()
-	if other, ok := c.structs[id]; ok {
-		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.tm)),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: other.Struct.Filename(),
-			OtherLine:     other.Struct.Line(),
-		}
-	}
-	c.structs[id] = Struct{
-		ID:     id,
-		Struct: n,
-	}
-	c.unsortedStructs = append(c.unsortedStructs, n)
-	return nil
-}
-
-func (c *Checker) checkStructCycles(_ *a.Node) error {
-	if _, ok := a.TopologicalSortStructs(c.unsortedStructs); !ok {
-		return fmt.Errorf("check: cyclical struct definitions")
-	}
-	return nil
-}
-
-func (c *Checker) checkStructFields(node *a.Node) error {
-	n := node.Struct()
-	if err := c.checkFields(n.Fields(), true); err != nil {
-		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
-			Filename: n.Filename(),
-			Line:     n.Line(),
-		}
-	}
-	n.Node().SetTypeChecked()
 	return nil
 }
 
