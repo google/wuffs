@@ -181,6 +181,14 @@ func (g *gen) generate() error {
 		return fmt.Errorf("cyclical struct definitions")
 	}
 
+	if err := g.genHeader(structs); err != nil {
+		return err
+	}
+	g.writes("// C HEADER ENDS HERE.\n\n")
+	return g.genImpl(structs)
+}
+
+func (g *gen) genHeader(structs []*a.Struct) error {
 	includeGuard := "PUFFS_" + strings.ToUpper(g.pkgName) + "_H"
 	g.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
@@ -232,10 +240,12 @@ func (g *gen) generate() error {
 		return err
 	}
 
-	// Finish up the header, which is also the first part of the .c file.
 	g.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	g.printf("#endif  // %s\n\n", includeGuard)
-	g.writes("// C HEADER ENDS HERE.\n\n")
+	return nil
+}
+
+func (g *gen) genImpl(structs []*a.Struct) error {
 	g.writes(baseImpl)
 	g.writes("\n")
 
