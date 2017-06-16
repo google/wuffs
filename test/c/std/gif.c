@@ -25,7 +25,7 @@ uint8_t global_src_buffer[BUFFER_SIZE];
 
 // ---------------- Basic Tests
 
-void test_bad_argument_null() {
+void test_basic_bad_argument_null() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -35,7 +35,7 @@ void test_bad_argument_null() {
   }
 }
 
-void test_bad_argument_out_of_range() {
+void test_basic_bad_argument_out_of_range() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -62,7 +62,7 @@ void test_bad_argument_out_of_range() {
   }
 }
 
-void test_bad_receiver() {
+void test_basic_bad_receiver() {
   test_funcname = __func__;
   puffs_base_buf1 dst = {0};
   puffs_base_buf1 src = {0};
@@ -72,7 +72,7 @@ void test_bad_receiver() {
   }
 }
 
-void test_constructor_not_called() {
+void test_basic_constructor_not_called() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec = {{0}};
   puffs_base_buf1 dst = {0};
@@ -84,7 +84,7 @@ void test_constructor_not_called() {
   }
 }
 
-void test_puffs_version_bad() {
+void test_basic_puffs_version_bad() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
@@ -97,7 +97,7 @@ cleanup0:
   puffs_gif_lzw_decoder_destructor(&dec);
 }
 
-void test_puffs_version_good() {
+void test_basic_puffs_version_good() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -114,7 +114,7 @@ cleanup0:
   puffs_gif_lzw_decoder_destructor(&dec);
 }
 
-void test_status_is_error() {
+void test_basic_status_is_error() {
   test_funcname = __func__;
   if (puffs_gif_status_is_error(puffs_gif_status_ok)) {
     FAIL("is_error(ok) returned true");
@@ -134,7 +134,7 @@ void test_status_is_error() {
   }
 }
 
-void test_status_strings() {
+void test_basic_status_strings() {
   test_funcname = __func__;
   const char* s0 = puffs_gif_status_string(puffs_gif_status_ok);
   const char* t0 = "gif: ok";
@@ -169,7 +169,7 @@ void test_status_strings() {
   }
 }
 
-void test_sub_struct_constructor() {
+void test_basic_sub_struct_constructor() {
   test_funcname = __func__;
   puffs_gif_decoder dec;
   puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -285,15 +285,15 @@ void test_gif_decode_input_is_a_png() {
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
     // Basic Tests
-    test_bad_argument_null,          //
-    test_bad_argument_out_of_range,  //
-    test_bad_receiver,               //
-    test_constructor_not_called,     //
-    test_puffs_version_bad,          //
-    test_puffs_version_good,         //
-    test_status_is_error,            //
-    test_status_strings,             //
-    test_sub_struct_constructor,     //
+    test_basic_bad_argument_null,          //
+    test_basic_bad_argument_out_of_range,  //
+    test_basic_bad_receiver,               //
+    test_basic_constructor_not_called,     //
+    test_basic_puffs_version_bad,          //
+    test_basic_puffs_version_good,         //
+    test_basic_status_is_error,            //
+    test_basic_status_strings,             //
+    test_basic_sub_struct_constructor,     //
     // LZW Tests
     test_lzw_decode,  //
     // GIF Tests
