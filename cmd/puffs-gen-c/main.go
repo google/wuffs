@@ -864,13 +864,23 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 				return err
 			}
 		}
-		g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
-		if v := n.Value(); v != nil {
-			if err := g.writeExpr(v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
-				return err
+		if n.XType().Decorator().Key() == t.KeyOpenBracket {
+			if n.Value() != nil {
+				return fmt.Errorf("TODO: array initializers for non-zero default values")
 			}
+			// TODO: arrays of arrays.
+			cv := n.XType().ArrayLength().ConstValue()
+			// TODO: check that cv is within size_t's range.
+			g.printf("for (size_t i = 0; i < %d; i++) { %s%s[i] = 0; }\n", cv, vPrefix, n.Name().String(g.tm))
 		} else {
-			g.writeb('0')
+			g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
+			if v := n.Value(); v != nil {
+				if err := g.writeExpr(v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
+					return err
+				}
+			} else {
+				g.writeb('0')
+			}
 		}
 		g.writes(";\n")
 		return nil

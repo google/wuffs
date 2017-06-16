@@ -15,15 +15,14 @@ pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
 
 // decode_header reads either "GIF87a" or "GIF89a".
 pri func decoder.decode_header?(src ptr buf1)() {
-	if (in.src.read_u8?() != 0x47) or (in.src.read_u8?() != 0x49) or
-		(in.src.read_u8?() != 0x46) or (in.src.read_u8?() != 0x38) {
-		return error "bad GIF header"
+	var c[6] u8
+	var i u8
+	while i < 6 {
+		c[i] = in.src.read_u8?()
+		i += 1
 	}
-	var c u8 = in.src.read_u8?()
-	if (c != 0x37) and (c != 0x39) {
-		return error "bad GIF header"
-	}
-	if in.src.read_u8?() != 0x61 {
+	if (c[0] != 0x47) or (c[1] != 0x49) or (c[2] != 0x46) or (c[3] != 0x38) or
+		((c[4] != 0x37) and (c[4] != 0x39)) or (c[5] != 0x61) {
 		return error "bad GIF header"
 	}
 }
