@@ -1,6 +1,15 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+pub error "bad GIF header"
+
 pub struct decoder?(
 	lzw lzw_decoder,
+	temporary_hack u32,
 )
+
+pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
+	if this.temporary_hack != 0x47 {
+		return error "bad GIF header"
+	}
+}

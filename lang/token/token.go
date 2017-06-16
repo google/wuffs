@@ -82,6 +82,10 @@ func alphaNumeric(c byte) bool {
 	return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_') || ('0' <= c && c <= '9')
 }
 
+func hexaNumeric(c byte) bool {
+	return ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f') || ('0' <= c && c <= '9')
+}
+
 func numeric(c byte) bool {
 	return ('0' <= c && c <= '9')
 }
@@ -173,13 +177,18 @@ loop:
 		}
 
 		if numeric(c) {
-			// TODO: 0x12 hex and 0b11 binary numbers.
+			// TODO: 0b11 binary numbers.
 			//
 			// TODO: allow underscores like 0b1000_0000_1111?
-			//
-			// TODO: reject 0755 octal numbers.
-			j := i + 1
-			for ; j < len(src) && numeric(src[j]); j++ {
+			j, isDigit := i+1, numeric
+			if c == '0' && j < len(src) {
+				if next := src[j]; next == 'x' || next == 'X' {
+					j, isDigit = j+1, hexaNumeric
+				} else if numeric(next) {
+					return nil, nil, fmt.Errorf("token: legacy octal syntax at %s:%d", filename, line)
+				}
+			}
+			for ; j < len(src) && isDigit(src[j]); j++ {
 				if j-i == maxTokenSize {
 					return nil, nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
 				}

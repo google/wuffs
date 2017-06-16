@@ -65,8 +65,9 @@ typedef enum {
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
   puffs_gif_error_closed_for_writes = -16 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
+  puffs_gif_error_bad_gif_header = -256 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -258 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -260 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -105,6 +106,7 @@ typedef struct {
     puffs_gif_status status;
     uint32_t magic;
     puffs_gif_lzw_decoder f_lzw;
+    uint32_t f_temporary_hack;
   } private_impl;
 } puffs_gif_decoder;
 
@@ -133,6 +135,10 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
 void puffs_gif_decoder_destructor(puffs_gif_decoder* self);
 
 // ---------------- Public Function Prototypes
+
+puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
+                                          puffs_base_buf1* a_dst,
+                                          puffs_base_buf1* a_src);
 
 void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
                                              uint32_t a_lw);

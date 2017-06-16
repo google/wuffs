@@ -65,8 +65,9 @@ typedef enum {
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
   puffs_gif_error_closed_for_writes = -16 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -256 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -258 + 1,
+  puffs_gif_error_bad_gif_header = -256 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -258 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -260 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -105,6 +106,7 @@ typedef struct {
     puffs_gif_status status;
     uint32_t magic;
     puffs_gif_lzw_decoder f_lzw;
+    uint32_t f_temporary_hack;
   } private_impl;
 } puffs_gif_decoder;
 
@@ -134,6 +136,10 @@ void puffs_gif_decoder_destructor(puffs_gif_decoder* self);
 
 // ---------------- Public Function Prototypes
 
+puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
+                                          puffs_base_buf1* a_dst,
+                                          puffs_base_buf1* a_src);
+
 void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
                                              uint32_t a_lw);
 
@@ -162,7 +168,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[11] = {
+const char* puffs_gif_status_strings[12] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -172,6 +178,7 @@ const char* puffs_gif_status_strings[11] = {
     "gif: short read",
     "gif: short write",
     "gif: closed for writes",
+    "gif: bad GIF header",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -183,7 +190,7 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
       return puffs_gif_status_strings[s];
     }
     s -= 119;
-    if ((9 <= s) && (s < 11)) {
+    if ((9 <= s) && (s < 12)) {
       return puffs_gif_status_strings[s];
     }
   }
@@ -259,6 +266,35 @@ void puffs_gif_decoder_destructor(puffs_gif_decoder* self) {
 }
 
 // ---------------- Function Implementations
+
+puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
+                                          puffs_base_buf1* a_dst,
+                                          puffs_base_buf1* a_src) {
+  if (!self) {
+    return puffs_gif_error_bad_receiver;
+  }
+  puffs_gif_status status = self->private_impl.status;
+  if (status & 1) {
+    return status;
+  }
+  if (self->private_impl.magic != PUFFS_MAGIC) {
+    status = puffs_gif_error_constructor_not_called;
+    goto cleanup0;
+  }
+  if (!a_dst || !a_src) {
+    status = puffs_gif_error_bad_argument;
+    goto cleanup0;
+  }
+
+  if (self->private_impl.f_temporary_hack != 71) {
+    status = puffs_gif_error_bad_gif_header;
+    goto cleanup0;
+  }
+
+cleanup0:
+  self->private_impl.status = status;
+  return status;
+}
 
 void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
                                              uint32_t a_lw) {
