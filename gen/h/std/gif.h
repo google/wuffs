@@ -106,7 +106,6 @@ typedef struct {
     puffs_gif_status status;
     uint32_t magic;
     puffs_gif_lzw_decoder f_lzw;
-    uint32_t f_temporary_hack;
   } private_impl;
 } puffs_gif_decoder;
 

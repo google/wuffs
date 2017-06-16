@@ -106,7 +106,6 @@ typedef struct {
     puffs_gif_status status;
     uint32_t magic;
     puffs_gif_lzw_decoder f_lzw;
-    uint32_t f_temporary_hack;
   } private_impl;
 } puffs_gif_decoder;
 
@@ -286,7 +285,19 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     goto cleanup0;
   }
 
-  if (self->private_impl.f_temporary_hack != 71) {
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    goto cleanup0;
+  }
+  uint8_t t_0 = a_src->ptr[a_src->ri++];
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    goto cleanup0;
+  }
+  uint8_t t_1 = a_src->ptr[a_src->ri++];
+  if ((t_0 != 71) || (t_1 != 73)) {
     status = puffs_gif_error_bad_gif_header;
     goto cleanup0;
   }

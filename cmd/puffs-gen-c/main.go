@@ -798,9 +798,24 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		return fmt.Errorf("TODO: generate code for foo() when foo is not a ? call-suspendible")
 
 	case a.KIf:
-		// TODO: consider suspendible calls.
-		n := n.If()
-		for {
+		// TODO: for writeSuspendibles, make sure that we get order of
+		// sub-expression evaluation correct.
+		n, nCloseCurly := n.If(), 1
+		for first := true; ; first = false {
+			if n.Condition().Suspendible() {
+				if !first {
+					g.writeb('{')
+					const maxCloseCurly = 1000
+					if nCloseCurly == maxCloseCurly {
+						return fmt.Errorf("too many nested if's")
+					}
+					nCloseCurly++
+				}
+				if err := g.writeSuspendibles(n.Condition(), depth); err != nil {
+					return err
+				}
+			}
+
 			g.writes("if (")
 			if err := g.writeExpr(n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
 				return err
@@ -826,7 +841,9 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			}
 			g.writes("} else ")
 		}
-		g.writes("}\n")
+		for ; nCloseCurly > 0; nCloseCurly-- {
+			g.writes("}\n")
+		}
 		return nil
 
 	case a.KJump:

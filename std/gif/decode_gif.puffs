@@ -5,11 +5,10 @@ pub error "bad GIF header"
 
 pub struct decoder?(
 	lzw lzw_decoder,
-	temporary_hack u32,
 )
 
 pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
-	if this.temporary_hack != 0x47 {
+	if (in.src.read_u8?() != 0x47) or (in.src.read_u8?() != 0x49) {
 		return error "bad GIF header"
 	}
 }

@@ -244,6 +244,42 @@ cleanup1:
 cleanup0:;
 }
 
+// ---------------- GIF Tests
+
+void test_gif_decode_input_is_a_xxx(const char* filename,
+                                    puffs_gif_status want) {
+  puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+
+  if (!read_file(&src, filename)) {
+    goto cleanup0;
+  }
+
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_status got = puffs_gif_decoder_decode(&dec, &dst, &src);
+  if (got != want) {
+    FAIL("status: got %d, want %d", got, want);
+    goto cleanup1;
+  }
+
+cleanup1:
+  puffs_gif_decoder_destructor(&dec);
+cleanup0:;
+}
+
+void test_gif_decode_input_is_a_gif() {
+  test_funcname = __func__;
+  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
+                                 puffs_gif_status_ok);
+}
+
+void test_gif_decode_input_is_a_png() {
+  test_funcname = __func__;
+  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png",
+                                 puffs_gif_error_bad_gif_header);
+}
+
 // ---------------- Manifest
 
 // The empty comments forces clang-format to place one element per line.
@@ -260,6 +296,9 @@ test tests[] = {
     test_sub_struct_constructor,     //
     // LZW Tests
     test_lzw_decode,  //
+    // GIF Tests
+    test_gif_decode_input_is_a_gif,  //
+    test_gif_decode_input_is_a_png,  //
     // End
     NULL,
 };
