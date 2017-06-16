@@ -811,6 +811,24 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 }
 
 func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	switch n.ID0().Key() {
+	// TODO.
+	case t.KeyXAssociativePlus:
+	case t.KeyXAssociativeStar:
+	case t.KeyXAssociativeAmp:
+	case t.KeyXAssociativePipe:
+	case t.KeyXAssociativeHat:
+
+	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
+		for _, o := range n.Args() {
+			o := o.Expr()
+			if _, _, err := q.bcheckExpr(o, depth); err != nil {
+				return nil, nil, err
+			}
+		}
+		return zero, one, nil
+	}
+
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
 }
 

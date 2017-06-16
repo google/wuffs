@@ -1240,7 +1240,15 @@ func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, rp replacementPolicy, de
 }
 
 func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
-	// TODO.
+	opName := cOpNames[0xFF&n.ID0().Key()]
+	for i, o := range n.Args() {
+		if i != 0 {
+			g.writes(opName)
+		}
+		if err := g.writeExpr(o.Expr(), rp, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

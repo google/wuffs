@@ -657,7 +657,29 @@ func (q *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error
 }
 
 func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
+	switch n.ID0().Key() {
 	// TODO.
+	case t.KeyXAssociativePlus:
+	case t.KeyXAssociativeStar:
+	case t.KeyXAssociativeAmp:
+	case t.KeyXAssociativePipe:
+	case t.KeyXAssociativeHat:
+
+	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
+		for _, o := range n.Args() {
+			o := o.Expr()
+			if err := q.tcheckExpr(o, depth); err != nil {
+				return err
+			}
+			if !o.MType().IsBool() {
+				return fmt.Errorf("check: associative %q: %q, of type %q, does not have a boolean type",
+					n.ID0().AmbiguousForm().String(q.tm), o.String(q.tm), o.MType().String(q.tm))
+			}
+		}
+		n.SetMType(typeExprBool)
+		return nil
+	}
+
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprAssociativeOp", n.ID0().Key())
 }
 
