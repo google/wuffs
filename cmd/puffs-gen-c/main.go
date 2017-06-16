@@ -125,6 +125,7 @@ type status struct {
 }
 
 type perFunc struct {
+	funk        *a.Func
 	jumpTargets map[*a.While]uint32
 	tempW       uint32
 	tempR       uint32
@@ -552,7 +553,7 @@ func (g *gen) writeFuncPrototype(n *a.Func) error {
 }
 
 func (g *gen) writeFuncImpl(n *a.Func) error {
-	g.perFunc = perFunc{}
+	g.perFunc = perFunc{funk: n}
 	if err := g.writeFuncSignature(n); err != nil {
 		return err
 	}
@@ -1032,6 +1033,11 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes(";\n")
 
+	} else if isThisDecodeHeader(g.tm, n) {
+		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.writes("if (status) { goto cleanup0; }\n")
+
 	} else {
 		// TODO: fix this.
 		//
@@ -1195,6 +1201,19 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+}
+
+func isThisDecodeHeader(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(src:in.src)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("decode_header") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
 }
 
 func isLowBits(tm *t.Map, n *a.Expr) bool {

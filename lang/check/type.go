@@ -327,7 +327,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) {
+		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
+			isThisDecodeHeader(q.tm, n) {
+
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
 			}
@@ -422,6 +424,19 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
+func isThisDecodeHeader(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(src:in.src)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("decode_header") {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
+}
+
 func isLowBits(tm *t.Map, n *a.Expr) bool {
 	// TODO: check that n.Args() is "(n:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
@@ -442,7 +457,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 
 	if lTyp.Decorator() != 0 {
 		// TODO.
-		return fmt.Errorf("check: unsupported package-or-decorator for tcheckDot")
+		return fmt.Errorf("check: unsupported decorator for tcheckDot")
 	}
 
 	s := (*a.Struct)(nil)
@@ -476,7 +491,13 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
+
+	if f := q.c.funcs[t.QID{lTyp.Name(), n.ID1()}]; f.Func != nil {
+		n.SetMType(typeExprPlaceholder) // HACK.
+		return nil
+	}
+
+	return fmt.Errorf("check: no field or method named %q found in struct type %q for expression %q",
 		n.ID1().String(q.tm), lTyp.Name().String(q.tm), n.String(q.tm))
 }
 

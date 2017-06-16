@@ -10,7 +10,11 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
-	// Read either "GIF87a" or "GIF89a".
+	this.decode_header?(src:in.src)
+}
+
+// decode_header reads either "GIF87a" or "GIF89a".
+pri func decoder.decode_header?(src ptr buf1)() {
 	if (in.src.read_u8?() != 0x47) or (in.src.read_u8?() != 0x49) or
 		(in.src.read_u8?() != 0x46) or (in.src.read_u8?() != 0x38) {
 		return error "bad GIF header"

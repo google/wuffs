@@ -200,6 +200,9 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
 
 // ---------------- Private Function Prototypes
 
+puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
+                                                 puffs_base_buf1* a_src);
+
 // ---------------- Constructor and Destructor Implementations
 
 // PUFFS_MAGIC is a magic number to check that constructors are called. It's
@@ -285,60 +288,69 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     goto cleanup0;
   }
 
-  uint8_t v_c;
-
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_0 = a_src->ptr[a_src->ri++];
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_1 = a_src->ptr[a_src->ri++];
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_2 = a_src->ptr[a_src->ri++];
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_3 = a_src->ptr[a_src->ri++];
-  if ((t_0 != 71) || (t_1 != 73) || (t_2 != 70) || (t_3 != 56)) {
-    status = puffs_gif_error_bad_gif_header;
-    goto cleanup0;
-  }
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_4 = a_src->ptr[a_src->ri++];
-  v_c = t_4;
-  if ((v_c != 55) && (v_c != 57)) {
-    status = puffs_gif_error_bad_gif_header;
-    goto cleanup0;
-  }
-  if (a_src->ri >= a_src->wi) {
-    status = a_src->closed ? puffs_gif_error_unexpected_eof
-                           : puffs_gif_status_short_read;
-    goto cleanup0;
-  }
-  uint8_t t_5 = a_src->ptr[a_src->ri++];
-  if (t_5 != 97) {
-    status = puffs_gif_error_bad_gif_header;
+  status = puffs_gif_decoder_decode_header(self, a_src);
+  if (status) {
     goto cleanup0;
   }
 
 cleanup0:
   self->private_impl.status = status;
+  return status;
+}
+
+puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
+                                                 puffs_base_buf1* a_src) {
+  puffs_gif_status status = self->private_impl.status;
+
+  uint8_t v_c;
+
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_0 = a_src->ptr[a_src->ri++];
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_1 = a_src->ptr[a_src->ri++];
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_2 = a_src->ptr[a_src->ri++];
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_3 = a_src->ptr[a_src->ri++];
+  if ((t_0 != 71) || (t_1 != 73) || (t_2 != 70) || (t_3 != 56)) {
+    return puffs_gif_error_bad_gif_header;
+  }
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_4 = a_src->ptr[a_src->ri++];
+  v_c = t_4;
+  if ((v_c != 55) && (v_c != 57)) {
+    return puffs_gif_error_bad_gif_header;
+  }
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_5 = a_src->ptr[a_src->ri++];
+  if (t_5 != 97) {
+    return puffs_gif_error_bad_gif_header;
+  }
+
   return status;
 }
 
