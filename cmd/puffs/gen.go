@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -40,7 +41,6 @@ func doGen(puffsRoot string, args []string) error {
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		arg = filepath.Join(puffsRoot, filepath.FromSlash(arg))
 		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func doGen(puffsRoot string, args []string) error {
 }
 
 func gen(puffsRoot, dirname string, langs []string, recursive bool) error {
-	filenames, dirnames, err := listDir(dirname, recursive)
+	filenames, dirnames, err := listDir(puffsRoot, dirname, recursive)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func gen(puffsRoot, dirname string, langs []string, recursive bool) error {
 	}
 	if len(dirnames) > 0 {
 		for _, d := range dirnames {
-			if err := gen(puffsRoot, filepath.Join(dirname, d), langs, recursive); err != nil {
+			if err := gen(puffsRoot, dirname+"/"+d, langs, recursive); err != nil {
 				return err
 			}
 		}
@@ -76,7 +76,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	files := []*ast.File(nil)
 	buf := &bytes.Buffer{}
 	for _, filename := range filenames {
-		filename = filepath.Join(dirname, filename)
+		filename = filepath.Join(puffsRoot, filepath.FromSlash(dirname), filename)
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return err
@@ -99,7 +99,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	}
 	combinedSrc := buf.Bytes()
 
-	packageName := filepath.Base(dirname)
+	packageName := path.Base(dirname)
 	if !validName(packageName) {
 		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
@@ -119,7 +119,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 		out := stdout.Bytes()
-		if err := genFile(puffsRoot, packageName, lang, out); err != nil {
+		if err := genFile(puffsRoot, dirname, lang, out); err != nil {
 			return err
 		}
 
@@ -132,7 +132,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 		} else {
 			out = out[:i]
 		}
-		if err := genFile(puffsRoot, packageName, "h", out); err != nil {
+		if err := genFile(puffsRoot, dirname, "h", out); err != nil {
 			return err
 		}
 	}
@@ -141,14 +141,13 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 
 var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
 
-func genFile(puffsRoot string, packageName string, lang string, out []byte) error {
-	outDirname := filepath.Join(puffsRoot, "gen", lang)
-	outFilename := filepath.Join(outDirname, packageName+"."+lang)
+func genFile(puffsRoot string, dirname string, lang string, out []byte) error {
+	outFilename := filepath.Join(puffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
 	if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
 		fmt.Println("gen unchanged: ", outFilename)
 		return nil
 	}
-	if err := os.MkdirAll(outDirname, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outFilename), 0755); err != nil {
 		return err
 	}
 	if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {

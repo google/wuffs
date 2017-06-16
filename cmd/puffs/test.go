@@ -34,10 +34,9 @@ func doTest(puffsRoot string, args []string) error {
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		qualifiedArg := filepath.Join(puffsRoot, filepath.FromSlash(arg))
 
 		// Ensure that we are testing the latest version of the generated code.
-		if err := gen(puffsRoot, qualifiedArg, langs, recursive); err != nil {
+		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
 			return err
 		}
 
@@ -55,7 +54,7 @@ func doTest(puffsRoot string, args []string) error {
 }
 
 func test(puffsRoot, dirname string, langs []string, recursive bool) (failed bool, err error) {
-	filenames, dirnames, err := listDir(filepath.Join(puffsRoot, filepath.FromSlash(dirname)), recursive)
+	filenames, dirnames, err := listDir(puffsRoot, dirname, recursive)
 	if err != nil {
 		return false, err
 	}

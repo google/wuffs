@@ -12,7 +12,7 @@ done
 Each edition should print "PASS", amongst other information, and exit(0).
 */
 
-#include "../../../gen/c/gif.c"
+#include "../../../gen/c/std/gif.c"
 #include "../testlib/testlib.c"
 
 const char* test_filename = "std/gif.c";

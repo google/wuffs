@@ -61,8 +61,8 @@ func findPuffsRoot() (string, error) {
 	return "", errors.New("could not find Puffs root directory")
 }
 
-func listDir(dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
-	f, err := os.Open(dirname)
+func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
+	f, err := os.Open(filepath.Join(puffsRoot, filepath.FromSlash(dirname)))
 	if err != nil {
 		return nil, nil, err
 	}
