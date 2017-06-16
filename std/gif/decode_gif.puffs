@@ -1,6 +1,8 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+// The GIF spec is https://www.w3.org/Graphics/GIF/spec-gif89a.txt
+
 pub error "bad GIF header"
 
 pub struct decoder?(
@@ -11,6 +13,13 @@ pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
 	// Read either "GIF87a" or "GIF89a".
 	if (in.src.read_u8?() != 0x47) or (in.src.read_u8?() != 0x49) or
 		(in.src.read_u8?() != 0x46) or (in.src.read_u8?() != 0x38) {
+		return error "bad GIF header"
+	}
+	var c u8 = in.src.read_u8?()
+	if (c != 0x37) and (c != 0x39) {
+		return error "bad GIF header"
+	}
+	if in.src.read_u8?() != 0x61 {
 		return error "bad GIF header"
 	}
 }

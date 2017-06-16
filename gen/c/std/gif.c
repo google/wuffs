@@ -285,6 +285,8 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     goto cleanup0;
   }
 
+  uint8_t v_c;
+
   if (a_src->ri >= a_src->wi) {
     status = a_src->closed ? puffs_gif_error_unexpected_eof
                            : puffs_gif_status_short_read;
@@ -310,6 +312,27 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
   }
   uint8_t t_3 = a_src->ptr[a_src->ri++];
   if ((t_0 != 71) || (t_1 != 73) || (t_2 != 70) || (t_3 != 56)) {
+    status = puffs_gif_error_bad_gif_header;
+    goto cleanup0;
+  }
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    goto cleanup0;
+  }
+  uint8_t t_4 = a_src->ptr[a_src->ri++];
+  v_c = t_4;
+  if ((v_c != 55) && (v_c != 57)) {
+    status = puffs_gif_error_bad_gif_header;
+    goto cleanup0;
+  }
+  if (a_src->ri >= a_src->wi) {
+    status = a_src->closed ? puffs_gif_error_unexpected_eof
+                           : puffs_gif_status_short_read;
+    goto cleanup0;
+  }
+  uint8_t t_5 = a_src->ptr[a_src->ri++];
+  if (t_5 != 97) {
     status = puffs_gif_error_bad_gif_header;
     goto cleanup0;
   }

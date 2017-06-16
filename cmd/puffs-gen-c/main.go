@@ -883,7 +883,11 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KVar:
 		n := n.Var()
-		// TODO: consider suspendible calls.
+		if v := n.Value(); v != nil {
+			if err := g.writeSuspendibles(v, depth); err != nil {
+				return err
+			}
+		}
 		g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 		if v := n.Value(); v != nil {
 			if err := g.writeExpr(v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
