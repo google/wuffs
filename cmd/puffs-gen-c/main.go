@@ -416,8 +416,9 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		g.printf("puffs_%s_status status;\n", g.pkgName)
 		g.printf("uint32_t magic;\n")
 	}
-	for _, f := range n.Fields() {
-		if err := g.writeField(f.Field(), fPrefix); err != nil {
+	for _, o := range n.Fields() {
+		o := o.Field()
+		if err := g.writeCTypeName(o.XType(), fPrefix, o.Name().String(g.tm)); err != nil {
 			return err
 		}
 		g.writes(";\n")
@@ -535,7 +536,8 @@ func (g *gen) writeFuncSignature(n *a.Func) error {
 			g.writeb(',')
 		}
 		comma = true
-		if err := g.writeField(o.Field(), aPrefix); err != nil {
+		o := o.Field()
+		if err := g.writeCTypeName(o.XType(), aPrefix, o.Name().String(g.tm)); err != nil {
 			return err
 		}
 	}
@@ -699,28 +701,6 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 	return nil
 }
 
-func (g *gen) writeField(n *a.Field, namePrefix string) error {
-	x := n.XType()
-	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
-	}
-
-	if err := g.writeCTypeName(x); err != nil {
-		return err
-	}
-	g.writeb(' ')
-	g.writes(namePrefix)
-	g.writes(n.Name().String(g.tm))
-
-	x = n.XType()
-	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
-		g.writeb('[')
-		g.writes(x.ArrayLength().ConstValue().String())
-		g.writeb(']')
-	}
-
-	return nil
-}
-
 func (g *gen) writeVars(block []*a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
@@ -741,16 +721,11 @@ func (g *gen) writeVars(block []*a.Node, depth uint32) error {
 
 		case a.KVar:
 			o := o.Var()
-			x := o.XType()
-			// TODO: use g.writeCTypeName.
-			if k := x.Name().Key(); k < t.Key(len(cTypeNames)) {
-				if s := cTypeNames[k]; s != "" {
-					g.printf("%s %s%s;\n", s, vPrefix, o.Name().String(g.tm))
-					continue
-				}
+			if err := g.writeCTypeName(o.XType(), vPrefix, o.Name().String(g.tm)); err != nil {
+				return err
 			}
-			// TODO: fix this.
-			return fmt.Errorf("cannot convert Puffs type %q to C", x.String(g.tm))
+			g.writes(";\n")
+			continue
 
 		case a.KWhile:
 			if err := g.writeVars(o.While().Body(), depth); err != nil {
@@ -986,10 +961,12 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		if err := g.writeCTypeName(n.MType()); err != nil {
+		// TODO: watch for passing an array type to writeCTypeName? In C, an
+		// array type can decay into a pointer.
+		if err := g.writeCTypeName(n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 			return err
 		}
-		g.printf(" %s%d = %ssrc->ptr[%ssrc->ri++];\n", tPrefix, temp, aPrefix, aPrefix)
+		g.printf(" = %ssrc->ptr[%ssrc->ri++];\n", aPrefix, aPrefix)
 
 	} else if isInDst(g.tm, n, t.KeyWrite) {
 		// TODO: suspend coroutine state.
@@ -1254,7 +1231,9 @@ func (g *gen) writeExprBinaryOp(n *a.Expr, rp replacementPolicy, pp parenthesesP
 
 func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, rp replacementPolicy, depth uint32) error {
 	g.writes("((")
-	if err := g.writeCTypeName(rhs); err != nil {
+	// TODO: watch for passing an array type to writeCTypeName? In C, an array
+	// type can decay into a pointer.
+	if err := g.writeCTypeName(rhs, "", ""); err != nil {
 		return err
 	}
 	g.writes(")(")
@@ -1278,14 +1257,21 @@ func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint
 	return nil
 }
 
-func (g *gen) writeCTypeName(n *a.TypeExpr) error {
-	const maxNPtr = 16
+func (g *gen) writeCTypeName(n *a.TypeExpr, varNamePrefix string, varName string) error {
+	// It may help to refer to http://unixwiz.net/techtips/reading-cdecl.html
 
-	numPointers, innermost := 0, n
+	// maxNumPointers is an arbitrary implementation restriction.
+	const maxNumPointers = 16
+
+	x := n
+	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
+	}
+
+	numPointers, innermost := 0, x
 	for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
 		// TODO: "nptr T", not just "ptr T".
 		if p := innermost.Decorator().Key(); p == t.KeyPtr {
-			if numPointers == maxNPtr {
+			if numPointers == maxNumPointers {
 				return fmt.Errorf("cannot convert Puffs type %q to C: too many ptr's", n.String(g.tm))
 			}
 			numPointers++
@@ -1309,6 +1295,18 @@ func (g *gen) writeCTypeName(n *a.TypeExpr) error {
 	for i := 0; i < numPointers; i++ {
 		g.writeb('*')
 	}
+
+	g.writeb(' ')
+	g.writes(varNamePrefix)
+	g.writes(varName)
+
+	x = n
+	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
+		g.writeb('[')
+		g.writes(x.ArrayLength().ConstValue().String())
+		g.writeb(']')
+	}
+
 	return nil
 }
 
