@@ -27,7 +27,7 @@ uint8_t global_src_buffer[BUFFER_SIZE];
 
 void test_constructor_not_called() {
   test_funcname = __func__;
-  puffs_gif_lzw_decoder dec;
+  puffs_gif_lzw_decoder dec = {{0}};
   puffs_base_buf1 dst = {0};
   puffs_base_buf1 src = {0};
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, &dst, &src);
