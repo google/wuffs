@@ -960,14 +960,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	if g.perFunc.tempW > maxTemp {
-		return fmt.Errorf("too many temporary variables required")
-	}
-	temp := g.perFunc.tempW
-	g.perFunc.tempW++
-
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	if isInSrcReadU8(g.tm, n) {
+		if g.perFunc.tempW > maxTemp {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		temp := g.perFunc.tempW
+		g.perFunc.tempW++
+
 		// TODO: suspend coroutine state.
 		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = "+
 			"%ssrc->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
