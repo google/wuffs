@@ -34,10 +34,10 @@ func doTest(puffsRoot string, args []string) error {
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		arg = filepath.Join(puffsRoot, filepath.FromSlash(arg))
+		qualifiedArg := filepath.Join(puffsRoot, filepath.FromSlash(arg))
 
 		// Ensure that we are testing the latest version of the generated code.
-		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
+		if err := gen(puffsRoot, qualifiedArg, langs, recursive); err != nil {
 			return err
 		}
 
@@ -55,7 +55,7 @@ func doTest(puffsRoot string, args []string) error {
 }
 
 func test(puffsRoot, dirname string, langs []string, recursive bool) (failed bool, err error) {
-	filenames, dirnames, err := listDir(dirname, recursive)
+	filenames, dirnames, err := listDir(filepath.Join(puffsRoot, filepath.FromSlash(dirname)), recursive)
 	if err != nil {
 		return false, err
 	}
@@ -79,16 +79,13 @@ func test(puffsRoot, dirname string, langs []string, recursive bool) (failed boo
 }
 
 func testDir(puffsRoot string, dirname string, langs []string) (failed bool, err error) {
-	packageName := filepath.Base(dirname)
-	if !validName(packageName) {
+	if packageName := filepath.Base(dirname); !validName(packageName) {
 		return false, fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
 
 	for _, lang := range langs {
 		command := "puffs-test-" + lang
-		testDirname := filepath.Join(puffsRoot, "test", lang, packageName)
-		fmt.Println("test:          ", testDirname)
-		cmd := exec.Command(command, testDirname)
+		cmd := exec.Command(command, filepath.Join(puffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err == nil {

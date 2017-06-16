@@ -1,7 +1,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// puffs-test-c runs directories of C test programs.
+// puffs-test-c runs C test programs.
 package main
 
 import (
@@ -11,8 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
-	"strings"
 )
 
 func main() {
@@ -26,17 +24,11 @@ func main1() error {
 	flag.Parse()
 	failed := false
 	for _, arg := range flag.Args() {
-		filenames, err := listDir(arg)
+		f, err := do(arg)
 		if err != nil {
 			return err
 		}
-		for _, filename := range filenames {
-			f, err := do(arg, filename)
-			if err != nil {
-				return err
-			}
-			failed = failed || f
-		}
+		failed = failed || f
 	}
 	if failed {
 		return fmt.Errorf("%s: some tests failed", os.Args[0])
@@ -44,28 +36,7 @@ func main1() error {
 	return nil
 }
 
-func listDir(dirname string) (filenames []string, err error) {
-	f, err := os.Open(dirname)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	infos, err := f.Readdir(-1)
-	if err != nil {
-		return nil, err
-	}
-	for _, o := range infos {
-		name := o.Name()
-		if strings.HasSuffix(name, ".c") {
-			filenames = append(filenames, name)
-		}
-	}
-	sort.Strings(filenames)
-	return filenames, nil
-}
-
-func do(dirname string, filename string) (failed bool, err error) {
+func do(filename string) (failed bool, err error) {
 	workDir, err := ioutil.TempDir("", "puffs-test-c")
 	if err != nil {
 		return false, err
@@ -73,7 +44,7 @@ func do(dirname string, filename string) (failed bool, err error) {
 	defer os.RemoveAll(workDir)
 
 	for _, cc := range []string{"clang", "gcc"} {
-		in := filepath.Join(dirname, filename)
+		in := filename + ".c"
 		out := filepath.Join(workDir, cc+".out")
 
 		ccCmd := exec.Command(cc, "-std=c99", "-Wall", "-Werror", "-o", out, in)
@@ -86,7 +57,7 @@ func do(dirname string, filename string) (failed bool, err error) {
 		outCmd := exec.Command(out)
 		outCmd.Stdout = os.Stdout
 		outCmd.Stderr = os.Stderr
-		outCmd.Dir = dirname
+		outCmd.Dir = filepath.Dir(filename)
 		if err := outCmd.Run(); err == nil {
 			// No-op.
 		} else if _, ok := err.(*exec.ExitError); ok {
