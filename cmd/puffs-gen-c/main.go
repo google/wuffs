@@ -624,6 +624,9 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	g.writes("}\n\n")
+	if g.perFunc.tempW != g.perFunc.tempR {
+		return fmt.Errorf("internal error: temporary variable count out of sync")
+	}
 	return nil
 }
 
