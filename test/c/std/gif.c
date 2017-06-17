@@ -263,6 +263,20 @@ void test_gif_decode_input_is_a_xxx(const char* filename,
     goto cleanup1;
   }
 
+  if (want != puffs_gif_status_ok) {
+    goto cleanup1;
+  }
+
+  // TODO: provide a public API for getting the width and height.
+  if (dec.private_impl.f_width != 160) {
+    FAIL("width: got %d, want %d", dec.private_impl.f_width, 160);
+    goto cleanup1;
+  }
+  if (dec.private_impl.f_height != 120) {
+    FAIL("height: got %d, want %d", dec.private_impl.f_height, 120);
+    goto cleanup1;
+  }
+
 cleanup1:
   puffs_gif_decoder_destructor(&dec);
 cleanup0:;

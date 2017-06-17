@@ -110,6 +110,8 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
+    uint32_t f_width;
+    uint32_t f_height;
     puffs_gif_lzw_decoder f_lzw;
   } private_impl;
 } puffs_gif_decoder;

@@ -110,6 +110,8 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
+    uint32_t f_width;
+    uint32_t f_height;
     puffs_gif_lzw_decoder f_lzw;
   } private_impl;
 } puffs_gif_decoder;
@@ -342,6 +344,28 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
 puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
                                               puffs_base_buf1* a_src) {
   puffs_gif_status status = self->private_impl.status;
+
+  uint8_t v_c[7];
+  uint8_t v_i;
+
+  for (size_t i = 0; i < 7; i++) {
+    v_c[i] = 0;
+  };
+  v_i = 0;
+  while (v_i < 7) {
+    if (a_src->ri >= a_src->wi) {
+      status = a_src->closed ? puffs_gif_error_unexpected_eof
+                             : puffs_gif_status_short_read;
+      return status;
+    }
+    uint8_t t_0 = a_src->ptr[a_src->ri++];
+    v_c[v_i] = t_0;
+    v_i += 1;
+  }
+  self->private_impl.f_width =
+      (((uint32_t)(v_c[0])) | (((uint32_t)(v_c[1])) << 8));
+  self->private_impl.f_height =
+      (((uint32_t)(v_c[2])) | (((uint32_t)(v_c[3])) << 8));
 
   return status;
 }

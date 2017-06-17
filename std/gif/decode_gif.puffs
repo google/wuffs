@@ -6,6 +6,8 @@
 pub error "bad GIF header"
 
 pub struct decoder?(
+	width u32[..65535],
+	height u32[..65535],
 	lzw lzw_decoder,
 )
 
@@ -34,4 +36,12 @@ pri func decoder.decode_header?(src ptr buf1)() {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd?(src ptr buf1)() {
+	var c[7] u8
+	var i u8
+	while i < 7 {
+		c[i] = in.src.read_u8?()
+		i += 1
+	}
+	this.width = (c[0] as u32) | ((c[1] as u32) << 8)
+	this.height = (c[2] as u32) | ((c[3] as u32) << 8)
 }
