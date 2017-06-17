@@ -11,12 +11,6 @@ import (
 	t "github.com/google/puffs/lang/token"
 )
 
-type Flags uint32
-
-const (
-	FlagsOnlyTypeCheck = Flags(0x0001)
-)
-
 type Error struct {
 	Err           error
 	Filename      string
@@ -83,7 +77,7 @@ type Struct struct {
 	Struct *a.Struct
 }
 
-func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
+func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {
 			return nil, errors.New("check: Check given a nil *ast.File")
@@ -107,7 +101,6 @@ func Check(tm *t.Map, flags Flags, files ...*a.File) (*Checker, error) {
 		}
 	}
 	c := &Checker{
-		flags:     flags,
 		tm:        tm,
 		reasonMap: rMap,
 		funcs:     map[t.QID]Func{},
@@ -153,7 +146,6 @@ var phases = [...]struct {
 }
 
 type Checker struct {
-	flags     Flags
 	tm        *t.Map
 	reasonMap reasonMap
 
@@ -269,10 +261,8 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 				return err
 			}
 		}
-		if c.flags&FlagsOnlyTypeCheck == 0 {
-			if err := bcheckField(c.tm, f); err != nil {
-				return err
-			}
+		if err := bcheckField(c.tm, f); err != nil {
+			return err
 		}
 		fieldNames[f.Name()] = true
 		f.Node().SetTypeChecked()
@@ -391,16 +381,13 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		}
 	}
 
-	// Run bounds checks.
-	if c.flags&FlagsOnlyTypeCheck == 0 {
-		if err := q.bcheckBlock(n.Body()); err != nil {
-			return &Error{
-				Err:      err,
-				Filename: q.errFilename,
-				Line:     q.errLine,
-				TMap:     c.tm,
-				Facts:    q.facts,
-			}
+	if err := q.bcheckBlock(n.Body()); err != nil {
+		return &Error{
+			Err:      err,
+			Filename: q.errFilename,
+			Line:     q.errLine,
+			TMap:     c.tm,
+			Facts:    q.facts,
 		}
 	}
 

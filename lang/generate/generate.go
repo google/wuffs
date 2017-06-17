@@ -16,9 +16,6 @@ import (
 )
 
 var (
-	assumeAlreadyChecked = flag.Bool("assume_already_checked", false,
-		"whether to skip bounds-checking; unsafe unless some other program checks the inputs")
-
 	packageName = flag.String("package_name", "", "the package name of the Puffs input code")
 )
 
@@ -41,13 +38,7 @@ func main1(g Generator) error {
 		return err
 	}
 
-	// Even if we can skip the bounds-checking, we still need to type-check to
-	// evaluate e.g. the constant N expression in the type "[N]u8".
-	checkFlags := check.Flags(0)
-	if *assumeAlreadyChecked {
-		checkFlags |= check.FlagsOnlyTypeCheck
-	}
-	if _, err := check.Check(tm, checkFlags, files...); err != nil {
+	if _, err := check.Check(tm, files...); err != nil {
 		return err
 	}
 

@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/google/puffs/lang/ast"
-	"github.com/google/puffs/lang/check"
 	"github.com/google/puffs/lang/parse"
 	"github.com/google/puffs/lang/render"
 	"github.com/google/puffs/lang/token"
@@ -94,9 +93,6 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 	}
-	if _, err := check.Check(tm, 0, files...); err != nil {
-		return err
-	}
 	combinedSrc := buf.Bytes()
 
 	packageName := path.Base(dirname)
@@ -107,7 +103,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	for _, lang := range langs {
 		command := "puffs-gen-" + lang
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command(command, "-assume_already_checked", "-package_name", packageName)
+		cmd := exec.Command(command, "-package_name", packageName)
 		cmd.Stdin = bytes.NewReader(combinedSrc)
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr

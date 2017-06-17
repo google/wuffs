@@ -97,7 +97,7 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("compareToPuffsfmt: %v", err)
 	}
 
-	c, err := Check(tm, 0, file)
+	c, err := Check(tm, file)
 	if err != nil {
 		t.Fatalf("Check: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestConstValues(t *testing.T) {
 			continue
 		}
 
-		c, err := Check(tm, 0, file)
+		c, err := Check(tm, file)
 		if err != nil {
 			t.Errorf("%q: Check: %v", s, err)
 			continue
