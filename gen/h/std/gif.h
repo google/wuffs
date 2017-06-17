@@ -26,8 +26,6 @@
 #error "Puffs requires a word size of at most 64 bits"
 #endif
 
-// Simil
-
 // PUFFS_VERSION is the major.minor version number as a uint32. The major
 // number is the high 16 bits. The minor number is the low 16 bits.
 //
