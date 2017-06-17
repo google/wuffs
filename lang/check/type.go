@@ -328,7 +328,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
-			isThisDecodeHeader(q.tm, n) {
+			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") {
 
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
@@ -424,13 +424,13 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isThisDecodeHeader(tm *t.Map, n *a.Expr) bool {
+func isThisMethod(tm *t.Map, n *a.Expr, methodName string) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
 	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("decode_header") {
+	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName(methodName) {
 		return false
 	}
 	n = n.LHS().Expr()

@@ -11,9 +11,12 @@ pub struct decoder?(
 
 pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
 	this.decode_header?(src:in.src)
+	this.decode_lsd?(src:in.src)
 }
 
 // decode_header reads either "GIF87a" or "GIF89a".
+//
+// See the spec section 17 "Header" on page 7.
 pri func decoder.decode_header?(src ptr buf1)() {
 	var c[6] u8
 	var i u8
@@ -25,4 +28,10 @@ pri func decoder.decode_header?(src ptr buf1)() {
 		((c[4] != 0x37) and (c[4] != 0x39)) or (c[5] != 0x61) {
 		return error "bad GIF header"
 	}
+}
+
+// decode_lsd reads the Logical Screen Descriptor.
+//
+// See the spec section 18 "Logical Screen Descriptor" on page 8.
+pri func decoder.decode_lsd?(src ptr buf1)() {
 }

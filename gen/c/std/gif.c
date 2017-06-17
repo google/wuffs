@@ -208,6 +208,9 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
 puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
                                                  puffs_base_buf1* a_src);
 
+puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
+                                              puffs_base_buf1* a_src);
+
 // ---------------- Constructor and Destructor Implementations
 
 // PUFFS_MAGIC is a magic number to check that constructors are called. It's
@@ -297,6 +300,10 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
   if (status) {
     goto cleanup0;
   }
+  status = puffs_gif_decoder_decode_lsd(self, a_src);
+  if (status) {
+    goto cleanup0;
+  }
 
 cleanup0:
   self->private_impl.status = status;
@@ -328,6 +335,13 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
       ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
     return puffs_gif_error_bad_gif_header;
   }
+
+  return status;
+}
+
+puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
+                                              puffs_base_buf1* a_src) {
+  puffs_gif_status status = self->private_impl.status;
 
   return status;
 }
