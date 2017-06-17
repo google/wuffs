@@ -17,9 +17,16 @@
 // converting a u32 to usize will never overflow. For example, the size of a
 // decoded image is often represented, explicitly or implicitly in an image
 // file, as a u32, and it is convenient to compare that to a buffer size.
+//
+// Similarly, the word size is at most 64 bits because it assumes that
+// converting a usize to u64 will never overflow.
 #if __WORDSIZE < 32
 #error "Puffs requires a word size of at least 32 bits"
+#elif __WORDSIZE > 64
+#error "Puffs requires a word size of at most 64 bits"
 #endif
+
+// Simil
 
 // PUFFS_VERSION is the major.minor version number as a uint32. The major
 // number is the high 16 bits. The minor number is the low 16 bits.
