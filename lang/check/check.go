@@ -149,6 +149,7 @@ var phases = [...]struct {
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncBody},
+	{a.KStruct, (*Checker).checkFieldMethodCollisions},
 }
 
 type Checker struct {
@@ -431,6 +432,18 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		return err
 	}
 
+	return nil
+}
+
+func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
+	n := node.Struct()
+	for _, o := range n.Fields() {
+		qid := t.QID{n.Name(), o.Field().Name()}
+		if _, ok := c.funcs[qid]; ok {
+			return fmt.Errorf("check: struct %q has both a field and method named %q",
+				qid[0].String(c.tm), qid[1].String(c.tm))
+		}
+	}
 	return nil
 }
 
