@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/puffs/lang/ast"
+	"github.com/google/puffs/lang/check"
 	"github.com/google/puffs/lang/parse"
 	"github.com/google/puffs/lang/render"
 	"github.com/google/puffs/lang/token"
@@ -71,6 +73,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	// mtime is newer than all inputs and the puffs-gen-foo command.
 
 	tm := &token.Map{}
+	files := []*ast.File(nil)
 	buf := &bytes.Buffer{}
 	for _, filename := range filenames {
 		filename = filepath.Join(puffsRoot, filepath.FromSlash(dirname), filename)
@@ -82,14 +85,17 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 		if err != nil {
 			return err
 		}
-		// We don't need the AST node to pretty-print, but it's worth rejecting
-		// syntax errors early. This is just a parse, not a full type check.
-		if _, err := parse.Parse(tm, filename, tokens); err != nil {
+		if f, err := parse.Parse(tm, filename, tokens); err != nil {
 			return err
+		} else {
+			files = append(files, f)
 		}
 		if err := render.Render(buf, tm, tokens, nil); err != nil {
 			return err
 		}
+	}
+	if _, err := check.Check(tm, files...); err != nil {
+		return err
 	}
 	combinedSrc := buf.Bytes()
 
