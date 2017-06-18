@@ -214,18 +214,20 @@ const (
 	KeyTrue  = Key(IDTrue >> KeyShift)
 	KeyZero  = Key(IDZero >> KeyShift)
 
-	KeyI8    = Key(IDI8 >> KeyShift)
-	KeyI16   = Key(IDI16 >> KeyShift)
-	KeyI32   = Key(IDI32 >> KeyShift)
-	KeyI64   = Key(IDI64 >> KeyShift)
-	KeyU8    = Key(IDU8 >> KeyShift)
-	KeyU16   = Key(IDU16 >> KeyShift)
-	KeyU32   = Key(IDU32 >> KeyShift)
-	KeyU64   = Key(IDU64 >> KeyShift)
-	KeyUsize = Key(IDUsize >> KeyShift)
-	KeyBool  = Key(IDBool >> KeyShift)
-	KeyBuf1  = Key(IDBuf1 >> KeyShift)
-	KeyBuf2  = Key(IDBuf2 >> KeyShift)
+	KeyI8      = Key(IDI8 >> KeyShift)
+	KeyI16     = Key(IDI16 >> KeyShift)
+	KeyI32     = Key(IDI32 >> KeyShift)
+	KeyI64     = Key(IDI64 >> KeyShift)
+	KeyU8      = Key(IDU8 >> KeyShift)
+	KeyU16     = Key(IDU16 >> KeyShift)
+	KeyU32     = Key(IDU32 >> KeyShift)
+	KeyU64     = Key(IDU64 >> KeyShift)
+	KeyUsize   = Key(IDUsize >> KeyShift)
+	KeyBool    = Key(IDBool >> KeyShift)
+	KeyBuf1    = Key(IDBuf1 >> KeyShift)
+	KeyBuf2    = Key(IDBuf2 >> KeyShift)
+	KeyReader1 = Key(IDReader1 >> KeyShift)
+	KeyWriter1 = Key(IDWriter1 >> KeyShift)
 
 	KeyUnderscore = Key(IDUnderscore >> KeyShift)
 	KeyThis       = Key(IDThis >> KeyShift)
@@ -366,18 +368,20 @@ const (
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDZero  = ID(0x82<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
 
-	IDI8    = ID(0x90<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI16   = ID(0x91<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI32   = ID(0x92<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI64   = ID(0x93<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU8    = ID(0x94<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU16   = ID(0x95<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU32   = ID(0x96<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU64   = ID(0x97<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDUsize = ID(0x98<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDBool  = ID(0x99<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf1  = ID(0x9A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf2  = ID(0x9B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI8      = ID(0x90<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI16     = ID(0x91<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI32     = ID(0x92<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDI64     = ID(0x93<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU8      = ID(0x94<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU16     = ID(0x95<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU32     = ID(0x96<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDU64     = ID(0x97<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDUsize   = ID(0x98<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
+	IDBool    = ID(0x99<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf1    = ID(0x9A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBuf2    = ID(0x9B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDReader1 = ID(0x9C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDWriter1 = ID(0x9D<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDUnderscore = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDThis       = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -540,18 +544,20 @@ var builtInsByKey = [nBuiltInKeys]struct {
 
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 
-	KeyI8:    {"i8", IDI8},
-	KeyI16:   {"i16", IDI16},
-	KeyI32:   {"i32", IDI32},
-	KeyI64:   {"i64", IDI64},
-	KeyU8:    {"u8", IDU8},
-	KeyU16:   {"u16", IDU16},
-	KeyU32:   {"u32", IDU32},
-	KeyU64:   {"u64", IDU64},
-	KeyUsize: {"usize", IDUsize},
-	KeyBool:  {"bool", IDBool},
-	KeyBuf1:  {"buf1", IDBuf1},
-	KeyBuf2:  {"buf2", IDBuf2},
+	KeyI8:      {"i8", IDI8},
+	KeyI16:     {"i16", IDI16},
+	KeyI32:     {"i32", IDI32},
+	KeyI64:     {"i64", IDI64},
+	KeyU8:      {"u8", IDU8},
+	KeyU16:     {"u16", IDU16},
+	KeyU32:     {"u32", IDU32},
+	KeyU64:     {"u64", IDU64},
+	KeyUsize:   {"usize", IDUsize},
+	KeyBool:    {"bool", IDBool},
+	KeyBuf1:    {"buf1", IDBuf1},
+	KeyBuf2:    {"buf2", IDBuf2},
+	KeyReader1: {"reader1", IDReader1},
+	KeyWriter1: {"writer1", IDWriter1},
 
 	KeyUnderscore: {"_", IDUnderscore},
 	KeyThis:       {"this", IDThis},

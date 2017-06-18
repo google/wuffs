@@ -17,7 +17,7 @@ pub func lzw_decoder.set_literal_width(lw u32[2..8] = 8)() {
 	this.literal_width = in.lw
 }
 
-pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1)() {
+pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 	// These variables don't change over the lifetime of this func.
 	var clear_code u32[4..256] = (1 as u32) << this.literal_width
 	var end_code u32[5..257] = clear_code + 1

@@ -16,7 +16,7 @@ pub struct decoder?(
 	lzw lzw_decoder,
 )
 
-pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
+pub func decoder.decode?(dst writer1, src reader1)() {
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
 }
@@ -24,7 +24,7 @@ pub func decoder.decode?(dst ptr buf1, src ptr buf1)() {
 // decode_header reads either "GIF87a" or "GIF89a".
 //
 // See the spec section 17 "Header" on page 7.
-pri func decoder.decode_header?(src ptr buf1)() {
+pri func decoder.decode_header?(src reader1)() {
 	var c[6] u8
 	var i u32
 	while i < 6 {
@@ -40,7 +40,7 @@ pri func decoder.decode_header?(src ptr buf1)() {
 // decode_lsd reads the Logical Screen Descriptor.
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
-pri func decoder.decode_lsd?(src ptr buf1)() {
+pri func decoder.decode_lsd?(src reader1)() {
 	var c[7] u8
 	var i u32
 	while i < 7 {

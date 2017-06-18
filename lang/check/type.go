@@ -467,9 +467,9 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			s = q.f.Func.In()
 		case t.KeyOut:
 			s = q.f.Func.Out()
-		case t.KeyBuf1:
+		case t.KeyReader1, t.KeyWriter1:
 			// TODO: remove this hack and be more principled about the built-in
-			// buf1 type.
+			// buf1, reader1, writer1 types.
 			//
 			// Another hack is using typeExprPlaceholder until a TypeExpr can
 			// represent function types.
@@ -730,7 +730,7 @@ swtch:
 		if n.Min() != nil || n.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyBuf1 {
+		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyReader1 || name == t.KeyWriter1 {
 			break
 		}
 		for _, s := range q.c.structs {

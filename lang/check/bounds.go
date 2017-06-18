@@ -852,6 +852,10 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	case t.KeyPtr, t.KeyOpenBracket:
 		return nil, nil, nil
 	}
+	switch n.Name().Key() {
+	case t.KeyReader1, t.KeyWriter1:
+		return nil, nil, nil
+	}
 
 	b := [2]*big.Int{}
 	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {

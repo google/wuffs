@@ -954,6 +954,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	}
 
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
+	//
+	// TODO: check reader1.buf and writer1.buf is non-NULL.
 	if isInSrcReadU8(g.tm, n) {
 		if g.perFunc.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
@@ -962,8 +964,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.perFunc.tempW++
 
 		// TODO: suspend coroutine state.
-		g.printf("if (%ssrc->ri >= %ssrc->wi) { status = "+
-			"%ssrc->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+		g.printf("if (%ssrc.buf->ri >= %ssrc.buf->wi) { status = "+
+			"%ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
 			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
@@ -976,20 +978,21 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		if err := g.writeCTypeName(n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 			return err
 		}
-		g.printf(" = %ssrc->ptr[%ssrc->ri++];\n", aPrefix, aPrefix)
+		g.printf(" = %ssrc.buf->ptr[%ssrc.buf->ri++];\n", aPrefix, aPrefix)
 
 	} else if isInDst(g.tm, n, t.KeyWrite) {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: don't assume that the argument is "this.stack[s:]".
-		g.printf("if (%sdst->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
+		g.printf("if (%sdst.buf->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
 		} else {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("if ((%sdst->len - %sdst->wi) < (sizeof(self->private_impl.f_stack) - v_s)) {", aPrefix, aPrefix)
+		g.printf("if ((%sdst.buf->len - %sdst.buf->wi) < (sizeof(self->private_impl.f_stack) - v_s)) {",
+			aPrefix, aPrefix)
 		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
@@ -998,14 +1001,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("}\n")
 		g.printf("memmove(" +
-			"a_dst->ptr + a_dst->wi," +
+			"a_dst.buf->ptr + a_dst.buf->wi," +
 			"self->private_impl.f_stack + v_s," +
 			"sizeof(self->private_impl.f_stack) - v_s);\n")
-		g.printf("a_dst->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
+		g.printf("a_dst.buf->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8) {
 		// TODO: suspend coroutine state.
-		g.printf("if (%sdst->wi >= %sdst->len) { status = puffs_%s_status_short_write;",
+		g.printf("if (%sdst.buf->wi >= %sdst.buf->len) { status = puffs_%s_status_short_write;",
 			aPrefix, aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
@@ -1013,7 +1016,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("%sdst->ptr[%sdst->wi++] = ", aPrefix, aPrefix)
+		g.printf("%sdst.buf->ptr[%sdst.buf->wi++] = ", aPrefix, aPrefix)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
@@ -1339,18 +1342,20 @@ var numTypeBounds = [256][2]*big.Int{
 }
 
 var cTypeNames = [...]string{
-	t.KeyI8:    "int8_t",
-	t.KeyI16:   "int16_t",
-	t.KeyI32:   "int32_t",
-	t.KeyI64:   "int64_t",
-	t.KeyU8:    "uint8_t",
-	t.KeyU16:   "uint16_t",
-	t.KeyU32:   "uint32_t",
-	t.KeyU64:   "uint64_t",
-	t.KeyUsize: "size_t",
-	t.KeyBool:  "bool",
-	t.KeyBuf1:  "puffs_base_buf1",
-	t.KeyBuf2:  "puffs_base_buf2",
+	t.KeyI8:      "int8_t",
+	t.KeyI16:     "int16_t",
+	t.KeyI32:     "int32_t",
+	t.KeyI64:     "int64_t",
+	t.KeyU8:      "uint8_t",
+	t.KeyU16:     "uint16_t",
+	t.KeyU32:     "uint32_t",
+	t.KeyU64:     "uint64_t",
+	t.KeyUsize:   "size_t",
+	t.KeyBool:    "bool",
+	t.KeyBuf1:    "puffs_base_buf1",
+	t.KeyBuf2:    "puffs_base_buf2",
+	t.KeyReader1: "puffs_base_reader1",
+	t.KeyWriter1: "puffs_base_writer1",
 }
 
 var cOpNames = [256]string{

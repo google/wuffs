@@ -49,6 +49,16 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
+typedef struct {
+  puffs_base_buf1* buf;
+  // TODO: limits.
+} puffs_base_reader1;
+
+typedef struct {
+  puffs_base_buf1* buf;
+  // TODO: limits.
+} puffs_base_writer1;
+
 #endif  // PUFFS_BASE_HEADER_H
 
 #ifdef __cplusplus
@@ -145,15 +155,15 @@ void puffs_gif_decoder_destructor(puffs_gif_decoder* self);
 // ---------------- Public Function Prototypes
 
 puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
-                                          puffs_base_buf1* a_dst,
-                                          puffs_base_buf1* a_src);
+                                          puffs_base_writer1 a_dst,
+                                          puffs_base_reader1 a_src);
 
 void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
                                              uint32_t a_lw);
 
 puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
-                                              puffs_base_buf1* a_dst,
-                                              puffs_base_buf1* a_src);
+                                              puffs_base_writer1 a_dst,
+                                              puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

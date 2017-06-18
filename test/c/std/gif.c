@@ -26,16 +26,6 @@ uint8_t global_palette_buffer[3 * 256];
 
 // ---------------- Basic Tests
 
-void test_basic_bad_argument_null() {
-  test_funcname = __func__;
-  puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, NULL, NULL);
-  if (status != puffs_gif_error_bad_argument) {
-    FAIL("status: got %d, want %d", status, puffs_gif_error_bad_argument);
-  }
-}
-
 void test_basic_bad_argument_out_of_range() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec;
@@ -65,9 +55,9 @@ void test_basic_bad_argument_out_of_range() {
 
 void test_basic_bad_receiver() {
   test_funcname = __func__;
-  puffs_base_buf1 dst = {0};
-  puffs_base_buf1 src = {0};
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL, &dst, &src);
+  puffs_base_writer1 dst = {0};
+  puffs_base_reader1 src = {0};
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL, dst, src);
   if (status != puffs_gif_error_bad_receiver) {
     FAIL("status: got %d, want %d", status, puffs_gif_error_bad_receiver);
   }
@@ -76,9 +66,9 @@ void test_basic_bad_receiver() {
 void test_basic_constructor_not_called() {
   test_funcname = __func__;
   puffs_gif_lzw_decoder dec = {{0}};
-  puffs_base_buf1 dst = {0};
-  puffs_base_buf1 src = {0};
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, &dst, &src);
+  puffs_base_writer1 dst = {0};
+  puffs_base_reader1 src = {0};
+  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, dst, src);
   if (status != puffs_gif_error_constructor_not_called) {
     FAIL("status: got %d, want %d", status,
          puffs_gif_error_constructor_not_called);
@@ -224,7 +214,10 @@ void test_lzw_decode() {
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   puffs_gif_lzw_decoder_set_literal_width(&dec, literal_width);
-  puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, &got, &src);
+  puffs_base_writer1 got_writer = {.buf = &got};
+  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_gif_status status =
+      puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
   if (status != puffs_gif_status_ok) {
     FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
     goto cleanup1;
@@ -259,7 +252,9 @@ void test_gif_decode_input_is_a_xxx(const char* filename,
 
   puffs_gif_decoder dec;
   puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status got = puffs_gif_decoder_decode(&dec, &dst, &src);
+  puffs_base_writer1 dst_writer = {.buf = &dst};
+  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_gif_status got = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
   if (got != want) {
     FAIL("status: got %d, want %d", got, want);
     goto cleanup1;
@@ -313,7 +308,6 @@ void test_gif_decode_input_is_a_png() {
 // The empty comments forces clang-format to place one element per line.
 test tests[] = {
     // Basic Tests
-    test_basic_bad_argument_null,          //
     test_basic_bad_argument_out_of_range,  //
     test_basic_bad_receiver,               //
     test_basic_constructor_not_called,     //
