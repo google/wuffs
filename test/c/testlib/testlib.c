@@ -63,26 +63,39 @@ bool read_file(puffs_base_buf1* dst, const char* path) {
     FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno), errno);
     return false;
   }
+
+  uint8_t dummy[1];
   uint8_t* ptr = dst->ptr + dst->wi;
   size_t len = dst->len - dst->wi;
   while (true) {
+    if (!len) {
+      // We have read all that dst can hold. Check that we have read the full
+      // file by trying to read one more byte, which should fail with EOF.
+      ptr = dummy;
+      len = 1;
+    }
     size_t n = fread(ptr, 1, len, f);
-    ptr += n;
-    len -= n;
-    dst->wi += n;
+    if (ptr != dummy) {
+      ptr += n;
+      len -= n;
+      dst->wi += n;
+    } else if (n) {
+      FAIL("read_file(\"%s\"): EOF not reached", path);
+      fclose(f);
+      return false;
+    }
     if (feof(f)) {
       break;
     }
     int err = ferror(f);
+    if (!err) {
+      continue;
+    }
     if (err == EINTR) {
       clearerr(f);
       continue;
     }
-    if (err) {
-      FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(err), err);
-    } else {
-      FAIL("read_file(\"%s\"): EOF not reached", path);
-    }
+    FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(err), err);
     fclose(f);
     return false;
   }
@@ -139,9 +152,11 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
   return msg;
 }
 
-bool buf1s_equal(puffs_base_buf1* got, puffs_base_buf1* want) {
+bool buf1s_equal(const char* prefix,
+                 puffs_base_buf1* got,
+                 puffs_base_buf1* want) {
   if (!got || !want) {
-    FAIL("bufs1_equal: NULL argument");
+    FAIL("%sbufs1_equal: NULL argument", prefix);
     return false;
   }
   char* msg = fail_msg;
@@ -152,9 +167,10 @@ bool buf1s_equal(puffs_base_buf1* got, puffs_base_buf1* want) {
     }
   }
   if (got->wi != want->wi) {
-    INCR_FAIL(msg, "bufs1_equal: wi: got %zu, want %zu.\n", got->wi, want->wi);
+    INCR_FAIL(msg, "%sbufs1_equal: wi: got %zu, want %zu.\n", prefix, got->wi,
+              want->wi);
   } else if (i < got->wi) {
-    INCR_FAIL(msg, "bufs1_equal:\n");
+    INCR_FAIL(msg, "%sbufs1_equal:\n", prefix);
   } else {
     return true;
   }

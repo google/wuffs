@@ -22,6 +22,7 @@ const char* test_filename = "std/gif.c";
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
+uint8_t global_palette_buffer[3 * 256];
 
 // ---------------- Basic Tests
 
@@ -229,7 +230,7 @@ void test_lzw_decode() {
     goto cleanup1;
   }
 
-  if (!buf1s_equal(&got, &want)) {
+  if (!buf1s_equal("", &got, &want)) {
     goto cleanup1;
   }
   // As a sanity check, the first decoded byte should be 0xDC.
@@ -247,6 +248,7 @@ cleanup0:;
 // ---------------- GIF Tests
 
 void test_gif_decode_input_is_a_xxx(const char* filename,
+                                    const char* palette_filename,
                                     puffs_gif_status want) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -277,6 +279,17 @@ void test_gif_decode_input_is_a_xxx(const char* filename,
     goto cleanup1;
   }
 
+  // TODO: provide a public API for getting the palette.
+  puffs_base_buf1 pal_got = {.ptr = dec.private_impl.f_gct, .len = 3 * 256};
+  puffs_base_buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
+  pal_got.wi = 3 * 256;
+  if (!read_file(&pal_want, palette_filename)) {
+    goto cleanup1;
+  }
+  if (!buf1s_equal("palette ", &pal_got, &pal_want)) {
+    goto cleanup1;
+  }
+
 cleanup1:
   puffs_gif_decoder_destructor(&dec);
 cleanup0:;
@@ -285,12 +298,13 @@ cleanup0:;
 void test_gif_decode_input_is_a_gif() {
   test_funcname = __func__;
   test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
+                                 "../../testdata/bricks-dither.palette",
                                  puffs_gif_status_ok);
 }
 
 void test_gif_decode_input_is_a_png() {
   test_funcname = __func__;
-  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png",
+  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png", "",
                                  puffs_gif_error_bad_gif_header);
 }
 

@@ -112,6 +112,8 @@ typedef struct {
     uint32_t magic;
     uint32_t f_width;
     uint32_t f_height;
+    uint8_t f_background_color_index;
+    uint8_t f_gct[768];
     puffs_gif_lzw_decoder f_lzw;
   } private_impl;
 } puffs_gif_decoder;

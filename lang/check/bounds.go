@@ -738,14 +738,18 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 		return nMin, nMax, nil
 
 	case t.KeyXBinaryStar:
-		// TODO.
-		if cv := lhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
-			return zero, zero, nil
+		// TODO: handle multiplication by negative numbers. Note that this
+		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
+		if lMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.String(q.tm))
 		}
-		if cv := rhs.ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
-			return zero, zero, nil
+		if rMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.String(q.tm))
 		}
+		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
+
 	case t.KeyXBinarySlash:
+		// TODO.
 
 	case t.KeyXBinaryShiftL:
 		if lMin.Cmp(zero) < 0 {
@@ -801,13 +805,17 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 		return zero, bitMask(z.BitLen()), nil
 
 	case t.KeyXBinaryAmpHat:
+		// TODO.
+
 	case t.KeyXBinaryHat:
+		// TODO.
 
 	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq, t.KeyXBinaryEqEq,
 		t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan, t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		return zero, one, nil
 
 	case t.KeyXBinaryAs:
+		// Unreachable, as this is checked by the caller.
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }

@@ -112,6 +112,8 @@ typedef struct {
     uint32_t magic;
     uint32_t f_width;
     uint32_t f_height;
+    uint8_t f_background_color_index;
+    uint8_t f_gct[768];
     puffs_gif_lzw_decoder f_lzw;
   } private_impl;
 } puffs_gif_decoder;
@@ -317,7 +319,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   puffs_gif_status status = self->private_impl.status;
 
   uint8_t v_c[6];
-  uint8_t v_i;
+  uint32_t v_i;
 
   for (size_t i = 0; i < 6; i++) {
     v_c[i] = 0;
@@ -346,7 +348,8 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
   puffs_gif_status status = self->private_impl.status;
 
   uint8_t v_c[7];
-  uint8_t v_i;
+  uint32_t v_i;
+  uint32_t v_gct_size;
 
   for (size_t i = 0; i < 7; i++) {
     v_c[i] = 0;
@@ -366,6 +369,35 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
       (((uint32_t)(v_c[0])) | (((uint32_t)(v_c[1])) << 8));
   self->private_impl.f_height =
       (((uint32_t)(v_c[2])) | (((uint32_t)(v_c[3])) << 8));
+  self->private_impl.f_background_color_index = v_c[5];
+  if ((v_c[4] & 128) != 0) {
+    v_gct_size = (((uint32_t)(1)) << (1 + (v_c[4] & 7)));
+    v_i = 0;
+    while (v_i < v_gct_size) {
+      if (a_src->ri >= a_src->wi) {
+        status = a_src->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
+        return status;
+      }
+      uint8_t t_1 = a_src->ptr[a_src->ri++];
+      self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
+      if (a_src->ri >= a_src->wi) {
+        status = a_src->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
+        return status;
+      }
+      uint8_t t_2 = a_src->ptr[a_src->ri++];
+      self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
+      if (a_src->ri >= a_src->wi) {
+        status = a_src->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
+        return status;
+      }
+      uint8_t t_3 = a_src->ptr[a_src->ri++];
+      self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
+      v_i += 1;
+    }
+  }
 
   return status;
 }
