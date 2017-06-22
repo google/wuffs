@@ -144,7 +144,16 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
-			// TODO: check that value.Type is assignable to n.TypeExpr().
+			lTyp := n.XType()
+			rTyp := value.MType()
+			if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+				// No-op.
+			} else {
+				return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
+					value.String(q.tm), rTyp.String(q.tm), n.Name().String(q.tm), lTyp.String(q.tm))
+			}
+		} else {
+			// TODO: check that the default zero value is assignable to n.XType().
 		}
 
 	case a.KWhile:

@@ -478,7 +478,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
       return status;
     }
     uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
-    v_block_size = ((uint32_t)(t_1));
+    v_block_size = t_1;
     if (v_block_size == 0) {
       goto label_0_break;
     }
@@ -546,7 +546,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
       return status;
     }
     uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
-    v_block_size = ((uint32_t)(t_2));
+    v_block_size = t_2;
     if (v_block_size == 0) {
       goto label_0_break;
     }

@@ -105,7 +105,7 @@ pri func decoder.decode_extension?(src reader1)() {
 
 	// Skip the data blocks.
 	while true {
-		var block_size u8 = in.src.read_u8?() as u32
+		var block_size u8 = in.src.read_u8?()
 		if block_size == 0 {
 			break
 		}
@@ -145,7 +145,7 @@ pri func decoder.decode_id?(src reader1)() {
 
 	// TODO: pass the data blocks' payload to this.lzw.
 	while true {
-		var block_size u8 = in.src.read_u8?() as u32
+		var block_size u8 = in.src.read_u8?()
 		if block_size == 0 {
 			break
 		}
