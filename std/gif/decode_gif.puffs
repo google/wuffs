@@ -137,11 +137,11 @@ pri func decoder.decode_id?(src reader1)() {
 		return error "TODO: unsupported Local Color Table"
 	}
 
-	var literal_width u8 = in.src.read_u8?()
-	// TODO: call this.lzw.set_literal_width.
-	if (literal_width < 2) or (8 < literal_width) {
+	var lw u8 = in.src.read_u8?()
+	if (lw < 2) or (8 < lw) {
 		return error "bad LZW literal width"
 	}
+	this.lzw.set_literal_width(lw:lw as u32)
 
 	// TODO: pass the data blocks' payload to this.lzw.
 	while true {

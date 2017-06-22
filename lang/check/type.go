@@ -359,6 +359,22 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(foo.MType().Unrefined())
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
+		if isSetLiteralWidth(q.tm, n) {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(typeExprPlaceholder) // HACK.
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 		// n is an index.
@@ -446,6 +462,15 @@ func isLowBits(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
+}
+
+func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(lw:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {

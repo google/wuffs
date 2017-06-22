@@ -504,7 +504,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   uint8_t v_c[9];
   uint32_t v_i;
   bool v_interlace;
-  uint8_t v_literal_width;
+  uint8_t v_lw;
   uint8_t v_block_size;
 
   for (size_t i = 0; i < 9; i++) {
@@ -533,10 +533,12 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     return status;
   }
   uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
-  v_literal_width = t_1;
-  if ((v_literal_width < 2) || (8 < v_literal_width)) {
+  v_lw = t_1;
+  if ((v_lw < 2) || (8 < v_lw)) {
     return puffs_gif_error_bad_lzw_literal_width;
   }
+  puffs_gif_lzw_decoder_set_literal_width(&self->private_impl.f_lzw,
+                                          ((uint32_t)(v_lw)));
   while (true) {
     if (a_src.buf->ri >= a_src.buf->wi) {
       status = a_src.buf->closed ? puffs_gif_error_unexpected_eof

@@ -774,6 +774,16 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		if n.CallSuspendible() {
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
+		if isSetLiteralWidth(g.tm, n) {
+			g.printf("puffs_%s_lzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgName)
+			a := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			g.writes(");\n")
+			return nil
+		}
 		return fmt.Errorf("TODO: generate code for foo() when foo is not a ? call-suspendible")
 
 	case a.KIf:
@@ -1259,6 +1269,15 @@ func isLowBits(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
+}
+
+func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(lw:bar)".
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
 }
 
 func (g *gen) writeExprUnaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {

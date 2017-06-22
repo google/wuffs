@@ -651,6 +651,18 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
+		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
+		if isSetLiteralWidth(q.tm, n) {
+			a := n.Args()[0].Arg().Value()
+			aMin, aMax, err := q.bcheckExpr(a, depth)
+			if err != nil {
+				return nil, nil, err
+			}
+			if aMin.Cmp(big.NewInt(2)) < 0 || aMax.Cmp(big.NewInt(8)) > 0 {
+				return nil, nil, fmt.Errorf("check: %q not in range [2..8]", a.String(q.tm))
+			}
+			return nil, nil, nil
+		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
 	case t.KeyOpenBracket:
