@@ -202,6 +202,7 @@ const MaxExprDepth = 255
 type Expr Node
 
 func (n *Expr) Node() *Node           { return (*Node)(n) }
+func (n *Expr) Pure() bool            { return n.flags&FlagsImpure == 0 }
 func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
 func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
 func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
@@ -542,6 +543,7 @@ const MaxBodyDepth = 255
 type Func Node
 
 func (n *Func) Node() *Node       { return (*Node)(n) }
+func (n *Func) Pure() bool        { return n.flags&FlagsImpure == 0 }
 func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
 func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Func) Public() bool      { return n.flags&FlagsPublic != 0 }
