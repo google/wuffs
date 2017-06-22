@@ -124,8 +124,8 @@ func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0
 //  - [0x40, 0x5F] are operators, such as "+", "==" and "not".
 //  - [0x60, 0x7F] are keywords, such as "if" and "return".
 //  - [0x80, 0x8F] are literals, such as "false" and "true".
-//  - [0x90, 0xBF] are identifiers, such as "bool" and "u32".
-//  - [0xC0, 0xFF] are disambiguation forms, e.g. unary "+" vs binary "+".
+//  - [0x90, 0xCF] are identifiers, such as "bool" and "u32".
+//  - [0xD0, 0xFF] are disambiguation forms, e.g. unary "+" vs binary "+".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Their Keys range in [0x01, 0x7F].
@@ -410,32 +410,32 @@ const (
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
 // ast.Node ID-typed fields to disambiguate e.g. unary vs binary plus.
 const (
-	minXKey = 0xC0
+	minXKey = 0xD0
 	maxXKey = 0xFF
 
-	IDXUnaryPlus  = ID(0xC0<<KeyShift | FlagsUnaryOp)
-	IDXUnaryMinus = ID(0xC1<<KeyShift | FlagsUnaryOp)
-	IDXUnaryNot   = ID(0xC2<<KeyShift | FlagsUnaryOp)
+	IDXUnaryPlus  = ID(0xD0<<KeyShift | FlagsUnaryOp)
+	IDXUnaryMinus = ID(0xD1<<KeyShift | FlagsUnaryOp)
+	IDXUnaryNot   = ID(0xD2<<KeyShift | FlagsUnaryOp)
 
-	IDXBinaryPlus        = ID(0xD0<<KeyShift | FlagsBinaryOp)
-	IDXBinaryMinus       = ID(0xD1<<KeyShift | FlagsBinaryOp)
-	IDXBinaryStar        = ID(0xD2<<KeyShift | FlagsBinaryOp)
-	IDXBinarySlash       = ID(0xD3<<KeyShift | FlagsBinaryOp)
-	IDXBinaryShiftL      = ID(0xD4<<KeyShift | FlagsBinaryOp)
-	IDXBinaryShiftR      = ID(0xD5<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAmp         = ID(0xD6<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAmpHat      = ID(0xD7<<KeyShift | FlagsBinaryOp)
-	IDXBinaryPipe        = ID(0xD8<<KeyShift | FlagsBinaryOp)
-	IDXBinaryHat         = ID(0xD9<<KeyShift | FlagsBinaryOp)
-	IDXBinaryNotEq       = ID(0xDA<<KeyShift | FlagsBinaryOp)
-	IDXBinaryLessThan    = ID(0xDB<<KeyShift | FlagsBinaryOp)
-	IDXBinaryLessEq      = ID(0xDC<<KeyShift | FlagsBinaryOp)
-	IDXBinaryEqEq        = ID(0xDD<<KeyShift | FlagsBinaryOp)
-	IDXBinaryGreaterEq   = ID(0xDE<<KeyShift | FlagsBinaryOp)
-	IDXBinaryGreaterThan = ID(0xDF<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAnd         = ID(0xE0<<KeyShift | FlagsBinaryOp)
-	IDXBinaryOr          = ID(0xE1<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAs          = ID(0xE2<<KeyShift | FlagsBinaryOp)
+	IDXBinaryPlus        = ID(0xD8<<KeyShift | FlagsBinaryOp)
+	IDXBinaryMinus       = ID(0xD9<<KeyShift | FlagsBinaryOp)
+	IDXBinaryStar        = ID(0xDA<<KeyShift | FlagsBinaryOp)
+	IDXBinarySlash       = ID(0xDB<<KeyShift | FlagsBinaryOp)
+	IDXBinaryShiftL      = ID(0xDC<<KeyShift | FlagsBinaryOp)
+	IDXBinaryShiftR      = ID(0xDD<<KeyShift | FlagsBinaryOp)
+	IDXBinaryAmp         = ID(0xDE<<KeyShift | FlagsBinaryOp)
+	IDXBinaryAmpHat      = ID(0xDF<<KeyShift | FlagsBinaryOp)
+	IDXBinaryPipe        = ID(0xE0<<KeyShift | FlagsBinaryOp)
+	IDXBinaryHat         = ID(0xE1<<KeyShift | FlagsBinaryOp)
+	IDXBinaryNotEq       = ID(0xE2<<KeyShift | FlagsBinaryOp)
+	IDXBinaryLessThan    = ID(0xE3<<KeyShift | FlagsBinaryOp)
+	IDXBinaryLessEq      = ID(0xE4<<KeyShift | FlagsBinaryOp)
+	IDXBinaryEqEq        = ID(0xE5<<KeyShift | FlagsBinaryOp)
+	IDXBinaryGreaterEq   = ID(0xE6<<KeyShift | FlagsBinaryOp)
+	IDXBinaryGreaterThan = ID(0xE7<<KeyShift | FlagsBinaryOp)
+	IDXBinaryAnd         = ID(0xE8<<KeyShift | FlagsBinaryOp)
+	IDXBinaryOr          = ID(0xE9<<KeyShift | FlagsBinaryOp)
+	IDXBinaryAs          = ID(0xEA<<KeyShift | FlagsBinaryOp)
 
 	IDXAssociativePlus = ID(0xF0<<KeyShift | FlagsAssociativeOp)
 	IDXAssociativeStar = ID(0xF1<<KeyShift | FlagsAssociativeOp)
