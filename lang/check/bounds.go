@@ -339,7 +339,10 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	if err != nil {
 		return err
 	}
-	if rMin.Cmp(lMin) < 0 || rMax.Cmp(lMax) > 0 {
+
+	if (rMin != nil && lMin != nil && rMin.Cmp(lMin) < 0) ||
+		(rMax != nil && lMax != nil && rMax.Cmp(lMax) > 0) {
+
 		if op == t.IDEq {
 			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
 				rhs.String(q.tm), rMin, rMax, lMin, lMax)
@@ -663,6 +666,17 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return nil, nil, nil
 		}
+		// TODO: delete this hack that only matches "foo.decode(etc)".
+		if isDecode(q.tm, n) {
+			for _, aNode := range n.Args() {
+				a := aNode.Arg().Value()
+				_, _, err := q.bcheckExpr(a, depth)
+				if err != nil {
+					return nil, nil, err
+				}
+			}
+			return nil, nil, nil
+		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
 	case t.KeyOpenBracket:
@@ -707,6 +721,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
 			return nil, nil, err
 		}
+
+	case t.KeyLimit:
+		return nil, nil, nil
 
 	default:
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())

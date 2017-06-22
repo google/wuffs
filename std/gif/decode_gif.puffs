@@ -149,6 +149,7 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 		if block_size == 0 {
 			break
 		}
-		in.src.skip32?(n:block_size as u32)
+		var lzw_src reader1 = limit (block_size as u64) in.src
+		this.lzw.decode?(dst:in.dst, src:lzw_src)
 	}
 }

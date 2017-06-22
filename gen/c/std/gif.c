@@ -49,14 +49,19 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
+typedef struct puffs_base_limit {
+  uint64_t* len;
+  struct puffs_base_limit* next;
+} puffs_base_limit;
+
 typedef struct {
   puffs_base_buf1* buf;
-  // TODO: limits.
+  puffs_base_limit limit;
 } puffs_base_reader1;
 
 typedef struct {
   puffs_base_buf1* buf;
-  // TODO: limits.
+  puffs_base_limit limit;
 } puffs_base_writer1;
 
 #endif  // PUFFS_BASE_HEADER_H
@@ -508,6 +513,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   bool v_interlace;
   uint8_t v_lw;
   uint8_t v_block_size;
+  uint64_t l_lzw_src;
+  puffs_base_reader1 v_lzw_src;
 
   for (size_t i = 0; i < 9; i++) {
     v_c[i] = 0;
@@ -552,15 +559,17 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     if (v_block_size == 0) {
       goto label_0_break;
     }
-    size_t t_3 = ((uint32_t)(v_block_size));
-    if (t_3 > a_src.buf->wi - a_src.buf->ri) {
-      t_3 -= a_src.buf->wi - a_src.buf->ri;
-      a_src.buf->ri = a_src.buf->wi;
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    l_lzw_src = ((uint64_t)(v_block_size));
+    v_lzw_src =
+        (puffs_base_reader1){.buf = a_src.buf,
+                             .limit = (puffs_base_limit){
+                                 .len = &l_lzw_src, .next = &a_src.limit,
+                             }};
+    status = puffs_gif_lzw_decoder_decode(&self->private_impl.f_lzw, a_dst,
+                                          v_lzw_src);
+    if (status) {
       return status;
     }
-    a_src.buf->ri += t_3;
   }
 label_0_break:;
 

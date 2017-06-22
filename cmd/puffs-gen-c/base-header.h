@@ -46,14 +46,19 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
+typedef struct puffs_base_limit {
+  uint64_t* len;
+  struct puffs_base_limit* next;
+} puffs_base_limit;
+
 typedef struct {
   puffs_base_buf1* buf;
-  // TODO: limits.
+  puffs_base_limit limit;
 } puffs_base_reader1;
 
 typedef struct {
   puffs_base_buf1* buf;
-  // TODO: limits.
+  puffs_base_limit limit;
 } puffs_base_writer1;
 
 #endif  // PUFFS_BASE_HEADER_H

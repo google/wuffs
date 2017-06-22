@@ -384,6 +384,22 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprPlaceholder) // HACK.
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.decode(etc)".
+		if isDecode(q.tm, n) {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(typeExprPlaceholder) // HACK.
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 		// n is an index.
@@ -397,12 +413,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		}
 		lTyp := lhs.MType()
 		if lTyp.Decorator().Key() != t.KeyOpenBracket {
-			return fmt.Errorf("%s is an array-index expression but %s has type %s, not an array type",
+			return fmt.Errorf("check: %s is an array-index expression but %s has type %s, not an array type",
 				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
 		rTyp := rhs.MType()
 		if !rTyp.IsNumTypeOrIdeal() {
-			return fmt.Errorf("%s is an array-index expression but %s has type %s, not a numeric type",
+			return fmt.Errorf("check: %s is an array-index expression but %s has type %s, not a numeric type",
 				n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
 		n.SetMType(lTyp.Inner())
@@ -414,6 +430,34 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyDot:
 		return q.tcheckDot(n, depth)
+
+	case t.KeyLimit:
+		lhs := n.LHS().Expr()
+		if err := q.tcheckExpr(lhs, depth); err != nil {
+			return err
+		}
+		if lhs.Impure() {
+			return fmt.Errorf(`check: limit count %q is not pure`, lhs.String(q.tm))
+		}
+		lTyp := lhs.MType()
+		if !lTyp.IsIdeal() && !lTyp.EqIgnoringRefinements(typeExprU64) {
+			return fmt.Errorf("check: limit count %q type %q not compatible with u64",
+				lhs.String(q.tm), lTyp.String(q.tm))
+		}
+		rhs := n.RHS().Expr()
+		if err := q.tcheckExpr(rhs, depth); err != nil {
+			return err
+		}
+		if rhs.Impure() {
+			return fmt.Errorf("check: limit arg %q is not pure", rhs.String(q.tm))
+		}
+		rTyp := rhs.MType()
+		if rTyp.Decorator() != 0 || (rTyp.Name().Key() != t.KeyReader1 && rTyp.Name().Key() != t.KeyWriter1) {
+			return fmt.Errorf(`check: limit arg %q type %q not "reader1" or "writer1"`,
+				rhs.String(q.tm), rTyp.String(q.tm))
+		}
+		n.SetMType(rTyp)
+		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprOther", n.ID0().Key())
 }
@@ -480,6 +524,15 @@ func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
+}
+
+func isDecode(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(dst:bar, src:baz)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 2 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {

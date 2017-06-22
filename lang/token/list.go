@@ -209,6 +209,7 @@ const (
 	KeyPri      = Key(IDPri >> KeyShift)
 	KeyError    = Key(IDError >> KeyShift)
 	KeyStatus   = Key(IDStatus >> KeyShift)
+	KeyLimit    = Key(IDLimit >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -366,6 +367,7 @@ const (
 	IDPri      = ID(0x72<<KeyShift | FlagsOther)
 	IDError    = ID(0x73<<KeyShift | FlagsOther)
 	IDStatus   = ID(0x74<<KeyShift | FlagsOther)
+	IDLimit    = ID(0x75<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -543,6 +545,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyPri:      {"pri", IDPri},
 	KeyError:    {"error", IDError},
 	KeyStatus:   {"status", IDStatus},
+	KeyLimit:    {"limit", IDLimit},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},

@@ -35,6 +35,7 @@ var (
 const (
 	aPrefix = "a_" // Function argument.
 	fPrefix = "f_" // Struct field.
+	lPrefix = "l_" // Limit length.
 	tPrefix = "t_" // Temporary local variable.
 	vPrefix = "v_" // Local variable.
 )
@@ -125,12 +126,13 @@ type status struct {
 }
 
 type perFunc struct {
-	funk        *a.Func
-	jumpTargets map[*a.While]uint32
-	tempW       uint32
-	tempR       uint32
-	public      bool
-	suspendible bool
+	funk         *a.Func
+	jumpTargets  map[*a.While]uint32
+	tempW        uint32
+	tempR        uint32
+	public       bool
+	suspendible  bool
+	limitVarName string
 }
 
 type gen struct {
@@ -721,6 +723,9 @@ func (g *gen) writeVars(block []*a.Node, depth uint32) error {
 
 		case a.KVar:
 			o := o.Var()
+			if v := o.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
+				g.printf("uint64_t %s%v;\n", lPrefix, o.Name().String(g.tm))
+			}
 			if err := g.writeCTypeName(o.XType(), vPrefix, o.Name().String(g.tm)); err != nil {
 				return err
 			}
@@ -872,6 +877,15 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		if v := n.Value(); v != nil {
 			if err := g.writeSuspendibles(v, depth); err != nil {
 				return err
+			}
+			if v.ID0().Key() == t.KeyLimit {
+				g.perFunc.limitVarName = n.Name().String(g.tm)
+				g.printf("%s%s =", lPrefix, g.perFunc.limitVarName)
+				if err := g.writeExpr(
+					v.LHS().Expr(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+					return err
+				}
+				g.writes(";\n")
 			}
 		}
 		if n.XType().Decorator().Key() == t.KeyOpenBracket {
@@ -1084,6 +1098,12 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
+	} else if isDecode(g.tm, n) {
+		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
+			g.pkgName, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
+		g.writes("if (status) { return status; }\n")
+		return nil
+
 	} else {
 		// TODO: fix this.
 		//
@@ -1212,6 +1232,17 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		g.writes(fPrefix)
 		g.writes(n.ID1().String(g.tm))
 		return nil
+
+	case t.KeyLimit:
+		// TODO: don't hard code so much detail.
+		g.writes("(puffs_base_reader1) {")
+		g.writes(".buf = a_src.buf,")
+		g.writes(".limit = (puffs_base_limit) {")
+		g.printf(".len = &%s%s,", lPrefix, g.perFunc.limitVarName)
+		g.writes(".next = &a_src.limit,")
+		g.writes("}}")
+		g.perFunc.limitVarName = ""
+		return nil
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }
@@ -1278,6 +1309,15 @@ func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
+}
+
+func isDecode(tm *t.Map, n *a.Expr) bool {
+	// TODO: check that n.Args() is "(dst:bar, src:baz)".
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 2 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
 }
 
 func (g *gen) writeExprUnaryOp(n *a.Expr, rp replacementPolicy, depth uint32) error {

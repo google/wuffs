@@ -199,6 +199,8 @@ const MaxExprDepth = 255
 // For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
 //
 // For selectors, like "LHS.ID1", ID0 is IDDot.
+//
+// For limits, like "limit (LHS) RHS", ID0 is IDLimit.
 type Expr Node
 
 func (n *Expr) Node() *Node           { return (*Node)(n) }

@@ -53,6 +53,7 @@ func trimQuotes(s string) string {
 var (
 	typeExprBool  = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
 	typeExprIdeal = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
+	typeExprU64   = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
 
 	// TODO: delete this.
 	typeExprPlaceholder = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
