@@ -3,7 +3,11 @@
 
 // The GIF spec is https://www.w3.org/Graphics/GIF/spec-gif89a.txt
 
+pub error "bad GIF block"
+pub error "bad GIF extension label"
 pub error "bad GIF header"
+
+pub error "TODO: unsupported Local Color Table"
 
 pub struct decoder?(
 	width u32[..65535],
@@ -19,6 +23,21 @@ pub struct decoder?(
 pub func decoder.decode?(dst writer1, src reader1)() {
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
+	while true {
+		var c u8 = in.src.read_u8?()
+		if c == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
+			this.decode_extension?(src:in.src)
+		} else if c == 0x2C {  // The spec calls 0x2C the "Image Separator".
+			// TODO: animated GIFs can have multiple Image Descriptors.
+			//
+			// TODO: reset this.lzw if it's not the first ID.
+			this.decode_id?(src:in.src)
+		} else if c == 0x3B {  // The spec calls 0x3B the "Trailer".
+			return
+		} else {
+			return error "bad GIF block"
+		}
+	}
 }
 
 // decode_header reads either "GIF87a" or "GIF89a".
@@ -61,6 +80,90 @@ pri func decoder.decode_lsd?(src reader1)() {
 			this.gct[(3 * i) + 1] = in.src.read_u8?()
 			this.gct[(3 * i) + 2] = in.src.read_u8?()
 			i += 1
+		}
+	}
+}
+
+// decode_extension reads an extension. The Extension Introducer byte has
+// already been read.
+//
+// See the spec:
+//  - section 23 "Graphic Control Extension" on page 15.
+//  - section 24 "Comment Extension" on page 17.
+//  - section 25 "Plain Text Extension" on page 18.
+//  - section 26 "Application Extension" on page 21.
+pri func decoder.decode_extension?(src reader1)() {
+	var label u8 = in.src.read_u8?()
+	if label == 0x01 {  // The spec calls 0x01 the "Plain Text Label".
+	} else if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
+	} else if label == 0xFE {  // The spec calls 0xFE the "Comment Label".
+	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
+	} else {
+		return error "bad GIF extension label"
+	}
+
+	// Skip the data blocks.
+	while true {
+		var block_size u32[..255] = in.src.read_u8?() as u32
+		if block_size == 0 {
+			break
+		}
+		var j u32
+		while j < block_size {
+			assert j < 255 via "a < b: a < c; c <= b"(c:block_size)
+			// TODO: we shouldn't need a temp variable.
+			//
+			// TODO: have an in.src.skip?(n:block_size) method?
+			var temp u8 = in.src.read_u8?()
+			temp *= 0  // Avoid "unused variable" C compiler warning.
+			j += 1
+		}
+	}
+}
+
+// decode_id reads an Image Descriptor. The Image Separator byte has already
+// been read.
+//
+// See the spec section 20 "Image Descriptor" on page 11.
+pri func decoder.decode_id?(src reader1)() {
+	var c[9] u8
+	var i u32
+	while i < 9 {
+		c[i] = in.src.read_u8?()
+		i += 1
+	}
+
+	// TODO: use image left/top/width/height.
+
+	// TODO: use interlace.
+	var interlace bool = (c[8] & 0x40) != 0
+	if interlace {  // Avoid "unused variable" C compiler warning.
+	}
+
+	// TODO: read the optional Local Color Table.
+	if (c[8] & 0x80) != 0 {
+		return error "TODO: unsupported Local Color Table"
+	}
+
+	var literal_width u8 = in.src.read_u8?()
+	// TODO: call this.lzw.set_literal_width.
+	literal_width *= 0  // Avoid "unused variable" C compiler warning.
+
+	// TODO: pass the data blocks' payload to this.lzw.
+	while true {
+		var block_size u32[..255] = in.src.read_u8?() as u32
+		if block_size == 0 {
+			break
+		}
+		var j u32
+		while j < block_size {
+			assert j < 255 via "a < b: a < c; c <= b"(c:block_size)
+			// TODO: we shouldn't need a temp variable.
+			//
+			// TODO: have an in.src.skip?(n:block_size) method?
+			var temp u8 = in.src.read_u8?()
+			temp *= 0  // Avoid "unused variable" C compiler warning.
+			j += 1
 		}
 	}
 }

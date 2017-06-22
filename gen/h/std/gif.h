@@ -80,9 +80,12 @@ typedef enum {
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
   puffs_gif_error_closed_for_writes = -16 + 1,
-  puffs_gif_error_bad_gif_header = -256 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -258 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -260 + 1,
+  puffs_gif_error_bad_gif_block = -256 + 1,
+  puffs_gif_error_bad_gif_extension_label = -258 + 1,
+  puffs_gif_error_bad_gif_header = -260 + 1,
+  puffs_gif_error_todo_unsupported_local_color_table = -262 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -264 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -266 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);

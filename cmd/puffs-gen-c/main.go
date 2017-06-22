@@ -1033,6 +1033,16 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
+	} else if isThisMethod(g.tm, n, "decode_extension") {
+		g.printf("status = puffs_%s_%s_decode_extension(self, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.writes("if (status) { goto cleanup0; }\n")
+
+	} else if isThisMethod(g.tm, n, "decode_id") {
+		g.printf("status = puffs_%s_%s_decode_id(self, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.writes("if (status) { goto cleanup0; }\n")
+
 	} else {
 		// TODO: fix this.
 		//

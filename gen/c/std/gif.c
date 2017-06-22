@@ -80,9 +80,12 @@ typedef enum {
   puffs_gif_status_short_read = -12,
   puffs_gif_status_short_write = -14,
   puffs_gif_error_closed_for_writes = -16 + 1,
-  puffs_gif_error_bad_gif_header = -256 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -258 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -260 + 1,
+  puffs_gif_error_bad_gif_block = -256 + 1,
+  puffs_gif_error_bad_gif_extension_label = -258 + 1,
+  puffs_gif_error_bad_gif_header = -260 + 1,
+  puffs_gif_error_todo_unsupported_local_color_table = -262 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -264 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -266 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -186,7 +189,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[12] = {
+const char* puffs_gif_status_strings[15] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -196,7 +199,10 @@ const char* puffs_gif_status_strings[12] = {
     "gif: short read",
     "gif: short write",
     "gif: closed for writes",
+    "gif: bad GIF block",
+    "gif: bad GIF extension label",
     "gif: bad GIF header",
+    "gif: TODO: unsupported Local Color Table",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -208,7 +214,7 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
       return puffs_gif_status_strings[s];
     }
     s -= 119;
-    if ((9 <= s) && (s < 12)) {
+    if ((9 <= s) && (s < 15)) {
       return puffs_gif_status_strings[s];
     }
   }
@@ -224,6 +230,12 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
 
 puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
                                               puffs_base_reader1 a_src);
+
+puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
+                                                    puffs_base_reader1 a_src);
+
+puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
+                                             puffs_base_reader1 a_src);
 
 // ---------------- Constructor and Destructor Implementations
 
@@ -306,6 +318,8 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     goto cleanup0;
   }
 
+  uint8_t v_c;
+
   status = puffs_gif_decoder_decode_header(self, a_src);
   if (status) {
     goto cleanup0;
@@ -313,6 +327,32 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
   status = puffs_gif_decoder_decode_lsd(self, a_src);
   if (status) {
     goto cleanup0;
+  }
+  while (true) {
+    if (a_src.buf->ri >= a_src.buf->wi) {
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      goto cleanup0;
+    }
+    uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    v_c = t_0;
+    if (v_c == 33) {
+      status = puffs_gif_decoder_decode_extension(self, a_src);
+      if (status) {
+        goto cleanup0;
+      }
+    } else if (v_c == 44) {
+      status = puffs_gif_decoder_decode_id(self, a_src);
+      if (status) {
+        goto cleanup0;
+      }
+    } else if (v_c == 59) {
+      status = puffs_gif_status_ok;
+      goto cleanup0;
+    } else {
+      status = puffs_gif_error_bad_gif_block;
+      goto cleanup0;
+    }
   }
 
 cleanup0:
@@ -404,6 +444,127 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
       v_i += 1;
     }
   }
+
+  return status;
+}
+
+puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
+                                                    puffs_base_reader1 a_src) {
+  puffs_gif_status status = self->private_impl.status;
+
+  uint8_t v_label;
+  uint32_t v_block_size;
+  uint32_t v_j;
+  uint8_t v_temp;
+
+  if (a_src.buf->ri >= a_src.buf->wi) {
+    status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+  v_label = t_0;
+  if (v_label == 1) {
+  } else if (v_label == 249) {
+  } else if (v_label == 254) {
+  } else if (v_label == 255) {
+  } else {
+    return puffs_gif_error_bad_gif_extension_label;
+  }
+  while (true) {
+    if (a_src.buf->ri >= a_src.buf->wi) {
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      return status;
+    }
+    uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
+    v_block_size = ((uint32_t)(t_1));
+    if (v_block_size == 0) {
+      goto label_0_break;
+    }
+    v_j = 0;
+    while (v_j < v_block_size) {
+      if (a_src.buf->ri >= a_src.buf->wi) {
+        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                   : puffs_gif_status_short_read;
+        return status;
+      }
+      uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
+      v_temp = t_2;
+      v_temp *= 0;
+      v_j += 1;
+    }
+  }
+label_0_break:;
+
+  return status;
+}
+
+puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
+                                             puffs_base_reader1 a_src) {
+  puffs_gif_status status = self->private_impl.status;
+
+  uint8_t v_c[9];
+  uint32_t v_i;
+  bool v_interlace;
+  uint8_t v_literal_width;
+  uint32_t v_block_size;
+  uint32_t v_j;
+  uint8_t v_temp;
+
+  for (size_t i = 0; i < 9; i++) {
+    v_c[i] = 0;
+  };
+  v_i = 0;
+  while (v_i < 9) {
+    if (a_src.buf->ri >= a_src.buf->wi) {
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      return status;
+    }
+    uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    v_c[v_i] = t_0;
+    v_i += 1;
+  }
+  v_interlace = ((v_c[8] & 64) != 0);
+  if (v_interlace) {
+  }
+  if ((v_c[8] & 128) != 0) {
+    return puffs_gif_error_todo_unsupported_local_color_table;
+  }
+  if (a_src.buf->ri >= a_src.buf->wi) {
+    status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                               : puffs_gif_status_short_read;
+    return status;
+  }
+  uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
+  v_literal_width = t_1;
+  v_literal_width *= 0;
+  while (true) {
+    if (a_src.buf->ri >= a_src.buf->wi) {
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      return status;
+    }
+    uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
+    v_block_size = ((uint32_t)(t_2));
+    if (v_block_size == 0) {
+      goto label_0_break;
+    }
+    v_j = 0;
+    while (v_j < v_block_size) {
+      if (a_src.buf->ri >= a_src.buf->wi) {
+        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                   : puffs_gif_status_short_read;
+        return status;
+      }
+      uint8_t t_3 = a_src.buf->ptr[a_src.buf->ri++];
+      v_temp = t_3;
+      v_temp *= 0;
+      v_j += 1;
+    }
+  }
+label_0_break:;
 
   return status;
 }

@@ -328,7 +328,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
-			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") {
+			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") ||
+			isThisMethod(q.tm, n, "decode_extension") || isThisMethod(q.tm, n, "decode_id") {
 
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
