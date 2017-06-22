@@ -237,6 +237,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
                                                     puffs_base_reader1 a_src);
 
 puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
+                                             puffs_base_writer1 a_dst,
                                              puffs_base_reader1 a_src);
 
 // ---------------- Constructor and Destructor Implementations
@@ -344,7 +345,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         goto cleanup0;
       }
     } else if (v_c == 44) {
-      status = puffs_gif_decoder_decode_id(self, a_src);
+      status = puffs_gif_decoder_decode_id(self, a_dst, a_src);
       if (status) {
         goto cleanup0;
       }
@@ -498,6 +499,7 @@ label_0_break:;
 }
 
 puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
+                                             puffs_base_writer1 a_dst,
                                              puffs_base_reader1 a_src) {
   puffs_gif_status status = self->private_impl.status;
 

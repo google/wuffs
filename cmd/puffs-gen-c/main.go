@@ -1021,7 +1021,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.writes("}\n")
 		g.printf("%ssrc.buf->ri += %s%d;\n", aPrefix, tPrefix, temp)
 
-	} else if isInDst(g.tm, n, t.KeyWrite) {
+	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: don't assume that the argument is "this.stack[s:]".
@@ -1047,7 +1047,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			"sizeof(self->private_impl.f_stack) - v_s);\n")
 		g.printf("a_dst.buf->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
 
-	} else if isInDst(g.tm, n, t.KeyWriteU8) {
+	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
 		// TODO: suspend coroutine state.
 		g.printf("if (%sdst.buf->wi >= %sdst.buf->len) { status = puffs_%s_status_short_write;",
 			aPrefix, aPrefix, g.pkgName)
@@ -1064,24 +1064,24 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes(";\n")
 
-	} else if isThisMethod(g.tm, n, "decode_header") {
+	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
-	} else if isThisMethod(g.tm, n, "decode_lsd") {
+	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
 		g.printf("status = puffs_%s_%s_decode_lsd(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
-	} else if isThisMethod(g.tm, n, "decode_extension") {
+	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
 		g.printf("status = puffs_%s_%s_decode_extension(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
-	} else if isThisMethod(g.tm, n, "decode_id") {
-		g.printf("status = puffs_%s_%s_decode_id(self, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+	} else if isThisMethod(g.tm, n, "decode_id", 2) {
+		g.printf("status = puffs_%s_%s_decode_id(self, %sdst, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		g.writes("if (status) { goto cleanup0; }\n")
 
 	} else {
@@ -1232,9 +1232,9 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
+func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	// TODO: check that n.Args() is "(x:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -1249,9 +1249,9 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isThisMethod(tm *t.Map, n *a.Expr, methodName string) bool {
+func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()

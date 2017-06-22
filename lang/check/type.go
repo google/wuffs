@@ -337,9 +337,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeySkip32, 1) ||
-			isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
-			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") ||
-			isThisMethod(q.tm, n, "decode_extension") || isThisMethod(q.tm, n, "decode_id") {
+			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
+			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
+			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) {
 
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
@@ -434,9 +434,9 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
+func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	// TODO: check that n.Args() is "(x:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -451,9 +451,9 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isThisMethod(tm *t.Map, n *a.Expr, methodName string) bool {
+func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 1 {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()

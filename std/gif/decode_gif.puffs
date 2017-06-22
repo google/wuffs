@@ -32,7 +32,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 			// TODO: animated GIFs can have multiple Image Descriptors.
 			//
 			// TODO: reset this.lzw if it's not the first ID.
-			this.decode_id?(src:in.src)
+			this.decode_id?(dst:in.dst, src:in.src)
 		} else if c == 0x3B {  // The spec calls 0x3B the "Trailer".
 			return
 		} else {
@@ -117,7 +117,7 @@ pri func decoder.decode_extension?(src reader1)() {
 // been read.
 //
 // See the spec section 20 "Image Descriptor" on page 11.
-pri func decoder.decode_id?(src reader1)() {
+pri func decoder.decode_id?(dst writer1, src reader1)() {
 	var c[9] u8
 	var i u32
 	while i < 9 {
