@@ -117,8 +117,22 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		id0 = t.IDXBinaryLessThan
 	case t.KeyXBinaryGreaterThan:
 		id0 = t.IDXBinaryLessEq
+	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
+		var err error
+		lhs, err = invert(tm, lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err = invert(tm, rhs)
+		if err != nil {
+			return nil, err
+		}
+		if id0.Key() == t.KeyXBinaryAnd {
+			id0 = t.IDXBinaryOr
+		} else {
+			id0 = t.IDXBinaryAnd
+		}
 	default:
-		// TODO: De Morgan's law for t.IDXBinaryAnd, t.IDXBinaryOr?
 		id0, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
 	o := a.NewExpr(n.Node().Raw().Flags(), id0, 0, lhs.Node(), nil, rhs.Node(), nil)

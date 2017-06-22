@@ -6,6 +6,7 @@
 pub error "bad GIF block"
 pub error "bad GIF extension label"
 pub error "bad GIF header"
+pub error "bad LZW literal width"
 
 pub error "TODO: unsupported Local Color Table"
 
@@ -138,7 +139,9 @@ pri func decoder.decode_id?(src reader1)() {
 
 	var literal_width u8 = in.src.read_u8?()
 	// TODO: call this.lzw.set_literal_width.
-	literal_width *= 0  // Avoid "unused variable" C compiler warning.
+	if (literal_width < 2) or (8 < literal_width) {
+		return error "bad LZW literal width"
+	}
 
 	// TODO: pass the data blocks' payload to this.lzw.
 	while true {

@@ -83,9 +83,10 @@ typedef enum {
   puffs_gif_error_bad_gif_block = -256 + 1,
   puffs_gif_error_bad_gif_extension_label = -258 + 1,
   puffs_gif_error_bad_gif_header = -260 + 1,
-  puffs_gif_error_todo_unsupported_local_color_table = -262 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -264 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -266 + 1,
+  puffs_gif_error_bad_lzw_literal_width = -262 + 1,
+  puffs_gif_error_todo_unsupported_local_color_table = -264 + 1,
+  puffs_gif_error_lzw_code_is_out_of_range = -266 + 1,
+  puffs_gif_error_lzw_prefix_chain_is_cyclical = -268 + 1,
 } puffs_gif_status;
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
@@ -189,7 +190,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
   return s & 1;
 }
 
-const char* puffs_gif_status_strings[15] = {
+const char* puffs_gif_status_strings[16] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -202,6 +203,7 @@ const char* puffs_gif_status_strings[15] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
+    "gif: bad LZW literal width",
     "gif: TODO: unsupported Local Color Table",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
@@ -214,7 +216,7 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
       return puffs_gif_status_strings[s];
     }
     s -= 119;
-    if ((9 <= s) && (s < 15)) {
+    if ((9 <= s) && (s < 16)) {
       return puffs_gif_status_strings[s];
     }
   }
@@ -532,7 +534,9 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   }
   uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
   v_literal_width = t_1;
-  v_literal_width *= 0;
+  if ((v_literal_width < 2) || (8 < v_literal_width)) {
+    return puffs_gif_error_bad_lzw_literal_width;
+  }
   while (true) {
     if (a_src.buf->ri >= a_src.buf->wi) {
       status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
