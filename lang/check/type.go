@@ -327,7 +327,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeySkip32, 1) ||
+			isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
 			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") ||
 			isThisMethod(q.tm, n, "decode_extension") || isThisMethod(q.tm, n, "decode_id") {
 
@@ -392,12 +393,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprOther", n.ID0().Key())
 }
 
-func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 0 {
+func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()

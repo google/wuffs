@@ -956,7 +956,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	//
 	// TODO: check reader1.buf and writer1.buf is non-NULL.
-	if isInSrcReadU8(g.tm, n) {
+	if isInSrc(g.tm, n, t.KeyReadU8, 0) {
 		if g.perFunc.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
 		}
@@ -964,9 +964,9 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.perFunc.tempW++
 
 		// TODO: suspend coroutine state.
-		g.printf("if (%ssrc.buf->ri >= %ssrc.buf->wi) { status = "+
-			"%ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
-			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
+		g.printf("if (%ssrc.buf->ri >= %ssrc.buf->wi) {", aPrefix, aPrefix)
+		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+			aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
 		} else {
@@ -979,6 +979,37 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			return err
 		}
 		g.printf(" = %ssrc.buf->ptr[%ssrc.buf->ri++];\n", aPrefix, aPrefix)
+
+	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
+		if g.perFunc.tempW > maxTemp {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		temp := g.perFunc.tempW
+		g.perFunc.tempW++
+		g.perFunc.tempR++
+
+		g.printf("size_t %s%d = ", tPrefix, temp)
+		x := n.Args()[0].Arg().Value()
+		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(";\n")
+
+		g.printf("if (%s%d > %ssrc.buf->wi - %ssrc.buf->ri) {\n", tPrefix, temp, aPrefix, aPrefix)
+		// TODO: save tPrefix+temp as coroutine state, and suspend.
+		g.printf("%s%d -= %ssrc.buf->wi - %ssrc.buf->ri;\n", tPrefix, temp, aPrefix, aPrefix)
+		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
+
+		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+			aPrefix, g.pkgName, g.pkgName)
+		if g.perFunc.public && g.perFunc.suspendible {
+			g.writes("goto cleanup0;")
+		} else {
+			g.writes("return status;")
+		}
+
+		g.writes("}\n")
+		g.printf("%ssrc.buf->ri += %s%d;\n", aPrefix, tPrefix, temp)
 
 	} else if isInDst(g.tm, n, t.KeyWrite) {
 		// TODO: suspend coroutine state.
@@ -1175,12 +1206,12 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }
 
-func isInSrcReadU8(tm *t.Map, n *a.Expr) bool {
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 0 {
+func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
+	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != t.KeyReadU8 {
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()

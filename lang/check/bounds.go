@@ -599,7 +599,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.KeyOpenParen:
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrcReadU8(q.tm, n) || isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeySkip32, 1) ||
+			isInDst(q.tm, n, t.KeyWrite) || isInDst(q.tm, n, t.KeyWriteU8) ||
 			isThisMethod(q.tm, n, "decode_header") || isThisMethod(q.tm, n, "decode_lsd") ||
 			isThisMethod(q.tm, n, "decode_extension") || isThisMethod(q.tm, n, "decode_id") {
 

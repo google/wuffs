@@ -453,9 +453,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
   puffs_gif_status status = self->private_impl.status;
 
   uint8_t v_label;
-  uint32_t v_block_size;
-  uint32_t v_j;
-  uint8_t v_temp;
+  uint8_t v_block_size;
 
   if (a_src.buf->ri >= a_src.buf->wi) {
     status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
@@ -482,18 +480,15 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     if (v_block_size == 0) {
       goto label_0_break;
     }
-    v_j = 0;
-    while (v_j < v_block_size) {
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
-        return status;
-      }
-      uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
-      v_temp = t_2;
-      v_temp *= 0;
-      v_j += 1;
+    size_t t_2 = ((uint32_t)(v_block_size));
+    if (t_2 > a_src.buf->wi - a_src.buf->ri) {
+      t_2 -= a_src.buf->wi - a_src.buf->ri;
+      a_src.buf->ri = a_src.buf->wi;
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      return status;
     }
+    a_src.buf->ri += t_2;
   }
 label_0_break:;
 
@@ -508,9 +503,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   uint32_t v_i;
   bool v_interlace;
   uint8_t v_literal_width;
-  uint32_t v_block_size;
-  uint32_t v_j;
-  uint8_t v_temp;
+  uint8_t v_block_size;
 
   for (size_t i = 0; i < 9; i++) {
     v_c[i] = 0;
@@ -551,18 +544,15 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     if (v_block_size == 0) {
       goto label_0_break;
     }
-    v_j = 0;
-    while (v_j < v_block_size) {
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
-        return status;
-      }
-      uint8_t t_3 = a_src.buf->ptr[a_src.buf->ri++];
-      v_temp = t_3;
-      v_temp *= 0;
-      v_j += 1;
+    size_t t_3 = ((uint32_t)(v_block_size));
+    if (t_3 > a_src.buf->wi - a_src.buf->ri) {
+      t_3 -= a_src.buf->wi - a_src.buf->ri;
+      a_src.buf->ri = a_src.buf->wi;
+      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
+                                 : puffs_gif_status_short_read;
+      return status;
     }
+    a_src.buf->ri += t_3;
   }
 label_0_break:;
 

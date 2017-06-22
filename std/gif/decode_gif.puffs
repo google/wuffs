@@ -104,20 +104,11 @@ pri func decoder.decode_extension?(src reader1)() {
 
 	// Skip the data blocks.
 	while true {
-		var block_size u32[..255] = in.src.read_u8?() as u32
+		var block_size u8 = in.src.read_u8?() as u32
 		if block_size == 0 {
 			break
 		}
-		var j u32
-		while j < block_size {
-			assert j < 255 via "a < b: a < c; c <= b"(c:block_size)
-			// TODO: we shouldn't need a temp variable.
-			//
-			// TODO: have an in.src.skip?(n:block_size) method?
-			var temp u8 = in.src.read_u8?()
-			temp *= 0  // Avoid "unused variable" C compiler warning.
-			j += 1
-		}
+		in.src.skip32?(n:block_size as u32)
 	}
 }
 
@@ -151,19 +142,10 @@ pri func decoder.decode_id?(src reader1)() {
 
 	// TODO: pass the data blocks' payload to this.lzw.
 	while true {
-		var block_size u32[..255] = in.src.read_u8?() as u32
+		var block_size u8 = in.src.read_u8?() as u32
 		if block_size == 0 {
 			break
 		}
-		var j u32
-		while j < block_size {
-			assert j < 255 via "a < b: a < c; c <= b"(c:block_size)
-			// TODO: we shouldn't need a temp variable.
-			//
-			// TODO: have an in.src.skip?(n:block_size) method?
-			var temp u8 = in.src.read_u8?()
-			temp *= 0  // Avoid "unused variable" C compiler warning.
-			j += 1
-		}
+		in.src.skip32?(n:block_size as u32)
 	}
 }
