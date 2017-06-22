@@ -23,15 +23,15 @@ func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
 	case t.KeyXBinaryNotEq:
 		reverseOp = t.IDXBinaryNotEq
 	case t.KeyXBinaryLessThan:
-		reverseOp = t.IDXBinaryGreaterEq
-	case t.KeyXBinaryLessEq:
 		reverseOp = t.IDXBinaryGreaterThan
+	case t.KeyXBinaryLessEq:
+		reverseOp = t.IDXBinaryGreaterEq
 	case t.KeyXBinaryEqEq:
 		reverseOp = t.IDXBinaryEqEq
 	case t.KeyXBinaryGreaterEq:
-		reverseOp = t.IDXBinaryLessThan
-	case t.KeyXBinaryGreaterThan:
 		reverseOp = t.IDXBinaryLessEq
+	case t.KeyXBinaryGreaterThan:
+		reverseOp = t.IDXBinaryLessThan
 	}
 
 	if reverseOp != 0 {
