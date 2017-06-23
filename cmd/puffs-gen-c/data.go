@@ -12,5 +12,5 @@ const baseHeader = "" +
 	""
 
 const baseImpl = "" +
-	"#ifndef PUFFS_BASE_IMPL_H\n#define PUFFS_BASE_IMPL_H\n\n#define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))\n\n#endif  // PUFFS_BASE_IMPL_H\n" +
+	"#ifndef PUFFS_BASE_IMPL_H\n#define PUFFS_BASE_IMPL_H\n\n// Use of this source code is governed by a BSD-style license that can be found\n// in the LICENSE file.\n\n// Use switch cases for coroutine state, similar to the technique in\n// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html\n//\n// We use a trivial macro instead of an explicit case statement so that\n// clang-format doesn't get confused by the unusual \"case\"s.\n#define PUFFS_COROUTINE_STATE(n) case n:\n\n#define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))\n\n#endif  // PUFFS_BASE_IMPL_H\n" +
 	""

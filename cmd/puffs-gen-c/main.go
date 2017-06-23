@@ -650,7 +650,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 		//
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\ncase 0:\n\n",
+		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\nPUFFS_COROUTINE_STATE(0);\n\n",
 			cPrefix, n.Name().String(g.tm))
 	}
 
@@ -1048,7 +1048,7 @@ func (g *gen) writeSuspend() error {
 		return fmt.Errorf("too many coroutine states required")
 	}
 
-	g.printf("case %d:;\n", g.perFunc.coroState)
+	g.printf("PUFFS_COROUTINE_STATE(%d);\n", g.perFunc.coroState)
 	return nil
 }
 
