@@ -617,7 +617,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		}
 		if n.Public() {
 			g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-				"status = puffs_%s_error_constructor_not_called; goto cleanup0; }\n", g.pkgName)
+				"status = puffs_%s_error_constructor_not_called; goto exit; }\n", g.pkgName)
 		}
 	} else if n.Receiver() != 0 && n.Public() {
 		g.writes("if (self->private_impl.status & 1) { return; }")
@@ -665,17 +665,17 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		if err := g.writeSuspend(); err != nil {
 			return err
 		}
-		g.writes("}\n") // Close the coroutine switch.
-		g.writes("goto cleanup0;\n\n")
-		// Avoid the "unused label" warning.
-		//
-		// TODO: delete this.
-		g.writes("goto suspend;\n")
+		g.writes("}\n\n") // Close the coroutine switch.
+
+		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		g.writes("suspend:\n")
 		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
 			return err
 		}
-		g.writes("\ncleanup0:")
+		g.writes("\n")
+
+		g.writes("goto exit;\n") // Avoid the "unused label" warning.
+		g.writes("exit:")
 		if g.perFunc.public {
 			g.writes("self->private_impl.status = status;\n")
 		}
@@ -747,7 +747,7 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 	}
 	g.writes(") {")
 	if n.Suspendible() {
-		g.printf("status = puffs_%s_error_bad_argument; goto cleanup0;", g.pkgName)
+		g.printf("status = puffs_%s_error_bad_argument; goto exit;", g.pkgName)
 	} else if n.Receiver() != 0 {
 		g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
 	} else {
@@ -963,7 +963,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			// suspendible function calls.
 			g.writes("return;\n")
 		} else if g.perFunc.public {
-			g.printf("status = %s; goto cleanup0;\n", ret)
+			g.printf("status = %s; goto suspend;\n", ret)
 		} else {
 			g.printf("return %s;\n", ret)
 		}
@@ -1106,7 +1106,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
 			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto cleanup0;")
+			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
@@ -1143,7 +1143,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
 			aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto cleanup0;")
+			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
@@ -1155,7 +1155,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		// TODO: don't assume that the argument is "this.stack[s:]".
 		g.printf("if (%sdst.buf->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto cleanup0;")
+			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
@@ -1164,7 +1164,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			aPrefix, aPrefix)
 		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto cleanup0;")
+			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
@@ -1179,7 +1179,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("if (%sdst.buf->wi >= %sdst.buf->len) { status = puffs_%s_status_short_write;",
 			aPrefix, aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto cleanup0;")
+			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
@@ -1194,22 +1194,22 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
-		g.writes("if (status) { goto cleanup0; }\n")
+		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
 		g.printf("status = puffs_%s_%s_decode_lsd(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
-		g.writes("if (status) { goto cleanup0; }\n")
+		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
 		g.printf("status = puffs_%s_%s_decode_extension(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
-		g.writes("if (status) { goto cleanup0; }\n")
+		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		g.printf("status = puffs_%s_%s_decode_id(self, %sdst, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
-		g.writes("if (status) { goto cleanup0; }\n")
+		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isDecode(g.tm, n) {
 		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",

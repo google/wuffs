@@ -375,7 +375,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
     status = puffs_gif_error_constructor_not_called;
-    goto cleanup0;
+    goto exit;
   }
 
   uint8_t v_c;
@@ -389,12 +389,12 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     case 1:;
       status = puffs_gif_decoder_decode_header(self, a_src);
       if (status) {
-        goto cleanup0;
+        goto suspend;
       }
     case 2:;
       status = puffs_gif_decoder_decode_lsd(self, a_src);
       if (status) {
-        goto cleanup0;
+        goto suspend;
       }
       while (true) {
         case 3:;
@@ -403,7 +403,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
             status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                          ? puffs_gif_error_unexpected_eof
                          : puffs_gif_status_short_read;
-            goto cleanup0;
+            goto suspend;
           }
           uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
           if (a_src.limit.ptr_to_len) {
@@ -414,31 +414,31 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
             case 4:;
               status = puffs_gif_decoder_decode_extension(self, a_src);
               if (status) {
-                goto cleanup0;
+                goto suspend;
               }
           } else if (v_c == 44) {
             case 5:;
               status = puffs_gif_decoder_decode_id(self, a_dst, a_src);
               if (status) {
-                goto cleanup0;
+                goto suspend;
               }
           } else if (v_c == 59) {
             status = puffs_gif_status_ok;
-            goto cleanup0;
+            goto suspend;
           } else {
             status = puffs_gif_error_bad_gif_block;
-            goto cleanup0;
+            goto suspend;
           }
       }
     case 6:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].v_c = v_c;
 
-cleanup0:
+  goto exit;
+exit:
   self->private_impl.status = status;
   return status;
 }
@@ -484,14 +484,14 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
       }
     case 2:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
   memcpy(self->private_impl.c_decode_header[0].v_c, v_c, 6);
   self->private_impl.c_decode_header[0].v_i = v_i;
 
-cleanup0:
+  goto exit;
+exit:
   return status;
 }
 
@@ -584,7 +584,6 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
       }
     case 5:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
@@ -592,7 +591,8 @@ suspend:
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
 
-cleanup0:
+  goto exit;
+exit:
   return status;
 }
 
@@ -661,14 +661,14 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     label_0_break:;
     case 4:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
   self->private_impl.c_decode_extension[0].v_label = v_label;
   self->private_impl.c_decode_extension[0].v_block_size = v_block_size;
 
-cleanup0:
+  goto exit;
+exit:
   return status;
 }
 
@@ -774,7 +774,6 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     label_0_break:;
     case 5:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
@@ -786,7 +785,8 @@ suspend:
   self->private_impl.c_decode_id[0].l_lzw_src = l_lzw_src;
   self->private_impl.c_decode_id[0].v_lzw_src = v_lzw_src;
 
-cleanup0:
+  goto exit;
+exit:
   return status;
 }
 
@@ -822,7 +822,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
     status = puffs_gif_error_constructor_not_called;
-    goto cleanup0;
+    goto exit;
   }
 
   uint32_t v_clear_code;
@@ -870,7 +870,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
               status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                            ? puffs_gif_error_unexpected_eof
                            : puffs_gif_status_short_read;
-              goto cleanup0;
+              goto suspend;
             }
             uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
             if (a_src.limit.ptr_to_len) {
@@ -886,7 +886,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           case 2:;
             if (a_dst.buf->wi >= a_dst.buf->len) {
               status = puffs_gif_status_short_write;
-              goto cleanup0;
+              goto suspend;
             }
             a_dst.buf->ptr[a_dst.buf->wi++] = ((uint8_t)(v_code));
             if (v_use_save_code) {
@@ -902,7 +902,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           goto label_0_continue;
         } else if (v_code == v_end_code) {
           status = puffs_gif_status_ok;
-          goto cleanup0;
+          goto suspend;
         } else if (v_code <= v_save_code) {
           v_s = 4095;
           v_c = v_code;
@@ -915,7 +915,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                 self->private_impl.f_suffixes[v_c];
             if (v_s == 0) {
               status = puffs_gif_error_lzw_prefix_chain_is_cyclical;
-              goto cleanup0;
+              goto suspend;
             }
             v_s -= 1;
             v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
@@ -927,12 +927,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           case 3:;
             if (a_dst.buf->closed) {
               status = puffs_gif_error_closed_for_writes;
-              goto cleanup0;
+              goto suspend;
             }
             if ((a_dst.buf->len - a_dst.buf->wi) <
                 (sizeof(self->private_impl.f_stack) - v_s)) {
               status = puffs_gif_status_short_write;
-              goto cleanup0;
+              goto suspend;
             }
             memmove(a_dst.buf->ptr + a_dst.buf->wi,
                     self->private_impl.f_stack + v_s,
@@ -945,7 +945,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
             }
         } else {
           status = puffs_gif_error_lzw_code_is_out_of_range;
-          goto cleanup0;
+          goto suspend;
         }
         v_use_save_code = (v_save_code < 4095);
         if (v_use_save_code) {
@@ -958,7 +958,6 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       }
     case 4:;
   }
-  goto cleanup0;
 
   goto suspend;
 suspend:
@@ -974,7 +973,8 @@ suspend:
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
 
-cleanup0:
+  goto exit;
+exit:
   self->private_impl.status = status;
   return status;
 }
