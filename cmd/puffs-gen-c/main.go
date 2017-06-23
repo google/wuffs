@@ -639,19 +639,27 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 	g.writes("\n")
 
+	// Generate a coroutine switch similiar to the technique in
+	// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+	if g.perFunc.suspendible {
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\ncase 0:\n",
+			cPrefix, n.Name().String(g.tm))
+	}
+
 	// Generate the function body.
 	for _, o := range n.Body() {
 		if err := g.writeStatement(o, 0); err != nil {
 			return err
 		}
 	}
-	g.writes("\n")
 
 	if g.perFunc.suspendible {
+		g.writes("}\n\n") // Close the coroutine switch.
 		if g.perFunc.public {
-			g.printf("cleanup0: self->private_impl.status = status;\n")
+			g.writes("cleanup0: self->private_impl.status = status;\n")
 		}
-		g.printf("return status;\n")
+		g.writes("return status;\n")
 	}
 
 	g.writes("}\n\n")
