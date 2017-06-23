@@ -34,6 +34,7 @@ var (
 // "double" being a valid Puffs variable name but not a valid C one.
 const (
 	aPrefix = "a_" // Function argument.
+	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
 	lPrefix = "l_" // Limit length.
 	tPrefix = "t_" // Temporary local variable.
@@ -175,9 +176,9 @@ func (g *gen) generate() error {
 	// Make a topologically sorted list of structs.
 	unsortedStructs := []*a.Struct(nil)
 	for _, file := range g.files {
-		for _, n := range file.TopLevelDecls() {
-			if n.Kind() == a.KStruct {
-				unsortedStructs = append(unsortedStructs, n.Struct())
+		for _, tld := range file.TopLevelDecls() {
+			if tld.Kind() == a.KStruct {
+				unsortedStructs = append(unsortedStructs, tld.Struct())
 			}
 		}
 	}
@@ -330,13 +331,13 @@ func (g *gen) genImpl() error {
 
 func (g *gen) forEachFunc(v visibility, f func(*gen, *a.Func) error) error {
 	for _, file := range g.files {
-		for _, n := range file.TopLevelDecls() {
-			if n.Kind() != a.KFunc ||
-				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
+		for _, tld := range file.TopLevelDecls() {
+			if tld.Kind() != a.KFunc ||
+				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
 				continue
 			}
-			if err := f(g, n.Func()); err != nil {
+			if err := f(g, tld.Func()); err != nil {
 				return err
 			}
 		}
@@ -346,13 +347,13 @@ func (g *gen) forEachFunc(v visibility, f func(*gen, *a.Func) error) error {
 
 func (g *gen) forEachStatus(v visibility, f func(*gen, *a.Status) error) error {
 	for _, file := range g.files {
-		for _, n := range file.TopLevelDecls() {
-			if n.Kind() != a.KStatus ||
-				(v == pubOnly && n.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && n.Raw().Flags()&a.FlagsPublic != 0) {
+		for _, tld := range file.TopLevelDecls() {
+			if tld.Kind() != a.KStatus ||
+				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
 				continue
 			}
-			if err := f(g, n.Status()); err != nil {
+			if err := f(g, tld.Status()); err != nil {
 				return err
 			}
 		}
@@ -418,6 +419,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		g.printf("puffs_%s_status status;\n", g.pkgName)
 		g.printf("uint32_t magic;\n")
 	}
+
 	for _, o := range n.Fields() {
 		o := o.Field()
 		if err := g.writeCTypeName(o.XType(), fPrefix, o.Name().String(g.tm)); err != nil {
@@ -425,6 +427,30 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		}
 		g.writes(";\n")
 	}
+
+	if n.Suspendible() {
+		g.writeb('\n')
+		for _, file := range g.files {
+			for _, tld := range file.TopLevelDecls() {
+				if tld.Kind() != a.KFunc {
+					continue
+				}
+				o := tld.Func()
+				if o.Receiver() != n.Name() || !o.Suspendible() {
+					continue
+				}
+				// TODO: allow max depth > 1 for recursive coroutines.
+				const maxDepth = 1
+				g.writes("struct {\n")
+				g.writes("uint32_t coro_state;\n")
+				if err := g.writeVars(o.Body(), 0); err != nil {
+					return err
+				}
+				g.printf("} %s%s[%d];\n", cPrefix, o.Name().String(g.tm), maxDepth)
+			}
+		}
+	}
+
 	g.printf("} private_impl;\n } puffs_%s_%s;\n\n", g.pkgName, structName)
 	return nil
 }

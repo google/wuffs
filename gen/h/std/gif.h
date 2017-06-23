@@ -121,6 +121,21 @@ typedef struct {
     uint8_t f_stack[4096];
     uint8_t f_suffixes[4096];
     uint16_t f_prefixes[4096];
+
+    struct {
+      uint32_t coro_state;
+      uint32_t v_clear_code;
+      uint32_t v_end_code;
+      bool v_use_save_code;
+      uint32_t v_save_code;
+      uint32_t v_prev_code;
+      uint32_t v_width;
+      uint32_t v_bits;
+      uint32_t v_n_bits;
+      uint32_t v_code;
+      uint32_t v_s;
+      uint32_t v_c;
+    } c_decode[1];
   } private_impl;
 } puffs_gif_lzw_decoder;
 
@@ -140,6 +155,37 @@ typedef struct {
     uint8_t f_background_color_index;
     uint8_t f_gct[768];
     puffs_gif_lzw_decoder f_lzw;
+
+    struct {
+      uint32_t coro_state;
+      uint8_t v_c;
+    } c_decode[1];
+    struct {
+      uint32_t coro_state;
+      uint8_t v_c[6];
+      uint32_t v_i;
+    } c_decode_header[1];
+    struct {
+      uint32_t coro_state;
+      uint8_t v_c[7];
+      uint32_t v_i;
+      uint32_t v_gct_size;
+    } c_decode_lsd[1];
+    struct {
+      uint32_t coro_state;
+      uint8_t v_label;
+      uint8_t v_block_size;
+    } c_decode_extension[1];
+    struct {
+      uint32_t coro_state;
+      uint8_t v_c[9];
+      uint32_t v_i;
+      bool v_interlace;
+      uint8_t v_lw;
+      uint8_t v_block_size;
+      uint64_t l_lzw_src;
+      puffs_base_reader1 v_lzw_src;
+    } c_decode_id[1];
   } private_impl;
 } puffs_gif_decoder;
 
