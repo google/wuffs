@@ -46,19 +46,25 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
-typedef struct puffs_base_limit {
-  uint64_t* len;
-  struct puffs_base_limit* next;
-} puffs_base_limit;
+// puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
+// its first N bytes. That N can be greater than a buffer's current read or
+// write capacity. N decreases naturally over time as bytes are read from or
+// written to the stream.
+//
+// A value with all fields NULL or zero is a valid, unlimited view.
+typedef struct puffs_base_limit1 {
+  uint64_t* ptr_to_len;            // Pointer to N.
+  struct puffs_base_limit1* next;  // Linked list of limits.
+} puffs_base_limit1;
 
 typedef struct {
   puffs_base_buf1* buf;
-  puffs_base_limit limit;
+  puffs_base_limit1 limit;
 } puffs_base_reader1;
 
 typedef struct {
   puffs_base_buf1* buf;
-  puffs_base_limit limit;
+  puffs_base_limit1 limit;
 } puffs_base_writer1;
 
 #endif  // PUFFS_BASE_HEADER_H

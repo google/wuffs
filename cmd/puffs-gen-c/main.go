@@ -990,7 +990,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		// TODO: suspend coroutine state.
 		//
 		// TODO: loop over all limits, not just the first one.
-		g.printf("if ((%ssrc.buf->ri >= %ssrc.buf->wi) || (%ssrc.limit.len && (*%ssrc.limit.len == 0))) {",
+		g.printf("if ((%ssrc.buf->ri >= %ssrc.buf->wi) || "+
+			"(%ssrc.limit.ptr_to_len && (*%ssrc.limit.ptr_to_len == 0))) {",
 			aPrefix, aPrefix, aPrefix, aPrefix)
 		g.printf("status = ((%ssrc.buf->closed) && (%ssrc.buf->ri == %ssrc.buf->wi)) ?"+
 			"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
@@ -1007,7 +1008,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			return err
 		}
 		g.printf(" = %ssrc.buf->ptr[%ssrc.buf->ri++];\n", aPrefix, aPrefix)
-		g.printf("if (%ssrc.limit.len) { (*%ssrc.limit.len)--; }\n", aPrefix, aPrefix)
+		g.printf("if (%ssrc.limit.ptr_to_len) { (*%ssrc.limit.ptr_to_len)--; }\n", aPrefix, aPrefix)
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		if g.perFunc.tempW > maxTemp {
@@ -1243,8 +1244,8 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// TODO: don't hard code so much detail.
 		g.writes("(puffs_base_reader1) {")
 		g.writes(".buf = a_src.buf,")
-		g.writes(".limit = (puffs_base_limit) {")
-		g.printf(".len = &%s%s,", lPrefix, g.perFunc.limitVarName)
+		g.writes(".limit = (puffs_base_limit1) {")
+		g.printf(".ptr_to_len = &%s%s,", lPrefix, g.perFunc.limitVarName)
 		g.writes(".next = &a_src.limit,")
 		g.writes("}}")
 		g.perFunc.limitVarName = ""
