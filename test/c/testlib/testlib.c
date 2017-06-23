@@ -156,7 +156,7 @@ bool buf1s_equal(const char* prefix,
                  puffs_base_buf1* got,
                  puffs_base_buf1* want) {
   if (!got || !want) {
-    FAIL("%sbufs1_equal: NULL argument", prefix);
+    FAIL("%sbuf1s_equal: NULL argument", prefix);
     return false;
   }
   char* msg = fail_msg;
@@ -167,10 +167,10 @@ bool buf1s_equal(const char* prefix,
     }
   }
   if (got->wi != want->wi) {
-    INCR_FAIL(msg, "%sbufs1_equal: wi: got %zu, want %zu.\n", prefix, got->wi,
+    INCR_FAIL(msg, "%sbuf1s_equal: wi: got %zu, want %zu.\n", prefix, got->wi,
               want->wi);
   } else if (i < got->wi) {
-    INCR_FAIL(msg, "%sbufs1_equal:\n", prefix);
+    INCR_FAIL(msg, "%sbuf1s_equal:\n", prefix);
   } else {
     return true;
   }

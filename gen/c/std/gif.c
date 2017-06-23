@@ -337,12 +337,17 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     goto cleanup0;
   }
   while (true) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       goto cleanup0;
     }
     uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_c = t_0;
     if (v_c == 33) {
       status = puffs_gif_decoder_decode_extension(self, a_src);
@@ -380,12 +385,17 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   };
   v_i = 0;
   while (v_i < 6) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       return status;
     }
     uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_c[v_i] = t_0;
     v_i += 1;
   }
@@ -410,12 +420,17 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
   };
   v_i = 0;
   while (v_i < 7) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       return status;
     }
     uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_c[v_i] = t_0;
     v_i += 1;
   }
@@ -428,26 +443,41 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
     v_gct_size = (((uint32_t)(1)) << (1 + (v_c[4] & 7)));
     v_i = 0;
     while (v_i < v_gct_size) {
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
+      if ((a_src.buf->ri >= a_src.buf->wi) ||
+          (a_src.limit.len && (*a_src.limit.len == 0))) {
+        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                     ? puffs_gif_error_unexpected_eof
+                     : puffs_gif_status_short_read;
         return status;
       }
       uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
+      if (a_src.limit.len) {
+        (*a_src.limit.len)--;
+      }
       self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
+      if ((a_src.buf->ri >= a_src.buf->wi) ||
+          (a_src.limit.len && (*a_src.limit.len == 0))) {
+        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                     ? puffs_gif_error_unexpected_eof
+                     : puffs_gif_status_short_read;
         return status;
       }
       uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
+      if (a_src.limit.len) {
+        (*a_src.limit.len)--;
+      }
       self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
+      if ((a_src.buf->ri >= a_src.buf->wi) ||
+          (a_src.limit.len && (*a_src.limit.len == 0))) {
+        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                     ? puffs_gif_error_unexpected_eof
+                     : puffs_gif_status_short_read;
         return status;
       }
       uint8_t t_3 = a_src.buf->ptr[a_src.buf->ri++];
+      if (a_src.limit.len) {
+        (*a_src.limit.len)--;
+      }
       self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
       v_i += 1;
     }
@@ -463,12 +493,17 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
   uint8_t v_label;
   uint8_t v_block_size;
 
-  if (a_src.buf->ri >= a_src.buf->wi) {
-    status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                               : puffs_gif_status_short_read;
+  if ((a_src.buf->ri >= a_src.buf->wi) ||
+      (a_src.limit.len && (*a_src.limit.len == 0))) {
+    status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                 ? puffs_gif_error_unexpected_eof
+                 : puffs_gif_status_short_read;
     return status;
   }
   uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+  if (a_src.limit.len) {
+    (*a_src.limit.len)--;
+  }
   v_label = t_0;
   if (v_label == 1) {
   } else if (v_label == 249) {
@@ -478,12 +513,17 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     return puffs_gif_error_bad_gif_extension_label;
   }
   while (true) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       return status;
     }
     uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_block_size = t_1;
     if (v_block_size == 0) {
       goto label_0_break;
@@ -521,12 +561,17 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   };
   v_i = 0;
   while (v_i < 9) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       return status;
     }
     uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_c[v_i] = t_0;
     v_i += 1;
   }
@@ -536,12 +581,17 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   if ((v_c[8] & 128) != 0) {
     return puffs_gif_error_todo_unsupported_local_color_table;
   }
-  if (a_src.buf->ri >= a_src.buf->wi) {
-    status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                               : puffs_gif_status_short_read;
+  if ((a_src.buf->ri >= a_src.buf->wi) ||
+      (a_src.limit.len && (*a_src.limit.len == 0))) {
+    status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                 ? puffs_gif_error_unexpected_eof
+                 : puffs_gif_status_short_read;
     return status;
   }
   uint8_t t_1 = a_src.buf->ptr[a_src.buf->ri++];
+  if (a_src.limit.len) {
+    (*a_src.limit.len)--;
+  }
   v_lw = t_1;
   if ((v_lw < 2) || (8 < v_lw)) {
     return puffs_gif_error_bad_lzw_literal_width;
@@ -549,12 +599,17 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   puffs_gif_lzw_decoder_set_literal_width(&self->private_impl.f_lzw,
                                           ((uint32_t)(v_lw)));
   while (true) {
-    if (a_src.buf->ri >= a_src.buf->wi) {
-      status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                 : puffs_gif_status_short_read;
+    if ((a_src.buf->ri >= a_src.buf->wi) ||
+        (a_src.limit.len && (*a_src.limit.len == 0))) {
+      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                   ? puffs_gif_error_unexpected_eof
+                   : puffs_gif_status_short_read;
       return status;
     }
     uint8_t t_2 = a_src.buf->ptr[a_src.buf->ri++];
+    if (a_src.limit.len) {
+      (*a_src.limit.len)--;
+    }
     v_block_size = t_2;
     if (v_block_size == 0) {
       goto label_0_break;
@@ -634,12 +689,17 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 label_0_continue:;
   while (true) {
     while (v_n_bits < v_width) {
-      if (a_src.buf->ri >= a_src.buf->wi) {
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
+      if ((a_src.buf->ri >= a_src.buf->wi) ||
+          (a_src.limit.len && (*a_src.limit.len == 0))) {
+        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+                     ? puffs_gif_error_unexpected_eof
+                     : puffs_gif_status_short_read;
         goto cleanup0;
       }
       uint8_t t_0 = a_src.buf->ptr[a_src.buf->ri++];
+      if (a_src.limit.len) {
+        (*a_src.limit.len)--;
+      }
       v_bits |= (((uint32_t)(t_0)) << v_n_bits);
       v_n_bits += 8;
     }

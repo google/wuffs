@@ -242,6 +242,7 @@ cleanup0:;
 
 void test_gif_decode_input_is_a_xxx(const char* filename,
                                     const char* palette_filename,
+                                    const char* indexes_filename,
                                     puffs_gif_status want) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -285,6 +286,14 @@ void test_gif_decode_input_is_a_xxx(const char* filename,
     goto cleanup1;
   }
 
+  puffs_base_buf1 ind_want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  if (!read_file(&ind_want, indexes_filename)) {
+    goto cleanup1;
+  }
+  if (!buf1s_equal("indexes ", &dst, &ind_want)) {
+    goto cleanup1;
+  }
+
 cleanup1:
   puffs_gif_decoder_destructor(&dec);
 cleanup0:;
@@ -294,13 +303,14 @@ void test_gif_decode_input_is_a_gif() {
   test_funcname = __func__;
   test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
                                  "../../testdata/bricks-dither.palette",
+                                 "../../testdata/bricks-dither.indexes",
                                  // TODO: puffs_gif_status_ok);
-                                 puffs_gif_error_lzw_code_is_out_of_range);
+                                 puffs_gif_status_short_read);
 }
 
 void test_gif_decode_input_is_a_png() {
   test_funcname = __func__;
-  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png", "",
+  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png", "", "",
                                  puffs_gif_error_bad_gif_header);
 }
 

@@ -988,9 +988,13 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.perFunc.tempW++
 
 		// TODO: suspend coroutine state.
-		g.printf("if (%ssrc.buf->ri >= %ssrc.buf->wi) {", aPrefix, aPrefix)
-		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
-			aPrefix, g.pkgName, g.pkgName)
+		//
+		// TODO: loop over all limits, not just the first one.
+		g.printf("if ((%ssrc.buf->ri >= %ssrc.buf->wi) || (%ssrc.limit.len && (*%ssrc.limit.len == 0))) {",
+			aPrefix, aPrefix, aPrefix, aPrefix)
+		g.printf("status = ((%ssrc.buf->closed) && (%ssrc.buf->ri == %ssrc.buf->wi)) ?"+
+			"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto cleanup0;")
 		} else {
@@ -1003,6 +1007,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			return err
 		}
 		g.printf(" = %ssrc.buf->ptr[%ssrc.buf->ri++];\n", aPrefix, aPrefix)
+		g.printf("if (%ssrc.limit.len) { (*%ssrc.limit.len)--; }\n", aPrefix, aPrefix)
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		if g.perFunc.tempW > maxTemp {
@@ -1012,6 +1017,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.perFunc.tempW++
 		g.perFunc.tempR++
 
+		// TODO: loop over all limits.
 		g.printf("size_t %s%d = ", tPrefix, temp)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
