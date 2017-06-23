@@ -1,0 +1,107 @@
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file.
+
+/*
+peterface decodes pjw's iconic face, stored as a GIF image.
+
+Compile it in C99 mode:
+
+$cc -std=c99 peterface.c && ./a.out; rm -f a.out
+
+for a C compiler $cc, such as clang or gcc.
+*/
+
+#include <stdio.h>
+
+#include "../../gen/c/std/gif.c"
+
+#define DST_BUFFER_SIZE (1024 * 1024)
+
+uint8_t pjw_ptr[];
+size_t pjw_len;
+
+int main(int argc, char** argv) {
+  uint8_t dst_buffer[DST_BUFFER_SIZE];
+  puffs_base_buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  puffs_base_buf1 src = {
+      .ptr = pjw_ptr, .len = pjw_len, .wi = pjw_len, .closed = true};
+  puffs_base_writer1 dst_writer = {.buf = &dst};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+  if (s) {
+    fprintf(stderr, "%s\n", puffs_gif_status_string(s));
+    puffs_gif_decoder_destructor(&dec);
+    return 1;
+  }
+
+  // TODO: provide API to get the width and height. Don't hard code 32/32.
+  if (dst.wi != 32 * 32) {
+    fprintf(stderr, "image dimensions not 32x32\n");
+    puffs_gif_decoder_destructor(&dec);
+    return 1;
+  }
+  uint8_t* p = dst.ptr;
+  for (int y = 0; y < 32; y++) {
+    for (int x = 0; x < 32; x++) {
+      putchar(*p++ ? '-' : '8');
+    }
+    putchar('\n');
+  }
+
+  puffs_gif_decoder_destructor(&dec);
+  return 0;
+}
+
+/*
+The remainder of this C program was generated from running this Go program via:
+
+go run x.go < ../../test/testdata/pjw-thumbnail.gif
+
+----
+package main
+
+import (
+        "fmt"
+        "io/ioutil"
+        "log"
+        "os"
+)
+
+func main() {
+        data, err := ioutil.ReadAll(os.Stdin)
+        if err != nil {
+                log.Fatal(err)
+        }
+        fmt.Printf("size_t pjw_len = %d;\n\n", len(data))
+        fmt.Printf("uint8_t pjw_ptr[] = {\n")
+        for _, c := range data {
+                fmt.Printf("%#02x,", c)
+        }
+        fmt.Printf("\n};\n")
+}
+----
+
+and piping the result through clang-format.
+*/
+
+size_t pjw_len = 158;
+
+uint8_t pjw_ptr[] = {
+    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x20, 0x00, 0x20, 0x00, 0xf0, 0x01,
+    0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x21, 0xf9, 0x04, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x20, 0x00,
+    0x00, 0x02, 0x75, 0x8c, 0x8f, 0xa9, 0xcb, 0x0b, 0x0f, 0x5f, 0x9b, 0x28,
+    0x5a, 0x49, 0x19, 0x08, 0xf7, 0x66, 0xb5, 0x25, 0x1d, 0xf6, 0x35, 0x23,
+    0x59, 0x8a, 0x67, 0x16, 0x6a, 0xab, 0x4b, 0x9d, 0x68, 0xd5, 0x9a, 0xaf,
+    0x5a, 0xdb, 0x9e, 0x83, 0xcd, 0x86, 0x9c, 0xe3, 0x44, 0x0e, 0x9b, 0x22,
+    0x30, 0xe8, 0x39, 0x8e, 0x70, 0x43, 0xc8, 0xef, 0xc8, 0x73, 0x56, 0x7e,
+    0xc2, 0x25, 0x48, 0xea, 0xa0, 0x76, 0x60, 0x34, 0xa2, 0xc4, 0xe8, 0x03,
+    0x3d, 0xaf, 0xdb, 0x09, 0x32, 0x69, 0x89, 0xb9, 0xbe, 0xd5, 0xf0, 0x74,
+    0x6d, 0xb5, 0x3d, 0x95, 0xee, 0x77, 0x94, 0xd3, 0x4e, 0x79, 0xd3, 0xd8,
+    0x14, 0xe9, 0x5b, 0xa6, 0x47, 0x16, 0xe4, 0xc7, 0xd4, 0x57, 0x12, 0x02,
+    0x24, 0x38, 0x76, 0x23, 0x08, 0x16, 0xb8, 0xf8, 0x98, 0xd6, 0x50, 0x00,
+    0x00, 0x3b,
+};

@@ -267,7 +267,7 @@ you think it should be able to.
 - `test` holds the tests for the Puffs standard library.
 - `script` holds miscellaneous utility programs.
 - `doc` holds additional documentation. TODO.
-- `example` holds example programs. TODO.
+- `example` holds example programs.
 
 For a guide on how various things work together, the "99ff8e2 Let fields have
 default values" commit is an example of adding new Puffs syntax and threading
