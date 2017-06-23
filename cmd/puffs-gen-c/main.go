@@ -443,7 +443,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 				const maxDepth = 1
 				g.writes("struct {\n")
 				g.writes("uint32_t coro_state;\n")
-				if err := g.writeVars(o.Body(), 0); err != nil {
+				if err := g.writeVars(o.Body()); err != nil {
 					return err
 				}
 				g.printf("} %s%s[%d];\n", cPrefix, o.Name().String(g.tm), maxDepth)
@@ -634,16 +634,22 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	g.writes("\n")
 
 	// Generate the local variables.
-	if err := g.writeVars(n.Body(), 0); err != nil {
+	if err := g.writeVars(n.Body()); err != nil {
 		return err
 	}
 	g.writes("\n")
 
-	// Generate a coroutine switch similiar to the technique in
-	// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 	if g.perFunc.suspendible {
+		g.printf("if (self->private_impl.%s%s[0].coro_state) {\n", cPrefix, n.Name().String(g.tm))
+		if err := g.writeResumeSuspend(n.Body(), false); err != nil {
+			return err
+		}
+		g.writes("}\n")
+		// Generate a coroutine switch similiar to the technique in
+		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+		//
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\ncase 0:\n",
+		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\ncase 0:\n\n",
 			cPrefix, n.Name().String(g.tm))
 	}
 
@@ -655,11 +661,21 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	if g.perFunc.suspendible {
-		g.writes("}\n\n") // Close the coroutine switch.
-		if g.perFunc.public {
-			g.writes("cleanup0: self->private_impl.status = status;\n")
+		g.writes("}\n") // Close the coroutine switch.
+		g.writes("goto cleanup0;\n\n")
+		// Avoid the "unused label" warning.
+		//
+		// TODO: delete this.
+		g.writes("goto suspend;\n")
+		g.writes("suspend:\n")
+		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
+			return err
 		}
-		g.writes("return status;\n")
+		g.writes("\ncleanup0:")
+		if g.perFunc.public {
+			g.writes("self->private_impl.status = status;\n")
+		}
+		g.writes("return status;\n\n")
 	}
 
 	g.writes("}\n\n")
@@ -737,7 +753,7 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 	return nil
 }
 
-func (g *gen) writeVars(block []*a.Node, depth uint32) error {
+func (g *gen) visitVars(block []*a.Node, depth uint32, f func(*gen, *a.Var) error) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
@@ -747,32 +763,75 @@ func (g *gen) writeVars(block []*a.Node, depth uint32) error {
 		switch o.Kind() {
 		case a.KIf:
 			for o := o.If(); o != nil; o = o.ElseIf() {
-				if err := g.writeVars(o.BodyIfTrue(), depth); err != nil {
+				if err := g.visitVars(o.BodyIfTrue(), depth, f); err != nil {
 					return err
 				}
-				if err := g.writeVars(o.BodyIfFalse(), depth); err != nil {
+				if err := g.visitVars(o.BodyIfFalse(), depth, f); err != nil {
 					return err
 				}
 			}
 
 		case a.KVar:
-			o := o.Var()
-			if v := o.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
-				g.printf("uint64_t %s%v;\n", lPrefix, o.Name().String(g.tm))
-			}
-			if err := g.writeCTypeName(o.XType(), vPrefix, o.Name().String(g.tm)); err != nil {
+			if err := f(g, o.Var()); err != nil {
 				return err
 			}
-			g.writes(";\n")
-			continue
 
 		case a.KWhile:
-			if err := g.writeVars(o.While().Body(), depth); err != nil {
+			if err := g.visitVars(o.While().Body(), depth, f); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (g *gen) writeResumeSuspend1(n *a.Var, prefix string, suspend bool) error {
+	lhs := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
+	// TODO: don't hard-code [0], and allow recursive coroutines.
+	rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.perFunc.funk.Name().String(g.tm), lhs)
+	if suspend {
+		lhs, rhs = rhs, lhs
+	}
+	typ := n.XType()
+	switch typ.Decorator().Key() {
+	case 0:
+		g.printf("%s = %s;\n", lhs, rhs)
+		return nil
+	case t.KeyOpenBracket:
+		if inner := typ.Inner(); inner.Decorator() != 0 || inner.Name().Key() != t.KeyU8 {
+			break
+		}
+		cv := typ.ArrayLength().ConstValue()
+		// TODO: check that cv is within size_t's range.
+		g.printf("memcpy(%s, %s, %v);\n", lhs, rhs, cv)
+		return nil
+	}
+	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
+		n.Name().String(g.tm), n.XType().String(g.tm))
+}
+
+func (g *gen) writeResumeSuspend(block []*a.Node, suspend bool) error {
+	return g.visitVars(block, 0, func(g *gen, n *a.Var) error {
+		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
+			if err := g.writeResumeSuspend1(n, lPrefix, suspend); err != nil {
+				return err
+			}
+		}
+		return g.writeResumeSuspend1(n, vPrefix, suspend)
+	})
+}
+
+func (g *gen) writeVars(block []*a.Node) error {
+	return g.visitVars(block, 0, func(g *gen, n *a.Var) error {
+		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
+			g.printf("uint64_t %s%v;\n", lPrefix, n.Name().String(g.tm))
+		}
+		if err := g.writeCTypeName(n.XType(), vPrefix, n.Name().String(g.tm)); err != nil {
+			return err
+		}
+		g.writes(";\n")
+		return nil
+	})
 }
 
 func (g *gen) writeStatement(n *a.Node, depth uint32) error {
