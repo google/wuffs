@@ -129,6 +129,7 @@ type status struct {
 type perFunc struct {
 	funk         *a.Func
 	jumpTargets  map[*a.While]uint32
+	coroState    uint32
 	tempW        uint32
 	tempR        uint32
 	public       bool
@@ -661,6 +662,9 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	if g.perFunc.suspendible {
+		if err := g.writeSuspend(); err != nil {
+			return err
+		}
 		g.writes("}\n") // Close the coroutine switch.
 		g.writes("goto cleanup0;\n\n")
 		// Avoid the "unused label" warning.
@@ -1037,9 +1041,23 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
+func (g *gen) writeSuspend() error {
+	const maxCoroState = 0xFFFFFFFF
+	g.perFunc.coroState++
+	if g.perFunc.coroState == maxCoroState {
+		return fmt.Errorf("too many coroutine states required")
+	}
+
+	g.printf("case %d:;\n", g.perFunc.coroState)
+	return nil
+}
+
 func (g *gen) writeSuspendibles(n *a.Expr, depth uint32) error {
 	if !n.Suspendible() {
 		return nil
+	}
+	if err := g.writeSuspend(); err != nil {
+		return err
 	}
 	return g.writeCallSuspendibles(n, depth)
 }
@@ -1080,8 +1098,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		temp := g.perFunc.tempW
 		g.perFunc.tempW++
 
-		// TODO: suspend coroutine state.
-		//
 		// TODO: loop over all limits, not just the first one.
 		g.printf("if ((%ssrc.buf->ri >= %ssrc.buf->wi) || "+
 			"(%ssrc.limit.ptr_to_len && (*%ssrc.limit.ptr_to_len == 0))) {",
@@ -1136,8 +1152,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("%ssrc.buf->ri += %s%d;\n", aPrefix, tPrefix, temp)
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
-		// TODO: suspend coroutine state.
-		//
 		// TODO: don't assume that the argument is "this.stack[s:]".
 		g.printf("if (%sdst.buf->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
@@ -1162,7 +1176,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("a_dst.buf->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		// TODO: suspend coroutine state.
 		g.printf("if (%sdst.buf->wi >= %sdst.buf->len) { status = puffs_%s_status_short_write;",
 			aPrefix, aPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
