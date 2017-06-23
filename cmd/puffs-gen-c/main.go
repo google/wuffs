@@ -641,17 +641,16 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	g.writes("\n")
 
 	if g.perFunc.suspendible {
-		g.printf("if (self->private_impl.%s%s[0].coro_state) {\n", cPrefix, n.Name().String(g.tm))
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		g.printf("uint32_t coro_state = self->private_impl.%s%s[0].coro_state;\n", cPrefix, n.Name().String(g.tm))
+		g.printf("if (coro_state) {\n")
 		if err := g.writeResumeSuspend(n.Body(), false); err != nil {
 			return err
 		}
 		g.writes("}\n")
 		// Generate a coroutine switch similiar to the technique in
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
-		//
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		g.printf("switch (self->private_impl.%s%s[0].coro_state) {\nPUFFS_COROUTINE_STATE(0);\n\n",
-			cPrefix, n.Name().String(g.tm))
+		g.writes("switch (coro_state) {\nPUFFS_COROUTINE_STATE(0);\n\n")
 	}
 
 	// Generate the function body.
@@ -669,6 +668,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 
 		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		g.writes("suspend:\n")
+		g.printf("self->private_impl.%s%s[0].coro_state = coro_state;\n", cPrefix, n.Name().String(g.tm))
 		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
 			return err
 		}

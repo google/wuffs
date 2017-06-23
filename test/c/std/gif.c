@@ -179,8 +179,7 @@ cleanup0:
 
 // ---------------- LZW Tests
 
-void test_lzw_decode() {
-  test_funcname = __func__;
+void test_lzw_decode_xxx(uint64_t limit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -216,11 +215,45 @@ void test_lzw_decode() {
   puffs_gif_lzw_decoder_set_literal_width(&dec, literal_width);
   puffs_base_writer1 got_writer = {.buf = &got};
   puffs_base_reader1 src_reader = {.buf = &src};
-  puffs_gif_status status =
-      puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
-  if (status != puffs_gif_status_ok) {
-    FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
-    goto cleanup1;
+  int num_iters = 0;
+  while (true) {
+    num_iters++;
+    uint64_t lim = limit;
+    src_reader.limit.ptr_to_len = &lim;
+    size_t old_ri = src.ri;
+    puffs_gif_status status =
+        puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
+    if (src.ri == src.wi) {
+      if (status != puffs_gif_status_ok) {
+        FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
+        goto cleanup1;
+      }
+      break;
+    }
+    if (status != puffs_gif_status_short_read) {
+      FAIL("status: got %d, want %d", status, puffs_gif_status_short_read);
+      goto cleanup1;
+    }
+    if (src.ri < old_ri) {
+      FAIL("read index src.ri went backwards");
+      goto cleanup1;
+    }
+    if (src.ri == old_ri) {
+      FAIL("no progress was made");
+      goto cleanup1;
+    }
+  }
+
+  if (limit < 1000000) {
+    if (num_iters <= 1) {
+      FAIL("num_iters: got %d, want > 1", num_iters);
+      goto cleanup1;
+    }
+  } else {
+    if (num_iters != 1) {
+      FAIL("num_iters: got %d, want 1", num_iters);
+      goto cleanup1;
+    }
   }
 
   if (!buf1s_equal("", &got, &want)) {
@@ -236,6 +269,16 @@ void test_lzw_decode() {
 cleanup1:
   puffs_gif_lzw_decoder_destructor(&dec);
 cleanup0:;
+}
+
+void test_lzw_decode_many_small_inputs() {
+  test_funcname = __func__;
+  test_lzw_decode_xxx(100);
+}
+
+void test_lzw_decode_one_large_input() {
+  test_funcname = __func__;
+  test_lzw_decode_xxx(1 << 30);
 }
 
 // ---------------- GIF Tests
@@ -328,7 +371,8 @@ test tests[] = {
     test_basic_status_strings,             //
     test_basic_sub_struct_constructor,     //
     // LZW Tests
-    test_lzw_decode,  //
+    test_lzw_decode_many_small_inputs,  //
+    test_lzw_decode_one_large_input,    //
     // GIF Tests
     test_gif_decode_input_is_a_gif,  //
     test_gif_decode_input_is_a_png,  //

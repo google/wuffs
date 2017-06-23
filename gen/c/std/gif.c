@@ -243,9 +243,11 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 // Use switch cases for coroutine state, similar to the technique in
 // https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
-// We use a trivial macro instead of an explicit case statement so that
-// clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_STATE(n) case n:
+// We use a trivial macro instead of an explicit assignment and case statement
+// so that clang-format doesn't get confused by the unusual "case"s.
+#define PUFFS_COROUTINE_STATE(n) \
+  coro_state = n;                \
+  case n:
 
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
 
@@ -390,10 +392,11 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
 
   uint8_t v_c;
 
-  if (self->private_impl.c_decode[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode[0].coro_state;
+  if (coro_state) {
     v_c = self->private_impl.c_decode[0].v_c;
   }
-  switch (self->private_impl.c_decode[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     PUFFS_COROUTINE_STATE(1);
@@ -445,6 +448,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode[0].coro_state = coro_state;
   self->private_impl.c_decode[0].v_c = v_c;
 
   goto exit;
@@ -460,11 +464,12 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   uint8_t v_c[6];
   uint32_t v_i;
 
-  if (self->private_impl.c_decode_header[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode_header[0].coro_state;
+  if (coro_state) {
     memcpy(v_c, self->private_impl.c_decode_header[0].v_c, 6);
     v_i = self->private_impl.c_decode_header[0].v_i;
   }
-  switch (self->private_impl.c_decode_header[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     for (size_t i = 0; i < 6; i++) {
@@ -496,6 +501,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode_header[0].coro_state = coro_state;
   memcpy(self->private_impl.c_decode_header[0].v_c, v_c, 6);
   self->private_impl.c_decode_header[0].v_i = v_i;
 
@@ -512,12 +518,13 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
   uint32_t v_i;
   uint32_t v_gct_size;
 
-  if (self->private_impl.c_decode_lsd[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode_lsd[0].coro_state;
+  if (coro_state) {
     memcpy(v_c, self->private_impl.c_decode_lsd[0].v_c, 7);
     v_i = self->private_impl.c_decode_lsd[0].v_i;
     v_gct_size = self->private_impl.c_decode_lsd[0].v_gct_size;
   }
-  switch (self->private_impl.c_decode_lsd[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     for (size_t i = 0; i < 7; i++) {
@@ -596,6 +603,7 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode_lsd[0].coro_state = coro_state;
   memcpy(self->private_impl.c_decode_lsd[0].v_c, v_c, 7);
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
@@ -612,11 +620,12 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
   uint8_t v_label;
   uint8_t v_block_size;
 
-  if (self->private_impl.c_decode_extension[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode_extension[0].coro_state;
+  if (coro_state) {
     v_label = self->private_impl.c_decode_extension[0].v_label;
     v_block_size = self->private_impl.c_decode_extension[0].v_block_size;
   }
-  switch (self->private_impl.c_decode_extension[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     PUFFS_COROUTINE_STATE(1);
@@ -673,6 +682,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode_extension[0].coro_state = coro_state;
   self->private_impl.c_decode_extension[0].v_label = v_label;
   self->private_impl.c_decode_extension[0].v_block_size = v_block_size;
 
@@ -694,7 +704,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   uint64_t l_lzw_src;
   puffs_base_reader1 v_lzw_src;
 
-  if (self->private_impl.c_decode_id[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode_id[0].coro_state;
+  if (coro_state) {
     memcpy(v_c, self->private_impl.c_decode_id[0].v_c, 9);
     v_i = self->private_impl.c_decode_id[0].v_i;
     v_interlace = self->private_impl.c_decode_id[0].v_interlace;
@@ -703,7 +714,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     l_lzw_src = self->private_impl.c_decode_id[0].l_lzw_src;
     v_lzw_src = self->private_impl.c_decode_id[0].v_lzw_src;
   }
-  switch (self->private_impl.c_decode_id[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     for (size_t i = 0; i < 9; i++) {
@@ -786,6 +797,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode_id[0].coro_state = coro_state;
   memcpy(self->private_impl.c_decode_id[0].v_c, v_c, 9);
   self->private_impl.c_decode_id[0].v_i = v_i;
   self->private_impl.c_decode_id[0].v_interlace = v_interlace;
@@ -846,7 +858,8 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_s;
   uint32_t v_c;
 
-  if (self->private_impl.c_decode[0].coro_state) {
+  uint32_t coro_state = self->private_impl.c_decode[0].coro_state;
+  if (coro_state) {
     v_clear_code = self->private_impl.c_decode[0].v_clear_code;
     v_end_code = self->private_impl.c_decode[0].v_end_code;
     v_use_save_code = self->private_impl.c_decode[0].v_use_save_code;
@@ -859,7 +872,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     v_s = self->private_impl.c_decode[0].v_s;
     v_c = self->private_impl.c_decode[0].v_c;
   }
-  switch (self->private_impl.c_decode[0].coro_state) {
+  switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
     v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
@@ -969,6 +982,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
   goto suspend;
 suspend:
+  self->private_impl.c_decode[0].coro_state = coro_state;
   self->private_impl.c_decode[0].v_clear_code = v_clear_code;
   self->private_impl.c_decode[0].v_end_code = v_end_code;
   self->private_impl.c_decode[0].v_use_save_code = v_use_save_code;

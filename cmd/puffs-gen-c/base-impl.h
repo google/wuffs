@@ -9,9 +9,11 @@
 // Use switch cases for coroutine state, similar to the technique in
 // https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
-// We use a trivial macro instead of an explicit case statement so that
-// clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_STATE(n) case n:
+// We use a trivial macro instead of an explicit assignment and case statement
+// so that clang-format doesn't get confused by the unusual "case"s.
+#define PUFFS_COROUTINE_STATE(n) \
+  coro_state = n;                \
+  case n:
 
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
 
