@@ -787,7 +787,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
       PUFFS_COROUTINE_STATE(4);
       status = puffs_gif_lzw_decoder_decode(&self->private_impl.f_lzw, a_dst,
                                             v_lzw_src);
-      if (status) {
+      if (status & 1) {
         return status;
       }
     }

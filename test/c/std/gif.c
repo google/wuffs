@@ -347,8 +347,7 @@ void test_gif_decode_input_is_a_gif() {
   test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
                                  "../../testdata/bricks-dither.palette",
                                  "../../testdata/bricks-dither.indexes",
-                                 // TODO: puffs_gif_status_ok);
-                                 puffs_gif_status_short_read);
+                                 puffs_gif_status_ok);
 }
 
 void test_gif_decode_input_is_a_png() {

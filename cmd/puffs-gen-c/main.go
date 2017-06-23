@@ -1214,7 +1214,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isDecode(g.tm, n) {
 		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
 			g.pkgName, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
-		g.writes("if (status) { return status; }\n")
+		// TODO: be principled with "if (status&1)" vs "if (status)".
+		g.writes("if (status&1) { return status; }\n")
 		return nil
 
 	} else {
