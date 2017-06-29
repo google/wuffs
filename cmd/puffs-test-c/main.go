@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	bench = flag.Bool("b", false, "whether to run benchmarks instead of regular tests")
+	bench = flag.Bool("bench", false, "whether to run benchmarks instead of regular tests")
 )
 
 func main() {
@@ -68,7 +68,7 @@ func do(filename string) (failed bool, err error) {
 
 		outArgs := []string(nil)
 		if *bench {
-			outArgs = append(outArgs, "-b")
+			outArgs = append(outArgs, "-bench")
 		}
 		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout

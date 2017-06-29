@@ -89,7 +89,7 @@ func benchTestDir(puffsRoot string, dirname string, langs []string, bench bool) 
 		command := "puffs-test-" + lang
 		args := []string(nil)
 		if bench {
-			args = append(args, "-b")
+			args = append(args, "-bench")
 		}
 		args = append(args, filepath.Join(puffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)

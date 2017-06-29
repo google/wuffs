@@ -66,8 +66,11 @@ int main(int argc, char** argv) {
   bool bench = false;
   int i;
   for (i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-b")) {
+    if (!strcmp(argv[i], "-bench")) {
       bench = true;
+    } else {
+      fprintf(stderr, "unknown flag \"%s\"\n", argv[i]);
+      return 1;
     }
   }
 
