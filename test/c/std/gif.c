@@ -304,7 +304,8 @@ void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
 
   bench_start();
   uint64_t n_bytes = 0;
-  for (uint64_t i = 0; i < reps; i++) {
+  uint64_t i;
+  for (i = 0; i < reps; i++) {
     dst.wi = 0;
     src.ri = 1;  // Skip the literal width.
     puffs_gif_lzw_decoder dec;
@@ -420,7 +421,8 @@ void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
 
   bench_start();
   uint64_t n_bytes = 0;
-  for (uint64_t i = 0; i < reps; i++) {
+  uint64_t i;
+  for (i = 0; i < reps; i++) {
     dst.wi = 0;
     src.ri = 0;
     puffs_gif_decoder dec;

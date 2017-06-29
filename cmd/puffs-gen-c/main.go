@@ -992,7 +992,8 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			// TODO: arrays of arrays.
 			cv := n.XType().ArrayLength().ConstValue()
 			// TODO: check that cv is within size_t's range.
-			g.printf("for (size_t i = 0; i < %d; i++) { %s%s[i] = 0; }\n", cv, vPrefix, n.Name().String(g.tm))
+			g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = 0; }}\n",
+				cv, vPrefix, n.Name().String(g.tm))
 		} else {
 			g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 			if v := n.Value(); v != nil {

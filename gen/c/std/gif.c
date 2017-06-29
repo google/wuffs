@@ -472,8 +472,11 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
-    for (size_t i = 0; i < 6; i++) {
-      v_c[i] = 0;
+    {
+      size_t i;
+      for (i = 0; i < 6; i++) {
+        v_c[i] = 0;
+      }
     };
     v_i = 0;
     while (v_i < 6) {
@@ -527,8 +530,11 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
   switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
-    for (size_t i = 0; i < 7; i++) {
-      v_c[i] = 0;
+    {
+      size_t i;
+      for (i = 0; i < 7; i++) {
+        v_c[i] = 0;
+      }
     };
     v_i = 0;
     while (v_i < 7) {
@@ -717,8 +723,11 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   switch (coro_state) {
     PUFFS_COROUTINE_STATE(0);
 
-    for (size_t i = 0; i < 9; i++) {
-      v_c[i] = 0;
+    {
+      size_t i;
+      for (i = 0; i < 9; i++) {
+        v_c[i] = 0;
+      }
     };
     v_i = 0;
     while (v_i < 9) {

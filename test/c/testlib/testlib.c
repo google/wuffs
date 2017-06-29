@@ -64,7 +64,8 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
 
 int main(int argc, char** argv) {
   bool bench = false;
-  for (int i = 1; i < argc; i++) {
+  int i;
+  for (i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-b")) {
       bench = true;
     }
@@ -81,11 +82,12 @@ int main(int argc, char** argv) {
         "https://godoc.org/golang.org/x/perf/cmd/benchstat\n");
   }
 
-  for (int i = 0; i < proc_reps; i++) {
+  for (i = 0; i < proc_reps; i++) {
     bench_warm_up = i == 0;
-    for (proc* t = procs; *t; t++) {
+    proc* p;
+    for (p = procs; *p; p++) {
       proc_funcname = "unknown_funcname";
-      (*t)();
+      (*p)();
       if (fail_msg[0]) {
         printf("%-16s%-8sFAIL %s: %s\n", proc_filename, cc, proc_funcname,
                fail_msg);
@@ -167,7 +169,8 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
     return msg;
   }
   size_t base = i - (i & 15);
-  for (int j = -3 * 16; j <= +3 * 16; j += 16) {
+  int j;
+  for (j = -3 * 16; j <= +3 * 16; j += 16) {
     if ((j < 0) && (base < (size_t)(-j))) {
       continue;
     }
@@ -177,7 +180,8 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
     }
     size_t n = buf->wi - b;
     INCR_FAIL(msg, "  %06zx:", b);
-    for (size_t k = 0; k < 16; k++) {
+    size_t k;
+    for (k = 0; k < 16; k++) {
       if (k % 2 == 0) {
         INCR_FAIL(msg, " ");
       }
@@ -188,7 +192,7 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
       }
     }
     INCR_FAIL(msg, "  ");
-    for (size_t k = 0; k < 16; k++) {
+    for (k = 0; k < 16; k++) {
       char c = ' ';
       if (k < n) {
         c = buf->ptr[b + k];

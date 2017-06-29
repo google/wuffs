@@ -2,11 +2,9 @@
 // in the LICENSE file.
 
 /*
-peterface decodes pjw's iconic face, stored as a GIF image.
+peterface decodes pjw's iconic face, stored as a GIF image. To run:
 
-Compile it in C99 mode:
-
-$cc -std=c99 peterface.c && ./a.out; rm -f a.out
+$cc peterface.c && ./a.out; rm -f a.out
 
 for a C compiler $cc, such as clang or gcc.
 */
@@ -44,8 +42,10 @@ int main(int argc, char** argv) {
     return 1;
   }
   uint8_t* p = dst.ptr;
-  for (int y = 0; y < 32; y++) {
-    for (int x = 0; x < 32; x++) {
+  int y;
+  for (y = 0; y < 32; y++) {
+    int x;
+    for (x = 0; x < 32; x++) {
       putchar(*p++ ? '-' : '8');
     }
     putchar('\n');
