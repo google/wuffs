@@ -9,16 +9,32 @@ $cc peterface.c && ./a.out; rm -f a.out
 for a C compiler $cc, such as clang or gcc.
 */
 
-#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "../../gen/c/std/gif.c"
 
+#ifdef __linux__
+#include <linux/prctl.h>
+#include <linux/seccomp.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#define PUFFS_EXAMPLE_USE_SECCOMP
+#endif
+
 #define DST_BUFFER_SIZE (1024 * 1024)
+
+// TODO: provide API to get the width and height. Don't hard code 32/32.
+#define WIDTH 32
+#define HEIGHT 32
 
 uint8_t pjw_ptr[];
 size_t pjw_len;
 
-int main(int argc, char** argv) {
+// ignore_return_value suppresses errors from -Wall -Werror.
+static void ignore_return_value(int ignored) {}
+
+static const char* decode(puffs_gif_decoder* dec) {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
   puffs_base_buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
   puffs_base_buf1 src = {
@@ -26,33 +42,51 @@ int main(int argc, char** argv) {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
-  puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_gif_status s = puffs_gif_decoder_decode(dec, dst_writer, src_reader);
   if (s) {
-    fprintf(stderr, "%s\n", puffs_gif_status_string(s));
-    puffs_gif_decoder_destructor(&dec);
-    return 1;
+    return puffs_gif_status_string(s);
   }
 
-  // TODO: provide API to get the width and height. Don't hard code 32/32.
-  if (dst.wi != 32 * 32) {
-    fprintf(stderr, "image dimensions not 32x32\n");
-    puffs_gif_decoder_destructor(&dec);
-    return 1;
+  if (dst.wi != WIDTH * HEIGHT) {
+    return "image dimensions not 32x32";
   }
   uint8_t* p = dst.ptr;
   int y;
-  for (y = 0; y < 32; y++) {
+  for (y = 0; y < HEIGHT; y++) {
+    uint8_t buf[WIDTH + 1];
     int x;
-    for (x = 0; x < 32; x++) {
-      putchar(*p++ ? '-' : '8');
+    for (x = 0; x < WIDTH; x++) {
+      buf[x] = *p++ ? '-' : '8';
     }
-    putchar('\n');
+    buf[WIDTH] = '\n';
+    ignore_return_value(write(1, buf, WIDTH + 1));
+  }
+  return NULL;
+}
+
+int main(int argc, char** argv) {
+#ifdef PUFFS_EXAMPLE_USE_SECCOMP
+  prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
+#endif
+
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  const char* status_msg = decode(&dec);
+  puffs_gif_decoder_destructor(&dec);
+
+  int status = 0;
+  if (status_msg) {
+    status = 1;
+    ignore_return_value(write(2, status_msg, strnlen(status_msg, 4095)));
+    ignore_return_value(write(2, "\n", 1));
   }
 
-  puffs_gif_decoder_destructor(&dec);
-  return 0;
+#ifdef PUFFS_EXAMPLE_USE_SECCOMP
+  // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
+  // SECCOMP_MODE_STRICT allows only the former.
+  syscall(SYS_exit, status);
+#endif
+  return status;
 }
 
 /*
