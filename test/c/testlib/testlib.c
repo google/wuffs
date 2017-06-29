@@ -77,9 +77,11 @@ int main(int argc, char** argv) {
     proc_reps = 5 + 1;  // +1 for the warm up run.
     procs = benches;
     printf(
-        "# The output format, including the redundant \"Benchmark\"s, is "
-        "compatible with\n# "
-        "https://godoc.org/golang.org/x/perf/cmd/benchstat\n");
+        "# The output format, including the \"Benchmark\" prefixes, is "
+        "compatible with the\n"
+        "# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install "
+        "it, first\n"
+        "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
   }
 
   for (i = 0; i < proc_reps; i++) {
