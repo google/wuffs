@@ -8,6 +8,11 @@ Bruegel the Elder, held by the Metropolitan Museum of Art.
 http://www.metmuseum.org/art/collection/search/435809 lists that image as in
 the public domain.
 
+hat.* are various encodings of a photo of "Self-Portrait with a Straw Hat
+(obverse: The Potato Peeler)" by Vincent van Gogh, held by the Metropolitan
+Museum of art. http://www.metmuseum.org/art/collection/search/436532 lists that
+image as in the public domain.
+
 hibiscus.* are various encodings of a photo of "Hibiscus and Parrots" by Louis
 Comfort Tiffany, held by the Metropolitan Museum of Art.
 http://www.metmuseum.org/art/collection/search/13503 lists that image as in the

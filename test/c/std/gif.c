@@ -441,9 +441,9 @@ void bench_gif_decode_1k() {
   bench_gif_decode_xxx("../../testdata/pjw-thumbnail.gif", 200000);
 }
 
-void bench_gif_decode_20k() {
+void bench_gif_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx("../../testdata/bricks-dither.gif", 5000);
+  bench_gif_decode_xxx("../../testdata/hat.gif", 10000);
 }
 
 void bench_gif_decode_100k() {
@@ -490,7 +490,7 @@ proc benches[] = {
 
     // GIF Benches
     bench_gif_decode_1k,     //
-    bench_gif_decode_20k,    //
+    bench_gif_decode_10k,    //
     bench_gif_decode_100k,   //
     bench_gif_decode_1000k,  //
 
