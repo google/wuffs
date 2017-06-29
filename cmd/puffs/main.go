@@ -19,6 +19,7 @@ var commands = []struct {
 	name string
 	do   func(puffsRoot string, args []string) error
 }{
+	{"bench", doBench},
 	{"gen", doGen},
 	{"test", doTest},
 }

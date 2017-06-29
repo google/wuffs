@@ -15,7 +15,7 @@ Each edition should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/std/gif.c"
 #include "../testlib/testlib.c"
 
-const char* test_filename = "std/gif.c";
+const char* proc_filename = "std/gif.c";
 
 #define BUFFER_SIZE (1024 * 1024)
 
@@ -27,7 +27,7 @@ uint8_t global_palette_buffer[3 * 256];
 // ---------------- Basic Tests
 
 void test_basic_bad_argument_out_of_range() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
 
@@ -54,7 +54,7 @@ void test_basic_bad_argument_out_of_range() {
 }
 
 void test_basic_bad_receiver() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_base_writer1 dst = {0};
   puffs_base_reader1 src = {0};
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL, dst, src);
@@ -64,7 +64,7 @@ void test_basic_bad_receiver() {
 }
 
 void test_basic_constructor_not_called() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_gif_lzw_decoder dec = {{0}};
   puffs_base_writer1 dst = {0};
   puffs_base_reader1 src = {0};
@@ -76,7 +76,7 @@ void test_basic_constructor_not_called() {
 }
 
 void test_basic_puffs_version_bad() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
   if (dec.private_impl.status != puffs_gif_error_bad_version) {
@@ -89,7 +89,7 @@ cleanup0:
 }
 
 void test_basic_puffs_version_good() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
@@ -106,7 +106,7 @@ cleanup0:
 }
 
 void test_basic_status_is_error() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   if (puffs_gif_status_is_error(puffs_gif_status_ok)) {
     FAIL("is_error(ok) returned true");
     return;
@@ -126,7 +126,7 @@ void test_basic_status_is_error() {
 }
 
 void test_basic_status_strings() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   const char* s0 = puffs_gif_status_string(puffs_gif_status_ok);
   const char* t0 = "gif: ok";
   if (strcmp(s0, t0)) {
@@ -161,7 +161,7 @@ void test_basic_status_strings() {
 }
 
 void test_basic_sub_struct_constructor() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   puffs_gif_decoder dec;
   puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
@@ -272,13 +272,63 @@ cleanup0:;
 }
 
 void test_lzw_decode_many_small_inputs() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   test_lzw_decode_xxx(100);
 }
 
 void test_lzw_decode_one_large_input() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   test_lzw_decode_xxx(1 << 30);
+}
+
+// ---------------- LZW Benches
+
+void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
+  puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_writer1 dst_writer = {.buf = &dst};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  if (!read_file(&src, filename)) {
+    return;
+  }
+  if (src.wi <= 0) {
+    FAIL("src size: got %d, want > 0", (int)(src.wi));
+    return;
+  }
+  uint8_t literal_width = src.ptr[0];
+  if (literal_width != 0x08) {
+    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
+    return;
+  }
+
+  bench_start();
+  uint64_t n_bytes = 0;
+  for (uint64_t i = 0; i < reps; i++) {
+    dst.wi = 0;
+    src.ri = 1;  // Skip the literal width.
+    puffs_gif_lzw_decoder dec;
+    puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+    puffs_gif_status s =
+        puffs_gif_lzw_decoder_decode(&dec, dst_writer, src_reader);
+    puffs_gif_lzw_decoder_destructor(&dec);
+    if (s) {
+      FAIL("decode: %s", puffs_gif_status_string(s));
+      return;
+    }
+    n_bytes += dst.wi;
+  }
+  bench_finish(reps, n_bytes);
+}
+
+void bench_lzw_decode_20k() {
+  proc_funcname = __func__;
+  bench_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 5000);
+}
+
+void bench_lzw_decode_100k() {
+  proc_funcname = __func__;
+  bench_lzw_decode_xxx("../../testdata/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
@@ -343,7 +393,7 @@ cleanup0:;
 }
 
 void test_gif_decode_input_is_a_gif() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
                                  "../../testdata/bricks-dither.palette",
                                  "../../testdata/bricks-dither.indexes",
@@ -351,15 +401,65 @@ void test_gif_decode_input_is_a_gif() {
 }
 
 void test_gif_decode_input_is_a_png() {
-  test_funcname = __func__;
+  proc_funcname = __func__;
   test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png", "", "",
                                  puffs_gif_error_bad_gif_header);
+}
+
+// ---------------- GIF Benches
+
+void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
+  puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_writer1 dst_writer = {.buf = &dst};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  if (!read_file(&src, filename)) {
+    return;
+  }
+
+  bench_start();
+  uint64_t n_bytes = 0;
+  for (uint64_t i = 0; i < reps; i++) {
+    dst.wi = 0;
+    src.ri = 0;
+    puffs_gif_decoder dec;
+    puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+    puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+    puffs_gif_decoder_destructor(&dec);
+    if (s) {
+      FAIL("decode: %s", puffs_gif_status_string(s));
+      return;
+    }
+    n_bytes += dst.wi;
+  }
+  bench_finish(reps, n_bytes);
+}
+
+void bench_gif_decode_1k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx("../../testdata/pjw-thumbnail.gif", 200000);
+}
+
+void bench_gif_decode_20k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx("../../testdata/bricks-dither.gif", 5000);
+}
+
+void bench_gif_decode_100k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx("../../testdata/hibiscus.gif", 1000);
+}
+
+void bench_gif_decode_1000k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx("../../testdata/harvesters.gif", 100);
 }
 
 // ---------------- Manifest
 
 // The empty comments forces clang-format to place one element per line.
-test tests[] = {
+proc tests[] = {
     // Basic Tests
     test_basic_bad_argument_out_of_range,  //
     test_basic_bad_receiver,               //
@@ -369,12 +469,31 @@ test tests[] = {
     test_basic_status_is_error,            //
     test_basic_status_strings,             //
     test_basic_sub_struct_constructor,     //
+
     // LZW Tests
     test_lzw_decode_many_small_inputs,  //
     test_lzw_decode_one_large_input,    //
+
     // GIF Tests
     test_gif_decode_input_is_a_gif,  //
     test_gif_decode_input_is_a_png,  //
+
+    // End
+    NULL,
+};
+
+// The empty comments forces clang-format to place one element per line.
+proc benches[] = {
+    // LZW Benches
+    bench_lzw_decode_20k,   //
+    bench_lzw_decode_100k,  //
+
+    // GIF Benches
+    bench_gif_decode_1k,     //
+    bench_gif_decode_20k,    //
+    bench_gif_decode_100k,   //
+    bench_gif_decode_1000k,  //
+
     // End
     NULL,
 };

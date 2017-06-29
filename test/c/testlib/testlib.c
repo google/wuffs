@@ -2,8 +2,10 @@
 // in the LICENSE file.
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 char fail_msg[65536] = {0};
 
@@ -13,36 +15,88 @@ char fail_msg[65536] = {0};
 
 int tests_run = 0;
 
-typedef void (*test)();
+typedef void (*proc)();
 
-test tests[];
+proc benches[];
+proc tests[];
 
-const char* test_filename;
-const char* test_funcname = "";
+const char* proc_filename;
+const char* proc_funcname = "";
 
-int main(int argc, char** argv) {
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
-  const char* cc = "clang";
+const char* cc = "clang";
 #elif defined(__GNUC__)
-  const char* cc = "gcc";
+const char* cc = "gcc";
 #elif defined(_MSC_VER)
-  const char* cc = "cl";
+const char* cc = "cl";
 #else
-  const char* cc = "cc";
+const char* cc = "cc";
 #endif
 
-  for (test* t = tests; *t; t++) {
-    test_funcname = "unknown_test_funcname";
-    (*t)();
-    if (fail_msg[0]) {
-      printf("%-16s%-8sFAIL %s: %s\n", test_filename, cc, test_funcname,
-             fail_msg);
-      return 1;
-    }
-    tests_run++;
+bool bench_warm_up;
+struct timeval bench_start_tv;
+
+void bench_start() {
+  gettimeofday(&bench_start_tv, NULL);
+}
+
+void bench_finish(uint64_t reps, uint64_t n_bytes) {
+  struct timeval bench_finish_tv;
+  gettimeofday(&bench_finish_tv, NULL);
+  int64_t micros =
+      (int64_t)(bench_finish_tv.tv_sec - bench_start_tv.tv_sec) * 1000000 +
+      (int64_t)(bench_finish_tv.tv_usec - bench_start_tv.tv_usec);
+  uint64_t nanos = 1;
+  if (micros > 0) {
+    nanos = (uint64_t)(micros)*1000;
   }
-  printf("%-16s%-8sPASS (%d tests run)\n", test_filename, cc, tests_run);
+  uint64_t kb_per_s = n_bytes * 1000000 / nanos;
+  if (bench_warm_up) {
+    printf("# (warm up) %s_%s\t%8" PRIu64 ".%06" PRIu64 " seconds\n",
+           proc_funcname, cc, nanos / 1000000000, (nanos % 1000000000) / 1000);
+  } else {
+    printf("Benchmark%s_%s\t%8" PRIu64 "\t%8" PRIu64 " ns/op\t%8d.%03d MB/s\n",
+           proc_funcname, cc, reps, nanos / reps, (int)(kb_per_s / 1000),
+           (int)(kb_per_s % 1000));
+  }
+}
+
+int main(int argc, char** argv) {
+  bool bench = false;
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-b")) {
+      bench = true;
+    }
+  }
+
+  int proc_reps = 1;
+  proc* procs = tests;
+  if (bench) {
+    proc_reps = 5 + 1;  // +1 for the warm up run.
+    procs = benches;
+    printf(
+        "# The output format, including the redundant \"Benchmark\"s, is "
+        "compatible with\n# "
+        "https://godoc.org/golang.org/x/perf/cmd/benchstat\n");
+  }
+
+  for (int i = 0; i < proc_reps; i++) {
+    bench_warm_up = i == 0;
+    for (proc* t = procs; *t; t++) {
+      proc_funcname = "unknown_funcname";
+      (*t)();
+      if (fail_msg[0]) {
+        printf("%-16s%-8sFAIL %s: %s\n", proc_filename, cc, proc_funcname,
+               fail_msg);
+        return 1;
+      }
+      tests_run++;
+    }
+  }
+  if (!bench) {
+    printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
+  }
   return 0;
 }
 

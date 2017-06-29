@@ -1,7 +1,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// puffs-test-c runs C test programs.
+// puffs-test-c runs C benchmark and test programs.
 package main
 
 import (
@@ -11,6 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+)
+
+var (
+	bench = flag.Bool("b", false, "whether to run benchmarks instead of regular tests")
 )
 
 func main() {
@@ -47,14 +51,26 @@ func do(filename string) (failed bool, err error) {
 		in := filename + ".c"
 		out := filepath.Join(workDir, cc+".out")
 
-		ccCmd := exec.Command(cc, "-std=c99", "-Wall", "-Werror", "-o", out, in)
+		ccArgs := []string(nil)
+		if *bench {
+			ccArgs = append(ccArgs, "-O3")
+		} else {
+			// TODO: set these flags even if we pass -O3.
+			ccArgs = append(ccArgs, "-Wall", "-Werror")
+		}
+		ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
+		ccCmd := exec.Command(cc, ccArgs...)
 		ccCmd.Stdout = os.Stdout
 		ccCmd.Stderr = os.Stderr
 		if err := ccCmd.Run(); err != nil {
 			return false, err
 		}
 
-		outCmd := exec.Command(out)
+		outArgs := []string(nil)
+		if *bench {
+			outArgs = append(outArgs, "-b")
+		}
+		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout
 		outCmd.Stderr = os.Stderr
 		outCmd.Dir = filepath.Dir(filename)
