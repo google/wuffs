@@ -339,7 +339,23 @@ func (g *gen) writeLoadDerivedVar(name t.ID, typ *a.TypeExpr, decl bool) error {
 		g.printf("}\n")
 
 	case t.KeyWriter1:
-		// TODO.
+		if decl {
+			g.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
+			g.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
+		}
+		g.printf("if (%s%s.buf) {", aPrefix, nameStr)
+
+		g.printf("%swptr_%s = %s%s.buf->ptr + %s%s.buf->wi;",
+			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;",
+			aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("puffs_base_limit1* lim;")
+		g.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
+		g.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
+		g.printf("}")
+		g.printf("%swend_%s = %swptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
+
+		g.printf("}\n")
 	}
 	return nil
 }
@@ -367,7 +383,17 @@ func (g *gen) writeSaveDerivedVar(name t.ID, typ *a.TypeExpr) error {
 		g.printf("}\n")
 
 	case t.KeyWriter1:
-		// TODO.
+		g.printf("if (%s%s.buf) {", aPrefix, nameStr)
+
+		g.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
+			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("%s%s.buf->wi += n;", aPrefix, nameStr)
+		g.printf("puffs_base_limit1* lim;")
+		g.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
+		g.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
+		g.printf("}")
+
+		g.printf("}\n")
 	}
 	return nil
 }
@@ -811,8 +837,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("if ((%sdst.buf->len - %sdst.buf->wi) < (sizeof(self->private_impl.f_stack) - v_s)) {",
-			aPrefix, aPrefix)
+		g.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
+			bPrefix, bPrefix)
 		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
@@ -820,22 +846,21 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("memmove(" +
-			"a_dst.buf->ptr + a_dst.buf->wi," +
+		g.printf("memmove(b_wptr_dst," +
 			"self->private_impl.f_stack + v_s," +
 			"sizeof(self->private_impl.f_stack) - v_s);\n")
-		g.printf("a_dst.buf->wi += sizeof(self->private_impl.f_stack) - v_s;\n")
+		g.printf("b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		g.printf("if (%sdst.buf->wi >= %sdst.buf->len) { status = puffs_%s_status_short_write;",
-			aPrefix, aPrefix, g.pkgName)
+		g.printf("if (%swptr_dst == %swend_dst) { status = puffs_%s_status_short_write;",
+			bPrefix, bPrefix, g.pkgName)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
 		g.writes("}\n")
-		g.printf("%sdst.buf->ptr[%sdst.buf->wi++] = ", aPrefix, aPrefix)
+		g.printf("*%swptr_dst++ = ", bPrefix)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err

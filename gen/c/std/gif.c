@@ -1053,6 +1053,19 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_s;
   uint32_t v_c;
 
+  uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wend_dst = NULL;
+  if (a_dst.buf) {
+    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    size_t len = a_dst.buf->len - a_dst.buf->wi;
+    puffs_base_limit1* lim;
+    for (lim = &a_dst.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+        len = *lim->ptr_to_len;
+      }
+    }
+    b_wend_dst = b_wptr_dst + len;
+  }
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
@@ -1111,11 +1124,11 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       v_n_bits -= v_width;
       if (v_code < v_clear_code) {
         PUFFS_COROUTINE_STATE(2);
-        if (a_dst.buf->wi >= a_dst.buf->len) {
+        if (b_wptr_dst == b_wend_dst) {
           status = puffs_gif_status_short_write;
           goto suspend;
         }
-        a_dst.buf->ptr[a_dst.buf->wi++] = ((uint8_t)(v_code));
+        *b_wptr_dst++ = ((uint8_t)(v_code));
         if (v_use_save_code) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_code));
           self->private_impl.f_prefixes[v_save_code] =
@@ -1155,15 +1168,14 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           status = puffs_gif_error_closed_for_writes;
           goto suspend;
         }
-        if ((a_dst.buf->len - a_dst.buf->wi) <
+        if ((b_wend_dst - b_wptr_dst) <
             (sizeof(self->private_impl.f_stack) - v_s)) {
           status = puffs_gif_status_short_write;
           goto suspend;
         }
-        memmove(a_dst.buf->ptr + a_dst.buf->wi,
-                self->private_impl.f_stack + v_s,
+        memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
                 sizeof(self->private_impl.f_stack) - v_s);
-        a_dst.buf->wi += sizeof(self->private_impl.f_stack) - v_s;
+        b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;
         if (v_use_save_code) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_c));
           self->private_impl.f_prefixes[v_save_code] =
@@ -1200,6 +1212,16 @@ suspend:
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
 
+  if (a_dst.buf) {
+    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+    a_dst.buf->wi += n;
+    puffs_base_limit1* lim;
+    for (lim = &a_dst.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+  }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
