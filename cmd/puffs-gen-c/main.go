@@ -34,6 +34,7 @@ var (
 // "double" being a valid Puffs variable name but not a valid C one.
 const (
 	aPrefix = "a_" // Function argument.
+	bPrefix = "b_" // Derived from a function argument.
 	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
 	lPrefix = "l_" // Limit length.

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -13,6 +14,7 @@ import (
 
 type perFunc struct {
 	funk         *a.Func
+	derivedVars  map[t.ID]struct{}
 	jumpTargets  map[*a.While]uint32
 	coroState    uint32
 	tempW        uint32
@@ -121,6 +123,15 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	g.writes("\n")
 
 	if g.perFunc.suspendible {
+		g.findDerivedVars()
+		for _, o := range n.In().Fields() {
+			o := o.Field()
+			if err := g.writeLoadDerivedVar(o.Name(), o.XType(), true); err != nil {
+				return err
+			}
+		}
+		g.writes("\n")
+
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		g.printf("uint32_t coro_state = self->private_impl.%s%s[0].coro_state;\n", cPrefix, n.Name().String(g.tm))
 		g.printf("if (coro_state) {\n")
@@ -151,6 +162,14 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		g.printf("self->private_impl.%s%s[0].coro_state = coro_state;\n", cPrefix, n.Name().String(g.tm))
 		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
 			return err
+		}
+		g.writes("\n")
+
+		for _, o := range n.In().Fields() {
+			o := o.Field()
+			if err := g.writeSaveDerivedVar(o.Name(), o.XType()); err != nil {
+				return err
+			}
 		}
 		g.writes("\n")
 
@@ -234,6 +253,156 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 		g.printf("return;")
 	}
 	g.writes("}\n")
+	return nil
+}
+
+var errNeedDerivedVar = errors.New("internal: need derived var")
+
+func (g *gen) needDerivedVar(name t.ID) bool {
+	for _, o := range g.perFunc.funk.Body() {
+		err := o.Walk(func(p *a.Node) error {
+			// Look for p matching "in.name.etc(etc)".
+			if p.Kind() != a.KExpr {
+				return nil
+			}
+			q := p.Expr()
+			if q.ID0().Key() != t.KeyOpenParen {
+				return nil
+			}
+			q = q.LHS().Expr()
+			if q.ID0().Key() != t.KeyDot {
+				return nil
+			}
+			q = q.LHS().Expr()
+			if q.ID0().Key() != t.KeyDot || q.ID1() != name {
+				return nil
+			}
+			q = q.LHS().Expr()
+			if q.ID0() != 0 || q.ID1().Key() != t.KeyIn {
+				return nil
+			}
+			return errNeedDerivedVar
+		})
+		if err == errNeedDerivedVar {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *gen) findDerivedVars() {
+	for _, o := range g.perFunc.funk.In().Fields() {
+		o := o.Field()
+		oTyp := o.XType()
+		if oTyp.Decorator() != 0 {
+			continue
+		}
+		if k := oTyp.Name().Key(); k != t.KeyReader1 && k != t.KeyWriter1 {
+			continue
+		}
+		if !g.needDerivedVar(o.Name()) {
+			continue
+		}
+		if g.perFunc.derivedVars == nil {
+			g.perFunc.derivedVars = map[t.ID]struct{}{}
+		}
+		g.perFunc.derivedVars[o.Name()] = struct{}{}
+	}
+}
+
+func (g *gen) writeLoadDerivedVar(name t.ID, typ *a.TypeExpr, decl bool) error {
+	if g.perFunc.derivedVars == nil {
+		return nil
+	}
+	if _, ok := g.perFunc.derivedVars[name]; !ok {
+		return nil
+	}
+	nameStr := name.String(g.tm)
+	switch typ.Name().Key() {
+	case t.KeyReader1:
+		if decl {
+			g.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
+			g.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
+		}
+		g.printf("if (%s%s.buf) {", aPrefix, nameStr)
+
+		g.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
+			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;",
+			aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("puffs_base_limit1* lim;")
+		g.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
+		g.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
+		g.printf("}")
+		g.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
+
+		g.printf("}\n")
+
+	case t.KeyWriter1:
+		// TODO.
+	}
+	return nil
+}
+
+func (g *gen) writeSaveDerivedVar(name t.ID, typ *a.TypeExpr) error {
+	if g.perFunc.derivedVars == nil {
+		return nil
+	}
+	if _, ok := g.perFunc.derivedVars[name]; !ok {
+		return nil
+	}
+	nameStr := name.String(g.tm)
+	switch typ.Name().Key() {
+	case t.KeyReader1:
+		g.printf("if (%s%s.buf) {", aPrefix, nameStr)
+
+		g.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
+			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		g.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
+		g.printf("puffs_base_limit1* lim;")
+		g.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
+		g.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
+		g.printf("}")
+
+		g.printf("}\n")
+
+	case t.KeyWriter1:
+		// TODO.
+	}
+	return nil
+}
+
+func (g *gen) writeLoadExprDerivedVars(n *a.Expr) error {
+	if g.perFunc.derivedVars == nil || n.ID0().Key() != t.KeyOpenParen {
+		return nil
+	}
+	for _, o := range n.Args() {
+		o := o.Arg()
+		// TODO: don't hard-code these.
+		if s := o.Value().String(g.tm); s != "in.src" && s != "lzw_src" {
+			continue
+		}
+		if err := g.writeLoadDerivedVar(o.Name(), o.Value().MType(), false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *gen) writeSaveExprDerivedVars(n *a.Expr) error {
+	if g.perFunc.derivedVars == nil || n.ID0().Key() != t.KeyOpenParen {
+		return nil
+	}
+	for _, o := range n.Args() {
+		o := o.Arg()
+		// TODO: don't hard-code these.
+		if s := o.Value().String(g.tm); s != "in.src" && s != "lzw_src" {
+			continue
+		}
+		if err := g.writeSaveDerivedVar(o.Name(), o.Value().MType()); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -569,6 +738,10 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
+	if err := g.writeSaveExprDerivedVars(n); err != nil {
+		return err
+	}
+
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	//
 	// TODO: check reader1.buf and writer1.buf is non-NULL.
@@ -579,10 +752,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		temp := g.perFunc.tempW
 		g.perFunc.tempW++
 
-		// TODO: loop over all limits, not just the first one.
-		g.printf("if ((%ssrc.buf->ri >= %ssrc.buf->wi) || "+
-			"(%ssrc.limit.ptr_to_len && (*%ssrc.limit.ptr_to_len == 0))) {",
-			aPrefix, aPrefix, aPrefix, aPrefix)
+		g.printf("if (%srptr_src == %srend_src) {", bPrefix, bPrefix)
+		// TODO: ri == wi isn't the right condition.
 		g.printf("status = ((%ssrc.buf->closed) && (%ssrc.buf->ri == %ssrc.buf->wi)) ?"+
 			"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
 			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
@@ -597,8 +768,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		if err := g.writeCTypeName(n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 			return err
 		}
-		g.printf(" = %ssrc.buf->ptr[%ssrc.buf->ri++];\n", aPrefix, aPrefix)
-		g.printf("if (%ssrc.limit.ptr_to_len) { (*%ssrc.limit.ptr_to_len)--; }\n", aPrefix, aPrefix)
+		g.printf(" = *%srptr_src++;\n", bPrefix)
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		if g.perFunc.tempW > maxTemp {
@@ -616,21 +786,21 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes(";\n")
 
-		g.printf("if (%s%d > %ssrc.buf->wi - %ssrc.buf->ri) {\n", tPrefix, temp, aPrefix, aPrefix)
+		g.printf("if (%s%d > %srend_src - %srptr_src) {\n", tPrefix, temp, bPrefix, bPrefix)
 		// TODO: save tPrefix+temp as coroutine state, and suspend.
-		g.printf("%s%d -= %ssrc.buf->wi - %ssrc.buf->ri;\n", tPrefix, temp, aPrefix, aPrefix)
+		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
 		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
 
 		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
 			aPrefix, g.pkgName, g.pkgName)
-		if g.perFunc.public && g.perFunc.suspendible {
+		if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
 			g.writes("goto suspend;")
 		} else {
 			g.writes("return status;")
 		}
 
 		g.writes("}\n")
-		g.printf("%ssrc.buf->ri += %s%d;\n", aPrefix, tPrefix, temp)
+		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
@@ -675,29 +845,43 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
 		g.printf("status = puffs_%s_%s_decode_lsd(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
 		g.printf("status = puffs_%s_%s_decode_extension(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		g.printf("status = puffs_%s_%s_decode_id(self, %sdst, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isDecode(g.tm, n) {
 		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
 			g.pkgName, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
 		// TODO: be principled with "if (status&1)" vs "if (status)".
 		g.writes("if (status&1) { return status; }\n")
-		return nil
 
 	} else {
 		// TODO: fix this.
