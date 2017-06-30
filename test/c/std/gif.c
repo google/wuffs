@@ -188,14 +188,6 @@ void test_lzw_decode_xxx(const char* src_filename,
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&want, want_filename)) {
-    goto cleanup0;
-  }
-  if (want.wi != want_size) {
-    FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
-    goto cleanup0;
-  }
-
   if (!read_file(&src, src_filename)) {
     goto cleanup0;
   }
@@ -210,6 +202,14 @@ void test_lzw_decode_xxx(const char* src_filename,
     goto cleanup0;
   }
   src.ri++;
+
+  if (!read_file(&want, want_filename)) {
+    goto cleanup0;
+  }
+  if (want.wi != want_size) {
+    FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
+    goto cleanup0;
+  }
 
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
@@ -349,10 +349,10 @@ void bench_lzw_decode_100k() {
 
 // ---------------- GIF Tests
 
-void test_gif_decode_input_is_a_xxx(const char* filename,
-                                    const char* palette_filename,
-                                    const char* indexes_filename,
-                                    puffs_gif_status want) {
+void test_gif_decode_xxx(const char* filename,
+                         const char* palette_filename,
+                         const char* indexes_filename,
+                         puffs_gif_status want) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -410,16 +410,16 @@ cleanup0:;
 
 void test_gif_decode_input_is_a_gif() {
   proc_funcname = __func__;
-  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.gif",
-                                 "../../testdata/bricks-dither.palette",
-                                 "../../testdata/bricks-dither.indexes",
-                                 puffs_gif_status_ok);
+  test_gif_decode_xxx("../../testdata/bricks-dither.gif",
+                      "../../testdata/bricks-dither.palette",
+                      "../../testdata/bricks-dither.indexes",
+                      puffs_gif_status_ok);
 }
 
 void test_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
-  test_gif_decode_input_is_a_xxx("../../testdata/bricks-dither.png", "", "",
-                                 puffs_gif_error_bad_gif_header);
+  test_gif_decode_xxx("../../testdata/bricks-dither.png", "", "",
+                      puffs_gif_error_bad_gif_header);
 }
 
 // ---------------- GIF Benches
