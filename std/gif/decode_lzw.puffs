@@ -23,8 +23,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 	var end_code u32[5..257] = clear_code + 1
 
 	// These variables do change.
-	var use_save_code bool
-	var save_code u32[..4095] = end_code
+	var save_code u32[..4096] = end_code  // 4096 means do not save.
 	var prev_code u32[..4095]
 	var width u32[..12] = this.literal_width + 1
 
@@ -51,13 +50,12 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 		if code < clear_code {
 			assert code < 256 via "a < b: a < c; c <= b"(c:clear_code)
 			in.dst.write_u8?(x:code as u8)
-			if use_save_code {
+			if save_code <= 4095 {
 				this.suffixes[save_code] = code as u8
 				this.prefixes[save_code] = prev_code as u16
 			}
 
 		} else if code == clear_code {
-			use_save_code = false
 			save_code = end_code
 			prev_code = 0
 			width = this.literal_width + 1
@@ -70,7 +68,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 			var s u32[..4095] = 4095
 			var c u32[..4095] = code
 
-			if (code == save_code) and use_save_code {
+			if code == save_code {
 				s -= 1
 				c = prev_code
 			}
@@ -88,7 +86,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 			}
 			this.stack[s] = c as u8
 
-			if (code == save_code) and use_save_code {
+			if code == save_code {
 				this.stack[4095] = c as u8
 			}
 
@@ -97,7 +95,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 			// type checking, bounds checking and code generation for it).
 			in.dst.write?(x:s)
 
-			if use_save_code {
+			if save_code <= 4095 {
 				this.suffixes[save_code] = c as u8
 				this.prefixes[save_code] = prev_code as u16
 			}
@@ -106,8 +104,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 			return error "LZW code is out of range"
 		}
 
-		use_save_code = save_code < 4095
-		if use_save_code {
+		if save_code <= 4095 {
 			save_code += 1
 			if (save_code == ((1 as u32) << width)) and (width < 12) {
 				width += 1

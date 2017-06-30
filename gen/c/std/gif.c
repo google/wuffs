@@ -126,7 +126,6 @@ typedef struct {
       uint32_t coro_state;
       uint32_t v_clear_code;
       uint32_t v_end_code;
-      bool v_use_save_code;
       uint32_t v_save_code;
       uint32_t v_prev_code;
       uint32_t v_width;
@@ -1043,7 +1042,6 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
   uint32_t v_clear_code;
   uint32_t v_end_code;
-  bool v_use_save_code;
   uint32_t v_save_code;
   uint32_t v_prev_code;
   uint32_t v_width;
@@ -1084,7 +1082,6 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   if (coro_state) {
     v_clear_code = self->private_impl.c_decode[0].v_clear_code;
     v_end_code = self->private_impl.c_decode[0].v_end_code;
-    v_use_save_code = self->private_impl.c_decode[0].v_use_save_code;
     v_save_code = self->private_impl.c_decode[0].v_save_code;
     v_prev_code = self->private_impl.c_decode[0].v_prev_code;
     v_width = self->private_impl.c_decode[0].v_width;
@@ -1099,7 +1096,6 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
     v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
     v_end_code = (v_clear_code + 1);
-    v_use_save_code = 0;
     v_save_code = v_end_code;
     v_prev_code = 0;
     v_width = (self->private_impl.f_literal_width + 1);
@@ -1129,13 +1125,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           goto suspend;
         }
         *b_wptr_dst++ = ((uint8_t)(v_code));
-        if (v_use_save_code) {
+        if (v_save_code <= 4095) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_code));
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
         }
       } else if (v_code == v_clear_code) {
-        v_use_save_code = false;
         v_save_code = v_end_code;
         v_prev_code = 0;
         v_width = (self->private_impl.f_literal_width + 1);
@@ -1146,7 +1141,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       } else if (v_code <= v_save_code) {
         v_s = 4095;
         v_c = v_code;
-        if ((v_code == v_save_code) && v_use_save_code) {
+        if (v_code == v_save_code) {
           v_s -= 1;
           v_c = v_prev_code;
         }
@@ -1160,7 +1155,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
         }
         self->private_impl.f_stack[v_s] = ((uint8_t)(v_c));
-        if ((v_code == v_save_code) && v_use_save_code) {
+        if (v_code == v_save_code) {
           self->private_impl.f_stack[4095] = ((uint8_t)(v_c));
         }
         PUFFS_COROUTINE_STATE(3);
@@ -1176,7 +1171,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
                 sizeof(self->private_impl.f_stack) - v_s);
         b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;
-        if (v_use_save_code) {
+        if (v_save_code <= 4095) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_c));
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
@@ -1185,8 +1180,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         status = puffs_gif_error_lzw_code_is_out_of_range;
         goto suspend;
       }
-      v_use_save_code = (v_save_code < 4095);
-      if (v_use_save_code) {
+      if (v_save_code <= 4095) {
         v_save_code += 1;
         if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
           v_width += 1;
@@ -1202,7 +1196,6 @@ suspend:
   self->private_impl.c_decode[0].coro_state = coro_state;
   self->private_impl.c_decode[0].v_clear_code = v_clear_code;
   self->private_impl.c_decode[0].v_end_code = v_end_code;
-  self->private_impl.c_decode[0].v_use_save_code = v_use_save_code;
   self->private_impl.c_decode[0].v_save_code = v_save_code;
   self->private_impl.c_decode[0].v_prev_code = v_prev_code;
   self->private_impl.c_decode[0].v_width = v_width;

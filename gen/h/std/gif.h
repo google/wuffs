@@ -126,7 +126,6 @@ typedef struct {
       uint32_t coro_state;
       uint32_t v_clear_code;
       uint32_t v_end_code;
-      bool v_use_save_code;
       uint32_t v_save_code;
       uint32_t v_prev_code;
       uint32_t v_width;
