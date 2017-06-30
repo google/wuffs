@@ -223,8 +223,8 @@ bool buf1s_equal(const char* prefix,
     return false;
   }
   char* msg = fail_msg;
-  size_t i = 0;
-  for (; (i < got->wi) && (i < want->wi); i++) {
+  size_t i;
+  for (i = 0; (i < got->wi) && (i < want->wi); i++) {
     if (got->ptr[i] != want->ptr[i]) {
       break;
     }
