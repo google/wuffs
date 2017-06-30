@@ -179,27 +179,28 @@ cleanup0:
 
 // ---------------- LZW Tests
 
-void test_lzw_decode_xxx(uint64_t limit) {
+void test_lzw_decode_xxx(const char* src_filename,
+                         uint64_t src_size,
+                         const char* want_filename,
+                         uint64_t want_size,
+                         uint64_t limit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  // The want .indexes file should be 19200 bytes long, as the image size is
-  // 160 * 120 pixels and there is 1 palette index byte per pixel.
-  if (!read_file(&want, "../../testdata/bricks-nodither.indexes")) {
+  if (!read_file(&want, want_filename)) {
     goto cleanup0;
   }
-  if (want.wi != 19200) {
-    FAIL("want size: got %d, want %d", (int)(want.wi), 19200);
+  if (want.wi != want_size) {
+    FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
     goto cleanup0;
   }
 
-  // The src .giflzw file should be 13382 bytes long.
-  if (!read_file(&src, "../../testdata/bricks-nodither.giflzw")) {
+  if (!read_file(&src, src_filename)) {
     goto cleanup0;
   }
-  if (src.wi != 13382) {
-    FAIL("src size: got %d, want %d", (int)(src.wi), 13382);
+  if (src.wi != src_size) {
+    FAIL("src size: got %d, want %d", (int)(src.wi), (int)(src_size));
     goto cleanup0;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
@@ -259,12 +260,6 @@ void test_lzw_decode_xxx(uint64_t limit) {
   if (!buf1s_equal("", &got, &want)) {
     goto cleanup1;
   }
-  // As a sanity check, the first decoded byte should be 0xDC.
-  if (got.ptr[0] != 0xDC) {
-    FAIL("first decoded byte: got 0x%02x, want 0x%02x", (int)(got.ptr[0]),
-         0xDC);
-    goto cleanup1;
-  }
 
 cleanup1:
   puffs_gif_lzw_decoder_destructor(&dec);
@@ -273,12 +268,32 @@ cleanup0:;
 
 void test_lzw_decode_many_small_inputs() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx(100);
+  test_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 14731,
+                      "../../testdata/bricks-gray.indexes", 19200, 100);
 }
 
 void test_lzw_decode_one_large_input() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx(1 << 30);
+  test_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 14731,
+                      "../../testdata/bricks-gray.indexes", 19200, 1 << 30);
+}
+
+void test_lzw_decode_bricks_dither() {
+  proc_funcname = __func__;
+  test_lzw_decode_xxx("../../testdata/bricks-dither.giflzw", 14923,
+                      "../../testdata/bricks-dither.indexes", 19200, 1 << 30);
+}
+
+void test_lzw_decode_bricks_nodither() {
+  proc_funcname = __func__;
+  test_lzw_decode_xxx("../../testdata/bricks-nodither.giflzw", 13382,
+                      "../../testdata/bricks-nodither.indexes", 19200, 1 << 30);
+}
+
+void test_lzw_decode_pi() {
+  proc_funcname = __func__;
+  test_lzw_decode_xxx("../../testdata/pi.txt.giflzw", 50550,
+                      "../../testdata/pi.txt", 100003, 1 << 30);
 }
 
 // ---------------- LZW Benches
@@ -475,6 +490,9 @@ proc tests[] = {
     // LZW Tests
     test_lzw_decode_many_small_inputs,  //
     test_lzw_decode_one_large_input,    //
+    test_lzw_decode_bricks_dither,      //
+    test_lzw_decode_bricks_nodither,    //
+    test_lzw_decode_pi,                 //
 
     // GIF Tests
     test_gif_decode_input_is_a_gif,  //
