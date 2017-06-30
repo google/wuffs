@@ -37,7 +37,7 @@ func main1() error {
 			return err
 		}
 		b := a[:len(a)-len(filepath.Ext(a))]
-		if err := ioutil.WriteFile(b+".giflzw", data, 0644); err != nil {
+		if err := ioutil.WriteFile(b+".indexes.giflzw", data, 0644); err != nil {
 			return err
 		}
 	}

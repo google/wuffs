@@ -268,25 +268,25 @@ cleanup0:;
 
 void test_lzw_decode_many_small_inputs() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 14731,
+  test_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 14731,
                       "../../testdata/bricks-gray.indexes", 19200, 100);
 }
 
 void test_lzw_decode_one_large_input() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 14731,
+  test_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 14731,
                       "../../testdata/bricks-gray.indexes", 19200, 1 << 30);
 }
 
 void test_lzw_decode_bricks_dither() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-dither.giflzw", 14923,
+  test_lzw_decode_xxx("../../testdata/bricks-dither.indexes.giflzw", 14923,
                       "../../testdata/bricks-dither.indexes", 19200, 1 << 30);
 }
 
 void test_lzw_decode_bricks_nodither() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-nodither.giflzw", 13382,
+  test_lzw_decode_xxx("../../testdata/bricks-nodither.indexes.giflzw", 13382,
                       "../../testdata/bricks-nodither.indexes", 19200, 1 << 30);
 }
 
@@ -339,7 +339,7 @@ void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
 
 void bench_lzw_decode_20k() {
   proc_funcname = __func__;
-  bench_lzw_decode_xxx("../../testdata/bricks-gray.giflzw", 5000);
+  bench_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 5000);
 }
 
 void bench_lzw_decode_100k() {
