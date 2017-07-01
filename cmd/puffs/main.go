@@ -24,6 +24,21 @@ var commands = []struct {
 	{"test", doTest},
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, `Puffs is a tool for managing Puffs source code.
+
+Usage:
+
+	puffs command [arguments]
+
+The commands are:
+
+	bench   benchmark packages
+	gen     generate code for packages and dependencies
+	test    test packages
+`)
+}
+
 func main() {
 	if err := main1(); err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
@@ -87,20 +102,6 @@ func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []
 	sort.Strings(filenames)
 	sort.Strings(dirnames)
 	return filenames, dirnames, nil
-}
-
-func usage() {
-	fmt.Fprintf(os.Stderr, `Puffs is a tool for managing Puffs source code.
-
-Usage:
-
-	puffs command [arguments]
-
-The commands are:
-
-	gen     generate code for packages and dependencies
-	test    test packages
-`)
 }
 
 const (
