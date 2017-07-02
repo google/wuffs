@@ -24,7 +24,7 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   // TODO: update API calls for libgif version 5 vs version 4?
   GifFileType* f = DGifOpen(src, gif_mimic_read_func);
   if (!f) {
-    ret = "DGifOpenFileName failed";
+    ret = "DGifOpen failed";
     goto cleanup0;
   }
   if (DGifSlurp(f) != GIF_OK) {
