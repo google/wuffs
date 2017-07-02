@@ -19,6 +19,7 @@ func doTest(puffsRoot string, args []string) error  { return doBenchTest(puffsRo
 func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
+	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -29,6 +30,14 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	args = flags.Args()
 	if len(args) == 0 {
 		args = []string{"std/..."}
+	}
+
+	cmdArgs := []string(nil)
+	if *mimicFlag {
+		cmdArgs = append(cmdArgs, "-mimic")
+	}
+	if bench {
+		cmdArgs = append(cmdArgs, "-bench")
 	}
 
 	failed := false
@@ -44,7 +53,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		}
 
 		// Proceed with benching / testing the generated code.
-		f, err := benchTest(puffsRoot, arg, langs, bench, recursive)
+		f, err := benchTest(puffsRoot, arg, langs, cmdArgs, recursive)
 		if err != nil {
 			return err
 		}
@@ -56,13 +65,13 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	return nil
 }
 
-func benchTest(puffsRoot, dirname string, langs []string, bench bool, recursive bool) (failed bool, err error) {
+func benchTest(puffsRoot, dirname string, langs []string, cmdArgs []string, recursive bool) (failed bool, err error) {
 	filenames, dirnames, err := listDir(puffsRoot, dirname, recursive)
 	if err != nil {
 		return false, err
 	}
 	if len(filenames) > 0 {
-		f, err := benchTestDir(puffsRoot, dirname, langs, bench)
+		f, err := benchTestDir(puffsRoot, dirname, langs, cmdArgs)
 		if err != nil {
 			return false, err
 		}
@@ -70,7 +79,7 @@ func benchTest(puffsRoot, dirname string, langs []string, bench bool, recursive 
 	}
 	if len(dirnames) > 0 {
 		for _, d := range dirnames {
-			f, err := benchTest(puffsRoot, filepath.Join(dirname, d), langs, bench, recursive)
+			f, err := benchTest(puffsRoot, filepath.Join(dirname, d), langs, cmdArgs, recursive)
 			if err != nil {
 				return false, err
 			}
@@ -80,17 +89,14 @@ func benchTest(puffsRoot, dirname string, langs []string, bench bool, recursive 
 	return failed, nil
 }
 
-func benchTestDir(puffsRoot string, dirname string, langs []string, bench bool) (failed bool, err error) {
+func benchTestDir(puffsRoot string, dirname string, langs []string, cmdArgs []string) (failed bool, err error) {
 	if packageName := filepath.Base(dirname); !validName(packageName) {
 		return false, fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
 
 	for _, lang := range langs {
 		command := "puffs-test-" + lang
-		args := []string(nil)
-		if bench {
-			args = append(args, "-bench")
-		}
+		args := append([]string(nil), cmdArgs...)
 		args = append(args, filepath.Join(puffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout

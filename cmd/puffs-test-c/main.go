@@ -5,16 +5,19 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 var (
 	bench = flag.Bool("bench", false, "whether to run benchmarks instead of regular tests")
+	mimic = flag.Bool("mimic", false, "whether to compare Puffs' output with other libraries' output")
 )
 
 func main() {
@@ -47,18 +50,26 @@ func do(filename string) (failed bool, err error) {
 	}
 	defer os.RemoveAll(workDir)
 
-	for _, cc := range []string{"clang", "gcc"} {
-		in := filename + ".c"
-		out := filepath.Join(workDir, cc+".out")
+	in := filename + ".c"
+	out := filepath.Join(workDir, "a.out")
 
-		ccArgs := []string(nil)
-		if *bench {
-			ccArgs = append(ccArgs, "-O3")
-		} else {
-			// TODO: set these flags even if we pass -O3.
-			ccArgs = append(ccArgs, "-Wall", "-Werror")
+	ccArgs := []string(nil)
+	if *bench {
+		ccArgs = append(ccArgs, "-O3")
+	} else {
+		// TODO: set these flags even if we pass -O3.
+		ccArgs = append(ccArgs, "-Wall", "-Werror")
+	}
+	ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
+	if *mimic {
+		extra, err := findPuffsMimicCflags(in)
+		if err != nil {
+			return false, err
 		}
-		ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
+		ccArgs = append(ccArgs, extra...)
+	}
+
+	for _, cc := range []string{"clang", "gcc"} {
 		ccCmd := exec.Command(cc, ccArgs...)
 		ccCmd.Stdout = os.Stdout
 		ccCmd.Stderr = os.Stderr
@@ -83,4 +94,23 @@ func do(filename string) (failed bool, err error) {
 		}
 	}
 	return failed, nil
+}
+
+func findPuffsMimicCflags(filename string) ([]string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		t := s.Text()
+		const prefix = "// !! puffs mimic cflags:"
+		if strings.HasPrefix(t, prefix) {
+			t = strings.TrimSpace(t[len(prefix):])
+			return strings.Split(t, " "), nil
+		}
+	}
+	return nil, s.Err()
 }

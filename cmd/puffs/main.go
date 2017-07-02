@@ -107,6 +107,9 @@ func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []
 const (
 	langsDefault = "c"
 	langsUsage   = `comma-separated list of target languages (file extensions), e.g. "c,go,rs"`
+
+	mimicDefault = false
+	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
 )
 
 func parseLangs(commaSeparated string) ([]string, error) {

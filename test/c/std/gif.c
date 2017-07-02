@@ -10,7 +10,12 @@ for cc in clang gcc; do
 done
 
 Each edition should print "PASS", amongst other information, and exit(0).
+
+Add the "puffs mimic cflags" below to the C compiler flags to test that Puff's
+output matches other libraries' output.
 */
+
+// !! puffs mimic cflags: -DPUFFS_MIMIC -lgif
 
 #include "../../../gen/c/std/gif.c"
 #include "../testlib/testlib.c"
@@ -422,6 +427,91 @@ void test_gif_decode_input_is_a_png() {
                       puffs_gif_error_bad_gif_header);
 }
 
+// ---------------- Mimic Tests
+
+#ifdef PUFFS_MIMIC
+
+#include "../mimiclib/gif.c"
+
+const char* gif_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 dst_writer = {.buf = dst};
+  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_gif_decoder_destructor(&dec);
+  if (s) {
+    return puffs_gif_status_string(s);
+  }
+  return NULL;
+}
+
+void test_gif_mimic_decode_xxx(const char* filename) {
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  if (!read_file(&src, filename)) {
+    return;
+  }
+
+  src.ri = 0;
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  const char* got_msg = gif_puffs_decode(&got, &src);
+  if (got_msg) {
+    FAIL("%s", got_msg);
+    return;
+  }
+
+  src.ri = 0;
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  const char* want_msg = gif_mimic_decode(&want, &src);
+  if (want_msg) {
+    FAIL("%s", want_msg);
+    return;
+  }
+
+  if (!buf1s_equal("", &got, &want)) {
+    return;
+  }
+
+  // TODO: check the palette RGB values, not just the palette indexes (pixels).
+}
+
+void test_gif_mimic_decode_bricks_dither() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/bricks-dither.gif");
+}
+
+void test_gif_mimic_decode_bricks_gray() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/bricks-gray.gif");
+}
+
+void test_gif_mimic_decode_bricks_nodither() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/bricks-nodither.gif");
+}
+
+void test_gif_mimic_decode_harvesters() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/harvesters.gif");
+}
+
+void test_gif_mimic_decode_hat() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/hat.gif");
+}
+
+void test_gif_mimic_decode_hibiscus() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/hibiscus.gif");
+}
+
+void test_gif_mimic_decode_pjw_thumbnail() {
+  proc_funcname = __func__;
+  test_gif_mimic_decode_xxx("../../testdata/pjw-thumbnail.gif");
+}
+
+#endif  // PUFFS_MIMIC
+
 // ---------------- GIF Benches
 
 void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
@@ -498,7 +588,19 @@ proc tests[] = {
     test_gif_decode_input_is_a_gif,  //
     test_gif_decode_input_is_a_png,  //
 
-    // End
+#ifdef PUFFS_MIMIC
+
+    // Mimic Tests
+    test_gif_mimic_decode_bricks_dither,    //
+    // test_gif_mimic_decode_bricks_gray,   // TODO
+    test_gif_mimic_decode_bricks_nodither,  //
+    test_gif_mimic_decode_harvesters,       //
+    test_gif_mimic_decode_hat,              //
+    test_gif_mimic_decode_hibiscus,         //
+    test_gif_mimic_decode_pjw_thumbnail,    //
+
+#endif  // PUFFS_MIMIC
+
     NULL,
 };
 
@@ -514,6 +616,5 @@ proc benches[] = {
     bench_gif_decode_100k,   //
     bench_gif_decode_1000k,  //
 
-    // End
     NULL,
 };
