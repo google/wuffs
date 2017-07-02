@@ -22,6 +22,7 @@ type perFunc struct {
 	public       bool
 	suspendible  bool
 	limitVarName string
+	shortReads   []string
 }
 
 func (g *gen) writeFuncSignature(n *a.Func) error {
@@ -181,6 +182,17 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 			g.writes("self->private_impl.status = status;\n")
 		}
 		g.writes("return status;\n\n")
+
+		shortReadsSeen := map[string]struct{}{}
+		for _, sr := range g.perFunc.shortReads {
+			if _, ok := shortReadsSeen[sr]; ok {
+				continue
+			}
+			shortReadsSeen[sr] = struct{}{}
+			if err := g.writeShortRead(sr); err != nil {
+				return err
+			}
+		}
 	}
 
 	g.writes("}\n\n")
@@ -780,17 +792,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		temp := g.perFunc.tempW
 		g.perFunc.tempW++
 
-		g.printf("if (%srptr_src == %srend_src) {", bPrefix, bPrefix)
-		// TODO: ri == wi isn't the right condition.
-		g.printf("status = ((%ssrc.buf->closed) && (%ssrc.buf->ri == %ssrc.buf->wi)) ?"+
-			"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
-			aPrefix, aPrefix, aPrefix, g.pkgName, g.pkgName)
-		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto suspend;")
-		} else {
-			g.writes("return status;")
-		}
-		g.writes("}\n")
+		g.printf("if (PUFFS_UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }", bPrefix, bPrefix)
+		g.perFunc.shortReads = append(g.perFunc.shortReads, "src")
 		// TODO: watch for passing an array type to writeCTypeName? In C, an
 		// array type can decay into a pointer.
 		if err := g.writeCTypeName(n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
@@ -915,6 +918,20 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		//
 		// This might involve calling g.writeExpr with replaceNothing??
 		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
+	}
+	return nil
+}
+
+func (g *gen) writeShortRead(name string) error {
+	g.printf("\nshort_read_%s:\n", name)
+	// TODO: ri == wi isn't the right condition.
+	g.printf("status = ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) ?"+
+		"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
+		aPrefix, name, aPrefix, name, aPrefix, name, g.pkgName, g.pkgName)
+	if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
+		g.writes("goto suspend;")
+	} else {
+		g.writes("return status;")
 	}
 	return nil
 }

@@ -250,6 +250,14 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
 
+#if defined(__clang__) || defined(__GNUC__)
+#define PUFFS_LIKELY(expr) (__builtin_expect((expr), 1))
+#define PUFFS_UNLIKELY(expr) (__builtin_expect((expr), 0))
+#else
+#define PUFFS_LIKELY(expr) (expr)
+#define PUFFS_UNLIKELY(expr) (expr)
+#endif
+
 #endif  // PUFFS_BASE_IMPL_H
 
 // ---------------- Status Codes Implementations
@@ -466,11 +474,8 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     }
     while (true) {
       PUFFS_COROUTINE_STATE(3);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        goto suspend;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
       v_c = t_0;
@@ -559,6 +564,12 @@ suspend:
 exit:
   self->private_impl.status = status;
   return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
+  goto suspend;
 }
 
 puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
@@ -599,11 +610,8 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
     v_i = 0;
     while (v_i < 6) {
       PUFFS_COROUTINE_STATE(1);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        return status;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
       v_c[v_i] = t_0;
@@ -635,6 +643,12 @@ suspend:
 
   goto exit;
 exit:
+  return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
   return status;
 }
 
@@ -678,11 +692,8 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
     v_i = 0;
     while (v_i < 7) {
       PUFFS_COROUTINE_STATE(1);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        return status;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
       v_c[v_i] = t_0;
@@ -698,29 +709,20 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
       v_i = 0;
       while (v_i < v_gct_size) {
         PUFFS_COROUTINE_STATE(2);
-        if (b_rptr_src == b_rend_src) {
-          status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                       ? puffs_gif_error_unexpected_eof
-                       : puffs_gif_status_short_read;
-          return status;
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
         }
         uint8_t t_1 = *b_rptr_src++;
         self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
         PUFFS_COROUTINE_STATE(3);
-        if (b_rptr_src == b_rend_src) {
-          status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                       ? puffs_gif_error_unexpected_eof
-                       : puffs_gif_status_short_read;
-          return status;
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
         }
         uint8_t t_2 = *b_rptr_src++;
         self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
         PUFFS_COROUTINE_STATE(4);
-        if (b_rptr_src == b_rend_src) {
-          status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                       ? puffs_gif_error_unexpected_eof
-                       : puffs_gif_status_short_read;
-          return status;
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
         }
         uint8_t t_3 = *b_rptr_src++;
         self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
@@ -750,6 +752,12 @@ suspend:
 
   goto exit;
 exit:
+  return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
   return status;
 }
 
@@ -783,11 +791,8 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     PUFFS_COROUTINE_STATE(0);
 
     PUFFS_COROUTINE_STATE(1);
-    if (b_rptr_src == b_rend_src) {
-      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                   ? puffs_gif_error_unexpected_eof
-                   : puffs_gif_status_short_read;
-      return status;
+    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      goto short_read_src;
     }
     uint8_t t_0 = *b_rptr_src++;
     v_label = t_0;
@@ -800,11 +805,8 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     }
     while (true) {
       PUFFS_COROUTINE_STATE(2);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        return status;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_1 = *b_rptr_src++;
       v_block_size = t_1;
@@ -845,6 +847,12 @@ suspend:
 
   goto exit;
 exit:
+  return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
   return status;
 }
 
@@ -897,11 +905,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     v_i = 0;
     while (v_i < 9) {
       PUFFS_COROUTINE_STATE(1);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        return status;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
       v_c[v_i] = t_0;
@@ -914,11 +919,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
       return puffs_gif_error_todo_unsupported_local_color_table;
     }
     PUFFS_COROUTINE_STATE(2);
-    if (b_rptr_src == b_rend_src) {
-      status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                   ? puffs_gif_error_unexpected_eof
-                   : puffs_gif_status_short_read;
-      return status;
+    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      goto short_read_src;
     }
     uint8_t t_1 = *b_rptr_src++;
     v_lw = t_1;
@@ -929,11 +931,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
                                             ((uint32_t)(v_lw)));
     while (true) {
       PUFFS_COROUTINE_STATE(3);
-      if (b_rptr_src == b_rend_src) {
-        status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                     ? puffs_gif_error_unexpected_eof
-                     : puffs_gif_status_short_read;
-        return status;
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
       }
       uint8_t t_2 = *b_rptr_src++;
       v_block_size = t_2;
@@ -1002,6 +1001,12 @@ suspend:
 
   goto exit;
 exit:
+  return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
   return status;
 }
 
@@ -1105,11 +1110,8 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     while (true) {
       while (v_n_bits < v_width) {
         PUFFS_COROUTINE_STATE(1);
-        if (b_rptr_src == b_rend_src) {
-          status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-                       ? puffs_gif_error_unexpected_eof
-                       : puffs_gif_status_short_read;
-          goto suspend;
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
         }
         uint8_t t_0 = *b_rptr_src++;
         v_bits |= (((uint32_t)(t_0)) << v_n_bits);
@@ -1230,4 +1232,10 @@ suspend:
 exit:
   self->private_impl.status = status;
   return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? puffs_gif_error_unexpected_eof
+               : puffs_gif_status_short_read;
+  goto suspend;
 }
