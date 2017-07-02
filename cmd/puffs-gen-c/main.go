@@ -446,7 +446,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 	return nil
 }
 
-func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) {
+func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) error {
 	structName := n.Name().String(g.tm)
 	ctorName := "destructor"
 	if ctor {
@@ -465,6 +465,7 @@ func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) {
 		g.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
 	}
 	g.printf(")")
+	return nil
 }
 
 func (g *gen) writeCtorPrototype(n *a.Struct) error {
@@ -472,7 +473,9 @@ func (g *gen) writeCtorPrototype(n *a.Struct) error {
 		return nil
 	}
 	for _, ctor := range []bool{true, false} {
-		g.writeCtorSignature(n, n.Public(), ctor)
+		if err := g.writeCtorSignature(n, n.Public(), ctor); err != nil {
+			return err
+		}
 		g.writes(";\n\n")
 	}
 	return nil
@@ -483,7 +486,9 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 		return nil
 	}
 	for _, ctor := range []bool{true, false} {
-		g.writeCtorSignature(n, false, ctor)
+		if err := g.writeCtorSignature(n, false, ctor); err != nil {
+			return err
+		}
 		g.printf("{\n")
 		g.printf("if (!self) { return; }\n")
 
