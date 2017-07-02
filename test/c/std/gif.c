@@ -342,17 +342,30 @@ void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
   bench_finish(reps, n_bytes);
 }
 
-void bench_lzw_decode_20k() {
+void bench_lzw_puffs_decode_20k() {
   proc_funcname = __func__;
   bench_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 5000);
 }
 
-void bench_lzw_decode_100k() {
+void bench_lzw_puffs_decode_100k() {
   proc_funcname = __func__;
   bench_lzw_decode_xxx("../../testdata/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
+
+const char* gif_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 dst_writer = {.buf = dst};
+  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_gif_decoder_destructor(&dec);
+  if (s) {
+    return puffs_gif_status_string(s);
+  }
+  return NULL;
+}
 
 void test_gif_decode_xxx(const char* filename,
                          const char* palette_filename,
@@ -433,19 +446,6 @@ void test_gif_decode_input_is_a_png() {
 
 #include "../mimiclib/gif.c"
 
-const char* gif_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
-  puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 dst_writer = {.buf = dst};
-  puffs_base_reader1 src_reader = {.buf = src};
-  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
-  puffs_gif_decoder_destructor(&dec);
-  if (s) {
-    return puffs_gif_status_string(s);
-  }
-  return NULL;
-}
-
 void test_gif_mimic_decode_xxx(const char* filename) {
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, filename)) {
@@ -514,11 +514,12 @@ void test_gif_mimic_decode_pjw_thumbnail() {
 
 // ---------------- GIF Benches
 
-void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
+void bench_gif_decode_xxx(const char* (*decode_func)(puffs_base_buf1*,
+                                                     puffs_base_buf1*),
+                          const char* filename,
+                          uint64_t reps) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_writer1 dst_writer = {.buf = &dst};
-  puffs_base_reader1 src_reader = {.buf = &src};
 
   if (!read_file(&src, filename)) {
     return;
@@ -530,12 +531,9 @@ void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
   for (i = 0; i < reps; i++) {
     dst.wi = 0;
     src.ri = 0;
-    puffs_gif_decoder dec;
-    puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
-    puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
-    puffs_gif_decoder_destructor(&dec);
-    if (s) {
-      FAIL("decode: %s", puffs_gif_status_string(s));
+    const char* error_msg = decode_func(&dst, &src);
+    if (error_msg) {
+      FAIL("%s", error_msg);
       return;
     }
     n_bytes += dst.wi;
@@ -543,25 +541,53 @@ void bench_gif_decode_xxx(const char* filename, uint64_t reps) {
   bench_finish(reps, n_bytes);
 }
 
-void bench_gif_decode_1k() {
+void bench_gif_puffs_decode_1k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx("../../testdata/pjw-thumbnail.gif", 200000);
+  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/pjw-thumbnail.gif",
+                       200000);
 }
 
-void bench_gif_decode_10k() {
+void bench_gif_puffs_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx("../../testdata/hat.gif", 10000);
+  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/hat.gif", 10000);
 }
 
-void bench_gif_decode_100k() {
+void bench_gif_puffs_decode_100k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx("../../testdata/hibiscus.gif", 1000);
+  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
-void bench_gif_decode_1000k() {
+void bench_gif_puffs_decode_1000k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx("../../testdata/harvesters.gif", 100);
+  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/harvesters.gif", 100);
 }
+
+// ---------------- Mimic Benches
+
+#ifdef PUFFS_MIMIC
+
+void bench_gif_mimic_decode_1k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/pjw-thumbnail.gif",
+                       200000);
+}
+
+void bench_gif_mimic_decode_10k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/hat.gif", 10000);
+}
+
+void bench_gif_mimic_decode_100k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/hibiscus.gif", 1000);
+}
+
+void bench_gif_mimic_decode_1000k() {
+  proc_funcname = __func__;
+  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/harvesters.gif", 100);
+}
+
+#endif  // PUFFS_MIMIC
 
 // ---------------- Manifest
 
@@ -607,14 +633,24 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // LZW Benches
-    bench_lzw_decode_20k,   //
-    bench_lzw_decode_100k,  //
+    bench_lzw_puffs_decode_20k,   //
+    bench_lzw_puffs_decode_100k,  //
 
     // GIF Benches
-    bench_gif_decode_1k,     //
-    bench_gif_decode_10k,    //
-    bench_gif_decode_100k,   //
-    bench_gif_decode_1000k,  //
+    bench_gif_puffs_decode_1k,     //
+    bench_gif_puffs_decode_10k,    //
+    bench_gif_puffs_decode_100k,   //
+    bench_gif_puffs_decode_1000k,  //
+
+#ifdef PUFFS_MIMIC
+
+    // Mimic Benches
+    bench_gif_mimic_decode_1k,     //
+    bench_gif_mimic_decode_10k,    //
+    bench_gif_mimic_decode_100k,   //
+    bench_gif_mimic_decode_1000k,  //
+
+#endif  // PUFFS_MIMIC
 
     NULL,
 };
