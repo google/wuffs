@@ -641,8 +641,35 @@ TODO: also trawl through Go's bug tracker for "this image failed to load".
 
 ## Benchmarks
 
-TODO.
+Preliminary `puffs bench` numbers for the GIF codec are below. "Mimic" tests
+check that Puffs' output mimics exactly other libraries' output (i.e. giflib
+for GIF, libpng for PNG, etc.). "Mimic" benchmarks are the numbers for those
+other libraries, measured here on Ubunty 14.04 LTS "Trusty".
 
+The 1k, 10k, etc. numbers are approximately how many pixels there are in the
+decoded image. For example, the `test/testdata/harvesters.*` images are 1165 ×
+859, which is approximately 1000k pixels.
+
+    name                          speed
+    gif_puffs_decode_1k/clang      389MB/s ± 2%
+    gif_puffs_decode_10k/clang     137MB/s ± 0%
+    gif_puffs_decode_100k/clang    121MB/s ± 0%
+    gif_puffs_decode_1000k/clang   124MB/s ± 0%
+
+    gif_mimic_decode_1k/clang      158MB/s ± 1%
+    gif_mimic_decode_10k/clang    94.4MB/s ± 0%
+    gif_mimic_decode_100k/clang    100MB/s ± 0%
+    gif_mimic_decode_1000k/clang   102MB/s ± 0%
+
+    gif_puffs_decode_1k/gcc        406MB/s ± 1%
+    gif_puffs_decode_10k/gcc       158MB/s ± 0%
+    gif_puffs_decode_100k/gcc      138MB/s ± 0%
+    gif_puffs_decode_1000k/gcc     142MB/s ± 0%
+
+    gif_mimic_decode_1k/gcc        158MB/s ± 0%
+    gif_mimic_decode_10k/gcc      94.4MB/s ± 0%
+    gif_mimic_decode_100k/gcc      100MB/s ± 0%
+    gif_mimic_decode_1000k/gcc     102MB/s ± 0%
 
 ## Code Size
 
