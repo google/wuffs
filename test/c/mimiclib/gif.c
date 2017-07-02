@@ -21,7 +21,9 @@ int gif_mimic_read_func(GifFileType* f, GifByteType* ptr, int len) {
 const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   const char* ret = NULL;
 
-  // TODO: update API calls for libgif version 5 vs version 4?
+  // TODO: #ifdef API calls for libgif version 4 vs version 5? Note that:
+  //  - Version 4 ships with Ubunty 14.04 LTS "Trusty".
+  //  - Version 5 ships with Ubunty 16.04 LTS "Xenial".
   GifFileType* f = DGifOpen(src, gif_mimic_read_func);
   if (!f) {
     ret = "DGifOpen failed";
@@ -38,6 +40,16 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
     goto cleanup1;
   }
 
+  // Copy the pixel data from the GifFileType* f to the dst buffer, since the
+  // former is free'd at the end of this function.
+  //
+  // In theory, this gif_mimic_decode function might be faster overall if the
+  // DGifSlurp call above decoded the pixel data directly into dst instead of
+  // into an intermediate buffer that needed to be malloc'ed and then free'd.
+  // In practice, doing so did not seem to show a huge difference. (See commit
+  // ab7e0ae "Add a custom gif_mimic_DGifSlurp function.") It also further
+  // complicates supporting both versions 4 and 5 of giflib. That commit was
+  // therefore rolled back.
   struct SavedImage* si = &f->SavedImages[0];
   size_t num_src =
       (size_t)(si->ImageDesc.Width) * (size_t)(si->ImageDesc.Height);
@@ -46,7 +58,6 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
     ret = "GIF image's pixel data won't fit in the dst buffer";
     goto cleanup1;
   }
-
   memmove(dst->ptr + dst->wi, si->RasterBits, num_src);
   dst->wi += num_src;
 
