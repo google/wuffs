@@ -618,7 +618,7 @@ proc tests[] = {
 
     // Mimic Tests
     test_gif_mimic_decode_bricks_dither,    //
-    // test_gif_mimic_decode_bricks_gray,   // TODO
+    test_gif_mimic_decode_bricks_gray,      //
     test_gif_mimic_decode_bricks_nodither,  //
     test_gif_mimic_decode_harvesters,       //
     test_gif_mimic_decode_hat,              //

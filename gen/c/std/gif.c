@@ -536,7 +536,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         goto suspend;
       }
     }
-    PUFFS_COROUTINE_STATE(6);
+    coro_state = 0;
   }
 
   goto suspend;
@@ -613,7 +613,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
         ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
       return puffs_gif_error_bad_gif_header;
     }
-    PUFFS_COROUTINE_STATE(2);
+    coro_state = 0;
   }
 
   goto suspend;
@@ -727,7 +727,7 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
         v_i += 1;
       }
     }
-    PUFFS_COROUTINE_STATE(5);
+    coro_state = 0;
   }
 
   goto suspend;
@@ -823,7 +823,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
       b_rptr_src += t_2;
     }
   label_0_break:;
-    PUFFS_COROUTINE_STATE(4);
+    coro_state = 0;
   }
 
   goto suspend;
@@ -975,7 +975,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
       }
     }
   label_0_break:;
-    PUFFS_COROUTINE_STATE(5);
+    coro_state = 0;
   }
 
   goto suspend;
@@ -1188,7 +1188,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       }
       v_prev_code = v_code;
     }
-    PUFFS_COROUTINE_STATE(4);
+    coro_state = 0;
   }
 
   goto suspend;

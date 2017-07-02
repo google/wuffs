@@ -141,6 +141,8 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		g.writes("}\n")
 		// Generate a coroutine switch similiar to the technique in
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+		//
+		// The matching } is written below. See "Close the coroutine switch".
 		g.writes("switch (coro_state) {\nPUFFS_COROUTINE_STATE(0);\n\n")
 	}
 
@@ -152,9 +154,9 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	if g.perFunc.suspendible {
-		if err := g.writeSuspend(); err != nil {
-			return err
-		}
+		// We've reached the end of the function body. Reset the coroutine
+		// state so that the next call to this function starts at the top.
+		g.writes("coro_state = 0;\n")
 		g.writes("}\n\n") // Close the coroutine switch.
 
 		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
