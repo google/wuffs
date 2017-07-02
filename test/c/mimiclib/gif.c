@@ -1,6 +1,8 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+#include <stdlib.h>
+
 #include "gif_lib.h"
 
 int gif_mimic_read_func(GifFileType* f, GifByteType* ptr, int len) {
@@ -18,6 +20,100 @@ int gif_mimic_read_func(GifFileType* f, GifByteType* ptr, int len) {
   return n;
 }
 
+// gif_mimic_DGifSlurp is based on the DGifSlurp function in giflib-4.1.6 (the
+// version in Ubunty 14.04 LTS "Trusty"). It is modified to avoid malloc'ing a
+// temporary buffer. Instead, the destination buffer is an additional argument.
+int gif_mimic_DGifSlurp(GifFileType* GifFile, puffs_base_buf1* dst) {
+  int ImageSize;
+  GifRecordType RecordType;
+  SavedImage* sp;
+  GifByteType* ExtData;
+  SavedImage temp_save;
+
+  temp_save.ExtensionBlocks = NULL;
+  temp_save.ExtensionBlockCount = 0;
+
+  do {
+    if (DGifGetRecordType(GifFile, &RecordType) == GIF_ERROR)
+      return (GIF_ERROR);
+
+    switch (RecordType) {
+      case IMAGE_DESC_RECORD_TYPE:
+        if (DGifGetImageDesc(GifFile) == GIF_ERROR)
+          return (GIF_ERROR);
+
+        sp = &GifFile->SavedImages[GifFile->ImageCount - 1];
+        ImageSize = sp->ImageDesc.Width * sp->ImageDesc.Height;
+
+        // Puffs modification: avoid a memmove by decompressing straight into
+        // the destination buffer.
+        //
+        // Original DGifSlurp code:
+        // sp->RasterBits =
+        //   (unsigned char*)malloc(ImageSize * sizeof(GifPixelType));
+        size_t num_src =
+            (size_t)(sp->ImageDesc.Width) * (size_t)(sp->ImageDesc.Height);
+        size_t num_dst = dst->len - dst->wi;
+        if (num_dst < num_src) {
+          return (GIF_ERROR);
+        }
+        sp->RasterBits = dst->ptr + dst->wi;
+        dst->wi += num_src;
+        // End Puffs modification.
+
+        if (sp->RasterBits == NULL) {
+          return GIF_ERROR;
+        }
+        if (DGifGetLine(GifFile, sp->RasterBits, ImageSize) == GIF_ERROR)
+          return (GIF_ERROR);
+        if (temp_save.ExtensionBlocks) {
+          sp->ExtensionBlocks = temp_save.ExtensionBlocks;
+          sp->ExtensionBlockCount = temp_save.ExtensionBlockCount;
+
+          temp_save.ExtensionBlocks = NULL;
+          temp_save.ExtensionBlockCount = 0;
+
+          /* FIXME: The following is wrong.  It is left in only for
+           * backwards compatibility.  Someday it should go away. Use
+           * the sp->ExtensionBlocks->Function variable instead. */
+          sp->Function = sp->ExtensionBlocks[0].Function;
+        }
+        break;
+
+      case EXTENSION_RECORD_TYPE:
+        if (DGifGetExtension(GifFile, &temp_save.Function, &ExtData) ==
+            GIF_ERROR)
+          return (GIF_ERROR);
+        while (ExtData != NULL) {
+          /* Create an extension block with our data */
+          if (AddExtensionBlock(&temp_save, ExtData[0], &ExtData[1]) ==
+              GIF_ERROR)
+            return (GIF_ERROR);
+
+          if (DGifGetExtensionNext(GifFile, &ExtData) == GIF_ERROR)
+            return (GIF_ERROR);
+          temp_save.Function = 0;
+        }
+        break;
+
+      case TERMINATE_RECORD_TYPE:
+        break;
+
+      default: /* Should be trapped by DGifGetRecordType */
+        break;
+    }
+  } while (RecordType != TERMINATE_RECORD_TYPE);
+
+  /* Just in case the Gif has an extension block without an associated
+   * image... (Should we save this into a savefile structure with no image
+   * instead? Have to check if the present writing code can handle that as
+   * well.... */
+  if (temp_save.ExtensionBlocks)
+    FreeExtension(&temp_save);
+
+  return (GIF_OK);
+}
+
 const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   const char* ret = NULL;
 
@@ -27,7 +123,8 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
     ret = "DGifOpen failed";
     goto cleanup0;
   }
-  if (DGifSlurp(f) != GIF_OK) {
+
+  if (gif_mimic_DGifSlurp(f, dst) != GIF_OK) {
     ret = "DGifSlurp failed";
     goto cleanup1;
   }
@@ -38,19 +135,13 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
     goto cleanup1;
   }
 
-  struct SavedImage* si = &f->SavedImages[0];
-  size_t num_src =
-      (size_t)(si->ImageDesc.Width) * (size_t)(si->ImageDesc.Height);
-  size_t num_dst = dst->len - dst->wi;
-  if (num_dst < num_src) {
-    ret = "GIF image's pixel data won't fit in the dst buffer";
-    goto cleanup1;
+cleanup1:;
+  // See "Puffs modification" in gif_mimic_DGifSlurp above.
+  SavedImage* sp;
+  for (sp = f->SavedImages; sp < f->SavedImages + f->ImageCount; sp++) {
+    sp->RasterBits = NULL;
   }
 
-  memmove(dst->ptr + dst->wi, si->RasterBits, num_src);
-  dst->wi += num_src;
-
-cleanup1:;
   if ((DGifCloseFile(f) != GIF_OK) && !ret) {
     ret = "DGifCloseFile failed";
   }
