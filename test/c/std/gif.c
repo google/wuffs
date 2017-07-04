@@ -2,7 +2,8 @@
 // in the LICENSE file.
 
 /*
-To manually run this test:
+This test program is typically run indirectly, by the "puffs test" or "puffs
+bench" commands. To manually run it:
 
 for cc in clang gcc; do
   $cc -std=c99 -Wall -Werror gif.c && ./a.out
@@ -11,8 +12,13 @@ done
 
 Each edition should print "PASS", amongst other information, and exit(0).
 
-Add the "puffs mimic cflags" below to the C compiler flags to test that Puff's
-output matches other libraries' output.
+Add the "puffs mimic cflags" (everything after the colon below) to the C
+compiler flags (after the .c file) to test that Puffs' output matches other
+libraries' output.
+
+To manually run the benchmarks, replace "-Wall -Werror" with "-O3" and replace
+"./a.out" with "./a.out -bench". Combine these changes with the "puffs mimic
+cflags" to run the mimic benchmarks in addition to the Puffs benchmarks.
 */
 
 // !! puffs mimic cflags: -DPUFFS_MIMIC -lgif
