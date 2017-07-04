@@ -644,10 +644,10 @@ TODO: also trawl through Go's bug tracker for "this image failed to load".
 *Preliminary* `puffs bench` throughput numbers for the GIF codec are below.
 Higher is better.
 
-"Mimic" tests check that Puffs' output mimics exactly other libraries' output
-(i.e. giflib for GIF, libpng for PNG, etc.). "Mimic" benchmarks are the numbers
-for those other libraries, as shipped with the OS, measured here on Ubunty
-14.04 LTS "Trusty".
+"Mimic" tests check that Puffs' output mimics (i.e. exactly matches) other
+libraries' output, such as giflib for GIF, libpng for PNG, etc. "Mimic"
+benchmarks give the numbers for those other libraries, as shipped with the OS,
+measured here on Ubunty 14.04 LTS "Trusty".
 
 The 1k, 10k, etc. numbers are approximately how many bytes of pixel data there
 is in the decoded image. For example, the `test/testdata/harvesters.*` images
