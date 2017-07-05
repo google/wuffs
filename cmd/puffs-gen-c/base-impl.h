@@ -17,9 +17,10 @@
 
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
 
-#if defined(__clang__) || defined(__GNUC__)
-#define PUFFS_LIKELY(expr) (__builtin_expect((expr), 1))
-#define PUFFS_UNLIKELY(expr) (__builtin_expect((expr), 0))
+// Clang also defines "__GNUC__".
+#if defined(__GNUC__)
+#define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
+#define PUFFS_UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 #else
 #define PUFFS_LIKELY(expr) (expr)
 #define PUFFS_UNLIKELY(expr) (expr)
