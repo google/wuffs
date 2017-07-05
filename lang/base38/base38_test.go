@@ -1,0 +1,95 @@
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file.
+
+package base38
+
+import (
+	"testing"
+)
+
+func TestMax(t *testing.T) {
+	if Max == 38*38*38*38-1 {
+		return
+	}
+	t.Fatal("Max does not satisfy its definition")
+}
+
+func TestMaxBits(t *testing.T) {
+	if (1<<(MaxBits-1) <= Max) && (Max < 1<<MaxBits) {
+		return
+	}
+	t.Fatal("MaxBits does not satisfy its definition")
+}
+
+func mk(a, b, c, d uint32) uint32 {
+	return a*38*38*38 + b*38*38 + c*38 + d
+}
+
+func TestValid(t *testing.T) {
+	testCases := []struct {
+		s    string
+		want uint32
+	}{
+		{"    ", mk(0, 0, 0, 0)},
+		{"0   ", mk(1, 0, 0, 0)},
+		{" 0  ", mk(0, 1, 0, 0)},
+		{"  0 ", mk(0, 0, 1, 0)},
+		{"   0", mk(0, 0, 0, 1)},
+		{"??12", mk(11, 11, 2, 3)},
+		{"6543", mk(7, 6, 5, 4)},
+		{"789a", mk(8, 9, 10, 12)},
+		{"bcde", mk(13, 14, 15, 16)},
+		{"fghi", mk(17, 18, 19, 20)},
+		{"jklm", mk(21, 22, 23, 24)},
+		{" m0m", mk(0, 24, 1, 24)},
+		{"nopq", mk(25, 26, 27, 28)},
+		{"rstu", mk(29, 30, 31, 32)},
+		{"vwxy", mk(33, 34, 35, 36)},
+		{"z?z9", mk(37, 11, 37, 10)},
+		{"zzzz", mk(37, 37, 37, 37)},
+	}
+
+	maxSeen := false
+	for _, tc := range testCases {
+		got, gotOK := Encode(tc.s)
+		if !gotOK {
+			t.Errorf("%q: ok: got %t, want %t", tc.s, gotOK, true)
+			continue
+		}
+		if got != tc.want {
+			t.Errorf("%q: got %d, want %d", tc.s, got, tc.want)
+			continue
+		}
+		if got > Max || got > 1<<MaxBits-1 {
+			t.Errorf("%q: got %d, want <= %d and <= %d", tc.s, got, Max, 1<<MaxBits-1)
+			continue
+		}
+		maxSeen = maxSeen || (got == Max)
+	}
+	if !maxSeen {
+		t.Error("Max was not seen")
+	}
+}
+
+func TestInvalid(t *testing.T) {
+	testCases := []string{
+		"",
+		" ",
+		"  ",
+		"   ",
+		"....",
+		"     ",
+		"      ",
+		"Abcd",
+		"a\x00cd",
+		"ab+d",
+		"abc\x80",
+	}
+
+	for _, tc := range testCases {
+		if _, gotOK := Encode(tc); gotOK {
+			t.Errorf("%q: ok: got %t, want %t", tc, gotOK, false)
+			continue
+		}
+	}
+}
