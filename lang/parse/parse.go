@@ -8,6 +8,8 @@ package parse
 import (
 	"fmt"
 
+	"github.com/google/puffs/lang/base38"
+
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
 )
@@ -72,8 +74,8 @@ func (p *parser) parseFile() (*a.File, error) {
 func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	flags := a.Flags(0)
 	line := p.src[0].Line
-	switch p.peek1().Key() {
-	case t.KeyUse:
+	switch k := p.peek1().Key(); k {
+	case t.KeyPackageID, t.KeyUse:
 		p.src = p.src[1:]
 		path := p.peek1()
 		if !path.IsStrLiteral() {
@@ -86,7 +88,19 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		return a.NewUse(p.filename, line, path).Node(), nil
+		if k == t.KeyPackageID {
+			raw := path.String(p.tm)
+			s, ok := t.Unescape(raw)
+			if !ok {
+				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, raw)
+			}
+			if u, ok := base38.Encode(s); !ok || u == 0 {
+				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, s)
+			}
+			return a.NewPackageID(p.filename, line, path).Node(), nil
+		} else {
+			return a.NewUse(p.filename, line, path).Node(), nil
+		}
 
 	case t.KeyPub:
 		flags |= a.FlagsPublic

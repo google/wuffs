@@ -288,11 +288,12 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 
 ## Keywords
 
-Puffs is a simple language, with only 22 keywords. 5 of these introduce
+Puffs is a simple language, with only 23 keywords. 6 of these introduce
 top-level concepts:
 
 - `error`
 - `func`
+- `packageid`
 - `status`
 - `struct`
 - `use`

@@ -30,6 +30,7 @@ const (
 	KFunc
 	KIf
 	KJump
+	KPackageID
 	KReturn
 	KStatus
 	KStruct
@@ -49,22 +50,23 @@ func (k Kind) String() string {
 var kindStrings = [...]string{
 	KInvalid: "KInvalid",
 
-	KArg:      "KArg",
-	KAssert:   "KAssert",
-	KAssign:   "KAssign",
-	KExpr:     "KExpr",
-	KField:    "KField",
-	KFile:     "KFile",
-	KFunc:     "KFunc",
-	KIf:       "KIf",
-	KJump:     "KJump",
-	KReturn:   "KReturn",
-	KStatus:   "KStatus",
-	KStruct:   "KStruct",
-	KTypeExpr: "KTypeExpr",
-	KUse:      "KUse",
-	KVar:      "KVar",
-	KWhile:    "KWhile",
+	KArg:       "KArg",
+	KAssert:    "KAssert",
+	KAssign:    "KAssign",
+	KExpr:      "KExpr",
+	KField:     "KField",
+	KFile:      "KFile",
+	KFunc:      "KFunc",
+	KIf:        "KIf",
+	KJump:      "KJump",
+	KPackageID: "KPackageID",
+	KReturn:    "KReturn",
+	KStatus:    "KStatus",
+	KStruct:    "KStruct",
+	KTypeExpr:  "KTypeExpr",
+	KUse:       "KUse",
+	KVar:       "KVar",
+	KWhile:     "KWhile",
 }
 
 type Flags uint32
@@ -104,23 +106,24 @@ func (n *Node) Kind() Kind        { return n.kind }
 func (n *Node) TypeChecked() bool { return n.flags&FlagsTypeChecked != 0 }
 func (n *Node) SetTypeChecked()   { n.flags |= FlagsTypeChecked }
 
-func (n *Node) Arg() *Arg           { return (*Arg)(n) }
-func (n *Node) Assert() *Assert     { return (*Assert)(n) }
-func (n *Node) Assign() *Assign     { return (*Assign)(n) }
-func (n *Node) Expr() *Expr         { return (*Expr)(n) }
-func (n *Node) Field() *Field       { return (*Field)(n) }
-func (n *Node) File() *File         { return (*File)(n) }
-func (n *Node) Func() *Func         { return (*Func)(n) }
-func (n *Node) If() *If             { return (*If)(n) }
-func (n *Node) Jump() *Jump         { return (*Jump)(n) }
-func (n *Node) Raw() *Raw           { return (*Raw)(n) }
-func (n *Node) Return() *Return     { return (*Return)(n) }
-func (n *Node) Status() *Status     { return (*Status)(n) }
-func (n *Node) Struct() *Struct     { return (*Struct)(n) }
-func (n *Node) TypeExpr() *TypeExpr { return (*TypeExpr)(n) }
-func (n *Node) Use() *Use           { return (*Use)(n) }
-func (n *Node) Var() *Var           { return (*Var)(n) }
-func (n *Node) While() *While       { return (*While)(n) }
+func (n *Node) Arg() *Arg             { return (*Arg)(n) }
+func (n *Node) Assert() *Assert       { return (*Assert)(n) }
+func (n *Node) Assign() *Assign       { return (*Assign)(n) }
+func (n *Node) Expr() *Expr           { return (*Expr)(n) }
+func (n *Node) Field() *Field         { return (*Field)(n) }
+func (n *Node) File() *File           { return (*File)(n) }
+func (n *Node) Func() *Func           { return (*Func)(n) }
+func (n *Node) If() *If               { return (*If)(n) }
+func (n *Node) Jump() *Jump           { return (*Jump)(n) }
+func (n *Node) PackageID() *PackageID { return (*PackageID)(n) }
+func (n *Node) Raw() *Raw             { return (*Raw)(n) }
+func (n *Node) Return() *Return       { return (*Return)(n) }
+func (n *Node) Status() *Status       { return (*Status)(n) }
+func (n *Node) Struct() *Struct       { return (*Struct)(n) }
+func (n *Node) TypeExpr() *TypeExpr   { return (*TypeExpr)(n) }
+func (n *Node) Use() *Use             { return (*Use)(n) }
+func (n *Node) Var() *Var             { return (*Var)(n) }
+func (n *Node) While() *While         { return (*While)(n) }
 
 func (n *Node) Walk(f func(*Node) error) error {
 	if n != nil {
@@ -624,6 +627,24 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 	}
 }
 
+// PackageID is "packageid ID1":
+//  - ID1:   <string literal> package ID
+type PackageID Node
+
+func (n *PackageID) Node() *Node      { return (*Node)(n) }
+func (n *PackageID) Filename() string { return n.filename }
+func (n *PackageID) Line() uint32     { return n.line }
+func (n *PackageID) ID() t.ID         { return n.id1 }
+
+func NewPackageID(filename string, line uint32, id t.ID) *PackageID {
+	return &PackageID{
+		kind:     KPackageID,
+		filename: filename,
+		line:     line,
+		id1:      id,
+	}
+}
+
 // Use is "use ID1":
 //  - ID1:   <string literal> package path
 type Use Node
@@ -643,7 +664,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 }
 
 // File is a file of source code:
-//  - List0: <Func|Status|Struct|Use> top-level declarations
+//  - List0: <Func|PackageID|Status|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) Node() *Node            { return (*Node)(n) }

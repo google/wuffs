@@ -13,6 +13,13 @@ const (
 	maxTokenSize = 1023
 )
 
+func Unescape(s string) (unescaped string, ok bool) {
+	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
+		return "", false
+	}
+	return s[1 : len(s)-1], true
+}
+
 type Map struct {
 	byName map[string]ID
 	byKey  []string

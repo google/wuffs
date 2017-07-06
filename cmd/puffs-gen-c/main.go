@@ -370,11 +370,11 @@ func (g *gen) cName(name string) string {
 }
 
 func (g *gen) gatherStatuses(n *a.Status) error {
-	msg := n.Message().String(g.tm)
-	if len(msg) < 2 || msg[0] != '"' || msg[len(msg)-1] != '"' {
-		return fmt.Errorf("bad status message %q", msg)
+	raw := n.Message().String(g.tm)
+	msg, ok := t.Unescape(raw)
+	if !ok {
+		return fmt.Errorf("bad status message %q", raw)
 	}
-	msg = msg[1 : len(msg)-1]
 	prefix := "status "
 	isError := n.Keyword().Key() == t.KeyError
 	if isError {

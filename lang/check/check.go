@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/puffs/lang/base38"
+
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
 )
@@ -104,6 +106,7 @@ func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
 	c := &Checker{
 		tm:        tm,
 		reasonMap: rMap,
+		packageID: base38.Max + 1,
 		funcs:     map[t.QID]Func{},
 		statuses:  map[t.ID]Status{},
 		structs:   map[t.ID]Struct{},
@@ -135,6 +138,7 @@ var phases = [...]struct {
 	kind  a.Kind
 	check func(*Checker, *a.Node) error
 }{
+	{a.KPackageID, (*Checker).checkPackageID},
 	{a.KUse, (*Checker).checkUse},
 	{a.KStatus, (*Checker).checkStatus},
 	{a.KStruct, (*Checker).checkStructDecl},
@@ -150,6 +154,9 @@ type Checker struct {
 	tm        *t.Map
 	reasonMap reasonMap
 
+	packageID      uint32
+	otherPackageID *a.PackageID
+
 	funcs    map[t.QID]Func
 	statuses map[t.ID]Status
 	structs  map[t.ID]Struct
@@ -157,9 +164,43 @@ type Checker struct {
 	unsortedStructs []*a.Struct
 }
 
+func (c *Checker) PackageID() uint32         { return c.packageID }
 func (c *Checker) Funcs() map[t.QID]Func     { return c.funcs }
 func (c *Checker) Statuses() map[t.ID]Status { return c.statuses }
 func (c *Checker) Structs() map[t.ID]Struct  { return c.structs }
+
+func (c *Checker) checkPackageID(node *a.Node) error {
+	n := node.PackageID()
+	if c.otherPackageID != nil {
+		return &Error{
+			Err:           fmt.Errorf("check: multiple packageid declarations"),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
+			OtherFilename: c.otherPackageID.Filename(),
+			OtherLine:     c.otherPackageID.Line(),
+		}
+	}
+	raw := n.ID().String(c.tm)
+	s, ok := t.Unescape(raw)
+	if !ok {
+		return &Error{
+			Err:      fmt.Errorf("check: %q is not a valid packageid", raw),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
+	}
+	u, ok := base38.Encode(s)
+	if !ok || u == 0 {
+		return &Error{
+			Err:      fmt.Errorf("check: %q is not a valid packageid", s),
+			Filename: n.Filename(),
+			Line:     n.Line(),
+		}
+	}
+	c.packageID = u
+	c.otherPackageID = n
+	return nil
+}
 
 func (c *Checker) checkUse(node *a.Node) error {
 	// TODO.

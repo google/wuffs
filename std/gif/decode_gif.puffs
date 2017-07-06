@@ -3,6 +3,8 @@
 
 // The GIF spec is https://www.w3.org/Graphics/GIF/spec-gif89a.txt
 
+packageid "gif "
+
 pub error "bad GIF block"
 pub error "bad GIF extension label"
 pub error "bad GIF header"
