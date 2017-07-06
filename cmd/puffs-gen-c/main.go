@@ -19,6 +19,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/google/puffs/lang/base38"
+	"github.com/google/puffs/lang/check"
 	"github.com/google/puffs/lang/generate"
 
 	a "github.com/google/puffs/lang/ast"
@@ -43,10 +45,11 @@ const (
 )
 
 func main() {
-	generate.Main(func(pkgName string, tm *t.Map, files []*a.File) ([]byte, error) {
+	generate.Main(func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		g := &gen{
 			pkgName: pkgName,
 			tm:      tm,
+			checker: c,
 			files:   files,
 		}
 		if err := g.generate(); err != nil {
@@ -64,19 +67,22 @@ func main() {
 	})
 }
 
-const userDefinedStatusBase = 128
+const (
+	maxNamespacedStatusCode  = 255
+	statusCodeNamespaceMask  = 1<<base38.MaxBits - 1
+	statusCodeNamespaceShift = 10
+	statusCodeCodeBits       = 8
+	statusCodeDescription    = "" +
+		"// Status codes are int32_t values:\n" +
+		"//  - the sign bit indicates a non-recoverable status code: an error\n" +
+		"//  - bits 10-30 hold the packageid: a namespace\n" +
+		"//  - bits 8-9 are reserved\n" +
+		"//  - bits 0-7 are a package-namespaced numeric code\n"
+)
 
 var builtInStatuses = [...]string{
-	// For API/ABI forwards and backwards compatibility, the very first two
-	// statuses must be "status ok" (with generated value 0) and "error bad
-	// version" (with generated value -2 + 1). This lets caller code check the
-	// constructor return value for "error bad version" even if the caller and
-	// callee were built with different versions.
 	"status ok",
 	"error bad version",
-	// The order of the remaining statuses is less important, but should remain
-	// stable for API/ABI backwards compatibility, where additional built in
-	// status codes don't affect existing ones.
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
@@ -87,7 +93,11 @@ var builtInStatuses = [...]string{
 }
 
 func init() {
-	if len(builtInStatuses) > userDefinedStatusBase {
+	// The +1 is for the error bit (the sign bit).
+	if statusCodeNamespaceShift+base38.MaxBits+1 != 32 {
+		panic("inconsistent status code namespace shift")
+	}
+	if len(builtInStatuses) > maxNamespacedStatusCode {
 		panic("too many builtInStatuses")
 	}
 }
@@ -131,6 +141,7 @@ type gen struct {
 	buffer     bytes.Buffer
 	pkgName    string
 	tm         *t.Map
+	checker    *check.Checker
 	files      []*a.File
 	statusList []status
 	statusMap  map[t.ID]status
@@ -199,25 +210,36 @@ func (g *gen) genHeader() error {
 	g.writes("\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 
 	g.writes("// ---------------- Status Codes\n\n")
-	g.writes("// Status codes are non-positive integers.\n")
-	g.writes("//\n")
-	g.writes("// The least significant bit indicates a non-recoverable status code: an error.\n")
-	g.writes("typedef enum {\n")
+	g.writes(statusCodeDescription)
+	g.printf("//\n// Do not manipulate these bits directly. Use the API functions such as\n"+
+		"// puffs_%s_status_is_error instead.\n", g.pkgName)
+	g.printf("typedef int32_t puffs_%s_status;\n\n", g.pkgName)
+	pkgID := g.checker.PackageID()
+	g.printf("#define puffs_%s_packageid %d // %#08x\n\n", g.pkgName, pkgID, pkgID)
+
 	for i, s := range builtInStatuses {
-		nudge := ""
+		code := uint32(0)
 		if strings.HasPrefix(s, "error ") {
-			nudge = "+1"
+			code |= 1 << 31
 		}
-		g.printf("%s = %d%s,\n", g.cName(s), -2*i, nudge)
+		code |= uint32(i)
+		g.printf("#define %s %d // %#08x\n", g.cName(s), int32(code), code)
+	}
+	g.writes("\n")
+
+	if len(g.statusList) > maxNamespacedStatusCode {
+		return fmt.Errorf("too many status codes")
 	}
 	for i, s := range g.statusList {
-		nudge := ""
+		code := pkgID << statusCodeNamespaceShift
 		if s.isError {
-			nudge = "+1"
+			code |= 1 << 31
 		}
-		g.printf("%s = %d%s,\n", s.name, -2*(userDefinedStatusBase+i), nudge)
+		code |= uint32(i)
+		g.printf("#define %s %d // %#08x\n", s.name, int32(code), code)
 	}
-	g.printf("} puffs_%s_status;\n\n", g.pkgName)
+	g.writes("\n")
+
 	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 
@@ -252,9 +274,9 @@ func (g *gen) genImpl() error {
 	g.writes("\n")
 
 	g.writes("// ---------------- Status Codes Implementations\n\n")
-	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s) {"+
-		"return s & 1; }\n\n", g.pkgName, g.pkgName)
-	g.printf("const char* puffs_%s_status_strings[%d] = {\n", g.pkgName, len(builtInStatuses)+len(g.statusList))
+	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s) { return s < 0; }\n\n", g.pkgName, g.pkgName)
+
+	g.printf("const char* puffs_%s_status_strings0[%d] = {\n", g.pkgName, len(builtInStatuses))
 	for _, s := range builtInStatuses {
 		if strings.HasPrefix(s, "status ") {
 			s = s[len("status "):]
@@ -264,19 +286,26 @@ func (g *gen) genImpl() error {
 		s = g.pkgName + ": " + s
 		g.printf("%q,", s)
 	}
+	g.writes("};\n\n")
+
+	g.printf("const char* puffs_%s_status_strings1[%d] = {\n", g.pkgName, len(g.statusList))
 	for _, s := range g.statusList {
 		g.printf("%q,", g.pkgName+": "+s.msg)
 	}
 	g.writes("};\n\n")
 
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s) {\n", g.pkgName, g.pkgName)
-	g.writes("s = -(s >> 1); if (0 <= s) {\n")
-	g.printf("if (s < %d) { return puffs_%s_status_strings[s]; }\n",
-		len(builtInStatuses), g.pkgName)
-	g.printf("s -= %d;\n", userDefinedStatusBase-len(builtInStatuses))
-	g.printf("if ((%d <= s) && (s < %d)) { return puffs_%s_status_strings[s]; }\n",
-		len(builtInStatuses), len(builtInStatuses)+len(g.statusList), g.pkgName)
-	g.printf("}\nreturn \"%s: unknown status\";\n", g.pkgName)
+	g.printf("const char** a = NULL;\n")
+	g.printf("uint32_t n = 0;\n")
+	g.printf("switch ((s >> %d) & %#x) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
+	g.printf("case 0: a = puffs_%s_status_strings0; n = %d; break;\n",
+		g.pkgName, len(builtInStatuses))
+	g.printf("case puffs_%s_packageid: a = puffs_%s_status_strings1; n = %d; break;\n",
+		g.pkgName, g.pkgName, len(g.statusList))
+	// TODO: add cases for other packages used by this one.
+	g.printf("}\n")
+	g.printf("uint32_t i = s & %#0x;\n", 1<<statusCodeCodeBits-1)
+	g.printf("return i < n ? a[i] : \"%s: unknown status\";\n", g.pkgName)
 	g.writes("}\n\n")
 
 	g.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")

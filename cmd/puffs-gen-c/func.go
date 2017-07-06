@@ -93,7 +93,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		if n.Receiver() != 0 {
 			g.writes("self->private_impl.status;\n")
 			if n.Public() {
-				g.writes("if (status & 1) { return status; }")
+				g.writes("if (status < 0) { return status; }")
 			}
 		} else {
 			g.printf("puffs_%s_status_ok;\n", g.pkgName)
@@ -103,7 +103,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 				"status = puffs_%s_error_constructor_not_called; goto exit; }\n", g.pkgName)
 		}
 	} else if n.Receiver() != 0 && n.Public() {
-		g.writes("if (self->private_impl.status & 1) { return; }")
+		g.writes("if (self->private_impl.status < 0) { return; }")
 		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
 			"self->private_impl.status = puffs_%s_error_constructor_not_called; return; }\n", g.pkgName)
 	}
@@ -910,8 +910,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
-		// TODO: be principled with "if (status&1)" vs "if (status)".
-		g.writes("if (status&1) { return status; }\n")
+		// TODO: be principled with "if (status < 0)" vs "if (status)".
+		g.writes("if (status < 0) { return status; }\n")
 
 	} else {
 		// TODO: fix this.

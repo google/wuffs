@@ -78,27 +78,36 @@ extern "C" {
 
 // ---------------- Status Codes
 
-// Status codes are non-positive integers.
+// Status codes are int32_t values:
+//  - the sign bit indicates a non-recoverable status code: an error
+//  - bits 10-30 hold the packageid: a namespace
+//  - bits 8-9 are reserved
+//  - bits 0-7 are a package-namespaced numeric code
 //
-// The least significant bit indicates a non-recoverable status code: an error.
-typedef enum {
-  puffs_gif_status_ok = 0,
-  puffs_gif_error_bad_version = -2 + 1,
-  puffs_gif_error_bad_receiver = -4 + 1,
-  puffs_gif_error_bad_argument = -6 + 1,
-  puffs_gif_error_constructor_not_called = -8 + 1,
-  puffs_gif_error_unexpected_eof = -10 + 1,
-  puffs_gif_status_short_read = -12,
-  puffs_gif_status_short_write = -14,
-  puffs_gif_error_closed_for_writes = -16 + 1,
-  puffs_gif_error_bad_gif_block = -256 + 1,
-  puffs_gif_error_bad_gif_extension_label = -258 + 1,
-  puffs_gif_error_bad_gif_header = -260 + 1,
-  puffs_gif_error_bad_lzw_literal_width = -262 + 1,
-  puffs_gif_error_todo_unsupported_local_color_table = -264 + 1,
-  puffs_gif_error_lzw_code_is_out_of_range = -266 + 1,
-  puffs_gif_error_lzw_prefix_chain_is_cyclical = -268 + 1,
-} puffs_gif_status;
+// Do not manipulate these bits directly. Use the API functions such as
+// puffs_gif_status_is_error instead.
+typedef int32_t puffs_gif_status;
+
+#define puffs_gif_packageid 1017222  // 0x000f8586
+
+#define puffs_gif_status_ok 0                               // 0x00000000
+#define puffs_gif_error_bad_version -2147483647             // 0x80000001
+#define puffs_gif_error_bad_receiver -2147483646            // 0x80000002
+#define puffs_gif_error_bad_argument -2147483645            // 0x80000003
+#define puffs_gif_error_constructor_not_called -2147483644  // 0x80000004
+#define puffs_gif_error_unexpected_eof -2147483643          // 0x80000005
+#define puffs_gif_status_short_read 6                       // 0x00000006
+#define puffs_gif_status_short_write 7                      // 0x00000007
+#define puffs_gif_error_closed_for_writes -2147483640       // 0x80000008
+
+#define puffs_gif_error_bad_gif_block -1105848320            // 0xbe161800
+#define puffs_gif_error_bad_gif_extension_label -1105848319  // 0xbe161801
+#define puffs_gif_error_bad_gif_header -1105848318           // 0xbe161802
+#define puffs_gif_error_bad_lzw_literal_width -1105848317    // 0xbe161803
+#define puffs_gif_error_todo_unsupported_local_color_table \
+  -1105848316                                                     // 0xbe161804
+#define puffs_gif_error_lzw_code_is_out_of_range -1105848315      // 0xbe161805
+#define puffs_gif_error_lzw_prefix_chain_is_cyclical -1105848314  // 0xbe161806
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
 
@@ -264,10 +273,10 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 // ---------------- Status Codes Implementations
 
 bool puffs_gif_status_is_error(puffs_gif_status s) {
-  return s & 1;
+  return s < 0;
 }
 
-const char* puffs_gif_status_strings[16] = {
+const char* puffs_gif_status_strings0[9] = {
     "gif: ok",
     "gif: bad version",
     "gif: bad receiver",
@@ -277,6 +286,9 @@ const char* puffs_gif_status_strings[16] = {
     "gif: short read",
     "gif: short write",
     "gif: closed for writes",
+};
+
+const char* puffs_gif_status_strings1[7] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
@@ -287,17 +299,20 @@ const char* puffs_gif_status_strings[16] = {
 };
 
 const char* puffs_gif_status_string(puffs_gif_status s) {
-  s = -(s >> 1);
-  if (0 <= s) {
-    if (s < 9) {
-      return puffs_gif_status_strings[s];
-    }
-    s -= 119;
-    if ((9 <= s) && (s < 16)) {
-      return puffs_gif_status_strings[s];
-    }
+  const char** a = NULL;
+  uint32_t n = 0;
+  switch ((s >> 10) & 0x1fffff) {
+    case 0:
+      a = puffs_gif_status_strings0;
+      n = 9;
+      break;
+    case puffs_gif_packageid:
+      a = puffs_gif_status_strings1;
+      n = 7;
+      break;
   }
-  return "gif: unknown status";
+  uint32_t i = s & 0xff;
+  return i < n ? a[i] : "gif: unknown status";
 }
 
 // ---------------- Private Constructor and Destructor Prototypes
@@ -390,7 +405,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     return puffs_gif_error_bad_receiver;
   }
   puffs_gif_status status = self->private_impl.status;
-  if (status & 1) {
+  if (status < 0) {
     return status;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
@@ -970,7 +985,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
         }
         b_rend_src = b_rptr_src + len;
       }
-      if (status & 1) {
+      if (status < 0) {
         return status;
       }
     }
@@ -1016,7 +1031,7 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
   if (!self) {
     return;
   }
-  if (self->private_impl.status & 1) {
+  if (self->private_impl.status < 0) {
     return;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
@@ -1038,7 +1053,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     return puffs_gif_error_bad_receiver;
   }
   puffs_gif_status status = self->private_impl.status;
-  if (status & 1) {
+  if (status < 0) {
     return status;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
