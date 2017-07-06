@@ -47,23 +47,23 @@ void test_basic_bad_argument_out_of_range() {
 
   // Setting to 8 is in the [2..8] range.
   puffs_gif_lzw_decoder_set_literal_width(&dec, 8);
-  if (dec.private_impl.status != puffs_gif_status_ok) {
+  if (dec.private_impl.status != PUFFS_GIF_STATUS_OK) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
-         puffs_gif_status_ok);
+         PUFFS_GIF_STATUS_OK);
   }
 
   // Setting to 999 is out of range.
   puffs_gif_lzw_decoder_set_literal_width(&dec, 999);
-  if (dec.private_impl.status != puffs_gif_error_bad_argument) {
+  if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_ARGUMENT) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
-         puffs_gif_error_bad_argument);
+         PUFFS_GIF_ERROR_BAD_ARGUMENT);
   }
 
   // That error status code should be sticky.
   puffs_gif_lzw_decoder_set_literal_width(&dec, 8);
-  if (dec.private_impl.status != puffs_gif_error_bad_argument) {
+  if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_ARGUMENT) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
-         puffs_gif_error_bad_argument);
+         PUFFS_GIF_ERROR_BAD_ARGUMENT);
   }
 }
 
@@ -72,8 +72,8 @@ void test_basic_bad_receiver() {
   puffs_base_writer1 dst = {0};
   puffs_base_reader1 src = {0};
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(NULL, dst, src);
-  if (status != puffs_gif_error_bad_receiver) {
-    FAIL("status: got %d, want %d", status, puffs_gif_error_bad_receiver);
+  if (status != PUFFS_GIF_ERROR_BAD_RECEIVER) {
+    FAIL("status: got %d, want %d", status, PUFFS_GIF_ERROR_BAD_RECEIVER);
   }
 }
 
@@ -83,9 +83,9 @@ void test_basic_constructor_not_called() {
   puffs_base_writer1 dst = {0};
   puffs_base_reader1 src = {0};
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, dst, src);
-  if (status != puffs_gif_error_constructor_not_called) {
+  if (status != PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED) {
     FAIL("status: got %d, want %d", status,
-         puffs_gif_error_constructor_not_called);
+         PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED);
   }
 }
 
@@ -93,9 +93,9 @@ void test_basic_puffs_version_bad() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
-  if (dec.private_impl.status != puffs_gif_error_bad_version) {
+  if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_VERSION) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
-         puffs_gif_error_bad_version);
+         PUFFS_GIF_ERROR_BAD_VERSION);
     goto cleanup0;
   }
 cleanup0:
@@ -121,46 +121,46 @@ cleanup0:
 
 void test_basic_status_is_error() {
   proc_funcname = __func__;
-  if (puffs_gif_status_is_error(puffs_gif_status_ok)) {
-    FAIL("is_error(ok) returned true");
+  if (puffs_gif_status_is_error(PUFFS_GIF_STATUS_OK)) {
+    FAIL("is_error(OK) returned true");
     return;
   }
-  if (!puffs_gif_status_is_error(puffs_gif_error_bad_version)) {
-    FAIL("is_error(bad_version) returned false");
+  if (!puffs_gif_status_is_error(PUFFS_GIF_ERROR_BAD_VERSION)) {
+    FAIL("is_error(BAD_VERSION) returned false");
     return;
   }
-  if (puffs_gif_status_is_error(puffs_gif_status_short_write)) {
-    FAIL("is_error(short_write) returned true");
+  if (puffs_gif_status_is_error(PUFFS_GIF_STATUS_SHORT_WRITE)) {
+    FAIL("is_error(SHORT_WRITE) returned true");
     return;
   }
-  if (!puffs_gif_status_is_error(puffs_gif_error_lzw_code_is_out_of_range)) {
-    FAIL("is_error(lzw_code_is_out_of_range) returned false");
+  if (!puffs_gif_status_is_error(PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE)) {
+    FAIL("is_error(LZW_CODE_IS_OUT_OF_RANGE) returned false");
     return;
   }
 }
 
 void test_basic_status_strings() {
   proc_funcname = __func__;
-  const char* s0 = puffs_gif_status_string(puffs_gif_status_ok);
+  const char* s0 = puffs_gif_status_string(PUFFS_GIF_STATUS_OK);
   const char* t0 = "gif: ok";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
   }
-  const char* s1 = puffs_gif_status_string(puffs_gif_error_bad_version);
+  const char* s1 = puffs_gif_status_string(PUFFS_GIF_ERROR_BAD_VERSION);
   const char* t1 = "gif: bad version";
   if (strcmp(s1, t1)) {
     FAIL("got \"%s\", want \"%s\"", s1, t1);
     return;
   }
-  const char* s2 = puffs_gif_status_string(puffs_gif_status_short_write);
+  const char* s2 = puffs_gif_status_string(PUFFS_GIF_STATUS_SHORT_WRITE);
   const char* t2 = "gif: short write";
   if (strcmp(s2, t2)) {
     FAIL("got \"%s\", want \"%s\"", s2, t2);
     return;
   }
   const char* s3 =
-      puffs_gif_status_string(puffs_gif_error_lzw_code_is_out_of_range);
+      puffs_gif_status_string(PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE);
   const char* t3 = "gif: LZW code is out of range";
   if (strcmp(s3, t3)) {
     FAIL("got \"%s\", want \"%s\"", s3, t3);
@@ -239,14 +239,14 @@ void test_lzw_decode_xxx(const char* src_filename,
     puffs_gif_status status =
         puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
     if (src.ri == src.wi) {
-      if (status != puffs_gif_status_ok) {
-        FAIL("status: got %d, want %d", status, puffs_gif_status_ok);
+      if (status != PUFFS_GIF_STATUS_OK) {
+        FAIL("status: got %d, want %d", status, PUFFS_GIF_STATUS_OK);
         goto cleanup1;
       }
       break;
     }
-    if (status != puffs_gif_status_short_read) {
-      FAIL("status: got %d, want %d", status, puffs_gif_status_short_read);
+    if (status != PUFFS_GIF_STATUS_SHORT_READ) {
+      FAIL("status: got %d, want %d", status, PUFFS_GIF_STATUS_SHORT_READ);
       goto cleanup1;
     }
     if (src.ri < old_ri) {
@@ -397,7 +397,7 @@ void test_gif_decode_xxx(const char* filename,
     goto cleanup1;
   }
 
-  if (want != puffs_gif_status_ok) {
+  if (want != PUFFS_GIF_STATUS_OK) {
     goto cleanup1;
   }
 
@@ -440,13 +440,13 @@ void test_gif_decode_input_is_a_gif() {
   test_gif_decode_xxx("../../testdata/bricks-dither.gif",
                       "../../testdata/bricks-dither.palette",
                       "../../testdata/bricks-dither.indexes",
-                      puffs_gif_status_ok);
+                      PUFFS_GIF_STATUS_OK);
 }
 
 void test_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
   test_gif_decode_xxx("../../testdata/bricks-dither.png", "", "",
-                      puffs_gif_error_bad_gif_header);
+                      PUFFS_GIF_ERROR_BAD_GIF_HEADER);
 }
 
 // ---------------- Mimic Tests

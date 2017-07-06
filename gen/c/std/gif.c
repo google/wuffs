@@ -90,24 +90,24 @@ typedef int32_t puffs_gif_status;
 
 #define puffs_gif_packageid 1017222  // 0x000f8586
 
-#define puffs_gif_status_ok 0                               // 0x00000000
-#define puffs_gif_error_bad_version -2147483647             // 0x80000001
-#define puffs_gif_error_bad_receiver -2147483646            // 0x80000002
-#define puffs_gif_error_bad_argument -2147483645            // 0x80000003
-#define puffs_gif_error_constructor_not_called -2147483644  // 0x80000004
-#define puffs_gif_error_unexpected_eof -2147483643          // 0x80000005
-#define puffs_gif_status_short_read 6                       // 0x00000006
-#define puffs_gif_status_short_write 7                      // 0x00000007
-#define puffs_gif_error_closed_for_writes -2147483640       // 0x80000008
+#define PUFFS_GIF_STATUS_OK 0                               // 0x00000000
+#define PUFFS_GIF_ERROR_BAD_VERSION -2147483647             // 0x80000001
+#define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
+#define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
+#define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483643          // 0x80000005
+#define PUFFS_GIF_STATUS_SHORT_READ 6                       // 0x00000006
+#define PUFFS_GIF_STATUS_SHORT_WRITE 7                      // 0x00000007
+#define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
-#define puffs_gif_error_bad_gif_block -1105848320            // 0xbe161800
-#define puffs_gif_error_bad_gif_extension_label -1105848319  // 0xbe161801
-#define puffs_gif_error_bad_gif_header -1105848318           // 0xbe161802
-#define puffs_gif_error_bad_lzw_literal_width -1105848317    // 0xbe161803
-#define puffs_gif_error_todo_unsupported_local_color_table \
+#define PUFFS_GIF_ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
+#define PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
+#define PUFFS_GIF_ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
+#define PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
   -1105848316                                                     // 0xbe161804
-#define puffs_gif_error_lzw_code_is_out_of_range -1105848315      // 0xbe161805
-#define puffs_gif_error_lzw_prefix_chain_is_cyclical -1105848314  // 0xbe161806
+#define PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
+#define PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
 
@@ -355,7 +355,7 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = puffs_gif_error_bad_version;
+    self->private_impl.status = PUFFS_GIF_ERROR_BAD_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
@@ -378,7 +378,7 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = puffs_gif_error_bad_version;
+    self->private_impl.status = PUFFS_GIF_ERROR_BAD_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
@@ -402,14 +402,14 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
                                           puffs_base_writer1 a_dst,
                                           puffs_base_reader1 a_src) {
   if (!self) {
-    return puffs_gif_error_bad_receiver;
+    return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
   puffs_gif_status status = self->private_impl.status;
   if (status < 0) {
     return status;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = puffs_gif_error_constructor_not_called;
+    status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
     goto exit;
   }
 
@@ -550,10 +550,10 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
           goto suspend;
         }
       } else if (v_c == 59) {
-        status = puffs_gif_status_ok;
+        status = PUFFS_GIF_STATUS_OK;
         goto suspend;
       } else {
-        status = puffs_gif_error_bad_gif_block;
+        status = PUFFS_GIF_ERROR_BAD_GIF_BLOCK;
         goto suspend;
       }
     }
@@ -583,8 +583,8 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   goto suspend;
 }
 
@@ -635,7 +635,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
     }
     if ((v_c[0] != 71) || (v_c[1] != 73) || (v_c[2] != 70) || (v_c[3] != 56) ||
         ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
-      return puffs_gif_error_bad_gif_header;
+      return PUFFS_GIF_ERROR_BAD_GIF_HEADER;
     }
     coro_state = 0;
   }
@@ -663,8 +663,8 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   return status;
 }
 
@@ -772,8 +772,8 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   return status;
 }
 
@@ -817,7 +817,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     } else if (v_label == 254) {
     } else if (v_label == 255) {
     } else {
-      return puffs_gif_error_bad_gif_extension_label;
+      return PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL;
     }
     while (true) {
       PUFFS_COROUTINE_STATE(2);
@@ -834,8 +834,8 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
       if (t_2 > b_rend_src - b_rptr_src) {
         t_2 -= b_rend_src - b_rptr_src;
         a_src.buf->ri = a_src.buf->wi;
-        status = a_src.buf->closed ? puffs_gif_error_unexpected_eof
-                                   : puffs_gif_status_short_read;
+        status = a_src.buf->closed ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+                                   : PUFFS_GIF_STATUS_SHORT_READ;
         return status;
       }
       b_rptr_src += t_2;
@@ -867,8 +867,8 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   return status;
 }
 
@@ -932,7 +932,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     if (v_interlace) {
     }
     if ((v_c[8] & 128) != 0) {
-      return puffs_gif_error_todo_unsupported_local_color_table;
+      return PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
     }
     PUFFS_COROUTINE_STATE(2);
     if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -941,7 +941,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     uint8_t t_1 = *b_rptr_src++;
     v_lw = t_1;
     if ((v_lw < 2) || (8 < v_lw)) {
-      return puffs_gif_error_bad_lzw_literal_width;
+      return PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH;
     }
     puffs_gif_lzw_decoder_set_literal_width(&self->private_impl.f_lzw,
                                             ((uint32_t)(v_lw)));
@@ -1021,8 +1021,8 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   return status;
 }
 
@@ -1035,11 +1035,11 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
     return;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = puffs_gif_error_constructor_not_called;
+    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
     return;
   }
   if (a_lw < 2 || a_lw > 8) {
-    self->private_impl.status = puffs_gif_error_bad_argument;
+    self->private_impl.status = PUFFS_GIF_ERROR_BAD_ARGUMENT;
     return;
   }
 
@@ -1050,14 +1050,14 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src) {
   if (!self) {
-    return puffs_gif_error_bad_receiver;
+    return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
   puffs_gif_status status = self->private_impl.status;
   if (status < 0) {
     return status;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = puffs_gif_error_constructor_not_called;
+    status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
     goto exit;
   }
 
@@ -1139,7 +1139,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       if (v_code < v_clear_code) {
         PUFFS_COROUTINE_STATE(2);
         if (b_wptr_dst == b_wend_dst) {
-          status = puffs_gif_status_short_write;
+          status = PUFFS_GIF_STATUS_SHORT_WRITE;
           goto suspend;
         }
         *b_wptr_dst++ = ((uint8_t)(v_code));
@@ -1154,7 +1154,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         v_width = (self->private_impl.f_literal_width + 1);
         goto label_0_continue;
       } else if (v_code == v_end_code) {
-        status = puffs_gif_status_ok;
+        status = PUFFS_GIF_STATUS_OK;
         goto suspend;
       } else if (v_code <= v_save_code) {
         v_s = 4095;
@@ -1166,7 +1166,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         while (v_c >= v_clear_code) {
           self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
           if (v_s == 0) {
-            status = puffs_gif_error_lzw_prefix_chain_is_cyclical;
+            status = PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL;
             goto suspend;
           }
           v_s -= 1;
@@ -1178,12 +1178,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         }
         PUFFS_COROUTINE_STATE(3);
         if (a_dst.buf->closed) {
-          status = puffs_gif_error_closed_for_writes;
+          status = PUFFS_GIF_ERROR_CLOSED_FOR_WRITES;
           goto suspend;
         }
         if ((b_wend_dst - b_wptr_dst) <
             (sizeof(self->private_impl.f_stack) - v_s)) {
-          status = puffs_gif_status_short_write;
+          status = PUFFS_GIF_STATUS_SHORT_WRITE;
           goto suspend;
         }
         memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
@@ -1195,7 +1195,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
               ((uint16_t)(v_prev_code));
         }
       } else {
-        status = puffs_gif_error_lzw_code_is_out_of_range;
+        status = PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE;
         goto suspend;
       }
       if (v_save_code <= 4095) {
@@ -1251,7 +1251,7 @@ exit:
 
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? puffs_gif_error_unexpected_eof
-               : puffs_gif_status_short_read;
+               ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
+               : PUFFS_GIF_STATUS_SHORT_READ;
   goto suspend;
 }

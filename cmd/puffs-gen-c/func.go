@@ -79,7 +79,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		if n.Receiver() != 0 {
 			g.writes("if (!self) {\n")
 			if n.Suspendible() {
-				g.printf("return puffs_%s_error_bad_receiver;", g.pkgName)
+				g.printf("return PUFFS_%s_ERROR_BAD_RECEIVER;", g.PKGNAME)
 			} else {
 				g.printf("return;")
 			}
@@ -96,16 +96,16 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 				g.writes("if (status < 0) { return status; }")
 			}
 		} else {
-			g.printf("puffs_%s_status_ok;\n", g.pkgName)
+			g.printf("PUFFS_%s_STATUS_OK;\n", g.PKGNAME)
 		}
 		if n.Public() {
 			g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-				"status = puffs_%s_error_constructor_not_called; goto exit; }\n", g.pkgName)
+				"status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; goto exit; }\n", g.PKGNAME)
 		}
 	} else if n.Receiver() != 0 && n.Public() {
 		g.writes("if (self->private_impl.status < 0) { return; }")
 		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-			"self->private_impl.status = puffs_%s_error_constructor_not_called; return; }\n", g.pkgName)
+			"self->private_impl.status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; return; }\n", g.PKGNAME)
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and
@@ -260,9 +260,9 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 	}
 	g.writes(") {")
 	if n.Suspendible() {
-		g.printf("status = puffs_%s_error_bad_argument; goto exit;", g.pkgName)
+		g.printf("status = PUFFS_%s_ERROR_BAD_ARGUMENT; goto exit;", g.PKGNAME)
 	} else if n.Receiver() != 0 {
-		g.printf("self->private_impl.status = puffs_%s_error_bad_argument; return;", g.pkgName)
+		g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_ARGUMENT; return;", g.PKGNAME)
 	} else {
 		g.printf("return;")
 	}
@@ -643,7 +643,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		n := n.Return()
 		ret := ""
 		if n.Keyword() == 0 {
-			ret = fmt.Sprintf("puffs_%s_status_ok", g.pkgName)
+			ret = fmt.Sprintf("PUFFS_%s_STATUS_OK", g.PKGNAME)
 		} else {
 			ret = g.statusMap[n.Message()].name
 		}
@@ -822,8 +822,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
 		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
 
-		g.printf("status = %ssrc.buf->closed ? puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
-			aPrefix, g.pkgName, g.pkgName)
+		g.printf("status = %ssrc.buf->closed ? PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_STATUS_SHORT_READ;",
+			aPrefix, g.PKGNAME, g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
 			g.writes("goto suspend;")
 		} else {
@@ -835,7 +835,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
-		g.printf("if (%sdst.buf->closed) { status = puffs_%s_error_closed_for_writes;", aPrefix, g.pkgName)
+		g.printf("if (%sdst.buf->closed) { status = PUFFS_%s_ERROR_CLOSED_FOR_WRITES;", aPrefix, g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
 		} else {
@@ -844,7 +844,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.writes("}\n")
 		g.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
 			bPrefix, bPrefix)
-		g.printf("status = puffs_%s_status_short_write;", g.pkgName)
+		g.printf("status = PUFFS_%s_STATUS_SHORT_WRITE;", g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
 		} else {
@@ -857,8 +857,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		g.printf("if (%swptr_dst == %swend_dst) { status = puffs_%s_status_short_write;",
-			bPrefix, bPrefix, g.pkgName)
+		g.printf("if (%swptr_dst == %swend_dst) { status = PUFFS_%s_STATUS_SHORT_WRITE;",
+			bPrefix, bPrefix, g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
 		} else {
@@ -926,8 +926,8 @@ func (g *gen) writeShortRead(name string) error {
 	g.printf("\nshort_read_%s:\n", name)
 	// TODO: ri == wi isn't the right condition.
 	g.printf("status = ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) ?"+
-		"puffs_%s_error_unexpected_eof : puffs_%s_status_short_read;",
-		aPrefix, name, aPrefix, name, aPrefix, name, g.pkgName, g.pkgName)
+		"PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_STATUS_SHORT_READ;",
+		aPrefix, name, aPrefix, name, aPrefix, name, g.PKGNAME, g.PKGNAME)
 	if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
 		g.writes("goto suspend;")
 	} else {

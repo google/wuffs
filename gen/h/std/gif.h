@@ -90,24 +90,24 @@ typedef int32_t puffs_gif_status;
 
 #define puffs_gif_packageid 1017222  // 0x000f8586
 
-#define puffs_gif_status_ok 0                               // 0x00000000
-#define puffs_gif_error_bad_version -2147483647             // 0x80000001
-#define puffs_gif_error_bad_receiver -2147483646            // 0x80000002
-#define puffs_gif_error_bad_argument -2147483645            // 0x80000003
-#define puffs_gif_error_constructor_not_called -2147483644  // 0x80000004
-#define puffs_gif_error_unexpected_eof -2147483643          // 0x80000005
-#define puffs_gif_status_short_read 6                       // 0x00000006
-#define puffs_gif_status_short_write 7                      // 0x00000007
-#define puffs_gif_error_closed_for_writes -2147483640       // 0x80000008
+#define PUFFS_GIF_STATUS_OK 0                               // 0x00000000
+#define PUFFS_GIF_ERROR_BAD_VERSION -2147483647             // 0x80000001
+#define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
+#define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
+#define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483643          // 0x80000005
+#define PUFFS_GIF_STATUS_SHORT_READ 6                       // 0x00000006
+#define PUFFS_GIF_STATUS_SHORT_WRITE 7                      // 0x00000007
+#define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
-#define puffs_gif_error_bad_gif_block -1105848320            // 0xbe161800
-#define puffs_gif_error_bad_gif_extension_label -1105848319  // 0xbe161801
-#define puffs_gif_error_bad_gif_header -1105848318           // 0xbe161802
-#define puffs_gif_error_bad_lzw_literal_width -1105848317    // 0xbe161803
-#define puffs_gif_error_todo_unsupported_local_color_table \
+#define PUFFS_GIF_ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
+#define PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
+#define PUFFS_GIF_ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
+#define PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
   -1105848316                                                     // 0xbe161804
-#define puffs_gif_error_lzw_code_is_out_of_range -1105848315      // 0xbe161805
-#define puffs_gif_error_lzw_prefix_chain_is_cyclical -1105848314  // 0xbe161806
+#define PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
+#define PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
 
 bool puffs_gif_status_is_error(puffs_gif_status s);
 

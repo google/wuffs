@@ -48,6 +48,7 @@ func main() {
 	generate.Main(func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		g := &gen{
 			pkgName: pkgName,
+			PKGNAME: strings.ToUpper(pkgName),
 			tm:      tm,
 			checker: c,
 			files:   files,
@@ -140,6 +141,7 @@ type status struct {
 type gen struct {
 	buffer     bytes.Buffer
 	pkgName    string
+	PKGNAME    string
 	tm         *t.Map
 	checker    *check.Checker
 	files      []*a.File
@@ -223,7 +225,7 @@ func (g *gen) genHeader() error {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
-		g.printf("#define %s %d // %#08x\n", g.cName(s), int32(code), code)
+		g.printf("#define %s %d // %#08x\n", strings.ToUpper(g.cName(s)), int32(code), code)
 	}
 	g.writes("\n")
 
@@ -410,7 +412,7 @@ func (g *gen) gatherStatuses(n *a.Status) error {
 		prefix = "error "
 	}
 	s := status{
-		name:    g.cName(prefix + msg),
+		name:    strings.ToUpper(g.cName(prefix + msg)),
 		msg:     msg,
 		isError: isError,
 	}
@@ -523,7 +525,7 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 
 		if ctor {
 			g.printf("if (puffs_version != PUFFS_VERSION) {\n")
-			g.printf("self->private_impl.status = puffs_%s_error_bad_version;\n", g.pkgName)
+			g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_VERSION;\n", g.PKGNAME)
 			g.printf("return;\n")
 			g.printf("}\n")
 
