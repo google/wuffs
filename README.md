@@ -405,8 +405,8 @@ TODO: also trawl through Go's bug tracker for "this image failed to load".
 
 ## Benchmarks
 
-*Preliminary* `puffs bench` throughput numbers for the GIF codec are below.
-Higher is better.
+*Preliminary* `puffs bench -mimic` summarized throughput numbers for the GIF
+codec are below. Higher is better.
 
 "Mimic" tests check that Puffs' output mimics (i.e. exactly matches) other
 libraries' output. "Mimic" benchmarks give the numbers for those other
