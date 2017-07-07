@@ -33,7 +33,7 @@ possible, it is unlikely that a Puffs compiler would be worth writing in Puffs.
 ## What Does Puffs Code Look Like?
 
 The [`std/gif/decode_lzw.puffs`](./std/gif/decode_lzw.puffs) file is a good
-example. See the "Your First Edit" section below for more guidance.
+example. See the "Poking Around" section below for more guidance.
 
 
 ## What Does Compile Time Checking Look Like?
@@ -224,7 +224,7 @@ You should now be able to run `puffs test`. If all goes well, you should see
 some output containing the word "PASS" multiple times.
 
 
-## Your First Edit
+## Poking Around
 
 Feel free to edit the `std/gif/decode_lzw.puffs` file, which implements the GIF
 LZW decoder. After editing, run `puffs gen std/gif` or `puffs test std/gif` to
@@ -250,6 +250,25 @@ Try adding `assert false` at various places, which should obviously fail, but
 should also cause `puffs gen` to print what facts the compiler can prove at
 that point. This can be useful when debugging why Puffs can't prove something
 you think it should be able to.
+
+
+## Running the Tests
+
+If you've changed any of the tools (i.e. changed any `.go` code), re-run `go
+install -v github.com/google/puffs/cmd/...` and `go test
+github.com/google/puffs/lang/...`.
+
+If you've changed any of the libraries (i.e. changed any `.puffs` code), run
+`puffs test` or, ideally, `puffs test -mimic` to also check that Puffs' output
+mimics (i.e. exactly matches) other libraries' output, such as giflib for GIF,
+libpng for PNG, etc.
+
+If your library change is an optimization, run `puffs bench` or `puffs bench
+-mimic` both before and after your change to quantify the improvement. The
+mimic benchmark numbers should't change if you're only changing `.puffs` code,
+but seeing zero change in those numbers is a sanity check on any unrelated
+system variance, such as software updates or virus checkers running in the
+background.
 
 
 ## Directory Layout
@@ -283,7 +302,7 @@ that all the way through to C code generation and testing.
 # Related Work
 
 
-## Existing Static Checkers
+## Static Checkers
 
 Puffs is a language by itself, integrated with a compiler, not something
 embedded in the comments of another language's program, supported by a separate
@@ -390,9 +409,8 @@ TODO: also trawl through Go's bug tracker for "this image failed to load".
 Higher is better.
 
 "Mimic" tests check that Puffs' output mimics (i.e. exactly matches) other
-libraries' output, such as giflib for GIF, libpng for PNG, etc. "Mimic"
-benchmarks give the numbers for those other libraries, as shipped with the OS,
-measured here on Ubunty 14.04 LTS "Trusty".
+libraries' output. "Mimic" benchmarks give the numbers for those other
+libraries, as shipped with the OS, measured here on Ubunty 14.04 LTS "Trusty".
 
 The 1k, 10k, etc. numbers are approximately how many bytes of pixel data there
 is in the decoded image. For example, the `test/testdata/harvesters.*` images
