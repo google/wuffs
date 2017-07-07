@@ -62,7 +62,7 @@ golden_test romeo_gt = {
 
 // ---------------- Flate Tests
 
-const char* flate_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_flate_decoder dec;
   puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
@@ -76,19 +76,19 @@ const char* flate_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
-void test_flate_puffs_decode_midsummer() {
+void test_puffs_flate_decode_midsummer() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_puffs_decode, &midsummer_gt);
+  test_buf1_buf1(puffs_flate_decode, &midsummer_gt);
 }
 
-void test_flate_puffs_decode_pi() {
+void test_puffs_flate_decode_pi() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_puffs_decode, &pi_gt);
+  test_buf1_buf1(puffs_flate_decode, &pi_gt);
 }
 
-void test_flate_puffs_decode_romeo() {
+void test_puffs_flate_decode_romeo() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_puffs_decode, &romeo_gt);
+  test_buf1_buf1(puffs_flate_decode, &romeo_gt);
 }
 
 // ---------------- Mimic Tests
@@ -97,57 +97,57 @@ void test_flate_puffs_decode_romeo() {
 
 #include "../mimiclib/flate.c"
 
-void test_flate_mimic_decode_midsummer() {
+void test_mimic_flate_decode_midsummer() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_mimic_decode, &midsummer_gt);
+  test_buf1_buf1(mimic_flate_decode, &midsummer_gt);
 }
 
-void test_flate_mimic_decode_pi() {
+void test_mimic_flate_decode_pi() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_mimic_decode, &pi_gt);
+  test_buf1_buf1(mimic_flate_decode, &pi_gt);
 }
 
-void test_flate_mimic_decode_romeo() {
+void test_mimic_flate_decode_romeo() {
   proc_funcname = __func__;
-  test_buf1_buf1(flate_mimic_decode, &romeo_gt);
+  test_buf1_buf1(mimic_flate_decode, &romeo_gt);
 }
 
 #endif  // PUFFS_MIMIC
 
 // ---------------- Flate Benches
 
-void bench_flate_puffs_decode_1k() {
+void bench_puffs_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_puffs_decode, &romeo_gt, 200000);
+  bench_buf1_buf1(puffs_flate_decode, &romeo_gt, 200000);
 }
 
-void bench_flate_puffs_decode_10k() {
+void bench_puffs_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_puffs_decode, &midsummer_gt, 30000);
+  bench_buf1_buf1(puffs_flate_decode, &midsummer_gt, 30000);
 }
 
-void bench_flate_puffs_decode_100k() {
+void bench_puffs_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_puffs_decode, &pi_gt, 3000);
+  bench_buf1_buf1(puffs_flate_decode, &pi_gt, 3000);
 }
 
 // ---------------- Mimic Benches
 
 #ifdef PUFFS_MIMIC
 
-void bench_flate_mimic_decode_1k() {
+void bench_mimic_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_mimic_decode, &romeo_gt, 200000);
+  bench_buf1_buf1(mimic_flate_decode, &romeo_gt, 200000);
 }
 
-void bench_flate_mimic_decode_10k() {
+void bench_mimic_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_mimic_decode, &midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_flate_decode, &midsummer_gt, 30000);
 }
 
-void bench_flate_mimic_decode_100k() {
+void bench_mimic_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(flate_mimic_decode, &pi_gt, 3000);
+  bench_buf1_buf1(mimic_flate_decode, &pi_gt, 3000);
 }
 
 #endif  // PUFFS_MIMIC
@@ -157,18 +157,18 @@ void bench_flate_mimic_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
     // Flate Tests
-    /* TODO: implement flate_puffs, then uncomment these.
-    test_flate_puffs_decode_midsummer,  //
-    test_flate_puffs_decode_pi,         //
-    test_flate_puffs_decode_romeo,      //
+    /* TODO: implement puffs_flate, then uncomment these.
+    test_puffs_flate_decode_midsummer,  //
+    test_puffs_flate_decode_pi,         //
+    test_puffs_flate_decode_romeo,      //
     */
 
 #ifdef PUFFS_MIMIC
 
     // Mimic Tests
-    test_flate_mimic_decode_midsummer,  //
-    test_flate_mimic_decode_pi,         //
-    test_flate_mimic_decode_romeo,      //
+    test_mimic_flate_decode_midsummer,  //
+    test_mimic_flate_decode_pi,         //
+    test_mimic_flate_decode_romeo,      //
 
 #endif  // PUFFS_MIMIC
 
@@ -178,16 +178,16 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // Flate Benches
-    bench_flate_puffs_decode_1k,    //
-    bench_flate_puffs_decode_10k,   //
-    bench_flate_puffs_decode_100k,  //
+    bench_puffs_flate_decode_1k,    //
+    bench_puffs_flate_decode_10k,   //
+    bench_puffs_flate_decode_100k,  //
 
 #ifdef PUFFS_MIMIC
 
     // Mimic Benches
-    bench_flate_mimic_decode_1k,    //
-    bench_flate_mimic_decode_10k,   //
-    bench_flate_mimic_decode_100k,  //
+    bench_mimic_flate_decode_1k,    //
+    bench_mimic_flate_decode_10k,   //
+    bench_mimic_flate_decode_100k,  //
 
 #endif  // PUFFS_MIMIC
 

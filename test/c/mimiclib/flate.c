@@ -3,13 +3,13 @@
 
 #include "zlib.h"
 
-unsigned int flate_mimic_read_func(void* ctx, unsigned char** buf) {
+unsigned int mimic_flate_read_func(void* ctx, unsigned char** buf) {
   puffs_base_buf1* src = (puffs_base_buf1*)(ctx);
   *buf = src->ptr + src->ri;
   return src->wi - src->ri;
 }
 
-int flate_mimic_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
+int mimic_flate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
   puffs_base_buf1* dst = (puffs_base_buf1*)(ctx);
   size_t n = len;
   if (n > dst->len - dst->wi) {
@@ -20,7 +20,7 @@ int flate_mimic_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
   return 0;
 }
 
-const char* flate_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   const char* ret = NULL;
   uint8_t window[32 * 1024];
 
@@ -32,7 +32,7 @@ const char* flate_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   }
 
   int ib_err =
-      inflateBack(&z, flate_mimic_read_func, src, flate_mimic_write_func, dst);
+      inflateBack(&z, mimic_flate_read_func, src, mimic_flate_write_func, dst);
   if (ib_err != Z_STREAM_END) {
     ret = "inflateBack failed";
     goto cleanup1;

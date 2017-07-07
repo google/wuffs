@@ -3,7 +3,7 @@
 
 #include "gif_lib.h"
 
-int gif_mimic_read_func(GifFileType* f, GifByteType* ptr, int len) {
+int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
   puffs_base_buf1* src = (puffs_base_buf1*)(f->UserData);
   if (len < 0) {
     return 0;
@@ -18,13 +18,13 @@ int gif_mimic_read_func(GifFileType* f, GifByteType* ptr, int len) {
   return n;
 }
 
-const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   const char* ret = NULL;
 
   // TODO: #ifdef API calls for libgif version 4 vs version 5? Note that:
   //  - Version 4 ships with Ubunty 14.04 LTS "Trusty".
   //  - Version 5 ships with Ubunty 16.04 LTS "Xenial".
-  GifFileType* f = DGifOpen(src, gif_mimic_read_func);
+  GifFileType* f = DGifOpen(src, mimic_gif_read_func);
   if (!f) {
     ret = "DGifOpen failed";
     goto cleanup0;
@@ -43,7 +43,7 @@ const char* gif_mimic_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   // Copy the pixel data from the GifFileType* f to the dst buffer, since the
   // former is free'd at the end of this function.
   //
-  // In theory, this gif_mimic_decode function might be faster overall if the
+  // In theory, this mimic_gif_decode function might be faster overall if the
   // DGifSlurp call above decoded the pixel data directly into dst instead of
   // into an intermediate buffer that needed to be malloc'ed and then free'd.
   // In practice, doing so did not seem to show a huge difference. (See commit

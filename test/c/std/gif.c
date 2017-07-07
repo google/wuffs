@@ -186,11 +186,11 @@ cleanup0:
 
 // ---------------- LZW Tests
 
-void test_lzw_decode_xxx(const char* src_filename,
-                         uint64_t src_size,
-                         const char* want_filename,
-                         uint64_t want_size,
-                         uint64_t limit) {
+void test_puffs_gif_lzw_decode(const char* src_filename,
+                               uint64_t src_size,
+                               const char* want_filename,
+                               uint64_t want_size,
+                               uint64_t limit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -273,39 +273,42 @@ cleanup1:
 cleanup0:;
 }
 
-void test_lzw_decode_many_small_inputs() {
+void test_puffs_gif_lzw_decode_many_small_inputs() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                      "../../testdata/bricks-gray.indexes", 19200, 100);
+  test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
+                            "../../testdata/bricks-gray.indexes", 19200, 100);
 }
 
-void test_lzw_decode_one_large_input() {
+void test_puffs_gif_lzw_decode_one_large_input() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                      "../../testdata/bricks-gray.indexes", 19200, 1 << 30);
+  test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
+                            "../../testdata/bricks-gray.indexes", 19200,
+                            1 << 30);
 }
 
-void test_lzw_decode_bricks_dither() {
+void test_puffs_gif_lzw_decode_bricks_dither() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-dither.indexes.giflzw", 14923,
-                      "../../testdata/bricks-dither.indexes", 19200, 1 << 30);
+  test_puffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
+                            14923, "../../testdata/bricks-dither.indexes",
+                            19200, 1 << 30);
 }
 
-void test_lzw_decode_bricks_nodither() {
+void test_puffs_gif_lzw_decode_bricks_nodither() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/bricks-nodither.indexes.giflzw", 13382,
-                      "../../testdata/bricks-nodither.indexes", 19200, 1 << 30);
+  test_puffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
+                            13382, "../../testdata/bricks-nodither.indexes",
+                            19200, 1 << 30);
 }
 
-void test_lzw_decode_pi() {
+void test_puffs_gif_lzw_decode_pi() {
   proc_funcname = __func__;
-  test_lzw_decode_xxx("../../testdata/pi.txt.giflzw", 50550,
-                      "../../testdata/pi.txt", 100003, 1 << 30);
+  test_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
+                            "../../testdata/pi.txt", 100003, 1 << 30);
 }
 
 // ---------------- LZW Benches
 
-void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
+void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base_writer1 dst_writer = {.buf = &dst};
@@ -344,19 +347,19 @@ void bench_lzw_decode_xxx(const char* filename, uint64_t reps) {
   bench_finish(reps, n_bytes);
 }
 
-void bench_lzw_puffs_decode_20k() {
+void bench_puffs_gif_lzw_decode_20k() {
   proc_funcname = __func__;
-  bench_lzw_decode_xxx("../../testdata/bricks-gray.indexes.giflzw", 5000);
+  bench_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 5000);
 }
 
-void bench_lzw_puffs_decode_100k() {
+void bench_puffs_gif_lzw_decode_100k() {
   proc_funcname = __func__;
-  bench_lzw_decode_xxx("../../testdata/pi.txt.giflzw", 1000);
+  bench_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
 
-const char* gif_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_gif_decoder dec;
   puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
@@ -369,10 +372,10 @@ const char* gif_puffs_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
-void test_gif_decode_xxx(const char* filename,
-                         const char* palette_filename,
-                         const char* indexes_filename,
-                         puffs_gif_status want) {
+void test_puffs_gif_decode(const char* filename,
+                           const char* palette_filename,
+                           const char* indexes_filename,
+                           puffs_gif_status want) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -428,18 +431,18 @@ cleanup1:
 cleanup0:;
 }
 
-void test_gif_decode_input_is_a_gif() {
+void test_puffs_gif_decode_input_is_a_gif() {
   proc_funcname = __func__;
-  test_gif_decode_xxx("../../testdata/bricks-dither.gif",
-                      "../../testdata/bricks-dither.palette",
-                      "../../testdata/bricks-dither.indexes",
-                      PUFFS_GIF_STATUS_OK);
+  test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                        "../../testdata/bricks-dither.palette",
+                        "../../testdata/bricks-dither.indexes",
+                        PUFFS_GIF_STATUS_OK);
 }
 
-void test_gif_decode_input_is_a_png() {
+void test_puffs_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
-  test_gif_decode_xxx("../../testdata/bricks-dither.png", "", "",
-                      PUFFS_GIF_ERROR_BAD_GIF_HEADER);
+  test_puffs_gif_decode("../../testdata/bricks-dither.png", "", "",
+                        PUFFS_GIF_ERROR_BAD_GIF_HEADER);
 }
 
 // ---------------- Mimic Tests
@@ -448,7 +451,7 @@ void test_gif_decode_input_is_a_png() {
 
 #include "../mimiclib/gif.c"
 
-void test_gif_mimic_decode_xxx(const char* filename) {
+void test_mimic_gif_decode(const char* filename) {
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, filename)) {
     return;
@@ -456,7 +459,7 @@ void test_gif_mimic_decode_xxx(const char* filename) {
 
   src.ri = 0;
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  const char* got_msg = gif_puffs_decode(&got, &src);
+  const char* got_msg = puffs_gif_decode(&got, &src);
   if (got_msg) {
     FAIL("%s", got_msg);
     return;
@@ -464,7 +467,7 @@ void test_gif_mimic_decode_xxx(const char* filename) {
 
   src.ri = 0;
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
-  const char* want_msg = gif_mimic_decode(&want, &src);
+  const char* want_msg = mimic_gif_decode(&want, &src);
   if (want_msg) {
     FAIL("%s", want_msg);
     return;
@@ -477,49 +480,49 @@ void test_gif_mimic_decode_xxx(const char* filename) {
   // TODO: check the palette RGB values, not just the palette indexes (pixels).
 }
 
-void test_gif_mimic_decode_bricks_dither() {
+void test_mimic_gif_decode_bricks_dither() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/bricks-dither.gif");
+  test_mimic_gif_decode("../../testdata/bricks-dither.gif");
 }
 
-void test_gif_mimic_decode_bricks_gray() {
+void test_mimic_gif_decode_bricks_gray() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/bricks-gray.gif");
+  test_mimic_gif_decode("../../testdata/bricks-gray.gif");
 }
 
-void test_gif_mimic_decode_bricks_nodither() {
+void test_mimic_gif_decode_bricks_nodither() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/bricks-nodither.gif");
+  test_mimic_gif_decode("../../testdata/bricks-nodither.gif");
 }
 
-void test_gif_mimic_decode_harvesters() {
+void test_mimic_gif_decode_harvesters() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/harvesters.gif");
+  test_mimic_gif_decode("../../testdata/harvesters.gif");
 }
 
-void test_gif_mimic_decode_hat() {
+void test_mimic_gif_decode_hat() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/hat.gif");
+  test_mimic_gif_decode("../../testdata/hat.gif");
 }
 
-void test_gif_mimic_decode_hibiscus() {
+void test_mimic_gif_decode_hibiscus() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/hibiscus.gif");
+  test_mimic_gif_decode("../../testdata/hibiscus.gif");
 }
 
-void test_gif_mimic_decode_pjw_thumbnail() {
+void test_mimic_gif_decode_pjw_thumbnail() {
   proc_funcname = __func__;
-  test_gif_mimic_decode_xxx("../../testdata/pjw-thumbnail.gif");
+  test_mimic_gif_decode("../../testdata/pjw-thumbnail.gif");
 }
 
 #endif  // PUFFS_MIMIC
 
 // ---------------- GIF Benches
 
-void bench_gif_decode_xxx(const char* (*decode_func)(puffs_base_buf1*,
-                                                     puffs_base_buf1*),
-                          const char* filename,
-                          uint64_t reps) {
+void bench_gif_decode(const char* (*decode_func)(puffs_base_buf1*,
+                                                 puffs_base_buf1*),
+                      const char* filename,
+                      uint64_t reps) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -543,50 +546,50 @@ void bench_gif_decode_xxx(const char* (*decode_func)(puffs_base_buf1*,
   bench_finish(reps, n_bytes);
 }
 
-void bench_gif_puffs_decode_1k() {
+void bench_puffs_gif_decode_1k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/pjw-thumbnail.gif",
-                       200000);
+  bench_gif_decode(puffs_gif_decode, "../../testdata/pjw-thumbnail.gif",
+                   200000);
 }
 
-void bench_gif_puffs_decode_10k() {
+void bench_puffs_gif_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/hat.gif", 10000);
+  bench_gif_decode(puffs_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
-void bench_gif_puffs_decode_100k() {
+void bench_puffs_gif_decode_100k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/hibiscus.gif", 1000);
+  bench_gif_decode(puffs_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
-void bench_gif_puffs_decode_1000k() {
+void bench_puffs_gif_decode_1000k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_puffs_decode, "../../testdata/harvesters.gif", 100);
+  bench_gif_decode(puffs_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 
 // ---------------- Mimic Benches
 
 #ifdef PUFFS_MIMIC
 
-void bench_gif_mimic_decode_1k() {
+void bench_mimic_gif_decode_1k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/pjw-thumbnail.gif",
-                       200000);
+  bench_gif_decode(mimic_gif_decode, "../../testdata/pjw-thumbnail.gif",
+                   200000);
 }
 
-void bench_gif_mimic_decode_10k() {
+void bench_mimic_gif_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/hat.gif", 10000);
+  bench_gif_decode(mimic_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
-void bench_gif_mimic_decode_100k() {
+void bench_mimic_gif_decode_100k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/hibiscus.gif", 1000);
+  bench_gif_decode(mimic_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
-void bench_gif_mimic_decode_1000k() {
+void bench_mimic_gif_decode_1000k() {
   proc_funcname = __func__;
-  bench_gif_decode_xxx(gif_mimic_decode, "../../testdata/harvesters.gif", 100);
+  bench_gif_decode(mimic_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 
 #endif  // PUFFS_MIMIC
@@ -606,26 +609,26 @@ proc tests[] = {
     test_basic_sub_struct_constructor,     //
 
     // LZW Tests
-    test_lzw_decode_many_small_inputs,  //
-    test_lzw_decode_one_large_input,    //
-    test_lzw_decode_bricks_dither,      //
-    test_lzw_decode_bricks_nodither,    //
-    test_lzw_decode_pi,                 //
+    test_puffs_gif_lzw_decode_many_small_inputs,  //
+    test_puffs_gif_lzw_decode_one_large_input,    //
+    test_puffs_gif_lzw_decode_bricks_dither,      //
+    test_puffs_gif_lzw_decode_bricks_nodither,    //
+    test_puffs_gif_lzw_decode_pi,                 //
 
     // GIF Tests
-    test_gif_decode_input_is_a_gif,  //
-    test_gif_decode_input_is_a_png,  //
+    test_puffs_gif_decode_input_is_a_gif,  //
+    test_puffs_gif_decode_input_is_a_png,  //
 
 #ifdef PUFFS_MIMIC
 
     // Mimic Tests
-    test_gif_mimic_decode_bricks_dither,    //
-    test_gif_mimic_decode_bricks_gray,      //
-    test_gif_mimic_decode_bricks_nodither,  //
-    test_gif_mimic_decode_harvesters,       //
-    test_gif_mimic_decode_hat,              //
-    test_gif_mimic_decode_hibiscus,         //
-    test_gif_mimic_decode_pjw_thumbnail,    //
+    test_mimic_gif_decode_bricks_dither,    //
+    test_mimic_gif_decode_bricks_gray,      //
+    test_mimic_gif_decode_bricks_nodither,  //
+    test_mimic_gif_decode_harvesters,       //
+    test_mimic_gif_decode_hat,              //
+    test_mimic_gif_decode_hibiscus,         //
+    test_mimic_gif_decode_pjw_thumbnail,    //
 
 #endif  // PUFFS_MIMIC
 
@@ -635,22 +638,22 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // LZW Benches
-    bench_lzw_puffs_decode_20k,   //
-    bench_lzw_puffs_decode_100k,  //
+    bench_puffs_gif_lzw_decode_20k,   //
+    bench_puffs_gif_lzw_decode_100k,  //
 
     // GIF Benches
-    bench_gif_puffs_decode_1k,     //
-    bench_gif_puffs_decode_10k,    //
-    bench_gif_puffs_decode_100k,   //
-    bench_gif_puffs_decode_1000k,  //
+    bench_puffs_gif_decode_1k,     //
+    bench_puffs_gif_decode_10k,    //
+    bench_puffs_gif_decode_100k,   //
+    bench_puffs_gif_decode_1000k,  //
 
 #ifdef PUFFS_MIMIC
 
     // Mimic Benches
-    bench_gif_mimic_decode_1k,     //
-    bench_gif_mimic_decode_10k,    //
-    bench_gif_mimic_decode_100k,   //
-    bench_gif_mimic_decode_1000k,  //
+    bench_mimic_gif_decode_1k,     //
+    bench_mimic_gif_decode_10k,    //
+    bench_mimic_gif_decode_100k,   //
+    bench_mimic_gif_decode_1000k,  //
 
 #endif  // PUFFS_MIMIC
 
