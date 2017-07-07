@@ -236,7 +236,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 
 	switch n.Operator().Key() {
 	case t.KeyShiftLEq, t.KeyShiftREq:
-		if rTyp.IsNumType() {
+		if rTyp.IsNumTypeOrIdeal() {
 			return nil
 		}
 		return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
@@ -338,8 +338,10 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
+			isInDst(q.tm, n, t.KeyCopyFrom32, 2) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
-			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) {
+			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
+			isThisMethod(q.tm, n, "decode_uncompressed", 2) {
 
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err

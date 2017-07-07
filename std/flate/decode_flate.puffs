@@ -5,9 +5,65 @@
 
 packageid "flte"
 
+pub error "bad flate block"
+pub error "inconsistent stored block length"
+pub error "internal error: inconsistent n_bits"
+
+pub error "TODO: fixed Huffman blocks"
+pub error "TODO: dynamic Huffman blocks"
+
 pub struct decoder?(
+	// These fields yield src's bits in Least Significant Bits order.
+	bits u32,
+	n_bits u32,
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
-	// TODO.
+	while true {
+		while this.n_bits < 3,
+			post this.n_bits >= 3,
+		{
+			this.bits |= (in.src.read_u8?() as u32) << this.n_bits
+			this.n_bits += 8
+		}
+		var final u32 = this.bits & 0x01
+		var type u32 = (this.bits >> 1) & 0x03
+		this.bits >>= 3
+		this.n_bits -= 3
+
+		if type == 0 {
+			this.decode_uncompressed?(dst:in.dst, src:in.src)
+		} else if type == 1 {
+			return error "TODO: fixed Huffman blocks"
+		} else if type == 2 {
+			return error "TODO: dynamic Huffman blocks"
+		} else {
+			return error "bad flate block"
+		}
+
+		if final != 0 {
+			return
+		}
+	}
+}
+
+pub func decoder.decode_uncompressed?(dst writer1, src reader1)() {
+	if this.n_bits >= 8 {
+		return error "internal error: inconsistent n_bits"
+	}
+	this.n_bits = 0
+
+	// TODO: a read_u16le method.
+	var n0 u8 = in.src.read_u8?()
+	var n1 u8 = in.src.read_u8?()
+	var complement u8
+	complement = in.src.read_u8?()
+	if (0xFF - complement) != n0 {
+		return error "inconsistent stored block length"
+	}
+	complement = in.src.read_u8?()
+	if (0xFF - complement) != n1 {
+		return error "inconsistent stored block length"
+	}
+	in.dst.copy_from32?(r:in.src, n:((n1 as u32) << 8) | (n0 as u32))
 }

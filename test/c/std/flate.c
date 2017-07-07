@@ -39,6 +39,13 @@ const char* proc_filename = "std/flate.c";
 //
 // The empty comments forces clang-format to place one element per line.
 
+golden_test two_five_six_gt = {
+    .want_filename = "../../testdata/256.bytes",    //
+    .src_filename = "../../testdata/256.bytes.gz",  //
+    .src_offset0 = 20,                              //
+    .src_offset1 = 281,                             //
+};
+
 golden_test midsummer_gt = {
     .want_filename = "../../testdata/midsummer.txt",    //
     .src_filename = "../../testdata/midsummer.txt.gz",  //
@@ -76,6 +83,11 @@ const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
+void test_puffs_flate_decode_256_bytes() {
+  proc_funcname = __func__;
+  test_buf1_buf1(puffs_flate_decode, &two_five_six_gt);
+}
+
 void test_puffs_flate_decode_midsummer() {
   proc_funcname = __func__;
   test_buf1_buf1(puffs_flate_decode, &midsummer_gt);
@@ -96,6 +108,11 @@ void test_puffs_flate_decode_romeo() {
 #ifdef PUFFS_MIMIC
 
 #include "../mimiclib/flate.c"
+
+void test_mimic_flate_decode_256_bytes() {
+  proc_funcname = __func__;
+  test_buf1_buf1(mimic_flate_decode, &two_five_six_gt);
+}
 
 void test_mimic_flate_decode_midsummer() {
   proc_funcname = __func__;
@@ -157,6 +174,7 @@ void bench_mimic_flate_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
     // Flate Tests
+    test_puffs_flate_decode_256_bytes,  //
     /* TODO: implement puffs_flate, then uncomment these.
     test_puffs_flate_decode_midsummer,  //
     test_puffs_flate_decode_pi,         //
@@ -166,6 +184,7 @@ proc tests[] = {
 #ifdef PUFFS_MIMIC
 
     // Mimic Tests
+    test_mimic_flate_decode_256_bytes,  //
     test_mimic_flate_decode_midsummer,  //
     test_mimic_flate_decode_pi,         //
     test_mimic_flate_decode_romeo,      //
@@ -178,9 +197,11 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // Flate Benches
+    /* TODO: implement puffs_flate, then uncomment these.
     bench_puffs_flate_decode_1k,    //
     bench_puffs_flate_decode_10k,   //
     bench_puffs_flate_decode_100k,  //
+    */
 
 #ifdef PUFFS_MIMIC
 

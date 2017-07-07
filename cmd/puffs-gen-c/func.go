@@ -872,6 +872,40 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes(";\n")
 
+	} else if isInDst(g.tm, n, t.KeyCopyFrom32, 2) {
+		if g.perFunc.tempW > maxTemp {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		temp := g.perFunc.tempW
+		g.perFunc.tempW++
+		g.perFunc.tempR++
+
+		g.writes("{\n")
+
+		g.printf("size_t %s%d = ", tPrefix, temp)
+		x := n.Args()[1].Arg().Value()
+		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(";\n")
+
+		const wName = "dst"
+		g.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
+		// TODO: suspend; return SHORT_WRITE.
+		g.writes("}\n")
+
+		// TODO: don't assume that the first argument is "in.src".
+		const rName = "src"
+		g.printf("if (%s%d > %srend_%s - %srptr_%s) {\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
+		// TODO: suspend; return SHORT_READ.
+		g.writes("}\n")
+
+		g.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
+		g.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
+		g.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
+
+		g.writes("}\n")
+
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
@@ -898,6 +932,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		g.printf("status = puffs_%s_%s_decode_id(self, %sdst, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
+		g.writes("if (status) { goto suspend; }\n")
+
+	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
+		g.printf("status = puffs_%s_%s_decode_uncompressed(self, %sdst, %ssrc);\n",
 			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err

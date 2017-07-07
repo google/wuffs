@@ -620,8 +620,10 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
+			isInDst(q.tm, n, t.KeyCopyFrom32, 2) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
-			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) {
+			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
+			isThisMethod(q.tm, n, "decode_uncompressed", 2) {
 
 			for _, o := range n.Args() {
 				// TODO: check that the arg range at the caller and the

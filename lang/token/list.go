@@ -254,8 +254,10 @@ const (
 	KeyWriteU64BE = Key(IDWriteU64BE >> KeyShift)
 	KeyWriteU64LE = Key(IDWriteU64LE >> KeyShift)
 
-	KeySkip32 = Key(IDSkip32 >> KeyShift)
-	KeySkip64 = Key(IDSkip64 >> KeyShift)
+	KeyCopyFrom32 = Key(IDCopyFrom32 >> KeyShift)
+	KeyCopyFrom64 = Key(IDCopyFrom64 >> KeyShift)
+	KeySkip32     = Key(IDSkip32 >> KeyShift)
+	KeySkip64     = Key(IDSkip64 >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -413,8 +415,10 @@ const (
 	IDWriteU64BE = ID(0xBE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU64LE = ID(0xBF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
-	IDSkip32 = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip64 = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFrom32 = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFrom64 = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip32     = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip64     = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -594,8 +598,10 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyWriteU64BE: {"write_u64be", IDWriteU64BE},
 	KeyWriteU64LE: {"write_u64le", IDWriteU64LE},
 
-	KeySkip32: {"skip32", IDSkip32},
-	KeySkip64: {"skip64", IDSkip64},
+	KeyCopyFrom32: {"copy_from32", IDCopyFrom32},
+	KeyCopyFrom64: {"copy_from64", IDCopyFrom64},
+	KeySkip32:     {"skip32", IDSkip32},
+	KeySkip64:     {"skip64", IDSkip64},
 }
 
 var builtInsByName = map[string]ID{}

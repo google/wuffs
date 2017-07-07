@@ -100,6 +100,14 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_STATUS_SHORT_WRITE 7                      // 0x00000007
 #define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
+  -1157040127  // 0xbb08f801
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
+  -1157040126                                                      // 0xbb08f802
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040125    // 0xbb08f803
+#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040124  // 0xbb08f804
+
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
 const char* puffs_flate_status_string(puffs_flate_status s);
@@ -117,10 +125,20 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
+    uint32_t f_bits;
+    uint32_t f_n_bits;
 
     struct {
       uint32_t coro_state;
+      uint32_t v_final;
+      uint32_t v_type;
     } c_decode[1];
+    struct {
+      uint32_t coro_state;
+      uint8_t v_n0;
+      uint8_t v_n1;
+      uint8_t v_complement;
+    } c_decode_uncompressed[1];
   } private_impl;
 } puffs_flate_decoder;
 
@@ -142,6 +160,11 @@ void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
 puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_decoder_decode_uncompressed(
+    puffs_flate_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
