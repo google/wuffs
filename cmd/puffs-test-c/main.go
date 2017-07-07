@@ -38,7 +38,11 @@ func main1() error {
 		failed = failed || f
 	}
 	if failed {
-		return fmt.Errorf("%s: some tests failed", os.Args[0])
+		s := "tests"
+		if *bench {
+			s = "benchmarks"
+		}
+		return fmt.Errorf("%s: some %s failed", os.Args[0], s)
 	}
 	return nil
 }

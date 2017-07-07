@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -60,7 +59,11 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		failed = failed || f
 	}
 	if failed {
-		return errors.New("puffs test: some tests failed")
+		s0, s1 := "test", "tests"
+		if bench {
+			s0, s1 = "bench", "benchmarks"
+		}
+		return fmt.Errorf("puffs %s: some %s failed", s0, s1)
 	}
 	return nil
 }
