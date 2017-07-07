@@ -822,7 +822,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
 		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
 
-		g.printf("status = %ssrc.buf->closed ? PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_STATUS_SHORT_READ;",
+		g.printf("status = %ssrc.buf->closed ? PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
 			aPrefix, g.PKGNAME, g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
 			g.writes("goto suspend;")
@@ -844,7 +844,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.writes("}\n")
 		g.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
 			bPrefix, bPrefix)
-		g.printf("status = PUFFS_%s_STATUS_SHORT_WRITE;", g.PKGNAME)
+		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_WRITE;", g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
 		} else {
@@ -857,7 +857,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		g.printf("if (%swptr_dst == %swend_dst) { status = PUFFS_%s_STATUS_SHORT_WRITE;",
+		g.printf("if (%swptr_dst == %swend_dst) { status = PUFFS_%s_SUSPENSION_SHORT_WRITE;",
 			bPrefix, bPrefix, g.PKGNAME)
 		if g.perFunc.public && g.perFunc.suspendible {
 			g.writes("goto suspend;")
@@ -968,7 +968,7 @@ func (g *gen) writeShortRead(name string) error {
 	g.printf("\nshort_read_%s:\n", name)
 	// TODO: ri == wi isn't the right condition.
 	g.printf("status = ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) ?"+
-		"PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_STATUS_SHORT_READ;",
+		"PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
 		aPrefix, name, aPrefix, name, aPrefix, name, g.PKGNAME, g.PKGNAME)
 	if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
 		g.writes("goto suspend;")

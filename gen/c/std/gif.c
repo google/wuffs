@@ -96,8 +96,8 @@ typedef int32_t puffs_gif_status;
 #define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
 #define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483643          // 0x80000005
-#define PUFFS_GIF_STATUS_SHORT_READ 6                       // 0x00000006
-#define PUFFS_GIF_STATUS_SHORT_WRITE 7                      // 0x00000007
+#define PUFFS_GIF_SUSPENSION_SHORT_READ 6                   // 0x00000006
+#define PUFFS_GIF_SUSPENSION_SHORT_WRITE 7                  // 0x00000007
 #define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
 #define PUFFS_GIF_ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
@@ -584,7 +584,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -664,7 +664,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   return status;
 }
 
@@ -773,7 +773,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   return status;
 }
 
@@ -835,7 +835,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         t_2 -= b_rend_src - b_rptr_src;
         a_src.buf->ri = a_src.buf->wi;
         status = a_src.buf->closed ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-                                   : PUFFS_GIF_STATUS_SHORT_READ;
+                                   : PUFFS_GIF_SUSPENSION_SHORT_READ;
         return status;
       }
       b_rptr_src += t_2;
@@ -868,7 +868,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   return status;
 }
 
@@ -1022,7 +1022,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   return status;
 }
 
@@ -1139,7 +1139,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       if (v_code < v_clear_code) {
         PUFFS_COROUTINE_STATE(2);
         if (b_wptr_dst == b_wend_dst) {
-          status = PUFFS_GIF_STATUS_SHORT_WRITE;
+          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
           goto suspend;
         }
         *b_wptr_dst++ = ((uint8_t)(v_code));
@@ -1183,7 +1183,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         }
         if ((b_wend_dst - b_wptr_dst) <
             (sizeof(self->private_impl.f_stack) - v_s)) {
-          status = PUFFS_GIF_STATUS_SHORT_WRITE;
+          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
           goto suspend;
         }
         memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
@@ -1252,6 +1252,6 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
-               : PUFFS_GIF_STATUS_SHORT_READ;
+               : PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }

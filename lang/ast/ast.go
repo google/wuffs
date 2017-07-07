@@ -403,8 +403,8 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 	}
 }
 
-// Return is "return LHS", "return error ID1" or "return status ID1":
-//  - ID0:   <0|IDError|IDStatus>
+// Return is "return LHS", "return error ID1" or "return suspension ID1":
+//  - ID0:   <0|IDError|IDSuspension>
 //  - ID1:   message
 //  - LHS:   <nil|Expr>
 type Return Node
@@ -577,9 +577,9 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 	}
 }
 
-// Status is "error ID1" or "status ID1":
+// Status is "error ID1" or "suspension ID1":
 //  - FlagsPublic      is "pub" vs "pri"
-//  - ID0:   <IDError|IDStatus>
+//  - ID0:   <IDError|IDSuspension>
 //  - ID1:   message
 type Status Node
 

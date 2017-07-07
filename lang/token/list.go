@@ -188,29 +188,29 @@ const (
 	KeyAs  = Key(IDAs >> KeyShift)
 
 	// TODO: sort these by name, when the list has stabilized.
-	KeyFunc      = Key(IDFunc >> KeyShift)
-	KeyPtr       = Key(IDPtr >> KeyShift)
-	KeyAssert    = Key(IDAssert >> KeyShift)
-	KeyWhile     = Key(IDWhile >> KeyShift)
-	KeyIf        = Key(IDIf >> KeyShift)
-	KeyElse      = Key(IDElse >> KeyShift)
-	KeyReturn    = Key(IDReturn >> KeyShift)
-	KeyBreak     = Key(IDBreak >> KeyShift)
-	KeyContinue  = Key(IDContinue >> KeyShift)
-	KeyStruct    = Key(IDStruct >> KeyShift)
-	KeyUse       = Key(IDUse >> KeyShift)
-	KeyVar       = Key(IDVar >> KeyShift)
-	KeyNptr      = Key(IDNptr >> KeyShift)
-	KeyPre       = Key(IDPre >> KeyShift)
-	KeyInv       = Key(IDInv >> KeyShift)
-	KeyPost      = Key(IDPost >> KeyShift)
-	KeyVia       = Key(IDVia >> KeyShift)
-	KeyPub       = Key(IDPub >> KeyShift)
-	KeyPri       = Key(IDPri >> KeyShift)
-	KeyError     = Key(IDError >> KeyShift)
-	KeyStatus    = Key(IDStatus >> KeyShift)
-	KeyLimit     = Key(IDLimit >> KeyShift)
-	KeyPackageID = Key(IDPackageID >> KeyShift)
+	KeyFunc       = Key(IDFunc >> KeyShift)
+	KeyPtr        = Key(IDPtr >> KeyShift)
+	KeyAssert     = Key(IDAssert >> KeyShift)
+	KeyWhile      = Key(IDWhile >> KeyShift)
+	KeyIf         = Key(IDIf >> KeyShift)
+	KeyElse       = Key(IDElse >> KeyShift)
+	KeyReturn     = Key(IDReturn >> KeyShift)
+	KeyBreak      = Key(IDBreak >> KeyShift)
+	KeyContinue   = Key(IDContinue >> KeyShift)
+	KeyStruct     = Key(IDStruct >> KeyShift)
+	KeyUse        = Key(IDUse >> KeyShift)
+	KeyVar        = Key(IDVar >> KeyShift)
+	KeyNptr       = Key(IDNptr >> KeyShift)
+	KeyPre        = Key(IDPre >> KeyShift)
+	KeyInv        = Key(IDInv >> KeyShift)
+	KeyPost       = Key(IDPost >> KeyShift)
+	KeyVia        = Key(IDVia >> KeyShift)
+	KeyPub        = Key(IDPub >> KeyShift)
+	KeyPri        = Key(IDPri >> KeyShift)
+	KeyError      = Key(IDError >> KeyShift)
+	KeySuspension = Key(IDSuspension >> KeyShift)
+	KeyLimit      = Key(IDLimit >> KeyShift)
+	KeyPackageID  = Key(IDPackageID >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -349,29 +349,29 @@ const (
 	IDAs  = ID(0x5B<<KeyShift | FlagsBinaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDFunc      = ID(0x60<<KeyShift | FlagsOther)
-	IDPtr       = ID(0x61<<KeyShift | FlagsOther)
-	IDAssert    = ID(0x62<<KeyShift | FlagsOther)
-	IDWhile     = ID(0x63<<KeyShift | FlagsOther)
-	IDIf        = ID(0x64<<KeyShift | FlagsOther)
-	IDElse      = ID(0x65<<KeyShift | FlagsOther)
-	IDReturn    = ID(0x66<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDBreak     = ID(0x67<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDContinue  = ID(0x68<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDStruct    = ID(0x69<<KeyShift | FlagsOther)
-	IDUse       = ID(0x6A<<KeyShift | FlagsOther)
-	IDVar       = ID(0x6B<<KeyShift | FlagsOther)
-	IDNptr      = ID(0x6C<<KeyShift | FlagsOther)
-	IDPre       = ID(0x6D<<KeyShift | FlagsOther)
-	IDInv       = ID(0x6E<<KeyShift | FlagsOther)
-	IDPost      = ID(0x6F<<KeyShift | FlagsOther)
-	IDVia       = ID(0x70<<KeyShift | FlagsOther)
-	IDPub       = ID(0x71<<KeyShift | FlagsOther)
-	IDPri       = ID(0x72<<KeyShift | FlagsOther)
-	IDError     = ID(0x73<<KeyShift | FlagsOther)
-	IDStatus    = ID(0x74<<KeyShift | FlagsOther)
-	IDLimit     = ID(0x75<<KeyShift | FlagsOther)
-	IDPackageID = ID(0x76<<KeyShift | FlagsOther)
+	IDFunc       = ID(0x60<<KeyShift | FlagsOther)
+	IDPtr        = ID(0x61<<KeyShift | FlagsOther)
+	IDAssert     = ID(0x62<<KeyShift | FlagsOther)
+	IDWhile      = ID(0x63<<KeyShift | FlagsOther)
+	IDIf         = ID(0x64<<KeyShift | FlagsOther)
+	IDElse       = ID(0x65<<KeyShift | FlagsOther)
+	IDReturn     = ID(0x66<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDBreak      = ID(0x67<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDContinue   = ID(0x68<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDStruct     = ID(0x69<<KeyShift | FlagsOther)
+	IDUse        = ID(0x6A<<KeyShift | FlagsOther)
+	IDVar        = ID(0x6B<<KeyShift | FlagsOther)
+	IDNptr       = ID(0x6C<<KeyShift | FlagsOther)
+	IDPre        = ID(0x6D<<KeyShift | FlagsOther)
+	IDInv        = ID(0x6E<<KeyShift | FlagsOther)
+	IDPost       = ID(0x6F<<KeyShift | FlagsOther)
+	IDVia        = ID(0x70<<KeyShift | FlagsOther)
+	IDPub        = ID(0x71<<KeyShift | FlagsOther)
+	IDPri        = ID(0x72<<KeyShift | FlagsOther)
+	IDError      = ID(0x73<<KeyShift | FlagsOther)
+	IDSuspension = ID(0x74<<KeyShift | FlagsOther)
+	IDLimit      = ID(0x75<<KeyShift | FlagsOther)
+	IDPackageID  = ID(0x76<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -530,29 +530,29 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyAs:  {"as", IDAs},
 	// TODO: do we need a "~as" form of the as operator, similar to "~+".
 
-	KeyFunc:      {"func", IDFunc},
-	KeyPtr:       {"ptr", IDPtr},
-	KeyAssert:    {"assert", IDAssert},
-	KeyWhile:     {"while", IDWhile},
-	KeyIf:        {"if", IDIf},
-	KeyElse:      {"else", IDElse},
-	KeyReturn:    {"return", IDReturn},
-	KeyBreak:     {"break", IDBreak},
-	KeyContinue:  {"continue", IDContinue},
-	KeyStruct:    {"struct", IDStruct},
-	KeyUse:       {"use", IDUse},
-	KeyVar:       {"var", IDVar},
-	KeyNptr:      {"nptr", IDNptr},
-	KeyPre:       {"pre", IDPre},
-	KeyInv:       {"inv", IDInv},
-	KeyPost:      {"post", IDPost},
-	KeyVia:       {"via", IDVia},
-	KeyPub:       {"pub", IDPub},
-	KeyPri:       {"pri", IDPri},
-	KeyError:     {"error", IDError},
-	KeyStatus:    {"status", IDStatus},
-	KeyLimit:     {"limit", IDLimit},
-	KeyPackageID: {"packageid", IDPackageID},
+	KeyFunc:       {"func", IDFunc},
+	KeyPtr:        {"ptr", IDPtr},
+	KeyAssert:     {"assert", IDAssert},
+	KeyWhile:      {"while", IDWhile},
+	KeyIf:         {"if", IDIf},
+	KeyElse:       {"else", IDElse},
+	KeyReturn:     {"return", IDReturn},
+	KeyBreak:      {"break", IDBreak},
+	KeyContinue:   {"continue", IDContinue},
+	KeyStruct:     {"struct", IDStruct},
+	KeyUse:        {"use", IDUse},
+	KeyVar:        {"var", IDVar},
+	KeyNptr:       {"nptr", IDNptr},
+	KeyPre:        {"pre", IDPre},
+	KeyInv:        {"inv", IDInv},
+	KeyPost:       {"post", IDPost},
+	KeyVia:        {"via", IDVia},
+	KeyPub:        {"pub", IDPub},
+	KeyPri:        {"pri", IDPri},
+	KeyError:      {"error", IDError},
+	KeySuspension: {"suspension", IDSuspension},
+	KeyLimit:      {"limit", IDLimit},
+	KeyPackageID:  {"packageid", IDPackageID},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},

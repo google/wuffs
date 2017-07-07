@@ -96,8 +96,8 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
 #define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483643          // 0x80000005
-#define PUFFS_FLATE_STATUS_SHORT_READ 6                       // 0x00000006
-#define PUFFS_FLATE_STATUS_SHORT_WRITE 7                      // 0x00000007
+#define PUFFS_FLATE_SUSPENSION_SHORT_READ 6                   // 0x00000006
+#define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 7                  // 0x00000007
 #define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040128  // 0xbb08f800
@@ -414,7 +414,7 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
-               : PUFFS_FLATE_STATUS_SHORT_READ;
+               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -562,6 +562,6 @@ exit:
 short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
-               : PUFFS_FLATE_STATUS_SHORT_READ;
+               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }

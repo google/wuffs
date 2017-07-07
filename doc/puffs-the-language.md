@@ -18,8 +18,8 @@ top-level concepts:
 - `error`
 - `func`
 - `packageid`
-- `status`
 - `struct`
+- `suspension`
 - `use`
 
 2 keywords distinguish between public and private API:
@@ -123,12 +123,11 @@ The function name, such as `max`, may be followed by either an exclamation mark
 `!` or a question mark `?` but not both. An exclamation mark means that the
 function is impure, and may assign to things other than its local variables. A
 question mark means that the function is impure and furthermore a coroutine: it
-can be suspended while returning a (recoverable) status, such as needing more
-input data, or a (fatal) error, such as being invalid with respect to a file
-format. If suspended with a status, calling that function again will resume at
-the suspension point, not necessarily at the top of the function body. If
-suspended with an error, calling that function again will return the same
-error.
+can return a (recoverable) suspension code, such as needing more input data, or
+return a (fatal) error code, such as being invalid with respect to a file
+format. If suspended, calling that function again will resume at the suspension
+point, not necessarily at the top of the function body. If an error was
+returned, calling that function again will return the same error.
 
 Some functions are methods, with syntax `func foo.bar(etc)(etc)`, where `foo`
 names a struct type and `bar` is the method name. Within the function body, an

@@ -87,9 +87,9 @@ var builtInStatuses = [...]string{
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
-	"error unexpected EOF", // Used if reading when closed == true.
-	"status short read",    // Used if reading when closed == false.
-	"status short write",
+	"error unexpected EOF",  // Used if reading when closed == true.
+	"suspension short read", // Used if reading when closed == false.
+	"suspension short write",
 	"error closed for writes",
 }
 
@@ -282,6 +282,8 @@ func (g *gen) genImpl() error {
 	for _, s := range builtInStatuses {
 		if strings.HasPrefix(s, "status ") {
 			s = s[len("status "):]
+		} else if strings.HasPrefix(s, "suspension ") {
+			s = s[len("suspension "):]
 		} else if strings.HasPrefix(s, "error ") {
 			s = s[len("error "):]
 		}
@@ -406,7 +408,7 @@ func (g *gen) gatherStatuses(n *a.Status) error {
 	if !ok {
 		return fmt.Errorf("bad status message %q", raw)
 	}
-	prefix := "status "
+	prefix := "suspension "
 	isError := n.Keyword().Key() == t.KeyError
 	if isError {
 		prefix = "error "

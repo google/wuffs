@@ -162,7 +162,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
 
-		case t.KeyError, t.KeyStatus:
+		case t.KeyError, t.KeySuspension:
 			keyword := p.src[0].ID
 			p.src = p.src[1:]
 			message := p.peek1()
@@ -549,7 +549,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		switch x := p.peek1(); x.Key() {
 		case t.KeySemicolon:
 			// No-op.
-		case t.KeyError, t.KeyStatus:
+		case t.KeyError, t.KeySuspension:
 			keyword = x
 			p.src = p.src[1:]
 			message = p.peek1()

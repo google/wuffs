@@ -122,7 +122,7 @@ void test_basic_status_is_error() {
     FAIL("is_error(BAD_VERSION) returned false");
     return;
   }
-  if (puffs_gif_status_is_error(PUFFS_GIF_STATUS_SHORT_WRITE)) {
+  if (puffs_gif_status_is_error(PUFFS_GIF_SUSPENSION_SHORT_WRITE)) {
     FAIL("is_error(SHORT_WRITE) returned true");
     return;
   }
@@ -146,7 +146,7 @@ void test_basic_status_strings() {
     FAIL("got \"%s\", want \"%s\"", s1, t1);
     return;
   }
-  const char* s2 = puffs_gif_status_string(PUFFS_GIF_STATUS_SHORT_WRITE);
+  const char* s2 = puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_WRITE);
   const char* t2 = "gif: short write";
   if (strcmp(s2, t2)) {
     FAIL("got \"%s\", want \"%s\"", s2, t2);
@@ -238,8 +238,8 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
       }
       break;
     }
-    if (status != PUFFS_GIF_STATUS_SHORT_READ) {
-      FAIL("status: got %d, want %d", status, PUFFS_GIF_STATUS_SHORT_READ);
+    if (status != PUFFS_GIF_SUSPENSION_SHORT_READ) {
+      FAIL("status: got %d, want %d", status, PUFFS_GIF_SUSPENSION_SHORT_READ);
       goto cleanup1;
     }
     if (src.ri < old_ri) {
