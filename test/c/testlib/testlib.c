@@ -7,12 +7,13 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define BUFFER_SIZE (1024 * 1024)
+#define BUFFER_SIZE (64 * 1024 * 1024)
+#define PALETTE_BUFFER_SIZE (4 * 245)
 
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
-uint8_t global_palette_buffer[3 * 256];
+uint8_t global_palette_buffer[PALETTE_BUFFER_SIZE];
 
 char fail_msg[65536] = {0};
 
