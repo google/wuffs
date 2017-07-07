@@ -475,9 +475,24 @@ Very long term:
 TODO: set up a mailing list.
 
 
+# Contributing
+
+The [CONTRIBUTING.md](./CONTRIBUTING.md) file contains instructions on how to
+file the Contributor License Agreement before sending any pull requests (PRs).
+Of course, if you're new to the project, it's usually best to discuss any
+proposals and reach consensus before sending your first PR.
+
+
 # License
 
 BSD-style with patent grant. See the LICENSE and PATENTS files for details.
+
+
+# Disclaimer
+
+This is not an official Google product, it is just code that happens to be
+owned by Google.
+
 
 ---
 
