@@ -7,6 +7,13 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define BUFFER_SIZE (1024 * 1024)
+
+uint8_t global_got_buffer[BUFFER_SIZE];
+uint8_t global_want_buffer[BUFFER_SIZE];
+uint8_t global_src_buffer[BUFFER_SIZE];
+uint8_t global_palette_buffer[3 * 256];
+
 char fail_msg[65536] = {0};
 
 #define FAIL(...) snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__)
@@ -33,6 +40,13 @@ const char* cc = "cl";
 #else
 const char* cc = "cc";
 #endif
+
+typedef struct {
+  const char* want_filename;
+  const char* src_filename;
+  size_t src_offset0;
+  size_t src_offset1;
+} golden_test;
 
 bool bench_warm_up;
 struct timeval bench_start_tv;
@@ -247,6 +261,81 @@ bool buf1s_equal(const char* prefix,
   INCR_FAIL(msg, "excerpts of got (above) versus want (below):\n");
   msg = hex_dump(msg, want, i);
   return false;
+}
+
+void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+                                              puffs_base_buf1*),
+                    golden_test* gt,
+                    uint64_t reps,
+                    bool bench) {
+  if (!codec_func) {
+    FAIL("NULL codec_func");
+    return;
+  }
+  if (!gt) {
+    FAIL("NULL golden_test");
+    return;
+  }
+
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+
+  if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+  if (gt->src_offset0 || gt->src_offset1) {
+    if (gt->src_offset0 > gt->src_offset1) {
+      FAIL("inconsistent src_offsets");
+      return;
+    }
+    if (gt->src_offset1 > src.wi) {
+      FAIL("src_offset1 too large");
+      return;
+    }
+    src.ri = gt->src_offset0;
+    src.wi = gt->src_offset1;
+  }
+
+  if (bench) {
+    bench_start();
+  }
+  uint64_t n_bytes = 0;
+  uint64_t i;
+  for (i = 0; i < reps; i++) {
+    got.wi = 0;
+    src.ri = gt->src_offset0;
+    const char* s = codec_func(&got, &src);
+    if (s) {
+      FAIL("%s", s);
+      return;
+    }
+    n_bytes += got.wi;
+  }
+  if (bench) {
+    bench_finish(reps, n_bytes);
+    return;
+  }
+
+  if (!read_file(&want, gt->want_filename)) {
+    return;
+  }
+  if (!buf1s_equal("", &got, &want)) {
+    return;
+  }
+}
+
+void bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+                                               puffs_base_buf1*),
+                     golden_test* gt,
+                     uint64_t reps) {
+  proc_buf1_buf1(codec_func, gt, reps, true);
+}
+
+void test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+                                              puffs_base_buf1*),
+                    golden_test* gt) {
+  proc_buf1_buf1(codec_func, gt, 1, false);
 }
 
 #endif  // PUFFS_BASE_HEADER_H

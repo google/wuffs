@@ -1,0 +1,13 @@
+// Use of this source code is governed by a BSD-style license that can be found
+// in the LICENSE file.
+
+// The flate spec is https://www.ietf.org/rfc/rfc1951.txt
+
+packageid "flte"
+
+pub struct decoder?(
+)
+
+pub func decoder.decode?(dst writer1, src reader1)() {
+	// TODO.
+}

@@ -31,13 +31,6 @@ cflags" to run the mimic benchmarks.
 
 const char* proc_filename = "std/gif.c";
 
-#define BUFFER_SIZE (1024 * 1024)
-
-uint8_t global_got_buffer[BUFFER_SIZE];
-uint8_t global_want_buffer[BUFFER_SIZE];
-uint8_t global_src_buffer[BUFFER_SIZE];
-uint8_t global_palette_buffer[3 * 256];
-
 // ---------------- Basic Tests
 
 void test_basic_bad_argument_out_of_range() {
