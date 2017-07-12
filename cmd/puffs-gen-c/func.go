@@ -67,50 +67,45 @@ func (g *gen) writeFuncPrototype(n *a.Func) error {
 }
 
 func (g *gen) writeFuncImpl(n *a.Func) error {
-	g.perFunc = perFunc{funk: n}
+	g.perFunc = perFunc{
+		funk:        n,
+		public:      n.Public(),
+		suspendible: n.Suspendible(),
+	}
 	if err := g.writeFuncSignature(n); err != nil {
 		return err
 	}
 	g.writes("{\n")
 
 	// Check the previous status and the "self" arg.
-	if n.Public() {
-		g.perFunc.public = true
-		if n.Receiver() != 0 {
-			g.writes("if (!self) {\n")
-			if n.Suspendible() {
-				g.printf("return PUFFS_%s_ERROR_BAD_RECEIVER;", g.PKGNAME)
-			} else {
-				g.printf("return;")
-			}
-			g.writes("}\n")
+	if g.perFunc.public && n.Receiver() != 0 {
+		g.writes("if (!self) {")
+		if g.perFunc.suspendible {
+			g.printf("return PUFFS_%s_ERROR_BAD_RECEIVER;", g.PKGNAME)
+		} else {
+			g.printf("return;")
 		}
+		g.writes("}")
+
+		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
+			"self->private_impl.status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; }", g.PKGNAME)
+
+		g.writes("if (self->private_impl.status < 0) {")
+		if g.perFunc.suspendible {
+			g.writes("return self->private_impl.status;")
+		} else {
+			g.writes("return;")
+		}
+		g.writes("}\n")
 	}
 
-	if n.Suspendible() {
-		g.perFunc.suspendible = true
-		g.printf("puffs_%s_status status = ", g.pkgName)
-		if n.Receiver() != 0 {
-			g.writes("self->private_impl.status;\n")
-			if n.Public() {
-				g.writes("if (status < 0) { return status; }")
-			}
-		} else {
-			g.printf("PUFFS_%s_STATUS_OK;\n", g.PKGNAME)
-		}
-		if n.Public() {
-			g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-				"status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; goto exit; }\n", g.PKGNAME)
-		}
-	} else if n.Receiver() != 0 && n.Public() {
-		g.writes("if (self->private_impl.status < 0) { return; }")
-		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-			"self->private_impl.status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; return; }\n", g.PKGNAME)
+	if g.perFunc.suspendible {
+		g.printf("puffs_%s_status status = PUFFS_%s_STATUS_OK;\n", g.pkgName, g.PKGNAME)
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and
 	// null-ness. For private functions, those checks are done at compile time.
-	if n.Public() {
+	if g.perFunc.public {
 		if err := g.writeFuncImplArgChecks(n); err != nil {
 			return err
 		}
@@ -259,7 +254,7 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 		g.writes(c)
 	}
 	g.writes(") {")
-	if n.Suspendible() {
+	if g.perFunc.suspendible {
 		g.printf("status = PUFFS_%s_ERROR_BAD_ARGUMENT; goto exit;", g.PKGNAME)
 	} else if n.Receiver() != 0 {
 		g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_ARGUMENT; return;", g.PKGNAME)

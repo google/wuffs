@@ -404,14 +404,13 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
   if (!self) {
     return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
-  puffs_gif_status status = self->private_impl.status;
-  if (status < 0) {
-    return status;
-  }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
-    goto exit;
+    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
   }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint8_t v_c;
 
@@ -590,7 +589,7 @@ short_read_src:
 
 puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
                                                  puffs_base_reader1 a_src) {
-  puffs_gif_status status = self->private_impl.status;
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint8_t v_c[6];
   uint32_t v_i;
@@ -670,7 +669,7 @@ short_read_src:
 
 puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
                                               puffs_base_reader1 a_src) {
-  puffs_gif_status status = self->private_impl.status;
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint8_t v_c[7];
   uint32_t v_i;
@@ -779,7 +778,7 @@ short_read_src:
 
 puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
                                                     puffs_base_reader1 a_src) {
-  puffs_gif_status status = self->private_impl.status;
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint8_t v_label;
   uint8_t v_block_size;
@@ -875,7 +874,7 @@ short_read_src:
 puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
                                              puffs_base_writer1 a_dst,
                                              puffs_base_reader1 a_src) {
-  puffs_gif_status status = self->private_impl.status;
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint8_t v_c[9];
   uint32_t v_i;
@@ -1031,11 +1030,10 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
   if (!self) {
     return;
   }
-  if (self->private_impl.status < 0) {
-    return;
-  }
   if (self->private_impl.magic != PUFFS_MAGIC) {
     self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
     return;
   }
   if (a_lw < 2 || a_lw > 8) {
@@ -1052,14 +1050,13 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   if (!self) {
     return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
-  puffs_gif_status status = self->private_impl.status;
-  if (status < 0) {
-    return status;
-  }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
-    goto exit;
+    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
   }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
 
   uint32_t v_clear_code;
   uint32_t v_end_code;

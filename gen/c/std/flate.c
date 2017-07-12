@@ -295,14 +295,13 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   if (!self) {
     return PUFFS_FLATE_ERROR_BAD_RECEIVER;
   }
-  puffs_flate_status status = self->private_impl.status;
-  if (status < 0) {
-    return status;
-  }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
-    goto exit;
+    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
   }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_final;
   uint32_t v_type;
@@ -425,14 +424,13 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   if (!self) {
     return PUFFS_FLATE_ERROR_BAD_RECEIVER;
   }
-  puffs_flate_status status = self->private_impl.status;
-  if (status < 0) {
-    return status;
-  }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
-    goto exit;
+    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
   }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint8_t v_n0;
   uint8_t v_n1;
