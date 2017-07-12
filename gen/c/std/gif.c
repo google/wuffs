@@ -956,11 +956,11 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
         goto label_0_break;
       }
       l_lzw_src = ((uint64_t)(v_block_size));
-      v_lzw_src = (puffs_base_reader1){
-          .buf = a_src.buf,
-          .limit = (puffs_base_limit1){
-              .ptr_to_len = &l_lzw_src, .next = &a_src.limit,
-          }};
+      v_lzw_src = (puffs_base_reader1){.buf = a_src.buf,
+                                       .limit = (puffs_base_limit1){
+                                           .ptr_to_len = &l_lzw_src,
+                                           .next = &a_src.limit,
+                                       }};
       PUFFS_COROUTINE_STATE(4);
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
