@@ -103,6 +103,72 @@ void test_puffs_flate_decode_romeo() {
   test_buf1_buf1(puffs_flate_decode, &romeo_gt);
 }
 
+void test_puffs_flate_decode_split_src() {
+  proc_funcname = __func__;
+
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+
+  golden_test* gt = &two_five_six_gt;
+  if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+  if (!read_file(&want, gt->want_filename)) {
+    return;
+  }
+
+  puffs_flate_decoder dec;
+  puffs_base_writer1 dst_writer = {.buf = &got};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  int i;
+  for (i = 1; i < 32; i++) {
+    size_t split = gt->src_offset0 + i;
+    if (split >= gt->src_offset1) {
+      FAIL("i=%d: split was not an interior split", i);
+      return;
+    }
+    got.wi = 0;
+
+    puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+
+    src.closed = false;
+    src.ri = gt->src_offset0;
+    src.wi = split;
+    puffs_flate_status s0 =
+        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+
+    src.closed = true;
+    src.ri = split;
+    src.wi = gt->src_offset1;
+    puffs_flate_status s1 =
+        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+
+    puffs_flate_decoder_destructor(&dec);
+
+    if (s0 != PUFFS_FLATE_SUSPENSION_SHORT_READ) {
+      FAIL("i=%d: s0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s0,
+           puffs_flate_status_string(s0), PUFFS_FLATE_SUSPENSION_SHORT_READ,
+           puffs_flate_status_string(PUFFS_FLATE_SUSPENSION_SHORT_READ));
+      return;
+    }
+
+    if (s1 != PUFFS_FLATE_STATUS_OK) {
+      FAIL("i=%d: s1: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s1,
+           puffs_flate_status_string(s1), PUFFS_FLATE_STATUS_OK,
+           puffs_flate_status_string(PUFFS_FLATE_STATUS_OK));
+      return;
+    }
+
+    char prefix[64];
+    snprintf(prefix, 64, "i=%d: ", i);
+    if (!buf1s_equal(prefix, &got, &want)) {
+      return;
+    }
+  }
+}
+
 // ---------------- Mimic Tests
 
 #ifdef PUFFS_MIMIC
@@ -180,6 +246,7 @@ proc tests[] = {
     test_puffs_flate_decode_pi,         //
     test_puffs_flate_decode_romeo,      //
     */
+    test_puffs_flate_decode_split_src,  //
 
 #ifdef PUFFS_MIMIC
 

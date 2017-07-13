@@ -908,7 +908,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
 		g.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
 		g.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
-		g.printf("if (status) { self->private_impl.scratch = %s%d; goto suspend; }\n", tPrefix, temp)
+		g.printf("if (status) { self->private_impl.scratch -= %s%d; goto suspend; }\n", tPrefix, temp)
 
 		g.writes("}\n")
 

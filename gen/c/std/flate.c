@@ -531,7 +531,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       b_wptr_dst += t_4;
       b_rptr_src += t_4;
       if (status) {
-        self->private_impl.scratch = t_4;
+        self->private_impl.scratch -= t_4;
         goto suspend;
       }
     }
