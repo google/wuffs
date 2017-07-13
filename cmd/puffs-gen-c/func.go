@@ -799,6 +799,9 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.printf(" = *%srptr_src++;\n", bPrefix)
 
+	} else if isInSrc(g.tm, n, t.KeyReadU32LE, 0) {
+		return g.writeReadUXX(n, "src", 32, "le")
+
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		if g.perFunc.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
@@ -981,6 +984,53 @@ func (g *gen) writeShortRead(name string) error {
 	} else {
 		g.writes("return status;")
 	}
+	return nil
+}
+
+func (g *gen) writeReadUXX(n *a.Expr, name string, size uint32, endianness string) error {
+	if g.perFunc.tempW > maxTemp-1 {
+		return fmt.Errorf("too many temporary variables required")
+	}
+	// temp0 is read by code generated in this function. temp1 is read elsewhere.
+	temp0 := g.perFunc.tempW + 0
+	temp1 := g.perFunc.tempW + 1
+	g.perFunc.tempW += 2
+	g.perFunc.tempR += 1
+
+	if err := g.writeCTypeName(n.MType(), tPrefix, fmt.Sprint(temp1)); err != nil {
+		return err
+	}
+	g.writes(";")
+
+	g.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= 4)) {", bPrefix, bPrefix)
+	g.printf("%s%d = PUFFS_U32LE(%srptr_src);\n", tPrefix, temp1, bPrefix)
+	g.printf("%srptr_src += 4;\n", bPrefix)
+	g.printf("} else {")
+	g.printf("self->private_impl.scratch = 0;\n")
+	if err := g.writeCoroSuspPoint(); err != nil {
+		return err
+	}
+	g.printf("while (true) {")
+
+	g.printf("if (PUFFS_UNLIKELY(%srptr_%s == %srend_%s)) { goto short_read_%s; }",
+		bPrefix, name, bPrefix, name, name)
+	g.perFunc.shortReads = append(g.perFunc.shortReads, name)
+
+	// TODO: look at endianness.
+	g.printf("uint32_t %s%d = self->private_impl.scratch >> 56;", tPrefix, temp0)
+	g.printf("self->private_impl.scratch <<= 8;")
+	g.printf("self->private_impl.scratch >>= 8;")
+	g.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << %s%d;", bPrefix, name, tPrefix, temp0)
+
+	g.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
+	g.printf("%s%d = self->private_impl.scratch;", tPrefix, temp1)
+	g.printf("break;")
+	g.printf("}")
+
+	g.printf("%s%d += 8;", tPrefix, temp0)
+	g.printf("self->private_impl.scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
+
+	g.writes("}}\n")
 	return nil
 }
 

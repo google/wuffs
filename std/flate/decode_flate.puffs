@@ -53,17 +53,9 @@ pub func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	}
 	this.n_bits = 0
 
-	// TODO: a read_u16le method.
-	var n0 u8 = in.src.read_u8?()
-	var n1 u8 = in.src.read_u8?()
-	var complement u8
-	complement = in.src.read_u8?()
-	if (0xFF - complement) != n0 {
+	var n u32 = in.src.read_u32le?()
+	if (n.low_bits(n:16) + n.high_bits(n:16)) != 0xFFFF {
 		return error "inconsistent stored block length"
 	}
-	complement = in.src.read_u8?()
-	if (0xFF - complement) != n1 {
-		return error "inconsistent stored block length"
-	}
-	in.dst.copy_from32?(r:in.src, n:((n1 as u32) << 8) | (n0 as u32))
+	in.dst.copy_from32?(r:in.src, n:n.low_bits(n:16))
 }

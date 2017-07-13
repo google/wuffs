@@ -137,9 +137,7 @@ typedef struct {
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_n0;
-      uint8_t v_n1;
-      uint8_t v_complement;
+      uint32_t v_n;
     } c_decode_uncompressed[1];
   } private_impl;
 } puffs_flate_decoder;

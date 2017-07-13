@@ -6,6 +6,12 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+// TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
+// if a benchmark justifies the additional code path.
+#define PUFFS_U32LE(p)                                 \
+  (((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) | \
+   ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24))
+
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //

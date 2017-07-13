@@ -137,9 +137,7 @@ typedef struct {
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_n0;
-      uint8_t v_n1;
-      uint8_t v_complement;
+      uint32_t v_n;
     } c_decode_uncompressed[1];
   } private_impl;
 } puffs_flate_decoder;
@@ -181,6 +179,12 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
 
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
+
+// TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
+// if a benchmark justifies the additional code path.
+#define PUFFS_U32LE(p)                                 \
+  (((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) | \
+   ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24))
 
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
@@ -432,9 +436,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
-  uint8_t v_n0;
-  uint8_t v_n1;
-  uint8_t v_complement;
+  uint32_t v_n;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wend_dst = NULL;
@@ -466,9 +468,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   uint32_t coro_susp_point =
       self->private_impl.c_decode_uncompressed[0].coro_susp_point;
   if (coro_susp_point) {
-    v_n0 = self->private_impl.c_decode_uncompressed[0].v_n0;
-    v_n1 = self->private_impl.c_decode_uncompressed[0].v_n1;
-    v_complement = self->private_impl.c_decode_uncompressed[0].v_complement;
+    v_n = self->private_impl.c_decode_uncompressed[0].v_n;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -479,57 +479,52 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     }
     self->private_impl.f_n_bits = 0;
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
+    uint32_t t_1;
+    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
+      t_1 = PUFFS_U32LE(b_rptr_src);
+      b_rptr_src += 4;
+    } else {
+      self->private_impl.scratch = 0;
+      PUFFS_COROUTINE_SUSPENSION_POINT(2);
+      while (true) {
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint32_t t_0 = self->private_impl.scratch >> 56;
+        self->private_impl.scratch <<= 8;
+        self->private_impl.scratch >>= 8;
+        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << t_0;
+        if (t_0 == 24) {
+          t_1 = self->private_impl.scratch;
+          break;
+        }
+        t_0 += 8;
+        self->private_impl.scratch |= ((uint64_t)(t_0)) << 56;
+      }
     }
-    uint8_t t_0 = *b_rptr_src++;
-    v_n0 = t_0;
-    PUFFS_COROUTINE_SUSPENSION_POINT(2);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
+    v_n = t_1;
+    if ((((v_n) & ((1 << (16)) - 1)) + ((v_n) >> (32 - (16)))) != 65535) {
+      status = PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH;
+      goto suspend;
     }
-    uint8_t t_1 = *b_rptr_src++;
-    v_n1 = t_1;
-    v_complement = 0;
     PUFFS_COROUTINE_SUSPENSION_POINT(3);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
-    }
-    uint8_t t_2 = *b_rptr_src++;
-    v_complement = t_2;
-    if ((255 - v_complement) != v_n0) {
-      status = PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH;
-      goto suspend;
-    }
-    PUFFS_COROUTINE_SUSPENSION_POINT(4);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
-    }
-    uint8_t t_3 = *b_rptr_src++;
-    v_complement = t_3;
-    if ((255 - v_complement) != v_n1) {
-      status = PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH;
-      goto suspend;
-    }
-    PUFFS_COROUTINE_SUSPENSION_POINT(5);
     {
-      self->private_impl.scratch =
-          ((((uint32_t)(v_n1)) << 8) | ((uint32_t)(v_n0)));
-      PUFFS_COROUTINE_SUSPENSION_POINT(6);
-      size_t t_4 = self->private_impl.scratch;
-      if (t_4 > b_wend_dst - b_wptr_dst) {
-        t_4 = b_wend_dst - b_wptr_dst;
+      self->private_impl.scratch = ((v_n) & ((1 << (16)) - 1));
+      PUFFS_COROUTINE_SUSPENSION_POINT(4);
+      size_t t_2 = self->private_impl.scratch;
+      if (t_2 > b_wend_dst - b_wptr_dst) {
+        t_2 = b_wend_dst - b_wptr_dst;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
       }
-      if (t_4 > b_rend_src - b_rptr_src) {
-        t_4 = b_rend_src - b_rptr_src;
+      if (t_2 > b_rend_src - b_rptr_src) {
+        t_2 = b_rend_src - b_rptr_src;
         status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
       }
-      memmove(b_wptr_dst, b_rptr_src, t_4);
-      b_wptr_dst += t_4;
-      b_rptr_src += t_4;
+      memmove(b_wptr_dst, b_rptr_src, t_2);
+      b_wptr_dst += t_2;
+      b_rptr_src += t_2;
       if (status) {
-        self->private_impl.scratch -= t_4;
+        self->private_impl.scratch -= t_2;
         goto suspend;
       }
     }
@@ -539,9 +534,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   goto suspend;
 suspend:
   self->private_impl.c_decode_uncompressed[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_uncompressed[0].v_n0 = v_n0;
-  self->private_impl.c_decode_uncompressed[0].v_n1 = v_n1;
-  self->private_impl.c_decode_uncompressed[0].v_complement = v_complement;
+  self->private_impl.c_decode_uncompressed[0].v_n = v_n;
 
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
