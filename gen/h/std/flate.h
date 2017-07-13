@@ -125,6 +125,8 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
+    uint64_t scratch;
+
     uint32_t f_bits;
     uint32_t f_n_bits;
 

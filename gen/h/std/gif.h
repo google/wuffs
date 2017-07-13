@@ -126,6 +126,8 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
+    uint64_t scratch;
+
     uint32_t f_literal_width;
     uint8_t f_stack[4096];
     uint8_t f_suffixes[4096];
@@ -158,6 +160,8 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
+    uint64_t scratch;
+
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_background_color_index;

@@ -441,7 +441,9 @@ func (g *gen) writeStruct(n *a.Struct) error {
 	g.writes("struct {\n")
 	if n.Suspendible() {
 		g.printf("puffs_%s_status status;\n", g.pkgName)
-		g.printf("uint32_t magic;\n")
+		g.writes("uint32_t magic;\n")
+		g.writes("uint64_t scratch;\n")
+		g.writes("\n")
 	}
 
 	for _, o := range n.Fields() {

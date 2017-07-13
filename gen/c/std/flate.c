@@ -125,6 +125,8 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
+    uint64_t scratch;
+
     uint32_t f_bits;
     uint32_t f_n_bits;
 
@@ -512,7 +514,10 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     }
     PUFFS_COROUTINE_STATE(5);
     {
-      size_t t_4 = ((((uint32_t)(v_n1)) << 8) | ((uint32_t)(v_n0)));
+      self->private_impl.scratch =
+          ((((uint32_t)(v_n1)) << 8) | ((uint32_t)(v_n0)));
+      PUFFS_COROUTINE_STATE(6);
+      size_t t_4 = self->private_impl.scratch;
       if (t_4 > b_wend_dst - b_wptr_dst) {
         t_4 = b_wend_dst - b_wptr_dst;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
@@ -525,6 +530,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       b_wptr_dst += t_4;
       b_rptr_src += t_4;
       if (status) {
+        self->private_impl.scratch = t_4;
         goto suspend;
       }
     }

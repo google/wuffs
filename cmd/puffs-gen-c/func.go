@@ -877,12 +877,17 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 		g.writes("{\n")
 
-		g.printf("size_t %s%d = ", tPrefix, temp)
+		g.writes("self->private_impl.scratch = ")
 		x := n.Args()[1].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		g.writes(";\n")
+
+		if err := g.writeSuspend(); err != nil {
+			return err
+		}
+		g.printf("size_t %s%d = self->private_impl.scratch;\n", tPrefix, temp)
 
 		const wName = "dst"
 		g.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
@@ -900,8 +905,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
 		g.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
 		g.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
-		// TODO: when suspending, save how many bytes remain to be copied.
-		g.writes("if (status) { goto suspend; }\n")
+		g.printf("if (status) { self->private_impl.scratch = %s%d; goto suspend; }\n", tPrefix, temp)
 
 		g.writes("}\n")
 
