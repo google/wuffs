@@ -886,18 +886,22 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 		const wName = "dst"
 		g.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
-		// TODO: suspend; return SHORT_WRITE.
+		g.printf("%s%d = %swend_%s - %swptr_%s;\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
+		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_WRITE;\n", g.PKGNAME)
 		g.writes("}\n")
 
 		// TODO: don't assume that the first argument is "in.src".
 		const rName = "src"
 		g.printf("if (%s%d > %srend_%s - %srptr_%s) {\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
-		// TODO: suspend; return SHORT_READ.
+		g.printf("%s%d = %srend_%s - %srptr_%s;\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
+		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ;\n", g.PKGNAME)
 		g.writes("}\n")
 
 		g.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
 		g.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
 		g.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
+		// TODO: when suspending, save how many bytes remain to be copied.
+		g.writes("if (status) { goto suspend; }\n")
 
 		g.writes("}\n")
 

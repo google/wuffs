@@ -514,12 +514,19 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     {
       size_t t_4 = ((((uint32_t)(v_n1)) << 8) | ((uint32_t)(v_n0)));
       if (t_4 > b_wend_dst - b_wptr_dst) {
+        t_4 = b_wend_dst - b_wptr_dst;
+        status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
       }
       if (t_4 > b_rend_src - b_rptr_src) {
+        t_4 = b_rend_src - b_rptr_src;
+        status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
       }
       memmove(b_wptr_dst, b_rptr_src, t_4);
       b_wptr_dst += t_4;
       b_rptr_src += t_4;
+      if (status) {
+        goto suspend;
+      }
     }
     coro_state = 0;
   }
