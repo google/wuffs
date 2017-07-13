@@ -134,7 +134,7 @@ typedef struct {
     uint16_t f_prefixes[4096];
 
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint32_t v_clear_code;
       uint32_t v_end_code;
       uint32_t v_save_code;
@@ -169,27 +169,27 @@ typedef struct {
     puffs_gif_lzw_decoder f_lzw;
 
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_c;
     } c_decode[1];
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_c[6];
       uint32_t v_i;
     } c_decode_header[1];
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_c[7];
       uint32_t v_i;
       uint32_t v_gct_size;
     } c_decode_lsd[1];
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_label;
       uint8_t v_block_size;
     } c_decode_extension[1];
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_c[9];
       uint32_t v_i;
       bool v_interlace;

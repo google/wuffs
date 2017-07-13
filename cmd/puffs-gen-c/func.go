@@ -13,16 +13,16 @@ import (
 )
 
 type perFunc struct {
-	funk         *a.Func
-	derivedVars  map[t.ID]struct{}
-	jumpTargets  map[*a.While]uint32
-	coroState    uint32
-	tempW        uint32
-	tempR        uint32
-	public       bool
-	suspendible  bool
-	limitVarName string
-	shortReads   []string
+	funk          *a.Func
+	derivedVars   map[t.ID]struct{}
+	jumpTargets   map[*a.While]uint32
+	coroSuspPoint uint32
+	tempW         uint32
+	tempR         uint32
+	public        bool
+	suspendible   bool
+	limitVarName  string
+	shortReads    []string
 }
 
 func (g *gen) writeFuncSignature(n *a.Func) error {
@@ -129,8 +129,9 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		g.writes("\n")
 
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		g.printf("uint32_t coro_state = self->private_impl.%s%s[0].coro_state;\n", cPrefix, n.Name().String(g.tm))
-		g.printf("if (coro_state) {\n")
+		g.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0].coro_susp_point;\n",
+			cPrefix, n.Name().String(g.tm))
+		g.printf("if (coro_susp_point) {\n")
 		if err := g.writeResumeSuspend(n.Body(), false); err != nil {
 			return err
 		}
@@ -139,7 +140,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 		//
 		// The matching } is written below. See "Close the coroutine switch".
-		g.writes("switch (coro_state) {\nPUFFS_COROUTINE_STATE(0);\n\n")
+		g.writes("switch (coro_susp_point) {\nPUFFS_COROUTINE_SUSPENSION_POINT(0);\n\n")
 	}
 
 	// Generate the function body.
@@ -151,13 +152,15 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 
 	if g.perFunc.suspendible {
 		// We've reached the end of the function body. Reset the coroutine
-		// state so that the next call to this function starts at the top.
-		g.writes("coro_state = 0;\n")
+		// suspension point so that the next call to this function starts at
+		// the top.
+		g.writes("coro_susp_point = 0;\n")
 		g.writes("}\n\n") // Close the coroutine switch.
 
 		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		g.writes("suspend:\n")
-		g.printf("self->private_impl.%s%s[0].coro_state = coro_state;\n", cPrefix, n.Name().String(g.tm))
+		g.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
+			cPrefix, n.Name().String(g.tm))
 		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
 			return err
 		}
@@ -726,14 +729,14 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeSuspend() error {
-	const maxCoroState = 0xFFFFFFFF
-	g.perFunc.coroState++
-	if g.perFunc.coroState == maxCoroState {
-		return fmt.Errorf("too many coroutine states required")
+func (g *gen) writeCoroSuspPoint() error {
+	const maxCoroSuspPoint = 0xFFFFFFFF
+	g.perFunc.coroSuspPoint++
+	if g.perFunc.coroSuspPoint == maxCoroSuspPoint {
+		return fmt.Errorf("too many coroutine suspension points required")
 	}
 
-	g.printf("PUFFS_COROUTINE_STATE(%d);\n", g.perFunc.coroState)
+	g.printf("PUFFS_COROUTINE_SUSPENSION_POINT(%d);\n", g.perFunc.coroSuspPoint)
 	return nil
 }
 
@@ -741,7 +744,7 @@ func (g *gen) writeSuspendibles(n *a.Expr, depth uint32) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	if err := g.writeSuspend(); err != nil {
+	if err := g.writeCoroSuspPoint(); err != nil {
 		return err
 	}
 	return g.writeCallSuspendibles(n, depth)
@@ -884,7 +887,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes(";\n")
 
-		if err := g.writeSuspend(); err != nil {
+		if err := g.writeCoroSuspPoint(); err != nil {
 			return err
 		}
 		g.printf("size_t %s%d = self->private_impl.scratch;\n", tPrefix, temp)

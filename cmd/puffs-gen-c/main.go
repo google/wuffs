@@ -468,7 +468,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 				// TODO: allow max depth > 1 for recursive coroutines.
 				const maxDepth = 1
 				g.writes("struct {\n")
-				g.writes("uint32_t coro_state;\n")
+				g.writes("uint32_t coro_susp_point;\n")
 				if err := g.writeVars(o.Body()); err != nil {
 					return err
 				}

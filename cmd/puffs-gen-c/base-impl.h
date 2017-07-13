@@ -6,13 +6,13 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// Use switch cases for coroutine state, similar to the technique in
-// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
+// Use switch cases for coroutine suspension points, similar to the technique
+// in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_STATE(n) \
-  coro_state = n;                \
+#define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
+  coro_susp_point = n;                      \
   case n:
 
 #define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))

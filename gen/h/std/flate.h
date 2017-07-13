@@ -131,12 +131,12 @@ typedef struct {
     uint32_t f_n_bits;
 
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint32_t v_final;
       uint32_t v_type;
     } c_decode[1];
     struct {
-      uint32_t coro_state;
+      uint32_t coro_susp_point;
       uint8_t v_n0;
       uint8_t v_n1;
       uint8_t v_complement;
