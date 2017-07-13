@@ -1057,15 +1057,16 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		// n is a function call.
 		// TODO: delete this hack that only matches "foo.low_bits(etc)".
 		if isLowBits(g.tm, n) {
-			g.printf("PUFFS_LOW_BITS(")
-			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
+			// "x.low_bits(n:etc)" in C is "((x) & ((1 << (n)) - 1))".
+			g.writes("((")
+			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
-			g.writes(",")
-			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
+			g.writes(") & ((1 << (")
+			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
-			g.writes(")")
+			g.writes(")) - 1))")
 			return nil
 		}
 		// TODO.

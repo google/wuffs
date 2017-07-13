@@ -261,8 +261,6 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   coro_susp_point = n;                      \
   case n:
 
-#define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
-
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
 #define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
@@ -1136,7 +1134,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         v_bits |= (((uint32_t)(t_0)) << v_n_bits);
         v_n_bits += 8;
       }
-      v_code = PUFFS_LOW_BITS(v_bits, v_width);
+      v_code = ((v_bits) & ((1 << (v_width)) - 1));
       v_bits >>= v_width;
       v_n_bits -= v_width;
       if (v_code < v_clear_code) {

@@ -15,8 +15,6 @@
   coro_susp_point = n;                      \
   case n:
 
-#define PUFFS_LOW_BITS(x, n) ((x) & ((1 << (n)) - 1))
-
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
 #define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
