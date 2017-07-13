@@ -91,7 +91,7 @@ typedef int32_t puffs_gif_status;
 #define puffs_gif_packageid 1017222  // 0x000f8586
 
 #define PUFFS_GIF_STATUS_OK 0                               // 0x00000000
-#define PUFFS_GIF_ERROR_BAD_VERSION -2147483647             // 0x80000001
+#define PUFFS_GIF_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
@@ -282,7 +282,7 @@ bool puffs_gif_status_is_error(puffs_gif_status s) {
 
 const char* puffs_gif_status_strings0[9] = {
     "gif: ok",
-    "gif: bad version",
+    "gif: bad puffs version",
     "gif: bad receiver",
     "gif: bad argument",
     "gif: constructor not called",
@@ -359,7 +359,7 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = PUFFS_GIF_ERROR_BAD_VERSION;
+    self->private_impl.status = PUFFS_GIF_ERROR_BAD_PUFFS_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
@@ -382,7 +382,7 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = PUFFS_GIF_ERROR_BAD_VERSION;
+    self->private_impl.status = PUFFS_GIF_ERROR_BAD_PUFFS_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {

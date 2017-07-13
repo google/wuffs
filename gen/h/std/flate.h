@@ -91,7 +91,7 @@ typedef int32_t puffs_flate_status;
 #define puffs_flate_packageid 967230  // 0x000ec23e
 
 #define PUFFS_FLATE_STATUS_OK 0                               // 0x00000000
-#define PUFFS_FLATE_ERROR_BAD_VERSION -2147483647             // 0x80000001
+#define PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_FLATE_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004

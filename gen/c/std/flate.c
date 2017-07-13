@@ -91,7 +91,7 @@ typedef int32_t puffs_flate_status;
 #define puffs_flate_packageid 967230  // 0x000ec23e
 
 #define PUFFS_FLATE_STATUS_OK 0                               // 0x00000000
-#define PUFFS_FLATE_ERROR_BAD_VERSION -2147483647             // 0x80000001
+#define PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_FLATE_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
@@ -212,7 +212,7 @@ bool puffs_flate_status_is_error(puffs_flate_status s) {
 
 const char* puffs_flate_status_strings0[9] = {
     "flate: ok",
-    "flate: bad version",
+    "flate: bad puffs version",
     "flate: bad receiver",
     "flate: bad argument",
     "flate: constructor not called",
@@ -274,7 +274,7 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = PUFFS_FLATE_ERROR_BAD_VERSION;
+    self->private_impl.status = PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {

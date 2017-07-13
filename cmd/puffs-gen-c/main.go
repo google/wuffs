@@ -83,7 +83,7 @@ const (
 
 var builtInStatuses = [...]string{
 	"status ok",
-	"error bad version",
+	"error bad puffs version",
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
@@ -426,9 +426,9 @@ func (g *gen) gatherStatuses(n *a.Status) error {
 func (g *gen) writeStruct(n *a.Struct) error {
 	// For API/ABI compatibility, the very first field in the struct's
 	// private_impl must be the status code. This lets the constructor callee
-	// set "self->private_impl.status = etc_error_bad_version;" regardless of
-	// the sizeof(*self) struct reserved by the caller and even if the caller
-	// and callee were built with different versions.
+	// set "self->private_impl.status = etc_error_bad_puffs_version;"
+	// regardless of the sizeof(*self) struct reserved by the caller and even
+	// if the caller and callee were built with different versions.
 	structName := n.Name().String(g.tm)
 	g.writes("typedef struct {\n")
 	g.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
@@ -529,7 +529,7 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 
 		if ctor {
 			g.printf("if (puffs_version != PUFFS_VERSION) {\n")
-			g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_VERSION;\n", g.PKGNAME)
+			g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_PUFFS_VERSION;\n", g.PKGNAME)
 			g.printf("return;\n")
 			g.printf("}\n")
 

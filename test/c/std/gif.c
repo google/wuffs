@@ -86,9 +86,9 @@ void test_basic_puffs_version_bad() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
   puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
-  if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_VERSION) {
+  if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_PUFFS_VERSION) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
-         PUFFS_GIF_ERROR_BAD_VERSION);
+         PUFFS_GIF_ERROR_BAD_PUFFS_VERSION);
     goto cleanup0;
   }
 cleanup0:
@@ -118,8 +118,8 @@ void test_basic_status_is_error() {
     FAIL("is_error(OK) returned true");
     return;
   }
-  if (!puffs_gif_status_is_error(PUFFS_GIF_ERROR_BAD_VERSION)) {
-    FAIL("is_error(BAD_VERSION) returned false");
+  if (!puffs_gif_status_is_error(PUFFS_GIF_ERROR_BAD_PUFFS_VERSION)) {
+    FAIL("is_error(BAD_PUFFS_VERSION) returned false");
     return;
   }
   if (puffs_gif_status_is_error(PUFFS_GIF_SUSPENSION_SHORT_WRITE)) {
@@ -140,8 +140,8 @@ void test_basic_status_strings() {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
   }
-  const char* s1 = puffs_gif_status_string(PUFFS_GIF_ERROR_BAD_VERSION);
-  const char* t1 = "gif: bad version";
+  const char* s1 = puffs_gif_status_string(PUFFS_GIF_ERROR_BAD_PUFFS_VERSION);
+  const char* t1 = "gif: bad puffs version";
   if (strcmp(s1, t1)) {
     FAIL("got \"%s\", want \"%s\"", s1, t1);
     return;
