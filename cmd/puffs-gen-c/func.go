@@ -1055,11 +1055,12 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 
 	case t.KeyOpenParen:
 		// n is a function call.
-		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(g.tm, n) {
+		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
+		if isLowHighBits(g.tm, n, t.KeyLowBits) {
 			// "x.low_bits(n:etc)" in C is "((x) & ((1 << (n)) - 1))".
+			x := n.LHS().Expr().LHS().Expr()
 			g.writes("((")
-			if err := g.writeExpr(n.LHS().Expr().LHS().Expr(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(x, rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
 			g.writes(") & ((1 << (")
@@ -1067,6 +1068,26 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 				return err
 			}
 			g.writes(")) - 1))")
+			return nil
+		}
+		if isLowHighBits(g.tm, n, t.KeyHighBits) {
+			// "x.high_bits(n:etc)" in C is "((x) >> (8*sizeof(x) - (n)))".
+			x := n.LHS().Expr().LHS().Expr()
+			g.writes("((")
+			if err := g.writeExpr(x, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			g.writes(") >> (")
+			if sz, err := g.sizeof(x.MType()); err != nil {
+				return err
+			} else {
+				g.printf("%d", 8*sz)
+			}
+			g.writes(" - (")
+			if err := g.writeExpr(n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			g.writes(")))")
 			return nil
 		}
 		// TODO.
@@ -1165,13 +1186,13 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
 }
 
-func isLowBits(tm *t.Map, n *a.Expr) bool {
+func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(n:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
 }
 
 func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {

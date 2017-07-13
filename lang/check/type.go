@@ -354,8 +354,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprPlaceholder) // HACK.
 			return nil
 		}
-		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(q.tm, n) {
+		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
+		if isLowHighBits(q.tm, n, t.KeyLowBits) || isLowHighBits(q.tm, n, t.KeyHighBits) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -510,13 +510,13 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
 }
 
-func isLowBits(tm *t.Map, n *a.Expr) bool {
+func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(n:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLowBits
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
 }
 
 func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {

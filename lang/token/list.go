@@ -236,7 +236,8 @@ const (
 	KeyIn         = Key(IDIn >> KeyShift)
 	KeyOut        = Key(IDOut >> KeyShift)
 
-	KeyLowBits = Key(IDLowBits >> KeyShift)
+	KeyLowBits  = Key(IDLowBits >> KeyShift)
+	KeyHighBits = Key(IDHighBits >> KeyShift)
 
 	KeyReadU8     = Key(IDReadU8 >> KeyShift)
 	KeyReadU16BE  = Key(IDReadU16BE >> KeyShift)
@@ -397,7 +398,8 @@ const (
 	IDIn         = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDOut        = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
-	IDLowBits = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLowBits  = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDHighBits = ID(0xA9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDReadU8     = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU16BE  = ID(0xB2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -580,7 +582,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyIn:         {"in", IDIn},
 	KeyOut:        {"out", IDOut},
 
-	KeyLowBits: {"low_bits", IDLowBits},
+	KeyLowBits:  {"low_bits", IDLowBits},
+	KeyHighBits: {"high_bits", IDHighBits},
 
 	KeyReadU8:     {"read_u8", IDReadU8},
 	KeyReadU16BE:  {"read_u16be", IDReadU16BE},

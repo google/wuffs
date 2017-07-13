@@ -638,8 +638,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			break
 		}
-		// TODO: delete this hack that only matches "foo.low_bits(etc)".
-		if isLowBits(q.tm, n) {
+		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
+		if isLowHighBits(q.tm, n, t.KeyLowBits) || isLowHighBits(q.tm, n, t.KeyHighBits) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {
@@ -650,7 +650,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 				// a.MType() is u32. Checking this properly should fall out
 				// when a *a.TypeExpr can express function types.
 			}
-			// TODO: sixtyFour should actually be sizeof(n.LHS().Expr()).
+			// TODO: sixtyFour should actually be 8 * sizeof(n.LHS().Expr()).
 			if aMax.Cmp(sixtyFour) > 0 {
 				return nil, nil, fmt.Errorf("check: low_bits argument %q is possibly too large", a.String(q.tm))
 			}
