@@ -39,32 +39,37 @@ const char* proc_filename = "std/flate.c";
 //
 // The empty comments forces clang-format to place one element per line.
 
-golden_test two_five_six_gt = {
+golden_test flate_256_bytes_gt = {
     .want_filename = "../../testdata/256.bytes",    //
     .src_filename = "../../testdata/256.bytes.gz",  //
     .src_offset0 = 20,                              //
     .src_offset1 = 281,                             //
 };
 
-golden_test midsummer_gt = {
+golden_test flate_midsummer_gt = {
     .want_filename = "../../testdata/midsummer.txt",    //
     .src_filename = "../../testdata/midsummer.txt.gz",  //
     .src_offset0 = 24,                                  //
     .src_offset1 = 5166,                                //
 };
 
-golden_test pi_gt = {
+golden_test flate_pi_gt = {
     .want_filename = "../../testdata/pi.txt",    //
     .src_filename = "../../testdata/pi.txt.gz",  //
     .src_offset0 = 17,                           //
     .src_offset1 = 48335,                        //
 };
 
-golden_test romeo_gt = {
+golden_test flate_romeo_gt = {
     .want_filename = "../../testdata/romeo.txt",    //
     .src_filename = "../../testdata/romeo.txt.gz",  //
     .src_offset0 = 20,                              //
     .src_offset1 = 550,                             //
+};
+
+golden_test gzip_pi_gt = {
+    .want_filename = "../../testdata/pi.txt",    //
+    .src_filename = "../../testdata/pi.txt.gz",  //
 };
 
 // ---------------- Flate Tests
@@ -85,22 +90,22 @@ const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
 
 void test_puffs_flate_decode_256_bytes() {
   proc_funcname = __func__;
-  test_buf1_buf1(puffs_flate_decode, &two_five_six_gt);
+  test_buf1_buf1(puffs_flate_decode, &flate_256_bytes_gt);
 }
 
 void test_puffs_flate_decode_midsummer() {
   proc_funcname = __func__;
-  test_buf1_buf1(puffs_flate_decode, &midsummer_gt);
+  test_buf1_buf1(puffs_flate_decode, &flate_midsummer_gt);
 }
 
 void test_puffs_flate_decode_pi() {
   proc_funcname = __func__;
-  test_buf1_buf1(puffs_flate_decode, &pi_gt);
+  test_buf1_buf1(puffs_flate_decode, &flate_pi_gt);
 }
 
 void test_puffs_flate_decode_romeo() {
   proc_funcname = __func__;
-  test_buf1_buf1(puffs_flate_decode, &romeo_gt);
+  test_buf1_buf1(puffs_flate_decode, &flate_romeo_gt);
 }
 
 void test_puffs_flate_decode_split_src() {
@@ -110,7 +115,7 @@ void test_puffs_flate_decode_split_src() {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
-  golden_test* gt = &two_five_six_gt;
+  golden_test* gt = &flate_256_bytes_gt;
   if (!read_file(&src, gt->src_filename)) {
     return;
   }
@@ -177,22 +182,27 @@ void test_puffs_flate_decode_split_src() {
 
 void test_mimic_flate_decode_256_bytes() {
   proc_funcname = __func__;
-  test_buf1_buf1(mimic_flate_decode, &two_five_six_gt);
+  test_buf1_buf1(mimic_flate_decode, &flate_256_bytes_gt);
 }
 
 void test_mimic_flate_decode_midsummer() {
   proc_funcname = __func__;
-  test_buf1_buf1(mimic_flate_decode, &midsummer_gt);
+  test_buf1_buf1(mimic_flate_decode, &flate_midsummer_gt);
 }
 
 void test_mimic_flate_decode_pi() {
   proc_funcname = __func__;
-  test_buf1_buf1(mimic_flate_decode, &pi_gt);
+  test_buf1_buf1(mimic_flate_decode, &flate_pi_gt);
 }
 
 void test_mimic_flate_decode_romeo() {
   proc_funcname = __func__;
-  test_buf1_buf1(mimic_flate_decode, &romeo_gt);
+  test_buf1_buf1(mimic_flate_decode, &flate_romeo_gt);
+}
+
+void test_mimic_gzip_decode_pi() {
+  proc_funcname = __func__;
+  test_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt);
 }
 
 #endif  // PUFFS_MIMIC
@@ -201,17 +211,17 @@ void test_mimic_flate_decode_romeo() {
 
 void bench_puffs_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &romeo_gt, 200000);
+  bench_buf1_buf1(puffs_flate_decode, &flate_romeo_gt, 200000);
 }
 
 void bench_puffs_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &midsummer_gt, 30000);
+  bench_buf1_buf1(puffs_flate_decode, &flate_midsummer_gt, 30000);
 }
 
 void bench_puffs_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &pi_gt, 3000);
+  bench_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 3000);
 }
 
 // ---------------- Mimic Benches
@@ -220,17 +230,22 @@ void bench_puffs_flate_decode_100k() {
 
 void bench_mimic_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &romeo_gt, 200000);
+  bench_buf1_buf1(mimic_flate_decode, &flate_romeo_gt, 200000);
 }
 
 void bench_mimic_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_flate_decode, &flate_midsummer_gt, 30000);
 }
 
 void bench_mimic_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &pi_gt, 3000);
+  bench_buf1_buf1(mimic_flate_decode, &flate_pi_gt, 3000);
+}
+
+void bench_mimic_gzip_decode_100k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 3000);
 }
 
 #endif  // PUFFS_MIMIC
@@ -255,6 +270,7 @@ proc tests[] = {
     test_mimic_flate_decode_midsummer,  //
     test_mimic_flate_decode_pi,         //
     test_mimic_flate_decode_romeo,      //
+    test_mimic_gzip_decode_pi,          //
 
 #endif  // PUFFS_MIMIC
 
@@ -276,6 +292,7 @@ proc benches[] = {
     bench_mimic_flate_decode_1k,    //
     bench_mimic_flate_decode_10k,   //
     bench_mimic_flate_decode_100k,  //
+    bench_mimic_gzip_decode_100k,   //
 
 #endif  // PUFFS_MIMIC
 
