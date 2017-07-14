@@ -39,6 +39,14 @@ const char* proc_filename = "std/flate.c";
 //
 // The empty comments forces clang-format to place one element per line.
 
+golden_test checksum_midsummer_gt = {
+    .src_filename = "../../testdata/midsummer.txt",  //
+};
+
+golden_test checksum_pi_gt = {
+    .src_filename = "../../testdata/pi.txt",  //
+};
+
 golden_test flate_256_bytes_gt = {
     .want_filename = "../../testdata/256.bytes",    //
     .src_filename = "../../testdata/256.bytes.gz",  //
@@ -258,6 +266,26 @@ void bench_puffs_flate_decode_100k() {
 
 #ifdef PUFFS_MIMIC
 
+void bench_mimic_adler32_10k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_adler32, &checksum_midsummer_gt, 30000);
+}
+
+void bench_mimic_adler32_100k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_adler32, &checksum_pi_gt, 3000);
+}
+
+void bench_mimic_crc32_10k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_crc32, &checksum_midsummer_gt, 30000);
+}
+
+void bench_mimic_crc32_100k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_crc32, &checksum_pi_gt, 3000);
+}
+
 void bench_mimic_flate_decode_1k() {
   proc_funcname = __func__;
   bench_buf1_buf1(mimic_flate_decode, &flate_romeo_gt, 200000);
@@ -337,6 +365,10 @@ proc benches[] = {
 #ifdef PUFFS_MIMIC
 
     // Mimic Benches
+    bench_mimic_adler32_10k,        //
+    bench_mimic_adler32_100k,       //
+    bench_mimic_crc32_10k,          //
+    bench_mimic_crc32_100k,         //
     bench_mimic_flate_decode_1k,    //
     bench_mimic_flate_decode_10k,   //
     bench_mimic_flate_decode_100k,  //

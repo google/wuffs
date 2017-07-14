@@ -3,6 +3,30 @@
 
 #include "zlib.h"
 
+uint32_t global_mimiclib_flate_unused_u32;
+
+const char* mimic_adler32(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  uint8_t* ptr = src->ptr + src->ri;
+  size_t len = src->wi - src->ri;
+  if (len > 0x7FFFFFFF) {
+    return "src length is too large";
+  }
+  global_mimiclib_flate_unused_u32 = adler32(0L, ptr, len);
+  src->ri = src->wi;
+  return NULL;
+}
+
+const char* mimic_crc32(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  uint8_t* ptr = src->ptr + src->ri;
+  size_t len = src->wi - src->ri;
+  if (len > 0x7FFFFFFF) {
+    return "src length is too large";
+  }
+  global_mimiclib_flate_unused_u32 = crc32(0L, ptr, len);
+  src->ri = src->wi;
+  return NULL;
+}
+
 unsigned int mimic_flate_read_func(void* ctx, unsigned char** buf) {
   puffs_base_buf1* src = (puffs_base_buf1*)(ctx);
   *buf = src->ptr + src->ri;

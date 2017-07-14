@@ -73,12 +73,16 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
     name += 6;
   }
   if (bench_warm_up) {
-    printf("# (warm up) %s/%s\t%8" PRIu64 ".%06" PRIu64 " seconds\n", name, cc,
-           nanos / 1000000000, (nanos % 1000000000) / 1000);
+    printf("# (warm up) %s/%s\t%8" PRIu64 ".%06" PRIu64 " seconds\n",  //
+           name, cc, nanos / 1000000000, (nanos % 1000000000) / 1000);
+  } else if (!n_bytes) {
+    printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64 " ns/op\n",  //
+           name, cc, reps, nanos / reps);
   } else {
-    printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64 " ns/op\t%8d.%03d MB/s\n",
-           name, cc, reps, nanos / reps, (int)(kb_per_s / 1000),
-           (int)(kb_per_s % 1000));
+    printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64
+           " ns/op\t%8d.%03d MB/s\n",     //
+           name, cc, reps, nanos / reps,  //
+           (int)(kb_per_s / 1000), (int)(kb_per_s % 1000));
   }
 }
 
@@ -282,7 +286,9 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&src, gt->src_filename)) {
+  if (!gt->src_filename) {
+    src.closed = true;
+  } else if (!read_file(&src, gt->src_filename)) {
     return;
   }
   if (gt->src_offset0 || gt->src_offset1) {
@@ -318,7 +324,9 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
     return;
   }
 
-  if (!read_file(&want, gt->want_filename)) {
+  if (!gt->want_filename) {
+    want.closed = true;
+  } else if (!read_file(&want, gt->want_filename)) {
     return;
   }
   if (!buf1s_equal("", &got, &want)) {
