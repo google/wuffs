@@ -57,15 +57,19 @@ cleanup0:;
   return ret;
 }
 
-const char* mimic_gzip_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_gzip_zlib_decode(puffs_base_buf1* dst,
+                                   puffs_base_buf1* src,
+                                   bool gzip_instead_of_zlib) {
   const char* ret = NULL;
 
   z_stream z = {0};
-  const int window_bits = 15;
-  // See inflateInit2 in the zlib manual, or in zlib.h, for details about this
-  // magic gzip_instead_of_zlib constant.
-  const int gzip_instead_of_zlib = 16;
-  int ii2_err = inflateInit2(&z, window_bits | gzip_instead_of_zlib);
+  int window_bits = 15;
+  if (gzip_instead_of_zlib) {
+    // See inflateInit2 in the zlib manual, or in zlib.h, for details about
+    // this magic constant.
+    window_bits |= 16;
+  }
+  int ii2_err = inflateInit2(&z, window_bits);
   if (ii2_err != Z_OK) {
     ret = "inflateInit2 failed";
     goto cleanup0;
@@ -106,4 +110,12 @@ cleanup1:;
 
 cleanup0:;
   return ret;
+}
+
+const char* mimic_gzip_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  return mimic_gzip_zlib_decode(dst, src, true);
+}
+
+const char* mimic_zlib_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  return mimic_gzip_zlib_decode(dst, src, false);
 }

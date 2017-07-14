@@ -67,9 +67,24 @@ golden_test flate_romeo_gt = {
     .src_offset1 = 550,                             //
 };
 
+golden_test gzip_midsummer_gt = {
+    .want_filename = "../../testdata/midsummer.txt",    //
+    .src_filename = "../../testdata/midsummer.txt.gz",  //
+};
+
 golden_test gzip_pi_gt = {
     .want_filename = "../../testdata/pi.txt",    //
     .src_filename = "../../testdata/pi.txt.gz",  //
+};
+
+golden_test zlib_midsummer_gt = {
+    .want_filename = "../../testdata/midsummer.txt",      //
+    .src_filename = "../../testdata/midsummer.txt.zlib",  //
+};
+
+golden_test zlib_pi_gt = {
+    .want_filename = "../../testdata/pi.txt",      //
+    .src_filename = "../../testdata/pi.txt.zlib",  //
 };
 
 // ---------------- Flate Tests
@@ -200,9 +215,24 @@ void test_mimic_flate_decode_romeo() {
   test_buf1_buf1(mimic_flate_decode, &flate_romeo_gt);
 }
 
+void test_mimic_gzip_decode_midsummer() {
+  proc_funcname = __func__;
+  test_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt);
+}
+
 void test_mimic_gzip_decode_pi() {
   proc_funcname = __func__;
   test_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt);
+}
+
+void test_mimic_zlib_decode_midsummer() {
+  proc_funcname = __func__;
+  test_buf1_buf1(mimic_zlib_decode, &zlib_midsummer_gt);
+}
+
+void test_mimic_zlib_decode_pi() {
+  proc_funcname = __func__;
+  test_buf1_buf1(mimic_zlib_decode, &zlib_pi_gt);
 }
 
 #endif  // PUFFS_MIMIC
@@ -243,9 +273,24 @@ void bench_mimic_flate_decode_100k() {
   bench_buf1_buf1(mimic_flate_decode, &flate_pi_gt, 3000);
 }
 
+void bench_mimic_gzip_decode_10k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt, 30000);
+}
+
 void bench_mimic_gzip_decode_100k() {
   proc_funcname = __func__;
   bench_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 3000);
+}
+
+void bench_mimic_zlib_decode_10k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_zlib_decode, &zlib_midsummer_gt, 30000);
+}
+
+void bench_mimic_zlib_decode_100k() {
+  proc_funcname = __func__;
+  bench_buf1_buf1(mimic_zlib_decode, &zlib_pi_gt, 3000);
 }
 
 #endif  // PUFFS_MIMIC
@@ -270,7 +315,10 @@ proc tests[] = {
     test_mimic_flate_decode_midsummer,  //
     test_mimic_flate_decode_pi,         //
     test_mimic_flate_decode_romeo,      //
+    test_mimic_gzip_decode_midsummer,   //
     test_mimic_gzip_decode_pi,          //
+    test_mimic_zlib_decode_midsummer,   //
+    test_mimic_zlib_decode_pi,          //
 
 #endif  // PUFFS_MIMIC
 
@@ -292,7 +340,10 @@ proc benches[] = {
     bench_mimic_flate_decode_1k,    //
     bench_mimic_flate_decode_10k,   //
     bench_mimic_flate_decode_100k,  //
+    bench_mimic_gzip_decode_10k,    //
     bench_mimic_gzip_decode_100k,   //
+    bench_mimic_zlib_decode_10k,    //
+    bench_mimic_zlib_decode_100k,   //
 
 #endif  // PUFFS_MIMIC
 

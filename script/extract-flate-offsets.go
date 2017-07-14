@@ -9,14 +9,24 @@ package main
 // flate-compressed data wrapped in a .gz file.
 //
 // Usage: go run extract-flate-offsets.go foo.gz bar.gz
+//
+// Alternatively: go run extract-flate-offsets.go -write-zlib foo.gz
 
 import (
 	"bytes"
 	"compress/flate"
+	"compress/zlib"
 	"crypto/md5"
+	"flag"
 	"fmt"
+	"hash/adler32"
 	"io/ioutil"
 	"os"
+	"strings"
+)
+
+var (
+	writeZlib = flag.Bool("write-zlib", false, "whether to convert gzip to zlib")
 )
 
 // GZIP wraps a header and footer around flate data. The format is described in
@@ -37,7 +47,8 @@ func main() {
 }
 
 func main1() error {
-	for _, a := range os.Args[1:] {
+	flag.Parse()
+	for _, a := range flag.Args() {
 		if err := decode(a); err != nil {
 			return err
 		}
@@ -86,12 +97,55 @@ func decode(filename string) error {
 	}
 
 	// As a sanity check, the result should be valid flate.
-	hash, err := checkFlate(src[i:])
+	uncompressed, err := checkFlate(src[i:])
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%7d %7d %x  %s\n", i, len(src), hash, filename)
+	if *writeZlib {
+		return doWriteZlib(src[i:], uncompressed, filename)
+	}
+	fmt.Printf("%7d %7d %x  %s\n", i, len(src), md5.Sum(uncompressed), filename)
+	return nil
+}
+
+func doWriteZlib(flateCompressed []byte, uncompressed []byte, filename string) error {
+	buf := bytes.NewBuffer(nil)
+	// The ZLIB header (as per https://www.ietf.org/rfc/rfc1950.txt) is 2
+	// bytes.
+	//
+	// The first byte's low 4 bits is the compression method: 8 means flate.
+	// The first byte's high 4 bits is the compression info: 7 means a 32KiB
+	// flate window size.
+	//
+	// The second byte's low 5 bits are a parity check. The 5th bit (0 in this
+	// case) indicates a preset dictionary. The high 2 bits (2 in this case)
+	// means the default compression algorithm.
+	buf.WriteString("\x78\x9c")
+	// Write the payload.
+	buf.Write(flateCompressed)
+	// The ZLIB footer is 4 bytes: a big-endian checksum.
+	checksum := adler32.Checksum(uncompressed)
+	buf.WriteByte(uint8(checksum >> 24))
+	buf.WriteByte(uint8(checksum >> 16))
+	buf.WriteByte(uint8(checksum >> 8))
+	buf.WriteByte(uint8(checksum >> 0))
+
+	asZlib := buf.Bytes()
+
+	// As a sanity check, the result should be valid zlib.
+	if _, err := checkZlib(asZlib); err != nil {
+		return err
+	}
+
+	if strings.HasSuffix(filename, ".gz") {
+		filename = filename[:len(filename)-3]
+	}
+	filename += ".zlib"
+	if err := ioutil.WriteFile(filename, asZlib, 0666); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s\n", filename)
 	return nil
 }
 
@@ -107,12 +161,25 @@ func readString(src []byte, i int) (int, error) {
 	}
 }
 
-func checkFlate(x []byte) ([md5.Size]byte, error) {
+func checkFlate(x []byte) ([]byte, error) {
 	rc := flate.NewReader(bytes.NewReader(x))
 	defer rc.Close()
 	x, err := ioutil.ReadAll(rc)
 	if err != nil {
-		return [md5.Size]byte{}, fmt.Errorf("data is not valid flate: %v", err)
+		return nil, fmt.Errorf("data is not valid flate: %v", err)
 	}
-	return md5.Sum(x), nil
+	return x, nil
+}
+
+func checkZlib(x []byte) ([]byte, error) {
+	rc, err := zlib.NewReader(bytes.NewReader(x))
+	if err != nil {
+		return nil, fmt.Errorf("data is not valid zlib: %v", err)
+	}
+	defer rc.Close()
+	x, err = ioutil.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("data is not valid zlib: %v", err)
+	}
+	return x, nil
 }
