@@ -390,14 +390,21 @@ func (g *gen) cName(name string) string {
 	b = append(b, "puffs_"...)
 	b = append(b, g.pkgName...)
 	b = append(b, '_')
+	underscore := true
 	for _, r := range name {
 		if 'A' <= r && r <= 'Z' {
 			b = append(b, byte(r+'a'-'A'))
-		} else if ('a' <= r && r <= 'z') || ('0' <= r && r <= '9') || ('_' == r) {
+			underscore = false
+		} else if ('a' <= r && r <= 'z') || ('0' <= r && r <= '9') {
 			b = append(b, byte(r))
-		} else if ' ' == r {
+			underscore = false
+		} else if !underscore {
 			b = append(b, '_')
+			underscore = true
 		}
+	}
+	if underscore {
+		b = b[:len(b)-1]
 	}
 	return string(b)
 }

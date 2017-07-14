@@ -102,7 +102,7 @@ typedef int32_t puffs_flate_status;
 
 #define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
-#define PUFFS_FLATE_ERROR_BAD_LITERALLENGTH_CODE_COUNT \
+#define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
   -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1157040125  // 0xbb08f803
@@ -673,7 +673,7 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
     }
     v_hlit = (((v_bits) & ((1 << (5)) - 1)) + 257);
     if (v_hlit > 286) {
-      status = PUFFS_FLATE_ERROR_BAD_LITERALLENGTH_CODE_COUNT;
+      status = PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT;
       goto suspend;
     }
     v_bits >>= 5;
