@@ -100,13 +100,16 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 7                  // 0x00000007
 #define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_LITERALLENGTH_CODE_COUNT \
+  -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040127  // 0xbb08f801
+  -1157040125  // 0xbb08f803
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040126                                                      // 0xbb08f802
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040125    // 0xbb08f803
-#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040124  // 0xbb08f804
+  -1157040124                                                      // 0xbb08f804
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040123    // 0xbb08f805
+#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040122  // 0xbb08f806
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -129,6 +132,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_wip0;
+    uint32_t f_wip1;
+    uint32_t f_wip2;
 
     struct {
       uint32_t coro_susp_point;
@@ -139,6 +145,14 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_n;
     } c_decode_uncompressed[1];
+    struct {
+      uint32_t coro_susp_point;
+      uint32_t v_bits;
+      uint32_t v_n_bits;
+      uint32_t v_hlit;
+      uint32_t v_hdist;
+      uint32_t v_hclen;
+    } c_decode_dynamic[1];
   } private_impl;
 } puffs_flate_decoder;
 
@@ -165,6 +179,10 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
+                                                      puffs_base_writer1 a_dst,
+                                                      puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

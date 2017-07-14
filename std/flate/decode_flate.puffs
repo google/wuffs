@@ -5,7 +5,9 @@
 
 packageid "flte"
 
+pub error "bad distance code count"
 pub error "bad flate block"
+pub error "bad literal/length code count"
 pub error "inconsistent stored block length"
 pub error "internal error: inconsistent n_bits"
 
@@ -16,6 +18,11 @@ pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits u32,
 	n_bits u32,
+
+	// These temporary fields are used to debug work-in-progress code.
+	wip0 u32,
+	wip1 u32,
+	wip2 u32,
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
@@ -36,7 +43,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		} else if type == 1 {
 			return error "TODO: fixed Huffman blocks"
 		} else if type == 2 {
-			return error "TODO: dynamic Huffman blocks"
+			this.decode_dynamic?(dst:in.dst, src:in.src)
 		} else {
 			return error "bad flate block"
 		}
@@ -58,4 +65,37 @@ pub func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 		return error "inconsistent stored block length"
 	}
 	in.dst.copy_from32?(r:in.src, n:n.low_bits(n:16))
+}
+
+// decode_dynamic decodes dynamic Huffman codes as per the RFC section 3.2.7.
+pub func decoder.decode_dynamic?(dst writer1, src reader1)() {
+	var bits u32 = this.bits
+	var n_bits u32 = this.n_bits
+	while n_bits < 14,
+		post n_bits >= 14,
+	{
+		bits |= (in.src.read_u8?() as u32) << n_bits
+		n_bits += 8
+	}
+	var hlit u32[257..288] = bits.low_bits(n:5) + 257
+	if hlit > 286 {
+		return error "bad literal/length code count"
+	}
+	bits >>= 5
+	var hdist u32[1..32] = bits.low_bits(n:5) + 1
+	if hdist > 30 {
+		return error "bad distance code count"
+	}
+	bits >>= 5
+	var hclen u32[4..19] = bits.low_bits(n:4) + 4
+	bits >>= 4
+	n_bits -= 14
+
+	// TODO: implement.
+	this.wip0 = hlit
+	this.wip1 = hdist
+	this.wip2 = hclen
+
+	this.bits = bits
+	this.n_bits = n_bits
 }

@@ -624,7 +624,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isInDst(q.tm, n, t.KeyCopyFrom32, 2) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
-			isThisMethod(q.tm, n, "decode_uncompressed", 2) {
+			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_dynamic", 2) {
 
 			for _, o := range n.Args() {
 				// TODO: check that the arg range at the caller and the

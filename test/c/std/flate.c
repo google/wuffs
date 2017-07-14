@@ -197,6 +197,51 @@ void test_puffs_flate_decode_split_src() {
   }
 }
 
+// test_puffs_flate_work_in_progress is a temporary test harness used while the
+// std/flate decoder is a work in progress.
+void test_puffs_flate_work_in_progress() {
+  proc_funcname = __func__;
+
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+
+  golden_test* gt = &flate_romeo_gt;
+  if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+  src.ri = gt->src_offset0;
+  src.wi = gt->src_offset1;
+
+  puffs_flate_decoder dec;
+  puffs_base_writer1 dst_writer = {.buf = &got};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_flate_status s =
+      puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_flate_decoder_destructor(&dec);
+
+  if (s != PUFFS_FLATE_STATUS_OK) {
+    FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", s,
+         puffs_flate_status_string(s), PUFFS_FLATE_STATUS_OK,
+         puffs_flate_status_string(PUFFS_FLATE_STATUS_OK));
+    return;
+  }
+
+  if (dec.private_impl.f_wip0 != 266) {
+    FAIL("wip0: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip0, 266);
+    return;
+  }
+  if (dec.private_impl.f_wip1 != 20) {
+    FAIL("wip1: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip1, 20);
+    return;
+  }
+  if (dec.private_impl.f_wip2 != 14) {
+    FAIL("wip2: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip2, 14);
+    return;
+  }
+}
+
 // ---------------- Mimic Tests
 
 #ifdef PUFFS_MIMIC
@@ -335,6 +380,7 @@ proc tests[] = {
     test_puffs_flate_decode_romeo,      //
     */
     test_puffs_flate_decode_split_src,  //
+    test_puffs_flate_work_in_progress,  //
 
 #ifdef PUFFS_MIMIC
 

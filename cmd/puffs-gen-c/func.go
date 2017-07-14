@@ -955,6 +955,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
+	} else if isThisMethod(g.tm, n, "decode_dynamic", 2) {
+		g.printf("status = puffs_%s_%s_decode_dynamic(self, %sdst, %ssrc);\n",
+			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
+		g.writes("if (status) { goto suspend; }\n")
+
 	} else if isDecode(g.tm, n) {
 		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
 			g.pkgName, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))

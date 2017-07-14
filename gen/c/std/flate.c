@@ -100,13 +100,16 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 7                  // 0x00000007
 #define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
 
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_LITERALLENGTH_CODE_COUNT \
+  -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040127  // 0xbb08f801
+  -1157040125  // 0xbb08f803
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040126                                                      // 0xbb08f802
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040125    // 0xbb08f803
-#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040124  // 0xbb08f804
+  -1157040124                                                      // 0xbb08f804
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040123    // 0xbb08f805
+#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040122  // 0xbb08f806
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -129,6 +132,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_wip0;
+    uint32_t f_wip1;
+    uint32_t f_wip2;
 
     struct {
       uint32_t coro_susp_point;
@@ -139,6 +145,14 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_n;
     } c_decode_uncompressed[1];
+    struct {
+      uint32_t coro_susp_point;
+      uint32_t v_bits;
+      uint32_t v_n_bits;
+      uint32_t v_hlit;
+      uint32_t v_hdist;
+      uint32_t v_hclen;
+    } c_decode_dynamic[1];
   } private_impl;
 } puffs_flate_decoder;
 
@@ -165,6 +179,10 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
+                                                      puffs_base_writer1 a_dst,
+                                                      puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -224,8 +242,10 @@ const char* puffs_flate_status_strings0[9] = {
     "flate: closed for writes",
 };
 
-const char* puffs_flate_status_strings1[5] = {
+const char* puffs_flate_status_strings1[7] = {
+    "flate: bad distance code count",
     "flate: bad flate block",
+    "flate: bad literal/length code count",
     "flate: inconsistent stored block length",
     "flate: internal error: inconsistent n_bits",
     "flate: TODO: fixed Huffman blocks",
@@ -242,7 +262,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
-      n = 5;
+      n = 7;
       break;
   }
   uint32_t i = s & 0xff;
@@ -378,8 +398,32 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         status = PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS;
         goto suspend;
       } else if (v_type == 2) {
-        status = PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS;
-        goto suspend;
+        PUFFS_COROUTINE_SUSPENSION_POINT(3);
+        if (a_src.buf) {
+          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+          a_src.buf->ri += n;
+          puffs_base_limit1* lim;
+          for (lim = &a_src.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len) {
+              *lim->ptr_to_len -= n;
+            }
+          }
+        }
+        status = puffs_flate_decoder_decode_dynamic(self, a_dst, a_src);
+        if (a_src.buf) {
+          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+          size_t len = a_src.buf->wi - a_src.buf->ri;
+          puffs_base_limit1* lim;
+          for (lim = &a_src.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+              len = *lim->ptr_to_len;
+            }
+          }
+          b_rend_src = b_rptr_src + len;
+        }
+        if (status) {
+          goto suspend;
+        }
       } else {
         status = PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK;
         goto suspend;
@@ -546,6 +590,119 @@ suspend:
       }
     }
   }
+  if (a_src.buf) {
+    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+    a_src.buf->ri += n;
+    puffs_base_limit1* lim;
+    for (lim = &a_src.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+  }
+
+  goto exit;
+exit:
+  self->private_impl.status = status;
+  return status;
+
+short_read_src:
+  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
+               ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
+               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
+  goto suspend;
+}
+
+puffs_flate_status puffs_flate_decoder_decode_dynamic(
+    puffs_flate_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src) {
+  if (!self) {
+    return PUFFS_FLATE_ERROR_BAD_RECEIVER;
+  }
+  if (self->private_impl.magic != PUFFS_MAGIC) {
+    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
+
+  uint32_t v_bits;
+  uint32_t v_n_bits;
+  uint32_t v_hlit;
+  uint32_t v_hdist;
+  uint32_t v_hclen;
+
+  uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rend_src = NULL;
+  if (a_src.buf) {
+    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    size_t len = a_src.buf->wi - a_src.buf->ri;
+    puffs_base_limit1* lim;
+    for (lim = &a_src.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+        len = *lim->ptr_to_len;
+      }
+    }
+    b_rend_src = b_rptr_src + len;
+  }
+
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_dynamic[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_bits = self->private_impl.c_decode_dynamic[0].v_bits;
+    v_n_bits = self->private_impl.c_decode_dynamic[0].v_n_bits;
+    v_hlit = self->private_impl.c_decode_dynamic[0].v_hlit;
+    v_hdist = self->private_impl.c_decode_dynamic[0].v_hdist;
+    v_hclen = self->private_impl.c_decode_dynamic[0].v_hclen;
+  }
+  switch (coro_susp_point) {
+    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+
+    v_bits = self->private_impl.f_bits;
+    v_n_bits = self->private_impl.f_n_bits;
+    while (v_n_bits < 14) {
+      PUFFS_COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *b_rptr_src++;
+      v_bits |= (((uint32_t)(t_0)) << v_n_bits);
+      v_n_bits += 8;
+    }
+    v_hlit = (((v_bits) & ((1 << (5)) - 1)) + 257);
+    if (v_hlit > 286) {
+      status = PUFFS_FLATE_ERROR_BAD_LITERALLENGTH_CODE_COUNT;
+      goto suspend;
+    }
+    v_bits >>= 5;
+    v_hdist = (((v_bits) & ((1 << (5)) - 1)) + 1);
+    if (v_hdist > 30) {
+      status = PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT;
+      goto suspend;
+    }
+    v_bits >>= 5;
+    v_hclen = (((v_bits) & ((1 << (4)) - 1)) + 4);
+    v_bits >>= 4;
+    v_n_bits -= 14;
+    self->private_impl.f_wip0 = v_hlit;
+    self->private_impl.f_wip1 = v_hdist;
+    self->private_impl.f_wip2 = v_hclen;
+    self->private_impl.f_bits = v_bits;
+    self->private_impl.f_n_bits = v_n_bits;
+    coro_susp_point = 0;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.c_decode_dynamic[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_dynamic[0].v_bits = v_bits;
+  self->private_impl.c_decode_dynamic[0].v_n_bits = v_n_bits;
+  self->private_impl.c_decode_dynamic[0].v_hlit = v_hlit;
+  self->private_impl.c_decode_dynamic[0].v_hdist = v_hdist;
+  self->private_impl.c_decode_dynamic[0].v_hclen = v_hclen;
+
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
