@@ -268,8 +268,19 @@ bool buf1s_equal(const char* prefix,
   return false;
 }
 
+// throughput_counter is whether to count dst or src bytes, or neither, when
+// calculating a benchmark's MB/s throughput number.
+//
+// Decoders typically use tc_dst. Encoders and hashes typically use tc_src.
+typedef enum {
+  tc_neither = 0,
+  tc_dst = 1,
+  tc_src = 2,
+} throughput_counter;
+
 void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
                                               puffs_base_buf1*),
+                    throughput_counter tc,
                     golden_test* gt,
                     uint64_t reps,
                     bool bench) {
@@ -317,7 +328,16 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
       FAIL("%s", s);
       return;
     }
-    n_bytes += got.wi;
+    switch (tc) {
+      case tc_neither:
+        break;
+      case tc_dst:
+        n_bytes += got.wi;
+        break;
+      case tc_src:
+        n_bytes += src.ri - gt->src_offset0;
+        break;
+    }
   }
   if (bench) {
     bench_finish(reps, n_bytes);
@@ -336,15 +356,16 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
 
 void bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
                                                puffs_base_buf1*),
+                     throughput_counter tc,
                      golden_test* gt,
                      uint64_t reps) {
-  proc_buf1_buf1(codec_func, gt, reps, true);
+  proc_buf1_buf1(codec_func, tc, gt, reps, true);
 }
 
 void test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
                                               puffs_base_buf1*),
                     golden_test* gt) {
-  proc_buf1_buf1(codec_func, gt, 1, false);
+  proc_buf1_buf1(codec_func, 0, gt, 1, false);
 }
 
 #endif  // PUFFS_BASE_HEADER_H

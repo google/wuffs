@@ -249,17 +249,17 @@ void test_mimic_zlib_decode_pi() {
 
 void bench_puffs_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &flate_romeo_gt, 200000);
+  bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_romeo_gt, 200000);
 }
 
 void bench_puffs_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &flate_midsummer_gt, 30000);
+  bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_midsummer_gt, 30000);
 }
 
 void bench_puffs_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 3000);
+  bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_pi_gt, 3000);
 }
 
 // ---------------- Mimic Benches
@@ -268,57 +268,57 @@ void bench_puffs_flate_decode_100k() {
 
 void bench_mimic_adler32_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_adler32, &checksum_midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_adler32, tc_src, &checksum_midsummer_gt, 30000);
 }
 
 void bench_mimic_adler32_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_adler32, &checksum_pi_gt, 3000);
+  bench_buf1_buf1(mimic_adler32, tc_src, &checksum_pi_gt, 3000);
 }
 
 void bench_mimic_crc32_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_crc32, &checksum_midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_crc32, tc_src, &checksum_midsummer_gt, 30000);
 }
 
 void bench_mimic_crc32_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_crc32, &checksum_pi_gt, 3000);
+  bench_buf1_buf1(mimic_crc32, tc_src, &checksum_pi_gt, 3000);
 }
 
 void bench_mimic_flate_decode_1k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &flate_romeo_gt, 200000);
+  bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_romeo_gt, 200000);
 }
 
 void bench_mimic_flate_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &flate_midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_midsummer_gt, 30000);
 }
 
 void bench_mimic_flate_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_flate_decode, &flate_pi_gt, 3000);
+  bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_pi_gt, 3000);
 }
 
 void bench_mimic_gzip_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_midsummer_gt, 30000);
 }
 
 void bench_mimic_gzip_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 3000);
+  bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_pi_gt, 3000);
 }
 
 void bench_mimic_zlib_decode_10k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_zlib_decode, &zlib_midsummer_gt, 30000);
+  bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 30000);
 }
 
 void bench_mimic_zlib_decode_100k() {
   proc_funcname = __func__;
-  bench_buf1_buf1(mimic_zlib_decode, &zlib_pi_gt, 3000);
+  bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 3000);
 }
 
 #endif  // PUFFS_MIMIC
