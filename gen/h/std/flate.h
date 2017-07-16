@@ -180,15 +180,6 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src);
 
-puffs_flate_status puffs_flate_decoder_decode_uncompressed(
-    puffs_flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
-
-puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
-                                                      puffs_base_writer1 a_dst,
-                                                      puffs_base_reader1 a_src);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif

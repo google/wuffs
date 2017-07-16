@@ -55,7 +55,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	}
 }
 
-pub func decoder.decode_uncompressed?(dst writer1, src reader1)() {
+pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	if this.n_bits >= 8 {
 		return error "internal error: inconsistent n_bits"
 	}
@@ -69,7 +69,7 @@ pub func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 }
 
 // decode_dynamic decodes dynamic Huffman codes as per the RFC section 3.2.7.
-pub func decoder.decode_dynamic?(dst writer1, src reader1)() {
+pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 	while n_bits < 14,

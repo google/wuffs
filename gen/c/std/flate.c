@@ -180,15 +180,6 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src);
 
-puffs_flate_status puffs_flate_decoder_decode_uncompressed(
-    puffs_flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
-
-puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
-                                                      puffs_base_writer1 a_dst,
-                                                      puffs_base_reader1 a_src);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -285,6 +276,15 @@ static const uint8_t puffs_flate_code_order[19] = {
 // ---------------- Private Constructor and Destructor Prototypes
 
 // ---------------- Private Function Prototypes
+
+puffs_flate_status puffs_flate_decoder_decode_uncompressed(
+    puffs_flate_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
+                                                      puffs_base_writer1 a_dst,
+                                                      puffs_base_reader1 a_src);
 
 // ---------------- Constructor and Destructor Implementations
 
@@ -487,15 +487,6 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src) {
-  if (!self) {
-    return PUFFS_FLATE_ERROR_BAD_RECEIVER;
-  }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return self->private_impl.status;
-  }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_n;
@@ -621,7 +612,6 @@ exit:
     }
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
@@ -640,15 +630,6 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src) {
-  if (!self) {
-    return PUFFS_FLATE_ERROR_BAD_RECEIVER;
-  }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return self->private_impl.status;
-  }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_bits;
@@ -764,7 +745,6 @@ exit:
     }
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
