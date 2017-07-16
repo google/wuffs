@@ -1105,8 +1105,11 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
 			g.writes("self->private_impl")
 		} else {
-			// TODO: don't assume that the vPrefix is necessary.
-			g.writes(vPrefix)
+			if n.GlobalIdent() {
+				g.writes(g.pkgPrefix)
+			} else {
+				g.writes(vPrefix)
+			}
 			g.writes(id1.String(g.tm))
 		}
 		return nil

@@ -82,6 +82,7 @@ const (
 	FlagsTypeChecked     = Flags(0x00000020)
 	FlagsHasBreak        = Flags(0x00000040)
 	FlagsHasContinue     = Flags(0x00000080)
+	FlagsGlobalIdent     = Flags(0x00000100)
 )
 
 type Node struct {
@@ -217,6 +218,7 @@ func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
 func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
 func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
 func (n *Expr) CallSuspendible() bool { return n.flags&FlagsCallSuspendible != 0 }
+func (n *Expr) GlobalIdent() bool     { return n.flags&FlagsGlobalIdent != 0 }
 func (n *Expr) ConstValue() *big.Int  { return n.constValue }
 func (n *Expr) MType() *TypeExpr      { return n.mType }
 func (n *Expr) ID0() t.ID             { return n.id0 }
@@ -228,6 +230,7 @@ func (n *Expr) Args() []*Node         { return n.list0 }
 
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
+func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
 
 func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {

@@ -312,7 +312,14 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return nil
 				}
 			}
-			// TODO: look for (global) names (constants, funcs, structs).
+			if c, ok := q.c.consts[id1]; ok {
+				// TODO: check somewhere that a global ident (i.e. a const) is
+				// not directly in the LHS of an assignment.
+				n.SetGlobalIdent()
+				n.SetMType(c.Const.XType())
+				return nil
+			}
+			// TODO: look for other (global) names: funcs, structs.
 			return fmt.Errorf("check: unrecognized identifier %q", id1.String(q.tm))
 		}
 		switch id1.Key() {

@@ -236,8 +236,25 @@ void test_puffs_flate_work_in_progress() {
     FAIL("wip1: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip1, 20);
     return;
   }
-  if (dec.private_impl.f_wip2 != 14) {
-    FAIL("wip2: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip2, 14);
+
+  if (dec.private_impl.f_code_length_code_lengths[16] != 0) {
+    FAIL("clcl[16]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_length_code_lengths[16], 0);
+    return;
+  }
+  if (dec.private_impl.f_code_length_code_lengths[17] != 4) {
+    FAIL("clcl[17]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_length_code_lengths[17], 4);
+    return;
+  }
+  if (dec.private_impl.f_code_length_code_lengths[18] != 5) {
+    FAIL("clcl[18]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_length_code_lengths[18], 5);
+    return;
+  }
+  if (dec.private_impl.f_code_length_code_lengths[3] != 5) {
+    FAIL("clcl[3]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_length_code_lengths[3], 5);
     return;
   }
 }

@@ -47,11 +47,12 @@ const (
 func main() {
 	generate.Main(func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		g := &gen{
-			pkgName: pkgName,
-			PKGNAME: strings.ToUpper(pkgName),
-			tm:      tm,
-			checker: c,
-			files:   files,
+			pkgPrefix: "puffs_" + pkgName + "_",
+			pkgName:   pkgName,
+			PKGNAME:   strings.ToUpper(pkgName),
+			tm:        tm,
+			checker:   c,
+			files:     files,
 		}
 		if err := g.generate(); err != nil {
 			return nil, err
@@ -140,6 +141,7 @@ type status struct {
 
 type gen struct {
 	buffer     bytes.Buffer
+	pkgPrefix  string
 	pkgName    string
 	PKGNAME    string
 	tm         *t.Map

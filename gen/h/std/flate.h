@@ -134,9 +134,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint8_t f_code_length_code_lengths[19];
     uint32_t f_wip0;
     uint32_t f_wip1;
-    uint32_t f_wip2;
 
     struct {
       uint32_t coro_susp_point;
@@ -154,6 +154,7 @@ typedef struct {
       uint32_t v_hlit;
       uint32_t v_hdist;
       uint32_t v_hclen;
+      uint32_t v_i;
     } c_decode_dynamic[1];
   } private_impl;
 } puffs_flate_decoder;

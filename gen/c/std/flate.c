@@ -134,9 +134,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint8_t f_code_length_code_lengths[19];
     uint32_t f_wip0;
     uint32_t f_wip1;
-    uint32_t f_wip2;
 
     struct {
       uint32_t coro_susp_point;
@@ -154,6 +154,7 @@ typedef struct {
       uint32_t v_hlit;
       uint32_t v_hdist;
       uint32_t v_hclen;
+      uint32_t v_i;
     } c_decode_dynamic[1];
   } private_impl;
 } puffs_flate_decoder;
@@ -641,6 +642,7 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
   uint32_t v_hlit;
   uint32_t v_hdist;
   uint32_t v_hclen;
+  uint32_t v_i;
 
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rend_src = NULL;
@@ -664,6 +666,7 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
     v_hlit = self->private_impl.c_decode_dynamic[0].v_hlit;
     v_hdist = self->private_impl.c_decode_dynamic[0].v_hdist;
     v_hclen = self->private_impl.c_decode_dynamic[0].v_hclen;
+    v_i = self->private_impl.c_decode_dynamic[0].v_i;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -694,9 +697,31 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
     v_hclen = (((v_bits) & ((1 << (4)) - 1)) + 4);
     v_bits >>= 4;
     v_n_bits -= 14;
+    v_i = 0;
+    while (v_i < v_hclen) {
+      while (v_n_bits < 3) {
+        PUFFS_COROUTINE_SUSPENSION_POINT(2);
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_1 = *b_rptr_src++;
+        v_bits |= (((uint32_t)(t_1)) << v_n_bits);
+        v_n_bits += 8;
+      }
+      self->private_impl
+          .f_code_length_code_lengths[puffs_flate_code_order[v_i]] =
+          ((uint8_t)((v_bits & 7)));
+      v_bits >>= 3;
+      v_n_bits -= 3;
+      v_i += 1;
+    }
+    while (v_i < 19) {
+      self->private_impl
+          .f_code_length_code_lengths[puffs_flate_code_order[v_i]] = 0;
+      v_i += 1;
+    }
     self->private_impl.f_wip0 = v_hlit;
     self->private_impl.f_wip1 = v_hdist;
-    self->private_impl.f_wip2 = v_hclen;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
     coro_susp_point = 0;
@@ -710,6 +735,7 @@ suspend:
   self->private_impl.c_decode_dynamic[0].v_hlit = v_hlit;
   self->private_impl.c_decode_dynamic[0].v_hdist = v_hdist;
   self->private_impl.c_decode_dynamic[0].v_hclen = v_hclen;
+  self->private_impl.c_decode_dynamic[0].v_i = v_i;
 
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
