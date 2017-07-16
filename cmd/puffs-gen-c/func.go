@@ -830,8 +830,9 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
 		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
 
-		// TODO: check limits too.
-		g.printf("if (%ssrc.buf->closed) {", aPrefix)
+		g.printf("if (%ssrc.limit.next) {", aPrefix)
+		g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
+		g.printf("} else if (%ssrc.buf->closed) {", aPrefix)
 		g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit; }", g.PKGPREFIX)
 		g.printf("status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
 
@@ -975,12 +976,16 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 func (g *gen) writeShortRead(name string) error {
 	g.printf("\nshort_read_%s:\n", name)
-	// TODO: ri == wi isn't the right condition.
-	g.printf("if ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) {",
+	g.printf("if (%s%s.limit.next) {", aPrefix, name)
+	g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
+	// TODO: we should be able to eliminate the ri == wi check.
+	g.printf("} else if ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) {",
 		aPrefix, name, aPrefix, name, aPrefix, name)
-	g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit;", g.PKGPREFIX)
+	g.printf("status = %sERROR_UNEXPECTED_EOF;", g.PKGPREFIX)
+	g.writes("goto exit;")
 	g.writes("}")
-	g.printf("status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
+	g.printf("status = %sSUSPENSION_SHORT_READ;", g.PKGPREFIX)
+	g.writes("goto suspend;\n")
 	return nil
 }
 

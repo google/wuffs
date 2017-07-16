@@ -95,10 +95,12 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483643          // 0x80000005
-#define PUFFS_FLATE_SUSPENSION_SHORT_READ 6                   // 0x00000006
-#define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 7                  // 0x00000007
-#define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483640       // 0x80000008
+#define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
+#define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
+#define PUFFS_FLATE_SUSPENSION_SHORT_READ 7                   // 0x00000007
+#define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_FLATE_SUSPENSION_LIMITED_READ 9                 // 0x00000009
+#define PUFFS_FLATE_SUSPENSION_LIMITED_WRITE 10               // 0x0000000a
 
 #define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
@@ -233,16 +235,18 @@ bool puffs_flate_status_is_error(puffs_flate_status s) {
   return s < 0;
 }
 
-const char* puffs_flate_status_strings0[9] = {
+const char* puffs_flate_status_strings0[11] = {
     "flate: ok",
     "flate: bad puffs version",
     "flate: bad receiver",
     "flate: bad argument",
     "flate: constructor not called",
+    "flate: closed for writes",
     "flate: unexpected EOF",
     "flate: short read",
     "flate: short write",
-    "flate: closed for writes",
+    "flate: limited read",
+    "flate: limited write",
 };
 
 const char* puffs_flate_status_strings1[7] = {
@@ -261,7 +265,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = puffs_flate_status_strings0;
-      n = 9;
+      n = 11;
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
@@ -468,7 +472,9 @@ exit:
   return status;
 
 short_read_src:
-  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  if (a_src.limit.next) {
+    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
+  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -618,7 +624,9 @@ exit:
   return status;
 
 short_read_src:
-  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  if (a_src.limit.next) {
+    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
+  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -758,7 +766,9 @@ exit:
   return status;
 
 short_read_src:
-  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  if (a_src.limit.next) {
+    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
+  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }

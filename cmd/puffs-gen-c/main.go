@@ -88,10 +88,12 @@ var builtInStatuses = [...]string{
 	"error bad receiver",
 	"error bad argument",
 	"error constructor not called",
+	"error closed for writes",
 	"error unexpected EOF",  // Used if reading when closed == true.
 	"suspension short read", // Used if reading when closed == false.
 	"suspension short write",
-	"error closed for writes",
+	"suspension limited read",
+	"suspension limited write",
 }
 
 func init() {
