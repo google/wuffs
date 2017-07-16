@@ -468,12 +468,11 @@ exit:
   return status;
 
 short_read_src:
-  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
-               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
-  if (status < 0) {
+  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+    status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -619,12 +618,11 @@ exit:
   return status;
 
 short_read_src:
-  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
-               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
-  if (status < 0) {
+  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+    status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -760,11 +758,10 @@ exit:
   return status;
 
 short_read_src:
-  status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
-               ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
-               : PUFFS_FLATE_SUSPENSION_SHORT_READ;
-  if (status < 0) {
+  if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+    status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }

@@ -830,9 +830,10 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
 		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
 
-		g.printf("status = %ssrc.buf->closed ? PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
-			aPrefix, g.PKGNAME, g.PKGNAME)
-		g.writes("if (status < 0) { goto exit; } goto suspend;")
+		// TODO: check limits too.
+		g.printf("if (%ssrc.buf->closed) {", aPrefix)
+		g.printf("status = PUFFS_%s_ERROR_UNEXPECTED_EOF; goto exit; }", g.PKGNAME)
+		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ; goto suspend;\n", g.PKGNAME)
 
 		g.writes("}\n")
 		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
@@ -975,10 +976,11 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 func (g *gen) writeShortRead(name string) error {
 	g.printf("\nshort_read_%s:\n", name)
 	// TODO: ri == wi isn't the right condition.
-	g.printf("status = ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) ?"+
-		"PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
-		aPrefix, name, aPrefix, name, aPrefix, name, g.PKGNAME, g.PKGNAME)
-	g.writes("if (status < 0) { goto exit; } goto suspend;")
+	g.printf("if ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) {",
+		aPrefix, name, aPrefix, name, aPrefix, name)
+	g.printf("status = PUFFS_%s_ERROR_UNEXPECTED_EOF; goto exit;", g.PKGNAME)
+	g.writes("}")
+	g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ; goto suspend;\n", g.PKGNAME)
 	return nil
 }
 
