@@ -565,7 +565,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         goto suspend;
       } else {
         status = PUFFS_GIF_ERROR_BAD_GIF_BLOCK;
-        goto suspend;
+        goto exit;
       }
     }
     coro_susp_point = 0;
@@ -596,6 +596,9 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
+  if (status < 0) {
+    goto exit;
+  }
   goto suspend;
 }
 
@@ -647,7 +650,8 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
     }
     if ((v_c[0] != 71) || (v_c[1] != 73) || (v_c[2] != 70) || (v_c[3] != 56) ||
         ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
-      return PUFFS_GIF_ERROR_BAD_GIF_HEADER;
+      status = PUFFS_GIF_ERROR_BAD_GIF_HEADER;
+      goto exit;
     }
     coro_susp_point = 0;
   }
@@ -677,7 +681,10 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
-  return status;
+  if (status < 0) {
+    goto exit;
+  }
+  goto suspend;
 }
 
 puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
@@ -786,7 +793,10 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
-  return status;
+  if (status < 0) {
+    goto exit;
+  }
+  goto suspend;
 }
 
 puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
@@ -830,7 +840,8 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     } else if (v_label == 254) {
     } else if (v_label == 255) {
     } else {
-      return PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL;
+      status = PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL;
+      goto exit;
     }
     while (true) {
       PUFFS_COROUTINE_SUSPENSION_POINT(2);
@@ -849,7 +860,10 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         a_src.buf->ri = a_src.buf->wi;
         status = a_src.buf->closed ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                                    : PUFFS_GIF_SUSPENSION_SHORT_READ;
-        return status;
+        if (status < 0) {
+          goto exit;
+        }
+        goto suspend;
       }
       b_rptr_src += t_2;
     }
@@ -882,7 +896,10 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
-  return status;
+  if (status < 0) {
+    goto exit;
+  }
+  goto suspend;
 }
 
 puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
@@ -945,7 +962,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     if (v_interlace) {
     }
     if ((v_c[8] & 128) != 0) {
-      return PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
+      status = PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
+      goto exit;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(2);
     if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -954,7 +972,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     uint8_t t_1 = *b_rptr_src++;
     v_lw = t_1;
     if ((v_lw < 2) || (8 < v_lw)) {
-      return PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH;
+      status = PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH;
+      goto exit;
     }
     puffs_gif_lzw_decoder_set_literal_width(&self->private_impl.f_lzw,
                                             ((uint32_t)(v_lw)));
@@ -1036,7 +1055,10 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
-  return status;
+  if (status < 0) {
+    goto exit;
+  }
+  goto suspend;
 }
 
 void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
@@ -1178,7 +1200,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
           self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
           if (v_s == 0) {
             status = PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL;
-            goto suspend;
+            goto exit;
           }
           v_s -= 1;
           v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
@@ -1190,7 +1212,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         PUFFS_COROUTINE_SUSPENSION_POINT(3);
         if (a_dst.buf->closed) {
           status = PUFFS_GIF_ERROR_CLOSED_FOR_WRITES;
-          goto suspend;
+          goto exit;
         }
         if ((b_wend_dst - b_wptr_dst) <
             (sizeof(self->private_impl.f_stack) - v_s)) {
@@ -1207,7 +1229,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         }
       } else {
         status = PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE;
-        goto suspend;
+        goto exit;
       }
       if (v_save_code <= 4095) {
         v_save_code += 1;
@@ -1264,5 +1286,8 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_GIF_ERROR_UNEXPECTED_EOF
                : PUFFS_GIF_SUSPENSION_SHORT_READ;
+  if (status < 0) {
+    goto exit;
+  }
   goto suspend;
 }

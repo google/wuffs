@@ -641,20 +641,23 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 
 	case a.KReturn:
 		n := n.Return()
-		ret := ""
+		ret := status{}
 		if n.Keyword() == 0 {
-			ret = fmt.Sprintf("PUFFS_%s_STATUS_OK", g.PKGNAME)
+			ret.name = fmt.Sprintf("PUFFS_%s_STATUS_OK", g.PKGNAME)
 		} else {
-			ret = g.statusMap[n.Message()].name
+			ret = g.statusMap[n.Message()]
 		}
-		if !g.perFunc.suspendible {
+		if g.perFunc.suspendible {
+			g.printf("status = %s;", ret.name)
+			if ret.isError {
+				g.writes("goto exit;")
+			} else {
+				g.writes("goto suspend;")
+			}
+		} else {
 			// TODO: consider the return values, especially if they involve
 			// suspendible function calls.
 			g.writes("return;\n")
-		} else if g.perFunc.public {
-			g.printf("status = %s; goto suspend;\n", ret)
-		} else {
-			g.printf("return %s;\n", ret)
 		}
 		return nil
 
@@ -827,11 +830,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 		g.printf("status = %ssrc.buf->closed ? PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
 			aPrefix, g.PKGNAME, g.PKGNAME)
-		if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
-			g.writes("goto suspend;")
-		} else {
-			g.writes("return status;")
-		}
+		g.writes("if (status < 0) { goto exit; } goto suspend;")
 
 		g.writes("}\n")
 		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
@@ -839,20 +838,12 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
 		g.printf("if (%sdst.buf->closed) { status = PUFFS_%s_ERROR_CLOSED_FOR_WRITES;", aPrefix, g.PKGNAME)
-		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto suspend;")
-		} else {
-			g.writes("return status;")
-		}
+		g.writes("goto exit;")
 		g.writes("}\n")
 		g.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
 			bPrefix, bPrefix)
 		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_WRITE;", g.PKGNAME)
-		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto suspend;")
-		} else {
-			g.writes("return status;")
-		}
+		g.writes("goto suspend;")
 		g.writes("}\n")
 		g.printf("memmove(b_wptr_dst," +
 			"self->private_impl.f_stack + v_s," +
@@ -862,11 +853,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
 		g.printf("if (%swptr_dst == %swend_dst) { status = PUFFS_%s_SUSPENSION_SHORT_WRITE;",
 			bPrefix, bPrefix, g.PKGNAME)
-		if g.perFunc.public && g.perFunc.suspendible {
-			g.writes("goto suspend;")
-		} else {
-			g.writes("return status;")
-		}
+		g.writes("goto suspend;")
 		g.writes("}\n")
 		g.printf("*%swptr_dst++ = ", bPrefix)
 		x := n.Args()[0].Arg().Value()
@@ -989,11 +976,7 @@ func (g *gen) writeShortRead(name string) error {
 	g.printf("status = ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) ?"+
 		"PUFFS_%s_ERROR_UNEXPECTED_EOF : PUFFS_%s_SUSPENSION_SHORT_READ;",
 		aPrefix, name, aPrefix, name, aPrefix, name, g.PKGNAME, g.PKGNAME)
-	if g.perFunc.public && g.perFunc.suspendible { // TODO: drop the g.perFunc.public?
-		g.writes("goto suspend;")
-	} else {
-		g.writes("return status;")
-	}
+	g.writes("if (status < 0) { goto exit; } goto suspend;")
 	return nil
 }
 

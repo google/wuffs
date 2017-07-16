@@ -405,7 +405,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         }
       } else if (v_type == 1) {
         status = PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS;
-        goto suspend;
+        goto exit;
       } else if (v_type == 2) {
         PUFFS_COROUTINE_SUSPENSION_POINT(3);
         if (a_src.buf) {
@@ -435,7 +435,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         }
       } else {
         status = PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK;
-        goto suspend;
+        goto exit;
       }
       if (v_final != 0) {
         status = PUFFS_FLATE_STATUS_OK;
@@ -471,6 +471,9 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
                : PUFFS_FLATE_SUSPENSION_SHORT_READ;
+  if (status < 0) {
+    goto exit;
+  }
   goto suspend;
 }
 
@@ -528,7 +531,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
 
     if (self->private_impl.f_n_bits >= 8) {
       status = PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
-      goto suspend;
+      goto exit;
     }
     self->private_impl.f_n_bits = 0;
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
@@ -558,7 +561,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     v_n = t_1;
     if ((((v_n) & ((1 << (16)) - 1)) + ((v_n) >> (32 - (16)))) != 65535) {
       status = PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH;
-      goto suspend;
+      goto exit;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(3);
     {
@@ -619,6 +622,9 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
                : PUFFS_FLATE_SUSPENSION_SHORT_READ;
+  if (status < 0) {
+    goto exit;
+  }
   goto suspend;
 }
 
@@ -685,13 +691,13 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
     v_hlit = (((v_bits) & ((1 << (5)) - 1)) + 257);
     if (v_hlit > 286) {
       status = PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT;
-      goto suspend;
+      goto exit;
     }
     v_bits >>= 5;
     v_hdist = (((v_bits) & ((1 << (5)) - 1)) + 1);
     if (v_hdist > 30) {
       status = PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT;
-      goto suspend;
+      goto exit;
     }
     v_bits >>= 5;
     v_hclen = (((v_bits) & ((1 << (4)) - 1)) + 4);
@@ -757,5 +763,8 @@ short_read_src:
   status = ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi))
                ? PUFFS_FLATE_ERROR_UNEXPECTED_EOF
                : PUFFS_FLATE_SUSPENSION_SHORT_READ;
+  if (status < 0) {
+    goto exit;
+  }
   goto suspend;
 }
