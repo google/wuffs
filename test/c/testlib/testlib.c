@@ -34,12 +34,16 @@ const char* proc_funcname = "";
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
 const char* cc = "clang";
+const char* cc_version = __clang_version__;
 #elif defined(__GNUC__)
 const char* cc = "gcc";
+const char* cc_version = __VERSION__;
 #elif defined(_MSC_VER)
 const char* cc = "cl";
+const char* cc_version = "???";
 #else
 const char* cc = "cc";
+const char* cc_version = "???";
 #endif
 
 typedef struct {
@@ -106,6 +110,7 @@ int main(int argc, char** argv) {
   if (bench) {
     proc_reps = 5 + 1;  // +1 for the warm up run.
     procs = benches;
+    printf("# %s version %s\n#\n", cc, cc_version);
     printf(
         "# The output format, including the \"Benchmark\" prefixes, is "
         "compatible with the\n"
@@ -125,10 +130,14 @@ int main(int argc, char** argv) {
                fail_msg);
         return 1;
       }
-      tests_run++;
+      if (i == 0) {
+        tests_run++;
+      }
     }
   }
-  if (!bench) {
+  if (bench) {
+    printf("# %-16s%-8s(%d benchmarks run)\n", proc_filename, cc, tests_run);
+  } else {
     printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
   }
   return 0;
