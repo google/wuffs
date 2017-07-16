@@ -113,6 +113,8 @@ bool puffs_gif_status_is_error(puffs_gif_status s);
 
 const char* puffs_gif_status_string(puffs_gif_status s);
 
+// ---------------- Public Consts
+
 // ---------------- Structs
 
 typedef struct {
@@ -322,6 +324,8 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
   uint32_t i = s & 0xff;
   return i < n ? a[i] : "gif: unknown status";
 }
+
+// ---------------- Private Consts
 
 // ---------------- Private Constructor and Destructor Prototypes
 

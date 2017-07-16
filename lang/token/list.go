@@ -150,6 +150,7 @@ const (
 	KeyQuestion  = Key(IDQuestion >> KeyShift)
 	KeyColon     = Key(IDColon >> KeyShift)
 	KeySemicolon = Key(IDSemicolon >> KeyShift)
+	KeyDollar    = Key(IDDollar >> KeyShift)
 
 	KeyEq       = Key(IDEq >> KeyShift)
 	KeyPlusEq   = Key(IDPlusEq >> KeyShift)
@@ -211,6 +212,7 @@ const (
 	KeySuspension = Key(IDSuspension >> KeyShift)
 	KeyLimit      = Key(IDLimit >> KeyShift)
 	KeyPackageID  = Key(IDPackageID >> KeyShift)
+	KeyConst      = Key(IDConst >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -312,6 +314,7 @@ const (
 	IDQuestion  = ID(0x24<<KeyShift | FlagsTightLeft | FlagsTightRight)
 	IDColon     = ID(0x25<<KeyShift | FlagsTightLeft | FlagsTightRight)
 	IDSemicolon = ID(0x26<<KeyShift | FlagsTightLeft)
+	IDDollar    = ID(0x27<<KeyShift | FlagsTightRight)
 
 	IDEq       = ID(0x30<<KeyShift | FlagsAssign)
 	IDPlusEq   = ID(0x31<<KeyShift | FlagsAssign)
@@ -373,6 +376,7 @@ const (
 	IDSuspension = ID(0x74<<KeyShift | FlagsOther)
 	IDLimit      = ID(0x75<<KeyShift | FlagsOther)
 	IDPackageID  = ID(0x76<<KeyShift | FlagsOther)
+	IDConst      = ID(0x77<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -491,6 +495,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyQuestion:  {"?", IDQuestion},
 	KeyColon:     {":", IDColon},
 	KeySemicolon: {";", IDSemicolon},
+	KeyDollar:    {"$", IDDollar},
 
 	KeyEq:       {"=", IDEq},
 	KeyPlusEq:   {"+=", IDPlusEq},
@@ -555,6 +560,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeySuspension: {"suspension", IDSuspension},
 	KeyLimit:      {"limit", IDLimit},
 	KeyPackageID:  {"packageid", IDPackageID},
+	KeyConst:      {"const", IDConst},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
@@ -630,6 +636,7 @@ var squiggles = [256]ID{
 	'?': IDQuestion,
 	':': IDColon,
 	';': IDSemicolon,
+	'$': IDDollar,
 }
 
 type suffixLexer struct {

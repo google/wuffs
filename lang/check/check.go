@@ -6,6 +6,7 @@ package check
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/google/puffs/lang/base38"
 
@@ -55,6 +56,7 @@ func trimQuotes(s string) string {
 var (
 	typeExprBool  = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
 	typeExprIdeal = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
+	typeExprList  = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
 	typeExprU64   = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
 
 	// TODO: delete this.
@@ -64,6 +66,11 @@ var (
 
 // TypeMap maps from variable names (as token IDs) to types.
 type TypeMap map[t.ID]*a.TypeExpr
+
+type Const struct {
+	ID    t.ID // ID of the const name.
+	Const *a.Const
+}
 
 type Func struct {
 	QID       t.QID // Qualified ID of the func name.
@@ -108,6 +115,7 @@ func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
 		tm:        tm,
 		reasonMap: rMap,
 		packageID: base38.Max + 1,
+		consts:    map[t.ID]Const{},
 		funcs:     map[t.QID]Func{},
 		statuses:  map[t.ID]Status{},
 		structs:   map[t.ID]Struct{},
@@ -142,6 +150,7 @@ var phases = [...]struct {
 	{a.KPackageID, (*Checker).checkPackageID},
 	{a.KUse, (*Checker).checkUse},
 	{a.KStatus, (*Checker).checkStatus},
+	{a.KConst, (*Checker).checkConst},
 	{a.KStruct, (*Checker).checkStructDecl},
 	{a.KInvalid, (*Checker).checkStructCycles},
 	{a.KStruct, (*Checker).checkStructFields},
@@ -149,6 +158,7 @@ var phases = [...]struct {
 	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncBody},
 	{a.KStruct, (*Checker).checkFieldMethodCollisions},
+	// TODO: check consts, funcs, structs and uses for name collisions.
 }
 
 type Checker struct {
@@ -158,6 +168,7 @@ type Checker struct {
 	packageID      uint32
 	otherPackageID *a.PackageID
 
+	consts   map[t.ID]Const
 	funcs    map[t.QID]Func
 	statuses map[t.ID]Status
 	structs  map[t.ID]Struct
@@ -166,6 +177,7 @@ type Checker struct {
 }
 
 func (c *Checker) PackageID() uint32         { return c.packageID }
+func (c *Checker) Consts() map[t.ID]Const    { return c.consts }
 func (c *Checker) Funcs() map[t.QID]Func     { return c.funcs }
 func (c *Checker) Statuses() map[t.ID]Status { return c.statuses }
 func (c *Checker) Structs() map[t.ID]Struct  { return c.structs }
@@ -225,6 +237,79 @@ func (c *Checker) checkStatus(node *a.Node) error {
 		Status: n,
 	}
 	n.Node().SetTypeChecked()
+	return nil
+}
+
+func (c *Checker) checkConst(node *a.Node) error {
+	n := node.Const()
+	id := n.Name()
+	if other, ok := c.consts[id]; ok {
+		return &Error{
+			Err:           fmt.Errorf("check: duplicate const %q", id.String(c.tm)),
+			Filename:      n.Filename(),
+			Line:          n.Line(),
+			OtherFilename: other.Const.Filename(),
+			OtherLine:     other.Const.Line(),
+		}
+	}
+	c.consts[id] = Const{
+		ID:    id,
+		Const: n,
+	}
+
+	q := &checker{
+		c:  c,
+		tm: c.tm,
+	}
+	if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
+		return fmt.Errorf("%v in const %q", err, id.String(c.tm))
+	}
+	if err := q.tcheckExpr(n.Value(), 0); err != nil {
+		return fmt.Errorf("%v in const %q", err, id.String(c.tm))
+	}
+
+	nLists := 0
+	typ := n.XType()
+	for typ.Decorator().Key() == t.KeyOpenBracket {
+		if nLists == a.MaxTypeExprDepth {
+			return fmt.Errorf("check: type expression recursion depth too large")
+		}
+		nLists++
+		typ = typ.Inner()
+	}
+	if typ.Decorator() != 0 {
+		return fmt.Errorf("check: invalid const type %q for %q", n.XType().String(c.tm), id.String(c.tm))
+	}
+	nMin, nMax, err := q.bcheckTypeExpr(typ)
+	if err != nil {
+		return err
+	}
+	if nMin == nil || nMax == nil {
+		return fmt.Errorf("check: invalid const type %q for %q", n.XType().String(c.tm), id.String(c.tm))
+	}
+	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
+		return fmt.Errorf("check: %v for %q", err, id.String(c.tm))
+	}
+	n.Node().SetTypeChecked()
+	return nil
+}
+
+func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLists int) error {
+	if nLists > 0 {
+		nLists--
+		if n.ID0().Key() != t.KeyDollar {
+			return fmt.Errorf("invalid const value %q", n.String(c.tm))
+		}
+		for _, o := range n.Args() {
+			if err := c.checkConstElement(o.Expr(), nMin, nMax, nLists); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if cv := n.ConstValue(); cv == nil || cv.Cmp(nMin) < 0 || cv.Cmp(nMax) > 0 {
+		return fmt.Errorf("invalid const value %q not within [%v..%v]", n.String(c.tm), nMin, nMax)
+	}
 	return nil
 }
 

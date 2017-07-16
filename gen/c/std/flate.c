@@ -115,6 +115,8 @@ bool puffs_flate_status_is_error(puffs_flate_status s);
 
 const char* puffs_flate_status_string(puffs_flate_status s);
 
+// ---------------- Public Consts
+
 // ---------------- Structs
 
 typedef struct {
@@ -268,6 +270,12 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
   uint32_t i = s & 0xff;
   return i < n ? a[i] : "flate: unknown status";
 }
+
+// ---------------- Private Consts
+
+static const uint8_t puffs_flate_code_order[19] = {
+    16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
+};
 
 // ---------------- Private Constructor and Destructor Prototypes
 

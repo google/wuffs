@@ -438,6 +438,16 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyDot:
 		return q.tcheckDot(n, depth)
 
+	case t.KeyDollar:
+		for _, o := range n.Args() {
+			o := o.Expr()
+			if err := q.tcheckExpr(o, depth); err != nil {
+				return err
+			}
+		}
+		n.SetMType(typeExprList)
+		return nil
+
 	case t.KeyLimit:
 		lhs := n.LHS().Expr()
 		if err := q.tcheckExpr(lhs, depth); err != nil {

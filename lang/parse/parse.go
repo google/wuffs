@@ -108,6 +108,41 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	case t.KeyPri:
 		p.src = p.src[1:]
 		switch p.peek1().Key() {
+		case t.KeyConst:
+			p.src = p.src[1:]
+			id, err := p.parseIdent()
+			if err != nil {
+				return nil, err
+			}
+			typ, err := p.parseTypeExpr()
+			if err != nil {
+				return nil, err
+			}
+			if p.peek1().Key() != t.KeyEq {
+				return nil, fmt.Errorf(`parse: const %q has no value at %s:%d`,
+					p.tm.ByID(id), p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			value := (*a.Expr)(nil)
+			// TODO: parse lists of lists.
+			if p.peek1().Key() == t.KeyDollar {
+				value, err = p.parseDollarExpr()
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				value, err = p.parseExpr()
+				if err != nil {
+					return nil, err
+				}
+			}
+			if x := p.peek1().Key(); x != t.KeySemicolon {
+				got := p.tm.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return a.NewConst(flags, p.filename, line, id, typ, value).Node(), nil
+
 		case t.KeyFunc:
 			p.src = p.src[1:]
 			id0, id1, err := p.parseQualifiedIdent()
@@ -660,6 +695,19 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 	return a.NewArg(name, value).Node(), nil
 }
 
+func (p *parser) parseDollarExpr() (*a.Expr, error) {
+	if x := p.peek1().Key(); x != t.KeyDollar {
+		got := p.tm.ByKey(x)
+		return nil, fmt.Errorf(`parse: expected "$", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+	args, err := p.parseList(t.KeyCloseParen, (*parser).parseExprNode)
+	if err != nil {
+		return nil, err
+	}
+	return a.NewExpr(0, t.IDDollar, 0, nil, nil, nil, args), nil
+}
+
 func (p *parser) parseLimitExpr() (*a.Expr, error) {
 	if x := p.peek1().Key(); x != t.KeyLimit {
 		got := p.tm.ByKey(x)
@@ -685,6 +733,14 @@ func (p *parser) parseLimitExpr() (*a.Expr, error) {
 		return nil, err
 	}
 	return a.NewExpr(0, t.IDLimit, 0, lhs.Node(), nil, rhs.Node(), nil), nil
+}
+
+func (p *parser) parseExprNode() (*a.Node, error) {
+	n, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return n.Node(), err
 }
 
 func (p *parser) parseExpr() (*a.Expr, error) {

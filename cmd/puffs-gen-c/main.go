@@ -245,6 +245,11 @@ func (g *gen) genHeader() error {
 	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
 
+	g.writes("// ---------------- Public Consts\n\n")
+	if err := g.forEachConst(pubOnly, (*gen).writeConst); err != nil {
+		return err
+	}
+
 	g.writes("// ---------------- Structs\n\n")
 	for _, n := range g.structList {
 		if err := g.writeStruct(n); err != nil {
@@ -312,6 +317,11 @@ func (g *gen) genImpl() error {
 	g.printf("return i < n ? a[i] : \"%s: unknown status\";\n", g.pkgName)
 	g.writes("}\n\n")
 
+	g.writes("// ---------------- Private Consts\n\n")
+	if err := g.forEachConst(priOnly, (*gen).writeConst); err != nil {
+		return err
+	}
+
 	g.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")
 	for _, n := range g.structList {
 		if !n.Public() {
@@ -350,6 +360,22 @@ func (g *gen) genImpl() error {
 		return err
 	}
 
+	return nil
+}
+
+func (g *gen) forEachConst(v visibility, f func(*gen, *a.Const) error) error {
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if tld.Kind() != a.KConst ||
+				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
+				continue
+			}
+			if err := f(g, tld.Const()); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -443,6 +469,42 @@ func (g *gen) gatherStatuses(n *a.Status) error {
 	}
 	g.statusList = append(g.statusList, s)
 	g.statusMap[n.Message()] = s
+	return nil
+}
+
+func (g *gen) writeConst(n *a.Const) error {
+	if !n.Public() {
+		g.writes("static ")
+	}
+	g.writes("const ")
+	prefix := fmt.Sprintf("puffs_%s_", g.pkgName)
+	if err := g.writeCTypeName(n.XType(), prefix, n.Name().String(g.tm)); err != nil {
+		return err
+	}
+	g.writes(" = ")
+	if err := g.writeConstList(n.Value()); err != nil {
+		return err
+	}
+	g.writes(";\n\n")
+	return nil
+}
+
+func (g *gen) writeConstList(n *a.Expr) error {
+	switch n.ID0().Key() {
+	case 0:
+		g.writes(n.ConstValue().String())
+	case t.KeyDollar:
+		g.writeb('{')
+		for _, o := range n.Args() {
+			if err := g.writeConstList(o.Expr()); err != nil {
+				return err
+			}
+			g.writeb(',')
+		}
+		g.writeb('}')
+	default:
+		return fmt.Errorf("invalid const value %q", n.String(g.tm))
+	}
 	return nil
 }
 

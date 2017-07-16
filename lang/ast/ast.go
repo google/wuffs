@@ -24,6 +24,7 @@ const (
 	KArg
 	KAssert
 	KAssign
+	KConst
 	KExpr
 	KField
 	KFile
@@ -53,6 +54,7 @@ var kindStrings = [...]string{
 	KArg:       "KArg",
 	KAssert:    "KAssert",
 	KAssign:    "KAssign",
+	KConst:     "KConst",
 	KExpr:      "KExpr",
 	KField:     "KField",
 	KFile:      "KFile",
@@ -109,6 +111,7 @@ func (n *Node) SetTypeChecked()   { n.flags |= FlagsTypeChecked }
 func (n *Node) Arg() *Arg             { return (*Arg)(n) }
 func (n *Node) Assert() *Assert       { return (*Assert)(n) }
 func (n *Node) Assign() *Assign       { return (*Assign)(n) }
+func (n *Node) Const() *Const         { return (*Const)(n) }
 func (n *Node) Expr() *Expr           { return (*Expr)(n) }
 func (n *Node) Field() *Field         { return (*Field)(n) }
 func (n *Node) File() *File           { return (*File)(n) }
@@ -182,7 +185,7 @@ const MaxExprDepth = 255
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
 //  - RHS:   <nil|Expr|TypeExpr>
-//  - List0: <Arg|Expr> function call arguments or associative op arguments
+//  - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
 // A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
 //
@@ -202,6 +205,8 @@ const MaxExprDepth = 255
 // For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
 //
 // For selectors, like "LHS.ID1", ID0 is IDDot.
+//
+// For lists, like "$(0, 1, 2)", ID0 is IDDollar.
 //
 // For limits, like "limit (LHS) RHS", ID0 is IDLimit.
 type Expr Node
@@ -463,7 +468,7 @@ const MaxTypeExprDepth = 63
 // refined as "foo[LHS..MHS]". LHS and MHS are Expr's, possibly nil. For
 // example, the LHS for "u32[..4095]" is nil.
 //
-// TODO: function / method types, struct types.
+// TODO: function / method types, struct types, list types.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node        { return (*Node)(n) }
@@ -598,6 +603,33 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message 
 		line:     line,
 		id0:      keyword,
 		id1:      message,
+	}
+}
+
+// Const is "const ID1 LHS = RHS":
+//  - FlagsPublic      is "pub" vs "pri"
+//  - ID1:   name
+//  - LHS:   <TypeExpr>
+//  - RHS:   <Expr>
+type Const Node
+
+func (n *Const) Node() *Node      { return (*Node)(n) }
+func (n *Const) Public() bool     { return n.flags&FlagsPublic != 0 }
+func (n *Const) Filename() string { return n.filename }
+func (n *Const) Line() uint32     { return n.line }
+func (n *Const) Name() t.ID       { return n.id1 }
+func (n *Const) XType() *TypeExpr { return n.lhs.TypeExpr() }
+func (n *Const) Value() *Expr     { return n.rhs.Expr() }
+
+func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeExpr, value *Expr) *Const {
+	return &Const{
+		kind:     KConst,
+		flags:    flags,
+		filename: filename,
+		line:     line,
+		id1:      name,
+		lhs:      xType.Node(),
+		rhs:      value.Node(),
 	}
 }
 

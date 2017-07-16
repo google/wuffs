@@ -113,6 +113,8 @@ bool puffs_gif_status_is_error(puffs_gif_status s);
 
 const char* puffs_gif_status_string(puffs_gif_status s);
 
+// ---------------- Public Consts
+
 // ---------------- Structs
 
 typedef struct {

@@ -115,6 +115,8 @@ bool puffs_flate_status_is_error(puffs_flate_status s);
 
 const char* puffs_flate_status_string(puffs_flate_status s);
 
+// ---------------- Public Consts
+
 // ---------------- Structs
 
 typedef struct {

@@ -65,6 +65,19 @@ func (n *Expr) appendString(buf []byte, tm *t.Map, parenthesize bool, depth uint
 				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				buf = append(buf, '.')
 				buf = append(buf, tm.ByID(n.id1)...)
+
+			case t.KeyDollar:
+				buf = append(buf, "$("...)
+				for i, o := range n.list0 {
+					if i != 0 {
+						buf = append(buf, ", "...)
+					}
+					buf = o.Expr().appendString(buf, tm, false, depth)
+				}
+				buf = append(buf, ')')
+
+			case t.KeyLimit:
+				// TODO.
 			}
 
 		case t.FlagsUnaryOp:
