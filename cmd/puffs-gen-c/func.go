@@ -161,12 +161,16 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 
 		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		g.writes("suspend:\n")
+
 		g.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
 			cPrefix, n.Name().String(g.tm))
 		if err := g.writeResumeSuspend(n.Body(), true); err != nil {
 			return err
 		}
 		g.writes("\n")
+
+		g.writes("goto exit;\n") // Avoid the "unused label" warning.
+		g.writes("exit:")
 
 		for _, o := range n.In().Fields() {
 			o := o.Field()
@@ -176,8 +180,6 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		}
 		g.writes("\n")
 
-		g.writes("goto exit;\n") // Avoid the "unused label" warning.
-		g.writes("exit:")
 		if g.perFunc.public {
 			g.writes("self->private_impl.status = status;\n")
 		}

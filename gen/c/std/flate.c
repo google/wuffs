@@ -451,6 +451,8 @@ suspend:
   self->private_impl.c_decode[0].v_final = v_final;
   self->private_impl.c_decode[0].v_type = v_type;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -462,8 +464,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   self->private_impl.status = status;
   return status;
 
@@ -592,6 +592,8 @@ suspend:
   self->private_impl.c_decode_uncompressed[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode_uncompressed[0].v_n = v_n;
 
+  goto exit;
+exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
@@ -613,8 +615,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   self->private_impl.status = status;
   return status;
 
@@ -743,6 +743,8 @@ suspend:
   self->private_impl.c_decode_dynamic[0].v_hclen = v_hclen;
   self->private_impl.c_decode_dynamic[0].v_i = v_i;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -754,8 +756,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   self->private_impl.status = status;
   return status;
 

@@ -576,6 +576,8 @@ suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_c = v_c;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -587,8 +589,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   self->private_impl.status = status;
   return status;
 
@@ -662,6 +662,8 @@ suspend:
   memcpy(self->private_impl.c_decode_header[0].v_c, v_c, 6);
   self->private_impl.c_decode_header[0].v_i = v_i;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -673,8 +675,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   return status;
 
 short_read_src:
@@ -774,6 +774,8 @@ suspend:
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -785,8 +787,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   return status;
 
 short_read_src:
@@ -877,6 +877,8 @@ suspend:
   self->private_impl.c_decode_extension[0].v_label = v_label;
   self->private_impl.c_decode_extension[0].v_block_size = v_block_size;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -888,8 +890,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   return status;
 
 short_read_src:
@@ -1036,6 +1036,8 @@ suspend:
   self->private_impl.c_decode_id[0].l_lzw_src = l_lzw_src;
   self->private_impl.c_decode_id[0].v_lzw_src = v_lzw_src;
 
+  goto exit;
+exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
@@ -1047,8 +1049,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   return status;
 
 short_read_src:
@@ -1256,6 +1256,8 @@ suspend:
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
 
+  goto exit;
+exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
@@ -1277,8 +1279,6 @@ suspend:
     }
   }
 
-  goto exit;
-exit:
   self->private_impl.status = status;
   return status;
 
