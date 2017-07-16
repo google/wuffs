@@ -84,6 +84,9 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
            name, cc, reps, nanos / reps,  //
            (int)(kb_per_s / 1000), (int)(kb_per_s % 1000));
   }
+  // Flush stdout so that "puffs bench | tee etc" still prints its numbers as
+  // soon as they are available.
+  fflush(stdout);
 }
 
 int main(int argc, char** argv) {
