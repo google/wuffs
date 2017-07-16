@@ -864,10 +864,11 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         goto label_0_break;
       }
       PUFFS_COROUTINE_SUSPENSION_POINT(3);
-      size_t t_2 = ((uint32_t)(v_block_size));
-      if (t_2 > b_rend_src - b_rptr_src) {
-        t_2 -= b_rend_src - b_rptr_src;
-        a_src.buf->ri += b_rend_src - b_rptr_src;
+      self->private_impl.scratch = ((uint32_t)(v_block_size));
+      PUFFS_COROUTINE_SUSPENSION_POINT(4);
+      if (self->private_impl.scratch > b_rend_src - b_rptr_src) {
+        self->private_impl.scratch -= b_rend_src - b_rptr_src;
+        b_rptr_src = b_rend_src;
         if (a_src.limit.ptr_to_len) {
           status = PUFFS_GIF_SUSPENSION_LIMITED_READ;
         } else if (a_src.buf->closed) {
@@ -878,7 +879,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         }
         goto suspend;
       }
-      b_rptr_src += t_2;
+      b_rptr_src += self->private_impl.scratch;
     }
   label_0_break:;
     self->private_impl.c_decode_extension[0].coro_susp_point = 0;

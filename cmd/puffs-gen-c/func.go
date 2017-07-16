@@ -810,24 +810,23 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		return g.writeReadUXX(n, "src", 32, "le")
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
-		if g.perFunc.tempW > maxTemp {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		temp := g.perFunc.tempW
-		g.perFunc.tempW++
-		g.perFunc.tempR++
-
-		g.printf("size_t %s%d = ", tPrefix, temp)
+		// TODO: is the scratch variable safe to use if callers can trap
+		// LIMITED_READ and then go down different code paths?
+		g.writes("self->private_impl.scratch = ")
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		g.writes(";\n")
 
-		g.printf("if (%s%d > %srend_src - %srptr_src) {\n", tPrefix, temp, bPrefix, bPrefix)
-		// TODO: save tPrefix+temp as coroutine state, and suspend.
-		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
-		g.printf("%ssrc.buf->ri += %srend_src - %srptr_src;\n", aPrefix, bPrefix, bPrefix)
+		// TODO: the CSP prior to this is probably unnecessary.
+		if err := g.writeCoroSuspPoint(); err != nil {
+			return err
+		}
+
+		g.printf("if (self->private_impl.scratch > %srend_src - %srptr_src) {\n", bPrefix, bPrefix)
+		g.printf("self->private_impl.scratch -= %srend_src - %srptr_src;\n", bPrefix, bPrefix)
+		g.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
 
 		// TODO: is ptr_to_len the right check?
 		g.printf("if (%ssrc.limit.ptr_to_len) {", aPrefix)
@@ -837,7 +836,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("} else { status = %sSUSPENSION_SHORT_READ; } goto suspend;\n", g.PKGPREFIX)
 
 		g.writes("}\n")
-		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
+		g.printf("%srptr_src += self->private_impl.scratch;\n", bPrefix)
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".

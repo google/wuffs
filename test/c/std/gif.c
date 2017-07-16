@@ -476,12 +476,22 @@ void test_puffs_gif_decode_input_is_a_gif_few_big_reads() {
                         PUFFS_GIF_STATUS_OK, 1 << 30);
 }
 
+void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
+  proc_funcname = __func__;
+  test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                        "../../testdata/bricks-dither.palette",
+                        "../../testdata/bricks-dither.indexes",
+                        PUFFS_GIF_STATUS_OK, 4096);
+}
+
 void test_puffs_gif_decode_input_is_a_gif_many_small_reads() {
   proc_funcname = __func__;
   test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                         "../../testdata/bricks-dither.palette",
                         "../../testdata/bricks-dither.indexes",
-                        PUFFS_GIF_STATUS_OK, 1000);
+                        PUFFS_GIF_STATUS_OK,
+                        787);  // 787 tickles being in the middle of a
+                               // decode_extension skip32 call.
 }
 
 void test_puffs_gif_decode_input_is_a_png() {
@@ -661,9 +671,10 @@ proc tests[] = {
     test_puffs_gif_lzw_decode_pi,                //
 
     // GIF Tests
-    test_puffs_gif_decode_input_is_a_gif_few_big_reads,     //
-    test_puffs_gif_decode_input_is_a_gif_many_small_reads,  //
-    test_puffs_gif_decode_input_is_a_png,                   //
+    test_puffs_gif_decode_input_is_a_gif_few_big_reads,      //
+    test_puffs_gif_decode_input_is_a_gif_many_medium_reads,  //
+    test_puffs_gif_decode_input_is_a_gif_many_small_reads,   //
+    test_puffs_gif_decode_input_is_a_png,                    //
 
 #ifdef PUFFS_MIMIC
 
