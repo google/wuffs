@@ -28,19 +28,21 @@ type perFunc struct {
 func (g *gen) writeFuncSignature(n *a.Func) error {
 	// TODO: write n's return values.
 	if n.Suspendible() {
-		g.printf("puffs_%s_status", g.pkgName)
+		g.printf("%sstatus ", g.pkgPrefix)
 	} else {
-		g.printf("void")
+		g.writes("void ")
 	}
-	g.printf(" puffs_%s", g.pkgName)
+
+	g.writes(g.pkgPrefix)
 	if r := n.Receiver(); r != 0 {
-		g.printf("_%s", r.String(g.tm))
+		g.writes(r.String(g.tm))
+		g.writeb('_')
 	}
-	g.printf("_%s(", n.Name().String(g.tm))
+	g.printf("%s(", n.Name().String(g.tm))
 
 	comma := false
 	if r := n.Receiver(); r != 0 {
-		g.printf("puffs_%s_%s *self", g.pkgName, r.String(g.tm))
+		g.printf("%s%s *self", g.pkgPrefix, r.String(g.tm))
 		comma = true
 	}
 	for _, o := range n.In().Fields() {
@@ -100,7 +102,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	if g.perFunc.suspendible {
-		g.printf("puffs_%s_status status = PUFFS_%s_STATUS_OK;\n", g.pkgName, g.PKGNAME)
+		g.printf("%sstatus status = PUFFS_%s_STATUS_OK;\n", g.pkgPrefix, g.PKGNAME)
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and
@@ -565,7 +567,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isSetLiteralWidth(g.tm, n) {
-			g.printf("puffs_%s_lzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgName)
+			g.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 				return err
@@ -916,56 +918,56 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.writes("}\n")
 
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
-		g.printf("status = puffs_%s_%s_decode_header(self, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.printf("status = %s%s_decode_header(self, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
-		g.printf("status = puffs_%s_%s_decode_lsd(self, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.printf("status = %s%s_decode_lsd(self, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
-		g.printf("status = puffs_%s_%s_decode_extension(self, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		g.printf("status = %s%s_decode_extension(self, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
-		g.printf("status = puffs_%s_%s_decode_id(self, %sdst, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		g.printf("status = %s%s_decode_id(self, %sdst, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
-		g.printf("status = puffs_%s_%s_decode_uncompressed(self, %sdst, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		g.printf("status = %s%s_decode_uncompressed(self, %sdst, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_dynamic", 2) {
-		g.printf("status = puffs_%s_%s_decode_dynamic(self, %sdst, %ssrc);\n",
-			g.pkgName, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		g.printf("status = %s%s_decode_dynamic(self, %sdst, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isDecode(g.tm, n) {
-		g.printf("status = puffs_%s_lzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
-			g.pkgName, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
+		g.printf("status = %slzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
+			g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}

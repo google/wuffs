@@ -140,10 +140,12 @@ type status struct {
 }
 
 type gen struct {
-	buffer     bytes.Buffer
-	pkgPrefix  string
-	pkgName    string
-	PKGNAME    string
+	buffer bytes.Buffer
+
+	pkgPrefix string // e.g. "puffs_jpeg_"
+	pkgName   string // e.g. "jpeg"
+	PKGNAME   string // e.g. "JPEG"
+
 	tm         *t.Map
 	checker    *check.Checker
 	files      []*a.File
@@ -216,10 +218,10 @@ func (g *gen) genHeader() error {
 	g.writes("// ---------------- Status Codes\n\n")
 	g.writes(statusCodeDescription)
 	g.printf("//\n// Do not manipulate these bits directly. Use the API functions such as\n"+
-		"// puffs_%s_status_is_error instead.\n", g.pkgName)
-	g.printf("typedef int32_t puffs_%s_status;\n\n", g.pkgName)
+		"// %sstatus_is_error instead.\n", g.pkgPrefix)
+	g.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
-	g.printf("#define puffs_%s_packageid %d // %#08x\n\n", g.pkgName, pkgID, pkgID)
+	g.printf("#define %spackageid %d // %#08x\n\n", g.pkgPrefix, pkgID, pkgID)
 
 	for i, s := range builtInStatuses {
 		code := uint32(0)
@@ -244,8 +246,8 @@ func (g *gen) genHeader() error {
 	}
 	g.writes("\n")
 
-	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
-	g.printf("const char* puffs_%s_status_string(puffs_%s_status s);\n\n", g.pkgName, g.pkgName)
+	g.printf("bool %sstatus_is_error(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
+	g.printf("const char* %sstatus_string(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
 
 	g.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(pubOnly, (*gen).writeConst); err != nil {
@@ -283,9 +285,9 @@ func (g *gen) genImpl() error {
 	g.writes("\n")
 
 	g.writes("// ---------------- Status Codes Implementations\n\n")
-	g.printf("bool puffs_%s_status_is_error(puffs_%s_status s) { return s < 0; }\n\n", g.pkgName, g.pkgName)
+	g.printf("bool %sstatus_is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
-	g.printf("const char* puffs_%s_status_strings0[%d] = {\n", g.pkgName, len(builtInStatuses))
+	g.printf("const char* %sstatus_strings0[%d] = {\n", g.pkgPrefix, len(builtInStatuses))
 	for _, s := range builtInStatuses {
 		if strings.HasPrefix(s, "status ") {
 			s = s[len("status "):]
@@ -299,20 +301,20 @@ func (g *gen) genImpl() error {
 	}
 	g.writes("};\n\n")
 
-	g.printf("const char* puffs_%s_status_strings1[%d] = {\n", g.pkgName, len(g.statusList))
+	g.printf("const char* %sstatus_strings1[%d] = {\n", g.pkgPrefix, len(g.statusList))
 	for _, s := range g.statusList {
 		g.printf("%q,", g.pkgName+": "+s.msg)
 	}
 	g.writes("};\n\n")
 
-	g.printf("const char* puffs_%s_status_string(puffs_%s_status s) {\n", g.pkgName, g.pkgName)
+	g.printf("const char* %sstatus_string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
 	g.printf("const char** a = NULL;\n")
 	g.printf("uint32_t n = 0;\n")
 	g.printf("switch ((s >> %d) & %#x) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
-	g.printf("case 0: a = puffs_%s_status_strings0; n = %d; break;\n",
-		g.pkgName, len(builtInStatuses))
-	g.printf("case puffs_%s_packageid: a = puffs_%s_status_strings1; n = %d; break;\n",
-		g.pkgName, g.pkgName, len(g.statusList))
+	g.printf("case 0: a = %sstatus_strings0; n = %d; break;\n",
+		g.pkgPrefix, len(builtInStatuses))
+	g.printf("case %spackageid: a = %sstatus_strings1; n = %d; break;\n",
+		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
 	// TODO: add cases for other packages used by this one.
 	g.printf("}\n")
 	g.printf("uint32_t i = s & %#0x;\n", 1<<statusCodeCodeBits-1)
@@ -479,8 +481,7 @@ func (g *gen) writeConst(n *a.Const) error {
 		g.writes("static ")
 	}
 	g.writes("const ")
-	prefix := fmt.Sprintf("puffs_%s_", g.pkgName)
-	if err := g.writeCTypeName(n.XType(), prefix, n.Name().String(g.tm)); err != nil {
+	if err := g.writeCTypeName(n.XType(), g.pkgPrefix, n.Name().String(g.tm)); err != nil {
 		return err
 	}
 	g.writes(" = ")
@@ -520,14 +521,14 @@ func (g *gen) writeStruct(n *a.Struct) error {
 	g.writes("typedef struct {\n")
 	g.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	g.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
-	g.printf("// puffs_%s_%s_etc functions.\n", g.pkgName, structName)
+	g.printf("// %s%s_etc functions.\n", g.pkgPrefix, structName)
 	g.writes("//\n")
 	g.writes("// In C++, these fields would be \"private\", but C does not support that.\n")
 	g.writes("//\n")
 	g.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
 	g.writes("struct {\n")
 	if n.Suspendible() {
-		g.printf("puffs_%s_status status;\n", g.pkgName)
+		g.printf("%sstatus status;\n", g.pkgPrefix)
 		g.writes("uint32_t magic;\n")
 		g.writes("uint64_t scratch;\n")
 		g.writes("\n")
@@ -564,7 +565,7 @@ func (g *gen) writeStruct(n *a.Struct) error {
 		}
 	}
 
-	g.printf("} private_impl;\n } puffs_%s_%s;\n\n", g.pkgName, structName)
+	g.printf("} private_impl;\n } %s%s;\n\n", g.pkgPrefix, structName)
 	return nil
 }
 
@@ -574,15 +575,15 @@ func (g *gen) writeCtorSignature(n *a.Struct, public bool, ctor bool) error {
 	if ctor {
 		ctorName = "constructor"
 		if public {
-			g.printf("// puffs_%s_%s_%s is a constructor function.\n", g.pkgName, structName, ctorName)
+			g.printf("// %s%s_%s is a constructor function.\n", g.pkgPrefix, structName, ctorName)
 			g.printf("//\n")
-			g.printf("// It should be called before any other puffs_%s_%s_* function.\n",
-				g.pkgName, structName)
+			g.printf("// It should be called before any other %s%s_* function.\n",
+				g.pkgPrefix, structName)
 			g.printf("//\n")
 			g.printf("// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
 		}
 	}
-	g.printf("void puffs_%s_%s_%s(puffs_%s_%s *self", g.pkgName, structName, ctorName, g.pkgName, structName)
+	g.printf("void %s%s_%s(%s%s *self", g.pkgPrefix, structName, ctorName, g.pkgPrefix, structName)
 	if ctor {
 		g.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
 	}
@@ -645,12 +646,12 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 				continue
 			}
 			if ctor {
-				g.printf("puffs_%s_%s_constructor(&self->private_impl.%s%s,"+
+				g.printf("%s%s_constructor(&self->private_impl.%s%s,"+
 					"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
-					g.pkgName, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+					g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
 			} else {
-				g.printf("puffs_%s_%s_destructor(&self->private_impl.%s%s);\n",
-					g.pkgName, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+				g.printf("%s%s_destructor(&self->private_impl.%s%s);\n",
+					g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
 			}
 		}
 
@@ -746,7 +747,7 @@ func (g *gen) writeCTypeName(n *a.TypeExpr, varNamePrefix string, varName string
 		}
 	}
 	if fallback {
-		g.printf("puffs_%s_%s", g.pkgName, n.Name().String(g.tm))
+		g.printf("%s%s", g.pkgPrefix, n.Name().String(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {
