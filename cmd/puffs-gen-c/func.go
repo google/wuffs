@@ -833,8 +833,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("if (%ssrc.limit.ptr_to_len) {", aPrefix)
 		g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
 		g.printf("} else if (%ssrc.buf->closed) {", aPrefix)
-		g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit; }", g.PKGPREFIX)
-		g.printf("status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
+		g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit;", g.PKGPREFIX)
+		g.printf("} else { status = %sSUSPENSION_SHORT_READ; } goto suspend;\n", g.PKGPREFIX)
 
 		g.writes("}\n")
 		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
@@ -982,8 +982,7 @@ func (g *gen) writeShortRead(name string) error {
 	g.printf("} else if (%s%s.buf->closed) {", aPrefix, name)
 	g.printf("status = %sERROR_UNEXPECTED_EOF;", g.PKGPREFIX)
 	g.writes("goto exit;")
-	g.writes("}")
-	g.printf("status = %sSUSPENSION_SHORT_READ;", g.PKGPREFIX)
+	g.printf("} else {status = %sSUSPENSION_SHORT_READ; }", g.PKGPREFIX)
 	g.writes("goto suspend;\n")
 	return nil
 }

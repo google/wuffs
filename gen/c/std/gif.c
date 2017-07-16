@@ -602,8 +602,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -688,8 +689,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -801,8 +803,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -870,8 +873,9 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         } else if (a_src.buf->closed) {
           status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
           goto exit;
+        } else {
+          status = PUFFS_GIF_SUSPENSION_SHORT_READ;
         }
-        status = PUFFS_GIF_SUSPENSION_SHORT_READ;
         goto suspend;
       }
       b_rptr_src += t_2;
@@ -907,8 +911,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -1067,8 +1072,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -1299,7 +1305,8 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
   goto suspend;
 }

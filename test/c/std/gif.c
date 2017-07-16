@@ -238,8 +238,9 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
       }
       break;
     }
-    if (status != PUFFS_GIF_SUSPENSION_SHORT_READ) {
-      FAIL("status: got %d, want %d", status, PUFFS_GIF_SUSPENSION_SHORT_READ);
+    if (status != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
+      FAIL("status: got %d, want %d", status,
+           PUFFS_GIF_SUSPENSION_LIMITED_READ);
       goto cleanup1;
     }
     if (src.ri < old_ri) {
@@ -403,8 +404,8 @@ void test_puffs_gif_decode(const char* filename,
       }
       break;
     }
-    if (got != PUFFS_GIF_SUSPENSION_SHORT_READ) {
-      FAIL("status: got %d, want %d", got, PUFFS_GIF_SUSPENSION_SHORT_READ);
+    if (got != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
+      FAIL("status: got %d, want %d", got, PUFFS_GIF_SUSPENSION_LIMITED_READ);
       goto cleanup1;
     }
     if (src.ri < old_ri) {

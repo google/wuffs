@@ -477,8 +477,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -629,8 +630,9 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -771,7 +773,8 @@ short_read_src:
   } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
+  } else {
+    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
-  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
