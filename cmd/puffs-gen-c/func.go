@@ -962,8 +962,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
-		// TODO: be principled with "if (status < 0)" vs "if (status)".
-		g.writes("if (status < 0) { return status; }\n")
+		// TODO: be principled with "if (l_lzw_src && etc)".
+		g.writes("if (l_lzw_src && status) { goto suspend; }\n")
 
 	} else {
 		// TODO: fix this.

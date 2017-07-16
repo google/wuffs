@@ -1027,8 +1027,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
         }
         b_rend_src = b_rptr_src + len;
       }
-      if (status < 0) {
-        return status;
+      if (l_lzw_src && status) {
+        goto suspend;
       }
     }
   label_0_break:;
