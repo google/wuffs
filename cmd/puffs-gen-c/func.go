@@ -817,7 +817,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.perFunc.tempW++
 		g.perFunc.tempR++
 
-		// TODO: loop over all limits.
 		g.printf("size_t %s%d = ", tPrefix, temp)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
@@ -828,9 +827,10 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("if (%s%d > %srend_src - %srptr_src) {\n", tPrefix, temp, bPrefix, bPrefix)
 		// TODO: save tPrefix+temp as coroutine state, and suspend.
 		g.printf("%s%d -= %srend_src - %srptr_src;\n", tPrefix, temp, bPrefix, bPrefix)
-		g.printf("%ssrc.buf->ri = %ssrc.buf->wi;\n", aPrefix, aPrefix)
+		g.printf("%ssrc.buf->ri += %srend_src - %srptr_src;\n", aPrefix, bPrefix, bPrefix)
 
-		g.printf("if (%ssrc.limit.next) {", aPrefix)
+		// TODO: is ptr_to_len the right check?
+		g.printf("if (%ssrc.limit.ptr_to_len) {", aPrefix)
 		g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
 		g.printf("} else if (%ssrc.buf->closed) {", aPrefix)
 		g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit; }", g.PKGPREFIX)
@@ -976,11 +976,10 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 func (g *gen) writeShortRead(name string) error {
 	g.printf("\nshort_read_%s:\n", name)
-	g.printf("if (%s%s.limit.next) {", aPrefix, name)
+	// TODO: is ptr_to_len the right check?
+	g.printf("if (%s%s.limit.ptr_to_len) {", aPrefix, name)
 	g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
-	// TODO: we should be able to eliminate the ri == wi check.
-	g.printf("} else if ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) {",
-		aPrefix, name, aPrefix, name, aPrefix, name)
+	g.printf("} else if (%s%s.buf->closed) {", aPrefix, name)
 	g.printf("status = %sERROR_UNEXPECTED_EOF;", g.PKGPREFIX)
 	g.writes("goto exit;")
 	g.writes("}")

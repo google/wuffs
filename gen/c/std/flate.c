@@ -472,9 +472,9 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.next) {
+  if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -624,9 +624,9 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.next) {
+  if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -766,9 +766,9 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.next) {
+  if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if ((a_src.buf->closed) && (a_src.buf->ri == a_src.buf->wi)) {
+  } else if (a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   }
