@@ -47,9 +47,9 @@ const (
 func main() {
 	generate.Main(func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		g := &gen{
+			PKGPREFIX: "PUFFS_" + strings.ToUpper(pkgName) + "_",
 			pkgPrefix: "puffs_" + pkgName + "_",
 			pkgName:   pkgName,
-			PKGNAME:   strings.ToUpper(pkgName),
 			tm:        tm,
 			checker:   c,
 			files:     files,
@@ -142,9 +142,9 @@ type status struct {
 type gen struct {
 	buffer bytes.Buffer
 
+	PKGPREFIX string // e.g. "PUFFS_JPEG_"
 	pkgPrefix string // e.g. "puffs_jpeg_"
 	pkgName   string // e.g. "jpeg"
-	PKGNAME   string // e.g. "JPEG"
 
 	tm         *t.Map
 	checker    *check.Checker
@@ -617,7 +617,7 @@ func (g *gen) writeCtorImpl(n *a.Struct) error {
 
 		if ctor {
 			g.printf("if (puffs_version != PUFFS_VERSION) {\n")
-			g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_PUFFS_VERSION;\n", g.PKGNAME)
+			g.printf("self->private_impl.status = %sERROR_BAD_PUFFS_VERSION;\n", g.PKGPREFIX)
 			g.printf("return;\n")
 			g.printf("}\n")
 

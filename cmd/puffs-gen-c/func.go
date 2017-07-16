@@ -83,14 +83,14 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	if g.perFunc.public && n.Receiver() != 0 {
 		g.writes("if (!self) {")
 		if g.perFunc.suspendible {
-			g.printf("return PUFFS_%s_ERROR_BAD_RECEIVER;", g.PKGNAME)
+			g.printf("return %sERROR_BAD_RECEIVER;", g.PKGPREFIX)
 		} else {
 			g.printf("return;")
 		}
 		g.writes("}")
 
 		g.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
-			"self->private_impl.status = PUFFS_%s_ERROR_CONSTRUCTOR_NOT_CALLED; }", g.PKGNAME)
+			"self->private_impl.status = %sERROR_CONSTRUCTOR_NOT_CALLED; }", g.PKGPREFIX)
 
 		g.writes("if (self->private_impl.status < 0) {")
 		if g.perFunc.suspendible {
@@ -102,7 +102,7 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 	}
 
 	if g.perFunc.suspendible {
-		g.printf("%sstatus status = PUFFS_%s_STATUS_OK;\n", g.pkgPrefix, g.PKGNAME)
+		g.printf("%sstatus status = %sSTATUS_OK;\n", g.pkgPrefix, g.PKGPREFIX)
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and
@@ -262,9 +262,9 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 	}
 	g.writes(") {")
 	if g.perFunc.suspendible {
-		g.printf("status = PUFFS_%s_ERROR_BAD_ARGUMENT; goto exit;", g.PKGNAME)
+		g.printf("status = %sERROR_BAD_ARGUMENT; goto exit;", g.PKGPREFIX)
 	} else if n.Receiver() != 0 {
-		g.printf("self->private_impl.status = PUFFS_%s_ERROR_BAD_ARGUMENT; return;", g.PKGNAME)
+		g.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT; return;", g.PKGPREFIX)
 	} else {
 		g.printf("return;")
 	}
@@ -645,7 +645,7 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		n := n.Return()
 		ret := status{}
 		if n.Keyword() == 0 {
-			ret.name = fmt.Sprintf("PUFFS_%s_STATUS_OK", g.PKGNAME)
+			ret.name = fmt.Sprintf("%sSTATUS_OK", g.PKGPREFIX)
 		} else {
 			ret = g.statusMap[n.Message()]
 		}
@@ -832,20 +832,20 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 		// TODO: check limits too.
 		g.printf("if (%ssrc.buf->closed) {", aPrefix)
-		g.printf("status = PUFFS_%s_ERROR_UNEXPECTED_EOF; goto exit; }", g.PKGNAME)
-		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ; goto suspend;\n", g.PKGNAME)
+		g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit; }", g.PKGPREFIX)
+		g.printf("status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
 
 		g.writes("}\n")
 		g.printf("%srptr_src += %s%d;\n", bPrefix, tPrefix, temp)
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
-		g.printf("if (%sdst.buf->closed) { status = PUFFS_%s_ERROR_CLOSED_FOR_WRITES;", aPrefix, g.PKGNAME)
+		g.printf("if (%sdst.buf->closed) { status = %sERROR_CLOSED_FOR_WRITES;", aPrefix, g.PKGPREFIX)
 		g.writes("goto exit;")
 		g.writes("}\n")
 		g.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
 			bPrefix, bPrefix)
-		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_WRITE;", g.PKGNAME)
+		g.printf("status = %sSUSPENSION_SHORT_WRITE;", g.PKGPREFIX)
 		g.writes("goto suspend;")
 		g.writes("}\n")
 		g.printf("memmove(b_wptr_dst," +
@@ -854,8 +854,8 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;\n")
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		g.printf("if (%swptr_dst == %swend_dst) { status = PUFFS_%s_SUSPENSION_SHORT_WRITE;",
-			bPrefix, bPrefix, g.PKGNAME)
+		g.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
+			bPrefix, bPrefix, g.PKGPREFIX)
 		g.writes("goto suspend;")
 		g.writes("}\n")
 		g.printf("*%swptr_dst++ = ", bPrefix)
@@ -890,14 +890,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		const wName = "dst"
 		g.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
 		g.printf("%s%d = %swend_%s - %swptr_%s;\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
-		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_WRITE;\n", g.PKGNAME)
+		g.printf("status = %sSUSPENSION_SHORT_WRITE;\n", g.PKGPREFIX)
 		g.writes("}\n")
 
 		// TODO: don't assume that the first argument is "in.src".
 		const rName = "src"
 		g.printf("if (%s%d > %srend_%s - %srptr_%s) {\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
 		g.printf("%s%d = %srend_%s - %srptr_%s;\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
-		g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ;\n", g.PKGNAME)
+		g.printf("status = %sSUSPENSION_SHORT_READ;\n", g.PKGPREFIX)
 		g.writes("}\n")
 
 		g.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
@@ -978,9 +978,9 @@ func (g *gen) writeShortRead(name string) error {
 	// TODO: ri == wi isn't the right condition.
 	g.printf("if ((%s%s.buf->closed) && (%s%s.buf->ri == %s%s.buf->wi)) {",
 		aPrefix, name, aPrefix, name, aPrefix, name)
-	g.printf("status = PUFFS_%s_ERROR_UNEXPECTED_EOF; goto exit;", g.PKGNAME)
+	g.printf("status = %sERROR_UNEXPECTED_EOF; goto exit;", g.PKGPREFIX)
 	g.writes("}")
-	g.printf("status = PUFFS_%s_SUSPENSION_SHORT_READ; goto suspend;\n", g.PKGNAME)
+	g.printf("status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
 	return nil
 }
 
