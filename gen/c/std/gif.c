@@ -568,7 +568,8 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         goto exit;
       }
     }
-    coro_susp_point = 0;
+    self->private_impl.c_decode[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -576,7 +577,6 @@ suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_c = v_c;
 
-  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -653,7 +653,8 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
       status = PUFFS_GIF_ERROR_BAD_GIF_HEADER;
       goto exit;
     }
-    coro_susp_point = 0;
+    self->private_impl.c_decode_header[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -662,7 +663,6 @@ suspend:
   memcpy(self->private_impl.c_decode_header[0].v_c, v_c, 6);
   self->private_impl.c_decode_header[0].v_i = v_i;
 
-  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -764,7 +764,8 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
         v_i += 1;
       }
     }
-    coro_susp_point = 0;
+    self->private_impl.c_decode_lsd[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -774,7 +775,6 @@ suspend:
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
 
-  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -868,7 +868,8 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
       b_rptr_src += t_2;
     }
   label_0_break:;
-    coro_susp_point = 0;
+    self->private_impl.c_decode_extension[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -877,7 +878,6 @@ suspend:
   self->private_impl.c_decode_extension[0].v_label = v_label;
   self->private_impl.c_decode_extension[0].v_block_size = v_block_size;
 
-  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1022,7 +1022,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
       }
     }
   label_0_break:;
-    coro_susp_point = 0;
+    self->private_impl.c_decode_id[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -1036,7 +1037,6 @@ suspend:
   self->private_impl.c_decode_id[0].l_lzw_src = l_lzw_src;
   self->private_impl.c_decode_id[0].v_lzw_src = v_lzw_src;
 
-  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1239,7 +1239,8 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       }
       v_prev_code = v_code;
     }
-    coro_susp_point = 0;
+    self->private_impl.c_decode[0].coro_susp_point = 0;
+    goto exit;
   }
 
   goto suspend;
@@ -1256,7 +1257,6 @@ suspend:
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
 
-  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

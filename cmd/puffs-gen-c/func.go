@@ -156,8 +156,9 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
-		g.writes("coro_susp_point = 0;\n")
-		g.writes("}\n\n") // Close the coroutine switch.
+		g.printf("self->private_impl.%s%s[0].coro_susp_point = 0;\n",
+			cPrefix, n.Name().String(g.tm))
+		g.writes("goto exit; }\n\n") // Close the coroutine switch.
 
 		g.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		g.writes("suspend:\n")
@@ -169,7 +170,6 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 		}
 		g.writes("\n")
 
-		g.writes("goto exit;\n") // Avoid the "unused label" warning.
 		g.writes("exit:")
 
 		for _, o := range n.In().Fields() {
