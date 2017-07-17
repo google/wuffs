@@ -10,6 +10,8 @@ package main
 //
 // Usage: go run extract-flate-offsets.go foo.gz bar.gz
 //
+// Alternatively: go run extract-flate-offsets.go -write-flate foo.gz
+//
 // Alternatively: go run extract-flate-offsets.go -write-zlib foo.gz
 
 import (
@@ -26,7 +28,8 @@ import (
 )
 
 var (
-	writeZlib = flag.Bool("write-zlib", false, "whether to convert gzip to zlib")
+	writeFlate = flag.Bool("write-flate", false, "whether to convert gzip to raw flate")
+	writeZlib  = flag.Bool("write-zlib", false, "whether to convert gzip to zlib")
 )
 
 // GZIP wraps a header and footer around flate data. The format is described in
@@ -102,10 +105,24 @@ func decode(filename string) error {
 		return err
 	}
 
-	if *writeZlib {
+	if *writeFlate {
+		return doWriteFlate(src[i:], uncompressed, filename)
+	} else if *writeZlib {
 		return doWriteZlib(src[i:], uncompressed, filename)
 	}
 	fmt.Printf("%7d %7d %x  %s\n", i, len(src), md5.Sum(uncompressed), filename)
+	return nil
+}
+
+func doWriteFlate(flateCompressed []byte, uncompressed []byte, filename string) error {
+	if strings.HasSuffix(filename, ".gz") {
+		filename = filename[:len(filename)-3]
+	}
+	filename += ".flate"
+	if err := ioutil.WriteFile(filename, flateCompressed, 0666); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s\n", filename)
 	return nil
 }
 
