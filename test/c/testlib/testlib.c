@@ -237,7 +237,7 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
       char c = ' ';
       if (k < n) {
         c = buf->ptr[b + k];
-        if ((c < 0x20) || (0x7F < c)) {
+        if ((c < 0x20) || (0x7F <= c)) {
           c = '.';
         }
       }
