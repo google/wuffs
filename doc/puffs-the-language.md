@@ -12,7 +12,7 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 
 ## Keywords
 
-The Puffs language has 24 keywords. 7 of those introduce top-level concepts:
+7 keywords introduce top-level concepts:
 
 - `const`
 - `error`
@@ -56,6 +56,8 @@ The Puffs language has 24 keywords. 7 of those introduce top-level concepts:
 1 keyword deals with I/O:
 
 - `limit`
+
+TODO: categorize and, or, not, as, false, true, in, out, this, u8, u16, etc.
 
 
 ## Operators
