@@ -33,8 +33,11 @@ func tssVisit(dst []*Struct, n *Struct, byName map[t.ID]*Struct, marks map[*Stru
 		temporary = 1
 		permanent = 2
 	)
-	if marks[n] == temporary {
+	switch marks[n] {
+	case temporary:
 		return nil, false
+	case permanent:
+		return dst, true
 	}
 	marks[n] = temporary
 
