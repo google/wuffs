@@ -25,7 +25,7 @@ func main() {
 func main1() error {
 	in := make([]byte, 4096)
 	bits := []byte("...._....\n")
-	os.Stdout.WriteString("offset  ASCII   hex     binary\n")
+	os.Stdout.WriteString("offset  xoffset ASCII   hex     binary\n")
 	for iBase := 0; ; {
 		n, err := os.Stdin.Read(in)
 		for i, x := range in[:n] {
@@ -41,7 +41,7 @@ func main1() error {
 			if (x < 0x20) || (0x7F <= x) {
 				ascii = '.'
 			}
-			fmt.Printf("%06d  %c       0x%02X    0b_%s", iBase+i, ascii, x, bits)
+			fmt.Printf("%06d  0x%04X  %c       0x%02X    0b_%s", iBase+i, iBase+i, ascii, x, bits)
 		}
 		if err == io.EOF {
 			return nil
