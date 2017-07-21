@@ -131,6 +131,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
+    uint16_t f_counts[16];
   } private_impl;
 } puffs_flate_huffman_decoder;
 
@@ -174,7 +175,6 @@ typedef struct {
     } c_decode_dynamic[1];
     struct {
       uint32_t coro_susp_point;
-      uint32_t v_counts[16];
       uint32_t v_i;
     } c_init_huffman[1];
   } private_impl;

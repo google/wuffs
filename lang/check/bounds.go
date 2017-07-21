@@ -625,7 +625,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_dynamic", 2) ||
-			isThisMethod(q.tm, n, "init_huffman", 1) {
+			isThisMethod(q.tm, n, "init_huffman", 2) {
 
 			for _, o := range n.Args() {
 				// TODO: check that the arg range at the caller and the
@@ -913,7 +913,7 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 		b = numTypeBounds[key]
 	}
 	if b[0] == nil || b[1] == nil {
-		return nil, nil, fmt.Errorf("check: internal error: unknown bounds for %q", n.String(q.tm))
+		return nil, nil, nil
 	}
 	if n.IsRefined() {
 		if x := n.Min(); x != nil {

@@ -969,10 +969,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
-	} else if isThisMethod(g.tm, n, "init_huffman", 1) {
+	} else if isThisMethod(g.tm, n, "init_huffman", 2) {
 		g.printf("status = %s%s_init_huffman(self,",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
 		if err := g.writeExpr(n.Args()[0].Arg().Value(), replaceNothing, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(",")
+		if err := g.writeExpr(n.Args()[1].Arg().Value(), replaceNothing, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		g.writes(");\n")
@@ -1120,7 +1124,7 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	switch n.ID0().Key() {
 	case 0:
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
-			g.writes("self->private_impl")
+			g.writes("self")
 		} else {
 			if n.GlobalIdent() {
 				g.writes(g.pkgPrefix)
@@ -1187,20 +1191,22 @@ func (g *gen) writeExprOther(n *a.Expr, rp replacementPolicy, depth uint32) erro
 	// TODO.
 
 	case t.KeyDot:
-		if n.LHS().Expr().ID1().Key() == t.KeyIn {
+		lhs := n.LHS().Expr()
+		if lhs.ID1().Key() == t.KeyIn {
 			g.writes(aPrefix)
 			g.writes(n.ID1().String(g.tm))
 			return nil
 		}
 
-		if err := g.writeExpr(n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
+		if err := g.writeExpr(lhs, rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
-		// TODO: choose between . vs -> operators.
-		//
-		// TODO: don't assume that the fPrefix is necessary.
-		g.writes(".")
-		g.writes(fPrefix)
+		if k := lhs.MType().Decorator().Key(); k == t.KeyPtr || k == t.KeyNptr {
+			g.writes("->")
+		} else {
+			g.writes(".")
+		}
+		g.writes("private_impl." + fPrefix)
 		g.writes(n.ID1().String(g.tm))
 		return nil
 
