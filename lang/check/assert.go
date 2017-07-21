@@ -275,6 +275,11 @@ func errFailedOrNil(ok bool) error {
 
 var errFailed = errors.New("failed")
 
+func binOpReasonError(tm *t.Map, op t.ID, lhs *a.Expr, rhs *a.Expr, err error) error {
+	n := a.NewExpr(a.FlagsTypeChecked, op, 0, lhs.Node(), nil, rhs.Node(), nil)
+	return fmt.Errorf("cannot prove %q: %v", n.String(tm), err)
+}
+
 type reason func(q *checker, n *a.Assert) error
 
 type reasonMap map[t.Key]reason
@@ -284,36 +289,51 @@ var reasons = [...]struct {
 	r reason
 }{
 	{`"a < (b + c): a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
-		op, a, bc := parseBinaryOp(n.Condition())
+		op, xa, bc := parseBinaryOp(n.Condition())
 		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
-		op, b, c := parseBinaryOp(bc)
+		op, xb, xc := parseBinaryOp(bc)
 		if op.Key() != t.KeyXBinaryPlus {
 			return errFailed
 		}
-		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, a, c); err != nil {
-			return fmt.Errorf("cannot prove \"%s < %s\": %v", a.String(q.tm), c.String(q.tm), err)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, xa, xc); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessThan, xa, xc, err)
 		}
-		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, b); err != nil {
-			return fmt.Errorf("cannot prove \"%s <= %s\": %v", zeroExpr.String(q.tm), b.String(q.tm), err)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, zeroExpr, xb); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessEq, zeroExpr, xb, err)
+		}
+		return nil
+	}},
+	{`"(a + b) <= c: a <= (c - b)"`, func(q *checker, n *a.Assert) error {
+		op, ab, xc := parseBinaryOp(n.Condition())
+		if op.Key() != t.KeyXBinaryLessEq {
+			return errFailed
+		}
+		op, xa, xb := parseBinaryOp(ab)
+		if op.Key() != t.KeyXBinaryPlus {
+			return errFailed
+		}
+		sub := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryMinus, 0, xc.Node(), nil, xb.Node(), nil)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, xa, sub); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessEq, xa, sub, err)
 		}
 		return nil
 	}},
 	{`"a < b: a < c; c <= b"`, func(q *checker, n *a.Assert) error {
-		c := argValue(q.tm, n.Args(), "c")
-		if c == nil {
+		xc := argValue(q.tm, n.Args(), "c")
+		if xc == nil {
 			return errFailed
 		}
-		op, a, b := parseBinaryOp(n.Condition())
+		op, xa, xb := parseBinaryOp(n.Condition())
 		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
-		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, a, c); err != nil {
-			return fmt.Errorf("cannot prove \"%s < %s\": %v", a.String(q.tm), c.String(q.tm), err)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, xa, xc); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessThan, xa, xc, err)
 		}
-		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, c, b); err != nil {
-			return fmt.Errorf("cannot prove \"%s <= %s\": %v", c.String(q.tm), b.String(q.tm), err)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, xc, xb); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessEq, xc, xb, err)
 		}
 		return nil
 	}},

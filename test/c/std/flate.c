@@ -229,32 +229,71 @@ void test_puffs_flate_work_in_progress() {
   }
 
   if (dec.private_impl.f_wip0 != 266) {
-    FAIL("wip0: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip0, 266);
+    FAIL("wip0: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip0,
+         (uint32_t)(266));
     return;
   }
   if (dec.private_impl.f_wip1 != 20) {
-    FAIL("wip1: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip1, 20);
+    FAIL("wip1: got %" PRIu32 ", want %" PRIu32, dec.private_impl.f_wip1,
+         (uint32_t)(20));
     return;
   }
 
   if (dec.private_impl.f_code_lengths[16] != 0) {
-    FAIL("clcl[16]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[16], 0);
+    FAIL("cl[16]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_lengths[16], (uint8_t)(0));
     return;
   }
   if (dec.private_impl.f_code_lengths[17] != 4) {
-    FAIL("clcl[17]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[17], 4);
+    FAIL("cl[17]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_lengths[17], (uint8_t)(4));
     return;
   }
   if (dec.private_impl.f_code_lengths[18] != 5) {
-    FAIL("clcl[18]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[18], 5);
+    FAIL("cl[18]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_lengths[18], (uint8_t)(5));
     return;
   }
   if (dec.private_impl.f_code_lengths[3] != 5) {
-    FAIL("clcl[3]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[3], 5);
+    FAIL("cl[3]: got %" PRIu8 ", want %" PRIu8,
+         dec.private_impl.f_code_lengths[3], (uint8_t)(5));
+    return;
+  }
+
+  if (dec.private_impl.f_huffs[0].private_impl.f_counts[3] != 7) {
+    FAIL("c[3]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_counts[3], (uint16_t)(7));
+    return;
+  }
+  if (dec.private_impl.f_huffs[0].private_impl.f_counts[4] != 1) {
+    FAIL("c[4]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_counts[4], (uint16_t)(1));
+    return;
+  }
+  if (dec.private_impl.f_huffs[0].private_impl.f_counts[5] != 2) {
+    FAIL("c[5]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_counts[5], (uint16_t)(2));
+    return;
+  }
+
+  if (dec.private_impl.f_huffs[0].private_impl.f_symbols[6] != 9) {
+    FAIL("s[6]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_symbols[6], (uint16_t)(9));
+    return;
+  }
+  if (dec.private_impl.f_huffs[0].private_impl.f_symbols[7] != 17) {
+    FAIL("s[7]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_symbols[7], (uint16_t)(17));
+    return;
+  }
+  if (dec.private_impl.f_huffs[0].private_impl.f_symbols[8] != 3) {
+    FAIL("s[8]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_symbols[8], (uint16_t)(3));
+    return;
+  }
+  if (dec.private_impl.f_huffs[0].private_impl.f_symbols[9] != 18) {
+    FAIL("s[9]: got %" PRIu16 ", want %" PRIu16,
+         dec.private_impl.f_huffs[0].private_impl.f_symbols[9], (uint16_t)(18));
     return;
   }
 }

@@ -105,14 +105,15 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040126                                                     // 0xbb08f802
-#define PUFFS_FLATE_ERROR_INCONSISTENT_HUFFMAN_TABLE -1157040125  // 0xbb08f803
+  -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
+  -1157040125  // 0xbb08f803
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFFMAN_STATE \
   -1157040124  // 0xbb08f804
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040123                                                      // 0xbb08f805
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040122    // 0xbb08f806
-#define PUFFS_FLATE_ERROR_TODO_DYNAMIC_HUFFMAN_BLOCKS -1157040121  // 0xbb08f807
+  -1157040123                                                    // 0xbb08f805
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040122           // 0xbb08f806
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040121  // 0xbb08f807
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -132,6 +133,7 @@ typedef struct {
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
     uint16_t f_counts[16];
+    uint16_t f_symbols[290];
   } private_impl;
 } puffs_flate_huffman_decoder;
 
@@ -150,7 +152,7 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    puffs_flate_huffman_decoder f_huff[2];
+    puffs_flate_huffman_decoder f_huffs[2];
     uint8_t f_code_lengths[289];
     uint32_t f_wip0;
     uint32_t f_wip1;
@@ -176,6 +178,9 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
+      uint16_t v_offsets[16];
+      uint16_t v_total;
+      uint16_t v_count;
     } c_init_huffman[1];
   } private_impl;
 } puffs_flate_decoder;
@@ -263,11 +268,11 @@ const char* puffs_flate_status_strings1[8] = {
     "flate: bad distance code count",
     "flate: bad flate block",
     "flate: bad literal/length code count",
-    "flate: inconsistent Huffman table",
     "flate: inconsistent stored block length",
+    "flate: internal error: inconsistent init_huffman state",
     "flate: internal error: inconsistent n_bits",
+    "flate: no Huffman codes",
     "flate: TODO: fixed Huffman blocks",
-    "flate: TODO: dynamic Huffman blocks",
 };
 
 const char* puffs_flate_status_string(puffs_flate_status s) {
@@ -792,37 +797,79 @@ puffs_flate_status puffs_flate_decoder_init_huffman(puffs_flate_decoder* self,
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_i;
+  uint16_t v_offsets[16];
+  uint16_t v_total;
+  uint16_t v_count;
 
   uint32_t coro_susp_point =
       self->private_impl.c_init_huffman[0].coro_susp_point;
   if (coro_susp_point) {
     v_i = self->private_impl.c_init_huffman[0].v_i;
+    memcpy(v_offsets, self->private_impl.c_init_huffman[0].v_offsets, 2 * 16);
+    v_total = self->private_impl.c_init_huffman[0].v_total;
+    v_count = self->private_impl.c_init_huffman[0].v_count;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
     v_i = 0;
     while (v_i < 16) {
-      self->private_impl.f_huff[a_which].private_impl.f_counts[v_i] = 0;
+      self->private_impl.f_huffs[a_which].private_impl.f_counts[v_i] = 0;
       v_i += 1;
     }
     v_i = 0;
     while (v_i < a_n_codes) {
-      if (self->private_impl.f_huff[a_which]
+      if (self->private_impl.f_huffs[a_which]
               .private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] >=
           289) {
-        status = PUFFS_FLATE_ERROR_INCONSISTENT_HUFFMAN_TABLE;
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFFMAN_STATE;
         goto exit;
       }
-      self->private_impl.f_huff[a_which]
+      self->private_impl.f_huffs[a_which]
           .private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] += 1;
       v_i += 1;
     }
     if (((uint32_t)(
-            self->private_impl.f_huff[a_which].private_impl.f_counts[0])) ==
+            self->private_impl.f_huffs[a_which].private_impl.f_counts[0])) ==
         a_n_codes) {
-      status = PUFFS_FLATE_ERROR_INCONSISTENT_HUFFMAN_TABLE;
+      status = PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES;
       goto exit;
+    }
+    {
+      size_t i;
+      for (i = 0; i < 16; i++) {
+        v_offsets[i] = 0;
+      }
+    };
+    v_total = 0;
+    v_i = 1;
+    while (v_i <= 15) {
+      v_offsets[v_i] = v_total;
+      v_count = self->private_impl.f_huffs[a_which].private_impl.f_counts[v_i];
+      if (v_total > (289 - v_count)) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFFMAN_STATE;
+        goto exit;
+      }
+      v_total = (v_total + v_count);
+      v_i += 1;
+    }
+    v_i = 0;
+    while (v_i < a_n_codes) {
+      if (self->private_impl.f_code_lengths[v_i] != 0) {
+        self->private_impl.f_huffs[a_which]
+            .private_impl
+            .f_symbols[v_offsets[self->private_impl.f_code_lengths[v_i]]] =
+            ((uint16_t)(v_i));
+        if (v_offsets[self->private_impl.f_code_lengths[v_i]] >= 289) {
+          status =
+              PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFFMAN_STATE;
+          goto exit;
+        }
+        v_offsets[self->private_impl.f_code_lengths[v_i]] += 1;
+      }
+      v_i += 1;
     }
     self->private_impl.c_init_huffman[0].coro_susp_point = 0;
     goto exit;
@@ -832,6 +879,9 @@ puffs_flate_status puffs_flate_decoder_init_huffman(puffs_flate_decoder* self,
 suspend:
   self->private_impl.c_init_huffman[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_init_huffman[0].v_i = v_i;
+  memcpy(self->private_impl.c_init_huffman[0].v_offsets, v_offsets, 2 * 16);
+  self->private_impl.c_init_huffman[0].v_total = v_total;
+  self->private_impl.c_init_huffman[0].v_count = v_count;
 
 exit:
   return status;

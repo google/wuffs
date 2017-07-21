@@ -8,19 +8,19 @@ packageid "flte"
 pub error "bad distance code count"
 pub error "bad flate block"
 pub error "bad literal/length code count"
-pub error "inconsistent Huffman table"
 pub error "inconsistent stored block length"
+pub error "internal error: inconsistent init_huffman state"
 pub error "internal error: inconsistent n_bits"
+pub error "no Huffman codes"
 
 pub error "TODO: fixed Huffman blocks"
-pub error "TODO: dynamic Huffman blocks"
 
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits u32,
 	n_bits u32,
 
-	huff[2] huffman_decoder,
+	huffs[2] huffman_decoder,
 	code_lengths[289] u8[..15],
 
 	// These temporary fields are used to debug work-in-progress code.
@@ -133,9 +133,31 @@ pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 // and its callers, as it can only return errors, not suspensions.
 
 pri func decoder.init_huffman?(which u32[..1], n_codes u32[..289])() {
+	// For the clcode example in this package's README.md:
+	//  - n_codes = 19
+	//  - code_lengths[ 0] = 3
+	//  - code_lengths[ 1] = 0
+	//  - code_lengths[ 2] = 0
+	//  - code_lengths[ 3] = 5
+	//  - code_lengths[ 4] = 3
+	//  - code_lengths[ 5] = 3
+	//  - code_lengths[ 6] = 3
+	//  - code_lengths[ 7] = 3
+	//  - code_lengths[ 8] = 3
+	//  - code_lengths[ 9] = 3
+	//  - code_lengths[10] = 0
+	//  - code_lengths[11] = 0
+	//  - code_lengths[12] = 0
+	//  - code_lengths[13] = 0
+	//  - code_lengths[14] = 0
+	//  - code_lengths[15] = 0
+	//  - code_lengths[16] = 0
+	//  - code_lengths[17] = 4
+	//  - code_lengths[18] = 5
+
 	var i u32
 	while i < 16 {
-		this.huff[in.which].counts[i] = 0
+		this.huffs[in.which].counts[i] = 0
 		i += 1
 	}
 	i = 0
@@ -143,26 +165,85 @@ pri func decoder.init_huffman?(which u32[..1], n_codes u32[..289])() {
 		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
-		if this.huff[in.which].counts[this.code_lengths[i]] >= 289 {
-			return error "inconsistent Huffman table"
+		if this.huffs[in.which].counts[this.code_lengths[i]] >= 289 {
+			return error "internal error: inconsistent init_huffman state"
 		}
-		this.huff[in.which].counts[this.code_lengths[i]] += 1
+		this.huffs[in.which].counts[this.code_lengths[i]] += 1
 		i += 1
 	}
-	if (this.huff[in.which].counts[0] as u32) == in.n_codes {
-		// There are no codes.
-		return error "inconsistent Huffman table"
+	if (this.huffs[in.which].counts[0] as u32) == in.n_codes {
+		return error "no Huffman codes"
 	}
 
-	// For the clcode_lengths example in this package's README.md:
+	// For the clcode example in this package's README.md:
+	//  - counts[0] = 9
+	//  - counts[1] = 0
+	//  - counts[2] = 0
 	//  - counts[3] = 7
 	//  - counts[4] = 1
 	//  - counts[5] = 2
-	//  - all other counts elements are zero.
+	//  - all other counts elements are 0.
 
 	// TODO: check for the total code_lengths being too short or too long.
+
+	var offsets[16] u16[..289]
+	var total u16[..289]
+	i = 1
+	while i <= 15 {
+		offsets[i] = total
+		var count u16[..289] = this.huffs[in.which].counts[i]
+		if total > (289 - count) {
+			return error "internal error: inconsistent init_huffman state"
+		}
+		assert (total + count) <= 289 via "(a + b) <= c: a <= (c - b)"()
+		// TODO: change this to total += count, once the proof engine's bounds
+		// checking can handle it.
+		total = total + count
+		i += 1
+	}
+
+	// For the clcode example in this package's README.md:
+	//  - offsets[0] =  0
+	//  - offsets[1] =  0
+	//  - offsets[2] =  0
+	//  - offsets[3] =  0
+	//  - offsets[4] =  7
+	//  - offsets[5] =  8
+	//  - offsets[6] = 10
+	//  - all other offsets elements are 10.
+
+	i = 0
+	while i < in.n_codes {
+		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
+		if this.code_lengths[i] != 0 {
+			this.huffs[in.which].symbols[offsets[this.code_lengths[i]]] = i as u16
+			if offsets[this.code_lengths[i]] >= 289 {
+				return error "internal error: inconsistent init_huffman state"
+			}
+			offsets[this.code_lengths[i]] += 1
+		}
+		i += 1
+	}
+
+	// For the clcode example in this package's README.md:
+	//  - symbols[0] =  0
+	//  - symbols[1] =  4
+	//  - symbols[2] =  5
+	//  - symbols[3] =  6
+	//  - symbols[4] =  7
+	//  - symbols[5] =  8
+	//  - symbols[6] =  9
+	//  - symbols[7] = 17
+	//  - symbols[8] =  3
+	//  - symbols[9] = 18
+	//
+	// As a (local variable) side effect, offsets' values have been updated:
+	//  - offsets[3] =  7, formerly 0
+	//  - offsets[4] =  8, formerly 7
+	//  - offsets[5] = 10, formerly 8
 }
 
 pri struct huffman_decoder(
 	counts[16] u16[..289],
+	symbols[290] u16[..289],
 )
