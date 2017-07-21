@@ -493,13 +493,27 @@ func (g *gen) writeResumeSuspend1(n *a.Var, prefix string, suspend bool) error {
 		g.printf("%s = %s;\n", lhs, rhs)
 		return nil
 	case t.KeyOpenBracket:
-		if inner := typ.Inner(); inner.Decorator() != 0 || inner.Name().Key() != t.KeyU8 {
+		inner := typ.Inner()
+		if inner.Decorator() != 0 {
 			break
 		}
+		multiplier := 0
+		switch inner.Name().Key() {
+		case t.KeyU8:
+			multiplier = 1
+		case t.KeyU16:
+			multiplier = 2
+		case t.KeyU32:
+			multiplier = 4
+		case t.KeyU64:
+			multiplier = 8
+		}
 		cv := typ.ArrayLength().ConstValue()
-		// TODO: check that cv is within size_t's range.
-		g.printf("memcpy(%s, %s, %v);\n", lhs, rhs, cv)
-		return nil
+		// TODO: check that multiplier * cv is within size_t's range.
+		if multiplier != 0 {
+			g.printf("memcpy(%s, %s, %d * %v);\n", lhs, rhs, multiplier, cv)
+			return nil
+		}
 	}
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
 		n.Name().String(g.tm), n.XType().String(g.tm))
@@ -758,14 +772,14 @@ func (g *gen) writeSuspendibles(n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
+	if depth > a.MaxExprDepth {
+		return fmt.Errorf("expression recursion depth too large")
+	}
+	depth++
+
 	// The evaluation order for suspendible calls (which can have side effects)
 	// is important here: LHS, MHS, RHS, Args and finally the node itself.
 	if !n.CallSuspendible() {
-		if depth > a.MaxExprDepth {
-			return fmt.Errorf("expression recursion depth too large")
-		}
-		depth++
-
 		for _, o := range n.Node().Raw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
 				if err := g.writeCallSuspendibles(o.Expr(), depth); err != nil {
@@ -950,6 +964,18 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 	} else if isThisMethod(g.tm, n, "decode_dynamic", 2) {
 		g.printf("status = %s%s_decode_dynamic(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
+		g.writes("if (status) { goto suspend; }\n")
+
+	} else if isThisMethod(g.tm, n, "init_huffman", 1) {
+		g.printf("status = %s%s_init_huffman(self,",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
+		if err := g.writeExpr(n.Args()[0].Arg().Value(), replaceNothing, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(");\n")
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}

@@ -8,6 +8,7 @@ packageid "flte"
 pub error "bad distance code count"
 pub error "bad flate block"
 pub error "bad literal/length code count"
+pub error "inconsistent Huffman table"
 pub error "inconsistent stored block length"
 pub error "internal error: inconsistent n_bits"
 
@@ -20,7 +21,7 @@ pub struct decoder?(
 	n_bits u32,
 
 	huff[2] huffman_decoder,
-	code_lengths[19] u8[..7],
+	code_lengths[289] u8[..15],
 
 	// These temporary fields are used to debug work-in-progress code.
 	wip0 u32,
@@ -113,13 +114,49 @@ pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
+	this.bits = bits
+	this.n_bits = n_bits
+
+	this.init_huffman?(n_codes:19)
 
 	// TODO: implement.
 	this.wip0 = hlit
 	this.wip1 = hdist
+}
 
-	this.bits = bits
-	this.n_bits = n_bits
+// TODO: make init_huffman a huffman_decoder method instead of a decoder
+// method?
+
+// TODO: make named constants for 15, 289, etc.
+
+// TODO: skip generating PUFFS_COROUTINE_SUSPENSION_POINTs for this function,
+// and its callers, as it can only return errors, not suspensions.
+
+pri func decoder.init_huffman?(n_codes u32[..289])() {
+	var counts[16] u32[..289]
+	var i u32
+	while i < in.n_codes {
+		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
+		// TODO: this if should be unnecessary. Have some way to assert that,
+		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
+		if counts[this.code_lengths[i]] >= 289 {
+			return error "inconsistent Huffman table"
+		}
+		counts[this.code_lengths[i]] += 1
+		i += 1
+	}
+	if counts[0] == in.n_codes {
+		// There are no codes.
+		return error "inconsistent Huffman table"
+	}
+
+	// For the clcode_lengths example in this package's README.md:
+	//  - counts[3] = 7
+	//  - counts[4] = 1
+	//  - counts[5] = 2
+	//  - all other counts elements are zero.
+
+	// TODO: check for the total code_lengths being too short or too long.
 }
 
 pri struct huffman_decoder(
