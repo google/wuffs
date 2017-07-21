@@ -136,7 +136,7 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    uint8_t f_code_length_code_lengths[19];
+    uint8_t f_code_lengths[19];
     uint32_t f_wip0;
     uint32_t f_wip1;
 
@@ -703,16 +703,14 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
         v_bits |= (((uint32_t)(t_1)) << v_n_bits);
         v_n_bits += 8;
       }
-      self->private_impl
-          .f_code_length_code_lengths[puffs_flate_code_order[v_i]] =
+      self->private_impl.f_code_lengths[puffs_flate_code_order[v_i]] =
           ((uint8_t)((v_bits & 7)));
       v_bits >>= 3;
       v_n_bits -= 3;
       v_i += 1;
     }
     while (v_i < 19) {
-      self->private_impl
-          .f_code_length_code_lengths[puffs_flate_code_order[v_i]] = 0;
+      self->private_impl.f_code_lengths[puffs_flate_code_order[v_i]] = 0;
       v_i += 1;
     }
     self->private_impl.f_wip0 = v_hlit;

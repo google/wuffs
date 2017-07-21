@@ -136,7 +136,7 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    uint8_t f_code_length_code_lengths[19];
+    uint8_t f_code_lengths[19];
     uint32_t f_wip0;
     uint32_t f_wip1;
 

@@ -237,24 +237,24 @@ void test_puffs_flate_work_in_progress() {
     return;
   }
 
-  if (dec.private_impl.f_code_length_code_lengths[16] != 0) {
+  if (dec.private_impl.f_code_lengths[16] != 0) {
     FAIL("clcl[16]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_length_code_lengths[16], 0);
+         dec.private_impl.f_code_lengths[16], 0);
     return;
   }
-  if (dec.private_impl.f_code_length_code_lengths[17] != 4) {
+  if (dec.private_impl.f_code_lengths[17] != 4) {
     FAIL("clcl[17]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_length_code_lengths[17], 4);
+         dec.private_impl.f_code_lengths[17], 4);
     return;
   }
-  if (dec.private_impl.f_code_length_code_lengths[18] != 5) {
+  if (dec.private_impl.f_code_lengths[18] != 5) {
     FAIL("clcl[18]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_length_code_lengths[18], 5);
+         dec.private_impl.f_code_lengths[18], 5);
     return;
   }
-  if (dec.private_impl.f_code_length_code_lengths[3] != 5) {
+  if (dec.private_impl.f_code_lengths[3] != 5) {
     FAIL("clcl[3]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_length_code_lengths[3], 5);
+         dec.private_impl.f_code_lengths[3], 5);
     return;
   }
 }
