@@ -108,7 +108,7 @@ typedef int32_t puffs_flate_status;
   -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1157040125  // 0xbb08f803
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFFMAN_STATE \
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFF_STATE \
   -1157040124  // 0xbb08f804
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
   -1157040123                                                    // 0xbb08f805
@@ -168,20 +168,23 @@ typedef struct {
     } c_decode_uncompressed[1];
     struct {
       uint32_t coro_susp_point;
+    } c_decode_dynamic[1];
+    struct {
+      uint32_t coro_susp_point;
       uint32_t v_bits;
       uint32_t v_n_bits;
-      uint32_t v_hlit;
-      uint32_t v_hdist;
-      uint32_t v_hclen;
+      uint32_t v_n_lit;
+      uint32_t v_n_dist;
+      uint32_t v_n_clen;
       uint32_t v_i;
-    } c_decode_dynamic[1];
+    } c_init_huffs[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
       uint16_t v_offsets[16];
       uint16_t v_total;
       uint16_t v_count;
-    } c_init_huffman[1];
+    } c_init_huff[1];
   } private_impl;
 } puffs_flate_decoder;
 

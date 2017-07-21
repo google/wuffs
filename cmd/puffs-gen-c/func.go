@@ -969,8 +969,16 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
-	} else if isThisMethod(g.tm, n, "init_huffman", 2) {
-		g.printf("status = %s%s_init_huffman(self,",
+	} else if isThisMethod(g.tm, n, "init_huffs", 1) {
+		g.printf("status = %s%s_init_huffs(self, %ssrc);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
+		g.writes("if (status) { goto suspend; }\n")
+
+	} else if isThisMethod(g.tm, n, "init_huff", 2) {
+		g.printf("status = %s%s_init_huff(self,",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
 		if err := g.writeExpr(n.Args()[0].Arg().Value(), replaceNothing, parenthesesMandatory, depth); err != nil {
 			return err
