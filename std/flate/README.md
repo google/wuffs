@@ -11,6 +11,13 @@ Gzip (the file format) is used by the `gzip` and `tar` command line tools and
 by the HTTP network protocol. Zlib is used by the ELF executable and PNG image
 file formats.
 
+[Zip](https://support.pkware.com/display/PKZIP/APPNOTE) (also known as PKZIP)
+is another wrapper, similar to combining gzip with tar, that can compress
+multiple files into a single archive. Zip is widely used by the ECMA Office
+Open XML format, the OASIS Open Document Format for Office Applications and the
+Java JAR format. Parsing zip is not provided by this package, look at the
+`std/zip` package instead (TODO).
+
 For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
 
     00000000: 526f 6d65 6f20 616e 6420 4a75 6c69 6574  Romeo and Juliet
