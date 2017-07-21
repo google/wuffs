@@ -102,18 +102,19 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_SUSPENSION_LIMITED_READ 9                 // 0x00000009
 #define PUFFS_FLATE_SUSPENSION_LIMITED_WRITE 10               // 0x0000000a
 
-#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040128  // 0xbb08f800
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040127          // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040128         // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040127  // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040126          // 0xbb08f802
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040126  // 0xbb08f802
-#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1157040125  // 0xbb08f803
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_INIT_HUFF_STATE \
+#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1157040124  // 0xbb08f804
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1157040123  // 0xbb08f805
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040123                                                    // 0xbb08f805
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040122           // 0xbb08f806
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040121  // 0xbb08f807
+  -1157040122                                                    // 0xbb08f806
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040121           // 0xbb08f807
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040120  // 0xbb08f808
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -177,6 +178,13 @@ typedef struct {
       uint32_t v_n_dist;
       uint32_t v_n_clen;
       uint32_t v_i;
+      uint32_t v_symbol;
+      uint32_t v_code;
+      uint32_t v_count;
+      uint32_t v_first;
+      uint32_t v_index;
+      uint32_t v_length;
+      uint32_t v_n_extra_bits;
     } c_init_huffs[1];
     struct {
       uint32_t coro_susp_point;

@@ -101,7 +101,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	if cv := n.ConstValue(); cv != nil {
 		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.String(tm))
 	}
-	id0, lhs, rhs := n.ID0(), n.LHS().Expr(), n.RHS().Expr()
+	id0, lhs, rhs, args := n.ID0(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
 	switch id0.Key() {
 	case t.KeyXUnaryNot:
 		return rhs, nil
@@ -132,10 +132,24 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		} else {
 			id0 = t.IDXBinaryAnd
 		}
+	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
+		args = make([]*a.Node, 0, len(n.Args()))
+		for _, a := range n.Args() {
+			v, err := invert(tm, a.Expr())
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, v.Node())
+		}
+		if id0.Key() == t.KeyXAssociativeAnd {
+			id0 = t.IDXAssociativeOr
+		} else {
+			id0 = t.IDXAssociativeAnd
+		}
 	default:
 		id0, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
-	o := a.NewExpr(n.Node().Raw().Flags(), id0, 0, lhs.Node(), nil, rhs.Node(), nil)
+	o := a.NewExpr(n.Node().Raw().Flags(), id0, 0, lhs.Node(), nil, rhs.Node(), args)
 	o.SetMType(n.MType())
 	return o, nil
 }

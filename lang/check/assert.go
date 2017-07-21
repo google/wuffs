@@ -67,7 +67,10 @@ func (z *facts) appendFact(fact *a.Expr) {
 		z.appendFact(fact.RHS().Expr())
 		return
 	case t.KeyXAssociativeAnd:
-		// TODO.
+		for _, a := range fact.Args() {
+			z.appendFact(a.Expr())
+		}
+		return
 	}
 
 	*z = append(*z, fact)

@@ -5,11 +5,12 @@
 
 packageid "flte"
 
+pub error "bad Huffman code"
 pub error "bad distance code count"
 pub error "bad flate block"
 pub error "bad literal/length code count"
 pub error "inconsistent stored block length"
-pub error "internal error: inconsistent init_huff state"
+pub error "internal error: inconsistent Huffman decoder state"
 pub error "internal error: inconsistent n_bits"
 pub error "no Huffman codes"
 
@@ -125,7 +126,127 @@ pri func decoder.init_huffs?(src reader1)() {
 	}
 	this.init_huff?(which:0, n_codes:19)
 
-	// TODO: implement.
+	i = 0
+	while i < 31 {  // TODO: replace 31 with n_lit + n_dist.
+		// Decode a clcode symbol from H-CL.
+		var symbol u32[..289]
+		var code u32
+		var count u32
+		var first u32
+		var index u32
+		var length u32 = 1
+		while true,
+			pre first <= 0xFFFF,
+			pre index <= 0xFFFF,
+			inv i < 31,
+		{
+			if length > 15 {
+				return error "bad Huffman code"
+			}
+
+			// Read the next bit.
+			while n_bits <= 0,
+				inv first <= 0xFFFF,
+				inv index <= 0xFFFF,
+				inv i < 31,
+				inv length <= 15,
+				post n_bits > 0,
+			{
+				bits |= (in.src.read_u8?() as u32) << n_bits
+				n_bits += 8
+			}
+			code |= bits & 1
+			// TODO: improve the proof engine's bounds checking so that any
+			// check returning "internal error: inconsistent Huffman decoder
+			// state" can be removed. There is one here and more below.
+			if code > 0xFFFF {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			bits >>= 1
+			n_bits -= 1
+
+			count = this.huffs[0].counts[length] as u32
+			if count > 0xFFFF {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+
+			// Compare the code so far to the counts.
+			//
+			// For the clcode example in this package's README.md:
+			//  - counts[1] = 0
+			//  - counts[2] = 0
+			//  - counts[3] = 7
+			//  - counts[4] = 1
+			//  - counts[5] = 2
+			//
+			// Recall that the map from bits to clcode symbols is:
+			//    bits        clcode
+			//    0b000        0
+			//    0b001        4
+			//    0b010        5
+			//    0b011        6
+			//    0b100        7
+			//    0b101        8
+			//    0b110        9
+			//    0b1110      17
+			//    0b11110      3
+			//    0b11111     18
+			//
+			// The loop iterations at this point have:
+			//  - length=1, count=0, first= 0, index=0, code in [0.. 1].
+			//  - length=2, count=0, first= 0, index=0, code in [0.. 3].
+			//  - length=3, count=7, first= 0, index=0, code in [0.. 7].
+			//  - length=4, count=1, first=14, index=7, code in [0..15].
+			//  - length=5, count=2, first=30, index=8, code in [0..31].
+			if code < (first + count) {
+				index += code
+				if index < first {
+					return error "internal error: inconsistent Huffman decoder state"
+				}
+				index -= first
+				if index >= 290 {
+					return error "internal error: inconsistent Huffman decoder state"
+				}
+				symbol = this.huffs[0].symbols[index] as u32
+				break
+			}
+
+			index += count
+			if index > 0xFFFF {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			first = (first + count) << 1
+			if first > 0xFFFF {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			code <<= 1
+
+			length += 1
+		}
+
+		// Read any extra bits, as per the RFC 1951 section 3.2.7.
+		var n_extra_bits u32[..7]
+		if symbol == 16 {
+			n_extra_bits = 2
+		} else if symbol == 17 {
+			n_extra_bits = 3
+		} else if symbol == 18 {
+			n_extra_bits = 7
+		}
+		while n_bits < n_extra_bits,
+			inv i < 31,
+			post n_bits >= n_extra_bits,
+		{
+			assert n_bits < 7 via "a < b: a < c; c <= b"(c:n_extra_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+		}
+		// TODO: do something with those extra bits.
+		bits >>= n_extra_bits
+		n_bits -= n_extra_bits
+
+		i += 1
+	}
 
 	this.wip0 = n_lit
 	this.wip1 = n_dist
@@ -176,7 +297,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
 		if this.huffs[in.which].counts[this.code_lengths[i]] >= 289 {
-			return error "internal error: inconsistent init_huff state"
+			return error "internal error: inconsistent Huffman decoder state"
 		}
 		this.huffs[in.which].counts[this.code_lengths[i]] += 1
 		i += 1
@@ -203,7 +324,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		offsets[i] = total
 		var count u16[..289] = this.huffs[in.which].counts[i]
 		if total > (289 - count) {
-			return error "internal error: inconsistent init_huff state"
+			return error "internal error: inconsistent Huffman decoder state"
 		}
 		assert (total + count) <= 289 via "(a + b) <= c: a <= (c - b)"()
 		// TODO: change this to total += count, once the proof engine's bounds
@@ -228,7 +349,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		if this.code_lengths[i] != 0 {
 			this.huffs[in.which].symbols[offsets[this.code_lengths[i]]] = i as u16
 			if offsets[this.code_lengths[i]] >= 289 {
-				return error "internal error: inconsistent init_huff state"
+				return error "internal error: inconsistent Huffman decoder state"
 			}
 			offsets[this.code_lengths[i]] += 1
 		}
