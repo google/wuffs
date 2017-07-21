@@ -749,7 +749,7 @@ func (g *gen) writeCTypeName(n *a.TypeExpr, varNamePrefix string, varName string
 		}
 	}
 	if fallback {
-		g.printf("%s%s", g.pkgPrefix, n.Name().String(g.tm))
+		g.printf("%s%s", g.pkgPrefix, innermost.Name().String(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {

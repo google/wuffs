@@ -19,6 +19,7 @@ pub struct decoder?(
 	bits u32,
 	n_bits u32,
 
+	huff[2] huffman_decoder,
 	code_lengths[19] u8[..7],
 
 	// These temporary fields are used to debug work-in-progress code.
@@ -120,3 +121,6 @@ pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 	this.bits = bits
 	this.n_bits = n_bits
 }
+
+pri struct huffman_decoder(
+)
