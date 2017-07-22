@@ -104,11 +104,16 @@ pri func decoder.init_huffs?(src reader1)() {
 	bits >>= 4
 	n_bits -= 14
 
-	// Read the clcode Huffman table.
+	// Read the clcode Huffman table: H-CL.
 	var i u32 = 0
-	while i < n_clen {
+	while i < n_clen,
+		inv n_dist <= 30,
+		inv n_lit <= 286,
+	{
 		while n_bits < 3,
 			inv i < n_clen,
+			inv n_dist <= 30,
+			inv n_lit <= 286,
 			post n_bits >= 3,
 		{
 			bits |= (in.src.read_u8?() as u32) << n_bits
@@ -120,14 +125,23 @@ pri func decoder.init_huffs?(src reader1)() {
 		n_bits -= 3
 		i += 1
 	}
-	while i < 19 {
+	while i < 19,
+		inv n_dist <= 30,
+		inv n_lit <= 286,
+	{
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
 	this.init_huff?(which:0, n_codes:19)
 
+	// Decode the code lengths for the next two Huffman tables.
 	i = 0
-	while i < 31 {  // TODO: replace 31 with n_lit + n_dist.
+	while i < (n_lit + n_dist),
+		inv n_dist <= 30,
+		inv n_lit <= 286,
+	{
+		assert i < (286 + 30) via "a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"(b0:n_lit, c0:n_dist)
+
 		// Decode a clcode symbol from H-CL.
 		var symbol u32[..289]
 		var code u32
@@ -138,7 +152,9 @@ pri func decoder.init_huffs?(src reader1)() {
 		while true,
 			pre first <= 0xFFFF,
 			pre index <= 0xFFFF,
-			inv i < 31,
+			inv i < 316,
+			inv n_dist <= 30,
+			inv n_lit <= 286,
 		{
 			if length > 15 {
 				return error "bad Huffman code"
@@ -147,9 +163,11 @@ pri func decoder.init_huffs?(src reader1)() {
 			// Read the next bit.
 			while n_bits <= 0,
 				inv first <= 0xFFFF,
+				inv i < 316,
 				inv index <= 0xFFFF,
-				inv i < 31,
 				inv length <= 15,
+				inv n_dist <= 30,
+				inv n_lit <= 286,
 				post n_bits > 0,
 			{
 				bits |= (in.src.read_u8?() as u32) << n_bits
@@ -234,7 +252,9 @@ pri func decoder.init_huffs?(src reader1)() {
 			n_extra_bits = 7
 		}
 		while n_bits < n_extra_bits,
-			inv i < 31,
+			inv i < 316,
+			inv n_dist <= 30,
+			inv n_lit <= 286,
 			post n_bits >= n_extra_bits,
 		{
 			assert n_bits < 7 via "a < b: a < c; c <= b"(c:n_extra_bits)

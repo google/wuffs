@@ -78,10 +78,13 @@ func (z *facts) appendFact(fact *a.Expr) {
 
 // update applies f to each fact, replacing the slice element with the result
 // of the function call. The slice is then compacted to remove all nils.
-func (z *facts) update(f func(*a.Expr) *a.Expr) {
+func (z *facts) update(f func(*a.Expr) (*a.Expr, error)) error {
 	i := 0
 	for _, x := range *z {
-		x = f(x)
+		x, err := f(x)
+		if err != nil {
+			return err
+		}
 		if x != nil {
 			(*z)[i] = x
 			i++
@@ -91,6 +94,7 @@ func (z *facts) update(f func(*a.Expr) *a.Expr) {
 		(*z)[j] = nil
 	}
 	*z = (*z)[:i]
+	return nil
 }
 
 func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.Int, *big.Int, error) {
@@ -153,26 +157,55 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 }
 
 // simplify returns a simplified form of n. For example, (x - x) becomes 0.
-func simplify(n *a.Expr) *a.Expr {
+func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	// TODO: be rigorous about this, not ad hoc.
 	switch op, lhs, rhs := parseBinaryOp(n); op.Key() {
 	case t.KeyXBinaryPlus:
-		// TODO: constant folding, so ((x + 1) + 1) becomes (x + 2).
+		if lcv, rcv := lhs.ConstValue(), rhs.ConstValue(); lcv != nil && rcv != nil {
+			ocv := big.NewInt(0).Add(lcv, rcv)
+			id, err := tm.Insert(ocv.String())
+			if err != nil {
+				return nil, err
+			}
+			o := a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
+			o.SetConstValue(ocv)
+			o.SetMType(typeExprIdeal)
+			return o, nil
+		}
+		// TODO: more constant folding, so ((x + 1) + 1) becomes (x + 2).
 
 	case t.KeyXBinaryMinus:
 		if lhs.Eq(rhs) {
-			return zeroExpr
+			return zeroExpr, nil
 		}
 		if lOp, lLHS, lRHS := parseBinaryOp(lhs); lOp.Key() == t.KeyXBinaryPlus {
 			if lLHS.Eq(rhs) {
-				return lRHS
+				return lRHS, nil
 			}
 			if lRHS.Eq(rhs) {
-				return lLHS
+				return lLHS, nil
 			}
 		}
+
+	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq,
+		t.KeyXBinaryEqEq, t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan:
+
+		l, err := simplify(tm, lhs)
+		if err != nil {
+			return nil, err
+		}
+		r, err := simplify(tm, rhs)
+		if err != nil {
+			return nil, err
+		}
+		if l != lhs || r != rhs {
+			o := a.NewExpr(a.FlagsTypeChecked, op, 0, l.Node(), nil, r.Node(), nil)
+			o.SetConstValue(n.ConstValue())
+			o.SetMType(n.MType())
+			return o, nil
+		}
 	}
-	return n
+	return n, nil
 }
 
 func argValue(tm *t.Map, args []*a.Node, name string) *a.Expr {
@@ -292,11 +325,11 @@ var reasons = [...]struct {
 	r reason
 }{
 	{`"a < (b + c): a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
-		op, xa, bc := parseBinaryOp(n.Condition())
+		op, xa, xbc := parseBinaryOp(n.Condition())
 		if op.Key() != t.KeyXBinaryLessThan {
 			return errFailed
 		}
-		op, xb, xc := parseBinaryOp(bc)
+		op, xb, xc := parseBinaryOp(xbc)
 		if op.Key() != t.KeyXBinaryPlus {
 			return errFailed
 		}
@@ -309,11 +342,11 @@ var reasons = [...]struct {
 		return nil
 	}},
 	{`"(a + b) <= c: a <= (c - b)"`, func(q *checker, n *a.Assert) error {
-		op, ab, xc := parseBinaryOp(n.Condition())
+		op, xab, xc := parseBinaryOp(n.Condition())
 		if op.Key() != t.KeyXBinaryLessEq {
 			return errFailed
 		}
-		op, xa, xb := parseBinaryOp(ab)
+		op, xa, xb := parseBinaryOp(xab)
 		if op.Key() != t.KeyXBinaryPlus {
 			return errFailed
 		}
@@ -337,6 +370,35 @@ var reasons = [...]struct {
 		}
 		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, xc, xb); err != nil {
 			return binOpReasonError(q.tm, t.IDXBinaryLessEq, xc, xb, err)
+		}
+		return nil
+	}},
+	{`"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"`, func(q *checker, n *a.Assert) error {
+		xb0 := argValue(q.tm, n.Args(), "b0")
+		if xb0 == nil {
+			return errFailed
+		}
+		xc0 := argValue(q.tm, n.Args(), "c0")
+		if xc0 == nil {
+			return errFailed
+		}
+		op, xa, xbc := parseBinaryOp(n.Condition())
+		if op.Key() != t.KeyXBinaryLessThan {
+			return errFailed
+		}
+		op, xb, xc := parseBinaryOp(xbc)
+		if op.Key() != t.KeyXBinaryPlus {
+			return errFailed
+		}
+		plus := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryPlus, 0, xb0.Node(), nil, xc0.Node(), nil)
+		if err := q.proveBinaryOp(t.KeyXBinaryLessThan, xa, plus); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessThan, xa, plus, err)
+		}
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, xb0, xb); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessEq, xb0, xb, err)
+		}
+		if err := q.proveBinaryOp(t.KeyXBinaryLessEq, xc0, xc); err != nil {
+			return binOpReasonError(q.tm, t.IDXBinaryLessEq, xc0, xc, err)
 		}
 		return nil
 	}},

@@ -269,7 +269,11 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 		}
 		return fmt.Errorf("check: cannot prove %q: %v", condition.String(q.tm), err)
 	}
-	q.facts.appendFact(condition)
+	o, err := simplify(q.tm, condition)
+	if err != nil {
+		return err
+	}
+	q.facts.appendFact(o)
 	return nil
 }
 
@@ -280,12 +284,14 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	// TODO: check lhs and rhs are pure expressions.
 	if op == t.IDEq {
 		// Drop any facts involving lhs.
-		q.facts.update(func(x *a.Expr) *a.Expr {
+		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 			if x.Mentions(lhs) {
-				return nil
+				return nil, nil
 			}
-			return x
-		})
+			return x, nil
+		}); err != nil {
+			return err
+		}
 
 		if lhs.Pure() && rhs.Pure() {
 			o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, lhs.Node(), nil, rhs.Node(), nil)
@@ -294,27 +300,33 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 	} else {
 		// Update any facts involving lhs.
-		q.facts.update(func(x *a.Expr) *a.Expr {
+		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 			xOp, xLHS, xRHS := parseBinaryOp(x)
 			if xOp == 0 || !xLHS.Eq(lhs) {
 				if x.Mentions(lhs) {
-					return nil
+					return nil, nil
 				}
-				return x
+				return x, nil
 			}
 			if xRHS.Mentions(lhs) {
-				return nil
+				return nil, nil
 			}
 			switch op.Key() {
 			case t.KeyPlusEq, t.KeyMinusEq:
 				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, xRHS.Node(), nil, rhs.Node(), nil)
 				oRHS.SetMType(xRHS.MType())
-				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, simplify(oRHS).Node(), nil)
+				oRHS, err := simplify(q.tm, oRHS)
+				if err != nil {
+					return nil, err
+				}
+				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, oRHS.Node(), nil)
 				o.SetMType(x.MType())
-				return o
+				return o, nil
 			}
-			return nil
-		})
+			return nil, nil
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -426,13 +438,12 @@ func (q *checker) unify(branches [][]*a.Expr) error {
 		}
 	}
 
-	q.facts.update(func(n *a.Expr) *a.Expr {
+	return q.facts.update(func(n *a.Expr) (*a.Expr, error) {
 		if m[n.String(q.tm)] == len(branches) {
-			return n
+			return n, nil
 		}
-		return nil
+		return nil, nil
 	})
-	return nil
 }
 
 func (q *checker) bcheckIf(n *a.If) error {

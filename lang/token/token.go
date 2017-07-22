@@ -25,7 +25,7 @@ type Map struct {
 	byKey  []string
 }
 
-func (m *Map) insert(name string) (ID, error) {
+func (m *Map) Insert(name string) (ID, error) {
 	if name == "" {
 		return 0, nil
 	}
@@ -158,7 +158,7 @@ loop:
 					return nil, nil, fmt.Errorf("token: string too long at %s:%d", filename, line)
 				}
 			}
-			id, err := m.insert(string(src[i:j]))
+			id, err := m.Insert(string(src[i:j]))
 			if err != nil {
 				return nil, nil, err
 			}
@@ -174,7 +174,7 @@ loop:
 					return nil, nil, fmt.Errorf("token: identifier too long at %s:%d", filename, line)
 				}
 			}
-			id, err := m.insert(string(src[i:j]))
+			id, err := m.Insert(string(src[i:j]))
 			if err != nil {
 				return nil, nil, err
 			}
@@ -200,7 +200,7 @@ loop:
 					return nil, nil, fmt.Errorf("token: constant too long at %s:%d", filename, line)
 				}
 			}
-			id, err := m.insert(string(src[i:j]))
+			id, err := m.Insert(string(src[i:j]))
 			if err != nil {
 				return nil, nil, err
 			}

@@ -804,7 +804,7 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
       goto suspend;
     }
     v_i = 0;
-    while (v_i < 31) {
+    while (v_i < (v_n_lit + v_n_dist)) {
       v_symbol = 0;
       v_code = 0;
       v_count = 0;
