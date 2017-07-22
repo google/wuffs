@@ -5,6 +5,8 @@
 
 packageid "flte"
 
+pub error "bad Huffman code length count"
+pub error "bad Huffman code length repetition"
 pub error "bad Huffman code"
 pub error "bad distance code count"
 pub error "bad flate block"
@@ -12,6 +14,7 @@ pub error "bad literal/length code count"
 pub error "inconsistent stored block length"
 pub error "internal error: inconsistent Huffman decoder state"
 pub error "internal error: inconsistent n_bits"
+pub error "missing end-of-block code"
 pub error "no Huffman codes"
 
 pub error "TODO: fixed Huffman blocks"
@@ -27,11 +30,7 @@ pub struct decoder?(
 	//  - huffs[1] is used for dcode.
 	huffs[2] huffman_decoder,
 
-	code_lengths[289] u8[..15],
-
-	// These temporary fields are used to debug work-in-progress code.
-	wip0 u32,
-	wip1 u32,
+	code_lengths[316] u8[..15],
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
@@ -242,17 +241,39 @@ pri func decoder.init_huffs?(src reader1)() {
 			length += 1
 		}
 
-		// Read any extra bits, as per the RFC 1951 section 3.2.7.
+		// Write a literal code length.
+		if symbol < 16 {
+			this.code_lengths[i] = symbol as u8
+			i += 1
+			continue
+		}
+
+		// Write a repeated code length.
 		var n_extra_bits u32[..7]
+		var rep_symbol u8[..15]
+		var rep_count u32
 		if symbol == 16 {
 			n_extra_bits = 2
+			if i <= 0 {
+				return error "bad Huffman code length repetition"
+			}
+			rep_symbol = this.code_lengths[i - 1]
+			rep_count = 3
+			assert rep_count <= 11
 		} else if symbol == 17 {
 			n_extra_bits = 3
-		} else if symbol == 18 {
+			rep_symbol = 0
+			rep_count = 3
+			assert rep_count <= 11
+		} else {
 			n_extra_bits = 7
+			rep_symbol = 0
+			rep_count = 11
+			assert rep_count <= 11
 		}
 		while n_bits < n_extra_bits,
 			inv i < 316,
+			inv rep_count <= 11,
 			inv n_dist <= 30,
 			inv n_lit <= 286,
 			post n_bits >= n_extra_bits,
@@ -261,15 +282,31 @@ pri func decoder.init_huffs?(src reader1)() {
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
-		// TODO: do something with those extra bits.
+		rep_count += bits.low_bits(n:n_extra_bits)
 		bits >>= n_extra_bits
 		n_bits -= n_extra_bits
 
-		i += 1
+		while rep_count > 0,
+			inv n_dist <= 30,
+			inv n_lit <= 286,
+		{
+			// TODO: hoist this check up one level?
+			if i >= (n_lit + n_dist) {
+				return error "bad Huffman code length count"
+			}
+			assert i < (286 + 30) via "a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"(b0:n_lit, c0:n_dist)
+			this.code_lengths[i] = rep_symbol
+			i += 1
+			rep_count -= 1
+		}
 	}
 
-	this.wip0 = n_lit
-	this.wip1 = n_dist
+	if i != (n_lit + n_dist) {
+		return error "bad Huffman code length count"
+	}
+	if this.code_lengths[256] == 0 {
+		return error "missing end-of-block code"
+	}
 
 	this.bits = bits
 	this.n_bits = n_bits

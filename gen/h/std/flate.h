@@ -102,19 +102,24 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_SUSPENSION_LIMITED_READ 9                 // 0x00000009
 #define PUFFS_FLATE_SUSPENSION_LIMITED_WRITE 10               // 0x0000000a
 
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040128         // 0xbb08f800
-#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040127  // 0xbb08f801
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040126          // 0xbb08f802
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
+  -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
+  -1157040127                                                  // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040126         // 0xbb08f802
+#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040125  // 0xbb08f803
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040124          // 0xbb08f804
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040125  // 0xbb08f803
-#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040124  // 0xbb08f804
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040123  // 0xbb08f805
+#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
+  -1157040122  // 0xbb08f806
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1157040121  // 0xbb08f807
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040122                                                    // 0xbb08f806
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040121           // 0xbb08f807
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040120  // 0xbb08f808
+  -1157040120                                                    // 0xbb08f808
+#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040119  // 0xbb08f809
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040118           // 0xbb08f80a
+#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040117  // 0xbb08f80b
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -154,9 +159,7 @@ typedef struct {
     uint32_t f_bits;
     uint32_t f_n_bits;
     puffs_flate_huffman_decoder f_huffs[2];
-    uint8_t f_code_lengths[289];
-    uint32_t f_wip0;
-    uint32_t f_wip1;
+    uint8_t f_code_lengths[316];
 
     struct {
       uint32_t coro_susp_point;
@@ -185,6 +188,8 @@ typedef struct {
       uint32_t v_index;
       uint32_t v_length;
       uint32_t v_n_extra_bits;
+      uint8_t v_rep_symbol;
+      uint32_t v_rep_count;
     } c_init_huffs[1];
     struct {
       uint32_t coro_susp_point;
