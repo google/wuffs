@@ -20,6 +20,7 @@ Java JAR format. Parsing zip is not provided by this package, look at the
 
 For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
 
+    $ xxd test/testdata/romeo.txt
     00000000: 526f 6d65 6f20 616e 6420 4a75 6c69 6574  Romeo and Juliet
     00000010: 0a45 7863 6572 7074 2066 726f 6d20 4163  .Excerpt from Ac
     etc
@@ -28,6 +29,7 @@ For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
 
 The raw flate encoding:
 
+    $ xxd test/testdata/romeo.txt.flate
     00000000: 4d53 c16e db30 0cbd f32b d853 2e46 0e3d  MS.n.0...+.S.F.=
     00000010: 2e87 20ed 0234 c5ba 0049 861e 861d 149b  .. ..4...I......
     etc
@@ -40,6 +42,7 @@ string name of the original, uncompressed file, "romeo.txt", amongst other
 data. The footer contains a 4 byte CRC32 checksum and a 4 byte length of the
 uncompressed file (0x3ae = 942 bytes).
 
+    $ xxd test/testdata/romeo.txt.gz
     00000000: 1f8b 0808 26d8 5d59 0003 726f 6d65 6f2e  ....&.]Y..romeo.
     00000010: 7478 7400 4d53 c16e db30 0cbd f32b d853  txt.MS.n.0...+.S
     etc
@@ -49,6 +52,7 @@ uncompressed file (0x3ae = 942 bytes).
 The zlib format wraps a 2 byte header and 4 byte footer around the raw flate
 data. The footer contains a 4 byte Adler32 checksum.
 
+    $ xxd test/testdata/romeo.txt.zlib
     00000000: 789c 4d53 c16e db30 0cbd f32b d853 2e46  x.MS.n.0...+.S.F
     00000010: 0e3d 2e87 20ed 0234 c5ba 0049 861e 861d  .=.. ..4...I....
     etc
@@ -100,7 +104,7 @@ As per the RFC section 3.2.3. Details of block format:
 
   - BFINAL is the first (LSB) bit, 0b1. This block is the final block.
   - BTYPE is the next two bits in natural (MSB to LSB) order, 0b10, which means
-	a block that's compressed with dynamic Huffman codes.
+    a block that's compressed with dynamic Huffman codes.
 
 There are 3 block types: uncompressed, compressed with fixed Huffman codes and
 compressed with dynamic Huffman codes. The first type is straightforward:
