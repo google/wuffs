@@ -161,6 +161,10 @@ var phases = [...]struct {
 	// TODO: check consts, funcs, structs and uses for name collisions.
 }
 
+type reason func(q *checker, n *a.Assert) error
+
+type reasonMap map[t.Key]reason
+
 type Checker struct {
 	tm        *t.Map
 	reasonMap reasonMap
