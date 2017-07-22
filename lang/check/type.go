@@ -719,10 +719,12 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		}
 	}
 
-	if l, r := lhs.ConstValue(), rhs.ConstValue(); l != nil && r != nil {
-		if err := q.setConstValueBinaryOp(n, l, r); err != nil {
+	if lcv, rcv := lhs.ConstValue(), rhs.ConstValue(); lcv != nil && rcv != nil {
+		ncv, err := evalConstValueBinaryOp(q.tm, n, lcv, rcv)
+		if err != nil {
 			return err
 		}
+		n.SetConstValue(ncv)
 	}
 
 	if comparisonOps[0xFF&op.Key()] {
@@ -736,59 +738,59 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (q *checker) setConstValueBinaryOp(n *a.Expr, l *big.Int, r *big.Int) error {
+func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.Int, error) {
 	switch n.ID0().Key() {
 	case t.KeyXBinaryPlus:
-		n.SetConstValue(big.NewInt(0).Add(l, r))
+		return big.NewInt(0).Add(l, r), nil
 	case t.KeyXBinaryMinus:
-		n.SetConstValue(big.NewInt(0).Sub(l, r))
+		return big.NewInt(0).Sub(l, r), nil
 	case t.KeyXBinaryStar:
-		n.SetConstValue(big.NewInt(0).Mul(l, r))
+		return big.NewInt(0).Mul(l, r), nil
 	case t.KeyXBinarySlash:
 		if r.Cmp(zero) == 0 {
-			return fmt.Errorf("check: division by zero in const expression %q", n.String(q.tm))
+			return nil, fmt.Errorf("check: division by zero in const expression %q", n.String(tm))
 		}
 		// TODO: decide on Euclidean division vs other definitions. See "go doc
 		// math/big int.divmod" for details.
-		n.SetConstValue(big.NewInt(0).Div(l, r))
+		return big.NewInt(0).Div(l, r), nil
 	case t.KeyXBinaryShiftL:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
-			return fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(q.tm), n.String(q.tm))
+			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
+				n.RHS().Expr().String(tm), n.String(tm))
 		}
-		n.SetConstValue(big.NewInt(0).Lsh(l, uint(r.Uint64())))
+		return big.NewInt(0).Lsh(l, uint(r.Uint64())), nil
 	case t.KeyXBinaryShiftR:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
-			return fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(q.tm), n.String(q.tm))
+			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
+				n.RHS().Expr().String(tm), n.String(tm))
 		}
-		n.SetConstValue(big.NewInt(0).Rsh(l, uint(r.Uint64())))
+		return big.NewInt(0).Rsh(l, uint(r.Uint64())), nil
 	case t.KeyXBinaryAmp:
-		n.SetConstValue(big.NewInt(0).And(l, r))
+		return big.NewInt(0).And(l, r), nil
 	case t.KeyXBinaryAmpHat:
-		n.SetConstValue(big.NewInt(0).AndNot(l, r))
+		return big.NewInt(0).AndNot(l, r), nil
 	case t.KeyXBinaryPipe:
-		n.SetConstValue(big.NewInt(0).Or(l, r))
+		return big.NewInt(0).Or(l, r), nil
 	case t.KeyXBinaryHat:
-		n.SetConstValue(big.NewInt(0).Xor(l, r))
+		return big.NewInt(0).Xor(l, r), nil
 	case t.KeyXBinaryNotEq:
-		n.SetConstValue(btoi(l.Cmp(r) != 0))
+		return btoi(l.Cmp(r) != 0), nil
 	case t.KeyXBinaryLessThan:
-		n.SetConstValue(btoi(l.Cmp(r) < 0))
+		return btoi(l.Cmp(r) < 0), nil
 	case t.KeyXBinaryLessEq:
-		n.SetConstValue(btoi(l.Cmp(r) <= 0))
+		return btoi(l.Cmp(r) <= 0), nil
 	case t.KeyXBinaryEqEq:
-		n.SetConstValue(btoi(l.Cmp(r) == 0))
+		return btoi(l.Cmp(r) == 0), nil
 	case t.KeyXBinaryGreaterEq:
-		n.SetConstValue(btoi(l.Cmp(r) >= 0))
+		return btoi(l.Cmp(r) >= 0), nil
 	case t.KeyXBinaryGreaterThan:
-		n.SetConstValue(btoi(l.Cmp(r) > 0))
+		return btoi(l.Cmp(r) > 0), nil
 	case t.KeyXBinaryAnd:
-		n.SetConstValue(btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)))
+		return btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)), nil
 	case t.KeyXBinaryOr:
-		n.SetConstValue(btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)))
+		return btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)), nil
 	}
-	return nil
+	return nil, fmt.Errorf("check: unrecognized token.Key (0x%02X) for evalConstValueBinaryOp", n.ID0().Key())
 }
 
 func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {

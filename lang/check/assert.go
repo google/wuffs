@@ -159,19 +159,26 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 // simplify returns a simplified form of n. For example, (x - x) becomes 0.
 func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	// TODO: be rigorous about this, not ad hoc.
-	switch op, lhs, rhs := parseBinaryOp(n); op.Key() {
-	case t.KeyXBinaryPlus:
+	op, lhs, rhs := parseBinaryOp(n)
+	if lhs != nil && rhs != nil {
 		if lcv, rcv := lhs.ConstValue(), rhs.ConstValue(); lcv != nil && rcv != nil {
-			ocv := big.NewInt(0).Add(lcv, rcv)
-			id, err := tm.Insert(ocv.String())
+			ncv, err := evalConstValueBinaryOp(tm, n, lcv, rcv)
+			if err != nil {
+				return nil, err
+			}
+			id, err := tm.Insert(ncv.String())
 			if err != nil {
 				return nil, err
 			}
 			o := a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
-			o.SetConstValue(ocv)
+			o.SetConstValue(ncv)
 			o.SetMType(typeExprIdeal)
 			return o, nil
 		}
+	}
+
+	switch op.Key() {
+	case t.KeyXBinaryPlus:
 		// TODO: more constant folding, so ((x + 1) + 1) becomes (x + 2).
 
 	case t.KeyXBinaryMinus:
@@ -250,23 +257,23 @@ func proveBinaryOpConstValues(op t.Key, lMin *big.Int, lMax *big.Int, rMin *big.
 }
 
 func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
-	lhsCV := lhs.ConstValue()
-	if lhsCV != nil {
+	lcv := lhs.ConstValue()
+	if lcv != nil {
 		rMin, rMax, err := q.bcheckExpr(rhs, 0)
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, lhsCV, lhsCV, rMin, rMax) {
+		if proveBinaryOpConstValues(op, lcv, lcv, rMin, rMax) {
 			return nil
 		}
 	}
-	rhsCV := rhs.ConstValue()
-	if rhsCV != nil {
+	rcv := rhs.ConstValue()
+	if rcv != nil {
 		lMin, lMax, err := q.bcheckExpr(lhs, 0)
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, lMin, lMax, rhsCV, rhsCV) {
+		if proveBinaryOpConstValues(op, lMin, lMax, rcv, rcv) {
 			return nil
 		}
 	}
@@ -280,21 +287,21 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 			return nil
 		}
 
-		if factOp == t.KeyXBinaryEqEq && rhsCV != nil {
+		if factOp == t.KeyXBinaryEqEq && rcv != nil {
 			if factCV := x.RHS().Expr().ConstValue(); factCV != nil {
 				switch op {
 				case t.KeyXBinaryNotEq:
-					return errFailedOrNil(factCV.Cmp(rhsCV) != 0)
+					return errFailedOrNil(factCV.Cmp(rcv) != 0)
 				case t.KeyXBinaryLessThan:
-					return errFailedOrNil(factCV.Cmp(rhsCV) < 0)
+					return errFailedOrNil(factCV.Cmp(rcv) < 0)
 				case t.KeyXBinaryLessEq:
-					return errFailedOrNil(factCV.Cmp(rhsCV) <= 0)
+					return errFailedOrNil(factCV.Cmp(rcv) <= 0)
 				case t.KeyXBinaryEqEq:
-					return errFailedOrNil(factCV.Cmp(rhsCV) == 0)
+					return errFailedOrNil(factCV.Cmp(rcv) == 0)
 				case t.KeyXBinaryGreaterEq:
-					return errFailedOrNil(factCV.Cmp(rhsCV) >= 0)
+					return errFailedOrNil(factCV.Cmp(rcv) >= 0)
 				case t.KeyXBinaryGreaterThan:
-					return errFailedOrNil(factCV.Cmp(rhsCV) > 0)
+					return errFailedOrNil(factCV.Cmp(rcv) > 0)
 				}
 			}
 		}
