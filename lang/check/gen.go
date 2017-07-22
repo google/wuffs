@@ -5,7 +5,7 @@
 
 package main
 
-// gen.go generates reason.go.
+// gen.go generates data.go.
 //
 // Invoke it via "go generate".
 
@@ -47,7 +47,7 @@ func main1() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile("reason.go", formatted, 0644)
+	return ioutil.WriteFile("data.go", formatted, 0644)
 }
 
 var (
