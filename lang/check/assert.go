@@ -311,7 +311,10 @@ func errFailedOrNil(ok bool) error {
 
 var errFailed = errors.New("failed")
 
-func binOpReasonError(tm *t.Map, op t.ID, lhs *a.Expr, rhs *a.Expr, err error) error {
-	n := a.NewExpr(a.FlagsTypeChecked, op, 0, lhs.Node(), nil, rhs.Node(), nil)
-	return fmt.Errorf("cannot prove %q: %v", n.String(tm), err)
+func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
+	if err := q.proveBinaryOp(op.Key(), lhs, rhs); err != nil {
+		n := a.NewExpr(a.FlagsTypeChecked, op, 0, lhs.Node(), nil, rhs.Node(), nil)
+		return fmt.Errorf("cannot prove %q: %v", n.String(q.tm), err)
+	}
+	return nil
 }
