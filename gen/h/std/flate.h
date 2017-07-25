@@ -132,20 +132,6 @@ const char* puffs_flate_status_string(puffs_flate_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_huffman_decoder_etc functions.
-  //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
-  struct {
-    uint16_t f_counts[16];
-    uint16_t f_symbols[290];
-  } private_impl;
-} puffs_flate_huffman_decoder;
-
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so. Instead, use the
   // puffs_flate_decoder_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
@@ -158,8 +144,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    puffs_flate_huffman_decoder f_huffs[2];
     uint8_t f_code_lengths[316];
+    uint16_t f_counts[16];
+    uint16_t f_symbols[290];
 
     struct {
       uint32_t coro_susp_point;

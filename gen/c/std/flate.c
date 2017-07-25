@@ -132,20 +132,6 @@ const char* puffs_flate_status_string(puffs_flate_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_huffman_decoder_etc functions.
-  //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
-  struct {
-    uint16_t f_counts[16];
-    uint16_t f_symbols[290];
-  } private_impl;
-} puffs_flate_huffman_decoder;
-
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so. Instead, use the
   // puffs_flate_decoder_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
@@ -158,8 +144,9 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    puffs_flate_huffman_decoder f_huffs[2];
     uint8_t f_code_lengths[316];
+    uint16_t f_counts[16];
+    uint16_t f_symbols[290];
 
     struct {
       uint32_t coro_susp_point;
@@ -846,8 +833,7 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
         }
         v_bits >>= 1;
         v_n_bits -= 1;
-        v_count = ((uint32_t)(
-            self->private_impl.f_huffs[0].private_impl.f_counts[v_length]));
+        v_count = ((uint32_t)(self->private_impl.f_counts[v_length]));
         if (v_count > 65535) {
           status =
               PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
@@ -866,8 +852,7 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
                 PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
             goto exit;
           }
-          v_symbol = ((uint32_t)(
-              self->private_impl.f_huffs[0].private_impl.f_symbols[v_index]));
+          v_symbol = ((uint32_t)(self->private_impl.f_symbols[v_index]));
           goto label_1_break;
         }
         v_index += v_count;
@@ -1014,25 +999,21 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
 
     v_i = 0;
     while (v_i < 16) {
-      self->private_impl.f_huffs[a_which].private_impl.f_counts[v_i] = 0;
+      self->private_impl.f_counts[v_i] = 0;
       v_i += 1;
     }
     v_i = 0;
     while (v_i < a_n_codes) {
-      if (self->private_impl.f_huffs[a_which]
-              .private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] >=
+      if (self->private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] >=
           289) {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
       }
-      self->private_impl.f_huffs[a_which]
-          .private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] += 1;
+      self->private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] += 1;
       v_i += 1;
     }
-    if (((uint32_t)(
-            self->private_impl.f_huffs[a_which].private_impl.f_counts[0])) ==
-        a_n_codes) {
+    if (((uint32_t)(self->private_impl.f_counts[0])) == a_n_codes) {
       status = PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES;
       goto exit;
     }
@@ -1046,7 +1027,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     v_i = 1;
     while (v_i <= 15) {
       v_offsets[v_i] = v_total;
-      v_count = self->private_impl.f_huffs[a_which].private_impl.f_counts[v_i];
+      v_count = self->private_impl.f_counts[v_i];
       if (v_total > (289 - v_count)) {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
@@ -1058,8 +1039,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     v_i = 0;
     while (v_i < a_n_codes) {
       if (self->private_impl.f_code_lengths[v_i] != 0) {
-        self->private_impl.f_huffs[a_which]
-            .private_impl
+        self->private_impl
             .f_symbols[v_offsets[self->private_impl.f_code_lengths[v_i]]] =
             ((uint16_t)(v_i));
         if (v_offsets[self->private_impl.f_code_lengths[v_i]] >= 289) {

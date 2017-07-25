@@ -28,9 +28,13 @@ pub struct decoder?(
 	// package's README.md:
 	//  - huffs[0] is used for clcode and lcode.
 	//  - huffs[1] is used for dcode.
-	huffs[2] huffman_decoder,
+	// TODO: define the huffs field.
 
+	// These fields are used as scratch space when constructing the huffs
+	// tables.
 	code_lengths[316] u8[..15],
+	counts[16] u16[..289],
+	symbols[290] u16[..289],
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
@@ -182,7 +186,7 @@ pri func decoder.init_huffs?(src reader1)() {
 			bits >>= 1
 			n_bits -= 1
 
-			count = this.huffs[0].counts[length] as u32
+			count = this.counts[length] as u32
 			if count > 0xFFFF {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
@@ -224,7 +228,7 @@ pri func decoder.init_huffs?(src reader1)() {
 				if index >= 290 {
 					return error "internal error: inconsistent Huffman decoder state"
 				}
-				symbol = this.huffs[0].symbols[index] as u32
+				symbol = this.symbols[index] as u32
 				break
 			}
 
@@ -345,7 +349,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 
 	var i u32
 	while i < 16 {
-		this.huffs[in.which].counts[i] = 0
+		this.counts[i] = 0
 		i += 1
 	}
 	i = 0
@@ -353,13 +357,13 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
-		if this.huffs[in.which].counts[this.code_lengths[i]] >= 289 {
+		if this.counts[this.code_lengths[i]] >= 289 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
-		this.huffs[in.which].counts[this.code_lengths[i]] += 1
+		this.counts[this.code_lengths[i]] += 1
 		i += 1
 	}
-	if (this.huffs[in.which].counts[0] as u32) == in.n_codes {
+	if (this.counts[0] as u32) == in.n_codes {
 		return error "no Huffman codes"
 	}
 
@@ -379,7 +383,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 	i = 1
 	while i <= 15 {
 		offsets[i] = total
-		var count u16[..289] = this.huffs[in.which].counts[i]
+		var count u16[..289] = this.counts[i]
 		if total > (289 - count) {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
@@ -404,7 +408,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 	while i < in.n_codes {
 		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
 		if this.code_lengths[i] != 0 {
-			this.huffs[in.which].symbols[offsets[this.code_lengths[i]]] = i as u16
+			this.symbols[offsets[this.code_lengths[i]]] = i as u16
 			if offsets[this.code_lengths[i]] >= 289 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
@@ -430,8 +434,3 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 	//  - offsets[4] =  8, formerly 7
 	//  - offsets[5] = 10, formerly 8
 }
-
-pri struct huffman_decoder(
-	counts[16] u16[..289],
-	symbols[290] u16[..289],
-)
