@@ -120,6 +120,8 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040119  // 0xbb08f809
 #define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040118           // 0xbb08f80a
 #define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040117  // 0xbb08f80b
+#define PUFFS_FLATE_ERROR_TODO_INDIRECT_HUFFMAN_TABLES \
+  -1157040116  // 0xbb08f80c
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -144,6 +146,8 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_huffs[2][512];
+    uint32_t f_n_huffs_bits[2];
     uint8_t f_code_lengths[316];
     uint16_t f_counts[16];
     uint16_t f_symbols[290];
@@ -184,6 +188,15 @@ typedef struct {
       uint16_t v_offsets[16];
       uint16_t v_total;
       uint16_t v_count;
+      uint32_t v_max_cl;
+      uint32_t v_n_symbols;
+      uint32_t v_prev_cl;
+      uint32_t v_code;
+      uint32_t v_cl;
+      uint32_t v_reversed_code;
+      uint32_t v_value;
+      uint32_t v_high_bits;
+      uint32_t v_delta;
     } c_init_huff[1];
   } private_impl;
 } puffs_flate_decoder;

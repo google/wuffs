@@ -120,6 +120,8 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040119  // 0xbb08f809
 #define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040118           // 0xbb08f80a
 #define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040117  // 0xbb08f80b
+#define PUFFS_FLATE_ERROR_TODO_INDIRECT_HUFFMAN_TABLES \
+  -1157040116  // 0xbb08f80c
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -144,6 +146,8 @@ typedef struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_huffs[2][512];
+    uint32_t f_n_huffs_bits[2];
     uint8_t f_code_lengths[316];
     uint16_t f_counts[16];
     uint16_t f_symbols[290];
@@ -184,6 +188,15 @@ typedef struct {
       uint16_t v_offsets[16];
       uint16_t v_total;
       uint16_t v_count;
+      uint32_t v_max_cl;
+      uint32_t v_n_symbols;
+      uint32_t v_prev_cl;
+      uint32_t v_code;
+      uint32_t v_cl;
+      uint32_t v_reversed_code;
+      uint32_t v_value;
+      uint32_t v_high_bits;
+      uint32_t v_delta;
     } c_init_huff[1];
   } private_impl;
 } puffs_flate_decoder;
@@ -267,7 +280,7 @@ const char* puffs_flate_status_strings0[11] = {
     "flate: limited write",
 };
 
-const char* puffs_flate_status_strings1[12] = {
+const char* puffs_flate_status_strings1[13] = {
     "flate: bad Huffman code length count",
     "flate: bad Huffman code length repetition",
     "flate: bad Huffman code",
@@ -280,6 +293,7 @@ const char* puffs_flate_status_strings1[12] = {
     "flate: missing end-of-block code",
     "flate: no Huffman codes",
     "flate: TODO: fixed Huffman blocks",
+    "flate: TODO: indirect Huffman tables",
 };
 
 const char* puffs_flate_status_string(puffs_flate_status s) {
@@ -292,7 +306,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
-      n = 12;
+      n = 13;
       break;
   }
   uint32_t i = s & 0xff;
@@ -1005,6 +1019,15 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
   uint16_t v_offsets[16];
   uint16_t v_total;
   uint16_t v_count;
+  uint32_t v_max_cl;
+  uint32_t v_n_symbols;
+  uint32_t v_prev_cl;
+  uint32_t v_code;
+  uint32_t v_cl;
+  uint32_t v_reversed_code;
+  uint32_t v_value;
+  uint32_t v_high_bits;
+  uint32_t v_delta;
 
   uint32_t coro_susp_point = self->private_impl.c_init_huff[0].coro_susp_point;
   if (coro_susp_point) {
@@ -1012,6 +1035,15 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     memcpy(v_offsets, self->private_impl.c_init_huff[0].v_offsets, 2 * 16);
     v_total = self->private_impl.c_init_huff[0].v_total;
     v_count = self->private_impl.c_init_huff[0].v_count;
+    v_max_cl = self->private_impl.c_init_huff[0].v_max_cl;
+    v_n_symbols = self->private_impl.c_init_huff[0].v_n_symbols;
+    v_prev_cl = self->private_impl.c_init_huff[0].v_prev_cl;
+    v_code = self->private_impl.c_init_huff[0].v_code;
+    v_cl = self->private_impl.c_init_huff[0].v_cl;
+    v_reversed_code = self->private_impl.c_init_huff[0].v_reversed_code;
+    v_value = self->private_impl.c_init_huff[0].v_value;
+    v_high_bits = self->private_impl.c_init_huff[0].v_high_bits;
+    v_delta = self->private_impl.c_init_huff[0].v_delta;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1070,6 +1102,65 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       }
       v_i += 1;
     }
+    v_max_cl = 15;
+    while (true) {
+      if (self->private_impl.f_counts[v_max_cl] != 0) {
+        goto label_0_break;
+      }
+      if (v_max_cl <= 1) {
+        status = PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES;
+        goto exit;
+      }
+      v_max_cl -= 1;
+    }
+  label_0_break:;
+    if (v_max_cl > 9) {
+      status = PUFFS_FLATE_ERROR_TODO_INDIRECT_HUFFMAN_TABLES;
+      goto exit;
+    }
+    v_i = 0;
+    v_n_symbols = ((uint32_t)(v_offsets[v_max_cl]));
+    v_prev_cl = ((uint32_t)(
+        self->private_impl.f_code_lengths[self->private_impl.f_symbols[0]]));
+    v_code = 0;
+    while (v_i < v_n_symbols) {
+      v_cl =
+          ((uint32_t)(self->private_impl
+                          .f_code_lengths[self->private_impl.f_symbols[v_i]]));
+      if (v_cl > v_max_cl) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
+      }
+      if (v_cl > v_prev_cl) {
+        v_code <<= (v_cl - v_prev_cl);
+        if (v_code >= 512) {
+          status =
+              PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+          goto exit;
+        }
+      }
+      v_reversed_code = (((uint32_t)(puffs_flate_reverse8[v_code >> 1])) |
+                         ((v_code & 1) << 8));
+      v_reversed_code >>= (9 - v_cl);
+      v_value = ((((uint32_t)(self->private_impl.f_symbols[v_i])) << 8) | v_cl);
+      v_value |= 1073741824;
+      v_high_bits = (((uint32_t)(1)) << v_max_cl);
+      v_delta = (((uint32_t)(1)) << v_cl);
+      while (v_high_bits >= v_delta) {
+        v_high_bits -= v_delta;
+        self->private_impl
+            .f_huffs[a_which][(v_high_bits | v_reversed_code) & 511] = v_value;
+      }
+      v_code += 1;
+      if (v_code >= 512) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
+      }
+      v_prev_cl = v_cl;
+      v_i += 1;
+    }
     self->private_impl.c_init_huff[0].coro_susp_point = 0;
     goto exit;
   }
@@ -1081,6 +1172,15 @@ suspend:
   memcpy(self->private_impl.c_init_huff[0].v_offsets, v_offsets, 2 * 16);
   self->private_impl.c_init_huff[0].v_total = v_total;
   self->private_impl.c_init_huff[0].v_count = v_count;
+  self->private_impl.c_init_huff[0].v_max_cl = v_max_cl;
+  self->private_impl.c_init_huff[0].v_n_symbols = v_n_symbols;
+  self->private_impl.c_init_huff[0].v_prev_cl = v_prev_cl;
+  self->private_impl.c_init_huff[0].v_code = v_code;
+  self->private_impl.c_init_huff[0].v_cl = v_cl;
+  self->private_impl.c_init_huff[0].v_reversed_code = v_reversed_code;
+  self->private_impl.c_init_huff[0].v_value = v_value;
+  self->private_impl.c_init_huff[0].v_high_bits = v_high_bits;
+  self->private_impl.c_init_huff[0].v_delta = v_delta;
 
 exit:
   return status;

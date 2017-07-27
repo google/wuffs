@@ -18,17 +18,44 @@ pub error "missing end-of-block code"
 pub error "no Huffman codes"
 
 pub error "TODO: fixed Huffman blocks"
+pub error "TODO: indirect Huffman tables"
 
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits u32,
 	n_bits u32,
 
-	// There are up to 2 Huffman tables active at any one time. As per this
+	// huffs and n_huffs_bits are the lookup tables for Huffman decodings.
+	//
+	// There are up to 2 Huffman decoders active at any one time. As per this
 	// package's README.md:
 	//  - huffs[0] is used for clcode and lcode.
 	//  - huffs[1] is used for dcode.
-	// TODO: define the huffs field.
+	//
+	// The initial table key is the low n_huffs_bits of the decoder.bits field.
+	// Keys longer than 9 bits require a two step lookup, the first step
+	// examines the low 9 bits, the second step examines the remaining bits.
+	// Two steps are required at most, as keys are at most 15 bits long.
+	//
+	// Using decoder.bits's low n_huffs_bits as a table key is valid even if
+	// decoder.n_bits is less than n_huffs_bits, because the immediate next
+	// step after indexing the table by the key is to compare decoder.n_bits to
+	// the table value's number of decoder.bits to consume. If it compares
+	// less, then more source bytes are read and the table lookup re-tried.
+	//
+	// The table value is:
+	//  - bit     31 indicates a redirect to another part of the table.
+	//  - bit     30 indicates the symbol is a literal.
+	//  - bit     29 indicates the symbol is a base number + extra bits.
+	//  - bit     28 indicates the symbol is the end-of-block.
+	//  - bits 27-24 is the redirect offset or the number of extra bits.
+	//  - bits 23- 8 is the literal (in bits 15-8) or base number.
+	//  - bits  7- 4 are unused.
+	//  - bits  3- 0 are the number of decoder.bits to consume.
+	//
+	// Exactly one of the four bits 31-28 should be set.
+	huffs[2][512] u32,
+	n_huffs_bits[2] u32[..9],
 
 	// These fields are used as scratch space when constructing the huffs
 	// tables.
@@ -316,9 +343,6 @@ pri func decoder.init_huffs?(src reader1)() {
 	this.n_bits = n_bits
 }
 
-// TODO: make init_huff a huffman_decoder method instead of a decoder
-// method?
-
 // TODO: make named constants for 15, 19, 289, etc.
 
 // TODO: skip generating PUFFS_COROUTINE_SUSPENSION_POINTs for this function,
@@ -433,4 +457,84 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 	//  - offsets[3] =  7, formerly 0
 	//  - offsets[4] =  8, formerly 7
 	//  - offsets[5] = 10, formerly 8
+
+	var max_cl u32[1..15] = 15
+	while true {
+		if this.counts[max_cl] != 0 {
+			break
+		}
+		if max_cl <= 1 {
+			// TODO: when is a degenerate Huffman table valid?
+			return error "no Huffman codes"
+		}
+		max_cl -= 1
+	}
+	if max_cl > 9 {
+		return error "TODO: indirect Huffman tables"
+	}
+
+	// For the clcode example in this package's README.md:
+	//  - max_cl = 5
+
+	i = 0
+	var n_symbols u32[..289] = offsets[max_cl] as u32
+	var prev_cl u32[..15] = this.code_lengths[this.symbols[0]] as u32
+	var code u32
+	while i < n_symbols,
+		inv code < (1 << 9),
+		inv max_cl <= 9,
+	{
+		assert i < 289 via "a < b: a < c; c <= b"(c:n_symbols)
+		var cl u32[..15] = this.code_lengths[this.symbols[i]] as u32
+		if cl > max_cl {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		assert cl <= 9 via "a <= b: a <= c; c <= b"(c:max_cl)
+		if cl > prev_cl {
+			code <<= cl - prev_cl
+			if code >= (1 << 9) {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+		}
+
+		var reversed_code u32[..511] = (reverse8[code >> 1] as u32) | ((code & 1) << 8)
+		reversed_code >>= 9 - cl
+
+		// TODO: don't assume that the value is a literal.
+		var value u32 = ((this.symbols[i] as u32) << 8) | cl
+		value |= 0x40000000
+
+		// The table uses max_cl bits, but reversed_code only has cl bits. We
+		// duplicate the key-value pair across all possible values of the high
+		// (max_cl - cl) bits.
+		var high_bits u32 = (1 as u32) << max_cl
+		var delta u32 = (1 as u32) << cl
+		while high_bits >= delta,
+			inv code < (1 << 9),
+			inv i < 289,
+			inv max_cl <= 9,
+		{
+			high_bits -= delta
+			this.huffs[in.which][(high_bits | reversed_code) & 511] = value
+		}
+
+		code += 1
+		if code >= (1 << 9) {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		prev_cl = cl
+		i += 1
+	}
+
+	// For the clcode example in this package's README.md:
+	//  - huffs[0][0b..000] maps to value 0x40000003 (literal, symbols[0]=0x00, code_length=3)
+	//  - huffs[0][0b..100] maps to value 0x40000403 (literal, symbols[1]=0x04, code_length=3)
+	//  - huffs[0][0b..010] maps to value 0x40000503 (literal, symbols[2]=0x05, code_length=3)
+	//  - huffs[0][0b..110] maps to value 0x40000603 (literal, symbols[3]=0x06, code_length=3)
+	//  - huffs[0][0b..001] maps to value 0x40000703 (literal, symbols[4]=0x07, code_length=3)
+	//  - huffs[0][0b..101] maps to value 0x40000803 (literal, symbols[5]=0x08, code_length=3)
+	//  - huffs[0][0b..011] maps to value 0x40000903 (literal, symbols[6]=0x09, code_length=3)
+	//  - huffs[0][0b.0111] maps to value 0x40001104 (literal, symbols[7]=0x11, code_length=4)
+	//  - huffs[0][0b01111] maps to value 0x40000305 (literal, symbols[8]=0x03, code_length=5)
+	//  - huffs[0][0b11111] maps to value 0x40001805 (literal, symbols[9]=0x18, code_length=5)
 }
