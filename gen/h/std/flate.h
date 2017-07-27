@@ -172,12 +172,9 @@ typedef struct {
       uint32_t v_n_dist;
       uint32_t v_n_clen;
       uint32_t v_i;
-      uint32_t v_symbol;
-      uint32_t v_code;
-      uint32_t v_count;
-      uint32_t v_first;
-      uint32_t v_index;
-      uint32_t v_length;
+      uint32_t v_mask;
+      uint32_t v_table_entry;
+      uint32_t v_table_entry_n_bits;
       uint32_t v_n_extra_bits;
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;

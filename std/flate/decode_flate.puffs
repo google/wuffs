@@ -165,6 +165,7 @@ pri func decoder.init_huffs?(src reader1)() {
 	this.init_huff?(which:0, n_codes:19)
 
 	// Decode the code lengths for the next two Huffman tables.
+	var mask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	i = 0
 	while i < (n_lit + n_dist),
 		inv n_dist <= 30,
@@ -173,108 +174,32 @@ pri func decoder.init_huffs?(src reader1)() {
 		assert i < (286 + 30) via "a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"(b0:n_lit, c0:n_dist)
 
 		// Decode a clcode symbol from H-CL.
-		var symbol u32[..289]
-		var code u32
-		var count u32
-		var first u32
-		var index u32
-		var length u32 = 1
+		var table_entry u32
 		while true,
-			pre first <= 0xFFFF,
-			pre index <= 0xFFFF,
 			inv i < 316,
 			inv n_dist <= 30,
 			inv n_lit <= 286,
 		{
-			if length > 15 {
-				return error "bad Huffman code"
-			}
-
-			// Read the next bit.
-			while n_bits <= 0,
-				inv first <= 0xFFFF,
-				inv i < 316,
-				inv index <= 0xFFFF,
-				inv length <= 15,
-				inv n_dist <= 30,
-				inv n_lit <= 286,
-				post n_bits > 0,
-			{
-				bits |= (in.src.read_u8?() as u32) << n_bits
-				n_bits += 8
-			}
-			code |= bits & 1
-			// TODO: improve the proof engine's bounds checking so that any
-			// check returning "internal error: inconsistent Huffman decoder
-			// state" can be removed. There is one here and more below.
-			if code > 0xFFFF {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
-			bits >>= 1
-			n_bits -= 1
-
-			count = this.counts[length] as u32
-			if count > 0xFFFF {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
-
-			// Compare the code so far to the counts.
-			//
-			// For the clcode example in this package's README.md:
-			//  - counts[1] = 0
-			//  - counts[2] = 0
-			//  - counts[3] = 7
-			//  - counts[4] = 1
-			//  - counts[5] = 2
-			//
-			// Recall that the map from bits to clcode symbols is:
-			//    bits        clcode
-			//    0b000        0
-			//    0b001        4
-			//    0b010        5
-			//    0b011        6
-			//    0b100        7
-			//    0b101        8
-			//    0b110        9
-			//    0b1110      17
-			//    0b11110      3
-			//    0b11111     18
-			//
-			// The loop iterations at this point have:
-			//  - length=1, count=0, first= 0, index=0, code in [0.. 1].
-			//  - length=2, count=0, first= 0, index=0, code in [0.. 3].
-			//  - length=3, count=7, first= 0, index=0, code in [0.. 7].
-			//  - length=4, count=1, first=14, index=7, code in [0..15].
-			//  - length=5, count=2, first=30, index=8, code in [0..31].
-			if code < (first + count) {
-				index += code
-				if index < first {
-					return error "internal error: inconsistent Huffman decoder state"
-				}
-				index -= first
-				if index >= 290 {
-					return error "internal error: inconsistent Huffman decoder state"
-				}
-				symbol = this.symbols[index] as u32
+			table_entry = this.huffs[0][bits & mask]
+			var table_entry_n_bits u32[..15] = table_entry & 15
+			if n_bits >= table_entry_n_bits {
+				bits >>= table_entry_n_bits
+				n_bits -= table_entry_n_bits
 				break
 			}
-
-			index += count
-			if index > 0xFFFF {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
-			first = (first + count) << 1
-			if first > 0xFFFF {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
-			code <<= 1
-
-			length += 1
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
 		}
+		// For H-CL, there are no redirections and all symbols are literals.
+		if (table_entry >> 30) != 1 {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		table_entry = (table_entry >> 8) & 0xFF
 
 		// Write a literal code length.
-		if symbol < 16 {
-			this.code_lengths[i] = symbol as u8
+		if table_entry < 16 {
+			this.code_lengths[i] = table_entry as u8
 			i += 1
 			continue
 		}
@@ -283,7 +208,7 @@ pri func decoder.init_huffs?(src reader1)() {
 		var n_extra_bits u32[..7]
 		var rep_symbol u8[..15]
 		var rep_count u32
-		if symbol == 16 {
+		if table_entry == 16 {
 			n_extra_bits = 2
 			if i <= 0 {
 				return error "bad Huffman code length repetition"
@@ -291,16 +216,18 @@ pri func decoder.init_huffs?(src reader1)() {
 			rep_symbol = this.code_lengths[i - 1]
 			rep_count = 3
 			assert rep_count <= 11
-		} else if symbol == 17 {
+		} else if table_entry == 17 {
 			n_extra_bits = 3
 			rep_symbol = 0
 			rep_count = 3
 			assert rep_count <= 11
-		} else {
+		} else if table_entry == 18 {
 			n_extra_bits = 7
 			rep_symbol = 0
 			rep_count = 11
 			assert rep_count <= 11
+		} else {
+			return error "internal error: inconsistent Huffman decoder state"
 		}
 		while n_bits < n_extra_bits,
 			inv i < 316,
@@ -524,6 +451,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		prev_cl = cl
 		i += 1
 	}
+	this.n_huffs_bits[in.which] = max_cl
 
 	// For the clcode example in this package's README.md:
 	//  - huffs[0][0b..000] maps to value 0x40000003 (literal, symbols[0]=0x00, code_length=3)
