@@ -168,7 +168,7 @@ typedef struct {
       uint32_t v_lmask;
       uint32_t v_table_entry;
       uint32_t v_table_entry_n_bits;
-    } c_decode_dynamic[1];
+    } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_bits;
@@ -183,7 +183,7 @@ typedef struct {
       uint32_t v_n_extra_bits;
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
-    } c_init_huffs[1];
+    } c_init_dynamic_huffman[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;

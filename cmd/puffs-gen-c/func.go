@@ -961,16 +961,16 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
-	} else if isThisMethod(g.tm, n, "decode_dynamic", 2) {
-		g.printf("status = %s%s_decode_dynamic(self, %sdst, %ssrc);\n",
+	} else if isThisMethod(g.tm, n, "decode_huffman", 2) {
+		g.printf("status = %s%s_decode_huffman(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
-	} else if isThisMethod(g.tm, n, "init_huffs", 1) {
-		g.printf("status = %s%s_init_huffs(self, %ssrc);\n",
+	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
+		g.printf("status = %s%s_init_dynamic_huffman(self, %ssrc);\n",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(n); err != nil {
 			return err

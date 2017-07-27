@@ -88,31 +88,30 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
-	while true {
+	var final u32
+	while final == 0 {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
 			this.bits |= (in.src.read_u8?() as u32) << this.n_bits
 			this.n_bits += 8
 		}
-		var final u32 = this.bits & 0x01
+		final = this.bits & 0x01
 		var type u32 = (this.bits >> 1) & 0x03
 		this.bits >>= 3
 		this.n_bits -= 3
 
 		if type == 0 {
 			this.decode_uncompressed?(dst:in.dst, src:in.src)
+			continue
 		} else if type == 1 {
 			return error "TODO: fixed Huffman blocks"
 		} else if type == 2 {
-			this.decode_dynamic?(dst:in.dst, src:in.src)
+			this.init_dynamic_huffman?(src:in.src)
 		} else {
 			return error "bad flate block"
 		}
-
-		if final != 0 {
-			return
-		}
+		this.decode_huffman?(dst:in.dst, src:in.src)
 	}
 }
 
@@ -129,10 +128,7 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	in.dst.copy_from32?(r:in.src, n:n.low_bits(n:16))
 }
 
-// decode_dynamic decodes dynamic Huffman codes as per the RFC section 3.2.7.
-pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
-	this.init_huffs?(src:in.src)
-
+pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 
@@ -178,7 +174,7 @@ pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 	this.n_bits = n_bits
 }
 
-pri func decoder.init_huffs?(src reader1)() {
+pri func decoder.init_dynamic_huffman?(src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 	while n_bits < 14,

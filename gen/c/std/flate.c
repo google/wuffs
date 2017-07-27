@@ -168,7 +168,7 @@ typedef struct {
       uint32_t v_lmask;
       uint32_t v_table_entry;
       uint32_t v_table_entry_n_bits;
-    } c_decode_dynamic[1];
+    } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_bits;
@@ -183,7 +183,7 @@ typedef struct {
       uint32_t v_n_extra_bits;
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
-    } c_init_huffs[1];
+    } c_init_dynamic_huffman[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
@@ -366,12 +366,13 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src);
 
-puffs_flate_status puffs_flate_decoder_decode_dynamic(puffs_flate_decoder* self,
+puffs_flate_status puffs_flate_decoder_decode_huffman(puffs_flate_decoder* self,
                                                       puffs_base_writer1 a_dst,
                                                       puffs_base_reader1 a_src);
 
-puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
-                                                  puffs_base_reader1 a_src);
+puffs_flate_status puffs_flate_decoder_init_dynamic_huffman(
+    puffs_flate_decoder* self,
+    puffs_base_reader1 a_src);
 
 puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_which,
@@ -458,7 +459,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    while (true) {
+    v_final = 0;
+  label_0_continue:;
+    while (v_final == 0) {
       while (self->private_impl.f_n_bits < 3) {
         PUFFS_COROUTINE_SUSPENSION_POINT(1);
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -500,6 +503,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         if (status) {
           goto suspend;
         }
+        goto label_0_continue;
       } else if (v_type == 1) {
         status = PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS;
         goto exit;
@@ -515,7 +519,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
             }
           }
         }
-        status = puffs_flate_decoder_decode_dynamic(self, a_dst, a_src);
+        status = puffs_flate_decoder_init_dynamic_huffman(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -534,8 +538,30 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         status = PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK;
         goto exit;
       }
-      if (v_final != 0) {
-        status = PUFFS_FLATE_STATUS_OK;
+      PUFFS_COROUTINE_SUSPENSION_POINT(4);
+      if (a_src.buf) {
+        size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+        a_src.buf->ri += n;
+        puffs_base_limit1* lim;
+        for (lim = &a_src.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len) {
+            *lim->ptr_to_len -= n;
+          }
+        }
+      }
+      status = puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
+      if (a_src.buf) {
+        b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        size_t len = a_src.buf->wi - a_src.buf->ri;
+        puffs_base_limit1* lim;
+        for (lim = &a_src.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+            len = *lim->ptr_to_len;
+          }
+        }
+        b_rend_src = b_rptr_src + len;
+      }
+      if (status) {
         goto suspend;
       }
     }
@@ -719,7 +745,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate_status puffs_flate_decoder_decode_dynamic(
+puffs_flate_status puffs_flate_decoder_decode_huffman(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src) {
@@ -759,44 +785,18 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
   }
 
   uint32_t coro_susp_point =
-      self->private_impl.c_decode_dynamic[0].coro_susp_point;
+      self->private_impl.c_decode_huffman[0].coro_susp_point;
   if (coro_susp_point) {
-    v_bits = self->private_impl.c_decode_dynamic[0].v_bits;
-    v_n_bits = self->private_impl.c_decode_dynamic[0].v_n_bits;
-    v_lmask = self->private_impl.c_decode_dynamic[0].v_lmask;
-    v_table_entry = self->private_impl.c_decode_dynamic[0].v_table_entry;
+    v_bits = self->private_impl.c_decode_huffman[0].v_bits;
+    v_n_bits = self->private_impl.c_decode_huffman[0].v_n_bits;
+    v_lmask = self->private_impl.c_decode_huffman[0].v_lmask;
+    v_table_entry = self->private_impl.c_decode_huffman[0].v_table_entry;
     v_table_entry_n_bits =
-        self->private_impl.c_decode_dynamic[0].v_table_entry_n_bits;
+        self->private_impl.c_decode_huffman[0].v_table_entry_n_bits;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
-      puffs_base_limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len) {
-          *lim->ptr_to_len -= n;
-        }
-      }
-    }
-    status = puffs_flate_decoder_init_huffs(self, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-      size_t len = a_src.buf->wi - a_src.buf->ri;
-      puffs_base_limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
-        }
-      }
-      b_rend_src = b_rptr_src + len;
-    }
-    if (status) {
-      goto suspend;
-    }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
     v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
@@ -811,7 +811,7 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
           v_n_bits -= v_table_entry_n_bits;
           goto label_1_break;
         }
-        PUFFS_COROUTINE_SUSPENSION_POINT(2);
+        PUFFS_COROUTINE_SUSPENSION_POINT(1);
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
@@ -825,7 +825,7 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
         goto exit;
       }
       if ((v_table_entry >> 30) != 0) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(3);
+        PUFFS_COROUTINE_SUSPENSION_POINT(2);
         if (b_wptr_dst == b_wend_dst) {
           status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
           goto suspend;
@@ -848,18 +848,18 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
   label_0_break:;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
-    self->private_impl.c_decode_dynamic[0].coro_susp_point = 0;
+    self->private_impl.c_decode_huffman[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode_dynamic[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_dynamic[0].v_bits = v_bits;
-  self->private_impl.c_decode_dynamic[0].v_n_bits = v_n_bits;
-  self->private_impl.c_decode_dynamic[0].v_lmask = v_lmask;
-  self->private_impl.c_decode_dynamic[0].v_table_entry = v_table_entry;
-  self->private_impl.c_decode_dynamic[0].v_table_entry_n_bits =
+  self->private_impl.c_decode_huffman[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_huffman[0].v_bits = v_bits;
+  self->private_impl.c_decode_huffman[0].v_n_bits = v_n_bits;
+  self->private_impl.c_decode_huffman[0].v_lmask = v_lmask;
+  self->private_impl.c_decode_huffman[0].v_table_entry = v_table_entry;
+  self->private_impl.c_decode_huffman[0].v_table_entry_n_bits =
       v_table_entry_n_bits;
 
 exit:
@@ -898,8 +898,9 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
-                                                  puffs_base_reader1 a_src) {
+puffs_flate_status puffs_flate_decoder_init_dynamic_huffman(
+    puffs_flate_decoder* self,
+    puffs_base_reader1 a_src) {
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_bits;
@@ -929,21 +930,23 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
     b_rend_src = b_rptr_src + len;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_init_huffs[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_init_dynamic_huffman[0].coro_susp_point;
   if (coro_susp_point) {
-    v_bits = self->private_impl.c_init_huffs[0].v_bits;
-    v_n_bits = self->private_impl.c_init_huffs[0].v_n_bits;
-    v_n_lit = self->private_impl.c_init_huffs[0].v_n_lit;
-    v_n_dist = self->private_impl.c_init_huffs[0].v_n_dist;
-    v_n_clen = self->private_impl.c_init_huffs[0].v_n_clen;
-    v_i = self->private_impl.c_init_huffs[0].v_i;
-    v_mask = self->private_impl.c_init_huffs[0].v_mask;
-    v_table_entry = self->private_impl.c_init_huffs[0].v_table_entry;
+    v_bits = self->private_impl.c_init_dynamic_huffman[0].v_bits;
+    v_n_bits = self->private_impl.c_init_dynamic_huffman[0].v_n_bits;
+    v_n_lit = self->private_impl.c_init_dynamic_huffman[0].v_n_lit;
+    v_n_dist = self->private_impl.c_init_dynamic_huffman[0].v_n_dist;
+    v_n_clen = self->private_impl.c_init_dynamic_huffman[0].v_n_clen;
+    v_i = self->private_impl.c_init_dynamic_huffman[0].v_i;
+    v_mask = self->private_impl.c_init_dynamic_huffman[0].v_mask;
+    v_table_entry = self->private_impl.c_init_dynamic_huffman[0].v_table_entry;
     v_table_entry_n_bits =
-        self->private_impl.c_init_huffs[0].v_table_entry_n_bits;
-    v_n_extra_bits = self->private_impl.c_init_huffs[0].v_n_extra_bits;
-    v_rep_symbol = self->private_impl.c_init_huffs[0].v_rep_symbol;
-    v_rep_count = self->private_impl.c_init_huffs[0].v_rep_count;
+        self->private_impl.c_init_dynamic_huffman[0].v_table_entry_n_bits;
+    v_n_extra_bits =
+        self->private_impl.c_init_dynamic_huffman[0].v_n_extra_bits;
+    v_rep_symbol = self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol;
+    v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1100,26 +1103,27 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
     }
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
-    self->private_impl.c_init_huffs[0].coro_susp_point = 0;
+    self->private_impl.c_init_dynamic_huffman[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_init_huffs[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_init_huffs[0].v_bits = v_bits;
-  self->private_impl.c_init_huffs[0].v_n_bits = v_n_bits;
-  self->private_impl.c_init_huffs[0].v_n_lit = v_n_lit;
-  self->private_impl.c_init_huffs[0].v_n_dist = v_n_dist;
-  self->private_impl.c_init_huffs[0].v_n_clen = v_n_clen;
-  self->private_impl.c_init_huffs[0].v_i = v_i;
-  self->private_impl.c_init_huffs[0].v_mask = v_mask;
-  self->private_impl.c_init_huffs[0].v_table_entry = v_table_entry;
-  self->private_impl.c_init_huffs[0].v_table_entry_n_bits =
+  self->private_impl.c_init_dynamic_huffman[0].coro_susp_point =
+      coro_susp_point;
+  self->private_impl.c_init_dynamic_huffman[0].v_bits = v_bits;
+  self->private_impl.c_init_dynamic_huffman[0].v_n_bits = v_n_bits;
+  self->private_impl.c_init_dynamic_huffman[0].v_n_lit = v_n_lit;
+  self->private_impl.c_init_dynamic_huffman[0].v_n_dist = v_n_dist;
+  self->private_impl.c_init_dynamic_huffman[0].v_n_clen = v_n_clen;
+  self->private_impl.c_init_dynamic_huffman[0].v_i = v_i;
+  self->private_impl.c_init_dynamic_huffman[0].v_mask = v_mask;
+  self->private_impl.c_init_dynamic_huffman[0].v_table_entry = v_table_entry;
+  self->private_impl.c_init_dynamic_huffman[0].v_table_entry_n_bits =
       v_table_entry_n_bits;
-  self->private_impl.c_init_huffs[0].v_n_extra_bits = v_n_extra_bits;
-  self->private_impl.c_init_huffs[0].v_rep_symbol = v_rep_symbol;
-  self->private_impl.c_init_huffs[0].v_rep_count = v_rep_count;
+  self->private_impl.c_init_dynamic_huffman[0].v_n_extra_bits = v_n_extra_bits;
+  self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol = v_rep_symbol;
+  self->private_impl.c_init_dynamic_huffman[0].v_rep_count = v_rep_count;
 
 exit:
   if (a_src.buf) {
