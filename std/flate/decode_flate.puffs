@@ -501,8 +501,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		reversed_code >>= 9 - cl
 
 		// TODO: don't assume that the value is a literal.
-		var value u32 = ((this.symbols[i] as u32) << 8) | cl
-		value |= 0x40000000
+		var value u32 = 0x40000000 | ((this.symbols[i] as u32) << 8) | cl
 
 		// The table uses max_cl bits, but reversed_code only has cl bits. We
 		// duplicate the key-value pair across all possible values of the high

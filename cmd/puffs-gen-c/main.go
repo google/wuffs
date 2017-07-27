@@ -704,7 +704,10 @@ func (g *gen) writeExprAs(lhs *a.Expr, rhs *a.TypeExpr, rp replacementPolicy, de
 	return nil
 }
 
-func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
+	if pp == parenthesesMandatory {
+		g.writeb('(')
+	}
 	opName := cOpNames[0xFF&n.ID0().Key()]
 	for i, o := range n.Args() {
 		if i != 0 {
@@ -713,6 +716,9 @@ func (g *gen) writeExprAssociativeOp(n *a.Expr, rp replacementPolicy, depth uint
 		if err := g.writeExpr(o.Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
+	}
+	if pp == parenthesesMandatory {
+		g.writeb(')')
 	}
 	return nil
 }

@@ -795,12 +795,40 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 
 func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 	switch n.ID0().Key() {
-	// TODO.
-	case t.KeyXAssociativePlus:
-	case t.KeyXAssociativeStar:
-	case t.KeyXAssociativeAmp:
-	case t.KeyXAssociativePipe:
-	case t.KeyXAssociativeHat:
+	case t.KeyXAssociativePlus, t.KeyXAssociativeStar,
+		t.KeyXAssociativeAmp, t.KeyXAssociativePipe, t.KeyXAssociativeHat:
+
+		expr, typ := (*a.Expr)(nil), (*a.TypeExpr)(nil)
+		for _, o := range n.Args() {
+			o := o.Expr()
+			if err := q.tcheckExpr(o, depth); err != nil {
+				return err
+			}
+			oTyp := o.MType()
+			if oTyp.IsIdeal() {
+				continue
+			}
+			if !oTyp.IsNumType() {
+				return fmt.Errorf("check: associative %q: %q, of type %q, does not have a numeric type",
+					n.ID0().AmbiguousForm().String(q.tm), o.String(q.tm), oTyp.String(q.tm))
+			}
+			if typ == nil {
+				expr, typ = o, oTyp.Unrefined()
+				continue
+			}
+			if !typ.EqIgnoringRefinements(oTyp) {
+				return fmt.Errorf("check: associative %q: %q and %q, of types %q and %q, "+
+					"do not have compatible types",
+					n.ID0().AmbiguousForm().String(q.tm),
+					expr.String(q.tm), o.String(q.tm),
+					expr.MType().String(q.tm), o.MType().String(q.tm))
+			}
+		}
+		if typ == nil {
+			typ = typeExprIdeal
+		}
+		n.SetMType(typ)
+		return nil
 
 	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
 		for _, o := range n.Args() {

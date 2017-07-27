@@ -1143,8 +1143,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       v_reversed_code = (((uint32_t)(puffs_flate_reverse8[v_code >> 1])) |
                          ((v_code & 1) << 8));
       v_reversed_code >>= (9 - v_cl);
-      v_value = ((((uint32_t)(self->private_impl.f_symbols[v_i])) << 8) | v_cl);
-      v_value |= 1073741824;
+      v_value = (1073741824 |
+                 (((uint32_t)(self->private_impl.f_symbols[v_i])) << 8) | v_cl);
       v_high_bits = (((uint32_t)(1)) << v_max_cl);
       v_delta = (((uint32_t)(1)) << v_cl);
       while (v_high_bits >= v_delta) {

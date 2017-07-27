@@ -1118,7 +1118,7 @@ func (g *gen) writeExpr(n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, d
 			return err
 		}
 	case t.FlagsAssociativeOp:
-		if err := g.writeExprAssociativeOp(n, rp, depth); err != nil {
+		if err := g.writeExprAssociativeOp(n, rp, pp, depth); err != nil {
 			return err
 		}
 	default:

@@ -360,7 +360,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 		rMin, rMax, err = q.bcheckExpr(rhs, 0)
 	} else {
-		rMin, rMax, err = q.bcheckExprBinaryOp(lhs, op.BinaryForm().Key(), rhs, 0)
+		rMin, rMax, err = q.bcheckExprBinaryOp(op.BinaryForm().Key(), lhs, rhs, 0)
 	}
 	if err != nil {
 		return err
@@ -629,7 +629,7 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 		if n.ID0().Key() == t.KeyXBinaryAs {
 			return q.bcheckExpr(n.LHS().Expr(), depth)
 		}
-		return q.bcheckExprBinaryOp(n.LHS().Expr(), n.ID0().Key(), n.RHS().Expr(), depth)
+		return q.bcheckExprBinaryOp(n.ID0().Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
@@ -778,11 +778,15 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
 }
 
-func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	lMin, lMax, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
+	return q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, rhs, depth)
+}
+
+func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	rMin, rMax, err := q.bcheckExpr(rhs, depth)
 	if err != nil {
 		return nil, nil, err
@@ -897,25 +901,30 @@ func (q *checker) bcheckExprBinaryOp(lhs *a.Expr, op t.Key, rhs *a.Expr, depth u
 }
 
 func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	switch n.ID0().Key() {
-	// TODO.
-	case t.KeyXAssociativePlus:
-	case t.KeyXAssociativeStar:
-	case t.KeyXAssociativeAmp:
-	case t.KeyXAssociativePipe:
-	case t.KeyXAssociativeHat:
-
-	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
-		for _, o := range n.Args() {
-			o := o.Expr()
-			if _, _, err := q.bcheckExpr(o, depth); err != nil {
-				return nil, nil, err
-			}
-		}
-		return zero, one, nil
+	op := n.ID0().AmbiguousForm().BinaryForm().Key()
+	if op == 0 {
+		return nil, nil, fmt.Errorf(
+			"check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
 	}
-
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
+	args := n.Args()
+	if len(args) < 1 {
+		return nil, nil, fmt.Errorf("check: associative op has no arguments")
+	}
+	lMin, lMax, err := q.bcheckExpr(args[0].Expr(), depth)
+	if err != nil {
+		return nil, nil, err
+	}
+	for i, o := range args {
+		if i == 0 {
+			continue
+		}
+		lhs := a.NewExpr(n.Node().Raw().Flags(), n.ID0(), n.ID1(), n.LHS(), n.MHS(), n.RHS(), args[:i])
+		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.Expr(), depth)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return lMin, lMax, nil
 }
 
 func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
