@@ -132,13 +132,15 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 
+	var table_entry u32
+	var table_entry_n_bits u32[..15]
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
+	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
 	while true {
 		// Decode an lcode symbol from H-L.
-		var table_entry u32
 		while true {
 			table_entry = this.huffs[0][bits & lmask]
-			var table_entry_n_bits u32[..15] = table_entry & 15
+			table_entry_n_bits = table_entry & 0x0F
 			if n_bits >= table_entry_n_bits {
 				bits >>= table_entry_n_bits
 				n_bits -= table_entry_n_bits
@@ -160,14 +162,76 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		} else if (table_entry >> 28) != 0 {
 			// End of block.
 			break
-		} else if (table_entry >> 27) != 0 {
+		} else if (table_entry >> 24) == 0x08 {
 			return error "bad Huffman code"
 		} else {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 
-		// TODO: non-literal Huffman symbols.
-		break
+		// length = base number + extra bits.
+		var length u32 = (table_entry >> 8) & 0xFFFF
+		// TODO: this if shouldn't be necessary.
+		if length > 0xFFFF {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		table_entry_n_bits = (table_entry >> 4) & 0x0F
+		while n_bits < table_entry_n_bits,
+			inv length <= 0xFFFF,
+			post n_bits >= table_entry_n_bits,
+		{
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+		}
+		length += bits.low_bits(n:table_entry_n_bits)
+		bits >>= table_entry_n_bits
+		n_bits -= table_entry_n_bits
+
+		// Decode a dcode symbol from H-D.
+		while true {
+			table_entry = this.huffs[1][bits & dmask]
+			table_entry_n_bits = table_entry & 15
+			if n_bits >= table_entry_n_bits {
+				bits >>= table_entry_n_bits
+				n_bits -= table_entry_n_bits
+				break
+			}
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+		}
+		if (table_entry >> 31) != 0 {
+			return error "TODO: indirect Huffman tables"
+		}
+
+		// For H-D, all symbols should be base number + extra bits.
+		if (table_entry >> 24) != 0x20 {
+			if (table_entry >> 24) == 0x08 {
+				return error "bad Huffman code"
+			}
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+
+		// distance = base number + extra bits.
+		var distance u32 = (table_entry >> 8) & 0xFFFF
+		// TODO: this if shouldn't be necessary.
+		if distance > 0xFFFF {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		table_entry_n_bits = (table_entry >> 4) & 0x0F
+		while n_bits < table_entry_n_bits,
+			inv distance <= 0xFFFF,
+			post n_bits >= table_entry_n_bits,
+		{
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+		}
+		distance += bits.low_bits(n:table_entry_n_bits)
+		bits >>= table_entry_n_bits
+		n_bits -= table_entry_n_bits
+
+		// TODO: use length and distance.
 	}
 
 	this.bits = bits
@@ -254,8 +318,9 @@ pri func decoder.init_dynamic_huffman?(src reader1)() {
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
-		// For H-CL, there are no redirections and all symbols are literals.
-		if (table_entry >> 30) != 1 {
+		// For H-CL, there should be no redirections and all symbols should be
+		// literals.
+		if (table_entry >> 24) != 0x40 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 		table_entry = (table_entry >> 8) & 0xFF
@@ -476,14 +541,20 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 
 	i = 0
 	var n_symbols u32[..289] = offsets[max_cl] as u32
-	var prev_cl u32[..15] = this.code_lengths[this.symbols[0]] as u32
+	if (in.n_codes0 + (this.symbols[0] as u32)) >= 316 {
+		return error "internal error: inconsistent Huffman decoder state"
+	}
+	var prev_cl u32[..15] = this.code_lengths[in.n_codes0 + (this.symbols[0] as u32)] as u32
 	var code u32
 	while true,
 		pre code < (1 << 9),
 		pre i < 289,
 		inv max_cl <= 9,
 	{
-		var cl u32[..15] = this.code_lengths[this.symbols[i]] as u32
+		if (in.n_codes0 + (this.symbols[i] as u32)) >= 316 {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		var cl u32[..15] = this.code_lengths[in.n_codes0 + (this.symbols[i] as u32)] as u32
 		if cl > max_cl {
 			return error "internal error: inconsistent Huffman decoder state"
 		}

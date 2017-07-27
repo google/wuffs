@@ -165,9 +165,12 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_bits;
       uint32_t v_n_bits;
-      uint32_t v_lmask;
       uint32_t v_table_entry;
       uint32_t v_table_entry_n_bits;
+      uint32_t v_lmask;
+      uint32_t v_dmask;
+      uint32_t v_length;
+      uint32_t v_distance;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
