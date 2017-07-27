@@ -915,6 +915,17 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
       status = PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE;
       goto exit;
     }
+    PUFFS_COROUTINE_SUSPENSION_POINT(6);
+    status = puffs_flate_decoder_init_huff(self, 0, 0, v_n_lit);
+    if (status) {
+      goto suspend;
+    }
+    PUFFS_COROUTINE_SUSPENSION_POINT(7);
+    status =
+        puffs_flate_decoder_init_huff(self, 1, v_n_lit, (v_n_lit + v_n_dist));
+    if (status) {
+      goto suspend;
+    }
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
     self->private_impl.c_init_huffs[0].coro_susp_point = 0;
@@ -1079,7 +1090,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     v_prev_cl = ((uint32_t)(
         self->private_impl.f_code_lengths[self->private_impl.f_symbols[0]]));
     v_code = 0;
-    while (v_i < v_n_symbols) {
+    while (true) {
       v_cl =
           ((uint32_t)(self->private_impl
                           .f_code_lengths[self->private_impl.f_symbols[v_i]]));
@@ -1108,6 +1119,10 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
         self->private_impl
             .f_huffs[a_which][(v_high_bits | v_reversed_code) & 511] = v_value;
       }
+      v_i += 1;
+      if (v_i >= v_n_symbols) {
+        goto label_1_break;
+      }
       v_code += 1;
       if (v_code >= 512) {
         status =
@@ -1115,8 +1130,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
         goto exit;
       }
       v_prev_cl = v_cl;
-      v_i += 1;
     }
+  label_1_break:;
     self->private_impl.f_n_huffs_bits[a_which] = v_max_cl;
     self->private_impl.c_init_huff[0].coro_susp_point = 0;
     goto exit;

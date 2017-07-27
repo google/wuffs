@@ -266,6 +266,9 @@ pri func decoder.init_huffs?(src reader1)() {
 		return error "missing end-of-block code"
 	}
 
+	this.init_huff?(which:0, n_codes0:0, n_codes1:n_lit)
+	this.init_huff?(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist)
+
 	this.bits = bits
 	this.n_bits = n_bits
 }
@@ -408,11 +411,11 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 	var n_symbols u32[..289] = offsets[max_cl] as u32
 	var prev_cl u32[..15] = this.code_lengths[this.symbols[0]] as u32
 	var code u32
-	while i < n_symbols,
-		inv code < (1 << 9),
+	while true,
+		pre code < (1 << 9),
+		pre i < 289,
 		inv max_cl <= 9,
 	{
-		assert i < 289 via "a < b: a < c; c <= b"(c:n_symbols)
 		var cl u32[..15] = this.code_lengths[this.symbols[i]] as u32
 		if cl > max_cl {
 			return error "internal error: inconsistent Huffman decoder state"
@@ -445,12 +448,16 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 			this.huffs[in.which][(high_bits | reversed_code) & 511] = value
 		}
 
+		i += 1
+		if i >= n_symbols {
+			break
+		}
+		assert i < 289 via "a < b: a < c; c <= b"(c:n_symbols)
 		code += 1
 		if code >= (1 << 9) {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 		prev_cl = cl
-		i += 1
 	}
 	this.n_huffs_bits[in.which] = max_cl
 
