@@ -353,7 +353,8 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
 
 puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_which,
-                                                 uint32_t a_n_codes);
+                                                 uint32_t a_n_codes0,
+                                                 uint32_t a_n_codes1);
 
 // ---------------- Constructor and Destructor Implementations
 
@@ -823,7 +824,7 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
       v_i += 1;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(3);
-    status = puffs_flate_decoder_init_huff(self, 0, 19);
+    status = puffs_flate_decoder_init_huff(self, 0, 0, 19);
     if (status) {
       goto suspend;
     }
@@ -965,7 +966,8 @@ short_read_src:
 
 puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_which,
-                                                 uint32_t a_n_codes) {
+                                                 uint32_t a_n_codes0,
+                                                 uint32_t a_n_codes1) {
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_i;
@@ -1006,8 +1008,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       self->private_impl.f_counts[v_i] = 0;
       v_i += 1;
     }
-    v_i = 0;
-    while (v_i < a_n_codes) {
+    v_i = a_n_codes0;
+    while (v_i < a_n_codes1) {
       if (self->private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] >=
           289) {
         status =
@@ -1017,7 +1019,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       self->private_impl.f_counts[self->private_impl.f_code_lengths[v_i]] += 1;
       v_i += 1;
     }
-    if (((uint32_t)(self->private_impl.f_counts[0])) == a_n_codes) {
+    if ((((uint32_t)(self->private_impl.f_counts[0])) + a_n_codes0) ==
+        a_n_codes1) {
       status = PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES;
       goto exit;
     }
@@ -1040,8 +1043,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       v_total = (v_total + v_count);
       v_i += 1;
     }
-    v_i = 0;
-    while (v_i < a_n_codes) {
+    v_i = a_n_codes0;
+    while (v_i < a_n_codes1) {
       if (self->private_impl.f_code_lengths[v_i] != 0) {
         self->private_impl
             .f_symbols[v_offsets[self->private_impl.f_code_lengths[v_i]]] =

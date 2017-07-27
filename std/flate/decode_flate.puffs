@@ -162,7 +162,7 @@ pri func decoder.init_huffs?(src reader1)() {
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
-	this.init_huff?(which:0, n_codes:19)
+	this.init_huff?(which:0, n_codes0:0, n_codes1:19)
 
 	// Decode the code lengths for the next two Huffman tables.
 	var mask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
@@ -275,9 +275,10 @@ pri func decoder.init_huffs?(src reader1)() {
 // TODO: skip generating PUFFS_COROUTINE_SUSPENSION_POINTs for this function,
 // and its callers, as it can only return errors, not suspensions.
 
-pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
+pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..289])() {
 	// For the clcode example in this package's README.md:
-	//  - n_codes = 19
+	//  - n_codes0 = 0
+	//  - n_codes1 = 19
 	//  - code_lengths[ 0] = 3
 	//  - code_lengths[ 1] = 0
 	//  - code_lengths[ 2] = 0
@@ -303,9 +304,9 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		this.counts[i] = 0
 		i += 1
 	}
-	i = 0
-	while i < in.n_codes {
-		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
+	i = in.n_codes0
+	while i < in.n_codes1 {
+		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes1)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
 		if this.counts[this.code_lengths[i]] >= 289 {
@@ -314,7 +315,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 		this.counts[this.code_lengths[i]] += 1
 		i += 1
 	}
-	if (this.counts[0] as u32) == in.n_codes {
+	if ((this.counts[0] as u32) + in.n_codes0) == in.n_codes1 {
 		return error "no Huffman codes"
 	}
 
@@ -355,9 +356,9 @@ pri func decoder.init_huff?(which u32[..1], n_codes u32[..289])() {
 	//  - offsets[6] = 10
 	//  - all other offsets elements are 10.
 
-	i = 0
-	while i < in.n_codes {
-		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes)
+	i = in.n_codes0
+	while i < in.n_codes1 {
+		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes1)
 		if this.code_lengths[i] != 0 {
 			this.symbols[offsets[this.code_lengths[i]]] = i as u16
 			if offsets[this.code_lengths[i]] >= 289 {
