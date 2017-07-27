@@ -163,6 +163,11 @@ typedef struct {
     } c_decode_uncompressed[1];
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_bits;
+      uint32_t v_n_bits;
+      uint32_t v_lmask;
+      uint32_t v_table_entry;
+      uint32_t v_table_entry_n_bits;
     } c_decode_dynamic[1];
     struct {
       uint32_t coro_susp_point;
@@ -192,6 +197,7 @@ typedef struct {
       uint32_t v_cl;
       uint32_t v_reversed_code;
       uint32_t v_value;
+      uint32_t v_symbol;
       uint32_t v_high_bits;
       uint32_t v_delta;
     } c_init_huff[1];

@@ -109,6 +109,48 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 // decode_dynamic decodes dynamic Huffman codes as per the RFC section 3.2.7.
 pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 	this.init_huffs?(src:in.src)
+
+	var bits u32 = this.bits
+	var n_bits u32 = this.n_bits
+
+	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
+	while true {
+		// Decode an lcode symbol from H-L.
+		var table_entry u32
+		while true {
+			table_entry = this.huffs[0][bits & lmask]
+			var table_entry_n_bits u32[..15] = table_entry & 15
+			if n_bits >= table_entry_n_bits {
+				bits >>= table_entry_n_bits
+				n_bits -= table_entry_n_bits
+				break
+			}
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+		}
+		if (table_entry >> 31) != 0 {
+			return error "TODO: indirect Huffman tables"
+		}
+
+		if (table_entry >> 30) != 0 {
+			in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
+			continue
+		} else if (table_entry >> 29) != 0 {
+			// No-op; code continues past the if-else chain.
+		} else if (table_entry >> 28) != 0 {
+			// End of block.
+			break
+		} else {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+
+		// TODO: non-literal Huffman symbols.
+		break
+	}
+
+	this.bits = bits
+	this.n_bits = n_bits
 }
 
 pri func decoder.init_huffs?(src reader1)() {
@@ -431,8 +473,19 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 		var reversed_code u32[..511] = (reverse8[code >> 1] as u32) | ((code & 1) << 8)
 		reversed_code >>= 9 - cl
 
-		// TODO: don't assume that the value is a literal.
-		var value u32 = 0x40000000 | ((this.symbols[i] as u32) << 8) | cl
+		var value u32
+		var symbol u32[..289] = this.symbols[i] as u32
+		if symbol == 256 {
+			// End-of-block.
+			value = 0x10000000 | cl
+		} else if (symbol < 256) and (in.which == 0) {
+			// Literal.
+			value = 0x40000000 | (symbol << 8) | cl
+		} else {
+			// Base number + extra bits.
+			// TODO: bits 27-8.
+			value = 0x20000000 | cl
+		}
 
 		// The table uses max_cl bits, but reversed_code only has cl bits. We
 		// duplicate the key-value pair across all possible values of the high
