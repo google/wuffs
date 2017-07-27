@@ -20,6 +20,28 @@ pub error "no Huffman codes"
 pub error "TODO: fixed Huffman blocks"
 pub error "TODO: indirect Huffman tables"
 
+// The next two tables were created by script/print-flate-magic-numbers.go.
+//
+// The u32 values' meanings are the same as the decoder.huffs u32 values. In
+// particular, bit 29 indicates a base number + extra bits, bits 23-8 are the
+// base number and bits 7-4 are the number of those extra bits.
+//
+// Some trailing elements are 0x08000000. Bit 27 indicates an invalid value.
+
+pri const lcode_magic_numbers[32] u32 = $(
+	0x20000300, 0x20000400, 0x20000500, 0x20000600, 0x20000700, 0x20000800, 0x20000900, 0x20000A00,
+	0x20000B10, 0x20000D10, 0x20000F10, 0x20001110, 0x20001320, 0x20001720, 0x20001B20, 0x20001F20,
+	0x20002330, 0x20002B30, 0x20003330, 0x20003B30, 0x20004340, 0x20005340, 0x20006340, 0x20007340,
+	0x20008350, 0x2000A350, 0x2000C350, 0x2000E350, 0x20010200, 0x08000000, 0x08000000, 0x08000000,
+)
+
+pri const dcode_magic_numbers[32] u32 = $(
+	0x20000100, 0x20000200, 0x20000300, 0x20000400, 0x20000510, 0x20000710, 0x20000920, 0x20000D20,
+	0x20001130, 0x20001930, 0x20002140, 0x20003140, 0x20004150, 0x20006150, 0x20008160, 0x2000C160,
+	0x20010170, 0x20018170, 0x20020180, 0x20030180, 0x20040190, 0x20060190, 0x200801A0, 0x200C01A0,
+	0x201001B0, 0x201801B0, 0x202001C0, 0x203001C0, 0x204001D0, 0x206001D0, 0x08000000, 0x08000000,
+)
+
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits u32,
@@ -48,12 +70,13 @@ pub struct decoder?(
 	//  - bit     30 indicates the symbol is a literal.
 	//  - bit     29 indicates the symbol is a base number + extra bits.
 	//  - bit     28 indicates the symbol is the end-of-block.
-	//  - bits 27-24 is the redirect offset or the number of extra bits.
+	//  - bit     27 indicates an invalid value.
+	//  - bits 26-24 are zero.
 	//  - bits 23- 8 is the literal (in bits 15-8) or base number.
-	//  - bits  7- 4 are unused.
+	//  - bits  7- 4 is the redirect offset or the number of extra bits.
 	//  - bits  3- 0 are the number of decoder.bits to consume.
 	//
-	// Exactly one of the four bits 31-28 should be set.
+	// Exactly one of the eight bits 31-24 should be set.
 	huffs[2][512] u32,
 	n_huffs_bits[2] u32[..9],
 
@@ -141,6 +164,8 @@ pri func decoder.decode_dynamic?(dst writer1, src reader1)() {
 		} else if (table_entry >> 28) != 0 {
 			// End of block.
 			break
+		} else if (table_entry >> 27) != 0 {
+			return error "bad Huffman code"
 		} else {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
@@ -204,7 +229,7 @@ pri func decoder.init_huffs?(src reader1)() {
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
-	this.init_huff?(which:0, n_codes0:0, n_codes1:19)
+	this.init_huff?(which:0, n_codes0:0, n_codes1:19, base_symbol:0xFFF)
 
 	// Decode the code lengths for the next two Huffman tables.
 	var mask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
@@ -308,8 +333,8 @@ pri func decoder.init_huffs?(src reader1)() {
 		return error "missing end-of-block code"
 	}
 
-	this.init_huff?(which:0, n_codes0:0, n_codes1:n_lit)
-	this.init_huff?(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist)
+	this.init_huff?(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
+	this.init_huff?(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist, base_symbol:0)
 
 	this.bits = bits
 	this.n_bits = n_bits
@@ -320,7 +345,7 @@ pri func decoder.init_huffs?(src reader1)() {
 // TODO: skip generating PUFFS_COROUTINE_SUSPENSION_POINTs for this function,
 // and its callers, as it can only return errors, not suspensions.
 
-pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..289])() {
+pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..289], base_symbol u32)() {
 	// For the clcode example in this package's README.md:
 	//  - n_codes0 = 0
 	//  - n_codes1 = 19
@@ -404,8 +429,12 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 	i = in.n_codes0
 	while i < in.n_codes1 {
 		assert i < 289 via "a < b: a < c; c <= b"(c:in.n_codes1)
+		// TODO: this if check should be unnecessary.
+		if i < in.n_codes0 {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
 		if this.code_lengths[i] != 0 {
-			this.symbols[offsets[this.code_lengths[i]]] = i as u16
+			this.symbols[offsets[this.code_lengths[i]]] = (i - in.n_codes0) as u16
 			if offsets[this.code_lengths[i]] >= 289 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
@@ -481,10 +510,16 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..289], n_codes1 u32[..
 		} else if (symbol < 256) and (in.which == 0) {
 			// Literal.
 			value = 0x40000000 | (symbol << 8) | cl
-		} else {
+		} else if symbol >= in.base_symbol {
 			// Base number + extra bits.
-			// TODO: bits 27-8.
-			value = 0x20000000 | cl
+			symbol -= in.base_symbol
+			if in.which == 0 {
+				value = lcode_magic_numbers[symbol & 31] | cl
+			} else {
+				value = dcode_magic_numbers[symbol & 31] | cl
+			}
+		} else {
+			return error "internal error: inconsistent Huffman decoder state"
 		}
 
 		// The table uses max_cl bits, but reversed_code only has cl bits. We

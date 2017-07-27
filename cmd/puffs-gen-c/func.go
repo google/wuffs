@@ -977,7 +977,7 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
-	} else if isThisMethod(g.tm, n, "init_huff", 3) {
+	} else if isThisMethod(g.tm, n, "init_huff", 4) {
 		g.printf("status = %s%s_init_huff(self,",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
 		for i, o := range n.Args() {

@@ -341,6 +341,22 @@ static const uint8_t puffs_flate_reverse8[256] = {
     15, 143, 79, 207, 47, 175, 111, 239, 31, 159, 95, 223, 63, 191, 127, 255,
 };
 
+static const uint32_t puffs_flate_lcode_magic_numbers[32] = {
+    536871680, 536871936, 536872192, 536872448, 536872704, 536872960, 536873216,
+    536873472, 536873744, 536874256, 536874768, 536875280, 536875808, 536876832,
+    536877856, 536878880, 536879920, 536881968, 536884016, 536886064, 536888128,
+    536892224, 536896320, 536900416, 536904528, 536912720, 536920912, 536929104,
+    536936960, 134217728, 134217728, 134217728,
+};
+
+static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
+    536871168, 536871424, 536871680, 536871936, 536872208, 536872720, 536873248,
+    536874272, 536875312, 536877360, 536879424, 536883520, 536887632, 536895824,
+    536904032, 536920416, 536936816, 536969584, 537002368, 537067904, 537133456,
+    537264528, 537395616, 537657760, 537919920, 538444208, 538968512, 540017088,
+    541065680, 543162832, 134217728, 134217728,
+};
+
 // ---------------- Private Constructor and Destructor Prototypes
 
 // ---------------- Private Function Prototypes
@@ -360,7 +376,8 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
 puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_which,
                                                  uint32_t a_n_codes0,
-                                                 uint32_t a_n_codes1);
+                                                 uint32_t a_n_codes1,
+                                                 uint32_t a_base_symbol);
 
 // ---------------- Constructor and Destructor Implementations
 
@@ -818,6 +835,9 @@ puffs_flate_status puffs_flate_decoder_decode_dynamic(
       } else if ((v_table_entry >> 29) != 0) {
       } else if ((v_table_entry >> 28) != 0) {
         goto label_0_break;
+      } else if ((v_table_entry >> 27) != 0) {
+        status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE;
+        goto exit;
       } else {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
@@ -976,7 +996,7 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
       v_i += 1;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(3);
-    status = puffs_flate_decoder_init_huff(self, 0, 0, 19);
+    status = puffs_flate_decoder_init_huff(self, 0, 0, 19, 4095);
     if (status) {
       goto suspend;
     }
@@ -1068,13 +1088,13 @@ puffs_flate_status puffs_flate_decoder_init_huffs(puffs_flate_decoder* self,
       goto exit;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(6);
-    status = puffs_flate_decoder_init_huff(self, 0, 0, v_n_lit);
+    status = puffs_flate_decoder_init_huff(self, 0, 0, v_n_lit, 257);
     if (status) {
       goto suspend;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(7);
-    status =
-        puffs_flate_decoder_init_huff(self, 1, v_n_lit, (v_n_lit + v_n_dist));
+    status = puffs_flate_decoder_init_huff(self, 1, v_n_lit,
+                                           (v_n_lit + v_n_dist), 0);
     if (status) {
       goto suspend;
     }
@@ -1130,7 +1150,8 @@ short_read_src:
 puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_which,
                                                  uint32_t a_n_codes0,
-                                                 uint32_t a_n_codes1) {
+                                                 uint32_t a_n_codes1,
+                                                 uint32_t a_base_symbol) {
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_i;
@@ -1210,10 +1231,15 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     }
     v_i = a_n_codes0;
     while (v_i < a_n_codes1) {
+      if (v_i < a_n_codes0) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
+      }
       if (self->private_impl.f_code_lengths[v_i] != 0) {
         self->private_impl
             .f_symbols[v_offsets[self->private_impl.f_code_lengths[v_i]]] =
-            ((uint16_t)(v_i));
+            ((uint16_t)((v_i - a_n_codes0)));
         if (v_offsets[self->private_impl.f_code_lengths[v_i]] >= 289) {
           status =
               PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
@@ -1270,8 +1296,17 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
         v_value = (268435456 | v_cl);
       } else if ((v_symbol < 256) && (a_which == 0)) {
         v_value = (1073741824 | (v_symbol << 8) | v_cl);
+      } else if (v_symbol >= a_base_symbol) {
+        v_symbol -= a_base_symbol;
+        if (a_which == 0) {
+          v_value = (puffs_flate_lcode_magic_numbers[v_symbol & 31] | v_cl);
+        } else {
+          v_value = (puffs_flate_dcode_magic_numbers[v_symbol & 31] | v_cl);
+        }
       } else {
-        v_value = (536870912 | v_cl);
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
       }
       v_high_bits = (((uint32_t)(1)) << v_max_cl);
       v_delta = (((uint32_t)(1)) << v_cl);
