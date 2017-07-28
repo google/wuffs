@@ -102,25 +102,29 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_SUSPENSION_LIMITED_READ 9                 // 0x00000009
 #define PUFFS_FLATE_SUSPENSION_LIMITED_WRITE 10               // 0x0000000a
 
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1157040128  // 0xbb08f800
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED \
+  -1157040127  // 0xbb08f801
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
+  -1157040126  // 0xbb08f802
 #define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
-  -1157040127                                                  // 0xbb08f801
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040126         // 0xbb08f802
-#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040125  // 0xbb08f803
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040124          // 0xbb08f804
+  -1157040125                                                  // 0xbb08f803
+#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040124         // 0xbb08f804
+#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040123  // 0xbb08f805
+#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040122          // 0xbb08f806
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040123  // 0xbb08f805
-#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040122  // 0xbb08f806
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040121  // 0xbb08f807
+#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
+  -1157040120  // 0xbb08f808
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1157040119  // 0xbb08f809
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040120                                                    // 0xbb08f808
-#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040119  // 0xbb08f809
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040118           // 0xbb08f80a
+  -1157040118                                                    // 0xbb08f80a
+#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040117  // 0xbb08f80b
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040116           // 0xbb08f80c
 #define PUFFS_FLATE_ERROR_TODO_INDIRECT_HUFFMAN_TABLES \
-  -1157040117  // 0xbb08f80b
+  -1157040115  // 0xbb08f80d
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -193,6 +197,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
+      uint32_t v_remaining;
       uint16_t v_offsets[16];
       uint32_t v_n_symbols;
       uint32_t v_count;
@@ -291,7 +296,9 @@ const char* puffs_flate_status_strings0[11] = {
     "flate: limited write",
 };
 
-const char* puffs_flate_status_strings1[12] = {
+const char* puffs_flate_status_strings1[14] = {
+    "flate: bad Huffman code (over-subscribed)",
+    "flate: bad Huffman code (under-subscribed)",
     "flate: bad Huffman code length count",
     "flate: bad Huffman code length repetition",
     "flate: bad Huffman code",
@@ -316,7 +323,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
-      n = 12;
+      n = 14;
       break;
   }
   uint32_t i = s & 0xff;
@@ -1335,6 +1342,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_i;
+  uint32_t v_remaining;
   uint16_t v_offsets[16];
   uint32_t v_n_symbols;
   uint32_t v_count;
@@ -1351,6 +1359,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
   uint32_t coro_susp_point = self->private_impl.c_init_huff[0].coro_susp_point;
   if (coro_susp_point) {
     v_i = self->private_impl.c_init_huff[0].v_i;
+    v_remaining = self->private_impl.c_init_huff[0].v_remaining;
     memcpy(v_offsets, self->private_impl.c_init_huff[0].v_offsets, 2 * 16);
     v_n_symbols = self->private_impl.c_init_huff[0].v_n_symbols;
     v_count = self->private_impl.c_init_huff[0].v_count;
@@ -1386,6 +1395,26 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
     if ((((uint32_t)(self->private_impl.f_counts[0])) + a_n_codes0) ==
         a_n_codes1) {
       status = PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES;
+      goto exit;
+    }
+    v_remaining = 1;
+    v_i = 1;
+    while (v_i <= 15) {
+      if (v_remaining > 1073741824) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
+      }
+      v_remaining <<= 1;
+      if (v_remaining < ((uint32_t)(self->private_impl.f_counts[v_i]))) {
+        status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED;
+        goto exit;
+      }
+      v_remaining -= ((uint32_t)(self->private_impl.f_counts[v_i]));
+      v_i += 1;
+    }
+    if (v_remaining != 0) {
+      status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED;
       goto exit;
     }
     {
@@ -1538,6 +1567,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
 suspend:
   self->private_impl.c_init_huff[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_init_huff[0].v_i = v_i;
+  self->private_impl.c_init_huff[0].v_remaining = v_remaining;
   memcpy(self->private_impl.c_init_huff[0].v_offsets, v_offsets, 2 * 16);
   self->private_impl.c_init_huff[0].v_n_symbols = v_n_symbols;
   self->private_impl.c_init_huff[0].v_count = v_count;
