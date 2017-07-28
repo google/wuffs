@@ -119,9 +119,8 @@ typedef int32_t puffs_flate_status;
   -1157040120                                                    // 0xbb08f808
 #define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040119  // 0xbb08f809
 #define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040118           // 0xbb08f80a
-#define PUFFS_FLATE_ERROR_TODO_FIXED_HUFFMAN_BLOCKS -1157040117  // 0xbb08f80b
 #define PUFFS_FLATE_ERROR_TODO_INDIRECT_HUFFMAN_TABLES \
-  -1157040116  // 0xbb08f80c
+  -1157040117  // 0xbb08f80b
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -148,9 +147,9 @@ typedef struct {
     uint32_t f_n_bits;
     uint32_t f_huffs[2][512];
     uint32_t f_n_huffs_bits[2];
-    uint8_t f_code_lengths[316];
+    uint8_t f_code_lengths[320];
     uint16_t f_counts[16];
-    uint16_t f_symbols[290];
+    uint16_t f_symbols[320];
 
     struct {
       uint32_t coro_susp_point;
@@ -174,6 +173,10 @@ typedef struct {
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_i;
+    } c_init_fixed_huffman[1];
+    struct {
+      uint32_t coro_susp_point;
       uint32_t v_bits;
       uint32_t v_n_bits;
       uint32_t v_n_lit;
@@ -191,10 +194,9 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
       uint16_t v_offsets[16];
-      uint16_t v_total;
-      uint16_t v_count;
-      uint32_t v_max_cl;
       uint32_t v_n_symbols;
+      uint32_t v_count;
+      uint32_t v_max_cl;
       uint32_t v_prev_cl;
       uint32_t v_code;
       uint32_t v_cl;

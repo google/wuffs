@@ -1025,6 +1025,14 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.writes("if (status) { goto suspend; }\n")
 
+	} else if isThisMethod(g.tm, n, "init_fixed_huffman", 0) {
+		g.printf("status = %s%s_init_fixed_huffman(self);\n",
+			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
+		if err := g.writeLoadExprDerivedVars(n); err != nil {
+			return err
+		}
+		g.writes("if (status) { goto suspend; }\n")
+
 	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
 		g.printf("status = %s%s_init_dynamic_huffman(self, %ssrc);\n",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)

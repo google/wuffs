@@ -650,7 +650,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||
-			isThisMethod(q.tm, n, "init_dynamic_huffman", 1) || isThisMethod(q.tm, n, "init_huff", 4) {
+			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
+			isThisMethod(q.tm, n, "init_huff", 4) {
 
 			for _, o := range n.Args() {
 				// TODO: check that the arg range at the caller and the
