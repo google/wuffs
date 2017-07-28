@@ -197,46 +197,6 @@ void test_puffs_flate_decode_split_src() {
   }
 }
 
-// test_puffs_flate_work_in_progress is a temporary test harness used while the
-// std/flate decoder is a work in progress.
-void test_puffs_flate_work_in_progress() {
-  proc_funcname = __func__;
-
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
-
-  golden_test* gt = &flate_romeo_gt;
-  if (!read_file(&src, gt->src_filename)) {
-    return;
-  }
-  if (!read_file(&want, gt->want_filename)) {
-    return;
-  }
-  src.ri = gt->src_offset0;
-  src.wi = gt->src_offset1;
-
-  puffs_flate_decoder dec;
-  puffs_base_writer1 dst_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
-
-  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
-  puffs_flate_status s =
-      puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
-  puffs_flate_decoder_destructor(&dec);
-
-  if (s != PUFFS_FLATE_STATUS_OK) {
-    FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", s,
-         puffs_flate_status_string(s), PUFFS_FLATE_STATUS_OK,
-         puffs_flate_status_string(PUFFS_FLATE_STATUS_OK));
-    return;
-  }
-
-  if (!buf1s_equal("", &got, &want)) {
-    return;
-  }
-}
-
 // ---------------- Mimic Tests
 
 #ifdef PUFFS_MIMIC
@@ -372,10 +332,9 @@ proc tests[] = {
     /* TODO: implement puffs_flate, then uncomment these.
     test_puffs_flate_decode_midsummer,  //
     test_puffs_flate_decode_pi,         //
-    test_puffs_flate_decode_romeo,      //
     */
+    test_puffs_flate_decode_romeo,      //
     test_puffs_flate_decode_split_src,  //
-    test_puffs_flate_work_in_progress,  //
 
 #ifdef PUFFS_MIMIC
 
@@ -397,8 +356,8 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // Flate Benches
-    /* TODO: implement puffs_flate, then uncomment these.
     bench_puffs_flate_decode_1k,    //
+    /* TODO: implement puffs_flate, then uncomment these.
     bench_puffs_flate_decode_10k,   //
     bench_puffs_flate_decode_100k,  //
     */
