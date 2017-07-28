@@ -481,7 +481,8 @@ func (g *gen) visitVars(block []*a.Node, depth uint32, f func(*gen, *a.Var) erro
 }
 
 func (g *gen) writeResumeSuspend1(n *a.Var, prefix string, suspend bool) error {
-	lhs := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
+	local := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
+	lhs := local
 	// TODO: don't hard-code [0], and allow recursive coroutines.
 	rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.perFunc.funk.Name().String(g.tm), lhs)
 	if suspend {
@@ -497,21 +498,9 @@ func (g *gen) writeResumeSuspend1(n *a.Var, prefix string, suspend bool) error {
 		if inner.Decorator() != 0 {
 			break
 		}
-		multiplier := 0
 		switch inner.Name().Key() {
-		case t.KeyU8:
-			multiplier = 1
-		case t.KeyU16:
-			multiplier = 2
-		case t.KeyU32:
-			multiplier = 4
-		case t.KeyU64:
-			multiplier = 8
-		}
-		cv := typ.ArrayLength().ConstValue()
-		// TODO: check that multiplier * cv is within size_t's range.
-		if multiplier != 0 {
-			g.printf("memcpy(%s, %s, %d * %v);\n", lhs, rhs, multiplier, cv)
+		case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64:
+			g.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
 			return nil
 		}
 	}
@@ -695,13 +684,16 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 		}
 		if n.XType().Decorator().Key() == t.KeyOpenBracket {
 			if n.Value() != nil {
+				// TODO: something like:
+				// cv := n.XType().ArrayLength().ConstValue()
+				// // TODO: check that cv is within size_t's range.
+				// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
+				// cv, vPrefix, n.Name().String(g.tm))
 				return fmt.Errorf("TODO: array initializers for non-zero default values")
 			}
 			// TODO: arrays of arrays.
-			cv := n.XType().ArrayLength().ConstValue()
-			// TODO: check that cv is within size_t's range.
-			g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = 0; }}\n",
-				cv, vPrefix, n.Name().String(g.tm))
+			name := n.Name().String(g.tm)
+			g.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
 		} else {
 			g.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 			if v := n.Value(); v != nil {
@@ -711,8 +703,8 @@ func (g *gen) writeStatement(n *a.Node, depth uint32) error {
 			} else {
 				g.writeb('0')
 			}
+			g.writes(";\n")
 		}
-		g.writes(";\n")
 		return nil
 
 	case a.KWhile:

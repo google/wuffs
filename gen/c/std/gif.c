@@ -635,18 +635,13 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   uint32_t coro_susp_point =
       self->private_impl.c_decode_header[0].coro_susp_point;
   if (coro_susp_point) {
-    memcpy(v_c, self->private_impl.c_decode_header[0].v_c, 1 * 6);
+    memcpy(v_c, self->private_impl.c_decode_header[0].v_c, sizeof(v_c));
     v_i = self->private_impl.c_decode_header[0].v_i;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    {
-      size_t i;
-      for (i = 0; i < 6; i++) {
-        v_c[i] = 0;
-      }
-    };
+    memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 6) {
       PUFFS_COROUTINE_SUSPENSION_POINT(1);
@@ -669,7 +664,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_header[0].coro_susp_point = coro_susp_point;
-  memcpy(self->private_impl.c_decode_header[0].v_c, v_c, 1 * 6);
+  memcpy(self->private_impl.c_decode_header[0].v_c, v_c, sizeof(v_c));
   self->private_impl.c_decode_header[0].v_i = v_i;
 
 exit:
@@ -722,19 +717,14 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode_lsd[0].coro_susp_point;
   if (coro_susp_point) {
-    memcpy(v_c, self->private_impl.c_decode_lsd[0].v_c, 1 * 7);
+    memcpy(v_c, self->private_impl.c_decode_lsd[0].v_c, sizeof(v_c));
     v_i = self->private_impl.c_decode_lsd[0].v_i;
     v_gct_size = self->private_impl.c_decode_lsd[0].v_gct_size;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    {
-      size_t i;
-      for (i = 0; i < 7; i++) {
-        v_c[i] = 0;
-      }
-    };
+    memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 7) {
       PUFFS_COROUTINE_SUSPENSION_POINT(1);
@@ -782,7 +772,7 @@ puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_lsd[0].coro_susp_point = coro_susp_point;
-  memcpy(self->private_impl.c_decode_lsd[0].v_c, v_c, 1 * 7);
+  memcpy(self->private_impl.c_decode_lsd[0].v_c, v_c, sizeof(v_c));
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
 
@@ -950,7 +940,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode_id[0].coro_susp_point;
   if (coro_susp_point) {
-    memcpy(v_c, self->private_impl.c_decode_id[0].v_c, 1 * 9);
+    memcpy(v_c, self->private_impl.c_decode_id[0].v_c, sizeof(v_c));
     v_i = self->private_impl.c_decode_id[0].v_i;
     v_interlace = self->private_impl.c_decode_id[0].v_interlace;
     v_lw = self->private_impl.c_decode_id[0].v_lw;
@@ -961,12 +951,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    {
-      size_t i;
-      for (i = 0; i < 9; i++) {
-        v_c[i] = 0;
-      }
-    };
+    memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 9) {
       PUFFS_COROUTINE_SUSPENSION_POINT(1);
@@ -1048,7 +1033,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_id[0].coro_susp_point = coro_susp_point;
-  memcpy(self->private_impl.c_decode_id[0].v_c, v_c, 1 * 9);
+  memcpy(self->private_impl.c_decode_id[0].v_c, v_c, sizeof(v_c));
   self->private_impl.c_decode_id[0].v_i = v_i;
   self->private_impl.c_decode_id[0].v_interlace = v_interlace;
   self->private_impl.c_decode_id[0].v_lw = v_lw;
