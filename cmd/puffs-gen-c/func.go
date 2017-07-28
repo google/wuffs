@@ -921,6 +921,62 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 
 		g.writes("}\n")
 
+	} else if isInDst(g.tm, n, t.KeyCopyHistory32, 2) {
+		if g.perFunc.tempW > maxTemp-2 {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		temp0 := g.perFunc.tempW + 0
+		temp1 := g.perFunc.tempW + 1
+		temp2 := g.perFunc.tempW + 2
+		g.perFunc.tempW += 3
+		g.perFunc.tempR += 3
+
+		g.writes("{\n")
+
+		g.writes("self->private_impl.scratch = ((uint64_t)(")
+		x0 := n.Args()[0].Arg().Value()
+		if err := g.writeExpr(x0, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(")<<32) | (uint64_t)(")
+		x1 := n.Args()[1].Arg().Value()
+		if err := g.writeExpr(x1, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		g.writes(");\n")
+		if err := g.writeCoroSuspPoint(); err != nil {
+			return err
+		}
+
+		const wName = "dst"
+		g.printf("size_t %s%d = (size_t)(self->private_impl.scratch >> 32);", tPrefix, temp0)
+		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
+		g.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %s%s.buf->ptr)))) { "+
+			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
+			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, aPrefix, wName, g.PKGPREFIX)
+		g.printf("uint8_t* %s%d = %swptr_%s - %s%d;\n", tPrefix, temp1, bPrefix, wName, tPrefix, temp0)
+		g.printf("uint32_t %s%d = (uint32_t)(self->private_impl.scratch);", tPrefix, temp2)
+
+		g.printf("if (PUFFS_LIKELY((size_t)(%s%d) <= (%swend_%s - %swptr_%s))) {",
+			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
+
+		g.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
+			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
+
+		g.writes("} else {\n")
+
+		g.printf("%s%d = (uint32_t)(%swend_%s - %swptr_%s);\n",
+			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
+		g.printf("self->private_impl.scratch -= (uint64_t)(%s%d);\n", tPrefix, temp2)
+		g.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
+			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
+		// TODO: SHORT_WRITE vs LIMITED_WRITE?
+		g.printf("status = %sSUSPENSION_SHORT_WRITE; goto suspend;\n", g.PKGPREFIX)
+
+		g.writes("}\n")
+
+		g.writes("}\n")
+
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		g.printf("status = %s%s_decode_header(self, %ssrc);\n",
 			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)

@@ -204,9 +204,13 @@ void test_puffs_flate_work_in_progress() {
 
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
   golden_test* gt = &flate_romeo_gt;
   if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+  if (!read_file(&want, gt->want_filename)) {
     return;
   }
   src.ri = gt->src_offset0;
@@ -228,42 +232,7 @@ void test_puffs_flate_work_in_progress() {
     return;
   }
 
-  // As per the package's README.md:
-  //    lcode_lengths[31] = 0
-  //    lcode_lengths[32] = 4
-  //    lcode_lengths[33] = 8
-  //    lcode_lengths[34] = 0
-  //    etc
-  //    dcode_lengths[18] = 3
-  //    dcode_lengths[19] = 6
-  if (dec.private_impl.f_code_lengths[31] != 0) {
-    FAIL("cl[31]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[31], (uint8_t)(0));
-    return;
-  }
-  if (dec.private_impl.f_code_lengths[32] != 4) {
-    FAIL("cl[32]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[32], (uint8_t)(4));
-    return;
-  }
-  if (dec.private_impl.f_code_lengths[33] != 8) {
-    FAIL("cl[33]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[33], (uint8_t)(8));
-    return;
-  }
-  if (dec.private_impl.f_code_lengths[34] != 0) {
-    FAIL("cl[34]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[34], (uint8_t)(0));
-    return;
-  }
-  if (dec.private_impl.f_code_lengths[266 + 18] != 3) {
-    FAIL("cl[266 + 18]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[266 + 18], (uint8_t)(3));
-    return;
-  }
-  if (dec.private_impl.f_code_lengths[266 + 19] != 6) {
-    FAIL("cl[266 + 19]: got %" PRIu8 ", want %" PRIu8,
-         dec.private_impl.f_code_lengths[266 + 19], (uint8_t)(6));
+  if (!buf1s_equal("", &got, &want)) {
     return;
   }
 }

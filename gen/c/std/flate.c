@@ -922,6 +922,33 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
       v_distance += ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1));
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
+      PUFFS_COROUTINE_SUSPENSION_POINT(6);
+      {
+        self->private_impl.scratch =
+            ((uint64_t)(v_distance) << 32) | (uint64_t)(v_length);
+        PUFFS_COROUTINE_SUSPENSION_POINT(7);
+        size_t t_4 = (size_t)(self->private_impl.scratch >> 32);
+        if (PUFFS_UNLIKELY((t_4 == 0) ||
+                           (t_4 > (b_wptr_dst - a_dst.buf->ptr)))) {
+          status = PUFFS_FLATE_ERROR_BAD_ARGUMENT;
+          goto exit;
+        }
+        uint8_t* t_5 = b_wptr_dst - t_4;
+        uint32_t t_6 = (uint32_t)(self->private_impl.scratch);
+        if (PUFFS_LIKELY((size_t)(t_6) <= (b_wend_dst - b_wptr_dst))) {
+          for (; t_6; t_6--) {
+            *b_wptr_dst++ = *t_5++;
+          }
+        } else {
+          t_6 = (uint32_t)(b_wend_dst - b_wptr_dst);
+          self->private_impl.scratch -= (uint64_t)(t_6);
+          for (; t_6; t_6--) {
+            *b_wptr_dst++ = *t_5++;
+          }
+          status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+          goto suspend;
+        }
+      }
     }
   label_0_break:;
     self->private_impl.f_bits = v_bits;
