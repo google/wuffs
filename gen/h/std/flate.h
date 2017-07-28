@@ -152,8 +152,6 @@ typedef struct {
     uint32_t f_huffs[2][512];
     uint32_t f_n_huffs_bits[2];
     uint8_t f_code_lengths[320];
-    uint16_t f_counts[16];
-    uint16_t f_symbols[320];
 
     struct {
       uint32_t coro_susp_point;
@@ -196,11 +194,13 @@ typedef struct {
     } c_init_dynamic_huffman[1];
     struct {
       uint32_t coro_susp_point;
+      uint16_t v_counts[16];
       uint32_t v_i;
       uint32_t v_remaining;
       uint16_t v_offsets[16];
       uint32_t v_n_symbols;
       uint32_t v_count;
+      uint16_t v_symbols[320];
       uint32_t v_max_cl;
       uint32_t v_prev_cl;
       uint32_t v_code;

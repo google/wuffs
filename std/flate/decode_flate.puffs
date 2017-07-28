@@ -85,12 +85,6 @@ pub struct decoder?(
 	//
 	// code_lengths[in.n_codes0 + i] holds the number of bits in the i'th code.
 	code_lengths[320] u8[..15],
-
-	// These fields are used as init_huff scratch space.
-	//
-	// TODO: make these local variables, not fields.
-	counts[16] u16[..320],
-	symbols[320] u16[..319],
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
@@ -461,23 +455,19 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	//  - counts[4] = 1
 	//  - counts[5] = 2
 	//  - all other counts elements are 0.
-	var i u32
-	while i < 16 {
-		this.counts[i] = 0
-		i += 1
-	}
-	i = in.n_codes0
+	var counts[16] u16[..320]
+	var i u32 = in.n_codes0
 	while i < in.n_codes1 {
 		assert i < 320 via "a < b: a < c; c <= b"(c:in.n_codes1)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
-		if this.counts[this.code_lengths[i]] >= 320 {
+		if counts[this.code_lengths[i]] >= 320 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
-		this.counts[this.code_lengths[i]] += 1
+		counts[this.code_lengths[i]] += 1
 		i += 1
 	}
-	if ((this.counts[0] as u32) + in.n_codes0) == in.n_codes1 {
+	if ((counts[0] as u32) + in.n_codes0) == in.n_codes1 {
 		return error "no Huffman codes"
 	}
 
@@ -490,10 +480,10 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 		}
 		// Each iteration doubles the number of possible remaining codes.
 		remaining <<= 1
-		if remaining < (this.counts[i] as u32) {
+		if remaining < (counts[i] as u32) {
 			return error "bad Huffman code (over-subscribed)"
 		}
-		remaining -= this.counts[i] as u32
+		remaining -= counts[i] as u32
 		i += 1
 	}
 	if remaining != 0 {
@@ -518,7 +508,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	i = 1
 	while i <= 15 {
 		offsets[i] = n_symbols as u16
-		var count u32[..320] = this.counts[i] as u32
+		var count u32[..320] = counts[i] as u32
 		if n_symbols > (320 - count) {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
@@ -550,6 +540,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	//  - offsets[3] =  7, formerly 0
 	//  - offsets[4] =  8, formerly 7
 	//  - offsets[5] = 10, formerly 8
+	var symbols[320] u16[..319]
 	i = in.n_codes0
 	while i < in.n_codes1,
 		inv n_symbols <= 288,
@@ -563,7 +554,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 			if offsets[this.code_lengths[i]] >= 320 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
-			this.symbols[offsets[this.code_lengths[i]]] = (i - in.n_codes0) as u16
+			symbols[offsets[this.code_lengths[i]]] = (i - in.n_codes0) as u16
 			offsets[this.code_lengths[i]] += 1
 		}
 		i += 1
@@ -577,7 +568,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	while true,
 		inv n_symbols <= 288,
 	{
-		if this.counts[max_cl] != 0 {
+		if counts[max_cl] != 0 {
 			break
 		}
 		if max_cl <= 1 {
@@ -607,10 +598,10 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	if (n_symbols != (offsets[max_cl] as u32)) or (n_symbols != (offsets[15] as u32)) {
 		return error "internal error: inconsistent Huffman decoder state"
 	}
-	if (in.n_codes0 + (this.symbols[0] as u32)) >= 320 {
+	if (in.n_codes0 + (symbols[0] as u32)) >= 320 {
 		return error "internal error: inconsistent Huffman decoder state"
 	}
-	var prev_cl u32[..15] = this.code_lengths[in.n_codes0 + (this.symbols[0] as u32)] as u32
+	var prev_cl u32[..15] = this.code_lengths[in.n_codes0 + (symbols[0] as u32)] as u32
 	var code u32
 	while true,
 		pre code < (1 << 9),
@@ -618,10 +609,10 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 		inv max_cl <= 9,
 		inv n_symbols <= 288,
 	{
-		if (in.n_codes0 + (this.symbols[i] as u32)) >= 320 {
+		if (in.n_codes0 + (symbols[i] as u32)) >= 320 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
-		var cl u32[..15] = this.code_lengths[in.n_codes0 + (this.symbols[i] as u32)] as u32
+		var cl u32[..15] = this.code_lengths[in.n_codes0 + (symbols[i] as u32)] as u32
 		if cl > max_cl {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
@@ -637,7 +628,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 		reversed_code >>= 9 - cl
 
 		var value u32
-		var symbol u32[..319] = this.symbols[i] as u32
+		var symbol u32[..319] = symbols[i] as u32
 		if symbol == 256 {
 			// End-of-block.
 			value = 0x10000000 | cl
