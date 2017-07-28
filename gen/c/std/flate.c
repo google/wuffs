@@ -261,6 +261,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 #if defined(__GNUC__)
 #define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
 #define PUFFS_UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
+// Declare the printf prototype. The generated code shouldn't need this at all,
+// but it's useful for manual printf debugging.
+extern int printf(const char* __restrict __format, ...);
 #else
 #define PUFFS_LIKELY(expr) (expr)
 #define PUFFS_UNLIKELY(expr) (expr)
