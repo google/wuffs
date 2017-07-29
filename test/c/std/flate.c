@@ -20,8 +20,8 @@ Add the "puffs mimic cflags" (everything after the colon below) to the C
 compiler flags (after the .c file) to run the mimic tests.
 
 To manually run the benchmarks, replace "-Wall -Werror" with "-O3" and replace
-"./a.out" with "./a.out -bench". Combine these changes with the "puffs mimic
-cflags" to run the mimic benchmarks.
+the first "./a.out" with "./a.out -bench". Combine these changes with the
+"puffs mimic cflags" to run the mimic benchmarks.
 */
 
 // !! puffs mimic cflags: -DPUFFS_MIMIC -lz
