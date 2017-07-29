@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -95,20 +96,43 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
 
 int main(int argc, char** argv) {
   bool bench = false;
+  int proc_reps = 5;
+
   int i;
   for (i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-bench")) {
+    const char* arg = argv[i];
+    if (!strcmp(arg, "-bench")) {
       bench = true;
+
+    } else if (!strncmp(arg, "-reps=", 6)) {
+      arg += 6;
+      if (!*arg) {
+        fprintf(stderr, "missing -reps=N value\n");
+        return 1;
+      }
+      char* end = NULL;
+      long int n = strtol(arg, &end, 10);
+      if (*end) {
+        fprintf(stderr, "invalid -reps=N value\n");
+        return 1;
+      }
+      if ((n < 0) || (1000000 < n)) {
+        fprintf(stderr, "out-of-range -reps=N value\n");
+        return 1;
+      }
+      proc_reps = n;
+
     } else {
-      fprintf(stderr, "unknown flag \"%s\"\n", argv[i]);
+      fprintf(stderr, "unknown flag \"%s\"\n", arg);
       return 1;
     }
   }
 
-  int proc_reps = 1;
   proc* procs = tests;
-  if (bench) {
-    proc_reps = 5 + 1;  // +1 for the warm up run.
+  if (!bench) {
+    proc_reps = 1;
+  } else {
+    proc_reps++;  // +1 for the warm up run.
     procs = benches;
     printf("# %s version %s\n#\n", cc, cc_version);
     printf(
@@ -136,7 +160,8 @@ int main(int argc, char** argv) {
     }
   }
   if (bench) {
-    printf("# %-16s%-8s(%d benchmarks run)\n", proc_filename, cc, tests_run);
+    printf("# %-16s%-8s(%d benchmarks run, 1+%d reps per benchmark)\n",
+           proc_filename, cc, tests_run, proc_reps - 1);
   } else {
     printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
   }

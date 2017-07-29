@@ -110,6 +110,11 @@ const (
 
 	mimicDefault = false
 	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
+
+	repsDefault = 5
+	repsMin     = 0
+	repsMax     = 1000000
+	repsUsage   = `the number of repetitions per benchmark`
 )
 
 func parseLangs(commaSeparated string) ([]string, error) {

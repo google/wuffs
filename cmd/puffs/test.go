@@ -19,12 +19,16 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
+	repsFlag := flags.Int("reps", repsDefault, repsUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	langs, err := parseLangs(*langsFlag)
 	if err != nil {
 		return err
+	}
+	if *repsFlag < repsMin || repsMax < *repsFlag {
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
 	}
 	args = flags.Args()
 	if len(args) == 0 {
@@ -36,7 +40,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		cmdArgs = append(cmdArgs, "-mimic")
 	}
 	if bench {
-		cmdArgs = append(cmdArgs, "-bench")
+		cmdArgs = append(cmdArgs, "-bench", fmt.Sprintf("-reps=%d", *repsFlag))
 	}
 
 	failed := false

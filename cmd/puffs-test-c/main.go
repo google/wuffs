@@ -15,9 +15,20 @@ import (
 	"strings"
 )
 
+const (
+	mimicDefault = false
+	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
+
+	repsDefault = 5
+	repsMin     = 0
+	repsMax     = 1000000
+	repsUsage   = `the number of repetitions per benchmark`
+)
+
 var (
-	bench = flag.Bool("bench", false, "whether to run benchmarks instead of regular tests")
-	mimic = flag.Bool("mimic", false, "whether to compare Puffs' output with other libraries' output")
+	benchFlag = flag.Bool("bench", false, "whether to run benchmarks instead of regular tests")
+	mimicFlag = flag.Bool("mimic", mimicDefault, mimicUsage)
+	repsFlag  = flag.Int("reps", repsDefault, repsUsage)
 )
 
 func main() {
@@ -29,6 +40,10 @@ func main() {
 
 func main1() error {
 	flag.Parse()
+	if *repsFlag < repsMin || repsMax < *repsFlag {
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
+	}
+
 	failed := false
 	for _, arg := range flag.Args() {
 		f, err := do(arg)
@@ -39,7 +54,7 @@ func main1() error {
 	}
 	if failed {
 		s := "tests"
-		if *bench {
+		if *benchFlag {
 			s = "benchmarks"
 		}
 		return fmt.Errorf("%s: some %s failed", os.Args[0], s)
@@ -58,14 +73,14 @@ func do(filename string) (failed bool, err error) {
 	out := filepath.Join(workDir, "a.out")
 
 	ccArgs := []string(nil)
-	if *bench {
+	if *benchFlag {
 		ccArgs = append(ccArgs, "-O3")
 	} else {
 		// TODO: set these flags even if we pass -O3.
 		ccArgs = append(ccArgs, "-Wall", "-Werror")
 	}
 	ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
-	if *mimic {
+	if *mimicFlag {
 		extra, err := findPuffsMimicCflags(in)
 		if err != nil {
 			return false, err
@@ -82,8 +97,8 @@ func do(filename string) (failed bool, err error) {
 		}
 
 		outArgs := []string(nil)
-		if *bench {
-			outArgs = append(outArgs, "-bench")
+		if *benchFlag {
+			outArgs = append(outArgs, "-bench", fmt.Sprintf("-reps=%d", *repsFlag))
 		}
 		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout
