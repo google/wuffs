@@ -207,6 +207,138 @@ void test_puffs_flate_decode_split_src() {
   }
 }
 
+void test_puffs_flate_table_redirect() {
+  proc_funcname = __func__;
+
+  // Call init_huff with a Huffman code that looks like:
+  //
+  //           code_bits  cl   c   r   s          1st  2nd
+  //  0b_______________0   1   1   1   0  0b........0
+  //  0b______________10   2   1   1   1  0b.......01
+  //  0b_____________110   3   1   1   2  0b......011
+  //  0b____________1110   4   1   1   3  0b.....0111
+  //  0b__________1_1110   5   1   1   4  0b....01111
+  //  0b_________11_1110   6   1   1   5  0b...011111
+  //  0b________111_1110   7   1   1   6  0b..0111111
+  //                       8   0   2
+  //  0b_____1_1111_1100   9   1   3   7  0b001111111
+  //  0b____11_1111_1010  10   1   5   8  0b101111111  0b..0   (3 bits)
+  //                      11   0  10
+  //  0b__1111_1110_1100  12  19  19   9  0b101111111  0b001
+  //  0b__1111_1110_1101  12      18  10  0b101111111  0b101
+  //  0b__1111_1110_1110  12      17  11  0b101111111  0b011
+  //  0b__1111_1110_1111  12      16  12  0b101111111  0b111
+  //  0b__1111_1111_0000  12      15  13  0b011111111  0b000   (3 bits)
+  //  0b__1111_1111_0001  12      14  14  0b011111111  0b100
+  //  0b__1111_1111_0010  12      13  15  0b011111111  0b010
+  //  0b__1111_1111_0011  12      12  16  0b011111111  0b110
+  //  0b__1111_1111_0100  12      11  17  0b011111111  0b001
+  //  0b__1111_1111_0101  12      10  18  0b011111111  0b101
+  //  0b__1111_1111_0110  12       9  19  0b011111111  0b011
+  //  0b__1111_1111_0111  12       8  20  0b011111111  0b111
+  //  0b__1111_1111_1000  12       7  21  0b111111111  0b.000  (4 bits)
+  //  0b__1111_1111_1001  12       6  22  0b111111111  0b.100
+  //  0b__1111_1111_1010  12       5  23  0b111111111  0b.010
+  //  0b__1111_1111_1011  12       4  24  0b111111111  0b.110
+  //  0b__1111_1111_1100  12       3  25  0b111111111  0b.001
+  //  0b__1111_1111_1101  12       2  26  0b111111111  0b.101
+  //  0b__1111_1111_1110  12       1  27  0b111111111  0b.011
+  //  0b1_1111_1111_1110  13   2   1  28  0b111111111  0b0111
+  //  0b1_1111_1111_1111  13       0  29  0b111111111  0b1111
+  //
+  // cl  is the code_length.
+  // c   is counts[code_length]
+  // r   is the number of codes (of that code_length) remaining.
+  // s   is the symbol
+  // 1st is the key in the first level table (9 bits).
+  // 2nd is the key in the second level table (variable bits).
+
+  puffs_flate_decoder dec;
+  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+
+  // The constructor should zero out dec's fields, but to be paranoid, we zero
+  // it out explicitly.
+  memset(&dec.private_impl.f_huffs[0], 0, sizeof(dec.private_impl.f_huffs[0]));
+
+  int i;
+  int n = 0;
+  dec.private_impl.f_code_lengths[n++] = 1;
+  dec.private_impl.f_code_lengths[n++] = 2;
+  dec.private_impl.f_code_lengths[n++] = 3;
+  dec.private_impl.f_code_lengths[n++] = 4;
+  dec.private_impl.f_code_lengths[n++] = 5;
+  dec.private_impl.f_code_lengths[n++] = 6;
+  dec.private_impl.f_code_lengths[n++] = 7;
+  dec.private_impl.f_code_lengths[n++] = 9;
+  dec.private_impl.f_code_lengths[n++] = 10;
+  for (i = 0; i < 19; i++) {
+    dec.private_impl.f_code_lengths[n++] = 12;
+  }
+  dec.private_impl.f_code_lengths[n++] = 13;
+  dec.private_impl.f_code_lengths[n++] = 13;
+
+  puffs_flate_status s = puffs_flate_decoder_init_huff(&dec, 0, 0, n, 257);
+  puffs_flate_decoder_destructor(&dec);
+  if (s) {
+    FAIL("%s", puffs_flate_status_string(s));
+    return;
+  }
+
+  // There is one 1st-level table (9 bits), and three 2nd-level tables (3, 3
+  // and 4 bits). f_huffs[0]'s elements should be non-zero for those tables and
+  // should be zero outside of those tables.
+  const int n_f_huffs = sizeof(dec.private_impl.f_huffs[0]) /
+                        sizeof(dec.private_impl.f_huffs[0][0]);
+  for (i = 0; i < n_f_huffs; i++) {
+    bool got = dec.private_impl.f_huffs[0][i] == 0;
+    bool want = i >= (1 << 9) + (1 << 3) + (1 << 3) + (1 << 4);
+    if (got != want) {
+      FAIL("huffs[0][%d] == 0: got %d, want %d", i, got, want);
+      return;
+    }
+  }
+
+  // The redirects in the 1st-level table should be at:
+  //  - 0b101111111 (0x017F) to the table offset 512 (0x0200), a 3-bit table.
+  //  - 0b011111111 (0x00FF) to the table offset 520 (0x0208), a 3-bit table.
+  //  - 0b111111111 (0x01FF) to the table offset 528 (0x0210), a 4-bit table.
+  uint32_t got;
+  uint32_t want;
+  got = dec.private_impl.f_huffs[0][0x017F];
+  want = 0x80020039;
+  if (got != want) {
+    FAIL("huffs[0][0x017F]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+    return;
+  }
+  got = dec.private_impl.f_huffs[0][0x00FF];
+  want = 0x80020839;
+  if (got != want) {
+    FAIL("huffs[0][0x00FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+    return;
+  }
+  got = dec.private_impl.f_huffs[0][0x01FF];
+  want = 0x80021049;
+  if (got != want) {
+    FAIL("huffs[0][0x01FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
+    return;
+  }
+
+  // The first 2nd-level table should look like wants.
+  const uint32_t wants[8] = {
+      0x40000801, 0x40000903, 0x40000801, 0x40000B03,
+      0x40000801, 0x40000A03, 0x40000801, 0x40000C03,
+  };
+  for (i = 0; i < 8; i++) {
+    got = dec.private_impl.f_huffs[0][0x0200 + i];
+    want = wants[i];
+    if (got != want) {
+      FAIL("huffs[0][0x%04" PRIX32 "]: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+           (uint32_t)(0x0200 + i), got, want);
+      return;
+    }
+  }
+}
+
 // ---------------- Mimic Tests
 
 #ifdef PUFFS_MIMIC
@@ -344,13 +476,12 @@ void bench_mimic_zlib_decode_100k() {
 proc tests[] = {
     // Flate Tests
     test_puffs_flate_decode_256_bytes,    //
-    /* TODO: implement puffs_flate, then uncomment these.
     test_puffs_flate_decode_midsummer,    //
     test_puffs_flate_decode_pi,           //
-    */
     test_puffs_flate_decode_romeo,        //
     test_puffs_flate_decode_romeo_fixed,  //
     test_puffs_flate_decode_split_src,    //
+    test_puffs_flate_table_redirect,      //
 
 #ifdef PUFFS_MIMIC
 
@@ -374,10 +505,8 @@ proc tests[] = {
 proc benches[] = {
     // Flate Benches
     bench_puffs_flate_decode_1k,    //
-    /* TODO: implement puffs_flate, then uncomment these.
     bench_puffs_flate_decode_10k,   //
     bench_puffs_flate_decode_100k,  //
-    */
 
 #ifdef PUFFS_MIMIC
 

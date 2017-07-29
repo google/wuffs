@@ -19,11 +19,20 @@ import (
 )
 
 var reasons = [...]string{
-	"a < (b + c): a < c; 0 <= b",
-	"(a + b) <= c: a <= (c - b)",
+	"a < b: a < c; c < b",
+	"a < b: a < c; c == b",
+	"a < b: a == c; c < b",
 	"a < b: a < c; c <= b",
+	"a < b: a <= c; c < b",
+
 	"a <= b: a <= c; c <= b",
+	"a <= b: a <= c; c == b",
+	"a <= b: a == c; c <= b",
+
+	"a < (b + c): a < c; 0 <= b",
 	"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c",
+
+	"(a + b) <= c: a <= (c - b)",
 }
 
 func main() {
