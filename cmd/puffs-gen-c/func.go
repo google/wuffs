@@ -952,6 +952,11 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.printf("if (PUFFS_LIKELY((size_t)(%s%d) <= (%swend_%s - %swptr_%s))) {",
 			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
 
+		g.printf("for (; %s%d >= 8; %s%d -= 8) {", tPrefix, temp2, tPrefix, temp2)
+		for i := 0; i < 8; i++ {
+			g.printf("*%swptr_%s++ = *%s%d++;\n", bPrefix, wName, tPrefix, temp1)
+		}
+		g.writes("}\n")
 		g.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
 			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
 

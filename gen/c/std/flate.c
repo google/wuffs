@@ -1026,6 +1026,16 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         uint8_t* t_7 = b_wptr_dst - t_6;
         uint32_t t_8 = (uint32_t)(self->private_impl.scratch);
         if (PUFFS_LIKELY((size_t)(t_8) <= (b_wend_dst - b_wptr_dst))) {
+          for (; t_8 >= 8; t_8 -= 8) {
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+            *b_wptr_dst++ = *t_7++;
+          }
           for (; t_8; t_8--) {
             *b_wptr_dst++ = *t_7++;
           }
