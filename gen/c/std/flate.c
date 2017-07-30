@@ -252,8 +252,6 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
 // C HEADER ENDS HERE.
 
-#include "../../../script/puffs-flate-decoder-decode-huffman.c"
-
 #ifndef PUFFS_BASE_IMPL_H
 #define PUFFS_BASE_IMPL_H
 
@@ -582,7 +580,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
           }
         }
       }
-      status = c_puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
+      status = puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
