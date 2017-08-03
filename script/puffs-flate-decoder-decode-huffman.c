@@ -73,7 +73,7 @@
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
 
-#if __x86_64__
+#ifdef __x86_64__
 #define PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
 #endif
 
@@ -115,9 +115,9 @@ outer_loop:
       psrc += 6;
       n_bits += 48;
 #else
-      bits |= (((uint32_t)(*psrc++)) << n_bits);
+      bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
-      bits |= (((uint32_t)(*psrc++)) << n_bits);
+      bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
 #endif
     }
@@ -161,7 +161,7 @@ outer_loop:
           psrc += 6;
           n_bits += 48;
 #else
-          bits |= (((uint32_t)(*psrc++)) << n_bits);
+          bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
 #endif
         }
@@ -178,9 +178,9 @@ outer_loop:
       psrc += 6;
       n_bits += 48;
 #else
-      bits |= (((uint32_t)(*psrc++)) << n_bits);
+      bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
-      bits |= (((uint32_t)(*psrc++)) << n_bits);
+      bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
 #endif
     }
@@ -216,9 +216,9 @@ outer_loop:
           psrc += 6;
           n_bits += 48;
 #else
-          bits |= (((uint32_t)(*psrc++)) << n_bits);
+          bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
-          bits |= (((uint32_t)(*psrc++)) << n_bits);
+          bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
 #endif
         }
