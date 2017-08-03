@@ -235,12 +235,7 @@ outer_loop:
     }
 
     uint8_t* pback = pdst - distance;
-    for (; length >= 8; length -= 8) {
-      *pdst++ = *pback++;
-      *pdst++ = *pback++;
-      *pdst++ = *pback++;
-      *pdst++ = *pback++;
-      *pdst++ = *pback++;
+    for (; length >= 3; length -= 3) {
       *pdst++ = *pback++;
       *pdst++ = *pback++;
       *pdst++ = *pback++;
