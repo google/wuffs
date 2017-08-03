@@ -235,6 +235,30 @@ outer_loop:
     }
 
     uint8_t* pback = pdst - distance;
+
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+    // Back-copy fast path, copying 8 instead of 1 bytes at a time.
+    //
+    // This always copies 8*N bytes (where N is the smallest integer such that
+    // 8*N >= length, i.e. we round length up to a multiple of 8), instead of
+    // only length bytes, but that's OK, as subsequent iterations will fix up
+    // the overrun.
+    if (distance >= 8) {
+      while (1) {
+        *((uint64_t*)(pdst)) = *((uint64_t*)(pback));
+        if (length <= 8) {
+          pdst += length;
+          break;
+        }
+        pdst += 8;
+        pback += 8;
+        length -= 8;
+      }
+      continue;
+    }
+#endif
+
+    // Back-copy slow path.
     for (; length >= 3; length -= 3) {
       *pdst++ = *pback++;
       *pdst++ = *pback++;
