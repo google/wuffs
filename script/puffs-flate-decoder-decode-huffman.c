@@ -73,6 +73,10 @@
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
 
+#if __x86_64__
+#define PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#endif
+
 puffs_flate_status c_puffs_flate_decoder_decode_huffman(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
@@ -85,7 +89,11 @@ puffs_flate_status c_puffs_flate_decoder_decode_huffman(
   // Load contextual state.
   uint8_t* pdst = a_dst.buf->ptr + a_dst.buf->wi;
   uint8_t* psrc = a_src.buf->ptr + a_src.buf->ri;
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+  uint64_t bits = self->private_impl.f_bits;
+#else
   uint32_t bits = self->private_impl.f_bits;
+#endif
   uint32_t n_bits = self->private_impl.f_n_bits;
 
   // Initialize other local variables.
@@ -102,10 +110,16 @@ outer_loop:
   while (true) {
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+      bits |= *((uint64_t*)psrc) << n_bits;
+      psrc += 6;
+      n_bits += 48;
+#else
       bits |= (((uint32_t)(*psrc++)) << n_bits);
       n_bits += 8;
       bits |= (((uint32_t)(*psrc++)) << n_bits);
       n_bits += 8;
+#endif
     }
 
     // Decode an lcode symbol from H-L.
@@ -142,8 +156,14 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < n) {
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+          bits |= *((uint64_t*)psrc) << n_bits;
+          psrc += 6;
+          n_bits += 48;
+#else
           bits |= (((uint32_t)(*psrc++)) << n_bits);
           n_bits += 8;
+#endif
         }
         length += bits & ((((uint32_t)(1)) << n) - 1);
         bits >>= n;
@@ -153,10 +173,16 @@ outer_loop:
 
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+      bits |= *((uint64_t*)psrc) << n_bits;
+      psrc += 6;
+      n_bits += 48;
+#else
       bits |= (((uint32_t)(*psrc++)) << n_bits);
       n_bits += 8;
       bits |= (((uint32_t)(*psrc++)) << n_bits);
       n_bits += 8;
+#endif
     }
 
     // Decode a dcode symbol from H-D.
@@ -185,10 +211,16 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < 15) {
+#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+          bits |= *((uint64_t*)psrc) << n_bits;
+          psrc += 6;
+          n_bits += 48;
+#else
           bits |= (((uint32_t)(*psrc++)) << n_bits);
           n_bits += 8;
           bits |= (((uint32_t)(*psrc++)) << n_bits);
           n_bits += 8;
+#endif
         }
         distance += bits & ((((uint32_t)(1)) << n) - 1);
         bits >>= n;
