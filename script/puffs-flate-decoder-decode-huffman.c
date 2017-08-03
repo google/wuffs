@@ -223,6 +223,7 @@ end:
   for (; n_bits >= 8; n_bits -= 8) {
     psrc--;
   }
+  bits &= (((uint32_t)(1)) << n_bits) - 1;
 
   // Save contextual state.
   a_dst.buf->wi = pdst - a_dst.buf->ptr;
