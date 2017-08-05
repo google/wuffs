@@ -63,6 +63,7 @@ var (
 
 	// TODO: delete this.
 	typeExprPlaceholder   = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
+	typeExprPlaceholder16 = a.NewTypeExpr(0, t.IDU16, nil, nil, nil)
 	typeExprPlaceholder32 = a.NewTypeExpr(0, t.IDU32, nil, nil, nil)
 )
 

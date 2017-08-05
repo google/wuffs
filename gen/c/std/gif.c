@@ -258,6 +258,11 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
 
 // TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
 // if a benchmark justifies the additional code path.
+#define PUFFS_U16BE(p) (((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0))
+#define PUFFS_U16LE(p) (((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8))
+#define PUFFS_U32BE(p)                                   \
+  (((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) | \
+   ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0))
 #define PUFFS_U32LE(p)                                 \
   (((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) | \
    ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24))

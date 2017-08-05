@@ -125,6 +125,13 @@ typedef int32_t puffs_flate_status;
   -1157040117                                                    // 0xbb08f80b
 #define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040115           // 0xbb08f80d
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
+  -1157040114  // 0xbb08f80e
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
+  -1157040113                                                    // 0xbb08f80f
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040112  // 0xbb08f810
+#define PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+  -1157040111  // 0xbb08f811
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -225,6 +232,29 @@ typedef struct {
   } private_impl;
 } puffs_flate_decoder;
 
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_flate_zlib_decoder_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_flate_status status;
+    uint32_t magic;
+    uint64_t scratch;
+
+    puffs_flate_decoder f_dec;
+
+    struct {
+      uint32_t coro_susp_point;
+      uint16_t v_x;
+      uint32_t v_checksum;
+    } c_decode[1];
+  } private_impl;
+} puffs_flate_zlib_decoder;
+
 // ---------------- Public Constructor and Destructor Prototypes
 
 // puffs_flate_decoder_constructor is a constructor function.
@@ -238,11 +268,27 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
 
 void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
 
+// puffs_flate_zlib_decoder_constructor is a constructor function.
+//
+// It should be called before any other puffs_flate_zlib_decoder_* function.
+//
+// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
+void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
+                                          uint32_t puffs_version,
+                                          uint32_t for_internal_use_only);
+
+void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self);
+
 // ---------------- Public Function Prototypes
 
 puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_zlib_decoder_decode(
+    puffs_flate_zlib_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -260,6 +306,11 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
 // TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
 // if a benchmark justifies the additional code path.
+#define PUFFS_U16BE(p) (((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0))
+#define PUFFS_U16LE(p) (((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8))
+#define PUFFS_U32BE(p)                                   \
+  (((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) | \
+   ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0))
 #define PUFFS_U32LE(p)                                 \
   (((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) | \
    ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24))
@@ -307,7 +358,7 @@ const char* puffs_flate_status_strings0[11] = {
     "flate: limited write",
 };
 
-const char* puffs_flate_status_strings1[14] = {
+const char* puffs_flate_status_strings1[18] = {
     "flate: bad Huffman code (over-subscribed)",
     "flate: bad Huffman code (under-subscribed)",
     "flate: bad Huffman code length count",
@@ -322,6 +373,10 @@ const char* puffs_flate_status_strings1[14] = {
     "flate: internal error: inconsistent n_bits",
     "flate: missing end-of-block code",
     "flate: no Huffman codes",
+    "flate: invalid zlib compression method",
+    "flate: invalid zlib compression window size",
+    "flate: invalid zlib parity check",
+    "flate: TODO: unsupported zlib preset dictionary",
 };
 
 const char* puffs_flate_status_string(puffs_flate_status s) {
@@ -334,7 +389,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
-      n = 14;
+      n = 18;
       break;
   }
   uint32_t i = s & 0xff;
@@ -444,6 +499,31 @@ void puffs_flate_decoder_destructor(puffs_flate_decoder* self) {
   if (!self) {
     return;
   }
+}
+
+void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
+                                          uint32_t puffs_version,
+                                          uint32_t for_internal_use_only) {
+  if (!self) {
+    return;
+  }
+  if (puffs_version != PUFFS_VERSION) {
+    self->private_impl.status = PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION;
+    return;
+  }
+  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+    memset(self, 0, sizeof(*self));
+  }
+  self->private_impl.magic = PUFFS_MAGIC;
+  puffs_flate_decoder_constructor(&self->private_impl.f_dec, PUFFS_VERSION,
+                                  PUFFS_ALREADY_ZEROED);
+}
+
+void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self) {
+  if (!self) {
+    return;
+  }
+  puffs_flate_decoder_destructor(&self->private_impl.f_dec);
 }
 
 // ---------------- Function Implementations
@@ -1766,4 +1846,174 @@ suspend:
 
 exit:
   return status;
+}
+
+puffs_flate_status puffs_flate_zlib_decoder_decode(
+    puffs_flate_zlib_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src) {
+  if (!self) {
+    return PUFFS_FLATE_ERROR_BAD_RECEIVER;
+  }
+  if (self->private_impl.magic != PUFFS_MAGIC) {
+    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
+
+  uint16_t v_x;
+  uint32_t v_checksum;
+
+  uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rend_src = NULL;
+  if (a_src.buf) {
+    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    size_t len = a_src.buf->wi - a_src.buf->ri;
+    puffs_base_limit1* lim;
+    for (lim = &a_src.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+        len = *lim->ptr_to_len;
+      }
+    }
+    b_rend_src = b_rptr_src + len;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_x = self->private_impl.c_decode[0].v_x;
+    v_checksum = self->private_impl.c_decode[0].v_checksum;
+  }
+  switch (coro_susp_point) {
+    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+
+    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    uint16_t t_1;
+    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 2)) {
+      t_1 = PUFFS_U16BE(b_rptr_src);
+      b_rptr_src += 2;
+    } else {
+      self->private_impl.scratch = 0;
+      PUFFS_COROUTINE_SUSPENSION_POINT(2);
+      while (true) {
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint32_t t_0 = self->private_impl.scratch & 0xFF;
+        self->private_impl.scratch >>= 8;
+        self->private_impl.scratch <<= 8;
+        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << (64 - t_0);
+        if (t_0 == 8) {
+          t_1 = self->private_impl.scratch >> (64 - 16);
+          break;
+        }
+        t_0 += 8;
+        self->private_impl.scratch |= ((uint64_t)(t_0));
+      }
+    }
+    v_x = t_1;
+    if (((v_x >> 8) & 15) != 8) {
+      status = PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD;
+      goto exit;
+    }
+    if ((v_x >> 12) > 7) {
+      status = PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE;
+      goto exit;
+    }
+    if ((v_x & 32) != 0) {
+      status = PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY;
+      goto exit;
+    }
+    if ((v_x % 31) != 0) {
+      status = PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK;
+      goto exit;
+    }
+    PUFFS_COROUTINE_SUSPENSION_POINT(3);
+    if (a_src.buf) {
+      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+      a_src.buf->ri += n;
+      puffs_base_limit1* lim;
+      for (lim = &a_src.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len) {
+          *lim->ptr_to_len -= n;
+        }
+      }
+    }
+    status =
+        puffs_flate_decoder_decode(&self->private_impl.f_dec, a_dst, a_src);
+    if (a_src.buf) {
+      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+      size_t len = a_src.buf->wi - a_src.buf->ri;
+      puffs_base_limit1* lim;
+      for (lim = &a_src.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
+      }
+      b_rend_src = b_rptr_src + len;
+    }
+    if (status) {
+      goto suspend;
+    }
+    PUFFS_COROUTINE_SUSPENSION_POINT(4);
+    uint32_t t_3;
+    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
+      t_3 = PUFFS_U32BE(b_rptr_src);
+      b_rptr_src += 4;
+    } else {
+      self->private_impl.scratch = 0;
+      PUFFS_COROUTINE_SUSPENSION_POINT(5);
+      while (true) {
+        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint32_t t_2 = self->private_impl.scratch & 0xFF;
+        self->private_impl.scratch >>= 8;
+        self->private_impl.scratch <<= 8;
+        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << (64 - t_2);
+        if (t_2 == 24) {
+          t_3 = self->private_impl.scratch >> (64 - 32);
+          break;
+        }
+        t_2 += 8;
+        self->private_impl.scratch |= ((uint64_t)(t_2));
+      }
+    }
+    v_checksum = t_3;
+    self->private_impl.c_decode[0].coro_susp_point = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode[0].v_x = v_x;
+  self->private_impl.c_decode[0].v_checksum = v_checksum;
+
+exit:
+  if (a_src.buf) {
+    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+    a_src.buf->ri += n;
+    puffs_base_limit1* lim;
+    for (lim = &a_src.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+  }
+
+  self->private_impl.status = status;
+  return status;
+
+short_read_src:
+  if (a_src.limit.ptr_to_len) {
+    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
+  } else if (a_src.buf->closed) {
+    status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
+    goto exit;
+  } else {
+    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
+  }
+  goto suspend;
 }

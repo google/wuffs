@@ -643,7 +643,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.KeyOpenParen:
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
+			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
+			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
 			isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) ||
@@ -890,6 +892,15 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 
 	case t.KeyXBinaryHat:
 		// TODO.
+
+	case t.KeyXBinaryPercent:
+		if lMin.Cmp(zero) < 0 {
+			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.String(q.tm))
+		}
+		if rMin.Cmp(zero) <= 0 {
+			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly non-positive", rhs.String(q.tm))
+		}
+		return zero, big.NewInt(0).Sub(rMax, one), nil
 
 	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq, t.KeyXBinaryEqEq,
 		t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan, t.KeyXBinaryAnd, t.KeyXBinaryOr:

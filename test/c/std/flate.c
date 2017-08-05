@@ -116,6 +116,20 @@ const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
+const char* puffs_zlib_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+  puffs_flate_zlib_decoder dec;
+  puffs_flate_zlib_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 dst_writer = {.buf = dst};
+  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_flate_status s =
+      puffs_flate_zlib_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_flate_zlib_decoder_destructor(&dec);
+  if (s) {
+    return puffs_flate_status_string(s);
+  }
+  return NULL;
+}
+
 void test_puffs_flate_decode_256_bytes() {
   proc_funcname = __func__;
   test_buf1_buf1(puffs_flate_decode, &flate_256_bytes_gt);
@@ -339,6 +353,16 @@ void test_puffs_flate_table_redirect() {
   }
 }
 
+void test_puffs_zlib_decode_midsummer() {
+  proc_funcname = __func__;
+  test_buf1_buf1(puffs_zlib_decode, &zlib_midsummer_gt);
+}
+
+void test_puffs_zlib_decode_pi() {
+  proc_funcname = __func__;
+  test_buf1_buf1(puffs_zlib_decode, &zlib_pi_gt);
+}
+
 // ---------------- Mimic Tests
 
 #ifdef PUFFS_MIMIC
@@ -482,6 +506,8 @@ proc tests[] = {
     test_puffs_flate_decode_romeo_fixed,  //
     test_puffs_flate_decode_split_src,    //
     test_puffs_flate_table_redirect,      //
+    test_puffs_zlib_decode_midsummer,     //
+    test_puffs_zlib_decode_pi,            //
 
 #ifdef PUFFS_MIMIC
 

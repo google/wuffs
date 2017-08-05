@@ -812,8 +812,17 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		}
 		g.printf(" = *%srptr_src++;\n", bPrefix)
 
+	} else if isInSrc(g.tm, n, t.KeyReadU16BE, 0) {
+		return g.writeReadUXX(n, "src", 16, "BE")
+
+	} else if isInSrc(g.tm, n, t.KeyReadU16LE, 0) {
+		return g.writeReadUXX(n, "src", 16, "LE")
+
+	} else if isInSrc(g.tm, n, t.KeyReadU32BE, 0) {
+		return g.writeReadUXX(n, "src", 32, "BE")
+
 	} else if isInSrc(g.tm, n, t.KeyReadU32LE, 0) {
-		return g.writeReadUXX(n, "src", 32, "le")
+		return g.writeReadUXX(n, "src", 32, "LE")
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		// TODO: is the scratch variable safe to use if callers can trap
@@ -1056,13 +1065,25 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		g.writes("if (status) { goto suspend; }\n")
 
 	} else if isDecode(g.tm, n) {
-		g.printf("status = %slzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
-			g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
-		if err := g.writeLoadExprDerivedVars(n); err != nil {
-			return err
+		switch g.pkgName {
+		case "flate":
+			g.printf("status = %sdecoder_decode(&self->private_impl.f_dec, %sdst, %ssrc);\n",
+				g.pkgPrefix, aPrefix, aPrefix)
+			if err := g.writeLoadExprDerivedVars(n); err != nil {
+				return err
+			}
+			g.writes("if (status) { goto suspend; }\n")
+		case "gif":
+			g.printf("status = %slzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
+				g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
+			if err := g.writeLoadExprDerivedVars(n); err != nil {
+				return err
+			}
+			// TODO: be principled with "if (l_lzw_src && etc)".
+			g.writes("if (l_lzw_src && status) { goto suspend; }\n")
+		default:
+			return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
 		}
-		// TODO: be principled with "if (l_lzw_src && etc)".
-		g.writes("if (l_lzw_src && status) { goto suspend; }\n")
 
 	} else {
 		// TODO: fix this.
@@ -1087,6 +1108,13 @@ func (g *gen) writeShortRead(name string) error {
 }
 
 func (g *gen) writeReadUXX(n *a.Expr, name string, size uint32, endianness string) error {
+	if size != 16 && size != 32 {
+		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
+	}
+	if endianness != "BE" && endianness != "LE" {
+		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
+	}
+
 	if g.perFunc.tempW > maxTemp-1 {
 		return fmt.Errorf("too many temporary variables required")
 	}
@@ -1101,9 +1129,9 @@ func (g *gen) writeReadUXX(n *a.Expr, name string, size uint32, endianness strin
 	}
 	g.writes(";")
 
-	g.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= 4)) {", bPrefix, bPrefix)
-	g.printf("%s%d = PUFFS_U32LE(%srptr_src);\n", tPrefix, temp1, bPrefix)
-	g.printf("%srptr_src += 4;\n", bPrefix)
+	g.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
+	g.printf("%s%d = PUFFS_U%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
+	g.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	g.printf("} else {")
 	g.printf("self->private_impl.scratch = 0;\n")
 	if err := g.writeCoroSuspPoint(); err != nil {
@@ -1115,19 +1143,39 @@ func (g *gen) writeReadUXX(n *a.Expr, name string, size uint32, endianness strin
 		bPrefix, name, bPrefix, name, name)
 	g.perFunc.shortReads = append(g.perFunc.shortReads, name)
 
-	// TODO: look at endianness.
-	g.printf("uint32_t %s%d = self->private_impl.scratch >> 56;", tPrefix, temp0)
-	g.printf("self->private_impl.scratch <<= 8;")
-	g.printf("self->private_impl.scratch >>= 8;")
-	g.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << %s%d;", bPrefix, name, tPrefix, temp0)
+	g.printf("uint32_t %s%d = self->private_impl.scratch", tPrefix, temp0)
+	switch endianness {
+	case "BE":
+		g.printf("& 0xFF;")
+		g.printf("self->private_impl.scratch >>= 8;")
+		g.printf("self->private_impl.scratch <<= 8;")
+		g.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << (64 - %s%d);",
+			bPrefix, name, tPrefix, temp0)
+	case "LE":
+		g.printf(">> 56;")
+		g.printf("self->private_impl.scratch <<= 8;")
+		g.printf("self->private_impl.scratch >>= 8;")
+		g.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << %s%d;",
+			bPrefix, name, tPrefix, temp0)
+	}
 
 	g.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
-	g.printf("%s%d = self->private_impl.scratch;", tPrefix, temp1)
+	switch endianness {
+	case "BE":
+		g.printf("%s%d = self->private_impl.scratch >> (64 - %d);", tPrefix, temp1, size)
+	case "LE":
+		g.printf("%s%d = self->private_impl.scratch;", tPrefix, temp1)
+	}
 	g.printf("break;")
 	g.printf("}")
 
 	g.printf("%s%d += 8;", tPrefix, temp0)
-	g.printf("self->private_impl.scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
+	switch endianness {
+	case "BE":
+		g.printf("self->private_impl.scratch |= ((uint64_t)(%s%d));", tPrefix, temp0)
+	case "LE":
+		g.printf("self->private_impl.scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
+	}
 
 	g.writes("}}\n")
 	return nil

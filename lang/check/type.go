@@ -343,7 +343,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
+			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
+			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
 			isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) ||
@@ -361,8 +363,10 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			if isInSrc(q.tm, n, t.KeyReadU32LE, 0) {
+			if isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) {
 				n.SetMType(typeExprPlaceholder32) // HACK.
+			} else if isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU16LE, 0) {
+				n.SetMType(typeExprPlaceholder16) // HACK.
 			} else {
 				n.SetMType(typeExprPlaceholder) // HACK.
 			}
@@ -774,6 +778,11 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return big.NewInt(0).Or(l, r), nil
 	case t.KeyXBinaryHat:
 		return big.NewInt(0).Xor(l, r), nil
+	case t.KeyXBinaryPercent:
+		if r.Cmp(zero) == 0 {
+			return nil, fmt.Errorf("check: division by zero in const expression %q", n.String(tm))
+		}
+		return big.NewInt(0).Mod(l, r), nil
 	case t.KeyXBinaryNotEq:
 		return btoi(l.Cmp(r) != 0), nil
 	case t.KeyXBinaryLessThan:

@@ -125,6 +125,13 @@ typedef int32_t puffs_flate_status;
   -1157040117                                                    // 0xbb08f80b
 #define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040115           // 0xbb08f80d
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
+  -1157040114  // 0xbb08f80e
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
+  -1157040113                                                    // 0xbb08f80f
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040112  // 0xbb08f810
+#define PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+  -1157040111  // 0xbb08f811
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -225,6 +232,29 @@ typedef struct {
   } private_impl;
 } puffs_flate_decoder;
 
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_flate_zlib_decoder_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_flate_status status;
+    uint32_t magic;
+    uint64_t scratch;
+
+    puffs_flate_decoder f_dec;
+
+    struct {
+      uint32_t coro_susp_point;
+      uint16_t v_x;
+      uint32_t v_checksum;
+    } c_decode[1];
+  } private_impl;
+} puffs_flate_zlib_decoder;
+
 // ---------------- Public Constructor and Destructor Prototypes
 
 // puffs_flate_decoder_constructor is a constructor function.
@@ -238,11 +268,27 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
 
 void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
 
+// puffs_flate_zlib_decoder_constructor is a constructor function.
+//
+// It should be called before any other puffs_flate_zlib_decoder_* function.
+//
+// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
+void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
+                                          uint32_t puffs_version,
+                                          uint32_t for_internal_use_only);
+
+void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self);
+
 // ---------------- Public Function Prototypes
 
 puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                               puffs_base_writer1 a_dst,
                                               puffs_base_reader1 a_src);
+
+puffs_flate_status puffs_flate_zlib_decoder_decode(
+    puffs_flate_zlib_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
