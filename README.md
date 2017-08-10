@@ -298,6 +298,10 @@ that all the way through to C code generation and testing.
 - [Puffs the Language](./doc/puffs-the-language.md)
 - Puffs the Library (TODO)
 
+Measurements:
+
+- [Binary Size](./doc/binary-size.md)
+
 
 # Related Work
 
@@ -443,11 +447,6 @@ it is unsurprising that they don't depend on the C compiler (clang or gcc) used
 to run the test harness.
 
 
-## Code Size
-
-TODO.
-
-
 ## Roadmap
 
 Short term:
@@ -514,4 +513,4 @@ owned by Google.
 
 ---
 
-Updated on July 2017.
+Updated on August 2017.

@@ -21,6 +21,7 @@ var commands = []struct {
 }{
 	{"bench", doBench},
 	{"gen", doGen},
+	{"genlib", doGenlib},
 	{"test", doTest},
 }
 
@@ -35,6 +36,7 @@ The commands are:
 
 	bench   benchmark packages
 	gen     generate code for packages and dependencies
+	genlib  generate software libraries
 	test    test packages
 `)
 }

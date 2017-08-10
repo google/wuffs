@@ -51,7 +51,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		}
 
 		// Ensure that we are testing the latest version of the generated code.
-		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
+		if _, err := gen(nil, puffsRoot, arg, langs, recursive); err != nil {
 			return err
 		}
 
@@ -103,7 +103,8 @@ func benchTestDir(puffsRoot string, dirname string, langs []string, cmdArgs []st
 
 	for _, lang := range langs {
 		command := "puffs-test-" + lang
-		args := append([]string(nil), cmdArgs...)
+		args := []string(nil)
+		args = append(args, cmdArgs...)
 		args = append(args, filepath.Join(puffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout

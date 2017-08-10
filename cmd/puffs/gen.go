@@ -21,7 +21,10 @@ import (
 	"github.com/google/puffs/lang/token"
 )
 
-func doGen(puffsRoot string, args []string) error {
+func doGen(puffsRoot string, args []string) error    { return doGenGenlib(puffsRoot, args, false) }
+func doGenlib(puffsRoot string, args []string) error { return doGenGenlib(puffsRoot, args, true) }
+
+func doGenGenlib(puffsRoot string, args []string, genlib bool) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	if err := flags.Parse(args); err != nil {
@@ -36,36 +39,48 @@ func doGen(puffsRoot string, args []string) error {
 		args = []string{"std/..."}
 	}
 
+	affected := []string(nil)
 	for _, arg := range args {
 		recursive := strings.HasSuffix(arg, "/...")
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		if err := gen(puffsRoot, arg, langs, recursive); err != nil {
+		var err error
+		affected, err = gen(affected, puffsRoot, arg, langs, recursive)
+		if err != nil {
+			return err
+		}
+	}
+
+	if genlib {
+		if err := genlibAffected(puffsRoot, langs, affected); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func gen(puffsRoot, dirname string, langs []string, recursive bool) error {
+func gen(affected []string, puffsRoot, dirname string, langs []string, recursive bool) (retAffected []string, retErr error) {
 	filenames, dirnames, err := listDir(puffsRoot, dirname, recursive)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(filenames) > 0 {
 		if err := genDir(puffsRoot, dirname, filenames, langs); err != nil {
-			return err
+			return nil, err
 		}
+		affected = append(affected, dirname)
 	}
 	if len(dirnames) > 0 {
 		for _, d := range dirnames {
-			if err := gen(puffsRoot, dirname+"/"+d, langs, recursive); err != nil {
-				return err
+			var err error
+			affected, err = gen(affected, puffsRoot, dirname+"/"+d, langs, recursive)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return affected, nil
 }
 
 func genDir(puffsRoot string, dirname string, filenames []string, langs []string) error {
@@ -154,5 +169,22 @@ func genFile(puffsRoot string, dirname string, lang string, out []byte) error {
 		return err
 	}
 	fmt.Println("gen wrote:     ", outFilename)
+	return nil
+}
+
+func genlibAffected(puffsRoot string, langs []string, affected []string) error {
+	for _, lang := range langs {
+		command := "puffs-genlib-" + lang
+		args := []string(nil)
+		args = append(args, "-dstdir", filepath.Join(puffsRoot, "gen", "lib", lang))
+		args = append(args, "-srcdir", filepath.Join(puffsRoot, "gen", lang))
+		args = append(args, affected...)
+		cmd := exec.Command(command, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
 	return nil
 }

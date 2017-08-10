@@ -1,3 +1,4 @@
-*~
 *.exe
+*~
+/gen/lib
 a.out
