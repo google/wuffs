@@ -7,7 +7,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
-	"os/exec"
 
 	"github.com/google/puffs/lang/ast"
 	"github.com/google/puffs/lang/check"
@@ -15,25 +14,18 @@ import (
 	"github.com/google/puffs/lang/token"
 )
 
-var (
-	packageName = flag.String("package_name", "", "the package name of the Puffs input code")
-)
-
 type Generator func(packageName string, tm *token.Map, c *check.Checker, files []*ast.File) ([]byte, error)
 
-func Main(g Generator) {
-	if err := main1(g); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			os.Stderr.WriteString(err.Error() + "\n")
-		}
-		os.Exit(1)
+func Do(args []string, g Generator) error {
+	flags := flag.FlagSet{}
+	packageName := flags.String("package_name", "", "the package name of the Puffs input code")
+	if err := flags.Parse(args); err != nil {
+		return err
 	}
-}
+	args = flags.Args()
 
-func main1(g Generator) error {
-	flag.Parse()
 	tm := &token.Map{}
-	files, err := parseFiles(tm)
+	files, err := parseFiles(tm, args)
 	if err != nil {
 		return err
 	}
@@ -54,8 +46,8 @@ func main1(g Generator) error {
 	return nil
 }
 
-func parseFiles(tm *token.Map) (files []*ast.File, err error) {
-	if len(flag.Args()) == 0 {
+func parseFiles(tm *token.Map, args []string) (files []*ast.File, err error) {
+	if len(args) == 0 {
 		const filename = "stdin"
 		src, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -72,7 +64,7 @@ func parseFiles(tm *token.Map) (files []*ast.File, err error) {
 		return []*ast.File{f}, nil
 	}
 
-	for _, filename := range flag.Args() {
+	for _, filename := range args {
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err

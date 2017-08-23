@@ -36,11 +36,13 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	}
 
 	cmdArgs := []string(nil)
+	if bench {
+		cmdArgs = append(cmdArgs, "bench", fmt.Sprintf("-reps=%d", *repsFlag))
+	} else {
+		cmdArgs = append(cmdArgs, "test")
+	}
 	if *mimicFlag {
 		cmdArgs = append(cmdArgs, "-mimic")
-	}
-	if bench {
-		cmdArgs = append(cmdArgs, "-bench", fmt.Sprintf("-reps=%d", *repsFlag))
 	}
 
 	failed := false
@@ -102,7 +104,7 @@ func benchTestDir(puffsRoot string, dirname string, langs []string, cmdArgs []st
 	}
 
 	for _, lang := range langs {
-		command := "puffs-test-" + lang
+		command := "puffs-" + lang
 		args := []string(nil)
 		args = append(args, cmdArgs...)
 		args = append(args, filepath.Join(puffsRoot, "test", lang, filepath.FromSlash(dirname)))

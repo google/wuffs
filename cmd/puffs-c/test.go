@@ -1,7 +1,6 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// puffs-test-c runs C benchmark and test programs.
 package main
 
 import (
@@ -15,38 +14,35 @@ import (
 	"strings"
 )
 
-const (
-	mimicDefault = false
-	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
+func doBench(args []string) error { return doBenchTest(args, true) }
+func doTest(args []string) error  { return doBenchTest(args, false) }
 
-	repsDefault = 5
-	repsMin     = 0
-	repsMax     = 1000000
-	repsUsage   = `the number of repetitions per benchmark`
-)
+func doBenchTest(args []string, bench bool) error {
+	const (
+		mimicDefault = false
+		mimicUsage   = `whether to compare Puffs' output with other libraries' output`
 
-var (
-	benchFlag = flag.Bool("bench", false, "whether to run benchmarks instead of regular tests")
-	mimicFlag = flag.Bool("mimic", mimicDefault, mimicUsage)
-	repsFlag  = flag.Int("reps", repsDefault, repsUsage)
-)
+		repsDefault = 5
+		repsMin     = 0
+		repsMax     = 1000000
+		repsUsage   = `the number of repetitions per benchmark`
+	)
 
-func main() {
-	if err := main1(); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(1)
+	flags := flag.FlagSet{}
+	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
+	repsFlag := flags.Int("reps", repsDefault, repsUsage)
+	if err := flags.Parse(args); err != nil {
+		return err
 	}
-}
+	args = flags.Args()
 
-func main1() error {
-	flag.Parse()
 	if *repsFlag < repsMin || repsMax < *repsFlag {
 		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
 	}
 
 	failed := false
-	for _, arg := range flag.Args() {
-		f, err := do(arg)
+	for _, arg := range args {
+		f, err := doBenchTest1(arg, bench, *mimicFlag, *repsFlag)
 		if err != nil {
 			return err
 		}
@@ -54,7 +50,7 @@ func main1() error {
 	}
 	if failed {
 		s := "tests"
-		if *benchFlag {
+		if bench {
 			s = "benchmarks"
 		}
 		return fmt.Errorf("%s: some %s failed", os.Args[0], s)
@@ -62,8 +58,8 @@ func main1() error {
 	return nil
 }
 
-func do(filename string) (failed bool, err error) {
-	workDir, err := ioutil.TempDir("", "puffs-test-c")
+func doBenchTest1(filename string, bench bool, mimic bool, reps int) (failed bool, err error) {
+	workDir, err := ioutil.TempDir("", "puffs-c")
 	if err != nil {
 		return false, err
 	}
@@ -73,14 +69,14 @@ func do(filename string) (failed bool, err error) {
 	out := filepath.Join(workDir, "a.out")
 
 	ccArgs := []string(nil)
-	if *benchFlag {
+	if bench {
 		ccArgs = append(ccArgs, "-O3")
 	} else {
 		// TODO: set these flags even if we pass -O3.
 		ccArgs = append(ccArgs, "-Wall", "-Werror")
 	}
 	ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
-	if *mimicFlag {
+	if mimic {
 		extra, err := findPuffsMimicCflags(in)
 		if err != nil {
 			return false, err
@@ -97,8 +93,8 @@ func do(filename string) (failed bool, err error) {
 		}
 
 		outArgs := []string(nil)
-		if *benchFlag {
-			outArgs = append(outArgs, "-bench", fmt.Sprintf("-reps=%d", *repsFlag))
+		if bench {
+			outArgs = append(outArgs, "-bench", fmt.Sprintf("-reps=%d", reps))
 		}
 		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout

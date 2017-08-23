@@ -1,7 +1,6 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-// puffs-genlib-c builds C software libraries.
 package main
 
 import (
@@ -13,27 +12,21 @@ import (
 	"strings"
 )
 
-var (
-	dstdirFlag = flag.String("dstdir", "", "directory containing the object files ")
-	srcdirFlag = flag.String("srcdir", "", "directory containing the C source files")
-)
-
-func main() {
-	if err := main1(); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(1)
+func doGenlib(args []string) error {
+	flags := flag.FlagSet{}
+	dstdirFlag := flags.String("dstdir", "", "directory containing the object files ")
+	srcdirFlag := flags.String("srcdir", "", "directory containing the C source files")
+	if err := flags.Parse(args); err != nil {
+		return err
 	}
-}
+	args = flags.Args()
 
-func main1() error {
-	flag.Parse()
 	if *dstdirFlag == "" {
 		return fmt.Errorf("empty -dstdir flag")
 	}
 	if *srcdirFlag == "" {
 		return fmt.Errorf("empty -srcdir flag")
 	}
-	args := flag.Args()
 
 	for _, cc := range []string{"clang", "gcc"} {
 		for _, dynamism := range []string{"static", "dynamic"} {
@@ -41,7 +34,7 @@ func main1() error {
 			if err := os.MkdirAll(outDir, 0755); err != nil {
 				return err
 			}
-			if err := genObj(outDir, cc, dynamism, args); err != nil {
+			if err := genObj(outDir, *srcdirFlag, cc, dynamism, args); err != nil {
 				return err
 			}
 			if err := genLib(outDir, cc, dynamism, args); err != nil {
@@ -64,10 +57,10 @@ var (
 	}
 )
 
-func genObj(outDir string, cc string, dynamism string, filenames []string) error {
+func genObj(outDir string, inDir string, cc string, dynamism string, filenames []string) error {
 	for _, filename := range filenames {
-		in := filepath.Join(*srcdirFlag, filename+".c")
-		out := outFilename(outDir, dynamism, filename)
+		in := filepath.Join(inDir, filename+".c")
+		out := genlibOutFilename(outDir, dynamism, filename)
 
 		args := []string(nil)
 		args = append(args, "-O3", "-std=c99")
@@ -101,7 +94,7 @@ func genLib(outDir string, cc string, dynamism string, filenames []string) error
 	args = append(args, out)
 
 	for _, filename := range filenames {
-		args = append(args, outFilename(outDir, dynamism, filename))
+		args = append(args, genlibOutFilename(outDir, dynamism, filename))
 	}
 
 	cmd := exec.Command(cc, args...)
@@ -114,7 +107,7 @@ func genLib(outDir string, cc string, dynamism string, filenames []string) error
 	return nil
 }
 
-func outFilename(outDir string, dynamism string, filename string) string {
+func genlibOutFilename(outDir string, dynamism string, filename string) string {
 	filename = strings.Replace(filename, "/", "-", -1)
 	filename = strings.Replace(filename, "\\", "-", -1)
 	filename = filepath.Join(outDir, filename+objExtensions[dynamism])

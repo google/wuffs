@@ -40,7 +40,7 @@ func main1() error {
 	out.WriteString("// Use of this source code is governed by a BSD-style license that can be found\n")
 	out.WriteString("// in the LICENSE file.\n")
 	out.WriteString("\n")
-	out.WriteString("package main\n")
+	out.WriteString("package cgen\n")
 	out.WriteString("\n")
 
 	for _, f := range files {

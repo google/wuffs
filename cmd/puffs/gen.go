@@ -120,9 +120,9 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	}
 
 	for _, lang := range langs {
-		command := "puffs-gen-" + lang
+		command := "puffs-" + lang
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command(command, "-package_name", packageName)
+		cmd := exec.Command(command, "gen", "-package_name", packageName)
 		cmd.Stdin = bytes.NewReader(combinedSrc)
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr
@@ -174,8 +174,8 @@ func genFile(puffsRoot string, dirname string, lang string, out []byte) error {
 
 func genlibAffected(puffsRoot string, langs []string, affected []string) error {
 	for _, lang := range langs {
-		command := "puffs-genlib-" + lang
-		args := []string(nil)
+		command := "puffs-" + lang
+		args := []string{"genlib"}
 		args = append(args, "-dstdir", filepath.Join(puffsRoot, "gen", "lib", lang))
 		args = append(args, "-srcdir", filepath.Join(puffsRoot, "gen", lang))
 		args = append(args, affected...)
