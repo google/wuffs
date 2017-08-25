@@ -290,3 +290,8 @@ does not otherwise use labels for switch cases or goto targets.
 
 TODO: describe the built in `buf1` and `buf2` types: 1- and 2-dimensional
 buffers of bytes, such as an I/O stream or a table of pixel data.
+
+
+---
+
+Updated on August 2017.
