@@ -558,6 +558,9 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				if o.Receiver() != n.Name() || !o.Suspendible() {
 					continue
 				}
+				if k := g.funks[o.QID()]; k.coroSuspPoint == 0 {
+					continue
+				}
 				// TODO: allow max depth > 1 for recursive coroutines.
 				const maxDepth = 1
 				b.writes("struct {\n")

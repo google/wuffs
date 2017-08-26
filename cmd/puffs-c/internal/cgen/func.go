@@ -97,9 +97,21 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	}
 	b.writes("{\n")
 	b.writex(k.bHeader)
-	b.writex(k.bBodyResume)
+	if k.suspendible {
+		if k.coroSuspPoint > 0 {
+			b.writex(k.bBodyResume)
+		} else {
+			b.writes("{\n")
+		}
+	}
 	b.writex(k.bBody)
-	b.writex(k.bBodySuspend)
+	if k.suspendible {
+		if k.coroSuspPoint > 0 {
+			b.writex(k.bBodySuspend)
+		} else {
+			b.writes("}\n")
+		}
+	}
 	b.writex(k.bFooter)
 	b.writes("}\n\n")
 	return nil

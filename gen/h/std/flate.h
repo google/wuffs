@@ -201,34 +201,6 @@ typedef struct {
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
     } c_init_dynamic_huffman[1];
-    struct {
-      uint32_t coro_susp_point;
-      uint16_t v_counts[16];
-      uint32_t v_i;
-      uint32_t v_remaining;
-      uint16_t v_offsets[16];
-      uint32_t v_n_symbols;
-      uint32_t v_count;
-      uint16_t v_symbols[320];
-      uint32_t v_min_cl;
-      uint32_t v_max_cl;
-      uint32_t v_initial_high_bits;
-      uint32_t v_prev_cl;
-      uint32_t v_prev_redirect_key;
-      uint32_t v_top;
-      uint32_t v_next_top;
-      uint32_t v_code;
-      uint32_t v_key;
-      uint32_t v_value;
-      uint32_t v_cl;
-      uint32_t v_tmp;
-      uint32_t v_redirect_key;
-      uint32_t v_j;
-      uint32_t v_reversed_key;
-      uint32_t v_symbol;
-      uint32_t v_high_bits;
-      uint32_t v_delta;
-    } c_init_huff[1];
   } private_impl;
 } puffs_flate_decoder;
 

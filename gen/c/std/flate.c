@@ -201,34 +201,6 @@ typedef struct {
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
     } c_init_dynamic_huffman[1];
-    struct {
-      uint32_t coro_susp_point;
-      uint16_t v_counts[16];
-      uint32_t v_i;
-      uint32_t v_remaining;
-      uint16_t v_offsets[16];
-      uint32_t v_n_symbols;
-      uint32_t v_count;
-      uint16_t v_symbols[320];
-      uint32_t v_min_cl;
-      uint32_t v_max_cl;
-      uint32_t v_initial_high_bits;
-      uint32_t v_prev_cl;
-      uint32_t v_prev_redirect_key;
-      uint32_t v_top;
-      uint32_t v_next_top;
-      uint32_t v_code;
-      uint32_t v_key;
-      uint32_t v_value;
-      uint32_t v_cl;
-      uint32_t v_tmp;
-      uint32_t v_redirect_key;
-      uint32_t v_j;
-      uint32_t v_reversed_key;
-      uint32_t v_symbol;
-      uint32_t v_high_bits;
-      uint32_t v_delta;
-    } c_init_huff[1];
   } private_impl;
 } puffs_flate_decoder;
 
@@ -1532,40 +1504,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
   uint32_t v_high_bits;
   uint32_t v_delta;
 
-  uint32_t coro_susp_point = self->private_impl.c_init_huff[0].coro_susp_point;
-  if (coro_susp_point) {
-    memcpy(v_counts, self->private_impl.c_init_huff[0].v_counts,
-           sizeof(v_counts));
-    v_i = self->private_impl.c_init_huff[0].v_i;
-    v_remaining = self->private_impl.c_init_huff[0].v_remaining;
-    memcpy(v_offsets, self->private_impl.c_init_huff[0].v_offsets,
-           sizeof(v_offsets));
-    v_n_symbols = self->private_impl.c_init_huff[0].v_n_symbols;
-    v_count = self->private_impl.c_init_huff[0].v_count;
-    memcpy(v_symbols, self->private_impl.c_init_huff[0].v_symbols,
-           sizeof(v_symbols));
-    v_min_cl = self->private_impl.c_init_huff[0].v_min_cl;
-    v_max_cl = self->private_impl.c_init_huff[0].v_max_cl;
-    v_initial_high_bits = self->private_impl.c_init_huff[0].v_initial_high_bits;
-    v_prev_cl = self->private_impl.c_init_huff[0].v_prev_cl;
-    v_prev_redirect_key = self->private_impl.c_init_huff[0].v_prev_redirect_key;
-    v_top = self->private_impl.c_init_huff[0].v_top;
-    v_next_top = self->private_impl.c_init_huff[0].v_next_top;
-    v_code = self->private_impl.c_init_huff[0].v_code;
-    v_key = self->private_impl.c_init_huff[0].v_key;
-    v_value = self->private_impl.c_init_huff[0].v_value;
-    v_cl = self->private_impl.c_init_huff[0].v_cl;
-    v_tmp = self->private_impl.c_init_huff[0].v_tmp;
-    v_redirect_key = self->private_impl.c_init_huff[0].v_redirect_key;
-    v_j = self->private_impl.c_init_huff[0].v_j;
-    v_reversed_key = self->private_impl.c_init_huff[0].v_reversed_key;
-    v_symbol = self->private_impl.c_init_huff[0].v_symbol;
-    v_high_bits = self->private_impl.c_init_huff[0].v_high_bits;
-    v_delta = self->private_impl.c_init_huff[0].v_delta;
-  }
-  switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
-
+  {
     memset(v_counts, 0, sizeof(v_counts));
     v_i = a_n_codes0;
     while (v_i < a_n_codes1) {
@@ -1808,42 +1747,7 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
       }
     }
   label_3_break:;
-    self->private_impl.c_init_huff[0].coro_susp_point = 0;
-    goto exit;
   }
-
-  goto suspend;
-suspend:
-  self->private_impl.c_init_huff[0].coro_susp_point = coro_susp_point;
-  memcpy(self->private_impl.c_init_huff[0].v_counts, v_counts,
-         sizeof(v_counts));
-  self->private_impl.c_init_huff[0].v_i = v_i;
-  self->private_impl.c_init_huff[0].v_remaining = v_remaining;
-  memcpy(self->private_impl.c_init_huff[0].v_offsets, v_offsets,
-         sizeof(v_offsets));
-  self->private_impl.c_init_huff[0].v_n_symbols = v_n_symbols;
-  self->private_impl.c_init_huff[0].v_count = v_count;
-  memcpy(self->private_impl.c_init_huff[0].v_symbols, v_symbols,
-         sizeof(v_symbols));
-  self->private_impl.c_init_huff[0].v_min_cl = v_min_cl;
-  self->private_impl.c_init_huff[0].v_max_cl = v_max_cl;
-  self->private_impl.c_init_huff[0].v_initial_high_bits = v_initial_high_bits;
-  self->private_impl.c_init_huff[0].v_prev_cl = v_prev_cl;
-  self->private_impl.c_init_huff[0].v_prev_redirect_key = v_prev_redirect_key;
-  self->private_impl.c_init_huff[0].v_top = v_top;
-  self->private_impl.c_init_huff[0].v_next_top = v_next_top;
-  self->private_impl.c_init_huff[0].v_code = v_code;
-  self->private_impl.c_init_huff[0].v_key = v_key;
-  self->private_impl.c_init_huff[0].v_value = v_value;
-  self->private_impl.c_init_huff[0].v_cl = v_cl;
-  self->private_impl.c_init_huff[0].v_tmp = v_tmp;
-  self->private_impl.c_init_huff[0].v_redirect_key = v_redirect_key;
-  self->private_impl.c_init_huff[0].v_j = v_j;
-  self->private_impl.c_init_huff[0].v_reversed_key = v_reversed_key;
-  self->private_impl.c_init_huff[0].v_symbol = v_symbol;
-  self->private_impl.c_init_huff[0].v_high_bits = v_high_bits;
-  self->private_impl.c_init_huff[0].v_delta = v_delta;
-
 exit:
   return status;
 }
