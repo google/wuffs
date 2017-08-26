@@ -13,12 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/google/puffs/lang/ast"
-	"github.com/google/puffs/lang/check"
-	"github.com/google/puffs/lang/parse"
-	"github.com/google/puffs/lang/render"
-	"github.com/google/puffs/lang/token"
 )
 
 func doGen(puffsRoot string, args []string) error    { return doGenGenlib(puffsRoot, args, false) }
@@ -87,43 +81,21 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	// TODO: skip the generation if the output file already exists and its
 	// mtime is newer than all inputs and the puffs-gen-foo command.
 
-	tm := &token.Map{}
-	files := []*ast.File(nil)
-	buf := &bytes.Buffer{}
-	for _, filename := range filenames {
-		filename = filepath.Join(puffsRoot, filepath.FromSlash(dirname), filename)
-		src, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
-		tokens, _, err := token.Tokenize(tm, filename, src)
-		if err != nil {
-			return err
-		}
-		if f, err := parse.Parse(tm, filename, tokens); err != nil {
-			return err
-		} else {
-			files = append(files, f)
-		}
-		if err := render.Render(buf, tm, tokens, nil); err != nil {
-			return err
-		}
-	}
-	if _, err := check.Check(tm, files...); err != nil {
-		return err
-	}
-	combinedSrc := buf.Bytes()
-
 	packageName := path.Base(dirname)
 	if !validName(packageName) {
 		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
+	}
+	cmdArgs := []string{"gen", "-package_name", packageName}
+	for _, filename := range filenames {
+		cmdArgs = append(cmdArgs,
+			filepath.Join(puffsRoot, filepath.FromSlash(dirname), filename))
 	}
 
 	for _, lang := range langs {
 		command := "puffs-" + lang
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command(command, "gen", "-package_name", packageName)
-		cmd.Stdin = bytes.NewReader(combinedSrc)
+		cmd := exec.Command(command, cmdArgs...)
+		cmd.Stdin = nil
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err == nil {
