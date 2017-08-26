@@ -224,9 +224,9 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 
 		case oTyp.IsRefined():
 			bounds := [2]*big.Int{}
-			for i, b := range oTyp.Bounds() {
-				if b != nil {
-					if cv := b.ConstValue(); cv != nil {
+			for i, bound := range oTyp.Bounds() {
+				if bound != nil {
+					if cv := bound.ConstValue(); cv != nil {
 						bounds[i] = cv
 					}
 				}
@@ -240,13 +240,13 @@ func (g *gen) writeFuncImplArgChecks(n *a.Func) error {
 					}
 				}
 			}
-			for i, b := range bounds {
-				if b != nil {
+			for i, bound := range bounds {
+				if bound != nil {
 					op := '<'
 					if i != 0 {
 						op = '>'
 					}
-					checks = append(checks, fmt.Sprintf("%s%s %c %s", aPrefix, o.Name().String(g.tm), op, b))
+					checks = append(checks, fmt.Sprintf("%s%s %c %s", aPrefix, o.Name().String(g.tm), op, bound))
 				}
 			}
 		}
