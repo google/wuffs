@@ -115,8 +115,8 @@ func genTemplates(out *bytes.Buffer) error {
 			}
 		}
 		fmt.Fprintf(out, "}\n\n")
-		fmt.Fprintf(out, "func template_%s(g *gen, args template_args_%s) error {\n", t.name, t.name)
-		fmt.Fprintf(out, "g.printf(%q,\n", t.format)
+		fmt.Fprintf(out, "func template_%s(b *buffer, args template_args_%s) error {\n", t.name, t.name)
+		fmt.Fprintf(out, "b.printf(%q,\n", t.format)
 		for _, a := range t.formatArgs {
 			fmt.Fprintf(out, "args.%s,\n", stripq(a))
 		}

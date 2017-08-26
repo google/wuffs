@@ -21,8 +21,8 @@ type template_args_short_read struct {
 	name      string
 }
 
-func template_short_read(g *gen, args template_args_short_read) error {
-	g.printf("short_read_%s:\nif (a_%s.limit.ptr_to_len) {\nstatus = %sSUSPENSION_LIMITED_READ;\n} else if (a_%s.buf->closed) {\nstatus = %sERROR_UNEXPECTED_EOF;\ngoto exit;\n} else {\nstatus = %sSUSPENSION_SHORT_READ;\n}\ngoto suspend;\n",
+func template_short_read(b *buffer, args template_args_short_read) error {
+	b.printf("short_read_%s:\nif (a_%s.limit.ptr_to_len) {\nstatus = %sSUSPENSION_LIMITED_READ;\n} else if (a_%s.buf->closed) {\nstatus = %sERROR_UNEXPECTED_EOF;\ngoto exit;\n} else {\nstatus = %sSUSPENSION_SHORT_READ;\n}\ngoto suspend;\n",
 		args.name,
 		args.name,
 		args.PKGPREFIX,
