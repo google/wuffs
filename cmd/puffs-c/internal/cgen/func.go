@@ -191,7 +191,10 @@ func (g *gen) writeFuncImpl(n *a.Func) error {
 				continue
 			}
 			shortReadsSeen[sr] = struct{}{}
-			if err := g.writeShortRead(sr); err != nil {
+			if err := template_short_read(g, template_args_short_read{
+				PKGPREFIX: g.PKGPREFIX,
+				name:      sr,
+			}); err != nil {
 				return err
 			}
 		}
@@ -1091,19 +1094,6 @@ func (g *gen) writeCallSuspendibles(n *a.Expr, depth uint32) error {
 		// This might involve calling g.writeExpr with replaceNothing??
 		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
 	}
-	return nil
-}
-
-func (g *gen) writeShortRead(name string) error {
-	g.printf("\nshort_read_%s:\n", name)
-	// TODO: is ptr_to_len the right check?
-	g.printf("if (%s%s.limit.ptr_to_len) {", aPrefix, name)
-	g.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
-	g.printf("} else if (%s%s.buf->closed) {", aPrefix, name)
-	g.printf("status = %sERROR_UNEXPECTED_EOF;", g.PKGPREFIX)
-	g.writes("goto exit;")
-	g.printf("} else {status = %sSUSPENSION_SHORT_READ; }", g.PKGPREFIX)
-	g.writes("goto suspend;\n")
 	return nil
 }
 
