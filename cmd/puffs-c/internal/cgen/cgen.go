@@ -170,21 +170,6 @@ type gen struct {
 	funks      map[t.QID]funk
 }
 
-func (k *funk) jumpTarget(n *a.While) (uint32, error) {
-	if k.jumpTargets == nil {
-		k.jumpTargets = map[*a.While]uint32{}
-	}
-	if jt, ok := k.jumpTargets[n]; ok {
-		return jt, nil
-	}
-	jt := uint32(len(k.jumpTargets))
-	if jt == 1000000 {
-		return 0, fmt.Errorf("too many jump targets")
-	}
-	k.jumpTargets[n] = jt
-	return jt, nil
-}
-
 func (g *gen) generate() ([]byte, error) {
 	b := new(buffer)
 
