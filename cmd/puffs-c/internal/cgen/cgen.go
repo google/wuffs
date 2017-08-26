@@ -166,22 +166,22 @@ type gen struct {
 	statusMap  map[t.ID]status
 	structList []*a.Struct
 	structMap  map[t.ID]*a.Struct
-	perFunc    perFunc
-	funcImpls  map[t.QID]buffer
+	currFunk   funk
+	funks      map[t.QID]funk
 }
 
-func (g *gen) jumpTarget(n *a.While) (uint32, error) {
-	if g.perFunc.jumpTargets == nil {
-		g.perFunc.jumpTargets = map[*a.While]uint32{}
+func (k *funk) jumpTarget(n *a.While) (uint32, error) {
+	if k.jumpTargets == nil {
+		k.jumpTargets = map[*a.While]uint32{}
 	}
-	if jt, ok := g.perFunc.jumpTargets[n]; ok {
+	if jt, ok := k.jumpTargets[n]; ok {
 		return jt, nil
 	}
-	jt := uint32(len(g.perFunc.jumpTargets))
+	jt := uint32(len(k.jumpTargets))
 	if jt == 1000000 {
 		return 0, fmt.Errorf("too many jump targets")
 	}
-	g.perFunc.jumpTargets[n] = jt
+	k.jumpTargets[n] = jt
 	return jt, nil
 }
 
@@ -212,7 +212,7 @@ func (g *gen) generate() ([]byte, error) {
 		g.structMap[n.Name()] = n
 	}
 
-	g.funcImpls = map[t.QID]buffer{}
+	g.funks = map[t.QID]funk{}
 	if err := g.forEachFunc(nil, bothPubPri, (*gen).gatherFuncImpl); err != nil {
 		return nil, err
 	}
@@ -766,8 +766,8 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	fallback := true
-	if k := innermost.Name().Key(); k < t.Key(len(cTypeNames)) {
-		if s := cTypeNames[k]; s != "" {
+	if key := innermost.Name().Key(); key < t.Key(len(cTypeNames)) {
+		if s := cTypeNames[key]; s != "" {
 			b.writes(s)
 			fallback = false
 		}
