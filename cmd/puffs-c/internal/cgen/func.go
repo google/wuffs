@@ -14,7 +14,7 @@ import (
 
 type perFunc struct {
 	impl          buffer
-	funk          *a.Func
+	astFunc       *a.Func
 	derivedVars   map[t.ID]struct{}
 	jumpTargets   map[*a.While]uint32
 	coroSuspPoint uint32
@@ -81,7 +81,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 
 func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	g.perFunc = perFunc{
-		funk:        n,
+		astFunc:     n,
 		public:      n.Public(),
 		suspendible: n.Suspendible(),
 	}
@@ -286,7 +286,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 var errNeedDerivedVar = errors.New("internal: need derived var")
 
 func (g *gen) needDerivedVar(name t.ID) bool {
-	for _, o := range g.perFunc.funk.Body() {
+	for _, o := range g.perFunc.astFunc.Body() {
 		err := o.Walk(func(p *a.Node) error {
 			// Look for p matching "in.name.etc(etc)".
 			if p.Kind() != a.KExpr {
@@ -318,7 +318,7 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 }
 
 func (g *gen) findDerivedVars() {
-	for _, o := range g.perFunc.funk.In().Fields() {
+	for _, o := range g.perFunc.astFunc.In().Fields() {
 		o := o.Field()
 		oTyp := o.XType()
 		if oTyp.Decorator() != 0 {
@@ -495,7 +495,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bo
 	local := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
 	lhs := local
 	// TODO: don't hard-code [0], and allow recursive coroutines.
-	rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.perFunc.funk.Name().String(g.tm), lhs)
+	rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.perFunc.astFunc.Name().String(g.tm), lhs)
 	if suspend {
 		lhs, rhs = rhs, lhs
 	}
@@ -996,7 +996,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		b.printf("status = %s%s_decode_header(self, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1004,7 +1004,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
 		b.printf("status = %s%s_decode_lsd(self, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1012,7 +1012,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
 		b.printf("status = %s%s_decode_extension(self, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1020,7 +1020,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		b.printf("status = %s%s_decode_id(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1028,7 +1028,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
 		b.printf("status = %s%s_decode_uncompressed(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1036,7 +1036,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_huffman", 2) {
 		b.printf("status = %s%s_decode_huffman(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1044,7 +1044,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_fixed_huffman", 0) {
 		b.printf("status = %s%s_init_fixed_huffman(self);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm))
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1052,7 +1052,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
 		b.printf("status = %s%s_init_dynamic_huffman(self, %ssrc);\n",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -1060,7 +1060,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_huff", 4) {
 		b.printf("status = %s%s_init_huff(self,",
-			g.pkgPrefix, g.perFunc.funk.Receiver().String(g.tm))
+			g.pkgPrefix, g.perFunc.astFunc.Receiver().String(g.tm))
 		for i, o := range n.Args() {
 			if i != 0 {
 				b.writes(",")
