@@ -90,6 +90,11 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
+	// TODO: copy from dst to history, if we aren't finished.
+	this.decode_blocks?(dst:in.dst, src:in.src)
+}
+
+pri func decoder.decode_blocks?(dst writer1, src reader1)() {
 	var final u32
 	while final == 0 {
 		while this.n_bits < 3,

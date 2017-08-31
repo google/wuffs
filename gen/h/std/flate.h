@@ -162,9 +162,12 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+    } c_decode[1];
+    struct {
+      uint32_t coro_susp_point;
       uint32_t v_final;
       uint32_t v_type;
-    } c_decode[1];
+    } c_decode_blocks[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_n;

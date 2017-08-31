@@ -162,9 +162,12 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+    } c_decode[1];
+    struct {
+      uint32_t coro_susp_point;
       uint32_t v_final;
       uint32_t v_type;
-    } c_decode[1];
+    } c_decode_blocks[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_n;
@@ -413,6 +416,10 @@ static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
 
 // ---------------- Private Function Prototypes
 
+puffs_flate_status puffs_flate_decoder_decode_blocks(puffs_flate_decoder* self,
+                                                     puffs_base_writer1 a_dst,
+                                                     puffs_base_reader1 a_src);
+
 puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     puffs_flate_decoder* self,
     puffs_base_writer1 a_dst,
@@ -514,6 +521,35 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
+  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  if (coro_susp_point) {
+  }
+  switch (coro_susp_point) {
+    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+
+    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    status = puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
+    if (status) {
+      goto suspend;
+    }
+    self->private_impl.c_decode[0].coro_susp_point = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+
+exit:
+  self->private_impl.status = status;
+  return status;
+}
+
+puffs_flate_status puffs_flate_decoder_decode_blocks(puffs_flate_decoder* self,
+                                                     puffs_base_writer1 a_dst,
+                                                     puffs_base_reader1 a_src) {
+  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
+
   uint32_t v_final;
   uint32_t v_type;
 
@@ -531,10 +567,11 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     b_rend_src = b_rptr_src + len;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_blocks[0].coro_susp_point;
   if (coro_susp_point) {
-    v_final = self->private_impl.c_decode[0].v_final;
-    v_type = self->private_impl.c_decode[0].v_type;
+    v_final = self->private_impl.c_decode_blocks[0].v_final;
+    v_type = self->private_impl.c_decode_blocks[0].v_type;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -648,15 +685,15 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         goto suspend;
       }
     }
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_blocks[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_final = v_final;
-  self->private_impl.c_decode[0].v_type = v_type;
+  self->private_impl.c_decode_blocks[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_blocks[0].v_final = v_final;
+  self->private_impl.c_decode_blocks[0].v_type = v_type;
 
 exit:
   if (a_src.buf) {
@@ -670,7 +707,6 @@ exit:
     }
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
