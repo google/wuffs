@@ -722,13 +722,22 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	case a.KReturn:
 		n := n.Return()
 		ret := status{}
-		if n.Keyword() == 0 {
-			ret.name = fmt.Sprintf("%sSTATUS_OK", g.PKGPREFIX)
-		} else {
+		retExpr := (*a.Expr)(nil)
+		if n.Keyword() != 0 {
 			ret = g.statusMap[n.Message()]
+		} else if retExpr = n.Value(); retExpr == nil {
+			ret.name = fmt.Sprintf("%sSTATUS_OK", g.PKGPREFIX)
 		}
 		if g.currFunk.suspendible {
-			b.printf("status = %s;", ret.name)
+			b.writes("status = ")
+			if retExpr == nil {
+				b.writes(ret.name)
+				// TODO: check that retExpr has no call-suspendibles.
+			} else if err := g.writeExpr(
+				b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writes(";")
 			if ret.isError {
 				b.writes("goto exit;")
 			} else {
@@ -1104,12 +1113,19 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_blocks", 2) {
-		b.printf("status = %s%s_decode_blocks(self, %sdst, %ssrc);\n",
+		// TODO: don't hard code being inside a try call.
+		if g.currFunk.tempW > maxTemp {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		temp := g.currFunk.tempW
+		g.currFunk.tempW++
+
+		b.printf("%sstatus %s%d = %s%s_decode_blocks(self, %sdst, %ssrc);\n",
+			g.pkgPrefix, tPrefix, temp,
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
-		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
 		b.printf("status = %s%s_decode_uncompressed(self, %sdst, %ssrc);\n",
@@ -1465,7 +1481,10 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 
 func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+		return false
+	}
+	if !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()

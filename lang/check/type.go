@@ -340,7 +340,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			// TODO.
 		}
 
-	case t.KeyOpenParen:
+	case t.KeyOpenParen, t.KeyTry:
 		// n is a function call.
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
@@ -364,7 +364,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			if isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) {
+			if n.ID0().Key() == t.KeyTry {
+				n.SetMType(typeExprStatus)
+			} else if isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) {
 				n.SetMType(typeExprPlaceholder32) // HACK.
 			} else if isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU16LE, 0) {
 				n.SetMType(typeExprPlaceholder16) // HACK.
@@ -528,7 +530,10 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 
 func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+		return false
+	}
+	if !n.CallSuspendible() || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -885,7 +890,8 @@ swtch:
 		if n.Min() != nil || n.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyReader1 || name == t.KeyWriter1 {
+		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyStatus ||
+			name == t.KeyReader1 || name == t.KeyWriter1 {
 			break
 		}
 		for _, s := range q.c.structs {

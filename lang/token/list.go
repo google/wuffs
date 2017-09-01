@@ -215,6 +215,7 @@ const (
 	KeyLimit      = Key(IDLimit >> KeyShift)
 	KeyPackageID  = Key(IDPackageID >> KeyShift)
 	KeyConst      = Key(IDConst >> KeyShift)
+	KeyTry        = Key(IDTry >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -234,6 +235,7 @@ const (
 	KeyBuf2    = Key(IDBuf2 >> KeyShift)
 	KeyReader1 = Key(IDReader1 >> KeyShift)
 	KeyWriter1 = Key(IDWriter1 >> KeyShift)
+	KeyStatus  = Key(IDStatus >> KeyShift)
 
 	KeyUnderscore = Key(IDUnderscore >> KeyShift)
 	KeyThis       = Key(IDThis >> KeyShift)
@@ -383,6 +385,7 @@ const (
 	IDLimit      = ID(0x75<<KeyShift | FlagsOther)
 	IDPackageID  = ID(0x76<<KeyShift | FlagsOther)
 	IDConst      = ID(0x77<<KeyShift | FlagsOther)
+	IDTry        = ID(0x78<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -402,6 +405,7 @@ const (
 	IDBuf2    = ID(0x9B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReader1 = ID(0x9C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriter1 = ID(0x9D<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDStatus  = ID(0x9E<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDUnderscore = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDThis       = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -571,6 +575,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyLimit:      {"limit", IDLimit},
 	KeyPackageID:  {"packageid", IDPackageID},
 	KeyConst:      {"const", IDConst},
+	KeyTry:        {"try", IDTry},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
@@ -592,6 +597,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyBuf2:    {"buf2", IDBuf2},
 	KeyReader1: {"reader1", IDReader1},
 	KeyWriter1: {"writer1", IDWriter1},
+	KeyStatus:  {"status", IDStatus},
 
 	KeyUnderscore: {"_", IDUnderscore},
 	KeyThis:       {"this", IDThis},

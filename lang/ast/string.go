@@ -31,6 +31,10 @@ func (n *Expr) appendString(buf []byte, tm *t.Map, parenthesize bool, depth uint
 			case 0:
 				buf = append(buf, tm.ByID(n.id1)...)
 
+			case t.KeyTry:
+				buf = append(buf, "try "...)
+				fallthrough
+
 			case t.KeyOpenParen:
 				buf = n.lhs.Expr().appendString(buf, tm, true, depth)
 				if n.flags&FlagsSuspendible != 0 {
@@ -77,7 +81,7 @@ func (n *Expr) appendString(buf []byte, tm *t.Map, parenthesize bool, depth uint
 				buf = append(buf, ')')
 
 			case t.KeyLimit:
-				// TODO.
+				buf = append(buf, "TODO(limit)"...)
 			}
 
 		case t.FlagsUnaryOp:

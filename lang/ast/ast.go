@@ -201,6 +201,8 @@ const MaxExprDepth = 255
 //
 // For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 //
+// For try/function calls, like "try LHS(List0)", ID0 is IDTry.
+//
 // For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
 //
 // For slices, like "LHS[MHS:RHS]", ID0 is IDColon.

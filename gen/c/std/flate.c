@@ -161,6 +161,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      puffs_flate_status v_z;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
@@ -522,17 +523,21 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
+  puffs_flate_status v_z;
+
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
+    v_z = self->private_impl.c_decode[0].v_z;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
-    status = puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
-    if (status) {
-      goto suspend;
-    }
+    puffs_flate_status t_0 =
+        puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
+    v_z = t_0;
+    status = v_z;
+    goto suspend;
     self->private_impl.c_decode[0].coro_susp_point = 0;
     goto exit;
   }
@@ -540,6 +545,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode[0].v_z = v_z;
 
 exit:
   self->private_impl.status = status;

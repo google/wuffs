@@ -641,7 +641,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 	case 0:
 		// No-op.
 
-	case t.KeyOpenParen:
+	case t.KeyOpenParen, t.KeyTry:
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||

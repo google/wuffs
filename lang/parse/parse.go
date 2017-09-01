@@ -614,12 +614,18 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		value := (*a.Expr)(nil)
 		if p.peek1().Key() == t.KeyEq {
 			p.src = p.src[1:]
-			if p.peek1().Key() == t.KeyLimit {
+			switch p.peek1().Key() {
+			case t.KeyLimit:
 				value, err = p.parseLimitExpr()
 				if err != nil {
 					return nil, err
 				}
-			} else {
+			case t.KeyTry:
+				value, err = p.parseTryExpr()
+				if err != nil {
+					return nil, err
+				}
+			default:
 				value, err = p.parseExpr()
 				if err != nil {
 					return nil, err
@@ -733,6 +739,24 @@ func (p *parser) parseLimitExpr() (*a.Expr, error) {
 		return nil, err
 	}
 	return a.NewExpr(0, t.IDLimit, 0, lhs.Node(), nil, rhs.Node(), nil), nil
+}
+
+func (p *parser) parseTryExpr() (*a.Expr, error) {
+	if x := p.peek1().Key(); x != t.KeyTry {
+		got := p.tm.ByKey(x)
+		return nil, fmt.Errorf(`parse: expected "try", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+	call, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if call.ID0() != t.IDOpenParen {
+		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
+			call.String(p.tm), p.filename, p.line())
+	}
+	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, call.ID1(),
+		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
 }
 
 func (p *parser) parseExprNode() (*a.Node, error) {

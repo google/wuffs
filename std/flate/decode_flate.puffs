@@ -91,7 +91,8 @@ pub struct decoder?(
 
 pub func decoder.decode?(dst writer1, src reader1)() {
 	// TODO: copy from dst to history, if we aren't finished.
-	this.decode_blocks?(dst:in.dst, src:in.src)
+	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
+	return z
 }
 
 pri func decoder.decode_blocks?(dst writer1, src reader1)() {
