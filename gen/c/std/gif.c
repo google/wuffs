@@ -130,7 +130,6 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_literal_width;
     uint8_t f_stack[4096];
@@ -164,7 +163,6 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_width;
     uint32_t f_height;
@@ -191,6 +189,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint8_t v_label;
       uint8_t v_block_size;
+      uint64_t scratch;
     } c_decode_extension[1];
     struct {
       uint32_t coro_susp_point;
@@ -862,10 +861,13 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         goto label_0_break;
       }
       PUFFS_COROUTINE_SUSPENSION_POINT(3);
-      self->private_impl.scratch = ((uint32_t)(v_block_size));
+      self->private_impl.c_decode_extension[0].scratch =
+          ((uint32_t)(v_block_size));
       PUFFS_COROUTINE_SUSPENSION_POINT(4);
-      if (self->private_impl.scratch > b_rend_src - b_rptr_src) {
-        self->private_impl.scratch -= b_rend_src - b_rptr_src;
+      if (self->private_impl.c_decode_extension[0].scratch >
+          b_rend_src - b_rptr_src) {
+        self->private_impl.c_decode_extension[0].scratch -=
+            b_rend_src - b_rptr_src;
         b_rptr_src = b_rend_src;
         if (a_src.limit.ptr_to_len) {
           status = PUFFS_GIF_SUSPENSION_LIMITED_READ;
@@ -877,7 +879,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         }
         goto suspend;
       }
-      b_rptr_src += self->private_impl.scratch;
+      b_rptr_src += self->private_impl.c_decode_extension[0].scratch;
     }
   label_0_break:;
     self->private_impl.c_decode_extension[0].coro_susp_point = 0;

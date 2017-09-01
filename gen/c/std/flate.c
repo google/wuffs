@@ -152,7 +152,6 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_bits;
     uint32_t f_n_bits;
@@ -171,6 +170,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_n;
+      uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {
       uint32_t coro_susp_point;
@@ -184,6 +184,7 @@ typedef struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_distance;
+      uint64_t scratch;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
@@ -218,7 +219,6 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     puffs_flate_decoder f_dec;
 
@@ -226,6 +226,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
       uint32_t v_checksum;
+      uint64_t scratch;
     } c_decode[1];
   } private_impl;
 } puffs_flate_zlib_decoder;
@@ -775,22 +776,25 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       t_1 = PUFFS_U32LE(b_rptr_src);
       b_rptr_src += 4;
     } else {
-      self->private_impl.scratch = 0;
+      self->private_impl.c_decode_uncompressed[0].scratch = 0;
       PUFFS_COROUTINE_SUSPENSION_POINT(2);
       while (true) {
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
-        uint32_t t_0 = self->private_impl.scratch >> 56;
-        self->private_impl.scratch <<= 8;
-        self->private_impl.scratch >>= 8;
-        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << t_0;
+        uint32_t t_0 =
+            self->private_impl.c_decode_uncompressed[0].scratch >> 56;
+        self->private_impl.c_decode_uncompressed[0].scratch <<= 8;
+        self->private_impl.c_decode_uncompressed[0].scratch >>= 8;
+        self->private_impl.c_decode_uncompressed[0].scratch |=
+            ((uint64_t)(*b_rptr_src++)) << t_0;
         if (t_0 == 24) {
-          t_1 = self->private_impl.scratch;
+          t_1 = self->private_impl.c_decode_uncompressed[0].scratch;
           break;
         }
         t_0 += 8;
-        self->private_impl.scratch |= ((uint64_t)(t_0)) << 56;
+        self->private_impl.c_decode_uncompressed[0].scratch |= ((uint64_t)(t_0))
+                                                               << 56;
       }
     }
     v_n = t_1;
@@ -800,9 +804,10 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(3);
     {
-      self->private_impl.scratch = ((v_n) & ((1 << (16)) - 1));
+      self->private_impl.c_decode_uncompressed[0].scratch =
+          ((v_n) & ((1 << (16)) - 1));
       PUFFS_COROUTINE_SUSPENSION_POINT(4);
-      size_t t_2 = self->private_impl.scratch;
+      size_t t_2 = self->private_impl.c_decode_uncompressed[0].scratch;
       if (t_2 > b_wend_dst - b_wptr_dst) {
         t_2 = b_wend_dst - b_wptr_dst;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
@@ -815,7 +820,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       b_wptr_dst += t_2;
       b_rptr_src += t_2;
       if (status) {
-        self->private_impl.scratch -= t_2;
+        self->private_impl.c_decode_uncompressed[0].scratch -= t_2;
         goto suspend;
       }
     }
@@ -1102,17 +1107,19 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
       v_n_bits -= v_table_entry_n_bits;
       PUFFS_COROUTINE_SUSPENSION_POINT(8);
       {
-        self->private_impl.scratch =
+        self->private_impl.c_decode_huffman[0].scratch =
             ((uint64_t)(v_distance) << 32) | (uint64_t)(v_length);
         PUFFS_COROUTINE_SUSPENSION_POINT(9);
-        size_t t_6 = (size_t)(self->private_impl.scratch >> 32);
+        size_t t_6 =
+            (size_t)(self->private_impl.c_decode_huffman[0].scratch >> 32);
         if (PUFFS_UNLIKELY((t_6 == 0) ||
                            (t_6 > (b_wptr_dst - a_dst.buf->ptr)))) {
           status = PUFFS_FLATE_ERROR_BAD_ARGUMENT;
           goto exit;
         }
         uint8_t* t_7 = b_wptr_dst - t_6;
-        uint32_t t_8 = (uint32_t)(self->private_impl.scratch);
+        uint32_t t_8 =
+            (uint32_t)(self->private_impl.c_decode_huffman[0].scratch);
         if (PUFFS_LIKELY((size_t)(t_8) <= (b_wend_dst - b_wptr_dst))) {
           for (; t_8 >= 8; t_8 -= 8) {
             *b_wptr_dst++ = *t_7++;
@@ -1129,7 +1136,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
           }
         } else {
           t_8 = (uint32_t)(b_wend_dst - b_wptr_dst);
-          self->private_impl.scratch -= (uint64_t)(t_8);
+          self->private_impl.c_decode_huffman[0].scratch -= (uint64_t)(t_8);
           for (; t_8; t_8--) {
             *b_wptr_dst++ = *t_7++;
           }
@@ -1832,22 +1839,23 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       t_1 = PUFFS_U16BE(b_rptr_src);
       b_rptr_src += 2;
     } else {
-      self->private_impl.scratch = 0;
+      self->private_impl.c_decode[0].scratch = 0;
       PUFFS_COROUTINE_SUSPENSION_POINT(2);
       while (true) {
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
-        uint32_t t_0 = self->private_impl.scratch & 0xFF;
-        self->private_impl.scratch >>= 8;
-        self->private_impl.scratch <<= 8;
-        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << (64 - t_0);
+        uint32_t t_0 = self->private_impl.c_decode[0].scratch & 0xFF;
+        self->private_impl.c_decode[0].scratch >>= 8;
+        self->private_impl.c_decode[0].scratch <<= 8;
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                  << (64 - t_0);
         if (t_0 == 8) {
-          t_1 = self->private_impl.scratch >> (64 - 16);
+          t_1 = self->private_impl.c_decode[0].scratch >> (64 - 16);
           break;
         }
         t_0 += 8;
-        self->private_impl.scratch |= ((uint64_t)(t_0));
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_0));
       }
     }
     v_x = t_1;
@@ -1900,22 +1908,23 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       t_3 = PUFFS_U32BE(b_rptr_src);
       b_rptr_src += 4;
     } else {
-      self->private_impl.scratch = 0;
+      self->private_impl.c_decode[0].scratch = 0;
       PUFFS_COROUTINE_SUSPENSION_POINT(5);
       while (true) {
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
-        uint32_t t_2 = self->private_impl.scratch & 0xFF;
-        self->private_impl.scratch >>= 8;
-        self->private_impl.scratch <<= 8;
-        self->private_impl.scratch |= ((uint64_t)(*b_rptr_src++)) << (64 - t_2);
+        uint32_t t_2 = self->private_impl.c_decode[0].scratch & 0xFF;
+        self->private_impl.c_decode[0].scratch >>= 8;
+        self->private_impl.c_decode[0].scratch <<= 8;
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                  << (64 - t_2);
         if (t_2 == 24) {
-          t_3 = self->private_impl.scratch >> (64 - 32);
+          t_3 = self->private_impl.c_decode[0].scratch >> (64 - 32);
           break;
         }
         t_2 += 8;
-        self->private_impl.scratch |= ((uint64_t)(t_2));
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_2));
       }
     }
     v_checksum = t_3;

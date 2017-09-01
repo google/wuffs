@@ -130,7 +130,6 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_literal_width;
     uint8_t f_stack[4096];
@@ -164,7 +163,6 @@ typedef struct {
   struct {
     puffs_gif_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_width;
     uint32_t f_height;
@@ -191,6 +189,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint8_t v_label;
       uint8_t v_block_size;
+      uint64_t scratch;
     } c_decode_extension[1];
     struct {
       uint32_t coro_susp_point;

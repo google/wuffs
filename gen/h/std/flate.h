@@ -152,7 +152,6 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     uint32_t f_bits;
     uint32_t f_n_bits;
@@ -171,6 +170,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_n;
+      uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {
       uint32_t coro_susp_point;
@@ -184,6 +184,7 @@ typedef struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_distance;
+      uint64_t scratch;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
@@ -218,7 +219,6 @@ typedef struct {
   struct {
     puffs_flate_status status;
     uint32_t magic;
-    uint64_t scratch;
 
     puffs_flate_decoder f_dec;
 
@@ -226,6 +226,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
       uint32_t v_checksum;
+      uint64_t scratch;
     } c_decode[1];
   } private_impl;
 } puffs_flate_zlib_decoder;

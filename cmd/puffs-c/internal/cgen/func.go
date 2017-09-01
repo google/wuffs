@@ -27,6 +27,7 @@ type funk struct {
 	tempR         uint32
 	public        bool
 	suspendible   bool
+	usesScratch   bool
 	limitVarName  string
 	shortReads    []string
 }
@@ -899,9 +900,12 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return g.writeReadUXX(b, n, "src", 32, "LE")
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
-		// TODO: is the scratch variable safe to use if callers can trap
-		// LIMITED_READ and then go down different code paths?
-		b.writes("self->private_impl.scratch = ")
+		g.currFunk.usesScratch = true
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+
+		b.printf("%s = ", scratchName)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(b, x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
@@ -913,8 +917,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 
-		b.printf("if (self->private_impl.scratch > %srend_src - %srptr_src) {\n", bPrefix, bPrefix)
-		b.printf("self->private_impl.scratch -= %srend_src - %srptr_src;\n", bPrefix, bPrefix)
+		b.printf("if (%s > %srend_src - %srptr_src) {\n", scratchName, bPrefix, bPrefix)
+		b.printf("%s -= %srend_src - %srptr_src;\n", scratchName, bPrefix, bPrefix)
 		b.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
 
 		// TODO: is ptr_to_len the right check?
@@ -925,7 +929,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.printf("} else { status = %sSUSPENSION_SHORT_READ; } goto suspend;\n", g.PKGPREFIX)
 
 		b.writes("}\n")
-		b.printf("%srptr_src += self->private_impl.scratch;\n", bPrefix)
+		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
@@ -964,7 +968,12 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 		b.writes("{\n")
 
-		b.writes("self->private_impl.scratch = ")
+		g.currFunk.usesScratch = true
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+
+		b.printf("%s = ", scratchName)
 		x := n.Args()[1].Arg().Value()
 		if err := g.writeExpr(b, x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
@@ -974,7 +983,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		if err := g.writeCoroSuspPoint(b); err != nil {
 			return err
 		}
-		b.printf("size_t %s%d = self->private_impl.scratch;\n", tPrefix, temp)
+		b.printf("size_t %s%d = %s;\n", tPrefix, temp, scratchName)
 
 		const wName = "dst"
 		b.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
@@ -992,7 +1001,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
 		b.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
 		b.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
-		b.printf("if (status) { self->private_impl.scratch -= %s%d; goto suspend; }\n", tPrefix, temp)
+		b.printf("if (status) { %s -= %s%d; goto suspend; }\n", scratchName, tPrefix, temp)
 
 		b.writes("}\n")
 
@@ -1008,7 +1017,12 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 		b.writes("{\n")
 
-		b.writes("self->private_impl.scratch = ((uint64_t)(")
+		g.currFunk.usesScratch = true
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+
+		b.printf("%s = ((uint64_t)(", scratchName)
 		x0 := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(b, x0, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
@@ -1024,13 +1038,13 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 
 		const wName = "dst"
-		b.printf("size_t %s%d = (size_t)(self->private_impl.scratch >> 32);", tPrefix, temp0)
+		b.printf("size_t %s%d = (size_t)(%s >> 32);", tPrefix, temp0, scratchName)
 		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
 		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %s%s.buf->ptr)))) { "+
 			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
 			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, aPrefix, wName, g.PKGPREFIX)
 		b.printf("uint8_t* %s%d = %swptr_%s - %s%d;\n", tPrefix, temp1, bPrefix, wName, tPrefix, temp0)
-		b.printf("uint32_t %s%d = (uint32_t)(self->private_impl.scratch);", tPrefix, temp2)
+		b.printf("uint32_t %s%d = (uint32_t)(%s);", tPrefix, temp2, scratchName)
 
 		b.printf("if (PUFFS_LIKELY((size_t)(%s%d) <= (%swend_%s - %swptr_%s))) {",
 			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
@@ -1047,7 +1061,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 		b.printf("%s%d = (uint32_t)(%swend_%s - %swptr_%s);\n",
 			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
-		b.printf("self->private_impl.scratch -= (uint64_t)(%s%d);\n", tPrefix, temp2)
+		b.printf("%s -= (uint64_t)(%s%d);\n", scratchName, tPrefix, temp2)
 		b.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
 			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
 		// TODO: SHORT_WRITE vs LIMITED_WRITE?
@@ -1198,11 +1212,16 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	}
 	b.writes(";")
 
+	g.currFunk.usesScratch = true
+	// TODO: don't hard-code [0], and allow recursive coroutines.
+	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+		cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+
 	b.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
 	b.printf("%s%d = PUFFS_U%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
 	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	b.printf("} else {")
-	b.printf("self->private_impl.scratch = 0;\n")
+	b.printf("%s = 0;\n", scratchName)
 	if err := g.writeCoroSuspPoint(b); err != nil {
 		return err
 	}
@@ -1212,28 +1231,28 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		bPrefix, name, bPrefix, name, name)
 	g.currFunk.shortReads = append(g.currFunk.shortReads, name)
 
-	b.printf("uint32_t %s%d = self->private_impl.scratch", tPrefix, temp0)
+	b.printf("uint32_t %s%d = %s", tPrefix, temp0, scratchName)
 	switch endianness {
 	case "BE":
 		b.printf("& 0xFF;")
-		b.printf("self->private_impl.scratch >>= 8;")
-		b.printf("self->private_impl.scratch <<= 8;")
-		b.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << (64 - %s%d);",
-			bPrefix, name, tPrefix, temp0)
+		b.printf("%s >>= 8;", scratchName)
+		b.printf("%s <<= 8;", scratchName)
+		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << (64 - %s%d);",
+			scratchName, bPrefix, name, tPrefix, temp0)
 	case "LE":
 		b.printf(">> 56;")
-		b.printf("self->private_impl.scratch <<= 8;")
-		b.printf("self->private_impl.scratch >>= 8;")
-		b.printf("self->private_impl.scratch |= ((uint64_t)(*%srptr_%s++)) << %s%d;",
-			bPrefix, name, tPrefix, temp0)
+		b.printf("%s <<= 8;", scratchName)
+		b.printf("%s >>= 8;", scratchName)
+		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << %s%d;",
+			scratchName, bPrefix, name, tPrefix, temp0)
 	}
 
 	b.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
 	switch endianness {
 	case "BE":
-		b.printf("%s%d = self->private_impl.scratch >> (64 - %d);", tPrefix, temp1, size)
+		b.printf("%s%d = %s >> (64 - %d);", tPrefix, temp1, scratchName, size)
 	case "LE":
-		b.printf("%s%d = self->private_impl.scratch;", tPrefix, temp1)
+		b.printf("%s%d = %s;", tPrefix, temp1, scratchName)
 	}
 	b.printf("break;")
 	b.printf("}")
@@ -1241,9 +1260,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	b.printf("%s%d += 8;", tPrefix, temp0)
 	switch endianness {
 	case "BE":
-		b.printf("self->private_impl.scratch |= ((uint64_t)(%s%d));", tPrefix, temp0)
+		b.printf("%s |= ((uint64_t)(%s%d));", scratchName, tPrefix, temp0)
 	case "LE":
-		b.printf("self->private_impl.scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
+		b.printf("%s |= ((uint64_t)(%s%d)) << 56;", scratchName, tPrefix, temp0)
 	}
 
 	b.writes("}}\n")

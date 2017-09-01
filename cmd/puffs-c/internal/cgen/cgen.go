@@ -535,7 +535,6 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	if n.Suspendible() {
 		b.printf("%sstatus status;\n", g.pkgPrefix)
 		b.writes("uint32_t magic;\n")
-		b.writes("uint64_t scratch;\n")
 		b.writes("\n")
 	}
 
@@ -558,15 +557,21 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				if o.Receiver() != n.Name() || !o.Suspendible() {
 					continue
 				}
-				if k := g.funks[o.QID()]; k.coroSuspPoint == 0 {
+				k := g.funks[o.QID()]
+				if k.coroSuspPoint == 0 && !k.usesScratch {
 					continue
 				}
 				// TODO: allow max depth > 1 for recursive coroutines.
 				const maxDepth = 1
 				b.writes("struct {\n")
-				b.writes("uint32_t coro_susp_point;\n")
-				if err := g.writeVars(b, o.Body()); err != nil {
-					return err
+				if k.coroSuspPoint != 0 {
+					b.writes("uint32_t coro_susp_point;\n")
+					if err := g.writeVars(b, o.Body()); err != nil {
+						return err
+					}
+				}
+				if k.usesScratch {
+					b.writes("uint64_t scratch;\n")
 				}
 				b.printf("} %s%s[%d];\n", cPrefix, o.Name().String(g.tm), maxDepth)
 			}
