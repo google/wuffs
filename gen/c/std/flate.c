@@ -536,6 +536,8 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     puffs_flate_status t_0 =
         puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
     v_z = t_0;
+    if (v_z > 0) {
+    }
     status = v_z;
     goto suspend;
     self->private_impl.c_decode[0].coro_susp_point = 0;

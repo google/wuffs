@@ -673,7 +673,7 @@ func (g *gen) writeCtorImpl(b *buffer, n *a.Struct) error {
 	return nil
 }
 
-func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	// TODO.
 	return nil
 }

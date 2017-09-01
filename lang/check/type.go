@@ -391,6 +391,22 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(foo.MType().Unrefined())
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
+		if isIsErrorOKSuspension(q.tm, n, t.KeyIsSuspension) {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(typeExprBool)
+			return nil
+		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isSetLiteralWidth(q.tm, n) {
 			foo := n.LHS().Expr().LHS().Expr()
@@ -547,6 +563,14 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(n:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
+}
+
+func isIsErrorOKSuspension(tm *t.Map, n *a.Expr, methodName t.Key) bool {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 0 {
 		return false
 	}
 	n = n.LHS().Expr()

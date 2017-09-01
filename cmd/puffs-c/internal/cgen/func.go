@@ -1320,11 +1320,11 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 
 	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
-		if err := g.writeExprOther(b, n, rp, depth); err != nil {
+		if err := g.writeExprOther(b, n, rp, pp, depth); err != nil {
 			return err
 		}
 	case t.FlagsUnaryOp:
-		if err := g.writeExprUnaryOp(b, n, rp, depth); err != nil {
+		if err := g.writeExprUnaryOp(b, n, rp, pp, depth); err != nil {
 			return err
 		}
 	case t.FlagsBinaryOp:
@@ -1342,7 +1342,7 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 	return nil
 }
 
-func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	switch n.ID0().Key() {
 	case 0:
 		if id1 := n.ID1(); id1.Key() == t.KeyThis {
@@ -1392,6 +1392,21 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 				return err
 			}
 			b.writes(")))")
+			return nil
+		}
+		if isIsErrorOKSuspension(g.tm, n, t.KeyIsSuspension) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			x := n.LHS().Expr().LHS().Expr()
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			// TODO: write < or == instead of > for KeyIsError or KeyIsOK.
+			b.writes(" > 0")
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
 			return nil
 		}
 		// TODO.
@@ -1498,6 +1513,14 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	// TODO: check that n.Args() is "(n:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
+}
+
+func isIsErrorOKSuspension(tm *t.Map, n *a.Expr, methodName t.Key) bool {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 0 {
 		return false
 	}
 	n = n.LHS().Expr()

@@ -266,6 +266,9 @@ const (
 	KeySkip32        = Key(IDSkip32 >> KeyShift)
 	KeySkip64        = Key(IDSkip64 >> KeyShift)
 	KeyCopyHistory32 = Key(IDCopyHistory32 >> KeyShift)
+	KeyIsError       = Key(IDIsError >> KeyShift)
+	KeyIsOK          = Key(IDIsOK >> KeyShift)
+	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -436,6 +439,9 @@ const (
 	IDSkip32        = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSkip64        = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDCopyHistory32 = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsError       = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsOK          = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsSuspension  = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -628,6 +634,9 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeySkip32:        {"skip32", IDSkip32},
 	KeySkip64:        {"skip64", IDSkip64},
 	KeyCopyHistory32: {"copy_history32", IDCopyHistory32},
+	KeyIsError:       {"is_error", IDIsError},
+	KeyIsOK:          {"is_ok", IDIsOK},
+	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
 }
 
 var builtInsByName = map[string]ID{}
