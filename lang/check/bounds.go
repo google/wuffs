@@ -353,7 +353,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	rMin, rMax := (*big.Int)(nil), (*big.Int)(nil)
 	if op == t.IDEq {
 		if cv := rhs.ConstValue(); cv != nil {
-			if cv.Cmp(lMin) < 0 || cv.Cmp(lMax) > 0 {
+			if (lMin != nil && cv.Cmp(lMin) < 0) || (lMax != nil && cv.Cmp(lMax) > 0) {
 				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, lMin, lMax)
 			}
 			return nil
@@ -951,7 +951,7 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	switch n.Decorator().Key() {
-	case t.KeyPtr, t.KeyOpenBracket:
+	case t.KeyPtr, t.KeyOpenBracket, t.KeyColon:
 		return nil, nil, nil
 	}
 	switch n.Name().Key() {

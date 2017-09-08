@@ -925,11 +925,6 @@ swtch:
 		}
 		return fmt.Errorf("check: %q is not a type", n.Name().String(q.tm))
 
-	case t.KeyPtr:
-		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
-			return err
-		}
-
 	case t.KeyOpenBracket:
 		aLen := n.ArrayLength()
 		if err := q.tcheckExpr(aLen, 0); err != nil {
@@ -938,6 +933,9 @@ swtch:
 		if aLen.ConstValue() == nil {
 			return fmt.Errorf("check: %q is not constant", aLen.String(q.tm))
 		}
+		fallthrough
+
+	case t.KeyPtr, t.KeyColon:
 		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
 		}

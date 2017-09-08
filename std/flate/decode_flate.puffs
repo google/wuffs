@@ -93,6 +93,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	// TODO: copy from dst to history, if we aren't finished.
 	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 	if z.is_suspension() {
+		// TODO: add some way to specify the bounds of the slice.
+		var written[] u8  // = in.dst.slice()
 	}
 	return z
 }

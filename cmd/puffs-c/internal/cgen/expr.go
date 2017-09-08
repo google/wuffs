@@ -250,6 +250,20 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, varName string) error {
 	// It may help to refer to http://unixwiz.net/techtips/reading-cdecl.html
 
+	// TODO: fix this, allow slices of all types, not just of u8's. Also allow
+	// arrays of slices, slices of pointers, etc.
+	if n.Decorator().Key() == t.KeyColon {
+		o := n.Inner()
+		if o.Decorator() == 0 && o.Name().Key() == t.KeyU8 && !o.IsRefined() {
+			b.writes("puffs_base_slice_u8")
+			b.writeb(' ')
+			b.writes(varNamePrefix)
+			b.writes(varName)
+			return nil
+		}
+		return fmt.Errorf("cannot convert Puffs type %q to C", n.String(g.tm))
+	}
+
 	// maxNumPointers is an arbitrary implementation restriction.
 	const maxNumPointers = 16
 

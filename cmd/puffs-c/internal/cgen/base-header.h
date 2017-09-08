@@ -34,8 +34,16 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length) plus
-// additional indexes into that buffer.
+// puffs_base_slice_u8 is a 1-dimensional buffer (a pointer and length).
+//
+// A value with all fields NULL or zero is a valid, empty slice.
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} puffs_base_slice_u8;
+
+// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length), plus
+// additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
 typedef struct {

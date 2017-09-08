@@ -37,8 +37,16 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length) plus
-// additional indexes into that buffer.
+// puffs_base_slice_u8 is a 1-dimensional buffer (a pointer and length).
+//
+// A value with all fields NULL or zero is a valid, empty slice.
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} puffs_base_slice_u8;
+
+// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length), plus
+// additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
 typedef struct {
@@ -162,6 +170,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
+      puffs_base_slice_u8 v_written;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
@@ -524,10 +533,12 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   puffs_flate_status v_z;
+  puffs_base_slice_u8 v_written;
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_z = self->private_impl.c_decode[0].v_z;
+    v_written = ((puffs_base_slice_u8){});
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -537,6 +548,10 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
         puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
     v_z = t_0;
     if (v_z > 0) {
+      v_written = ((puffs_base_slice_u8){});
+      /* Avoid the "unused variable" warning. */
+      if (v_written.ptr) {
+      }
     }
     status = v_z;
     goto suspend;
@@ -548,6 +563,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_z = v_z;
+  self->private_impl.c_decode[0].v_written = ((puffs_base_slice_u8){});
 
 exit:
   self->private_impl.status = status;

@@ -169,7 +169,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				b.writes(";\n")
 			}
 		}
-		if n.XType().Decorator().Key() == t.KeyOpenBracket {
+		switch n.XType().Decorator().Key() {
+		case t.KeyOpenBracket:
 			if n.Value() != nil {
 				// TODO: something like:
 				// cv := n.XType().ArrayLength().ConstValue()
@@ -181,7 +182,19 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			// TODO: arrays of arrays.
 			name := n.Name().String(g.tm)
 			b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
-		} else {
+
+		case t.KeyColon:
+			if n.Value() != nil {
+				return fmt.Errorf("TODO: slice initializers for non-zero default values")
+			}
+			// TODO: don't assume that the slice is a slice of u8.
+			b.printf("%s%s = ((puffs_base_slice_u8){});", vPrefix, n.Name().String(g.tm))
+
+			// TODO: remove this.
+			b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
+			b.printf("if (%s%s.ptr) {}\n", vPrefix, n.Name().String(g.tm))
+
+		default:
 			b.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 			if v := n.Value(); v != nil {
 				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {

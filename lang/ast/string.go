@@ -188,6 +188,9 @@ func (n *TypeExpr) appendString(buf []byte, tm *t.Map, depth uint32) []byte {
 		buf = n.ArrayLength().appendString(buf, tm, false, 0)
 		buf = append(buf, "] "...)
 		return n.Inner().appendString(buf, tm, depth)
+	case t.KeyColon:
+		buf = append(buf, "[] "...)
+		return n.Inner().appendString(buf, tm, depth)
 	default:
 		buf = append(buf, tm.ByID(n.Decorator())...)
 		buf = append(buf, '.')

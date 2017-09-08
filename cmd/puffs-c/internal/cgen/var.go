@@ -242,6 +242,11 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bo
 			b.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
 			return nil
 		}
+	case t.KeyColon:
+		// TODO: should we be able to resume and suspend slices?
+		// TODO: don't assume that the slice is a slice of u8.
+		b.printf("%s = ((puffs_base_slice_u8){});\n", lhs)
+		return nil
 	}
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
 		n.Name().String(g.tm), n.XType().String(g.tm))

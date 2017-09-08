@@ -456,9 +456,9 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 // MaxTypeExprDepth is an advisory limit for a TypeExpr's recursion depth.
 const MaxTypeExprDepth = 63
 
-// TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr T"
-// or "[8] T":
-//  - ID0:   <0|package name|IDPtr|IDOpenBracket>
+// TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
+// T", "[8] T" or "[] T":
+//  - ID0:   <0|package name|IDPtr|IDOpenBracket|IDColon>
 //  - ID1:   <0|type name>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
@@ -467,6 +467,8 @@ const MaxTypeExprDepth = 63
 // An IDPtr ID0 means "ptr RHS". RHS is the inner type.
 //
 // An IDOpenBracket ID0 means "[LHS] RHS". RHS is the inner type.
+//
+// An IDColon ID0 means "[] RHS". RHS is the inner type.
 //
 // Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
 // "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be

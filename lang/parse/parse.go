@@ -346,20 +346,25 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 
 	if p.peek1().Key() == t.KeyOpenBracket {
 		p.src = p.src[1:]
-		lhs, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		if x := p.peek1().Key(); x != t.KeyCloseBracket {
-			got := p.tm.ByKey(x)
-			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
+		decorator, lhs := t.IDColon, (*a.Expr)(nil)
+		if p.peek1().Key() != t.KeyCloseBracket {
+			decorator = t.IDOpenBracket
+			var err error
+			lhs, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if x := p.peek1().Key(); x != t.KeyCloseBracket {
+				got := p.tm.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
+			}
 		}
 		p.src = p.src[1:]
 		rhs, err := p.parseTypeExpr()
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(t.IDOpenBracket, 0, lhs, nil, rhs), nil
+		return a.NewTypeExpr(decorator, 0, lhs, nil, rhs), nil
 	}
 
 	pkg, name, err := p.parseQualifiedIdent()
