@@ -149,8 +149,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr) error {
 		b.printf("}")
 
 		// Not all writer1 methods use the wend variable.
-		b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
-		b.printf("(void)(%swend_%s);", bPrefix, nameStr)
+		b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
 
 		b.printf("}\n")
 	}

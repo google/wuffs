@@ -290,6 +290,8 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+#define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
+
 // TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
 // if a benchmark justifies the additional code path.
 #define PUFFS_U16BE(p) (((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0))
@@ -567,8 +569,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
           *lim->ptr_to_len -= n;
         }
       }
-      /* Avoid the "unused variable" warning. */
-      (void)(b_wend_dst);
+      PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
     }
     puffs_flate_status t_0 =
         puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
@@ -587,10 +588,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     if (v_z > 0) {
       v_written = ((puffs_base_slice_u8){.ptr = a_dst.buf->ptr,
                                          .len = b_wptr_dst - a_dst.buf->ptr});
-
-      /* Avoid the "unused variable" warning. */
-      if (v_written.ptr) {
-      }
+      PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(v_written);
     }
     status = v_z;
     goto suspend;
@@ -614,8 +612,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
-    /* Avoid the "unused variable" warning. */
-    (void)(b_wend_dst);
+    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
 
   self->private_impl.status = status;
@@ -919,8 +916,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
-    /* Avoid the "unused variable" warning. */
-    (void)(b_wend_dst);
+    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1255,8 +1251,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
-    /* Avoid the "unused variable" warning. */
-    (void)(b_wend_dst);
+    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);

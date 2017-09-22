@@ -6,6 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
+#define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
+
 // TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
 // if a benchmark justifies the additional code path.
 #define PUFFS_U16BE(p) (((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0))

@@ -199,8 +199,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 			// TODO: remove this.
 			if n.XType().Decorator().Key() == t.KeyColon {
-				b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
-				b.printf("if (%s%s.ptr) {}\n", vPrefix, n.Name().String(g.tm))
+				b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", vPrefix, n.Name().String(g.tm))
 			}
 		}
 		return nil
