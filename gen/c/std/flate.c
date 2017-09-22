@@ -292,17 +292,6 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
 
 #define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
-// TODO: look for (ifdef) the x86 architecture and cast the pointer? Only do so
-// if a benchmark justifies the additional code path.
-#define PUFFS_U16BE(p) (((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0))
-#define PUFFS_U16LE(p) (((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8))
-#define PUFFS_U32BE(p)                                   \
-  (((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) | \
-   ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0))
-#define PUFFS_U32LE(p)                                 \
-  (((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) | \
-   ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24))
-
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
@@ -341,6 +330,28 @@ extern int printf(const char* __restrict __format, ...);
 // They are explicitly marked inline, even if modern compilers don't use the
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
+
+// TODO: for puffs_u16be and similar functions, look for (ifdef) the x86
+// architecture and cast the pointer? Only do so if a benchmark justifies the
+// additional code path. Modern compilers might already generate good code.
+
+static inline uint16_t puffs_u16be(uint8_t* p) {
+  return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
+}
+
+static inline uint16_t puffs_u16le(uint8_t* p) {
+  return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
+}
+
+static inline uint32_t puffs_u32be(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
+         ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
+}
+
+static inline uint32_t puffs_u32le(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
+         ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
+}
 
 // puffs_base_slice_u8_prefix returns up to the first n bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
@@ -887,7 +898,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
     uint32_t t_1;
     if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_1 = PUFFS_U32LE(b_rptr_src);
+      t_1 = puffs_u32le(b_rptr_src);
       b_rptr_src += 4;
     } else {
       self->private_impl.c_decode_uncompressed[0].scratch = 0;
@@ -1952,7 +1963,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
     uint16_t t_1;
     if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 2)) {
-      t_1 = PUFFS_U16BE(b_rptr_src);
+      t_1 = puffs_u16be(b_rptr_src);
       b_rptr_src += 2;
     } else {
       self->private_impl.c_decode[0].scratch = 0;
@@ -2021,7 +2032,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
     PUFFS_COROUTINE_SUSPENSION_POINT(4);
     uint32_t t_3;
     if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_3 = PUFFS_U32BE(b_rptr_src);
+      t_3 = puffs_u32be(b_rptr_src);
       b_rptr_src += 4;
     } else {
       self->private_impl.c_decode[0].scratch = 0;

@@ -305,16 +305,16 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.printf(" = *%srptr_src++;\n", bPrefix)
 
 	} else if isInSrc(g.tm, n, t.KeyReadU16BE, 0) {
-		return g.writeReadUXX(b, n, "src", 16, "BE")
+		return g.writeReadUXX(b, n, "src", 16, "be")
 
 	} else if isInSrc(g.tm, n, t.KeyReadU16LE, 0) {
-		return g.writeReadUXX(b, n, "src", 16, "LE")
+		return g.writeReadUXX(b, n, "src", 16, "le")
 
 	} else if isInSrc(g.tm, n, t.KeyReadU32BE, 0) {
-		return g.writeReadUXX(b, n, "src", 32, "BE")
+		return g.writeReadUXX(b, n, "src", 32, "be")
 
 	} else if isInSrc(g.tm, n, t.KeyReadU32LE, 0) {
-		return g.writeReadUXX(b, n, "src", 32, "LE")
+		return g.writeReadUXX(b, n, "src", 32, "le")
 
 	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
 		g.currFunk.usesScratch = true
@@ -618,7 +618,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	if size != 16 && size != 32 {
 		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
 	}
-	if endianness != "BE" && endianness != "LE" {
+	if endianness != "be" && endianness != "le" {
 		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
 	}
 
@@ -642,7 +642,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		cPrefix, g.currFunk.astFunc.Name().String(g.tm))
 
 	b.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
-	b.printf("%s%d = PUFFS_U%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
+	b.printf("%s%d = puffs_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
 	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
@@ -657,13 +657,13 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 
 	b.printf("uint32_t %s%d = %s", tPrefix, temp0, scratchName)
 	switch endianness {
-	case "BE":
+	case "be":
 		b.printf("& 0xFF;")
 		b.printf("%s >>= 8;", scratchName)
 		b.printf("%s <<= 8;", scratchName)
 		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << (64 - %s%d);",
 			scratchName, bPrefix, name, tPrefix, temp0)
-	case "LE":
+	case "le":
 		b.printf(">> 56;")
 		b.printf("%s <<= 8;", scratchName)
 		b.printf("%s >>= 8;", scratchName)
@@ -673,9 +673,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 
 	b.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
 	switch endianness {
-	case "BE":
+	case "be":
 		b.printf("%s%d = %s >> (64 - %d);", tPrefix, temp1, scratchName, size)
-	case "LE":
+	case "le":
 		b.printf("%s%d = %s;", tPrefix, temp1, scratchName)
 	}
 	b.printf("break;")
@@ -683,9 +683,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 
 	b.printf("%s%d += 8;", tPrefix, temp0)
 	switch endianness {
-	case "BE":
+	case "be":
 		b.printf("%s |= ((uint64_t)(%s%d));", scratchName, tPrefix, temp0)
-	case "LE":
+	case "le":
 		b.printf("%s |= ((uint64_t)(%s%d)) << 56;", scratchName, tPrefix, temp0)
 	}
 
