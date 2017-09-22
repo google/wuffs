@@ -658,15 +658,16 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isThisMethod(q.tm, n, "init_huff", 4) {
 
 			for _, o := range n.Args() {
+				a := o.Arg().Value()
 				// TODO: check that the arg range at the caller and the
 				// signature are compatible.
-				oMin, oMax, err := q.bcheckExpr(o.Arg().Value(), depth)
+				aMin, aMax, err := q.bcheckExpr(a, depth)
 				if err != nil {
 					return nil, nil, err
 				}
-				// TODO: check that oMin and oMax is within the function's
+				// TODO: check that aMin and aMax is within the function's
 				// declared arg bounds.
-				_, _ = oMin, oMax
+				_, _ = aMin, aMax
 			}
 			break
 		}
@@ -706,12 +707,29 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
-			for _, aNode := range n.Args() {
-				a := aNode.Arg().Value()
-				_, _, err := q.bcheckExpr(a, depth)
+			for _, o := range n.Args() {
+				a := o.Arg().Value()
+				aMin, aMax, err := q.bcheckExpr(a, depth)
 				if err != nil {
 					return nil, nil, err
 				}
+				// TODO: check that aMin and aMax is within the function's
+				// declared arg bounds.
+				_, _ = aMin, aMax
+			}
+			return nil, nil, nil
+		}
+		// TODO: delete this hack that only matches "foo.copy_from(etc)".
+		if isThatMethod(q.tm, n, t.KeyCopyFrom, 1) {
+			for _, o := range n.Args() {
+				a := o.Arg().Value()
+				aMin, aMax, err := q.bcheckExpr(a, depth)
+				if err != nil {
+					return nil, nil, err
+				}
+				// TODO: check that aMin and aMax is within the function's
+				// declared arg bounds.
+				_, _ = aMin, aMax
 			}
 			return nil, nil, nil
 		}

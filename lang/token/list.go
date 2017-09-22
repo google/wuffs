@@ -261,14 +261,15 @@ const (
 	KeyWriteU64BE = Key(IDWriteU64BE >> KeyShift)
 	KeyWriteU64LE = Key(IDWriteU64LE >> KeyShift)
 
+	KeyIsError       = Key(IDIsError >> KeyShift)
+	KeyIsOK          = Key(IDIsOK >> KeyShift)
+	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
+	KeyCopyFrom      = Key(IDCopyFrom >> KeyShift)
 	KeyCopyFrom32    = Key(IDCopyFrom32 >> KeyShift)
 	KeyCopyFrom64    = Key(IDCopyFrom64 >> KeyShift)
 	KeySkip32        = Key(IDSkip32 >> KeyShift)
 	KeySkip64        = Key(IDSkip64 >> KeyShift)
 	KeyCopyHistory32 = Key(IDCopyHistory32 >> KeyShift)
-	KeyIsError       = Key(IDIsError >> KeyShift)
-	KeyIsOK          = Key(IDIsOK >> KeyShift)
-	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
 	KeySlice         = Key(IDSlice >> KeyShift)
 	KeyLength        = Key(IDLength >> KeyShift)
 	KeyPrefix        = Key(IDPrefix >> KeyShift)
@@ -438,18 +439,19 @@ const (
 	IDWriteU64BE = ID(0xBE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU64LE = ID(0xBF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
-	IDCopyFrom32    = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFrom64    = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip32        = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip64        = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyHistory32 = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsError       = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsOK          = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsSuspension  = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSlice         = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLength        = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix        = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix        = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsError       = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsOK          = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsSuspension  = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFrom      = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFrom32    = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFrom64    = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip32        = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip64        = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyHistory32 = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSlice         = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLength        = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix        = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix        = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -637,14 +639,15 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyWriteU64BE: {"write_u64be", IDWriteU64BE},
 	KeyWriteU64LE: {"write_u64le", IDWriteU64LE},
 
+	KeyIsError:       {"is_error", IDIsError},
+	KeyIsOK:          {"is_ok", IDIsOK},
+	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
+	KeyCopyFrom:      {"copy_from", IDCopyFrom},
 	KeyCopyFrom32:    {"copy_from32", IDCopyFrom32},
 	KeyCopyFrom64:    {"copy_from64", IDCopyFrom64},
 	KeySkip32:        {"skip32", IDSkip32},
 	KeySkip64:        {"skip64", IDSkip64},
 	KeyCopyHistory32: {"copy_history32", IDCopyHistory32},
-	KeyIsError:       {"is_error", IDIsError},
-	KeyIsOK:          {"is_ok", IDIsOK},
-	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
 	KeySlice:         {"slice", IDSlice},
 	KeyLength:        {"length", IDLength},
 	KeyPrefix:        {"prefix", IDPrefix},

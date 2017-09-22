@@ -165,6 +165,8 @@ typedef struct {
     uint32_t f_n_bits;
     uint32_t f_huffs[2][1234];
     uint32_t f_n_huffs_bits[2];
+    uint8_t f_history[32768];
+    uint32_t f_history_index;
     uint8_t f_code_lengths[320];
 
     struct {
@@ -372,6 +374,13 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
     s.len = n;
   }
   return s;
+}
+
+// puffs_base_slice_u8_copy_from calls memmove(dst.ptr, src.ptr, n) where n is
+// the minimum of dst.len and src.len.
+static inline void puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
+                                                 puffs_base_slice_u8 src) {
+  memmove(dst.ptr, src.ptr, dst.len < src.len ? dst.len : src.len);
 }
 
 #endif  // PUFFS_BASE_IMPL_H
@@ -640,6 +649,12 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                                          .len = b_wptr_dst - a_dst.buf->ptr});
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
+        puffs_base_slice_u8_copy_from(
+            ((puffs_base_slice_u8){
+                .ptr = self->private_impl.f_history,
+                .len = sizeof(self->private_impl.f_history)}),
+            v_written);
+        self->private_impl.f_history_index = 32768;
       }
     }
     status = v_z;

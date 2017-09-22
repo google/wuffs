@@ -83,6 +83,20 @@ pub struct decoder?(
 	huffs[2][1234] u32,
 	n_huffs_bits[2] u32[..9],
 
+	// history holds up to the last 32KiB of decoded output, if the decoding
+	// was incomplete (e.g. due to a short read or write). RFC 1951 (DEFLATE)
+	// gives the maximum distance in a length-distance back-reference as 32768,
+	// or 0x8000.
+	//
+	// It is a ringbuffer, so that the most distant byte in the decoding isn't
+	// necessarily history[0]. The ringbuffer is full (i.e. it holds 32KiB of
+	// history) if and only if history_index >= 0x8000.
+	//
+	// history[history_index & 0x7FFF] is where the next byte of decoded output
+	// will be written.
+	history[32 * 1024] u8,
+	history_index u32,
+
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
 	// code_lengths[in.n_codes0 + i] holds the number of bits in the i'th code.
@@ -90,7 +104,6 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
-	// TODO: copy from dst to history, if we aren't finished.
 	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 	if z.is_suspension() {
 		// TODO: add some way to specify the bounds of the slice.
@@ -101,6 +114,11 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		var written[] u8 = in.dst.slice()
 		if written.length() >= (32 * 1024) {
 			written = written.suffix(up_to:32 * 1024)
+			// TODO: change this.history to this.history[:].
+			this.history.copy_from(s:written)
+			this.history_index = 32 * 1024
+		} else {
+			// TODO: fill part of the history.
 		}
 	}
 	return z

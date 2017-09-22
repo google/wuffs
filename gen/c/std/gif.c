@@ -347,6 +347,13 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
+// puffs_base_slice_u8_copy_from calls memmove(dst.ptr, src.ptr, n) where n is
+// the minimum of dst.len and src.len.
+static inline void puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
+                                                 puffs_base_slice_u8 src) {
+  memmove(dst.ptr, src.ptr, dst.len < src.len ? dst.len : src.len);
+}
+
 #endif  // PUFFS_BASE_IMPL_H
 
 // ---------------- Status Codes Implementations

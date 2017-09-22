@@ -428,23 +428,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
-					return err
-				}
-			}
-			n.SetMType(typeExprPlaceholder) // HACK.
-			return nil
-		}
-		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
+		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) ||
+			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
+			isThatMethod(q.tm, n, t.KeyCopyFrom, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err

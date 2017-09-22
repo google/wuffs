@@ -165,6 +165,8 @@ typedef struct {
     uint32_t f_n_bits;
     uint32_t f_huffs[2][1234];
     uint32_t f_n_huffs_bits[2];
+    uint8_t f_history[32768];
+    uint32_t f_history_index;
     uint8_t f_code_lengths[320];
 
     struct {
