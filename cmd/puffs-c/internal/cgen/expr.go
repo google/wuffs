@@ -85,7 +85,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 	case t.KeyOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isLowHighBits(g.tm, n, t.KeyLowBits) {
+		if isThatMethod(g.tm, n, t.KeyLowBits, 1) {
 			// "x.low_bits(n:etc)" in C is "((x) & ((1 << (n)) - 1))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
@@ -99,7 +99,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")) - 1))")
 			return nil
 		}
-		if isLowHighBits(g.tm, n, t.KeyHighBits) {
+		if isThatMethod(g.tm, n, t.KeyHighBits, 1) {
 			// "x.high_bits(n:etc)" in C is "((x) >> (8*sizeof(x) - (n)))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
@@ -119,7 +119,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")))")
 			return nil
 		}
-		if isIsErrorOKSuspension(g.tm, n, t.KeyIsSuspension) {
+		if isThatMethod(g.tm, n, t.KeyIsSuspension, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -134,7 +134,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
-		if isIsPrefixSuffix(g.tm, n, t.KeySuffix) {
+		if isThatMethod(g.tm, n, t.KeySuffix, 1) {
 			// TODO: don't assume that the slice is a slice of u8.
 			b.writes("puffs_base_slice_u8_suffix(")
 			x := n.LHS().Expr().LHS().Expr()
@@ -158,7 +158,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
-		if isLength(g.tm, n) {
+		if isThatMethod(g.tm, n, t.KeyLength, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}

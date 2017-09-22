@@ -671,7 +671,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			break
 		}
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isLowHighBits(q.tm, n, t.KeyLowBits) || isLowHighBits(q.tm, n, t.KeyHighBits) {
+		if isThatMethod(q.tm, n, t.KeyLowBits, 1) || isThatMethod(q.tm, n, t.KeyHighBits, 1) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {
@@ -689,11 +689,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isIsErrorOKSuspension(q.tm, n, t.KeyIsSuspension) || isIsPrefixSuffix(q.tm, n, t.KeySuffix) {
+		if isThatMethod(q.tm, n, t.KeyIsSuspension, 0) || isThatMethod(q.tm, n, t.KeySuffix, 1) {
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isSetLiteralWidth(q.tm, n) {
+		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {
@@ -705,7 +705,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isDecode(q.tm, n) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
 			for _, aNode := range n.Args() {
 				a := aNode.Arg().Value()
 				_, _, err := q.bcheckExpr(a, depth)
@@ -715,7 +715,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return nil, nil, nil
 		}
-		if isLength(q.tm, n) {
+		// TODO: delete this hack that only matches "foo.length(etc)".
+		if isThatMethod(q.tm, n, t.KeyLength, 0) {
 			break
 		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())

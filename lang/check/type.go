@@ -379,7 +379,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isLowHighBits(q.tm, n, t.KeyLowBits) || isLowHighBits(q.tm, n, t.KeyHighBits) {
+		if isThatMethod(q.tm, n, t.KeyLowBits, 1) || isThatMethod(q.tm, n, t.KeyHighBits, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -395,7 +395,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isIsErrorOKSuspension(q.tm, n, t.KeyIsSuspension) {
+		if isThatMethod(q.tm, n, t.KeyIsSuspension, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -411,7 +411,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.suffix(etc)".
-		if isIsPrefixSuffix(q.tm, n, t.KeySuffix) {
+		if isThatMethod(q.tm, n, t.KeySuffix, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -428,7 +428,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isSetLiteralWidth(q.tm, n) {
+		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -444,7 +444,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isDecode(q.tm, n) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -460,7 +460,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isLength(q.tm, n) {
+		if isThatMethod(q.tm, n, t.KeyLength, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -544,7 +544,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.SetMType(rTyp)
 		return nil
 	}
-	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprOther", n.ID0().Key())
+	return fmt.Errorf("check: unrecognized token.Key (0x%X) in expression %q for tcheckExprOther",
+		n.ID0().Key(), n.String(q.tm))
 }
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
@@ -586,7 +587,7 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return false
 	}
-	if !n.CallSuspendible() || len(n.Args()) != nArgs {
+	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -597,55 +598,16 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
 }
 
-func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	// TODO: check that n.Args() is "(n:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+// isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
+func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+		return false
+	}
+	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isIsErrorOKSuspension(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 0 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isIsPrefixSuffix(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
-	// TODO: check that n.Args() is "(lw:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
-}
-
-func isDecode(tm *t.Map, n *a.Expr) bool {
-	// TODO: check that n.Args() is "(dst:bar, src:baz)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 2 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
-}
-
-func isLength(tm *t.Map, n *a.Expr) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() || len(n.Args()) != 0 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLength
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {

@@ -49,7 +49,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isSetLiteralWidth(g.tm, n) {
+		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
 			b.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
@@ -584,7 +584,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes("if (status) { goto suspend; }\n")
 
-	} else if isDecode(g.tm, n) {
+	} else if isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 2) {
 		switch g.pkgName {
 		case "flate":
 			b.printf("status = %sdecoder_decode(&self->private_impl.f_dec, %sdst, %ssrc);\n",
@@ -732,7 +732,7 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return false
 	}
-	if !n.CallSuspendible() || len(n.Args()) != nArgs {
+	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
@@ -743,53 +743,14 @@ func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
 }
 
-func isLowHighBits(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	// TODO: check that n.Args() is "(n:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+// isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
+func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+		return false
+	}
+	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isIsErrorOKSuspension(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 0 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isIsPrefixSuffix(tm *t.Map, n *a.Expr, methodName t.Key) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
-}
-
-func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
-	// TODO: check that n.Args() is "(lw:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("set_literal_width")
-}
-
-func isDecode(tm *t.Map, n *a.Expr) bool {
-	// TODO: check that n.Args() is "(dst:bar, src:baz)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != 2 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
-}
-
-func isLength(tm *t.Map, n *a.Expr) bool {
-	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() || len(n.Args()) != 0 {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLength
 }
