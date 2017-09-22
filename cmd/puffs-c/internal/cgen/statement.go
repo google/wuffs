@@ -760,6 +760,14 @@ func isIsErrorOKSuspension(tm *t.Map, n *a.Expr, methodName t.Key) bool {
 	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
 }
 
+func isIsPrefixSuffix(tm *t.Map, n *a.Expr, methodName t.Key) bool {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
+}
+
 func isSetLiteralWidth(tm *t.Map, n *a.Expr) bool {
 	// TODO: check that n.Args() is "(lw:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallImpure() || len(n.Args()) != 1 {

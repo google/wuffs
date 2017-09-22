@@ -134,6 +134,20 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
+		if isIsPrefixSuffix(g.tm, n, t.KeySuffix) {
+			// TODO: don't assume that the slice is a slice of u8.
+			b.writes("puffs_base_slice_u8_suffix(")
+			x := n.LHS().Expr().LHS().Expr()
+			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(", ")
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			return nil
+		}
 		if isInDst(g.tm, n, t.KeySlice, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')

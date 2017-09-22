@@ -100,6 +100,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		// change the veracity of any in.dst assertions?
 		var written[] u8 = in.dst.slice()
 		if written.length() >= (32 * 1024) {
+			written = written.suffix(up_to:32 * 1024)
 		}
 	}
 	return z

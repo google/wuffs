@@ -271,6 +271,8 @@ const (
 	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
 	KeySlice         = Key(IDSlice >> KeyShift)
 	KeyLength        = Key(IDLength >> KeyShift)
+	KeyPrefix        = Key(IDPrefix >> KeyShift)
+	KeySuffix        = Key(IDSuffix >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -446,6 +448,8 @@ const (
 	IDIsSuspension  = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSlice         = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDLength        = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix        = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix        = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -643,6 +647,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
 	KeySlice:         {"slice", IDSlice},
 	KeyLength:        {"length", IDLength},
+	KeyPrefix:        {"prefix", IDPrefix},
+	KeySuffix:        {"suffix", IDSuffix},
 }
 
 var builtInsByName = map[string]ID{}

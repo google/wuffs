@@ -689,7 +689,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isIsErrorOKSuspension(q.tm, n, t.KeyIsSuspension) {
+		if isIsErrorOKSuspension(q.tm, n, t.KeyIsSuspension) || isIsPrefixSuffix(q.tm, n, t.KeySuffix) {
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
