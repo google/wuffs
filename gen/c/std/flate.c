@@ -588,7 +588,8 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     if (v_z > 0) {
       v_written = ((puffs_base_slice_u8){.ptr = a_dst.buf->ptr,
                                          .len = b_wptr_dst - a_dst.buf->ptr});
-      PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(v_written);
+      if (((uint64_t)(v_written.len)) >= 32768) {
+      }
     }
     status = v_z;
     goto suspend;

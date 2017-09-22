@@ -442,6 +442,22 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprPlaceholder) // HACK.
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.length(etc)".
+		if isLength(q.tm, n) {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(typeExprU64)
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 		// n is an index.
@@ -597,6 +613,14 @@ func isDecode(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
+}
+
+func isLength(tm *t.Map, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() || len(n.Args()) != 0 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLength
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {

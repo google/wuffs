@@ -99,6 +99,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		// modify the state of in.dst, so future mutations (via the slice) can
 		// change the veracity of any in.dst assertions?
 		var written[] u8 = in.dst.slice()
+		if written.length() >= (32 * 1024) {
+		}
 	}
 	return z
 }

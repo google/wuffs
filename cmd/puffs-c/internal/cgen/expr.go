@@ -144,6 +144,21 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
+		if isLength(g.tm, n) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			b.writes("(uint64_t)(")
+			x := n.LHS().Expr().LHS().Expr()
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writes(".len)")
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
+			return nil
+		}
 		// TODO.
 
 	case t.KeyOpenBracket:

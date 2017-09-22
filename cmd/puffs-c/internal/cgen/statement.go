@@ -196,11 +196,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				b.writeb('0')
 			}
 			b.writes(";\n")
-
-			// TODO: remove this.
-			if n.XType().Decorator().Key() == t.KeyColon {
-				b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", vPrefix, n.Name().String(g.tm))
-			}
 		}
 		return nil
 
@@ -781,4 +776,12 @@ func isDecode(tm *t.Map, n *a.Expr) bool {
 	}
 	n = n.LHS().Expr()
 	return n.ID0().Key() == t.KeyDot && n.ID1() == tm.ByName("decode")
+}
+
+func isLength(tm *t.Map, n *a.Expr) bool {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() || len(n.Args()) != 0 {
+		return false
+	}
+	n = n.LHS().Expr()
+	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == t.KeyLength
 }

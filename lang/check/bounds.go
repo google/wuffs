@@ -715,6 +715,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return nil, nil, nil
 		}
+		if isLength(q.tm, n) {
+			break
+		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 
 	case t.KeyOpenBracket:
