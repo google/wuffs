@@ -659,7 +659,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		cPrefix, g.currFunk.astFunc.Name().String(g.tm))
 
 	b.printf("if (PUFFS_LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
-	b.printf("%s%d = puffs_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
+	b.printf("%s%d = puffs_base_load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
 	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)

@@ -47,24 +47,24 @@ extern int printf(const char* __restrict __format, ...);
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-// TODO: for puffs_u16be and similar functions, look for (ifdef) the x86
-// architecture and cast the pointer? Only do so if a benchmark justifies the
-// additional code path. Modern compilers might already generate good code.
+// TODO: for puffs_base_load_u16be etc, look for (ifdef) the x86 architecture
+// and cast the pointer? Only do so if a benchmark justifies the additional code
+// path. Modern compilers might already generate good code.
 
-static inline uint16_t puffs_u16be(uint8_t* p) {
+static inline uint16_t puffs_base_load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
 }
 
-static inline uint16_t puffs_u16le(uint8_t* p) {
+static inline uint16_t puffs_base_load_u16le(uint8_t* p) {
   return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
 }
 
-static inline uint32_t puffs_u32be(uint8_t* p) {
+static inline uint32_t puffs_base_load_u32be(uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
 
-static inline uint32_t puffs_u32le(uint8_t* p) {
+static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
