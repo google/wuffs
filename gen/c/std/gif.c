@@ -1288,6 +1288,8 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    /* Avoid the "unused variable" warning. */
+    (void)(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);

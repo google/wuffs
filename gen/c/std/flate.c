@@ -535,6 +535,20 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   puffs_flate_status v_z;
   puffs_base_slice_u8 v_written;
 
+  uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wend_dst = NULL;
+  if (a_dst.buf) {
+    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    size_t len = a_dst.buf->len - a_dst.buf->wi;
+    puffs_base_limit1* lim;
+    for (lim = &a_dst.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+        len = *lim->ptr_to_len;
+      }
+    }
+    b_wend_dst = b_wptr_dst + len;
+  }
+
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_z = self->private_impl.c_decode[0].v_z;
@@ -544,11 +558,36 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    if (a_dst.buf) {
+      size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+      a_dst.buf->wi += n;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len) {
+          *lim->ptr_to_len -= n;
+        }
+      }
+      /* Avoid the "unused variable" warning. */
+      (void)(b_wend_dst);
+    }
     puffs_flate_status t_0 =
         puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
+    if (a_dst.buf) {
+      b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
+      }
+      b_wend_dst = b_wptr_dst + len;
+    }
     v_z = t_0;
     if (v_z > 0) {
-      v_written = ((puffs_base_slice_u8){});
+      v_written = ((puffs_base_slice_u8){.ptr = a_dst.buf->ptr,
+                                         .len = b_wptr_dst - a_dst.buf->ptr});
+
       /* Avoid the "unused variable" warning. */
       if (v_written.ptr) {
       }
@@ -566,6 +605,19 @@ suspend:
   self->private_impl.c_decode[0].v_written = ((puffs_base_slice_u8){});
 
 exit:
+  if (a_dst.buf) {
+    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+    a_dst.buf->wi += n;
+    puffs_base_limit1* lim;
+    for (lim = &a_dst.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+    /* Avoid the "unused variable" warning. */
+    (void)(b_wend_dst);
+  }
+
   self->private_impl.status = status;
   return status;
 }
@@ -867,6 +919,8 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    /* Avoid the "unused variable" warning. */
+    (void)(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1201,6 +1255,8 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    /* Avoid the "unused variable" warning. */
+    (void)(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);

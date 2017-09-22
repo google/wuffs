@@ -134,6 +134,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
+		if isInDst(g.tm, n, t.KeySlice, 0) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			b.writes("(puffs_base_slice_u8){.ptr= a_dst.buf->ptr, .len=b_wptr_dst - a_dst.buf->ptr}")
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
+			return nil
+		}
 		// TODO.
 
 	case t.KeyOpenBracket:

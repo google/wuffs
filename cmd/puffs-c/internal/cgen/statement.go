@@ -183,27 +183,25 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			name := n.Name().String(g.tm)
 			b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
 
-		case t.KeyColon:
-			if n.Value() != nil {
-				return fmt.Errorf("TODO: slice initializers for non-zero default values")
-			}
-			// TODO: don't assume that the slice is a slice of u8.
-			b.printf("%s%s = ((puffs_base_slice_u8){});", vPrefix, n.Name().String(g.tm))
-
-			// TODO: remove this.
-			b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
-			b.printf("if (%s%s.ptr) {}\n", vPrefix, n.Name().String(g.tm))
-
 		default:
 			b.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
 			if v := n.Value(); v != nil {
 				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 					return err
 				}
+			} else if n.XType().Decorator().Key() == t.KeyColon {
+				// TODO: don't assume that the slice is a slice of u8.
+				b.printf("((puffs_base_slice_u8){})")
 			} else {
 				b.writeb('0')
 			}
 			b.writes(";\n")
+
+			// TODO: remove this.
+			if n.XType().Decorator().Key() == t.KeyColon {
+				b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
+				b.printf("if (%s%s.ptr) {}\n", vPrefix, n.Name().String(g.tm))
+			}
 		}
 		return nil
 
@@ -718,8 +716,9 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
+	callSuspendible := methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
+	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()

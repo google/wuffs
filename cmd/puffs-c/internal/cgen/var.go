@@ -148,19 +148,26 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr) error {
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
 		b.printf("}")
 
+		// Not all writer1 methods use the wend variable.
+		b.printf("\n/* Avoid the \"unused variable\" warning. */\n")
+		b.printf("(void)(%swend_%s);", bPrefix, nameStr)
+
 		b.printf("}\n")
 	}
 	return nil
 }
 
 func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
-	if g.currFunk.derivedVars == nil || n.ID0().Key() != t.KeyOpenParen {
+	if g.currFunk.derivedVars == nil {
+		return nil
+	}
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return nil
 	}
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.src" && s != "lzw_src" {
+		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" && s != "lzw_src" {
 			continue
 		}
 		if err := g.writeLoadDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
@@ -171,13 +178,16 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 }
 
 func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
-	if g.currFunk.derivedVars == nil || n.ID0().Key() != t.KeyOpenParen {
+	if g.currFunk.derivedVars == nil {
+		return nil
+	}
+	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return nil
 	}
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.src" && s != "lzw_src" {
+		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" && s != "lzw_src" {
 			continue
 		}
 		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType()); err != nil {

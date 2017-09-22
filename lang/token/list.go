@@ -269,6 +269,7 @@ const (
 	KeyIsError       = Key(IDIsError >> KeyShift)
 	KeyIsOK          = Key(IDIsOK >> KeyShift)
 	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
+	KeySlice         = Key(IDSlice >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -442,6 +443,7 @@ const (
 	IDIsError       = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDIsOK          = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDIsSuspension  = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSlice         = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -637,6 +639,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyIsError:       {"is_error", IDIsError},
 	KeyIsOK:          {"is_ok", IDIsOK},
 	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
+	KeySlice:         {"slice", IDSlice},
 }
 
 var builtInsByName = map[string]ID{}
