@@ -188,8 +188,28 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		return nil
 
 	case t.KeyColon:
-	// n is a slice.
-	// TODO.
+		// n is a slice.
+		lhs := n.LHS().Expr()
+		mhs := n.MHS().Expr()
+		rhs := n.RHS().Expr()
+		if mhs == nil && rhs == nil {
+			if lhs.MType().Decorator().Key() == t.KeyOpenBracket {
+				// Slice of an array.
+				// TODO: don't assume that the slice is a slice of u8.
+				b.writes("((puffs_base_slice_u8){.ptr = ")
+				if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
+					return err
+				}
+				b.printf(", .len=%s})", lhs.MType().ArrayLength().ConstValue())
+			} else {
+				// Slice of a slice.
+				if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("TODO: writeExprOther for a non-trivial slice")
 
 	case t.KeyDot:
 		lhs := n.LHS().Expr()

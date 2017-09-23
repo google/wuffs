@@ -761,8 +761,12 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.KeyColon:
-		// TODO.
-		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+		mhs := n.MHS().Expr()
+		rhs := n.RHS().Expr()
+		if mhs == nil && rhs == nil {
+			return nil, nil, nil
+		}
+		return nil, nil, fmt.Errorf("TODO: bcheckExprOther for a non-trivial slice")
 
 	case t.KeyDot:
 		// TODO: delete this hack that only matches "in".

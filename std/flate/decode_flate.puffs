@@ -114,8 +114,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		var written[] u8 = in.dst.slice()
 		if written.length() >= (32 * 1024) {
 			written = written.suffix(up_to:32 * 1024)
-			// TODO: change this.history to this.history[:].
-			this.history.copy_from(s:written)
+			this.history[:].copy_from(s:written)
 			this.history_index = 32 * 1024
 		} else {
 			// TODO: fill part of the history.

@@ -61,12 +61,10 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		// TODO: delete this hack that only matches "foo.copy_from(etc)".
 		if isThatMethod(g.tm, n, t.KeyCopyFrom, 1) {
 			b.writes("puffs_base_slice_u8_copy_from(")
-			// TODO: don't hard-code this.history (a [32768]u8) as the
-			// receiver. In any case, the receiver should probably be a slice
-			// instead of an array.
-			b.writes("((puffs_base_slice_u8){")
-			b.writes(".ptr=self->private_impl.f_history,")
-			b.writes(".len=sizeof(self->private_impl.f_history)})")
+			receiver := n.LHS().Expr().LHS().Expr()
+			if err := g.writeExpr(b, receiver, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
 			b.writeb(',')
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {

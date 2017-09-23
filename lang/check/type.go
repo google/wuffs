@@ -487,7 +487,41 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyColon:
 		// n is a slice.
-		// TODO.
+		if mhs := n.MHS().Expr(); mhs != nil {
+			if err := q.tcheckExpr(mhs, depth); err != nil {
+				return err
+			}
+			mTyp := mhs.MType()
+			if !mTyp.IsNumTypeOrIdeal() {
+				return fmt.Errorf("check: %s is a slice expression but %s has type %s, not a numeric type",
+					n.String(q.tm), mhs.String(q.tm), mTyp.String(q.tm))
+			}
+		}
+		if rhs := n.RHS().Expr(); rhs != nil {
+			if err := q.tcheckExpr(rhs, depth); err != nil {
+				return err
+			}
+			rTyp := rhs.MType()
+			if !rTyp.IsNumTypeOrIdeal() {
+				return fmt.Errorf("check: %s is a slice expression but %s has type %s, not a numeric type",
+					n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+			}
+		}
+		lhs := n.LHS().Expr()
+		if err := q.tcheckExpr(lhs, depth); err != nil {
+			return err
+		}
+		lTyp := lhs.MType()
+		switch lTyp.Decorator().Key() {
+		default:
+			return fmt.Errorf("check: %s is a slice expression but %s has type %s, not an array or slice type",
+				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+		case t.KeyOpenBracket:
+			n.SetMType(a.NewTypeExpr(t.IDColon, 0, nil, nil, lTyp.Inner()))
+		case t.KeyColon:
+			n.SetMType(lTyp)
+		}
+		return nil
 
 	case t.KeyDot:
 		return q.tcheckDot(n, depth)
