@@ -221,6 +221,80 @@ void test_puffs_flate_decode_split_src() {
   }
 }
 
+void test_puffs_flate_history_full() {
+  proc_funcname = __func__;
+
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+
+  golden_test* gt = &flate_pi_gt;
+  if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+  if (!read_file(&want, gt->want_filename)) {
+    return;
+  }
+
+  const int full_history_size = 32 * 1024;
+  int i;
+  for (i = -2; i <= +2; i++) {
+    src.ri = gt->src_offset0;
+    src.wi = gt->src_offset1;
+    got.ri = 0;
+    got.wi = 0;
+
+    puffs_flate_decoder dec;
+    puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+    puffs_base_writer1 dst_writer = {.buf = &got};
+    puffs_base_reader1 src_reader = {.buf = &src};
+
+    uint64_t lim = want.wi + i;
+    dst_writer.limit.ptr_to_len = &lim;
+
+    puffs_flate_status got_s =
+        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+    puffs_flate_decoder_destructor(&dec);
+    // TODO: should SHORT_WRITE be LIMITED_WRITE?
+    puffs_flate_status want_s =
+        i >= 0 ? PUFFS_FLATE_STATUS_OK : PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+    if (got_s != want_s) {
+      FAIL("i=%d: decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
+           i, got_s, puffs_flate_status_string(got_s), want_s,
+           puffs_flate_status_string(want_s));
+      return;
+    }
+
+    uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
+    if (dec.private_impl.f_history_index != want_history_index) {
+      FAIL("history_index: got %" PRIu32 ", want %" PRIu32,
+           dec.private_impl.f_history_index, want_history_index);
+      return;
+    }
+    if (i >= 0) {
+      continue;
+    }
+
+    puffs_base_buf1 history_got = {
+        .ptr = dec.private_impl.f_history,
+        .len = full_history_size,
+        .wi = full_history_size,
+    };
+    if (want.wi < full_history_size - i) {
+      FAIL("i=%d: want file is too short", i);
+      return;
+    }
+    puffs_base_buf1 history_want = {
+        .ptr = global_want_buffer + want.wi - (full_history_size - i),
+        .len = full_history_size,
+        .wi = full_history_size,
+    };
+    if (!buf1s_equal("", &history_got, &history_want)) {
+      return;
+    }
+  }
+}
+
 void test_puffs_flate_table_redirect() {
   proc_funcname = __func__;
 
@@ -505,6 +579,7 @@ proc tests[] = {
     test_puffs_flate_decode_romeo,        //
     test_puffs_flate_decode_romeo_fixed,  //
     test_puffs_flate_decode_split_src,    //
+    test_puffs_flate_history_full,        //
     test_puffs_flate_table_redirect,      //
     test_puffs_zlib_decode_midsummer,     //
     test_puffs_zlib_decode_pi,            //
