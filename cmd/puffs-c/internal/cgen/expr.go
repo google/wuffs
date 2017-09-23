@@ -152,20 +152,21 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
-			b.writes("(puffs_base_buf1_mark){.ptr= a_dst.buf->ptr + a_dst.buf->wi}")
+			b.printf("(puffs_base_buf1_mark){.ptr= %swptr_dst}", bPrefix)
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeySlice, 0) {
-			if pp == parenthesesMandatory {
-				b.writeb('(')
+		if isInDst(g.tm, n, t.KeySlice, 2) {
+			b.printf("puffs_base_make_slice_u8(%sdst.buf->ptr,", aPrefix)
+			for _, o := range n.Args() {
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writes(".ptr,")
 			}
-			b.writes("(puffs_base_slice_u8){.ptr= a_dst.buf->ptr, .len=b_wptr_dst - a_dst.buf->ptr}")
-			if pp == parenthesesMandatory {
-				b.writeb(')')
-			}
+			b.printf("%swptr_dst)", bPrefix)
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeyLength, 0) {

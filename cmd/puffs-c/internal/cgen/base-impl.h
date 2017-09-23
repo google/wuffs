@@ -65,6 +65,19 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8(uint8_t* start,
+                                                           uint8_t* mark0,
+                                                           uint8_t* mark1,
+                                                           uint8_t* end) {
+  if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
+    return ((puffs_base_slice_u8){
+        .ptr = mark0,
+        .len = mark1 - mark0,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
 // puffs_base_slice_u8_prefix returns up to the first n bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
     puffs_base_slice_u8 s,

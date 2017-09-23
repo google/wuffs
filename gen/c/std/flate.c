@@ -359,6 +359,19 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8(uint8_t* start,
+                                                           uint8_t* mark0,
+                                                           uint8_t* mark1,
+                                                           uint8_t* end) {
+  if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
+    return ((puffs_base_slice_u8){
+        .ptr = mark0,
+        .len = mark1 - mark0,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
 // puffs_base_slice_u8_prefix returns up to the first n bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
     puffs_base_slice_u8 s,
@@ -632,7 +645,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    v_m0 = ((puffs_base_buf1_mark){.ptr = a_dst.buf->ptr + a_dst.buf->wi});
+    v_m0 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
     if (a_dst.buf) {
       size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -660,9 +673,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     }
     v_z = t_0;
     if (v_z > 0) {
-      v_m1 = ((puffs_base_buf1_mark){.ptr = a_dst.buf->ptr + a_dst.buf->wi});
-      v_written = ((puffs_base_slice_u8){.ptr = a_dst.buf->ptr,
-                                         .len = b_wptr_dst - a_dst.buf->ptr});
+      v_m1 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
+      v_written = puffs_base_make_slice_u8(a_dst.buf->ptr, v_m0.ptr, v_m1.ptr,
+                                           b_wptr_dst);
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
         puffs_base_slice_u8_copy_from(
