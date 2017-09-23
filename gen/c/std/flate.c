@@ -57,6 +57,12 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
+// puffs_base_buf1_mark marks a position (pointer + offset) in a
+// puffs_base_buf1.
+typedef struct {
+  uint8_t* ptr;
+} puffs_base_buf1_mark;
+
 // puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
@@ -171,7 +177,9 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      puffs_base_buf1_mark v_m0;
       puffs_flate_status v_z;
+      puffs_base_buf1_mark v_m1;
       puffs_base_slice_u8 v_written;
     } c_decode[1];
     struct {
@@ -595,7 +603,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
+  puffs_base_buf1_mark v_m0;
   puffs_flate_status v_z;
+  puffs_base_buf1_mark v_m1;
   puffs_base_slice_u8 v_written;
 
   uint8_t* b_wptr_dst = NULL;
@@ -614,12 +624,15 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
+    v_m0 = self->private_impl.c_decode[0].v_m0;
     v_z = self->private_impl.c_decode[0].v_z;
+    v_m1 = self->private_impl.c_decode[0].v_m1;
     v_written = ((puffs_base_slice_u8){});
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
+    v_m0 = ((puffs_base_buf1_mark){.ptr = a_dst.buf->ptr + a_dst.buf->wi});
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
     if (a_dst.buf) {
       size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -647,6 +660,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     }
     v_z = t_0;
     if (v_z > 0) {
+      v_m1 = ((puffs_base_buf1_mark){.ptr = a_dst.buf->ptr + a_dst.buf->wi});
       v_written = ((puffs_base_slice_u8){.ptr = a_dst.buf->ptr,
                                          .len = b_wptr_dst - a_dst.buf->ptr});
       if (((uint64_t)(v_written.len)) >= 32768) {
@@ -667,7 +681,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode[0].v_m0 = v_m0;
   self->private_impl.c_decode[0].v_z = v_z;
+  self->private_impl.c_decode[0].v_m1 = v_m1;
   self->private_impl.c_decode[0].v_written = ((puffs_base_slice_u8){});
 
 exit:

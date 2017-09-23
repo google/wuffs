@@ -54,6 +54,12 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
+// puffs_base_buf1_mark marks a position (pointer + offset) in a
+// puffs_base_buf1.
+typedef struct {
+  uint8_t* ptr;
+} puffs_base_buf1_mark;
+
 // puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or

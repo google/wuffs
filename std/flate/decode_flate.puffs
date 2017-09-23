@@ -104,8 +104,10 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
+	var m0 buf1_mark = in.dst.mark()
 	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 	if z.is_suspension() {
+		var m1 buf1_mark = in.dst.mark()
 		// TODO: add some way to specify the bounds of the slice.
 		//
 		// TODO: should "slice" be "slice!", as the return value lets you

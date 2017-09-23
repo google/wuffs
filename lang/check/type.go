@@ -349,7 +349,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
 			isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) ||
-			isInDst(q.tm, n, t.KeySlice, 0) ||
+			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeySlice, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||
@@ -371,6 +371,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.SetMType(typeExprPlaceholder32) // HACK.
 			} else if isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU16LE, 0) {
 				n.SetMType(typeExprPlaceholder16) // HACK.
+			} else if isInDst(q.tm, n, t.KeyMark, 0) {
+				n.SetMType(typeExprBuf1Mark)
 			} else if isInDst(q.tm, n, t.KeySlice, 0) {
 				n.SetMType(typeExprSliceU8) // HACK.
 			} else {
@@ -585,7 +587,7 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeySlice
+	callSuspendible := methodName != t.KeyMark && methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
@@ -950,7 +952,7 @@ swtch:
 			// TODO: reject. You can only refine numeric types.
 		}
 		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyStatus ||
-			name == t.KeyReader1 || name == t.KeyWriter1 {
+			name == t.KeyBuf1Mark || name == t.KeyReader1 || name == t.KeyWriter1 {
 			break
 		}
 		for _, s := range q.c.structs {
