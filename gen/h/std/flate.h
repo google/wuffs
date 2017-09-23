@@ -177,10 +177,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      puffs_base_buf1_mark v_m0;
       puffs_flate_status v_z;
-      puffs_base_buf1_mark v_m1;
-      puffs_base_slice_u8 v_written;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;

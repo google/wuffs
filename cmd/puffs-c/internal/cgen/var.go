@@ -230,33 +230,53 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 
 func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bool) error {
 	local := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
-	lhs := local
-	// TODO: don't hard-code [0], and allow recursive coroutines.
-	rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.Name().String(g.tm), lhs)
-	if suspend {
-		lhs, rhs = rhs, lhs
-	}
-	typ := n.XType()
-	switch typ.Decorator().Key() {
-	case 0:
-		b.printf("%s = %s;\n", lhs, rhs)
-		return nil
-	case t.KeyOpenBracket:
-		inner := typ.Inner()
-		if inner.Decorator() != 0 {
-			break
-		}
-		switch inner.Name().Key() {
-		case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64:
-			b.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
+
+	// TODO: explicitly handle prefix == lPrefix?
+	if typ := n.XType(); prefix == vPrefix && typeHasPointers(typ) {
+		if suspend {
 			return nil
 		}
-	case t.KeyColon:
-		// TODO: should we be able to resume and suspend slices?
-		// TODO: don't assume that the slice is a slice of u8.
-		b.printf("%s = ((puffs_base_slice_u8){});\n", lhs)
-		return nil
+		rhs := ""
+
+		switch typ.Decorator().Key() {
+		case 0:
+			if key := typ.Name().Key(); key < t.Key(len(cTypeNames)) {
+				rhs = cTypeNames[key]
+			}
+		case t.KeyColon:
+			// TODO: don't assume that the slice is a slice of u8.
+			rhs = "puffs_base_slice_u8"
+		}
+		if rhs != "" {
+			b.printf("%s = ((%s){});\n", local, rhs)
+			return nil
+		}
+
+	} else {
+		lhs := local
+		// TODO: don't hard-code [0], and allow recursive coroutines.
+		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.Name().String(g.tm), lhs)
+		if suspend {
+			lhs, rhs = rhs, lhs
+		}
+
+		switch typ.Decorator().Key() {
+		case 0:
+			b.printf("%s = %s;\n", lhs, rhs)
+			return nil
+		case t.KeyOpenBracket:
+			inner := typ.Inner()
+			if inner.Decorator() != 0 {
+				break
+			}
+			switch inner.Name().Key() {
+			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64:
+				b.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
+				return nil
+			}
+		}
 	}
+
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
 		n.Name().String(g.tm), n.XType().String(g.tm))
 }
@@ -272,10 +292,13 @@ func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool) error
 	})
 }
 
-func (g *gen) writeVars(b *buffer, block []*a.Node) error {
+func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
 		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
 			b.printf("uint64_t %s%v;\n", lPrefix, n.Name().String(g.tm))
+		}
+		if skipPointerTypes && typeHasPointers(n.XType()) {
+			return nil
 		}
 		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().String(g.tm)); err != nil {
 			return err
@@ -283,4 +306,18 @@ func (g *gen) writeVars(b *buffer, block []*a.Node) error {
 		b.writes(";\n")
 		return nil
 	})
+}
+
+func typeHasPointers(typ *a.TypeExpr) bool {
+	for ; typ != nil; typ = typ.Inner() {
+		switch typ.Decorator().Key() {
+		case 0:
+			if key := typ.Name().Key(); key < t.Key(len(builtInPointerTypes)) && builtInPointerTypes[key] {
+				return true
+			}
+		case t.KeyPtr, t.KeyColon:
+			return true
+		}
+	}
+	return false
 }

@@ -177,10 +177,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      puffs_base_buf1_mark v_m0;
       puffs_flate_status v_z;
-      puffs_base_buf1_mark v_m1;
-      puffs_base_slice_u8 v_written;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
@@ -637,9 +634,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
-    v_m0 = self->private_impl.c_decode[0].v_m0;
+    v_m0 = ((puffs_base_buf1_mark){});
     v_z = self->private_impl.c_decode[0].v_z;
-    v_m1 = self->private_impl.c_decode[0].v_m1;
+    v_m1 = ((puffs_base_buf1_mark){});
     v_written = ((puffs_base_slice_u8){});
   }
   switch (coro_susp_point) {
@@ -694,10 +691,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_m0 = v_m0;
   self->private_impl.c_decode[0].v_z = v_z;
-  self->private_impl.c_decode[0].v_m1 = v_m1;
-  self->private_impl.c_decode[0].v_written = ((puffs_base_slice_u8){});
 
 exit:
   if (a_dst.buf) {
