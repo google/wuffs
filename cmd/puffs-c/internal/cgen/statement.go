@@ -356,7 +356,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		// TODO: is ptr_to_len the right check?
 		b.printf("if (%ssrc.limit.ptr_to_len) {", aPrefix)
 		b.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
-		b.printf("} else if (%ssrc.buf->closed) {", aPrefix)
+		b.printf("} else if (%ssrc.buf && %ssrc.buf->closed) {", aPrefix, aPrefix)
 		b.printf("status = %sERROR_UNEXPECTED_EOF; goto exit;", g.PKGPREFIX)
 		b.printf("} else { status = %sSUSPENSION_SHORT_READ; } goto suspend;\n", g.PKGPREFIX)
 
@@ -365,7 +365,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
-		b.printf("if (%sdst.buf->closed) { status = %sERROR_CLOSED_FOR_WRITES;", aPrefix, g.PKGPREFIX)
+		b.printf("if (%sdst.buf && %sdst.buf->closed) { status = %sERROR_CLOSED_FOR_WRITES;",
+			aPrefix, aPrefix, g.PKGPREFIX)
 		b.writes("goto exit;")
 		b.writes("}\n")
 		b.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
@@ -472,6 +473,10 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		const wName = "dst"
 		b.printf("size_t %s%d = (size_t)(%s >> 32);", tPrefix, temp0, scratchName)
 		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
+		//
+		// TODO: %s%s.buf->ptr might be a NULL pointer dereference. In any
+		// case, we need to compare the (resumed) distance against a mark, not
+		// against the beginning of the dst buffer.
 		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %s%s.buf->ptr)))) { "+
 			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
 			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, aPrefix, wName, g.PKGPREFIX)

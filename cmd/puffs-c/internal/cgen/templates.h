@@ -12,7 +12,7 @@ short_read_qnameq:
   // TODO: is ptr_to_len the right check?
   if (a_qnameq.limit.ptr_to_len) {
     status = qPKGPREFIXqSUSPENSION_LIMITED_READ;
-  } else if (a_qnameq.buf->closed) {
+  } else if (a_qnameq.buf && a_qnameq.buf->closed) {
     status = qPKGPREFIXqERROR_UNEXPECTED_EOF;
     goto exit;
   } else {

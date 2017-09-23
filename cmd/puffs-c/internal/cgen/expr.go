@@ -159,14 +159,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySlice, 2) {
-			b.printf("puffs_base_make_slice_u8(%sdst.buf->ptr,", aPrefix)
+			b.printf("puffs_base_make_slice_u8(%sdst.buf ? %sdst.buf->ptr : NULL,", aPrefix, aPrefix)
 			for _, o := range n.Args() {
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
 					return err
 				}
 				b.writes(".ptr,")
 			}
-			b.printf("%swptr_dst)", bPrefix)
+			b.printf("%sdst.buf ? %swptr_dst : NULL)", aPrefix, bPrefix)
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeyLength, 0) {

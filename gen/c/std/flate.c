@@ -671,8 +671,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     v_z = t_0;
     if (v_z > 0) {
       v_m1 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
-      v_written = puffs_base_make_slice_u8(a_dst.buf->ptr, v_m0.ptr, v_m1.ptr,
-                                           b_wptr_dst);
+      v_written =
+          puffs_base_make_slice_u8(a_dst.buf ? a_dst.buf->ptr : NULL, v_m0.ptr,
+                                   v_m1.ptr, a_dst.buf ? b_wptr_dst : NULL);
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
         puffs_base_slice_u8_copy_from(
@@ -877,7 +878,7 @@ exit:
 short_read_src:
   if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf->closed) {
+  } else if (a_src.buf && a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   } else {
@@ -1025,7 +1026,7 @@ exit:
 short_read_src:
   if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf->closed) {
+  } else if (a_src.buf && a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   } else {
@@ -1360,7 +1361,7 @@ exit:
 short_read_src:
   if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf->closed) {
+  } else if (a_src.buf && a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   } else {
@@ -1671,7 +1672,7 @@ exit:
 short_read_src:
   if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf->closed) {
+  } else if (a_src.buf && a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   } else {
@@ -2122,7 +2123,7 @@ exit:
 short_read_src:
   if (a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf->closed) {
+  } else if (a_src.buf && a_src.buf->closed) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
   } else {
