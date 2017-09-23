@@ -92,9 +92,15 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
 
 // puffs_base_slice_u8_copy_from calls memmove(dst.ptr, src.ptr, n) where n is
 // the minimum of dst.len and src.len.
+//
+// Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
+// slice) is valid and results in a no-op.
 static inline void puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
                                                  puffs_base_slice_u8 src) {
-  memmove(dst.ptr, src.ptr, dst.len < src.len ? dst.len : src.len);
+  size_t n = dst.len < src.len ? dst.len : src.len;
+  if (n > 0) {
+    memmove(dst.ptr, src.ptr, n);
+  }
 }
 
 #endif  // PUFFS_BASE_IMPL_H
