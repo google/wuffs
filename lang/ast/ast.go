@@ -513,6 +513,22 @@ func (n *TypeExpr) IsRefined() bool {
 	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
 }
 
+func (n *TypeExpr) HasPointers() bool {
+	for ; n != nil; n = n.Inner() {
+		switch n.id0.Key() {
+		case 0:
+			// TODO: add t.KeyReader1, after figuring out how limit's should really work.
+			switch n.id1.Key() {
+			case t.KeyBuf1, t.KeyBuf1Mark, t.KeyWriter1, t.KeyBuf2:
+				return true
+			}
+		case t.KeyPtr, t.KeyNptr, t.KeyColon:
+			return true
+		}
+	}
+	return false
+}
+
 func (n *TypeExpr) Unrefined() *TypeExpr {
 	if !n.IsRefined() {
 		return n

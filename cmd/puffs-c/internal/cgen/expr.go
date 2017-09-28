@@ -384,15 +384,6 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	return nil
 }
 
-var builtInPointerTypes = [...]bool{
-	t.KeyBuf1:     true,
-	t.KeyBuf1Mark: true,
-	// TODO: uncomment, after figuring out how limit's should really work.
-	// t.KeyReader1:  true,
-	t.KeyWriter1: true,
-	t.KeyBuf2:    true,
-}
-
 var cTypeNames = [...]string{
 	t.KeyI8:       "int8_t",
 	t.KeyI16:      "int16_t",

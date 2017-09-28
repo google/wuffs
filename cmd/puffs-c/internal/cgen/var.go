@@ -232,7 +232,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bo
 	local := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
 
 	// TODO: explicitly handle prefix == lPrefix?
-	if typ := n.XType(); prefix == vPrefix && typeHasPointers(typ) {
+	if typ := n.XType(); prefix == vPrefix && typ.HasPointers() {
 		if suspend {
 			return nil
 		}
@@ -297,7 +297,7 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool) error
 		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
 			b.printf("uint64_t %s%v;\n", lPrefix, n.Name().String(g.tm))
 		}
-		if skipPointerTypes && typeHasPointers(n.XType()) {
+		if skipPointerTypes && n.XType().HasPointers() {
 			return nil
 		}
 		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().String(g.tm)); err != nil {
@@ -306,18 +306,4 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool) error
 		b.writes(";\n")
 		return nil
 	})
-}
-
-func typeHasPointers(typ *a.TypeExpr) bool {
-	for ; typ != nil; typ = typ.Inner() {
-		switch typ.Decorator().Key() {
-		case 0:
-			if key := typ.Name().Key(); key < t.Key(len(builtInPointerTypes)) && builtInPointerTypes[key] {
-				return true
-			}
-		case t.KeyPtr, t.KeyColon:
-			return true
-		}
-	}
-	return false
 }
