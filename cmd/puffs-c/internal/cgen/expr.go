@@ -141,7 +141,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
-			b.writes(", ")
+			b.writeb(',')
 			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
@@ -172,12 +172,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isThatMethod(g.tm, n, t.KeyCopyFrom, 1) {
 			b.writes("puffs_base_slice_u8_copy_from(")
 			receiver := n.LHS().Expr().LHS().Expr()
-			if err := g.writeExpr(b, receiver, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			if err := g.writeExpr(b, receiver, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writeb(',')
 			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")\n")
@@ -196,6 +196,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}
+			return nil
+		}
+		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
+			// TODO: don't hard-code lzw.
+			b.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
+			a := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writes(")\n")
 			return nil
 		}
 		// TODO.

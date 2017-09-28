@@ -48,16 +48,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if n.CallSuspendible() {
 			return nil
 		}
-		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
-			b.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
-			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-				return err
-			}
-			b.writes(");\n")
-			return nil
-		}
 		if err := g.writeExpr(b, n, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
