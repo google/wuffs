@@ -65,10 +65,25 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8(uint8_t* start,
-                                                           uint8_t* mark0,
-                                                           uint8_t* mark1,
-                                                           uint8_t* end) {
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ints(
+    uint8_t* start,
+    uint64_t i,
+    uint64_t j,
+    uint64_t k) {
+  if ((i <= j) && (j <= k) && (k <= SIZE_MAX)) {
+    return ((puffs_base_slice_u8){
+        .ptr = start + i,
+        .len = j - i,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ptrs(
+    uint8_t* start,
+    uint8_t* mark0,
+    uint8_t* mark1,
+    uint8_t* end) {
   if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
     return ((puffs_base_slice_u8){
         .ptr = mark0,

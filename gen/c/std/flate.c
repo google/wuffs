@@ -356,10 +356,25 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8(uint8_t* start,
-                                                           uint8_t* mark0,
-                                                           uint8_t* mark1,
-                                                           uint8_t* end) {
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ints(
+    uint8_t* start,
+    uint64_t i,
+    uint64_t j,
+    uint64_t k) {
+  if ((i <= j) && (j <= k) && (k <= SIZE_MAX)) {
+    return ((puffs_base_slice_u8){
+        .ptr = start + i,
+        .len = j - i,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ptrs(
+    uint8_t* start,
+    uint8_t* mark0,
+    uint8_t* mark1,
+    uint8_t* end) {
   if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
     return ((puffs_base_slice_u8){
         .ptr = mark0,
@@ -671,16 +686,22 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     v_z = t_0;
     if (v_z > 0) {
       v_m1 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
-      v_written =
-          puffs_base_make_slice_u8(a_dst.buf ? a_dst.buf->ptr : NULL, v_m0.ptr,
-                                   v_m1.ptr, a_dst.buf ? b_wptr_dst : NULL);
+      v_written = puffs_base_make_slice_u8_from_ptrs(
+          a_dst.buf ? a_dst.buf->ptr : NULL, v_m0.ptr, v_m1.ptr,
+          a_dst.buf ? b_wptr_dst : NULL);
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
         puffs_base_slice_u8_copy_from(
-            ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                   .len = 32768}),
+            puffs_base_make_slice_u8_from_ints(self->private_impl.f_history, 0,
+                                               32768, 32768),
             v_written);
         self->private_impl.f_history_index = 32768;
+      } else {
+        puffs_base_slice_u8_copy_from(
+            puffs_base_make_slice_u8_from_ints(
+                self->private_impl.f_history,
+                self->private_impl.f_history_index & 32767, 32768, 32768),
+            v_written);
       }
     }
     status = v_z;

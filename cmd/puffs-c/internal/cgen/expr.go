@@ -159,7 +159,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySlice, 2) {
-			b.printf("puffs_base_make_slice_u8(%sdst.buf ? %sdst.buf->ptr : NULL,", aPrefix, aPrefix)
+			b.printf("puffs_base_make_slice_u8_from_ptrs(%sdst.buf ? %sdst.buf->ptr : NULL,", aPrefix, aPrefix)
 			for _, o := range n.Args() {
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
 					return err
@@ -203,24 +203,39 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		lhs := n.LHS().Expr()
 		mhs := n.MHS().Expr()
 		rhs := n.RHS().Expr()
-		if mhs == nil && rhs == nil {
-			if lhs.MType().Decorator().Key() == t.KeyOpenBracket {
-				// Slice of an array.
-				// TODO: don't assume that the slice is a slice of u8.
-				b.writes("((puffs_base_slice_u8){.ptr = ")
-				if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
-					return err
-				}
-				b.printf(", .len=%s})", lhs.MType().ArrayLength().ConstValue())
-			} else {
-				// Slice of a slice.
-				if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
-					return err
-				}
+		if lhs.MType().Decorator().Key() == t.KeyOpenBracket {
+			// Slice of an array.
+			// TODO: don't assume that the slice is a slice of u8.
+			length := lhs.MType().ArrayLength().ConstValue().String()
+			b.writes("puffs_base_make_slice_u8_from_ints(")
+			if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
+				return err
 			}
-			return nil
+			b.writeb(',')
+			if mhs == nil {
+				b.writes("0")
+			} else if err := g.writeExpr(b, mhs, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writeb(',')
+			if rhs == nil {
+				b.writes(length)
+			} else if err := g.writeExpr(b, rhs, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writeb(',')
+			b.writes(length)
+			b.writes(")")
+		} else {
+			// Slice of a slice.
+			if mhs != nil || rhs != nil {
+				return fmt.Errorf("TODO: writeExprOther for a non-trivial slice of a slice")
+			}
+			if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
 		}
-		return fmt.Errorf("TODO: writeExprOther for a non-trivial slice")
+		return nil
 
 	case t.KeyDot:
 		lhs := n.LHS().Expr()

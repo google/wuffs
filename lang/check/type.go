@@ -342,6 +342,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyOpenParen, t.KeyTry:
 		// n is a function call.
+
+		// TODO: be consistent about type-checking n.LHS().Expr() or
+		// n.LHS().Expr().LHS().Expr(). Doing this properly will probably
+		// require a TypeExpr being able to express function and method types.
+
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
@@ -489,6 +494,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyColon:
 		// n is a slice.
+		// TODO: require that the i and j in a[i:j] are *unsigned* (or
+		// non-negative constants)?
 		if mhs := n.MHS().Expr(); mhs != nil {
 			if err := q.tcheckExpr(mhs, depth); err != nil {
 				return err
