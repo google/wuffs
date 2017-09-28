@@ -169,6 +169,20 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.printf("%sdst.buf ? %swptr_dst : NULL)", aPrefix, bPrefix)
 			return nil
 		}
+		if isThatMethod(g.tm, n, t.KeyCopyFrom, 1) {
+			b.writes("puffs_base_slice_u8_copy_from(")
+			receiver := n.LHS().Expr().LHS().Expr()
+			if err := g.writeExpr(b, receiver, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writeb(',')
+			a := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writes(")\n")
+			return nil
+		}
 		if isThatMethod(g.tm, n, t.KeyLength, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')

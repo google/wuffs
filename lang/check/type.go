@@ -436,8 +436,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
-			isThatMethod(q.tm, n, t.KeyCopyFrom, 1) {
+			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -453,7 +452,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyLength, 0) {
+		if isThatMethod(q.tm, n, t.KeyCopyFrom, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err

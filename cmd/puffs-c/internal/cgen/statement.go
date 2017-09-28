@@ -58,22 +58,11 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			b.writes(");\n")
 			return nil
 		}
-		// TODO: delete this hack that only matches "foo.copy_from(etc)".
-		if isThatMethod(g.tm, n, t.KeyCopyFrom, 1) {
-			b.writes("puffs_base_slice_u8_copy_from(")
-			receiver := n.LHS().Expr().LHS().Expr()
-			if err := g.writeExpr(b, receiver, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-				return err
-			}
-			b.writeb(',')
-			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-				return err
-			}
-			b.writes(");\n")
-			return nil
+		if err := g.writeExpr(b, n, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
 		}
-		return fmt.Errorf("TODO: generate code for foo() when foo is not a ? call-suspendible")
+		b.writes(";\n")
+		return nil
 
 	case a.KIf:
 		// TODO: for writeSuspendibles, make sure that we get order of

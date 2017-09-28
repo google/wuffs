@@ -178,6 +178,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
+      uint64_t v_n;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
@@ -410,12 +411,13 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
 //
 // Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline void puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
-                                                 puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
+                                                     puffs_base_slice_u8 src) {
   size_t n = dst.len < src.len ? dst.len : src.len;
   if (n > 0) {
     memmove(dst.ptr, src.ptr, n);
   }
+  return n;
 }
 
 #endif  // PUFFS_BASE_IMPL_H
@@ -632,6 +634,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   puffs_flate_status v_z;
   puffs_base_buf1_mark v_m1;
   puffs_base_slice_u8 v_written;
+  uint64_t v_n;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wend_dst = NULL;
@@ -653,6 +656,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     v_z = self->private_impl.c_decode[0].v_z;
     v_m1 = ((puffs_base_buf1_mark){});
     v_written = ((puffs_base_slice_u8){});
+    v_n = self->private_impl.c_decode[0].v_n;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -697,7 +701,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
-        puffs_base_slice_u8_copy_from(
+        v_n = puffs_base_slice_u8_copy_from(
             puffs_base_make_slice_u8_from_ints(
                 self->private_impl.f_history,
                 self->private_impl.f_history_index & 32767, 32768, 32768),
@@ -714,6 +718,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_z = v_z;
+  self->private_impl.c_decode[0].v_n = v_n;
 
 exit:
   if (a_dst.buf) {

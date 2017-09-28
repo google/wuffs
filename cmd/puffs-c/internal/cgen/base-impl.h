@@ -119,12 +119,13 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
 //
 // Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline void puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
-                                                 puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
+                                                     puffs_base_slice_u8 src) {
   size_t n = dst.len < src.len ? dst.len : src.len;
   if (n > 0) {
     memmove(dst.ptr, src.ptr, n);
   }
+  return n;
 }
 
 #endif  // PUFFS_BASE_IMPL_H
