@@ -972,6 +972,7 @@ swtch:
 		}
 		fallthrough
 
+	// TODO: also check t.KeyNptr? Where else should we look for nptr?
 	case t.KeyPtr, t.KeyColon:
 		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
 			return err
