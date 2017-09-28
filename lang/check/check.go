@@ -382,14 +382,9 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
 			return fmt.Errorf("%v in field %q", err, f.Name().String(c.tm))
 		}
-		if banPtrTypes {
-			for x := f.XType(); x.Inner() != nil; x = x.Inner() {
-				if x.Decorator().Key() == t.KeyPtr {
-					// TODO: implement nptr (nullable pointer) types.
-					return fmt.Errorf("check: ptr type %q not allowed for field %q; use nptr instead",
-						x.String(c.tm), f.Name().String(c.tm))
-				}
-			}
+		if banPtrTypes && f.XType().HasPointers() {
+			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
+				f.XType().String(c.tm), f.Name().String(c.tm))
 		}
 		if dv := f.DefaultValue(); dv != nil {
 			if f.XType().Decorator() != 0 {
