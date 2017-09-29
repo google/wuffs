@@ -39,6 +39,8 @@ const (
 // Key is the high 16 bits of an ID. It is the map key for a Map.
 type Key uint32
 
+func (k Key) isXOp() bool { return minXKey <= k && k <= maxXKey }
+
 const (
 	FlagsBits = 16
 	FlagsMask = 1<<FlagsBits - 1
@@ -78,6 +80,10 @@ func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
 func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
 func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
 
+func (x ID) IsXUnaryOp() bool       { return x.Key().isXOp() && x.IsUnaryOp() }
+func (x ID) IsXBinaryOp() bool      { return x.Key().isXOp() && x.IsBinaryOp() }
+func (x ID) IsXAssociativeOp() bool { return x.Key().isXOp() && x.IsAssociativeOp() }
+
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
@@ -115,6 +121,10 @@ func (t Token) IsTightRight() bool        { return Flags(t.ID)&FlagsTightRight !
 func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
 func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
 func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0 }
+
+func (t Token) IsXUnaryOp() bool       { return t.ID.Key().isXOp() && t.ID.IsUnaryOp() }
+func (t Token) IsXBinaryOp() bool      { return t.ID.Key().isXOp() && t.ID.IsBinaryOp() }
+func (t Token) IsXAssociativeOp() bool { return t.ID.Key().isXOp() && t.ID.IsAssociativeOp() }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.

@@ -385,6 +385,40 @@ static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ptrs(
   return ((puffs_base_slice_u8){});
 }
 
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_i(
+    puffs_base_slice_u8 s,
+    uint64_t i) {
+  if ((i <= SIZE_MAX) && (i <= s.len)) {
+    return ((puffs_base_slice_u8){
+        .ptr = s.ptr + i,
+        .len = s.len - i,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_j(
+    puffs_base_slice_u8 s,
+    uint64_t j) {
+  if ((j <= SIZE_MAX) && (j <= s.len)) {
+    return ((puffs_base_slice_u8){.ptr = s.ptr, .len = j});
+  }
+  return ((puffs_base_slice_u8){});
+}
+
+static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_ij(
+    puffs_base_slice_u8 s,
+    uint64_t i,
+    uint64_t j) {
+  if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
+    return ((puffs_base_slice_u8){
+        .ptr = s.ptr + i,
+        .len = j - i,
+    });
+  }
+  return ((puffs_base_slice_u8){});
+}
+
 // puffs_base_slice_u8_prefix returns up to the first n bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
     puffs_base_slice_u8 s,
@@ -706,6 +740,13 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                 self->private_impl.f_history,
                 self->private_impl.f_history_index & 32767, 32768, 32768),
             v_written);
+        if (v_n < ((uint64_t)(v_written.len))) {
+          v_written = puffs_base_make_slice_u8_subslice_i(v_written, v_n);
+          v_n = puffs_base_slice_u8_copy_from(
+              puffs_base_make_slice_u8_from_ints(self->private_impl.f_history,
+                                                 0, 32768, 32768),
+              v_written);
+        }
       }
     }
     status = v_z;

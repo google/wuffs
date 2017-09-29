@@ -249,14 +249,48 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			b.writeb(',')
 			b.writes(length)
-			b.writes(")")
+			b.writeb(')')
 		} else {
 			// Slice of a slice.
-			if mhs != nil || rhs != nil {
-				return fmt.Errorf("TODO: writeExprOther for a non-trivial slice of a slice")
-			}
-			if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
-				return err
+			switch {
+			case mhs == nil && rhs == nil:
+				if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
+					return err
+				}
+			case mhs != nil && rhs == nil:
+				b.writes("puffs_base_make_slice_u8_subslice_i(")
+				if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(',')
+				if err := g.writeExpr(b, mhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(')')
+			case mhs == nil && rhs != nil:
+				b.writes("puffs_base_make_slice_u8_subslice_j(")
+				if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(',')
+				if err := g.writeExpr(b, rhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(')')
+			case mhs != nil && rhs != nil:
+				b.writes("puffs_base_make_slice_u8_subslice_ij(")
+				if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(',')
+				if err := g.writeExpr(b, mhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(',')
+				if err := g.writeExpr(b, rhs, rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+				b.writeb(')')
 			}
 		}
 		return nil

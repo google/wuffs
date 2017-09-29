@@ -283,7 +283,7 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 			continue
 		}
 		factOp := x.ID0().Key()
-		if factOp == op && x.RHS().Expr().Eq(rhs) {
+		if opImpliesOp(factOp, op) && x.RHS().Expr().Eq(rhs) {
 			return nil
 		}
 
@@ -309,6 +309,21 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 	return errFailed
 }
 
+// opImpliesOp returns whether the first op implies the second. For example,
+// knowing "x < y" implies that "x != y" and "x <= y".
+func opImpliesOp(op0 t.Key, op1 t.Key) bool {
+	if op0 == op1 {
+		return true
+	}
+	switch op0 {
+	case t.KeyXBinaryLessThan:
+		return op1 == t.KeyXBinaryNotEq || op1 == t.KeyXBinaryLessEq
+	case t.KeyXBinaryGreaterThan:
+		return op1 == t.KeyXBinaryNotEq || op1 == t.KeyXBinaryGreaterEq
+	}
+	return false
+}
+
 func errFailedOrNil(ok bool) error {
 	if ok {
 		return nil
@@ -319,6 +334,10 @@ func errFailedOrNil(ok bool) error {
 var errFailed = errors.New("failed")
 
 func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
+	if !op.IsXBinaryOp() {
+		return fmt.Errorf(
+			"check: internal error: proveReasonRequirement token.Key (0x%02X) is not an XBinaryOp", op.Key())
+	}
 	if err := q.proveBinaryOp(op.Key(), lhs, rhs); err != nil {
 		n := a.NewExpr(a.FlagsTypeChecked, op, 0, lhs.Node(), nil, rhs.Node(), nil)
 		return fmt.Errorf("cannot prove %q: %v", n.String(q.tm), err)

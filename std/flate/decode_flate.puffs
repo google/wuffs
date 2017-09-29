@@ -119,6 +119,11 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		} else {
 			// TODO: fill part of the history.
 			var n u64 = this.history[this.history_index & 0x7FFF:].copy_from(s:written)
+			if n < written.length() {
+				written = written[n:]
+				n = this.history[:].copy_from(s:written)
+			}
+			// TODO: update this.history_index.
 		}
 	}
 	return z

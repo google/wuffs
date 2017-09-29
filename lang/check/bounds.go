@@ -766,52 +766,51 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.KeyColon:
+		lhs := n.LHS().Expr()
 		mhs := n.MHS().Expr()
 		rhs := n.RHS().Expr()
 		if mhs == nil && rhs == nil {
 			return nil, nil, nil
 		}
-		lTyp := n.LHS().Expr().MType()
 
-		mMin, mMax := (*big.Int)(nil), (*big.Int)(nil)
-		if mhs != nil {
-			var err error
-			mMin, mMax, err = q.bcheckExpr(mhs, depth)
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-		rMin, rMax := (*big.Int)(nil), (*big.Int)(nil)
-		if rhs != nil {
-			var err error
-			rMin, rMax, err = q.bcheckExpr(rhs, depth)
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-
-		if lTyp.Decorator().Key() == t.KeyOpenBracket {
+		lengthExpr := (*a.Expr)(nil)
+		if lTyp := lhs.MType(); lTyp.Decorator().Key() == t.KeyOpenBracket {
 			// Slice of an array.
 			cv := lTyp.ArrayLength().ConstValue()
-			if mhs != nil && (mMin.Cmp(zero) < 0 || mMax.Cmp(cv) > 0) {
-				return nil, nil, fmt.Errorf("check: slice index %q (of range %v..%v) out of range",
-					mhs.String(q.tm), mMin, mMax)
+			id, err := q.tm.Insert(cv.String())
+			if err != nil {
+				return nil, nil, err
 			}
-			if rhs != nil && (rMin.Cmp(zero) < 0 || rMax.Cmp(cv) > 0) {
-				return nil, nil, fmt.Errorf("check: slice index %q (of range %v..%v) out of range",
-					rhs.String(q.tm), rMin, rMax)
-			}
-			if mhs != nil && rhs != nil && mMax.Cmp(rMin) > 0 {
-				return nil, nil, fmt.Errorf("check: slice indexes "+
-					"%q (of range %v..%v) and %q (of range %v..%v) overlap",
-					mhs.String(q.tm), mMin, mMax,
-					rhs.String(q.tm), rMin, rMax,
-				)
-			}
-
+			lengthExpr = a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
+			lengthExpr.SetConstValue(cv)
+			lengthExpr.SetMType(typeExprIdeal)
 		} else {
 			// Slice of a slice.
-			return nil, nil, fmt.Errorf("TODO: bcheckExprOther for a non-trivial slice of a slice")
+			lengthExpr = a.NewExpr(a.FlagsTypeChecked, t.IDDot, t.IDLength, lhs.Node(), nil, nil, nil)
+			lengthExpr.SetMType(typeExprPlaceholder) // HACK.
+			lengthExpr = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, lengthExpr.Node(), nil, nil, nil)
+			lengthExpr.SetMType(typeExprU64)
+		}
+
+		if mhs == nil {
+			mhs = zeroExpr
+		}
+		if rhs == nil {
+			rhs = lengthExpr
+		}
+
+		if mhs != zeroExpr {
+			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, mhs); err != nil {
+				return nil, nil, err
+			}
+		}
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, mhs, rhs); err != nil {
+			return nil, nil, err
+		}
+		if rhs != lengthExpr {
+			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, rhs, lengthExpr); err != nil {
+				return nil, nil, err
+			}
 		}
 		return nil, nil, nil
 
