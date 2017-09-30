@@ -109,7 +109,6 @@ const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_flate_status s =
       puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
-  puffs_flate_decoder_destructor(&dec);
   if (s) {
     return puffs_flate_status_string(s);
   }
@@ -123,7 +122,6 @@ const char* puffs_zlib_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_flate_status s =
       puffs_flate_zlib_decoder_decode(&dec, dst_writer, src_reader);
-  puffs_flate_zlib_decoder_destructor(&dec);
   if (s) {
     return puffs_flate_status_string(s);
   }
@@ -197,8 +195,6 @@ void test_puffs_flate_decode_split_src() {
     puffs_flate_status s1 =
         puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
 
-    puffs_flate_decoder_destructor(&dec);
-
     if (s0 != PUFFS_FLATE_SUSPENSION_SHORT_READ) {
       FAIL("i=%d: s0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s0,
            puffs_flate_status_string(s0), PUFFS_FLATE_SUSPENSION_SHORT_READ,
@@ -244,7 +240,6 @@ bool do_test_puffs_flate_history(int i,
 
   puffs_flate_status got_s =
       puffs_flate_decoder_decode(dec, dst_writer, src_reader);
-  puffs_flate_decoder_destructor(dec);
   // TODO: should want_s's SHORT_WRITE be LIMITED_WRITE?
   if (got_s != want_s) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
@@ -442,7 +437,6 @@ void test_puffs_flate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
 
   puffs_flate_status s = puffs_flate_decoder_init_huff(&dec, 0, 0, n, 257);
-  puffs_flate_decoder_destructor(&dec);
   if (s) {
     FAIL("%s", puffs_flate_status_string(s));
     return;

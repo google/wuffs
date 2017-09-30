@@ -56,7 +56,6 @@ int main(int argc, char** argv) {
   puffs_flate_decoder dec;
   puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
   const char* status_msg = decode(&dec);
-  puffs_flate_decoder_destructor(&dec);
 
   int status = 0;
   if (status_msg) {

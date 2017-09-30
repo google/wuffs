@@ -261,8 +261,6 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
                                      uint32_t puffs_version,
                                      uint32_t for_internal_use_only);
 
-void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
-
 // puffs_flate_zlib_decoder_constructor is a constructor function.
 //
 // It should be called before any other puffs_flate_zlib_decoder_* function.
@@ -271,8 +269,6 @@ void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
 void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
                                           uint32_t puffs_version,
                                           uint32_t for_internal_use_only);
-
-void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self);
 
 // ---------------- Public Function Prototypes
 
@@ -618,12 +614,6 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
 }
 
-void puffs_flate_decoder_destructor(puffs_flate_decoder* self) {
-  if (!self) {
-    return;
-  }
-}
-
 void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
                                           uint32_t puffs_version,
                                           uint32_t for_internal_use_only) {
@@ -640,13 +630,6 @@ void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
   puffs_flate_decoder_constructor(&self->private_impl.f_dec, PUFFS_VERSION,
                                   PUFFS_ALREADY_ZEROED);
-}
-
-void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self) {
-  if (!self) {
-    return;
-  }
-  puffs_flate_decoder_destructor(&self->private_impl.f_dec);
 }
 
 // ---------------- Function Implementations

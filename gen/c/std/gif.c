@@ -229,8 +229,6 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
                                        uint32_t puffs_version,
                                        uint32_t for_internal_use_only);
 
-void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
-
 // puffs_gif_decoder_constructor is a constructor function.
 //
 // It should be called before any other puffs_gif_decoder_* function.
@@ -239,8 +237,6 @@ void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self);
 void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
                                    uint32_t puffs_version,
                                    uint32_t for_internal_use_only);
-
-void puffs_gif_decoder_destructor(puffs_gif_decoder* self);
 
 // ---------------- Public Function Prototypes
 
@@ -526,12 +522,6 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
   self->private_impl.f_literal_width = 8;
 }
 
-void puffs_gif_lzw_decoder_destructor(puffs_gif_lzw_decoder* self) {
-  if (!self) {
-    return;
-  }
-}
-
 void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
                                    uint32_t puffs_version,
                                    uint32_t for_internal_use_only) {
@@ -548,13 +538,6 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
   puffs_gif_lzw_decoder_constructor(&self->private_impl.f_lzw, PUFFS_VERSION,
                                     PUFFS_ALREADY_ZEROED);
-}
-
-void puffs_gif_decoder_destructor(puffs_gif_decoder* self) {
-  if (!self) {
-    return;
-  }
-  puffs_gif_lzw_decoder_destructor(&self->private_impl.f_lzw);
 }
 
 // ---------------- Function Implementations

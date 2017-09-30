@@ -582,24 +582,18 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	return nil
 }
 
-func (g *gen) writeCtorSignature(b *buffer, n *a.Struct, public bool, ctor bool) error {
+func (g *gen) writeCtorSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.Name().String(g.tm)
-	ctorName := "destructor"
-	if ctor {
-		ctorName = "constructor"
-		if public {
-			b.printf("// %s%s_%s is a constructor function.\n", g.pkgPrefix, structName, ctorName)
-			b.printf("//\n")
-			b.printf("// It should be called before any other %s%s_* function.\n",
-				g.pkgPrefix, structName)
-			b.printf("//\n")
-			b.printf("// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
-		}
+	if public {
+		b.printf("// %s%s_constructor is a constructor function.\n", g.pkgPrefix, structName)
+		b.printf("//\n")
+		b.printf("// It should be called before any other %s%s_* function.\n",
+			g.pkgPrefix, structName)
+		b.printf("//\n")
+		b.printf("// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
 	}
-	b.printf("void %s%s_%s(%s%s *self", g.pkgPrefix, structName, ctorName, g.pkgPrefix, structName)
-	if ctor {
-		b.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
-	}
+	b.printf("void %s%s_constructor(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
+	b.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
 	b.printf(")")
 	return nil
 }
@@ -608,12 +602,10 @@ func (g *gen) writeCtorPrototype(b *buffer, n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	for _, ctor := range []bool{true, false} {
-		if err := g.writeCtorSignature(b, n, n.Public(), ctor); err != nil {
-			return err
-		}
-		b.writes(";\n\n")
+	if err := g.writeCtorSignature(b, n, n.Public()); err != nil {
+		return err
 	}
+	b.writes(";\n\n")
 	return nil
 }
 
@@ -621,54 +613,45 @@ func (g *gen) writeCtorImpl(b *buffer, n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	for _, ctor := range []bool{true, false} {
-		if err := g.writeCtorSignature(b, n, false, ctor); err != nil {
-			return err
-		}
-		b.printf("{\n")
-		b.printf("if (!self) { return; }\n")
-
-		if ctor {
-			b.printf("if (puffs_version != PUFFS_VERSION) {\n")
-			b.printf("self->private_impl.status = %sERROR_BAD_PUFFS_VERSION;\n", g.PKGPREFIX)
-			b.printf("return;\n")
-			b.printf("}\n")
-
-			b.writes("if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {" +
-				"memset(self, 0, sizeof(*self)); }\n")
-			b.writes("self->private_impl.magic = PUFFS_MAGIC;\n")
-
-			for _, f := range n.Fields() {
-				f := f.Field()
-				if dv := f.DefaultValue(); dv != nil {
-					// TODO: set default values for array types.
-					b.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
-				}
-			}
-		}
-
-		// Call any ctor/dtors on sub-structs.
-		for _, f := range n.Fields() {
-			f := f.Field()
-			x := f.XType()
-			if x != x.Innermost() {
-				// TODO: arrays of sub-structs.
-				continue
-			}
-			if g.structMap[x.Name()] == nil {
-				continue
-			}
-			if ctor {
-				b.printf("%s%s_constructor(&self->private_impl.%s%s,"+
-					"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
-					g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
-			} else {
-				b.printf("%s%s_destructor(&self->private_impl.%s%s);\n",
-					g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
-			}
-		}
-
-		b.writes("}\n\n")
+	if err := g.writeCtorSignature(b, n, false); err != nil {
+		return err
 	}
+	b.printf("{\n")
+	b.printf("if (!self) { return; }\n")
+
+	b.printf("if (puffs_version != PUFFS_VERSION) {\n")
+	b.printf("self->private_impl.status = %sERROR_BAD_PUFFS_VERSION;\n", g.PKGPREFIX)
+	b.printf("return;\n")
+	b.printf("}\n")
+
+	b.writes("if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {" +
+		"memset(self, 0, sizeof(*self)); }\n")
+	b.writes("self->private_impl.magic = PUFFS_MAGIC;\n")
+
+	for _, f := range n.Fields() {
+		f := f.Field()
+		if dv := f.DefaultValue(); dv != nil {
+			// TODO: set default values for array types.
+			b.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
+		}
+	}
+
+	// Call any ctors on sub-structs.
+	for _, f := range n.Fields() {
+		f := f.Field()
+		x := f.XType()
+		if x != x.Innermost() {
+			// TODO: arrays of sub-structs.
+			continue
+		}
+		if g.structMap[x.Name()] == nil {
+			continue
+		}
+		b.printf("%s%s_constructor(&self->private_impl.%s%s,"+
+			"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
+			g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+	}
+
+	b.writes("}\n\n")
 	return nil
 }

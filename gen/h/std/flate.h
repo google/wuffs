@@ -261,8 +261,6 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
                                      uint32_t puffs_version,
                                      uint32_t for_internal_use_only);
 
-void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
-
 // puffs_flate_zlib_decoder_constructor is a constructor function.
 //
 // It should be called before any other puffs_flate_zlib_decoder_* function.
@@ -271,8 +269,6 @@ void puffs_flate_decoder_destructor(puffs_flate_decoder* self);
 void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
                                           uint32_t puffs_version,
                                           uint32_t for_internal_use_only);
-
-void puffs_flate_zlib_decoder_destructor(puffs_flate_zlib_decoder* self);
 
 // ---------------- Public Function Prototypes
 

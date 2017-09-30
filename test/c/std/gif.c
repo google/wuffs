@@ -89,10 +89,8 @@ void test_basic_puffs_version_bad() {
   if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_PUFFS_VERSION) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
          PUFFS_GIF_ERROR_BAD_PUFFS_VERSION);
-    goto cleanup0;
+    return;
   }
-cleanup0:
-  puffs_gif_lzw_decoder_destructor(&dec);
 }
 
 void test_basic_puffs_version_good() {
@@ -101,15 +99,13 @@ void test_basic_puffs_version_good() {
   puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
     FAIL("magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
-    goto cleanup0;
+    return;
   }
   if (dec.private_impl.f_literal_width != 8) {
     FAIL("f_literal_width: got %u, want %u", dec.private_impl.f_literal_width,
          8);
-    goto cleanup0;
+    return;
   }
-cleanup0:
-  puffs_gif_lzw_decoder_destructor(&dec);
 }
 
 void test_basic_status_is_error() {
@@ -173,15 +169,13 @@ void test_basic_sub_struct_constructor() {
   puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
     FAIL("outer magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
-    goto cleanup0;
+    return;
   }
   if (dec.private_impl.f_lzw.private_impl.magic != PUFFS_MAGIC) {
     FAIL("inner magic: got %u, want %u",
          dec.private_impl.f_lzw.private_impl.magic, PUFFS_MAGIC);
-    goto cleanup0;
+    return;
   }
-cleanup0:
-  puffs_gif_decoder_destructor(&dec);
 }
 
 // ---------------- LZW Tests
@@ -196,26 +190,26 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, src_filename)) {
-    goto cleanup0;
+    return;
   }
   if (src.wi != src_size) {
     FAIL("src size: got %d, want %d", (int)(src.wi), (int)(src_size));
-    goto cleanup0;
+    return;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
   uint8_t literal_width = src.ptr[0];
   if (literal_width != 0x08) {
     FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
-    goto cleanup0;
+    return;
   }
   src.ri++;
 
   if (!read_file(&want, want_filename)) {
-    goto cleanup0;
+    return;
   }
   if (want.wi != want_size) {
     FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
-    goto cleanup0;
+    return;
   }
 
   puffs_gif_lzw_decoder dec;
@@ -234,44 +228,40 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
     if (src.ri == src.wi) {
       if (status != PUFFS_GIF_STATUS_OK) {
         FAIL("status: got %d, want %d", status, PUFFS_GIF_STATUS_OK);
-        goto cleanup1;
+        return;
       }
       break;
     }
     if (status != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
       FAIL("status: got %d, want %d", status,
            PUFFS_GIF_SUSPENSION_LIMITED_READ);
-      goto cleanup1;
+      return;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
-      goto cleanup1;
+      return;
     }
     if (src.ri == old_ri) {
       FAIL("no progress was made");
-      goto cleanup1;
+      return;
     }
   }
 
   if (limit < 1000000) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
-      goto cleanup1;
+      return;
     }
   } else {
     if (num_iters != 1) {
       FAIL("num_iters: got %d, want 1", num_iters);
-      goto cleanup1;
+      return;
     }
   }
 
   if (!buf1s_equal("", &got, &want)) {
-    goto cleanup1;
+    return;
   }
-
-cleanup1:
-  puffs_gif_lzw_decoder_destructor(&dec);
-cleanup0:;
 }
 
 void test_puffs_gif_lzw_decode_few_big_reads() {
@@ -338,7 +328,6 @@ void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
     puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
     puffs_gif_status s =
         puffs_gif_lzw_decoder_decode(&dec, dst_writer, src_reader);
-    puffs_gif_lzw_decoder_destructor(&dec);
     if (s) {
       FAIL("decode: %s", puffs_gif_status_string(s));
       return;
@@ -366,7 +355,6 @@ const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_base_writer1 dst_writer = {.buf = dst};
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
-  puffs_gif_decoder_destructor(&dec);
   if (s) {
     return puffs_gif_status_string(s);
   }
@@ -382,7 +370,7 @@ void test_puffs_gif_decode(const char* filename,
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
-    goto cleanup0;
+    return;
   }
 
   puffs_gif_decoder dec;
@@ -400,48 +388,48 @@ void test_puffs_gif_decode(const char* filename,
     if ((src.ri == src.wi) || puffs_gif_status_is_error(got)) {
       if (got != want) {
         FAIL("status: got %d, want %d", got, want);
-        goto cleanup1;
+        return;
       }
       break;
     }
     if (got != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
       FAIL("status: got %d, want %d", got, PUFFS_GIF_SUSPENSION_LIMITED_READ);
-      goto cleanup1;
+      return;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
-      goto cleanup1;
+      return;
     }
     if (src.ri == old_ri) {
       FAIL("no progress was made");
-      goto cleanup1;
+      return;
     }
   }
 
   if (want != PUFFS_GIF_STATUS_OK) {
-    goto cleanup1;
+    return;
   }
 
   if (limit < 1000000) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
-      goto cleanup1;
+      return;
     }
   } else {
     if (num_iters != 1) {
       FAIL("num_iters: got %d, want 1", num_iters);
-      goto cleanup1;
+      return;
     }
   }
 
   // TODO: provide a public API for getting the width and height.
   if (dec.private_impl.f_width != 160) {
     FAIL("width: got %d, want %d", dec.private_impl.f_width, 160);
-    goto cleanup1;
+    return;
   }
   if (dec.private_impl.f_height != 120) {
     FAIL("height: got %d, want %d", dec.private_impl.f_height, 120);
-    goto cleanup1;
+    return;
   }
 
   // TODO: provide a public API for getting the palette.
@@ -449,23 +437,19 @@ void test_puffs_gif_decode(const char* filename,
   puffs_base_buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
   pal_got.wi = 3 * 256;
   if (!read_file(&pal_want, palette_filename)) {
-    goto cleanup1;
+    return;
   }
   if (!buf1s_equal("palette ", &pal_got, &pal_want)) {
-    goto cleanup1;
+    return;
   }
 
   puffs_base_buf1 ind_want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   if (!read_file(&ind_want, indexes_filename)) {
-    goto cleanup1;
+    return;
   }
   if (!buf1s_equal("indexes ", &got, &ind_want)) {
-    goto cleanup1;
+    return;
   }
-
-cleanup1:
-  puffs_gif_decoder_destructor(&dec);
-cleanup0:;
 }
 
 void test_puffs_gif_decode_input_is_a_gif_few_big_reads() {
