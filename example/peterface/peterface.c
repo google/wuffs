@@ -108,19 +108,17 @@ func main() {
         if err != nil {
                 log.Fatal(err)
         }
-        fmt.Printf("size_t pjw_len = %d;\n\n", len(data))
         fmt.Printf("uint8_t pjw_ptr[] = {\n")
         for _, c := range data {
                 fmt.Printf("%#02x,", c)
         }
         fmt.Printf("\n};\n")
+        fmt.Printf("size_t pjw_len = %d;\n", len(data))
 }
 ----
 
 and piping the result through clang-format.
 */
-
-size_t pjw_len = 158;
 
 uint8_t pjw_ptr[] = {
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x20, 0x00, 0x20, 0x00, 0xf0, 0x01,
@@ -138,3 +136,4 @@ uint8_t pjw_ptr[] = {
     0x24, 0x38, 0x76, 0x23, 0x08, 0x16, 0xb8, 0xf8, 0x98, 0xd6, 0x50, 0x00,
     0x00, 0x3b,
 };
+size_t pjw_len = 158;

@@ -25,12 +25,12 @@ for a C compiler $cc, such as clang or gcc.
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 
-size_t lgtm_len = 20;
-
+// lgtm_ptr and lgtm_len hold a flate-encoded "LGTM" message.
 uint8_t lgtm_ptr[] = {
     0xf3, 0xc9, 0xcf, 0xcf, 0x2e, 0x56, 0x48, 0xcf, 0xcf, 0x4f,
     0x51, 0x28, 0xc9, 0x57, 0xc8, 0x4d, 0xd5, 0xe3, 0x02, 0x00,
 };
+size_t lgtm_len = 20;
 
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
