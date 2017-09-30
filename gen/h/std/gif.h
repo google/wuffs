@@ -108,7 +108,7 @@ typedef int32_t puffs_gif_status;
 #define PUFFS_GIF_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
 #define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
 #define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
 #define PUFFS_GIF_SUSPENSION_SHORT_READ 7                   // 0x00000007
@@ -218,25 +218,25 @@ typedef struct {
   } private_impl;
 } puffs_gif_decoder;
 
-// ---------------- Public Constructor and Destructor Prototypes
+// ---------------- Public Initializer Prototypes
 
-// puffs_gif_lzw_decoder_constructor is a constructor function.
+// puffs_gif_lzw_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_gif_lzw_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version,
-                                       uint32_t for_internal_use_only);
+void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
+                                      uint32_t puffs_version,
+                                      uint32_t for_internal_use_only);
 
-// puffs_gif_decoder_constructor is a constructor function.
+// puffs_gif_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_gif_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
-                                   uint32_t puffs_version,
-                                   uint32_t for_internal_use_only);
+void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
+                                  uint32_t puffs_version,
+                                  uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 

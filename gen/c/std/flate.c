@@ -108,7 +108,7 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_FLATE_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_FLATE_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
 #define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
 #define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
 #define PUFFS_FLATE_SUSPENSION_SHORT_READ 7                   // 0x00000007
@@ -250,25 +250,25 @@ typedef struct {
   } private_impl;
 } puffs_flate_zlib_decoder;
 
-// ---------------- Public Constructor and Destructor Prototypes
+// ---------------- Public Initializer Prototypes
 
-// puffs_flate_decoder_constructor is a constructor function.
+// puffs_flate_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_flate_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
-                                     uint32_t puffs_version,
-                                     uint32_t for_internal_use_only);
+void puffs_flate_decoder_initialize(puffs_flate_decoder* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only);
 
-// puffs_flate_zlib_decoder_constructor is a constructor function.
+// puffs_flate_zlib_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_flate_zlib_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
-                                          uint32_t puffs_version,
-                                          uint32_t for_internal_use_only);
+void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
+                                         uint32_t puffs_version,
+                                         uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
@@ -464,7 +464,7 @@ const char* puffs_flate_status_strings0[11] = {
     "flate: bad puffs version",
     "flate: bad receiver",
     "flate: bad argument",
-    "flate: constructor not called",
+    "flate: initializer not called",
     "flate: closed for writes",
     "flate: unexpected EOF",
     "flate: short read",
@@ -552,7 +552,7 @@ static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
     541065680, 543162832, 134217728, 134217728,
 };
 
-// ---------------- Private Constructor and Destructor Prototypes
+// ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
 
@@ -582,25 +582,25 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_n_codes1,
                                                  uint32_t a_base_symbol);
 
-// ---------------- Constructor and Destructor Implementations
+// ---------------- Initializer Implementations
 
-// PUFFS_MAGIC is a magic number to check that constructors are called. It's
+// PUFFS_MAGIC is a magic number to check that initializers are called. It's
 // not foolproof, given C doesn't automatically zero memory before use, but it
 // should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
 #define PUFFS_MAGIC (0xCB3699CCU)
 
-// PUFFS_ALREADY_ZEROED is passed from a container struct's constructor to a
-// containee struct's constructor when the container has already zeroed the
+// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
+// containee struct's initializer when the container has already zeroed the
 // containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
 #define PUFFS_ALREADY_ZEROED (0x68602EF1U)
 
-void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
-                                     uint32_t puffs_version,
-                                     uint32_t for_internal_use_only) {
+void puffs_flate_decoder_initialize(puffs_flate_decoder* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -614,9 +614,9 @@ void puffs_flate_decoder_constructor(puffs_flate_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
 }
 
-void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
-                                          uint32_t puffs_version,
-                                          uint32_t for_internal_use_only) {
+void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
+                                         uint32_t puffs_version,
+                                         uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -628,8 +628,8 @@ void puffs_flate_zlib_decoder_constructor(puffs_flate_zlib_decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = PUFFS_MAGIC;
-  puffs_flate_decoder_constructor(&self->private_impl.f_dec, PUFFS_VERSION,
-                                  PUFFS_ALREADY_ZEROED);
+  puffs_flate_decoder_initialize(&self->private_impl.f_dec, PUFFS_VERSION,
+                                 PUFFS_ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
@@ -641,7 +641,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     return PUFFS_FLATE_ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
+    self->private_impl.status = PUFFS_FLATE_ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
@@ -2032,7 +2032,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
     return PUFFS_FLATE_ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_FLATE_ERROR_CONSTRUCTOR_NOT_CALLED;
+    self->private_impl.status = PUFFS_FLATE_ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;

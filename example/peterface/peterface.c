@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
 #endif
 
   puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
   const char* status_msg = decode(&dec);
 
   int status = 0;

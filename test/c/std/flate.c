@@ -104,7 +104,7 @@ golden_test zlib_pi_gt = {
 
 const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_flate_decoder dec;
-  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_flate_status s =
@@ -117,7 +117,7 @@ const char* puffs_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
 
 const char* puffs_zlib_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_flate_zlib_decoder dec;
-  puffs_flate_zlib_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_flate_zlib_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_flate_status s =
@@ -181,7 +181,7 @@ void test_puffs_flate_decode_split_src() {
     }
     got.wi = 0;
 
-    puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+    puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
 
     src.closed = false;
     src.ri = gt->src_offset0;
@@ -230,7 +230,7 @@ bool do_test_puffs_flate_history(int i,
   got->ri = 0;
   got->wi = 0;
 
-  puffs_flate_decoder_constructor(dec, PUFFS_VERSION, 0);
+  puffs_flate_decoder_initialize(dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = got};
   puffs_base_reader1 src_reader = {.buf = src};
 
@@ -413,9 +413,9 @@ void test_puffs_flate_table_redirect() {
   // 2nd is the key in the second level table (variable bits).
 
   puffs_flate_decoder dec;
-  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
 
-  // The constructor should zero out dec's fields, but to be paranoid, we zero
+  // The initializer should zero out dec's fields, but to be paranoid, we zero
   // it out explicitly.
   memset(&dec.private_impl.f_huffs[0], 0, sizeof(dec.private_impl.f_huffs[0]));
 

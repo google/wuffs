@@ -88,7 +88,7 @@ var builtInStatuses = [...]string{
 	"error bad puffs version",
 	"error bad receiver",
 	"error bad argument",
-	"error constructor not called",
+	"error initializer not called",
 	"error closed for writes",
 	"error unexpected EOF",  // Used if reading when closed == true.
 	"suspension short read", // Used if reading when closed == false.
@@ -266,10 +266,10 @@ func (g *gen) genHeader(b *buffer) error {
 		}
 	}
 
-	b.writes("// ---------------- Public Constructor and Destructor Prototypes\n\n")
+	b.writes("// ---------------- Public Initializer Prototypes\n\n")
 	for _, n := range g.structList {
 		if n.Public() {
-			if err := g.writeCtorPrototype(b, n); err != nil {
+			if err := g.writeInitializerPrototype(b, n); err != nil {
 				return err
 			}
 		}
@@ -331,10 +331,10 @@ func (g *gen) genImpl(b *buffer) error {
 		return err
 	}
 
-	b.writes("// ---------------- Private Constructor and Destructor Prototypes\n\n")
+	b.writes("// ---------------- Private Initializer Prototypes\n\n")
 	for _, n := range g.structList {
 		if !n.Public() {
-			if err := g.writeCtorPrototype(b, n); err != nil {
+			if err := g.writeInitializerPrototype(b, n); err != nil {
 				return err
 			}
 		}
@@ -345,21 +345,21 @@ func (g *gen) genImpl(b *buffer) error {
 		return err
 	}
 
-	b.writes("// ---------------- Constructor and Destructor Implementations\n\n")
-	b.writes("// PUFFS_MAGIC is a magic number to check that constructors are called. It's\n")
+	b.writes("// ---------------- Initializer Implementations\n\n")
+	b.writes("// PUFFS_MAGIC is a magic number to check that initializers are called. It's\n")
 	b.writes("// not foolproof, given C doesn't automatically zero memory before use, but it\n")
 	b.writes("// should catch 99.99% of cases.\n")
 	b.writes("//\n")
 	b.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
 	b.writes("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
-	b.writes("// PUFFS_ALREADY_ZEROED is passed from a container struct's constructor to a\n")
-	b.writes("// containee struct's constructor when the container has already zeroed the\n")
+	b.writes("// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a\n")
+	b.writes("// containee struct's initializer when the container has already zeroed the\n")
 	b.writes("// containee's memory.\n")
 	b.writes("//\n")
 	b.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
 	b.writes("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
 	for _, n := range g.structList {
-		if err := g.writeCtorImpl(b, n); err != nil {
+		if err := g.writeInitializerImpl(b, n); err != nil {
 			return err
 		}
 	}
@@ -518,7 +518,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// For API/ABI compatibility, the very first field in the struct's
-	// private_impl must be the status code. This lets the constructor callee
+	// private_impl must be the status code. This lets the initializer callee
 	// set "self->private_impl.status = etc_error_bad_puffs_version;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
@@ -582,38 +582,38 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	return nil
 }
 
-func (g *gen) writeCtorSignature(b *buffer, n *a.Struct, public bool) error {
+func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.Name().String(g.tm)
 	if public {
-		b.printf("// %s%s_constructor is a constructor function.\n", g.pkgPrefix, structName)
+		b.printf("// %s%s_initialize is an initializer function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
 		b.printf("// It should be called before any other %s%s_* function.\n",
 			g.pkgPrefix, structName)
 		b.printf("//\n")
 		b.printf("// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
 	}
-	b.printf("void %s%s_constructor(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
+	b.printf("void %s%s_initialize(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
 	b.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
 	b.printf(")")
 	return nil
 }
 
-func (g *gen) writeCtorPrototype(b *buffer, n *a.Struct) error {
+func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	if err := g.writeCtorSignature(b, n, n.Public()); err != nil {
+	if err := g.writeInitializerSignature(b, n, n.Public()); err != nil {
 		return err
 	}
 	b.writes(";\n\n")
 	return nil
 }
 
-func (g *gen) writeCtorImpl(b *buffer, n *a.Struct) error {
+func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	if err := g.writeCtorSignature(b, n, false); err != nil {
+	if err := g.writeInitializerSignature(b, n, false); err != nil {
 		return err
 	}
 	b.printf("{\n")
@@ -647,7 +647,7 @@ func (g *gen) writeCtorImpl(b *buffer, n *a.Struct) error {
 		if g.structMap[x.Name()] == nil {
 			continue
 		}
-		b.printf("%s%s_constructor(&self->private_impl.%s%s,"+
+		b.printf("%s%s_initialize(&self->private_impl.%s%s,"+
 			"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
 			g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
 	}

@@ -36,7 +36,7 @@ const char* proc_filename = "std/gif.c";
 void test_basic_bad_argument_out_of_range() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_lzw_decoder_initialize(&dec, PUFFS_VERSION, 0);
 
   // Setting to 8 is in the [2..8] range.
   puffs_gif_lzw_decoder_set_literal_width(&dec, 8);
@@ -70,22 +70,22 @@ void test_basic_bad_receiver() {
   }
 }
 
-void test_basic_constructor_not_called() {
+void test_basic_initializer_not_called() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec = {{0}};
   puffs_base_writer1 dst = {0};
   puffs_base_reader1 src = {0};
   puffs_gif_status status = puffs_gif_lzw_decoder_decode(&dec, dst, src);
-  if (status != PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED) {
+  if (status != PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED) {
     FAIL("status: got %d, want %d", status,
-         PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED);
+         PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED);
   }
 }
 
 void test_basic_puffs_version_bad() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
+  puffs_gif_lzw_decoder_initialize(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
   if (dec.private_impl.status != PUFFS_GIF_ERROR_BAD_PUFFS_VERSION) {
     FAIL("status: got %d, want %d", dec.private_impl.status,
          PUFFS_GIF_ERROR_BAD_PUFFS_VERSION);
@@ -96,7 +96,7 @@ void test_basic_puffs_version_bad() {
 void test_basic_puffs_version_good() {
   proc_funcname = __func__;
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_lzw_decoder_initialize(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
     FAIL("magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
     return;
@@ -163,10 +163,10 @@ void test_basic_status_strings() {
   }
 }
 
-void test_basic_sub_struct_constructor() {
+void test_basic_sub_struct_initializer() {
   proc_funcname = __func__;
   puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_MAGIC) {
     FAIL("outer magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
     return;
@@ -213,7 +213,7 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
   }
 
   puffs_gif_lzw_decoder dec;
-  puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_lzw_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_gif_lzw_decoder_set_literal_width(&dec, literal_width);
   puffs_base_writer1 got_writer = {.buf = &got};
   puffs_base_reader1 src_reader = {.buf = &src};
@@ -325,7 +325,7 @@ void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
     dst.wi = 0;
     src.ri = 1;  // Skip the literal width.
     puffs_gif_lzw_decoder dec;
-    puffs_gif_lzw_decoder_constructor(&dec, PUFFS_VERSION, 0);
+    puffs_gif_lzw_decoder_initialize(&dec, PUFFS_VERSION, 0);
     puffs_gif_status s =
         puffs_gif_lzw_decoder_decode(&dec, dst_writer, src_reader);
     if (s) {
@@ -351,7 +351,7 @@ void bench_puffs_gif_lzw_decode_100k() {
 
 const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
   puffs_base_reader1 src_reader = {.buf = src};
   puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
@@ -374,7 +374,7 @@ void test_puffs_gif_decode(const char* filename,
   }
 
   puffs_gif_decoder dec;
-  puffs_gif_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 got_writer = {.buf = &got};
   puffs_base_reader1 src_reader = {.buf = &src};
   int num_iters = 0;
@@ -640,12 +640,12 @@ proc tests[] = {
     // Basic Tests
     test_basic_bad_argument_out_of_range,  //
     test_basic_bad_receiver,               //
-    test_basic_constructor_not_called,     //
+    test_basic_initializer_not_called,     //
     test_basic_puffs_version_bad,          //
     test_basic_puffs_version_good,         //
     test_basic_status_is_error,            //
     test_basic_status_strings,             //
-    test_basic_sub_struct_constructor,     //
+    test_basic_sub_struct_initializer,     //
 
     // LZW Tests
     test_puffs_gif_lzw_decode_few_big_reads,     //

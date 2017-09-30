@@ -54,7 +54,7 @@ static const char* decode(puffs_flate_decoder* dec) {
 
 int main(int argc, char** argv) {
   puffs_flate_decoder dec;
-  puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
+  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
   const char* status_msg = decode(&dec);
 
   int status = 0;

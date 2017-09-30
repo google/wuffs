@@ -108,7 +108,7 @@ typedef int32_t puffs_gif_status;
 #define PUFFS_GIF_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
 #define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
 #define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
 #define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
 #define PUFFS_GIF_SUSPENSION_SHORT_READ 7                   // 0x00000007
@@ -218,25 +218,25 @@ typedef struct {
   } private_impl;
 } puffs_gif_decoder;
 
-// ---------------- Public Constructor and Destructor Prototypes
+// ---------------- Public Initializer Prototypes
 
-// puffs_gif_lzw_decoder_constructor is a constructor function.
+// puffs_gif_lzw_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_gif_lzw_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version,
-                                       uint32_t for_internal_use_only);
+void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
+                                      uint32_t puffs_version,
+                                      uint32_t for_internal_use_only);
 
-// puffs_gif_decoder_constructor is a constructor function.
+// puffs_gif_decoder_initialize is an initializer function.
 //
 // It should be called before any other puffs_gif_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
-                                   uint32_t puffs_version,
-                                   uint32_t for_internal_use_only);
+void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
+                                  uint32_t puffs_version,
+                                  uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
@@ -434,7 +434,7 @@ const char* puffs_gif_status_strings0[11] = {
     "gif: bad puffs version",
     "gif: bad receiver",
     "gif: bad argument",
-    "gif: constructor not called",
+    "gif: initializer not called",
     "gif: closed for writes",
     "gif: unexpected EOF",
     "gif: short read",
@@ -472,7 +472,7 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
 
 // ---------------- Private Consts
 
-// ---------------- Private Constructor and Destructor Prototypes
+// ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
 
@@ -489,25 +489,25 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
                                              puffs_base_writer1 a_dst,
                                              puffs_base_reader1 a_src);
 
-// ---------------- Constructor and Destructor Implementations
+// ---------------- Initializer Implementations
 
-// PUFFS_MAGIC is a magic number to check that constructors are called. It's
+// PUFFS_MAGIC is a magic number to check that initializers are called. It's
 // not foolproof, given C doesn't automatically zero memory before use, but it
 // should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
 #define PUFFS_MAGIC (0xCB3699CCU)
 
-// PUFFS_ALREADY_ZEROED is passed from a container struct's constructor to a
-// containee struct's constructor when the container has already zeroed the
+// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
+// containee struct's initializer when the container has already zeroed the
 // containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
 #define PUFFS_ALREADY_ZEROED (0x68602EF1U)
 
-void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
-                                       uint32_t puffs_version,
-                                       uint32_t for_internal_use_only) {
+void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
+                                      uint32_t puffs_version,
+                                      uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -522,9 +522,9 @@ void puffs_gif_lzw_decoder_constructor(puffs_gif_lzw_decoder* self,
   self->private_impl.f_literal_width = 8;
 }
 
-void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
-                                   uint32_t puffs_version,
-                                   uint32_t for_internal_use_only) {
+void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
+                                  uint32_t puffs_version,
+                                  uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -536,8 +536,8 @@ void puffs_gif_decoder_constructor(puffs_gif_decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = PUFFS_MAGIC;
-  puffs_gif_lzw_decoder_constructor(&self->private_impl.f_lzw, PUFFS_VERSION,
-                                    PUFFS_ALREADY_ZEROED);
+  puffs_gif_lzw_decoder_initialize(&self->private_impl.f_lzw, PUFFS_VERSION,
+                                   PUFFS_ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
@@ -549,7 +549,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
     return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
@@ -1201,7 +1201,7 @@ void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
     return;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return;
@@ -1221,7 +1221,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     return PUFFS_GIF_ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_CONSTRUCTOR_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
