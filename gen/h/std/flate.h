@@ -179,6 +179,7 @@ typedef struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
       uint64_t v_n;
+      uint32_t v_already_full;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;

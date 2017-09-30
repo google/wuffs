@@ -11,6 +11,8 @@
 #define BUFFER_SIZE (64 * 1024 * 1024)
 #define PALETTE_BUFFER_SIZE (4 * 245)
 
+#define PUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];

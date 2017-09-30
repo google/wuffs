@@ -94,7 +94,7 @@ pub struct decoder?(
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history[32 * 1024] u8,
+	history[0x8000] u8,  // 32 KiB.
 	history_index u32,
 
 	// code_lengths is used to pass out-of-band data to init_huff.
@@ -112,18 +112,42 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		// modify the state of in.dst, so future mutations (via the slice) can
 		// change the veracity of any in.dst assertions?
 		var written[] u8 = in.dst.slice(m0:m0, m1:m1)
-		if written.length() >= (32 * 1024) {
-			written = written.suffix(up_to:32 * 1024)
+		// Append written, the decoded output, to the history ringbuffer.
+		if written.length() >= 0x8000 {
+			// If written is longer than the ringbuffer, we can ignore the
+			// previous value of history_index, as we will overwrite the whole
+			// ringbuffer.
+			written = written.suffix(up_to:0x8000)
 			this.history[:].copy_from(s:written)
-			this.history_index = 32 * 1024
+			this.history_index = 0x8000
 		} else {
-			// TODO: fill part of the history.
+			// Otherwise, append written to the history ringbuffer starting at
+			// the previous history_index (modulo 0x8000).
 			var n u64 = this.history[this.history_index & 0x7FFF:].copy_from(s:written)
 			if n < written.length() {
+				// a_slice.copy_from(s:b_slice) returns the minimum of the two
+				// slice lengths. If that value is less than b_slice.length(),
+				// then not all of b_slice was copied.
+				//
+				// In terms of the history ringbuffer, that means that we have
+				// to wrap around and copy the remainder of written over the
+				// start of the history ringbuffer.
 				written = written[n:]
 				n = this.history[:].copy_from(s:written)
+				// Set history_index (modulo 0x8000) to the length of this
+				// remainder. The &0x7FFF is redundant, but proves to the
+				// compiler that the conversion to u32 will not overflow. The
+				// +0x8000 is to maintain that the history ringbuffer is full
+				// if and only if history_index >= 0x8000.
+				this.history_index = ((n & 0x7FFF) as u32) + 0x8000
+			} else {
+				// We didn't need to wrap around.
+				var already_full u32[..0x8000]
+				if this.history_index >= 0x8000 {
+					already_full = 0x8000
+				}
+				this.history_index = (this.history_index & 0x7FFF) + ((n & 0x7FFF) as u32) + already_full
 			}
-			// TODO: update this.history_index.
 		}
 	}
 	return z

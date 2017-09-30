@@ -221,6 +221,41 @@ void test_puffs_flate_decode_split_src() {
   }
 }
 
+bool do_test_puffs_flate_history(int i,
+                                 golden_test* gt,
+                                 puffs_base_buf1* src,
+                                 puffs_base_buf1* got,
+                                 puffs_flate_decoder* dec,
+                                 uint32_t starting_history_index,
+                                 uint64_t limit,
+                                 puffs_flate_status want_s) {
+  src->ri = gt->src_offset0;
+  src->wi = gt->src_offset1;
+  got->ri = 0;
+  got->wi = 0;
+
+  puffs_flate_decoder_constructor(dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 dst_writer = {.buf = got};
+  puffs_base_reader1 src_reader = {.buf = src};
+
+  dec->private_impl.f_history_index = starting_history_index;
+
+  dst_writer.limit.ptr_to_len = &limit;
+
+  puffs_flate_status got_s =
+      puffs_flate_decoder_decode(dec, dst_writer, src_reader);
+  puffs_flate_decoder_destructor(dec);
+  // TODO: should want_s's SHORT_WRITE be LIMITED_WRITE?
+  if (got_s != want_s) {
+    FAIL("i=%d: starting_history_index=0x%04" PRIX32
+         ": decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
+         i, starting_history_index, got_s, puffs_flate_status_string(got_s),
+         want_s, puffs_flate_status_string(want_s));
+    return false;
+  }
+  return true;
+}
+
 void test_puffs_flate_history_full() {
   proc_funcname = __func__;
 
@@ -236,38 +271,20 @@ void test_puffs_flate_history_full() {
     return;
   }
 
-  const int full_history_size = 32 * 1024;
+  const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
-    src.ri = gt->src_offset0;
-    src.wi = gt->src_offset1;
-    got.ri = 0;
-    got.wi = 0;
-
     puffs_flate_decoder dec;
-    puffs_flate_decoder_constructor(&dec, PUFFS_VERSION, 0);
-    puffs_base_writer1 dst_writer = {.buf = &got};
-    puffs_base_reader1 src_reader = {.buf = &src};
-
-    uint64_t lim = want.wi + i;
-    dst_writer.limit.ptr_to_len = &lim;
-
-    puffs_flate_status got_s =
-        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
-    puffs_flate_decoder_destructor(&dec);
-    // TODO: should SHORT_WRITE be LIMITED_WRITE?
-    puffs_flate_status want_s =
-        i >= 0 ? PUFFS_FLATE_STATUS_OK : PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
-    if (got_s != want_s) {
-      FAIL("i=%d: decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
-           i, got_s, puffs_flate_status_string(got_s), want_s,
-           puffs_flate_status_string(want_s));
+    if (!do_test_puffs_flate_history(
+            i, gt, &src, &got, &dec, 0, want.wi + i,
+            i >= 0 ? PUFFS_FLATE_STATUS_OK
+                   : PUFFS_FLATE_SUSPENSION_SHORT_WRITE)) {
       return;
     }
 
     uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
     if (dec.private_impl.f_history_index != want_history_index) {
-      FAIL("history_index: got %" PRIu32 ", want %" PRIu32,
+      FAIL("i=%d: history_index: got %" PRIu32 ", want %" PRIu32, i,
            dec.private_impl.f_history_index, want_history_index);
       return;
     }
@@ -291,6 +308,65 @@ void test_puffs_flate_history_full() {
     };
     if (!buf1s_equal("", &history_got, &history_want)) {
       return;
+    }
+  }
+}
+
+void test_puffs_flate_history_partial() {
+  proc_funcname = __func__;
+
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+
+  golden_test* gt = &flate_pi_gt;
+  if (!read_file(&src, gt->src_filename)) {
+    return;
+  }
+
+  uint32_t starting_history_indexes[] = {
+      0x0000, 0x0001, 0x1234, 0x7FFB, 0x7FFC, 0x7FFD, 0x7FFE, 0x7FFF,
+      0x8000, 0x8001, 0x9234, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0xFFFF,
+  };
+
+  int i;
+  for (i = 0; i < PUFFS_TESTLIB_ARRAY_SIZE(starting_history_indexes); i++) {
+    uint32_t starting_history_index = starting_history_indexes[i];
+
+    // The flate_pi_gt golden test file decodes to the digits of pi.
+    const char* fragment = "3.14";
+    const uint32_t fragment_length = 4;
+
+    puffs_flate_decoder dec;
+    if (!do_test_puffs_flate_history(i, gt, &src, &got, &dec,
+                                     starting_history_index, fragment_length,
+                                     PUFFS_FLATE_SUSPENSION_SHORT_WRITE)) {
+      return;
+    }
+
+    bool got_full = dec.private_impl.f_history_index >= 0x8000;
+    uint32_t got_history_index = dec.private_impl.f_history_index & 0x7FFF;
+    bool want_full = (starting_history_index + fragment_length) >= 0x8000;
+    uint32_t want_history_index =
+        (starting_history_index + fragment_length) & 0x7FFF;
+    if ((got_full != want_full) || (got_history_index != want_history_index)) {
+      FAIL("i=%d: starting_history_index=0x%04" PRIX32
+           ": history_index: got %d;%04" PRIX32 ", want %d;%04" PRIX32,
+           i, starting_history_index, (int)(got_full), got_history_index,
+           (int)(want_full), want_history_index);
+      return;
+    }
+
+    int j;
+    for (j = 0; j < fragment_length; j++) {
+      uint32_t index = (starting_history_index + j) & 0x7FFF;
+      uint8_t got = dec.private_impl.f_history[index];
+      uint8_t want = fragment[j];
+      if (got != want) {
+        FAIL("i=%d: starting_history_index=0x%04" PRIX32
+             ": j=%d: got 0x%02" PRIX8 ", want 0x%02" PRIX8,
+             i, starting_history_index, j, got, want);
+        return;
+      }
     }
   }
 }
@@ -580,6 +656,7 @@ proc tests[] = {
     test_puffs_flate_decode_romeo_fixed,  //
     test_puffs_flate_decode_split_src,    //
     test_puffs_flate_history_full,        //
+    test_puffs_flate_history_partial,     //
     test_puffs_flate_table_redirect,      //
     test_puffs_zlib_decode_midsummer,     //
     test_puffs_zlib_decode_pi,            //

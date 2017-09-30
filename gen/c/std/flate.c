@@ -179,6 +179,7 @@ typedef struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
       uint64_t v_n;
+      uint32_t v_already_full;
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
@@ -669,6 +670,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   puffs_base_buf1_mark v_m1;
   puffs_base_slice_u8 v_written;
   uint64_t v_n;
+  uint32_t v_already_full;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wend_dst = NULL;
@@ -691,6 +693,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     v_m1 = ((puffs_base_buf1_mark){});
     v_written = ((puffs_base_slice_u8){});
     v_n = self->private_impl.c_decode[0].v_n;
+    v_already_full = self->private_impl.c_decode[0].v_already_full;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -746,6 +749,16 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
               puffs_base_make_slice_u8_from_ints(self->private_impl.f_history,
                                                  0, 32768, 32768),
               v_written);
+          self->private_impl.f_history_index =
+              (((uint32_t)((v_n & 32767))) + 32768);
+        } else {
+          v_already_full = 0;
+          if (self->private_impl.f_history_index >= 32768) {
+            v_already_full = 32768;
+          }
+          self->private_impl.f_history_index =
+              ((self->private_impl.f_history_index & 32767) +
+               ((uint32_t)((v_n & 32767))) + v_already_full);
         }
       }
     }
@@ -760,6 +773,7 @@ suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_z = v_z;
   self->private_impl.c_decode[0].v_n = v_n;
+  self->private_impl.c_decode[0].v_already_full = v_already_full;
 
 exit:
   if (a_dst.buf) {
