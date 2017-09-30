@@ -35,7 +35,7 @@ size_t lgtm_len = 20;
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
 
-static const char* decode(puffs_flate_decoder* dec) {
+static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
   puffs_base_buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
   puffs_base_buf1 src = {
@@ -43,8 +43,10 @@ static const char* decode(puffs_flate_decoder* dec) {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
+  puffs_flate_decoder dec;
+  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_flate_status s =
-      puffs_flate_decoder_decode(dec, dst_writer, src_reader);
+      puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
   if (s) {
     return puffs_flate_status_string(s);
   }
@@ -53,10 +55,7 @@ static const char* decode(puffs_flate_decoder* dec) {
 }
 
 int main(int argc, char** argv) {
-  puffs_flate_decoder dec;
-  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
-  const char* status_msg = decode(&dec);
-
+  const char* status_msg = decode();
   int status = 0;
   if (status_msg) {
     status = 1;

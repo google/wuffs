@@ -34,7 +34,7 @@ size_t pjw_len;
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
 
-static const char* decode(puffs_gif_decoder* dec) {
+static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
   puffs_base_buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
   puffs_base_buf1 src = {
@@ -42,7 +42,9 @@ static const char* decode(puffs_gif_decoder* dec) {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
-  puffs_gif_status s = puffs_gif_decoder_decode(dec, dst_writer, src_reader);
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
   if (s) {
     return puffs_gif_status_string(s);
   }
@@ -69,10 +71,7 @@ int main(int argc, char** argv) {
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
-  puffs_gif_decoder dec;
-  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
-  const char* status_msg = decode(&dec);
-
+  const char* status_msg = decode();
   int status = 0;
   if (status_msg) {
     status = 1;
