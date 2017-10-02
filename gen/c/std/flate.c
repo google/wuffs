@@ -648,9 +648,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   }
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
-  puffs_base_buf1_mark v_m0;
   puffs_flate_status v_z;
-  puffs_base_buf1_mark v_m1;
   puffs_base_slice_u8 v_written;
   uint64_t v_n;
   uint32_t v_already_full;
@@ -673,9 +671,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
-    v_m0 = ((puffs_base_buf1_mark){});
     v_z = self->private_impl.c_decode[0].v_z;
-    v_m1 = ((puffs_base_buf1_mark){});
     v_written = ((puffs_base_slice_u8){});
     v_n = self->private_impl.c_decode[0].v_n;
     v_already_full = self->private_impl.c_decode[0].v_already_full;
@@ -683,7 +679,6 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    v_m0 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
     PUFFS_COROUTINE_SUSPENSION_POINT(1);
     if (a_dst.buf) {
       size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -710,10 +705,10 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
     }
     v_z = t_0;
     if (v_z > 0) {
-      v_m1 = ((puffs_base_buf1_mark){.ptr = b_wptr_dst});
-      v_written = puffs_base_make_slice_u8_from_ptrs(
-          a_dst.buf ? a_dst.buf->ptr : NULL, v_m0.ptr, v_m1.ptr,
-          a_dst.buf ? b_wptr_dst : NULL);
+      v_written = ((puffs_base_slice_u8){
+          .ptr = b_wstart_dst,
+          .len = b_wptr_dst - b_wstart_dst,
+      });
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
         puffs_base_slice_u8_copy_from(

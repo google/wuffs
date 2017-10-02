@@ -104,14 +104,14 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
-	var m0 buf1_mark = in.dst.mark()
 	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 	if z.is_suspension() {
-		var m1 buf1_mark = in.dst.mark()
 		// TODO: should "slice" be "slice!", as the return value lets you
 		// modify the state of in.dst, so future mutations (via the slice) can
 		// change the veracity of any in.dst assertions?
-		var written[] u8 = in.dst.slice(m0:m0, m1:m1)
+		//
+		// Should the RHS be "in.dst[:]" instead of a method call?
+		var written[] u8 = in.dst.slice()
 		// Append written, the decoded output, to the history ringbuffer.
 		if written.length() >= 0x8000 {
 			// If written is longer than the ringbuffer, we can ignore the
