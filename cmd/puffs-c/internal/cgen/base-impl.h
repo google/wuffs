@@ -65,7 +65,7 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_i(
+static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_i(
     puffs_base_slice_u8 s,
     uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
@@ -77,7 +77,7 @@ static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_i(
   return ((puffs_base_slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_j(
+static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_j(
     puffs_base_slice_u8 s,
     uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
@@ -86,10 +86,8 @@ static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_j(
   return ((puffs_base_slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_ij(
-    puffs_base_slice_u8 s,
-    uint64_t i,
-    uint64_t j) {
+static inline puffs_base_slice_u8
+puffs_base_slice_u8_subslice_ij(puffs_base_slice_u8 s, uint64_t i, uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
     return ((puffs_base_slice_u8){
         .ptr = s.ptr + i,

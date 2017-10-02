@@ -213,11 +213,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		rhs := n.RHS().Expr()
 		switch {
 		case mhs != nil && rhs == nil:
-			b.writes("puffs_base_make_slice_u8_subslice_i(")
+			b.writes("puffs_base_slice_u8_subslice_i(")
 		case mhs == nil && rhs != nil:
-			b.writes("puffs_base_make_slice_u8_subslice_j(")
+			b.writes("puffs_base_slice_u8_subslice_j(")
 		case mhs != nil && rhs != nil:
-			b.writes("puffs_base_make_slice_u8_subslice_ij(")
+			b.writes("puffs_base_slice_u8_subslice_ij(")
 		}
 
 		lhsIsArray := lhs.MType().Decorator().Key() == t.KeyOpenBracket
