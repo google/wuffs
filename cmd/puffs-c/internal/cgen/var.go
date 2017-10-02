@@ -65,7 +65,7 @@ func (g *gen) findDerivedVars() {
 	}
 }
 
-func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, decl bool) error {
+func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header bool) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -75,14 +75,18 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, decl bo
 	nameStr := name.String(g.tm)
 	switch typ.Name().Key() {
 	case t.KeyReader1:
-		if decl {
+		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		if header {
+			b.printf("%srstart_%s = %srptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+		}
 		b.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;",
 			aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base_limit1* lim;")
@@ -94,14 +98,18 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, decl bo
 		b.printf("}\n")
 
 	case t.KeyWriter1:
-		if decl {
+		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("%swptr_%s = %s%s.buf->ptr + %s%s.buf->wi;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		if header {
+			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+		}
 		b.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;",
 			aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base_limit1* lim;")
@@ -115,7 +123,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, decl bo
 	return nil
 }
 
-func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr) error {
+func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer bool) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -135,6 +143,11 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr) error {
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
 		b.printf("}")
 
+		if footer {
+			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
+		}
+
 		b.printf("}\n")
 
 	case t.KeyWriter1:
@@ -148,8 +161,10 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr) error {
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
 		b.printf("}")
 
-		// Not all writer1 methods use the wend variable.
-		b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
+		if footer {
+			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
+		}
 
 		b.printf("}\n")
 	}
@@ -189,7 +204,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" && s != "lzw_src" {
 			continue
 		}
-		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType()); err != nil {
+		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
 			return err
 		}
 	}
