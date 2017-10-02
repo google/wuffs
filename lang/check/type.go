@@ -955,9 +955,9 @@ swtch:
 		if n.Min() != nil || n.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		if name := n.Name().Key(); name == t.KeyBool || name == t.KeyStatus ||
-			name == t.KeyReader1 || name == t.KeyWriter1 {
-			break
+		switch n.Name().Key() {
+		case t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
+			break swtch
 		}
 		for _, s := range q.c.structs {
 			if s.ID == n.Name() {
