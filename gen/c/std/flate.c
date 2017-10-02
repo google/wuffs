@@ -348,20 +348,6 @@ static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ints(
-    uint8_t* start,
-    uint64_t i,
-    uint64_t j,
-    uint64_t k) {
-  if ((i <= j) && (j <= k) && (k <= SIZE_MAX)) {
-    return ((puffs_base_slice_u8){
-        .ptr = start + i,
-        .len = j - i,
-    });
-  }
-  return ((puffs_base_slice_u8){});
-}
-
 static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_i(
     puffs_base_slice_u8 s,
     uint64_t i) {
@@ -692,21 +678,22 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
         puffs_base_slice_u8_copy_from(
-            puffs_base_make_slice_u8_from_ints(self->private_impl.f_history, 0,
-                                               32768, 32768),
+            ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
+                                   .len = 32768}),
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
         v_n = puffs_base_slice_u8_copy_from(
-            puffs_base_make_slice_u8_from_ints(
-                self->private_impl.f_history,
-                self->private_impl.f_history_index & 32767, 32768, 32768),
+            puffs_base_make_slice_u8_subslice_i(
+                ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
+                                       .len = 32768}),
+                self->private_impl.f_history_index & 32767),
             v_written);
         if (v_n < ((uint64_t)(v_written.len))) {
           v_written = puffs_base_make_slice_u8_subslice_i(v_written, v_n);
           v_n = puffs_base_slice_u8_copy_from(
-              puffs_base_make_slice_u8_from_ints(self->private_impl.f_history,
-                                                 0, 32768, 32768),
+              ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
+                                     .len = 32768}),
               v_written);
           self->private_impl.f_history_index =
               (((uint32_t)((v_n & 32767))) + 32768);
