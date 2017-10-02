@@ -352,10 +352,10 @@ void test_puffs_flate_history_partial() {
     }
 
     int j;
-    for (j = 0; j < fragment_length; j++) {
+    for (j = -2; j < (int)(fragment_length) + 2; j++) {
       uint32_t index = (starting_history_index + j) & 0x7FFF;
       uint8_t got = dec.private_impl.f_history[index];
-      uint8_t want = fragment[j];
+      uint8_t want = (0 <= j && j < fragment_length) ? fragment[j] : 0;
       if (got != want) {
         FAIL("i=%d: starting_history_index=0x%04" PRIX32
              ": j=%d: got 0x%02" PRIX8 ", want 0x%02" PRIX8,
