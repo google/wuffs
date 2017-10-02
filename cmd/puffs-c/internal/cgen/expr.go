@@ -148,16 +148,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyMark, 0) {
-			if pp == parenthesesMandatory {
-				b.writeb('(')
-			}
-			b.printf("(puffs_base_buf1_mark){.ptr= %swptr_dst}", bPrefix)
-			if pp == parenthesesMandatory {
-				b.writeb(')')
-			}
-			return nil
-		}
 		if isInDst(g.tm, n, t.KeySlice, 0) {
 			b.printf("((puffs_base_slice_u8){ .ptr = %swstart_dst, .len = %swptr_dst - %swstart_dst, })",
 				bPrefix, bPrefix, bPrefix)
@@ -452,21 +442,20 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 }
 
 var cTypeNames = [...]string{
-	t.KeyI8:       "int8_t",
-	t.KeyI16:      "int16_t",
-	t.KeyI32:      "int32_t",
-	t.KeyI64:      "int64_t",
-	t.KeyU8:       "uint8_t",
-	t.KeyU16:      "uint16_t",
-	t.KeyU32:      "uint32_t",
-	t.KeyU64:      "uint64_t",
-	t.KeyUsize:    "size_t",
-	t.KeyBool:     "bool",
-	t.KeyBuf1:     "puffs_base_buf1",
-	t.KeyBuf1Mark: "puffs_base_buf1_mark",
-	t.KeyReader1:  "puffs_base_reader1",
-	t.KeyWriter1:  "puffs_base_writer1",
-	t.KeyBuf2:     "puffs_base_buf2",
+	t.KeyI8:      "int8_t",
+	t.KeyI16:     "int16_t",
+	t.KeyI32:     "int32_t",
+	t.KeyI64:     "int64_t",
+	t.KeyU8:      "uint8_t",
+	t.KeyU16:     "uint16_t",
+	t.KeyU32:     "uint32_t",
+	t.KeyU64:     "uint64_t",
+	t.KeyUsize:   "size_t",
+	t.KeyBool:    "bool",
+	t.KeyBuf1:    "puffs_base_buf1",
+	t.KeyReader1: "puffs_base_reader1",
+	t.KeyWriter1: "puffs_base_writer1",
+	t.KeyBuf2:    "puffs_base_buf2",
 }
 
 var cOpNames = [256]string{

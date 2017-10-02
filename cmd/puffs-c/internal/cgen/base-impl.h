@@ -79,20 +79,6 @@ static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ints(
   return ((puffs_base_slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ptrs(
-    uint8_t* start,
-    uint8_t* mark0,
-    uint8_t* mark1,
-    uint8_t* end) {
-  if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
-    return ((puffs_base_slice_u8){
-        .ptr = mark0,
-        .len = mark1 - mark0,
-    });
-  }
-  return ((puffs_base_slice_u8){});
-}
-
 static inline puffs_base_slice_u8 puffs_base_make_slice_u8_subslice_i(
     puffs_base_slice_u8 s,
     uint64_t i) {

@@ -654,7 +654,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isInSrc(q.tm, n, t.KeySkip32, 1) ||
 			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
 			isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) ||
-			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeySlice, 0) ||
+			isInDst(q.tm, n, t.KeySlice, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||

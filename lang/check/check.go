@@ -56,14 +56,13 @@ func trimQuotes(s string) string {
 
 // typeExprFoo is an *ast.Node MType (implicit type).
 var (
-	typeExprBool     = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
-	typeExprIdeal    = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
-	typeExprList     = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
-	typeExprBuf1Mark = a.NewTypeExpr(0, t.IDBuf1Mark, nil, nil, nil)
-	typeExprStatus   = a.NewTypeExpr(0, t.IDStatus, nil, nil, nil)
-	typeExprU8       = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
-	typeExprU64      = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
-	typeExprSliceU8  = a.NewTypeExpr(t.IDColon, 0, nil, nil, typeExprU8)
+	typeExprBool    = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
+	typeExprIdeal   = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
+	typeExprList    = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
+	typeExprStatus  = a.NewTypeExpr(0, t.IDStatus, nil, nil, nil)
+	typeExprU8      = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
+	typeExprU64     = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
+	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, nil, nil, typeExprU8)
 
 	// TODO: delete this.
 	typeExprPlaceholder   = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)

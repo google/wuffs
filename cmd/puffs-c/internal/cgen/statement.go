@@ -454,8 +454,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
 		//
 		// TODO: %s%s.buf->ptr might be a NULL pointer dereference. In any
-		// case, we need to compare the (resumed) distance against a mark, not
-		// against the beginning of the dst buffer.
+		// case, we need to compare the (resumed) distance against the
+		// b_wstart_dst pointer, not against the beginning of the dst buffer.
 		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %s%s.buf->ptr)))) { "+
 			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
 			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, aPrefix, wName, g.PKGPREFIX)
@@ -709,7 +709,7 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyMark && methodName != t.KeySlice
+	callSuspendible := methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false

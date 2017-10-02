@@ -57,12 +57,6 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base_buf1;
 
-// puffs_base_buf1_mark marks a position (pointer + offset) in a
-// puffs_base_buf1.
-typedef struct {
-  uint8_t* ptr;
-} puffs_base_buf1_mark;
-
 // puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
@@ -333,20 +327,6 @@ static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ints(
     return ((puffs_base_slice_u8){
         .ptr = start + i,
         .len = j - i,
-    });
-  }
-  return ((puffs_base_slice_u8){});
-}
-
-static inline puffs_base_slice_u8 puffs_base_make_slice_u8_from_ptrs(
-    uint8_t* start,
-    uint8_t* mark0,
-    uint8_t* mark1,
-    uint8_t* end) {
-  if ((start <= mark0) && (mark0 <= mark1) && (mark1 <= end)) {
-    return ((puffs_base_slice_u8){
-        .ptr = mark0,
-        .len = mark1 - mark0,
     });
   }
   return ((puffs_base_slice_u8){});
