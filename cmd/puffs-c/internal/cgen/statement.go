@@ -452,13 +452,9 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		const wName = "dst"
 		b.printf("size_t %s%d = (size_t)(%s >> 32);", tPrefix, temp0, scratchName)
 		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
-		//
-		// TODO: %s%s.buf->ptr might be a NULL pointer dereference. In any
-		// case, we need to compare the (resumed) distance against the
-		// b_wstart_dst pointer, not against the beginning of the dst buffer.
-		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %s%s.buf->ptr)))) { "+
+		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %swstart_%s)))) { "+
 			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
-			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, aPrefix, wName, g.PKGPREFIX)
+			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, bPrefix, wName, g.PKGPREFIX)
 		b.printf("uint8_t* %s%d = %swptr_%s - %s%d;\n", tPrefix, temp1, bPrefix, wName, tPrefix, temp0)
 		b.printf("uint32_t %s%d = (uint32_t)(%s);", tPrefix, temp2, scratchName)
 

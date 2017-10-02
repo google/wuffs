@@ -1319,8 +1319,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         PUFFS_COROUTINE_SUSPENSION_POINT(9);
         size_t t_6 =
             (size_t)(self->private_impl.c_decode_huffman[0].scratch >> 32);
-        if (PUFFS_UNLIKELY((t_6 == 0) ||
-                           (t_6 > (b_wptr_dst - a_dst.buf->ptr)))) {
+        if (PUFFS_UNLIKELY((t_6 == 0) || (t_6 > (b_wptr_dst - b_wstart_dst)))) {
           status = PUFFS_FLATE_ERROR_BAD_ARGUMENT;
           goto exit;
         }
