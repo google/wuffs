@@ -23,7 +23,11 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 	var end_code u32[5..257] = clear_code + 1
 
 	// These variables do change.
-	var save_code u32[..4096] = end_code  // 4096 means do not save.
+	//
+	// save_code is the code for which, after decoding a code, we save what the
+	// next back-reference expands to. The README.md file also calls this value
+	// `max`. 4096 means do not save.
+	var save_code u32[..4096] = end_code
 	var prev_code u32[..4095]
 	var width u32[..12] = this.literal_width + 1
 
