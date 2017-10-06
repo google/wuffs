@@ -197,7 +197,7 @@ typedef struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_distance;
-      uint64_t scratch;
+      uint32_t v_n;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;

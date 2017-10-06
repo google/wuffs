@@ -191,6 +191,7 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	if (n.low_bits(n:16) + n.high_bits(n:16)) != 0xFFFF {
 		return error "inconsistent stored block length"
 	}
+	// TODO: drop the "?" from "copy_from32?"?
 	in.dst.copy_from32?(r:in.src, n:n.low_bits(n:16))
 }
 
@@ -338,14 +339,22 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
-		// TODO: copy_history32 should also take some notion of how much of dst
-		// is valid. When copying from a distance greater than that, we also
-		// need to keep a sliding window of previous history.
 		while true {
 			if (distance as u64) > in.dst.length() {
+				// TODO: copy from this.history.
 			}
-			in.dst.copy_history32?(distance:distance, length:length)
-			break
+			var n u32 = in.dst.copy_history32(distance:distance, length:length)
+			if length == n {
+				break
+			} else if length < n {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			length -= n
+			// TODO: distinguish between short and limited writes?
+			//
+			// TODO: return suspension "short write" instead of this bogus
+			// return error "bad Huffman code".
+			return error "bad Huffman code"
 		}
 	}
 

@@ -417,72 +417,6 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 		b.writes("}\n")
 
-	} else if isInDst(g.tm, n, t.KeyCopyHistory32, 2) {
-		if g.currFunk.tempW > maxTemp-2 {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		temp0 := g.currFunk.tempW + 0
-		temp1 := g.currFunk.tempW + 1
-		temp2 := g.currFunk.tempW + 2
-		g.currFunk.tempW += 3
-		g.currFunk.tempR += 3
-
-		b.writes("{\n")
-
-		g.currFunk.usesScratch = true
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
-
-		b.printf("%s = ((uint64_t)(", scratchName)
-		x0 := n.Args()[0].Arg().Value()
-		if err := g.writeExpr(b, x0, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writes(")<<32) | (uint64_t)(")
-		x1 := n.Args()[1].Arg().Value()
-		if err := g.writeExpr(b, x1, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writes(");\n")
-		if err := g.writeCoroSuspPoint(b); err != nil {
-			return err
-		}
-
-		const wName = "dst"
-		b.printf("size_t %s%d = (size_t)(%s >> 32);", tPrefix, temp0, scratchName)
-		// TODO: it's not a BAD_ARGUMENT if we can copy from the sliding window.
-		b.printf("if (PUFFS_UNLIKELY((%s%d == 0) || (%s%d > (%swptr_%s - %swstart_%s)))) { "+
-			"status = %sERROR_BAD_ARGUMENT; goto exit; }\n",
-			tPrefix, temp0, tPrefix, temp0, bPrefix, wName, bPrefix, wName, g.PKGPREFIX)
-		b.printf("uint8_t* %s%d = %swptr_%s - %s%d;\n", tPrefix, temp1, bPrefix, wName, tPrefix, temp0)
-		b.printf("uint32_t %s%d = (uint32_t)(%s);", tPrefix, temp2, scratchName)
-
-		b.printf("if (PUFFS_LIKELY((size_t)(%s%d) <= (%swend_%s - %swptr_%s))) {",
-			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
-
-		b.printf("for (; %s%d >= 8; %s%d -= 8) {", tPrefix, temp2, tPrefix, temp2)
-		for i := 0; i < 8; i++ {
-			b.printf("*%swptr_%s++ = *%s%d++;\n", bPrefix, wName, tPrefix, temp1)
-		}
-		b.writes("}\n")
-		b.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
-			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
-
-		b.writes("} else {\n")
-
-		b.printf("%s%d = (uint32_t)(%swend_%s - %swptr_%s);\n",
-			tPrefix, temp2, bPrefix, wName, bPrefix, wName)
-		b.printf("%s -= (uint64_t)(%s%d);\n", scratchName, tPrefix, temp2)
-		b.printf("for (; %s%d; %s%d--) { *%swptr_%s++ = *%s%d++; }\n",
-			tPrefix, temp2, tPrefix, temp2, bPrefix, wName, tPrefix, temp1)
-		// TODO: SHORT_WRITE vs LIMITED_WRITE?
-		b.printf("status = %sSUSPENSION_SHORT_WRITE; goto suspend;\n", g.PKGPREFIX)
-
-		b.writes("}\n")
-
-		b.writes("}\n")
-
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		b.printf("status = %s%s_decode_header(self, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
@@ -705,7 +639,7 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeySlice
+	callSuspendible := methodName != t.KeyCopyHistory32 && methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false

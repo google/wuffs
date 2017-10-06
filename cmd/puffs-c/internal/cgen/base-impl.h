@@ -132,4 +132,39 @@ static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
   return n;
 }
 
+static inline uint32_t puffs_base_writer1_copy_history32(uint8_t** ptr_ptr,
+                                                         uint8_t* start,
+                                                         uint8_t* end,
+                                                         uint32_t distance,
+                                                         uint32_t length) {
+  uint8_t* ptr = *ptr_ptr;
+  size_t d = ptr - start;
+  if ((d == 0) || (d < (size_t)(distance))) {
+    return 0;
+  }
+  start = ptr - distance;
+  size_t l = end - ptr;
+  if ((size_t)(length) > l) {
+    length = l;
+  } else {
+    l = length;
+  }
+  // TODO: is manual unrolling actually helpful?
+  for (; l >= 8; l -= 8) {
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+  }
+  for (; l; l--) {
+    *ptr++ = *start++;
+  }
+  *ptr_ptr = ptr;
+  return length;
+}
+
 #endif  // PUFFS_BASE_IMPL_H

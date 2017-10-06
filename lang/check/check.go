@@ -61,6 +61,7 @@ var (
 	typeExprList    = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
 	typeExprStatus  = a.NewTypeExpr(0, t.IDStatus, nil, nil, nil)
 	typeExprU8      = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
+	typeExprU32     = a.NewTypeExpr(0, t.IDU32, nil, nil, nil)
 	typeExprU64     = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
 	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, nil, nil, typeExprU8)
 
