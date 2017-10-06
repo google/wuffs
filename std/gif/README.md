@@ -2,7 +2,7 @@
 
 GIF (Graphics Interchange Format) is an image compression format for paletted
 still and animated images. It is specified in [the GIF89a
-specification](http://www.w3.org/Graphics/GIF/spec-gif89a.txt).
+specification](https://www.w3.org/Graphics/GIF/spec-gif89a.txt).
 
 
 # Wire Format Worked Example
