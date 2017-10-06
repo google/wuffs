@@ -171,12 +171,20 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
-			b.writes("(uint64_t)(")
+
 			x := n.LHS().Expr().LHS().Expr()
-			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
-				return err
+			if typ := x.MType(); typ.Decorator() == 0 && typ.Name().Key() == t.KeyWriter1 {
+				// TODO: don't hard-code dst.
+				const wName = "dst"
+				b.printf("(uint64_t)(%swptr_%s - %swstart_%s)", bPrefix, wName, bPrefix, wName)
+			} else {
+				b.writes("(uint64_t)(")
+				if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
+					return err
+				}
+				b.writes(".len)")
 			}
-			b.writes(".len)")
+
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}

@@ -1314,6 +1314,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
       v_distance += ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1));
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
+      if (((uint64_t)(v_distance)) > ((uint64_t)(b_wptr_dst - b_wstart_dst))) {
+      }
       PUFFS_COROUTINE_SUSPENSION_POINT(8);
       {
         self->private_impl.c_decode_huffman[0].scratch =
