@@ -351,10 +351,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 			}
 			length -= n
 			// TODO: distinguish between short and limited writes?
-			//
-			// TODO: return suspension "short write" instead of this bogus
-			// return error "bad Huffman code".
-			return error "bad Huffman code"
+			return suspension "short write"
 		}
 	}
 

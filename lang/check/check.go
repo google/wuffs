@@ -95,6 +95,12 @@ type Struct struct {
 	Struct *a.Struct
 }
 
+var builtInStatuses = map[string]t.ID{
+	// TODO: fill in the rest of the built in statuses.
+	"short read":  t.IDSuspension,
+	"short write": t.IDSuspension,
+}
+
 func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {

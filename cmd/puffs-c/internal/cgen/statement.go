@@ -122,8 +122,16 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		retExpr := (*a.Expr)(nil)
 		if n.Keyword() != 0 {
 			ret = g.statusMap[n.Message()]
+			if ret.name == "" {
+				msg := trimQuotes(n.Message().String(g.tm))
+				suffix := builtInStatusSuffixes[msg]
+				if suffix == "" {
+					return fmt.Errorf("no status code for %q", msg)
+				}
+				ret.name = g.PKGPREFIX + suffix
+			}
 		} else if retExpr = n.Value(); retExpr == nil {
-			ret.name = fmt.Sprintf("%sSTATUS_OK", g.PKGPREFIX)
+			ret.name = g.PKGPREFIX + "STATUS_OK"
 		}
 		if g.currFunk.suspendible {
 			b.writes("status = ")

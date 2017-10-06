@@ -1365,8 +1365,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
           goto exit;
         }
         v_length -= v_n;
-        status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE;
-        goto exit;
+        status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+        goto suspend;
       }
     label_5_break:;
     }

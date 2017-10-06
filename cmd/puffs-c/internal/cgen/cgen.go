@@ -97,6 +97,12 @@ var builtInStatuses = [...]string{
 	"suspension limited write",
 }
 
+var builtInStatusSuffixes = map[string]string{
+	// TODO: fill in the rest of the built in statuses.
+	"short read":  "SUSPENSION_SHORT_READ",
+	"short write": "SUSPENSION_SHORT_WRITE",
+}
+
 func init() {
 	// The +1 is for the error bit (the sign bit).
 	if statusCodeNamespaceShift+base38.MaxBits+1 != 32 {
@@ -105,6 +111,13 @@ func init() {
 	if len(builtInStatuses) > maxNamespacedStatusCode {
 		panic("too many builtInStatuses")
 	}
+}
+
+func trimQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 type replacementPolicy bool
