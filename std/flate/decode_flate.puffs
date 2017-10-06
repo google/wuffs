@@ -341,9 +341,12 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		// TODO: copy_history32 should also take some notion of how much of dst
 		// is valid. When copying from a distance greater than that, we also
 		// need to keep a sliding window of previous history.
-		if (distance as u64) > in.dst.length() {
+		while true {
+			if (distance as u64) > in.dst.length() {
+			}
+			in.dst.copy_history32?(distance:distance, length:length)
+			break
 		}
-		in.dst.copy_history32?(distance:distance, length:length)
 	}
 
 	this.bits = bits
