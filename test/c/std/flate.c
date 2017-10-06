@@ -463,19 +463,19 @@ void test_puffs_flate_table_redirect() {
   uint32_t got;
   uint32_t want;
   got = dec.private_impl.f_huffs[0][0x017F];
-  want = 0x80020039;
+  want = 0x10020039;
   if (got != want) {
     FAIL("huffs[0][0x017F]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
     return;
   }
   got = dec.private_impl.f_huffs[0][0x00FF];
-  want = 0x80020839;
+  want = 0x10020839;
   if (got != want) {
     FAIL("huffs[0][0x00FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
     return;
   }
   got = dec.private_impl.f_huffs[0][0x01FF];
-  want = 0x80021049;
+  want = 0x10021049;
   if (got != want) {
     FAIL("huffs[0][0x01FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got, want);
     return;
@@ -483,8 +483,8 @@ void test_puffs_flate_table_redirect() {
 
   // The first 2nd-level table should look like wants.
   const uint32_t wants[8] = {
-      0x40000801, 0x40000903, 0x40000801, 0x40000B03,
-      0x40000801, 0x40000A03, 0x40000801, 0x40000C03,
+      0x80000801, 0x80000903, 0x80000801, 0x80000B03,
+      0x80000801, 0x80000A03, 0x80000801, 0x80000C03,
   };
   for (i = 0; i < 8; i++) {
     got = dec.private_impl.f_huffs[0][0x0200 + i];

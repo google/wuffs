@@ -501,19 +501,21 @@ static const uint8_t puffs_flate_reverse8[256] = {
 };
 
 static const uint32_t puffs_flate_lcode_magic_numbers[32] = {
-    536871680, 536871936, 536872192, 536872448, 536872704, 536872960, 536873216,
-    536873472, 536873744, 536874256, 536874768, 536875280, 536875808, 536876832,
-    536877856, 536878880, 536879920, 536881968, 536884016, 536886064, 536888128,
-    536892224, 536896320, 536900416, 536904528, 536912720, 536920912, 536929104,
-    536936960, 134217728, 134217728, 134217728,
+    1073742592, 1073742848, 1073743104, 1073743360, 1073743616, 1073743872,
+    1073744128, 1073744384, 1073744656, 1073745168, 1073745680, 1073746192,
+    1073746720, 1073747744, 1073748768, 1073749792, 1073750832, 1073752880,
+    1073754928, 1073756976, 1073759040, 1073763136, 1073767232, 1073771328,
+    1073775440, 1073783632, 1073791824, 1073800016, 1073807872, 134217728,
+    134217728,  134217728,
 };
 
 static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
-    536871168, 536871424, 536871680, 536871936, 536872208, 536872720, 536873248,
-    536874272, 536875312, 536877360, 536879424, 536883520, 536887632, 536895824,
-    536904032, 536920416, 536936816, 536969584, 537002368, 537067904, 537133456,
-    537264528, 537395616, 537657760, 537919920, 538444208, 538968512, 540017088,
-    541065680, 543162832, 134217728, 134217728,
+    1073742080, 1073742336, 1073742592, 1073742848, 1073743120, 1073743632,
+    1073744160, 1073745184, 1073746224, 1073748272, 1073750336, 1073754432,
+    1073758544, 1073766736, 1073774944, 1073791328, 1073807728, 1073840496,
+    1073873280, 1073938816, 1074004368, 1074135440, 1074266528, 1074528672,
+    1074790832, 1075315120, 1075839424, 1076888000, 1077936592, 1080033744,
+    134217728,  134217728,
 };
 
 // ---------------- Private Initializer Prototypes
@@ -1163,7 +1165,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         v_n_bits += 8;
       }
     label_1_break:;
-      if ((v_table_entry >> 31) != 0) {
+      if ((v_table_entry >> 28) == 1) {
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
@@ -1190,13 +1192,13 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
           v_n_bits += 8;
         }
       label_2_break:;
-        if ((v_table_entry >> 31) != 0) {
+        if ((v_table_entry >> 28) == 1) {
           status =
               PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
           goto exit;
         }
       }
-      if ((v_table_entry >> 30) != 0) {
+      if ((v_table_entry >> 31) != 0) {
         PUFFS_COROUTINE_SUSPENSION_POINT(3);
         if (b_wptr_dst == b_wend_dst) {
           status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
@@ -1204,8 +1206,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         }
         *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
         goto label_0_continue;
+      } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
-      } else if ((v_table_entry >> 28) != 0) {
         goto label_0_break;
       } else if ((v_table_entry >> 24) == 8) {
         status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE;
@@ -1251,7 +1253,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         v_n_bits += 8;
       }
     label_3_break:;
-      if ((v_table_entry >> 31) != 0) {
+      if ((v_table_entry >> 28) == 1) {
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
@@ -1284,7 +1286,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
           goto exit;
         }
       }
-      if ((v_table_entry >> 24) != 32) {
+      if ((v_table_entry >> 24) != 64) {
         if ((v_table_entry >> 24) == 8) {
           status = PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE;
           goto exit;
@@ -1600,7 +1602,7 @@ puffs_flate_status puffs_flate_decoder_init_dynamic_huffman(
         v_n_bits += 8;
       }
     label_1_break:;
-      if ((v_table_entry >> 24) != 64) {
+      if ((v_table_entry >> 24) != 128) {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
@@ -1949,7 +1951,7 @@ label_1_break:;
             (((uint32_t)(puffs_flate_reverse8[v_redirect_key >> 1])) |
              ((v_redirect_key & 1) << 8));
         self->private_impl.f_huffs[a_which][v_redirect_key] =
-            (2147483657 | (v_top << 8) | (v_tmp << 4));
+            (268435465 | (v_top << 8) | (v_tmp << 4));
       }
     }
     if ((v_key >= 512) || (v_counts[v_prev_cl] <= 0)) {
@@ -1963,9 +1965,9 @@ label_1_break:;
     v_reversed_key >>= (9 - v_cl);
     v_symbol = ((uint32_t)(v_symbols[v_i]));
     if (v_symbol == 256) {
-      v_value = (268435456 | v_cl);
+      v_value = (536870912 | v_cl);
     } else if ((v_symbol < 256) && (a_which == 0)) {
-      v_value = (1073741824 | (v_symbol << 8) | v_cl);
+      v_value = (2147483648 | (v_symbol << 8) | v_cl);
     } else if (v_symbol >= a_base_symbol) {
       v_symbol -= a_base_symbol;
       if (a_which == 0) {

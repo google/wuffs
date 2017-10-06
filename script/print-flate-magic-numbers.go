@@ -30,7 +30,7 @@ func main1() error {
 		for j := 0; j < 32; j++ {
 			x := uint32(0x08000000)
 			if baseNumbers[i][j] != bad {
-				x = 0x20000000 | (baseNumbers[i][j] << 8) | (extraBits[i][j] << 4)
+				x = 0x40000000 | (baseNumbers[i][j] << 8) | (extraBits[i][j] << 4)
 			}
 			fmt.Printf("0x%08X,", x)
 			if j&7 == 7 {

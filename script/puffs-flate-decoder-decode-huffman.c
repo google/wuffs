@@ -128,19 +128,20 @@ outer_loop:
       uint32_t n = table_entry & 0x0F;
       bits >>= n;
       n_bits -= n;
-      if ((table_entry >> 30) == 1) {
+      if ((table_entry >> 31) != 0) {
+        // Literal.
         *pdst++ = (uint8_t)(table_entry >> 8);
         goto outer_loop;
       }
-      if ((table_entry >> 29) == 1) {
-        // Back-reference.
+      if ((table_entry >> 30) != 0) {
+        // Back-reference; length = base number + extra bits.
         break;
       }
-      if ((table_entry >> 28) == 1) {
+      if ((table_entry >> 29) != 0) {
         // End of block.
         goto end;
       }
-      if ((table_entry >> 24) != 0x80) {
+      if ((table_entry >> 24) != 0x10) {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
@@ -191,11 +192,11 @@ outer_loop:
       uint32_t n = table_entry & 0x0F;
       bits >>= n;
       n_bits -= n;
-      if ((table_entry >> 29) == 1) {
-        // Back-reference.
+      if ((table_entry >> 30) != 0) {
+        // Back-reference; distance = base number + extra bits.
         break;
       }
-      if ((table_entry >> 24) != 0x80) {
+      if ((table_entry >> 24) != 0x10) {
         status =
             PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
