@@ -302,8 +302,10 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
   case n:;
 
 #define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status <= 0) {                                      \
+  if (status < 0) {                                       \
     goto exit;                                            \
+  } else if (status == 0) {                               \
+    goto ok;                                              \
   }                                                       \
   coro_susp_point = n;                                    \
   goto suspend;                                           \
@@ -779,6 +781,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
       status = v_z;
       PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
+
+    goto ok;
+  ok:
     self->private_impl.c_decode[0].coro_susp_point = 0;
     goto exit;
   }
@@ -950,6 +955,9 @@ puffs_flate_status puffs_flate_decoder_decode_blocks(puffs_flate_decoder* self,
         goto suspend;
       }
     }
+
+    goto ok;
+  ok:
     self->private_impl.c_decode_blocks[0].coro_susp_point = 0;
     goto exit;
   }
@@ -1091,6 +1099,9 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
   label_0_break:;
+
+    goto ok;
+  ok:
     self->private_impl.c_decode_uncompressed[0].coro_susp_point = 0;
     goto exit;
   }
@@ -1405,6 +1416,9 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
   label_0_break:;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
+
+    goto ok;
+  ok:
     self->private_impl.c_decode_huffman[0].coro_susp_point = 0;
     goto exit;
   }
@@ -1510,6 +1524,9 @@ puffs_flate_status puffs_flate_decoder_init_fixed_huffman(
     if (status) {
       goto suspend;
     }
+
+    goto ok;
+  ok:
     self->private_impl.c_init_fixed_huffman[0].coro_susp_point = 0;
     goto exit;
   }
@@ -1730,6 +1747,9 @@ puffs_flate_status puffs_flate_decoder_init_dynamic_huffman(
     }
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
+
+    goto ok;
+  ok:
     self->private_impl.c_init_dynamic_huffman[0].coro_susp_point = 0;
     goto exit;
   }
@@ -2196,6 +2216,9 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       }
     }
     v_checksum = t_3;
+
+    goto ok;
+  ok:
     self->private_impl.c_decode[0].coro_susp_point = 0;
     goto exit;
   }

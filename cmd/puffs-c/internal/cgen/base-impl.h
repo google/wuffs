@@ -18,8 +18,10 @@
   case n:;
 
 #define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status <= 0) {                                      \
+  if (status < 0) {                                       \
     goto exit;                                            \
+  } else if (status == 0) {                               \
+    goto ok;                                              \
   }                                                       \
   coro_susp_point = n;                                    \
   goto suspend;                                           \

@@ -227,6 +227,8 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
+		b.writes("\ngoto ok;\n") // Avoid the "unused label" warning.
+		b.writes("ok:\n")
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = 0;\n",
 			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
 		b.writes("goto exit; }\n\n") // Close the coroutine switch.

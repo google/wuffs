@@ -151,9 +151,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			if retExpr == nil {
 				switch ret.keyword.Key() {
 				case 0:
-					// TODO: set csp=0, then goto ok.
-					// Also update the PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND macro.
-					b.writes("goto suspend;")
+					b.writes("goto ok;")
 					return nil
 				case t.KeyError:
 					b.writes("goto exit;")
