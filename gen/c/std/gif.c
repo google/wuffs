@@ -1030,12 +1030,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
         self->private_impl.c_decode_extension[0].scratch -=
             b_rend_src - b_rptr_src;
         b_rptr_src = b_rend_src;
-        if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-          status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
-          goto exit;
-        }
-        status = PUFFS_GIF_SUSPENSION_SHORT_READ;
-        goto suspend;
+        goto short_read_src;
       }
       b_rptr_src += self->private_impl.c_decode_extension[0].scratch;
     }
