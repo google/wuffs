@@ -317,7 +317,7 @@ typedef enum {
   tc_src = 2,
 } throughput_counter;
 
-void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
                                               puffs_base_buf1*),
                     throughput_counter tc,
                     golden_test* gt,
@@ -325,11 +325,11 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
                     bool bench) {
   if (!codec_func) {
     FAIL("NULL codec_func");
-    return;
+    return false;
   }
   if (!gt) {
     FAIL("NULL golden_test");
-    return;
+    return false;
   }
 
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -339,16 +339,16 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   if (!gt->src_filename) {
     src.closed = true;
   } else if (!read_file(&src, gt->src_filename)) {
-    return;
+    return false;
   }
   if (gt->src_offset0 || gt->src_offset1) {
     if (gt->src_offset0 > gt->src_offset1) {
       FAIL("inconsistent src_offsets");
-      return;
+      return false;
     }
     if (gt->src_offset1 > src.wi) {
       FAIL("src_offset1 too large");
-      return;
+      return false;
     }
     src.ri = gt->src_offset0;
     src.wi = gt->src_offset1;
@@ -365,7 +365,7 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
     const char* s = codec_func(&got, &src);
     if (s) {
       FAIL("%s", s);
-      return;
+      return false;
     }
     switch (tc) {
       case tc_neither:
@@ -380,31 +380,32 @@ void proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   }
   if (bench) {
     bench_finish(reps, n_bytes);
-    return;
+    return true;
   }
 
   if (!gt->want_filename) {
     want.closed = true;
   } else if (!read_file(&want, gt->want_filename)) {
-    return;
+    return false;
   }
   if (!buf1s_equal("", &got, &want)) {
-    return;
+    return false;
   }
+  return true;
 }
 
-void bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                               puffs_base_buf1*),
-                     throughput_counter tc,
-                     golden_test* gt,
-                     uint64_t reps) {
-  proc_buf1_buf1(codec_func, tc, gt, reps, true);
+bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+                                                  puffs_base_buf1*),
+                        throughput_counter tc,
+                        golden_test* gt,
+                        uint64_t reps) {
+  return proc_buf1_buf1(codec_func, tc, gt, reps, true);
 }
 
-void test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                              puffs_base_buf1*),
-                    golden_test* gt) {
-  proc_buf1_buf1(codec_func, 0, gt, 1, false);
+bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
+                                                 puffs_base_buf1*),
+                       golden_test* gt) {
+  return proc_buf1_buf1(codec_func, 0, gt, 1, false);
 }
 
 #endif  // PUFFS_BASE_HEADER_H

@@ -180,36 +180,36 @@ void test_basic_sub_struct_initializer() {
 
 // ---------------- LZW Tests
 
-void test_puffs_gif_lzw_decode(const char* src_filename,
-                               uint64_t src_size,
-                               const char* want_filename,
-                               uint64_t want_size,
-                               uint64_t limit) {
+bool do_test_puffs_gif_lzw_decode(const char* src_filename,
+                                  uint64_t src_size,
+                                  const char* want_filename,
+                                  uint64_t want_size,
+                                  uint64_t limit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, src_filename)) {
-    return;
+    return false;
   }
   if (src.wi != src_size) {
     FAIL("src size: got %d, want %d", (int)(src.wi), (int)(src_size));
-    return;
+    return false;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
   uint8_t literal_width = src.ptr[0];
   if (literal_width != 0x08) {
     FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
-    return;
+    return false;
   }
   src.ri++;
 
   if (!read_file(&want, want_filename)) {
-    return;
+    return false;
   }
   if (want.wi != want_size) {
     FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
-    return;
+    return false;
   }
 
   puffs_gif_lzw_decoder dec;
@@ -230,7 +230,7 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
         FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
              puffs_gif_status_string(status), PUFFS_GIF_STATUS_OK,
              puffs_gif_status_string(PUFFS_GIF_STATUS_OK));
-        return;
+        return false;
       }
       break;
     }
@@ -238,87 +238,86 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
       FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
            puffs_gif_status_string(status), PUFFS_GIF_SUSPENSION_SHORT_READ,
            puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
-      return;
+      return false;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
-      return;
+      return false;
     }
     if (src.ri == old_ri) {
       FAIL("no progress was made");
-      return;
+      return false;
     }
   }
 
   if (limit < 1000000) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
-      return;
+      return false;
     }
   } else {
     if (num_iters != 1) {
       FAIL("num_iters: got %d, want 1", num_iters);
-      return;
+      return false;
     }
   }
 
-  if (!buf1s_equal("", &got, &want)) {
-    return;
-  }
+  return buf1s_equal("", &got, &want);
 }
 
 void test_puffs_gif_lzw_decode_few_big_reads() {
   proc_funcname = __func__;
-  test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                            "../../testdata/bricks-gray.indexes", 19200,
-                            1 << 30);
+  do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
+                               14731, "../../testdata/bricks-gray.indexes",
+                               19200, 1 << 30);
 }
 
 void test_puffs_gif_lzw_decode_many_small_reads() {
   proc_funcname = __func__;
-  test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                            "../../testdata/bricks-gray.indexes", 19200, 100);
+  do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
+                               14731, "../../testdata/bricks-gray.indexes",
+                               19200, 100);
 }
 
 void test_puffs_gif_lzw_decode_bricks_dither() {
   proc_funcname = __func__;
-  test_puffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
-                            14923, "../../testdata/bricks-dither.indexes",
-                            19200, 1 << 30);
+  do_test_puffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
+                               14923, "../../testdata/bricks-dither.indexes",
+                               19200, 1 << 30);
 }
 
 void test_puffs_gif_lzw_decode_bricks_nodither() {
   proc_funcname = __func__;
-  test_puffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
-                            13382, "../../testdata/bricks-nodither.indexes",
-                            19200, 1 << 30);
+  do_test_puffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
+                               13382, "../../testdata/bricks-nodither.indexes",
+                               19200, 1 << 30);
 }
 
 void test_puffs_gif_lzw_decode_pi() {
   proc_funcname = __func__;
-  test_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
-                            "../../testdata/pi.txt", 100003, 1 << 30);
+  do_test_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
+                               "../../testdata/pi.txt", 100003, 1 << 30);
 }
 
 // ---------------- LZW Benches
 
-void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
+bool do_bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
   if (!read_file(&src, filename)) {
-    return;
+    return false;
   }
   if (src.wi <= 0) {
     FAIL("src size: got %d, want > 0", (int)(src.wi));
-    return;
+    return false;
   }
   uint8_t literal_width = src.ptr[0];
   if (literal_width != 0x08) {
     FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
-    return;
+    return false;
   }
 
   bench_start();
@@ -333,21 +332,23 @@ void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
         puffs_gif_lzw_decoder_decode(&dec, dst_writer, src_reader);
     if (s) {
       FAIL("decode: %" PRIi32 " (%s)", s, puffs_gif_status_string(s));
-      return;
+      return false;
     }
     n_bytes += dst.wi;
   }
   bench_finish(reps, n_bytes);
+  return true;
 }
 
 void bench_puffs_gif_lzw_decode_20k() {
   proc_funcname = __func__;
-  bench_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 5000);
+  do_bench_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
+                                5000);
 }
 
 void bench_puffs_gif_lzw_decode_100k() {
   proc_funcname = __func__;
-  bench_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
+  do_bench_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
@@ -364,16 +365,16 @@ const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
-void test_puffs_gif_decode(const char* filename,
-                           const char* palette_filename,
-                           const char* indexes_filename,
-                           puffs_gif_status want,
-                           uint64_t limit) {
+bool do_test_puffs_gif_decode(const char* filename,
+                              const char* palette_filename,
+                              const char* indexes_filename,
+                              puffs_gif_status want,
+                              uint64_t limit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
-    return;
+    return false;
   }
 
   puffs_gif_decoder dec;
@@ -392,7 +393,7 @@ void test_puffs_gif_decode(const char* filename,
       if (got != want) {
         FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
              puffs_gif_status_string(got), want, puffs_gif_status_string(want));
-        return;
+        return false;
       }
       break;
     }
@@ -400,42 +401,42 @@ void test_puffs_gif_decode(const char* filename,
       FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
            puffs_gif_status_string(got), PUFFS_GIF_SUSPENSION_SHORT_READ,
            puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
-      return;
+      return false;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
-      return;
+      return false;
     }
     if (src.ri == old_ri) {
       FAIL("no progress was made");
-      return;
+      return false;
     }
   }
 
   if (want != PUFFS_GIF_STATUS_OK) {
-    return;
+    return false;
   }
 
   if (limit < 1000000) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
-      return;
+      return false;
     }
   } else {
     if (num_iters != 1) {
       FAIL("num_iters: got %d, want 1", num_iters);
-      return;
+      return false;
     }
   }
 
   // TODO: provide a public API for getting the width and height.
   if (dec.private_impl.f_width != 160) {
     FAIL("width: got %d, want %d", dec.private_impl.f_width, 160);
-    return;
+    return false;
   }
   if (dec.private_impl.f_height != 120) {
     FAIL("height: got %d, want %d", dec.private_impl.f_height, 120);
-    return;
+    return false;
   }
 
   // TODO: provide a public API for getting the palette.
@@ -443,51 +444,49 @@ void test_puffs_gif_decode(const char* filename,
   puffs_base_buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
   pal_got.wi = 3 * 256;
   if (!read_file(&pal_want, palette_filename)) {
-    return;
+    return false;
   }
   if (!buf1s_equal("palette ", &pal_got, &pal_want)) {
-    return;
+    return false;
   }
 
   puffs_base_buf1 ind_want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   if (!read_file(&ind_want, indexes_filename)) {
-    return;
+    return false;
   }
-  if (!buf1s_equal("indexes ", &got, &ind_want)) {
-    return;
-  }
+  return buf1s_equal("indexes ", &got, &ind_want);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_few_big_reads() {
   proc_funcname = __func__;
-  test_puffs_gif_decode("../../testdata/bricks-dither.gif",
-                        "../../testdata/bricks-dither.palette",
-                        "../../testdata/bricks-dither.indexes",
-                        PUFFS_GIF_STATUS_OK, 1 << 30);
+  do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                           "../../testdata/bricks-dither.palette",
+                           "../../testdata/bricks-dither.indexes",
+                           PUFFS_GIF_STATUS_OK, 1 << 30);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
   proc_funcname = __func__;
-  test_puffs_gif_decode("../../testdata/bricks-dither.gif",
-                        "../../testdata/bricks-dither.palette",
-                        "../../testdata/bricks-dither.indexes",
-                        PUFFS_GIF_STATUS_OK, 4096);
+  do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                           "../../testdata/bricks-dither.palette",
+                           "../../testdata/bricks-dither.indexes",
+                           PUFFS_GIF_STATUS_OK, 4096);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_small_reads() {
   proc_funcname = __func__;
-  test_puffs_gif_decode("../../testdata/bricks-dither.gif",
-                        "../../testdata/bricks-dither.palette",
-                        "../../testdata/bricks-dither.indexes",
-                        PUFFS_GIF_STATUS_OK,
-                        787);  // 787 tickles being in the middle of a
-                               // decode_extension skip32 call.
+  do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                           "../../testdata/bricks-dither.palette",
+                           "../../testdata/bricks-dither.indexes",
+                           PUFFS_GIF_STATUS_OK,
+                           787);  // 787 tickles being in the middle of a
+                                  // decode_extension skip32 call.
 }
 
 void test_puffs_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
-  test_puffs_gif_decode("../../testdata/bricks-dither.png", "", "",
-                        PUFFS_GIF_ERROR_BAD_GIF_HEADER, 1 << 30);
+  do_test_puffs_gif_decode("../../testdata/bricks-dither.png", "", "",
+                           PUFFS_GIF_ERROR_BAD_GIF_HEADER, 1 << 30);
 }
 
 // ---------------- Mimic Tests
@@ -496,10 +495,10 @@ void test_puffs_gif_decode_input_is_a_png() {
 
 #include "../mimiclib/gif.c"
 
-void test_mimic_gif_decode(const char* filename) {
+bool do_test_mimic_gif_decode(const char* filename) {
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, filename)) {
-    return;
+    return false;
   }
 
   src.ri = 0;
@@ -507,7 +506,7 @@ void test_mimic_gif_decode(const char* filename) {
   const char* got_msg = puffs_gif_decode(&got, &src);
   if (got_msg) {
     FAIL("%s", got_msg);
-    return;
+    return false;
   }
 
   src.ri = 0;
@@ -515,64 +514,66 @@ void test_mimic_gif_decode(const char* filename) {
   const char* want_msg = mimic_gif_decode(&want, &src);
   if (want_msg) {
     FAIL("%s", want_msg);
-    return;
+    return false;
   }
 
   if (!buf1s_equal("", &got, &want)) {
-    return;
+    return false;
   }
 
   // TODO: check the palette RGB values, not just the palette indexes (pixels).
+
+  return true;
 }
 
 void test_mimic_gif_decode_bricks_dither() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/bricks-dither.gif");
+  do_test_mimic_gif_decode("../../testdata/bricks-dither.gif");
 }
 
 void test_mimic_gif_decode_bricks_gray() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/bricks-gray.gif");
+  do_test_mimic_gif_decode("../../testdata/bricks-gray.gif");
 }
 
 void test_mimic_gif_decode_bricks_nodither() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/bricks-nodither.gif");
+  do_test_mimic_gif_decode("../../testdata/bricks-nodither.gif");
 }
 
 void test_mimic_gif_decode_harvesters() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/harvesters.gif");
+  do_test_mimic_gif_decode("../../testdata/harvesters.gif");
 }
 
 void test_mimic_gif_decode_hat() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/hat.gif");
+  do_test_mimic_gif_decode("../../testdata/hat.gif");
 }
 
 void test_mimic_gif_decode_hibiscus() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/hibiscus.gif");
+  do_test_mimic_gif_decode("../../testdata/hibiscus.gif");
 }
 
 void test_mimic_gif_decode_pjw_thumbnail() {
   proc_funcname = __func__;
-  test_mimic_gif_decode("../../testdata/pjw-thumbnail.gif");
+  do_test_mimic_gif_decode("../../testdata/pjw-thumbnail.gif");
 }
 
 #endif  // PUFFS_MIMIC
 
 // ---------------- GIF Benches
 
-void bench_gif_decode(const char* (*decode_func)(puffs_base_buf1*,
-                                                 puffs_base_buf1*),
-                      const char* filename,
-                      uint64_t reps) {
+bool do_bench_gif_decode(const char* (*decode_func)(puffs_base_buf1*,
+                                                    puffs_base_buf1*),
+                         const char* filename,
+                         uint64_t reps) {
   puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
-    return;
+    return false;
   }
 
   bench_start();
@@ -584,32 +585,33 @@ void bench_gif_decode(const char* (*decode_func)(puffs_base_buf1*,
     const char* error_msg = decode_func(&dst, &src);
     if (error_msg) {
       FAIL("%s", error_msg);
-      return;
+      return false;
     }
     n_bytes += dst.wi;
   }
   bench_finish(reps, n_bytes);
+  return true;
 }
 
 void bench_puffs_gif_decode_1k() {
   proc_funcname = __func__;
-  bench_gif_decode(puffs_gif_decode, "../../testdata/pjw-thumbnail.gif",
-                   200000);
+  do_bench_gif_decode(puffs_gif_decode, "../../testdata/pjw-thumbnail.gif",
+                      200000);
 }
 
 void bench_puffs_gif_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode(puffs_gif_decode, "../../testdata/hat.gif", 10000);
+  do_bench_gif_decode(puffs_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
 void bench_puffs_gif_decode_100k() {
   proc_funcname = __func__;
-  bench_gif_decode(puffs_gif_decode, "../../testdata/hibiscus.gif", 1000);
+  do_bench_gif_decode(puffs_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
 void bench_puffs_gif_decode_1000k() {
   proc_funcname = __func__;
-  bench_gif_decode(puffs_gif_decode, "../../testdata/harvesters.gif", 100);
+  do_bench_gif_decode(puffs_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 
 // ---------------- Mimic Benches
@@ -618,23 +620,23 @@ void bench_puffs_gif_decode_1000k() {
 
 void bench_mimic_gif_decode_1k() {
   proc_funcname = __func__;
-  bench_gif_decode(mimic_gif_decode, "../../testdata/pjw-thumbnail.gif",
-                   200000);
+  do_bench_gif_decode(mimic_gif_decode, "../../testdata/pjw-thumbnail.gif",
+                      200000);
 }
 
 void bench_mimic_gif_decode_10k() {
   proc_funcname = __func__;
-  bench_gif_decode(mimic_gif_decode, "../../testdata/hat.gif", 10000);
+  do_bench_gif_decode(mimic_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
 void bench_mimic_gif_decode_100k() {
   proc_funcname = __func__;
-  bench_gif_decode(mimic_gif_decode, "../../testdata/hibiscus.gif", 1000);
+  do_bench_gif_decode(mimic_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
 void bench_mimic_gif_decode_1000k() {
   proc_funcname = __func__;
-  bench_gif_decode(mimic_gif_decode, "../../testdata/harvesters.gif", 100);
+  do_bench_gif_decode(mimic_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 
 #endif  // PUFFS_MIMIC
