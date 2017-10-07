@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/google/puffs/lang/base38"
+	"github.com/google/puffs/lang/builtin"
 	"github.com/google/puffs/lang/check"
 	"github.com/google/puffs/lang/generate"
 
@@ -83,41 +84,14 @@ const (
 		"//  - bits 0-7 are a package-namespaced numeric code\n"
 )
 
-var builtInStatuses = [...]string{
-	"status ok",
-	"error bad puffs version",
-	"error bad receiver",
-	"error bad argument",
-	"error initializer not called",
-	"error closed for writes",
-	"error unexpected EOF",  // Used if reading when closed == true.
-	"suspension short read", // Used if reading when closed == false.
-	"suspension short write",
-	"suspension limited read",
-	"suspension limited write",
-}
-
-var builtInStatusSuffixes = map[string]string{
-	// TODO: fill in the rest of the built in statuses.
-	"short read":  "SUSPENSION_SHORT_READ",
-	"short write": "SUSPENSION_SHORT_WRITE",
-}
-
 func init() {
 	// The +1 is for the error bit (the sign bit).
 	if statusCodeNamespaceShift+base38.MaxBits+1 != 32 {
 		panic("inconsistent status code namespace shift")
 	}
-	if len(builtInStatuses) > maxNamespacedStatusCode {
-		panic("too many builtInStatuses")
+	if len(builtin.StatusList) > maxNamespacedStatusCode {
+		panic("too many built-in statuses")
 	}
-}
-
-func trimQuotes(s string) string {
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
 }
 
 type replacementPolicy bool
@@ -241,13 +215,13 @@ func (g *gen) genHeader(b *buffer) error {
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // %#08x\n\n", g.pkgPrefix, pkgID, pkgID)
 
-	for i, s := range builtInStatuses {
+	for i, z := range builtin.StatusList {
 		code := uint32(0)
-		if strings.HasPrefix(s, "error ") {
+		if z.Keyword == t.IDError {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
-		b.printf("#define %s %d // %#08x\n", strings.ToUpper(g.cName(s)), int32(code), code)
+		b.printf("#define %s %d // %#08x\n", strings.ToUpper(g.cName(z.String())), int32(code), code)
 	}
 	b.writes("\n")
 
@@ -305,17 +279,9 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 	b.printf("bool %sstatus_is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
-	b.printf("const char* %sstatus_strings0[%d] = {\n", g.pkgPrefix, len(builtInStatuses))
-	for _, s := range builtInStatuses {
-		if strings.HasPrefix(s, "status ") {
-			s = s[len("status "):]
-		} else if strings.HasPrefix(s, "suspension ") {
-			s = s[len("suspension "):]
-		} else if strings.HasPrefix(s, "error ") {
-			s = s[len("error "):]
-		}
-		s = g.pkgName + ": " + s
-		b.printf("%q,", s)
+	b.printf("const char* %sstatus_strings0[%d] = {\n", g.pkgPrefix, len(builtin.StatusList))
+	for _, z := range builtin.StatusList {
+		b.printf("%q,", g.pkgName+": "+z.Message)
 	}
 	b.writes("};\n\n")
 
@@ -329,8 +295,7 @@ func (g *gen) genImpl(b *buffer) error {
 	b.printf("const char** a = NULL;\n")
 	b.printf("uint32_t n = 0;\n")
 	b.printf("switch ((s >> %d) & %#x) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
-	b.printf("case 0: a = %sstatus_strings0; n = %d; break;\n",
-		g.pkgPrefix, len(builtInStatuses))
+	b.printf("case 0: a = %sstatus_strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
 	b.printf("case %spackageid: a = %sstatus_strings1; n = %d; break;\n",
 		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
 	// TODO: add cases for other packages used by this one.
@@ -479,10 +444,10 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 	if !ok {
 		return fmt.Errorf("bad status message %q", raw)
 	}
-	prefix := "suspension "
+	prefix := "SUSPENSION_"
 	isError := n.Keyword().Key() == t.KeyError
 	if isError {
-		prefix = "error "
+		prefix = "ERROR_"
 	}
 	s := status{
 		name:    strings.ToUpper(g.cName(prefix + msg)),

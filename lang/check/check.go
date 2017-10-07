@@ -11,6 +11,7 @@ import (
 	"math/big"
 
 	"github.com/google/puffs/lang/base38"
+	"github.com/google/puffs/lang/builtin"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
@@ -45,13 +46,6 @@ func (e *Error) Error() string {
 		b = append(b, '\n')
 	}
 	return string(b)
-}
-
-func trimQuotes(s string) string {
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
 }
 
 // typeExprFoo is an *ast.Node MType (implicit type).
@@ -93,12 +87,6 @@ type Status struct {
 type Struct struct {
 	ID     t.ID // ID of the struct name.
 	Struct *a.Struct
-}
-
-var builtInStatuses = map[string]t.ID{
-	// TODO: fill in the rest of the built in statuses.
-	"short read":  t.IDSuspension,
-	"short write": t.IDSuspension,
 }
 
 func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
@@ -242,7 +230,7 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	id := n.Message()
 	if other, ok := c.statuses[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate status %q", trimQuotes(id.String(c.tm))),
+			Err:           fmt.Errorf("check: duplicate status %q", builtin.TrimQuotes(id.String(c.tm))),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Status.Filename(),

@@ -5,6 +5,9 @@ package cgen
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/google/puffs/lang/builtin"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
@@ -123,12 +126,12 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if n.Keyword() != 0 {
 			ret = g.statusMap[n.Message()]
 			if ret.name == "" {
-				msg := trimQuotes(n.Message().String(g.tm))
-				suffix := builtInStatusSuffixes[msg]
-				if suffix == "" {
+				msg := builtin.TrimQuotes(n.Message().String(g.tm))
+				z := builtin.StatusMap[msg]
+				if z.Message == "" {
 					return fmt.Errorf("no status code for %q", msg)
 				}
-				ret.name = g.PKGPREFIX + suffix
+				ret.name = strings.ToUpper(g.cName(z.String()))
 			}
 		} else if retExpr = n.Value(); retExpr == nil {
 			ret.name = g.PKGPREFIX + "STATUS_OK"

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/google/puffs/lang/builtin"
+
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
 )
@@ -124,11 +126,12 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if s, ok := q.c.statuses[n.Message()]; ok {
 				sk = s.Status.Keyword()
 			} else {
-				msg := trimQuotes(n.Message().String(q.tm))
-				sk, ok = builtInStatuses[msg]
+				msg := builtin.TrimQuotes(n.Message().String(q.tm))
+				z, ok := builtin.StatusMap[msg]
 				if !ok {
 					return fmt.Errorf("check: no error or status with message %q", msg)
 				}
+				sk = z.Keyword
 			}
 			if nk != sk {
 				return fmt.Errorf("check: return statement says %q but declaration says %q",
