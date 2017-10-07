@@ -126,7 +126,7 @@ const maxTemp = 10000
 type status struct {
 	name    string
 	msg     string
-	isError bool
+	keyword t.ID
 }
 
 type buffer []byte
@@ -230,7 +230,7 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	for i, s := range g.statusList {
 		code := pkgID << statusCodeNamespaceShift
-		if s.isError {
+		if s.keyword.Key() == t.KeyError {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
@@ -445,14 +445,13 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 		return fmt.Errorf("bad status message %q", raw)
 	}
 	prefix := "SUSPENSION_"
-	isError := n.Keyword().Key() == t.KeyError
-	if isError {
+	if n.Keyword().Key() == t.KeyError {
 		prefix = "ERROR_"
 	}
 	s := status{
 		name:    strings.ToUpper(g.cName(prefix + msg)),
 		msg:     msg,
-		isError: isError,
+		keyword: n.Keyword(),
 	}
 	g.statusList = append(g.statusList, s)
 	g.statusMap[n.Message()] = s

@@ -15,7 +15,15 @@
 // so that clang-format doesn't get confused by the unusual "case"s.
 #define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                      \
-  case n:
+  case n:;
+
+#define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
+  if (status <= 0) {                                      \
+    goto exit;                                            \
+  }                                                       \
+  coro_susp_point = n;                                    \
+  goto suspend;                                           \
+  case n:;
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
@@ -130,6 +138,27 @@ static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
     memmove(dst.ptr, src.ptr, n);
   }
   return n;
+}
+
+static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
+                                                      uint8_t* wend,
+                                                      uint8_t** ptr_rptr,
+                                                      uint8_t* rend,
+                                                      uint32_t length) {
+  uint8_t* wptr = *ptr_wptr;
+  if (length > (wend - wptr)) {
+    length = wend - wptr;
+  }
+  uint8_t* rptr = *ptr_rptr;
+  if (length > (rend - rptr)) {
+    length = rend - rptr;
+  }
+  if (length > 0) {
+    memmove(wptr, rptr, length);
+    *ptr_wptr += length;
+    *ptr_rptr += length;
+  }
+  return length;
 }
 
 static inline uint32_t puffs_base_writer1_copy_history32(uint8_t** ptr_ptr,

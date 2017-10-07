@@ -388,7 +388,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.SetMType(typeExprPlaceholder16) // HACK.
 			} else if isInDst(q.tm, n, t.KeySlice, 0) {
 				n.SetMType(typeExprSliceU8) // HACK.
-			} else if isInDst(q.tm, n, t.KeyCopyHistory32, 2) {
+			} else if isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) {
 				n.SetMType(typeExprU32) // HACK.
 			} else {
 				n.SetMType(typeExprPlaceholder) // HACK.
@@ -603,7 +603,9 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyCopyHistory32 && methodName != t.KeySlice
+	callSuspendible := methodName != t.KeyCopyFrom32 &&
+		methodName != t.KeyCopyHistory32 &&
+		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false

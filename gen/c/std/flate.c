@@ -183,6 +183,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_length;
+      uint32_t v_n;
       uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {
@@ -298,7 +299,15 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
 // so that clang-format doesn't get confused by the unusual "case"s.
 #define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                      \
-  case n:
+  case n:;
+
+#define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
+  if (status <= 0) {                                      \
+    goto exit;                                            \
+  }                                                       \
+  coro_susp_point = n;                                    \
+  goto suspend;                                           \
+  case n:;
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
@@ -413,6 +422,27 @@ static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
     memmove(dst.ptr, src.ptr, n);
   }
   return n;
+}
+
+static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
+                                                      uint8_t* wend,
+                                                      uint8_t** ptr_rptr,
+                                                      uint8_t* rend,
+                                                      uint32_t length) {
+  uint8_t* wptr = *ptr_wptr;
+  if (length > (wend - wptr)) {
+    length = wend - wptr;
+  }
+  uint8_t* rptr = *ptr_rptr;
+  if (length > (rend - rptr)) {
+    length = rend - rptr;
+  }
+  if (length > 0) {
+    memmove(wptr, rptr, length);
+    *ptr_wptr += length;
+    *ptr_rptr += length;
+  }
+  return length;
 }
 
 static inline uint32_t puffs_base_writer1_copy_history32(uint8_t** ptr_ptr,
@@ -680,32 +710,36 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
 
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
-    if (a_dst.buf) {
-      size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
-      a_dst.buf->wi += n;
-      puffs_base_limit1* lim;
-      for (lim = &a_dst.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len) {
-          *lim->ptr_to_len -= n;
+    while (true) {
+      PUFFS_COROUTINE_SUSPENSION_POINT(1);
+      if (a_dst.buf) {
+        size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+        a_dst.buf->wi += n;
+        puffs_base_limit1* lim;
+        for (lim = &a_dst.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len) {
+            *lim->ptr_to_len -= n;
+          }
         }
       }
-    }
-    puffs_flate_status t_0 =
-        puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
-    if (a_dst.buf) {
-      b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
-      size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
-      for (lim = &a_dst.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
+      puffs_flate_status t_0 =
+          puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
+      if (a_dst.buf) {
+        b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+        size_t len = a_dst.buf->len - a_dst.buf->wi;
+        puffs_base_limit1* lim;
+        for (lim = &a_dst.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+            len = *lim->ptr_to_len;
+          }
         }
+        b_wend_dst = b_wptr_dst + len;
       }
-      b_wend_dst = b_wptr_dst + len;
-    }
-    v_z = t_0;
-    if (v_z > 0) {
+      v_z = t_0;
+      if (!(v_z > 0)) {
+        status = v_z;
+        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+      }
       v_written = ((puffs_base_slice_u8){
           .ptr = b_wstart_dst,
           .len = b_wptr_dst - b_wstart_dst,
@@ -742,9 +776,9 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
                ((uint32_t)((v_n & 32767))) + v_already_full);
         }
       }
+      status = v_z;
+      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
-    status = v_z;
-    goto suspend;
     self->private_impl.c_decode[0].coro_susp_point = 0;
     goto exit;
   }
@@ -961,6 +995,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_length;
+  uint32_t v_n;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -997,6 +1032,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       self->private_impl.c_decode_uncompressed[0].coro_susp_point;
   if (coro_susp_point) {
     v_length = self->private_impl.c_decode_uncompressed[0].v_length;
+    v_n = self->private_impl.c_decode_uncompressed[0].v_n;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1040,29 +1076,19 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       goto exit;
     }
     v_length = ((v_length) & ((1 << (16)) - 1));
-    while (v_length > 0) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(3);
-      {
-        self->private_impl.c_decode_uncompressed[0].scratch = v_length;
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
-        size_t t_2 = self->private_impl.c_decode_uncompressed[0].scratch;
-        if (t_2 > b_wend_dst - b_wptr_dst) {
-          t_2 = b_wend_dst - b_wptr_dst;
-          status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
-        }
-        if (t_2 > b_rend_src - b_rptr_src) {
-          t_2 = b_rend_src - b_rptr_src;
-          status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
-        }
-        memmove(b_wptr_dst, b_rptr_src, t_2);
-        b_wptr_dst += t_2;
-        b_rptr_src += t_2;
-        if (status) {
-          self->private_impl.c_decode_uncompressed[0].scratch -= t_2;
-          goto suspend;
-        }
+    while (true) {
+      v_n = puffs_base_writer1_copy_from32(&b_wptr_dst, b_wend_dst, &b_rptr_src,
+                                           b_rend_src, v_length);
+      if (v_length == v_n) {
+        goto label_0_break;
+      } else if (v_length < v_n) {
+        status =
+            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
       }
-      goto label_0_break;
+      v_length -= v_n;
+      status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
+      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
   label_0_break:;
     self->private_impl.c_decode_uncompressed[0].coro_susp_point = 0;
@@ -1073,6 +1099,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
 suspend:
   self->private_impl.c_decode_uncompressed[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode_uncompressed[0].v_length = v_length;
+  self->private_impl.c_decode_uncompressed[0].v_n = v_n;
 
 exit:
   if (a_dst.buf) {
@@ -1371,7 +1398,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         }
         v_length -= v_n;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
-        goto suspend;
+        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
       }
     label_5_break:;
     }

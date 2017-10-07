@@ -148,6 +148,17 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
+		if isInDst(g.tm, n, t.KeyCopyFrom32, 2) {
+			b.printf("puffs_base_writer1_copy_from32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			// TODO: don't assume that the first argument is "in.src".
+			b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
+			a := n.Args()[1].Arg().Value()
+			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writeb(')')
+			return nil
+		}
 		if isInDst(g.tm, n, t.KeyCopyHistory32, 2) {
 			b.printf("puffs_base_writer1_copy_history32(&%swptr_dst, %swstart_dst, %swend_dst",
 				bPrefix, bPrefix, bPrefix)
@@ -304,8 +315,15 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	// TODO.
-	return nil
+	switch n.ID0().Key() {
+	case t.KeyXUnaryPlus:
+		b.writeb('+')
+	case t.KeyXUnaryMinus:
+		b.writeb('-')
+	case t.KeyXUnaryNot:
+		b.writeb('!')
+	}
+	return g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {

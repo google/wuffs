@@ -183,6 +183,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_length;
+      uint32_t v_n;
       uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {

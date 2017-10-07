@@ -102,8 +102,12 @@ pub struct decoder?(
 )
 
 pub func decoder.decode?(dst writer1, src reader1)() {
-	var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
-	if z.is_suspension() {
+	while true {
+		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
+		if not z.is_suspension() {
+			// TODO: rename "return" to "raise"?
+			return z
+		}
 		// TODO: should "slice" be "slice!", as the return value lets you
 		// modify the state of in.dst, so future mutations (via the slice) can
 		// change the veracity of any in.dst assertions?
@@ -147,8 +151,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 				this.history_index = (this.history_index & 0x7FFF) + ((n & 0x7FFF) as u32) + already_full
 			}
 		}
+		return z
 	}
-	return z
 }
 
 pri func decoder.decode_blocks?(dst writer1, src reader1)() {
@@ -192,10 +196,17 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 		return error "inconsistent stored block length"
 	}
 	length = length.low_bits(n:16)
-	while length > 0 {
-		// TODO: drop the "?" from "copy_from32?"?
-		in.dst.copy_from32?(r:in.src, n:length)
-		break
+	while true {
+		var n u32 = in.dst.copy_from32(r:in.src, length:length)
+		if length == n {
+			break
+		} else if length < n {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
+		length -= n
+		// TODO: distinguish between short and limited writes?
+		// TODO: distinguish between reads and writes.
+		return suspension "short read"
 	}
 }
 

@@ -132,10 +132,12 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 					return fmt.Errorf("no status code for %q", msg)
 				}
 				ret.name = strings.ToUpper(g.cName(z.String()))
+				ret.keyword = z.Keyword
 			}
 		} else if retExpr = n.Value(); retExpr == nil {
 			ret.name = g.PKGPREFIX + "STATUS_OK"
 		}
+
 		if g.currFunk.suspendible {
 			b.writes("status = ")
 			if retExpr == nil {
@@ -146,17 +148,23 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				return err
 			}
 			b.writes(";")
-			if ret.isError {
-				b.writes("goto exit;")
-			} else {
-				b.writes("goto suspend;")
+			if retExpr == nil {
+				switch ret.keyword.Key() {
+				case 0:
+					// TODO: set csp=0, then goto ok.
+					// Also update the PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND macro.
+					b.writes("goto suspend;")
+					return nil
+				case t.KeyError:
+					b.writes("goto exit;")
+					return nil
+				case t.KeySuspension:
+					// No-op.
+				}
 			}
-		} else {
-			// TODO: consider the return values, especially if they involve
-			// suspendible function calls.
-			b.writes("return;\n")
+			return g.writeCoroSuspPoint(b, true)
 		}
-		return nil
+		return fmt.Errorf("TODO: return statements in non-suspendible functions")
 
 	case a.KVar:
 		n := n.Var()
@@ -239,14 +247,18 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeCoroSuspPoint(b *buffer) error {
+func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 	const maxCoroSuspPoint = 0xFFFFFFFF
 	g.currFunk.coroSuspPoint++
 	if g.currFunk.coroSuspPoint == maxCoroSuspPoint {
 		return fmt.Errorf("too many coroutine suspension points required")
 	}
 
-	b.printf("PUFFS_COROUTINE_SUSPENSION_POINT(%d);\n", g.currFunk.coroSuspPoint)
+	macro := ""
+	if maybeSuspend {
+		macro = "_MAYBE_SUSPEND"
+	}
+	b.printf("PUFFS_COROUTINE_SUSPENSION_POINT%s(%d);\n", macro, g.currFunk.coroSuspPoint)
 	return nil
 }
 
@@ -254,7 +266,7 @@ func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	if err := g.writeCoroSuspPoint(b); err != nil {
+	if err := g.writeCoroSuspPoint(b, false); err != nil {
 		return err
 	}
 	return g.writeCallSuspendibles(b, n, depth)
@@ -335,7 +347,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes(";\n")
 
 		// TODO: the CSP prior to this is probably unnecessary.
-		if err := g.writeCoroSuspPoint(b); err != nil {
+		if err := g.writeCoroSuspPoint(b, false); err != nil {
 			return err
 		}
 
@@ -380,53 +392,6 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 		b.writes(";\n")
-
-	} else if isInDst(g.tm, n, t.KeyCopyFrom32, 2) {
-		if g.currFunk.tempW > maxTemp {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		temp := g.currFunk.tempW
-		g.currFunk.tempW++
-		g.currFunk.tempR++
-
-		b.writes("{\n")
-
-		g.currFunk.usesScratch = true
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
-
-		b.printf("%s = ", scratchName)
-		x := n.Args()[1].Arg().Value()
-		if err := g.writeExpr(b, x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writes(";\n")
-
-		if err := g.writeCoroSuspPoint(b); err != nil {
-			return err
-		}
-		b.printf("size_t %s%d = %s;\n", tPrefix, temp, scratchName)
-
-		const wName = "dst"
-		b.printf("if (%s%d > %swend_%s - %swptr_%s) {\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
-		b.printf("%s%d = %swend_%s - %swptr_%s;\n", tPrefix, temp, bPrefix, wName, bPrefix, wName)
-		b.printf("status = %sSUSPENSION_SHORT_WRITE;\n", g.PKGPREFIX)
-		b.writes("}\n")
-
-		// TODO: don't assume that the first argument is "in.src".
-		const rName = "src"
-		b.printf("if (%s%d > %srend_%s - %srptr_%s) {\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
-		b.printf("%s%d = %srend_%s - %srptr_%s;\n", tPrefix, temp, bPrefix, rName, bPrefix, rName)
-		b.printf("status = %sSUSPENSION_SHORT_READ;\n", g.PKGPREFIX)
-		b.writes("}\n")
-
-		b.printf("memmove(%swptr_%s, %srptr_%s, %s%d);\n", bPrefix, wName, bPrefix, rName, tPrefix, temp)
-		b.printf("%swptr_%s += %s%d;\n", bPrefix, wName, tPrefix, temp)
-		b.printf("%srptr_%s += %s%d;\n", bPrefix, rName, tPrefix, temp)
-		b.printf("if (status) { %s -= %s%d; goto suspend; }\n", scratchName, tPrefix, temp)
-
-		b.writes("}\n")
 
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		b.printf("status = %s%s_decode_header(self, %ssrc);\n",
@@ -586,7 +551,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
-	if err := g.writeCoroSuspPoint(b); err != nil {
+	if err := g.writeCoroSuspPoint(b, false); err != nil {
 		return err
 	}
 	b.printf("while (true) {")
@@ -650,7 +615,9 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyCopyHistory32 && methodName != t.KeySlice
+	callSuspendible := methodName != t.KeyCopyFrom32 &&
+		methodName != t.KeyCopyHistory32 &&
+		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
