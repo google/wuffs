@@ -240,7 +240,6 @@ bool do_test_puffs_flate_history(int i,
 
   puffs_flate_status got_s =
       puffs_flate_decoder_decode(dec, dst_writer, src_reader);
-  // TODO: should want_s's SHORT_WRITE be LIMITED_WRITE?
   if (got_s != want_s) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
          ": decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",

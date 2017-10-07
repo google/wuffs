@@ -107,8 +107,6 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
 #define PUFFS_FLATE_SUSPENSION_SHORT_READ 7                   // 0x00000007
 #define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 8                  // 0x00000008
-#define PUFFS_FLATE_SUSPENSION_LIMITED_READ 9                 // 0x00000009
-#define PUFFS_FLATE_SUSPENSION_LIMITED_WRITE 10               // 0x0000000a
 
 #define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1157040128  // 0xbb08f800
@@ -490,7 +488,7 @@ bool puffs_flate_status_is_error(puffs_flate_status s) {
   return s < 0;
 }
 
-const char* puffs_flate_status_strings0[11] = {
+const char* puffs_flate_status_strings0[9] = {
     "flate: ok",
     "flate: bad puffs version",
     "flate: bad receiver",
@@ -500,8 +498,6 @@ const char* puffs_flate_status_strings0[11] = {
     "flate: unexpected EOF",
     "flate: short read",
     "flate: short write",
-    "flate: limited read",
-    "flate: limited write",
 };
 
 const char* puffs_flate_status_strings1[18] = {
@@ -531,7 +527,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = puffs_flate_status_strings0;
-      n = 11;
+      n = 9;
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
@@ -985,14 +981,11 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.ptr_to_len) {
-    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf && a_src.buf->closed) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
-  } else {
-    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -1141,14 +1134,11 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.ptr_to_len) {
-    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf && a_src.buf->closed) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
-  } else {
-    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -1468,14 +1458,11 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.ptr_to_len) {
-    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf && a_src.buf->closed) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
-  } else {
-    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -1789,14 +1776,11 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.ptr_to_len) {
-    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf && a_src.buf->closed) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
-  } else {
-    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
@@ -2247,13 +2231,10 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.limit.ptr_to_len) {
-    status = PUFFS_FLATE_SUSPENSION_LIMITED_READ;
-  } else if (a_src.buf && a_src.buf->closed) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
     status = PUFFS_FLATE_ERROR_UNEXPECTED_EOF;
     goto exit;
-  } else {
-    status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   }
+  status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
 }

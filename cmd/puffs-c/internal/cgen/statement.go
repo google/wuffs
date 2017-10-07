@@ -353,12 +353,10 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.printf("%s -= %srend_src - %srptr_src;\n", scratchName, bPrefix, bPrefix)
 		b.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
 
-		// TODO: is ptr_to_len the right check?
-		b.printf("if (%ssrc.limit.ptr_to_len) {", aPrefix)
-		b.printf("status = %sSUSPENSION_LIMITED_READ;", g.PKGPREFIX)
-		b.printf("} else if (%ssrc.buf && %ssrc.buf->closed) {", aPrefix, aPrefix)
+		// TODO: goto short_read_src;
+		b.printf("if (%ssrc.buf && %ssrc.buf->closed && !%ssrc.limit.ptr_to_len) {", aPrefix, aPrefix, aPrefix)
 		b.printf("status = %sERROR_UNEXPECTED_EOF; goto exit;", g.PKGPREFIX)
-		b.printf("} else { status = %sSUSPENSION_SHORT_READ; } goto suspend;\n", g.PKGPREFIX)
+		b.printf("} status = %sSUSPENSION_SHORT_READ; goto suspend;\n", g.PKGPREFIX)
 
 		b.writes("}\n")
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)

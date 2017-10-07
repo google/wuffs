@@ -27,10 +27,9 @@ type template_args_short_read struct {
 }
 
 func template_short_read(b *buffer, args template_args_short_read) error {
-	b.printf("short_read_%s:\nif (a_%s.limit.ptr_to_len) {\nstatus = %sSUSPENSION_LIMITED_READ;\n} else if (a_%s.buf && a_%s.buf->closed) {\nstatus = %sERROR_UNEXPECTED_EOF;\ngoto exit;\n} else {\nstatus = %sSUSPENSION_SHORT_READ;\n}\ngoto suspend;\n",
+	b.printf("short_read_%s:\nif (a_%s.buf && a_%s.buf->closed && !a_%s.limit.ptr_to_len) {\nstatus = %sERROR_UNEXPECTED_EOF;\ngoto exit;\n}\nstatus = %sSUSPENSION_SHORT_READ;\ngoto suspend;\n",
 		args.name,
 		args.name,
-		args.PKGPREFIX,
 		args.name,
 		args.name,
 		args.PKGPREFIX,

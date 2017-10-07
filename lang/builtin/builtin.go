@@ -34,8 +34,6 @@ var StatusList = [...]Status{
 	{t.IDError, "unexpected EOF"},  // Used if reading when closed == true.
 	{t.IDSuspension, "short read"}, // Used if reading when closed == false.
 	{t.IDSuspension, "short write"},
-	{t.IDSuspension, "limited read"},
-	{t.IDSuspension, "limited write"},
 }
 
 var StatusMap = map[string]Status{}

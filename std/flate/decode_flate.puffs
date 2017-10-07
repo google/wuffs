@@ -204,7 +204,6 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 		length -= n
-		// TODO: distinguish between short and limited writes?
 		// TODO: distinguish between reads and writes.
 		return suspension "short read"
 	}
@@ -365,7 +364,6 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
 			length -= n
-			// TODO: distinguish between short and limited writes?
 			return suspension "short write"
 		}
 	}

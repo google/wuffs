@@ -227,14 +227,17 @@ void test_puffs_gif_lzw_decode(const char* src_filename,
         puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
     if (src.ri == src.wi) {
       if (status != PUFFS_GIF_STATUS_OK) {
-        FAIL("status: got %d, want %d", status, PUFFS_GIF_STATUS_OK);
+        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+             puffs_gif_status_string(status), PUFFS_GIF_STATUS_OK,
+             puffs_gif_status_string(PUFFS_GIF_STATUS_OK));
         return;
       }
       break;
     }
-    if (status != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
-      FAIL("status: got %d, want %d", status,
-           PUFFS_GIF_SUSPENSION_LIMITED_READ);
+    if (status != PUFFS_GIF_SUSPENSION_SHORT_READ) {
+      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+           puffs_gif_status_string(status), PUFFS_GIF_SUSPENSION_SHORT_READ,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
       return;
     }
     if (src.ri < old_ri) {
@@ -329,7 +332,7 @@ void bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
     puffs_gif_status s =
         puffs_gif_lzw_decoder_decode(&dec, dst_writer, src_reader);
     if (s) {
-      FAIL("decode: %s", puffs_gif_status_string(s));
+      FAIL("decode: %" PRIi32 " (%s)", s, puffs_gif_status_string(s));
       return;
     }
     n_bytes += dst.wi;
@@ -387,13 +390,16 @@ void test_puffs_gif_decode(const char* filename,
         puffs_gif_decoder_decode(&dec, got_writer, src_reader);
     if ((src.ri == src.wi) || puffs_gif_status_is_error(got)) {
       if (got != want) {
-        FAIL("status: got %d, want %d", got, want);
+        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
+             puffs_gif_status_string(got), want, puffs_gif_status_string(want));
         return;
       }
       break;
     }
-    if (got != PUFFS_GIF_SUSPENSION_LIMITED_READ) {
-      FAIL("status: got %d, want %d", got, PUFFS_GIF_SUSPENSION_LIMITED_READ);
+    if (got != PUFFS_GIF_SUSPENSION_SHORT_READ) {
+      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
+           puffs_gif_status_string(got), PUFFS_GIF_SUSPENSION_SHORT_READ,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
       return;
     }
     if (src.ri < old_ri) {
