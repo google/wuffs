@@ -739,7 +739,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyLength, 0) {
+		if isThatMethod(q.tm, n, t.KeyLength, 0) || isThatMethod(q.tm, n, t.KeyAvailable, 0) {
 			break
 		}
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())

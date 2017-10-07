@@ -282,6 +282,7 @@ const (
 	KeyCopyHistory32 = Key(IDCopyHistory32 >> KeyShift)
 	KeySlice         = Key(IDSlice >> KeyShift)
 	KeyLength        = Key(IDLength >> KeyShift)
+	KeyAvailable     = Key(IDAvailable >> KeyShift)
 	KeyPrefix        = Key(IDPrefix >> KeyShift)
 	KeySuffix        = Key(IDSuffix >> KeyShift)
 
@@ -460,8 +461,9 @@ const (
 	IDCopyHistory32 = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSlice         = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDLength        = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix        = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix        = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDAvailable     = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix        = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix        = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -660,6 +662,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyCopyHistory32: {"copy_history32", IDCopyHistory32},
 	KeySlice:         {"slice", IDSlice},
 	KeyLength:        {"length", IDLength},
+	KeyAvailable:     {"available", IDAvailable},
 	KeyPrefix:        {"prefix", IDPrefix},
 	KeySuffix:        {"suffix", IDSuffix},
 }

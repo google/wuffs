@@ -1088,8 +1088,13 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
         goto exit;
       }
       v_length -= v_n;
-      status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
-      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      if (((uint64_t)(b_wend_dst - b_wptr_dst)) == 0) {
+        status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      } else {
+        status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
+        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+      }
     }
   label_0_break:;
 

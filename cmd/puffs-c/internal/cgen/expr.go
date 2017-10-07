@@ -213,6 +213,18 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
+		if isThatMethod(g.tm, n, t.KeyAvailable, 0) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			// TODO: don't hard-code dst.
+			const wName = "dst"
+			b.printf("(uint64_t)(%swend_%s - %swptr_%s)", bPrefix, wName, bPrefix, wName)
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
+			return nil
+		}
 		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
 			// TODO: don't hard-code lzw.
 			b.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)

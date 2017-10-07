@@ -462,7 +462,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyCopyFrom, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) {
+		if isThatMethod(q.tm, n, t.KeyCopyFrom, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) ||
+			isThatMethod(q.tm, n, t.KeyAvailable, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
