@@ -187,12 +187,16 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	}
 	this.n_bits = 0
 
-	var n u32 = in.src.read_u32le?()
-	if (n.low_bits(n:16) + n.high_bits(n:16)) != 0xFFFF {
+	var length u32 = in.src.read_u32le?()
+	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {
 		return error "inconsistent stored block length"
 	}
-	// TODO: drop the "?" from "copy_from32?"?
-	in.dst.copy_from32?(r:in.src, n:n.low_bits(n:16))
+	length = length.low_bits(n:16)
+	while length > 0 {
+		// TODO: drop the "?" from "copy_from32?"?
+		in.dst.copy_from32?(r:in.src, n:length)
+		break
+	}
 }
 
 pri func decoder.decode_huffman?(dst writer1, src reader1)() {
