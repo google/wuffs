@@ -332,7 +332,7 @@ proposals and reach consensus before sending your first PR.
 
 # License
 
-BSD-style with patent grant. See the LICENSE and PATENTS files for details.
+Apache 2. See the LICENSE file for details.
 
 
 # Disclaimer
