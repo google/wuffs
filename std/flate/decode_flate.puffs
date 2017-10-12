@@ -132,12 +132,12 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 			// previous value of history_index, as we will overwrite the whole
 			// ringbuffer.
 			written = written.suffix(up_to:0x8000)
-			this.history[:].copy_from(s:written)
+			this.history[:].copy_from_slice(s:written)
 			this.history_index = 0x8000
 		} else {
 			// Otherwise, append written to the history ringbuffer starting at
 			// the previous history_index (modulo 0x8000).
-			var n u64 = this.history[this.history_index & 0x7FFF:].copy_from(s:written)
+			var n u64 = this.history[this.history_index & 0x7FFF:].copy_from_slice(s:written)
 			if n < written.length() {
 				// a_slice.copy_from(s:b_slice) returns the minimum of the two
 				// slice lengths. If that value is less than b_slice.length(),
@@ -147,7 +147,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 				// to wrap around and copy the remainder of written over the
 				// start of the history ringbuffer.
 				written = written[n:]
-				n = this.history[:].copy_from(s:written)
+				n = this.history[:].copy_from_slice(s:written)
 				// Set history_index (modulo 0x8000) to the length of this
 				// remainder. The &0x7FFF is redundant, but proves to the
 				// compiler that the conversion to u32 will not overflow. The
@@ -209,7 +209,7 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	}
 	length = length.low_bits(n:16)
 	while true {
-		var n u32 = in.dst.copy_from32(r:in.src, length:length)
+		var n u32 = in.dst.copy_from_reader32(r:in.src, length:length)
 		// TODO: assert n <= length and simplify the subsequent if.
 		if length == n {
 			break
@@ -395,7 +395,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 			}
 
 			// Copy from in.dst.
-			n = in.dst.copy_history32(distance:distance, length:length)
+			n = in.dst.copy_from_history32(distance:distance, length:length)
 			if length == n {
 				break
 			} else if length < n {

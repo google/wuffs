@@ -159,7 +159,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyFrom32, 2) {
+		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
 			b.printf("puffs_base_writer1_copy_from32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			// TODO: don't assume that the first argument is "in.src".
 			b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
@@ -170,7 +170,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyHistory32, 2) {
+		if isInDst(g.tm, n, t.KeyCopyFromHistory32, 2) {
 			b.printf("puffs_base_writer1_copy_history32(&%swptr_dst, %swstart_dst, %swend_dst",
 				bPrefix, bPrefix, bPrefix)
 			for _, o := range n.Args() {
@@ -187,7 +187,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				bPrefix, bPrefix, bPrefix)
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyCopyFrom, 1) {
+		if isThatMethod(g.tm, n, t.KeyCopyFromSlice, 1) {
 			b.writes("puffs_base_slice_u8_copy_from(")
 			receiver := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, receiver, rp, parenthesesMandatory, depth); err != nil {

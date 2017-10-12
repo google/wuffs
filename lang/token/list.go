@@ -273,7 +273,6 @@ const (
 	KeyReadU32LE  = Key(IDReadU32LE >> KeyShift)
 	KeyReadU64BE  = Key(IDReadU64BE >> KeyShift)
 	KeyReadU64LE  = Key(IDReadU64LE >> KeyShift)
-	KeyWrite      = Key(IDWrite >> KeyShift)
 	KeyWriteU8    = Key(IDWriteU8 >> KeyShift)
 	KeyWriteU16BE = Key(IDWriteU16BE >> KeyShift)
 	KeyWriteU16LE = Key(IDWriteU16LE >> KeyShift)
@@ -282,20 +281,19 @@ const (
 	KeyWriteU64BE = Key(IDWriteU64BE >> KeyShift)
 	KeyWriteU64LE = Key(IDWriteU64LE >> KeyShift)
 
-	KeyIsError       = Key(IDIsError >> KeyShift)
-	KeyIsOK          = Key(IDIsOK >> KeyShift)
-	KeyIsSuspension  = Key(IDIsSuspension >> KeyShift)
-	KeyCopyFrom      = Key(IDCopyFrom >> KeyShift)
-	KeyCopyFrom32    = Key(IDCopyFrom32 >> KeyShift)
-	KeyCopyFrom64    = Key(IDCopyFrom64 >> KeyShift)
-	KeySkip32        = Key(IDSkip32 >> KeyShift)
-	KeySkip64        = Key(IDSkip64 >> KeyShift)
-	KeyCopyHistory32 = Key(IDCopyHistory32 >> KeyShift)
-	KeySlice         = Key(IDSlice >> KeyShift)
-	KeyLength        = Key(IDLength >> KeyShift)
-	KeyAvailable     = Key(IDAvailable >> KeyShift)
-	KeyPrefix        = Key(IDPrefix >> KeyShift)
-	KeySuffix        = Key(IDSuffix >> KeyShift)
+	KeyIsError           = Key(IDIsError >> KeyShift)
+	KeyIsOK              = Key(IDIsOK >> KeyShift)
+	KeyIsSuspension      = Key(IDIsSuspension >> KeyShift)
+	KeyCopyFromHistory32 = Key(IDCopyFromHistory32 >> KeyShift)
+	KeyCopyFromReader32  = Key(IDCopyFromReader32 >> KeyShift)
+	KeyCopyFromSlice     = Key(IDCopyFromSlice >> KeyShift)
+	KeySkip32            = Key(IDSkip32 >> KeyShift)
+	KeySkip64            = Key(IDSkip64 >> KeyShift)
+	KeySlice             = Key(IDSlice >> KeyShift)
+	KeyLength            = Key(IDLength >> KeyShift)
+	KeyAvailable         = Key(IDAvailable >> KeyShift)
+	KeyPrefix            = Key(IDPrefix >> KeyShift)
+	KeySuffix            = Key(IDSuffix >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -452,7 +450,6 @@ const (
 	IDReadU32LE  = ID(0xB5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64BE  = ID(0xB6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64LE  = ID(0xB7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWrite      = ID(0xB8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU8    = ID(0xB9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16BE = ID(0xBA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16LE = ID(0xBB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -461,20 +458,19 @@ const (
 	IDWriteU64BE = ID(0xBE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU64LE = ID(0xBF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
-	IDIsError       = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsOK          = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsSuspension  = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFrom      = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFrom32    = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFrom64    = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip32        = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip64        = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyHistory32 = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSlice         = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLength        = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDAvailable     = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix        = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix        = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsError           = ID(0xC0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsOK              = ID(0xC1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsSuspension      = ID(0xC2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFromHistory32 = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFromReader32  = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFromSlice     = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip32            = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip64            = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSlice             = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLength            = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDAvailable         = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix            = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -653,7 +649,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyReadU32LE:  {"read_u32le", IDReadU32LE},
 	KeyReadU64BE:  {"read_u64be", IDReadU64BE},
 	KeyReadU64LE:  {"read_u64le", IDReadU64LE},
-	KeyWrite:      {"write", IDWrite},
 	KeyWriteU8:    {"write_u8", IDWriteU8},
 	KeyWriteU16BE: {"write_u16be", IDWriteU16BE},
 	KeyWriteU16LE: {"write_u16le", IDWriteU16LE},
@@ -662,20 +657,19 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyWriteU64BE: {"write_u64be", IDWriteU64BE},
 	KeyWriteU64LE: {"write_u64le", IDWriteU64LE},
 
-	KeyIsError:       {"is_error", IDIsError},
-	KeyIsOK:          {"is_ok", IDIsOK},
-	KeyIsSuspension:  {"is_suspension", IDIsSuspension},
-	KeyCopyFrom:      {"copy_from", IDCopyFrom},
-	KeyCopyFrom32:    {"copy_from32", IDCopyFrom32},
-	KeyCopyFrom64:    {"copy_from64", IDCopyFrom64},
-	KeySkip32:        {"skip32", IDSkip32},
-	KeySkip64:        {"skip64", IDSkip64},
-	KeyCopyHistory32: {"copy_history32", IDCopyHistory32},
-	KeySlice:         {"slice", IDSlice},
-	KeyLength:        {"length", IDLength},
-	KeyAvailable:     {"available", IDAvailable},
-	KeyPrefix:        {"prefix", IDPrefix},
-	KeySuffix:        {"suffix", IDSuffix},
+	KeyIsError:           {"is_error", IDIsError},
+	KeyIsOK:              {"is_ok", IDIsOK},
+	KeyIsSuspension:      {"is_suspension", IDIsSuspension},
+	KeyCopyFromHistory32: {"copy_from_history32", IDCopyFromHistory32},
+	KeyCopyFromReader32:  {"copy_from_reader32", IDCopyFromReader32},
+	KeyCopyFromSlice:     {"copy_from_slice", IDCopyFromSlice},
+	KeySkip32:            {"skip32", IDSkip32},
+	KeySkip64:            {"skip64", IDSkip64},
+	KeySlice:             {"slice", IDSlice},
+	KeyLength:            {"length", IDLength},
+	KeyAvailable:         {"available", IDAvailable},
+	KeyPrefix:            {"prefix", IDPrefix},
+	KeySuffix:            {"suffix", IDSuffix},
 }
 
 var builtInsByName = map[string]ID{}

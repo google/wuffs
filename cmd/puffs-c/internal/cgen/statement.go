@@ -368,7 +368,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
 
-	} else if isInDst(g.tm, n, t.KeyWrite, 1) {
+	} else if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
 		// TODO: don't assume that the argument is "this.stack[s:]".
 		b.printf("if (%sdst.buf && %sdst.buf->closed) { status = %sERROR_CLOSED_FOR_WRITES;",
 			aPrefix, aPrefix, g.PKGPREFIX)
@@ -618,8 +618,8 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyCopyFrom32 &&
-		methodName != t.KeyCopyHistory32 &&
+	callSuspendible := methodName != t.KeyCopyFromReader32 &&
+		methodName != t.KeyCopyFromHistory32 &&
 		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {

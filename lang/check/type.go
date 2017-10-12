@@ -373,8 +373,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) ||
-			isInDst(q.tm, n, t.KeyWrite, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
-			isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) ||
+			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyWriteU8, 1) ||
+			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeySlice, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
@@ -399,7 +399,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.SetMType(typeExprPlaceholder16) // HACK.
 			} else if isInDst(q.tm, n, t.KeySlice, 0) {
 				n.SetMType(typeExprSliceU8) // HACK.
-			} else if isInDst(q.tm, n, t.KeyCopyFrom32, 2) || isInDst(q.tm, n, t.KeyCopyHistory32, 2) {
+			} else if isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) {
 				n.SetMType(typeExprU32) // HACK.
 			} else {
 				n.SetMType(typeExprPlaceholder) // HACK.
@@ -473,7 +473,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyCopyFrom, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) ||
+		if isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) ||
 			isThatMethod(q.tm, n, t.KeyAvailable, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
@@ -615,8 +615,8 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyCopyFrom32 &&
-		methodName != t.KeyCopyHistory32 &&
+	callSuspendible := methodName != t.KeyCopyFromReader32 &&
+		methodName != t.KeyCopyFromHistory32 &&
 		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {

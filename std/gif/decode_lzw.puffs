@@ -110,8 +110,8 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 				inv c < 256,
 			{
 				var expansion[] u8 = this.stack[s:]
-				// TODO: change write to copy_from_slice.
-				in.dst.write?(x:expansion)
+				// TODO: copy_from_slice should return n_copied.
+				in.dst.copy_from_slice?(x:expansion)
 				if expansion.length() == 0 {  // Avoid "unused variable" C compiler warning.
 				}
 				break
