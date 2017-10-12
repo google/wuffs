@@ -218,6 +218,7 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 		}
 		length -= n
 		if in.dst.available() == 0 {
+			// TODO: "closed for writes" instead?
 			return suspension "short write"
 		} else {
 			return suspension "short read"
@@ -401,6 +402,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
 			length -= n
+			// TODO: "closed for writes" instead?
 			return suspension "short write"
 		}
 	}

@@ -105,10 +105,17 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 				this.stack[4095] = c as u8
 			}
 
-			// TODO: the "x:s" arg is a placeholder, and should be something
-			// like (this.stack[s:]), which means defining a slice type (and
-			// type checking, bounds checking and code generation for it).
-			in.dst.write?(x:s)
+			while true,
+				inv n_bits < 8,
+				inv c < 256,
+			{
+				var expansion[] u8 = this.stack[s:]
+				// TODO: change write to copy_from_slice.
+				in.dst.write?(x:expansion)
+				if expansion.length() == 0 {  // Avoid "unused variable" C compiler warning.
+				}
+				break
+			}
 
 			if save_code <= 4095 {
 				this.suffixes[save_code] = c as u8

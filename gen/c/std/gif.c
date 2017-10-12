@@ -1298,6 +1298,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_code;
   uint32_t v_s;
   uint32_t v_c;
+  puffs_base_slice_u8 v_expansion;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1342,6 +1343,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     v_code = self->private_impl.c_decode[0].v_code;
     v_s = self->private_impl.c_decode[0].v_s;
     v_c = self->private_impl.c_decode[0].v_c;
+    v_expansion = ((puffs_base_slice_u8){});
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1407,19 +1409,29 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         if (v_code == v_save_code) {
           self->private_impl.f_stack[4095] = ((uint8_t)(v_c));
         }
-        PUFFS_COROUTINE_SUSPENSION_POINT(3);
-        if (a_dst.buf && a_dst.buf->closed) {
-          status = PUFFS_GIF_ERROR_CLOSED_FOR_WRITES;
-          goto exit;
+        while (true) {
+          v_expansion = puffs_base_slice_u8_subslice_i(
+              ((puffs_base_slice_u8){.ptr = self->private_impl.f_stack,
+                                     .len = 4096}),
+              v_s);
+          PUFFS_COROUTINE_SUSPENSION_POINT(3);
+          if (a_dst.buf && a_dst.buf->closed) {
+            status = PUFFS_GIF_ERROR_CLOSED_FOR_WRITES;
+            goto exit;
+          }
+          if ((b_wend_dst - b_wptr_dst) <
+              (sizeof(self->private_impl.f_stack) - v_s)) {
+            status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
+            goto suspend;
+          }
+          memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
+                  sizeof(self->private_impl.f_stack) - v_s);
+          b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;
+          if (((uint64_t)(v_expansion.len)) == 0) {
+          }
+          goto label_1_break;
         }
-        if ((b_wend_dst - b_wptr_dst) <
-            (sizeof(self->private_impl.f_stack) - v_s)) {
-          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
-          goto suspend;
-        }
-        memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
-                sizeof(self->private_impl.f_stack) - v_s);
-        b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;
+      label_1_break:;
         if (v_save_code <= 4095) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_c));
           self->private_impl.f_prefixes[v_save_code] =
