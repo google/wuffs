@@ -20,6 +20,7 @@ pub error "bad Huffman code length count"
 pub error "bad Huffman code length repetition"
 pub error "bad Huffman code"
 pub error "bad Huffman minimum code length"
+pub error "bad distance"
 pub error "bad distance code count"
 pub error "bad flate block"
 pub error "bad literal/length code count"
@@ -209,6 +210,7 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	length = length.low_bits(n:16)
 	while true {
 		var n u32 = in.dst.copy_from32(r:in.src, length:length)
+		// TODO: assert n <= length and simplify the subsequent if.
 		if length == n {
 			break
 		} else if length < n {
@@ -285,21 +287,16 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		}
 
 		// length = base number + extra bits.
-		var length u32 = (table_entry >> 8) & 0xFFFF
-		// TODO: this if shouldn't be necessary.
-		if length > 0xFFFF {
-			return error "internal error: inconsistent Huffman decoder state"
-		}
+		var length u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		while n_bits < table_entry_n_bits,
-			inv length <= 0xFFFF,
 			post n_bits >= table_entry_n_bits,
 		{
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
-		length += bits.low_bits(n:table_entry_n_bits)
+		length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
@@ -349,29 +346,55 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		}
 
 		// distance = base number + extra bits.
-		var distance u32 = (table_entry >> 8) & 0xFFFF
-		// TODO: this if shouldn't be necessary.
-		if distance > 0xFFFF {
-			return error "internal error: inconsistent Huffman decoder state"
-		}
+		var distance u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		while n_bits < table_entry_n_bits,
-			inv distance <= 0xFFFF,
 			post n_bits >= table_entry_n_bits,
 		{
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
-		distance += bits.low_bits(n:table_entry_n_bits)
+		distance = (distance + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
 		while true {
+			var n u32
+
+			// Copy from this.history.
 			if (distance as u64) > in.dst.length() {
-				// TODO: copy from this.history.
+				// Set (n, d) to be the length-distance pair to copy from
+				// this.history, and (length, distance) to be the remaining
+				// length-distance pair to copy from in.dst.
+				var d u32[..0x7FFF] = ((distance as u64) - in.dst.length()) as u32
+				if length > d {
+					length -= d
+					n = d
+				} else {
+					length = 0
+					n = length
+				}
+				if this.history_index < d {
+					return error "bad distance"
+				}
+
+				var history[] u8 = this.history[(this.history_index - d) & 0x7FFF:]
+				if (n as u64) <= history.length() {
+					// TODO: in.dst.write?(x:history.prefix(up_to:n as u64))
+				} else {
+					n = ((n as u64) - history.length()) as u32
+					// TODO: in.dst.write?(x:history)
+					// TODO: in.dst.write?(x:this.history[:n & 0x7FFF])
+				}
+
+				if length == 0 {
+					continue
+				}
 			}
-			var n u32 = in.dst.copy_history32(distance:distance, length:length)
+
+			// Copy from in.dst.
+			n = in.dst.copy_history32(distance:distance, length:length)
 			if length == n {
 				break
 			} else if length < n {
