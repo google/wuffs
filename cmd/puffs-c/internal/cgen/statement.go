@@ -604,6 +604,7 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	callSuspendible := methodName != t.KeyCopyFromReader32 &&
 		methodName != t.KeyCopyFromHistory32 &&
+		methodName != t.KeyCopyFromSlice32 &&
 		methodName != t.KeyCopyFromSlice &&
 		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".

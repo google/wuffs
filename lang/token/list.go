@@ -287,6 +287,7 @@ const (
 	KeyCopyFromHistory32 = Key(IDCopyFromHistory32 >> KeyShift)
 	KeyCopyFromReader32  = Key(IDCopyFromReader32 >> KeyShift)
 	KeyCopyFromSlice     = Key(IDCopyFromSlice >> KeyShift)
+	KeyCopyFromSlice32   = Key(IDCopyFromSlice32 >> KeyShift)
 	KeySkip32            = Key(IDSkip32 >> KeyShift)
 	KeySkip64            = Key(IDSkip64 >> KeyShift)
 	KeySlice             = Key(IDSlice >> KeyShift)
@@ -464,13 +465,14 @@ const (
 	IDCopyFromHistory32 = ID(0xC3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDCopyFromReader32  = ID(0xC4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDCopyFromSlice     = ID(0xC5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip32            = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip64            = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSlice             = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLength            = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDAvailable         = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix            = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCopyFromSlice32   = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip32            = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSkip64            = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSlice             = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLength            = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDAvailable         = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix            = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -663,6 +665,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyCopyFromHistory32: {"copy_from_history32", IDCopyFromHistory32},
 	KeyCopyFromReader32:  {"copy_from_reader32", IDCopyFromReader32},
 	KeyCopyFromSlice:     {"copy_from_slice", IDCopyFromSlice},
+	KeyCopyFromSlice32:   {"copy_from_slice32", IDCopyFromSlice32},
 	KeySkip32:            {"skip32", IDSkip32},
 	KeySkip64:            {"skip64", IDSkip64},
 	KeySlice:             {"slice", IDSlice},

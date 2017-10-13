@@ -165,14 +165,14 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
     return 0;
   }
   start = ptr - distance;
-  size_t l = end - ptr;
-  if ((size_t)(length) > l) {
-    length = l;
+  size_t n = end - ptr;
+  if ((size_t)(length) > n) {
+    length = n;
   } else {
-    l = length;
+    n = length;
   }
   // TODO: is manual unrolling actually helpful?
-  for (; l >= 8; l -= 8) {
+  for (; n >= 8; n -= 8) {
     *ptr++ = *start++;
     *ptr++ = *start++;
     *ptr++ = *start++;
@@ -182,7 +182,7 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
     *ptr++ = *start++;
     *ptr++ = *start++;
   }
-  for (; l; l--) {
+  for (; n; n--) {
     *ptr++ = *start++;
   }
   *ptr_ptr = ptr;
@@ -195,19 +195,20 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
                                                              uint8_t* rend,
                                                              uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
-  if (length > wend - wptr) {
-    length = wend - wptr;
+  size_t n = length;
+  if (n > wend - wptr) {
+    n = wend - wptr;
   }
   uint8_t* rptr = *ptr_rptr;
-  if (length > rend - rptr) {
-    length = rend - rptr;
+  if (n > rend - rptr) {
+    n = rend - rptr;
   }
-  if (length > 0) {
-    memmove(wptr, rptr, length);
-    *ptr_wptr += length;
-    *ptr_rptr += length;
+  if (n > 0) {
+    memmove(wptr, rptr, n);
+    *ptr_wptr += n;
+    *ptr_rptr += n;
   }
-  return length;
+  return n;
 }
 
 static inline uint64_t puffs_base_writer1_copy_from_slice(
@@ -215,15 +216,35 @@ static inline uint64_t puffs_base_writer1_copy_from_slice(
     uint8_t* wend,
     puffs_base_slice_u8 src) {
   uint8_t* wptr = *ptr_wptr;
-  size_t length = src.len;
-  if (length > wend - wptr) {
-    length = wend - wptr;
+  size_t n = src.len;
+  if (n > wend - wptr) {
+    n = wend - wptr;
   }
-  if (length > 0) {
-    memmove(wptr, src.ptr, length);
-    *ptr_wptr += length;
+  if (n > 0) {
+    memmove(wptr, src.ptr, n);
+    *ptr_wptr += n;
   }
-  return length;
+  return n;
+}
+
+static inline uint32_t puffs_base_writer1_copy_from_slice32(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    puffs_base_slice_u8 src,
+    uint32_t length) {
+  uint8_t* wptr = *ptr_wptr;
+  size_t n = src.len;
+  if (n > length) {
+    n = length;
+  }
+  if (n > wend - wptr) {
+    n = wend - wptr;
+  }
+  if (n > 0) {
+    memmove(wptr, src.ptr, n);
+    *ptr_wptr += n;
+  }
+  return n;
 }
 
 #endif  // PUFFS_BASE_IMPL_H

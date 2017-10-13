@@ -187,6 +187,17 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
+		if isInDst(g.tm, n, t.KeyCopyFromSlice32, 2) {
+			b.printf("puffs_base_writer1_copy_from_slice32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			for _, o := range n.Args() {
+				b.writeb(',')
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+			}
+			b.writeb(')')
+			return nil
+		}
 		if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
 			b.printf("puffs_base_writer1_copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
 			a := n.Args()[0].Arg().Value()

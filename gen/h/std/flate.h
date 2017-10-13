@@ -209,7 +209,8 @@ typedef struct {
       uint32_t v_length;
       uint32_t v_distance;
       uint32_t v_n;
-      uint32_t v_d;
+      uint32_t v_hlen;
+      uint32_t v_hdist;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;

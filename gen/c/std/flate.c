@@ -209,7 +209,8 @@ typedef struct {
       uint32_t v_length;
       uint32_t v_distance;
       uint32_t v_n;
-      uint32_t v_d;
+      uint32_t v_hlen;
+      uint32_t v_hdist;
     } c_decode_huffman[1];
     struct {
       uint32_t coro_susp_point;
@@ -460,14 +461,14 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
     return 0;
   }
   start = ptr - distance;
-  size_t l = end - ptr;
-  if ((size_t)(length) > l) {
-    length = l;
+  size_t n = end - ptr;
+  if ((size_t)(length) > n) {
+    length = n;
   } else {
-    l = length;
+    n = length;
   }
   // TODO: is manual unrolling actually helpful?
-  for (; l >= 8; l -= 8) {
+  for (; n >= 8; n -= 8) {
     *ptr++ = *start++;
     *ptr++ = *start++;
     *ptr++ = *start++;
@@ -477,7 +478,7 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
     *ptr++ = *start++;
     *ptr++ = *start++;
   }
-  for (; l; l--) {
+  for (; n; n--) {
     *ptr++ = *start++;
   }
   *ptr_ptr = ptr;
@@ -490,19 +491,20 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
                                                              uint8_t* rend,
                                                              uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
-  if (length > wend - wptr) {
-    length = wend - wptr;
+  size_t n = length;
+  if (n > wend - wptr) {
+    n = wend - wptr;
   }
   uint8_t* rptr = *ptr_rptr;
-  if (length > rend - rptr) {
-    length = rend - rptr;
+  if (n > rend - rptr) {
+    n = rend - rptr;
   }
-  if (length > 0) {
-    memmove(wptr, rptr, length);
-    *ptr_wptr += length;
-    *ptr_rptr += length;
+  if (n > 0) {
+    memmove(wptr, rptr, n);
+    *ptr_wptr += n;
+    *ptr_rptr += n;
   }
-  return length;
+  return n;
 }
 
 static inline uint64_t puffs_base_writer1_copy_from_slice(
@@ -510,15 +512,35 @@ static inline uint64_t puffs_base_writer1_copy_from_slice(
     uint8_t* wend,
     puffs_base_slice_u8 src) {
   uint8_t* wptr = *ptr_wptr;
-  size_t length = src.len;
-  if (length > wend - wptr) {
-    length = wend - wptr;
+  size_t n = src.len;
+  if (n > wend - wptr) {
+    n = wend - wptr;
   }
-  if (length > 0) {
-    memmove(wptr, src.ptr, length);
-    *ptr_wptr += length;
+  if (n > 0) {
+    memmove(wptr, src.ptr, n);
+    *ptr_wptr += n;
   }
-  return length;
+  return n;
+}
+
+static inline uint32_t puffs_base_writer1_copy_from_slice32(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    puffs_base_slice_u8 src,
+    uint32_t length) {
+  uint8_t* wptr = *ptr_wptr;
+  size_t n = src.len;
+  if (n > length) {
+    n = length;
+  }
+  if (n > wend - wptr) {
+    n = wend - wptr;
+  }
+  if (n > 0) {
+    memmove(wptr, src.ptr, n);
+    *ptr_wptr += n;
+  }
+  return n;
 }
 
 #endif  // PUFFS_BASE_IMPL_H
@@ -1132,6 +1154,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       v_n = puffs_base_writer1_copy_from_reader32(
           &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
       if (v_length == v_n) {
+        v_length = 0;
         goto label_0_break;
       } else if (v_length < v_n) {
         status =
@@ -1215,8 +1238,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
   uint32_t v_length;
   uint32_t v_distance;
   uint32_t v_n;
-  uint32_t v_d;
-  puffs_base_slice_u8 v_history;
+  uint32_t v_hlen;
+  uint32_t v_hdist;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1267,8 +1290,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
     v_length = self->private_impl.c_decode_huffman[0].v_length;
     v_distance = self->private_impl.c_decode_huffman[0].v_distance;
     v_n = self->private_impl.c_decode_huffman[0].v_n;
-    v_d = self->private_impl.c_decode_huffman[0].v_d;
-    v_history = ((puffs_base_slice_u8){});
+    v_hlen = self->private_impl.c_decode_huffman[0].v_hlen;
+    v_hdist = self->private_impl.c_decode_huffman[0].v_hdist;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1446,27 +1469,71 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         v_n = 0;
         if (((uint64_t)(v_distance)) >
             ((uint64_t)(b_wptr_dst - b_wstart_dst))) {
-          v_d = ((uint32_t)((((uint64_t)(v_distance)) -
-                             ((uint64_t)(b_wptr_dst - b_wstart_dst)))));
-          if (v_length > v_d) {
-            v_length -= v_d;
-            v_n = v_d;
+          v_hlen = 0;
+          v_hdist = ((uint32_t)((((uint64_t)(v_distance)) -
+                                 ((uint64_t)(b_wptr_dst - b_wstart_dst)))));
+          if (v_length > v_hdist) {
+            v_length -= v_hdist;
+            v_hlen = v_hdist;
           } else {
             v_length = 0;
-            v_n = v_length;
+            v_hlen = v_length;
           }
-          if (self->private_impl.f_history_index < v_d) {
+          if (self->private_impl.f_history_index < v_hdist) {
             status = PUFFS_FLATE_ERROR_BAD_DISTANCE;
             goto exit;
           }
-          v_history = puffs_base_slice_u8_subslice_i(
-              ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                     .len = 32768}),
-              (self->private_impl.f_history_index - v_d) & 32767);
-          if (((uint64_t)(v_n)) <= ((uint64_t)(v_history.len))) {
-          } else {
-            v_n =
-                ((uint32_t)((((uint64_t)(v_n)) - ((uint64_t)(v_history.len)))));
+          v_hdist = ((self->private_impl.f_history_index - v_hdist) & 32767);
+          while (true) {
+            v_n = puffs_base_writer1_copy_from_slice32(
+                &b_wptr_dst, b_wend_dst,
+                puffs_base_slice_u8_subslice_i(
+                    ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
+                                           .len = 32768}),
+                    v_hdist),
+                v_hlen);
+            if (v_hlen == v_n) {
+              v_hlen = 0;
+              goto label_6_break;
+            } else if (v_hlen < v_n) {
+              status =
+                  PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+              goto exit;
+            }
+            if (v_n > 0) {
+              v_hlen -= v_n;
+              v_hdist = ((v_hdist + (v_n & 32767)) & 32767);
+              if (v_hdist == 0) {
+                goto label_6_break;
+              }
+            }
+            status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+            PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+          }
+        label_6_break:;
+          if (v_hlen > 0) {
+            while (true) {
+              v_n = puffs_base_writer1_copy_from_slice32(
+                  &b_wptr_dst, b_wend_dst,
+                  puffs_base_slice_u8_subslice_i(
+                      ((puffs_base_slice_u8){
+                          .ptr = self->private_impl.f_history, .len = 32768}),
+                      v_hdist),
+                  v_hlen);
+              if (v_hlen == v_n) {
+                v_hlen = 0;
+                goto label_7_break;
+              } else if (v_hlen < v_n) {
+                status =
+                    PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+                goto exit;
+              }
+              v_hlen -= v_n;
+              v_hdist = ((v_hdist + (v_n & 32767)) & 32767);
+              status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
+              PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
+            }
+          label_7_break:;
           }
           if (v_length == 0) {
             goto label_5_continue;
@@ -1483,7 +1550,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         }
         v_length -= v_n;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
-        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
     label_5_break:;
     }
@@ -1512,7 +1579,8 @@ suspend:
   self->private_impl.c_decode_huffman[0].v_length = v_length;
   self->private_impl.c_decode_huffman[0].v_distance = v_distance;
   self->private_impl.c_decode_huffman[0].v_n = v_n;
-  self->private_impl.c_decode_huffman[0].v_d = v_d;
+  self->private_impl.c_decode_huffman[0].v_hlen = v_hlen;
+  self->private_impl.c_decode_huffman[0].v_hdist = v_hdist;
 
 exit:
   if (a_dst.buf) {
