@@ -1153,13 +1153,9 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     while (true) {
       v_n = puffs_base_writer1_copy_from_reader32(
           &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
-      if (v_length == v_n) {
+      if (v_length <= v_n) {
         v_length = 0;
         goto label_0_break;
-      } else if (v_length < v_n) {
-        status =
-            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-        goto exit;
       }
       v_length -= v_n;
       if (((uint64_t)(b_wend_dst - b_wptr_dst)) == 0) {
@@ -1492,13 +1488,9 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
                                            .len = 32768}),
                     v_hdist),
                 v_hlen);
-            if (v_hlen == v_n) {
+            if (v_hlen <= v_n) {
               v_hlen = 0;
               goto label_6_break;
-            } else if (v_hlen < v_n) {
-              status =
-                  PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-              goto exit;
             }
             if (v_n > 0) {
               v_hlen -= v_n;
@@ -1520,13 +1512,9 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
                           .ptr = self->private_impl.f_history, .len = 32768}),
                       v_hdist),
                   v_hlen);
-              if (v_hlen == v_n) {
+              if (v_hlen <= v_n) {
                 v_hlen = 0;
                 goto label_7_break;
-              } else if (v_hlen < v_n) {
-                status =
-                    PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-                goto exit;
               }
               v_hlen -= v_n;
               v_hdist = ((v_hdist + (v_n & 32767)) & 32767);
@@ -1541,12 +1529,9 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         }
         v_n = puffs_base_writer1_copy_from_history32(
             &b_wptr_dst, b_wstart_dst, b_wend_dst, v_distance, v_length);
-        if (v_length == v_n) {
+        if (v_length <= v_n) {
+          v_length = 0;
           goto label_5_break;
-        } else if (v_length < v_n) {
-          status =
-              PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-          goto exit;
         }
         v_length -= v_n;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;

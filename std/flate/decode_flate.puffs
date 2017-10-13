@@ -210,12 +210,9 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	length = length.low_bits(n:16)
 	while true {
 		var n u32 = in.dst.copy_from_reader32(r:in.src, length:length)
-		// TODO: assert n <= length and simplify the subsequent if.
-		if length == n {
+		if length <= n {
 			length = 0
 			break
-		} else if length < n {
-			return error "internal error: inconsistent Huffman decoder state"
 		}
 		length -= n
 		if in.dst.available() == 0 {
@@ -388,11 +385,9 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 				// Copy from hdist to the end of this.history.
 				while true {
 					n = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
-					if hlen == n {
+					if hlen <= n {
 						hlen = 0
 						break
-					} else if hlen < n {
-						return error "internal error: inconsistent Huffman decoder state"
 					}
 					if n > 0 {
 						hlen -= n
@@ -416,11 +411,9 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 				if hlen > 0 {
 					while true {
 						n = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
-						if hlen == n {
+						if hlen <= n {
 							hlen = 0
 							break
-						} else if hlen < n {
-							return error "internal error: inconsistent Huffman decoder state"
 						}
 						hlen -= n
 						hdist = (hdist + (n & 0x7FFF)) & 0x7FFF
@@ -437,10 +430,9 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 
 			// Copy from in.dst.
 			n = in.dst.copy_from_history32(distance:distance, length:length)
-			if length == n {
+			if length <= n {
+				length = 0
 				break
-			} else if length < n {
-				return error "internal error: inconsistent Huffman decoder state"
 			}
 			length -= n
 			// TODO: "closed for writes" instead?
