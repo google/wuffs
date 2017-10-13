@@ -110,11 +110,13 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 				inv c < 256,
 			{
 				var expansion[] u8 = this.stack[s:]
-				// TODO: copy_from_slice should return n_copied.
-				in.dst.copy_from_slice?(x:expansion)
-				if expansion.length() == 0 {  // Avoid "unused variable" C compiler warning.
+				var n u64 = in.dst.copy_from_slice(x:expansion)
+				if n == expansion.length() {
+					break
 				}
-				break
+				s = (s + ((n & 4095) as u32)) & 4095
+				// TODO: "closed for writes" instead?
+				return suspension "short write"
 			}
 
 			if save_code <= 4095 {

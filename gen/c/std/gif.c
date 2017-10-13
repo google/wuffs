@@ -165,6 +165,7 @@ typedef struct {
       uint32_t v_code;
       uint32_t v_s;
       uint32_t v_c;
+      uint64_t v_n;
     } c_decode[1];
   } private_impl;
 } puffs_gif_lzw_decoder;
@@ -380,40 +381,40 @@ puffs_base_slice_u8_subslice_ij(puffs_base_slice_u8 s, uint64_t i, uint64_t j) {
   return ((puffs_base_slice_u8){});
 }
 
-// puffs_base_slice_u8_prefix returns up to the first n bytes of s.
+// puffs_base_slice_u8_prefix returns up to the first up_to bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
     puffs_base_slice_u8 s,
-    uint64_t n) {
-  if ((uint64_t)(s.len) > n) {
-    s.len = n;
+    uint64_t up_to) {
+  if ((uint64_t)(s.len) > up_to) {
+    s.len = up_to;
   }
   return s;
 }
 
-// puffs_base_slice_u8_suffix returns up to the last n bytes of s.
+// puffs_base_slice_u8_suffix returns up to the last up_to bytes of s.
 static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
     puffs_base_slice_u8 s,
-    uint64_t n) {
-  if ((uint64_t)(s.len) > n) {
-    s.ptr += (uint64_t)(s.len) - n;
-    s.len = n;
+    uint64_t up_to) {
+  if ((uint64_t)(s.len) > up_to) {
+    s.ptr += (uint64_t)(s.len) - up_to;
+    s.len = up_to;
   }
   return s;
 }
 
-// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, n) where
-// n is the minimum of dst.len and src.len.
+// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, length)
+// where length is the minimum of dst.len and src.len.
 //
 // Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
 static inline uint64_t puffs_base_slice_u8_copy_from_slice(
     puffs_base_slice_u8 dst,
     puffs_base_slice_u8 src) {
-  size_t n = dst.len < src.len ? dst.len : src.len;
-  if (n > 0) {
-    memmove(dst.ptr, src.ptr, n);
+  size_t length = dst.len < src.len ? dst.len : src.len;
+  if (length > 0) {
+    memmove(dst.ptr, src.ptr, length);
   }
-  return n;
+  return length;
 }
 
 static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
@@ -457,17 +458,33 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
                                                              uint8_t* rend,
                                                              uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
-  if (length > (wend - wptr)) {
+  if (length > wend - wptr) {
     length = wend - wptr;
   }
   uint8_t* rptr = *ptr_rptr;
-  if (length > (rend - rptr)) {
+  if (length > rend - rptr) {
     length = rend - rptr;
   }
   if (length > 0) {
     memmove(wptr, rptr, length);
     *ptr_wptr += length;
     *ptr_rptr += length;
+  }
+  return length;
+}
+
+static inline uint64_t puffs_base_writer1_copy_from_slice(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    puffs_base_slice_u8 src) {
+  uint8_t* wptr = *ptr_wptr;
+  size_t length = src.len;
+  if (length > wend - wptr) {
+    length = wend - wptr;
+  }
+  if (length > 0) {
+    memmove(wptr, src.ptr, length);
+    *ptr_wptr += length;
   }
   return length;
 }
@@ -1300,6 +1317,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_s;
   uint32_t v_c;
   puffs_base_slice_u8 v_expansion;
+  uint64_t v_n;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1345,6 +1363,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     v_s = self->private_impl.c_decode[0].v_s;
     v_c = self->private_impl.c_decode[0].v_c;
     v_expansion = ((puffs_base_slice_u8){});
+    v_n = self->private_impl.c_decode[0].v_n;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1415,22 +1434,14 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
               ((puffs_base_slice_u8){.ptr = self->private_impl.f_stack,
                                      .len = 4096}),
               v_s);
-          PUFFS_COROUTINE_SUSPENSION_POINT(3);
-          if (a_dst.buf && a_dst.buf->closed) {
-            status = PUFFS_GIF_ERROR_CLOSED_FOR_WRITES;
-            goto exit;
+          v_n = puffs_base_writer1_copy_from_slice(&b_wptr_dst, b_wend_dst,
+                                                   v_expansion);
+          if (v_n == ((uint64_t)(v_expansion.len))) {
+            goto label_1_break;
           }
-          if ((b_wend_dst - b_wptr_dst) <
-              (sizeof(self->private_impl.f_stack) - v_s)) {
-            status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
-            goto suspend;
-          }
-          memmove(b_wptr_dst, self->private_impl.f_stack + v_s,
-                  sizeof(self->private_impl.f_stack) - v_s);
-          b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;
-          if (((uint64_t)(v_expansion.len)) == 0) {
-          }
-          goto label_1_break;
+          v_s = ((v_s + ((uint32_t)((v_n & 4095)))) & 4095);
+          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
+          PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
       label_1_break:;
         if (v_save_code <= 4095) {
@@ -1470,6 +1481,7 @@ suspend:
   self->private_impl.c_decode[0].v_code = v_code;
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
+  self->private_impl.c_decode[0].v_n = v_n;
 
 exit:
   if (a_dst.buf) {

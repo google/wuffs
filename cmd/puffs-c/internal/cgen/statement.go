@@ -368,22 +368,6 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
 
-	} else if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
-		// TODO: don't assume that the argument is "this.stack[s:]".
-		b.printf("if (%sdst.buf && %sdst.buf->closed) { status = %sERROR_CLOSED_FOR_WRITES;",
-			aPrefix, aPrefix, g.PKGPREFIX)
-		b.writes("goto exit;")
-		b.writes("}\n")
-		b.printf("if ((%swend_dst - %swptr_dst) < (sizeof(self->private_impl.f_stack) - v_s)) {",
-			bPrefix, bPrefix)
-		b.printf("status = %sSUSPENSION_SHORT_WRITE;", g.PKGPREFIX)
-		b.writes("goto suspend;")
-		b.writes("}\n")
-		b.printf("memmove(b_wptr_dst," +
-			"self->private_impl.f_stack + v_s," +
-			"sizeof(self->private_impl.f_stack) - v_s);\n")
-		b.printf("b_wptr_dst += sizeof(self->private_impl.f_stack) - v_s;\n")
-
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
 		b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
 			bPrefix, bPrefix, g.PKGPREFIX)
@@ -620,6 +604,7 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	callSuspendible := methodName != t.KeyCopyFromReader32 &&
 		methodName != t.KeyCopyFromHistory32 &&
+		methodName != t.KeyCopyFromSlice &&
 		methodName != t.KeySlice
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
