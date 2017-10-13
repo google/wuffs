@@ -401,13 +401,14 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
-// puffs_base_slice_u8_copy_from calls memmove(dst.ptr, src.ptr, n) where n is
-// the minimum of dst.len and src.len.
+// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, n) where
+// n is the minimum of dst.len and src.len.
 //
 // Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
-                                                     puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base_slice_u8_copy_from_slice(
+    puffs_base_slice_u8 dst,
+    puffs_base_slice_u8 src) {
   size_t n = dst.len < src.len ? dst.len : src.len;
   if (n > 0) {
     memmove(dst.ptr, src.ptr, n);
@@ -415,11 +416,11 @@ static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
-                                                      uint8_t* wend,
-                                                      uint8_t** ptr_rptr,
-                                                      uint8_t* rend,
-                                                      uint32_t length) {
+static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
+                                                             uint8_t* wend,
+                                                             uint8_t** ptr_rptr,
+                                                             uint8_t* rend,
+                                                             uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   if (length > (wend - wptr)) {
     length = wend - wptr;
@@ -436,11 +437,11 @@ static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_history32(uint8_t** ptr_ptr,
-                                                         uint8_t* start,
-                                                         uint8_t* end,
-                                                         uint32_t distance,
-                                                         uint32_t length) {
+static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
+                                                              uint8_t* start,
+                                                              uint8_t* end,
+                                                              uint32_t distance,
+                                                              uint32_t length) {
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {

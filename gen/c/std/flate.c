@@ -434,13 +434,14 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
-// puffs_base_slice_u8_copy_from calls memmove(dst.ptr, src.ptr, n) where n is
-// the minimum of dst.len and src.len.
+// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, n) where
+// n is the minimum of dst.len and src.len.
 //
 // Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
-                                                     puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base_slice_u8_copy_from_slice(
+    puffs_base_slice_u8 dst,
+    puffs_base_slice_u8 src) {
   size_t n = dst.len < src.len ? dst.len : src.len;
   if (n > 0) {
     memmove(dst.ptr, src.ptr, n);
@@ -448,11 +449,11 @@ static inline uint64_t puffs_base_slice_u8_copy_from(puffs_base_slice_u8 dst,
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
-                                                      uint8_t* wend,
-                                                      uint8_t** ptr_rptr,
-                                                      uint8_t* rend,
-                                                      uint32_t length) {
+static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
+                                                             uint8_t* wend,
+                                                             uint8_t** ptr_rptr,
+                                                             uint8_t* rend,
+                                                             uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   if (length > (wend - wptr)) {
     length = wend - wptr;
@@ -469,11 +470,11 @@ static inline uint32_t puffs_base_writer1_copy_from32(uint8_t** ptr_wptr,
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_history32(uint8_t** ptr_ptr,
-                                                         uint8_t* start,
-                                                         uint8_t* end,
-                                                         uint32_t distance,
-                                                         uint32_t length) {
+static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
+                                                              uint8_t* start,
+                                                              uint8_t* end,
+                                                              uint32_t distance,
+                                                              uint32_t length) {
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {
@@ -769,13 +770,13 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base_slice_u8_suffix(v_written, 32768);
-        puffs_base_slice_u8_copy_from(
+        puffs_base_slice_u8_copy_from_slice(
             ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                    .len = 32768}),
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
-        v_n = puffs_base_slice_u8_copy_from(
+        v_n = puffs_base_slice_u8_copy_from_slice(
             puffs_base_slice_u8_subslice_i(
                 ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                        .len = 32768}),
@@ -783,7 +784,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
             v_written);
         if (v_n < ((uint64_t)(v_written.len))) {
           v_written = puffs_base_slice_u8_subslice_i(v_written, v_n);
-          v_n = puffs_base_slice_u8_copy_from(
+          v_n = puffs_base_slice_u8_copy_from_slice(
               ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                      .len = 32768}),
               v_written);
@@ -1103,8 +1104,8 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     }
     v_length = ((v_length) & ((1 << (16)) - 1));
     while (true) {
-      v_n = puffs_base_writer1_copy_from32(&b_wptr_dst, b_wend_dst, &b_rptr_src,
-                                           b_rend_src, v_length);
+      v_n = puffs_base_writer1_copy_from_reader32(
+          &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
       if (v_length == v_n) {
         goto label_0_break;
       } else if (v_length < v_n) {
@@ -1443,7 +1444,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
             goto label_5_continue;
           }
         }
-        v_n = puffs_base_writer1_copy_history32(
+        v_n = puffs_base_writer1_copy_from_history32(
             &b_wptr_dst, b_wstart_dst, b_wend_dst, v_distance, v_length);
         if (v_length == v_n) {
           goto label_5_break;
