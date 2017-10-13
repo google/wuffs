@@ -730,14 +730,17 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wstart_dst = b_wptr_dst;
-    size_t len = a_dst.buf->len - a_dst.buf->wi;
-    puffs_base_limit1* lim;
-    for (lim = &a_dst.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
+    b_wend_dst = b_wptr_dst;
+    if (!a_dst.buf->closed) {
+      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
       }
+      b_wend_dst += len;
     }
-    b_wend_dst = b_wptr_dst + len;
   }
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
@@ -766,14 +769,17 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
           puffs_flate_decoder_decode_blocks(self, a_dst, a_src);
       if (a_dst.buf) {
         b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
-        size_t len = a_dst.buf->len - a_dst.buf->wi;
-        puffs_base_limit1* lim;
-        for (lim = &a_dst.limit; lim; lim = lim->next) {
-          if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-            len = *lim->ptr_to_len;
+        b_wend_dst = b_wptr_dst;
+        if (!a_dst.buf->closed) {
+          size_t len = a_dst.buf->len - a_dst.buf->wi;
+          puffs_base_limit1* lim;
+          for (lim = &a_dst.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+              len = *lim->ptr_to_len;
+            }
           }
+          b_wend_dst += len;
         }
-        b_wend_dst = b_wptr_dst + len;
       }
       v_z = t_0;
       if (!(v_z > 0)) {
@@ -1046,14 +1052,17 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wstart_dst = b_wptr_dst;
-    size_t len = a_dst.buf->len - a_dst.buf->wi;
-    puffs_base_limit1* lim;
-    for (lim = &a_dst.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
+    b_wend_dst = b_wptr_dst;
+    if (!a_dst.buf->closed) {
+      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
       }
+      b_wend_dst += len;
     }
-    b_wend_dst = b_wptr_dst + len;
   }
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
@@ -1215,14 +1224,17 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wstart_dst = b_wptr_dst;
-    size_t len = a_dst.buf->len - a_dst.buf->wi;
-    puffs_base_limit1* lim;
-    for (lim = &a_dst.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
+    b_wend_dst = b_wptr_dst;
+    if (!a_dst.buf->closed) {
+      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
       }
+      b_wend_dst += len;
     }
-    b_wend_dst = b_wptr_dst + len;
   }
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;

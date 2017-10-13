@@ -98,8 +98,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		if header {
 			b.printf("%srstart_%s = %srptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		}
-		b.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;",
-			aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base_limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
@@ -121,13 +120,15 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		if header {
 			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		}
-		b.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;",
-			aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+		b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
+		b.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base_limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
 		b.printf("}")
-		b.printf("%swend_%s = %swptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
+		b.printf("%swend_%s += len;", bPrefix, nameStr)
+		b.printf("}\n")
 
 		b.printf("}\n")
 	}
