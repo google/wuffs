@@ -154,27 +154,6 @@ static inline uint64_t puffs_base_slice_u8_copy_from_slice(
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
-                                                             uint8_t* wend,
-                                                             uint8_t** ptr_rptr,
-                                                             uint8_t* rend,
-                                                             uint32_t length) {
-  uint8_t* wptr = *ptr_wptr;
-  if (length > (wend - wptr)) {
-    length = wend - wptr;
-  }
-  uint8_t* rptr = *ptr_rptr;
-  if (length > (rend - rptr)) {
-    length = rend - rptr;
-  }
-  if (length > 0) {
-    memmove(wptr, rptr, length);
-    *ptr_wptr += length;
-    *ptr_rptr += length;
-  }
-  return length;
-}
-
 static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
                                                               uint8_t* start,
                                                               uint8_t* end,
@@ -207,6 +186,27 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
     *ptr++ = *start++;
   }
   *ptr_ptr = ptr;
+  return length;
+}
+
+static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
+                                                             uint8_t* wend,
+                                                             uint8_t** ptr_rptr,
+                                                             uint8_t* rend,
+                                                             uint32_t length) {
+  uint8_t* wptr = *ptr_wptr;
+  if (length > (wend - wptr)) {
+    length = wend - wptr;
+  }
+  uint8_t* rptr = *ptr_rptr;
+  if (length > (rend - rptr)) {
+    length = rend - rptr;
+  }
+  if (length > 0) {
+    memmove(wptr, rptr, length);
+    *ptr_wptr += length;
+    *ptr_rptr += length;
+  }
   return length;
 }
 
