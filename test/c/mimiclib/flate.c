@@ -16,7 +16,11 @@
 
 uint32_t global_mimiclib_flate_unused_u32;
 
-const char* mimic_adler32(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_adler32(puffs_base_buf1* dst,
+                          puffs_base_buf1* src,
+                          uint64_t wlimit,
+                          uint64_t rlimit) {
+  // TODO: don't ignore wlimit and rlimit.
   uint8_t* ptr = src->ptr + src->ri;
   size_t len = src->wi - src->ri;
   if (len > 0x7FFFFFFF) {
@@ -27,7 +31,11 @@ const char* mimic_adler32(puffs_base_buf1* dst, puffs_base_buf1* src) {
   return NULL;
 }
 
-const char* mimic_crc32(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_crc32(puffs_base_buf1* dst,
+                        puffs_base_buf1* src,
+                        uint64_t wlimit,
+                        uint64_t rlimit) {
+  // TODO: don't ignore wlimit and rlimit.
   uint8_t* ptr = src->ptr + src->ri;
   size_t len = src->wi - src->ri;
   if (len > 0x7FFFFFFF) {
@@ -55,7 +63,11 @@ int mimic_flate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
   return 0;
 }
 
-const char* mimic_flate_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_flate_decode(puffs_base_buf1* dst,
+                               puffs_base_buf1* src,
+                               uint64_t wlimit,
+                               uint64_t rlimit) {
+  // TODO: don't ignore wlimit and rlimit.
   const char* ret = NULL;
   uint8_t window[32 * 1024];
 
@@ -94,7 +106,10 @@ cleanup0:;
 
 const char* mimic_gzip_zlib_decode(puffs_base_buf1* dst,
                                    puffs_base_buf1* src,
+                                   uint64_t wlimit,
+                                   uint64_t rlimit,
                                    bool gzip_instead_of_zlib) {
+  // TODO: don't ignore wlimit and rlimit.
   const char* ret = NULL;
 
   z_stream z = {0};
@@ -147,10 +162,16 @@ cleanup0:;
   return ret;
 }
 
-const char* mimic_gzip_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
-  return mimic_gzip_zlib_decode(dst, src, true);
+const char* mimic_gzip_decode(puffs_base_buf1* dst,
+                              puffs_base_buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  return mimic_gzip_zlib_decode(dst, src, wlimit, rlimit, true);
 }
 
-const char* mimic_zlib_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
-  return mimic_gzip_zlib_decode(dst, src, false);
+const char* mimic_zlib_decode(puffs_base_buf1* dst,
+                              puffs_base_buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  return mimic_gzip_zlib_decode(dst, src, wlimit, rlimit, false);
 }

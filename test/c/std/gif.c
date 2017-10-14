@@ -195,7 +195,8 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
                                   uint64_t src_size,
                                   const char* want_filename,
                                   uint64_t want_size,
-                                  uint64_t limit) {
+                                  uint64_t wlimit,
+                                  uint64_t rlimit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -231,37 +232,53 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    uint64_t lim = limit;
-    src_reader.limit.ptr_to_len = &lim;
+    uint64_t wlim = wlimit;
+    if (wlimit) {
+      got_writer.limit.ptr_to_len = &wlim;
+    }
+    uint64_t rlim = rlimit;
+    if (rlimit) {
+      src_reader.limit.ptr_to_len = &rlim;
+    }
+    size_t old_wi = got.wi;
     size_t old_ri = src.ri;
+
     puffs_gif_status status =
         puffs_gif_lzw_decoder_decode(&dec, got_writer, src_reader);
-    if (src.ri == src.wi) {
-      if (status != PUFFS_GIF_STATUS_OK) {
-        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-             puffs_gif_status_string(status), PUFFS_GIF_STATUS_OK,
-             puffs_gif_status_string(PUFFS_GIF_STATUS_OK));
+    if (status == PUFFS_GIF_STATUS_OK) {
+      if (src.ri != src.wi) {
+        FAIL("decode returned ok but src was not exhausted");
         return false;
       }
       break;
     }
-    if (status != PUFFS_GIF_SUSPENSION_SHORT_READ) {
-      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-           puffs_gif_status_string(status), PUFFS_GIF_SUSPENSION_SHORT_READ,
-           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
+    if ((status != PUFFS_GIF_SUSPENSION_SHORT_READ) &&
+        (status != PUFFS_GIF_SUSPENSION_SHORT_WRITE)) {
+      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s) or %" PRIi32
+           " (%s)",
+           status, puffs_gif_status_string(status),
+           PUFFS_GIF_SUSPENSION_SHORT_READ,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ),
+           PUFFS_GIF_SUSPENSION_SHORT_WRITE,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_WRITE));
+      return false;
+    }
+
+    if (got.wi < old_wi) {
+      FAIL("write index got.wi went backwards");
       return false;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
       return false;
     }
-    if (src.ri == old_ri) {
+    if ((got.wi == old_wi) && (src.ri == old_ri)) {
       FAIL("no progress was made");
       return false;
     }
   }
 
-  if (limit < 1000000) {
+  if (wlimit || rlimit) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
       return false;
@@ -276,38 +293,38 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
   return buf1s_equal("", &got, &want);
 }
 
-void test_puffs_gif_lzw_decode_few_big_reads() {
+void test_puffs_gif_lzw_decode_many_big_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
                                14731, "../../testdata/bricks-gray.indexes",
-                               19200, 1 << 30);
+                               19200, 0, 4096);
 }
 
-void test_puffs_gif_lzw_decode_many_small_reads() {
+void test_puffs_gif_lzw_decode_many_small_writes_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
                                14731, "../../testdata/bricks-gray.indexes",
-                               19200, 100);
+                               19200, 41, 43);
 }
 
 void test_puffs_gif_lzw_decode_bricks_dither() {
   proc_funcname = __func__;
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
                                14923, "../../testdata/bricks-dither.indexes",
-                               19200, 1 << 30);
+                               19200, 0, 0);
 }
 
 void test_puffs_gif_lzw_decode_bricks_nodither() {
   proc_funcname = __func__;
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
                                13382, "../../testdata/bricks-nodither.indexes",
-                               19200, 1 << 30);
+                               19200, 0, 0);
 }
 
 void test_puffs_gif_lzw_decode_pi() {
   proc_funcname = __func__;
   do_test_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
-                               "../../testdata/pi.txt", 100003, 1 << 30);
+                               "../../testdata/pi.txt", 100003, 0, 0);
 }
 
 // ---------------- LZW Benches
@@ -379,8 +396,9 @@ const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
 bool do_test_puffs_gif_decode(const char* filename,
                               const char* palette_filename,
                               const char* indexes_filename,
-                              puffs_gif_status want,
-                              uint64_t limit) {
+                              puffs_gif_status want_status,  // TODO: delete.
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -395,40 +413,62 @@ bool do_test_puffs_gif_decode(const char* filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    uint64_t lim = limit;
-    src_reader.limit.ptr_to_len = &lim;
+    uint64_t wlim = wlimit;
+    if (wlimit) {
+      got_writer.limit.ptr_to_len = &wlim;
+    }
+    uint64_t rlim = rlimit;
+    if (rlimit) {
+      src_reader.limit.ptr_to_len = &rlim;
+    }
+    size_t old_wi = got.wi;
     size_t old_ri = src.ri;
-    puffs_gif_status got =
+
+    puffs_gif_status status =
         puffs_gif_decoder_decode(&dec, got_writer, src_reader);
-    if ((src.ri == src.wi) || puffs_gif_status_is_error(got)) {
-      if (got != want) {
-        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
-             puffs_gif_status_string(got), want, puffs_gif_status_string(want));
+    if (want_status != PUFFS_GIF_STATUS_OK) {
+      if (status != want_status) {
+        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+             puffs_gif_status_string(status), want_status,
+             puffs_gif_status_string(want_status));
+        return false;
+      }
+      return true;
+    }
+    if (status == PUFFS_GIF_STATUS_OK) {
+      if (src.ri != src.wi) {
+        FAIL("decode returned ok but src was not exhausted");
         return false;
       }
       break;
     }
-    if (got != PUFFS_GIF_SUSPENSION_SHORT_READ) {
-      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", got,
-           puffs_gif_status_string(got), PUFFS_GIF_SUSPENSION_SHORT_READ,
-           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ));
+    if ((status != PUFFS_GIF_SUSPENSION_SHORT_READ) &&
+        (status != PUFFS_GIF_SUSPENSION_SHORT_WRITE)) {
+      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s) or %" PRIi32
+           " (%s)",
+           status, puffs_gif_status_string(status),
+           PUFFS_GIF_SUSPENSION_SHORT_READ,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_READ),
+           PUFFS_GIF_SUSPENSION_SHORT_WRITE,
+           puffs_gif_status_string(PUFFS_GIF_SUSPENSION_SHORT_WRITE));
+      return false;
+    }
+
+    if (got.wi < old_wi) {
+      FAIL("write index got.wi went backwards");
       return false;
     }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
       return false;
     }
-    if (src.ri == old_ri) {
+    if ((got.wi == old_wi) && (src.ri == old_ri)) {
       FAIL("no progress was made");
       return false;
     }
   }
 
-  if (want != PUFFS_GIF_STATUS_OK) {
-    return false;
-  }
-
-  if (limit < 1000000) {
+  if (wlimit || rlimit) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
       return false;
@@ -468,12 +508,20 @@ bool do_test_puffs_gif_decode(const char* filename,
   return buf1s_equal("indexes ", &got, &ind_want);
 }
 
-void test_puffs_gif_decode_input_is_a_gif_few_big_reads() {
+void test_puffs_gif_decode_input_is_a_gif() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 1 << 30);
+                           PUFFS_GIF_STATUS_OK, 0, 0);
+}
+
+void test_puffs_gif_decode_input_is_a_gif_many_big_reads() {
+  proc_funcname = __func__;
+  do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
+                           "../../testdata/bricks-dither.palette",
+                           "../../testdata/bricks-dither.indexes",
+                           PUFFS_GIF_STATUS_OK, 0, 4096);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
@@ -481,23 +529,23 @@ void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 4096);
+                           PUFFS_GIF_STATUS_OK, 0,
+                           787);  // 787 tickles being in the middle of a
+                                  // decode_extension skip32 call.
 }
 
-void test_puffs_gif_decode_input_is_a_gif_many_small_reads() {
+void test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK,
-                           787);  // 787 tickles being in the middle of a
-                                  // decode_extension skip32 call.
+                           PUFFS_GIF_STATUS_OK, 11, 13);
 }
 
 void test_puffs_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.png", "", "",
-                           PUFFS_GIF_ERROR_BAD_GIF_HEADER, 1 << 30);
+                           PUFFS_GIF_ERROR_BAD_GIF_HEADER, 0, 0);
 }
 
 // ---------------- Mimic Tests
@@ -667,17 +715,18 @@ proc tests[] = {
     test_basic_sub_struct_initializer,     //
 
     // LZW Tests
-    test_puffs_gif_lzw_decode_few_big_reads,     //
-    test_puffs_gif_lzw_decode_many_small_reads,  //
-    test_puffs_gif_lzw_decode_bricks_dither,     //
-    test_puffs_gif_lzw_decode_bricks_nodither,   //
-    test_puffs_gif_lzw_decode_pi,                //
+    test_puffs_gif_lzw_decode_many_big_reads,           //
+    test_puffs_gif_lzw_decode_many_small_writes_reads,  //
+    test_puffs_gif_lzw_decode_bricks_dither,            //
+    test_puffs_gif_lzw_decode_bricks_nodither,          //
+    test_puffs_gif_lzw_decode_pi,                       //
 
     // GIF Tests
-    test_puffs_gif_decode_input_is_a_gif_few_big_reads,      //
-    test_puffs_gif_decode_input_is_a_gif_many_medium_reads,  //
-    test_puffs_gif_decode_input_is_a_gif_many_small_reads,   //
-    test_puffs_gif_decode_input_is_a_png,                    //
+    test_puffs_gif_decode_input_is_a_gif,                          //
+    test_puffs_gif_decode_input_is_a_gif_many_big_reads,           //
+    test_puffs_gif_decode_input_is_a_gif_many_medium_reads,        //
+    test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads,  //
+    test_puffs_gif_decode_input_is_a_png,                          //
 
 #ifdef PUFFS_MIMIC
 

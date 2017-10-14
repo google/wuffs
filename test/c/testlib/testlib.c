@@ -329,9 +329,13 @@ typedef enum {
 } throughput_counter;
 
 bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                              puffs_base_buf1*),
+                                              puffs_base_buf1*,
+                                              uint64_t,
+                                              uint64_t),
                     throughput_counter tc,
                     golden_test* gt,
+                    uint64_t wlimit,
+                    uint64_t rlimit,
                     uint64_t reps,
                     bool bench) {
   if (!codec_func) {
@@ -373,7 +377,7 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   for (i = 0; i < reps; i++) {
     got.wi = 0;
     src.ri = gt->src_offset0;
-    const char* s = codec_func(&got, &src);
+    const char* s = codec_func(&got, &src, wlimit, rlimit);
     if (s) {
       FAIL("%s", s);
       return false;
@@ -406,17 +410,25 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
 }
 
 bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                                  puffs_base_buf1*),
+                                                  puffs_base_buf1*,
+                                                  uint64_t,
+                                                  uint64_t),
                         throughput_counter tc,
                         golden_test* gt,
+                        uint64_t wlimit,
+                        uint64_t rlimit,
                         uint64_t reps) {
-  return proc_buf1_buf1(codec_func, tc, gt, reps, true);
+  return proc_buf1_buf1(codec_func, tc, gt, wlimit, rlimit, reps, true);
 }
 
 bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                                 puffs_base_buf1*),
-                       golden_test* gt) {
-  return proc_buf1_buf1(codec_func, 0, gt, 1, false);
+                                                 puffs_base_buf1*,
+                                                 uint64_t,
+                                                 uint64_t),
+                       golden_test* gt,
+                       uint64_t wlimit,
+                       uint64_t rlimit) {
+  return proc_buf1_buf1(codec_func, 0, gt, wlimit, rlimit, 1, false);
 }
 
 #endif  // PUFFS_BASE_HEADER_H
