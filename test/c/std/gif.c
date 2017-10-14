@@ -396,7 +396,6 @@ const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
 bool do_test_puffs_gif_decode(const char* filename,
                               const char* palette_filename,
                               const char* indexes_filename,
-                              puffs_gif_status want_status,  // TODO: delete.
                               uint64_t wlimit,
                               uint64_t rlimit) {
   puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
@@ -426,15 +425,6 @@ bool do_test_puffs_gif_decode(const char* filename,
 
     puffs_gif_status status =
         puffs_gif_decoder_decode(&dec, got_writer, src_reader);
-    if (want_status != PUFFS_GIF_STATUS_OK) {
-      if (status != want_status) {
-        FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-             puffs_gif_status_string(status), want_status,
-             puffs_gif_status_string(want_status));
-        return false;
-      }
-      return true;
-    }
     if (status == PUFFS_GIF_STATUS_OK) {
       if (src.ri != src.wi) {
         FAIL("decode returned ok but src was not exhausted");
@@ -512,24 +502,21 @@ void test_puffs_gif_decode_input_is_a_gif() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 0, 0);
+                           "../../testdata/bricks-dither.indexes", 0, 0);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_big_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 0, 4096);
+                           "../../testdata/bricks-dither.indexes", 0, 4096);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 0,
+                           "../../testdata/bricks-dither.indexes", 0,
                            787);  // 787 tickles being in the middle of a
                                   // decode_extension skip32 call.
 }
@@ -538,14 +525,32 @@ void test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
   proc_funcname = __func__;
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes",
-                           PUFFS_GIF_STATUS_OK, 11, 13);
+                           "../../testdata/bricks-dither.indexes", 11, 13);
 }
 
 void test_puffs_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
-  do_test_puffs_gif_decode("../../testdata/bricks-dither.png", "", "",
-                           PUFFS_GIF_ERROR_BAD_GIF_HEADER, 0, 0);
+
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+
+  if (!read_file(&src, "../../testdata/bricks-dither.png")) {
+    return;
+  }
+
+  puffs_gif_decoder dec;
+  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 got_writer = {.buf = &got};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  puffs_gif_status status =
+      puffs_gif_decoder_decode(&dec, got_writer, src_reader);
+  if (status != PUFFS_GIF_ERROR_BAD_GIF_HEADER) {
+    FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+         puffs_gif_status_string(status), PUFFS_GIF_ERROR_BAD_GIF_HEADER,
+         puffs_gif_status_string(PUFFS_GIF_ERROR_BAD_GIF_HEADER));
+    return;
+  }
 }
 
 // ---------------- Mimic Tests
