@@ -165,7 +165,7 @@ typedef struct {
       uint32_t v_code;
       uint32_t v_s;
       uint32_t v_c;
-      uint64_t v_n;
+      uint64_t v_n_copied;
     } c_decode[1];
   } private_impl;
 } puffs_gif_lzw_decoder;

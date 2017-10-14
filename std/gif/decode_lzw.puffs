@@ -111,11 +111,11 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 			{
 				var expansion[] u8 = this.stack[s:]
 				// TODO: "x:" instead of "s:" should be a compiler error.
-				var n u64 = in.dst.copy_from_slice(x:expansion)
-				if n == expansion.length() {
+				var n_copied u64 = in.dst.copy_from_slice(x:expansion)
+				if n_copied == expansion.length() {
 					break
 				}
-				s = (s + ((n & 4095) as u32)) & 4095
+				s = (s + ((n_copied & 4095) as u32)) & 4095
 				// TODO: "closed for writes" instead?
 				return suspension "short write"
 			}

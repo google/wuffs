@@ -182,7 +182,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
-      uint64_t v_n;
+      uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
     struct {
@@ -193,7 +193,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_length;
-      uint32_t v_n;
+      uint32_t v_n_copied;
       uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {
@@ -208,7 +208,7 @@ typedef struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_distance;
-      uint32_t v_n;
+      uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
     } c_decode_huffman[1];

@@ -137,8 +137,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		} else {
 			// Otherwise, append written to the history ringbuffer starting at
 			// the previous history_index (modulo 0x8000).
-			var n u64 = this.history[this.history_index & 0x7FFF:].copy_from_slice(s:written)
-			if n < written.length() {
+			var n_copied u64 = this.history[this.history_index & 0x7FFF:].copy_from_slice(s:written)
+			if n_copied < written.length() {
 				// a_slice.copy_from(s:b_slice) returns the minimum of the two
 				// slice lengths. If that value is less than b_slice.length(),
 				// then not all of b_slice was copied.
@@ -146,21 +146,21 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 				// In terms of the history ringbuffer, that means that we have
 				// to wrap around and copy the remainder of written over the
 				// start of the history ringbuffer.
-				written = written[n:]
-				n = this.history[:].copy_from_slice(s:written)
+				written = written[n_copied:]
+				n_copied = this.history[:].copy_from_slice(s:written)
 				// Set history_index (modulo 0x8000) to the length of this
 				// remainder. The &0x7FFF is redundant, but proves to the
 				// compiler that the conversion to u32 will not overflow. The
 				// +0x8000 is to maintain that the history ringbuffer is full
 				// if and only if history_index >= 0x8000.
-				this.history_index = ((n & 0x7FFF) as u32) + 0x8000
+				this.history_index = ((n_copied & 0x7FFF) as u32) + 0x8000
 			} else {
 				// We didn't need to wrap around.
 				var already_full u32[..0x8000]
 				if this.history_index >= 0x8000 {
 					already_full = 0x8000
 				}
-				this.history_index = (this.history_index & 0x7FFF) + ((n & 0x7FFF) as u32) + already_full
+				this.history_index = (this.history_index & 0x7FFF) + ((n_copied & 0x7FFF) as u32) + already_full
 			}
 		}
 		return z
@@ -209,12 +209,12 @@ pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	}
 	length = length.low_bits(n:16)
 	while true {
-		var n u32 = in.dst.copy_from_reader32(r:in.src, length:length)
-		if length <= n {
+		var n_copied u32 = in.dst.copy_from_reader32(r:in.src, length:length)
+		if length <= n_copied {
 			length = 0
 			break
 		}
-		length -= n
+		length -= n_copied
 		if in.dst.available() == 0 {
 			// TODO: "closed for writes" instead?
 			return suspension "short write"
@@ -358,9 +358,8 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
+		var n_copied u32
 		while true {
-			var n u32
-
 			// Copy from this.history.
 			if (distance as u64) > in.dst.length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
@@ -384,15 +383,15 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 
 				// Copy from hdist to the end of this.history.
 				while true {
-					n = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
-					if hlen <= n {
+					n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
+					if hlen <= n_copied {
 						hlen = 0
 						break
 					}
-					if n > 0 {
-						hlen -= n
+					if n_copied > 0 {
+						hlen -= n_copied
 						// TODO: a "~+" tilde-operator that ignores overflow.
-						hdist = (hdist + (n & 0x7FFF)) & 0x7FFF
+						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
 						if hdist == 0 {
 							// Wrap around the this.history ringbuffer.
 							break
@@ -410,13 +409,13 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {
 					while true {
-						n = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
-						if hlen <= n {
+						n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
+						if hlen <= n_copied {
 							hlen = 0
 							break
 						}
-						hlen -= n
-						hdist = (hdist + (n & 0x7FFF)) & 0x7FFF
+						hlen -= n_copied
+						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
 						// TODO: "closed for writes" instead?
 						return suspension "short write"
 					}
@@ -429,12 +428,12 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 			}
 
 			// Copy from in.dst.
-			n = in.dst.copy_from_history32(distance:distance, length:length)
-			if length <= n {
+			n_copied = in.dst.copy_from_history32(distance:distance, length:length)
+			if length <= n_copied {
 				length = 0
 				break
 			}
-			length -= n
+			length -= n_copied
 			// TODO: "closed for writes" instead?
 			return suspension "short write"
 		}

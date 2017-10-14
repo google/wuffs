@@ -182,7 +182,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       puffs_flate_status v_z;
-      uint64_t v_n;
+      uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
     struct {
@@ -193,7 +193,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_length;
-      uint32_t v_n;
+      uint32_t v_n_copied;
       uint64_t scratch;
     } c_decode_uncompressed[1];
     struct {
@@ -208,7 +208,7 @@ typedef struct {
       uint32_t v_redir_mask;
       uint32_t v_length;
       uint32_t v_distance;
-      uint32_t v_n;
+      uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
     } c_decode_huffman[1];
@@ -743,7 +743,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 
   puffs_flate_status v_z;
   puffs_base_slice_u8 v_written;
-  uint64_t v_n;
+  uint64_t v_n_copied;
   uint32_t v_already_full;
 
   uint8_t* b_wptr_dst = NULL;
@@ -769,7 +769,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
   if (coro_susp_point) {
     v_z = self->private_impl.c_decode[0].v_z;
     v_written = ((puffs_base_slice_u8){});
-    v_n = self->private_impl.c_decode[0].v_n;
+    v_n_copied = self->private_impl.c_decode[0].v_n_copied;
     v_already_full = self->private_impl.c_decode[0].v_already_full;
   }
   switch (coro_susp_point) {
@@ -820,20 +820,20 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
-        v_n = puffs_base_slice_u8_copy_from_slice(
+        v_n_copied = puffs_base_slice_u8_copy_from_slice(
             puffs_base_slice_u8_subslice_i(
                 ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                        .len = 32768}),
                 self->private_impl.f_history_index & 32767),
             v_written);
-        if (v_n < ((uint64_t)(v_written.len))) {
-          v_written = puffs_base_slice_u8_subslice_i(v_written, v_n);
-          v_n = puffs_base_slice_u8_copy_from_slice(
+        if (v_n_copied < ((uint64_t)(v_written.len))) {
+          v_written = puffs_base_slice_u8_subslice_i(v_written, v_n_copied);
+          v_n_copied = puffs_base_slice_u8_copy_from_slice(
               ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                      .len = 32768}),
               v_written);
           self->private_impl.f_history_index =
-              (((uint32_t)((v_n & 32767))) + 32768);
+              (((uint32_t)((v_n_copied & 32767))) + 32768);
         } else {
           v_already_full = 0;
           if (self->private_impl.f_history_index >= 32768) {
@@ -841,7 +841,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
           }
           self->private_impl.f_history_index =
               ((self->private_impl.f_history_index & 32767) +
-               ((uint32_t)((v_n & 32767))) + v_already_full);
+               ((uint32_t)((v_n_copied & 32767))) + v_already_full);
         }
       }
       status = v_z;
@@ -858,7 +858,7 @@ puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_z = v_z;
-  self->private_impl.c_decode[0].v_n = v_n;
+  self->private_impl.c_decode[0].v_n_copied = v_n_copied;
   self->private_impl.c_decode[0].v_already_full = v_already_full;
 
 exit:
@@ -1066,7 +1066,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint32_t v_length;
-  uint32_t v_n;
+  uint32_t v_n_copied;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1106,7 +1106,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
       self->private_impl.c_decode_uncompressed[0].coro_susp_point;
   if (coro_susp_point) {
     v_length = self->private_impl.c_decode_uncompressed[0].v_length;
-    v_n = self->private_impl.c_decode_uncompressed[0].v_n;
+    v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1151,13 +1151,13 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
     }
     v_length = ((v_length) & ((1 << (16)) - 1));
     while (true) {
-      v_n = puffs_base_writer1_copy_from_reader32(
+      v_n_copied = puffs_base_writer1_copy_from_reader32(
           &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
-      if (v_length <= v_n) {
+      if (v_length <= v_n_copied) {
         v_length = 0;
         goto label_0_break;
       }
-      v_length -= v_n;
+      v_length -= v_n_copied;
       if (((uint64_t)(b_wend_dst - b_wptr_dst)) == 0) {
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
         PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
@@ -1178,7 +1178,7 @@ puffs_flate_status puffs_flate_decoder_decode_uncompressed(
 suspend:
   self->private_impl.c_decode_uncompressed[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode_uncompressed[0].v_length = v_length;
-  self->private_impl.c_decode_uncompressed[0].v_n = v_n;
+  self->private_impl.c_decode_uncompressed[0].v_n_copied = v_n_copied;
 
 exit:
   if (a_dst.buf) {
@@ -1233,7 +1233,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
   uint32_t v_redir_mask;
   uint32_t v_length;
   uint32_t v_distance;
-  uint32_t v_n;
+  uint32_t v_n_copied;
   uint32_t v_hlen;
   uint32_t v_hdist;
 
@@ -1285,7 +1285,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
     v_redir_mask = self->private_impl.c_decode_huffman[0].v_redir_mask;
     v_length = self->private_impl.c_decode_huffman[0].v_length;
     v_distance = self->private_impl.c_decode_huffman[0].v_distance;
-    v_n = self->private_impl.c_decode_huffman[0].v_n;
+    v_n_copied = self->private_impl.c_decode_huffman[0].v_n_copied;
     v_hlen = self->private_impl.c_decode_huffman[0].v_hlen;
     v_hdist = self->private_impl.c_decode_huffman[0].v_hdist;
   }
@@ -1460,9 +1460,9 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
            32767);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
+      v_n_copied = 0;
     label_5_continue:;
       while (true) {
-        v_n = 0;
         if (((uint64_t)(v_distance)) >
             ((uint64_t)(b_wptr_dst - b_wstart_dst))) {
           v_hlen = 0;
@@ -1481,20 +1481,20 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
           }
           v_hdist = ((self->private_impl.f_history_index - v_hdist) & 32767);
           while (true) {
-            v_n = puffs_base_writer1_copy_from_slice32(
+            v_n_copied = puffs_base_writer1_copy_from_slice32(
                 &b_wptr_dst, b_wend_dst,
                 puffs_base_slice_u8_subslice_i(
                     ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
                                            .len = 32768}),
                     v_hdist),
                 v_hlen);
-            if (v_hlen <= v_n) {
+            if (v_hlen <= v_n_copied) {
               v_hlen = 0;
               goto label_6_break;
             }
-            if (v_n > 0) {
-              v_hlen -= v_n;
-              v_hdist = ((v_hdist + (v_n & 32767)) & 32767);
+            if (v_n_copied > 0) {
+              v_hlen -= v_n_copied;
+              v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               if (v_hdist == 0) {
                 goto label_6_break;
               }
@@ -1505,19 +1505,19 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
         label_6_break:;
           if (v_hlen > 0) {
             while (true) {
-              v_n = puffs_base_writer1_copy_from_slice32(
+              v_n_copied = puffs_base_writer1_copy_from_slice32(
                   &b_wptr_dst, b_wend_dst,
                   puffs_base_slice_u8_subslice_i(
                       ((puffs_base_slice_u8){
                           .ptr = self->private_impl.f_history, .len = 32768}),
                       v_hdist),
                   v_hlen);
-              if (v_hlen <= v_n) {
+              if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
                 goto label_7_break;
               }
-              v_hlen -= v_n;
-              v_hdist = ((v_hdist + (v_n & 32767)) & 32767);
+              v_hlen -= v_n_copied;
+              v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
               PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
             }
@@ -1527,13 +1527,13 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
             goto label_5_continue;
           }
         }
-        v_n = puffs_base_writer1_copy_from_history32(
+        v_n_copied = puffs_base_writer1_copy_from_history32(
             &b_wptr_dst, b_wstart_dst, b_wend_dst, v_distance, v_length);
-        if (v_length <= v_n) {
+        if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_5_break;
         }
-        v_length -= v_n;
+        v_length -= v_n_copied;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
         PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
@@ -1563,7 +1563,7 @@ suspend:
   self->private_impl.c_decode_huffman[0].v_redir_mask = v_redir_mask;
   self->private_impl.c_decode_huffman[0].v_length = v_length;
   self->private_impl.c_decode_huffman[0].v_distance = v_distance;
-  self->private_impl.c_decode_huffman[0].v_n = v_n;
+  self->private_impl.c_decode_huffman[0].v_n_copied = v_n_copied;
   self->private_impl.c_decode_huffman[0].v_hlen = v_hlen;
   self->private_impl.c_decode_huffman[0].v_hdist = v_hdist;
 

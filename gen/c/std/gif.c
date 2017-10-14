@@ -165,7 +165,7 @@ typedef struct {
       uint32_t v_code;
       uint32_t v_s;
       uint32_t v_c;
-      uint64_t v_n;
+      uint64_t v_n_copied;
     } c_decode[1];
   } private_impl;
 } puffs_gif_lzw_decoder;
@@ -1338,7 +1338,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
   uint32_t v_s;
   uint32_t v_c;
   puffs_base_slice_u8 v_expansion;
-  uint64_t v_n;
+  uint64_t v_n_copied;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1387,7 +1387,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
     v_s = self->private_impl.c_decode[0].v_s;
     v_c = self->private_impl.c_decode[0].v_c;
     v_expansion = ((puffs_base_slice_u8){});
-    v_n = self->private_impl.c_decode[0].v_n;
+    v_n_copied = self->private_impl.c_decode[0].v_n_copied;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -1458,12 +1458,12 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
               ((puffs_base_slice_u8){.ptr = self->private_impl.f_stack,
                                      .len = 4096}),
               v_s);
-          v_n = puffs_base_writer1_copy_from_slice(&b_wptr_dst, b_wend_dst,
-                                                   v_expansion);
-          if (v_n == ((uint64_t)(v_expansion.len))) {
+          v_n_copied = puffs_base_writer1_copy_from_slice(
+              &b_wptr_dst, b_wend_dst, v_expansion);
+          if (v_n_copied == ((uint64_t)(v_expansion.len))) {
             goto label_1_break;
           }
-          v_s = ((v_s + ((uint32_t)((v_n & 4095)))) & 4095);
+          v_s = ((v_s + ((uint32_t)((v_n_copied & 4095)))) & 4095);
           status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
           PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
@@ -1505,7 +1505,7 @@ suspend:
   self->private_impl.c_decode[0].v_code = v_code;
   self->private_impl.c_decode[0].v_s = v_s;
   self->private_impl.c_decode[0].v_c = v_c;
-  self->private_impl.c_decode[0].v_n = v_n;
+  self->private_impl.c_decode[0].v_n_copied = v_n_copied;
 
 exit:
   if (a_dst.buf) {
