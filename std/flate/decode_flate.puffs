@@ -232,7 +232,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 	var table_entry_n_bits u32[..15]
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
-	while true {
+	while:loop true {
 		// Decode an lcode symbol from H-L.
 		while true {
 			table_entry = this.huffs[0][bits & lmask]
@@ -371,8 +371,8 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 					length -= hdist
 					hlen = hdist
 				} else {
-					length = 0
 					hlen = length
+					length = 0
 				}
 				if this.history_index < hdist {
 					return error "bad distance"
@@ -423,7 +423,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 
 				if length == 0 {
 					// No need to copy from in.dst.
-					continue
+					continue:loop
 				}
 			}
 

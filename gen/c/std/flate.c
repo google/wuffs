@@ -1461,7 +1461,6 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
       v_n_copied = 0;
-    label_5_continue:;
       while (true) {
         if (((uint64_t)(v_distance)) >
             ((uint64_t)(b_wptr_dst - b_wstart_dst))) {
@@ -1472,8 +1471,8 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
             v_length -= v_hdist;
             v_hlen = v_hdist;
           } else {
-            v_length = 0;
             v_hlen = v_length;
+            v_length = 0;
           }
           if (self->private_impl.f_history_index < v_hdist) {
             status = PUFFS_FLATE_ERROR_BAD_DISTANCE;
@@ -1490,19 +1489,19 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
                 v_hlen);
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
-              goto label_6_break;
+              goto label_5_break;
             }
             if (v_n_copied > 0) {
               v_hlen -= v_n_copied;
               v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               if (v_hdist == 0) {
-                goto label_6_break;
+                goto label_5_break;
               }
             }
             status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
             PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
           }
-        label_6_break:;
+        label_5_break:;
           if (v_hlen > 0) {
             while (true) {
               v_n_copied = puffs_base_writer1_copy_from_slice32(
@@ -1514,30 +1513,30 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
                   v_hlen);
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
-                goto label_7_break;
+                goto label_6_break;
               }
               v_hlen -= v_n_copied;
               v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
               PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
             }
-          label_7_break:;
+          label_6_break:;
           }
           if (v_length == 0) {
-            goto label_5_continue;
+            goto label_0_continue;
           }
         }
         v_n_copied = puffs_base_writer1_copy_from_history32(
             &b_wptr_dst, b_wstart_dst, b_wend_dst, v_distance, v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;
-          goto label_5_break;
+          goto label_7_break;
         }
         v_length -= v_n_copied;
         status = PUFFS_FLATE_SUSPENSION_SHORT_WRITE;
         PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
-    label_5_break:;
+    label_7_break:;
     }
   label_0_break:;
     self->private_impl.f_bits = v_bits;

@@ -712,21 +712,20 @@ void bench_mimic_zlib_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
     // Flate Tests
-    test_puffs_flate_decode_256_bytes,    //
-    test_puffs_flate_decode_midsummer,    //
-    test_puffs_flate_decode_pi,           //
-    // TODO: uncomment.
-    // test_puffs_flate_decode_pi_many_big_reads,           //
-    // test_puffs_flate_decode_pi_many_medium_reads,        //
-    // test_puffs_flate_decode_pi_many_small_writes_reads,  //
-    test_puffs_flate_decode_romeo,        //
-    test_puffs_flate_decode_romeo_fixed,  //
-    test_puffs_flate_decode_split_src,    //
-    test_puffs_flate_history_full,        //
-    test_puffs_flate_history_partial,     //
-    test_puffs_flate_table_redirect,      //
-    test_puffs_zlib_decode_midsummer,     //
-    test_puffs_zlib_decode_pi,            //
+    test_puffs_flate_decode_256_bytes,                   //
+    test_puffs_flate_decode_midsummer,                   //
+    test_puffs_flate_decode_pi,                          //
+    test_puffs_flate_decode_pi_many_big_reads,           //
+    test_puffs_flate_decode_pi_many_medium_reads,        //
+    test_puffs_flate_decode_pi_many_small_writes_reads,  //
+    test_puffs_flate_decode_romeo,                       //
+    test_puffs_flate_decode_romeo_fixed,                 //
+    test_puffs_flate_decode_split_src,                   //
+    test_puffs_flate_history_full,                       //
+    test_puffs_flate_history_partial,                    //
+    test_puffs_flate_table_redirect,                     //
+    test_puffs_zlib_decode_midsummer,                    //
+    test_puffs_zlib_decode_pi,                           //
 
 #ifdef PUFFS_MIMIC
 
