@@ -237,6 +237,23 @@ typedef struct {
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_flate_adler_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_flate_status status;
+    uint32_t magic;
+
+    uint32_t f_state;
+
+  } private_impl;
+} puffs_flate_adler;
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
   // puffs_flate_zlib_decoder_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
@@ -247,6 +264,7 @@ typedef struct {
     uint32_t magic;
 
     puffs_flate_decoder f_dec;
+    puffs_flate_adler f_adler;
 
     struct {
       uint32_t coro_susp_point;

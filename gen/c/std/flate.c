@@ -237,6 +237,23 @@ typedef struct {
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
+  // puffs_flate_adler_etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    puffs_flate_status status;
+    uint32_t magic;
+
+    uint32_t f_state;
+
+  } private_impl;
+} puffs_flate_adler;
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
   // puffs_flate_zlib_decoder_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
@@ -247,6 +264,7 @@ typedef struct {
     uint32_t magic;
 
     puffs_flate_decoder f_dec;
+    puffs_flate_adler f_adler;
 
     struct {
       uint32_t coro_susp_point;
@@ -647,6 +665,10 @@ static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
 
 // ---------------- Private Initializer Prototypes
 
+void puffs_flate_adler_initialize(puffs_flate_adler* self,
+                                  uint32_t puffs_version,
+                                  uint32_t for_internal_use_only);
+
 // ---------------- Private Function Prototypes
 
 puffs_flate_status puffs_flate_decoder_decode_blocks(puffs_flate_decoder* self,
@@ -707,6 +729,23 @@ void puffs_flate_decoder_initialize(puffs_flate_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
 }
 
+void puffs_flate_adler_initialize(puffs_flate_adler* self,
+                                  uint32_t puffs_version,
+                                  uint32_t for_internal_use_only) {
+  if (!self) {
+    return;
+  }
+  if (puffs_version != PUFFS_VERSION) {
+    self->private_impl.status = PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION;
+    return;
+  }
+  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+    memset(self, 0, sizeof(*self));
+  }
+  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.f_state = 1;
+}
+
 void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
                                          uint32_t puffs_version,
                                          uint32_t for_internal_use_only) {
@@ -723,6 +762,8 @@ void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
   puffs_flate_decoder_initialize(&self->private_impl.f_dec, PUFFS_VERSION,
                                  PUFFS_ALREADY_ZEROED);
+  puffs_flate_adler_initialize(&self->private_impl.f_adler, PUFFS_VERSION,
+                               PUFFS_ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations

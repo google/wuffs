@@ -165,18 +165,47 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	return o, nil
 }
 
+func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
+	b := [2]*big.Int{}
+	if key := typ.Name().Key(); typ.Decorator() == 0 && key < t.Key(len(numTypeBounds)) {
+		b = numTypeBounds[key]
+	}
+	if b[0] == nil || b[1] == nil {
+		return nil, nil, nil
+	}
+	if o := typ.Min(); o != nil {
+		cv := o.ConstValue()
+		if cv.Cmp(b[0]) < 0 {
+			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.String(tm))
+		}
+		b[0] = cv
+	}
+	if o := typ.Max(); o != nil {
+		cv := o.ConstValue()
+		if cv.Cmp(b[1]) > 0 {
+			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.String(tm))
+		}
+		b[1] = cv
+	}
+	return b[0], b[1], nil
+}
+
 func bcheckField(tm *t.Map, n *a.Field) error {
-	// TODO: check if x is a numeric type? What if n.XType() is "ptr T"?
-	x := n.XType().Innermost()
-	dv, nMin, nMax := zero, zero, zero
+	innTyp := n.XType().Innermost()
+	nMin, nMax, err := typeBounds(tm, innTyp)
+	if err != nil {
+		return err
+	}
+	if nMin == nil {
+		if n.DefaultValue() != nil {
+			return fmt.Errorf("check: explicit default value %v for field %q of non-numeric innermost type %q",
+				n.DefaultValue().ConstValue(), n.Name().String(tm), innTyp.String(tm))
+		}
+		return nil
+	}
+	dv := zero
 	if o := n.DefaultValue(); o != nil {
 		dv = o.ConstValue()
-	}
-	if o := x.Min(); o != nil {
-		nMin = o.ConstValue()
-	}
-	if o := x.Max(); o != nil {
-		nMax = o.ConstValue()
 	}
 	if dv.Cmp(nMin) < 0 || dv.Cmp(nMax) > 0 {
 		return fmt.Errorf("check: default value %v is not within bounds [%v..%v] for field %q",
@@ -237,6 +266,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KVar:
 		n := n.Var()
+		if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
+			if _, _, err := typeBounds(q.tm, innTyp); err != nil {
+				return err
+			}
+		}
 		lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
 		lhs.SetMType(n.XType())
 		rhs := n.Value()

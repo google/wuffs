@@ -20,6 +20,7 @@ pub error "TODO: unsupported zlib preset dictionary"
 
 pub struct zlib_decoder?(
 	dec decoder,
+	adler adler,
 )
 
 pub func zlib_decoder.decode?(dst writer1, src reader1)() {
@@ -40,3 +41,8 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	var checksum u32 = in.src.read_u32be?()
 	// TODO: verify the checksum.
 }
+
+// TODO: drop the '?' but still generate puffs_flate_adler_initialize?
+pri struct adler?(
+	state u32 = 1,
+)
