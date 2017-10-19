@@ -46,3 +46,7 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 pri struct adler?(
 	state u32 = 1,
 )
+
+pri func adler.update(x[] u8)(checksum u32) {
+	return this.state
+}

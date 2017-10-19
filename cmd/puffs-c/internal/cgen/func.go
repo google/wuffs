@@ -61,8 +61,15 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 	// TODO: write n's return values.
 	if n.Suspendible() {
 		b.printf("%sstatus ", g.pkgPrefix)
-	} else {
+	} else if outFields := n.Out().Fields(); len(outFields) == 0 {
 		b.writes("void ")
+	} else if len(outFields) == 1 {
+		// TODO: does this generate the right C if the XType is an array?
+		if err := g.writeCTypeName(b, outFields[0].Field().XType(), "", ""); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("TODO: multiple return values")
 	}
 
 	b.writes(g.pkgPrefix)

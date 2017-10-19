@@ -173,7 +173,20 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			}
 			return g.writeCoroSuspPoint(b, true)
 		}
-		return fmt.Errorf("TODO: return statements in non-suspendible functions")
+
+		b.writes("return ")
+		if len(g.currFunk.astFunc.Out().Fields()) == 0 {
+			if retExpr != nil {
+				return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.String(g.tm))
+			}
+		} else if retExpr == nil {
+			// TODO: should a bare "return" imply "return out"?
+			return fmt.Errorf("empty return expression incompatible with non-empty return type")
+		} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+			return err
+		}
+		b.writeb(';')
+		return nil
 
 	case a.KVar:
 		n := n.Var()

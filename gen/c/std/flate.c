@@ -697,6 +697,9 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_n_codes1,
                                                  uint32_t a_base_symbol);
 
+uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
+                                  puffs_base_slice_u8 a_x);
+
 // ---------------- Initializer Implementations
 
 // PUFFS_MAGIC is a magic number to check that initializers are called. It's
@@ -2415,4 +2418,9 @@ short_read_src:
   }
   status = PUFFS_FLATE_SUSPENSION_SHORT_READ;
   goto suspend;
+}
+
+uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
+                                  puffs_base_slice_u8 a_x) {
+  return self->private_impl.f_state;
 }

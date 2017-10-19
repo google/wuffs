@@ -429,6 +429,10 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	}
 	n.Out().Node().SetTypeChecked()
 
+	// TODO: check somewhere that, if n.Out() is non-empty (or we are
+	// suspendible), that we end with a return statement? Or is that an
+	// implicit "return out"?
+
 	qid := n.QID()
 	if other, ok := c.funcs[qid]; ok {
 		return &Error{
