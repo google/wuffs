@@ -48,5 +48,39 @@ pri struct adler?(
 )
 
 pri func adler.update(x[] u8)(checksum u32) {
+	// The magic 65521 and 5552 numbers are discussed in RFC 1950.
+
+	var s1 u32 = this.state.low_bits(n:16)
+	var s2 u32 = this.state.high_bits(n:16)
+
+	while in.x.length() > 0 {
+		var remaining[] u8
+		if in.x.length() > 5552 {
+			remaining = in.x[5552:]
+			in.x = in.x[:5552]
+			// TODO: this redundant if should be unnecessary.
+			if in.x.length() > 5552 {
+				return 0  // Unreachable.
+			}
+		}
+
+		// TODO: can u64 be u32? Does it matter?
+		var i u64
+		while i < in.x.length(),
+			inv in.x.length() <= 5552,
+		{
+			assert i < 5552 via "a < b: a < c; c <= b"(c:in.x.length())
+			s1 ~+= 42  // TODO.
+			s2 ~+= s1
+			i += 1
+		}
+
+		s1 %= 65521
+		s2 %= 65521
+
+		in.x = remaining
+	}
+
+	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 	return this.state
 }

@@ -2422,5 +2422,32 @@ short_read_src:
 
 uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
                                   puffs_base_slice_u8 a_x) {
+  uint32_t v_s1;
+  uint32_t v_s2;
+  puffs_base_slice_u8 v_remaining;
+  uint64_t v_i;
+
+  v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
+  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  while (((uint64_t)(a_x.len)) > 0) {
+    v_remaining = ((puffs_base_slice_u8){});
+    if (((uint64_t)(a_x.len)) > 5552) {
+      v_remaining = puffs_base_slice_u8_subslice_i(a_x, 5552);
+      a_x = puffs_base_slice_u8_subslice_j(a_x, 5552);
+      if (((uint64_t)(a_x.len)) > 5552) {
+        return 0;
+      }
+    }
+    v_i = 0;
+    while (v_i < ((uint64_t)(a_x.len))) {
+      v_s1 += 42;
+      v_s2 += v_s1;
+      v_i += 1;
+    }
+    v_s1 %= 65521;
+    v_s2 %= 65521;
+    a_x = v_remaining;
+  }
+  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
   return self->private_impl.f_state;
 }

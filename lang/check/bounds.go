@@ -338,7 +338,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			return err
 		}
 
-		if lhs.Pure() && rhs.Pure() {
+		if lhs.Pure() && rhs.Pure() && lhs.MType().IsNumType() {
 			o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, lhs.Node(), nil, rhs.Node(), nil)
 			o.SetMType(lhs.MType())
 			q.facts.appendFact(o)
