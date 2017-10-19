@@ -237,7 +237,7 @@ typedef struct {
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_adler_etc functions.
+  // puffs_flate_adler32_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -249,7 +249,7 @@ typedef struct {
     uint32_t f_state;
 
   } private_impl;
-} puffs_flate_adler;
+} puffs_flate_adler32;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -264,7 +264,7 @@ typedef struct {
     uint32_t magic;
 
     puffs_flate_decoder f_dec;
-    puffs_flate_adler f_adler;
+    puffs_flate_adler32 f_adler;
 
     struct {
       uint32_t coro_susp_point;

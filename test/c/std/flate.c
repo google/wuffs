@@ -157,13 +157,13 @@ void test_puffs_adler32() {
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
-    puffs_flate_adler checksum;
-    puffs_flate_adler_initialize(&checksum, PUFFS_VERSION, 0);
+    puffs_flate_adler32 checksum;
+    puffs_flate_adler32_initialize(&checksum, PUFFS_VERSION, 0);
     uint32_t got =
-        puffs_flate_adler_update(&checksum, ((puffs_base_slice_u8){
-                                                .ptr = src.ptr + src.ri,
-                                                .len = src.wi - src.ri,
-                                            }));
+        puffs_flate_adler32_update(&checksum, ((puffs_base_slice_u8){
+                                                  .ptr = src.ptr + src.ri,
+                                                  .len = src.wi - src.ri,
+                                              }));
     if (got != test_cases[i].want) {
       FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
            i, test_cases[i].filename, got, test_cases[i].want);
@@ -694,13 +694,13 @@ const char* puffs_bench_adler32(puffs_base_buf1* dst,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
-  puffs_flate_adler checksum;
-  puffs_flate_adler_initialize(&checksum, PUFFS_VERSION, 0);
+  puffs_flate_adler32 checksum;
+  puffs_flate_adler32_initialize(&checksum, PUFFS_VERSION, 0);
   global_puffs_flate_unused_u32 =
-      puffs_flate_adler_update(&checksum, ((puffs_base_slice_u8){
-                                              .ptr = src->ptr + src->ri,
-                                              .len = src->wi - src->ri,
-                                          }));
+      puffs_flate_adler32_update(&checksum, ((puffs_base_slice_u8){
+                                                .ptr = src->ptr + src->ri,
+                                                .len = src->wi - src->ri,
+                                            }));
   src->ri = src->wi;
   return NULL;
 }

@@ -237,7 +237,7 @@ typedef struct {
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_adler_etc functions.
+  // puffs_flate_adler32_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -249,7 +249,7 @@ typedef struct {
     uint32_t f_state;
 
   } private_impl;
-} puffs_flate_adler;
+} puffs_flate_adler32;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -264,7 +264,7 @@ typedef struct {
     uint32_t magic;
 
     puffs_flate_decoder f_dec;
-    puffs_flate_adler f_adler;
+    puffs_flate_adler32 f_adler;
 
     struct {
       uint32_t coro_susp_point;
@@ -665,9 +665,9 @@ static const uint32_t puffs_flate_dcode_magic_numbers[32] = {
 
 // ---------------- Private Initializer Prototypes
 
-void puffs_flate_adler_initialize(puffs_flate_adler* self,
-                                  uint32_t puffs_version,
-                                  uint32_t for_internal_use_only);
+void puffs_flate_adler32_initialize(puffs_flate_adler32* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only);
 
 // ---------------- Private Function Prototypes
 
@@ -697,8 +697,8 @@ puffs_flate_status puffs_flate_decoder_init_huff(puffs_flate_decoder* self,
                                                  uint32_t a_n_codes1,
                                                  uint32_t a_base_symbol);
 
-uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
-                                  puffs_base_slice_u8 a_x);
+uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
+                                    puffs_base_slice_u8 a_x);
 
 // ---------------- Initializer Implementations
 
@@ -732,9 +732,9 @@ void puffs_flate_decoder_initialize(puffs_flate_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
 }
 
-void puffs_flate_adler_initialize(puffs_flate_adler* self,
-                                  uint32_t puffs_version,
-                                  uint32_t for_internal_use_only) {
+void puffs_flate_adler32_initialize(puffs_flate_adler32* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -765,8 +765,8 @@ void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
   self->private_impl.magic = PUFFS_MAGIC;
   puffs_flate_decoder_initialize(&self->private_impl.f_dec, PUFFS_VERSION,
                                  PUFFS_ALREADY_ZEROED);
-  puffs_flate_adler_initialize(&self->private_impl.f_adler, PUFFS_VERSION,
-                               PUFFS_ALREADY_ZEROED);
+  puffs_flate_adler32_initialize(&self->private_impl.f_adler, PUFFS_VERSION,
+                                 PUFFS_ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
@@ -2420,8 +2420,8 @@ short_read_src:
   goto suspend;
 }
 
-uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
-                                  puffs_base_slice_u8 a_x) {
+uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
+                                    puffs_base_slice_u8 a_x) {
   uint32_t v_s1;
   uint32_t v_s2;
   puffs_base_slice_u8 v_remaining;

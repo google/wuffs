@@ -20,7 +20,7 @@ pub error "TODO: unsupported zlib preset dictionary"
 
 pub struct zlib_decoder?(
 	dec decoder,
-	adler adler,
+	adler adler32,
 )
 
 pub func zlib_decoder.decode?(dst writer1, src reader1)() {
@@ -43,11 +43,11 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 }
 
 // TODO: drop the '?' but still generate puffs_flate_adler_initialize?
-pri struct adler?(
+pri struct adler32?(
 	state u32 = 1,
 )
 
-pri func adler.update(x[] u8)(checksum u32) {
+pri func adler32.update(x[] u8)(checksum u32) {
 	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
 	// RFC 1950.
 
