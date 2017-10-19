@@ -257,11 +257,11 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 
 	switch n.Operator().Key() {
 	case t.KeyShiftLEq, t.KeyShiftREq:
-		if rTyp.IsNumTypeOrIdeal() {
-			return nil
+		if !rTyp.IsNumTypeOrIdeal() {
+			return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
+				n.Operator().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
-		return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
-			n.Operator().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+		return nil
 	case t.KeyTildePlusEq:
 		if !lTyp.IsUnsignedInteger() {
 			return fmt.Errorf("check: assignment %q: %q, of type %q, does not have unsigned integer type",
