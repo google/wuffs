@@ -158,6 +158,7 @@ var opStrings = [256]string{
 	t.KeyXBinaryAnd:         " and ",
 	t.KeyXBinaryOr:          " or ",
 	t.KeyXBinaryAs:          " as ",
+	t.KeyXBinaryTildePlus:   " ~+ ",
 
 	t.KeyXAssociativePlus: " + ",
 	t.KeyXAssociativeStar: " * ",

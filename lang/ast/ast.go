@@ -524,6 +524,11 @@ func (n *TypeExpr) IsRefined() bool {
 	return t.Key(n.id0>>t.KeyShift) != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
 }
 
+func (n *TypeExpr) IsUnsignedInteger() bool {
+	return n.id0 == 0 && (n.id1.Key() == t.KeyU8 || n.id1.Key() == t.KeyU16 ||
+		n.id1.Key() == t.KeyU32 || n.id1.Key() == t.KeyU64) // TODO: t.KeyUsize?
+}
+
 func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
 		switch n.id0.Key() {

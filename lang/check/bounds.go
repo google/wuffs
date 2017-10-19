@@ -997,6 +997,14 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 
 	case t.KeyXBinaryAs:
 		// Unreachable, as this is checked by the caller.
+
+	case t.KeyXBinaryTildePlus:
+		typ := lhs.MType()
+		if typ.IsIdeal() {
+			typ = rhs.MType()
+		}
+		b := numTypeBounds[typ.Name().Key()]
+		return b[0], b[1], nil
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }

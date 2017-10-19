@@ -1493,7 +1493,7 @@ puffs_flate_status puffs_flate_decoder_decode_huffman(
             }
             if (v_n_copied > 0) {
               v_hlen -= v_n_copied;
-              v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
+              v_hdist = ((v_hdist + v_n_copied) & 32767);
               if (v_hdist == 0) {
                 goto label_5_break;
               }

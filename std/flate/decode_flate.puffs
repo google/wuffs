@@ -390,8 +390,7 @@ pri func decoder.decode_huffman?(dst writer1, src reader1)() {
 					}
 					if n_copied > 0 {
 						hlen -= n_copied
-						// TODO: a "~+" tilde-operator that ignores overflow.
-						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
+						hdist = (hdist ~+ n_copied) & 0x7FFF
 						if hdist == 0 {
 							// Wrap around the this.history ringbuffer.
 							break

@@ -173,30 +173,32 @@ const (
 	KeySemicolon = Key(IDSemicolon >> KeyShift)
 	KeyDollar    = Key(IDDollar >> KeyShift)
 
-	KeyEq        = Key(IDEq >> KeyShift)
-	KeyPlusEq    = Key(IDPlusEq >> KeyShift)
-	KeyMinusEq   = Key(IDMinusEq >> KeyShift)
-	KeyStarEq    = Key(IDStarEq >> KeyShift)
-	KeySlashEq   = Key(IDSlashEq >> KeyShift)
-	KeyShiftLEq  = Key(IDShiftLEq >> KeyShift)
-	KeyShiftREq  = Key(IDShiftREq >> KeyShift)
-	KeyAmpEq     = Key(IDAmpEq >> KeyShift)
-	KeyAmpHatEq  = Key(IDAmpHatEq >> KeyShift)
-	KeyPipeEq    = Key(IDPipeEq >> KeyShift)
-	KeyHatEq     = Key(IDHatEq >> KeyShift)
-	KeyPercentEq = Key(IDPercentEq >> KeyShift)
+	KeyEq          = Key(IDEq >> KeyShift)
+	KeyPlusEq      = Key(IDPlusEq >> KeyShift)
+	KeyMinusEq     = Key(IDMinusEq >> KeyShift)
+	KeyStarEq      = Key(IDStarEq >> KeyShift)
+	KeySlashEq     = Key(IDSlashEq >> KeyShift)
+	KeyShiftLEq    = Key(IDShiftLEq >> KeyShift)
+	KeyShiftREq    = Key(IDShiftREq >> KeyShift)
+	KeyAmpEq       = Key(IDAmpEq >> KeyShift)
+	KeyAmpHatEq    = Key(IDAmpHatEq >> KeyShift)
+	KeyPipeEq      = Key(IDPipeEq >> KeyShift)
+	KeyHatEq       = Key(IDHatEq >> KeyShift)
+	KeyPercentEq   = Key(IDPercentEq >> KeyShift)
+	KeyTildePlusEq = Key(IDTildePlusEq >> KeyShift)
 
-	KeyPlus    = Key(IDPlus >> KeyShift)
-	KeyMinus   = Key(IDMinus >> KeyShift)
-	KeyStar    = Key(IDStar >> KeyShift)
-	KeySlash   = Key(IDSlash >> KeyShift)
-	KeyShiftL  = Key(IDShiftL >> KeyShift)
-	KeyShiftR  = Key(IDShiftR >> KeyShift)
-	KeyAmp     = Key(IDAmp >> KeyShift)
-	KeyAmpHat  = Key(IDAmpHat >> KeyShift)
-	KeyPipe    = Key(IDPipe >> KeyShift)
-	KeyHat     = Key(IDHat >> KeyShift)
-	KeyPercent = Key(IDPercent >> KeyShift)
+	KeyPlus      = Key(IDPlus >> KeyShift)
+	KeyMinus     = Key(IDMinus >> KeyShift)
+	KeyStar      = Key(IDStar >> KeyShift)
+	KeySlash     = Key(IDSlash >> KeyShift)
+	KeyShiftL    = Key(IDShiftL >> KeyShift)
+	KeyShiftR    = Key(IDShiftR >> KeyShift)
+	KeyAmp       = Key(IDAmp >> KeyShift)
+	KeyAmpHat    = Key(IDAmpHat >> KeyShift)
+	KeyPipe      = Key(IDPipe >> KeyShift)
+	KeyHat       = Key(IDHat >> KeyShift)
+	KeyPercent   = Key(IDPercent >> KeyShift)
+	KeyTildePlus = Key(IDTildePlus >> KeyShift)
 
 	KeyNotEq       = Key(IDNotEq >> KeyShift)
 	KeyLessThan    = Key(IDLessThan >> KeyShift)
@@ -320,6 +322,7 @@ const (
 	KeyXBinaryAnd         = Key(IDXBinaryAnd >> KeyShift)
 	KeyXBinaryOr          = Key(IDXBinaryOr >> KeyShift)
 	KeyXBinaryAs          = Key(IDXBinaryAs >> KeyShift)
+	KeyXBinaryTildePlus   = Key(IDXBinaryTildePlus >> KeyShift)
 
 	KeyXAssociativePlus = Key(IDXAssociativePlus >> KeyShift)
 	KeyXAssociativeStar = Key(IDXAssociativeStar >> KeyShift)
@@ -351,30 +354,32 @@ const (
 	IDSemicolon = ID(0x26<<KeyShift | FlagsTightLeft)
 	IDDollar    = ID(0x27<<KeyShift | FlagsTightRight)
 
-	IDEq        = ID(0x30<<KeyShift | FlagsAssign)
-	IDPlusEq    = ID(0x31<<KeyShift | FlagsAssign)
-	IDMinusEq   = ID(0x32<<KeyShift | FlagsAssign)
-	IDStarEq    = ID(0x33<<KeyShift | FlagsAssign)
-	IDSlashEq   = ID(0x34<<KeyShift | FlagsAssign)
-	IDShiftLEq  = ID(0x35<<KeyShift | FlagsAssign)
-	IDShiftREq  = ID(0x36<<KeyShift | FlagsAssign)
-	IDAmpEq     = ID(0x37<<KeyShift | FlagsAssign)
-	IDAmpHatEq  = ID(0x38<<KeyShift | FlagsAssign)
-	IDPipeEq    = ID(0x39<<KeyShift | FlagsAssign)
-	IDHatEq     = ID(0x3A<<KeyShift | FlagsAssign)
-	IDPercentEq = ID(0x3B<<KeyShift | FlagsAssign)
+	IDEq          = ID(0x30<<KeyShift | FlagsAssign)
+	IDPlusEq      = ID(0x31<<KeyShift | FlagsAssign)
+	IDMinusEq     = ID(0x32<<KeyShift | FlagsAssign)
+	IDStarEq      = ID(0x33<<KeyShift | FlagsAssign)
+	IDSlashEq     = ID(0x34<<KeyShift | FlagsAssign)
+	IDShiftLEq    = ID(0x35<<KeyShift | FlagsAssign)
+	IDShiftREq    = ID(0x36<<KeyShift | FlagsAssign)
+	IDAmpEq       = ID(0x37<<KeyShift | FlagsAssign)
+	IDAmpHatEq    = ID(0x38<<KeyShift | FlagsAssign)
+	IDPipeEq      = ID(0x39<<KeyShift | FlagsAssign)
+	IDHatEq       = ID(0x3A<<KeyShift | FlagsAssign)
+	IDPercentEq   = ID(0x3B<<KeyShift | FlagsAssign)
+	IDTildePlusEq = ID(0x3C<<KeyShift | FlagsAssign)
 
-	IDPlus    = ID(0x41<<KeyShift | FlagsBinaryOp | FlagsUnaryOp | FlagsAssociativeOp)
-	IDMinus   = ID(0x42<<KeyShift | FlagsBinaryOp | FlagsUnaryOp)
-	IDStar    = ID(0x43<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDSlash   = ID(0x44<<KeyShift | FlagsBinaryOp)
-	IDShiftL  = ID(0x45<<KeyShift | FlagsBinaryOp)
-	IDShiftR  = ID(0x46<<KeyShift | FlagsBinaryOp)
-	IDAmp     = ID(0x47<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDAmpHat  = ID(0x48<<KeyShift | FlagsBinaryOp)
-	IDPipe    = ID(0x49<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDHat     = ID(0x4A<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDPercent = ID(0x4B<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDPlus      = ID(0x41<<KeyShift | FlagsBinaryOp | FlagsUnaryOp | FlagsAssociativeOp)
+	IDMinus     = ID(0x42<<KeyShift | FlagsBinaryOp | FlagsUnaryOp)
+	IDStar      = ID(0x43<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDSlash     = ID(0x44<<KeyShift | FlagsBinaryOp)
+	IDShiftL    = ID(0x45<<KeyShift | FlagsBinaryOp)
+	IDShiftR    = ID(0x46<<KeyShift | FlagsBinaryOp)
+	IDAmp       = ID(0x47<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDAmpHat    = ID(0x48<<KeyShift | FlagsBinaryOp)
+	IDPipe      = ID(0x49<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDHat       = ID(0x4A<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDPercent   = ID(0x4B<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDTildePlus = ID(0x4C<<KeyShift | FlagsBinaryOp) // TODO: FlagsAssociativeOp?
 
 	IDNotEq       = ID(0x50<<KeyShift | FlagsBinaryOp)
 	IDLessThan    = ID(0x51<<KeyShift | FlagsBinaryOp)
@@ -505,6 +510,7 @@ const (
 	IDXBinaryAnd         = ID(0xE9<<KeyShift | FlagsBinaryOp)
 	IDXBinaryOr          = ID(0xEA<<KeyShift | FlagsBinaryOp)
 	IDXBinaryAs          = ID(0xEB<<KeyShift | FlagsBinaryOp)
+	IDXBinaryTildePlus   = ID(0xEC<<KeyShift | FlagsBinaryOp)
 
 	IDXAssociativePlus = ID(0xF0<<KeyShift | FlagsAssociativeOp)
 	IDXAssociativeStar = ID(0xF1<<KeyShift | FlagsAssociativeOp)
@@ -546,34 +552,32 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeySemicolon: {";", IDSemicolon},
 	KeyDollar:    {"$", IDDollar},
 
-	KeyEq:        {"=", IDEq},
-	KeyPlusEq:    {"+=", IDPlusEq},
-	KeyMinusEq:   {"-=", IDMinusEq},
-	KeyStarEq:    {"*=", IDStarEq},
-	KeySlashEq:   {"/=", IDSlashEq},
-	KeyShiftLEq:  {"<<=", IDShiftLEq},
-	KeyShiftREq:  {">>=", IDShiftREq},
-	KeyAmpEq:     {"&=", IDAmpEq},
-	KeyAmpHatEq:  {"&^=", IDAmpHatEq},
-	KeyPipeEq:    {"|=", IDPipeEq},
-	KeyHatEq:     {"^=", IDHatEq},
-	KeyPercentEq: {"%=", IDPercentEq},
+	KeyEq:          {"=", IDEq},
+	KeyPlusEq:      {"+=", IDPlusEq},
+	KeyMinusEq:     {"-=", IDMinusEq},
+	KeyStarEq:      {"*=", IDStarEq},
+	KeySlashEq:     {"/=", IDSlashEq},
+	KeyShiftLEq:    {"<<=", IDShiftLEq},
+	KeyShiftREq:    {">>=", IDShiftREq},
+	KeyAmpEq:       {"&=", IDAmpEq},
+	KeyAmpHatEq:    {"&^=", IDAmpHatEq},
+	KeyPipeEq:      {"|=", IDPipeEq},
+	KeyHatEq:       {"^=", IDHatEq},
+	KeyPercentEq:   {"%=", IDPercentEq},
+	KeyTildePlusEq: {"~+=", IDTildePlusEq},
 
-	KeyPlus:    {"+", IDPlus},
-	KeyMinus:   {"-", IDMinus},
-	KeyStar:    {"*", IDStar},
-	KeySlash:   {"/", IDSlash},
-	KeyShiftL:  {"<<", IDShiftL},
-	KeyShiftR:  {">>", IDShiftR},
-	KeyAmp:     {"&", IDAmp},
-	KeyAmpHat:  {"&^", IDAmpHat},
-	KeyPipe:    {"|", IDPipe},
-	KeyHat:     {"^", IDHat},
-	KeyPercent: {"%", IDPercent},
-	// TODO: tilde-ops such as ~+ for ignoring overflow. Swift defines overflow
-	// ops for +, - and *. Swift syntax uses a leading &. Puffs uses a leading
-	// ~ as it is less ambiguous with the &^ operator (and any potential use of
-	// & as address-of) and ~ is otherwise unused.
+	KeyPlus:      {"+", IDPlus},
+	KeyMinus:     {"-", IDMinus},
+	KeyStar:      {"*", IDStar},
+	KeySlash:     {"/", IDSlash},
+	KeyShiftL:    {"<<", IDShiftL},
+	KeyShiftR:    {">>", IDShiftR},
+	KeyAmp:       {"&", IDAmp},
+	KeyAmpHat:    {"&^", IDAmpHat},
+	KeyPipe:      {"|", IDPipe},
+	KeyHat:       {"^", IDHat},
+	KeyPercent:   {"%", IDPercent},
+	KeyTildePlus: {"~+", IDPercent},
 
 	KeyNotEq:       {"!=", IDNotEq},
 	KeyLessThan:    {"<", IDLessThan},
@@ -770,6 +774,10 @@ var lexers = [256][]suffixLexer{
 		{"=", IDGreaterEq},
 		{"", IDGreaterThan},
 	},
+	'~': {
+		{"+=", IDTildePlusEq},
+		{"+", IDTildePlus},
+	},
 }
 
 var ambiguousForms = [256]ID{
@@ -797,6 +805,7 @@ var ambiguousForms = [256]ID{
 	KeyXBinaryAnd:         IDAnd,
 	KeyXBinaryOr:          IDOr,
 	KeyXBinaryAs:          IDAs,
+	KeyXBinaryTildePlus:   IDTildePlus,
 
 	KeyXAssociativePlus: IDPlus,
 	KeyXAssociativeStar: IDStar,
@@ -814,17 +823,18 @@ var unaryForms = [256]ID{
 }
 
 var binaryForms = [256]ID{
-	KeyPlusEq:    IDXBinaryPlus,
-	KeyMinusEq:   IDXBinaryMinus,
-	KeyStarEq:    IDXBinaryStar,
-	KeySlashEq:   IDXBinarySlash,
-	KeyShiftLEq:  IDXBinaryShiftL,
-	KeyShiftREq:  IDXBinaryShiftR,
-	KeyAmpEq:     IDXBinaryAmp,
-	KeyAmpHatEq:  IDXBinaryAmpHat,
-	KeyPipeEq:    IDXBinaryPipe,
-	KeyHatEq:     IDXBinaryHat,
-	KeyPercentEq: IDXBinaryPercent,
+	KeyPlusEq:      IDXBinaryPlus,
+	KeyMinusEq:     IDXBinaryMinus,
+	KeyStarEq:      IDXBinaryStar,
+	KeySlashEq:     IDXBinarySlash,
+	KeyShiftLEq:    IDXBinaryShiftL,
+	KeyShiftREq:    IDXBinaryShiftR,
+	KeyAmpEq:       IDXBinaryAmp,
+	KeyAmpHatEq:    IDXBinaryAmpHat,
+	KeyPipeEq:      IDXBinaryPipe,
+	KeyHatEq:       IDXBinaryHat,
+	KeyPercentEq:   IDXBinaryPercent,
+	KeyTildePlusEq: IDXBinaryTildePlus,
 
 	KeyPlus:        IDXBinaryPlus,
 	KeyMinus:       IDXBinaryMinus,
@@ -846,6 +856,7 @@ var binaryForms = [256]ID{
 	KeyAnd:         IDXBinaryAnd,
 	KeyOr:          IDXBinaryOr,
 	KeyAs:          IDXBinaryAs,
+	KeyTildePlus:   IDXBinaryTildePlus,
 }
 
 var associativeForms = [256]ID{

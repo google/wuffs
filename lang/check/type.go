@@ -262,6 +262,11 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		}
 		return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
 			n.Operator().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+	case t.KeyTildePlusEq:
+		if !lTyp.IsUnsignedInteger() {
+			return fmt.Errorf("check: assignment %q: %q, of type %q, does not have unsigned integer type",
+				n.Operator().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+		}
 	}
 
 	if rTyp.IsIdeal() || lTyp.EqIgnoringRefinements(rTyp) {
@@ -826,6 +831,28 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		}
 	}
 
+	switch op.Key() {
+	case t.KeyXBinaryTildePlus:
+		typ := lTyp
+		if typ.IsIdeal() {
+			typ = rTyp
+			if typ.IsIdeal() {
+				return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have non-ideal types",
+					op.AmbiguousForm().String(q.tm),
+					lhs.String(q.tm), rhs.String(q.tm),
+					lTyp.String(q.tm), rTyp.String(q.tm),
+				)
+			}
+		}
+		if !typ.IsUnsignedInteger() {
+			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have unsigned integer types",
+				op.AmbiguousForm().String(q.tm),
+				lhs.String(q.tm), rhs.String(q.tm),
+				lTyp.String(q.tm), rTyp.String(q.tm),
+			)
+		}
+	}
+
 	if lcv, rcv := lhs.ConstValue(), rhs.ConstValue(); lcv != nil && rcv != nil {
 		ncv, err := evalConstValueBinaryOp(q.tm, n, lcv, rcv)
 		if err != nil {
@@ -901,6 +928,8 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)), nil
 	case t.KeyXBinaryOr:
 		return btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)), nil
+	case t.KeyXBinaryTildePlus:
+		return nil, fmt.Errorf("check: cannot apply ~+ operator to ideal numbers")
 	}
 	return nil, fmt.Errorf("check: unrecognized token.Key (0x%02X) for evalConstValueBinaryOp", n.ID0().Key())
 }
