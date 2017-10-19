@@ -48,7 +48,8 @@ pri struct adler?(
 )
 
 pri func adler.update(x[] u8)(checksum u32) {
-	// The magic 65521 and 5552 numbers are discussed in RFC 1950.
+	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
+	// RFC 1950.
 
 	var s1 u32 = this.state.low_bits(n:16)
 	var s2 u32 = this.state.high_bits(n:16)
@@ -70,7 +71,7 @@ pri func adler.update(x[] u8)(checksum u32) {
 			inv in.x.length() <= 5552,
 		{
 			assert i < 5552 via "a < b: a < c; c <= b"(c:in.x.length())
-			s1 ~+= 42  // TODO.
+			s1 ~+= in.x[i] as u32
 			s2 ~+= s1
 			i += 1
 		}

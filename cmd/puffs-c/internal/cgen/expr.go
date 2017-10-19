@@ -273,6 +273,10 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if err := g.writeExpr(b, n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
+		if lTyp := n.LHS().Expr().MType(); lTyp.Decorator().Key() == t.KeyColon {
+			// TODO: don't assume that the slice is a slice of u8.
+			b.writes(".ptr")
+		}
 		b.writeb('[')
 		if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesOptional, depth); err != nil {
 			return err

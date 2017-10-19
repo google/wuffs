@@ -796,18 +796,23 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 		rhs := n.RHS().Expr()
-		rMin, rMax, err := q.bcheckExpr(rhs, depth)
+		_, _, err = q.bcheckExpr(rhs, depth)
 		if err != nil {
 			return nil, nil, err
 		}
-		cv := lhs.MType().ArrayLength().ConstValue()
-		if cv == nil {
-			return nil, nil, fmt.Errorf("check: cannot determine constant array length for %q",
-				lhs.MType().String(q.tm))
+
+		lengthExpr := (*a.Expr)(nil)
+		if lTyp := lhs.MType(); lTyp.Decorator().Key() == t.KeyOpenBracket {
+			lengthExpr = lTyp.ArrayLength()
+		} else {
+			lengthExpr = makeSliceLengthExpr(lhs)
 		}
-		if rMin.Cmp(zero) < 0 || rMax.Cmp(cv) >= 0 {
-			return nil, nil, fmt.Errorf("check: array index %q (of range %v..%v) out of range",
-				rhs.String(q.tm), rMin, rMax)
+
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, rhs); err != nil {
+			return nil, nil, err
+		}
+		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, rhs, lengthExpr); err != nil {
+			return nil, nil, err
 		}
 
 	case t.KeyColon:
@@ -820,21 +825,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 		lengthExpr := (*a.Expr)(nil)
 		if lTyp := lhs.MType(); lTyp.Decorator().Key() == t.KeyOpenBracket {
-			// Slice of an array.
-			cv := lTyp.ArrayLength().ConstValue()
-			id, err := q.tm.Insert(cv.String())
-			if err != nil {
-				return nil, nil, err
-			}
-			lengthExpr = a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
-			lengthExpr.SetConstValue(cv)
-			lengthExpr.SetMType(typeExprIdeal)
+			lengthExpr = lTyp.ArrayLength()
 		} else {
-			// Slice of a slice.
-			lengthExpr = a.NewExpr(a.FlagsTypeChecked, t.IDDot, t.IDLength, lhs.Node(), nil, nil, nil)
-			lengthExpr.SetMType(typeExprPlaceholder) // HACK.
-			lengthExpr = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, lengthExpr.Node(), nil, nil, nil)
-			lengthExpr.SetMType(typeExprU64)
+			lengthExpr = makeSliceLengthExpr(lhs)
 		}
 
 		if mhs == nil {
@@ -884,6 +877,14 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 	}
 	return q.bcheckTypeExpr(n.MType())
+}
+
+func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
+	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, t.IDLength, slice.Node(), nil, nil, nil)
+	x.SetMType(typeExprPlaceholder) // HACK.
+	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, x.Node(), nil, nil, nil)
+	x.SetMType(typeExprU64)
+	return x
 }
 
 func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {

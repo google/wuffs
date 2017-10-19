@@ -509,13 +509,13 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if lTyp.Decorator().Key() != t.KeyOpenBracket {
-			return fmt.Errorf("check: %s is an array-index expression but %s has type %s, not an array type",
+		if key := lTyp.Decorator().Key(); key != t.KeyOpenBracket && key != t.KeyColon {
+			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
 				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
 		}
 		rTyp := rhs.MType()
 		if !rTyp.IsNumTypeOrIdeal() {
-			return fmt.Errorf("check: %s is an array-index expression but %s has type %s, not a numeric type",
+			return fmt.Errorf("check: %s is an index expression but %s has type %s, not a numeric type",
 				n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
 		}
 		n.SetMType(lTyp.Inner())

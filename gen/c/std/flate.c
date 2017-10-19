@@ -2440,7 +2440,7 @@ uint32_t puffs_flate_adler_update(puffs_flate_adler* self,
     }
     v_i = 0;
     while (v_i < ((uint64_t)(a_x.len))) {
-      v_s1 += 42;
+      v_s1 += ((uint32_t)(a_x.ptr[v_i]));
       v_s2 += v_s1;
       v_i += 1;
     }

@@ -16,10 +16,10 @@
 
 uint32_t global_mimiclib_flate_unused_u32;
 
-const char* mimic_adler32(puffs_base_buf1* dst,
-                          puffs_base_buf1* src,
-                          uint64_t wlimit,
-                          uint64_t rlimit) {
+const char* mimic_bench_adler32(puffs_base_buf1* dst,
+                                puffs_base_buf1* src,
+                                uint64_t wlimit,
+                                uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   uint8_t* ptr = src->ptr + src->ri;
   size_t len = src->wi - src->ri;
@@ -31,10 +31,10 @@ const char* mimic_adler32(puffs_base_buf1* dst,
   return NULL;
 }
 
-const char* mimic_crc32(puffs_base_buf1* dst,
-                        puffs_base_buf1* src,
-                        uint64_t wlimit,
-                        uint64_t rlimit) {
+const char* mimic_bench_crc32(puffs_base_buf1* dst,
+                              puffs_base_buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   uint8_t* ptr = src->ptr + src->ri;
   size_t len = src->wi - src->ri;

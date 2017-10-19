@@ -111,6 +111,67 @@ golden_test zlib_pi_gt = {
     .src_filename = "../../testdata/pi.txt.zlib",  //
 };
 
+// ---------------- Checksum Tests
+
+void test_puffs_adler32() {
+  proc_funcname = __func__;
+
+  struct {
+    const char* filename;
+    // The want values are determined by script/adler32sum.go.
+    uint32_t want;
+  } test_cases[] = {
+      {
+          .filename = "../../testdata/hat.bmp",
+          .want = 0x3D26D034,
+      },
+      {
+          .filename = "../../testdata/hat.gif",
+          .want = 0x2A5EB144,
+      },
+      {
+          .filename = "../../testdata/hat.jpeg",
+          .want = 0x3A503B1A,
+      },
+      {
+          .filename = "../../testdata/hat.lossless.webp",
+          .want = 0xD059D427,
+      },
+      {
+          .filename = "../../testdata/hat.lossy.webp",
+          .want = 0xF1BB258D,
+      },
+      {
+          .filename = "../../testdata/hat.png",
+          .want = 0xDFC6C9C6,
+      },
+      {
+          .filename = "../../testdata/hat.tiff",
+          .want = 0xBDC011E9,
+      },
+  };
+
+  int i;
+  for (i = 0; i < PUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+    puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+    if (!read_file(&src, test_cases[i].filename)) {
+      return;
+    }
+    puffs_flate_adler checksum;
+    puffs_flate_adler_initialize(&checksum, PUFFS_VERSION, 0);
+    uint32_t got =
+        puffs_flate_adler_update(&checksum, ((puffs_base_slice_u8){
+                                                .ptr = src.ptr + src.ri,
+                                                .len = src.wi - src.ri,
+                                            }));
+    if (got != test_cases[i].want) {
+      FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
+           i, test_cases[i].filename, got, test_cases[i].want);
+      return;
+    }
+  }
+}
+
 // ---------------- Flate Tests
 
 const char* puffs_flate_decode(puffs_base_buf1* dst,
@@ -624,6 +685,37 @@ void test_mimic_zlib_decode_pi() {
 
 #endif  // PUFFS_MIMIC
 
+// ---------------- Checksum Benches
+
+uint32_t global_puffs_flate_unused_u32;
+
+const char* puffs_bench_adler32(puffs_base_buf1* dst,
+                                puffs_base_buf1* src,
+                                uint64_t wlimit,
+                                uint64_t rlimit) {
+  // TODO: don't ignore wlimit and rlimit.
+  puffs_flate_adler checksum;
+  puffs_flate_adler_initialize(&checksum, PUFFS_VERSION, 0);
+  global_puffs_flate_unused_u32 =
+      puffs_flate_adler_update(&checksum, ((puffs_base_slice_u8){
+                                              .ptr = src->ptr + src->ri,
+                                              .len = src->wi - src->ri,
+                                          }));
+  src->ri = src->wi;
+  return NULL;
+}
+
+void bench_puffs_adler32_10k() {
+  proc_funcname = __func__;
+  do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
+                     30000);
+}
+
+void bench_puffs_adler32_100k() {
+  proc_funcname = __func__;
+  do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
+}
+
 // ---------------- Flate Benches
 
 void bench_puffs_flate_decode_1k() {
@@ -648,23 +740,24 @@ void bench_puffs_flate_decode_100k() {
 
 void bench_mimic_adler32_10k() {
   proc_funcname = __func__;
-  do_bench_buf1_buf1(mimic_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
+  do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_adler32_100k() {
   proc_funcname = __func__;
-  do_bench_buf1_buf1(mimic_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
+  do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_crc32_10k() {
   proc_funcname = __func__;
-  do_bench_buf1_buf1(mimic_crc32, tc_src, &checksum_midsummer_gt, 0, 0, 30000);
+  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &checksum_midsummer_gt, 0, 0,
+                     30000);
 }
 
 void bench_mimic_crc32_100k() {
   proc_funcname = __func__;
-  do_bench_buf1_buf1(mimic_crc32, tc_src, &checksum_pi_gt, 0, 0, 3000);
+  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &checksum_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_flate_decode_1k() {
@@ -712,6 +805,7 @@ void bench_mimic_zlib_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
     // Flate Tests
+    test_puffs_adler32,                                  //
     test_puffs_flate_decode_256_bytes,                   //
     test_puffs_flate_decode_midsummer,                   //
     test_puffs_flate_decode_pi,                          //
@@ -748,6 +842,8 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
     // Flate Benches
+    bench_puffs_adler32_10k,        //
+    bench_puffs_adler32_100k,       //
     bench_puffs_flate_decode_1k,    //
     bench_puffs_flate_decode_10k,   //
     bench_puffs_flate_decode_100k,  //
