@@ -109,13 +109,16 @@ type Node struct {
 	filename string
 	line     uint32
 
-	id0   t.ID
-	id1   t.ID
-	lhs   *Node // Left Hand Side.
-	mhs   *Node // Middle Hand Side.
-	rhs   *Node // Right Hand Side.
+	id0 t.ID
+	id1 t.ID
+
+	lhs *Node // Left Hand Side.
+	mhs *Node // Middle Hand Side.
+	rhs *Node // Right Hand Side.
+
 	list0 []*Node
 	list1 []*Node
+	list2 []*Node
 }
 
 func (n *Node) Kind() Kind        { return n.kind }
@@ -181,9 +184,10 @@ func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.
 func (n *Raw) LHS() *Node                     { return n.lhs }
 func (n *Raw) MHS() *Node                     { return n.mhs }
 func (n *Raw) RHS() *Node                     { return n.rhs }
-func (n *Raw) SubLists() [2][]*Node           { return [2][]*Node{n.list0, n.list1} }
+func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
 func (n *Raw) List0() []*Node                 { return n.list0 }
 func (n *Raw) List1() []*Node                 { return n.list1 }
+func (n *Raw) List2() []*Node                 { return n.list2 }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
@@ -378,12 +382,12 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 	}
 }
 
-// Iterate is "iterate:ID1 (vars) { List1 }":
+// Iterate is "iterate:ID1 (vars) { List2 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID1:   <0|label>
 //  - List0: <Var> variables
-//  - List1: <Statement> loop body
+//  - List2: <Statement> loop body
 type Iterate Node
 
 func (n *Iterate) Node() *Node        { return (*Node)(n) }
@@ -391,7 +395,7 @@ func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
 func (n *Iterate) Label() t.ID        { return n.id1 }
 func (n *Iterate) Variables() []*Node { return n.list0 }
-func (n *Iterate) Body() []*Node      { return n.list1 }
+func (n *Iterate) Body() []*Node      { return n.list2 }
 
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
@@ -401,17 +405,17 @@ func NewIterate(label t.ID, variables []*Node, body []*Node) *Iterate {
 		kind:  KIterate,
 		id1:   label,
 		list0: variables,
-		list1: body,
+		list2: body,
 	}
 }
 
-// While is "while:ID1 LHS, List0 { List1 }":
+// While is "while:ID1 LHS, List1 { List2 }":
 //  - FlagsHasBreak    is the while has an explicit break
 //  - FlagsHasContinue is the while has an explicit continue
 //  - ID1:   <0|label>
 //  - LHS:   <Expr>
-//  - List0: <Assert> asserts
-//  - List1: <Statement> loop body
+//  - List1: <Assert> asserts
+//  - List2: <Statement> loop body
 type While Node
 
 func (n *While) Node() *Node       { return (*Node)(n) }
@@ -419,8 +423,8 @@ func (n *While) HasBreak() bool    { return n.flags&FlagsHasBreak != 0 }
 func (n *While) HasContinue() bool { return n.flags&FlagsHasContinue != 0 }
 func (n *While) Label() t.ID       { return n.id1 }
 func (n *While) Condition() *Expr  { return n.lhs.Expr() }
-func (n *While) Asserts() []*Node  { return n.list0 }
-func (n *While) Body() []*Node     { return n.list1 }
+func (n *While) Asserts() []*Node  { return n.list1 }
+func (n *While) Body() []*Node     { return n.list2 }
 
 func (n *While) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *While) SetHasContinue() { n.flags |= FlagsHasContinue }
@@ -430,8 +434,8 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 		kind:  KWhile,
 		id1:   label,
 		lhs:   condition.Node(),
-		list0: asserts,
-		list1: body,
+		list1: asserts,
+		list2: body,
 	}
 }
 
@@ -603,7 +607,7 @@ func NewTypeExpr(pkgOrDec t.ID, name t.ID, arrayLengthMin *Expr, max *Expr, inne
 // MaxBodyDepth is an advisory limit for a function body's recursion depth.
 const MaxBodyDepth = 255
 
-// Func is "func ID0.ID1(LHS)(RHS) { List1 }":
+// Func is "func ID0.ID1(LHS)(RHS) { List2 }":
 //  - FlagsImpure      is "ID1" vs "ID1!"
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - FlagsPublic      is "pub" vs "pri"
@@ -611,8 +615,8 @@ const MaxBodyDepth = 255
 //  - ID1:   name
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
-//  - List0: <Assert> asserts
-//  - List1: <Statement> function body
+//  - List1: <Assert> asserts
+//  - List2: <Statement> function body
 //
 // Statement means one of:
 //  - Assert
@@ -638,8 +642,8 @@ func (n *Func) Receiver() t.ID    { return n.id0 }
 func (n *Func) Name() t.ID        { return n.id1 }
 func (n *Func) In() *Struct       { return n.lhs.Struct() }
 func (n *Func) Out() *Struct      { return n.rhs.Struct() }
-func (n *Func) Asserts() []*Node  { return n.list0 }
-func (n *Func) Body() []*Node     { return n.list1 }
+func (n *Func) Asserts() []*Node  { return n.list1 }
+func (n *Func) Body() []*Node     { return n.list2 }
 
 func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, in *Struct, out *Struct, asserts []*Node, body []*Node) *Func {
 	return &Func{
@@ -651,8 +655,8 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 		id1:      name,
 		lhs:      in.Node(),
 		rhs:      out.Node(),
-		list0:    asserts,
-		list1:    body,
+		list1:    asserts,
+		list2:    body,
 	}
 }
 
