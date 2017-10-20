@@ -2438,6 +2438,14 @@ uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
         return 0;
       }
     }
+    {
+      puffs_base_slice_u8 i_slice_p = a_x;
+      uint8_t* i_ptr_p = i_slice_p.ptr;
+      uint8_t* i_end_p = i_slice_p.ptr + i_slice_p.len;
+      while (i_ptr_p < i_end_p) {
+        i_ptr_p++;
+      }
+    }
     v_i = 0;
     while (v_i < ((uint64_t)(a_x.len))) {
       v_s1 += ((uint32_t)(a_x.ptr[v_i]));

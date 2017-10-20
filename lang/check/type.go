@@ -39,6 +39,14 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 				}
 			}
 
+		case a.KIterate:
+			if err := q.tcheckVars(o.Iterate().Variables()); err != nil {
+				return err
+			}
+			if err := q.tcheckVars(o.Iterate().Body()); err != nil {
+				return err
+			}
+
 		case a.KVar:
 			o := o.Var()
 			name := o.Name()
@@ -167,14 +175,43 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 			lTyp := n.XType()
 			rTyp := value.MType()
-			if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+			if n.IterateVariable() {
+				if lTyp.Decorator().Key() != t.KeyPtr {
+					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a pointer type",
+						n.Name().String(q.tm), lTyp.String(q.tm))
+				}
+				if rTyp.Decorator().Key() != t.KeyColon {
+					return fmt.Errorf("check: iterate range %q, of type %q, does not have a slice type",
+						value.String(q.tm), rTyp.String(q.tm))
+				}
+				if !lTyp.Inner().Eq(rTyp.Inner()) {
+					return fmt.Errorf("check: cannot iterate %q of type %q over %q of type %q "+
+						"as their inner types don't match",
+						n.Name().String(q.tm), lTyp.String(q.tm), value.String(q.tm), rTyp.String(q.tm))
+				}
+
+			} else if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
 				// No-op.
+
 			} else {
 				return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
 					value.String(q.tm), rTyp.String(q.tm), n.Name().String(q.tm), lTyp.String(q.tm))
 			}
 		} else {
 			// TODO: check that the default zero value is assignable to n.XType().
+		}
+
+	case a.KIterate:
+		n := n.Iterate()
+		for _, o := range n.Variables() {
+			if err := q.tcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		for _, o := range n.Body() {
+			if err := q.tcheckStatement(o); err != nil {
+				return err
+			}
 		}
 
 	case a.KWhile:

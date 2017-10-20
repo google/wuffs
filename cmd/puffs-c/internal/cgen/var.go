@@ -246,6 +246,14 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 				return err
 			}
 
+		case a.KIterate:
+			if err := g.visitVars(b, o.Iterate().Variables(), depth, f); err != nil {
+				return err
+			}
+			if err := g.visitVars(b, o.Iterate().Body(), depth, f); err != nil {
+				return err
+			}
+
 		case a.KWhile:
 			if err := g.visitVars(b, o.While().Body(), depth, f); err != nil {
 				return err
@@ -319,12 +327,15 @@ func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool) error
 	})
 }
 
-func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool) error {
+func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipIterateVariables bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
 		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
 			b.printf("uint64_t %s%v;\n", lPrefix, n.Name().String(g.tm))
 		}
 		if skipPointerTypes && n.XType().HasPointers() {
+			return nil
+		}
+		if skipIterateVariables && n.IterateVariable() {
 			return nil
 		}
 		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().String(g.tm)); err != nil {

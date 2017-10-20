@@ -239,6 +239,7 @@ const (
 	KeyPackageID  = Key(IDPackageID >> KeyShift)
 	KeyConst      = Key(IDConst >> KeyShift)
 	KeyTry        = Key(IDTry >> KeyShift)
+	KeyIterate    = Key(IDIterate >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -420,6 +421,7 @@ const (
 	IDPackageID  = ID(0x76<<KeyShift | FlagsOther)
 	IDConst      = ID(0x77<<KeyShift | FlagsOther)
 	IDTry        = ID(0x78<<KeyShift | FlagsOther)
+	IDIterate    = ID(0x79<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -617,6 +619,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyPackageID:  {"packageid", IDPackageID},
 	KeyConst:      {"const", IDConst},
 	KeyTry:        {"try", IDTry},
+	KeyIterate:    {"iterate", IDIterate},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},

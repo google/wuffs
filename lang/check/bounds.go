@@ -265,22 +265,24 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// TODO.
 
 	case a.KVar:
-		n := n.Var()
-		if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
-			if _, _, err := typeBounds(q.tm, innTyp); err != nil {
+		return q.bcheckVar(n.Var())
+
+	case a.KIterate:
+		n := n.Iterate()
+		for _, o := range n.Variables() {
+			if err := q.bcheckVar(o.Var()); err != nil {
 				return err
 			}
 		}
-		lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
-		lhs.SetMType(n.XType())
-		rhs := n.Value()
-		if rhs == nil {
-			// "var x T" has an implicit "= 0".
-			//
-			// TODO: check that T is an integer type.
-			rhs = zeroExpr
+		// TODO: this isn't right, as the body is a loop, not an
+		// execute-exactly-once block. We should have pre / inv / post
+		// conditions, a la bcheckWhile.
+		for _, o := range n.Body() {
+			if err := q.bcheckStatement(o); err != nil {
+				return err
+			}
 		}
-		return q.bcheckAssignment(lhs, t.IDEq, rhs)
+		return nil
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
@@ -634,6 +636,24 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		q.facts.appendFact(o.Assert().Condition())
 	}
 	return nil
+}
+
+func (q *checker) bcheckVar(n *a.Var) error {
+	if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
+		if _, _, err := typeBounds(q.tm, innTyp); err != nil {
+			return err
+		}
+	}
+	lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
+	lhs.SetMType(n.XType())
+	rhs := n.Value()
+	if rhs == nil {
+		// "var x T" has an implicit "= 0".
+		//
+		// TODO: check that T is an integer type.
+		rhs = zeroExpr
+	}
+	return q.bcheckAssignment(lhs, t.IDEq, rhs)
 }
 
 func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {

@@ -65,6 +65,12 @@ pri func adler32.update(x[] u8)(checksum u32) {
 			}
 		}
 
+		iterate (p ptr u8:in.x) {
+			// TODO: uncomment this loop body, and delete the while loop below.
+			// s1 ~+= deref p as u32
+			// s2 ~+= s1
+		}
+
 		// TODO: can u64 be u32? Does it matter?
 		var i u64
 		while i < in.x.length(),

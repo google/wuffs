@@ -234,6 +234,39 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		}
 		return nil
 
+	case a.KIterate:
+		n := n.Iterate()
+		vars := n.Variables()
+		if len(vars) == 0 {
+			return nil
+		}
+		if len(vars) != 1 {
+			return fmt.Errorf("TODO: iterate over more than one variable")
+		}
+		v := vars[0].Var()
+		name := v.Name().String(g.tm)
+		b.writes("{\n")
+
+		// TODO: don't assume that the slice is a slice of u8.
+		b.printf("puffs_base_slice_u8 %sslice_%s =", iPrefix, name)
+		if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+			return err
+		}
+		b.writes(";\n")
+		b.printf("uint8_t* %sptr_%s = %sslice_%s.ptr;\n", iPrefix, name, iPrefix, name)
+		b.printf("uint8_t* %send_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
+			iPrefix, name, iPrefix, name, iPrefix, name)
+		b.printf("while (%sptr_%s < %send_%s) {\n", iPrefix, name, iPrefix, name)
+		for _, o := range n.Body() {
+			if err := g.writeStatement(b, o, depth); err != nil {
+				return err
+			}
+		}
+		b.printf("%sptr_%s++;\n}\n", iPrefix, name)
+
+		b.writes("}\n")
+		return nil
+
 	case a.KWhile:
 		n := n.While()
 		// TODO: consider suspendible calls.

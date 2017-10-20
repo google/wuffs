@@ -538,6 +538,11 @@ func (p *parser) parseStatement() (*a.Node, error) {
 	n, err := p.parseStatement1()
 	if n != nil {
 		n.Raw().SetFilenameLine(p.filename, line)
+		if n.Kind() == a.KIterate {
+			for _, o := range n.Iterate().Variables() {
+				o.Raw().SetFilenameLine(p.filename, line)
+			}
+		}
 	}
 	return n, err
 }
@@ -562,6 +567,22 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, err
 		}
 		return a.NewJump(x, label).Node(), nil
+
+	case t.KeyIterate:
+		p.src = p.src[1:]
+		label, err := p.parseLabel()
+		if err != nil {
+			return nil, err
+		}
+		vars, err := p.parseList(t.KeyCloseParen, (*parser).parseIterateVariableNode)
+		if err != nil {
+			return nil, err
+		}
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewIterate(label, vars, body).Node(), nil
 
 	case t.KeyWhile:
 		p.src = p.src[1:]
@@ -619,36 +640,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyVar:
 		p.src = p.src[1:]
-		id, err := p.parseIdent()
-		if err != nil {
-			return nil, err
-		}
-		typ, err := p.parseTypeExpr()
-		if err != nil {
-			return nil, err
-		}
-		value := (*a.Expr)(nil)
-		if p.peek1().Key() == t.KeyEq {
-			p.src = p.src[1:]
-			switch p.peek1().Key() {
-			case t.KeyLimit:
-				value, err = p.parseLimitExpr()
-				if err != nil {
-					return nil, err
-				}
-			case t.KeyTry:
-				value, err = p.parseTryExpr()
-				if err != nil {
-					return nil, err
-				}
-			default:
-				value, err = p.parseExpr()
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-		return a.NewVar(id, typ, value).Node(), nil
+		return p.parseVar(false)
 	}
 
 	lhs, err := p.parseExpr()
@@ -715,6 +707,59 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 		return nil, err
 	}
 	return a.NewArg(name, value).Node(), nil
+}
+
+func (p *parser) parseIterateVariableNode() (*a.Node, error) {
+	return p.parseVar(true)
+}
+
+func (p *parser) parseVar(inIterate bool) (*a.Node, error) {
+	id, err := p.parseIdent()
+	if err != nil {
+		return nil, err
+	}
+	typ, err := p.parseTypeExpr()
+	if err != nil {
+		return nil, err
+	}
+	value := (*a.Expr)(nil)
+
+	op := t.ID(0)
+	if inIterate {
+		op = t.IDColon
+		if x := p.peek1().Key(); x != t.KeyColon {
+			got := p.tm.ByKey(x)
+			return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		value, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+
+	} else if p.peek1().Key() == t.KeyEq {
+		op = t.IDEq
+		p.src = p.src[1:]
+		switch p.peek1().Key() {
+		case t.KeyLimit:
+			value, err = p.parseLimitExpr()
+			if err != nil {
+				return nil, err
+			}
+		case t.KeyTry:
+			value, err = p.parseTryExpr()
+			if err != nil {
+				return nil, err
+			}
+		default:
+			value, err = p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return a.NewVar(op, id, typ, value).Node(), nil
 }
 
 func (p *parser) parseDollarExpr() (*a.Expr, error) {

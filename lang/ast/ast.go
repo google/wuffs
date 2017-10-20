@@ -41,6 +41,7 @@ const (
 	KFile
 	KFunc
 	KIf
+	KIterate
 	KJump
 	KPackageID
 	KReturn
@@ -71,6 +72,7 @@ var kindStrings = [...]string{
 	KFile:      "KFile",
 	KFunc:      "KFunc",
 	KIf:        "KIf",
+	KIterate:   "KIterate",
 	KJump:      "KJump",
 	KPackageID: "KPackageID",
 	KReturn:    "KReturn",
@@ -129,6 +131,7 @@ func (n *Node) Field() *Field         { return (*Field)(n) }
 func (n *Node) File() *File           { return (*File)(n) }
 func (n *Node) Func() *Func           { return (*Func)(n) }
 func (n *Node) If() *If               { return (*If)(n) }
+func (n *Node) Iterate() *Iterate     { return (*Iterate)(n) }
 func (n *Node) Jump() *Jump           { return (*Jump)(n) }
 func (n *Node) PackageID() *PackageID { return (*PackageID)(n) }
 func (n *Node) Raw() *Raw             { return (*Raw)(n) }
@@ -331,20 +334,24 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
-// Var is "var ID1 LHS" or "var ID1 LHS = RHS":
+// Var is "var ID1 LHS" or "var ID1 LHS = RHS" or an iterate variable
+// declaration "ID1 LHS : RHS":
+//  - ID0:   <0|IDEq|IDColon>
 //  - ID1:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Var Node
 
-func (n *Var) Node() *Node      { return (*Node)(n) }
-func (n *Var) Name() t.ID       { return n.id1 }
-func (n *Var) XType() *TypeExpr { return n.lhs.TypeExpr() }
-func (n *Var) Value() *Expr     { return n.rhs.Expr() }
+func (n *Var) Node() *Node           { return (*Node)(n) }
+func (n *Var) IterateVariable() bool { return n.id0 == t.IDColon }
+func (n *Var) Name() t.ID            { return n.id1 }
+func (n *Var) XType() *TypeExpr      { return n.lhs.TypeExpr() }
+func (n *Var) Value() *Expr          { return n.rhs.Expr() }
 
-func NewVar(name t.ID, xType *TypeExpr, value *Expr) *Var {
+func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 	return &Var{
 		kind: KVar,
+		id0:  op,
 		id1:  name,
 		lhs:  xType.Node(),
 		rhs:  value.Node(),
@@ -368,6 +375,33 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 		id1:  name,
 		lhs:  xType.Node(),
 		rhs:  defaultValue.Node(),
+	}
+}
+
+// Iterate is "iterate:ID1 (vars) { List1 }":
+//  - FlagsHasBreak    is the iterate has an explicit break
+//  - FlagsHasContinue is the iterate has an explicit continue
+//  - ID1:   <0|label>
+//  - List0: <Var> variables
+//  - List1: <Statement> loop body
+type Iterate Node
+
+func (n *Iterate) Node() *Node        { return (*Node)(n) }
+func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
+func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
+func (n *Iterate) Label() t.ID        { return n.id1 }
+func (n *Iterate) Variables() []*Node { return n.list0 }
+func (n *Iterate) Body() []*Node      { return n.list1 }
+
+func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
+func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
+
+func NewIterate(label t.ID, variables []*Node, body []*Node) *Iterate {
+	return &Iterate{
+		kind:  KIterate,
+		id1:   label,
+		list0: variables,
+		list1: body,
 	}
 }
 
@@ -585,6 +619,7 @@ const MaxBodyDepth = 255
 //  - Assign
 //  - Expr
 //  - If
+//  - Iterate
 //  - Jump
 //  - Return
 //  - Var

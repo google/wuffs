@@ -45,6 +45,7 @@ const (
 	bPrefix = "b_" // Derived from a function argument.
 	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
+	iPrefix = "i_" // Iterate variable.
 	lPrefix = "l_" // Limit length.
 	tPrefix = "t_" // Temporary local variable.
 	vPrefix = "v_" // Local variable.
@@ -554,7 +555,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				b.writes("struct {\n")
 				if k.coroSuspPoint != 0 {
 					b.writes("uint32_t coro_susp_point;\n")
-					if err := g.writeVars(b, o.Body(), true); err != nil {
+					if err := g.writeVars(b, o.Body(), true, true); err != nil {
 						return err
 					}
 				}

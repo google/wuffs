@@ -194,7 +194,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 	b.writes("\n")
 
 	// Generate the local variables.
-	if err := g.writeVars(b, g.currFunk.astFunc.Body(), false); err != nil {
+	if err := g.writeVars(b, g.currFunk.astFunc.Body(), false, true); err != nil {
 		return err
 	}
 	b.writes("\n")

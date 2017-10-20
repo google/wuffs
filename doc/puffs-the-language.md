@@ -27,12 +27,13 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 - `pri`
 - `pub`
 
-6 keywords deal with control flow within a function:
+7 keywords deal with control flow within a function:
 
 - `break`
 - `continue`
 - `else`
 - `if`
+- `iterate`
 - `return`
 - `while`
 
