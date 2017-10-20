@@ -586,7 +586,7 @@ type checker struct {
 	errFilename string
 	errLine     uint32
 
-	jumpTargets []*a.While
+	jumpTargets []a.Loop
 
 	facts facts
 }

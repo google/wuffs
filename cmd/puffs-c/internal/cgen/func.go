@@ -31,7 +31,7 @@ type funk struct {
 
 	astFunc       *a.Func
 	derivedVars   map[t.ID]struct{}
-	jumpTargets   map[*a.While]uint32
+	jumpTargets   map[a.Loop]uint32
 	coroSuspPoint uint32
 	tempW         uint32
 	tempR         uint32
@@ -42,9 +42,9 @@ type funk struct {
 	shortReads    []string
 }
 
-func (k *funk) jumpTarget(n *a.While) (uint32, error) {
+func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
 	if k.jumpTargets == nil {
-		k.jumpTargets = map[*a.While]uint32{}
+		k.jumpTargets = map[a.Loop]uint32{}
 	}
 	if jt, ok := k.jumpTargets[n]; ok {
 		return jt, nil

@@ -112,7 +112,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KJump:
 		n := n.Jump()
-		jumpTarget := (*a.While)(nil)
+		jumpTarget := (a.Loop)(nil)
 		if id := n.Label(); id != 0 {
 			for i := len(q.jumpTargets) - 1; i >= 0; i-- {
 				if w := q.jumpTargets[i]; w.Label() == id {
@@ -128,7 +128,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if id := n.Label(); id != 0 {
 				sepStr, labelStr = ":", id.String(q.tm)
 			}
-			return fmt.Errorf("no matching while statement for %s%s%s",
+			return fmt.Errorf("no matching while/iterate statement for %s%s%s",
 				n.Keyword().String(q.tm), sepStr, labelStr)
 		}
 		if n.Keyword().Key() == t.KeyBreak {
@@ -208,10 +208,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				return err
 			}
 		}
-		for _, o := range n.Body() {
-			if err := q.tcheckStatement(o); err != nil {
-				return err
-			}
+		if err := q.tcheckLoop(n); err != nil {
+			return err
 		}
 
 	case a.KWhile:
@@ -224,20 +222,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
 				cond.String(q.tm), cond.MType().String(q.tm))
 		}
-		for _, o := range n.Asserts() {
-			if err := q.tcheckAssert(o.Assert()); err != nil {
-				return err
-			}
-			o.SetTypeChecked()
-		}
-		q.jumpTargets = append(q.jumpTargets, n)
-		defer func() {
-			q.jumpTargets = q.jumpTargets[:len(q.jumpTargets)-1]
-		}()
-		for _, o := range n.Body() {
-			if err := q.tcheckStatement(o); err != nil {
-				return err
-			}
+		if err := q.tcheckLoop(n); err != nil {
+			return err
 		}
 
 	default:
@@ -321,6 +307,25 @@ func (q *checker) tcheckArg(n *a.Arg, depth uint32) error {
 		return err
 	}
 	n.Node().SetTypeChecked()
+	return nil
+}
+
+func (q *checker) tcheckLoop(n a.Loop) error {
+	for _, o := range n.Asserts() {
+		if err := q.tcheckAssert(o.Assert()); err != nil {
+			return err
+		}
+		o.SetTypeChecked()
+	}
+	q.jumpTargets = append(q.jumpTargets, n)
+	defer func() {
+		q.jumpTargets = q.jumpTargets[:len(q.jumpTargets)-1]
+	}()
+	for _, o := range n.Body() {
+		if err := q.tcheckStatement(o); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

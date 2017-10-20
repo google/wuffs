@@ -578,11 +578,15 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		asserts, err := p.parseAsserts()
+		if err != nil {
+			return nil, err
+		}
 		body, err := p.parseBlock()
 		if err != nil {
 			return nil, err
 		}
-		return a.NewIterate(label, vars, body).Node(), nil
+		return a.NewIterate(label, vars, asserts, body).Node(), nil
 
 	case t.KeyWhile:
 		p.src = p.src[1:]
@@ -594,16 +598,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		asserts := []*a.Node(nil)
-		if p.peek1().Key() == t.KeyComma {
-			p.src = p.src[1:]
-			asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode)
-			if err != nil {
-				return nil, err
-			}
-			if err := p.assertsSorted(asserts); err != nil {
-				return nil, err
-			}
+		asserts, err := p.parseAsserts()
+		if err != nil {
+			return nil, err
 		}
 		body, err := p.parseBlock()
 		if err != nil {
@@ -658,6 +655,21 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 	}
 
 	return lhs.Node(), nil
+}
+
+func (p *parser) parseAsserts() ([]*a.Node, error) {
+	asserts := []*a.Node(nil)
+	if p.peek1().Key() == t.KeyComma {
+		p.src = p.src[1:]
+		var err error
+		if asserts, err = p.parseList(t.KeyOpenCurly, (*parser).parseAssertNode); err != nil {
+			return nil, err
+		}
+		if err := p.assertsSorted(asserts); err != nil {
+			return nil, err
+		}
+	}
+	return asserts, nil
 }
 
 func (p *parser) parseIf() (*a.If, error) {

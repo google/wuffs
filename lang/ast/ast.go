@@ -104,7 +104,7 @@ type Node struct {
 
 	constValue *big.Int
 	mType      *TypeExpr
-	jumpTarget *While
+	jumpTarget Loop
 
 	filename string
 	line     uint32
@@ -165,6 +165,17 @@ func (n *Node) Walk(f func(*Node) error) error {
 		}
 	}
 	return nil
+}
+
+type Loop interface {
+	Node() *Node
+	HasBreak() bool
+	HasContinue() bool
+	Label() t.ID
+	Asserts() []*Node
+	Body() []*Node
+	SetHasBreak()
+	SetHasContinue()
 }
 
 type Raw Node
@@ -382,11 +393,12 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 	}
 }
 
-// Iterate is "iterate:ID1 (vars) { List2 }":
+// Iterate is "iterate:ID1 (vars), List1 { List2 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID1:   <0|label>
 //  - List0: <Var> variables
+//  - List1: <Assert> asserts
 //  - List2: <Statement> loop body
 type Iterate Node
 
@@ -395,16 +407,18 @@ func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
 func (n *Iterate) Label() t.ID        { return n.id1 }
 func (n *Iterate) Variables() []*Node { return n.list0 }
+func (n *Iterate) Asserts() []*Node   { return n.list1 }
 func (n *Iterate) Body() []*Node      { return n.list2 }
 
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, variables []*Node, body []*Node) *Iterate {
+func NewIterate(label t.ID, variables []*Node, asserts []*Node, body []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id1:   label,
 		list0: variables,
+		list1: asserts,
 		list2: body,
 	}
 }
@@ -487,12 +501,12 @@ func NewReturn(keyword t.ID, message t.ID, value *Expr) *Return {
 //  - ID1:   <0|label>
 type Jump Node
 
-func (n *Jump) Node() *Node        { return (*Node)(n) }
-func (n *Jump) JumpTarget() *While { return n.jumpTarget }
-func (n *Jump) Keyword() t.ID      { return n.id0 }
-func (n *Jump) Label() t.ID        { return n.id1 }
+func (n *Jump) Node() *Node      { return (*Node)(n) }
+func (n *Jump) JumpTarget() Loop { return n.jumpTarget }
+func (n *Jump) Keyword() t.ID    { return n.id0 }
+func (n *Jump) Label() t.ID      { return n.id1 }
 
-func (n *Jump) SetJumpTarget(o *While) { n.jumpTarget = o }
+func (n *Jump) SetJumpTarget(o Loop) { n.jumpTarget = o }
 
 func NewJump(keyword t.ID, label t.ID) *Jump {
 	return &Jump{

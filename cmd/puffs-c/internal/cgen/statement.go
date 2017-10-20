@@ -258,6 +258,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.printf("uint8_t* %s%s = %sslice_%s.ptr;\n", vPrefix, name, iPrefix, name)
 		b.printf("uint8_t* %send_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
 			iPrefix, name, iPrefix, name, iPrefix, name)
+		// TODO: look at n.HasContinue().
 		b.printf("while (%s%s < %send_%s) {\n", vPrefix, name, iPrefix, name)
 		for _, o := range n.Body() {
 			if err := g.writeStatement(b, o, depth); err != nil {
@@ -265,6 +266,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			}
 		}
 		b.printf("%s%s++;\n}\n", vPrefix, name)
+		// TODO: look at n.HasBreak().
 
 		b.writes("}\n")
 		return nil
