@@ -59,27 +59,11 @@ pri func adler32.update(x[] u8)(checksum u32) {
 		if in.x.length() > 5552 {
 			remaining = in.x[5552:]
 			in.x = in.x[:5552]
-			// TODO: this redundant if should be unnecessary.
-			if in.x.length() > 5552 {
-				return 0  // Unreachable.
-			}
 		}
 
 		iterate (p ptr u8:in.x) {
-			// TODO: uncomment this loop body, and delete the while loop below.
-			// s1 ~+= deref p as u32
-			// s2 ~+= s1
-		}
-
-		// TODO: can u64 be u32? Does it matter?
-		var i u64
-		while i < in.x.length(),
-			inv in.x.length() <= 5552,
-		{
-			assert i < 5552 via "a < b: a < c; c <= b"(c:in.x.length())
-			s1 ~+= in.x[i] as u32
+			s1 ~+= deref p as u32
 			s2 ~+= s1
-			i += 1
 		}
 
 		s1 %= 65521

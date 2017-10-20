@@ -138,6 +138,8 @@ var opStrings = [256]string{
 	t.KeyXUnaryPlus:  "+",
 	t.KeyXUnaryMinus: "-",
 	t.KeyXUnaryNot:   "not ",
+	t.KeyXUnaryRef:   "ref ",
+	t.KeyXUnaryDeref: "deref ",
 
 	t.KeyXBinaryPlus:        " + ",
 	t.KeyXBinaryMinus:       " - ",

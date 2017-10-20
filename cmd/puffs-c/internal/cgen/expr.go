@@ -362,14 +362,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	switch n.ID0().Key() {
-	case t.KeyXUnaryPlus:
-		b.writeb('+')
-	case t.KeyXUnaryMinus:
-		b.writeb('-')
-	case t.KeyXUnaryNot:
-		b.writeb('!')
-	}
+	b.writes(cOpNames[0xFF&n.ID0().Key()])
 	return g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth)
 }
 
@@ -528,9 +521,11 @@ var cOpNames = [256]string{
 	t.KeyPercentEq:   " %= ",
 	t.KeyTildePlusEq: " += ",
 
-	t.KeyXUnaryPlus:  "+",
-	t.KeyXUnaryMinus: "-",
-	t.KeyXUnaryNot:   "!",
+	t.KeyXUnaryPlus:  " + ",
+	t.KeyXUnaryMinus: " - ",
+	t.KeyXUnaryNot:   " ! ",
+	t.KeyXUnaryRef:   " & ",
+	t.KeyXUnaryDeref: " * ",
 
 	t.KeyXBinaryPlus:        " + ",
 	t.KeyXBinaryMinus:       " - ",

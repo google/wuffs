@@ -208,10 +208,12 @@ const (
 	KeyGreaterThan = Key(IDGreaterThan >> KeyShift)
 
 	// TODO: sort these by name, when the list has stabilized.
-	KeyAnd = Key(IDAnd >> KeyShift)
-	KeyOr  = Key(IDOr >> KeyShift)
-	KeyNot = Key(IDNot >> KeyShift)
-	KeyAs  = Key(IDAs >> KeyShift)
+	KeyAnd   = Key(IDAnd >> KeyShift)
+	KeyOr    = Key(IDOr >> KeyShift)
+	KeyNot   = Key(IDNot >> KeyShift)
+	KeyAs    = Key(IDAs >> KeyShift)
+	KeyRef   = Key(IDRef >> KeyShift)
+	KeyDeref = Key(IDDeref >> KeyShift)
 
 	// TODO: sort these by name, when the list has stabilized.
 	KeyFunc       = Key(IDFunc >> KeyShift)
@@ -302,6 +304,8 @@ const (
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
 	KeyXUnaryNot   = Key(IDXUnaryNot >> KeyShift)
+	KeyXUnaryRef   = Key(IDXUnaryRef >> KeyShift)
+	KeyXUnaryDeref = Key(IDXUnaryDeref >> KeyShift)
 
 	KeyXBinaryPlus        = Key(IDXBinaryPlus >> KeyShift)
 	KeyXBinaryMinus       = Key(IDXBinaryMinus >> KeyShift)
@@ -390,10 +394,12 @@ const (
 	IDGreaterThan = ID(0x55<<KeyShift | FlagsBinaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDAnd = ID(0x58<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDOr  = ID(0x59<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDNot = ID(0x5A<<KeyShift | FlagsUnaryOp)
-	IDAs  = ID(0x5B<<KeyShift | FlagsBinaryOp)
+	IDAnd   = ID(0x58<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDOr    = ID(0x59<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDNot   = ID(0x5A<<KeyShift | FlagsUnaryOp)
+	IDAs    = ID(0x5B<<KeyShift | FlagsBinaryOp)
+	IDRef   = ID(0x5C<<KeyShift | FlagsUnaryOp)
+	IDDeref = ID(0x5D<<KeyShift | FlagsUnaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
 	IDFunc       = ID(0x60<<KeyShift | FlagsOther)
@@ -491,6 +497,8 @@ const (
 	IDXUnaryPlus  = ID(0xD0<<KeyShift | FlagsUnaryOp)
 	IDXUnaryMinus = ID(0xD1<<KeyShift | FlagsUnaryOp)
 	IDXUnaryNot   = ID(0xD2<<KeyShift | FlagsUnaryOp)
+	IDXUnaryRef   = ID(0xD3<<KeyShift | FlagsUnaryOp)
+	IDXUnaryDeref = ID(0xD4<<KeyShift | FlagsUnaryOp)
 
 	IDXBinaryPlus        = ID(0xD8<<KeyShift | FlagsBinaryOp)
 	IDXBinaryMinus       = ID(0xD9<<KeyShift | FlagsBinaryOp)
@@ -593,6 +601,8 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyNot: {"not", IDNot},
 	KeyAs:  {"as", IDAs},
 	// TODO: do we need a "~as" form of the as operator, similar to "~+".
+	KeyRef:   {"ref", IDRef},
+	KeyDeref: {"deref", IDDeref},
 
 	KeyFunc:       {"func", IDFunc},
 	KeyPtr:        {"ptr", IDPtr},
@@ -787,6 +797,8 @@ var ambiguousForms = [256]ID{
 	KeyXUnaryPlus:  IDPlus,
 	KeyXUnaryMinus: IDMinus,
 	KeyXUnaryNot:   IDNot,
+	KeyXUnaryRef:   IDRef,
+	KeyXUnaryDeref: IDDeref,
 
 	KeyXBinaryPlus:        IDPlus,
 	KeyXBinaryMinus:       IDMinus,
@@ -823,6 +835,8 @@ var unaryForms = [256]ID{
 	KeyPlus:  IDXUnaryPlus,
 	KeyMinus: IDXUnaryMinus,
 	KeyNot:   IDXUnaryNot,
+	KeyRef:   IDXUnaryRef,
+	KeyDeref: IDXUnaryDeref,
 }
 
 var binaryForms = [256]ID{

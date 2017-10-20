@@ -2425,7 +2425,6 @@ uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
   uint32_t v_s1;
   uint32_t v_s2;
   puffs_base_slice_u8 v_remaining;
-  uint64_t v_i;
 
   v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
   v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
@@ -2434,23 +2433,16 @@ uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
     if (((uint64_t)(a_x.len)) > 5552) {
       v_remaining = puffs_base_slice_u8_subslice_i(a_x, 5552);
       a_x = puffs_base_slice_u8_subslice_j(a_x, 5552);
-      if (((uint64_t)(a_x.len)) > 5552) {
-        return 0;
-      }
     }
     {
       puffs_base_slice_u8 i_slice_p = a_x;
-      uint8_t* i_ptr_p = i_slice_p.ptr;
+      uint8_t* v_p = i_slice_p.ptr;
       uint8_t* i_end_p = i_slice_p.ptr + i_slice_p.len;
-      while (i_ptr_p < i_end_p) {
-        i_ptr_p++;
+      while (v_p < i_end_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
       }
-    }
-    v_i = 0;
-    while (v_i < ((uint64_t)(a_x.len))) {
-      v_s1 += ((uint32_t)(a_x.ptr[v_i]));
-      v_s2 += v_s1;
-      v_i += 1;
     }
     v_s1 %= 65521;
     v_s2 %= 65521;

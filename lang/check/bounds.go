@@ -920,6 +920,8 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 		return neg(rMax), neg(rMin), nil
 	case t.KeyXUnaryNot:
 		return zero, one, nil
+	case t.KeyXUnaryRef, t.KeyXUnaryDeref:
+		return q.bcheckTypeExpr(n.MType())
 	}
 
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
