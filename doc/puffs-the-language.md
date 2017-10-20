@@ -58,7 +58,8 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 
 - `limit`
 
-TODO: categorize and, or, not, as, false, true, in, out, this, u8, u16, etc.
+TODO: categorize and, or, not, as, ref, deref, false, true, in, out, this, u8,
+u16, etc.
 
 
 ## Operators
