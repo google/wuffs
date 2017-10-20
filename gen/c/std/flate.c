@@ -2437,8 +2437,35 @@ uint32_t puffs_flate_adler32_update(puffs_flate_adler32* self,
     {
       puffs_base_slice_u8 i_slice_p = a_x;
       uint8_t* v_p = i_slice_p.ptr;
-      uint8_t* i_end_p = i_slice_p.ptr + i_slice_p.len;
-      while (v_p < i_end_p) {
+      uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+      while (v_p < i_end0_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+      }
+      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p < i_end1_p) {
         v_s1 += ((uint32_t)(*v_p));
         v_s2 += v_s1;
         v_p++;

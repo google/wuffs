@@ -203,6 +203,13 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		n := n.Iterate()
+		unroll := n.UnrollCount()
+		if err := q.tcheckExpr(unroll, 0); err != nil {
+			return err
+		}
+		if cv := unroll.ConstValue(); cv == nil {
+			return fmt.Errorf("check: unroll count %q is not constant", unroll.String(q.tm))
+		}
 		for _, o := range n.Variables() {
 			if err := q.tcheckStatement(o); err != nil {
 				return err

@@ -570,6 +570,26 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyIterate:
 		p.src = p.src[1:]
+		if x := p.peek1().Key(); x != t.KeyDot {
+			got := p.tm.ByKey(x)
+			return nil, fmt.Errorf(`parse: expected ".", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		unrollID := p.peek1()
+		unrollStr := p.tm.ByKey(unrollID.Key())
+		if !unrollID.IsLiteral() {
+			return nil, fmt.Errorf(`parse: expected literal unroll count, got %q at %s:%d`,
+				unrollStr, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		switch unrollStr {
+		default:
+			return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1..256], got %q at %s:%d`,
+				unrollStr, p.filename, p.line())
+		case "1", "2", "4", "8", "16", "32", "64", "128", "256":
+		}
+		unroll := a.NewExpr(0, 0, unrollID, nil, nil, nil, nil)
+
 		label, err := p.parseLabel()
 		if err != nil {
 			return nil, err
@@ -586,7 +606,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewIterate(label, vars, asserts, body).Node(), nil
+		return a.NewIterate(label, unroll, vars, asserts, body).Node(), nil
 
 	case t.KeyWhile:
 		p.src = p.src[1:]
