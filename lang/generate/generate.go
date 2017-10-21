@@ -16,8 +16,10 @@ package generate
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/google/puffs/lang/ast"
 	"github.com/google/puffs/lang/check"
@@ -33,6 +35,10 @@ func Do(args []string, g Generator) error {
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
+	pkgName := checkPackageName(*packageName)
+	if pkgName == "" {
+		return fmt.Errorf("prohibited package name %q", *packageName)
+	}
 	args = flags.Args()
 
 	tm := &token.Map{}
@@ -46,7 +52,7 @@ func Do(args []string, g Generator) error {
 		return err
 	}
 
-	out, err := g(*packageName, tm, c, files)
+	out, err := g(pkgName, tm, c, files)
 	if err != nil {
 		return err
 	}
@@ -55,6 +61,26 @@ func Do(args []string, g Generator) error {
 		return err
 	}
 	return nil
+}
+
+func checkPackageName(s string) string {
+	allUnderscores := true
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || (c == '_') || ('0' <= c && c <= '9') {
+			allUnderscores = allUnderscores && c == '_'
+		} else {
+			return ""
+		}
+	}
+	if allUnderscores {
+		return ""
+	}
+	s = strings.ToLower(s)
+	if s == "base" || s == "base_header" || s == "base_impl" {
+		return ""
+	}
+	return s
 }
 
 func parseFiles(tm *token.Map, args []string) (files []*ast.File, err error) {
