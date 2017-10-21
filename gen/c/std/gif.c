@@ -48,15 +48,15 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_slice_u8 is a 1-dimensional buffer (a pointer and length).
+// puffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
 typedef struct {
   uint8_t* ptr;
   size_t len;
-} puffs_base_slice_u8;
+} puffs_base__slice_u8;
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length), plus
+// puffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
 // additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
@@ -66,28 +66,28 @@ typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   bool closed;   // No further writes are expected.
-} puffs_base_buf1;
+} puffs_base__buf1;
 
-// puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
+// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
 // written to the stream.
 //
 // A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base_limit1 {
-  uint64_t* ptr_to_len;            // Pointer to N.
-  struct puffs_base_limit1* next;  // Linked list of limits.
-} puffs_base_limit1;
+typedef struct puffs_base__limit1 {
+  uint64_t* ptr_to_len;             // Pointer to N.
+  struct puffs_base__limit1* next;  // Linked list of limits.
+} puffs_base__limit1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_reader1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__reader1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_writer1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__writer1;
 
 #endif  // PUFFS_BASE_HEADER_H
 
@@ -217,7 +217,7 @@ typedef struct {
       uint8_t v_lw;
       uint8_t v_block_size;
       uint64_t l_lzw_src;
-      puffs_base_reader1 v_lzw_src;
+      puffs_base__reader1 v_lzw_src;
     } c_decode_id[1];
   } private_impl;
 } puffs_gif__decoder;
@@ -245,15 +245,15 @@ void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
 // ---------------- Public Function Prototypes
 
 puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
-                                             puffs_base_writer1 a_dst,
-                                             puffs_base_reader1 a_src);
+                                             puffs_base__writer1 a_dst,
+                                             puffs_base__reader1 a_src);
 
 void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
                                                uint32_t a_lw);
 
 puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
-                                                 puffs_base_writer1 a_dst,
-                                                 puffs_base_reader1 a_src);
+                                                 puffs_base__writer1 a_dst,
+                                                 puffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -280,51 +280,51 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
+#define PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
-// PUFFS_MAGIC is a magic number to check that initializers are called. It's
-// not foolproof, given C doesn't automatically zero memory before use, but it
-// should catch 99.99% of cases.
+// PUFFS_BASE__MAGIC is a magic number to check that initializers are called.
+// It's not foolproof, given C doesn't automatically zero memory before use,
+// but it should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
-#define PUFFS_MAGIC (0xCB3699CCU)
+#define PUFFS_BASE__MAGIC (0xCB3699CCU)
 
-// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
-// containee struct's initializer when the container has already zeroed the
-// containee's memory.
+// PUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
+// to a containee struct's initializer when the container has already zeroed
+// the containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
+#define PUFFS_BASE__ALREADY_ZEROED (0x68602EF1U)
 
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
-  coro_susp_point = n;                      \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
+  coro_susp_point = n;                            \
   case n:;
 
-#define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status < 0) {                                       \
-    goto exit;                                            \
-  } else if (status == 0) {                               \
-    goto ok;                                              \
-  }                                                       \
-  coro_susp_point = n;                                    \
-  goto suspend;                                           \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
+  if (status < 0) {                                             \
+    goto exit;                                                  \
+  } else if (status == 0) {                                     \
+    goto ok;                                                    \
+  }                                                             \
+  coro_susp_point = n;                                          \
+  goto suspend;                                                 \
   case n:;
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
-#define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
-#define PUFFS_UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
+#define PUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
+#define PUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 // Declare the printf prototype. The generated code shouldn't need this at all,
 // but it's useful for manual printf debugging.
 extern int printf(const char* __restrict __format, ...);
 #else
-#define PUFFS_LIKELY(expr) (expr)
-#define PUFFS_UNLIKELY(expr) (expr)
+#define PUFFS_BASE__LIKELY(expr) (expr)
+#define PUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
 
 // ---------------- Static Inline Functions
@@ -345,59 +345,61 @@ extern int printf(const char* __restrict __format, ...);
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-static inline uint16_t puffs_base_load_u16be(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
 }
 
-static inline uint16_t puffs_base_load_u16le(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16le(uint8_t* p) {
   return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
 }
 
-static inline uint32_t puffs_base_load_u32be(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32be(uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
 
-static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32le(uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_i(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_i(
+    puffs_base__slice_u8 s,
     uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = s.len - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_j(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_j(
+    puffs_base__slice_u8 s,
     uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){.ptr = s.ptr, .len = j});
+    return ((puffs_base__slice_u8){.ptr = s.ptr, .len = j});
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8
-puffs_base_slice_u8_subslice_ij(puffs_base_slice_u8 s, uint64_t i, uint64_t j) {
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_ij(
+    puffs_base__slice_u8 s,
+    uint64_t i,
+    uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = j - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-// puffs_base_slice_u8_prefix returns up to the first up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8__prefix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.len = up_to;
@@ -405,9 +407,9 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
   return s;
 }
 
-// puffs_base_slice_u8_suffix returns up to the last up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8_suffix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.ptr += (uint64_t)(s.len) - up_to;
@@ -416,14 +418,14 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
-// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, length)
-// where length is the minimum of dst.len and src.len.
+// puffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr,
+// length) where length is the minimum of dst.len and src.len.
 //
-// Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
+// Passing a puffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline uint64_t puffs_base_slice_u8_copy_from_slice(
-    puffs_base_slice_u8 dst,
-    puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base__slice_u8__copy_from_slice(
+    puffs_base__slice_u8 dst,
+    puffs_base__slice_u8 src) {
   size_t length = dst.len < src.len ? dst.len : src.len;
   if (length > 0) {
     memmove(dst.ptr, src.ptr, length);
@@ -431,11 +433,12 @@ static inline uint64_t puffs_base_slice_u8_copy_from_slice(
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
-                                                              uint8_t* start,
-                                                              uint8_t* end,
-                                                              uint32_t distance,
-                                                              uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_history32(
+    uint8_t** ptr_ptr,
+    uint8_t* start,
+    uint8_t* end,
+    uint32_t distance,
+    uint32_t length) {
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {
@@ -466,11 +469,12 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
-                                                             uint8_t* wend,
-                                                             uint8_t** ptr_rptr,
-                                                             uint8_t* rend,
-                                                             uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_reader32(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    uint8_t** ptr_rptr,
+    uint8_t* rend,
+    uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = length;
   if (n > wend - wptr) {
@@ -488,10 +492,10 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
   return n;
 }
 
-static inline uint64_t puffs_base_writer1_copy_from_slice(
+static inline uint64_t puffs_base__writer1__copy_from_slice(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src) {
+    puffs_base__slice_u8 src) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;
   if (n > wend - wptr) {
@@ -504,10 +508,10 @@ static inline uint64_t puffs_base_writer1_copy_from_slice(
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_slice32(
+static inline uint32_t puffs_base__writer1__copy_from_slice32(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src,
+    puffs_base__slice_u8 src,
     uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;
@@ -578,18 +582,18 @@ const char* puffs_gif__status__string(puffs_gif__status s) {
 // ---------------- Private Function Prototypes
 
 puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
-                                                    puffs_base_reader1 a_src);
+                                                    puffs_base__reader1 a_src);
 
 puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
-                                                 puffs_base_reader1 a_src);
+                                                 puffs_base__reader1 a_src);
 
 puffs_gif__status puffs_gif__decoder__decode_extension(
     puffs_gif__decoder* self,
-    puffs_base_reader1 a_src);
+    puffs_base__reader1 a_src);
 
 puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
-                                                puffs_base_writer1 a_dst,
-                                                puffs_base_reader1 a_src);
+                                                puffs_base__writer1 a_dst,
+                                                puffs_base__reader1 a_src);
 
 // ---------------- Initializer Implementations
 
@@ -603,10 +607,10 @@ void puffs_gif__lzw_decoder__initialize(puffs_gif__lzw_decoder* self,
     self->private_impl.status = PUFFS_GIF__ERROR_BAD_PUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+  if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.magic = PUFFS_BASE__MAGIC;
   self->private_impl.f_literal_width = 8;
 }
 
@@ -620,23 +624,23 @@ void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
     self->private_impl.status = PUFFS_GIF__ERROR_BAD_PUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+  if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.magic = PUFFS_BASE__MAGIC;
   puffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw, PUFFS_VERSION,
-                                     PUFFS_ALREADY_ZEROED);
+                                     PUFFS_BASE__ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
 
 puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
-                                             puffs_base_writer1 a_dst,
-                                             puffs_base_reader1 a_src) {
+                                             puffs_base__writer1 a_dst,
+                                             puffs_base__reader1 a_src) {
   if (!self) {
     return PUFFS_GIF__ERROR_BAD_RECEIVER;
   }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_BASE__MAGIC) {
     self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
@@ -653,7 +657,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -667,13 +671,13 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     v_c = self->private_impl.c_decode[0].v_c;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (a_src.buf) {
       size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
       a_src.buf->ri += n;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_src.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
           *lim->ptr_to_len -= n;
@@ -684,7 +688,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       size_t len = a_src.buf->wi - a_src.buf->ri;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_src.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -695,11 +699,11 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     if (status) {
       goto suspend;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(2);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
     if (a_src.buf) {
       size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
       a_src.buf->ri += n;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_src.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
           *lim->ptr_to_len -= n;
@@ -710,7 +714,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       size_t len = a_src.buf->wi - a_src.buf->ri;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_src.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -722,18 +726,18 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       goto suspend;
     }
     while (true) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(3);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
       v_c = t_0;
       if (v_c == 33) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
               *lim->ptr_to_len -= n;
@@ -744,7 +748,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -756,11 +760,11 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
           goto suspend;
         }
       } else if (v_c == 44) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(5);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
               *lim->ptr_to_len -= n;
@@ -771,7 +775,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -806,14 +810,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   self->private_impl.status = status;
@@ -829,7 +833,7 @@ short_read_src:
 }
 
 puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
-                                                    puffs_base_reader1 a_src) {
+                                                    puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[6];
@@ -842,7 +846,7 @@ puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -858,13 +862,13 @@ puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
     v_i = self->private_impl.c_decode_header[0].v_i;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 6) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
@@ -893,14 +897,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -915,7 +919,7 @@ short_read_src:
 }
 
 puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
-                                                 puffs_base_reader1 a_src) {
+                                                 puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[7];
@@ -929,7 +933,7 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -945,13 +949,13 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
     v_gct_size = self->private_impl.c_decode_lsd[0].v_gct_size;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 7) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
@@ -967,20 +971,20 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
       v_gct_size = (((uint32_t)(1)) << (1 + (v_c[4] & 7)));
       v_i = 0;
       while (v_i < v_gct_size) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(2);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_1 = *b_rptr_src++;
         self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
-        PUFFS_COROUTINE_SUSPENSION_POINT(3);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_2 = *b_rptr_src++;
         self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_3 = *b_rptr_src++;
@@ -1006,14 +1010,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1029,7 +1033,7 @@ short_read_src:
 
 puffs_gif__status puffs_gif__decoder__decode_extension(
     puffs_gif__decoder* self,
-    puffs_base_reader1 a_src) {
+    puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_label;
@@ -1042,7 +1046,7 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1058,10 +1062,10 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
     v_block_size = self->private_impl.c_decode_extension[0].v_block_size;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+    if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
       goto short_read_src;
     }
     uint8_t t_0 = *b_rptr_src++;
@@ -1075,8 +1079,8 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
       goto exit;
     }
     while (true) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(2);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_1 = *b_rptr_src++;
@@ -1084,10 +1088,10 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
       if (v_block_size == 0) {
         goto label_0_break;
       }
-      PUFFS_COROUTINE_SUSPENSION_POINT(3);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       self->private_impl.c_decode_extension[0].scratch =
           ((uint32_t)(v_block_size));
-      PUFFS_COROUTINE_SUSPENSION_POINT(4);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (self->private_impl.c_decode_extension[0].scratch >
           b_rend_src - b_rptr_src) {
         self->private_impl.c_decode_extension[0].scratch -=
@@ -1115,14 +1119,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1137,8 +1141,8 @@ short_read_src:
 }
 
 puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
-                                                puffs_base_writer1 a_dst,
-                                                puffs_base_reader1 a_src) {
+                                                puffs_base__writer1 a_dst,
+                                                puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[9];
@@ -1147,7 +1151,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
   uint8_t v_lw;
   uint8_t v_block_size;
   uint64_t l_lzw_src;
-  puffs_base_reader1 v_lzw_src;
+  puffs_base__reader1 v_lzw_src;
 
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
@@ -1156,7 +1160,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1176,13 +1180,13 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     v_lzw_src = self->private_impl.c_decode_id[0].v_lzw_src;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 9) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
@@ -1196,8 +1200,8 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
       status = PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
       goto exit;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(2);
-    if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+    if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
       goto short_read_src;
     }
     uint8_t t_1 = *b_rptr_src++;
@@ -1209,8 +1213,8 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     puffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
                                               ((uint32_t)(v_lw)));
     while (true) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(3);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_2 = *b_rptr_src++;
@@ -1219,16 +1223,16 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
         goto label_0_break;
       }
       l_lzw_src = ((uint64_t)(v_block_size));
-      v_lzw_src = (puffs_base_reader1){.buf = a_src.buf,
-                                       .limit = (puffs_base_limit1){
-                                           .ptr_to_len = &l_lzw_src,
-                                           .next = &a_src.limit,
-                                       }};
-      PUFFS_COROUTINE_SUSPENSION_POINT(4);
+      v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
+                                        .limit = (puffs_base__limit1){
+                                            .ptr_to_len = &l_lzw_src,
+                                            .next = &a_src.limit,
+                                        }};
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
             *lim->ptr_to_len -= n;
@@ -1240,7 +1244,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
             len = *lim->ptr_to_len;
@@ -1275,14 +1279,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1301,7 +1305,7 @@ void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
   if (!self) {
     return;
   }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_BASE__MAGIC) {
     self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
@@ -1316,12 +1320,12 @@ void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
 }
 
 puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
-                                                 puffs_base_writer1 a_dst,
-                                                 puffs_base_reader1 a_src) {
+                                                 puffs_base__writer1 a_dst,
+                                                 puffs_base__reader1 a_src) {
   if (!self) {
     return PUFFS_GIF__ERROR_BAD_RECEIVER;
   }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_BASE__MAGIC) {
     self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
@@ -1339,7 +1343,7 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
   uint32_t v_code;
   uint32_t v_s;
   uint32_t v_c;
-  puffs_base_slice_u8 v_expansion;
+  puffs_base__slice_u8 v_expansion;
   uint64_t v_n_copied;
 
   uint8_t* b_wptr_dst = NULL;
@@ -1351,7 +1355,7 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -1367,7 +1371,7 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1388,11 +1392,11 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
     v_code = self->private_impl.c_decode[0].v_code;
     v_s = self->private_impl.c_decode[0].v_s;
     v_c = self->private_impl.c_decode[0].v_c;
-    v_expansion = ((puffs_base_slice_u8){});
+    v_expansion = ((puffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
     v_end_code = (v_clear_code + 1);
@@ -1404,8 +1408,8 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
   label_0_continue:;
     while (true) {
       while (v_n_bits < v_width) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(1);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_0 = *b_rptr_src++;
@@ -1416,7 +1420,7 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
       v_bits >>= v_width;
       v_n_bits -= v_width;
       if (v_code < v_clear_code) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(2);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         if (b_wptr_dst == b_wend_dst) {
           status = PUFFS_GIF__SUSPENSION_SHORT_WRITE;
           goto suspend;
@@ -1456,18 +1460,18 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
           self->private_impl.f_stack[4095] = ((uint8_t)(v_c));
         }
         while (true) {
-          v_expansion = puffs_base_slice_u8_subslice_i(
-              ((puffs_base_slice_u8){.ptr = self->private_impl.f_stack,
-                                     .len = 4096}),
+          v_expansion = puffs_base__slice_u8__subslice_i(
+              ((puffs_base__slice_u8){.ptr = self->private_impl.f_stack,
+                                      .len = 4096}),
               v_s);
-          v_n_copied = puffs_base_writer1_copy_from_slice(
+          v_n_copied = puffs_base__writer1__copy_from_slice(
               &b_wptr_dst, b_wend_dst, v_expansion);
           if (v_n_copied == ((uint64_t)(v_expansion.len))) {
             goto label_1_break;
           }
           v_s = ((v_s + ((uint32_t)((v_n_copied & 4095)))) & 4095);
           status = PUFFS_GIF__SUSPENSION_SHORT_WRITE;
-          PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
       label_1_break:;
         if (v_save_code <= 4095) {
@@ -1513,26 +1517,26 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   self->private_impl.status = status;

@@ -156,7 +156,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isThatMethod(g.tm, n, t.KeySuffix, 1) {
 			// TODO: don't assume that the slice is a slice of u8.
-			b.writes("puffs_base_slice_u8_suffix(")
+			b.writes("puffs_base__slice_u8_suffix(")
 			x := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
 				return err
@@ -169,12 +169,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySlice, 0) {
-			b.printf("((puffs_base_slice_u8){ .ptr = %swstart_dst, .len = %swptr_dst - %swstart_dst, })",
+			b.printf("((puffs_base__slice_u8){ .ptr = %swstart_dst, .len = %swptr_dst - %swstart_dst, })",
 				bPrefix, bPrefix, bPrefix)
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
-			b.printf("puffs_base_writer1_copy_from_reader32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			b.printf("puffs_base__writer1__copy_from_reader32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			// TODO: don't assume that the first argument is "in.src".
 			b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
 			a := n.Args()[1].Arg().Value()
@@ -185,7 +185,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromHistory32, 2) {
-			b.printf("puffs_base_writer1_copy_from_history32(&%swptr_dst, %swstart_dst, %swend_dst",
+			b.printf("puffs_base__writer1__copy_from_history32(&%swptr_dst, %swstart_dst, %swend_dst",
 				bPrefix, bPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
@@ -197,7 +197,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromSlice32, 2) {
-			b.printf("puffs_base_writer1_copy_from_slice32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			b.printf("puffs_base__writer1__copy_from_slice32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
@@ -208,7 +208,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
-			b.printf("puffs_base_writer1_copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
+			b.printf("puffs_base__writer1__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
 				return err
@@ -217,7 +217,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeyCopyFromSlice, 1) {
-			b.writes("puffs_base_slice_u8_copy_from_slice(")
+			b.writes("puffs_base__slice_u8__copy_from_slice(")
 			receiver := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, receiver, rp, parenthesesOptional, depth); err != nil {
 				return err
@@ -310,17 +310,17 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		rhs := n.RHS().Expr()
 		switch {
 		case mhs != nil && rhs == nil:
-			b.writes("puffs_base_slice_u8_subslice_i(")
+			b.writes("puffs_base__slice_u8__subslice_i(")
 		case mhs == nil && rhs != nil:
-			b.writes("puffs_base_slice_u8_subslice_j(")
+			b.writes("puffs_base__slice_u8__subslice_j(")
 		case mhs != nil && rhs != nil:
-			b.writes("puffs_base_slice_u8_subslice_ij(")
+			b.writes("puffs_base__slice_u8__subslice_ij(")
 		}
 
 		lhsIsArray := lhs.MType().Decorator().Key() == t.KeyOpenBracket
 		if lhsIsArray {
 			// TODO: don't assume that the slice is a slice of u8.
-			b.writes("((puffs_base_slice_u8){.ptr=")
+			b.writes("((puffs_base__slice_u8){.ptr=")
 		}
 		if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
 			return err
@@ -368,9 +368,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 
 	case t.KeyLimit:
 		// TODO: don't hard code so much detail.
-		b.writes("(puffs_base_reader1) {")
+		b.writes("(puffs_base__reader1) {")
 		b.writes(".buf = a_src.buf,")
-		b.writes(".limit = (puffs_base_limit1) {")
+		b.writes(".limit = (puffs_base__limit1) {")
 		b.printf(".ptr_to_len = &%s%s,", lPrefix, g.currFunk.limitVarName)
 		b.writes(".next = &a_src.limit,")
 		b.writes("}}")
@@ -449,7 +449,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	if n.Decorator().Key() == t.KeyColon {
 		o := n.Inner()
 		if o.Decorator() == 0 && o.Name().Key() == t.KeyU8 && !o.IsRefined() {
-			b.writes("puffs_base_slice_u8")
+			b.writes("puffs_base__slice_u8")
 			b.writeb(' ')
 			b.writes(varNamePrefix)
 			b.writes(varName)
@@ -519,10 +519,10 @@ var cTypeNames = [...]string{
 	t.KeyU64:     "uint64_t",
 	t.KeyUsize:   "size_t",
 	t.KeyBool:    "bool",
-	t.KeyBuf1:    "puffs_base_buf1",
-	t.KeyReader1: "puffs_base_reader1",
-	t.KeyWriter1: "puffs_base_writer1",
-	t.KeyBuf2:    "puffs_base_buf2",
+	t.KeyBuf1:    "puffs_base__buf1",
+	t.KeyReader1: "puffs_base__reader1",
+	t.KeyWriter1: "puffs_base__writer1",
+	t.KeyBuf2:    "puffs_base__buf2",
 }
 
 var cOpNames = [256]string{

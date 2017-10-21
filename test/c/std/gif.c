@@ -73,8 +73,8 @@ void test_basic_bad_argument_out_of_range() {
 
 void test_basic_bad_receiver() {
   proc_funcname = __func__;
-  puffs_base_writer1 dst = {0};
-  puffs_base_reader1 src = {0};
+  puffs_base__writer1 dst = {0};
+  puffs_base__reader1 src = {0};
   puffs_gif__status status = puffs_gif__lzw_decoder__decode(NULL, dst, src);
   if (status != PUFFS_GIF__ERROR_BAD_RECEIVER) {
     FAIL("status: got %d, want %d", status, PUFFS_GIF__ERROR_BAD_RECEIVER);
@@ -84,8 +84,8 @@ void test_basic_bad_receiver() {
 void test_basic_initializer_not_called() {
   proc_funcname = __func__;
   puffs_gif__lzw_decoder dec = {{0}};
-  puffs_base_writer1 dst = {0};
-  puffs_base_reader1 src = {0};
+  puffs_base__writer1 dst = {0};
+  puffs_base__reader1 src = {0};
   puffs_gif__status status = puffs_gif__lzw_decoder__decode(&dec, dst, src);
   if (status != PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED) {
     FAIL("status: got %d, want %d", status,
@@ -108,8 +108,8 @@ void test_basic_puffs_version_good() {
   proc_funcname = __func__;
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
-  if (dec.private_impl.magic != PUFFS_MAGIC) {
-    FAIL("magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
+  if (dec.private_impl.magic != PUFFS_BASE__MAGIC) {
+    FAIL("magic: got %u, want %u", dec.private_impl.magic, PUFFS_BASE__MAGIC);
     return;
   }
   if (dec.private_impl.f_literal_width != 8) {
@@ -179,13 +179,14 @@ void test_basic_sub_struct_initializer() {
   proc_funcname = __func__;
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  if (dec.private_impl.magic != PUFFS_MAGIC) {
-    FAIL("outer magic: got %u, want %u", dec.private_impl.magic, PUFFS_MAGIC);
+  if (dec.private_impl.magic != PUFFS_BASE__MAGIC) {
+    FAIL("outer magic: got %u, want %u", dec.private_impl.magic,
+         PUFFS_BASE__MAGIC);
     return;
   }
-  if (dec.private_impl.f_lzw.private_impl.magic != PUFFS_MAGIC) {
+  if (dec.private_impl.f_lzw.private_impl.magic != PUFFS_BASE__MAGIC) {
     FAIL("inner magic: got %u, want %u",
-         dec.private_impl.f_lzw.private_impl.magic, PUFFS_MAGIC);
+         dec.private_impl.f_lzw.private_impl.magic, PUFFS_BASE__MAGIC);
     return;
   }
 }
@@ -198,9 +199,9 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
                                   uint64_t want_size,
                                   uint64_t wlimit,
                                   uint64_t rlimit) {
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, src_filename)) {
     return false;
@@ -228,8 +229,8 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
   puffs_gif__lzw_decoder__set_literal_width(&dec, literal_width);
-  puffs_base_writer1 got_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 got_writer = {.buf = &got};
+  puffs_base__reader1 src_reader = {.buf = &src};
   int num_iters = 0;
   while (true) {
     num_iters++;
@@ -331,10 +332,10 @@ void test_puffs_gif_lzw_decode_pi() {
 // ---------------- LZW Benches
 
 bool do_bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
-  puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_writer1 dst_writer = {.buf = &dst};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__writer1 dst_writer = {.buf = &dst};
+  puffs_base__reader1 src_reader = {.buf = &src};
 
   if (!read_file(&src, filename)) {
     return false;
@@ -382,11 +383,11 @@ void bench_puffs_gif_lzw_decode_100k() {
 
 // ---------------- GIF Tests
 
-const char* puffs_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* puffs_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 dst_writer = {.buf = dst};
-  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_base__writer1 dst_writer = {.buf = dst};
+  puffs_base__reader1 src_reader = {.buf = src};
   puffs_gif__status s =
       puffs_gif__decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
@@ -400,8 +401,8 @@ bool do_test_puffs_gif_decode(const char* filename,
                               const char* indexes_filename,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
     return false;
@@ -409,8 +410,8 @@ bool do_test_puffs_gif_decode(const char* filename,
 
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 got_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 got_writer = {.buf = &got};
+  puffs_base__reader1 src_reader = {.buf = &src};
   int num_iters = 0;
   while (true) {
     num_iters++;
@@ -483,8 +484,8 @@ bool do_test_puffs_gif_decode(const char* filename,
   }
 
   // TODO: provide a public API for getting the palette.
-  puffs_base_buf1 pal_got = {.ptr = dec.private_impl.f_gct, .len = 3 * 256};
-  puffs_base_buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
+  puffs_base__buf1 pal_got = {.ptr = dec.private_impl.f_gct, .len = 3 * 256};
+  puffs_base__buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
   pal_got.wi = 3 * 256;
   if (!read_file(&pal_want, palette_filename)) {
     return false;
@@ -493,7 +494,7 @@ bool do_test_puffs_gif_decode(const char* filename,
     return false;
   }
 
-  puffs_base_buf1 ind_want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 ind_want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   if (!read_file(&ind_want, indexes_filename)) {
     return false;
   }
@@ -533,8 +534,8 @@ void test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
 void test_puffs_gif_decode_input_is_a_png() {
   proc_funcname = __func__;
 
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, "../../testdata/bricks-dither.png")) {
     return;
@@ -542,8 +543,8 @@ void test_puffs_gif_decode_input_is_a_png() {
 
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 got_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 got_writer = {.buf = &got};
+  puffs_base__reader1 src_reader = {.buf = &src};
 
   puffs_gif__status status =
       puffs_gif__decoder__decode(&dec, got_writer, src_reader);
@@ -562,13 +563,13 @@ void test_puffs_gif_decode_input_is_a_png() {
 #include "../mimiclib/gif.c"
 
 bool do_test_mimic_gif_decode(const char* filename) {
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   if (!read_file(&src, filename)) {
     return false;
   }
 
   src.ri = 0;
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   const char* got_msg = puffs_gif_decode(&got, &src);
   if (got_msg) {
     FAIL("%s", got_msg);
@@ -576,7 +577,7 @@ bool do_test_mimic_gif_decode(const char* filename) {
   }
 
   src.ri = 0;
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   const char* want_msg = mimic_gif_decode(&want, &src);
   if (want_msg) {
     FAIL("%s", want_msg);
@@ -631,12 +632,12 @@ void test_mimic_gif_decode_pjw_thumbnail() {
 
 // ---------------- GIF Benches
 
-bool do_bench_gif_decode(const char* (*decode_func)(puffs_base_buf1*,
-                                                    puffs_base_buf1*),
+bool do_bench_gif_decode(const char* (*decode_func)(puffs_base__buf1*,
+                                                    puffs_base__buf1*),
                          const char* filename,
                          uint64_t reps) {
-  puffs_base_buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
     return false;

@@ -181,10 +181,10 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-// PUFFS_BASE_HEADER_H is where puffs_base_buf1 is defined.
+// PUFFS_BASE_HEADER_H is where puffs_base__buf1 is defined.
 #ifdef PUFFS_BASE_HEADER_H
 
-bool read_file(puffs_base_buf1* dst, const char* path) {
+bool read_file(puffs_base__buf1* dst, const char* path) {
   if (!dst || !path) {
     FAIL("read_file: NULL argument");
     return false;
@@ -239,7 +239,7 @@ bool read_file(puffs_base_buf1* dst, const char* path) {
   return true;
 }
 
-char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
+char* hex_dump(char* msg, puffs_base__buf1* buf, size_t i) {
   if (!msg || !buf) {
     FAIL("hex_dump: NULL argument");
     return false;
@@ -290,8 +290,8 @@ char* hex_dump(char* msg, puffs_base_buf1* buf, size_t i) {
 }
 
 bool buf1s_equal(const char* prefix,
-                 puffs_base_buf1* got,
-                 puffs_base_buf1* want) {
+                 puffs_base__buf1* got,
+                 puffs_base__buf1* want) {
   if (!got || !want) {
     FAIL("%sbuf1s_equal: NULL argument", prefix);
     return false;
@@ -328,8 +328,8 @@ typedef enum {
   tc_src = 2,
 } throughput_counter;
 
-bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                              puffs_base_buf1*,
+bool proc_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
+                                              puffs_base__buf1*,
                                               uint64_t,
                                               uint64_t),
                     throughput_counter tc,
@@ -347,9 +347,9 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
     return false;
   }
 
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
   if (!gt->src_filename) {
     src.closed = true;
@@ -409,8 +409,8 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   return true;
 }
 
-bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                                  puffs_base_buf1*,
+bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
+                                                  puffs_base__buf1*,
                                                   uint64_t,
                                                   uint64_t),
                         throughput_counter tc,
@@ -421,8 +421,8 @@ bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
   return proc_buf1_buf1(codec_func, tc, gt, wlimit, rlimit, reps, true);
 }
 
-bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base_buf1*,
-                                                 puffs_base_buf1*,
+bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
+                                                 puffs_base__buf1*,
                                                  uint64_t,
                                                  uint64_t),
                        golden_test* gt,

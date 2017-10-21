@@ -168,7 +168,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		}
 		b.writes("}")
 
-		b.printf("if (self->private_impl.magic != PUFFS_MAGIC) {"+
+		b.printf("if (self->private_impl.magic != PUFFS_BASE__MAGIC) {"+
 			"self->private_impl.status = %sERROR_INITIALIZER_NOT_CALLED; }", g.PKGPREFIX)
 
 		b.writes("if (self->private_impl.status < 0) {")
@@ -226,7 +226,7 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 		//
 		// The matching } is written below. See "Close the coroutine switch".
-		b.writes("switch (coro_susp_point) {\nPUFFS_COROUTINE_SUSPENSION_POINT(0);\n\n")
+		b.writes("switch (coro_susp_point) {\nPUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);\n\n")
 	}
 	return nil
 }

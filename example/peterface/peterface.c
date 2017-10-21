@@ -47,11 +47,11 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
-  puffs_base_buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-  puffs_base_buf1 src = {
+  puffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  puffs_base__buf1 src = {
       .ptr = pjw_ptr, .len = pjw_len, .wi = pjw_len, .closed = true};
-  puffs_base_writer1 dst_writer = {.buf = &dst};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 dst_writer = {.buf = &dst};
+  puffs_base__reader1 src_reader = {.buf = &src};
 
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);

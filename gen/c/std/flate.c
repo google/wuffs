@@ -48,15 +48,15 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_slice_u8 is a 1-dimensional buffer (a pointer and length).
+// puffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
 typedef struct {
   uint8_t* ptr;
   size_t len;
-} puffs_base_slice_u8;
+} puffs_base__slice_u8;
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length), plus
+// puffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
 // additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
@@ -66,28 +66,28 @@ typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   bool closed;   // No further writes are expected.
-} puffs_base_buf1;
+} puffs_base__buf1;
 
-// puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
+// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
 // written to the stream.
 //
 // A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base_limit1 {
-  uint64_t* ptr_to_len;            // Pointer to N.
-  struct puffs_base_limit1* next;  // Linked list of limits.
-} puffs_base_limit1;
+typedef struct puffs_base__limit1 {
+  uint64_t* ptr_to_len;             // Pointer to N.
+  struct puffs_base__limit1* next;  // Linked list of limits.
+} puffs_base__limit1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_reader1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__reader1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_writer1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__writer1;
 
 #endif  // PUFFS_BASE_HEADER_H
 
@@ -301,13 +301,13 @@ void puffs_flate__zlib_decoder__initialize(puffs_flate__zlib_decoder* self,
 
 puffs_flate__status puffs_flate__flate_decoder__decode(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 puffs_flate__status puffs_flate__zlib_decoder__decode(
     puffs_flate__zlib_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -334,51 +334,51 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
+#define PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
-// PUFFS_MAGIC is a magic number to check that initializers are called. It's
-// not foolproof, given C doesn't automatically zero memory before use, but it
-// should catch 99.99% of cases.
+// PUFFS_BASE__MAGIC is a magic number to check that initializers are called.
+// It's not foolproof, given C doesn't automatically zero memory before use,
+// but it should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
-#define PUFFS_MAGIC (0xCB3699CCU)
+#define PUFFS_BASE__MAGIC (0xCB3699CCU)
 
-// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
-// containee struct's initializer when the container has already zeroed the
-// containee's memory.
+// PUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
+// to a containee struct's initializer when the container has already zeroed
+// the containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
+#define PUFFS_BASE__ALREADY_ZEROED (0x68602EF1U)
 
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
-  coro_susp_point = n;                      \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
+  coro_susp_point = n;                            \
   case n:;
 
-#define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status < 0) {                                       \
-    goto exit;                                            \
-  } else if (status == 0) {                               \
-    goto ok;                                              \
-  }                                                       \
-  coro_susp_point = n;                                    \
-  goto suspend;                                           \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
+  if (status < 0) {                                             \
+    goto exit;                                                  \
+  } else if (status == 0) {                                     \
+    goto ok;                                                    \
+  }                                                             \
+  coro_susp_point = n;                                          \
+  goto suspend;                                                 \
   case n:;
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
-#define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
-#define PUFFS_UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
+#define PUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
+#define PUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 // Declare the printf prototype. The generated code shouldn't need this at all,
 // but it's useful for manual printf debugging.
 extern int printf(const char* __restrict __format, ...);
 #else
-#define PUFFS_LIKELY(expr) (expr)
-#define PUFFS_UNLIKELY(expr) (expr)
+#define PUFFS_BASE__LIKELY(expr) (expr)
+#define PUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
 
 // ---------------- Static Inline Functions
@@ -399,59 +399,61 @@ extern int printf(const char* __restrict __format, ...);
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-static inline uint16_t puffs_base_load_u16be(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
 }
 
-static inline uint16_t puffs_base_load_u16le(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16le(uint8_t* p) {
   return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
 }
 
-static inline uint32_t puffs_base_load_u32be(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32be(uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
 
-static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32le(uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_i(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_i(
+    puffs_base__slice_u8 s,
     uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = s.len - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_j(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_j(
+    puffs_base__slice_u8 s,
     uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){.ptr = s.ptr, .len = j});
+    return ((puffs_base__slice_u8){.ptr = s.ptr, .len = j});
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8
-puffs_base_slice_u8_subslice_ij(puffs_base_slice_u8 s, uint64_t i, uint64_t j) {
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_ij(
+    puffs_base__slice_u8 s,
+    uint64_t i,
+    uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = j - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-// puffs_base_slice_u8_prefix returns up to the first up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8__prefix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.len = up_to;
@@ -459,9 +461,9 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
   return s;
 }
 
-// puffs_base_slice_u8_suffix returns up to the last up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8_suffix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.ptr += (uint64_t)(s.len) - up_to;
@@ -470,14 +472,14 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
-// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, length)
-// where length is the minimum of dst.len and src.len.
+// puffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr,
+// length) where length is the minimum of dst.len and src.len.
 //
-// Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
+// Passing a puffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline uint64_t puffs_base_slice_u8_copy_from_slice(
-    puffs_base_slice_u8 dst,
-    puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base__slice_u8__copy_from_slice(
+    puffs_base__slice_u8 dst,
+    puffs_base__slice_u8 src) {
   size_t length = dst.len < src.len ? dst.len : src.len;
   if (length > 0) {
     memmove(dst.ptr, src.ptr, length);
@@ -485,11 +487,12 @@ static inline uint64_t puffs_base_slice_u8_copy_from_slice(
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
-                                                              uint8_t* start,
-                                                              uint8_t* end,
-                                                              uint32_t distance,
-                                                              uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_history32(
+    uint8_t** ptr_ptr,
+    uint8_t* start,
+    uint8_t* end,
+    uint32_t distance,
+    uint32_t length) {
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {
@@ -520,11 +523,12 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
-                                                             uint8_t* wend,
-                                                             uint8_t** ptr_rptr,
-                                                             uint8_t* rend,
-                                                             uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_reader32(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    uint8_t** ptr_rptr,
+    uint8_t* rend,
+    uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = length;
   if (n > wend - wptr) {
@@ -542,10 +546,10 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
   return n;
 }
 
-static inline uint64_t puffs_base_writer1_copy_from_slice(
+static inline uint64_t puffs_base__writer1__copy_from_slice(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src) {
+    puffs_base__slice_u8 src) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;
   if (n > wend - wptr) {
@@ -558,10 +562,10 @@ static inline uint64_t puffs_base_writer1_copy_from_slice(
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_slice32(
+static inline uint32_t puffs_base__writer1__copy_from_slice32(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src,
+    puffs_base__slice_u8 src,
     uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;
@@ -691,25 +695,25 @@ void puffs_flate__adler32__initialize(puffs_flate__adler32* self,
 
 puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src);
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
     puffs_flate__flate_decoder* self);
 
 puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     puffs_flate__flate_decoder* self,
-    puffs_base_reader1 a_src);
+    puffs_base__reader1 a_src);
 
 puffs_flate__status puffs_flate__flate_decoder__init_huff(
     puffs_flate__flate_decoder* self,
@@ -719,7 +723,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_huff(
     uint32_t a_base_symbol);
 
 uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
-                                      puffs_base_slice_u8 a_x);
+                                      puffs_base__slice_u8 a_x);
 
 // ---------------- Initializer Implementations
 
@@ -733,10 +737,10 @@ void puffs_flate__flate_decoder__initialize(puffs_flate__flate_decoder* self,
     self->private_impl.status = PUFFS_FLATE__ERROR_BAD_PUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+  if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.magic = PUFFS_BASE__MAGIC;
 }
 
 void puffs_flate__adler32__initialize(puffs_flate__adler32* self,
@@ -749,10 +753,10 @@ void puffs_flate__adler32__initialize(puffs_flate__adler32* self,
     self->private_impl.status = PUFFS_FLATE__ERROR_BAD_PUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+  if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->private_impl.magic = PUFFS_MAGIC;
+  self->private_impl.magic = PUFFS_BASE__MAGIC;
   self->private_impl.f_state = 1;
 }
 
@@ -766,26 +770,26 @@ void puffs_flate__zlib_decoder__initialize(puffs_flate__zlib_decoder* self,
     self->private_impl.status = PUFFS_FLATE__ERROR_BAD_PUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
+  if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
-  self->private_impl.magic = PUFFS_MAGIC;
-  puffs_flate__flate_decoder__initialize(&self->private_impl.f_flate,
-                                         PUFFS_VERSION, PUFFS_ALREADY_ZEROED);
+  self->private_impl.magic = PUFFS_BASE__MAGIC;
+  puffs_flate__flate_decoder__initialize(
+      &self->private_impl.f_flate, PUFFS_VERSION, PUFFS_BASE__ALREADY_ZEROED);
   puffs_flate__adler32__initialize(&self->private_impl.f_adler, PUFFS_VERSION,
-                                   PUFFS_ALREADY_ZEROED);
+                                   PUFFS_BASE__ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
 
 puffs_flate__status puffs_flate__flate_decoder__decode(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   if (!self) {
     return PUFFS_FLATE__ERROR_BAD_RECEIVER;
   }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_BASE__MAGIC) {
     self->private_impl.status = PUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
@@ -794,7 +798,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   puffs_flate__status v_z;
-  puffs_base_slice_u8 v_written;
+  puffs_base__slice_u8 v_written;
   uint64_t v_n_copied;
   uint32_t v_already_full;
 
@@ -807,7 +811,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -820,19 +824,19 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_z = self->private_impl.c_decode[0].v_z;
-    v_written = ((puffs_base_slice_u8){});
+    v_written = ((puffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
     v_already_full = self->private_impl.c_decode[0].v_already_full;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     while (true) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(1);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_dst.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
             *lim->ptr_to_len -= n;
@@ -846,7 +850,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
           size_t len = a_dst.buf->len - a_dst.buf->wi;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_dst.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -858,31 +862,31 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
       v_z = t_0;
       if (!(v_z > 0)) {
         status = v_z;
-        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
       }
-      v_written = ((puffs_base_slice_u8){
+      v_written = ((puffs_base__slice_u8){
           .ptr = b_wstart_dst,
           .len = b_wptr_dst - b_wstart_dst,
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
-        v_written = puffs_base_slice_u8_suffix(v_written, 32768);
-        puffs_base_slice_u8_copy_from_slice(
-            ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                   .len = 32768}),
+        v_written = puffs_base__slice_u8_suffix(v_written, 32768);
+        puffs_base__slice_u8__copy_from_slice(
+            ((puffs_base__slice_u8){.ptr = self->private_impl.f_history,
+                                    .len = 32768}),
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
-        v_n_copied = puffs_base_slice_u8_copy_from_slice(
-            puffs_base_slice_u8_subslice_i(
-                ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                       .len = 32768}),
+        v_n_copied = puffs_base__slice_u8__copy_from_slice(
+            puffs_base__slice_u8__subslice_i(
+                ((puffs_base__slice_u8){.ptr = self->private_impl.f_history,
+                                        .len = 32768}),
                 self->private_impl.f_history_index & 32767),
             v_written);
         if (v_n_copied < ((uint64_t)(v_written.len))) {
-          v_written = puffs_base_slice_u8_subslice_i(v_written, v_n_copied);
-          v_n_copied = puffs_base_slice_u8_copy_from_slice(
-              ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                     .len = 32768}),
+          v_written = puffs_base__slice_u8__subslice_i(v_written, v_n_copied);
+          v_n_copied = puffs_base__slice_u8__copy_from_slice(
+              ((puffs_base__slice_u8){.ptr = self->private_impl.f_history,
+                                      .len = 32768}),
               v_written);
           self->private_impl.f_history_index =
               (((uint32_t)((v_n_copied & 32767))) + 32768);
@@ -897,7 +901,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
         }
       }
       status = v_z;
-      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
 
     goto ok;
@@ -917,14 +921,14 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
 
   self->private_impl.status = status;
@@ -933,8 +937,8 @@ exit:
 
 puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   uint32_t v_final;
@@ -947,7 +951,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -963,14 +967,14 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     v_type = self->private_impl.c_decode_blocks[0].v_type;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     v_final = 0;
   label_0_continue:;
     while (v_final == 0) {
       while (self->private_impl.f_n_bits < 3) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(1);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_0 = *b_rptr_src++;
@@ -983,11 +987,11 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       self->private_impl.f_bits >>= 3;
       self->private_impl.f_n_bits -= 3;
       if (v_type == 0) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(2);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
               *lim->ptr_to_len -= n;
@@ -999,7 +1003,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -1012,17 +1016,17 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         }
         goto label_0_continue;
       } else if (v_type == 1) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(3);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = puffs_flate__flate_decoder__init_fixed_huffman(self);
         if (status) {
           goto suspend;
         }
       } else if (v_type == 2) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
               *lim->ptr_to_len -= n;
@@ -1033,7 +1037,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -1048,11 +1052,11 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         status = PUFFS_FLATE__ERROR_BAD_FLATE_BLOCK;
         goto exit;
       }
-      PUFFS_COROUTINE_SUSPENSION_POINT(5);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
             *lim->ptr_to_len -= n;
@@ -1063,7 +1067,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
             len = *lim->ptr_to_len;
@@ -1092,14 +1096,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1115,8 +1119,8 @@ short_read_src:
 
 puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   uint32_t v_length;
@@ -1131,7 +1135,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -1147,7 +1151,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1163,23 +1167,23 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     if (self->private_impl.f_n_bits >= 8) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
     }
     self->private_impl.f_n_bits = 0;
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     uint32_t t_1;
-    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_1 = puffs_base_load_u32le(b_rptr_src);
+    if (PUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
+      t_1 = puffs_base__load_u32le(b_rptr_src);
       b_rptr_src += 4;
     } else {
       self->private_impl.c_decode_uncompressed[0].scratch = 0;
-      PUFFS_COROUTINE_SUSPENSION_POINT(2);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
       while (true) {
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint32_t t_0 =
@@ -1205,7 +1209,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     }
     v_length = ((v_length) & ((1 << (16)) - 1));
     while (true) {
-      v_n_copied = puffs_base_writer1_copy_from_reader32(
+      v_n_copied = puffs_base__writer1__copy_from_reader32(
           &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
       if (v_length <= v_n_copied) {
         v_length = 0;
@@ -1214,10 +1218,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
       v_length -= v_n_copied;
       if (((uint64_t)(b_wend_dst - b_wptr_dst)) == 0) {
         status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
       } else {
         status = PUFFS_FLATE__SUSPENSION_SHORT_READ;
-        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
       }
     }
   label_0_break:;
@@ -1238,26 +1242,26 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1273,8 +1277,8 @@ short_read_src:
 
 puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     puffs_flate__flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   uint32_t v_bits;
@@ -1300,7 +1304,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -1316,7 +1320,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1344,7 +1348,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     v_hdist = self->private_impl.c_decode_huffman[0].v_hdist;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
@@ -1362,8 +1366,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
           v_n_bits -= v_table_entry_n_bits;
           goto label_1_break;
         }
-        PUFFS_COROUTINE_SUSPENSION_POINT(1);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_0 = *b_rptr_src++;
@@ -1389,8 +1393,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
             v_n_bits -= v_table_entry_n_bits;
             goto label_2_break;
           }
-          PUFFS_COROUTINE_SUSPENSION_POINT(2);
-          if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
             goto short_read_src;
           }
           uint8_t t_1 = *b_rptr_src++;
@@ -1405,7 +1409,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
         }
       }
       if ((v_table_entry >> 31) != 0) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(3);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (b_wptr_dst == b_wend_dst) {
           status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
           goto suspend;
@@ -1426,8 +1430,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
       v_length = ((v_table_entry >> 8) & 32767);
       v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
       while (v_n_bits < v_table_entry_n_bits) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_2 = *b_rptr_src++;
@@ -1447,8 +1451,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
           v_n_bits -= v_table_entry_n_bits;
           goto label_3_break;
         }
-        PUFFS_COROUTINE_SUSPENSION_POINT(5);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_3 = *b_rptr_src++;
@@ -1474,8 +1478,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
             v_n_bits -= v_table_entry_n_bits;
             goto label_4_break;
           }
-          PUFFS_COROUTINE_SUSPENSION_POINT(6);
-          if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
             goto short_read_src;
           }
           uint8_t t_4 = *b_rptr_src++;
@@ -1501,8 +1505,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
       v_distance = ((v_table_entry >> 8) & 32767);
       v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
       while (v_n_bits < v_table_entry_n_bits) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(7);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_5 = *b_rptr_src++;
@@ -1534,11 +1538,11 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
           }
           v_hdist = ((self->private_impl.f_history_index - v_hdist) & 32767);
           while (true) {
-            v_n_copied = puffs_base_writer1_copy_from_slice32(
+            v_n_copied = puffs_base__writer1__copy_from_slice32(
                 &b_wptr_dst, b_wend_dst,
-                puffs_base_slice_u8_subslice_i(
-                    ((puffs_base_slice_u8){.ptr = self->private_impl.f_history,
-                                           .len = 32768}),
+                puffs_base__slice_u8__subslice_i(
+                    ((puffs_base__slice_u8){.ptr = self->private_impl.f_history,
+                                            .len = 32768}),
                     v_hdist),
                 v_hlen);
             if (v_hlen <= v_n_copied) {
@@ -1553,15 +1557,15 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
               }
             }
             status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-            PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
+            PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
           }
         label_5_break:;
           if (v_hlen > 0) {
             while (true) {
-              v_n_copied = puffs_base_writer1_copy_from_slice32(
+              v_n_copied = puffs_base__writer1__copy_from_slice32(
                   &b_wptr_dst, b_wend_dst,
-                  puffs_base_slice_u8_subslice_i(
-                      ((puffs_base_slice_u8){
+                  puffs_base__slice_u8__subslice_i(
+                      ((puffs_base__slice_u8){
                           .ptr = self->private_impl.f_history, .len = 32768}),
                       v_hdist),
                   v_hlen);
@@ -1572,7 +1576,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
               v_hlen -= v_n_copied;
               v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-              PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
+              PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(9);
             }
           label_6_break:;
           }
@@ -1580,7 +1584,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
             goto label_0_continue;
           }
         }
-        v_n_copied = puffs_base_writer1_copy_from_history32(
+        v_n_copied = puffs_base__writer1__copy_from_history32(
             &b_wptr_dst, b_wstart_dst, b_wend_dst, v_distance, v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;
@@ -1588,7 +1592,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
         }
         v_length -= v_n_copied;
         status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-        PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
       }
     label_7_break:;
     }
@@ -1624,26 +1628,26 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -1669,7 +1673,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
     v_i = self->private_impl.c_init_fixed_huffman[0].v_i;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     v_i = 0;
     while (v_i < 144) {
@@ -1692,12 +1696,12 @@ puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
       self->private_impl.f_code_lengths[v_i] = 5;
       v_i += 1;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     status = puffs_flate__flate_decoder__init_huff(self, 0, 0, 288, 257);
     if (status) {
       goto suspend;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(2);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
     status = puffs_flate__flate_decoder__init_huff(self, 1, 288, 320, 0);
     if (status) {
       goto suspend;
@@ -1720,7 +1724,7 @@ exit:
 
 puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     puffs_flate__flate_decoder* self,
-    puffs_base_reader1 a_src) {
+    puffs_base__reader1 a_src) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   uint32_t v_bits;
@@ -1743,7 +1747,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -1771,13 +1775,13 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
     while (v_n_bits < 14) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
         goto short_read_src;
       }
       uint8_t t_0 = *b_rptr_src++;
@@ -1802,8 +1806,8 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     v_i = 0;
     while (v_i < v_n_clen) {
       while (v_n_bits < 3) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(2);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_1 = *b_rptr_src++;
@@ -1820,7 +1824,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
       self->private_impl.f_code_lengths[puffs_flate__code_order[v_i]] = 0;
       v_i += 1;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(3);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
     status = puffs_flate__flate_decoder__init_huff(self, 0, 0, 19, 4095);
     if (status) {
       goto suspend;
@@ -1838,8 +1842,8 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
           v_n_bits -= v_table_entry_n_bits;
           goto label_1_break;
         }
-        PUFFS_COROUTINE_SUSPENSION_POINT(4);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_2 = *b_rptr_src++;
@@ -1883,8 +1887,8 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
         goto exit;
       }
       while (v_n_bits < v_n_extra_bits) {
-        PUFFS_COROUTINE_SUSPENSION_POINT(5);
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint8_t t_3 = *b_rptr_src++;
@@ -1912,12 +1916,12 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
       status = PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE;
       goto exit;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(6);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
     status = puffs_flate__flate_decoder__init_huff(self, 0, 0, v_n_lit, 257);
     if (status) {
       goto suspend;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(7);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
     status = puffs_flate__flate_decoder__init_huff(self, 1, v_n_lit,
                                                    (v_n_lit + v_n_dist), 0);
     if (status) {
@@ -1954,14 +1958,14 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
@@ -2257,12 +2261,12 @@ exit:
 
 puffs_flate__status puffs_flate__zlib_decoder__decode(
     puffs_flate__zlib_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   if (!self) {
     return PUFFS_FLATE__ERROR_BAD_RECEIVER;
   }
-  if (self->private_impl.magic != PUFFS_MAGIC) {
+  if (self->private_impl.magic != PUFFS_BASE__MAGIC) {
     self->private_impl.status = PUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
@@ -2283,7 +2287,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       size_t len = a_dst.buf->len - a_dst.buf->wi;
-      puffs_base_limit1* lim;
+      puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
           len = *lim->ptr_to_len;
@@ -2299,7 +2303,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     b_rstart_src = b_rptr_src;
     size_t len = a_src.buf->wi - a_src.buf->ri;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
@@ -2315,18 +2319,18 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     v_z = self->private_impl.c_decode[0].v_z;
   }
   switch (coro_susp_point) {
-    PUFFS_COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
-    PUFFS_COROUTINE_SUSPENSION_POINT(1);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     uint16_t t_1;
-    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 2)) {
-      t_1 = puffs_base_load_u16be(b_rptr_src);
+    if (PUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 2)) {
+      t_1 = puffs_base__load_u16be(b_rptr_src);
       b_rptr_src += 2;
     } else {
       self->private_impl.c_decode[0].scratch = 0;
-      PUFFS_COROUTINE_SUSPENSION_POINT(2);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
       while (true) {
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint32_t t_0 = self->private_impl.c_decode[0].scratch & 0xFF;
@@ -2361,11 +2365,11 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     }
     v_checksum = 0;
     while (true) {
-      PUFFS_COROUTINE_SUSPENSION_POINT(3);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_dst.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
             *lim->ptr_to_len -= n;
@@ -2375,7 +2379,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
             *lim->ptr_to_len -= n;
@@ -2389,7 +2393,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
           size_t len = a_dst.buf->len - a_dst.buf->wi;
-          puffs_base_limit1* lim;
+          puffs_base__limit1* lim;
           for (lim = &a_dst.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
               len = *lim->ptr_to_len;
@@ -2401,7 +2405,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
-        puffs_base_limit1* lim;
+        puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
             len = *lim->ptr_to_len;
@@ -2411,7 +2415,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       }
       v_z = t_2;
       v_checksum = puffs_flate__adler32__update(
-          &self->private_impl.f_adler, ((puffs_base_slice_u8){
+          &self->private_impl.f_adler, ((puffs_base__slice_u8){
                                            .ptr = b_wstart_dst,
                                            .len = b_wptr_dst - b_wstart_dst,
                                        }));
@@ -2419,19 +2423,19 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
         goto label_0_break;
       }
       status = v_z;
-      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
     }
   label_0_break:;
-    PUFFS_COROUTINE_SUSPENSION_POINT(5);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
     uint32_t t_4;
-    if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_4 = puffs_base_load_u32be(b_rptr_src);
+    if (PUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
+      t_4 = puffs_base__load_u32be(b_rptr_src);
       b_rptr_src += 4;
     } else {
       self->private_impl.c_decode[0].scratch = 0;
-      PUFFS_COROUTINE_SUSPENSION_POINT(6);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
       while (true) {
-        if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
         uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
@@ -2469,26 +2473,26 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    puffs_base_limit1* lim;
+    puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
         *lim->ptr_to_len -= n;
       }
     }
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
-    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   self->private_impl.status = status;
@@ -2504,21 +2508,21 @@ short_read_src:
 }
 
 uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
-                                      puffs_base_slice_u8 a_x) {
+                                      puffs_base__slice_u8 a_x) {
   uint32_t v_s1;
   uint32_t v_s2;
-  puffs_base_slice_u8 v_remaining;
+  puffs_base__slice_u8 v_remaining;
 
   v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
   v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
   while (((uint64_t)(a_x.len)) > 0) {
-    v_remaining = ((puffs_base_slice_u8){});
+    v_remaining = ((puffs_base__slice_u8){});
     if (((uint64_t)(a_x.len)) > 5552) {
-      v_remaining = puffs_base_slice_u8_subslice_i(a_x, 5552);
-      a_x = puffs_base_slice_u8_subslice_j(a_x, 5552);
+      v_remaining = puffs_base__slice_u8__subslice_i(a_x, 5552);
+      a_x = puffs_base__slice_u8__subslice_j(a_x, 5552);
     }
     {
-      puffs_base_slice_u8 i_slice_p = a_x;
+      puffs_base__slice_u8 i_slice_p = a_x;
       uint8_t* v_p = i_slice_p.ptr;
       uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
       while (v_p < i_end0_p) {

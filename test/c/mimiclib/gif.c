@@ -15,7 +15,7 @@
 #include "gif_lib.h"
 
 int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
-  puffs_base_buf1* src = (puffs_base_buf1*)(f->UserData);
+  puffs_base__buf1* src = (puffs_base__buf1*)(f->UserData);
   if (len < 0) {
     return 0;
   }
@@ -29,7 +29,7 @@ int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
   return n;
 }
 
-const char* mimic_gif_decode(puffs_base_buf1* dst, puffs_base_buf1* src) {
+const char* mimic_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
   const char* ret = NULL;
 
   // TODO: #ifdef API calls for libgif version 4 vs version 5? Note that:

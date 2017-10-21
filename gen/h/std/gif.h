@@ -48,15 +48,15 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// puffs_base_slice_u8 is a 1-dimensional buffer (a pointer and length).
+// puffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
 typedef struct {
   uint8_t* ptr;
   size_t len;
-} puffs_base_slice_u8;
+} puffs_base__slice_u8;
 
-// puffs_base_buf1 is a 1-dimensional buffer (a pointer and length), plus
+// puffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
 // additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
@@ -66,28 +66,28 @@ typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   bool closed;   // No further writes are expected.
-} puffs_base_buf1;
+} puffs_base__buf1;
 
-// puffs_base_limit1 provides a limited view of a 1-dimensional byte stream:
+// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
 // written to the stream.
 //
 // A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base_limit1 {
-  uint64_t* ptr_to_len;            // Pointer to N.
-  struct puffs_base_limit1* next;  // Linked list of limits.
-} puffs_base_limit1;
+typedef struct puffs_base__limit1 {
+  uint64_t* ptr_to_len;             // Pointer to N.
+  struct puffs_base__limit1* next;  // Linked list of limits.
+} puffs_base__limit1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_reader1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__reader1;
 
 typedef struct {
-  puffs_base_buf1* buf;
-  puffs_base_limit1 limit;
-} puffs_base_writer1;
+  puffs_base__buf1* buf;
+  puffs_base__limit1 limit;
+} puffs_base__writer1;
 
 #endif  // PUFFS_BASE_HEADER_H
 
@@ -217,7 +217,7 @@ typedef struct {
       uint8_t v_lw;
       uint8_t v_block_size;
       uint64_t l_lzw_src;
-      puffs_base_reader1 v_lzw_src;
+      puffs_base__reader1 v_lzw_src;
     } c_decode_id[1];
   } private_impl;
 } puffs_gif__decoder;
@@ -245,15 +245,15 @@ void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
 // ---------------- Public Function Prototypes
 
 puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
-                                             puffs_base_writer1 a_dst,
-                                             puffs_base_reader1 a_src);
+                                             puffs_base__writer1 a_dst,
+                                             puffs_base__reader1 a_src);
 
 void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
                                                uint32_t a_lw);
 
 puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
-                                                 puffs_base_writer1 a_dst,
-                                                 puffs_base_reader1 a_src);
+                                                 puffs_base__writer1 a_dst,
+                                                 puffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -99,7 +99,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			b.printf("%srstart_%s = %srptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		}
 		b.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("puffs_base_limit1* lim;")
+		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
 		b.printf("}")
@@ -123,7 +123,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
 		b.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("puffs_base_limit1* lim;")
+		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
 		b.printf("}")
@@ -150,14 +150,14 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
-		b.printf("puffs_base_limit1* lim;")
+		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
 		b.printf("}")
 
 		if footer {
-			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
-			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
 		}
 
 		b.printf("}\n")
@@ -168,14 +168,14 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->wi += n;", aPrefix, nameStr)
-		b.printf("puffs_base_limit1* lim;")
+		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
 		b.printf("}")
 
 		if footer {
-			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
-			b.printf("PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
 		}
 
 		b.printf("}\n")
@@ -280,7 +280,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bo
 			}
 		case t.KeyColon:
 			// TODO: don't assume that the slice is a slice of u8.
-			rhs = "puffs_base_slice_u8"
+			rhs = "puffs_base__slice_u8"
 		}
 		if rhs != "" {
 			b.printf("%s = ((%s){});\n", local, rhs)

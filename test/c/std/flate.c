@@ -153,14 +153,14 @@ void test_puffs_adler32() {
 
   int i;
   for (i = 0; i < PUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
-    puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+    puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
     puffs_flate__adler32 checksum;
     puffs_flate__adler32__initialize(&checksum, PUFFS_VERSION, 0);
     uint32_t got =
-        puffs_flate__adler32__update(&checksum, ((puffs_base_slice_u8){
+        puffs_flate__adler32__update(&checksum, ((puffs_base__slice_u8){
                                                     .ptr = src.ptr + src.ri,
                                                     .len = src.wi - src.ri,
                                                 }));
@@ -174,14 +174,14 @@ void test_puffs_adler32() {
 
 // ---------------- Flate Tests
 
-const char* puffs_flate_decode(puffs_base_buf1* dst,
-                               puffs_base_buf1* src,
+const char* puffs_flate_decode(puffs_base__buf1* dst,
+                               puffs_base__buf1* src,
                                uint64_t wlimit,
                                uint64_t rlimit) {
   puffs_flate__flate_decoder dec;
   puffs_flate__flate_decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 dst_writer = {.buf = dst};
-  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_base__writer1 dst_writer = {.buf = dst};
+  puffs_base__reader1 src_reader = {.buf = src};
   while (true) {
     uint64_t wlim = wlimit;
     if (wlimit) {
@@ -206,14 +206,14 @@ const char* puffs_flate_decode(puffs_base_buf1* dst,
   }
 }
 
-const char* puffs_zlib_decode(puffs_base_buf1* dst,
-                              puffs_base_buf1* src,
+const char* puffs_zlib_decode(puffs_base__buf1* dst,
+                              puffs_base__buf1* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   puffs_flate__zlib_decoder dec;
   puffs_flate__zlib_decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 dst_writer = {.buf = dst};
-  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_base__writer1 dst_writer = {.buf = dst};
+  puffs_base__reader1 src_reader = {.buf = src};
 
   while (true) {
     uint64_t wlim = wlimit;
@@ -282,9 +282,9 @@ void test_puffs_flate_decode_romeo_fixed() {
 void test_puffs_flate_decode_split_src() {
   proc_funcname = __func__;
 
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
   golden_test* gt = &flate_256_bytes_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -295,8 +295,8 @@ void test_puffs_flate_decode_split_src() {
   }
 
   puffs_flate__flate_decoder dec;
-  puffs_base_writer1 dst_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 dst_writer = {.buf = &got};
+  puffs_base__reader1 src_reader = {.buf = &src};
 
   int i;
   for (i = 1; i < 32; i++) {
@@ -345,8 +345,8 @@ void test_puffs_flate_decode_split_src() {
 
 bool do_test_puffs_flate_history(int i,
                                  golden_test* gt,
-                                 puffs_base_buf1* src,
-                                 puffs_base_buf1* got,
+                                 puffs_base__buf1* src,
+                                 puffs_base__buf1* got,
                                  puffs_flate__flate_decoder* dec,
                                  uint32_t starting_history_index,
                                  uint64_t limit,
@@ -357,8 +357,8 @@ bool do_test_puffs_flate_history(int i,
   got->wi = 0;
 
   puffs_flate__flate_decoder__initialize(dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 dst_writer = {.buf = got};
-  puffs_base_reader1 src_reader = {.buf = src};
+  puffs_base__writer1 dst_writer = {.buf = got};
+  puffs_base__reader1 src_reader = {.buf = src};
 
   dec->private_impl.f_history_index = starting_history_index;
 
@@ -379,9 +379,9 @@ bool do_test_puffs_flate_history(int i,
 void test_puffs_flate_history_full() {
   proc_funcname = __func__;
 
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
   golden_test* gt = &flate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -412,7 +412,7 @@ void test_puffs_flate_history_full() {
       continue;
     }
 
-    puffs_base_buf1 history_got = {
+    puffs_base__buf1 history_got = {
         .ptr = dec.private_impl.f_history,
         .len = full_history_size,
         .wi = full_history_size,
@@ -421,7 +421,7 @@ void test_puffs_flate_history_full() {
       FAIL("i=%d: want file is too short", i);
       return;
     }
-    puffs_base_buf1 history_want = {
+    puffs_base__buf1 history_want = {
         .ptr = global_want_buffer + want.wi - (full_history_size - i),
         .len = full_history_size,
         .wi = full_history_size,
@@ -435,8 +435,8 @@ void test_puffs_flate_history_full() {
 void test_puffs_flate_history_partial() {
   proc_funcname = __func__;
 
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
 
   golden_test* gt = &flate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -626,8 +626,8 @@ void test_puffs_flate_table_redirect() {
 void test_puffs_zlib_checksum_mismatch() {
   proc_funcname = __func__;
 
-  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
     return;
@@ -641,8 +641,8 @@ void test_puffs_zlib_checksum_mismatch() {
 
   puffs_flate__zlib_decoder dec;
   puffs_flate__zlib_decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base_writer1 got_writer = {.buf = &got};
-  puffs_base_reader1 src_reader = {.buf = &src};
+  puffs_base__writer1 got_writer = {.buf = &got};
+  puffs_base__reader1 src_reader = {.buf = &src};
 
   puffs_flate__status status =
       puffs_flate__zlib_decoder__decode(&dec, got_writer, src_reader);
@@ -722,15 +722,15 @@ void test_mimic_zlib_decode_pi() {
 
 uint32_t global_puffs_flate_unused_u32;
 
-const char* puffs_bench_adler32(puffs_base_buf1* dst,
-                                puffs_base_buf1* src,
+const char* puffs_bench_adler32(puffs_base__buf1* dst,
+                                puffs_base__buf1* src,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   puffs_flate__adler32 checksum;
   puffs_flate__adler32__initialize(&checksum, PUFFS_VERSION, 0);
   global_puffs_flate_unused_u32 =
-      puffs_flate__adler32__update(&checksum, ((puffs_base_slice_u8){
+      puffs_flate__adler32__update(&checksum, ((puffs_base__slice_u8){
                                                   .ptr = src->ptr + src->ri,
                                                   .len = src->wi - src->ri,
                                               }));

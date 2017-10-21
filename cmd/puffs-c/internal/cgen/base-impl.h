@@ -17,51 +17,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
+#define PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
-// PUFFS_MAGIC is a magic number to check that initializers are called. It's
-// not foolproof, given C doesn't automatically zero memory before use, but it
-// should catch 99.99% of cases.
+// PUFFS_BASE__MAGIC is a magic number to check that initializers are called.
+// It's not foolproof, given C doesn't automatically zero memory before use,
+// but it should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("puffs").
-#define PUFFS_MAGIC (0xCB3699CCU)
+#define PUFFS_BASE__MAGIC (0xCB3699CCU)
 
-// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
-// containee struct's initializer when the container has already zeroed the
-// containee's memory.
+// PUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
+// to a containee struct's initializer when the container has already zeroed
+// the containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
+#define PUFFS_BASE__ALREADY_ZEROED (0x68602EF1U)
 
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
-#define PUFFS_COROUTINE_SUSPENSION_POINT(n) \
-  coro_susp_point = n;                      \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
+  coro_susp_point = n;                            \
   case n:;
 
-#define PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status < 0) {                                       \
-    goto exit;                                            \
-  } else if (status == 0) {                               \
-    goto ok;                                              \
-  }                                                       \
-  coro_susp_point = n;                                    \
-  goto suspend;                                           \
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
+  if (status < 0) {                                             \
+    goto exit;                                                  \
+  } else if (status == 0) {                                     \
+    goto ok;                                                    \
+  }                                                             \
+  coro_susp_point = n;                                          \
+  goto suspend;                                                 \
   case n:;
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
-#define PUFFS_LIKELY(expr) (__builtin_expect(!!(expr), 1))
-#define PUFFS_UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
+#define PUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
+#define PUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
 // Declare the printf prototype. The generated code shouldn't need this at all,
 // but it's useful for manual printf debugging.
 extern int printf(const char* __restrict __format, ...);
 #else
-#define PUFFS_LIKELY(expr) (expr)
-#define PUFFS_UNLIKELY(expr) (expr)
+#define PUFFS_BASE__LIKELY(expr) (expr)
+#define PUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
 
 // ---------------- Static Inline Functions
@@ -82,59 +82,61 @@ extern int printf(const char* __restrict __format, ...);
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-static inline uint16_t puffs_base_load_u16be(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
 }
 
-static inline uint16_t puffs_base_load_u16le(uint8_t* p) {
+static inline uint16_t puffs_base__load_u16le(uint8_t* p) {
   return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
 }
 
-static inline uint32_t puffs_base_load_u32be(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32be(uint8_t* p) {
   return ((uint32_t)(p[0]) << 24) | ((uint32_t)(p[1]) << 16) |
          ((uint32_t)(p[2]) << 8) | ((uint32_t)(p[3]) << 0);
 }
 
-static inline uint32_t puffs_base_load_u32le(uint8_t* p) {
+static inline uint32_t puffs_base__load_u32le(uint8_t* p) {
   return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_i(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_i(
+    puffs_base__slice_u8 s,
     uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = s.len - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8 puffs_base_slice_u8_subslice_j(
-    puffs_base_slice_u8 s,
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_j(
+    puffs_base__slice_u8 s,
     uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){.ptr = s.ptr, .len = j});
+    return ((puffs_base__slice_u8){.ptr = s.ptr, .len = j});
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-static inline puffs_base_slice_u8
-puffs_base_slice_u8_subslice_ij(puffs_base_slice_u8 s, uint64_t i, uint64_t j) {
+static inline puffs_base__slice_u8 puffs_base__slice_u8__subslice_ij(
+    puffs_base__slice_u8 s,
+    uint64_t i,
+    uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return ((puffs_base_slice_u8){
+    return ((puffs_base__slice_u8){
         .ptr = s.ptr + i,
         .len = j - i,
     });
   }
-  return ((puffs_base_slice_u8){});
+  return ((puffs_base__slice_u8){});
 }
 
-// puffs_base_slice_u8_prefix returns up to the first up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8__prefix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.len = up_to;
@@ -142,9 +144,9 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_prefix(
   return s;
 }
 
-// puffs_base_slice_u8_suffix returns up to the last up_to bytes of s.
-static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
-    puffs_base_slice_u8 s,
+// puffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
+static inline puffs_base__slice_u8 puffs_base__slice_u8_suffix(
+    puffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
     s.ptr += (uint64_t)(s.len) - up_to;
@@ -153,14 +155,14 @@ static inline puffs_base_slice_u8 puffs_base_slice_u8_suffix(
   return s;
 }
 
-// puffs_base_slice_u8_copy_from_slice calls memmove(dst.ptr, src.ptr, length)
-// where length is the minimum of dst.len and src.len.
+// puffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr,
+// length) where length is the minimum of dst.len and src.len.
 //
-// Passing a puffs_base_slice_u8 with all fields NULL or zero (a valid, empty
+// Passing a puffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
-static inline uint64_t puffs_base_slice_u8_copy_from_slice(
-    puffs_base_slice_u8 dst,
-    puffs_base_slice_u8 src) {
+static inline uint64_t puffs_base__slice_u8__copy_from_slice(
+    puffs_base__slice_u8 dst,
+    puffs_base__slice_u8 src) {
   size_t length = dst.len < src.len ? dst.len : src.len;
   if (length > 0) {
     memmove(dst.ptr, src.ptr, length);
@@ -168,11 +170,12 @@ static inline uint64_t puffs_base_slice_u8_copy_from_slice(
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
-                                                              uint8_t* start,
-                                                              uint8_t* end,
-                                                              uint32_t distance,
-                                                              uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_history32(
+    uint8_t** ptr_ptr,
+    uint8_t* start,
+    uint8_t* end,
+    uint32_t distance,
+    uint32_t length) {
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {
@@ -203,11 +206,12 @@ static inline uint32_t puffs_base_writer1_copy_from_history32(uint8_t** ptr_ptr,
   return length;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
-                                                             uint8_t* wend,
-                                                             uint8_t** ptr_rptr,
-                                                             uint8_t* rend,
-                                                             uint32_t length) {
+static inline uint32_t puffs_base__writer1__copy_from_reader32(
+    uint8_t** ptr_wptr,
+    uint8_t* wend,
+    uint8_t** ptr_rptr,
+    uint8_t* rend,
+    uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = length;
   if (n > wend - wptr) {
@@ -225,10 +229,10 @@ static inline uint32_t puffs_base_writer1_copy_from_reader32(uint8_t** ptr_wptr,
   return n;
 }
 
-static inline uint64_t puffs_base_writer1_copy_from_slice(
+static inline uint64_t puffs_base__writer1__copy_from_slice(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src) {
+    puffs_base__slice_u8 src) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;
   if (n > wend - wptr) {
@@ -241,10 +245,10 @@ static inline uint64_t puffs_base_writer1_copy_from_slice(
   return n;
 }
 
-static inline uint32_t puffs_base_writer1_copy_from_slice32(
+static inline uint32_t puffs_base__writer1__copy_from_slice32(
     uint8_t** ptr_wptr,
     uint8_t* wend,
-    puffs_base_slice_u8 src,
+    puffs_base__slice_u8 src,
     uint32_t length) {
   uint8_t* wptr = *ptr_wptr;
   size_t n = src.len;

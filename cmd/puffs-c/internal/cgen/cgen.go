@@ -598,9 +598,9 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.printf("return;\n")
 	b.printf("}\n")
 
-	b.writes("if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {" +
+	b.writes("if (for_internal_use_only != PUFFS_BASE__ALREADY_ZEROED) {" +
 		"memset(self, 0, sizeof(*self)); }\n")
-	b.writes("self->private_impl.magic = PUFFS_MAGIC;\n")
+	b.writes("self->private_impl.magic = PUFFS_BASE__MAGIC;\n")
 
 	for _, f := range n.Fields() {
 		f := f.Field()
@@ -622,7 +622,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			continue
 		}
 		b.printf("%s%s__initialize(&self->private_impl.%s%s,"+
-			"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
+			"PUFFS_VERSION, PUFFS_BASE__ALREADY_ZEROED);\n",
 			g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
 	}
 
