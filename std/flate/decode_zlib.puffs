@@ -40,6 +40,8 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	var checksum u32
 	while true {
 		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
+		// TODO: expose some API to opt out of checksumming, trading off error
+		// detection for throughput.
 		checksum = this.adler.update(x:in.dst.slice())
 		if z.is_ok() {
 			break
