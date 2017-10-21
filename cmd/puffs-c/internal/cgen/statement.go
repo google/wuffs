@@ -448,7 +448,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes(";\n")
 
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
-		b.printf("status = %s%s_decode_header(self, %ssrc);\n",
+		b.printf("status = %s%s__decode_header(self, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -458,7 +458,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
-		b.printf("status = %s%s_decode_lsd(self, %ssrc);\n",
+		b.printf("status = %s%s__decode_lsd(self, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -466,7 +466,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
-		b.printf("status = %s%s_decode_extension(self, %ssrc);\n",
+		b.printf("status = %s%s__decode_extension(self, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -474,7 +474,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
-		b.printf("status = %s%s_decode_id(self, %sdst, %ssrc);\n",
+		b.printf("status = %s%s__decode_id(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -489,7 +489,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		temp := g.currFunk.tempW
 		g.currFunk.tempW++
 
-		b.printf("%sstatus %s%d = %s%s_decode_blocks(self, %sdst, %ssrc);\n",
+		b.printf("%sstatus %s%d = %s%s__decode_blocks(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, tPrefix, temp,
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
@@ -498,7 +498,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		// TODO: check if tPrefix_temp is an error, and return?
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
-		b.printf("status = %s%s_decode_uncompressed(self, %sdst, %ssrc);\n",
+		b.printf("status = %s%s__decode_uncompressed(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -506,7 +506,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_huffman", 2) {
-		b.printf("status = %s%s_decode_huffman(self, %sdst, %ssrc);\n",
+		b.printf("status = %s%s__decode_huffman(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -514,7 +514,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "init_fixed_huffman", 0) {
-		b.printf("status = %s%s_init_fixed_huffman(self);\n",
+		b.printf("status = %s%s__init_fixed_huffman(self);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm))
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -522,7 +522,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
-		b.printf("status = %s%s_init_dynamic_huffman(self, %ssrc);\n",
+		b.printf("status = %s%s__init_dynamic_huffman(self, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
@@ -530,7 +530,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "init_huff", 4) {
-		b.printf("status = %s%s_init_huff(self,",
+		b.printf("status = %s%s__init_huff(self,",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm))
 		for i, o := range n.Args() {
 			if i != 0 {
@@ -556,7 +556,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			b.printf("%sstatus %s%d = %sflate_decoder_decode(&self->private_impl.f_flate, %sdst, %ssrc);\n",
+			b.printf("%sstatus %s%d = %sflate_decoder__decode(&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, aPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
@@ -565,7 +565,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: check if tPrefix_temp is an error, and return?
 
 		case "gif":
-			b.printf("status = %slzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
+			b.printf("status = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
 				g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 				return err

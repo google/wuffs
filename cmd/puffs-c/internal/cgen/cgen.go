@@ -60,8 +60,8 @@ const (
 func Do(args []string) error {
 	return generate.Do(args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		g := &gen{
-			PKGPREFIX: "PUFFS_" + strings.ToUpper(pkgName) + "_",
-			pkgPrefix: "puffs_" + pkgName + "_",
+			PKGPREFIX: "PUFFS_" + strings.ToUpper(pkgName) + "__",
+			pkgPrefix: "puffs_" + pkgName + "__",
 			pkgName:   pkgName,
 			tm:        tm,
 			checker:   c,
@@ -154,8 +154,8 @@ func (b *buffer) writes(s string)                           { *b = append(*b, s.
 func (b *buffer) writex(s []byte)                           { *b = append(*b, s...) }
 
 type gen struct {
-	PKGPREFIX string // e.g. "PUFFS_JPEG_"
-	pkgPrefix string // e.g. "puffs_jpeg_"
+	PKGPREFIX string // e.g. "PUFFS_JPEG__"
+	pkgPrefix string // e.g. "puffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
 	tm         *t.Map
@@ -222,7 +222,7 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// ---------------- Status Codes\n\n")
 	b.writes(statusCodeDescription)
 	b.printf("//\n// Do not manipulate these bits directly. Use the API functions such as\n"+
-		"// %sstatus_is_error instead.\n", g.pkgPrefix)
+		"// %sstatus__is_error instead.\n", g.pkgPrefix)
 	b.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // %#08x\n\n", g.pkgPrefix, pkgID, pkgID)
@@ -250,8 +250,8 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	b.writes("\n")
 
-	b.printf("bool %sstatus_is_error(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
-	b.printf("const char* %sstatus_string(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("bool %sstatus__is_error(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("const char* %sstatus__string(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
 
 	b.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(b, pubOnly, (*gen).writeConst); err != nil {
@@ -289,26 +289,26 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writes("\n")
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
-	b.printf("bool %sstatus_is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
-	b.printf("const char* %sstatus_strings0[%d] = {\n", g.pkgPrefix, len(builtin.StatusList))
+	b.printf("const char* %sstatus__strings0[%d] = {\n", g.pkgPrefix, len(builtin.StatusList))
 	for _, z := range builtin.StatusList {
 		b.printf("%q,", g.pkgName+": "+z.Message)
 	}
 	b.writes("};\n\n")
 
-	b.printf("const char* %sstatus_strings1[%d] = {\n", g.pkgPrefix, len(g.statusList))
+	b.printf("const char* %sstatus__strings1[%d] = {\n", g.pkgPrefix, len(g.statusList))
 	for _, s := range g.statusList {
 		b.printf("%q,", g.pkgName+": "+s.msg)
 	}
 	b.writes("};\n\n")
 
-	b.printf("const char* %sstatus_string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("const char* %sstatus__string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
 	b.printf("const char** a = NULL;\n")
 	b.printf("uint32_t n = 0;\n")
 	b.printf("switch ((s >> %d) & %#x) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
-	b.printf("case 0: a = %sstatus_strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
-	b.printf("case %spackageid: a = %sstatus_strings1; n = %d; break;\n",
+	b.printf("case 0: a = %sstatus__strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
+	b.printf("case %spackageid: a = %sstatus__strings1; n = %d; break;\n",
 		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
 	// TODO: add cases for other packages used by this one.
 	b.printf("}\n")
@@ -411,10 +411,7 @@ func (g *gen) forEachStatus(b *buffer, v visibility, f func(*gen, *buffer, *a.St
 }
 
 func (g *gen) cName(name string) string {
-	s := []byte(nil)
-	s = append(s, "puffs_"...)
-	s = append(s, g.pkgName...)
-	s = append(s, '_')
+	s := []byte(g.pkgPrefix)
 	underscore := true
 	for _, r := range name {
 		if 'A' <= r && r <= 'Z' {
@@ -508,14 +505,14 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// For API/ABI compatibility, the very first field in the struct's
 	// private_impl must be the status code. This lets the initializer callee
-	// set "self->private_impl.status = etc_error_bad_puffs_version;"
+	// set "self->private_impl.status = PUFFS_ETC__ERROR_BAD_PUFFS_VERSION;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
 	structName := n.Name().String(g.tm)
 	b.writes("typedef struct {\n")
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
-	b.printf("// %s%s_etc functions.\n", g.pkgPrefix, structName)
+	b.printf("// %s%s__etc functions.\n", g.pkgPrefix, structName)
 	b.writes("//\n")
 	b.writes("// In C++, these fields would be \"private\", but C does not support that.\n")
 	b.writes("//\n")
@@ -574,14 +571,14 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.Name().String(g.tm)
 	if public {
-		b.printf("// %s%s_initialize is an initializer function.\n", g.pkgPrefix, structName)
+		b.printf("// %s%s__initialize is an initializer function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
-		b.printf("// It should be called before any other %s%s_* function.\n",
+		b.printf("// It should be called before any other %s%s__* function.\n",
 			g.pkgPrefix, structName)
 		b.printf("//\n")
 		b.printf("// Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.\n")
 	}
-	b.printf("void %s%s_initialize(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
+	b.printf("void %s%s__initialize(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
 	b.printf(", uint32_t puffs_version, uint32_t for_internal_use_only")
 	b.printf(")")
 	return nil
@@ -636,7 +633,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		if g.structMap[x.Name()] == nil {
 			continue
 		}
-		b.printf("%s%s_initialize(&self->private_impl.%s%s,"+
+		b.printf("%s%s__initialize(&self->private_impl.%s%s,"+
 			"PUFFS_VERSION, PUFFS_ALREADY_ZEROED);\n",
 			g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
 	}

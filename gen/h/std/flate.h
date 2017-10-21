@@ -104,57 +104,57 @@ extern "C" {
 //  - bits 0-7 are a package-namespaced numeric code
 //
 // Do not manipulate these bits directly. Use the API functions such as
-// puffs_flate_status_is_error instead.
-typedef int32_t puffs_flate_status;
+// puffs_flate__status__is_error instead.
+typedef int32_t puffs_flate__status;
 
-#define puffs_flate_packageid 967230  // 0x000ec23e
+#define puffs_flate__packageid 967230  // 0x000ec23e
 
-#define PUFFS_FLATE_STATUS_OK 0                               // 0x00000000
-#define PUFFS_FLATE_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
-#define PUFFS_FLATE_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define PUFFS_FLATE_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_FLATE_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_FLATE_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
-#define PUFFS_FLATE_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
-#define PUFFS_FLATE_SUSPENSION_SHORT_READ 7                   // 0x00000007
-#define PUFFS_FLATE_SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_FLATE__STATUS_OK 0                               // 0x00000000
+#define PUFFS_FLATE__ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
+#define PUFFS_FLATE__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
+#define PUFFS_FLATE__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
+#define PUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_FLATE__ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
+#define PUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
+#define PUFFS_FLATE__SUSPENSION_SHORT_READ 7                   // 0x00000007
+#define PUFFS_FLATE__SUSPENSION_SHORT_WRITE 8                  // 0x00000008
 
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1157040128  // 0xbb08f800
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED \
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED \
   -1157040127  // 0xbb08f801
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
   -1157040126  // 0xbb08f802
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
-  -1157040125                                           // 0xbb08f803
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_CODE -1157040124  // 0xbb08f804
-#define PUFFS_FLATE_ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
-  -1157040123                                                  // 0xbb08f805
-#define PUFFS_FLATE_ERROR_BAD_DISTANCE -1157040122             // 0xbb08f806
-#define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xbb08f807
-#define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040120          // 0xbb08f808
-#define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040119                                            // 0xbb08f809
-#define PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH -1157040118  // 0xbb08f80a
-#define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
+  -1157040125                                            // 0xbb08f803
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE -1157040124  // 0xbb08f804
+#define PUFFS_FLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
+  -1157040123                                                   // 0xbb08f805
+#define PUFFS_FLATE__ERROR_BAD_DISTANCE -1157040122             // 0xbb08f806
+#define PUFFS_FLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xbb08f807
+#define PUFFS_FLATE__ERROR_BAD_FLATE_BLOCK -1157040120          // 0xbb08f808
+#define PUFFS_FLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
+  -1157040119                                             // 0xbb08f809
+#define PUFFS_FLATE__ERROR_CHECKSUM_MISMATCH -1157040118  // 0xbb08f80a
+#define PUFFS_FLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1157040117  // 0xbb08f80b
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+#define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040116  // 0xbb08f80c
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040115                                                    // 0xbb08f80d
-#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040114  // 0xbb08f80e
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040113           // 0xbb08f80f
-#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
+#define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
+  -1157040115                                                     // 0xbb08f80d
+#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040114  // 0xbb08f80e
+#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040113           // 0xbb08f80f
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
   -1157040112  // 0xbb08f810
-#define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040111                                                    // 0xbb08f811
-#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040110  // 0xbb08f812
-#define PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
+  -1157040111                                                     // 0xbb08f811
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040110  // 0xbb08f812
+#define PUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
   -1157040109  // 0xbb08f813
 
-bool puffs_flate_status_is_error(puffs_flate_status s);
+bool puffs_flate__status__is_error(puffs_flate__status s);
 
-const char* puffs_flate_status_string(puffs_flate_status s);
+const char* puffs_flate__status__string(puffs_flate__status s);
 
 // ---------------- Public Consts
 
@@ -163,13 +163,13 @@ const char* puffs_flate_status_string(puffs_flate_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_flate_decoder_etc functions.
+  // puffs_flate__flate_decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_flate_status status;
+    puffs_flate__status status;
     uint32_t magic;
 
     uint32_t f_bits;
@@ -182,7 +182,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      puffs_flate_status v_z;
+      puffs_flate__status v_z;
       uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
@@ -233,79 +233,79 @@ typedef struct {
       uint32_t v_rep_count;
     } c_init_dynamic_huffman[1];
   } private_impl;
-} puffs_flate_flate_decoder;
+} puffs_flate__flate_decoder;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_adler32_etc functions.
+  // puffs_flate__adler32__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_flate_status status;
+    puffs_flate__status status;
     uint32_t magic;
 
     uint32_t f_state;
 
   } private_impl;
-} puffs_flate_adler32;
+} puffs_flate__adler32;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_zlib_decoder_etc functions.
+  // puffs_flate__zlib_decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_flate_status status;
+    puffs_flate__status status;
     uint32_t magic;
 
-    puffs_flate_flate_decoder f_flate;
-    puffs_flate_adler32 f_adler;
+    puffs_flate__flate_decoder f_flate;
+    puffs_flate__adler32 f_adler;
 
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
       uint32_t v_checksum;
-      puffs_flate_status v_z;
+      puffs_flate__status v_z;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
-} puffs_flate_zlib_decoder;
+} puffs_flate__zlib_decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// puffs_flate_flate_decoder_initialize is an initializer function.
+// puffs_flate__flate_decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_flate_flate_decoder_* function.
+// It should be called before any other puffs_flate__flate_decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_flate_flate_decoder_initialize(puffs_flate_flate_decoder* self,
-                                          uint32_t puffs_version,
-                                          uint32_t for_internal_use_only);
+void puffs_flate__flate_decoder__initialize(puffs_flate__flate_decoder* self,
+                                            uint32_t puffs_version,
+                                            uint32_t for_internal_use_only);
 
-// puffs_flate_zlib_decoder_initialize is an initializer function.
+// puffs_flate__zlib_decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_flate_zlib_decoder_* function.
+// It should be called before any other puffs_flate__zlib_decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
-                                         uint32_t puffs_version,
-                                         uint32_t for_internal_use_only);
+void puffs_flate__zlib_decoder__initialize(puffs_flate__zlib_decoder* self,
+                                           uint32_t puffs_version,
+                                           uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-puffs_flate_status puffs_flate_flate_decoder_decode(
-    puffs_flate_flate_decoder* self,
+puffs_flate__status puffs_flate__flate_decoder__decode(
+    puffs_flate__flate_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src);
 
-puffs_flate_status puffs_flate_zlib_decoder_decode(
-    puffs_flate_zlib_decoder* self,
+puffs_flate__status puffs_flate__zlib_decoder__decode(
+    puffs_flate__zlib_decoder* self,
     puffs_base_writer1 a_dst,
     puffs_base_reader1 a_src);
 

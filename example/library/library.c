@@ -54,12 +54,12 @@ static const char* decode() {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
-  puffs_flate_flate_decoder dec;
-  puffs_flate_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
-  puffs_flate_status s =
-      puffs_flate_flate_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_flate__flate_decoder dec;
+  puffs_flate__flate_decoder__initialize(&dec, PUFFS_VERSION, 0);
+  puffs_flate__status s =
+      puffs_flate__flate_decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
-    return puffs_flate_status_string(s);
+    return puffs_flate__status__string(s);
   }
   ignore_return_value(write(1, dst.ptr, dst.wi));
   return NULL;

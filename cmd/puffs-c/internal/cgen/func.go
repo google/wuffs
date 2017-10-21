@@ -75,7 +75,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 	b.writes(g.pkgPrefix)
 	if r := n.Receiver(); r != 0 {
 		b.writes(r.String(g.tm))
-		b.writeb('_')
+		b.writes("__")
 	}
 	b.printf("%s(", n.Name().String(g.tm))
 

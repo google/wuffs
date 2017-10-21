@@ -104,33 +104,33 @@ extern "C" {
 //  - bits 0-7 are a package-namespaced numeric code
 //
 // Do not manipulate these bits directly. Use the API functions such as
-// puffs_gif_status_is_error instead.
-typedef int32_t puffs_gif_status;
+// puffs_gif__status__is_error instead.
+typedef int32_t puffs_gif__status;
 
-#define puffs_gif_packageid 1017222  // 0x000f8586
+#define puffs_gif__packageid 1017222  // 0x000f8586
 
-#define PUFFS_GIF_STATUS_OK 0                               // 0x00000000
-#define PUFFS_GIF_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
-#define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
-#define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
-#define PUFFS_GIF_SUSPENSION_SHORT_READ 7                   // 0x00000007
-#define PUFFS_GIF_SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_GIF__STATUS_OK 0                               // 0x00000000
+#define PUFFS_GIF__ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
+#define PUFFS_GIF__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
+#define PUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
+#define PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
+#define PUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
+#define PUFFS_GIF__SUSPENSION_SHORT_READ 7                   // 0x00000007
+#define PUFFS_GIF__SUSPENSION_SHORT_WRITE 8                  // 0x00000008
 
-#define PUFFS_GIF_ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
-#define PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
-#define PUFFS_GIF_ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
-#define PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
-#define PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848316                                                     // 0xbe161804
-#define PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
-#define PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
+#define PUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
+#define PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
+#define PUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
+#define PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
+  -1105848316                                                      // 0xbe161804
+#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
+#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
 
-bool puffs_gif_status_is_error(puffs_gif_status s);
+bool puffs_gif__status__is_error(puffs_gif__status s);
 
-const char* puffs_gif_status_string(puffs_gif_status s);
+const char* puffs_gif__status__string(puffs_gif__status s);
 
 // ---------------- Public Consts
 
@@ -139,13 +139,13 @@ const char* puffs_gif_status_string(puffs_gif_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_gif_lzw_decoder_etc functions.
+  // puffs_gif__lzw_decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_gif_status status;
+    puffs_gif__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -168,25 +168,25 @@ typedef struct {
       uint64_t v_n_copied;
     } c_decode[1];
   } private_impl;
-} puffs_gif_lzw_decoder;
+} puffs_gif__lzw_decoder;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_gif_decoder_etc functions.
+  // puffs_gif__decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_gif_status status;
+    puffs_gif__status status;
     uint32_t magic;
 
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_background_color_index;
     uint8_t f_gct[768];
-    puffs_gif_lzw_decoder f_lzw;
+    puffs_gif__lzw_decoder f_lzw;
 
     struct {
       uint32_t coro_susp_point;
@@ -220,40 +220,40 @@ typedef struct {
       puffs_base_reader1 v_lzw_src;
     } c_decode_id[1];
   } private_impl;
-} puffs_gif_decoder;
+} puffs_gif__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// puffs_gif_lzw_decoder_initialize is an initializer function.
+// puffs_gif__lzw_decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_gif_lzw_decoder_* function.
+// It should be called before any other puffs_gif__lzw_decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
-                                      uint32_t puffs_version,
-                                      uint32_t for_internal_use_only);
+void puffs_gif__lzw_decoder__initialize(puffs_gif__lzw_decoder* self,
+                                        uint32_t puffs_version,
+                                        uint32_t for_internal_use_only);
 
-// puffs_gif_decoder_initialize is an initializer function.
+// puffs_gif__decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_gif_decoder_* function.
+// It should be called before any other puffs_gif__decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
-                                  uint32_t puffs_version,
-                                  uint32_t for_internal_use_only);
+void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
-                                          puffs_base_writer1 a_dst,
-                                          puffs_base_reader1 a_src);
+puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
+                                             puffs_base_writer1 a_dst,
+                                             puffs_base_reader1 a_src);
 
-void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
-                                             uint32_t a_lw);
+void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
+                                               uint32_t a_lw);
 
-puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
-                                              puffs_base_writer1 a_dst,
-                                              puffs_base_reader1 a_src);
+puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
+                                                 puffs_base_writer1 a_dst,
+                                                 puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -514,11 +514,11 @@ static inline uint32_t puffs_base_writer1_copy_from_slice32(
 
 // ---------------- Status Codes Implementations
 
-bool puffs_gif_status_is_error(puffs_gif_status s) {
+bool puffs_gif__status__is_error(puffs_gif__status s) {
   return s < 0;
 }
 
-const char* puffs_gif_status_strings0[9] = {
+const char* puffs_gif__status__strings0[9] = {
     "gif: ok",
     "gif: bad puffs version",
     "gif: bad receiver",
@@ -530,7 +530,7 @@ const char* puffs_gif_status_strings0[9] = {
     "gif: short write",
 };
 
-const char* puffs_gif_status_strings1[7] = {
+const char* puffs_gif__status__strings1[7] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
@@ -540,16 +540,16 @@ const char* puffs_gif_status_strings1[7] = {
     "gif: LZW prefix chain is cyclical",
 };
 
-const char* puffs_gif_status_string(puffs_gif_status s) {
+const char* puffs_gif__status__string(puffs_gif__status s) {
   const char** a = NULL;
   uint32_t n = 0;
   switch ((s >> 10) & 0x1fffff) {
     case 0:
-      a = puffs_gif_status_strings0;
+      a = puffs_gif__status__strings0;
       n = 9;
       break;
-    case puffs_gif_packageid:
-      a = puffs_gif_status_strings1;
+    case puffs_gif__packageid:
+      a = puffs_gif__status__strings1;
       n = 7;
       break;
   }
@@ -563,18 +563,19 @@ const char* puffs_gif_status_string(puffs_gif_status s) {
 
 // ---------------- Private Function Prototypes
 
-puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
-                                                 puffs_base_reader1 a_src);
-
-puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
-                                              puffs_base_reader1 a_src);
-
-puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
+puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
                                                     puffs_base_reader1 a_src);
 
-puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
-                                             puffs_base_writer1 a_dst,
-                                             puffs_base_reader1 a_src);
+puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
+                                                 puffs_base_reader1 a_src);
+
+puffs_gif__status puffs_gif__decoder__decode_extension(
+    puffs_gif__decoder* self,
+    puffs_base_reader1 a_src);
+
+puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
+                                                puffs_base_writer1 a_dst,
+                                                puffs_base_reader1 a_src);
 
 // ---------------- Initializer Implementations
 
@@ -592,14 +593,14 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
 #define PUFFS_ALREADY_ZEROED (0x68602EF1U)
 
-void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
-                                      uint32_t puffs_version,
-                                      uint32_t for_internal_use_only) {
+void puffs_gif__lzw_decoder__initialize(puffs_gif__lzw_decoder* self,
+                                        uint32_t puffs_version,
+                                        uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = PUFFS_GIF_ERROR_BAD_PUFFS_VERSION;
+    self->private_impl.status = PUFFS_GIF__ERROR_BAD_PUFFS_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
@@ -609,39 +610,39 @@ void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
   self->private_impl.f_literal_width = 8;
 }
 
-void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
-                                  uint32_t puffs_version,
-                                  uint32_t for_internal_use_only) {
+void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
   if (puffs_version != PUFFS_VERSION) {
-    self->private_impl.status = PUFFS_GIF_ERROR_BAD_PUFFS_VERSION;
+    self->private_impl.status = PUFFS_GIF__ERROR_BAD_PUFFS_VERSION;
     return;
   }
   if (for_internal_use_only != PUFFS_ALREADY_ZEROED) {
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = PUFFS_MAGIC;
-  puffs_gif_lzw_decoder_initialize(&self->private_impl.f_lzw, PUFFS_VERSION,
-                                   PUFFS_ALREADY_ZEROED);
+  puffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw, PUFFS_VERSION,
+                                     PUFFS_ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
 
-puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
-                                          puffs_base_writer1 a_dst,
-                                          puffs_base_reader1 a_src) {
+puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
+                                             puffs_base_writer1 a_dst,
+                                             puffs_base_reader1 a_src) {
   if (!self) {
-    return PUFFS_GIF_ERROR_BAD_RECEIVER;
+    return PUFFS_GIF__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c;
 
@@ -679,7 +680,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         }
       }
     }
-    status = puffs_gif_decoder_decode_header(self, a_src);
+    status = puffs_gif__decoder__decode_header(self, a_src);
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -705,7 +706,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
         }
       }
     }
-    status = puffs_gif_decoder_decode_lsd(self, a_src);
+    status = puffs_gif__decoder__decode_lsd(self, a_src);
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -739,7 +740,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
             }
           }
         }
-        status = puffs_gif_decoder_decode_extension(self, a_src);
+        status = puffs_gif__decoder__decode_extension(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -766,7 +767,7 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
             }
           }
         }
-        status = puffs_gif_decoder_decode_id(self, a_dst, a_src);
+        status = puffs_gif__decoder__decode_id(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -782,10 +783,10 @@ puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
           goto suspend;
         }
       } else if (v_c == 59) {
-        status = PUFFS_GIF_STATUS_OK;
+        status = PUFFS_GIF__STATUS_OK;
         goto ok;
       } else {
-        status = PUFFS_GIF_ERROR_BAD_GIF_BLOCK;
+        status = PUFFS_GIF__ERROR_BAD_GIF_BLOCK;
         goto exit;
       }
     }
@@ -820,16 +821,16 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
-puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
-                                                 puffs_base_reader1 a_src) {
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
+                                                    puffs_base_reader1 a_src) {
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[6];
   uint32_t v_i;
@@ -872,7 +873,7 @@ puffs_gif_status puffs_gif_decoder_decode_header(puffs_gif_decoder* self,
     }
     if ((v_c[0] != 71) || (v_c[1] != 73) || (v_c[2] != 70) || (v_c[3] != 56) ||
         ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
-      status = PUFFS_GIF_ERROR_BAD_GIF_HEADER;
+      status = PUFFS_GIF__ERROR_BAD_GIF_HEADER;
       goto exit;
     }
 
@@ -906,16 +907,16 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
-puffs_gif_status puffs_gif_decoder_decode_lsd(puffs_gif_decoder* self,
-                                              puffs_base_reader1 a_src) {
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
+                                                 puffs_base_reader1 a_src) {
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[7];
   uint32_t v_i;
@@ -1019,16 +1020,17 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
-puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
-                                                    puffs_base_reader1 a_src) {
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+puffs_gif__status puffs_gif__decoder__decode_extension(
+    puffs_gif__decoder* self,
+    puffs_base_reader1 a_src) {
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_label;
   uint8_t v_block_size;
@@ -1069,7 +1071,7 @@ puffs_gif_status puffs_gif_decoder_decode_extension(puffs_gif_decoder* self,
     } else if (v_label == 254) {
     } else if (v_label == 255) {
     } else {
-      status = PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL;
+      status = PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL;
       goto exit;
     }
     while (true) {
@@ -1127,17 +1129,17 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
-puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
-                                             puffs_base_writer1 a_dst,
-                                             puffs_base_reader1 a_src) {
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
+                                                puffs_base_writer1 a_dst,
+                                                puffs_base_reader1 a_src) {
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[9];
   uint32_t v_i;
@@ -1191,7 +1193,7 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     if (v_interlace) {
     }
     if ((v_c[8] & 128) != 0) {
-      status = PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
+      status = PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
       goto exit;
     }
     PUFFS_COROUTINE_SUSPENSION_POINT(2);
@@ -1201,11 +1203,11 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
     uint8_t t_1 = *b_rptr_src++;
     v_lw = t_1;
     if ((v_lw < 2) || (8 < v_lw)) {
-      status = PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH;
+      status = PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH;
       goto exit;
     }
-    puffs_gif_lzw_decoder_set_literal_width(&self->private_impl.f_lzw,
-                                            ((uint32_t)(v_lw)));
+    puffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
+                                              ((uint32_t)(v_lw)));
     while (true) {
       PUFFS_COROUTINE_SUSPENSION_POINT(3);
       if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -1233,8 +1235,8 @@ puffs_gif_status puffs_gif_decoder_decode_id(puffs_gif_decoder* self,
           }
         }
       }
-      status = puffs_gif_lzw_decoder_decode(&self->private_impl.f_lzw, a_dst,
-                                            v_lzw_src);
+      status = puffs_gif__lzw_decoder__decode(&self->private_impl.f_lzw, a_dst,
+                                              v_lzw_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -1287,45 +1289,45 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
 
-void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
-                                             uint32_t a_lw) {
+void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
+                                               uint32_t a_lw) {
   if (!self) {
     return;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return;
   }
   if (a_lw < 2 || a_lw > 8) {
-    self->private_impl.status = PUFFS_GIF_ERROR_BAD_ARGUMENT;
+    self->private_impl.status = PUFFS_GIF__ERROR_BAD_ARGUMENT;
     return;
   }
 
   self->private_impl.f_literal_width = a_lw;
 }
 
-puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
-                                              puffs_base_writer1 a_dst,
-                                              puffs_base_reader1 a_src) {
+puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
+                                                 puffs_base_writer1 a_dst,
+                                                 puffs_base_reader1 a_src) {
   if (!self) {
-    return PUFFS_GIF_ERROR_BAD_RECEIVER;
+    return PUFFS_GIF__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != PUFFS_MAGIC) {
-    self->private_impl.status = PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  puffs_gif_status status = PUFFS_GIF_STATUS_OK;
+  puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint32_t v_clear_code;
   uint32_t v_end_code;
@@ -1416,7 +1418,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
       if (v_code < v_clear_code) {
         PUFFS_COROUTINE_SUSPENSION_POINT(2);
         if (b_wptr_dst == b_wend_dst) {
-          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
+          status = PUFFS_GIF__SUSPENSION_SHORT_WRITE;
           goto suspend;
         }
         *b_wptr_dst++ = ((uint8_t)(v_code));
@@ -1431,7 +1433,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         v_width = (self->private_impl.f_literal_width + 1);
         goto label_0_continue;
       } else if (v_code == v_end_code) {
-        status = PUFFS_GIF_STATUS_OK;
+        status = PUFFS_GIF__STATUS_OK;
         goto ok;
       } else if (v_code <= v_save_code) {
         v_s = 4095;
@@ -1443,7 +1445,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
         while (v_c >= v_clear_code) {
           self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
           if (v_s == 0) {
-            status = PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL;
+            status = PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL;
             goto exit;
           }
           v_s -= 1;
@@ -1464,7 +1466,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
             goto label_1_break;
           }
           v_s = ((v_s + ((uint32_t)((v_n_copied & 4095)))) & 4095);
-          status = PUFFS_GIF_SUSPENSION_SHORT_WRITE;
+          status = PUFFS_GIF__SUSPENSION_SHORT_WRITE;
           PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
       label_1_break:;
@@ -1474,7 +1476,7 @@ puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
               ((uint16_t)(v_prev_code));
         }
       } else {
-        status = PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE;
+        status = PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE;
         goto exit;
       }
       if (v_save_code <= 4095) {
@@ -1538,9 +1540,9 @@ exit:
 
 short_read_src:
   if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
-    status = PUFFS_GIF_ERROR_UNEXPECTED_EOF;
+    status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = PUFFS_GIF_SUSPENSION_SHORT_READ;
+  status = PUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }

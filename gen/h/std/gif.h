@@ -104,33 +104,33 @@ extern "C" {
 //  - bits 0-7 are a package-namespaced numeric code
 //
 // Do not manipulate these bits directly. Use the API functions such as
-// puffs_gif_status_is_error instead.
-typedef int32_t puffs_gif_status;
+// puffs_gif__status__is_error instead.
+typedef int32_t puffs_gif__status;
 
-#define puffs_gif_packageid 1017222  // 0x000f8586
+#define puffs_gif__packageid 1017222  // 0x000f8586
 
-#define PUFFS_GIF_STATUS_OK 0                               // 0x00000000
-#define PUFFS_GIF_ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
-#define PUFFS_GIF_ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define PUFFS_GIF_ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define PUFFS_GIF_ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_GIF_ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
-#define PUFFS_GIF_ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
-#define PUFFS_GIF_SUSPENSION_SHORT_READ 7                   // 0x00000007
-#define PUFFS_GIF_SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_GIF__STATUS_OK 0                               // 0x00000000
+#define PUFFS_GIF__ERROR_BAD_PUFFS_VERSION -2147483647       // 0x80000001
+#define PUFFS_GIF__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
+#define PUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
+#define PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
+#define PUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
+#define PUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
+#define PUFFS_GIF__SUSPENSION_SHORT_READ 7                   // 0x00000007
+#define PUFFS_GIF__SUSPENSION_SHORT_WRITE 8                  // 0x00000008
 
-#define PUFFS_GIF_ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
-#define PUFFS_GIF_ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
-#define PUFFS_GIF_ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
-#define PUFFS_GIF_ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
-#define PUFFS_GIF_ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848316                                                     // 0xbe161804
-#define PUFFS_GIF_ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
-#define PUFFS_GIF_ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
+#define PUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
+#define PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
+#define PUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
+#define PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
+  -1105848316                                                      // 0xbe161804
+#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
+#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
 
-bool puffs_gif_status_is_error(puffs_gif_status s);
+bool puffs_gif__status__is_error(puffs_gif__status s);
 
-const char* puffs_gif_status_string(puffs_gif_status s);
+const char* puffs_gif__status__string(puffs_gif__status s);
 
 // ---------------- Public Consts
 
@@ -139,13 +139,13 @@ const char* puffs_gif_status_string(puffs_gif_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_gif_lzw_decoder_etc functions.
+  // puffs_gif__lzw_decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_gif_status status;
+    puffs_gif__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -168,25 +168,25 @@ typedef struct {
       uint64_t v_n_copied;
     } c_decode[1];
   } private_impl;
-} puffs_gif_lzw_decoder;
+} puffs_gif__lzw_decoder;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_gif_decoder_etc functions.
+  // puffs_gif__decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    puffs_gif_status status;
+    puffs_gif__status status;
     uint32_t magic;
 
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_background_color_index;
     uint8_t f_gct[768];
-    puffs_gif_lzw_decoder f_lzw;
+    puffs_gif__lzw_decoder f_lzw;
 
     struct {
       uint32_t coro_susp_point;
@@ -220,40 +220,40 @@ typedef struct {
       puffs_base_reader1 v_lzw_src;
     } c_decode_id[1];
   } private_impl;
-} puffs_gif_decoder;
+} puffs_gif__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// puffs_gif_lzw_decoder_initialize is an initializer function.
+// puffs_gif__lzw_decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_gif_lzw_decoder_* function.
+// It should be called before any other puffs_gif__lzw_decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_lzw_decoder_initialize(puffs_gif_lzw_decoder* self,
-                                      uint32_t puffs_version,
-                                      uint32_t for_internal_use_only);
+void puffs_gif__lzw_decoder__initialize(puffs_gif__lzw_decoder* self,
+                                        uint32_t puffs_version,
+                                        uint32_t for_internal_use_only);
 
-// puffs_gif_decoder_initialize is an initializer function.
+// puffs_gif__decoder__initialize is an initializer function.
 //
-// It should be called before any other puffs_gif_decoder_* function.
+// It should be called before any other puffs_gif__decoder__* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_gif_decoder_initialize(puffs_gif_decoder* self,
-                                  uint32_t puffs_version,
-                                  uint32_t for_internal_use_only);
+void puffs_gif__decoder__initialize(puffs_gif__decoder* self,
+                                    uint32_t puffs_version,
+                                    uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-puffs_gif_status puffs_gif_decoder_decode(puffs_gif_decoder* self,
-                                          puffs_base_writer1 a_dst,
-                                          puffs_base_reader1 a_src);
+puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
+                                             puffs_base_writer1 a_dst,
+                                             puffs_base_reader1 a_src);
 
-void puffs_gif_lzw_decoder_set_literal_width(puffs_gif_lzw_decoder* self,
-                                             uint32_t a_lw);
+void puffs_gif__lzw_decoder__set_literal_width(puffs_gif__lzw_decoder* self,
+                                               uint32_t a_lw);
 
-puffs_gif_status puffs_gif_lzw_decoder_decode(puffs_gif_lzw_decoder* self,
-                                              puffs_base_writer1 a_dst,
-                                              puffs_base_reader1 a_src);
+puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
+                                                 puffs_base_writer1 a_dst,
+                                                 puffs_base_reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -53,11 +53,12 @@ static const char* decode() {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
-  puffs_gif_decoder dec;
-  puffs_gif_decoder_initialize(&dec, PUFFS_VERSION, 0);
-  puffs_gif_status s = puffs_gif_decoder_decode(&dec, dst_writer, src_reader);
+  puffs_gif__decoder dec;
+  puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
+  puffs_gif__status s =
+      puffs_gif__decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
-    return puffs_gif_status_string(s);
+    return puffs_gif__status__string(s);
   }
 
   if (dst.wi != WIDTH * HEIGHT) {

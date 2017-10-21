@@ -267,7 +267,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("update").Key(), 1) {
 			// TODO: don't hard-code this.adler.
-			b.printf("%sadler32_update(&self->private_impl.f_adler, ", g.pkgPrefix)
+			b.printf("%sadler32__update(&self->private_impl.f_adler, ", g.pkgPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
@@ -277,7 +277,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
 			// TODO: don't hard-code lzw.
-			b.printf("%slzw_decoder_set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
+			b.printf("%slzw_decoder__set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
