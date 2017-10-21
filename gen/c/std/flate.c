@@ -336,6 +336,20 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
 
 #define PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
+// PUFFS_MAGIC is a magic number to check that initializers are called. It's
+// not foolproof, given C doesn't automatically zero memory before use, but it
+// should catch 99.99% of cases.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("puffs").
+#define PUFFS_MAGIC (0xCB3699CCU)
+
+// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
+// containee struct's initializer when the container has already zeroed the
+// containee's memory.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("zeroed").
+#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
+
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
@@ -708,20 +722,6 @@ uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
                                       puffs_base_slice_u8 a_x);
 
 // ---------------- Initializer Implementations
-
-// PUFFS_MAGIC is a magic number to check that initializers are called. It's
-// not foolproof, given C doesn't automatically zero memory before use, but it
-// should catch 99.99% of cases.
-//
-// Its (non-zero) value is arbitrary, based on md5sum("puffs").
-#define PUFFS_MAGIC (0xCB3699CCU)
-
-// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a
-// containee struct's initializer when the container has already zeroed the
-// containee's memory.
-//
-// Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define PUFFS_ALREADY_ZEROED (0x68602EF1U)
 
 void puffs_flate__flate_decoder__initialize(puffs_flate__flate_decoder* self,
                                             uint32_t puffs_version,

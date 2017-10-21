@@ -336,18 +336,6 @@ func (g *gen) genImpl(b *buffer) error {
 	}
 
 	b.writes("// ---------------- Initializer Implementations\n\n")
-	b.writes("// PUFFS_MAGIC is a magic number to check that initializers are called. It's\n")
-	b.writes("// not foolproof, given C doesn't automatically zero memory before use, but it\n")
-	b.writes("// should catch 99.99% of cases.\n")
-	b.writes("//\n")
-	b.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"puffs\").\n")
-	b.writes("#define PUFFS_MAGIC (0xCB3699CCU)\n\n")
-	b.writes("// PUFFS_ALREADY_ZEROED is passed from a container struct's initializer to a\n")
-	b.writes("// containee struct's initializer when the container has already zeroed the\n")
-	b.writes("// containee's memory.\n")
-	b.writes("//\n")
-	b.writes("// Its (non-zero) value is arbitrary, based on md5sum(\"zeroed\").\n")
-	b.writes("#define PUFFS_ALREADY_ZEROED (0x68602EF1U)\n\n")
 	for _, n := range g.structList {
 		if err := g.writeInitializerImpl(b, n); err != nil {
 			return err
