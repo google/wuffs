@@ -248,8 +248,18 @@ pri func flate_decoder.decode_huffman?(dst writer1, src reader1)() {
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
 		}
-		// Check for a redirect.
-		if (table_entry >> 28) == 1 {
+
+		if (table_entry >> 31) != 0 {
+			// Literal.
+			in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
+			continue
+		} else if (table_entry >> 30) != 0 {
+			// No-op; code continues past the if-else chain.
+		} else if (table_entry >> 29) != 0 {
+			// End of block.
+			break
+		} else if (table_entry >> 28) != 0 {
+			// Redirect.
 			var redir_top u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
 			var redir_mask u32[..0x7FFF] = ((1 as u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
@@ -267,21 +277,25 @@ pri func flate_decoder.decode_huffman?(dst writer1, src reader1)() {
 				bits |= (in.src.read_u8?() as u32) << n_bits
 				n_bits += 8
 			}
-			if (table_entry >> 28) == 1 {
+
+			if (table_entry >> 31) != 0 {
+				// Literal.
+				in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
+				continue
+			} else if (table_entry >> 30) != 0 {
+				// No-op; code continues past the if-else chain.
+			} else if (table_entry >> 29) != 0 {
+				// End of block.
+				break
+			} else if (table_entry >> 28) != 0 {
+				return error "internal error: inconsistent Huffman decoder state"
+			} else if (table_entry >> 27) != 0 {
+				return error "bad Huffman code"
+			} else {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
-		}
 
-		if (table_entry >> 31) != 0 {
-			// Literal.
-			in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
-			continue
-		} else if (table_entry >> 30) != 0 {
-			// No-op; code continues past the if-else chain.
-		} else if (table_entry >> 29) != 0 {
-			// End of block.
-			break
-		} else if (table_entry >> 24) == 0x08 {
+		} else if (table_entry >> 27) != 0 {
 			return error "bad Huffman code"
 		} else {
 			return error "internal error: inconsistent Huffman decoder state"
