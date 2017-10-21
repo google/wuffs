@@ -118,6 +118,9 @@ func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []
 }
 
 const (
+	ccompilersDefault = "clang,gcc"
+	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
+
 	langsDefault = "c"
 	langsUsage   = `comma-separated list of target languages (file extensions), e.g. "c,go,rs"`
 

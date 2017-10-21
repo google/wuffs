@@ -46,3 +46,8 @@ func main1() error {
 	}
 	return fmt.Errorf("bad sub-command %q", os.Args[1])
 }
+
+const (
+	ccompilersDefault = "clang,gcc"
+	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
+)

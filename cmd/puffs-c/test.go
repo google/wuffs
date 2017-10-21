@@ -40,6 +40,7 @@ func doBenchTest(args []string, bench bool) error {
 	)
 
 	flags := flag.FlagSet{}
+	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
 	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
 	repsFlag := flags.Int("reps", repsDefault, repsUsage)
 	if err := flags.Parse(args); err != nil {
@@ -53,7 +54,7 @@ func doBenchTest(args []string, bench bool) error {
 
 	failed := false
 	for _, arg := range args {
-		f, err := doBenchTest1(arg, bench, *mimicFlag, *repsFlag)
+		f, err := doBenchTest1(arg, bench, *ccompilersFlag, *mimicFlag, *repsFlag)
 		if err != nil {
 			return err
 		}
@@ -69,7 +70,7 @@ func doBenchTest(args []string, bench bool) error {
 	return nil
 }
 
-func doBenchTest1(filename string, bench bool, mimic bool, reps int) (failed bool, err error) {
+func doBenchTest1(filename string, bench bool, ccompilers string, mimic bool, reps int) (failed bool, err error) {
 	workDir, err := ioutil.TempDir("", "puffs-c")
 	if err != nil {
 		return false, err
@@ -95,7 +96,12 @@ func doBenchTest1(filename string, bench bool, mimic bool, reps int) (failed boo
 		ccArgs = append(ccArgs, extra...)
 	}
 
-	for _, cc := range []string{"clang", "gcc"} {
+	for _, cc := range strings.Split(ccompilers, ",") {
+		cc = strings.TrimSpace(cc)
+		if cc == "" {
+			continue
+		}
+
 		ccCmd := exec.Command(cc, ccArgs...)
 		ccCmd.Stdout = os.Stdout
 		ccCmd.Stderr = os.Stderr

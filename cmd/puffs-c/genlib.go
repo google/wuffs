@@ -25,6 +25,7 @@ import (
 
 func doGenlib(args []string) error {
 	flags := flag.FlagSet{}
+	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
 	dstdirFlag := flags.String("dstdir", "", "directory containing the object files ")
 	srcdirFlag := flags.String("srcdir", "", "directory containing the C source files")
 	if err := flags.Parse(args); err != nil {
@@ -39,7 +40,12 @@ func doGenlib(args []string) error {
 		return fmt.Errorf("empty -srcdir flag")
 	}
 
-	for _, cc := range []string{"clang", "gcc"} {
+	for _, cc := range strings.Split(*ccompilersFlag, ",") {
+		cc = strings.TrimSpace(cc)
+		if cc == "" {
+			continue
+		}
+
 		for _, dynamism := range []string{"static", "dynamic"} {
 			outDir := filepath.Join(*dstdirFlag, cc+"-"+dynamism)
 			if err := os.MkdirAll(outDir, 0755); err != nil {
