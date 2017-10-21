@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // This file contains a hand-written C implementation of gen/c/std/flate.c's
-// generated puffs_flate_decoder_decode_huffman function.
+// generated puffs_flate__flate_decoder__decode_huffman function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
 // purpose is to give a rough upper bound on how fast Puffs' generated C code
@@ -47,28 +47,27 @@
 //
 // ----------------
 //
-// $ git diff
+// $ git diff gen/c/std/flate.c
 // diff --git a/gen/c/std/flate.c b/gen/c/std/flate.c
-// index 0fac466..87166fc 100644
+// index 372d6ef..777f30b 100644
 // --- a/gen/c/std/flate.c
 // +++ b/gen/c/std/flate.c
-// @@ -252,6 +252,8 @@ puffs_flate_status
-// puffs_flate_decoder_decode(puffs_flate_decoder* self,
+// @@ -317,6 +317,8 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
 //
 //  // C HEADER ENDS HERE.
 //
 // +#include "../../../script/puffs-flate-decoder-decode-huffman.c"
 // +
-// #ifndef PUFFS_BASE_IMPL_H
-// #define PUFFS_BASE_IMPL_H
+//  #ifndef PUFFS_BASE_IMPL_H
+//  #define PUFFS_BASE_IMPL_H
 //
-// @@ -580,7 +582,7 @@ puffs_flate_status
-// puffs_flate_decoder_decode(puffs_flate_decoder* self,
+// @@ -1063,7 +1065,7 @@ puffs_flate__status
+// puffs_flate__flate_decoder__decode_blocks(
 //            }
 //          }
 //        }
-// -      status = puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
-// +      status = c_puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
+// -      status = puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
+// +      status = c_puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
 //        if (a_src.buf) {
 //          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
 //          size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -87,22 +86,22 @@
 #include <stdio.h>  // For manual printf debugging.
 
 #ifdef __x86_64__
-#define PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#define PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
 #endif
 
-puffs_flate_status c_puffs_flate_decoder_decode_huffman(
-    puffs_flate_decoder* self,
-    puffs_base_writer1 a_dst,
-    puffs_base_reader1 a_src) {
+puffs_flate__status c_puffs_flate__flate_decoder__decode_huffman(
+    puffs_flate__flate_decoder* self,
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   if (!a_dst.buf || !a_src.buf) {
-    return PUFFS_FLATE_ERROR_BAD_ARGUMENT;
+    return PUFFS_FLATE__ERROR_BAD_ARGUMENT;
   }
-  puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
+  puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
   // Load contextual state.
   uint8_t* pdst = a_dst.buf->ptr + a_dst.buf->wi;
   uint8_t* psrc = a_src.buf->ptr + a_src.buf->ri;
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
   uint64_t bits = self->private_impl.f_bits;
 #else
   uint32_t bits = self->private_impl.f_bits;
@@ -123,7 +122,7 @@ outer_loop:
   while (true) {
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -156,7 +155,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -170,7 +169,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < n) {
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -187,7 +186,7 @@ outer_loop:
 
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -211,7 +210,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -225,7 +224,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < 15) {
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -244,13 +243,13 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(distance) > (pdst - pdst0)) {
-      status = PUFFS_FLATE_ERROR_BAD_ARGUMENT;
+      status = PUFFS_FLATE__ERROR_BAD_ARGUMENT;
       goto end;
     }
 
     uint8_t* pback = pdst - distance;
 
-#ifdef PUFFS_FLATE_HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
     // Back-copy fast path, copying 8 instead of 1 bytes at a time.
     //
     // This always copies 8*N bytes (where N is the smallest integer such that
