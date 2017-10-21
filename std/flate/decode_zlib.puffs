@@ -19,7 +19,7 @@ pub error "invalid zlib parity check"
 pub error "TODO: unsupported zlib preset dictionary"
 
 pub struct zlib_decoder?(
-	dec decoder,
+	flate flate_decoder,
 	adler adler32,
 )
 
@@ -39,7 +39,7 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	}
 	var checksum u32
 	while true {
-		var z status = try this.dec.decode?(dst:in.dst, src:in.src)
+		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
 		checksum = this.adler.update(x:in.dst.slice())
 		if z.is_ok() {
 			break

@@ -40,6 +40,8 @@
 //
 // status = puffs_flate_decoder_decode_huffman(self, a_dst, a_src);
 //
+// TODO: "puffs_flate_decoder" should be "puffs_flate_flate_decoder".
+//
 // Change the "puffs" to "c_puffs", i.e. add a "c_" prefix. The net result
 // should look something like:
 //

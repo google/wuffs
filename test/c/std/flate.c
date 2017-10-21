@@ -178,8 +178,8 @@ const char* puffs_flate_decode(puffs_base_buf1* dst,
                                puffs_base_buf1* src,
                                uint64_t wlimit,
                                uint64_t rlimit) {
-  puffs_flate_decoder dec;
-  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_flate_flate_decoder dec;
+  puffs_flate_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = dst};
   puffs_base_reader1 src_reader = {.buf = src};
   while (true) {
@@ -193,7 +193,7 @@ const char* puffs_flate_decode(puffs_base_buf1* dst,
     }
 
     puffs_flate_status s =
-        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+        puffs_flate_flate_decoder_decode(&dec, dst_writer, src_reader);
 
     if (s == PUFFS_FLATE_STATUS_OK) {
       return NULL;
@@ -294,7 +294,7 @@ void test_puffs_flate_decode_split_src() {
     return;
   }
 
-  puffs_flate_decoder dec;
+  puffs_flate_flate_decoder dec;
   puffs_base_writer1 dst_writer = {.buf = &got};
   puffs_base_reader1 src_reader = {.buf = &src};
 
@@ -307,19 +307,19 @@ void test_puffs_flate_decode_split_src() {
     }
     got.wi = 0;
 
-    puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
+    puffs_flate_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
 
     src.closed = false;
     src.ri = gt->src_offset0;
     src.wi = split;
     puffs_flate_status s0 =
-        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+        puffs_flate_flate_decoder_decode(&dec, dst_writer, src_reader);
 
     src.closed = true;
     src.ri = split;
     src.wi = gt->src_offset1;
     puffs_flate_status s1 =
-        puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+        puffs_flate_flate_decoder_decode(&dec, dst_writer, src_reader);
 
     if (s0 != PUFFS_FLATE_SUSPENSION_SHORT_READ) {
       FAIL("i=%d: s0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s0,
@@ -347,7 +347,7 @@ bool do_test_puffs_flate_history(int i,
                                  golden_test* gt,
                                  puffs_base_buf1* src,
                                  puffs_base_buf1* got,
-                                 puffs_flate_decoder* dec,
+                                 puffs_flate_flate_decoder* dec,
                                  uint32_t starting_history_index,
                                  uint64_t limit,
                                  puffs_flate_status want_s) {
@@ -356,7 +356,7 @@ bool do_test_puffs_flate_history(int i,
   got->ri = 0;
   got->wi = 0;
 
-  puffs_flate_decoder_initialize(dec, PUFFS_VERSION, 0);
+  puffs_flate_flate_decoder_initialize(dec, PUFFS_VERSION, 0);
   puffs_base_writer1 dst_writer = {.buf = got};
   puffs_base_reader1 src_reader = {.buf = src};
 
@@ -365,7 +365,7 @@ bool do_test_puffs_flate_history(int i,
   dst_writer.limit.ptr_to_len = &limit;
 
   puffs_flate_status got_s =
-      puffs_flate_decoder_decode(dec, dst_writer, src_reader);
+      puffs_flate_flate_decoder_decode(dec, dst_writer, src_reader);
   if (got_s != want_s) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
          ": decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
@@ -394,7 +394,7 @@ void test_puffs_flate_history_full() {
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
-    puffs_flate_decoder dec;
+    puffs_flate_flate_decoder dec;
     if (!do_test_puffs_flate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
             i >= 0 ? PUFFS_FLATE_STATUS_OK
@@ -456,7 +456,7 @@ void test_puffs_flate_history_partial() {
     const char* fragment = "3.14";
     const uint32_t fragment_length = 4;
 
-    puffs_flate_decoder dec;
+    puffs_flate_flate_decoder dec;
     if (!do_test_puffs_flate_history(i, gt, &src, &got, &dec,
                                      starting_history_index, fragment_length,
                                      PUFFS_FLATE_SUSPENSION_SHORT_WRITE)) {
@@ -537,8 +537,8 @@ void test_puffs_flate_table_redirect() {
   // 1st is the key in the first level table (9 bits).
   // 2nd is the key in the second level table (variable bits).
 
-  puffs_flate_decoder dec;
-  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_flate_flate_decoder dec;
+  puffs_flate_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
 
   // The initializer should zero out dec's fields, but to be paranoid, we zero
   // it out explicitly.
@@ -561,7 +561,8 @@ void test_puffs_flate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
   dec.private_impl.f_code_lengths[n++] = 13;
 
-  puffs_flate_status s = puffs_flate_decoder_init_huff(&dec, 0, 0, n, 257);
+  puffs_flate_status s =
+      puffs_flate_flate_decoder_init_huff(&dec, 0, 0, n, 257);
   if (s) {
     FAIL("%s", puffs_flate_status_string(s));
     return;

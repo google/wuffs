@@ -163,7 +163,7 @@ const char* puffs_flate_status_string(puffs_flate_status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // puffs_flate_decoder_etc functions.
+  // puffs_flate_flate_decoder_etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -233,7 +233,7 @@ typedef struct {
       uint32_t v_rep_count;
     } c_init_dynamic_huffman[1];
   } private_impl;
-} puffs_flate_decoder;
+} puffs_flate_flate_decoder;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -264,7 +264,7 @@ typedef struct {
     puffs_flate_status status;
     uint32_t magic;
 
-    puffs_flate_decoder f_dec;
+    puffs_flate_flate_decoder f_flate;
     puffs_flate_adler32 f_adler;
 
     struct {
@@ -279,14 +279,14 @@ typedef struct {
 
 // ---------------- Public Initializer Prototypes
 
-// puffs_flate_decoder_initialize is an initializer function.
+// puffs_flate_flate_decoder_initialize is an initializer function.
 //
-// It should be called before any other puffs_flate_decoder_* function.
+// It should be called before any other puffs_flate_flate_decoder_* function.
 //
 // Pass PUFFS_VERSION and 0 for puffs_version and for_internal_use_only.
-void puffs_flate_decoder_initialize(puffs_flate_decoder* self,
-                                    uint32_t puffs_version,
-                                    uint32_t for_internal_use_only);
+void puffs_flate_flate_decoder_initialize(puffs_flate_flate_decoder* self,
+                                          uint32_t puffs_version,
+                                          uint32_t for_internal_use_only);
 
 // puffs_flate_zlib_decoder_initialize is an initializer function.
 //
@@ -299,9 +299,10 @@ void puffs_flate_zlib_decoder_initialize(puffs_flate_zlib_decoder* self,
 
 // ---------------- Public Function Prototypes
 
-puffs_flate_status puffs_flate_decoder_decode(puffs_flate_decoder* self,
-                                              puffs_base_writer1 a_dst,
-                                              puffs_base_reader1 a_src);
+puffs_flate_status puffs_flate_flate_decoder_decode(
+    puffs_flate_flate_decoder* self,
+    puffs_base_writer1 a_dst,
+    puffs_base_reader1 a_src);
 
 puffs_flate_status puffs_flate_zlib_decoder_decode(
     puffs_flate_zlib_decoder* self,

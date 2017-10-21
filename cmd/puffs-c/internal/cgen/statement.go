@@ -556,7 +556,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			b.printf("%sstatus %s%d = %sdecoder_decode(&self->private_impl.f_dec, %sdst, %ssrc);\n",
+			b.printf("%sstatus %s%d = %sflate_decoder_decode(&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, aPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {

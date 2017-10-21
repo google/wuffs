@@ -54,10 +54,10 @@ static const char* decode() {
   puffs_base_writer1 dst_writer = {.buf = &dst};
   puffs_base_reader1 src_reader = {.buf = &src};
 
-  puffs_flate_decoder dec;
-  puffs_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_flate_flate_decoder dec;
+  puffs_flate_flate_decoder_initialize(&dec, PUFFS_VERSION, 0);
   puffs_flate_status s =
-      puffs_flate_decoder_decode(&dec, dst_writer, src_reader);
+      puffs_flate_flate_decoder_decode(&dec, dst_writer, src_reader);
   if (s) {
     return puffs_flate_status_string(s);
   }
