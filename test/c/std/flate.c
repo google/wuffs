@@ -622,6 +622,37 @@ void test_puffs_flate_table_redirect() {
   }
 }
 
+void test_puffs_zlib_checksum_mismatch() {
+  proc_funcname = __func__;
+
+  puffs_base_buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  puffs_base_buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+
+  if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
+    return;
+  }
+  if (src.wi == 0) {
+    FAIL("source file was empty");
+    return;
+  }
+  // Flip a bit in the zlib checksum, which comes at the end of the file.
+  src.ptr[src.wi - 1] ^= 1;
+
+  puffs_flate_zlib_decoder dec;
+  puffs_flate_zlib_decoder_initialize(&dec, PUFFS_VERSION, 0);
+  puffs_base_writer1 got_writer = {.buf = &got};
+  puffs_base_reader1 src_reader = {.buf = &src};
+
+  puffs_flate_status status =
+      puffs_flate_zlib_decoder_decode(&dec, got_writer, src_reader);
+  if (status != PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH) {
+    FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+         puffs_flate_status_string(status), PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH,
+         puffs_flate_status_string(PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH));
+    return;
+  }
+}
+
 void test_puffs_zlib_decode_midsummer() {
   proc_funcname = __func__;
   do_test_buf1_buf1(puffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
@@ -734,6 +765,17 @@ void bench_puffs_flate_decode_100k() {
   do_bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_pi_gt, 0, 0, 3000);
 }
 
+void bench_puffs_zlib_decode_10k() {
+  proc_funcname = __func__;
+  do_bench_buf1_buf1(puffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
+                     30000);
+}
+
+void bench_puffs_zlib_decode_100k() {
+  proc_funcname = __func__;
+  do_bench_buf1_buf1(puffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
+}
+
 // ---------------- Mimic Benches
 
 #ifdef PUFFS_MIMIC
@@ -818,6 +860,7 @@ proc tests[] = {
     test_puffs_flate_history_full,                       //
     test_puffs_flate_history_partial,                    //
     test_puffs_flate_table_redirect,                     //
+    test_puffs_zlib_checksum_mismatch,                   //
     test_puffs_zlib_decode_midsummer,                    //
     test_puffs_zlib_decode_pi,                           //
 
@@ -847,6 +890,8 @@ proc benches[] = {
     bench_puffs_flate_decode_1k,    //
     bench_puffs_flate_decode_10k,   //
     bench_puffs_flate_decode_100k,  //
+    bench_puffs_zlib_decode_10k,    //
+    bench_puffs_zlib_decode_100k,   //
 
 #ifdef PUFFS_MIMIC
 

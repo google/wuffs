@@ -37,16 +37,18 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	if (x % 31) != 0 {
 		return error "invalid zlib parity check"
 	}
+	var checksum u32
 	while true {
 		var z status = try this.dec.decode?(dst:in.dst, src:in.src)
-		// TODO: calculate the checksum.
+		checksum = this.adler.update(x:in.dst.slice())
 		if z.is_ok() {
 			break
 		}
 		return z
 	}
-	var checksum u32 = in.src.read_u32be?()
-	// TODO: verify the checksum.
+	if checksum != in.src.read_u32be?() {
+		return error "checksum mismatch"
+	}
 }
 
 // TODO: drop the '?' but still generate puffs_flate_adler_initialize?

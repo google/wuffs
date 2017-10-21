@@ -762,6 +762,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
 		if isThatMethod(q.tm, n, t.KeyIsError, 0) || isThatMethod(q.tm, n, t.KeyIsOK, 0) ||
 			isThatMethod(q.tm, n, t.KeyIsSuspension, 0) || isThatMethod(q.tm, n, t.KeySuffix, 1) {
+			// TODO: should return be break? Ditto below.
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
@@ -777,21 +778,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
-			for _, o := range n.Args() {
-				a := o.Arg().Value()
-				aMin, aMax, err := q.bcheckExpr(a, depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				// TODO: check that aMin and aMax is within the function's
-				// declared arg bounds.
-				_, _ = aMin, aMax
-			}
-			return nil, nil, nil
-		}
-		// TODO: delete this hack that only matches "foo.copy_from_slice(etc)".
-		if isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) || isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) ||
+			isThatMethod(q.tm, n, q.tm.ByName("update").Key(), 1) {
 			for _, o := range n.Args() {
 				a := o.Arg().Value()
 				aMin, aMax, err := q.bcheckExpr(a, depth)

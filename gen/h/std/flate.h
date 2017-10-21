@@ -134,22 +134,23 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xbb08f807
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040120          // 0xbb08f808
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040119  // 0xbb08f809
+  -1157040119                                            // 0xbb08f809
+#define PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH -1157040118  // 0xbb08f80a
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040118  // 0xbb08f80a
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040117  // 0xbb08f80b
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040116                                                    // 0xbb08f80c
-#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040115  // 0xbb08f80d
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040114           // 0xbb08f80e
+  -1157040115                                                    // 0xbb08f80d
+#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040114  // 0xbb08f80e
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040113           // 0xbb08f80f
 #define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040113  // 0xbb08f80f
+  -1157040112  // 0xbb08f810
 #define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040112                                                    // 0xbb08f810
-#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040111  // 0xbb08f811
+  -1157040111                                                    // 0xbb08f811
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040110  // 0xbb08f812
 #define PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040110  // 0xbb08f812
+  -1157040109  // 0xbb08f813
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -269,8 +270,8 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
-      puffs_flate_status v_z;
       uint32_t v_checksum;
+      puffs_flate_status v_z;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;

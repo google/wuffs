@@ -553,6 +553,22 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprU64)
 			return nil
 		}
+		// TODO: delete this hack that only matches "foo.update(etc)".
+		if isThatMethod(q.tm, n, q.tm.ByName("update").Key(), 1) {
+			foo := n.LHS().Expr().LHS().Expr()
+			if err := q.tcheckExpr(foo, depth); err != nil {
+				return err
+			}
+			n.LHS().SetTypeChecked()
+			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			for _, o := range n.Args() {
+				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+					return err
+				}
+			}
+			n.SetMType(typeExprU32)
+			return nil
+		}
 
 	case t.KeyOpenBracket:
 		// n is an index.

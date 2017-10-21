@@ -134,22 +134,23 @@ typedef int32_t puffs_flate_status;
 #define PUFFS_FLATE_ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xbb08f807
 #define PUFFS_FLATE_ERROR_BAD_FLATE_BLOCK -1157040120          // 0xbb08f808
 #define PUFFS_FLATE_ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040119  // 0xbb08f809
+  -1157040119                                            // 0xbb08f809
+#define PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH -1157040118  // 0xbb08f80a
 #define PUFFS_FLATE_ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040118  // 0xbb08f80a
-#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040117  // 0xbb08f80b
+#define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE_ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040116                                                    // 0xbb08f80c
-#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040115  // 0xbb08f80d
-#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040114           // 0xbb08f80e
+  -1157040115                                                    // 0xbb08f80d
+#define PUFFS_FLATE_ERROR_MISSING_END_OF_BLOCK_CODE -1157040114  // 0xbb08f80e
+#define PUFFS_FLATE_ERROR_NO_HUFFMAN_CODES -1157040113           // 0xbb08f80f
 #define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040113  // 0xbb08f80f
+  -1157040112  // 0xbb08f810
 #define PUFFS_FLATE_ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040112                                                    // 0xbb08f810
-#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040111  // 0xbb08f811
+  -1157040111                                                    // 0xbb08f811
+#define PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK -1157040110  // 0xbb08f812
 #define PUFFS_FLATE_ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040110  // 0xbb08f812
+  -1157040109  // 0xbb08f813
 
 bool puffs_flate_status_is_error(puffs_flate_status s);
 
@@ -269,8 +270,8 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
-      puffs_flate_status v_z;
       uint32_t v_checksum;
+      puffs_flate_status v_z;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
@@ -582,7 +583,7 @@ const char* puffs_flate_status_strings0[9] = {
     "flate: short write",
 };
 
-const char* puffs_flate_status_strings1[19] = {
+const char* puffs_flate_status_strings1[20] = {
     "flate: bad Huffman code (over-subscribed)",
     "flate: bad Huffman code (under-subscribed)",
     "flate: bad Huffman code length count",
@@ -593,6 +594,7 @@ const char* puffs_flate_status_strings1[19] = {
     "flate: bad distance code count",
     "flate: bad flate block",
     "flate: bad literal/length code count",
+    "flate: checksum mismatch",
     "flate: inconsistent stored block length",
     "flate: internal error: inconsistent Huffman decoder state",
     "flate: internal error: inconsistent n_bits",
@@ -614,7 +616,7 @@ const char* puffs_flate_status_string(puffs_flate_status s) {
       break;
     case puffs_flate_packageid:
       a = puffs_flate_status_strings1;
-      n = 19;
+      n = 20;
       break;
   }
   uint32_t i = s & 0xff;
@@ -2261,9 +2263,27 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint16_t v_x;
-  puffs_flate_status v_z;
   uint32_t v_checksum;
+  puffs_flate_status v_z;
 
+  uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
+  uint8_t* b_wend_dst = NULL;
+  if (a_dst.buf) {
+    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
+    b_wend_dst = b_wptr_dst;
+    if (!a_dst.buf->closed) {
+      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      puffs_base_limit1* lim;
+      for (lim = &a_dst.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
+      }
+      b_wend_dst += len;
+    }
+  }
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
@@ -2283,8 +2303,8 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_x = self->private_impl.c_decode[0].v_x;
-    v_z = self->private_impl.c_decode[0].v_z;
     v_checksum = self->private_impl.c_decode[0].v_checksum;
+    v_z = self->private_impl.c_decode[0].v_z;
   }
   switch (coro_susp_point) {
     PUFFS_COROUTINE_SUSPENSION_POINT(0);
@@ -2331,8 +2351,19 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       status = PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK;
       goto exit;
     }
+    v_checksum = 0;
     while (true) {
       PUFFS_COROUTINE_SUSPENSION_POINT(3);
+      if (a_dst.buf) {
+        size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+        a_dst.buf->wi += n;
+        puffs_base_limit1* lim;
+        for (lim = &a_dst.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len) {
+            *lim->ptr_to_len -= n;
+          }
+        }
+      }
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
@@ -2345,6 +2376,20 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       }
       puffs_flate_status t_2 =
           puffs_flate_decoder_decode(&self->private_impl.f_dec, a_dst, a_src);
+      if (a_dst.buf) {
+        b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+        b_wend_dst = b_wptr_dst;
+        if (!a_dst.buf->closed) {
+          size_t len = a_dst.buf->len - a_dst.buf->wi;
+          puffs_base_limit1* lim;
+          for (lim = &a_dst.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+              len = *lim->ptr_to_len;
+            }
+          }
+          b_wend_dst += len;
+        }
+      }
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         size_t len = a_src.buf->wi - a_src.buf->ri;
@@ -2357,6 +2402,11 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
         b_rend_src = b_rptr_src + len;
       }
       v_z = t_2;
+      v_checksum = puffs_flate_adler32_update(
+          &self->private_impl.f_adler, ((puffs_base_slice_u8){
+                                           .ptr = b_wstart_dst,
+                                           .len = b_wptr_dst - b_wstart_dst,
+                                       }));
       if (v_z == 0) {
         goto label_0_break;
       }
@@ -2389,7 +2439,10 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
       }
     }
-    v_checksum = t_4;
+    if (v_checksum != t_4) {
+      status = PUFFS_FLATE_ERROR_CHECKSUM_MISMATCH;
+      goto exit;
+    }
 
     goto ok;
   ok:
@@ -2401,10 +2454,22 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_x = v_x;
-  self->private_impl.c_decode[0].v_z = v_z;
   self->private_impl.c_decode[0].v_checksum = v_checksum;
+  self->private_impl.c_decode[0].v_z = v_z;
 
 exit:
+  if (a_dst.buf) {
+    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+    a_dst.buf->wi += n;
+    puffs_base_limit1* lim;
+    for (lim = &a_dst.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    PUFFS_IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+  }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
