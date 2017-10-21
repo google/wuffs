@@ -72,7 +72,7 @@ pri func adler32.update(x[] u8)(checksum u32) {
 			in.x = in.x[:5552]
 		}
 
-		iterate.8(p ptr u8:in.x) {
+		iterate.8 (p ptr u8:in.x) {
 			s1 ~+= deref p as u32
 			s2 ~+= s1
 		}

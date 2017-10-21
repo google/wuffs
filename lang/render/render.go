@@ -108,14 +108,15 @@ func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (e
 		prevID, prevIsTightRight := token.ID(0), false
 		for _, t := range lineTokens {
 			const (
+				flagsCIL = token.FlagsClose | token.FlagsIdent | token.FlagsLiteral
+				flagsCIS = token.FlagsClose | token.FlagsIdent | token.FlagsStrLiteral
 				flagsUB  = token.FlagsUnaryOp | token.FlagsBinaryOp
-				flagsLIC = token.FlagsLiteral | token.FlagsIdent | token.FlagsClose
 			)
 
 			if prevID != 0 && !prevIsTightRight && !t.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if t.ID.Key() != token.KeyOpenParen || prevID.Flags()&flagsLIC == 0 {
+				if t.ID.Key() != token.KeyOpenParen || prevID.Flags()&flagsCIS == 0 {
 					buf = append(buf, ' ')
 				}
 			}
@@ -140,7 +141,7 @@ func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (e
 			if prevID != 0 && t.ID.Flags()&flagsUB == flagsUB {
 				// Token-based (not ast.Node-based) heuristic for whether the
 				// operator looks unary instead of binary.
-				prevIsTightRight = prevID.Flags()&flagsLIC == 0
+				prevIsTightRight = prevID.Flags()&flagsCIL == 0
 			}
 
 			prevID = t.ID
