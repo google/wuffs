@@ -130,7 +130,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")))")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyIsSuspension, 0) {
+		if isThatMethod(g.tm, n, t.KeyIsError, 0) || isThatMethod(g.tm, n, t.KeyIsOK, 0) ||
+			isThatMethod(g.tm, n, t.KeyIsSuspension, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -138,8 +139,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
-			// TODO: write < or == instead of > for KeyIsError or KeyIsOK.
-			b.writes(" > 0")
+			switch key := n.LHS().Expr().ID1().Key(); key {
+			case t.KeyIsError:
+				b.writes(" < 0")
+			case t.KeyIsOK:
+				b.writes(" == 0")
+			case t.KeyIsSuspension:
+				b.writes(" > 0")
+			default:
+				return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther's IsXxx", key)
+			}
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}

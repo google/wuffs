@@ -480,7 +480,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isThatMethod(q.tm, n, t.KeyIsSuspension, 0) {
+		if isThatMethod(q.tm, n, t.KeyIsError, 0) ||
+			isThatMethod(q.tm, n, t.KeyIsOK, 0) ||
+			isThatMethod(q.tm, n, t.KeyIsSuspension, 0) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -526,7 +528,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return err
 				}
 			}
-			n.SetMType(typeExprPlaceholder) // HACK.
+			if n.ID0().Key() == t.KeyTry {
+				// TODO: be more principled about inferring "try etc"'s type.
+				n.SetMType(typeExprStatus)
+			} else {
+				n.SetMType(typeExprPlaceholder) // HACK.
+			}
 			return nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".

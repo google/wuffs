@@ -269,6 +269,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
+      puffs_flate_status v_z;
       uint32_t v_checksum;
       uint64_t scratch;
     } c_decode[1];

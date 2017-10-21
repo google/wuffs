@@ -453,6 +453,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
+		// TODO: should we goto exit/suspend depending on if status < or > 0?
+		// Ditto below.
 		b.writes("if (status) { goto suspend; }\n")
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
@@ -493,6 +495,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
+		// TODO: check if tPrefix_temp is an error, and return?
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
 		b.printf("status = %s%s_decode_uncompressed(self, %sdst, %ssrc);\n",
@@ -546,12 +549,21 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	} else if isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 2) {
 		switch g.pkgName {
 		case "flate":
-			b.printf("status = %sdecoder_decode(&self->private_impl.f_dec, %sdst, %ssrc);\n",
+			// TODO: don't hard code being inside a try call.
+			if g.currFunk.tempW > maxTemp {
+				return fmt.Errorf("too many temporary variables required")
+			}
+			temp := g.currFunk.tempW
+			g.currFunk.tempW++
+
+			b.printf("%sstatus %s%d = %sdecoder_decode(&self->private_impl.f_dec, %sdst, %ssrc);\n",
+				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, aPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 				return err
 			}
-			b.writes("if (status) { goto suspend; }\n")
+			// TODO: check if tPrefix_temp is an error, and return?
+
 		case "gif":
 			b.printf("status = %slzw_decoder_decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
 				g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))

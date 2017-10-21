@@ -760,7 +760,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isThatMethod(q.tm, n, t.KeyIsSuspension, 0) || isThatMethod(q.tm, n, t.KeySuffix, 1) {
+		if isThatMethod(q.tm, n, t.KeyIsError, 0) || isThatMethod(q.tm, n, t.KeyIsOK, 0) ||
+			isThatMethod(q.tm, n, t.KeyIsSuspension, 0) || isThatMethod(q.tm, n, t.KeySuffix, 1) {
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".

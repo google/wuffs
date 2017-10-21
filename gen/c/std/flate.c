@@ -269,6 +269,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
+      puffs_flate_status v_z;
       uint32_t v_checksum;
       uint64_t scratch;
     } c_decode[1];
@@ -2260,6 +2261,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
   puffs_flate_status status = PUFFS_FLATE_STATUS_OK;
 
   uint16_t v_x;
+  puffs_flate_status v_z;
   uint32_t v_checksum;
 
   uint8_t* b_rptr_src = NULL;
@@ -2281,6 +2283,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_x = self->private_impl.c_decode[0].v_x;
+    v_z = self->private_impl.c_decode[0].v_z;
     v_checksum = self->private_impl.c_decode[0].v_checksum;
   }
   switch (coro_susp_point) {
@@ -2328,59 +2331,65 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
       status = PUFFS_FLATE_ERROR_INVALID_ZLIB_PARITY_CHECK;
       goto exit;
     }
-    PUFFS_COROUTINE_SUSPENSION_POINT(3);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
-      puffs_base_limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len) {
-          *lim->ptr_to_len -= n;
+    while (true) {
+      PUFFS_COROUTINE_SUSPENSION_POINT(3);
+      if (a_src.buf) {
+        size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+        a_src.buf->ri += n;
+        puffs_base_limit1* lim;
+        for (lim = &a_src.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len) {
+            *lim->ptr_to_len -= n;
+          }
         }
       }
-    }
-    status =
-        puffs_flate_decoder_decode(&self->private_impl.f_dec, a_dst, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-      size_t len = a_src.buf->wi - a_src.buf->ri;
-      puffs_base_limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
+      puffs_flate_status t_2 =
+          puffs_flate_decoder_decode(&self->private_impl.f_dec, a_dst, a_src);
+      if (a_src.buf) {
+        b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        size_t len = a_src.buf->wi - a_src.buf->ri;
+        puffs_base_limit1* lim;
+        for (lim = &a_src.limit; lim; lim = lim->next) {
+          if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+            len = *lim->ptr_to_len;
+          }
         }
+        b_rend_src = b_rptr_src + len;
       }
-      b_rend_src = b_rptr_src + len;
+      v_z = t_2;
+      if (v_z == 0) {
+        goto label_0_break;
+      }
+      status = v_z;
+      PUFFS_COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
     }
-    if (status) {
-      goto suspend;
-    }
-    PUFFS_COROUTINE_SUSPENSION_POINT(4);
-    uint32_t t_3;
+  label_0_break:;
+    PUFFS_COROUTINE_SUSPENSION_POINT(5);
+    uint32_t t_4;
     if (PUFFS_LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_3 = puffs_base_load_u32be(b_rptr_src);
+      t_4 = puffs_base_load_u32be(b_rptr_src);
       b_rptr_src += 4;
     } else {
       self->private_impl.c_decode[0].scratch = 0;
-      PUFFS_COROUTINE_SUSPENSION_POINT(5);
+      PUFFS_COROUTINE_SUSPENSION_POINT(6);
       while (true) {
         if (PUFFS_UNLIKELY(b_rptr_src == b_rend_src)) {
           goto short_read_src;
         }
-        uint32_t t_2 = self->private_impl.c_decode[0].scratch & 0xFF;
+        uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
         self->private_impl.c_decode[0].scratch >>= 8;
         self->private_impl.c_decode[0].scratch <<= 8;
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
-                                                  << (64 - t_2);
-        if (t_2 == 24) {
-          t_3 = self->private_impl.c_decode[0].scratch >> (64 - 32);
+                                                  << (64 - t_3);
+        if (t_3 == 24) {
+          t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
           break;
         }
-        t_2 += 8;
-        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_2));
+        t_3 += 8;
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
       }
     }
-    v_checksum = t_3;
+    v_checksum = t_4;
 
     goto ok;
   ok:
@@ -2392,6 +2401,7 @@ puffs_flate_status puffs_flate_zlib_decoder_decode(
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_x = v_x;
+  self->private_impl.c_decode[0].v_z = v_z;
   self->private_impl.c_decode[0].v_checksum = v_checksum;
 
 exit:

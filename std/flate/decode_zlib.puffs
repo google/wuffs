@@ -37,7 +37,14 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	if (x % 31) != 0 {
 		return error "invalid zlib parity check"
 	}
-	this.dec.decode?(dst:in.dst, src:in.src)
+	while true {
+		var z status = try this.dec.decode?(dst:in.dst, src:in.src)
+		// TODO: calculate the checksum.
+		if z.is_ok() {
+			break
+		}
+		return z
+	}
 	var checksum u32 = in.src.read_u32be?()
 	// TODO: verify the checksum.
 }
