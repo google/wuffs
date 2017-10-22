@@ -11,7 +11,16 @@ command line tool.
 
 
 
-256.bytes just holds "\x00\x01\x02\x03...\xff".
+The artificial directory holds artificially generated test data, often to
+explicitly test corner cases of various file formats. The files there usually
+come in families whose names have a common prefix, such as three files
+"foo.bar", "foo.bar.qux", "foo.bar.commentary.txt" all prefixed by "foo.bar".
+The file whose name is that prefix is usually the canonical (typically
+hand-crafted) file, and the other files are then derived from that. Outside of
+the artificial directory, the other files in this directory are typically real
+world examples of various file formats, or deriviations of them.
+
+
 
 bricks-* are various encodings of an original photo by Nigel Tao
 <nigeltao@golang.org>.

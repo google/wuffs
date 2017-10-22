@@ -59,10 +59,10 @@ golden_test checksum_pi_gt = {
 };
 
 golden_test flate_256_bytes_gt = {
-    .want_filename = "../../testdata/256.bytes",    //
-    .src_filename = "../../testdata/256.bytes.gz",  //
-    .src_offset0 = 20,                              //
-    .src_offset1 = 281,                             //
+    .want_filename = "../../testdata/artificial/256.bytes",    //
+    .src_filename = "../../testdata/artificial/256.bytes.gz",  //
+    .src_offset0 = 20,                                         //
+    .src_offset1 = 281,                                        //
 };
 
 golden_test flate_midsummer_gt = {
