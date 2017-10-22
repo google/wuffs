@@ -69,7 +69,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KIO:
-		b.writes("/* placeholder */\n")
+		// TODO: the mark needs to apply on every (coroutine) call to the
+		// function, not just when we execute this particular statement.
 		return nil
 
 	case a.KIf:

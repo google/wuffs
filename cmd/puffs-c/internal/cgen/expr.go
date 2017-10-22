@@ -169,8 +169,10 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySlice, 0) {
-			b.printf("((puffs_base__slice_u8){ .ptr = %swstart_dst, .len = %swptr_dst - %swstart_dst, })",
-				bPrefix, bPrefix, bPrefix)
+			b.printf("((puffs_base__slice_u8){ "+
+				".ptr = (%sdst.private_impl.mark ? %sdst.private_impl.mark : %swstart_dst), "+
+				".len = %swptr_dst - (%sdst.private_impl.mark ? %sdst.private_impl.mark : %swstart_dst), })",
+				aPrefix, aPrefix, bPrefix, bPrefix, aPrefix, aPrefix, bPrefix)
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
@@ -185,8 +187,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromHistory32, 2) {
-			b.printf("puffs_base__writer1__copy_from_history32(&%swptr_dst, %swstart_dst, %swend_dst",
-				bPrefix, bPrefix, bPrefix)
+			b.printf("puffs_base__writer1__copy_from_history32(&%swptr_dst, "+
+				"(%sdst.private_impl.mark ? %sdst.private_impl.mark : %swstart_dst), %swend_dst",
+				bPrefix, aPrefix, aPrefix, bPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
@@ -239,7 +242,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if typ := x.MType(); typ.Decorator() == 0 && typ.Name().Key() == t.KeyWriter1 {
 				// TODO: don't hard-code dst.
 				const wName = "dst"
-				b.printf("(uint64_t)(%swptr_%s - %swstart_%s)", bPrefix, wName, bPrefix, wName)
+				b.printf("(uint64_t)(%swptr_%s - "+
+					"(%sdst.private_impl.mark ? %sdst.private_impl.mark : %swstart_%s))",
+					bPrefix, wName, aPrefix, aPrefix, bPrefix, wName)
 			} else {
 				b.writes("(uint64_t)(")
 				if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {

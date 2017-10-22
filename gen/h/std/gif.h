@@ -82,11 +82,21 @@ typedef struct puffs_base__limit1 {
 typedef struct {
   puffs_base__buf1* buf;
   puffs_base__limit1 limit;
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so.
+  struct {
+    uint8_t* mark;
+  } private_impl;
 } puffs_base__reader1;
 
 typedef struct {
   puffs_base__buf1* buf;
   puffs_base__limit1 limit;
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so.
+  struct {
+    uint8_t* mark;
+  } private_impl;
 } puffs_base__writer1;
 
 #endif  // PUFFS_BASE_HEADER_H

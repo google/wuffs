@@ -88,7 +88,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.KeyReader1:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr) // TODO: delete.
 			b.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
@@ -110,13 +110,25 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.KeyWriter1:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr) // TODO: delete.
 			b.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("%swptr_%s = %s%s.buf->ptr + %s%s.buf->wi;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+
+		// TODO: remove this hard-coded hack for "mark in.dst".
+		//
+		// TODO: is a private_impl.mark the right representation? What if the
+		// function is passed a (ptr writer1) instead of a (writer1)? Do we
+		// still want to have that mark live outside of the function scope?
+		if header &&
+			g.currFunk.astFunc.Receiver().String(g.tm) == "flate_decoder" &&
+			g.currFunk.astFunc.Name().String(g.tm) == "decode" {
+			b.printf("%s%s.private_impl.mark = %swptr_%s;", aPrefix, nameStr, bPrefix, nameStr)
+		}
+
 		if header {
 			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		}

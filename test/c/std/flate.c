@@ -255,9 +255,8 @@ void test_puffs_flate_decode_256_bytes() {
 
 void test_puffs_flate_decode_flate_backref_crosses_blocks() {
   proc_funcname = __func__;
-  // TODO: uncomment.
-  // do_test_buf1_buf1(puffs_flate_decode,
-  // &flate_flate_backref_crosses_blocks_gt, 0, 0);
+  do_test_buf1_buf1(puffs_flate_decode, &flate_flate_backref_crosses_blocks_gt,
+                    0, 0);
 }
 
 void test_puffs_flate_decode_midsummer() {
