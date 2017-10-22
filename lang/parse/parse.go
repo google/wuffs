@@ -568,6 +568,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewJump(x, label).Node(), nil
 
+	case t.KeyIf:
+		o, err := p.parseIf()
+		return o.Node(), err
+
 	case t.KeyIterate:
 		p.src = p.src[1:]
 		if x := p.peek1().Key(); x != t.KeyDot {
@@ -608,30 +612,6 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewIterate(label, unroll, vars, asserts, body).Node(), nil
 
-	case t.KeyWhile:
-		p.src = p.src[1:]
-		label, err := p.parseLabel()
-		if err != nil {
-			return nil, err
-		}
-		condition, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		asserts, err := p.parseAsserts()
-		if err != nil {
-			return nil, err
-		}
-		body, err := p.parseBlock()
-		if err != nil {
-			return nil, err
-		}
-		return a.NewWhile(label, condition, asserts, body).Node(), nil
-
-	case t.KeyIf:
-		o, err := p.parseIf()
-		return o.Node(), err
-
 	case t.KeyMark:
 		p.src = p.src[1:]
 		value, err := p.parseExpr()
@@ -666,6 +646,26 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 	case t.KeyVar:
 		p.src = p.src[1:]
 		return p.parseVar(false)
+
+	case t.KeyWhile:
+		p.src = p.src[1:]
+		label, err := p.parseLabel()
+		if err != nil {
+			return nil, err
+		}
+		condition, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		asserts, err := p.parseAsserts()
+		if err != nil {
+			return nil, err
+		}
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewWhile(label, condition, asserts, body).Node(), nil
 	}
 
 	lhs, err := p.parseExpr()

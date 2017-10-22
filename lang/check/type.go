@@ -122,6 +122,24 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		return nil
 
+	case a.KIterate:
+		n := n.Iterate()
+		unroll := n.UnrollCount()
+		if err := q.tcheckExpr(unroll, 0); err != nil {
+			return err
+		}
+		if cv := unroll.ConstValue(); cv == nil {
+			return fmt.Errorf("check: unroll count %q is not constant", unroll.String(q.tm))
+		}
+		for _, o := range n.Variables() {
+			if err := q.tcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		if err := q.tcheckLoop(n); err != nil {
+			return err
+		}
+
 	case a.KJump:
 		n := n.Jump()
 		jumpTarget := (a.Loop)(nil)
@@ -211,24 +229,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		} else {
 			// TODO: check that the default zero value is assignable to n.XType().
-		}
-
-	case a.KIterate:
-		n := n.Iterate()
-		unroll := n.UnrollCount()
-		if err := q.tcheckExpr(unroll, 0); err != nil {
-			return err
-		}
-		if cv := unroll.ConstValue(); cv == nil {
-			return fmt.Errorf("check: unroll count %q is not constant", unroll.String(q.tm))
-		}
-		for _, o := range n.Variables() {
-			if err := q.tcheckStatement(o); err != nil {
-				return err
-			}
-		}
-		if err := q.tcheckLoop(n); err != nil {
-			return err
 		}
 
 	case a.KWhile:

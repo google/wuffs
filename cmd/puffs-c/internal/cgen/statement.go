@@ -121,6 +121,60 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		}
 		return nil
 
+	case a.KIterate:
+		n := n.Iterate()
+		vars := n.Variables()
+		if len(vars) == 0 {
+			return nil
+		}
+		if len(vars) != 1 {
+			return fmt.Errorf("TODO: iterate over more than one variable")
+		}
+		v := vars[0].Var()
+		name := v.Name().String(g.tm)
+		b.writes("{\n")
+
+		// TODO: don't assume that the slice is a slice of u8. In particular,
+		// the code gen can be subtle if the slice element type has zero size,
+		// such as the empty struct.
+		b.printf("puffs_base__slice_u8 %sslice_%s =", iPrefix, name)
+		if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+			return err
+		}
+		b.writes(";\n")
+		b.printf("uint8_t* %s%s = %sslice_%s.ptr;\n", vPrefix, name, iPrefix, name)
+		// TODO: look at n.HasContinue() and n.HasBreak().
+
+		unrollCount := int(n.UnrollCount().ConstValue().Int64())
+		if unrollCount != 1 {
+			b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
+				iPrefix, name, iPrefix, name, iPrefix, name, unrollCount, unrollCount)
+			b.printf("while (%s%s < %send0_%s) {\n", vPrefix, name, iPrefix, name)
+			for i := 0; i < unrollCount; i++ {
+				for _, o := range n.Body() {
+					if err := g.writeStatement(b, o, depth); err != nil {
+						return err
+					}
+				}
+				b.printf("%s%s++;\n", vPrefix, name)
+			}
+			b.writes("}\n")
+		}
+
+		b.printf("uint8_t* %send1_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
+			iPrefix, name, iPrefix, name, iPrefix, name)
+		b.printf("while (%s%s < %send1_%s) {\n", vPrefix, name, iPrefix, name)
+		for _, o := range n.Body() {
+			if err := g.writeStatement(b, o, depth); err != nil {
+				return err
+			}
+		}
+		b.printf("%s%s++;\n", vPrefix, name)
+		b.writes("}\n")
+
+		b.writes("}\n")
+		return nil
+
 	case a.KJump:
 		n := n.Jump()
 		jt, err := g.currFunk.jumpTarget(n.JumpTarget())
@@ -236,60 +290,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			}
 			b.writes(";\n")
 		}
-		return nil
-
-	case a.KIterate:
-		n := n.Iterate()
-		vars := n.Variables()
-		if len(vars) == 0 {
-			return nil
-		}
-		if len(vars) != 1 {
-			return fmt.Errorf("TODO: iterate over more than one variable")
-		}
-		v := vars[0].Var()
-		name := v.Name().String(g.tm)
-		b.writes("{\n")
-
-		// TODO: don't assume that the slice is a slice of u8. In particular,
-		// the code gen can be subtle if the slice element type has zero size,
-		// such as the empty struct.
-		b.printf("puffs_base__slice_u8 %sslice_%s =", iPrefix, name)
-		if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
-			return err
-		}
-		b.writes(";\n")
-		b.printf("uint8_t* %s%s = %sslice_%s.ptr;\n", vPrefix, name, iPrefix, name)
-		// TODO: look at n.HasContinue() and n.HasBreak().
-
-		unrollCount := int(n.UnrollCount().ConstValue().Int64())
-		if unrollCount != 1 {
-			b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-				iPrefix, name, iPrefix, name, iPrefix, name, unrollCount, unrollCount)
-			b.printf("while (%s%s < %send0_%s) {\n", vPrefix, name, iPrefix, name)
-			for i := 0; i < unrollCount; i++ {
-				for _, o := range n.Body() {
-					if err := g.writeStatement(b, o, depth); err != nil {
-						return err
-					}
-				}
-				b.printf("%s%s++;\n", vPrefix, name)
-			}
-			b.writes("}\n")
-		}
-
-		b.printf("uint8_t* %send1_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
-			iPrefix, name, iPrefix, name, iPrefix, name)
-		b.printf("while (%s%s < %send1_%s) {\n", vPrefix, name, iPrefix, name)
-		for _, o := range n.Body() {
-			if err := g.writeStatement(b, o, depth); err != nil {
-				return err
-			}
-		}
-		b.printf("%s%s++;\n", vPrefix, name)
-		b.writes("}\n")
-
-		b.writes("}\n")
 		return nil
 
 	case a.KWhile:
