@@ -831,6 +831,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
+    /* placeholder */
     while (true) {
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (a_dst.buf) {

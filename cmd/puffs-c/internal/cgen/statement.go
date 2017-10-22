@@ -68,6 +68,10 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.writes(";\n")
 		return nil
 
+	case a.KIO:
+		b.writes("/* placeholder */\n")
+		return nil
+
 	case a.KIf:
 		// TODO: for writeSuspendibles, make sure that we get order of
 		// sub-expression evaluation correct.

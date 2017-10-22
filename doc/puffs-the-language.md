@@ -54,9 +54,10 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 
 - `var`
 
-1 keyword deals with I/O:
+2 keywords deal with I/O:
 
 - `limit`
+- `mark`
 
 TODO: categorize and, or, not, as, ref, deref, false, true, in, out, this, u8,
 u16, etc.

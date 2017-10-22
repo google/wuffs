@@ -632,6 +632,14 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		o, err := p.parseIf()
 		return o.Node(), err
 
+	case t.KeyMark:
+		p.src = p.src[1:]
+		value, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewIO(x, value).Node(), nil
+
 	case t.KeyReturn:
 		p.src = p.src[1:]
 		keyword, message, value, err := t.ID(0), t.ID(0), (*a.Expr)(nil), error(nil)

@@ -241,6 +241,10 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		_, _, err := q.bcheckExpr(n.Expr(), 0)
 		return err
 
+	case a.KIO:
+		_, _, err := q.bcheckExpr(n.IO().Value(), 0)
+		return err
+
 	case a.KIf:
 		return q.bcheckIf(n.If())
 

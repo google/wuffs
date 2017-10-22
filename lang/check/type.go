@@ -84,6 +84,18 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KExpr:
 		return q.tcheckExpr(n.Expr(), 0)
 
+	case a.KIO:
+		n := n.IO()
+		val := n.Value()
+		if err := q.tcheckExpr(val, 0); err != nil {
+			return err
+		}
+		typ := val.MType()
+		if key := typ.Name().Key(); typ.Decorator() != 0 || (key != t.KeyReader1 && key != t.KeyWriter1) {
+			return fmt.Errorf("check: %s expression %q, of type %q, does not have an I/O type",
+				n.Keyword().String(q.tm), val.String(q.tm), typ.String(q.tm))
+		}
+
 	case a.KIf:
 		for n := n.If(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()

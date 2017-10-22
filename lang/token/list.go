@@ -242,6 +242,7 @@ const (
 	KeyConst      = Key(IDConst >> KeyShift)
 	KeyTry        = Key(IDTry >> KeyShift)
 	KeyIterate    = Key(IDIterate >> KeyShift)
+	KeyMark       = Key(IDMark >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -428,6 +429,7 @@ const (
 	IDConst      = ID(0x77<<KeyShift | FlagsOther)
 	IDTry        = ID(0x78<<KeyShift | FlagsOther)
 	IDIterate    = ID(0x79<<KeyShift | FlagsOther)
+	IDMark       = ID(0x7A<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -630,6 +632,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyConst:      {"const", IDConst},
 	KeyTry:        {"try", IDTry},
 	KeyIterate:    {"iterate", IDIterate},
+	KeyMark:       {"mark", IDMark},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
