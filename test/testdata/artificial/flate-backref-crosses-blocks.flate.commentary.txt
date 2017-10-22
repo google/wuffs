@@ -29,3 +29,8 @@ distance=2 back-reference decodes to "cdc", so the overall decoding is
 
     000010  0x000A  B       0x42    0b_0..._....  (lcode = 256) end of block
     000011  0x000B  .       0x00    0b_..00_0000
+
+This back-reference is valid, even though there is no prior data in that block,
+because there is prior data in previous blocks. RFC 1951 section 2 "Compressed
+representation overview" says that "the LZ77 algorithm may use a reference to a
+duplicated string occurring in a previous block".
