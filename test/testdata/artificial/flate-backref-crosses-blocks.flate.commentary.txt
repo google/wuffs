@@ -1,0 +1,31 @@
+Running flate-backref-crosses-blocks.flate through script/print-bits.go and
+adding commentary:
+
+    offset  xoffset ASCII   hex     binary
+    000000  0x0000  .       0x00    0b_0000_0000  Non-compressed block (BTYPE=00), non-final (BFINAL=0)
+    000001  0x0001  .       0x04    0b_0000_0100  Block length is 0x0004 (parity value is 0xFFFB)
+    000002  0x0002  .       0x00    0b_0000_0000
+    000003  0x0003  .       0xFB    0b_1111_1011
+    000004  0x0004  .       0xFF    0b_1111_1111
+    000005  0x0005  a       0x61    0b_0110_0001  Literal "abcd"
+    000006  0x0006  b       0x62    0b_0110_0010
+    000007  0x0007  c       0x63    0b_0110_0011
+    000008  0x0008  d       0x64    0b_0110_0100
+    000009  0x0009  .       0x03    0b_0000_0011  Fixed Huffman block (BTYPE=01), final (BFINAL=1), see below
+    000010  0x000A  B       0x42    0b_0100_0010
+    000011  0x000B  .       0x00    0b_0000_0000
+
+The fixed Huffman block consists of a back-reference that refers to the
+previous (non-compressed) block, and then an "end of block" code. The length=3,
+distance=2 back-reference decodes to "cdc", so the overall decoding is
+"abcdcdc". The breakdown of the fixed Huffman block is:
+
+    000009  0x0009  .       0x03    0b_...._.011  Fixed Huffman block (BTYPE=01), final (BFINAL=1)
+
+    000009  0x0009  .       0x03    0b_0000_0...  (lcode = 257) length   = 3
+    000010  0x000A  B       0x42    0b_...._..10
+
+    000010  0x000A  B       0x42    0b_.100_00..  (dcode =   1) distance = 2
+
+    000010  0x000A  B       0x42    0b_0..._....  (lcode = 256) end of block
+    000011  0x000B  .       0x00    0b_..00_0000

@@ -65,6 +65,15 @@ golden_test flate_256_bytes_gt = {
     .src_offset1 = 281,                                        //
 };
 
+golden_test flate_flate_backref_crosses_blocks_gt = {
+    .want_filename =
+        "../../testdata/artificial/"
+        "flate-backref-crosses-blocks.flate.decompressed",
+    .src_filename =
+        "../../testdata/artificial/"
+        "flate-backref-crosses-blocks.flate",
+};
+
 golden_test flate_midsummer_gt = {
     .want_filename = "../../testdata/midsummer.txt",    //
     .src_filename = "../../testdata/midsummer.txt.gz",  //
@@ -242,6 +251,13 @@ const char* puffs_zlib_decode(puffs_base__buf1* dst,
 void test_puffs_flate_decode_256_bytes() {
   proc_funcname = __func__;
   do_test_buf1_buf1(puffs_flate_decode, &flate_256_bytes_gt, 0, 0);
+}
+
+void test_puffs_flate_decode_flate_backref_crosses_blocks() {
+  proc_funcname = __func__;
+  // TODO: uncomment.
+  // do_test_buf1_buf1(puffs_flate_decode,
+  // &flate_flate_backref_crosses_blocks_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_midsummer() {
@@ -676,6 +692,12 @@ void test_mimic_flate_decode_256_bytes() {
   do_test_buf1_buf1(mimic_flate_decode, &flate_256_bytes_gt, 0, 0);
 }
 
+void test_mimic_flate_decode_flate_backref_crosses_blocks() {
+  proc_funcname = __func__;
+  do_test_buf1_buf1(mimic_flate_decode, &flate_flate_backref_crosses_blocks_gt,
+                    0, 0);
+}
+
 void test_mimic_flate_decode_midsummer() {
   proc_funcname = __func__;
   do_test_buf1_buf1(mimic_flate_decode, &flate_midsummer_gt, 0, 0);
@@ -849,35 +871,37 @@ void bench_mimic_zlib_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
     // Flate Tests
-    test_puffs_adler32,                                  //
-    test_puffs_flate_decode_256_bytes,                   //
-    test_puffs_flate_decode_midsummer,                   //
-    test_puffs_flate_decode_pi,                          //
-    test_puffs_flate_decode_pi_many_big_reads,           //
-    test_puffs_flate_decode_pi_many_medium_reads,        //
-    test_puffs_flate_decode_pi_many_small_writes_reads,  //
-    test_puffs_flate_decode_romeo,                       //
-    test_puffs_flate_decode_romeo_fixed,                 //
-    test_puffs_flate_decode_split_src,                   //
-    test_puffs_flate_history_full,                       //
-    test_puffs_flate_history_partial,                    //
-    test_puffs_flate_table_redirect,                     //
-    test_puffs_zlib_checksum_mismatch,                   //
-    test_puffs_zlib_decode_midsummer,                    //
-    test_puffs_zlib_decode_pi,                           //
+    test_puffs_adler32,                                    //
+    test_puffs_flate_decode_256_bytes,                     //
+    test_puffs_flate_decode_flate_backref_crosses_blocks,  //
+    test_puffs_flate_decode_midsummer,                     //
+    test_puffs_flate_decode_pi,                            //
+    test_puffs_flate_decode_pi_many_big_reads,             //
+    test_puffs_flate_decode_pi_many_medium_reads,          //
+    test_puffs_flate_decode_pi_many_small_writes_reads,    //
+    test_puffs_flate_decode_romeo,                         //
+    test_puffs_flate_decode_romeo_fixed,                   //
+    test_puffs_flate_decode_split_src,                     //
+    test_puffs_flate_history_full,                         //
+    test_puffs_flate_history_partial,                      //
+    test_puffs_flate_table_redirect,                       //
+    test_puffs_zlib_checksum_mismatch,                     //
+    test_puffs_zlib_decode_midsummer,                      //
+    test_puffs_zlib_decode_pi,                             //
 
 #ifdef PUFFS_MIMIC
 
     // Mimic Tests
-    test_mimic_flate_decode_256_bytes,    //
-    test_mimic_flate_decode_midsummer,    //
-    test_mimic_flate_decode_pi,           //
-    test_mimic_flate_decode_romeo,        //
-    test_mimic_flate_decode_romeo_fixed,  //
-    test_mimic_gzip_decode_midsummer,     //
-    test_mimic_gzip_decode_pi,            //
-    test_mimic_zlib_decode_midsummer,     //
-    test_mimic_zlib_decode_pi,            //
+    test_mimic_flate_decode_256_bytes,                     //
+    test_mimic_flate_decode_flate_backref_crosses_blocks,  //
+    test_mimic_flate_decode_midsummer,                     //
+    test_mimic_flate_decode_pi,                            //
+    test_mimic_flate_decode_romeo,                         //
+    test_mimic_flate_decode_romeo_fixed,                   //
+    test_mimic_gzip_decode_midsummer,                      //
+    test_mimic_gzip_decode_pi,                             //
+    test_mimic_zlib_decode_midsummer,                      //
+    test_mimic_zlib_decode_pi,                             //
 
 #endif  // PUFFS_MIMIC
 
