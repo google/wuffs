@@ -160,10 +160,15 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 		if block_size == 0 {
 			break
 		}
-		// TODO: how should this reader1-typed variable (which is implemented
-		// by containing pointers) work across resume/suspend? We don't want to
-		// have a dangling pointer to an earlier src buffer.
-		var lzw_src reader1 = limit (block_size) in.src
-		this.lzw.decode?(dst:in.dst, src:lzw_src)
+		while true {
+			// TODO: how should this reader1-typed variable (which is implemented
+			// by containing pointers) work across resume/suspend? We don't want to
+			// have a dangling pointer to an earlier src buffer.
+			var lzw_src reader1 = limit (block_size) in.src
+			this.lzw.decode?(dst:in.dst, src:lzw_src)
+
+			// TODO: add a "try" to the line above, and break *conditionally*.
+			break
+		}
 	}
 }

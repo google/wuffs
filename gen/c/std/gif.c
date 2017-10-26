@@ -1241,39 +1241,43 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
       if (v_block_size == 0) {
         goto label_0_break;
       }
-      l_lzw_src = v_block_size;
-      v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
-                                        .limit = (puffs_base__limit1){
-                                            .ptr_to_len = &l_lzw_src,
-                                            .next = &a_src.limit,
-                                        }};
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      if (a_src.buf) {
-        size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-        a_src.buf->ri += n;
-        puffs_base__limit1* lim;
-        for (lim = &a_src.limit; lim; lim = lim->next) {
-          if (lim->ptr_to_len) {
-            *lim->ptr_to_len -= n;
+      while (true) {
+        l_lzw_src = v_block_size;
+        v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
+                                          .limit = (puffs_base__limit1){
+                                              .ptr_to_len = &l_lzw_src,
+                                              .next = &a_src.limit,
+                                          }};
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        if (a_src.buf) {
+          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+          a_src.buf->ri += n;
+          puffs_base__limit1* lim;
+          for (lim = &a_src.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len) {
+              *lim->ptr_to_len -= n;
+            }
           }
         }
-      }
-      status = puffs_gif__lzw_decoder__decode(&self->private_impl.f_lzw, a_dst,
-                                              v_lzw_src);
-      if (a_src.buf) {
-        b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        size_t len = a_src.buf->wi - a_src.buf->ri;
-        puffs_base__limit1* lim;
-        for (lim = &a_src.limit; lim; lim = lim->next) {
-          if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-            len = *lim->ptr_to_len;
+        status = puffs_gif__lzw_decoder__decode(&self->private_impl.f_lzw,
+                                                a_dst, v_lzw_src);
+        if (a_src.buf) {
+          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+          size_t len = a_src.buf->wi - a_src.buf->ri;
+          puffs_base__limit1* lim;
+          for (lim = &a_src.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+              len = *lim->ptr_to_len;
+            }
           }
+          b_rend_src = b_rptr_src + len;
         }
-        b_rend_src = b_rptr_src + len;
+        if (l_lzw_src && status) {
+          goto suspend;
+        }
+        goto label_1_break;
       }
-      if (l_lzw_src && status) {
-        goto suspend;
-      }
+    label_1_break:;
     }
   label_0_break:;
 
