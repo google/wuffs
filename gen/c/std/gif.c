@@ -451,10 +451,13 @@ static inline uint64_t puffs_base__slice_u8__copy_from_slice(
 
 static inline uint32_t puffs_base__writer1__copy_from_history32(
     uint8_t** ptr_ptr,
-    uint8_t* start,
+    uint8_t* start,  // May be NULL, meaning an unmarked writer1.
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
+  if (!start) {
+    return 0;
+  }
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {

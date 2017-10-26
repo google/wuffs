@@ -505,10 +505,13 @@ static inline uint64_t puffs_base__slice_u8__copy_from_slice(
 
 static inline uint32_t puffs_base__writer1__copy_from_history32(
     uint8_t** ptr_ptr,
-    uint8_t* start,
+    uint8_t* start,  // May be NULL, meaning an unmarked writer1.
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
+  if (!start) {
+    return 0;
+  }
   uint8_t* ptr = *ptr_ptr;
   size_t d = ptr - start;
   if ((d == 0) || (d < (size_t)(distance))) {
@@ -896,10 +899,9 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
         PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
       }
       v_written = ((puffs_base__slice_u8){
-          .ptr = (a_dst.private_impl.mark ? a_dst.private_impl.mark
-                                          : b_wstart_dst),
-          .len = b_wptr_dst - (a_dst.private_impl.mark ? a_dst.private_impl.mark
-                                                       : b_wstart_dst),
+          .ptr = a_dst.private_impl.mark,
+          .len = a_dst.private_impl.mark ? b_wptr_dst - a_dst.private_impl.mark
+                                         : 0,
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = puffs_base__slice_u8_suffix(v_written, 32768);
@@ -1571,15 +1573,15 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)(v_distance)) >
-            ((uint64_t)(b_wptr_dst - (a_dst.private_impl.mark
-                                          ? a_dst.private_impl.mark
-                                          : b_wstart_dst)))) {
+            ((uint64_t)(a_dst.private_impl.mark
+                            ? (b_wptr_dst - a_dst.private_impl.mark)
+                            : 0))) {
           v_hlen = 0;
           v_hdist = ((uint32_t)(
               (((uint64_t)(v_distance)) -
-               ((uint64_t)(b_wptr_dst - (a_dst.private_impl.mark
-                                             ? a_dst.private_impl.mark
-                                             : b_wstart_dst))))));
+               ((uint64_t)(a_dst.private_impl.mark
+                               ? (b_wptr_dst - a_dst.private_impl.mark)
+                               : 0)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;
@@ -1640,9 +1642,8 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
           }
         }
         v_n_copied = puffs_base__writer1__copy_from_history32(
-            &b_wptr_dst,
-            (a_dst.private_impl.mark ? a_dst.private_impl.mark : b_wstart_dst),
-            b_wend_dst, v_distance, v_length);
+            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
+            v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_7_break;
@@ -2475,11 +2476,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       v_checksum = puffs_flate__adler32__update(
           &self->private_impl.f_adler,
           ((puffs_base__slice_u8){
-              .ptr = (a_dst.private_impl.mark ? a_dst.private_impl.mark
-                                              : b_wstart_dst),
-              .len = b_wptr_dst - (a_dst.private_impl.mark
-                                       ? a_dst.private_impl.mark
-                                       : b_wstart_dst),
+              .ptr = a_dst.private_impl.mark,
+              .len = a_dst.private_impl.mark
+                         ? b_wptr_dst - a_dst.private_impl.mark
+                         : 0,
           }));
       if (v_z == 0) {
         goto label_0_break;
