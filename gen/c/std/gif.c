@@ -68,20 +68,8 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base__buf1;
 
-// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
-// its first N bytes. That N can be greater than a buffer's current read or
-// write capacity. N decreases naturally over time as bytes are read from or
-// written to the stream.
-//
-// A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base__limit1 {
-  uint64_t* ptr_to_len;             // Pointer to N.
-  struct puffs_base__limit1* next;  // Linked list of limits.
-} puffs_base__limit1;
-
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;  // TODO: delete.
   uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
   bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -93,7 +81,6 @@ typedef struct {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;  // TODO: delete.
   uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
   bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -717,12 +704,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
-    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -740,12 +721,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       if (a_src.use_limitt) {
         a_src.limitt -= n;
       }
-      puffs_base__limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len) {
-          *lim->ptr_to_len -= n;
-        }
-      }
     }
     status = puffs_gif__decoder__decode_header(self, a_src);
     if (a_src.buf) {
@@ -753,12 +728,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       uint64_t len = a_src.buf->wi - a_src.buf->ri;
       if (a_src.use_limitt && (len > a_src.limitt)) {
         len = a_src.limitt;
-      }
-      puffs_base__limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
-        }
       }
       b_rend_src = b_rptr_src + len;
     }
@@ -772,12 +741,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       if (a_src.use_limitt) {
         a_src.limitt -= n;
       }
-      puffs_base__limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len) {
-          *lim->ptr_to_len -= n;
-        }
-      }
     }
     status = puffs_gif__decoder__decode_lsd(self, a_src);
     if (a_src.buf) {
@@ -785,12 +748,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       uint64_t len = a_src.buf->wi - a_src.buf->ri;
       if (a_src.use_limitt && (len > a_src.limitt)) {
         len = a_src.limitt;
-      }
-      puffs_base__limit1* lim;
-      for (lim = &a_src.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
-        }
       }
       b_rend_src = b_rptr_src + len;
     }
@@ -812,12 +769,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
           if (a_src.use_limitt) {
             a_src.limitt -= n;
           }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
-            }
-          }
         }
         status = puffs_gif__decoder__decode_extension(self, a_src);
         if (a_src.buf) {
@@ -825,12 +776,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
           uint64_t len = a_src.buf->wi - a_src.buf->ri;
           if (a_src.use_limitt && (len > a_src.limitt)) {
             len = a_src.limitt;
-          }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-              len = *lim->ptr_to_len;
-            }
           }
           b_rend_src = b_rptr_src + len;
         }
@@ -845,12 +790,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
           if (a_src.use_limitt) {
             a_src.limitt -= n;
           }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
-            }
-          }
         }
         status = puffs_gif__decoder__decode_id(self, a_dst, a_src);
         if (a_src.buf) {
@@ -858,12 +797,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
           uint64_t len = a_src.buf->wi - a_src.buf->ri;
           if (a_src.use_limitt && (len > a_src.limitt)) {
             len = a_src.limitt;
-          }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-              len = *lim->ptr_to_len;
-            }
           }
           b_rend_src = b_rptr_src + len;
         }
@@ -897,12 +830,6 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -910,8 +837,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -933,12 +859,6 @@ puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
-    }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -988,20 +908,13 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1024,12 +937,6 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
-    }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -1105,20 +1012,13 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1141,12 +1041,6 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
-    }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -1218,20 +1112,13 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1259,12 +1146,6 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
-    }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -1333,12 +1214,6 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
           if (a_src.use_limitt) {
             a_src.limitt -= n;
           }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
-            }
-          }
         }
         puffs_gif__status t_3 = puffs_gif__lzw_decoder__decode(
             &self->private_impl.f_lzw, a_dst, v_r);
@@ -1347,12 +1222,6 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
           uint64_t len = a_src.buf->wi - a_src.buf->ri;
           if (a_src.use_limitt && (len > a_src.limitt)) {
             len = a_src.limitt;
-          }
-          puffs_base__limit1* lim;
-          for (lim = &a_src.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-              len = *lim->ptr_to_len;
-            }
           }
           b_rend_src = b_rptr_src + len;
         }
@@ -1412,20 +1281,13 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1489,12 +1351,6 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
       if (a_dst.use_limitt && (len > a_dst.limitt)) {
         len = a_dst.limitt;
       }
-      puffs_base__limit1* lim;
-      for (lim = &a_dst.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
-        }
-      }
       b_wend_dst += len;
     }
   }
@@ -1505,12 +1361,6 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     if (a_src.use_limitt && (len > a_src.limitt)) {
       len = a_src.limitt;
-    }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -1655,12 +1505,6 @@ exit:
     if (a_dst.use_limitt) {
       a_dst.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_dst.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
@@ -1669,12 +1513,6 @@ exit:
     if (a_src.use_limitt) {
       a_src.limitt -= n;
     }
-    puffs_base__limit1* lim;
-    for (lim = &a_src.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -1682,8 +1520,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
-      !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }

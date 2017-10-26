@@ -65,20 +65,8 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base__buf1;
 
-// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
-// its first N bytes. That N can be greater than a buffer's current read or
-// write capacity. N decreases naturally over time as bytes are read from or
-// written to the stream.
-//
-// A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base__limit1 {
-  uint64_t* ptr_to_len;             // Pointer to N.
-  struct puffs_base__limit1* next;  // Linked list of limits.
-} puffs_base__limit1;
-
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;  // TODO: delete.
   uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
   bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -90,7 +78,6 @@ typedef struct {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;  // TODO: delete.
   uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
   bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI

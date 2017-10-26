@@ -416,15 +416,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		return nil
 
 	case t.KeyLimit:
-		// TODO: don't hard code so much detail.
-		b.writes("(puffs_base__reader1) {")
-		b.writes(".buf = a_src.buf,")
-		b.writes(".limit = (puffs_base__limit1) {")
-		b.printf(".ptr_to_len = &%s%s,", lPrefix, g.currFunk.limitVarName)
-		b.writes(".next = &a_src.limit,")
-		b.writes("}}")
-		g.currFunk.limitVarName = ""
-		return nil
+		panic("TODO: delete t.KeyLimit")
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }
