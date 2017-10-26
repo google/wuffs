@@ -313,6 +313,27 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
+		if isThatMethod(g.tm, n, t.KeyLimitt, 1) {
+			// TODO: don't hard-code v_r.
+			b.printf("puffs_base__reader1__limit(&v_r,")
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			return nil
+		}
+		if isThatMethod(g.tm, n, t.KeyMark, 0) {
+			// TODO: don't hard-code v_r or b_rptr_src.
+			b.printf("puffs_base__reader1__mark(&v_r, b_rptr_src)")
+			return nil
+		}
+		if isThatMethod(g.tm, n, t.KeySinceMark, 0) {
+			// TODO: don't hard-code v_r or b_rptr_src.
+			b.printf("((puffs_base__slice_u8){ " +
+				".ptr = v_r.private_impl.mark, " +
+				".len = v_r.private_impl.mark ? b_rptr_src - v_r.private_impl.mark : 0, })")
+			return nil
+		}
 		// TODO.
 
 	case t.KeyOpenBracket:

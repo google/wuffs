@@ -77,6 +77,12 @@ func (g *gen) findDerivedVars() {
 }
 
 func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header bool) error {
+	// TODO: remove this hack. We're picking up the wrong name for "src:r,
+	// dummy:in.src".
+	if name.String(g.tm) == "dummy" {
+		name = g.tm.ByName("src")
+	}
+
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -94,7 +100,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("size_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("if (%s%s.use_limitt && (len > %s%s.limitt)) { len = %s%s.limitt; }",
+			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
@@ -114,7 +122,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
-		b.printf("size_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("if (%s%s.use_limitt && (len > %s%s.limitt)) { len = %s%s.limitt; }",
+			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) { len = *lim->ptr_to_len; }")
@@ -128,6 +138,12 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 }
 
 func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer bool) error {
+	// TODO: remove this hack. We're picking up the wrong name for "src:r,
+	// dummy:in.src".
+	if name.String(g.tm) == "dummy" {
+		name = g.tm.ByName("src")
+	}
+
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -142,6 +158,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
+		// TODO: Should limitt be a uint8_t*, not a uint64_t?
+		b.printf("if (%s%s.use_limitt) { %s%s.limitt -= n; }", aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
@@ -159,6 +177,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->wi += n;", aPrefix, nameStr)
+		// TODO: Should limitt be a uint8_t*, not a uint64_t?
+		b.printf("if (%s%s.use_limitt) { %s%s.limitt -= n; }", aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("puffs_base__limit1* lim;")
 		b.printf("for (lim = &%s%s.limit; lim; lim = lim->next) {", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) { *lim->ptr_to_len -= n; }")
@@ -183,7 +203,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" && s != "lzw_src" {
+		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" {
 			continue
 		}
 		if err := g.writeLoadDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
@@ -203,7 +223,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" && s != "lzw_src" {
+		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" {
 			continue
 		}
 		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {

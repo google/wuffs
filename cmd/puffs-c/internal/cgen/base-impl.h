@@ -277,7 +277,10 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
 static inline puffs_base__empty_struct puffs_base__reader1__limit(
     puffs_base__reader1* r,
     uint64_t limit) {
-  // TODO: implement.
+  if (!r->use_limitt || (r->limitt > limit)) {
+    r->limitt = limit;
+    r->use_limitt = true;
+  }
   return ((puffs_base__empty_struct){});
 }
 
@@ -291,7 +294,10 @@ static inline puffs_base__empty_struct puffs_base__reader1__mark(
 static inline puffs_base__empty_struct puffs_base__writer1__limit(
     puffs_base__writer1* w,
     uint64_t limit) {
-  // TODO: implement.
+  if (!w->use_limitt || (w->limitt > limit)) {
+    w->limitt = limit;
+    w->use_limitt = true;
+  }
   return ((puffs_base__empty_struct){});
 }
 

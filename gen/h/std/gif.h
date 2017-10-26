@@ -81,7 +81,9 @@ typedef struct puffs_base__limit1 {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;
+  puffs_base__limit1 limit;  // TODO: delete.
+  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
+  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -91,7 +93,9 @@ typedef struct {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;
+  puffs_base__limit1 limit;  // TODO: delete.
+  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
+  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -228,8 +232,7 @@ typedef struct {
       bool v_interlace;
       uint8_t v_lw;
       uint64_t v_block_size;
-      uint64_t l_lzw_src;
-      puffs_base__reader1 v_lzw_src;
+      puffs_gif__status v_z;
     } c_decode_id[1];
   } private_impl;
 } puffs_gif__decoder;

@@ -162,25 +162,25 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 			break
 		}
 		while true {
-			in.src.mark()
-			in.src.limitt(l:block_size)
-			// TODO: how should this reader1-typed variable (which is implemented
-			// by containing pointers) work across resume/suspend? We don't want to
-			// have a dangling pointer to an earlier src buffer.
-			var lzw_src reader1 = limit (block_size) in.src
-			this.lzw.decode?(dst:in.dst, src:lzw_src)
-
-			if block_size < in.src.since_mark().length() {
+			var r reader1 = in.src
+			r.mark()
+			r.limitt(l:block_size)
+			// TODO: remove the dummy param. It's needed for now so that
+			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
+			// variables.
+			var z status = try this.lzw.decode?(dst:in.dst, src:r, dummy:in.src)
+			if z.is_ok() {
+				break
+			}
+			if block_size < r.since_mark().length() {
 				return error "internal error: inconsistent limited read"
 			}
-			block_size -= in.src.since_mark().length()
-			if block_size == 0 {
-				// TODO: examine the this.lzw.decode? status.
+			block_size -= r.since_mark().length()
+			// TODO: z.is_suspension() should be (z == suspension "short read").
+			if (block_size == 0) and z.is_suspension() {
+				break
 			}
-
-			// TODO: add a "try" to the this.lzw.decode? line above, and break
-			// *conditionally*.
-			break
+			return z
 		}
 	}
 }

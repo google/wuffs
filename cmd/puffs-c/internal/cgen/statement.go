@@ -556,7 +556,9 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes("if (status) { goto suspend; }\n")
 
-	} else if isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 2) {
+	} else if isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 2) ||
+		isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 3) {
+
 		switch g.pkgName {
 		case "flate":
 			// TODO: don't hard code being inside a try call.
@@ -566,6 +568,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
+			// TODO: don't hard-code a_dst or a_src.
 			b.printf("%sstatus %s%d = %sflate_decoder__decode(&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, aPrefix)
@@ -575,13 +578,22 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: check if tPrefix_temp is an error, and return?
 
 		case "gif":
-			b.printf("status = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %s%s);\n",
-				g.pkgPrefix, aPrefix, vPrefix, n.Args()[1].Arg().Value().String(g.tm))
+			// TODO: don't hard code being inside a try call.
+			if g.currFunk.tempW > maxTemp {
+				return fmt.Errorf("too many temporary variables required")
+			}
+			temp := g.currFunk.tempW
+			g.currFunk.tempW++
+
+			// TODO: don't hard-code a_dst or v_r.
+			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %sr);\n",
+				g.pkgPrefix, tPrefix, temp,
+				g.pkgPrefix, aPrefix, vPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 				return err
 			}
-			// TODO: be principled with "if (l_lzw_src && etc)".
-			b.writes("if (l_lzw_src && status) { goto suspend; }\n")
+			// TODO: check if tPrefix_temp is an error, and return?
+
 		default:
 			return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
 		}

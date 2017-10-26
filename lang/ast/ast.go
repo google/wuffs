@@ -613,9 +613,8 @@ func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
 		switch n.id0.Key() {
 		case 0:
-			// TODO: add t.KeyReader1, after figuring out how limit's should really work.
 			switch n.id1.Key() {
-			case t.KeyBuf1, t.KeyWriter1, t.KeyBuf2:
+			case t.KeyBuf1, t.KeyReader1, t.KeyWriter1, t.KeyBuf2:
 				return true
 			}
 		case t.KeyPtr, t.KeyNptr, t.KeyColon:

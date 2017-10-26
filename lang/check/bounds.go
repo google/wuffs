@@ -731,7 +731,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||
 			isThisMethod(q.tm, n, "decode_blocks", 2) ||
 			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
-			isThisMethod(q.tm, n, "init_huff", 4) {
+			isThisMethod(q.tm, n, "init_huff", 4) ||
+			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimitt, 1) ||
+			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
 
 			for _, o := range n.Args() {
 				a := o.Arg().Value()
@@ -784,7 +786,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) || isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) ||
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
+			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) ||
+			isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) ||
 			isThatMethod(q.tm, n, q.tm.ByName("update").Key(), 1) {
 			for _, o := range n.Args() {
 				a := o.Arg().Value()

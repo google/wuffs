@@ -81,7 +81,9 @@ typedef struct puffs_base__limit1 {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;
+  puffs_base__limit1 limit;  // TODO: delete.
+  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
+  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -91,7 +93,9 @@ typedef struct {
 
 typedef struct {
   puffs_base__buf1* buf;
-  puffs_base__limit1 limit;
+  puffs_base__limit1 limit;  // TODO: delete.
+  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
+  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
@@ -604,7 +608,10 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
 static inline puffs_base__empty_struct puffs_base__reader1__limit(
     puffs_base__reader1* r,
     uint64_t limit) {
-  // TODO: implement.
+  if (!r->use_limitt || (r->limitt > limit)) {
+    r->limitt = limit;
+    r->use_limitt = true;
+  }
   return ((puffs_base__empty_struct){});
 }
 
@@ -618,7 +625,10 @@ static inline puffs_base__empty_struct puffs_base__reader1__mark(
 static inline puffs_base__empty_struct puffs_base__writer1__limit(
     puffs_base__writer1* w,
     uint64_t limit) {
-  // TODO: implement.
+  if (!w->use_limitt || (w->limitt > limit)) {
+    w->limitt = limit;
+    w->use_limitt = true;
+  }
   return ((puffs_base__empty_struct){});
 }
 
@@ -855,7 +865,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
-      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+      if (a_dst.use_limitt && (len > a_dst.limitt)) {
+        len = a_dst.limitt;
+      }
       puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -882,6 +895,9 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
+        if (a_dst.use_limitt) {
+          a_dst.limitt -= n;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_dst.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -895,7 +911,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
         b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
-          size_t len = a_dst.buf->len - a_dst.buf->wi;
+          uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+          if (a_dst.use_limitt && (len > a_dst.limitt)) {
+            len = a_dst.limitt;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_dst.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -968,6 +987,9 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
+    if (a_dst.use_limitt) {
+      a_dst.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -994,7 +1016,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-    size_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    if (a_src.use_limitt && (len > a_src.limitt)) {
+      len = a_src.limitt;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1035,6 +1060,9 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
+          if (a_src.use_limitt) {
+            a_src.limitt -= n;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -1046,7 +1074,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
             puffs_flate__flate_decoder__decode_uncompressed(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          size_t len = a_src.buf->wi - a_src.buf->ri;
+          uint64_t len = a_src.buf->wi - a_src.buf->ri;
+          if (a_src.use_limitt && (len > a_src.limitt)) {
+            len = a_src.limitt;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1070,6 +1101,9 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
+          if (a_src.use_limitt) {
+            a_src.limitt -= n;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -1080,7 +1114,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         status = puffs_flate__flate_decoder__init_dynamic_huffman(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          size_t len = a_src.buf->wi - a_src.buf->ri;
+          uint64_t len = a_src.buf->wi - a_src.buf->ri;
+          if (a_src.use_limitt && (len > a_src.limitt)) {
+            len = a_src.limitt;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_src.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1100,6 +1137,9 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
+        if (a_src.use_limitt) {
+          a_src.limitt -= n;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -1110,7 +1150,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       status = puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        size_t len = a_src.buf->wi - a_src.buf->ri;
+        uint64_t len = a_src.buf->wi - a_src.buf->ri;
+        if (a_src.use_limitt && (len > a_src.limitt)) {
+          len = a_src.limitt;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1140,6 +1183,9 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
+    if (a_src.use_limitt) {
+      a_src.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1152,7 +1198,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
+      !a_src.use_limitt) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1175,7 +1222,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
-      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+      if (a_dst.use_limitt && (len > a_dst.limitt)) {
+        len = a_dst.limitt;
+      }
       puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1189,7 +1239,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-    size_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    if (a_src.use_limitt && (len > a_src.limitt)) {
+      len = a_src.limitt;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1281,6 +1334,9 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
+    if (a_dst.use_limitt) {
+      a_dst.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1292,6 +1348,9 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
+    if (a_src.use_limitt) {
+      a_src.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1304,7 +1363,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
+      !a_src.use_limitt) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1338,7 +1398,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
-      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+      if (a_dst.use_limitt && (len > a_dst.limitt)) {
+        len = a_dst.limitt;
+      }
       puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1352,7 +1415,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-    size_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    if (a_src.use_limitt && (len > a_src.limitt)) {
+      len = a_src.limitt;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1692,6 +1758,9 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
+    if (a_dst.use_limitt) {
+      a_dst.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1703,6 +1772,9 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
+    if (a_src.use_limitt) {
+      a_src.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1715,7 +1787,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
+      !a_src.use_limitt) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1806,7 +1879,10 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-    size_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    if (a_src.use_limitt && (len > a_src.limitt)) {
+      len = a_src.limitt;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2018,6 +2094,9 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
+    if (a_src.use_limitt) {
+      a_src.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2030,7 +2109,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
+      !a_src.use_limitt) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2343,7 +2423,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
-      size_t len = a_dst.buf->len - a_dst.buf->wi;
+      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+      if (a_dst.use_limitt && (len > a_dst.limitt)) {
+        len = a_dst.limitt;
+      }
       puffs_base__limit1* lim;
       for (lim = &a_dst.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2357,7 +2440,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-    size_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    if (a_src.use_limitt && (len > a_src.limitt)) {
+      len = a_src.limitt;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2425,6 +2511,9 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
+        if (a_dst.use_limitt) {
+          a_dst.limitt -= n;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_dst.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -2435,6 +2524,9 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
+        if (a_src.use_limitt) {
+          a_src.limitt -= n;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -2448,7 +2540,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
         b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
-          size_t len = a_dst.buf->len - a_dst.buf->wi;
+          uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+          if (a_dst.use_limitt && (len > a_dst.limitt)) {
+            len = a_dst.limitt;
+          }
           puffs_base__limit1* lim;
           for (lim = &a_dst.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2460,7 +2555,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       }
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        size_t len = a_src.buf->wi - a_src.buf->ri;
+        uint64_t len = a_src.buf->wi - a_src.buf->ri;
+        if (a_src.use_limitt && (len > a_src.limitt)) {
+          len = a_src.limitt;
+        }
         puffs_base__limit1* lim;
         for (lim = &a_src.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2532,6 +2630,9 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
+    if (a_dst.use_limitt) {
+      a_dst.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_dst.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2543,6 +2644,9 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
+    if (a_src.use_limitt) {
+      a_src.limitt -= n;
+    }
     puffs_base__limit1* lim;
     for (lim = &a_src.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2556,7 +2660,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len) {
+  if (a_src.buf && a_src.buf->closed && !a_src.limit.ptr_to_len &&
+      !a_src.use_limitt) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }

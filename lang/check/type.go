@@ -449,7 +449,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||
 			isThisMethod(q.tm, n, "decode_blocks", 2) ||
 			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
-			isThisMethod(q.tm, n, "init_huff", 4) {
+			isThisMethod(q.tm, n, "init_huff", 4) ||
+			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimitt, 1) ||
+			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
 
 			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
 				return err
@@ -530,7 +532,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) {
+			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
+			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err

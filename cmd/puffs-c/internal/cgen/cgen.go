@@ -46,7 +46,7 @@ const (
 	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
 	iPrefix = "i_" // Iterate variable.
-	lPrefix = "l_" // Limit length.
+	lPrefix = "l_" // Limit length. TODO: delete.
 	tPrefix = "t_" // Temporary local variable.
 	vPrefix = "v_" // Local variable.
 )
