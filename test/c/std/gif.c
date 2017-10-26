@@ -229,16 +229,16 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
   puffs_gif__lzw_decoder__set_literal_width(&dec, literal_width);
-  puffs_base__writer1 got_writer = {.buf = &got};
-  puffs_base__reader1 src_reader = {.buf = &src};
   int num_iters = 0;
   while (true) {
     num_iters++;
+    puffs_base__writer1 got_writer = {.buf = &got};
     if (wlimit) {
-      puffs_base__writer1__limit(&got_writer, wlimit);
+      puffs_base__writer1__limit(&got_writer, got.ptr + got.wi, wlimit);
     }
+    puffs_base__reader1 src_reader = {.buf = &src};
     if (rlimit) {
-      puffs_base__reader1__limit(&src_reader, rlimit);
+      puffs_base__reader1__limit(&src_reader, src.ptr + src.ri, rlimit);
     }
     size_t old_wi = got.wi;
     size_t old_ri = src.ri;
@@ -408,16 +408,16 @@ bool do_test_puffs_gif_decode(const char* filename,
 
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_base__writer1 got_writer = {.buf = &got};
-  puffs_base__reader1 src_reader = {.buf = &src};
   int num_iters = 0;
   while (true) {
     num_iters++;
+    puffs_base__writer1 got_writer = {.buf = &got};
     if (wlimit) {
-      puffs_base__writer1__limit(&got_writer, wlimit);
+      puffs_base__writer1__limit(&got_writer, got.ptr + got.wi, wlimit);
     }
+    puffs_base__reader1 src_reader = {.buf = &src};
     if (rlimit) {
-      puffs_base__reader1__limit(&src_reader, rlimit);
+      puffs_base__reader1__limit(&src_reader, src.ptr + src.ri, rlimit);
     }
     size_t old_wi = got.wi;
     size_t old_ri = src.ri;
@@ -727,9 +727,8 @@ proc tests[] = {
 
     // GIF Tests
     test_puffs_gif_decode_input_is_a_gif,                          //
-    // TODO: uncomment.
-    // test_puffs_gif_decode_input_is_a_gif_many_big_reads,           //
-    // test_puffs_gif_decode_input_is_a_gif_many_medium_reads,        //
+    test_puffs_gif_decode_input_is_a_gif_many_big_reads,           //
+    test_puffs_gif_decode_input_is_a_gif_many_medium_reads,        //
     test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads,  //
     test_puffs_gif_decode_input_is_a_png,                          //
 

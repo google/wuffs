@@ -69,23 +69,27 @@ typedef struct {
 } puffs_base__buf1;
 
 typedef struct {
+  // TODO: move buf into private_impl? As it is, it looks like users can modify
+  // the buf field to point to a different buffer, which can turn the limit and
+  // mark fields into dangling pointers.
   puffs_base__buf1* buf;
-  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
-  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    uint8_t* limit;
     uint8_t* mark;
   } private_impl;
 } puffs_base__reader1;
 
 typedef struct {
+  // TODO: move buf into private_impl? As it is, it looks like users can modify
+  // the buf field to point to a different buffer, which can turn the limit and
+  // mark fields into dangling pointers.
   puffs_base__buf1* buf;
-  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
-  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    uint8_t* limit;
     uint8_t* mark;
   } private_impl;
 } puffs_base__writer1;
@@ -592,37 +596,65 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
   return n;
 }
 
+// Note that the *__limit and *__mark methods are private (in base-impl.h) not
+// public (in base-header.h). We assume that, at the boundary between user code
+// and Puffs code, the reader1 and writer1's private_impl fields (including
+// limit and mark) are NULL. Otherwise, some internal assumptions break down.
+// For example, the limit field is represented as a pointer, even though
+// conceptually it is a count, but that pointer-to-count correspondence becomes
+// invalid if a buffer is re-used (e.g. on resuming a coroutine).
+//
+// Admittedly, some of the Puffs test code calls these methods, but that test
+// code is still Puffs code, not user code. Other Puffs test code modifies
+// private_impl fields directly.
+
 static inline puffs_base__empty_struct puffs_base__reader1__limit(
-    puffs_base__reader1* r,
+    puffs_base__reader1* o,
+    uint8_t* ptr,
     uint64_t limit) {
-  if (!r->use_limitt || (r->limitt > limit)) {
-    r->limitt = limit;
-    r->use_limitt = true;
+  if (!o->buf) {
+    o->private_impl.limit = NULL;
+  } else {
+    uint64_t len = o->buf->wi - o->buf->ri;
+    if (limit > len) {
+      limit = len;
+    }
+    if (!o->private_impl.limit || (limit < (o->private_impl.limit - ptr))) {
+      o->private_impl.limit = ptr + limit;
+    }
   }
   return ((puffs_base__empty_struct){});
 }
 
 static inline puffs_base__empty_struct puffs_base__reader1__mark(
-    puffs_base__reader1* r,
+    puffs_base__reader1* o,
     uint8_t* mark) {
-  r->private_impl.mark = mark;
+  o->private_impl.mark = mark;
   return ((puffs_base__empty_struct){});
 }
 
 static inline puffs_base__empty_struct puffs_base__writer1__limit(
-    puffs_base__writer1* w,
+    puffs_base__writer1* o,
+    uint8_t* ptr,
     uint64_t limit) {
-  if (!w->use_limitt || (w->limitt > limit)) {
-    w->limitt = limit;
-    w->use_limitt = true;
+  if (!o->buf) {
+    o->private_impl.limit = NULL;
+  } else {
+    uint64_t len = o->buf->len - o->buf->wi;
+    if (limit > len) {
+      limit = len;
+    }
+    if (!o->private_impl.limit || (limit < (o->private_impl.limit - ptr))) {
+      o->private_impl.limit = ptr + limit;
+    }
   }
   return ((puffs_base__empty_struct){});
 }
 
 static inline puffs_base__empty_struct puffs_base__writer1__mark(
-    puffs_base__writer1* w,
+    puffs_base__writer1* o,
     uint8_t* mark) {
-  w->private_impl.mark = mark;
+  o->private_impl.mark = mark;
   return ((puffs_base__empty_struct){});
 }
 
@@ -853,10 +885,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-      if (a_dst.use_limitt && (len > a_dst.limitt)) {
-        len = a_dst.limitt;
-      }
       b_wend_dst += len;
+      if (a_dst.private_impl.limit && (b_wend_dst > a_dst.private_impl.limit)) {
+        b_wend_dst = a_dst.private_impl.limit;
+      }
     }
   }
 
@@ -876,9 +908,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
-        if (a_dst.use_limitt) {
-          a_dst.limitt -= n;
-        }
       }
       puffs_flate__status t_0 =
           puffs_flate__flate_decoder__decode_blocks(self, a_dst, a_src);
@@ -887,10 +916,11 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
           uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-          if (a_dst.use_limitt && (len > a_dst.limitt)) {
-            len = a_dst.limitt;
-          }
           b_wend_dst += len;
+          if (a_dst.private_impl.limit &&
+              (b_wend_dst > a_dst.private_impl.limit)) {
+            b_wend_dst = a_dst.private_impl.limit;
+          }
         }
       }
       v_z = t_0;
@@ -956,9 +986,6 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    if (a_dst.use_limitt) {
-      a_dst.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
 
@@ -980,10 +1007,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-    if (a_src.use_limitt && (len > a_src.limitt)) {
-      len = a_src.limitt;
-    }
     b_rend_src = b_rptr_src + len;
+    if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
+      b_rend_src = a_src.private_impl.limit;
+    }
   }
 
   uint32_t coro_susp_point =
@@ -1017,19 +1044,17 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          if (a_src.use_limitt) {
-            a_src.limitt -= n;
-          }
         }
         status =
             puffs_flate__flate_decoder__decode_uncompressed(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          if (a_src.use_limitt && (len > a_src.limitt)) {
-            len = a_src.limitt;
-          }
           b_rend_src = b_rptr_src + len;
+          if (a_src.private_impl.limit &&
+              (b_rend_src > a_src.private_impl.limit)) {
+            b_rend_src = a_src.private_impl.limit;
+          }
         }
         if (status) {
           goto suspend;
@@ -1046,18 +1071,16 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-          if (a_src.use_limitt) {
-            a_src.limitt -= n;
-          }
         }
         status = puffs_flate__flate_decoder__init_dynamic_huffman(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
           uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          if (a_src.use_limitt && (len > a_src.limitt)) {
-            len = a_src.limitt;
-          }
           b_rend_src = b_rptr_src + len;
+          if (a_src.private_impl.limit &&
+              (b_rend_src > a_src.private_impl.limit)) {
+            b_rend_src = a_src.private_impl.limit;
+          }
         }
         if (status) {
           goto suspend;
@@ -1070,18 +1093,16 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
-        if (a_src.use_limitt) {
-          a_src.limitt -= n;
-        }
       }
       status = puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         uint64_t len = a_src.buf->wi - a_src.buf->ri;
-        if (a_src.use_limitt && (len > a_src.limitt)) {
-          len = a_src.limitt;
-        }
         b_rend_src = b_rptr_src + len;
+        if (a_src.private_impl.limit &&
+            (b_rend_src > a_src.private_impl.limit)) {
+          b_rend_src = a_src.private_impl.limit;
+        }
       }
       if (status) {
         goto suspend;
@@ -1104,16 +1125,13 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    if (a_src.use_limitt) {
-      a_src.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1137,10 +1155,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-      if (a_dst.use_limitt && (len > a_dst.limitt)) {
-        len = a_dst.limitt;
-      }
       b_wend_dst += len;
+      if (a_dst.private_impl.limit && (b_wend_dst > a_dst.private_impl.limit)) {
+        b_wend_dst = a_dst.private_impl.limit;
+      }
     }
   }
   uint8_t* b_rptr_src = NULL;
@@ -1148,10 +1166,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-    if (a_src.use_limitt && (len > a_src.limitt)) {
-      len = a_src.limitt;
-    }
     b_rend_src = b_rptr_src + len;
+    if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
+      b_rend_src = a_src.private_impl.limit;
+    }
   }
 
   uint32_t coro_susp_point =
@@ -1236,24 +1254,18 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    if (a_dst.use_limitt) {
-      a_dst.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    if (a_src.use_limitt) {
-      a_src.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1288,10 +1300,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-      if (a_dst.use_limitt && (len > a_dst.limitt)) {
-        len = a_dst.limitt;
-      }
       b_wend_dst += len;
+      if (a_dst.private_impl.limit && (b_wend_dst > a_dst.private_impl.limit)) {
+        b_wend_dst = a_dst.private_impl.limit;
+      }
     }
   }
   uint8_t* b_rptr_src = NULL;
@@ -1299,10 +1311,10 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-    if (a_src.use_limitt && (len > a_src.limitt)) {
-      len = a_src.limitt;
-    }
     b_rend_src = b_rptr_src + len;
+    if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
+      b_rend_src = a_src.private_impl.limit;
+    }
   }
 
   uint32_t coro_susp_point =
@@ -1635,24 +1647,18 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    if (a_dst.use_limitt) {
-      a_dst.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    if (a_src.use_limitt) {
-      a_src.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1744,10 +1750,10 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-    if (a_src.use_limitt && (len > a_src.limitt)) {
-      len = a_src.limitt;
-    }
     b_rend_src = b_rptr_src + len;
+    if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
+      b_rend_src = a_src.private_impl.limit;
+    }
   }
 
   uint32_t coro_susp_point =
@@ -1952,16 +1958,13 @@ exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    if (a_src.use_limitt) {
-      a_src.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2275,10 +2278,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-      if (a_dst.use_limitt && (len > a_dst.limitt)) {
-        len = a_dst.limitt;
-      }
       b_wend_dst += len;
+      if (a_dst.private_impl.limit && (b_wend_dst > a_dst.private_impl.limit)) {
+        b_wend_dst = a_dst.private_impl.limit;
+      }
     }
   }
   uint8_t* b_rptr_src = NULL;
@@ -2286,10 +2289,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-    if (a_src.use_limitt && (len > a_src.limitt)) {
-      len = a_src.limitt;
-    }
     b_rend_src = b_rptr_src + len;
+    if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
+      b_rend_src = a_src.private_impl.limit;
+    }
   }
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
@@ -2350,16 +2353,10 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
         a_dst.buf->wi += n;
-        if (a_dst.use_limitt) {
-          a_dst.limitt -= n;
-        }
       }
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
         a_src.buf->ri += n;
-        if (a_src.use_limitt) {
-          a_src.limitt -= n;
-        }
       }
       puffs_flate__status t_2 = puffs_flate__flate_decoder__decode(
           &self->private_impl.f_flate, a_dst, a_src);
@@ -2368,19 +2365,21 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
         b_wend_dst = b_wptr_dst;
         if (!a_dst.buf->closed) {
           uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-          if (a_dst.use_limitt && (len > a_dst.limitt)) {
-            len = a_dst.limitt;
-          }
           b_wend_dst += len;
+          if (a_dst.private_impl.limit &&
+              (b_wend_dst > a_dst.private_impl.limit)) {
+            b_wend_dst = a_dst.private_impl.limit;
+          }
         }
       }
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         uint64_t len = a_src.buf->wi - a_src.buf->ri;
-        if (a_src.use_limitt && (len > a_src.limitt)) {
-          len = a_src.limitt;
-        }
         b_rend_src = b_rptr_src + len;
+        if (a_src.private_impl.limit &&
+            (b_rend_src > a_src.private_impl.limit)) {
+          b_rend_src = a_src.private_impl.limit;
+        }
       }
       v_z = t_2;
       v_checksum = puffs_flate__adler32__update(
@@ -2445,17 +2444,11 @@ exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
     a_dst.buf->wi += n;
-    if (a_dst.use_limitt) {
-      a_dst.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
     a_src.buf->ri += n;
-    if (a_src.use_limitt) {
-      a_src.limitt -= n;
-    }
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -2463,7 +2456,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.use_limitt) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
     status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }

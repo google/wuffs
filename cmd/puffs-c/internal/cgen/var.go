@@ -101,9 +101,10 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		b.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("if (%s%s.use_limitt && (len > %s%s.limitt)) { len = %s%s.limitt; }",
-			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
+		b.printf("if (%s%s.private_impl.limit && (%srend_%s > %s%s.private_impl.limit)) {"+
+			" %srend_%s = %s%s.private_impl.limit; }",
+			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
 
 		b.printf("}\n")
 
@@ -119,9 +120,10 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
 		b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("if (%s%s.use_limitt && (len > %s%s.limitt)) { len = %s%s.limitt; }",
-			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%swend_%s += len;", bPrefix, nameStr)
+		b.printf("if (%s%s.private_impl.limit && (%swend_%s > %s%s.private_impl.limit)) {"+
+			" %swend_%s = %s%s.private_impl.limit; }",
+			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
 		b.printf("}\n")
 
 		b.printf("}\n")
@@ -150,8 +152,6 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
-		// TODO: Should limitt be a uint8_t*, not a uint64_t?
-		b.printf("if (%s%s.use_limitt) { %s%s.limitt -= n; }", aPrefix, nameStr, aPrefix, nameStr)
 
 		if footer {
 			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
@@ -165,8 +165,6 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->wi += n;", aPrefix, nameStr)
-		// TODO: Should limitt be a uint8_t*, not a uint64_t?
-		b.printf("if (%s%s.use_limitt) { %s%s.limitt -= n; }", aPrefix, nameStr, aPrefix, nameStr)
 
 		if footer {
 			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)

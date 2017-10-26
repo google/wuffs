@@ -66,23 +66,27 @@ typedef struct {
 } puffs_base__buf1;
 
 typedef struct {
+  // TODO: move buf into private_impl? As it is, it looks like users can modify
+  // the buf field to point to a different buffer, which can turn the limit and
+  // mark fields into dangling pointers.
   puffs_base__buf1* buf;
-  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
-  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    uint8_t* limit;
     uint8_t* mark;
   } private_impl;
 } puffs_base__reader1;
 
 typedef struct {
+  // TODO: move buf into private_impl? As it is, it looks like users can modify
+  // the buf field to point to a different buffer, which can turn the limit and
+  // mark fields into dangling pointers.
   puffs_base__buf1* buf;
-  uint64_t limitt;  // TODO: should this be uint8_t*, not (uint64_t + bool)?
-  bool use_limitt;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    uint8_t* limit;
     uint8_t* mark;
   } private_impl;
 } puffs_base__writer1;
