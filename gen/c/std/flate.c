@@ -1557,15 +1557,23 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)(v_distance)) >
-            ((uint64_t)(a_dst.private_impl.mark
-                            ? (b_wptr_dst - a_dst.private_impl.mark)
-                            : 0))) {
+            ((uint64_t)(((puffs_base__slice_u8){
+                             .ptr = a_dst.private_impl.mark,
+                             .len = a_dst.private_impl.mark
+                                        ? b_wptr_dst - a_dst.private_impl.mark
+                                        : 0,
+                         })
+                            .len))) {
           v_hlen = 0;
-          v_hdist = ((uint32_t)(
-              (((uint64_t)(v_distance)) -
-               ((uint64_t)(a_dst.private_impl.mark
-                               ? (b_wptr_dst - a_dst.private_impl.mark)
-                               : 0)))));
+          v_hdist = ((uint32_t)((
+              ((uint64_t)(v_distance)) -
+              ((uint64_t)(((puffs_base__slice_u8){
+                               .ptr = a_dst.private_impl.mark,
+                               .len = a_dst.private_impl.mark
+                                          ? b_wptr_dst - a_dst.private_impl.mark
+                                          : 0,
+                           })
+                              .len)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;

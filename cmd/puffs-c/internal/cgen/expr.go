@@ -244,21 +244,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
-
-			x := n.LHS().Expr().LHS().Expr()
-			if typ := x.MType(); typ.Decorator() == 0 && typ.Name().Key() == t.KeyWriter1 {
-				// TODO: don't hard-code dst.
-				const wName = "dst"
-				b.printf("(uint64_t)(%s%s.private_impl.mark ? (%swptr_%s - %s%s.private_impl.mark) : 0)",
-					aPrefix, wName, bPrefix, wName, aPrefix, wName)
-			} else {
-				b.writes("(uint64_t)(")
-				if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
-					return err
-				}
-				b.writes(".len)")
+			b.writes("(uint64_t)(")
+			if err := g.writeExpr(b, n.LHS().Expr().LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
+				return err
 			}
-
+			b.writes(".len)")
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}

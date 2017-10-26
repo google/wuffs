@@ -376,12 +376,12 @@ pri func flate_decoder.decode_huffman?(dst writer1, src reader1)() {
 		var n_copied u32
 		while true {
 			// Copy from this.history.
-			if (distance as u64) > in.dst.length() {
+			if (distance as u64) > in.dst.since_mark().length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from in.dst.
 				var hlen u32[..0x7FFF]
-				var hdist u32[..0x7FFF] = ((distance as u64) - in.dst.length()) as u32
+				var hdist u32[..0x7FFF] = ((distance as u64) - in.dst.since_mark().length()) as u32
 				if length > hdist {
 					length -= hdist
 					hlen = hdist
