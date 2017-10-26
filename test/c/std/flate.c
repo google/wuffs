@@ -192,13 +192,11 @@ const char* puffs_flate_decode(puffs_base__buf1* dst,
   puffs_base__writer1 dst_writer = {.buf = dst};
   puffs_base__reader1 src_reader = {.buf = src};
   while (true) {
-    uint64_t wlim = wlimit;
     if (wlimit) {
-      dst_writer.limit.ptr_to_len = &wlim;
+      puffs_base__writer1__limit(&dst_writer, wlimit);
     }
-    uint64_t rlim = rlimit;
     if (rlimit) {
-      src_reader.limit.ptr_to_len = &rlim;
+      puffs_base__reader1__limit(&src_reader, rlimit);
     }
 
     puffs_flate__status s =
@@ -225,13 +223,11 @@ const char* puffs_zlib_decode(puffs_base__buf1* dst,
   puffs_base__reader1 src_reader = {.buf = src};
 
   while (true) {
-    uint64_t wlim = wlimit;
     if (wlimit) {
-      dst_writer.limit.ptr_to_len = &wlim;
+      puffs_base__writer1__limit(&dst_writer, wlimit);
     }
-    uint64_t rlim = rlimit;
     if (rlimit) {
-      src_reader.limit.ptr_to_len = &rlim;
+      puffs_base__reader1__limit(&src_reader, rlimit);
     }
 
     puffs_flate__status s =
@@ -377,7 +373,7 @@ bool do_test_puffs_flate_history(int i,
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  dst_writer.limit.ptr_to_len = &limit;
+  puffs_base__writer1__limit(&dst_writer, limit);
 
   puffs_flate__status got_s =
       puffs_flate__flate_decoder__decode(dec, dst_writer, src_reader);
