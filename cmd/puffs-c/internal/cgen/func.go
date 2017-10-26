@@ -38,7 +38,6 @@ type funk struct {
 	public        bool
 	suspendible   bool
 	usesScratch   bool
-	limitVarName  string // TODO: delete.
 	shortReads    []string
 }
 

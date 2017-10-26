@@ -404,9 +404,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		b.writes("private_impl." + fPrefix)
 		b.writes(n.ID1().String(g.tm))
 		return nil
-
-	case t.KeyLimit:
-		panic("TODO: delete t.KeyLimit")
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
 }

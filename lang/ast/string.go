@@ -90,9 +90,6 @@ func (n *Expr) appendString(buf []byte, tm *t.Map, parenthesize bool, depth uint
 					buf = o.Expr().appendString(buf, tm, false, depth)
 				}
 				buf = append(buf, ')')
-
-			case t.KeyLimit:
-				buf = append(buf, "TODO(limit)"...)
 			}
 
 		case t.FlagsUnaryOp:

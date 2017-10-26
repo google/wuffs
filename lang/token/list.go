@@ -237,7 +237,6 @@ const (
 	KeyPri        = Key(IDPri >> KeyShift)
 	KeyError      = Key(IDError >> KeyShift)
 	KeySuspension = Key(IDSuspension >> KeyShift)
-	KeyLimit      = Key(IDLimit >> KeyShift) // TODO: delete.
 	KeyPackageID  = Key(IDPackageID >> KeyShift)
 	KeyConst      = Key(IDConst >> KeyShift)
 	KeyTry        = Key(IDTry >> KeyShift)
@@ -425,11 +424,10 @@ const (
 	IDPri        = ID(0x72<<KeyShift | FlagsOther)
 	IDError      = ID(0x73<<KeyShift | FlagsOther)
 	IDSuspension = ID(0x74<<KeyShift | FlagsOther)
-	IDLimit      = ID(0x75<<KeyShift | FlagsOther)
-	IDPackageID  = ID(0x76<<KeyShift | FlagsOther)
-	IDConst      = ID(0x77<<KeyShift | FlagsOther)
-	IDTry        = ID(0x78<<KeyShift | FlagsOther)
-	IDIterate    = ID(0x79<<KeyShift | FlagsOther)
+	IDPackageID  = ID(0x75<<KeyShift | FlagsOther)
+	IDConst      = ID(0x76<<KeyShift | FlagsOther)
+	IDTry        = ID(0x77<<KeyShift | FlagsOther)
+	IDIterate    = ID(0x78<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -629,7 +627,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyPri:        {"pri", IDPri},
 	KeyError:      {"error", IDError},
 	KeySuspension: {"suspension", IDSuspension},
-	KeyLimit:      {"limit", IDLimit},
 	KeyPackageID:  {"packageid", IDPackageID},
 	KeyConst:      {"const", IDConst},
 	KeyTry:        {"try", IDTry},

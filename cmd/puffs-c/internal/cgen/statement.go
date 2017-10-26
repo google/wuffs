@@ -68,15 +68,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.writes(";\n")
 		return nil
 
-	case a.KIO:
-		// TODO: is a private_impl.mark the right representation? What if the
-		// function is passed a (ptr writer1) instead of a (writer1)? Do we
-		// still want to have that mark live outside of the function scope?
-		//
-		// TODO: remove this hard-coded hack for "mark in.dst".
-		b.printf("%sdst.private_impl.mark = %swptr_dst;", aPrefix, bPrefix)
-		return nil
-
 	case a.KIf:
 		// TODO: for writeSuspendibles, make sure that we get order of
 		// sub-expression evaluation correct.
@@ -256,15 +247,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if v := n.Value(); v != nil {
 			if err := g.writeSuspendibles(b, v, depth); err != nil {
 				return err
-			}
-			if v.ID0().Key() == t.KeyLimit {
-				g.currFunk.limitVarName = n.Name().String(g.tm)
-				b.printf("%s%s =", lPrefix, g.currFunk.limitVarName)
-				if err := g.writeExpr(
-					b, v.LHS().Expr(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-					return err
-				}
-				b.writes(";\n")
 			}
 		}
 		switch n.XType().Decorator().Key() {

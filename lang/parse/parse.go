@@ -612,14 +612,6 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewIterate(label, unroll, vars, asserts, body).Node(), nil
 
-	case t.KeyMark:
-		p.src = p.src[1:]
-		value, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		return a.NewIO(x, value).Node(), nil
-
 	case t.KeyReturn:
 		p.src = p.src[1:]
 		keyword, message, value, err := t.ID(0), t.ID(0), (*a.Expr)(nil), error(nil)
@@ -780,18 +772,12 @@ func (p *parser) parseVar(inIterate bool) (*a.Node, error) {
 	} else if p.peek1().Key() == t.KeyEq {
 		op = t.IDEq
 		p.src = p.src[1:]
-		switch p.peek1().Key() {
-		case t.KeyLimit:
-			value, err = p.parseLimitExpr()
-			if err != nil {
-				return nil, err
-			}
-		case t.KeyTry:
+		if p.peek1().Key() == t.KeyTry {
 			value, err = p.parseTryExpr()
 			if err != nil {
 				return nil, err
 			}
-		default:
+		} else {
 			value, err = p.parseExpr()
 			if err != nil {
 				return nil, err
@@ -813,33 +799,6 @@ func (p *parser) parseDollarExpr() (*a.Expr, error) {
 		return nil, err
 	}
 	return a.NewExpr(0, t.IDDollar, 0, nil, nil, nil, args), nil
-}
-
-func (p *parser) parseLimitExpr() (*a.Expr, error) {
-	if x := p.peek1().Key(); x != t.KeyLimit {
-		got := p.tm.ByKey(x)
-		return nil, fmt.Errorf(`parse: expected "limit", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
-	if x := p.peek1().Key(); x != t.KeyOpenParen {
-		got := p.tm.ByKey(x)
-		return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
-	lhs, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-	if x := p.peek1().Key(); x != t.KeyCloseParen {
-		got := p.tm.ByKey(x)
-		return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
-	rhs, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-	return a.NewExpr(0, t.IDLimit, 0, lhs.Node(), nil, rhs.Node(), nil), nil
 }
 
 func (p *parser) parseTryExpr() (*a.Expr, error) {

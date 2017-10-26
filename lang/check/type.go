@@ -84,18 +84,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KExpr:
 		return q.tcheckExpr(n.Expr(), 0)
 
-	case a.KIO:
-		n := n.IO()
-		val := n.Value()
-		if err := q.tcheckExpr(val, 0); err != nil {
-			return err
-		}
-		typ := val.MType()
-		if key := typ.Name().Key(); typ.Decorator() != 0 || (key != t.KeyReader1 && key != t.KeyWriter1) {
-			return fmt.Errorf("check: %s expression %q, of type %q, does not have an I/O type",
-				n.Keyword().String(q.tm), val.String(q.tm), typ.String(q.tm))
-		}
-
 	case a.KIf:
 		for n := n.If(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
@@ -661,34 +649,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			}
 		}
 		n.SetMType(typeExprList)
-		return nil
-
-	case t.KeyLimit:
-		lhs := n.LHS().Expr()
-		if err := q.tcheckExpr(lhs, depth); err != nil {
-			return err
-		}
-		if lhs.Impure() {
-			return fmt.Errorf(`check: limit count %q is not pure`, lhs.String(q.tm))
-		}
-		lTyp := lhs.MType()
-		if !lTyp.IsIdeal() && !lTyp.EqIgnoringRefinements(typeExprU64) {
-			return fmt.Errorf("check: limit count %q type %q not compatible with u64",
-				lhs.String(q.tm), lTyp.String(q.tm))
-		}
-		rhs := n.RHS().Expr()
-		if err := q.tcheckExpr(rhs, depth); err != nil {
-			return err
-		}
-		if rhs.Impure() {
-			return fmt.Errorf("check: limit arg %q is not pure", rhs.String(q.tm))
-		}
-		rTyp := rhs.MType()
-		if rTyp.Decorator() != 0 || (rTyp.Name().Key() != t.KeyReader1 && rTyp.Name().Key() != t.KeyWriter1) {
-			return fmt.Errorf(`check: limit arg %q type %q not "reader1" or "writer1"`,
-				rhs.String(q.tm), rTyp.String(q.tm))
-		}
-		n.SetMType(rTyp)
 		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) in expression %q for tcheckExprOther",

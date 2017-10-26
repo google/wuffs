@@ -255,11 +255,10 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 	return nil
 }
 
-func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bool) error {
-	local := fmt.Sprintf("%s%s", prefix, n.Name().String(g.tm))
+func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
+	local := fmt.Sprintf("%s%s", vPrefix, n.Name().String(g.tm))
 
-	// TODO: explicitly handle prefix == lPrefix?
-	if typ := n.XType(); prefix == vPrefix && typ.HasPointers() {
+	if typ := n.XType(); typ.HasPointers() {
 		if suspend {
 			return nil
 		}
@@ -310,20 +309,12 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, prefix string, suspend bo
 
 func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
-		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
-			if err := g.writeResumeSuspend1(b, n, lPrefix, suspend); err != nil {
-				return err
-			}
-		}
-		return g.writeResumeSuspend1(b, n, vPrefix, suspend)
+		return g.writeResumeSuspend1(b, n, suspend)
 	})
 }
 
 func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipIterateVariables bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
-		if v := n.Value(); v != nil && v.ID0().Key() == t.KeyLimit {
-			b.printf("uint64_t %s%v;\n", lPrefix, n.Name().String(g.tm))
-		}
 		if skipPointerTypes && n.XType().HasPointers() {
 			return nil
 		}

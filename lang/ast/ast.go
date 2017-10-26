@@ -40,7 +40,6 @@ const (
 	KField
 	KFile
 	KFunc
-	KIO // TODO: delete.
 	KIf
 	KIterate
 	KJump
@@ -72,7 +71,6 @@ var kindStrings = [...]string{
 	KField:     "KField",
 	KFile:      "KFile",
 	KFunc:      "KFunc",
-	KIO:        "KIO",
 	KIf:        "KIf",
 	KIterate:   "KIterate",
 	KJump:      "KJump",
@@ -135,7 +133,6 @@ func (n *Node) Expr() *Expr           { return (*Expr)(n) }
 func (n *Node) Field() *Field         { return (*Field)(n) }
 func (n *Node) File() *File           { return (*File)(n) }
 func (n *Node) Func() *Func           { return (*Func)(n) }
-func (n *Node) IO() *IO               { return (*IO)(n) }
 func (n *Node) If() *If               { return (*If)(n) }
 func (n *Node) Iterate() *Iterate     { return (*Iterate)(n) }
 func (n *Node) Jump() *Jump           { return (*Jump)(n) }
@@ -242,8 +239,6 @@ const MaxExprDepth = 255
 // For selectors, like "LHS.ID1", ID0 is IDDot.
 //
 // For lists, like "$(0, 1, 2)", ID0 is IDDollar.
-//
-// For limits, like "limit (LHS) RHS", ID0 is IDLimit.
 type Expr Node
 
 func (n *Expr) Node() *Node           { return (*Node)(n) }
@@ -480,27 +475,6 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 		rhs:   elseIf.Node(),
 		list0: bodyIfTrue,
 		list1: bodyIfFalse,
-	}
-}
-
-// IO is "mark LHS":
-//  - ID0:   <IDMark>
-//  - LHS:   <Expr>
-//
-// TODO: "mark LHS { List2 }"?
-//
-// TODO: also represent "limit LHS"?
-type IO Node
-
-func (n *IO) Node() *Node   { return (*Node)(n) }
-func (n *IO) Keyword() t.ID { return n.id0 }
-func (n *IO) Value() *Expr  { return n.lhs.Expr() }
-
-func NewIO(keyword t.ID, value *Expr) *IO {
-	return &IO{
-		kind: KIO,
-		id0:  keyword,
-		lhs:  value.Node(),
 	}
 }
 

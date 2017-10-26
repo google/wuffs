@@ -241,10 +241,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		_, _, err := q.bcheckExpr(n.Expr(), 0)
 		return err
 
-	case a.KIO:
-		_, _, err := q.bcheckExpr(n.IO().Value(), 0)
-		return err
-
 	case a.KIf:
 		return q.bcheckIf(n.If())
 
@@ -888,9 +884,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
 			return nil, nil, err
 		}
-
-	case t.KeyLimit:
-		return nil, nil, nil
 
 	default:
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
