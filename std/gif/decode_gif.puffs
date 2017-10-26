@@ -156,7 +156,6 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 	}
 	this.lzw.set_literal_width(lw:lw as u32)
 
-	// TODO: pass the data blocks' payload to this.lzw.
 	while true {
 		var block_size u64 = in.src.read_u8?() as u64
 		if block_size == 0 {
