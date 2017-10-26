@@ -2422,6 +2422,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     }
     v_checksum = 0;
     while (true) {
+      puffs_base__writer1__mark(&a_dst, b_wptr_dst);
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
