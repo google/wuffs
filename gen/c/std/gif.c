@@ -225,7 +225,7 @@ typedef struct {
       uint32_t v_i;
       bool v_interlace;
       uint8_t v_lw;
-      uint8_t v_block_size;
+      uint64_t v_block_size;
       uint64_t l_lzw_src;
       puffs_base__reader1 v_lzw_src;
     } c_decode_id[1];
@@ -1170,7 +1170,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
   uint32_t v_i;
   bool v_interlace;
   uint8_t v_lw;
-  uint8_t v_block_size;
+  uint64_t v_block_size;
   uint64_t l_lzw_src;
   puffs_base__reader1 v_lzw_src;
 
@@ -1237,11 +1237,11 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
         goto short_read_src;
       }
       uint8_t t_2 = *b_rptr_src++;
-      v_block_size = t_2;
+      v_block_size = ((uint64_t)(t_2));
       if (v_block_size == 0) {
         goto label_0_break;
       }
-      l_lzw_src = ((uint64_t)(v_block_size));
+      l_lzw_src = v_block_size;
       v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
                                         .limit = (puffs_base__limit1){
                                             .ptr_to_len = &l_lzw_src,

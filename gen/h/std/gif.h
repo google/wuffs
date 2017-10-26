@@ -225,7 +225,7 @@ typedef struct {
       uint32_t v_i;
       bool v_interlace;
       uint8_t v_lw;
-      uint8_t v_block_size;
+      uint64_t v_block_size;
       uint64_t l_lzw_src;
       puffs_base__reader1 v_lzw_src;
     } c_decode_id[1];

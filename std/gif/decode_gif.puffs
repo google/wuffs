@@ -156,14 +156,14 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 
 	// TODO: pass the data blocks' payload to this.lzw.
 	while true {
-		var block_size u8 = in.src.read_u8?()
+		var block_size u64 = in.src.read_u8?() as u64
 		if block_size == 0 {
 			break
 		}
 		// TODO: how should this reader1-typed variable (which is implemented
 		// by containing pointers) work across resume/suspend? We don't want to
 		// have a dangling pointer to an earlier src buffer.
-		var lzw_src reader1 = limit (block_size as u64) in.src
+		var lzw_src reader1 = limit (block_size) in.src
 		this.lzw.decode?(dst:in.dst, src:lzw_src)
 	}
 }
