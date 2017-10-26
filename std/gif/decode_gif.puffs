@@ -19,6 +19,8 @@ pub error "bad GIF extension label"
 pub error "bad GIF header"
 pub error "bad LZW literal width"
 
+pub error "internal error: inconsistent limited read"
+
 pub error "TODO: unsupported Local Color Table"
 
 pub struct decoder?(
@@ -161,13 +163,23 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 			break
 		}
 		while true {
+			in.src.mark()
 			// TODO: how should this reader1-typed variable (which is implemented
 			// by containing pointers) work across resume/suspend? We don't want to
 			// have a dangling pointer to an earlier src buffer.
 			var lzw_src reader1 = limit (block_size) in.src
 			this.lzw.decode?(dst:in.dst, src:lzw_src)
 
-			// TODO: add a "try" to the line above, and break *conditionally*.
+			if block_size < in.src.since_mark().length() {
+				return error "internal error: inconsistent limited read"
+			}
+			block_size -= in.src.since_mark().length()
+			if block_size == 0 {
+				// TODO: examine the this.lzw.decode? status.
+			}
+
+			// TODO: add a "try" to the this.lzw.decode? line above, and break
+			// *conditionally*.
 			break
 		}
 	}

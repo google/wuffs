@@ -438,7 +438,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
-			isInSrc(q.tm, n, t.KeySkip32, 1) ||
+			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||
+			isInSrc(q.tm, n, t.KeyMark, 0) ||
 			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
@@ -464,7 +465,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.SetMType(typeExprPlaceholder32) // HACK.
 			} else if isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU16LE, 0) {
 				n.SetMType(typeExprPlaceholder16) // HACK.
-			} else if isInDst(q.tm, n, t.KeySinceMark, 0) {
+			} else if isInSrc(q.tm, n, t.KeySinceMark, 0) || isInDst(q.tm, n, t.KeySinceMark, 0) {
 				n.SetMType(typeExprSliceU8) // HACK.
 			} else if isInDst(q.tm, n, t.KeyCopyFromSlice, 1) {
 				n.SetMType(typeExprU64) // HACK.
@@ -692,7 +693,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 }
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	if n.ID0().Key() != t.KeyOpenParen || !n.CallSuspendible() || len(n.Args()) != nArgs {
+	callSuspendible := methodName != t.KeySinceMark &&
+		methodName != t.KeyMark
+	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()

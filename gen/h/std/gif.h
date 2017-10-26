@@ -133,10 +133,12 @@ typedef int32_t puffs_gif__status;
 #define PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
 #define PUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
 #define PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ \
+  -1105848316  // 0xbe161804
 #define PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848316                                                      // 0xbe161804
-#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
-#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
+  -1105848315                                                      // 0xbe161805
+#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848314      // 0xbe161806
+#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848313  // 0xbe161807
 
 bool puffs_gif__status__is_error(puffs_gif__status s);
 

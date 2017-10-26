@@ -168,10 +168,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeySinceMark, 0) {
+		if isInSrc(g.tm, n, t.KeyMark, 0) {
+			b.printf("puffs_base__reader1__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
+			return nil
+		}
+		if isInSrc(g.tm, n, t.KeySinceMark, 0) {
 			b.printf("((puffs_base__slice_u8){ "+
-				".ptr = %sdst.private_impl.mark, "+
-				".len = %sdst.private_impl.mark ? %swptr_dst - %sdst.private_impl.mark : 0, })",
+				".ptr = %ssrc.private_impl.mark, "+
+				".len = %ssrc.private_impl.mark ? %srptr_src - %ssrc.private_impl.mark : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
@@ -181,6 +185,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// Do we still want to have that mark live outside of the function
 			// scope?
 			b.printf("puffs_base__writer1__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
+			return nil
+		}
+		if isInDst(g.tm, n, t.KeySinceMark, 0) {
+			b.printf("((puffs_base__slice_u8){ "+
+				".ptr = %sdst.private_impl.mark, "+
+				".len = %sdst.private_impl.mark ? %swptr_dst - %sdst.private_impl.mark : 0, })",
+				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {

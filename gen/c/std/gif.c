@@ -133,10 +133,12 @@ typedef int32_t puffs_gif__status;
 #define PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
 #define PUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
 #define PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define PUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ \
+  -1105848316  // 0xbe161804
 #define PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848316                                                      // 0xbe161804
-#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xbe161805
-#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xbe161806
+  -1105848315                                                      // 0xbe161805
+#define PUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848314      // 0xbe161806
+#define PUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848313  // 0xbe161807
 
 bool puffs_gif__status__is_error(puffs_gif__status s);
 
@@ -581,11 +583,12 @@ const char* puffs_gif__status__strings0[9] = {
     "gif: short write",
 };
 
-const char* puffs_gif__status__strings1[7] = {
+const char* puffs_gif__status__strings1[8] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
     "gif: bad LZW literal width",
+    "gif: internal error: inconsistent limited read",
     "gif: TODO: unsupported Local Color Table",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
@@ -601,7 +604,7 @@ const char* puffs_gif__status__string(puffs_gif__status s) {
       break;
     case puffs_gif__packageid:
       a = puffs_gif__status__strings1;
-      n = 7;
+      n = 8;
       break;
   }
   uint32_t i = s & 0xff;
@@ -1242,6 +1245,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
         goto label_0_break;
       }
       while (true) {
+        puffs_base__reader1__mark(&a_src, b_rptr_src);
         l_lzw_src = v_block_size;
         v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
                                           .limit = (puffs_base__limit1){
@@ -1274,6 +1278,27 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
         }
         if (l_lzw_src && status) {
           goto suspend;
+        }
+        if (v_block_size <
+            ((uint64_t)(((puffs_base__slice_u8){
+                             .ptr = a_src.private_impl.mark,
+                             .len = a_src.private_impl.mark
+                                        ? b_rptr_src - a_src.private_impl.mark
+                                        : 0,
+                         })
+                            .len))) {
+          status = PUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ;
+          goto exit;
+        }
+        v_block_size -=
+            ((uint64_t)(((puffs_base__slice_u8){
+                             .ptr = a_src.private_impl.mark,
+                             .len = a_src.private_impl.mark
+                                        ? b_rptr_src - a_src.private_impl.mark
+                                        : 0,
+                         })
+                            .len));
+        if (v_block_size == 0) {
         }
         goto label_1_break;
       }
