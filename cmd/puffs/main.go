@@ -131,6 +131,9 @@ const (
 	repsMin     = 0
 	repsMax     = 1000000
 	repsUsage   = `the number of repetitions per benchmark`
+
+	skipgenDefault = false
+	skipgenUsage   = `whether to skip automatically generating code when testing`
 )
 
 func parseLangs(commaSeparated string) ([]string, error) {

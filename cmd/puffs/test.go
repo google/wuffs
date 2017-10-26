@@ -32,6 +32,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
 	repsFlag := flags.Int("reps", repsDefault, repsUsage)
+	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -72,8 +73,10 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		}
 
 		// Ensure that we are testing the latest version of the generated code.
-		if _, err := gen(nil, puffsRoot, arg, langs, recursive); err != nil {
-			return err
+		if !*skipgenFlag {
+			if _, err := gen(nil, puffsRoot, arg, langs, recursive); err != nil {
+				return err
+			}
 		}
 
 		// Proceed with benching / testing the generated code.
