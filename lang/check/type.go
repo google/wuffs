@@ -439,7 +439,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||
-			isInSrc(q.tm, n, t.KeyMark, 0) ||
+			isInSrc(q.tm, n, t.KeyMark, 0) || isInSrc(q.tm, n, t.KeyLimitt, 1) ||
 			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
@@ -694,7 +694,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	callSuspendible := methodName != t.KeySinceMark &&
-		methodName != t.KeyMark
+		methodName != t.KeyMark &&
+		methodName != t.KeyLimitt
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
@@ -716,7 +717,8 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 		methodName != t.KeyCopyFromSlice32 &&
 		methodName != t.KeyCopyFromSlice &&
 		methodName != t.KeySinceMark &&
-		methodName != t.KeyMark
+		methodName != t.KeyMark &&
+		methodName != t.KeyLimitt
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false

@@ -549,17 +549,31 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
   return n;
 }
 
+static inline puffs_base__empty_struct puffs_base__reader1__limit(
+    puffs_base__reader1* r,
+    uint64_t limit) {
+  // TODO: implement.
+  return ((puffs_base__empty_struct){});
+}
+
 static inline puffs_base__empty_struct puffs_base__reader1__mark(
     puffs_base__reader1* r,
-    uint8_t* m) {
-  r->private_impl.mark = m;
+    uint8_t* mark) {
+  r->private_impl.mark = mark;
+  return ((puffs_base__empty_struct){});
+}
+
+static inline puffs_base__empty_struct puffs_base__writer1__limit(
+    puffs_base__writer1* w,
+    uint64_t limit) {
+  // TODO: implement.
   return ((puffs_base__empty_struct){});
 }
 
 static inline puffs_base__empty_struct puffs_base__writer1__mark(
     puffs_base__writer1* w,
-    uint8_t* m) {
-  w->private_impl.mark = m;
+    uint8_t* mark) {
+  w->private_impl.mark = mark;
   return ((puffs_base__empty_struct){});
 }
 
@@ -1246,6 +1260,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
       }
       while (true) {
         puffs_base__reader1__mark(&a_src, b_rptr_src);
+        puffs_base__reader1__limit(&a_src, v_block_size);
         l_lzw_src = v_block_size;
         v_lzw_src = (puffs_base__reader1){.buf = a_src.buf,
                                           .limit = (puffs_base__limit1){

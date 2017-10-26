@@ -164,6 +164,7 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 		}
 		while true {
 			in.src.mark()
+			in.src.limitt(l:block_size)
 			// TODO: how should this reader1-typed variable (which is implemented
 			// by containing pointers) work across resume/suspend? We don't want to
 			// have a dangling pointer to an earlier src buffer.

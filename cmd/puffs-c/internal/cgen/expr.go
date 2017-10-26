@@ -168,6 +168,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
+		if isInSrc(g.tm, n, t.KeyLimitt, 1) {
+			b.printf("puffs_base__reader1__limit(&%ssrc,", aPrefix)
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			return nil
+		}
 		if isInSrc(g.tm, n, t.KeyMark, 0) {
 			b.printf("puffs_base__reader1__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil
@@ -177,6 +185,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				".ptr = %ssrc.private_impl.mark, "+
 				".len = %ssrc.private_impl.mark ? %srptr_src - %ssrc.private_impl.mark : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
+			return nil
+		}
+		if isInDst(g.tm, n, t.KeyLimitt, 1) {
+			b.printf("puffs_base__writer1__limit(&%sdst,", aPrefix)
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyMark, 0) {
