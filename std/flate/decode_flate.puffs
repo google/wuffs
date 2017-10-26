@@ -123,12 +123,10 @@ pub func flate_decoder.decode?(dst writer1, src reader1)() {
 			// TODO: rename "return" to "raise"?
 			return z
 		}
-		// TODO: should "slice" be "slice!", as the return value lets you
-		// modify the state of in.dst, so future mutations (via the slice) can
-		// change the veracity of any in.dst assertions?
-		//
-		// Should the RHS be "in.dst[:]" instead of a method call?
-		var written[] u8 = in.dst.slice()
+		// TODO: should "since_mark" be "since_mark!", as the return value lets
+		// you modify the state of in.dst, so future mutations (via the slice)
+		// can change the veracity of any in.dst assertions?
+		var written[] u8 = in.dst.since_mark()
 		// Append written, the decoded output, to the history ringbuffer.
 		if written.length() >= 0x8000 {
 			// If written is longer than the ringbuffer, we can ignore the

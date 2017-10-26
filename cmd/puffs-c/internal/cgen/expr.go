@@ -168,7 +168,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeySlice, 0) {
+		if isInDst(g.tm, n, t.KeySinceMark, 0) {
 			b.printf("((puffs_base__slice_u8){ "+
 				".ptr = %sdst.private_impl.mark, "+
 				".len = %sdst.private_impl.mark ? %swptr_dst - %sdst.private_impl.mark : 0, })",

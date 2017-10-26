@@ -279,6 +279,7 @@ const (
 	KeyReadU32LE  = Key(IDReadU32LE >> KeyShift)
 	KeyReadU64BE  = Key(IDReadU64BE >> KeyShift)
 	KeyReadU64LE  = Key(IDReadU64LE >> KeyShift)
+	KeySinceMark  = Key(IDSinceMark >> KeyShift)
 	KeyWriteU8    = Key(IDWriteU8 >> KeyShift)
 	KeyWriteU16BE = Key(IDWriteU16BE >> KeyShift)
 	KeyWriteU16LE = Key(IDWriteU16LE >> KeyShift)
@@ -296,7 +297,6 @@ const (
 	KeyCopyFromSlice32   = Key(IDCopyFromSlice32 >> KeyShift)
 	KeySkip32            = Key(IDSkip32 >> KeyShift)
 	KeySkip64            = Key(IDSkip64 >> KeyShift)
-	KeySlice             = Key(IDSlice >> KeyShift)
 	KeyLength            = Key(IDLength >> KeyShift)
 	KeyAvailable         = Key(IDAvailable >> KeyShift)
 	KeyPrefix            = Key(IDPrefix >> KeyShift)
@@ -466,6 +466,7 @@ const (
 	IDReadU32LE  = ID(0xB5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64BE  = ID(0xB6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU64LE  = ID(0xB7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSinceMark  = ID(0xB8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU8    = ID(0xB9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16BE = ID(0xBA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDWriteU16LE = ID(0xBB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -483,11 +484,10 @@ const (
 	IDCopyFromSlice32   = ID(0xC6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSkip32            = ID(0xC7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSkip64            = ID(0xC8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSlice             = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLength            = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDAvailable         = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix            = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLength            = ID(0xC9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDAvailable         = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDPrefix            = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSuffix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -671,6 +671,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyReadU32LE:  {"read_u32le", IDReadU32LE},
 	KeyReadU64BE:  {"read_u64be", IDReadU64BE},
 	KeyReadU64LE:  {"read_u64le", IDReadU64LE},
+	KeySinceMark:  {"since_mark", IDSinceMark},
 	KeyWriteU8:    {"write_u8", IDWriteU8},
 	KeyWriteU16BE: {"write_u16be", IDWriteU16BE},
 	KeyWriteU16LE: {"write_u16le", IDWriteU16LE},
@@ -688,7 +689,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyCopyFromSlice32:   {"copy_from_slice32", IDCopyFromSlice32},
 	KeySkip32:            {"skip32", IDSkip32},
 	KeySkip64:            {"skip64", IDSkip64},
-	KeySlice:             {"slice", IDSlice},
 	KeyLength:            {"length", IDLength},
 	KeyAvailable:         {"available", IDAvailable},
 	KeyPrefix:            {"prefix", IDPrefix},

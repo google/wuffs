@@ -50,10 +50,7 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
 		// TODO: expose some API to opt out of checksumming, trading off error
 		// detection for throughput.
-		//
-		// TODO: in.dst.slice needs a previous mark statement. Do that, and
-		// remove the b_wstart_dst derived variables.
-		checksum = this.adler.update(x:in.dst.slice())
+		checksum = this.adler.update(x:in.dst.since_mark())
 		if z.is_ok() {
 			break
 		}
