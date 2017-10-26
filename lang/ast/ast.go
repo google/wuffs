@@ -40,7 +40,7 @@ const (
 	KField
 	KFile
 	KFunc
-	KIO
+	KIO // TODO: delete.
 	KIf
 	KIterate
 	KJump

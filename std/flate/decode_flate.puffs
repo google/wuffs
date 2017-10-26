@@ -117,8 +117,7 @@ pub struct flate_decoder?(
 
 pub func flate_decoder.decode?(dst writer1, src reader1)() {
 	while true {
-		// TODO: this could be "in.dst.mark()" instead of a keyword.
-		mark in.dst
+		in.dst.mark()
 		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 		if not z.is_suspension() {
 			// TODO: rename "return" to "raise"?

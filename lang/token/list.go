@@ -242,7 +242,6 @@ const (
 	KeyConst      = Key(IDConst >> KeyShift)
 	KeyTry        = Key(IDTry >> KeyShift)
 	KeyIterate    = Key(IDIterate >> KeyShift)
-	KeyMark       = Key(IDMark >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -272,6 +271,7 @@ const (
 	KeyLowBits  = Key(IDLowBits >> KeyShift)
 	KeyHighBits = Key(IDHighBits >> KeyShift)
 
+	KeyMark       = Key(IDMark >> KeyShift)
 	KeyReadU8     = Key(IDReadU8 >> KeyShift)
 	KeyReadU16BE  = Key(IDReadU16BE >> KeyShift)
 	KeyReadU16LE  = Key(IDReadU16LE >> KeyShift)
@@ -429,7 +429,6 @@ const (
 	IDConst      = ID(0x77<<KeyShift | FlagsOther)
 	IDTry        = ID(0x78<<KeyShift | FlagsOther)
 	IDIterate    = ID(0x79<<KeyShift | FlagsOther)
-	IDMark       = ID(0x7A<<KeyShift | FlagsOther)
 
 	IDFalse = ID(0x80<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
 	IDTrue  = ID(0x81<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
@@ -459,6 +458,7 @@ const (
 	IDLowBits  = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDHighBits = ID(0xA9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
+	IDMark       = ID(0xB0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU8     = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU16BE  = ID(0xB2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU16LE  = ID(0xB3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -632,7 +632,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyConst:      {"const", IDConst},
 	KeyTry:        {"try", IDTry},
 	KeyIterate:    {"iterate", IDIterate},
-	KeyMark:       {"mark", IDMark},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},
@@ -664,6 +663,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyLowBits:  {"low_bits", IDLowBits},
 	KeyHighBits: {"high_bits", IDHighBits},
 
+	KeyMark:       {"mark", IDMark},
 	KeyReadU8:     {"read_u8", IDReadU8},
 	KeyReadU16BE:  {"read_u16be", IDReadU16BE},
 	KeyReadU16LE:  {"read_u16le", IDReadU16LE},

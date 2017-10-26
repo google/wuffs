@@ -17,6 +17,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// puffs_base__empty_struct is used when a Puffs function returns an empty
+// struct. In C, if a function f returns void, you can't say "x = f()", but in
+// Puffs, if a function g returns empty, you can say "y = g()".
+typedef struct {
+} puffs_base__empty_struct;
+
 #define PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // PUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -263,6 +269,20 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
     *ptr_wptr += n;
   }
   return n;
+}
+
+static inline puffs_base__empty_struct puffs_base__reader1__mark(
+    puffs_base__reader1* r,
+    uint8_t* m) {
+  r->private_impl.mark = m;
+  return ((puffs_base__empty_struct){});
+}
+
+static inline puffs_base__empty_struct puffs_base__writer1__mark(
+    puffs_base__writer1* w,
+    uint8_t* m) {
+  w->private_impl.mark = m;
+  return ((puffs_base__empty_struct){});
 }
 
 #endif  // PUFFS_BASE_IMPL_H

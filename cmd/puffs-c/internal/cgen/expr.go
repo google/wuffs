@@ -175,6 +175,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, aPrefix, bPrefix, bPrefix, aPrefix, aPrefix, bPrefix)
 			return nil
 		}
+		if isInDst(g.tm, n, t.KeyMark, 0) {
+			// TODO: is a private_impl.mark the right representation? What if
+			// the function is passed a (ptr writer1) instead of a (writer1)?
+			// Do we still want to have that mark live outside of the function
+			// scope?
+			b.printf("puffs_base__writer1__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
+			return nil
+		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
 			b.printf("puffs_base__writer1__copy_from_reader32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			// TODO: don't assume that the first argument is "in.src".

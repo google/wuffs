@@ -344,6 +344,12 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// puffs_base__empty_struct is used when a Puffs function returns an empty
+// struct. In C, if a function f returns void, you can't say "x = f()", but in
+// Puffs, if a function g returns empty, you can say "y = g()".
+typedef struct {
+} puffs_base__empty_struct;
+
 #define PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // PUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -590,6 +596,20 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
     *ptr_wptr += n;
   }
   return n;
+}
+
+static inline puffs_base__empty_struct puffs_base__reader1__mark(
+    puffs_base__reader1* r,
+    uint8_t* m) {
+  r->private_impl.mark = m;
+  return ((puffs_base__empty_struct){});
+}
+
+static inline puffs_base__empty_struct puffs_base__writer1__mark(
+    puffs_base__writer1* w,
+    uint8_t* m) {
+  w->private_impl.mark = m;
+  return ((puffs_base__empty_struct){});
 }
 
 #endif  // PUFFS_BASE_IMPL_H
@@ -842,7 +862,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     while (true) {
-      a_dst.private_impl.mark = b_wptr_dst;
+      puffs_base__writer1__mark(&a_dst, b_wptr_dst);
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
