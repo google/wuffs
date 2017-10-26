@@ -116,12 +116,9 @@ pub struct flate_decoder?(
 )
 
 pub func flate_decoder.decode?(dst writer1, src reader1)() {
-	// TODO: when is the mark undone? Explicitly or implicitly? Right now, we
-	// just assume that the mark is dropped at function end, since the arg is a
-	// writer1 not a *writer1. Should we support nested marks? Should this be
-	// "mark dst { etc }" that has a block and unmarks at the block end?
-	mark in.dst
 	while true {
+		// TODO: this could be "in.dst.mark()" instead of a keyword.
+		mark in.dst
 		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 		if not z.is_suspension() {
 			// TODO: rename "return" to "raise"?

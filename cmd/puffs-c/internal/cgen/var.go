@@ -117,18 +117,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("%swptr_%s = %s%s.buf->ptr + %s%s.buf->wi;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-
-		// TODO: remove this hard-coded hack for "mark in.dst".
-		//
-		// TODO: is a private_impl.mark the right representation? What if the
-		// function is passed a (ptr writer1) instead of a (writer1)? Do we
-		// still want to have that mark live outside of the function scope?
-		if header &&
-			g.currFunk.astFunc.Receiver().String(g.tm) == "flate_decoder" &&
-			g.currFunk.astFunc.Name().String(g.tm) == "decode" {
-			b.printf("%s%s.private_impl.mark = %swptr_%s;", aPrefix, nameStr, bPrefix, nameStr)
-		}
-
 		if header {
 			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 		}

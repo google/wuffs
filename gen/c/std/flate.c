@@ -817,7 +817,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
-    a_dst.private_impl.mark = b_wptr_dst;
     b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
@@ -843,6 +842,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
 
     while (true) {
+      a_dst.private_impl.mark = b_wptr_dst;
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (a_dst.buf) {
         size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

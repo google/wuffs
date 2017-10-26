@@ -69,8 +69,12 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return nil
 
 	case a.KIO:
-		// TODO: the mark needs to apply on every (coroutine) call to the
-		// function, not just when we execute this particular statement.
+		// TODO: is a private_impl.mark the right representation? What if the
+		// function is passed a (ptr writer1) instead of a (writer1)? Do we
+		// still want to have that mark live outside of the function scope?
+		//
+		// TODO: remove this hard-coded hack for "mark in.dst".
+		b.printf("%sdst.private_impl.mark = %swptr_dst;", aPrefix, bPrefix)
 		return nil
 
 	case a.KIf:
