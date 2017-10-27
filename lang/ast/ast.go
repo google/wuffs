@@ -239,6 +239,9 @@ const MaxExprDepth = 255
 // For selectors, like "LHS.ID1", ID0 is IDDot.
 //
 // For lists, like "$(0, 1, 2)", ID0 is IDDollar.
+//
+// For statuses, like `error "foo"` and `"suspension "bar"`, ID0 is the keyword
+// and ID1 is the message.
 type Expr Node
 
 func (n *Expr) Node() *Node           { return (*Node)(n) }

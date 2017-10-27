@@ -1256,7 +1256,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
                                         : 0,
                          })
                             .len));
-        if ((v_block_size == 0) && (v_z > 0)) {
+        if ((v_block_size == 0) && (v_z == PUFFS_GIF__SUSPENSION_SHORT_READ)) {
           goto label_1_break;
         }
         status = v_z;

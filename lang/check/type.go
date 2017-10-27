@@ -159,6 +159,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KReturn:
 		n := n.Return()
 		if nk := n.Keyword(); nk != 0 {
+			// TODO: delete.
 			sk := t.ID(0)
 			if s, ok := q.c.statuses[n.Message()]; ok {
 				sk = s.Status.Keyword()
@@ -640,6 +641,26 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.KeyDot:
 		return q.tcheckDot(n, depth)
+
+	case t.KeyError, t.KeyStatus, t.KeySuspension:
+		nominalKeyword := n.ID0()
+		declaredKeyword := t.ID(0)
+		if s, ok := q.c.statuses[n.ID1()]; ok {
+			declaredKeyword = s.Status.Keyword()
+		} else {
+			msg := builtin.TrimQuotes(n.ID1().String(q.tm))
+			z, ok := builtin.StatusMap[msg]
+			if !ok {
+				return fmt.Errorf("check: no error or status with message %q", msg)
+			}
+			declaredKeyword = z.Keyword
+		}
+		if nominalKeyword != declaredKeyword {
+			return fmt.Errorf("check: status literal says %q but declaration says %q",
+				nominalKeyword.String(q.tm), declaredKeyword.String(q.tm))
+		}
+		n.SetMType(typeExprStatus)
+		return nil
 
 	case t.KeyDollar:
 		for _, o := range n.Args() {

@@ -176,8 +176,7 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 				return error "internal error: inconsistent limited read"
 			}
 			block_size -= r.since_mark().length()
-			// TODO: z.is_suspension() should be (z == suspension "short read").
-			if (block_size == 0) and z.is_suspension() {
+			if (block_size == 0) and (z == suspension "short read") {
 				break
 			}
 			return z

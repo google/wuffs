@@ -16,6 +16,9 @@ package cgen
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/google/puffs/lang/builtin"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
@@ -403,6 +406,19 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		b.writes("private_impl." + fPrefix)
 		b.writes(n.ID1().String(g.tm))
+		return nil
+
+	case t.KeyError, t.KeyStatus, t.KeySuspension:
+		status := g.statusMap[n.ID1()]
+		if status.name == "" {
+			msg := builtin.TrimQuotes(n.ID1().String(g.tm))
+			z := builtin.StatusMap[msg]
+			if z.Message == "" {
+				return fmt.Errorf("no status code for %q", msg)
+			}
+			status.name = strings.ToUpper(g.cName(z.String()))
+		}
+		b.writes(status.name)
 		return nil
 	}
 	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())

@@ -619,6 +619,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		case t.KeySemicolon:
 			// No-op.
 		case t.KeyError, t.KeySuspension:
+			// TODO: delete.
 			keyword = x
 			p.src = p.src[1:]
 			message = p.peek1()
@@ -877,19 +878,6 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 
 func (p *parser) parseOperand() (*a.Expr, error) {
 	switch x := p.peek1(); {
-	case x.Key() == t.KeyOpenParen:
-		p.src = p.src[1:]
-		expr, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		if x := p.peek1().Key(); x != t.KeyCloseParen {
-			got := p.tm.ByKey(x)
-			return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-		return expr, nil
-
 	case x.IsUnaryOp():
 		p.src = p.src[1:]
 		rhs, err := p.parseOperand()
@@ -905,6 +893,33 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 	case x.IsLiteral():
 		p.src = p.src[1:]
 		return a.NewExpr(0, 0, x, nil, nil, nil, nil), nil
+
+	default:
+		switch x.Key() {
+		case t.KeyOpenParen:
+			p.src = p.src[1:]
+			expr, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			if x := p.peek1().Key(); x != t.KeyCloseParen {
+				got := p.tm.ByKey(x)
+				return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return expr, nil
+
+		case t.KeyError, t.KeyStatus, t.KeySuspension:
+			keyword := x
+			p.src = p.src[1:]
+			message := p.peek1()
+			if !message.IsStrLiteral() {
+				got := p.tm.ByID(message)
+				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
+			}
+			p.src = p.src[1:]
+			return a.NewExpr(0, keyword, message, nil, nil, nil, nil), nil
+		}
 	}
 
 	id, err := p.parseIdent()
