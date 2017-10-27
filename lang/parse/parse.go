@@ -614,27 +614,14 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyReturn:
 		p.src = p.src[1:]
-		keyword, message, value, err := t.ID(0), t.ID(0), (*a.Expr)(nil), error(nil)
-		switch x := p.peek1(); x.Key() {
-		case t.KeySemicolon:
-			// No-op.
-		case t.KeyError, t.KeySuspension:
-			// TODO: delete.
-			keyword = x
-			p.src = p.src[1:]
-			message = p.peek1()
-			if !message.IsStrLiteral() {
-				got := p.tm.ByID(message)
-				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
-			}
-			p.src = p.src[1:]
-		default:
+		value, err := (*a.Expr)(nil), error(nil)
+		if p.peek1().Key() != t.KeySemicolon {
 			value, err = p.parseExpr()
 			if err != nil {
 				return nil, err
 			}
 		}
-		return a.NewReturn(keyword, message, value).Node(), nil
+		return a.NewReturn(value).Node(), nil
 
 	case t.KeyVar:
 		p.src = p.src[1:]

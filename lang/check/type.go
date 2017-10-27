@@ -158,24 +158,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KReturn:
 		n := n.Return()
-		if nk := n.Keyword(); nk != 0 {
-			// TODO: delete.
-			sk := t.ID(0)
-			if s, ok := q.c.statuses[n.Message()]; ok {
-				sk = s.Status.Keyword()
-			} else {
-				msg := builtin.TrimQuotes(n.Message().String(q.tm))
-				z, ok := builtin.StatusMap[msg]
-				if !ok {
-					return fmt.Errorf("check: no error or status with message %q", msg)
-				}
-				sk = z.Keyword
-			}
-			if nk != sk {
-				return fmt.Errorf("check: return statement says %q but declaration says %q",
-					nk.String(q.tm), sk.String(q.tm))
-			}
-		} else if value := n.Value(); value != nil {
+		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}

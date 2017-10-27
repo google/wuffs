@@ -16,9 +16,6 @@ package cgen
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/google/puffs/lang/builtin"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
@@ -186,44 +183,30 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	case a.KReturn:
 		n := n.Return()
-		ret := status{}
-		retExpr := (*a.Expr)(nil)
-		if n.Keyword() != 0 {
-			ret = g.statusMap[n.Message()]
-			if ret.name == "" {
-				msg := builtin.TrimQuotes(n.Message().String(g.tm))
-				z := builtin.StatusMap[msg]
-				if z.Message == "" {
-					return fmt.Errorf("no status code for %q", msg)
-				}
-				ret.name = strings.ToUpper(g.cName(z.String()))
-				ret.keyword = z.Keyword
-			}
-		} else if retExpr = n.Value(); retExpr == nil {
-			ret.name = g.PKGPREFIX + "STATUS_OK"
-		}
+		retExpr := n.Value()
 
 		if g.currFunk.suspendible {
 			b.writes("status = ")
+			retKeyword := t.KeyStatus
 			if retExpr == nil {
-				b.writes(ret.name)
+				b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
+			} else {
+				retKeyword = retExpr.ID0().Key()
 				// TODO: check that retExpr has no call-suspendibles.
-			} else if err := g.writeExpr(
-				b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-				return err
+				if err := g.writeExpr(
+					b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+					return err
+				}
 			}
 			b.writes(";")
-			if retExpr == nil {
-				switch ret.keyword.Key() {
-				case 0:
-					b.writes("goto ok;")
-					return nil
-				case t.KeyError:
-					b.writes("goto exit;")
-					return nil
-				case t.KeySuspension:
-					// No-op.
-				}
+
+			switch retKeyword {
+			case t.KeyError:
+				b.writes("goto exit;")
+				return nil
+			case t.KeyStatus:
+				b.writes("goto ok;")
+				return nil
 			}
 			return g.writeCoroSuspPoint(b, true)
 		}

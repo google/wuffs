@@ -481,22 +481,16 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 	}
 }
 
-// Return is "return LHS", "return error ID1" or "return suspension ID1":
-//  - ID0:   <0|IDError|IDSuspension>
-//  - ID1:   message
+// Return is "return LHS":
 //  - LHS:   <nil|Expr>
 type Return Node
 
-func (n *Return) Node() *Node   { return (*Node)(n) }
-func (n *Return) Keyword() t.ID { return n.id0 }
-func (n *Return) Message() t.ID { return n.id1 }
-func (n *Return) Value() *Expr  { return n.lhs.Expr() }
+func (n *Return) Node() *Node  { return (*Node)(n) }
+func (n *Return) Value() *Expr { return n.lhs.Expr() }
 
-func NewReturn(keyword t.ID, message t.ID, value *Expr) *Return {
+func NewReturn(value *Expr) *Return {
 	return &Return{
 		kind: KReturn,
-		id0:  keyword,
-		id1:  message,
 		lhs:  value.Node(),
 	}
 }
