@@ -168,7 +168,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInSrc(g.tm, n, t.KeyLimitt, 1) {
+		if isInSrc(g.tm, n, t.KeyLimit, 1) {
 			return fmt.Errorf("TODO: in.src.limit")
 		}
 		if isInSrc(g.tm, n, t.KeyMark, 0) {
@@ -182,7 +182,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyLimitt, 1) {
+		if isInDst(g.tm, n, t.KeyLimit, 1) {
 			return fmt.Errorf("TODO: in.dst.limit")
 		}
 		if isInDst(g.tm, n, t.KeyMark, 0) {
@@ -303,7 +303,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyLimitt, 1) {
+		if isThatMethod(g.tm, n, t.KeyLimit, 1) {
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("puffs_base__reader1__limit(&v_r, b_rptr_src,")
 			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {

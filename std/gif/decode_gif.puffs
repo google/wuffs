@@ -164,7 +164,7 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 		while true {
 			var r reader1 = in.src
 			r.mark()
-			r.limitt(l:block_size)
+			r.limit(l:block_size)
 			// TODO: remove the dummy param. It's needed for now so that
 			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
 			// variables.

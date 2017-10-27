@@ -300,7 +300,7 @@ const (
 	KeyAvailable         = Key(IDAvailable >> KeyShift)
 	KeyPrefix            = Key(IDPrefix >> KeyShift)
 	KeySuffix            = Key(IDSuffix >> KeyShift)
-	KeyLimitt            = Key(IDLimitt >> KeyShift) // TODO: rename Limitt to Limit.
+	KeyLimit             = Key(IDLimit >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -487,7 +487,7 @@ const (
 	IDAvailable         = ID(0xCA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDPrefix            = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSuffix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLimitt            = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDLimit             = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -692,7 +692,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyAvailable:         {"available", IDAvailable},
 	KeyPrefix:            {"prefix", IDPrefix},
 	KeySuffix:            {"suffix", IDSuffix},
-	KeyLimitt:            {"limitt", IDLimitt},
+	KeyLimit:             {"limit", IDLimit},
 }
 
 var builtInsByName = map[string]ID{}
