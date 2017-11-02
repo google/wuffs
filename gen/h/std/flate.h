@@ -96,6 +96,10 @@ typedef struct {
   struct {
     uint8_t* limit;
     uint8_t* mark;
+    // use_limit is redundant, in that it always equals (limit != NULL), but
+    // having a separate bool can have a significant performance effect with
+    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
+    bool use_limit;
 #ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
     struct {
       puffs_base__paired_nulls* noph0;
@@ -115,6 +119,10 @@ typedef struct {
   struct {
     uint8_t* limit;
     uint8_t* mark;
+    // use_limit is redundant, in that it always equals (limit != NULL), but
+    // having a separate bool can have a significant performance effect with
+    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
+    // TODO: bool use_limit;
   } private_impl;
 } puffs_base__writer1;
 

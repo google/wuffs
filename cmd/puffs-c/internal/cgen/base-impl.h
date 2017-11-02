@@ -301,6 +301,7 @@ static inline puffs_base__empty_struct puffs_base__reader1__limit(
       o->private_impl.limit = ptr + limit;
     }
   }
+  o->private_impl.use_limit = true;
   return ((puffs_base__empty_struct){});
 }
 
@@ -326,6 +327,7 @@ static inline puffs_base__empty_struct puffs_base__writer1__limit(
       o->private_impl.limit = ptr + limit;
     }
   }
+  // TODO: o->private_impl.use_limit = true;
   return ((puffs_base__empty_struct){});
 }
 

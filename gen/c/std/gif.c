@@ -96,6 +96,10 @@ typedef struct {
   struct {
     uint8_t* limit;
     uint8_t* mark;
+    // use_limit is redundant, in that it always equals (limit != NULL), but
+    // having a separate bool can have a significant performance effect with
+    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
+    bool use_limit;
 #ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
     struct {
       puffs_base__paired_nulls* noph0;
@@ -115,6 +119,10 @@ typedef struct {
   struct {
     uint8_t* limit;
     uint8_t* mark;
+    // use_limit is redundant, in that it always equals (limit != NULL), but
+    // having a separate bool can have a significant performance effect with
+    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
+    // TODO: bool use_limit;
   } private_impl;
 } puffs_base__writer1;
 
@@ -594,6 +602,7 @@ static inline puffs_base__empty_struct puffs_base__reader1__limit(
       o->private_impl.limit = ptr + limit;
     }
   }
+  o->private_impl.use_limit = true;
   return ((puffs_base__empty_struct){});
 }
 
@@ -619,6 +628,7 @@ static inline puffs_base__empty_struct puffs_base__writer1__limit(
       o->private_impl.limit = ptr + limit;
     }
   }
+  // TODO: o->private_impl.use_limit = true;
   return ((puffs_base__empty_struct){});
 }
 
@@ -880,7 +890,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -954,7 +964,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1055,7 +1065,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1152,7 +1162,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1326,7 +1336,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1561,7 +1571,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit) {
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.use_limit) {
     status = PUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
