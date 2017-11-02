@@ -100,11 +100,13 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
-		b.printf("if (%s%s.private_impl.limit && (%srend_%s > %s%s.private_impl.limit)) {"+
-			" %srend_%s = %s%s.private_impl.limit; }",
-			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
+		if header {
+			b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
+			b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
+			b.printf("if (%s%s.private_impl.limit && (%srend_%s > %s%s.private_impl.limit)) {"+
+				" %srend_%s = %s%s.private_impl.limit; }",
+				aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
+		}
 
 		b.printf("}\n")
 
@@ -117,14 +119,16 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("%swptr_%s = %s%s.buf->ptr + %s%s.buf->wi;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
-		b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
-		b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("%swend_%s += len;", bPrefix, nameStr)
-		b.printf("if (%s%s.private_impl.limit && (%swend_%s > %s%s.private_impl.limit)) {"+
-			" %swend_%s = %s%s.private_impl.limit; }",
-			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
-		b.printf("}\n")
+		if header {
+			b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+			b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
+			b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
+			b.printf("%swend_%s += len;", bPrefix, nameStr)
+			b.printf("if (%s%s.private_impl.limit && (%swend_%s > %s%s.private_impl.limit)) {"+
+				" %swend_%s = %s%s.private_impl.limit; }",
+				aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
+			b.printf("}\n")
+		}
 
 		b.printf("}\n")
 	}

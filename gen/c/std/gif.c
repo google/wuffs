@@ -788,11 +788,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     status = puffs_gif__decoder__decode_header(self, a_src);
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-      uint64_t len = a_src.buf->wi - a_src.buf->ri;
-      b_rend_src = b_rptr_src + len;
-      if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
-        b_rend_src = a_src.private_impl.limit;
-      }
     }
     if (status) {
       goto suspend;
@@ -805,11 +800,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     status = puffs_gif__decoder__decode_lsd(self, a_src);
     if (a_src.buf) {
       b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-      uint64_t len = a_src.buf->wi - a_src.buf->ri;
-      b_rend_src = b_rptr_src + len;
-      if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
-        b_rend_src = a_src.private_impl.limit;
-      }
     }
     if (status) {
       goto suspend;
@@ -830,12 +820,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
         status = puffs_gif__decoder__decode_extension(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          b_rend_src = b_rptr_src + len;
-          if (a_src.private_impl.limit &&
-              (b_rend_src > a_src.private_impl.limit)) {
-            b_rend_src = a_src.private_impl.limit;
-          }
         }
         if (status) {
           goto suspend;
@@ -849,12 +833,6 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
         status = puffs_gif__decoder__decode_id(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          b_rend_src = b_rptr_src + len;
-          if (a_src.private_impl.limit &&
-              (b_rend_src > a_src.private_impl.limit)) {
-            b_rend_src = a_src.private_impl.limit;
-          }
         }
         if (status) {
           goto suspend;
@@ -1260,12 +1238,6 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
             &self->private_impl.f_lzw, a_dst, v_r);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          b_rend_src = b_rptr_src + len;
-          if (a_src.private_impl.limit &&
-              (b_rend_src > a_src.private_impl.limit)) {
-            b_rend_src = a_src.private_impl.limit;
-          }
         }
         v_z = t_3;
         if (v_z == 0) {

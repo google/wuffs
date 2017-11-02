@@ -947,15 +947,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
           puffs_flate__flate_decoder__decode_blocks(self, a_dst, a_src);
       if (a_dst.buf) {
         b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
-        b_wend_dst = b_wptr_dst;
-        if (!a_dst.buf->closed) {
-          uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-          b_wend_dst += len;
-          if (a_dst.private_impl.limit &&
-              (b_wend_dst > a_dst.private_impl.limit)) {
-            b_wend_dst = a_dst.private_impl.limit;
-          }
-        }
       }
       v_z = t_0;
       if (!(v_z > 0)) {
@@ -1083,12 +1074,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
             puffs_flate__flate_decoder__decode_uncompressed(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          b_rend_src = b_rptr_src + len;
-          if (a_src.private_impl.limit &&
-              (b_rend_src > a_src.private_impl.limit)) {
-            b_rend_src = a_src.private_impl.limit;
-          }
         }
         if (status) {
           goto suspend;
@@ -1109,12 +1094,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         status = puffs_flate__flate_decoder__init_dynamic_huffman(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-          uint64_t len = a_src.buf->wi - a_src.buf->ri;
-          b_rend_src = b_rptr_src + len;
-          if (a_src.private_impl.limit &&
-              (b_rend_src > a_src.private_impl.limit)) {
-            b_rend_src = a_src.private_impl.limit;
-          }
         }
         if (status) {
           goto suspend;
@@ -1131,12 +1110,6 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       status = puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        uint64_t len = a_src.buf->wi - a_src.buf->ri;
-        b_rend_src = b_rptr_src + len;
-        if (a_src.private_impl.limit &&
-            (b_rend_src > a_src.private_impl.limit)) {
-          b_rend_src = a_src.private_impl.limit;
-        }
       }
       if (status) {
         goto suspend;
@@ -2396,24 +2369,9 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
           &self->private_impl.f_flate, a_dst, a_src);
       if (a_dst.buf) {
         b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
-        b_wend_dst = b_wptr_dst;
-        if (!a_dst.buf->closed) {
-          uint64_t len = a_dst.buf->len - a_dst.buf->wi;
-          b_wend_dst += len;
-          if (a_dst.private_impl.limit &&
-              (b_wend_dst > a_dst.private_impl.limit)) {
-            b_wend_dst = a_dst.private_impl.limit;
-          }
-        }
       }
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        uint64_t len = a_src.buf->wi - a_src.buf->ri;
-        b_rend_src = b_rptr_src + len;
-        if (a_src.private_impl.limit &&
-            (b_rend_src > a_src.private_impl.limit)) {
-          b_rend_src = a_src.private_impl.limit;
-        }
       }
       v_z = t_2;
       v_checksum = puffs_flate__adler32__update(
