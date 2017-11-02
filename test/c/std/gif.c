@@ -230,15 +230,19 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
   puffs_gif__lzw_decoder__set_literal_width(&dec, literal_width);
   int num_iters = 0;
+  uint64_t wlim = 0;
+  uint64_t rlim = 0;
   while (true) {
     num_iters++;
     puffs_base__writer1 got_writer = {.buf = &got};
     if (wlimit) {
-      puffs_base__writer1__limit(&got_writer, got.ptr + got.wi, wlimit);
+      wlim = wlimit;
+      got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     puffs_base__reader1 src_reader = {.buf = &src};
     if (rlimit) {
-      puffs_base__reader1__limit(&src_reader, src.ptr + src.ri, rlimit);
+      rlim = rlimit;
+      src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
     size_t old_wi = got.wi;
     size_t old_ri = src.ri;
@@ -409,15 +413,19 @@ bool do_test_puffs_gif_decode(const char* filename,
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
   int num_iters = 0;
+  uint64_t wlim = 0;
+  uint64_t rlim = 0;
   while (true) {
     num_iters++;
     puffs_base__writer1 got_writer = {.buf = &got};
     if (wlimit) {
-      puffs_base__writer1__limit(&got_writer, got.ptr + got.wi, wlimit);
+      wlim = wlimit;
+      got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     puffs_base__reader1 src_reader = {.buf = &src};
     if (rlimit) {
-      puffs_base__reader1__limit(&src_reader, src.ptr + src.ri, rlimit);
+      rlim = rlimit;
+      src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
     size_t old_wi = got.wi;
     size_t old_ri = src.ri;

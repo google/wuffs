@@ -172,7 +172,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInSrc(g.tm, n, t.KeyLimit, 1) {
-			return fmt.Errorf("TODO: in.src.limit")
+			return fmt.Errorf(`TODO: cgen an "in.src.limit" expression`)
 		}
 		if isInSrc(g.tm, n, t.KeyMark, 0) {
 			b.printf("puffs_base__reader1__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
@@ -186,7 +186,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyLimit, 1) {
-			return fmt.Errorf("TODO: in.dst.limit")
+			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
 		if isInDst(g.tm, n, t.KeyMark, 0) {
 			// TODO: is a private_impl.mark the right representation? What if
@@ -307,13 +307,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeyLimit, 1) {
-			// TODO: don't hard-code v_r or b_rptr_src.
-			b.printf("puffs_base__reader1__limit(&v_r, b_rptr_src,")
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
-				return err
-			}
-			b.writes(")")
-			return nil
+			return fmt.Errorf(`TODO: cgen a "foo.limit" expression`)
 		}
 		if isThatMethod(g.tm, n, t.KeyMark, 0) {
 			// TODO: don't hard-code v_r or b_rptr_src.

@@ -278,31 +278,21 @@ static inline uint32_t puffs_base__writer1__copy_from_slice32(
 // public (in base-header.h). We assume that, at the boundary between user code
 // and Puffs code, the reader1 and writer1's private_impl fields (including
 // limit and mark) are NULL. Otherwise, some internal assumptions break down.
-// For example, the limit field is represented as a pointer, even though
-// conceptually it is a count, but that pointer-to-count correspondence becomes
-// invalid if a buffer is re-used (e.g. on resuming a coroutine).
+// For example, limits could be represented as pointers, even though
+// conceptually they are counts, but that pointer-to-count correspondence
+// becomes invalid if a buffer is re-used (e.g. on resuming a coroutine).
 //
 // Admittedly, some of the Puffs test code calls these methods, but that test
 // code is still Puffs code, not user code. Other Puffs test code modifies
 // private_impl fields directly.
 
-static inline puffs_base__empty_struct puffs_base__reader1__limit(
+static inline puffs_base__reader1 puffs_base__reader1__limit(
     puffs_base__reader1* o,
-    uint8_t* ptr,
-    uint64_t limit) {
-  if (!o->buf) {
-    o->private_impl.limit = NULL;
-  } else {
-    uint64_t len = o->buf->wi - o->buf->ri;
-    if (limit > len) {
-      limit = len;
-    }
-    if (!o->private_impl.limit || (limit < (o->private_impl.limit - ptr))) {
-      o->private_impl.limit = ptr + limit;
-    }
-  }
-  o->private_impl.use_limit = true;
-  return ((puffs_base__empty_struct){});
+    uint64_t* ptr_to_len) {
+  puffs_base__reader1 ret = *o;
+  ret.private_impl.limit.ptr_to_len = ptr_to_len;
+  ret.private_impl.limit.next = &o->private_impl.limit;
+  return ret;
 }
 
 static inline puffs_base__empty_struct puffs_base__reader1__mark(
@@ -312,24 +302,7 @@ static inline puffs_base__empty_struct puffs_base__reader1__mark(
   return ((puffs_base__empty_struct){});
 }
 
-static inline puffs_base__empty_struct puffs_base__writer1__limit(
-    puffs_base__writer1* o,
-    uint8_t* ptr,
-    uint64_t limit) {
-  if (!o->buf) {
-    o->private_impl.limit = NULL;
-  } else {
-    uint64_t len = o->buf->len - o->buf->wi;
-    if (limit > len) {
-      limit = len;
-    }
-    if (!o->private_impl.limit || (limit < (o->private_impl.limit - ptr))) {
-      o->private_impl.limit = ptr + limit;
-    }
-  }
-  o->private_impl.use_limit = true;
-  return ((puffs_base__empty_struct){});
-}
+// TODO: static inline puffs_base__writer1 puffs_base__writer1__limit()
 
 static inline puffs_base__empty_struct puffs_base__writer1__mark(
     puffs_base__writer1* o,

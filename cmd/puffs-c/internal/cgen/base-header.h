@@ -76,6 +76,17 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } puffs_base__buf1;
 
+// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
+// its first N bytes. That N can be greater than a buffer's current read or
+// write capacity. N decreases naturally over time as bytes are read from or
+// written to the stream.
+//
+// A value with all fields NULL or zero is a valid, unlimited view.
+typedef struct puffs_base__limit1 {
+  uint64_t* ptr_to_len;             // Pointer to N.
+  struct puffs_base__limit1* next;  // Linked list of limits.
+} puffs_base__limit1;
+
 #ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
 typedef struct {
   void* always_null0;
@@ -91,12 +102,8 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    uint8_t* limit;
+    puffs_base__limit1 limit;
     uint8_t* mark;
-    // use_limit is redundant, in that it always equals (limit != NULL), but
-    // having a separate bool can have a significant performance effect with
-    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
-    bool use_limit;
 #ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
     struct {
       puffs_base__paired_nulls* noph0;
@@ -114,12 +121,8 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    uint8_t* limit;
+    puffs_base__limit1 limit;
     uint8_t* mark;
-    // use_limit is redundant, in that it always equals (limit != NULL), but
-    // having a separate bool can have a significant performance effect with
-    // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
-    bool use_limit;
   } private_impl;
 } puffs_base__writer1;
 

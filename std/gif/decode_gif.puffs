@@ -163,12 +163,15 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 		}
 		while true {
 			var r reader1 = in.src
+			// TODO: should "mark" be "set_mark"? Unlike "limit", "mark" does
+			// not return a different reader1.
 			r.mark()
-			r.limit(l:block_size)
 			// TODO: remove the dummy param. It's needed for now so that
 			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
 			// variables.
-			var z status = try this.lzw.decode?(dst:in.dst, src:r, dummy:in.src)
+			//
+			// TODO: enforce that limit can only be called in a "foo?" call?
+			var z status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
 			if z.is_ok() {
 				break
 			}
