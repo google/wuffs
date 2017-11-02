@@ -1255,16 +1255,6 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
         if (a_src.buf) {
           size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
           a_src.buf->ri += n;
-#ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
-          if (a_src.private_impl.no_op_performance_hacks) {
-            puffs_base__paired_nulls* pn =
-                a_src.private_impl.no_op_performance_hacks->noph0;
-            while (pn && pn->always_null0) {
-              *((int*)(pn->always_null0)) = 0;
-              pn = (puffs_base__paired_nulls*)(pn->always_null1);
-            }
-          }
-#endif
         }
         puffs_gif__status t_3 = puffs_gif__lzw_decoder__decode(
             &self->private_impl.f_lzw, a_dst, v_r);
@@ -1408,14 +1398,6 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
-#ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
-    if (a_src.private_impl.no_op_performance_hacks) {
-      if (a_src.private_impl.no_op_performance_hacks->noph1 &&
-          (len > a_src.private_impl.no_op_performance_hacks->noph1)) {
-        len = a_src.private_impl.no_op_performance_hacks->noph1;
-      }
-    }
-#endif
     b_rend_src = b_rptr_src + len;
     if (a_src.private_impl.limit && (b_rend_src > a_src.private_impl.limit)) {
       b_rend_src = a_src.private_impl.limit;

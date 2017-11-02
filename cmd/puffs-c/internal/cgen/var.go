@@ -101,15 +101,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		b.printf("%srptr_%s = %s%s.buf->ptr + %s%s.buf->ri;",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
-
-		if s := noOpPerformanceHacks[nophKey{
-			gCurrFunkCName: g.currFunk.cName,
-			genMethod:      "writeLoadDerivedVar",
-			headerFooter:   header,
-		}]; s != "" {
-			b.writes(s)
-		}
-
 		b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
 		b.printf("if (%s%s.private_impl.limit && (%srend_%s > %s%s.private_impl.limit)) {"+
 			" %srend_%s = %s%s.private_impl.limit; }",
@@ -161,15 +152,6 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
-
-		if s := noOpPerformanceHacks[nophKey{
-			gCurrFunkCName: g.currFunk.cName,
-			genMethod:      "writeSaveDerivedVar",
-			headerFooter:   footer,
-		}]; s != "" {
-			b.writes(s)
-		}
-
 		if footer {
 			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
 		}

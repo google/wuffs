@@ -20,6 +20,8 @@ package cgen
 //
 // TODO: investigate; delete these hacks (without regressing performance).
 
+// TODO: delete this file.
+
 type nophKey struct {
 	gCurrFunkCName string
 	genMethod      string
@@ -58,5 +60,3 @@ if (a_src.private_impl.no_op_performance_hacks) {
 #endif
 `,
 }
-
-// puffs_gif__decoder__decode_id
