@@ -119,7 +119,7 @@ typedef struct {
     // use_limit is redundant, in that it always equals (limit != NULL), but
     // having a separate bool can have a significant performance effect with
     // gcc 4.8.4 (e.g. 1.1x on some benchmarks).
-    // TODO: bool use_limit;
+    bool use_limit;
   } private_impl;
 } puffs_base__writer1;
 
