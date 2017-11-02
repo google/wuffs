@@ -45,17 +45,6 @@
 // TODO: don't hard code this in base-header.h.
 #define PUFFS_VERSION (0x00001)
 
-// PUFFS_USE_NO_OP_PERFORMANCE_HACKS enables code paths that look like
-// redundant no-ops, but for reasons to be investigated, can have dramatic
-// performance effects with gcc 4.8.4 (e.g. 1.2x on some benchmarks).
-//
-// TODO: investigate; delete these hacks (without regressing performance).
-// The order matters here. Clang also defines "__GNUC__".
-#if defined(__clang__)
-#elif defined(__GNUC__)
-#define PUFFS_USE_NO_OP_PERFORMANCE_HACKS 1
-#endif
-
 // puffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
@@ -87,13 +76,6 @@ typedef struct puffs_base__limit1 {
   struct puffs_base__limit1* next;  // Linked list of limits.
 } puffs_base__limit1;
 
-#ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
-typedef struct {
-  void* always_null0;
-  void* always_null1;
-} puffs_base__paired_nulls;
-#endif
-
 typedef struct {
   // TODO: move buf into private_impl? As it is, it looks like users can modify
   // the buf field to point to a different buffer, which can turn the limit and
@@ -104,12 +86,6 @@ typedef struct {
   struct {
     puffs_base__limit1 limit;
     uint8_t* mark;
-#ifdef PUFFS_USE_NO_OP_PERFORMANCE_HACKS
-    struct {
-      puffs_base__paired_nulls* noph0;
-      uint32_t noph1;
-    } * no_op_performance_hacks;
-#endif
   } private_impl;
 } puffs_base__reader1;
 
