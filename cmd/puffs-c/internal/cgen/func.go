@@ -30,6 +30,7 @@ type funk struct {
 	bFooter      buffer
 
 	astFunc       *a.Func
+	cName         string
 	derivedVars   map[t.ID]struct{}
 	jumpTargets   map[a.Loop]uint32
 	coroSuspPoint uint32
@@ -56,6 +57,13 @@ func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
 	return jt, nil
 }
 
+func (g *gen) funcCName(n *a.Func) string {
+	if r := n.Receiver(); r != 0 {
+		return g.pkgPrefix + r.String(g.tm) + "__" + n.Name().String(g.tm)
+	}
+	return g.pkgPrefix + n.Name().String(g.tm)
+}
+
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 	// TODO: write n's return values.
 	if n.Suspendible() {
@@ -71,12 +79,8 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 		return fmt.Errorf("TODO: multiple return values")
 	}
 
-	b.writes(g.pkgPrefix)
-	if r := n.Receiver(); r != 0 {
-		b.writes(r.String(g.tm))
-		b.writes("__")
-	}
-	b.printf("%s(", n.Name().String(g.tm))
+	b.writes(g.funcCName(n))
+	b.writeb('(')
 
 	comma := false
 	if r := n.Receiver(); r != 0 {
@@ -129,6 +133,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	g.currFunk = funk{
 		astFunc:     n,
+		cName:       g.funcCName(n),
 		public:      n.Public(),
 		suspendible: n.Suspendible(),
 	}
