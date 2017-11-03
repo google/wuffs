@@ -395,13 +395,13 @@ typedef struct {
 #if defined(__GNUC__)
 #define PUFFS_BASE__LIKELY(expr) (__builtin_expect(!!(expr), 1))
 #define PUFFS_BASE__UNLIKELY(expr) (__builtin_expect(!!(expr), 0))
-// Declare the printf prototype. The generated code shouldn't need this at all,
-// but it's useful for manual printf debugging.
-extern int printf(const char* __restrict __format, ...);
 #else
 #define PUFFS_BASE__LIKELY(expr) (expr)
 #define PUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
+
+// Uncomment this #include for printf-debugging.
+// #include <stdio.h>
 
 // ---------------- Static Inline Functions
 //
