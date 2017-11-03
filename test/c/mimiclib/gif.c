@@ -32,10 +32,19 @@ int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
 const char* mimic_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
   const char* ret = NULL;
 
-  // TODO: #ifdef API calls for libgif version 4 vs version 5? Note that:
-  //  - Version 4 ships with Ubunty 14.04 LTS "Trusty".
-  //  - Version 5 ships with Ubunty 16.04 LTS "Xenial".
+  // http://giflib.sourceforge.net/gif_lib.html#compatibility says that "A few
+  // changes in behavior were introduced in 5.0:
+  //
+  // GIF file openers and closers - DGifOpenFileName(), DGifOpenFileHandle(),
+  // DGifOpen(), DGifClose(), EGifOpenFileName(), EGifOpenFileHandle(),
+  // EGifOpen(), and EGifClose() - all now take a final integer address
+  // argument. If non-null, this is used to pass back an error code when the
+  // function returns NULL."
+#if defined(GIFLIB_MAJOR) && (GIFLIB_MAJOR >= 5)
+  GifFileType* f = DGifOpen(src, mimic_gif_read_func, NULL);
+#else
   GifFileType* f = DGifOpen(src, mimic_gif_read_func);
+#endif
   if (!f) {
     ret = "DGifOpen failed";
     goto cleanup0;
@@ -73,7 +82,12 @@ const char* mimic_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
   dst->wi += num_src;
 
 cleanup1:;
-  if ((DGifCloseFile(f) != GIF_OK) && !ret) {
+#if defined(GIFLIB_MAJOR) && (GIFLIB_MAJOR >= 5)
+  int close_status = DGifCloseFile(f, NULL);
+#else
+  int close_status = DGifCloseFile(f);
+#endif
+  if ((close_status != GIF_OK) && !ret) {
     ret = "DGifCloseFile failed";
   }
 cleanup0:;
