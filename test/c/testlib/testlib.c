@@ -428,7 +428,7 @@ bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
                        golden_test* gt,
                        uint64_t wlimit,
                        uint64_t rlimit) {
-  return proc_buf1_buf1(codec_func, 0, gt, wlimit, rlimit, 1, false);
+  return proc_buf1_buf1(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
 #endif  // PUFFS_BASE_HEADER_H
