@@ -37,7 +37,7 @@ char fail_msg[65536] = {0};
 
 int tests_run = 0;
 
-const char* proc_filename;
+const char* proc_filename = "";
 const char* proc_funcname = "";
 
 // The order matters here. Clang also defines "__GNUC__".

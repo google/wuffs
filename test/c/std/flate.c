@@ -40,8 +40,6 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../gen/c/std/flate.c"
 #include "../testlib/testlib.c"
 
-const char* proc_filename = "std/flate.c";
-
 // ---------------- Golden Tests
 
 // The src_offset0 and src_offset1 magic numbers come from:
@@ -943,5 +941,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
+  proc_filename = "std/flate.c";
   return test_main(argc, argv, tests, benches);
 }

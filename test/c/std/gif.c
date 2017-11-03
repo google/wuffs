@@ -40,8 +40,6 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../gen/c/std/gif.c"
 #include "../testlib/testlib.c"
 
-const char* proc_filename = "std/gif.c";
-
 // ---------------- Basic Tests
 
 void test_basic_bad_argument_out_of_range() {
@@ -782,5 +780,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
+  proc_filename = "std/gif.c";
   return test_main(argc, argv, tests, benches);
 }
