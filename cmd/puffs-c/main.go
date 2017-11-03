@@ -52,7 +52,7 @@ const (
 	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
 
 	focusDefault = ""
-	focusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "bench_puffs_gif_decode"`
+	focusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "puffs_gif_decode"`
 
 	mimicDefault = false
 	mimicUsage   = `whether to compare Puffs' output with other libraries' output`

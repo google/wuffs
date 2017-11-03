@@ -61,9 +61,23 @@ bool check_focus() {
     while ((*q != ',') && (*q != '\x00')) {
       q++;
     }
+
+    // See if proc_funcname (with or without a "test_" or "bench_" prefix)
+    // starts with the [p, q) string.
     if (!strncmp(proc_funcname, p, q - p)) {
       return true;
     }
+    const char* unprefixed_proc_funcname = NULL;
+    if (!strncmp(proc_funcname, "test_", 5)) {
+      unprefixed_proc_funcname = proc_funcname + 5;
+    } else if (!strncmp(proc_funcname, "bench_", 6)) {
+      unprefixed_proc_funcname = proc_funcname + 6;
+    }
+    if (unprefixed_proc_funcname &&
+        !strncmp(unprefixed_proc_funcname, p, q - p)) {
+      return true;
+    }
+
     if (*q == '\x00') {
       break;
     }

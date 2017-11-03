@@ -122,7 +122,7 @@ const (
 	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
 
 	focusDefault = ""
-	focusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "bench_puffs_gif_decode"`
+	focusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "puffs_gif_decode"`
 
 	langsDefault = "c"
 	langsUsage   = `comma-separated list of target languages (file extensions), e.g. "c,go,rs"`
