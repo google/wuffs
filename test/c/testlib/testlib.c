@@ -54,6 +54,8 @@ bool check_focus() {
   if (!*p) {
     return true;
   }
+  size_t n = strlen(proc_funcname);
+
   // On each iteration of the loop, set p and q so that p (inclusive) and q
   // (exclusive) bracket the interesting fragment of the comma-separated
   // elements of focus.
@@ -84,22 +86,25 @@ bool check_focus() {
       // and won't start with "Benchmark". Stripping lets us conveniently
       // copy/paste a string like "Benchmarkpuffs_gif_decode_10k/gcc" from the
       // "puffs bench std/gif" output.
-      if (!strncmp(p, "Benchmark", 9)) {
+      if ((q - p >= 9) && !strncmp(p, "Benchmark", 9)) {
         p += 9;
       }
 
       // See if proc_funcname (with or without a "test_" or "bench_" prefix)
       // starts with the [p, q) string.
-      if (!strncmp(proc_funcname, p, q - p)) {
+      if ((n >= q - p) && !strncmp(proc_funcname, p, q - p)) {
         return true;
       }
       const char* unprefixed_proc_funcname = NULL;
-      if (!strncmp(proc_funcname, "test_", 5)) {
+      size_t unprefixed_n = 0;
+      if ((n >= q - p) && !strncmp(proc_funcname, "test_", 5)) {
         unprefixed_proc_funcname = proc_funcname + 5;
-      } else if (!strncmp(proc_funcname, "bench_", 6)) {
+        unprefixed_n = n - 5;
+      } else if ((n >= q - p) && !strncmp(proc_funcname, "bench_", 6)) {
         unprefixed_proc_funcname = proc_funcname + 6;
+        unprefixed_n = n - 6;
       }
-      if (unprefixed_proc_funcname &&
+      if (unprefixed_proc_funcname && (unprefixed_n >= q - p) &&
           !strncmp(unprefixed_proc_funcname, p, q - p)) {
         return true;
       }
@@ -155,7 +160,7 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
   uint64_t kb_per_s = n_bytes * 1000000 / nanos;
 
   const char* name = proc_funcname;
-  if (!strncmp(name, "bench_", 6)) {
+  if ((strlen(name) >= 6) && !strncmp(name, "bench_", 6)) {
     name += 6;
   }
   if (bench_warm_up) {
@@ -184,13 +189,14 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   int i;
   for (i = 1; i < argc; i++) {
     const char* arg = argv[i];
+    size_t arg_len = strlen(arg);
     if (!strcmp(arg, "-bench")) {
       bench = true;
 
-    } else if (!strncmp(arg, "-focus=", 7)) {
+    } else if ((arg_len >= 7) && !strncmp(arg, "-focus=", 7)) {
       focus = arg + 7;
 
-    } else if (!strncmp(arg, "-reps=", 6)) {
+    } else if ((arg_len >= 6) && !strncmp(arg, "-reps=", 6)) {
       arg += 6;
       if (!*arg) {
         fprintf(stderr, "missing -reps=N value\n");
