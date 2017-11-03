@@ -37,11 +37,6 @@ char fail_msg[65536] = {0};
 
 int tests_run = 0;
 
-typedef void (*proc)();
-
-proc benches[];
-proc tests[];
-
 const char* proc_filename;
 const char* proc_funcname = "";
 
@@ -107,7 +102,9 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
   fflush(stdout);
 }
 
-int main(int argc, char** argv) {
+typedef void (*proc)();
+
+int test_main(int argc, char** argv, proc* tests, proc* benches) {
   bool bench = false;
   int proc_reps = 5;
 
