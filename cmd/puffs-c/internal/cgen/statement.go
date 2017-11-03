@@ -16,10 +16,17 @@ package cgen
 
 import (
 	"fmt"
+	"strings"
 
 	a "github.com/google/puffs/lang/ast"
 	t "github.com/google/puffs/lang/token"
 )
+
+// genFilenameLineComments is whether to print "// foo.puffs:123\n" comments in
+// the generated code. This can be useful for debugging, although it is not
+// enabled by default as it can lead to many spurious changes in the generated
+// C code (due to line numbers changing) when editing Puffs code.
+const genFilenameLineComments = false
 
 func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
@@ -27,11 +34,23 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	}
 	depth++
 
-	switch n.Kind() {
-	case a.KAssert:
+	if n.Kind() == a.KAssert {
 		// Assertions only apply at compile-time.
 		return nil
+	}
 
+	if genFilenameLineComments {
+		filename, line := n.Raw().FilenameLine()
+		if i := strings.LastIndexByte(filename, '/'); i >= 0 {
+			filename = filename[i+1:]
+		}
+		if i := strings.LastIndexByte(filename, '\\'); i >= 0 {
+			filename = filename[i+1:]
+		}
+		b.printf("// %s:%d\n", filename, line)
+	}
+
+	switch n.Kind() {
 	case a.KAssign:
 		n := n.Assign()
 		if err := g.writeSuspendibles(b, n.LHS(), depth); err != nil {
@@ -95,7 +114,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				}
 			}
 			if bif := n.BodyIfFalse(); len(bif) > 0 {
-				b.writes("} else {")
+				b.writes("} else {\n")
 				for _, o := range bif {
 					if err := g.writeStatement(b, o, depth); err != nil {
 						return err
