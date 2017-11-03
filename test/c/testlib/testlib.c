@@ -242,7 +242,7 @@ bool read_file(puffs_base__buf1* dst, const char* path) {
 char* hex_dump(char* msg, puffs_base__buf1* buf, size_t i) {
   if (!msg || !buf) {
     FAIL("hex_dump: NULL argument");
-    return false;
+    return NULL;
   }
   if (buf->wi == 0) {
     return msg;
