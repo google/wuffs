@@ -23,26 +23,47 @@ import (
 	"strings"
 )
 
+func isStringList(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == ',' || c == '-' || c == '.' || ('0' <= c && c <= '9') || c == '_' || ('a' <= c && c <= 'z') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func doBench(puffsRoot string, args []string) error { return doBenchTest(puffsRoot, args, true) }
 func doTest(puffsRoot string, args []string) error  { return doBenchTest(puffsRoot, args, false) }
 
 func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
 	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
+	focusFlag := flags.String("focus", focusDefault, focusUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
 	repsFlag := flags.Int("reps", repsDefault, repsUsage)
 	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
+
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
+
 	langs, err := parseLangs(*langsFlag)
 	if err != nil {
 		return err
 	}
+	if !isStringList(*ccompilersFlag) {
+		return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
+	}
+	if !isStringList(*focusFlag) {
+		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
+	}
 	if *repsFlag < repsMin || repsMax < *repsFlag {
 		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
 	}
+
 	args = flags.Args()
 	if len(args) == 0 {
 		args = []string{"std/..."}
@@ -53,6 +74,9 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		cmdArgs = append(cmdArgs, "bench", fmt.Sprintf("-reps=%d", *repsFlag))
 	} else {
 		cmdArgs = append(cmdArgs, "test")
+	}
+	if *focusFlag != "" {
+		cmdArgs = append(cmdArgs, fmt.Sprintf("-focus=%s", *focusFlag))
 	}
 	if *mimicFlag {
 		cmdArgs = append(cmdArgs, "-mimic")
@@ -137,7 +161,7 @@ func (b *btHelper) benchTestDir(dirname string) (failed bool, err error) {
 		args := []string(nil)
 		args = append(args, b.cmdArgs...)
 		if lang == "c" {
-			args = append(args, "-ccompilers", b.ccompilers)
+			args = append(args, fmt.Sprintf("-ccompilers=%s", b.ccompilers))
 		}
 		args = append(args, filepath.Join(b.puffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)

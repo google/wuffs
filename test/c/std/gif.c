@@ -43,7 +43,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Basic Tests
 
 void test_basic_bad_argument_out_of_range() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
 
@@ -70,7 +70,7 @@ void test_basic_bad_argument_out_of_range() {
 }
 
 void test_basic_bad_receiver() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_base__writer1 dst = {0};
   puffs_base__reader1 src = {0};
   puffs_gif__status status = puffs_gif__lzw_decoder__decode(NULL, dst, src);
@@ -80,7 +80,7 @@ void test_basic_bad_receiver() {
 }
 
 void test_basic_initializer_not_called() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_gif__lzw_decoder dec = {{0}};
   puffs_base__writer1 dst = {0};
   puffs_base__reader1 src = {0};
@@ -92,7 +92,7 @@ void test_basic_initializer_not_called() {
 }
 
 void test_basic_puffs_version_bad() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, 0, 0);  // 0 is not PUFFS_VERSION.
   if (dec.private_impl.status != PUFFS_GIF__ERROR_BAD_PUFFS_VERSION) {
@@ -103,7 +103,7 @@ void test_basic_puffs_version_bad() {
 }
 
 void test_basic_puffs_version_good() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_gif__lzw_decoder dec;
   puffs_gif__lzw_decoder__initialize(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_BASE__MAGIC) {
@@ -118,7 +118,7 @@ void test_basic_puffs_version_good() {
 }
 
 void test_basic_status_is_error() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   if (puffs_gif__status__is_error(PUFFS_GIF__STATUS_OK)) {
     FAIL("is_error(OK) returned true");
     return;
@@ -138,7 +138,7 @@ void test_basic_status_is_error() {
 }
 
 void test_basic_status_strings() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   const char* s0 = puffs_gif__status__string(PUFFS_GIF__STATUS_OK);
   const char* t0 = "gif: ok";
   if (strcmp(s0, t0)) {
@@ -174,7 +174,7 @@ void test_basic_status_strings() {
 }
 
 void test_basic_sub_struct_initializer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   puffs_gif__decoder dec;
   puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
   if (dec.private_impl.magic != PUFFS_BASE__MAGIC) {
@@ -296,35 +296,35 @@ bool do_test_puffs_gif_lzw_decode(const char* src_filename,
 }
 
 void test_puffs_gif_lzw_decode_many_big_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
                                14731, "../../testdata/bricks-gray.indexes",
                                19200, 0, 4096);
 }
 
 void test_puffs_gif_lzw_decode_many_small_writes_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
                                14731, "../../testdata/bricks-gray.indexes",
                                19200, 41, 43);
 }
 
 void test_puffs_gif_lzw_decode_bricks_dither() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
                                14923, "../../testdata/bricks-dither.indexes",
                                19200, 0, 0);
 }
 
 void test_puffs_gif_lzw_decode_bricks_nodither() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
                                13382, "../../testdata/bricks-nodither.indexes",
                                19200, 0, 0);
 }
 
 void test_puffs_gif_lzw_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
                                "../../testdata/pi.txt", 100003, 0, 0);
 }
@@ -371,13 +371,13 @@ bool do_bench_puffs_gif_lzw_decode(const char* filename, uint64_t reps) {
 }
 
 void bench_puffs_gif_lzw_decode_20k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_puffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
                                 5000);
 }
 
 void bench_puffs_gif_lzw_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_puffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
 }
 
@@ -504,21 +504,21 @@ bool do_test_puffs_gif_decode(const char* filename,
 }
 
 void test_puffs_gif_decode_input_is_a_gif() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes", 0, 0);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_big_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes", 0, 4096);
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes", 0,
@@ -527,14 +527,14 @@ void test_puffs_gif_decode_input_is_a_gif_many_medium_reads() {
 }
 
 void test_puffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_puffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
                            "../../testdata/bricks-dither.indexes", 11, 13);
 }
 
 void test_puffs_gif_decode_input_is_a_png() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -596,37 +596,37 @@ bool do_test_mimic_gif_decode(const char* filename) {
 }
 
 void test_mimic_gif_decode_bricks_dither() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/bricks-dither.gif");
 }
 
 void test_mimic_gif_decode_bricks_gray() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/bricks-gray.gif");
 }
 
 void test_mimic_gif_decode_bricks_nodither() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/bricks-nodither.gif");
 }
 
 void test_mimic_gif_decode_harvesters() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/harvesters.gif");
 }
 
 void test_mimic_gif_decode_hat() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/hat.gif");
 }
 
 void test_mimic_gif_decode_hibiscus() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/hibiscus.gif");
 }
 
 void test_mimic_gif_decode_pjw_thumbnail() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../testdata/pjw-thumbnail.gif");
 }
 
@@ -663,23 +663,23 @@ bool do_bench_gif_decode(const char* (*decode_func)(puffs_base__buf1*,
 }
 
 void bench_puffs_gif_decode_1k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(puffs_gif_decode, "../../testdata/pjw-thumbnail.gif",
                       200000);
 }
 
 void bench_puffs_gif_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(puffs_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
 void bench_puffs_gif_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(puffs_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
 void bench_puffs_gif_decode_1000k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(puffs_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 
@@ -688,23 +688,23 @@ void bench_puffs_gif_decode_1000k() {
 #ifdef PUFFS_MIMIC
 
 void bench_mimic_gif_decode_1k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(mimic_gif_decode, "../../testdata/pjw-thumbnail.gif",
                       200000);
 }
 
 void bench_mimic_gif_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(mimic_gif_decode, "../../testdata/hat.gif", 10000);
 }
 
 void bench_mimic_gif_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(mimic_gif_decode, "../../testdata/hibiscus.gif", 1000);
 }
 
 void bench_mimic_gif_decode_1000k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_gif_decode(mimic_gif_decode, "../../testdata/harvesters.gif", 100);
 }
 

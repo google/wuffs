@@ -50,4 +50,15 @@ func main1() error {
 const (
 	ccompilersDefault = "clang,gcc"
 	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
+
+	focusDefault = ""
+	focusUsage   = `comma-separated list of tests or benchmarks to focus on, e.g. "bench_puffs_gif_decode_10k"`
+
+	mimicDefault = false
+	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
+
+	repsDefault = 5
+	repsMin     = 0
+	repsMax     = 1000000
+	repsUsage   = `the number of repetitions per benchmark`
 )

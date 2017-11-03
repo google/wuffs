@@ -39,6 +39,38 @@ int tests_run = 0;
 
 const char* proc_filename = "";
 const char* proc_funcname = "";
+const char* focus = "";
+bool in_focus = false;
+
+#define CHECK_FOCUS(funcname) \
+  proc_funcname = funcname;   \
+  in_focus = check_focus();   \
+  if (!in_focus) {            \
+    return;                   \
+  }
+
+bool check_focus() {
+  const char* p = focus;
+  if (!*p) {
+    return true;
+  }
+  // On each iteration of the loop, set p and q so that p (inclusive) and q
+  // (exclusive) bracket the comma-separated elements of focus.
+  while (true) {
+    const char* q = p;
+    while ((*q != ',') && (*q != '\x00')) {
+      q++;
+    }
+    if (!strncmp(proc_funcname, p, q - p)) {
+      return true;
+    }
+    if (*q == '\x00') {
+      break;
+    }
+    p = q + 1;
+  }
+  return false;
+}
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
@@ -114,6 +146,9 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     if (!strcmp(arg, "-bench")) {
       bench = true;
 
+    } else if (!strncmp(arg, "-focus=", 7)) {
+      focus = arg + 7;
+
     } else if (!strncmp(arg, "-reps=", 6)) {
       arg += 6;
       if (!*arg) {
@@ -158,7 +193,11 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     proc* p;
     for (p = procs; *p; p++) {
       proc_funcname = "unknown_funcname";
+      in_focus = false;
       (*p)();
+      if (!in_focus) {
+        continue;
+      }
       if (fail_msg[0]) {
         printf("%-16s%-8sFAIL %s: %s\n", proc_filename, cc, proc_funcname,
                fail_msg);

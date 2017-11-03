@@ -121,7 +121,7 @@ golden_test zlib_pi_gt = {
 // ---------------- Checksum Tests
 
 void test_puffs_adler32() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   struct {
     const char* filename;
@@ -251,53 +251,53 @@ const char* puffs_zlib_decode(puffs_base__buf1* dst,
 }
 
 void test_puffs_flate_decode_256_bytes() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_256_bytes_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_flate_backref_crosses_blocks() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_flate_backref_crosses_blocks_gt,
                     0, 0);
 }
 
 void test_puffs_flate_decode_midsummer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_midsummer_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_pi_many_big_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 0, 4096);
 }
 
 void test_puffs_flate_decode_pi_many_medium_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 0, 599);
 }
 
 void test_puffs_flate_decode_pi_many_small_writes_reads() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_pi_gt, 59, 61);
 }
 
 void test_puffs_flate_decode_romeo() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_romeo_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_romeo_fixed() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_flate_decode, &flate_romeo_fixed_gt, 0, 0);
 }
 
 void test_puffs_flate_decode_split_src() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
@@ -394,7 +394,7 @@ bool do_test_puffs_flate_history(int i,
 }
 
 void test_puffs_flate_history_full() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
@@ -450,7 +450,7 @@ void test_puffs_flate_history_full() {
 }
 
 void test_puffs_flate_history_partial() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
@@ -509,7 +509,7 @@ void test_puffs_flate_history_partial() {
 }
 
 void test_puffs_flate_table_redirect() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   // Call init_huff with a Huffman code that looks like:
   //
@@ -641,7 +641,7 @@ void test_puffs_flate_table_redirect() {
 }
 
 void test_puffs_zlib_checksum_mismatch() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
 
   puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -673,12 +673,12 @@ void test_puffs_zlib_checksum_mismatch() {
 }
 
 void test_puffs_zlib_decode_midsummer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
 }
 
 void test_puffs_zlib_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(puffs_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
@@ -689,53 +689,53 @@ void test_puffs_zlib_decode_pi() {
 #include "../mimiclib/flate.c"
 
 void test_mimic_flate_decode_256_bytes() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_256_bytes_gt, 0, 0);
 }
 
 void test_mimic_flate_decode_flate_backref_crosses_blocks() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_flate_backref_crosses_blocks_gt,
                     0, 0);
 }
 
 void test_mimic_flate_decode_midsummer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_midsummer_gt, 0, 0);
 }
 
 void test_mimic_flate_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_pi_gt, 0, 0);
 }
 
 void test_mimic_flate_decode_romeo() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_romeo_gt, 0, 0);
 }
 
 void test_mimic_flate_decode_romeo_fixed() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_flate_decode, &flate_romeo_fixed_gt, 0, 0);
 }
 
 void test_mimic_gzip_decode_midsummer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt, 0, 0);
 }
 
 void test_mimic_gzip_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 0, 0);
 }
 
 void test_mimic_zlib_decode_midsummer() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_zlib_decode, &zlib_midsummer_gt, 0, 0);
 }
 
 void test_mimic_zlib_decode_pi() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
@@ -762,42 +762,42 @@ const char* puffs_bench_adler32(puffs_base__buf1* dst,
 }
 
 void bench_puffs_adler32_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_puffs_adler32_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
 }
 
 // ---------------- Flate Benches
 
 void bench_puffs_flate_decode_1k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_romeo_gt, 0, 0, 200000);
 }
 
 void bench_puffs_flate_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_puffs_flate_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_flate_decode, tc_dst, &flate_pi_gt, 0, 0, 3000);
 }
 
 void bench_puffs_zlib_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_puffs_zlib_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
 }
 
@@ -806,62 +806,62 @@ void bench_puffs_zlib_decode_100k() {
 #ifdef PUFFS_MIMIC
 
 void bench_mimic_adler32_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_adler32_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_crc32_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &checksum_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_crc32_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &checksum_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_flate_decode_1k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_romeo_gt, 0, 0, 200000);
 }
 
 void bench_mimic_flate_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_flate_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_flate_decode, tc_dst, &flate_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_gzip_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_gzip_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
 }
 
 void bench_mimic_zlib_decode_10k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
                      30000);
 }
 
 void bench_mimic_zlib_decode_100k() {
-  proc_funcname = __func__;
+  CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
 }
 

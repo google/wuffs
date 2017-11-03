@@ -25,36 +25,46 @@ import (
 	"strings"
 )
 
+func isStringList(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == ',' || c == '-' || c == '.' || ('0' <= c && c <= '9') || c == '_' || ('a' <= c && c <= 'z') {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func doBench(args []string) error { return doBenchTest(args, true) }
 func doTest(args []string) error  { return doBenchTest(args, false) }
 
 func doBenchTest(args []string, bench bool) error {
-	const (
-		mimicDefault = false
-		mimicUsage   = `whether to compare Puffs' output with other libraries' output`
-
-		repsDefault = 5
-		repsMin     = 0
-		repsMax     = 1000000
-		repsUsage   = `the number of repetitions per benchmark`
-	)
-
 	flags := flag.FlagSet{}
 	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
+	focusFlag := flags.String("focus", focusDefault, focusUsage)
 	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
 	repsFlag := flags.Int("reps", repsDefault, repsUsage)
+
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	args = flags.Args()
 
+	if !isStringList(*ccompilersFlag) {
+		return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
+	}
+	if !isStringList(*focusFlag) {
+		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
+	}
 	if *repsFlag < repsMin || repsMax < *repsFlag {
 		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
 	}
 
+	args = flags.Args()
+
 	failed := false
 	for _, arg := range args {
-		f, err := doBenchTest1(arg, bench, *ccompilersFlag, *mimicFlag, *repsFlag)
+		f, err := doBenchTest1(arg, bench, *ccompilersFlag, *focusFlag, *mimicFlag, *repsFlag)
 		if err != nil {
 			return err
 		}
@@ -70,7 +80,7 @@ func doBenchTest(args []string, bench bool) error {
 	return nil
 }
 
-func doBenchTest1(filename string, bench bool, ccompilers string, mimic bool, reps int) (failed bool, err error) {
+func doBenchTest1(filename string, bench bool, ccompilers string, focus string, mimic bool, reps int) (failed bool, err error) {
 	workDir, err := ioutil.TempDir("", "puffs-c")
 	if err != nil {
 		return false, err
@@ -112,6 +122,9 @@ func doBenchTest1(filename string, bench bool, ccompilers string, mimic bool, re
 		outArgs := []string(nil)
 		if bench {
 			outArgs = append(outArgs, "-bench", fmt.Sprintf("-reps=%d", reps))
+		}
+		if focus != "" {
+			outArgs = append(outArgs, fmt.Sprintf("-focus=%s", focus))
 		}
 		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout
