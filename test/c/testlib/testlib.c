@@ -62,20 +62,25 @@ bool check_focus() {
       q++;
     }
 
-    // See if proc_funcname (with or without a "test_" or "bench_" prefix)
-    // starts with the [p, q) string.
-    if (!strncmp(proc_funcname, p, q - p)) {
-      return true;
-    }
-    const char* unprefixed_proc_funcname = NULL;
-    if (!strncmp(proc_funcname, "test_", 5)) {
-      unprefixed_proc_funcname = proc_funcname + 5;
-    } else if (!strncmp(proc_funcname, "bench_", 6)) {
-      unprefixed_proc_funcname = proc_funcname + 6;
-    }
-    if (unprefixed_proc_funcname &&
-        !strncmp(unprefixed_proc_funcname, p, q - p)) {
-      return true;
+    if (p == q) {
+      // No-op. Skip empty focus targets, which makes it convenient to
+      // copy/paste a string with a trailing comma.
+    } else {
+      // See if proc_funcname (with or without a "test_" or "bench_" prefix)
+      // starts with the [p, q) string.
+      if (!strncmp(proc_funcname, p, q - p)) {
+        return true;
+      }
+      const char* unprefixed_proc_funcname = NULL;
+      if (!strncmp(proc_funcname, "test_", 5)) {
+        unprefixed_proc_funcname = proc_funcname + 5;
+      } else if (!strncmp(proc_funcname, "bench_", 6)) {
+        unprefixed_proc_funcname = proc_funcname + 6;
+      }
+      if (unprefixed_proc_funcname &&
+          !strncmp(unprefixed_proc_funcname, p, q - p)) {
+        return true;
+      }
     }
 
     if (*q == '\x00') {
