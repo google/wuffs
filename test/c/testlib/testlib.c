@@ -55,12 +55,25 @@ bool check_focus() {
     return true;
   }
   // On each iteration of the loop, set p and q so that p (inclusive) and q
-  // (exclusive) bracket the comma-separated elements of focus.
+  // (exclusive) bracket the interesting fragment of the comma-separated
+  // elements of focus.
   while (true) {
-    const char* q = p;
-    while ((*q != ',') && (*q != '\x00')) {
-      q++;
+    const char* r = p;
+    const char* q = NULL;
+    while ((*r != ',') && (*r != '\x00')) {
+      if ((*r == '/') && (q == NULL)) {
+        q = r;
+      }
+      r++;
     }
+    if (q == NULL) {
+      q = r;
+    }
+    // At this point, r points to the comma or NUL byte that ends this element
+    // of the comma-separated list. q points to the first slash in that
+    // element, or if there are no slashes, q equals r.
+    //
+    // The pointers are named so that (p <= q) && (q <= r).
 
     if (p == q) {
       // No-op. Skip empty focus targets, which makes it convenient to
@@ -71,8 +84,6 @@ bool check_focus() {
       // and won't start with "Benchmark". Stripping lets us conveniently
       // copy/paste a string like "Benchmarkpuffs_gif_decode_10k/gcc" from the
       // "puffs bench std/gif" output.
-      //
-      // TODO: strip the "/gcc".
       if (!strncmp(p, "Benchmark", 9)) {
         p += 9;
       }
@@ -94,10 +105,10 @@ bool check_focus() {
       }
     }
 
-    if (*q == '\x00') {
+    if (*r == '\x00') {
       break;
     }
-    p = q + 1;
+    p = r + 1;
   }
   return false;
 }

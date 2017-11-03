@@ -28,7 +28,7 @@ import (
 func isStringList(s string) bool {
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if c == ',' || c == '-' || c == '.' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') ||
+		if c == ',' || c == '-' || c == '.' || c == '/' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') ||
 			c == '_' || ('a' <= c && c <= 'z') {
 			continue
 		}
