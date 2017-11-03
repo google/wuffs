@@ -377,6 +377,7 @@ typedef struct {
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0 case 0:;
 #define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                            \
   case n:;
@@ -889,7 +890,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
     v_already_full = self->private_impl.c_decode[0].v_already_full;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
       puffs_base__writer1__mark(&a_dst, b_wptr_dst);
@@ -1016,7 +1017,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     v_type = self->private_impl.c_decode_blocks[0].v_type;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_final = 0;
   label_0_continue:;
@@ -1187,7 +1188,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_n_bits >= 8) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
@@ -1362,7 +1363,7 @@ puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     v_hdist = self->private_impl.c_decode_huffman[0].v_hdist;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
@@ -1718,7 +1719,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
     v_i = self->private_impl.c_init_fixed_huffman[0].v_i;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_i = 0;
     while (v_i < 144) {
@@ -1818,7 +1819,7 @@ puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
@@ -2357,7 +2358,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     v_z = self->private_impl.c_decode[0].v_z;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     uint16_t t_1;

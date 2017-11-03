@@ -324,6 +324,7 @@ typedef struct {
 //
 // We use a trivial macro instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
+#define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0 case 0:;
 #define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                            \
   case n:;
@@ -733,7 +734,7 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
     v_c = self->private_impl.c_decode[0].v_c;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (a_src.buf) {
@@ -889,7 +890,7 @@ puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
     v_i = self->private_impl.c_decode_header[0].v_i;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
@@ -973,7 +974,7 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
     v_gct_size = self->private_impl.c_decode_lsd[0].v_gct_size;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
@@ -1083,7 +1084,7 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
     v_block_size = self->private_impl.c_decode_extension[0].v_block_size;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -1198,7 +1199,7 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     v_z = self->private_impl.c_decode_id[0].v_z;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
@@ -1427,7 +1428,7 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
   }
   switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);
+    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
     v_end_code = (v_clear_code + 1);

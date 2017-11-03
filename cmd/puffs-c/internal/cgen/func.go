@@ -230,7 +230,7 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 		// https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 		//
 		// The matching } is written below. See "Close the coroutine switch".
-		b.writes("switch (coro_susp_point) {\nPUFFS_BASE__COROUTINE_SUSPENSION_POINT(0);\n\n")
+		b.writes("switch (coro_susp_point) {\nPUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;\n\n")
 	}
 	return nil
 }
