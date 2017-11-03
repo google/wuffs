@@ -80,9 +80,9 @@ func do(w *bufio.Writer, dir string, filename string, depth int) error {
 
 	r := bufio.NewScanner(f)
 	for r.Scan() {
-		s := r.Bytes()
+		line := r.Bytes()
 
-		if bytes.HasPrefix(s, prefix) {
+		if s := line; bytes.HasPrefix(s, prefix) {
 			s = s[len(prefix):]
 			if bytes.HasSuffix(s, suffix) {
 				s = s[:len(s)-len(suffix)]
@@ -98,7 +98,7 @@ func do(w *bufio.Writer, dir string, filename string, depth int) error {
 			}
 		}
 
-		w.Write(s)
+		w.Write(line)
 		w.WriteByte('\n')
 	}
 	return r.Err()
