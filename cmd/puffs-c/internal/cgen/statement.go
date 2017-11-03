@@ -39,6 +39,24 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return nil
 	}
 
+	mightIntroduceTemporaries := false
+	switch n.Kind() {
+	case a.KAssign:
+		n := n.Assign()
+		mightIntroduceTemporaries = n.LHS().Suspendible() || n.RHS().Suspendible()
+	case a.KVar:
+		v := n.Var().Value()
+		mightIntroduceTemporaries = v != nil && v.Suspendible()
+	}
+	if mightIntroduceTemporaries {
+		// Put n's code into its own block, to restrict the scope of the
+		// tPrefix temporary variables. This helps avoid "jump bypasses
+		// variable initialization" compiler warnings with the coroutine
+		// suspension points.
+		b.writes("{\n")
+		defer b.writes("}\n")
+	}
+
 	if genFilenameLineComments {
 		filename, line := n.Raw().FilenameLine()
 		if i := strings.LastIndexByte(filename, '/'); i >= 0 {

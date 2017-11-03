@@ -773,12 +773,14 @@ puffs_gif__status puffs_gif__decoder__decode(puffs_gif__decoder* self,
       goto suspend;
     }
     while (true) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_0 = *b_rptr_src++;
+        v_c = t_0;
       }
-      uint8_t t_0 = *b_rptr_src++;
-      v_c = t_0;
       if (v_c == 33) {
         PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
         if (a_src.buf) {
@@ -895,12 +897,14 @@ puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 6) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_0 = *b_rptr_src++;
+        v_c[v_i] = t_0;
       }
-      uint8_t t_0 = *b_rptr_src++;
-      v_c[v_i] = t_0;
       v_i += 1;
     }
     if ((v_c[0] != 71) || (v_c[1] != 73) || (v_c[2] != 70) || (v_c[3] != 56) ||
@@ -979,12 +983,14 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 7) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_0 = *b_rptr_src++;
+        v_c[v_i] = t_0;
       }
-      uint8_t t_0 = *b_rptr_src++;
-      v_c[v_i] = t_0;
       v_i += 1;
     }
     self->private_impl.f_width =
@@ -996,24 +1002,30 @@ puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
       v_gct_size = (((uint32_t)(1)) << (1 + (v_c[4] & 7)));
       v_i = 0;
       while (v_i < v_gct_size) {
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+        {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint8_t t_1 = *b_rptr_src++;
+          self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
         }
-        uint8_t t_1 = *b_rptr_src++;
-        self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+        {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint8_t t_2 = *b_rptr_src++;
+          self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
         }
-        uint8_t t_2 = *b_rptr_src++;
-        self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+        {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint8_t t_3 = *b_rptr_src++;
+          self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
         }
-        uint8_t t_3 = *b_rptr_src++;
-        self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
         v_i += 1;
       }
     }
@@ -1086,12 +1098,14 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
+    {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *b_rptr_src++;
+      v_label = t_0;
     }
-    uint8_t t_0 = *b_rptr_src++;
-    v_label = t_0;
     if (v_label == 1) {
     } else if (v_label == 249) {
     } else if (v_label == 254) {
@@ -1101,12 +1115,14 @@ puffs_gif__status puffs_gif__decoder__decode_extension(
       goto exit;
     }
     while (true) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_1 = *b_rptr_src++;
+        v_block_size = t_1;
       }
-      uint8_t t_1 = *b_rptr_src++;
-      v_block_size = t_1;
       if (v_block_size == 0) {
         goto label_0_break;
       }
@@ -1204,12 +1220,14 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     memset(v_c, 0, sizeof(v_c));
     v_i = 0;
     while (v_i < 9) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_0 = *b_rptr_src++;
+        v_c[v_i] = t_0;
       }
-      uint8_t t_0 = *b_rptr_src++;
-      v_c[v_i] = t_0;
       v_i += 1;
     }
     v_interlace = ((v_c[8] & 64) != 0);
@@ -1219,12 +1237,14 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
       status = PUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE;
       goto exit;
     }
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-      goto short_read_src;
+    {
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_1 = *b_rptr_src++;
+      v_lw = t_1;
     }
-    uint8_t t_1 = *b_rptr_src++;
-    v_lw = t_1;
     if ((v_lw < 2) || (8 < v_lw)) {
       status = PUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH;
       goto exit;
@@ -1232,37 +1252,41 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
     puffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
                                               ((uint32_t)(v_lw)));
     while (true) {
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-      if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-        goto short_read_src;
+      {
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint8_t t_2 = *b_rptr_src++;
+        v_block_size = ((uint64_t)(t_2));
       }
-      uint8_t t_2 = *b_rptr_src++;
-      v_block_size = ((uint64_t)(t_2));
       if (v_block_size == 0) {
         goto label_0_break;
       }
       while (true) {
         v_r = a_src;
         puffs_base__reader1__mark(&v_r, b_rptr_src);
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-        if (a_src.buf) {
-          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-          a_src.buf->ri += n;
-          puffs_base__limit1* lim;
-          for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
+        {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+          if (a_src.buf) {
+            size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+            a_src.buf->ri += n;
+            puffs_base__limit1* lim;
+            for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
+              if (lim->ptr_to_len) {
+                *lim->ptr_to_len -= n;
+              }
             }
           }
+          uint64_t l_rlimit0 = v_block_size;
+          puffs_gif__status t_3 = puffs_gif__lzw_decoder__decode(
+              &self->private_impl.f_lzw, a_dst,
+              puffs_base__reader1__limit(&v_r, &l_rlimit0));
+          if (a_src.buf) {
+            b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+          }
+          v_z = t_3;
         }
-        uint64_t l_rlimit0 = v_block_size;
-        puffs_gif__status t_3 = puffs_gif__lzw_decoder__decode(
-            &self->private_impl.f_lzw, a_dst,
-            puffs_base__reader1__limit(&v_r, &l_rlimit0));
-        if (a_src.buf) {
-          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-        }
-        v_z = t_3;
         if (v_z == 0) {
           goto label_1_break;
         }
@@ -1440,12 +1464,14 @@ puffs_gif__status puffs_gif__lzw_decoder__decode(puffs_gif__lzw_decoder* self,
   label_0_continue:;
     while (true) {
       while (v_n_bits < v_width) {
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-        if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+        {
+          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint8_t t_0 = *b_rptr_src++;
+          v_bits |= (((uint32_t)(t_0)) << v_n_bits);
         }
-        uint8_t t_0 = *b_rptr_src++;
-        v_bits |= (((uint32_t)(t_0)) << v_n_bits);
         v_n_bits += 8;
       }
       v_code = ((v_bits) & ((1 << (v_width)) - 1));
