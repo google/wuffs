@@ -66,6 +66,17 @@ bool check_focus() {
       // No-op. Skip empty focus targets, which makes it convenient to
       // copy/paste a string with a trailing comma.
     } else {
+      // Strip a leading "Benchmark", if present, from the [p, q) string.
+      // Idiomatic C function names look like "test_puffs_gif_lzw_decode_pi"
+      // and won't start with "Benchmark". Stripping lets us conveniently
+      // copy/paste a string like "Benchmarkpuffs_gif_decode_10k/gcc" from the
+      // "puffs bench std/gif" output.
+      //
+      // TODO: strip the "/gcc".
+      if (!strncmp(p, "Benchmark", 9)) {
+        p += 9;
+      }
+
       // See if proc_funcname (with or without a "test_" or "bench_" prefix)
       // starts with the [p, q) string.
       if (!strncmp(proc_funcname, p, q - p)) {
