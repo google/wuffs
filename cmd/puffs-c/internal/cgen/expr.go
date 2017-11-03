@@ -181,7 +181,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isInSrc(g.tm, n, t.KeySinceMark, 0) {
 			b.printf("((puffs_base__slice_u8){ "+
 				".ptr = %ssrc.private_impl.mark, "+
-				".len = %ssrc.private_impl.mark ? %srptr_src - %ssrc.private_impl.mark : 0, })",
+				".len = %ssrc.private_impl.mark ? (size_t)(%srptr_src - %ssrc.private_impl.mark) : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
@@ -199,7 +199,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isInDst(g.tm, n, t.KeySinceMark, 0) {
 			b.printf("((puffs_base__slice_u8){ "+
 				".ptr = %sdst.private_impl.mark, "+
-				".len = %sdst.private_impl.mark ? %swptr_dst - %sdst.private_impl.mark : 0, })",
+				".len = %sdst.private_impl.mark ? (size_t)(%swptr_dst - %sdst.private_impl.mark) : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
@@ -318,7 +318,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("((puffs_base__slice_u8){ " +
 				".ptr = v_r.private_impl.mark, " +
-				".len = v_r.private_impl.mark ? b_rptr_src - v_r.private_impl.mark : 0, })")
+				".len = v_r.private_impl.mark ? (size_t)(b_rptr_src - v_r.private_impl.mark) : 0, })")
 			return nil
 		}
 		// TODO.

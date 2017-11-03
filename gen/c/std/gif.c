@@ -1266,24 +1266,25 @@ puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
           goto label_1_break;
         }
         if (v_block_size <
-            ((uint64_t)(((puffs_base__slice_u8){
-                             .ptr = v_r.private_impl.mark,
-                             .len = v_r.private_impl.mark
-                                        ? b_rptr_src - v_r.private_impl.mark
-                                        : 0,
-                         })
-                            .len))) {
+            ((uint64_t)(
+                ((puffs_base__slice_u8){
+                     .ptr = v_r.private_impl.mark,
+                     .len = v_r.private_impl.mark
+                                ? (size_t)(b_rptr_src - v_r.private_impl.mark)
+                                : 0,
+                 })
+                    .len))) {
           status = PUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ;
           goto exit;
         }
-        v_block_size -=
-            ((uint64_t)(((puffs_base__slice_u8){
-                             .ptr = v_r.private_impl.mark,
-                             .len = v_r.private_impl.mark
-                                        ? b_rptr_src - v_r.private_impl.mark
-                                        : 0,
-                         })
-                            .len));
+        v_block_size -= ((uint64_t)(
+            ((puffs_base__slice_u8){
+                 .ptr = v_r.private_impl.mark,
+                 .len = v_r.private_impl.mark
+                            ? (size_t)(b_rptr_src - v_r.private_impl.mark)
+                            : 0,
+             })
+                .len));
         if ((v_block_size == 0) && (v_z == PUFFS_GIF__SUSPENSION_SHORT_READ)) {
           goto label_1_break;
         }
