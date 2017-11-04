@@ -201,11 +201,14 @@ pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
 
 		this.end_of_block = false
 		this.decode_huffman_fast?(dst:in.dst, src:in.src)
-		// TODO: check this.end_of_block.
-		this.decode_huffman_slow?(dst:in.dst, src:in.src)
-		if not this.end_of_block {
-			return error "internal error: inconsistent Huffman end_of_block"
+		if this.end_of_block {
+			continue
 		}
+		this.decode_huffman_slow?(dst:in.dst, src:in.src)
+		if this.end_of_block {
+			continue
+		}
+		return error "internal error: inconsistent Huffman end_of_block"
 	}
 }
 

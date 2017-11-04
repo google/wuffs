@@ -1135,6 +1135,9 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       if (status) {
         goto suspend;
       }
+      if (self->private_impl.f_end_of_block) {
+        goto label_0_continue;
+      }
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1154,11 +1157,12 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       if (status) {
         goto suspend;
       }
-      if (!self->private_impl.f_end_of_block) {
-        status =
-            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK;
-        goto exit;
+      if (self->private_impl.f_end_of_block) {
+        goto label_0_continue;
       }
+      status =
+          PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK;
+      goto exit;
     }
 
     goto ok;
