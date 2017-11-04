@@ -39,6 +39,9 @@ var (
 	minusOne  = big.NewInt(-1)
 	zero      = big.NewInt(+0)
 	one       = big.NewInt(+1)
+	two       = big.NewInt(+2)
+	four      = big.NewInt(+4)
+	eight     = big.NewInt(+8)
 	sixtyFour = big.NewInt(+64)
 	ffff      = big.NewInt(0xFFFF)
 
@@ -229,6 +232,10 @@ func (q *checker) bcheckBlock(block []*a.Node) error {
 func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
+	// TODO: be principled about checking for provenNotToSuspend. Should we
+	// call bcheckIOMethods only for assignments, for var statements too, or
+	// for all statements generally?
+
 	switch n.Kind() {
 	case a.KAssert:
 		return q.bcheckAssert(n.Assert())
@@ -375,6 +382,20 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			return err
 		}
 	}
+
+	// TODO: be principled about checking for provenNotToSuspend, and for
+	// updating facts like "in.src.available() >= 6" after "in.src.read_u8?()".
+	// In general, we need to invalidate any "foo.bar()" facts after a call to
+	// an impure function like "foo.meth0!()" or "foo.meth1?()".
+	//
+	// What's here is somewhat ad hoc. Perhaps we need a call keyword and an
+	// explicit "foo = call bar?()" syntax.
+	if rhs.Suspendible() {
+		if err := q.bcheckIOMethods(rhs, 0); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -1123,4 +1144,115 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 		}
 	}
 	return b[0], b[1], nil
+}
+
+func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
+	if depth > a.MaxExprDepth {
+		return fmt.Errorf("check: expression recursion depth too large")
+	}
+	depth++
+
+	if !n.CallSuspendible() {
+		for _, o := range n.Node().Raw().SubNodes() {
+			if o != nil && o.Kind() == a.KExpr {
+				if err := q.bcheckIOMethods(o.Expr(), depth); err != nil {
+					return err
+				}
+			}
+		}
+		for _, o := range n.Args() {
+			if o != nil && o.Kind() == a.KExpr {
+				if err := q.bcheckIOMethods(o.Expr(), depth); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+
+	if n.ID0().Key() != t.KeyOpenParen {
+		return nil
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot {
+		return nil
+	}
+	advance := (*big.Int)(nil)
+	if key := n.ID1().Key(); key < t.Key(len(ioMethodAdvances)) {
+		advance = ioMethodAdvances[key]
+	}
+	if advance == nil {
+		return nil
+	}
+	n = n.LHS().Expr()
+
+	// TODO: check that n's type is actually a reader1 or writer1.
+
+	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+		op := x.ID0().Key()
+		if op != t.KeyXBinaryGreaterEq && op != t.KeyXBinaryGreaterThan {
+			return x, nil
+		}
+
+		rcv := x.RHS().Expr().ConstValue()
+		if rcv == nil {
+			return x, nil
+		}
+
+		// Check that lhs is "n.available()".
+		lhs := x.LHS().Expr()
+		if lhs.ID0().Key() != t.KeyOpenParen || len(lhs.Args()) != 0 {
+			return x, nil
+		}
+		lhs = lhs.LHS().Expr()
+		if lhs.ID0().Key() != t.KeyDot || lhs.ID1().Key() != t.KeyAvailable {
+			return x, nil
+		}
+		lhs = lhs.LHS().Expr()
+		if !lhs.Eq(n) {
+			return x, nil
+		}
+
+		// Check if the bytes available is >= the bytes needed. If so, update
+		// rcv to be the bytes remaining. If not, discard the fact x.
+		//
+		// TODO: mark the call as proven not to suspend.
+		if op == t.KeyXBinaryGreaterThan {
+			op = t.KeyXBinaryGreaterEq
+			rcv = big.NewInt(0).Add(rcv, one)
+		}
+		if rcv.Cmp(advance) < 0 {
+			return nil, nil
+		}
+		rcv = big.NewInt(0).Sub(rcv, advance)
+
+		// Create a new a.Expr to hold the adjusted RHS constant value rcv.
+		id, err := q.tm.Insert(rcv.String())
+		if err != nil {
+			return nil, err
+		}
+		o := a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
+		o.SetConstValue(rcv)
+		o.SetMType(typeExprIdeal)
+
+		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, x.LHS(), nil, o.Node(), nil), nil
+	})
+}
+
+var ioMethodAdvances = [256]*big.Int{
+	t.KeyReadU8:    one,
+	t.KeyReadU16BE: two,
+	t.KeyReadU16LE: two,
+	t.KeyReadU32BE: four,
+	t.KeyReadU32LE: four,
+	t.KeyReadU64BE: eight,
+	t.KeyReadU64LE: eight,
+
+	t.KeyWriteU8:    one,
+	t.KeyWriteU16BE: two,
+	t.KeyWriteU16LE: two,
+	t.KeyWriteU32BE: four,
+	t.KeyWriteU32LE: four,
+	t.KeyWriteU64BE: eight,
+	t.KeyWriteU64LE: eight,
 }

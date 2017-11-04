@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: describe how the xxx_fast version differs from the xxx_slow one, the
+// assumptions that xxx_fast makes, and how that makes it fast.
 pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_slow function. Keep the diff between the two
@@ -21,14 +23,34 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 
+	// TODO: check that n_bits < 8?
+
 	var table_entry u32
 	var table_entry_n_bits u32[..15]
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
 
 	while:loop in.src.available() >= 6 {
+		// Ensure that we have at least 15 bits of input.
+		if n_bits < 15 {
+			assert n_bits >= 0  // TODO: this shouldn't be necessary.
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+			assert n_bits >= 15
+		} else {
+			assert in.src.available() >= 4
+		}
+
+		// These assertions are redundant, but are listed explicitly for
+		// clarity. They must hold regardless of which branch was taken for the
+		// if statement above.
+		assert in.src.available() >= 4
+		assert n_bits >= 15
+
 		// Decode an lcode symbol from H-L.
-		while true {
+		while true {  // TODO: drop the while.
 			table_entry = this.huffs[0][bits & lmask]
 			table_entry_n_bits = table_entry & 0x0F
 			if n_bits >= table_entry_n_bits {
@@ -247,6 +269,8 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			return suspension "short write"
 		}
 	}
+
+	// TODO: unread some in.src bytes if n_bits >= 8?
 
 	this.bits = bits
 	this.n_bits = n_bits
