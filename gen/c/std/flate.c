@@ -2029,6 +2029,10 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    if (self->private_impl.f_n_bits >= 8) {
+      status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
+      goto exit;
+    }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
     v_table_entry = 0;
@@ -2323,6 +2327,10 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   label_0_break:;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
+    if (self->private_impl.f_n_bits >= 8) {
+      status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
+      goto exit;
+    }
 
     goto ok;
   ok:
@@ -2454,6 +2462,10 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    if (self->private_impl.f_n_bits >= 8) {
+      status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
+      goto exit;
+    }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
     v_table_entry = 0;
@@ -2750,6 +2762,10 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
   label_0_break:;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
+    if (self->private_impl.f_n_bits >= 8) {
+      status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
+      goto exit;
+    }
 
     goto ok;
   ok:

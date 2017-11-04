@@ -215,6 +215,9 @@ pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
 pri func flate_decoder.decode_uncompressed?(dst writer1, src reader1)() {
+	// TODO: make this "if" into a function invariant?
+	//
+	// Ditto for decode_huffman_slow and decode_huffman_fast.
 	if this.n_bits >= 8 {
 		return error "internal error: inconsistent n_bits"
 	}

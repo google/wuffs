@@ -18,6 +18,10 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 	// decode_huffman_*.puffs files as small as possible, while retaining both
 	// correctness and performance.
 
+	if this.n_bits >= 8 {
+		return error "internal error: inconsistent n_bits"
+	}
+
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 
@@ -250,4 +254,8 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 
 	this.bits = bits
 	this.n_bits = n_bits
+
+	if this.n_bits >= 8 {
+		return error "internal error: inconsistent n_bits"
+	}
 }
