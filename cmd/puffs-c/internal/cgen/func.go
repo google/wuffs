@@ -65,6 +65,10 @@ func (g *gen) funcCName(n *a.Func) string {
 }
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
+	if !n.Public() {
+		b.writes("static ")
+	}
+
 	// TODO: write n's return values.
 	if n.Suspendible() {
 		b.printf("%sstatus ", g.pkgPrefix)

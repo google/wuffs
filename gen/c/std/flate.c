@@ -756,37 +756,37 @@ void puffs_flate__adler32__initialize(puffs_flate__adler32* self,
 
 // ---------------- Private Function Prototypes
 
-puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
+static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src);
 
-puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
+static puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src);
 
-puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src);
 
-puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
     puffs_flate__flate_decoder* self);
 
-puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     puffs_flate__flate_decoder* self,
     puffs_base__reader1 a_src);
 
-puffs_flate__status puffs_flate__flate_decoder__init_huff(
+static puffs_flate__status puffs_flate__flate_decoder__init_huff(
     puffs_flate__flate_decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
     uint32_t a_n_codes1,
     uint32_t a_base_symbol);
 
-uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
-                                      puffs_base__slice_u8 a_x);
+static uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
+                                             puffs_base__slice_u8 a_x);
 
 // ---------------- Initializer Implementations
 
@@ -989,7 +989,7 @@ exit:
   return status;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
+static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src) {
@@ -1146,7 +1146,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
+static puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src) {
@@ -1300,7 +1300,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src) {
@@ -1725,7 +1725,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__init_fixed_huffman(
     puffs_flate__flate_decoder* self) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
 
@@ -1786,7 +1786,7 @@ exit:
   return status;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
     puffs_flate__flate_decoder* self,
     puffs_base__reader1 a_src) {
   puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
@@ -2048,7 +2048,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_flate__status puffs_flate__flate_decoder__init_huff(
+static puffs_flate__status puffs_flate__flate_decoder__init_huff(
     puffs_flate__flate_decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
@@ -2559,8 +2559,8 @@ short_read_src:
   goto suspend;
 }
 
-uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
-                                      puffs_base__slice_u8 a_x) {
+static uint32_t puffs_flate__adler32__update(puffs_flate__adler32* self,
+                                             puffs_base__slice_u8 a_x) {
   uint32_t v_s1;
   uint32_t v_s2;
   puffs_base__slice_u8 v_remaining;

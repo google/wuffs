@@ -646,19 +646,22 @@ const char* puffs_gif__status__string(puffs_gif__status s) {
 
 // ---------------- Private Function Prototypes
 
-puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
-                                                    puffs_base__reader1 a_src);
-
-puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
-                                                 puffs_base__reader1 a_src);
-
-puffs_gif__status puffs_gif__decoder__decode_extension(
+static puffs_gif__status puffs_gif__decoder__decode_header(
     puffs_gif__decoder* self,
     puffs_base__reader1 a_src);
 
-puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
-                                                puffs_base__writer1 a_dst,
-                                                puffs_base__reader1 a_src);
+static puffs_gif__status puffs_gif__decoder__decode_lsd(
+    puffs_gif__decoder* self,
+    puffs_base__reader1 a_src);
+
+static puffs_gif__status puffs_gif__decoder__decode_extension(
+    puffs_gif__decoder* self,
+    puffs_base__reader1 a_src);
+
+static puffs_gif__status puffs_gif__decoder__decode_id(
+    puffs_gif__decoder* self,
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src);
 
 // ---------------- Initializer Implementations
 
@@ -864,8 +867,9 @@ short_read_src:
   goto suspend;
 }
 
-puffs_gif__status puffs_gif__decoder__decode_header(puffs_gif__decoder* self,
-                                                    puffs_base__reader1 a_src) {
+static puffs_gif__status puffs_gif__decoder__decode_header(
+    puffs_gif__decoder* self,
+    puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[6];
@@ -949,8 +953,9 @@ short_read_src:
   goto suspend;
 }
 
-puffs_gif__status puffs_gif__decoder__decode_lsd(puffs_gif__decoder* self,
-                                                 puffs_base__reader1 a_src) {
+static puffs_gif__status puffs_gif__decoder__decode_lsd(
+    puffs_gif__decoder* self,
+    puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[7];
@@ -1067,7 +1072,7 @@ short_read_src:
   goto suspend;
 }
 
-puffs_gif__status puffs_gif__decoder__decode_extension(
+static puffs_gif__status puffs_gif__decoder__decode_extension(
     puffs_gif__decoder* self,
     puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
@@ -1177,9 +1182,10 @@ short_read_src:
   goto suspend;
 }
 
-puffs_gif__status puffs_gif__decoder__decode_id(puffs_gif__decoder* self,
-                                                puffs_base__writer1 a_dst,
-                                                puffs_base__reader1 a_src) {
+static puffs_gif__status puffs_gif__decoder__decode_id(
+    puffs_gif__decoder* self,
+    puffs_base__writer1 a_dst,
+    puffs_base__reader1 a_src) {
   puffs_gif__status status = PUFFS_GIF__STATUS_OK;
 
   uint8_t v_c[9];
