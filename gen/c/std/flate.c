@@ -247,7 +247,7 @@ typedef struct {
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
-    } c_decode_huffman[1];
+    } c_decode_huffman_slow[1];
   } private_impl;
 } puffs_flate__flate_decoder;
 
@@ -780,7 +780,7 @@ static puffs_flate__status puffs_flate__flate_decoder__init_huff(
     uint32_t a_n_codes1,
     uint32_t a_base_symbol);
 
-static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src);
@@ -1101,7 +1101,8 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
           }
         }
       }
-      status = puffs_flate__flate_decoder__decode_huffman(self, a_dst, a_src);
+      status =
+          puffs_flate__flate_decoder__decode_huffman_slow(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       }
@@ -1903,7 +1904,7 @@ exit:
   return status;
 }
 
-static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
+static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
     puffs_flate__flate_decoder* self,
     puffs_base__writer1 a_dst,
     puffs_base__reader1 a_src) {
@@ -1954,22 +1955,22 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
   }
 
   uint32_t coro_susp_point =
-      self->private_impl.c_decode_huffman[0].coro_susp_point;
+      self->private_impl.c_decode_huffman_slow[0].coro_susp_point;
   if (coro_susp_point) {
-    v_bits = self->private_impl.c_decode_huffman[0].v_bits;
-    v_n_bits = self->private_impl.c_decode_huffman[0].v_n_bits;
-    v_table_entry = self->private_impl.c_decode_huffman[0].v_table_entry;
+    v_bits = self->private_impl.c_decode_huffman_slow[0].v_bits;
+    v_n_bits = self->private_impl.c_decode_huffman_slow[0].v_n_bits;
+    v_table_entry = self->private_impl.c_decode_huffman_slow[0].v_table_entry;
     v_table_entry_n_bits =
-        self->private_impl.c_decode_huffman[0].v_table_entry_n_bits;
-    v_lmask = self->private_impl.c_decode_huffman[0].v_lmask;
-    v_dmask = self->private_impl.c_decode_huffman[0].v_dmask;
-    v_redir_top = self->private_impl.c_decode_huffman[0].v_redir_top;
-    v_redir_mask = self->private_impl.c_decode_huffman[0].v_redir_mask;
-    v_length = self->private_impl.c_decode_huffman[0].v_length;
-    v_distance = self->private_impl.c_decode_huffman[0].v_distance;
-    v_n_copied = self->private_impl.c_decode_huffman[0].v_n_copied;
-    v_hlen = self->private_impl.c_decode_huffman[0].v_hlen;
-    v_hdist = self->private_impl.c_decode_huffman[0].v_hdist;
+        self->private_impl.c_decode_huffman_slow[0].v_table_entry_n_bits;
+    v_lmask = self->private_impl.c_decode_huffman_slow[0].v_lmask;
+    v_dmask = self->private_impl.c_decode_huffman_slow[0].v_dmask;
+    v_redir_top = self->private_impl.c_decode_huffman_slow[0].v_redir_top;
+    v_redir_mask = self->private_impl.c_decode_huffman_slow[0].v_redir_mask;
+    v_length = self->private_impl.c_decode_huffman_slow[0].v_length;
+    v_distance = self->private_impl.c_decode_huffman_slow[0].v_distance;
+    v_n_copied = self->private_impl.c_decode_huffman_slow[0].v_n_copied;
+    v_hlen = self->private_impl.c_decode_huffman_slow[0].v_hlen;
+    v_hdist = self->private_impl.c_decode_huffman_slow[0].v_hdist;
   }
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -2271,27 +2272,27 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman(
 
     goto ok;
   ok:
-    self->private_impl.c_decode_huffman[0].coro_susp_point = 0;
+    self->private_impl.c_decode_huffman_slow[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode_huffman[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_huffman[0].v_bits = v_bits;
-  self->private_impl.c_decode_huffman[0].v_n_bits = v_n_bits;
-  self->private_impl.c_decode_huffman[0].v_table_entry = v_table_entry;
-  self->private_impl.c_decode_huffman[0].v_table_entry_n_bits =
+  self->private_impl.c_decode_huffman_slow[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_huffman_slow[0].v_bits = v_bits;
+  self->private_impl.c_decode_huffman_slow[0].v_n_bits = v_n_bits;
+  self->private_impl.c_decode_huffman_slow[0].v_table_entry = v_table_entry;
+  self->private_impl.c_decode_huffman_slow[0].v_table_entry_n_bits =
       v_table_entry_n_bits;
-  self->private_impl.c_decode_huffman[0].v_lmask = v_lmask;
-  self->private_impl.c_decode_huffman[0].v_dmask = v_dmask;
-  self->private_impl.c_decode_huffman[0].v_redir_top = v_redir_top;
-  self->private_impl.c_decode_huffman[0].v_redir_mask = v_redir_mask;
-  self->private_impl.c_decode_huffman[0].v_length = v_length;
-  self->private_impl.c_decode_huffman[0].v_distance = v_distance;
-  self->private_impl.c_decode_huffman[0].v_n_copied = v_n_copied;
-  self->private_impl.c_decode_huffman[0].v_hlen = v_hlen;
-  self->private_impl.c_decode_huffman[0].v_hdist = v_hdist;
+  self->private_impl.c_decode_huffman_slow[0].v_lmask = v_lmask;
+  self->private_impl.c_decode_huffman_slow[0].v_dmask = v_dmask;
+  self->private_impl.c_decode_huffman_slow[0].v_redir_top = v_redir_top;
+  self->private_impl.c_decode_huffman_slow[0].v_redir_mask = v_redir_mask;
+  self->private_impl.c_decode_huffman_slow[0].v_length = v_length;
+  self->private_impl.c_decode_huffman_slow[0].v_distance = v_distance;
+  self->private_impl.c_decode_huffman_slow[0].v_n_copied = v_n_copied;
+  self->private_impl.c_decode_huffman_slow[0].v_hlen = v_hlen;
+  self->private_impl.c_decode_huffman_slow[0].v_hdist = v_hdist;
 
 exit:
   if (a_dst.buf) {

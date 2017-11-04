@@ -418,8 +418,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInDst(q.tm, n, t.KeyMark, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
-			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_huffman", 2) ||
-			isThisMethod(q.tm, n, "decode_blocks", 2) ||
+			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_blocks", 2) ||
+			isThisMethod(q.tm, n, "decode_huffman_slow", 2) ||
 			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
 			isThisMethod(q.tm, n, "init_huff", 4) ||
 			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimit, 1) ||

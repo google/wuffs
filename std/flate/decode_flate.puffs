@@ -192,7 +192,8 @@ pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
 		} else {
 			return error "bad flate block"
 		}
-		this.decode_huffman?(dst:in.dst, src:in.src)
+
+		this.decode_huffman_slow?(dst:in.dst, src:in.src)
 	}
 }
 

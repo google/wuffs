@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func flate_decoder.decode_huffman?(dst writer1, src reader1)() {
+pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 

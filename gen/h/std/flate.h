@@ -247,7 +247,7 @@ typedef struct {
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
-    } c_decode_huffman[1];
+    } c_decode_huffman_slow[1];
   } private_impl;
 } puffs_flate__flate_decoder;
 
