@@ -278,9 +278,22 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
-			// TODO: don't hard-code dst.
-			const wName = "dst"
-			b.printf("(uint64_t)(%swend_%s - %swptr_%s)", bPrefix, wName, bPrefix, wName)
+			p0, p1 := "", ""
+			if o := n.LHS().Expr().LHS().Expr(); o != nil {
+				// TODO: don't hard-code these.
+				switch o.String(g.tm) {
+				case "in.dst":
+					p0 = bPrefix + "wend_dst"
+					p1 = bPrefix + "wptr_dst"
+				case "in.src":
+					p0 = bPrefix + "rend_src"
+					p1 = bPrefix + "rptr_src"
+				}
+			}
+			if p0 == "" {
+				return fmt.Errorf(`TODO: cgen a "foo.available" expression`)
+			}
+			b.printf("(uint64_t)(%s - %s)", p0, p1)
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}

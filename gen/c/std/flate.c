@@ -2036,7 +2036,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
-    while (((uint64_t)(b_wend_dst - b_wptr_dst)) > 999999999) {
+    while (((uint64_t)(b_rend_src - b_rptr_src)) >= 6) {
       while (true) {
         v_table_entry = self->private_impl.f_huffs[0][v_bits & v_lmask];
         v_table_entry_n_bits = (v_table_entry & 15);

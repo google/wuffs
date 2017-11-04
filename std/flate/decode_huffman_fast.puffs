@@ -26,7 +26,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
 
-	while:loop in.dst.available() > 999999999 {  // TODO: change 999999999 to the real condition.
+	while:loop in.src.available() >= 6 {
 		// Decode an lcode symbol from H-L.
 		while true {
 			table_entry = this.huffs[0][bits & lmask]
