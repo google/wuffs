@@ -21,30 +21,20 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-)
 
-func isStringList(s string) bool {
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c == ',' || c == '-' || c == '.' || c == '/' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') ||
-			c == '_' || ('a' <= c && c <= 'z') {
-			continue
-		}
-		return false
-	}
-	return true
-}
+	cf "github.com/google/puffs/cmd/commonflags"
+)
 
 func doBench(puffsRoot string, args []string) error { return doBenchTest(puffsRoot, args, true) }
 func doTest(puffsRoot string, args []string) error  { return doBenchTest(puffsRoot, args, false) }
 
 func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
-	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
-	focusFlag := flags.String("focus", focusDefault, focusUsage)
+	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
+	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
-	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
-	repsFlag := flags.Int("reps", repsDefault, repsUsage)
+	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
+	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
 
 	if err := flags.Parse(args); err != nil {
@@ -55,14 +45,14 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	if err != nil {
 		return err
 	}
-	if !isStringList(*ccompilersFlag) {
+	if !cf.IsAlphaNumericIsh(*ccompilersFlag) {
 		return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
 	}
-	if !isStringList(*focusFlag) {
+	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
-	if *repsFlag < repsMin || repsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
+	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, cf.RepsMin, cf.RepsMax)
 	}
 
 	args = flags.Args()

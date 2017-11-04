@@ -23,42 +23,32 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-)
 
-func isStringList(s string) bool {
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c == ',' || c == '-' || c == '.' || c == '/' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') ||
-			c == '_' || ('a' <= c && c <= 'z') {
-			continue
-		}
-		return false
-	}
-	return true
-}
+	cf "github.com/google/puffs/cmd/commonflags"
+)
 
 func doBench(args []string) error { return doBenchTest(args, true) }
 func doTest(args []string) error  { return doBenchTest(args, false) }
 
 func doBenchTest(args []string, bench bool) error {
 	flags := flag.FlagSet{}
-	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
-	focusFlag := flags.String("focus", focusDefault, focusUsage)
-	mimicFlag := flags.Bool("mimic", mimicDefault, mimicUsage)
-	repsFlag := flags.Int("reps", repsDefault, repsUsage)
+	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
+	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
+	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
+	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 
-	if !isStringList(*ccompilersFlag) {
+	if !cf.IsAlphaNumericIsh(*ccompilersFlag) {
 		return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
 	}
-	if !isStringList(*focusFlag) {
+	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
-	if *repsFlag < repsMin || repsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, repsMin, repsMax)
+	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, cf.RepsMin, cf.RepsMax)
 	}
 
 	args = flags.Args()

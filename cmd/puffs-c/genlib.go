@@ -21,11 +21,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	cf "github.com/google/puffs/cmd/commonflags"
 )
 
 func doGenlib(args []string) error {
 	flags := flag.FlagSet{}
-	ccompilersFlag := flags.String("ccompilers", ccompilersDefault, ccompilersUsage)
+	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	dstdirFlag := flags.String("dstdir", "", "directory containing the object files ")
 	srcdirFlag := flags.String("srcdir", "", "directory containing the C source files")
 	if err := flags.Parse(args); err != nil {

@@ -118,22 +118,8 @@ func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []
 }
 
 const (
-	ccompilersDefault = "clang,gcc"
-	ccompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
-
-	focusDefault = ""
-	focusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "puffs_gif_decode"`
-
 	langsDefault = "c"
 	langsUsage   = `comma-separated list of target languages (file extensions), e.g. "c,go,rs"`
-
-	mimicDefault = false
-	mimicUsage   = `whether to compare Puffs' output with other libraries' output`
-
-	repsDefault = 5
-	repsMin     = 0
-	repsMax     = 1000000
-	repsUsage   = `the number of repetitions per benchmark`
 
 	skipgenDefault = false
 	skipgenUsage   = `whether to skip automatically generating code when testing`
