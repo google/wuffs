@@ -764,12 +764,12 @@ const char* puffs_bench_adler32(puffs_base__buf1* dst,
 void bench_puffs_adler32_10k() {
   CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_midsummer_gt, 0, 0,
-                     30000);
+                     150000);
 }
 
 void bench_puffs_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 3000);
+  do_bench_buf1_buf1(puffs_bench_adler32, tc_src, &checksum_pi_gt, 0, 0, 15000);
 }
 
 // ---------------- Flate Benches
