@@ -517,6 +517,14 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes("if (status) { goto suspend; }\n")
 
+	} else if isThisMethod(g.tm, n, "decode_huffman_fast", 2) {
+		b.printf("status = %s%s__decode_huffman_fast(self, %sdst, %ssrc);\n",
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
+			return err
+		}
+		b.writes("if (status) { goto suspend; }\n")
+
 	} else if isThisMethod(g.tm, n, "decode_huffman_slow", 2) {
 		b.printf("status = %s%s__decode_huffman_slow(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)

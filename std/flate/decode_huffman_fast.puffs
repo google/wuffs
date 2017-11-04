@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
+pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// When editing this function, consider making the equivalent change to the
-	// decode_huffman_fast function. Keep the diff between the two
+	// decode_huffman_slow function. Keep the diff between the two
 	// decode_huffman_*.puffs files as small as possible, while retaining both
 	// correctness and performance.
 
@@ -26,7 +26,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
 
-	while:loop true {
+	while:loop in.dst.available() > 999999999 {  // TODO: change 999999999 to the real condition.
 		// Decode an lcode symbol from H-L.
 		while true {
 			table_entry = this.huffs[0][bits & lmask]
