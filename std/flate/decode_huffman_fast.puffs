@@ -50,18 +50,10 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		assert n_bits >= 15
 
 		// Decode an lcode symbol from H-L.
-		while true {  // TODO: drop the while.
-			table_entry = this.huffs[0][bits & lmask]
-			table_entry_n_bits = table_entry & 0x0F
-			if n_bits >= table_entry_n_bits {
-				bits >>= table_entry_n_bits
-				n_bits -= table_entry_n_bits
-				break
-			}
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (in.src.read_u8?() as u32) << n_bits
-			n_bits += 8
-		}
+		table_entry = this.huffs[0][bits & lmask]
+		table_entry_n_bits = table_entry & 0x0F
+		bits >>= table_entry_n_bits
+		n_bits -= table_entry_n_bits
 
 		if (table_entry >> 31) != 0 {
 			// Literal.
