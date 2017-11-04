@@ -20,6 +20,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 	var table_entry_n_bits u32[..15]
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
+
 	while:loop true {
 		// Decode an lcode symbol from H-L.
 		while true {
@@ -38,13 +39,13 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 		if (table_entry >> 31) != 0 {
 			// Literal.
 			in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
-			continue
+			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
 		} else if (table_entry >> 29) != 0 {
 			// End of block.
 			this.end_of_block = true
-			break
+			break:loop
 		} else if (table_entry >> 28) != 0 {
 			// Redirect.
 			var redir_top u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
@@ -68,13 +69,13 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			if (table_entry >> 31) != 0 {
 				// Literal.
 				in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
-				continue
+				continue:loop
 			} else if (table_entry >> 30) != 0 {
 				// No-op; code continues past the if-else chain.
 			} else if (table_entry >> 29) != 0 {
 				// End of block.
 				this.end_of_block = true
-				break
+				break:loop
 			} else if (table_entry >> 28) != 0 {
 				return error "internal error: inconsistent Huffman decoder state"
 			} else if (table_entry >> 27) != 0 {
