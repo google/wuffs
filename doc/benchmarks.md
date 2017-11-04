@@ -16,7 +16,8 @@ Broadwell.
 The benchmark programs aim to be runnable "out of the box" without any
 configuration or installation. For example, to run the `std/flate` benchmarks:
 
-    git clone etc
+    # TODO: confirm that we will live at github.com/google/puffs
+    git clone https://github.com/google/puffs.git
     cd puffs/test/c/std
     gcc -O3 flate.c
     ./a.out -bench
@@ -31,8 +32,27 @@ benchmark runs, or calculate p-values when comparing numbers before and after a
 code change. To install it, first install Go, then run `go get
 golang.org/x/perf/cmd/benchstat`.
 
+## puffs bench
 
-## GIF
+As mentioned above, individual benchmark programs can be run manually. However,
+the canonical way to run the benchmarks (across multiple compilers and multiple
+packages like GIF and PNG) is to use the `puffs` command line tool, as it will
+also re-generate (transpile) the C code whenever you edit the \*.puffs code.
+Running `go install -v github.com/google/puffs/cmd/...` will install the Puffs
+tools. After that, you can say
+
+    puffs bench
+
+or
+
+    puffs bench -mimic std/flate
+
+or
+
+    puffs bench -ccompilers=gcc -reps=3 -focus=Benchmarkpuffs_gif_lzw std/gif
+
+
+# GIF
 
 The 1k, 10k, etc. numbers are approximately how many bytes of pixel data there
 is in the decoded image. For example, the `test/testdata/harvesters.*` images
@@ -67,4 +87,4 @@ to run the test harness.
 
 ---
 
-Updated on October 2017.
+Updated on November 2017.

@@ -216,7 +216,7 @@ home of the software project will be at `github.com/google/puffs`. After
 cloning the repository, move it to that path under your `$GOPATH`.
 
 Running `go install -v github.com/google/puffs/cmd/...` will then install the
-puffs tools. The ones that you'll most often use are `puffsfmt` (analogous to
+Puffs tools. The ones that you'll most often use are `puffsfmt` (analogous to
 `clang-format`, `gofmt` or `rustfmt`) and `puffs` (roughly analogous to `make`,
 `go` or `cargo`).
 
@@ -343,4 +343,4 @@ owned by Google.
 
 ---
 
-Updated on August 2017.
+Updated on November 2017.
