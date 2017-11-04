@@ -87,15 +87,16 @@ var kindStrings = [...]string{
 type Flags uint32
 
 const (
-	FlagsImpure          = Flags(0x00000001)
-	FlagsSuspendible     = Flags(0x00000002)
-	FlagsCallImpure      = Flags(0x00000004)
-	FlagsCallSuspendible = Flags(0x00000008)
-	FlagsPublic          = Flags(0x00000010)
-	FlagsTypeChecked     = Flags(0x00000020)
-	FlagsHasBreak        = Flags(0x00000040)
-	FlagsHasContinue     = Flags(0x00000080)
-	FlagsGlobalIdent     = Flags(0x00000100)
+	FlagsImpure             = Flags(0x00000001)
+	FlagsSuspendible        = Flags(0x00000002)
+	FlagsCallImpure         = Flags(0x00000004)
+	FlagsCallSuspendible    = Flags(0x00000008)
+	FlagsPublic             = Flags(0x00000010)
+	FlagsTypeChecked        = Flags(0x00000020)
+	FlagsHasBreak           = Flags(0x00000040)
+	FlagsHasContinue        = Flags(0x00000080)
+	FlagsGlobalIdent        = Flags(0x00000100)
+	FlagsProvenNotToSuspend = Flags(0x00000200)
 )
 
 type Node struct {
@@ -244,25 +245,27 @@ const MaxExprDepth = 255
 // and ID1 is the message.
 type Expr Node
 
-func (n *Expr) Node() *Node           { return (*Node)(n) }
-func (n *Expr) Pure() bool            { return n.flags&FlagsImpure == 0 }
-func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
-func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
-func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
-func (n *Expr) CallSuspendible() bool { return n.flags&FlagsCallSuspendible != 0 }
-func (n *Expr) GlobalIdent() bool     { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) ConstValue() *big.Int  { return n.constValue }
-func (n *Expr) MType() *TypeExpr      { return n.mType }
-func (n *Expr) ID0() t.ID             { return n.id0 }
-func (n *Expr) ID1() t.ID             { return n.id1 }
-func (n *Expr) LHS() *Node            { return n.lhs }
-func (n *Expr) MHS() *Node            { return n.mhs }
-func (n *Expr) RHS() *Node            { return n.rhs }
-func (n *Expr) Args() []*Node         { return n.list0 }
+func (n *Expr) Node() *Node              { return (*Node)(n) }
+func (n *Expr) Pure() bool               { return n.flags&FlagsImpure == 0 }
+func (n *Expr) Impure() bool             { return n.flags&FlagsImpure != 0 }
+func (n *Expr) Suspendible() bool        { return n.flags&FlagsSuspendible != 0 }
+func (n *Expr) CallImpure() bool         { return n.flags&FlagsCallImpure != 0 }
+func (n *Expr) CallSuspendible() bool    { return n.flags&FlagsCallSuspendible != 0 }
+func (n *Expr) GlobalIdent() bool        { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) ProvenNotToSuspend() bool { return n.flags&FlagsProvenNotToSuspend != 0 }
+func (n *Expr) ConstValue() *big.Int     { return n.constValue }
+func (n *Expr) MType() *TypeExpr         { return n.mType }
+func (n *Expr) ID0() t.ID                { return n.id0 }
+func (n *Expr) ID1() t.ID                { return n.id1 }
+func (n *Expr) LHS() *Node               { return n.lhs }
+func (n *Expr) MHS() *Node               { return n.mhs }
+func (n *Expr) RHS() *Node               { return n.rhs }
+func (n *Expr) Args() []*Node            { return n.list0 }
 
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
-func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
+func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
+func (n *Expr) SetProvenNotToSuspend()   { n.flags |= FlagsProvenNotToSuspend }
 
 func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {

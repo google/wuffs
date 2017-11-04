@@ -1170,23 +1170,24 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
+	// Figure out the "receiver" in "receiver.read_u8?()".
 	if n.ID0().Key() != t.KeyOpenParen {
 		return nil
 	}
-	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot {
+	receiver := n.LHS().Expr()
+	if receiver.ID0().Key() != t.KeyDot {
 		return nil
 	}
 	advance := (*big.Int)(nil)
-	if key := n.ID1().Key(); key < t.Key(len(ioMethodAdvances)) {
+	if key := receiver.ID1().Key(); key < t.Key(len(ioMethodAdvances)) {
 		advance = ioMethodAdvances[key]
 	}
 	if advance == nil {
 		return nil
 	}
-	n = n.LHS().Expr()
+	receiver = receiver.LHS().Expr()
 
-	// TODO: check that n's type is actually a reader1 or writer1.
+	// TODO: check that receiver's type is actually a reader1 or writer1.
 
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		op := x.ID0().Key()
@@ -1199,7 +1200,7 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 			return x, nil
 		}
 
-		// Check that lhs is "n.available()".
+		// Check that lhs is "receiver.available()".
 		lhs := x.LHS().Expr()
 		if lhs.ID0().Key() != t.KeyOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
@@ -1209,7 +1210,7 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 			return x, nil
 		}
 		lhs = lhs.LHS().Expr()
-		if !lhs.Eq(n) {
+		if !lhs.Eq(receiver) {
 			return x, nil
 		}
 
@@ -1234,6 +1235,11 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 		o := a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
 		o.SetConstValue(rcv)
 		o.SetMType(typeExprIdeal)
+
+		if !n.CallSuspendible() {
+			return nil, fmt.Errorf("check: internal error: inconsistent suspendible-ness for %q", n.String(q.tm))
+		}
+		n.SetProvenNotToSuspend()
 
 		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, x.LHS(), nil, o.Node(), nil), nil
 	})
