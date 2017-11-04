@@ -27,6 +27,7 @@ pub error "bad literal/length code count"
 pub error "checksum mismatch"
 pub error "inconsistent stored block length"
 pub error "internal error: inconsistent Huffman decoder state"
+pub error "internal error: inconsistent Huffman end_of_block"
 pub error "internal error: inconsistent n_bits"
 pub error "missing end-of-block code"
 pub error "no Huffman codes"
@@ -113,6 +114,11 @@ pub struct flate_decoder?(
 	//
 	// code_lengths[in.n_codes0 + i] holds the number of bits in the i'th code.
 	code_lengths[320] u8[..15],
+
+	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
+	//
+	// TODO: can decode_huffman_xxx signal this in band instead of out of band?
+	end_of_block bool,
 )
 
 pub func flate_decoder.decode?(dst writer1, src reader1)() {
@@ -193,7 +199,11 @@ pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
 			return error "bad flate block"
 		}
 
+		this.end_of_block = false
 		this.decode_huffman_slow?(dst:in.dst, src:in.src)
+		if not this.end_of_block {
+			return error "internal error: inconsistent Huffman end_of_block"
+		}
 	}
 }
 

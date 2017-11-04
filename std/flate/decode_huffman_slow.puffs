@@ -43,6 +43,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			// No-op; code continues past the if-else chain.
 		} else if (table_entry >> 29) != 0 {
 			// End of block.
+			this.end_of_block = true
 			break
 		} else if (table_entry >> 28) != 0 {
 			// Redirect.
@@ -72,6 +73,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 				// No-op; code continues past the if-else chain.
 			} else if (table_entry >> 29) != 0 {
 				// End of block.
+				this.end_of_block = true
 				break
 			} else if (table_entry >> 28) != 0 {
 				return error "internal error: inconsistent Huffman decoder state"

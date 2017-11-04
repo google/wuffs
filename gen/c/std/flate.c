@@ -156,17 +156,19 @@ typedef int32_t puffs_flate__status;
   -1157040117  // 0xbb08f80b
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
   -1157040116  // 0xbb08f80c
+#define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
+  -1157040115  // 0xbb08f80d
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040115                                                     // 0xbb08f80d
-#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040114  // 0xbb08f80e
-#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040113           // 0xbb08f80f
+  -1157040114                                                     // 0xbb08f80e
+#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040113  // 0xbb08f80f
+#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040112           // 0xbb08f810
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040112  // 0xbb08f810
+  -1157040111  // 0xbb08f811
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040111                                                     // 0xbb08f811
-#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040110  // 0xbb08f812
+  -1157040110                                                     // 0xbb08f812
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040109  // 0xbb08f813
 #define PUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040109  // 0xbb08f813
+  -1157040108  // 0xbb08f814
 
 bool puffs_flate__status__is_error(puffs_flate__status s);
 
@@ -195,6 +197,7 @@ typedef struct {
     uint8_t f_history[32768];
     uint32_t f_history_index;
     uint8_t f_code_lengths[320];
+    bool f_end_of_block;
 
     struct {
       uint32_t coro_susp_point;
@@ -665,7 +668,7 @@ const char* puffs_flate__status__strings0[9] = {
     "flate: short write",
 };
 
-const char* puffs_flate__status__strings1[20] = {
+const char* puffs_flate__status__strings1[21] = {
     "flate: bad Huffman code (over-subscribed)",
     "flate: bad Huffman code (under-subscribed)",
     "flate: bad Huffman code length count",
@@ -679,6 +682,7 @@ const char* puffs_flate__status__strings1[20] = {
     "flate: checksum mismatch",
     "flate: inconsistent stored block length",
     "flate: internal error: inconsistent Huffman decoder state",
+    "flate: internal error: inconsistent Huffman end_of_block",
     "flate: internal error: inconsistent n_bits",
     "flate: missing end-of-block code",
     "flate: no Huffman codes",
@@ -698,7 +702,7 @@ const char* puffs_flate__status__string(puffs_flate__status s) {
       break;
     case puffs_flate__packageid:
       a = puffs_flate__status__strings1;
-      n = 20;
+      n = 21;
       break;
   }
   uint32_t i = s & 0xff;
@@ -1090,6 +1094,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
         status = PUFFS_FLATE__ERROR_BAD_FLATE_BLOCK;
         goto exit;
       }
+      self->private_impl.f_end_of_block = false;
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       if (a_src.buf) {
         size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1108,6 +1113,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
       }
       if (status) {
         goto suspend;
+      }
+      if (!self->private_impl.f_end_of_block) {
+        status =
+            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK;
+        goto exit;
       }
     }
 
@@ -2012,6 +2022,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
+        self->private_impl.f_end_of_block = true;
         goto label_0_break;
       } else if ((v_table_entry >> 28) != 0) {
         v_redir_top = ((v_table_entry >> 8) & 65535);
@@ -2052,6 +2063,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
           goto label_0_continue;
         } else if ((v_table_entry >> 30) != 0) {
         } else if ((v_table_entry >> 29) != 0) {
+          self->private_impl.f_end_of_block = true;
           goto label_0_break;
         } else if ((v_table_entry >> 28) != 0) {
           status =
