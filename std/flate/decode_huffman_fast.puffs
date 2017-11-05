@@ -292,6 +292,9 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 						hdist = (hdist ~+ n_copied) & 0x7FFF
 						if hdist == 0 {
 							// Wrap around the this.history ringbuffer.
+							if hlen > 0 {
+								in.dst.copy_from_slice32(s:this.history[:], length:hlen)
+							}
 							break
 						}
 					}
@@ -303,20 +306,6 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 					// TODO: invalidate this-related facts because the
 					// suspension can change the state of this and its fields.
 					assert false
-				}
-				// Copy from the start of this.history, if we wrapped around.
-				if hlen > 0 {
-					while true {
-						n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
-						if hlen <= n_copied {
-							hlen = 0
-							break
-						}
-						hlen -= n_copied
-						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
-						// TODO: "closed for writes" instead?
-						return suspension "short write"
-					}
 				}
 
 				if length == 0 {

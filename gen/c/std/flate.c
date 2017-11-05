@@ -2298,6 +2298,13 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
               v_hlen -= v_n_copied;
               v_hdist = ((v_hdist + v_n_copied) & 32767);
               if (v_hdist == 0) {
+                if (v_hlen > 0) {
+                  puffs_base__writer1__copy_from_slice32(
+                      &b_wptr_dst, b_wend_dst,
+                      ((puffs_base__slice_u8){
+                          .ptr = self->private_impl.f_history, .len = 32768}),
+                      v_hlen);
+                }
                 goto label_1_break;
               }
             }
@@ -2305,26 +2312,6 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
             PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
           }
         label_1_break:;
-          if (v_hlen > 0) {
-            while (true) {
-              v_n_copied = puffs_base__writer1__copy_from_slice32(
-                  &b_wptr_dst, b_wend_dst,
-                  puffs_base__slice_u8__subslice_i(
-                      ((puffs_base__slice_u8){
-                          .ptr = self->private_impl.f_history, .len = 32768}),
-                      v_hdist),
-                  v_hlen);
-              if (v_hlen <= v_n_copied) {
-                v_hlen = 0;
-                goto label_2_break;
-              }
-              v_hlen -= v_n_copied;
-              v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
-              status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-              PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-            }
-          label_2_break:;
-          }
           if (v_length == 0) {
             goto label_0_continue;
           }
@@ -2332,14 +2319,14 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
         puffs_base__writer1__copy_from_history32(
             &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
             v_length);
-        goto label_3_break;
+        goto label_2_break;
       }
-    label_3_break:;
+    label_2_break:;
     }
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (b_rptr_src == b_rstart_src) {
         status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
         goto exit;
