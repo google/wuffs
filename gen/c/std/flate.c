@@ -2229,19 +2229,20 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
             PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
       }
-      v_distance = ((v_table_entry >> 8) & 32767);
-      v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
-      while (v_n_bits < v_table_entry_n_bits) {
+      if (v_n_bits < 15) {
         {
-          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-          if (PUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-            goto short_read_src;
-          }
           uint8_t t_10 = *b_rptr_src++;
           v_bits |= (((uint32_t)(t_10)) << v_n_bits);
         }
         v_n_bits += 8;
+        {
+          uint8_t t_11 = *b_rptr_src++;
+          v_bits |= (((uint32_t)(t_11)) << v_n_bits);
+        }
+        v_n_bits += 8;
       }
+      v_distance = ((v_table_entry >> 8) & 32767);
+      v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
       v_distance =
           ((v_distance + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
            32767);
@@ -2301,7 +2302,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
               }
             }
             status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-            PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+            PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
           }
         label_1_break:;
           if (v_hlen > 0) {
@@ -2320,7 +2321,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
               v_hlen -= v_n_copied;
               v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
               status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-              PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+              PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
             }
           label_2_break:;
           }
@@ -2337,14 +2338,14 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
         }
         v_length -= v_n_copied;
         status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
       }
     label_3_break:;
     }
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
       if (b_rptr_src == b_rstart_src) {
         status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
         goto exit;
@@ -2409,14 +2410,6 @@ exit:
   }
 
   return status;
-
-short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
-    status = PUFFS_FLATE__ERROR_UNEXPECTED_EOF;
-    goto exit;
-  }
-  status = PUFFS_FLATE__SUSPENSION_SHORT_READ;
-  goto suspend;
 }
 
 static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
