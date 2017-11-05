@@ -407,7 +407,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// require a TypeExpr being able to express function and method types.
 
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyUnreadU8, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||

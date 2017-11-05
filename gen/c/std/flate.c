@@ -2349,6 +2349,12 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
+      if (b_rptr_src == b_rstart_src) {
+        status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
+        goto exit;
+      }
+      b_rptr_src--;
     }
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;

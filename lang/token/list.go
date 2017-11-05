@@ -150,6 +150,8 @@ func (t Token) IsXAssociativeOp() bool { return t.ID.Key().isXOp() && t.ID.IsAss
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Their Keys range in [0x01, 0x7F].
+//
+// TODO: re-pack the keys.
 const nBuiltInKeys = Key(256)
 
 const (
@@ -301,6 +303,7 @@ const (
 	KeyPrefix            = Key(IDPrefix >> KeyShift)
 	KeySuffix            = Key(IDSuffix >> KeyShift)
 	KeyLimit             = Key(IDLimit >> KeyShift)
+	KeyUnreadU8          = Key(IDUnreadU8 >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -488,6 +491,7 @@ const (
 	IDPrefix            = ID(0xCB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDSuffix            = ID(0xCC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDLimit             = ID(0xCD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDUnreadU8          = ID(0xCE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -693,6 +697,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyPrefix:            {"prefix", IDPrefix},
 	KeySuffix:            {"suffix", IDSuffix},
 	KeyLimit:             {"limit", IDLimit},
+	KeyUnreadU8:          {"unread_u8", IDUnreadU8},
 }
 
 var builtInsByName = map[string]ID{}

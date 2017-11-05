@@ -459,6 +459,15 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.printf(" = *%srptr_src++;\n", bPrefix)
 
+	} else if isInSrc(g.tm, n, t.KeyUnreadU8, 0) {
+		if !n.ProvenNotToSuspend() {
+			b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
+				bPrefix, bPrefix, g.PKGPREFIX)
+			b.writes("goto exit;")
+			b.writes("}\n")
+		}
+		b.printf("%srptr_src--;\n", bPrefix)
+
 	} else if isInSrc(g.tm, n, t.KeyReadU16BE, 0) {
 		return g.writeReadUXX(b, n, "src", 16, "be")
 

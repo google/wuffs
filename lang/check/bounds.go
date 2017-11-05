@@ -734,7 +734,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) ||
+		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyUnreadU8, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
 			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
 			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||
@@ -1170,7 +1170,8 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	// Figure out the "receiver" in "receiver.read_u8?()".
+	// Figure out the "receiver" in "receiver.read_xxx?()", for some I/O method
+	// "read_xxx".
 	if n.ID0().Key() != t.KeyOpenParen {
 		return nil
 	}
@@ -1179,7 +1180,10 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 		return nil
 	}
 	advance := (*big.Int)(nil)
-	if key := receiver.ID1().Key(); key < t.Key(len(ioMethodAdvances)) {
+	if key := receiver.ID1().Key(); key == t.KeyUnreadU8 {
+		// TODO: call SetProvenNotToSuspend, since unread_u8 can never suspend,
+		// only succeed or fail.
+	} else if key < t.Key(len(ioMethodAdvances)) {
 		advance = ioMethodAdvances[key]
 	}
 	if advance == nil {

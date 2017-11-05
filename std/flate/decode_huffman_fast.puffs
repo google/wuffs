@@ -306,7 +306,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// function is ProvenNotToSuspend?
 	while n_bits >= 8 {
 		n_bits -= 8
-		// TODO: in.src.unread_u8?()
+		in.src.unread_u8?()
 	}
 
 	this.bits = bits
