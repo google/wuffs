@@ -130,10 +130,11 @@ typedef int32_t puffs_flate__status;
 #define PUFFS_FLATE__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_FLATE__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_FLATE__ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
-#define PUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
-#define PUFFS_FLATE__SUSPENSION_SHORT_READ 7                   // 0x00000007
-#define PUFFS_FLATE__SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
+#define PUFFS_FLATE__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
+#define PUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
+#define PUFFS_FLATE__SUSPENSION_SHORT_READ 8                   // 0x00000008
+#define PUFFS_FLATE__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
 
 #define PUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1157040128  // 0xbb08f800
@@ -672,12 +673,13 @@ bool puffs_flate__status__is_error(puffs_flate__status s) {
   return s < 0;
 }
 
-const char* puffs_flate__status__strings0[9] = {
+const char* puffs_flate__status__strings0[10] = {
     "flate: ok",
     "flate: bad puffs version",
     "flate: bad receiver",
     "flate: bad argument",
     "flate: initializer not called",
+    "flate: invalid I/O operation",
     "flate: closed for writes",
     "flate: unexpected EOF",
     "flate: short read",
@@ -714,7 +716,7 @@ const char* puffs_flate__status__string(puffs_flate__status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = puffs_flate__status__strings0;
-      n = 9;
+      n = 10;
       break;
     case puffs_flate__packageid:
       a = puffs_flate__status__strings1;

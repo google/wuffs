@@ -41,6 +41,7 @@ var StatusList = [...]Status{
 	{t.IDError, "bad receiver"},
 	{t.IDError, "bad argument"},
 	{t.IDError, "initializer not called"},
+	{t.IDError, "invalid I/O operation"},
 	{t.IDError, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
 	{t.IDError, "unexpected EOF"},    // Used if reading when closed == true.
 	{t.IDSuspension, "short read"},   // Used if reading when closed == false.

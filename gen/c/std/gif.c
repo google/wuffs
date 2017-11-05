@@ -130,10 +130,11 @@ typedef int32_t puffs_gif__status;
 #define PUFFS_GIF__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
 #define PUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
 #define PUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define PUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483643       // 0x80000005
-#define PUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483642          // 0x80000006
-#define PUFFS_GIF__SUSPENSION_SHORT_READ 7                   // 0x00000007
-#define PUFFS_GIF__SUSPENSION_SHORT_WRITE 8                  // 0x00000008
+#define PUFFS_GIF__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
+#define PUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
+#define PUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
+#define PUFFS_GIF__SUSPENSION_SHORT_READ 8                   // 0x00000008
+#define PUFFS_GIF__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
 
 #define PUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
 #define PUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
@@ -600,12 +601,13 @@ bool puffs_gif__status__is_error(puffs_gif__status s) {
   return s < 0;
 }
 
-const char* puffs_gif__status__strings0[9] = {
+const char* puffs_gif__status__strings0[10] = {
     "gif: ok",
     "gif: bad puffs version",
     "gif: bad receiver",
     "gif: bad argument",
     "gif: initializer not called",
+    "gif: invalid I/O operation",
     "gif: closed for writes",
     "gif: unexpected EOF",
     "gif: short read",
@@ -629,7 +631,7 @@ const char* puffs_gif__status__string(puffs_gif__status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = puffs_gif__status__strings0;
-      n = 9;
+      n = 10;
       break;
     case puffs_gif__packageid:
       a = puffs_gif__status__strings1;
