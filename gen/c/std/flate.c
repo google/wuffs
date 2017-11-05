@@ -893,9 +893,11 @@ puffs_flate__status puffs_flate__flate_decoder__decode(
   uint32_t v_already_full;
 
   uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
@@ -1009,6 +1011,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
 
@@ -1026,9 +1029,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
   uint32_t v_type;
 
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -1189,6 +1194,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -1213,9 +1219,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
   uint32_t v_n_copied;
 
   uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
@@ -1229,9 +1237,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
     }
   }
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -1332,6 +1342,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
@@ -1343,6 +1354,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -1437,9 +1449,11 @@ static puffs_flate__status puffs_flate__flate_decoder__init_dynamic_huffman(
   uint32_t v_rep_count;
 
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -1666,6 +1680,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -1981,9 +1996,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   uint32_t v_hdist;
 
   uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
@@ -1997,9 +2014,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     }
   }
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2372,6 +2391,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
@@ -2383,6 +2403,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -2418,9 +2439,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
   uint32_t v_hdist;
 
   uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
@@ -2434,9 +2457,11 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
     }
   }
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2807,6 +2832,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
@@ -2818,6 +2844,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
@@ -2852,9 +2879,11 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
   puffs_flate__status v_z;
 
   uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
   if (a_dst.buf) {
     b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.buf->closed) {
       uint64_t len = a_dst.buf->len - a_dst.buf->wi;
@@ -2868,9 +2897,11 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
     }
   }
   uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
   if (a_src.buf) {
     b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.buf->wi - a_src.buf->ri;
     puffs_base__limit1* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -3037,6 +3068,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.buf) {
@@ -3048,6 +3080,7 @@ exit:
         *lim->ptr_to_len -= n;
       }
     }
+    PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 

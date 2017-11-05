@@ -94,6 +94,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.KeyReader1:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
@@ -102,6 +103,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
+			b.printf("%srstart_%s = %srptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+
 			b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
 
 			b.printf("puffs_base__limit1* lim;\n")
@@ -119,6 +122,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.KeyWriter1:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
 		}
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
@@ -127,6 +131,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
+			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
+
 			b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 			b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
 			b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
@@ -177,6 +183,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("}\n")
 
 		if footer {
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
 			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
 		}
 
@@ -197,6 +204,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("}\n")
 
 		if footer {
+			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
 			b.printf("PUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
 		}
 
