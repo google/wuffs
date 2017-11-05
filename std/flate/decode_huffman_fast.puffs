@@ -71,7 +71,6 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		} else {
 			assert in.src.available() >= 10
 		}
-
 		// These assertions are redundant, but are listed explicitly for
 		// clarity. They must hold regardless of which branch was taken for the
 		// if statement above.
@@ -109,7 +108,6 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			} else {
 				assert in.src.available() >= 8
 			}
-
 			// Once again, redundant but explicit assertions.
 			assert in.src.available() >= 8
 			assert n_bits >= 15
@@ -162,7 +160,6 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		} else {
 			assert in.src.available() >= 6
 		}
-
 		// Once again, redundant but explicit assertions.
 		assert in.src.available() >= 6
 		assert n_bits >= 15
@@ -174,19 +171,27 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
-		// Decode a dcode symbol from H-D.
-		while true {
-			table_entry = this.huffs[1][bits & dmask]
-			table_entry_n_bits = table_entry & 15
-			if n_bits >= table_entry_n_bits {
-				bits >>= table_entry_n_bits
-				n_bits -= table_entry_n_bits
-				break
-			}
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+		// Ensure that we have at least 15 bits of input.
+		if n_bits < 15 {
+			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= (in.src.read_u8?() as u32) << n_bits
 			n_bits += 8
+			bits |= (in.src.read_u8?() as u32) << n_bits
+			n_bits += 8
+			assert n_bits >= 15
+		} else {
+			assert in.src.available() >= 4
 		}
+		// Once again, redundant but explicit assertions.
+		assert in.src.available() >= 4
+		assert n_bits >= 15
+
+		// Decode a dcode symbol from H-D.
+		table_entry = this.huffs[1][bits & dmask]
+		table_entry_n_bits = table_entry & 15
+		bits >>= table_entry_n_bits
+		n_bits -= table_entry_n_bits
+
 		// Check for a redirect.
 		if (table_entry >> 28) == 1 {
 			redir_top = (table_entry >> 8) & 0xFFFF
