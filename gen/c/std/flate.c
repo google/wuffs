@@ -395,7 +395,7 @@ typedef struct {
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
-// We use a trivial macro instead of an explicit assignment and case statement
+// We use trivial macros instead of an explicit assignment and case statement
 // so that clang-format doesn't get confused by the unusual "case"s.
 #define PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0 case 0:;
 #define PUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
