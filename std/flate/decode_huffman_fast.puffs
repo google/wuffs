@@ -90,29 +90,39 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
+			assert in.src.available() >= 8
 		} else if (table_entry >> 29) != 0 {
 			// End of block.
 			this.end_of_block = true
 			break:loop
 		} else if (table_entry >> 28) != 0 {
 			// Redirect.
-			var redir_top u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
-			var redir_mask u32[..0x7FFF] = ((1 as u32) << ((table_entry >> 4) & 0x0F)) - 1
-			while true {
-				if (redir_top + (bits & redir_mask)) >= 1234 {
-					return error "internal error: inconsistent Huffman decoder state"
-				}
-				table_entry = this.huffs[0][redir_top + (bits & redir_mask)]
-				table_entry_n_bits = table_entry & 0x0F
-				if n_bits >= table_entry_n_bits {
-					bits >>= table_entry_n_bits
-					n_bits -= table_entry_n_bits
-					break
-				}
-				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+
+			// Ensure that we have at least 15 bits of input.
+			if n_bits < 15 {
+				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= (in.src.read_u8?() as u32) << n_bits
 				n_bits += 8
+				bits |= (in.src.read_u8?() as u32) << n_bits
+				n_bits += 8
+				assert n_bits >= 15
+			} else {
+				assert in.src.available() >= 8
 			}
+
+			// Once again, redundant but explicit assertions.
+			assert in.src.available() >= 8
+			assert n_bits >= 15
+
+			var redir_top u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
+			var redir_mask u32[..0x7FFF] = ((1 as u32) << ((table_entry >> 4) & 0x0F)) - 1
+			if (redir_top + (bits & redir_mask)) >= 1234 {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			table_entry = this.huffs[0][redir_top + (bits & redir_mask)]
+			table_entry_n_bits = table_entry & 0x0F
+			bits >>= table_entry_n_bits
+			n_bits -= table_entry_n_bits
 
 			if (table_entry >> 31) != 0 {
 				// Literal.
@@ -132,11 +142,17 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
 
+			// Once again, redundant but explicit assertions.
+			assert in.src.available() >= 8
+
 		} else if (table_entry >> 27) != 0 {
 			return error "bad Huffman code"
 		} else {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
+
+		// Once again, redundant but explicit assertions.
+		assert in.src.available() >= 8
 
 		// length = base number + extra bits.
 		var length u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
