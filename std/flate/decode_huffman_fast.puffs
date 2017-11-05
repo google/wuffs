@@ -194,26 +194,37 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 
 		// Check for a redirect.
 		if (table_entry >> 28) == 1 {
-			redir_top = (table_entry >> 8) & 0xFFFF
-			redir_mask = ((1 as u32) << ((table_entry >> 4) & 0x0F)) - 1
-			while true {
-				if (redir_top + (bits & redir_mask)) >= 1234 {
-					return error "internal error: inconsistent Huffman decoder state"
-				}
-				table_entry = this.huffs[1][redir_top + (bits & redir_mask)]
-				table_entry_n_bits = table_entry & 0x0F
-				if n_bits >= table_entry_n_bits {
-					bits >>= table_entry_n_bits
-					n_bits -= table_entry_n_bits
-					break
-				}
-				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			// Ensure that we have at least 15 bits of input.
+			if n_bits < 15 {
+				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= (in.src.read_u8?() as u32) << n_bits
 				n_bits += 8
+				bits |= (in.src.read_u8?() as u32) << n_bits
+				n_bits += 8
+				assert n_bits >= 15
+			} else {
+				assert in.src.available() >= 2
 			}
+			// Once again, redundant but explicit assertions.
+			assert in.src.available() >= 2
+			assert n_bits >= 15
+
+			redir_top = (table_entry >> 8) & 0xFFFF
+			redir_mask = ((1 as u32) << ((table_entry >> 4) & 0x0F)) - 1
+			if (redir_top + (bits & redir_mask)) >= 1234 {
+				return error "internal error: inconsistent Huffman decoder state"
+			}
+			table_entry = this.huffs[1][redir_top + (bits & redir_mask)]
+			table_entry_n_bits = table_entry & 0x0F
+			bits >>= table_entry_n_bits
+			n_bits -= table_entry_n_bits
+
+			// TODO: redundant?
 			if (table_entry >> 31) != 0 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
+		} else {
+			assert in.src.available() >= 2
 		}
 
 		// For H-D, all symbols should be base number + extra bits.
