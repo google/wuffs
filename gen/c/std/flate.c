@@ -2328,6 +2328,9 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     label_6_break:;
     }
   label_0_break:;
+    while (v_n_bits >= 8) {
+      v_n_bits -= 8;
+    }
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
     if (self->private_impl.f_n_bits >= 8) {
