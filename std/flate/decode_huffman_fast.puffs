@@ -255,6 +255,9 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		n_bits -= table_entry_n_bits
 
 		var n_copied u32
+		// The "while true { etc; break }" is a redundant version of "etc", but
+		// its presence minimizes the diff between decode_huffman_fast and
+		// decode_huffman_slow.
 		while true {
 			// Copy from this.history.
 			if (distance as u64) > in.dst.since_mark().length() {
@@ -323,14 +326,8 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			}
 
 			// Copy from in.dst.
-			n_copied = in.dst.copy_from_history32(distance:distance, length:length)
-			if length <= n_copied {
-				length = 0
-				break
-			}
-			length -= n_copied
-			// TODO: "closed for writes" instead?
-			return suspension "short write"
+			in.dst.copy_from_history32(distance:distance, length:length)
+			break
 		}
 	}
 

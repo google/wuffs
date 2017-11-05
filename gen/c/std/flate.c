@@ -2329,23 +2329,17 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
             goto label_0_continue;
           }
         }
-        v_n_copied = puffs_base__writer1__copy_from_history32(
+        puffs_base__writer1__copy_from_history32(
             &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
             v_length);
-        if (v_length <= v_n_copied) {
-          v_length = 0;
-          goto label_3_break;
-        }
-        v_length -= v_n_copied;
-        status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
+        goto label_3_break;
       }
     label_3_break:;
     }
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       if (b_rptr_src == b_rstart_src) {
         status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
         goto exit;
