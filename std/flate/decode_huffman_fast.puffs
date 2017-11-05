@@ -32,11 +32,21 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	var lmask u32[..511] = ((1 as u32) << this.n_huffs_bits[0]) - 1
 	var dmask u32[..511] = ((1 as u32) << this.n_huffs_bits[1]) - 1
 
-	// Strictly speaking, we only need 6 bytes (48 bits) of available input,
-	// because the H-L length/literal code is up to 15 bits plus up to 5 extra
-	// bits, the H-D distance code is up to 15 bits plus up to 13 extra bits
-	// and 15 + 5 + 15 + 13 == 48. However, in.src.available() assertions are
-	// made in terms of bytes, not bits.
+	// Check up front, on each iteration, that we have enough buffer space to
+	// both read (12 bytes) and write (258 bytes) as much as we need to. Doing
+	// this check once (per iteration), up front, removes the need to check
+	// (and possibly suspend the coroutine) multiple times inside the loop
+	// body, so it's faster overall.
+	//
+	// For writing, a literal code obviously corresponds to writing 1 byte, and
+	// 258 is the maximum length in a length-distance pair, as specified in the
+	// RFC section 3.2.5. Compressed blocks (length and distance codes).
+	//
+	// For reading, strictly speaking, we only need 6 bytes (48 bits) of
+	// available input, because the H-L length/literal code is up to 15 bits
+	// plus up to 5 extra bits, the H-D distance code is up to 15 bits plus up
+	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However, in.src.available()
+	// assertions are made in terms of bytes, not bits.
 	//
 	// In theory, we could write assertions that mixed bytes and bits, such as:
 	//
@@ -49,7 +59,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// for each. There are also up to 13 extra bits, or 2 bytes. Thus, each
 	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
 	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
-	while:loop in.src.available() >= 12 {
+	while:loop(in.dst.available() >= 258) and (in.src.available() >= 12) {
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
