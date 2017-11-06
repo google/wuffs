@@ -2081,11 +2081,6 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
       if ((v_table_entry >> 31) != 0) {
-        PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-        if (b_wptr_dst == b_wend_dst) {
-          status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-          goto suspend;
-        }
         *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
@@ -2119,11 +2114,6 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
         if ((v_table_entry >> 31) != 0) {
-          PUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-          if (b_wptr_dst == b_wend_dst) {
-            status = PUFFS_FLATE__SUSPENSION_SHORT_WRITE;
-            goto suspend;
-          }
           *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
           goto label_0_continue;
         } else if ((v_table_entry >> 30) != 0) {
@@ -2316,7 +2306,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (b_rptr_src == b_rstart_src) {
         status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
         goto exit;

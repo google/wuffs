@@ -245,8 +245,16 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
 
 	case a.KExpr:
-		_, _, err := q.bcheckExpr(n.Expr(), 0)
-		return err
+		n := n.Expr()
+		if _, _, err := q.bcheckExpr(n, 0); err != nil {
+			return err
+		}
+		if n.Suspendible() {
+			if err := q.bcheckIOMethods(n, 0); err != nil {
+				return err
+			}
+		}
+		return nil
 
 	case a.KIf:
 		return q.bcheckIf(n.If())

@@ -507,10 +507,13 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
 
 	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
-		b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
-			bPrefix, bPrefix, g.PKGPREFIX)
-		b.writes("goto suspend;")
-		b.writes("}\n")
+		if !n.ProvenNotToSuspend() {
+			b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
+				bPrefix, bPrefix, g.PKGPREFIX)
+			b.writes("goto suspend;")
+			b.writes("}\n")
+		}
+
 		b.printf("*%swptr_dst++ = ", bPrefix)
 		x := n.Args()[0].Arg().Value()
 		if err := g.writeExpr(b, x, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
