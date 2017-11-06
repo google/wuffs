@@ -117,6 +117,11 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QID()]
 
+	// TODO: delete this. This bool should only last for one git commit, to
+	// separate one conceptual code change into two diff's: one small semantic
+	// diff and one large cosmetic diff.
+	temporaryIndentationHack := k.cName == "puffs_flate__flate_decoder__decode_huffman_fast"
+
 	if err := g.writeFuncSignature(b, n); err != nil {
 		return err
 	}
@@ -124,10 +129,14 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	b.writex(k.bHeader)
 	if k.suspendible && k.coroSuspPoint > 0 {
 		b.writex(k.bBodyResume)
+	} else if temporaryIndentationHack {
+		b.writes("{\n")
 	}
 	b.writex(k.bBody)
 	if k.suspendible && k.coroSuspPoint > 0 {
 		b.writex(k.bBodySuspend)
+	} else if temporaryIndentationHack {
+		b.writes("}\n")
 	}
 	b.writex(k.bFooter)
 	b.writes("}\n\n")

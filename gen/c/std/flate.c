@@ -251,22 +251,6 @@ typedef struct {
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
-    } c_decode_huffman_fast[1];
-    struct {
-      uint32_t coro_susp_point;
-      uint32_t v_bits;
-      uint32_t v_n_bits;
-      uint32_t v_table_entry;
-      uint32_t v_table_entry_n_bits;
-      uint32_t v_lmask;
-      uint32_t v_dmask;
-      uint32_t v_redir_top;
-      uint32_t v_redir_mask;
-      uint32_t v_length;
-      uint32_t v_distance;
-      uint32_t v_n_copied;
-      uint32_t v_hlen;
-      uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
 } puffs_flate__flate_decoder;
@@ -2029,27 +2013,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     b_rend_src = b_rptr_src + len;
   }
 
-  uint32_t coro_susp_point =
-      self->private_impl.c_decode_huffman_fast[0].coro_susp_point;
-  if (coro_susp_point) {
-    v_bits = self->private_impl.c_decode_huffman_fast[0].v_bits;
-    v_n_bits = self->private_impl.c_decode_huffman_fast[0].v_n_bits;
-    v_table_entry = self->private_impl.c_decode_huffman_fast[0].v_table_entry;
-    v_table_entry_n_bits =
-        self->private_impl.c_decode_huffman_fast[0].v_table_entry_n_bits;
-    v_lmask = self->private_impl.c_decode_huffman_fast[0].v_lmask;
-    v_dmask = self->private_impl.c_decode_huffman_fast[0].v_dmask;
-    v_redir_top = self->private_impl.c_decode_huffman_fast[0].v_redir_top;
-    v_redir_mask = self->private_impl.c_decode_huffman_fast[0].v_redir_mask;
-    v_length = self->private_impl.c_decode_huffman_fast[0].v_length;
-    v_distance = self->private_impl.c_decode_huffman_fast[0].v_distance;
-    v_n_copied = self->private_impl.c_decode_huffman_fast[0].v_n_copied;
-    v_hlen = self->private_impl.c_decode_huffman_fast[0].v_hlen;
-    v_hdist = self->private_impl.c_decode_huffman_fast[0].v_hdist;
-  }
-  switch (coro_susp_point) {
-    PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
-
+  {
     if (self->private_impl.f_n_bits >= 8) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
@@ -2306,7 +2270,6 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
   label_0_break:;
     while (v_n_bits >= 8) {
       v_n_bits -= 8;
-      PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (b_rptr_src == b_rstart_src) {
         status = PUFFS_FLATE__ERROR_INVALID_I_O_OPERATION;
         goto exit;
@@ -2319,31 +2282,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
     }
-
-    goto ok;
-  ok:
-    self->private_impl.c_decode_huffman_fast[0].coro_susp_point = 0;
-    goto exit;
   }
-
-  goto suspend;
-suspend:
-  self->private_impl.c_decode_huffman_fast[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_huffman_fast[0].v_bits = v_bits;
-  self->private_impl.c_decode_huffman_fast[0].v_n_bits = v_n_bits;
-  self->private_impl.c_decode_huffman_fast[0].v_table_entry = v_table_entry;
-  self->private_impl.c_decode_huffman_fast[0].v_table_entry_n_bits =
-      v_table_entry_n_bits;
-  self->private_impl.c_decode_huffman_fast[0].v_lmask = v_lmask;
-  self->private_impl.c_decode_huffman_fast[0].v_dmask = v_dmask;
-  self->private_impl.c_decode_huffman_fast[0].v_redir_top = v_redir_top;
-  self->private_impl.c_decode_huffman_fast[0].v_redir_mask = v_redir_mask;
-  self->private_impl.c_decode_huffman_fast[0].v_length = v_length;
-  self->private_impl.c_decode_huffman_fast[0].v_distance = v_distance;
-  self->private_impl.c_decode_huffman_fast[0].v_n_copied = v_n_copied;
-  self->private_impl.c_decode_huffman_fast[0].v_hlen = v_hlen;
-  self->private_impl.c_decode_huffman_fast[0].v_hdist = v_hdist;
-
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

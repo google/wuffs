@@ -251,22 +251,6 @@ typedef struct {
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
-    } c_decode_huffman_fast[1];
-    struct {
-      uint32_t coro_susp_point;
-      uint32_t v_bits;
-      uint32_t v_n_bits;
-      uint32_t v_table_entry;
-      uint32_t v_table_entry_n_bits;
-      uint32_t v_lmask;
-      uint32_t v_dmask;
-      uint32_t v_redir_top;
-      uint32_t v_redir_mask;
-      uint32_t v_length;
-      uint32_t v_distance;
-      uint32_t v_n_copied;
-      uint32_t v_hlen;
-      uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
 } puffs_flate__flate_decoder;

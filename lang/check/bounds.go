@@ -1187,19 +1187,21 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 	if receiver.ID0().Key() != t.KeyDot {
 		return nil
 	}
+	receiver, method := receiver.LHS().Expr(), receiver.ID1().Key()
+
+	// TODO: check that receiver's type is actually a reader1 or writer1.
+
 	advance := (*big.Int)(nil)
-	if key := receiver.ID1().Key(); key == t.KeyUnreadU8 {
-		// TODO: call SetProvenNotToSuspend, since unread_u8 can never suspend,
-		// only succeed or fail.
-	} else if key < t.Key(len(ioMethodAdvances)) {
-		advance = ioMethodAdvances[key]
+	if method == t.KeyUnreadU8 {
+		// unread_u8 can never suspend, only succeed or fail.
+		n.SetProvenNotToSuspend()
+		return nil
+	} else if method < t.Key(len(ioMethodAdvances)) {
+		advance = ioMethodAdvances[method]
 	}
 	if advance == nil {
 		return nil
 	}
-	receiver = receiver.LHS().Expr()
-
-	// TODO: check that receiver's type is actually a reader1 or writer1.
 
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		op := x.ID0().Key()
