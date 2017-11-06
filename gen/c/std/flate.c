@@ -1245,11 +1245,13 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_uncompressed(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_n_bits >= 8) {
+    if ((self->private_impl.f_n_bits >= 8) ||
+        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
     }
     self->private_impl.f_n_bits = 0;
+    self->private_impl.f_bits = 0;
     {
       PUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint32_t t_1;
@@ -2013,7 +2015,8 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     b_rend_src = b_rptr_src + len;
   }
 
-  if (self->private_impl.f_n_bits >= 8) {
+  if ((self->private_impl.f_n_bits >= 8) ||
+      ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
     status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
     goto exit;
   }
@@ -2274,9 +2277,10 @@ label_0_break:;
     }
     b_rptr_src--;
   }
-  self->private_impl.f_bits = v_bits;
+  self->private_impl.f_bits = (v_bits & ((((uint32_t)(1)) << v_n_bits) - 1));
   self->private_impl.f_n_bits = v_n_bits;
-  if (self->private_impl.f_n_bits >= 8) {
+  if ((self->private_impl.f_n_bits >= 8) ||
+      ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
     status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
     goto exit;
   }
@@ -2384,7 +2388,8 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
   switch (coro_susp_point) {
     PUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_n_bits >= 8) {
+    if ((self->private_impl.f_n_bits >= 8) ||
+        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
     }
@@ -2684,7 +2689,8 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
   label_0_break:;
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
-    if (self->private_impl.f_n_bits >= 8) {
+    if ((self->private_impl.f_n_bits >= 8) ||
+        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
       status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
       goto exit;
     }

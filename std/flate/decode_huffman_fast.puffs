@@ -20,7 +20,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// decode_huffman_*.puffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	if this.n_bits >= 8 {
+	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
 
@@ -321,15 +321,17 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	//
 	// TODO: have the compiler enforce (via some explicit syntax) that this
 	// function is ProvenNotToSuspend?
-	while n_bits >= 8 {
+	while n_bits >= 8,
+		post n_bits < 8,
+	{
 		n_bits -= 8
 		in.src.unread_u8?()
 	}
 
-	this.bits = bits
+	this.bits = bits & (((1 as u32) << n_bits) - 1)
 	this.n_bits = n_bits
 
-	if this.n_bits >= 8 {
+	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
 }

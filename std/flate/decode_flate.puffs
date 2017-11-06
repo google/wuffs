@@ -218,10 +218,11 @@ pri func flate_decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
-	if this.n_bits >= 8 {
+	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
 	this.n_bits = 0
+	this.bits = 0
 
 	var length u32 = in.src.read_u32le?()
 	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {

@@ -18,7 +18,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 	// decode_huffman_*.puffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	if this.n_bits >= 8 {
+	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
 
@@ -254,12 +254,12 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 		}
 	}
 
-	// TODO: "assert n_bits < 8"?
+	// TODO: "assert n_bits < 8"? What about (bits >> n_bits)?
 
 	this.bits = bits
 	this.n_bits = n_bits
 
-	if this.n_bits >= 8 {
+	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
 }
