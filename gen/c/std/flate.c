@@ -535,13 +535,15 @@ static inline uint32_t puffs_base__writer1__copy_from_history32(
   } else {
     n = length;
   }
-  // TODO: is manual unrolling actually helpful?
-  for (; n >= 8; n -= 8) {
-    *ptr++ = *start++;
-    *ptr++ = *start++;
-    *ptr++ = *start++;
-    *ptr++ = *start++;
-    *ptr++ = *start++;
+  // TODO: unrolling by 3 seems best for the std/flate benchmarks, but that is
+  // mostly because 3 is the minimum length for the flate format. This function
+  // implementation shouldn't overfit to that one format. Perhaps the
+  // copy_from_history32 Puffs method should also take an unroll hint argument,
+  // and the cgen can look if that argument is the constant expression '3'.
+  //
+  // Alternatively, or additionally, have a sloppy_copy_from_history32 method
+  // that copies 8 bytes at a time, possibly writing more than length bytes?
+  for (; n >= 3; n -= 3) {
     *ptr++ = *start++;
     *ptr++ = *start++;
     *ptr++ = *start++;
