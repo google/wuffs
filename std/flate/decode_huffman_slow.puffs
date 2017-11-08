@@ -102,16 +102,18 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 		// length = base number + extra bits.
 		var length u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
-		while n_bits < table_entry_n_bits,
-			post n_bits >= table_entry_n_bits,
-		{
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (in.src.read_u8?() as u32) << n_bits
-			n_bits += 8
+		if table_entry_n_bits > 0 {
+			while n_bits < table_entry_n_bits,
+				post n_bits >= table_entry_n_bits,
+			{
+				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+				bits |= (in.src.read_u8?() as u32) << n_bits
+				n_bits += 8
+			}
+			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+			bits >>= table_entry_n_bits
+			n_bits -= table_entry_n_bits
 		}
-		length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
-		bits >>= table_entry_n_bits
-		n_bits -= table_entry_n_bits
 
 		// Decode a dcode symbol from H-D.
 		while true {
@@ -158,16 +160,18 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 		// distance = base number + extra bits.
 		var distance u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
-		while n_bits < table_entry_n_bits,
-			post n_bits >= table_entry_n_bits,
-		{
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (in.src.read_u8?() as u32) << n_bits
-			n_bits += 8
+		if table_entry_n_bits > 0 {
+			while n_bits < table_entry_n_bits,
+				post n_bits >= table_entry_n_bits,
+			{
+				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+				bits |= (in.src.read_u8?() as u32) << n_bits
+				n_bits += 8
+			}
+			distance = (distance + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+			bits >>= table_entry_n_bits
+			n_bits -= table_entry_n_bits
 		}
-		distance = (distance + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
-		bits >>= table_entry_n_bits
-		n_bits -= table_entry_n_bits
 
 		var n_copied u32
 		while true {
