@@ -2017,7 +2017,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
     b_rend_src = b_rptr_src + len;
   }
 
-  if ((a_dst.private_impl.mark != NULL) != true) {
+  if (!(a_dst.private_impl.mark != NULL)) {
     status = PUFFS_FLATE__ERROR_BAD_ARGUMENT;
     goto exit;
   }

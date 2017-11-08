@@ -310,8 +310,15 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 }
 
 func (q *checker) bcheckAssert(n *a.Assert) error {
+	// TODO: check, here or elsewhere, that the condition is pure.
 	condition := n.Condition()
+	for _, x := range q.facts {
+		if x.Eq(condition) {
+			return nil
+		}
+	}
 	err := errFailed
+
 	if cv := condition.ConstValue(); cv != nil {
 		if cv.Cmp(one) == 0 {
 			err = nil
@@ -325,6 +332,7 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 	} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
 		err = q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr())
 	}
+
 	if err != nil {
 		if err == errFailed {
 			return fmt.Errorf("check: cannot prove %q", condition.String(q.tm))

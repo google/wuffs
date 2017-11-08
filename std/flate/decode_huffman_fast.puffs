@@ -21,7 +21,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// correctness and performance.
 
 	// TODO: make this a func pre-condition.
-	if in.dst.is_marked() != true {  // TODO: if not in.dst.is_marked() {
+	if not in.dst.is_marked() {
 		return error "bad argument"
 	}
 
@@ -65,7 +65,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
 	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
 	while:loop(in.dst.available() >= 258) and (in.src.available() >= 12),
-		inv in.dst.is_marked() == true,  // TODO: remove the redundant "== true".
+		inv in.dst.is_marked(),
 	{
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
@@ -268,7 +268,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
 		while true,
-			inv in.dst.is_marked() == true,
+			inv in.dst.is_marked(),
 		{
 			// Copy from this.history.
 			if (distance as u64) > in.dst.since_mark().length() {
@@ -298,7 +298,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				// "etc", but its presence minimizes the diff between
 				// decode_huffman_fast and decode_huffman_slow.
 				while true,
-					inv in.dst.is_marked() == true,
+					inv in.dst.is_marked(),
 				{
 					n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
 					if hlen <= n_copied {
