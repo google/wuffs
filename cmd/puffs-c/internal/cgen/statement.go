@@ -785,6 +785,7 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 		methodName != t.KeyCopyFromSlice32 &&
 		methodName != t.KeyCopyFromSlice &&
 		methodName != t.KeySinceMark &&
+		methodName != t.KeyIsMarked &&
 		methodName != t.KeyMark &&
 		methodName != t.KeyLimit
 	// TODO: check that n.Args() is "(x:bar)".

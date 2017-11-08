@@ -303,6 +303,7 @@ const (
 	KeyLowBits           = Key(IDLowBits >> KeyShift)
 	KeyHighBits          = Key(IDHighBits >> KeyShift)
 	KeyUnreadU8          = Key(IDUnreadU8 >> KeyShift)
+	KeyIsMarked          = Key(IDIsMarked >> KeyShift)
 
 	KeyXUnaryPlus  = Key(IDXUnaryPlus >> KeyShift)
 	KeyXUnaryMinus = Key(IDXUnaryMinus >> KeyShift)
@@ -490,6 +491,7 @@ const (
 	IDLowBits           = ID(0xAE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDHighBits          = ID(0xAF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDUnreadU8          = ID(0xB0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIsMarked          = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -695,6 +697,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyLowBits:           {"low_bits", IDLowBits},
 	KeyHighBits:          {"high_bits", IDHighBits},
 	KeyUnreadU8:          {"unread_u8", IDUnreadU8},
+	KeyIsMarked:          {"is_marked", IDIsMarked},
 }
 
 var builtInsByName = map[string]ID{}

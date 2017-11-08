@@ -750,7 +750,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
-			isInDst(q.tm, n, t.KeyMark, 0) ||
+			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_blocks", 2) ||

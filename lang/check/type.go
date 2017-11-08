@@ -415,7 +415,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
-			isInDst(q.tm, n, t.KeyMark, 0) ||
+			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
 			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
 			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
 			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_blocks", 2) ||
@@ -446,6 +446,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			} else if isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) || isInDst(q.tm, n, t.KeyCopyFromReader32, 2) ||
 				isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) {
 				n.SetMType(typeExprU32) // HACK.
+			} else if isInDst(q.tm, n, t.KeyIsMarked, 0) {
+				n.SetMType(typeExprBool) // HACK.
 			} else {
 				n.SetMType(typeExprPlaceholder) // HACK.
 			}
@@ -684,6 +686,7 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 		methodName != t.KeyCopyFromSlice32 &&
 		methodName != t.KeyCopyFromSlice &&
 		methodName != t.KeySinceMark &&
+		methodName != t.KeyIsMarked &&
 		methodName != t.KeyMark &&
 		methodName != t.KeyLimit
 	// TODO: check that n.Args() is "(x:bar)".

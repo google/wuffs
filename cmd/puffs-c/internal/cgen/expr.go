@@ -185,6 +185,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
+		// TODO: reader1.is_marked, not just writer1.is_marked?
 		if isInDst(g.tm, n, t.KeyLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
@@ -201,6 +202,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				".ptr = %sdst.private_impl.mark, "+
 				".len = %sdst.private_impl.mark ? (size_t)(%swptr_dst - %sdst.private_impl.mark) : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
+			return nil
+		}
+		if isInDst(g.tm, n, t.KeyIsMarked, 0) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			b.printf("%sdst.private_impl.mark != NULL", aPrefix)
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
