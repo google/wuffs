@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // This file contains a hand-written C implementation of gen/c/std/flate.c's
-// generated puffs_flate__flate_decoder__decode_huffman function.
+// generated puffs_flate__flate_decoder__decode_huffman_fast function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
 // purpose is to give a rough upper bound on how fast Puffs' generated C code
