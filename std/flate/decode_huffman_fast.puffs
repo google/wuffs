@@ -218,11 +218,6 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			table_entry_n_bits = table_entry & 0x0F
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
-
-			// TODO: redundant?
-			if (table_entry >> 31) != 0 {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
 		} else {
 			assert in.src.available() >= 2
 		}

@@ -2170,11 +2170,6 @@ label_0_continue:;
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
-      if ((v_table_entry >> 31) != 0) {
-        status =
-            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-        goto exit;
-      }
     } else {
     }
     if ((v_table_entry >> 24) != 64) {
@@ -2561,11 +2556,6 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_slow(
           v_n_bits += 8;
         }
       label_4_break:;
-        if ((v_table_entry >> 31) != 0) {
-          status =
-              PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-          goto exit;
-        }
       }
       if ((v_table_entry >> 24) != 64) {
         if ((v_table_entry >> 24) == 8) {

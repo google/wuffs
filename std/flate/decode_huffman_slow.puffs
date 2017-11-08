@@ -145,11 +145,6 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 				bits |= (in.src.read_u8?() as u32) << n_bits
 				n_bits += 8
 			}
-
-			// TODO: redundant?
-			if (table_entry >> 31) != 0 {
-				return error "internal error: inconsistent Huffman decoder state"
-			}
 		}
 
 		// For H-D, all symbols should be base number + extra bits.
