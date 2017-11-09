@@ -233,8 +233,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	// TODO: be principled about checking for provenNotToSuspend. Should we
-	// call bcheckIOMethods only for assignments, for var statements too, or
-	// for all statements generally?
+	// call bcheckOptimizeSuspendible only for assignments, for var statements
+	// too, or for all statements generally?
 
 	switch n.Kind() {
 	case a.KAssert:
@@ -250,7 +250,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 		if n.Suspendible() {
-			if err := q.bcheckIOMethods(n, 0); err != nil {
+			if err := q.bcheckOptimizeSuspendible(n, 0); err != nil {
 				return err
 			}
 		}
@@ -407,7 +407,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	// What's here is somewhat ad hoc. Perhaps we need a call keyword and an
 	// explicit "foo = call bar?()" syntax.
 	if rhs.Suspendible() {
-		if err := q.bcheckIOMethods(rhs, 0); err != nil {
+		if err := q.bcheckOptimizeSuspendible(rhs, 0); err != nil {
 			return err
 		}
 	}
@@ -714,6 +714,9 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 	if (nMin != nil && tMin != nil && nMin.Cmp(tMin) < 0) || (nMax != nil && tMax != nil && nMax.Cmp(tMax) > 0) {
 		return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
 			n.String(q.tm), nMin, nMax, tMin, tMax)
+	}
+	if err := q.bcheckOptimizeNonSuspendible(n); err != nil {
+		return nil, nil, err
 	}
 	return nMin, nMax, nil
 }
@@ -1162,7 +1165,50 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	return b[0], b[1], nil
 }
 
-func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
+// splitReceiverMethod returns the "receiver" and "method" in the expression
+// "receiver.method(etc)".
+func splitReceiverMethod(n *a.Expr) (receiver *a.Expr, method t.Key) {
+	if n.ID0().Key() != t.KeyOpenParen {
+		return nil, 0
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() != t.KeyDot {
+		return nil, 0
+	}
+	return n.LHS().Expr(), n.ID1().Key()
+}
+
+// TODO: should bcheckOptimizeNonSuspendible be bcheckOptimizeExpr and check
+// both suspendible and non-suspendible expressions?
+//
+// See also "be principled about checking for provenNotToSuspend".
+
+func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
+	// TODO: check n.CallSuspendible()?
+	//
+	// Should we have an explicit "foo = call bar?()" syntax?
+
+	nReceiver, nMethod := splitReceiverMethod(n)
+	if nReceiver == nil {
+		return nil
+	}
+
+	// TODO: check that nReceiver's type is actually a reader1 or writer1.
+
+	if nMethod == t.KeySinceMark {
+		for _, x := range q.facts {
+			xReceiver, xMethod := splitReceiverMethod(x)
+			if xMethod == t.KeyIsMarked && xReceiver.Eq(nReceiver) {
+				n.SetBoundsCheckOptimized()
+				return nil
+			}
+		}
+	}
+
+	return nil
+}
+
+func (q *checker) bcheckOptimizeSuspendible(n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -1171,14 +1217,14 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 	if !n.CallSuspendible() {
 		for _, o := range n.Node().Raw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.bcheckIOMethods(o.Expr(), depth); err != nil {
+				if err := q.bcheckOptimizeSuspendible(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.bcheckIOMethods(o.Expr(), depth); err != nil {
+				if err := q.bcheckOptimizeSuspendible(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
@@ -1186,31 +1232,29 @@ func (q *checker) bcheckIOMethods(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	// Figure out the "receiver" in "receiver.read_xxx?()", for some I/O method
-	// "read_xxx".
-	if n.ID0().Key() != t.KeyOpenParen {
+	nReceiver, nMethod := splitReceiverMethod(n)
+	if nReceiver == nil {
 		return nil
 	}
-	receiver := n.LHS().Expr()
-	if receiver.ID0().Key() != t.KeyDot {
-		return nil
-	}
-	receiver, method := receiver.LHS().Expr(), receiver.ID1().Key()
 
-	// TODO: check that receiver's type is actually a reader1 or writer1.
+	// TODO: check that nReceiver's type is actually a reader1 or writer1.
 
-	advance := (*big.Int)(nil)
-	if method == t.KeyUnreadU8 {
+	if nMethod == t.KeyUnreadU8 {
 		// unread_u8 can never suspend, only succeed or fail.
 		n.SetProvenNotToSuspend()
 		return nil
-	} else if method < t.Key(len(ioMethodAdvances)) {
-		advance = ioMethodAdvances[method]
-	}
-	if advance == nil {
-		return nil
 	}
 
+	if nMethod < t.Key(len(ioMethodAdvances)) {
+		if advance := ioMethodAdvances[nMethod]; advance != nil {
+			return q.bcheckOptimizeIOMethodAdvance(n, nReceiver, advance)
+		}
+	}
+
+	return nil
+}
+
+func (q *checker) bcheckOptimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		op := x.ID0().Key()
 		if op != t.KeyXBinaryGreaterEq && op != t.KeyXBinaryGreaterThan {

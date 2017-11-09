@@ -87,16 +87,33 @@ var kindStrings = [...]string{
 type Flags uint32
 
 const (
-	FlagsImpure             = Flags(0x00000001)
-	FlagsSuspendible        = Flags(0x00000002)
-	FlagsCallImpure         = Flags(0x00000004)
-	FlagsCallSuspendible    = Flags(0x00000008)
-	FlagsPublic             = Flags(0x00000010)
-	FlagsTypeChecked        = Flags(0x00000020)
-	FlagsHasBreak           = Flags(0x00000040)
-	FlagsHasContinue        = Flags(0x00000080)
-	FlagsGlobalIdent        = Flags(0x00000100)
-	FlagsProvenNotToSuspend = Flags(0x00000200)
+	FlagsImpure          = Flags(0x00000001)
+	FlagsSuspendible     = Flags(0x00000002)
+	FlagsCallImpure      = Flags(0x00000004)
+	FlagsCallSuspendible = Flags(0x00000008)
+	FlagsPublic          = Flags(0x00000010)
+	FlagsTypeChecked     = Flags(0x00000020)
+	FlagsHasBreak        = Flags(0x00000040)
+	FlagsHasContinue     = Flags(0x00000080)
+	FlagsGlobalIdent     = Flags(0x00000100)
+)
+
+// These flags are set by the bounds checker to generate optimized code.
+const (
+	// FlagsProvenNotToSuspend notes that a method such as read_u8 or
+	// write_u16le is proven not to suspend. For example, if it's guaranteed
+	// that there enough buffer space for an I/O method to succeed.
+	//
+	// Some methods, such as unread_u8, are called with the question mark, as
+	// "r.unread_u8?()", so nominally can suspend, but their semantics also
+	// guarantee to either succeed or fail, never suspend and retry later.
+	FlagsProvenNotToSuspend = Flags(0x00010000)
+	// FlagsBoundsCheckOptimized similarly means that some code gen's run time
+	// bounds checks or null pointer checks can be skipped, although such
+	// methods are not called with the question mark. Specifically, those
+	// methods are:
+	//  - since_mark
+	FlagsBoundsCheckOptimized = Flags(0x00020000)
 )
 
 type Node struct {
@@ -245,23 +262,25 @@ const MaxExprDepth = 255
 // and ID1 is the message.
 type Expr Node
 
-func (n *Expr) Node() *Node              { return (*Node)(n) }
-func (n *Expr) Pure() bool               { return n.flags&FlagsImpure == 0 }
-func (n *Expr) Impure() bool             { return n.flags&FlagsImpure != 0 }
-func (n *Expr) Suspendible() bool        { return n.flags&FlagsSuspendible != 0 }
-func (n *Expr) CallImpure() bool         { return n.flags&FlagsCallImpure != 0 }
-func (n *Expr) CallSuspendible() bool    { return n.flags&FlagsCallSuspendible != 0 }
-func (n *Expr) GlobalIdent() bool        { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) ProvenNotToSuspend() bool { return n.flags&FlagsProvenNotToSuspend != 0 }
-func (n *Expr) ConstValue() *big.Int     { return n.constValue }
-func (n *Expr) MType() *TypeExpr         { return n.mType }
-func (n *Expr) ID0() t.ID                { return n.id0 }
-func (n *Expr) ID1() t.ID                { return n.id1 }
-func (n *Expr) LHS() *Node               { return n.lhs }
-func (n *Expr) MHS() *Node               { return n.mhs }
-func (n *Expr) RHS() *Node               { return n.rhs }
-func (n *Expr) Args() []*Node            { return n.list0 }
+func (n *Expr) Node() *Node                { return (*Node)(n) }
+func (n *Expr) Pure() bool                 { return n.flags&FlagsImpure == 0 }
+func (n *Expr) Impure() bool               { return n.flags&FlagsImpure != 0 }
+func (n *Expr) Suspendible() bool          { return n.flags&FlagsSuspendible != 0 }
+func (n *Expr) CallImpure() bool           { return n.flags&FlagsCallImpure != 0 }
+func (n *Expr) CallSuspendible() bool      { return n.flags&FlagsCallSuspendible != 0 }
+func (n *Expr) GlobalIdent() bool          { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) ProvenNotToSuspend() bool   { return n.flags&FlagsProvenNotToSuspend != 0 }
+func (n *Expr) BoundsCheckOptimized() bool { return n.flags&FlagsBoundsCheckOptimized != 0 }
+func (n *Expr) ConstValue() *big.Int       { return n.constValue }
+func (n *Expr) MType() *TypeExpr           { return n.mType }
+func (n *Expr) ID0() t.ID                  { return n.id0 }
+func (n *Expr) ID1() t.ID                  { return n.id1 }
+func (n *Expr) LHS() *Node                 { return n.lhs }
+func (n *Expr) MHS() *Node                 { return n.mhs }
+func (n *Expr) RHS() *Node                 { return n.rhs }
+func (n *Expr) Args() []*Node              { return n.list0 }
 
+func (n *Expr) SetBoundsCheckOptimized() { n.flags |= FlagsBoundsCheckOptimized }
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }

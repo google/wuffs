@@ -198,10 +198,19 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySinceMark, 0) {
+			// Write .len as either "foo ? bar : baz" or "bar".
+			//
+			// TODO: drop the "true" in the "if true", provided that the
+			// benchmark numbers improve.
+			len0, len1 := "", ""
+			if true || !n.BoundsCheckOptimized() {
+				len0 = aPrefix + "dst.private_impl.mark ?"
+				len1 = ": 0"
+			}
 			b.printf("((puffs_base__slice_u8){ "+
 				".ptr = %sdst.private_impl.mark, "+
-				".len = %sdst.private_impl.mark ? (size_t)(%swptr_dst - %sdst.private_impl.mark) : 0, })",
-				aPrefix, aPrefix, bPrefix, aPrefix)
+				".len = %s (size_t)(%swptr_dst - %sdst.private_impl.mark) %s, })",
+				aPrefix, len0, bPrefix, aPrefix, len1)
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyIsMarked, 0) {
