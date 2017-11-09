@@ -464,12 +464,11 @@ static inline uint32_t puffs_base__writer1__copy_from_history32(
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
-  if (!start) {
+  if (!start || !distance) {
     return 0;
   }
   uint8_t* ptr = *ptr_ptr;
-  size_t d = ptr - start;
-  if ((d == 0) || (d < (size_t)(distance))) {
+  if ((size_t)(ptr - start) < (size_t)(distance)) {
     return 0;
   }
   start = ptr - distance;
