@@ -14,6 +14,15 @@
 
 package check
 
+// TODO: should bounds checking even be responsible for selecting between
+// optimized implementations of e.g. read_u8? Instead, the Puffs code could
+// explicitly call either read_u8 or read_u8_fast, with the latter having
+// stronger preconditions.
+//
+// Doing so might need some syntactical distinction (not just a question mark)
+// between "foo?" and "bar?" if one of those methods can still return an error
+// code but never actually suspend.
+
 import (
 	"fmt"
 	"math/big"
