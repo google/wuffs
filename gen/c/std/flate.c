@@ -2138,6 +2138,11 @@ label_0_continue:;
       v_n_bits -= v_table_entry_n_bits;
     } else {
     }
+    if (v_length > 258) {
+      status =
+          PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+      goto exit;
+    }
     if (v_n_bits < 15) {
       {
         uint8_t t_6 = *b_rptr_src++;
@@ -2213,6 +2218,11 @@ label_0_continue:;
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
     }
+    if (v_distance <= 0) {
+      status =
+          PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+      goto exit;
+    }
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)(v_distance)) >
@@ -2238,6 +2248,11 @@ label_0_continue:;
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
+          if (v_length > 258) {
+            status =
+                PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            goto exit;
+          }
         } else {
           v_hlen = v_length;
           v_length = 0;

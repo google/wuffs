@@ -182,6 +182,9 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		} else {
 			assert in.src.available() >= 6
 		}
+		if length > 258 {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
 
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
@@ -262,12 +265,17 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		}
+		if distance <= 0 {
+			return error "internal error: inconsistent Huffman decoder state"
+		}
 
 		var n_copied u32
 		// The "while true { etc; break }" is a redundant version of "etc", but
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
 		while true,
+			pre length <= 258,
+			pre distance > 0,
 			pre in.dst.available() >= 258,
 			inv in.dst.is_marked(),
 		{
@@ -281,9 +289,14 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				if length > hdist {
 					length -= hdist
 					hlen = hdist
+					// TODO: this if check should be redundant.
+					if length > 258 {
+						return error "internal error: inconsistent Huffman decoder state"
+					}
 				} else {
 					hlen = length
 					length = 0
+					assert length <= 258
 				}
 				if this.history_index < hdist {
 					return error "bad distance"
@@ -299,6 +312,8 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				// "etc", but its presence minimizes the diff between
 				// decode_huffman_fast and decode_huffman_slow.
 				while true,
+					inv length <= 258,
+					inv distance > 0,
 					inv in.dst.available() >= 258,
 					inv in.dst.is_marked(),
 				{
@@ -324,9 +339,15 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				}
 			}
 			// Once again, redundant but explicit assertions.
+			assert length <= 258
+			assert distance > 0
+			assert (distance as u64) <= in.dst.since_mark().length()
 			assert in.dst.available() >= 258
 			assert in.dst.is_marked()
-			assert (distance as u64) <= in.dst.since_mark().length()
+
+			// We can therefore prove:
+			assert (length as u64) <= 258
+			assert (length as u64) <= in.dst.available() via "a <= b: a <= c; c <= b"(c:258)
 
 			// Copy from in.dst.
 			in.dst.copy_from_history32(distance:distance, length:length)
