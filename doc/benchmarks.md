@@ -32,6 +32,7 @@ benchmark runs, or calculate p-values when comparing numbers before and after a
 code change. To install it, first install Go, then run `go get
 golang.org/x/perf/cmd/benchstat`.
 
+
 ## puffs bench
 
 As mentioned above, individual benchmark programs can be run manually. However,
@@ -50,6 +51,19 @@ or
 or
 
     puffs bench -ccompilers=gcc -reps=3 -focus=Benchmarkpuffs_gif_lzw std/gif
+
+
+## CPU Scaling
+
+CPU power management can inject noise in benchmark times. On a Linux system,
+power management can be controlled with:
+
+    # Query.
+    cpupower --cpu all frequency-info --policy
+    # Turn on.
+    sudo cpupower frequency-set --governor powersave
+    # Turn off.
+    sudo cpupower frequency-set --governor performance
 
 
 # GIF
