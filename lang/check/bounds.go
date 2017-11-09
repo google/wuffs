@@ -233,8 +233,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.Raw().FilenameLine()
 
 	// TODO: be principled about checking for provenNotToSuspend. Should we
-	// call bcheckOptimizeSuspendible only for assignments, for var statements
-	// too, or for all statements generally?
+	// call optimizeSuspendible only for assignments, for var statements too,
+	// or for all statements generally?
 
 	switch n.Kind() {
 	case a.KAssert:
@@ -250,7 +250,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 		if n.Suspendible() {
-			if err := q.bcheckOptimizeSuspendible(n, 0); err != nil {
+			if err := q.optimizeSuspendible(n, 0); err != nil {
 				return err
 			}
 		}
@@ -407,7 +407,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	// What's here is somewhat ad hoc. Perhaps we need a call keyword and an
 	// explicit "foo = call bar?()" syntax.
 	if rhs.Suspendible() {
-		if err := q.bcheckOptimizeSuspendible(rhs, 0); err != nil {
+		if err := q.optimizeSuspendible(rhs, 0); err != nil {
 			return err
 		}
 	}
@@ -715,7 +715,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 		return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
 			n.String(q.tm), nMin, nMax, tMin, tMax)
 	}
-	if err := q.bcheckOptimizeNonSuspendible(n); err != nil {
+	if err := q.optimizeNonSuspendible(n); err != nil {
 		return nil, nil, err
 	}
 	return nMin, nMax, nil

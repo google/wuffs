@@ -36,12 +36,12 @@ func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.Key, args []
 	return n.LHS().Expr(), n.ID1().Key(), args
 }
 
-// TODO: should bcheckOptimizeNonSuspendible be bcheckOptimizeExpr and check
-// both suspendible and non-suspendible expressions?
+// TODO: should optimizeNonSuspendible be optimizeExpr and check both
+// suspendible and non-suspendible expressions?
 //
 // See also "be principled about checking for provenNotToSuspend".
 
-func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
+func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 	// TODO: check n.CallSuspendible()?
 	//
 	// Should we have an explicit "foo = call bar?()" syntax?
@@ -55,7 +55,7 @@ func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
 
 	switch nMethod {
 	case t.KeyCopyFromHistory32:
-		return q.bcheckOptimizeCopyFromHistory32(n)
+		return q.optimizeCopyFromHistory32(n)
 	case t.KeySinceMark:
 		for _, x := range q.facts {
 			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
@@ -69,14 +69,14 @@ func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
 	return nil
 }
 
-// bcheckOptimizeCopyFromHistory32 checks if the code generator can call the
-// Bounds Check Optimized version of CopyFromHistory32. As per
-// cgen/base-impl.h, the conditions are:
+// optimizeCopyFromHistory32 checks if the code generator can call the Bounds
+// Check Optimized version of CopyFromHistory32. As per cgen/base-impl.h, the
+// conditions are:
 //  - start    != NULL
 //  - distance != 0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
-func (q *checker) bcheckOptimizeCopyFromHistory32(n *a.Expr) error {
+func (q *checker) optimizeCopyFromHistory32(n *a.Expr) error {
 	// The arguments are (distance, length).
 	nReceiver, _, args := splitReceiverMethodArgs(n)
 	if len(args) != 2 {
@@ -190,7 +190,7 @@ check3:
 	return nil
 }
 
-func (q *checker) bcheckOptimizeSuspendible(n *a.Expr, depth uint32) error {
+func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("check: expression recursion depth too large")
 	}
@@ -199,14 +199,14 @@ func (q *checker) bcheckOptimizeSuspendible(n *a.Expr, depth uint32) error {
 	if !n.CallSuspendible() {
 		for _, o := range n.Node().Raw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.bcheckOptimizeSuspendible(o.Expr(), depth); err != nil {
+				if err := q.optimizeSuspendible(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.bcheckOptimizeSuspendible(o.Expr(), depth); err != nil {
+				if err := q.optimizeSuspendible(o.Expr(), depth); err != nil {
 					return err
 				}
 			}
@@ -229,14 +229,14 @@ func (q *checker) bcheckOptimizeSuspendible(n *a.Expr, depth uint32) error {
 
 	if nMethod < t.Key(len(ioMethodAdvances)) {
 		if advance := ioMethodAdvances[nMethod]; advance != nil {
-			return q.bcheckOptimizeIOMethodAdvance(n, nReceiver, advance)
+			return q.optimizeIOMethodAdvance(n, nReceiver, advance)
 		}
 	}
 
 	return nil
 }
 
-func (q *checker) bcheckOptimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
+func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		op := x.ID0().Key()
 		if op != t.KeyXBinaryGreaterEq && op != t.KeyXBinaryGreaterThan {
