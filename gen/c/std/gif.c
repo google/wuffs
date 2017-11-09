@@ -484,8 +484,38 @@ static inline uint32_t puffs_base__writer1__copy_from_history32(
   // copy_from_history32 Puffs method should also take an unroll hint argument,
   // and the cgen can look if that argument is the constant expression '3'.
   //
+  // See also puffs_base__writer1__copy_from_history32__bco below.
+  //
   // Alternatively, or additionally, have a sloppy_copy_from_history32 method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
+  for (; n >= 3; n -= 3) {
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+    *ptr++ = *start++;
+  }
+  for (; n; n--) {
+    *ptr++ = *start++;
+  }
+  *ptr_ptr = ptr;
+  return length;
+}
+
+// puffs_base__writer1__copy_from_history32__bco is a Bounds Check Optimized
+// version of the puffs_base__writer1__copy_from_history32 function above. The
+// caller needs to prove that:
+//  - start    != NULL
+//  - distance != 0
+//  - distance <= (*ptr_ptr - start)
+//  - length   <= (end      - *ptr_ptr)
+static inline uint32_t puffs_base__writer1__copy_from_history32__bco(
+    uint8_t** ptr_ptr,
+    uint8_t* start,
+    uint8_t* end,
+    uint32_t distance,
+    uint32_t length) {
+  uint8_t* ptr = *ptr_ptr;
+  start = ptr - distance;
+  uint32_t n = length;
   for (; n >= 3; n -= 3) {
     *ptr++ = *start++;
     *ptr++ = *start++;
