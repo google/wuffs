@@ -8,8 +8,8 @@ libraries' output. "Mimic" benchmarks give the numbers for those other
 libraries, as shipped with the OS. These were measured on a Debian Testing
 system as of November 2017, which means these compiler versions:
 
-- clang/llvm version 5.0.0
-- gcc version 7.2.0
+- clang/llvm 5.0.0
+- gcc 7.2.0
 
 and these mimic library versions:
 
