@@ -1,11 +1,20 @@
 # Benchmarks
 
-*Preliminary* `puffs bench -mimic` summarized throughput numbers for the GIF
-codec are below. Higher is better.
+*Preliminary* `puffs bench -mimic` summarized throughput numbers for various
+codecs are below. Higher is better.
 
 "Mimic" tests check that Puffs' output mimics (i.e. exactly matches) other
 libraries' output. "Mimic" benchmarks give the numbers for those other
-libraries, as shipped with the OS, measured here on Ubunty 14.04 LTS "Trusty".
+libraries, as shipped with the OS. These were measured on a Debian Testing
+system as of November 2017, which means these compiler versions:
+
+- clang/llvm version 5.0.0
+- gcc version 7.2.0
+
+and these mimic library versions:
+
+- libgif 5.1.4
+- zlib 1.2.8
 
 Unless otherwise stated, these benchmarks were run on an Intel x86_64
 Broadwell.
@@ -66,37 +75,61 @@ power management can be controlled with:
     sudo cpupower frequency-set --governor performance
 
 
+# Flate (including gzip and zlib)
+
+The 1k, 10k, etc. numbers are approximately how many bytes there in the decoded
+output.
+
+    name                             speed
+
+    puffs_adler32_10k/clang          2.42GB/s ± 3%
+    puffs_adler32_100k/clang         2.42GB/s ± 3%
+    puffs_flate_decode_1k/clang       133MB/s ± 3%
+    puffs_flate_decode_10k/clang      199MB/s ± 3%
+    puffs_flate_decode_100k/clang     229MB/s ± 4%
+    puffs_zlib_decode_10k/clang       185MB/s ± 1%
+    puffs_zlib_decode_100k/clang      210MB/s ± 3%
+
+    puffs_adler32_10k/gcc            3.22GB/s ± 1%
+    puffs_adler32_100k/gcc           3.23GB/s ± 0%
+    puffs_flate_decode_1k/gcc         152MB/s ± 1%
+    puffs_flate_decode_10k/gcc        250MB/s ± 1%
+    puffs_flate_decode_100k/gcc       298MB/s ± 1%
+    puffs_zlib_decode_10k/gcc         238MB/s ± 2%
+    puffs_zlib_decode_100k/gcc        270MB/s ± 2%
+
+    mimic_adler32_10k                3.00GB/s ± 1%
+    mimic_adler32_100k               2.91GB/s ± 2%
+    mimic_flate_decode_1k             211MB/s ± 1%
+    mimic_flate_decode_10k            270MB/s ± 2%
+    mimic_flate_decode_100k           285MB/s ± 1%
+    mimic_zlib_decode_10k             250MB/s ± 2%
+    mimic_zlib_decode_100k            294MB/s ± 2%
+
+
 # GIF
 
 The 1k, 10k, etc. numbers are approximately how many bytes of pixel data there
-is in the decoded image. For example, the `test/testdata/harvesters.*` images
+are in the decoded image. For example, the `test/testdata/harvesters.*` images
 are 1165 × 859 (approximately 1000k pixels) and a GIF image (a paletted image)
 is 1 byte per pixel.
 
     name                             speed
-    puffs_gif_decode_1k/clang         335MB/s ± 2%
-    puffs_gif_decode_10k/clang        124MB/s ± 1%
-    puffs_gif_decode_100k/clang       113MB/s ± 1%
-    puffs_gif_decode_1000k/clang      115MB/s ± 1%
 
-    mimic_gif_decode_1k/clang         154MB/s ± 1%
-    mimic_gif_decode_10k/clang       91.1MB/s ± 0%
-    mimic_gif_decode_100k/clang      97.1MB/s ± 1%
-    mimic_gif_decode_1000k/clang     98.7MB/s ± 2%
+    puffs_gif_decode_1k/clang         346MB/s ± 1%
+    puffs_gif_decode_10k/clang        137MB/s ± 0%
+    puffs_gif_decode_100k/clang       118MB/s ± 0%
+    puffs_gif_decode_1000k/clang      120MB/s ± 0%
 
-    puffs_gif_decode_1k/gcc           395MB/s ± 1%
-    puffs_gif_decode_10k/gcc          161MB/s ± 2%
-    puffs_gif_decode_100k/gcc         134MB/s ± 2%
-    puffs_gif_decode_1000k/gcc        138MB/s ± 1%
+    puffs_gif_decode_1k/gcc           399MB/s ± 1%
+    puffs_gif_decode_10k/gcc          141MB/s ± 0%
+    puffs_gif_decode_100k/gcc         128MB/s ± 0%
+    puffs_gif_decode_1000k/gcc        131MB/s ± 0%
 
-    mimic_gif_decode_1k/gcc           154MB/s ± 1%
-    mimic_gif_decode_10k/gcc         90.8MB/s ± 2%
-    mimic_gif_decode_100k/gcc        97.7MB/s ± 0%
-    mimic_gif_decode_1000k/gcc       98.7MB/s ± 0%
-
-The mimic numbers measure the pre-compiled library that shipped with the OS, so
-it is unsurprising that they don't depend on the C compiler (clang or gcc) used
-to run the test harness.
+    mimic_gif_decode_1k               147MB/s ± 0%
+    mimic_gif_decode_10k             90.7MB/s ± 0%
+    mimic_gif_decode_100k            95.4MB/s ± 0%
+    mimic_gif_decode_1000k           97.8MB/s ± 0%
 
 
 ---
