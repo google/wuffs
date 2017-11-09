@@ -98,6 +98,10 @@ const (
 	FlagsGlobalIdent     = Flags(0x00000100)
 )
 
+// flagsThatMatterForEq is the bitwise or of all flags that matter for the
+// Expr.Eq method.
+const flagsThatMatterForEq = Flags(0x0000FFFF)
+
 // These flags are set by the bounds checker to generate optimized code.
 const (
 	// FlagsProvenNotToSuspend notes that a method such as read_u8 or

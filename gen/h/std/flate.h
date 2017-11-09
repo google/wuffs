@@ -159,17 +159,19 @@ typedef int32_t puffs_flate__status;
   -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
   -1157040115  // 0xbb08f80d
+#define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
+  -1157040114  // 0xbb08f80e
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040114                                                     // 0xbb08f80e
-#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040113  // 0xbb08f80f
-#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040112           // 0xbb08f810
+  -1157040113                                                     // 0xbb08f80f
+#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040112  // 0xbb08f810
+#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040111           // 0xbb08f811
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040111  // 0xbb08f811
+  -1157040110  // 0xbb08f812
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040110                                                     // 0xbb08f812
-#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040109  // 0xbb08f813
+  -1157040109                                                     // 0xbb08f813
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040108  // 0xbb08f814
 #define PUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040108  // 0xbb08f814
+  -1157040107  // 0xbb08f815
 
 bool puffs_flate__status__is_error(puffs_flate__status s);
 

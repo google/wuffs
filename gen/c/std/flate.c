@@ -159,17 +159,19 @@ typedef int32_t puffs_flate__status;
   -1157040116  // 0xbb08f80c
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
   -1157040115  // 0xbb08f80d
+#define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
+  -1157040114  // 0xbb08f80e
 #define PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040114                                                     // 0xbb08f80e
-#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040113  // 0xbb08f80f
-#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040112           // 0xbb08f810
+  -1157040113                                                     // 0xbb08f80f
+#define PUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040112  // 0xbb08f810
+#define PUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040111           // 0xbb08f811
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040111  // 0xbb08f811
+  -1157040110  // 0xbb08f812
 #define PUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040110                                                     // 0xbb08f812
-#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040109  // 0xbb08f813
+  -1157040109                                                     // 0xbb08f813
+#define PUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040108  // 0xbb08f814
 #define PUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040108  // 0xbb08f814
+  -1157040107  // 0xbb08f815
 
 bool puffs_flate__status__is_error(puffs_flate__status s);
 
@@ -672,7 +674,7 @@ const char* puffs_flate__status__strings0[10] = {
     "flate: short write",
 };
 
-const char* puffs_flate__status__strings1[21] = {
+const char* puffs_flate__status__strings1[22] = {
     "flate: bad Huffman code (over-subscribed)",
     "flate: bad Huffman code (under-subscribed)",
     "flate: bad Huffman code length count",
@@ -687,6 +689,7 @@ const char* puffs_flate__status__strings1[21] = {
     "flate: inconsistent stored block length",
     "flate: internal error: inconsistent Huffman decoder state",
     "flate: internal error: inconsistent Huffman end_of_block",
+    "flate: internal error: inconsistent distance",
     "flate: internal error: inconsistent n_bits",
     "flate: missing end-of-block code",
     "flate: no Huffman codes",
@@ -706,7 +709,7 @@ const char* puffs_flate__status__string(puffs_flate__status s) {
       break;
     case puffs_flate__packageid:
       a = puffs_flate__status__strings1;
-      n = 21;
+      n = 22;
       break;
   }
   uint32_t i = s & 0xff;
@@ -2266,6 +2269,18 @@ label_0_continue:;
       label_1_break:;
         if (v_length == 0) {
           goto label_0_continue;
+        }
+        if (((uint64_t)(v_distance)) >
+            ((uint64_t)(
+                ((puffs_base__slice_u8){
+                     .ptr = a_dst.private_impl.mark,
+                     .len = a_dst.private_impl.mark
+                                ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
+                                : 0,
+                 })
+                    .len))) {
+          status = PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE;
+          goto exit;
         }
       }
       puffs_base__writer1__copy_from_history32(

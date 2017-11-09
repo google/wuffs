@@ -268,6 +268,7 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
 		while true,
+			pre in.dst.available() >= 258,
 			inv in.dst.is_marked(),
 		{
 			// Copy from this.history.
@@ -298,8 +299,12 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 				// "etc", but its presence minimizes the diff between
 				// decode_huffman_fast and decode_huffman_slow.
 				while true,
+					inv in.dst.available() >= 258,
 					inv in.dst.is_marked(),
 				{
+					// TODO: copy_from_slice32 should probably update the
+					// "in.dst.available() >= 258" fact. It should certainly
+					// invalidate any fact that was "<=" instead of ">=".
 					n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
 					if hlen <= n_copied {
 						break
@@ -313,7 +318,15 @@ pri func flate_decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 					// No need to copy from in.dst.
 					continue:loop
 				}
+
+				if (distance as u64) > in.dst.since_mark().length() {
+					return error "internal error: inconsistent distance"
+				}
 			}
+			// Once again, redundant but explicit assertions.
+			assert in.dst.available() >= 258
+			assert in.dst.is_marked()
+			assert (distance as u64) <= in.dst.since_mark().length()
 
 			// Copy from in.dst.
 			in.dst.copy_from_history32(distance:distance, length:length)
