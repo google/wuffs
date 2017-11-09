@@ -235,8 +235,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromHistory32, 2) {
-			b.printf("puffs_base__writer1__copy_from_history32(&%swptr_dst, %sdst.private_impl.mark , %swend_dst",
-				bPrefix, aPrefix, bPrefix)
+			bco := ""
+			if n.BoundsCheckOptimized() {
+				bco = "__bco"
+			}
+			b.printf("puffs_base__writer1__copy_from_history32%s(&%swptr_dst, %sdst.private_impl.mark , %swend_dst",
+				bco, bPrefix, aPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {

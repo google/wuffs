@@ -1165,17 +1165,18 @@ func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
 	return b[0], b[1], nil
 }
 
-// splitReceiverMethod returns the "receiver" and "method" in the expression
-// "receiver.method(etc)".
-func splitReceiverMethod(n *a.Expr) (receiver *a.Expr, method t.Key) {
+// splitReceiverMethodArgs returns the "receiver", "method" and "args" in the
+// expression "receiver.method(args)".
+func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.Key, args []*a.Node) {
 	if n.ID0().Key() != t.KeyOpenParen {
-		return nil, 0
+		return nil, 0, nil
 	}
+	args = n.Args()
 	n = n.LHS().Expr()
 	if n.ID0().Key() != t.KeyDot {
-		return nil, 0
+		return nil, 0, nil
 	}
-	return n.LHS().Expr(), n.ID1().Key()
+	return n.LHS().Expr(), n.ID1().Key(), args
 }
 
 // TODO: should bcheckOptimizeNonSuspendible be bcheckOptimizeExpr and check
@@ -1188,16 +1189,19 @@ func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
 	//
 	// Should we have an explicit "foo = call bar?()" syntax?
 
-	nReceiver, nMethod := splitReceiverMethod(n)
+	nReceiver, nMethod, _ := splitReceiverMethodArgs(n)
 	if nReceiver == nil {
 		return nil
 	}
 
 	// TODO: check that nReceiver's type is actually a reader1 or writer1.
 
-	if nMethod == t.KeySinceMark {
+	switch nMethod {
+	case t.KeyCopyFromHistory32:
+		return q.bcheckOptimizeCopyFromHistory32(n)
+	case t.KeySinceMark:
 		for _, x := range q.facts {
-			xReceiver, xMethod := splitReceiverMethod(x)
+			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
 			if xMethod == t.KeyIsMarked && xReceiver.Eq(nReceiver) {
 				n.SetBoundsCheckOptimized()
 				return nil
@@ -1205,6 +1209,127 @@ func (q *checker) bcheckOptimizeNonSuspendible(n *a.Expr) error {
 		}
 	}
 
+	return nil
+}
+
+// bcheckOptimizeCopyFromHistory32 checks if the code generator can call the
+// Bounds Check Optimized version of CopyFromHistory32. As per
+// cgen/base-impl.h, the conditions are:
+//  - start    != NULL
+//  - distance != 0
+//  - distance <= (*ptr_ptr - start)
+//  - length   <= (end      - *ptr_ptr)
+func (q *checker) bcheckOptimizeCopyFromHistory32(n *a.Expr) error {
+	// The arguments are (distance, length).
+	nReceiver, _, args := splitReceiverMethodArgs(n)
+	if len(args) != 2 {
+		return nil
+	}
+	d := args[0].Arg().Value()
+	l := args[1].Arg().Value()
+
+	// Check "start != NULL".
+check0:
+	for {
+		for _, x := range q.facts {
+			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
+			if xMethod == t.KeyIsMarked && xReceiver.Eq(nReceiver) {
+				break check0
+			}
+		}
+		return nil
+	}
+
+	// Check "distance != 0".
+	//
+	// TODO: check that typeof(distance) is an unsigned integer type, so that
+	// an equivalent test is "distance > 0".
+check1:
+	for {
+		for _, x := range q.facts {
+			if x.ID0().Key() != t.KeyXBinaryGreaterThan {
+				continue
+			}
+			if lhs := x.LHS().Expr(); !lhs.Eq(d) {
+				continue
+			}
+			if rcv := x.RHS().Expr().ConstValue(); rcv == nil || rcv.Cmp(zero) != 0 {
+				continue
+			}
+			break check1
+		}
+		return nil
+	}
+
+	// Check "distance <= (*ptr_ptr - start)".
+check2:
+	for {
+		for _, x := range q.facts {
+			if x.ID0().Key() != t.KeyXBinaryLessEq {
+				continue
+			}
+
+			// Check that the LHS is "d as u64".
+			lhs := x.LHS().Expr()
+			if lhs.ID0().Key() != t.KeyXBinaryAs {
+				continue
+			}
+			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
+			if !llhs.Eq(d) || !lrhs.Eq(typeExprU64) {
+				continue
+			}
+
+			// Check that the RHS is "nReceiver.since_mark().length()".
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
+			if method != t.KeyLength || len(yArgs) != 0 {
+				continue
+			}
+			z, method, zArgs := splitReceiverMethodArgs(y)
+			if method != t.KeySinceMark || len(zArgs) != 0 {
+				continue
+			}
+			if !z.Eq(nReceiver) {
+				continue
+			}
+
+			break check2
+		}
+		return nil
+	}
+
+	// Check "length <= (end - *ptr_ptr)".
+check3:
+	for {
+		for _, x := range q.facts {
+			if x.ID0().Key() != t.KeyXBinaryLessEq {
+				continue
+			}
+
+			// Check that the LHS is "l as u64".
+			lhs := x.LHS().Expr()
+			if lhs.ID0().Key() != t.KeyXBinaryAs {
+				continue
+			}
+			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
+			if !llhs.Eq(l) || !lrhs.Eq(typeExprU64) {
+				continue
+			}
+
+			// Check that the RHS is "nReceiver.available()".
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
+			if method != t.KeyAvailable || len(yArgs) != 0 {
+				continue
+			}
+			if !y.Eq(nReceiver) {
+				continue
+			}
+
+			break check3
+		}
+		return nil
+	}
+
+	n.SetBoundsCheckOptimized()
 	return nil
 }
 
@@ -1232,7 +1357,7 @@ func (q *checker) bcheckOptimizeSuspendible(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	nReceiver, nMethod := splitReceiverMethod(n)
+	nReceiver, nMethod, _ := splitReceiverMethodArgs(n)
 	if nReceiver == nil {
 		return nil
 	}

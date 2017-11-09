@@ -2327,7 +2327,7 @@ label_0_continue:;
           goto exit;
         }
       }
-      puffs_base__writer1__copy_from_history32(
+      puffs_base__writer1__copy_from_history32__bco(
           &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
           v_length);
       goto label_2_break;
