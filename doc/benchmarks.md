@@ -16,8 +16,9 @@ and these mimic library versions:
 - libgif 5.1.4
 - zlib 1.2.8
 
-Unless otherwise stated, these benchmarks were run on an Intel x86_64
-Broadwell.
+Unless otherwise stated, the numbers below were measured on an Intel x86_64
+Broadwell, and were taken as of git commit "693af47 Rename some
+bcheckOptimizeXxx methods."
 
 
 ## Reproducing
@@ -130,6 +131,14 @@ is 1 byte per pixel.
     mimic_gif_decode_10k             90.7MB/s ± 0%
     mimic_gif_decode_100k            95.4MB/s ± 0%
     mimic_gif_decode_1000k           97.8MB/s ± 0%
+
+TODO: investigate why gcc 4.8 (Ubuntu Trusty) seems to generate faster code
+than gcc 7.2 (Debian Testing):
+
+    puffs_gif_decode_1k/gcc           411MB/s ± 2%
+    puffs_gif_decode_10k/gcc          162MB/s ± 0%
+    puffs_gif_decode_100k/gcc         138MB/s ± 0%
+    puffs_gif_decode_1000k/gcc        141MB/s ± 0%
 
 
 ---
