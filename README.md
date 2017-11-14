@@ -197,9 +197,9 @@ might only need the .c files, not the .h files, as the .c files are designed to
 be a [drop-in library](http://gpfault.net/posts/drop-in-libraries.txt.html).
 For example, if you want a GIF decoder, you only need `gif.c`. See TODO for an
 example. More complicated decoders might require multiple .c files - multiple
-modules. For example, the PNG codec (TODO) requires the flate codec (TODO), but
-they are separate files, since HTTP can use also flate compression (also known
-as gzip or zlib, roughly speaking) without necessarily processing PNG images.
+modules. For example, the PNG codec (TODO) requires the flate codec, but they
+are separate files, since HTTP can use also flate compression (also known as
+gzip or zlib, roughly speaking) without necessarily processing PNG images.
 
 
 ## Getting Deeper
@@ -208,17 +208,15 @@ If you want to modify the Puffs standard library, or compile your own Puffs
 code, you will need to do a little more work, and will have to install at least
 the Go toolchain in order to build the Puffs tools. To run the test suite, you
 might also have to install C compilers like clang and gcc, as well as C
-libraries (and their .h files) like libjpeg and libpng, as some tests (TODO)
-compare that Puffs produces exactly the same output as these other libraries.
+libraries (and their .h files) like libjpeg and libpng, as some tests compare
+that Puffs produces exactly the same output as these other libraries.
 
-Puffs is not published yet, but the working assumption is that the eventual
-home of the software project will be at `github.com/google/puffs`. After
-cloning the repository, move it to that path under your `$GOPATH`.
-
-Running `go install -v github.com/google/puffs/cmd/...` will then install the
-Puffs tools. The ones that you'll most often use are `puffsfmt` (analogous to
-`clang-format`, `gofmt` or `rustfmt`) and `puffs` (roughly analogous to `make`,
-`go` or `cargo`).
+Running `go get -v github.com/google/puffs/cmd/...` will download and install
+the Puffs tools. Change `get` to `install` to re-install those programs without
+downloading, e.g. after you've modified their source code, or after a manually
+issued `git pull`. The Puffs tools that you'll most often use are `puffsfmt`
+(analogous to `clang-format`, `gofmt` or `rustfmt`) and `puffs` (roughly
+analogous to `make`, `go` or `cargo`).
 
 You should now be able to run `puffs test`. If all goes well, you should see
 some output containing the word "PASS" multiple times.
@@ -319,7 +317,8 @@ brushstrokes are there.
 
 # Discussion
 
-TODO: set up a mailing list.
+The mailing list is at
+[https://groups.google.com/forum/#!forum/puffslang](https://groups.google.com/forum/#!forum/puffslang).
 
 
 # Contributing
