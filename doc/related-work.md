@@ -61,11 +61,23 @@ of the Ada programming language, which again is more complicated than Puffs. It
 also allows for pluggable theorem provers such as Z3, similar to
 [Dafny](http://research.microsoft.com/dafny). This can increase programmer
 productivity in that it can take less effort to prove more programs safe, but
-it also affects reproducibility: when some programs that are provable in one
-programmer's configuration are unprovable in another. It's also not obvious up
-front what effect different theorem provers, and their different heuristics,
-will have on compile times or proof times. In constrast, Puffs' proof system is
-fast (and dumb) instead of smart (and slow).
+it also affects reproducibility (when some programs that are provable in one
+programmer's configuration are unprovable in another) and the size of the
+trusted computing base. It's also not obvious up front what effect different
+theorem provers, and their different heuristics, will have on compile times or
+proof times.
+
+In constrast, Puffs' proof system is fast (and dumb) instead of smart (and
+slow). For example, [Vale (Verified Assembly Language for
+Everest)](https://github.com/project-everest/vale) is a promising approach that
+uses Dafny to verify implementations of cryptographic algorithms. However,
+["Vale: Verifying High-Performance Cryptographic Assembly
+Code"](http://www.andrew.cmu.edu/user/bparno/papers/vale.pdf) reports in Table
+1 that verification times are measured in *minutes*. Puffs aims for
+*sub-second* compilation times, including proofs of safety.
+
+Once again, we're not claiming that these other approaches are unworkable, or
+not useful, just different, with different trade-offs.
 
 
 ## Why a New Language?
@@ -103,12 +115,12 @@ HTTPS"](https://project-everest.github.io/assets/snapl2017.pdf) and ["Verified
 Low-Level Programming Embedded in F\*"](https://arxiv.org/pdf/1703.00053.pdf).
 
 [Cryptol](https://github.com/GaloisInc/cryptol) is another project that, like
-F\* / KreMLin and its HACL\* sub-project, focuses on cryptographic algorithms,
-rather than Puffs' focus on file formats, and also relies on a sophisticated
-theorem prover like Z3.
+Everest (including F\* / KreMLin and its HACL\* sub-project, and Dafny / Vale),
+focuses on cryptographic algorithms, rather than Puffs' focus on file formats,
+and also relies on a sophisticated theorem prover like Z3.
 
-Once again, we're not claiming that such projects are unworkable, just
-different, with different trade-offs.
+Once again, we're not claiming that these other approaches are unworkable, or
+not useful, just different, with different trade-offs.
 
 
 ## Why Not Rust?
@@ -118,30 +130,31 @@ anywhere that has a C99 compliant C compiler. An existing C/C++ project, such
 as the Chromium web browser, can choose to replace e.g. libpng with Puffs PNG,
 without needing any additional toolchains. Sure, languages like D and Rust have
 great binary-level interop with C code, and Mozilla are reporting progress with
-parsing media formats in Rust, but it's still a non-zero operational hurdle to
-grow a project's build process and to assess build times and binary sizes.
+parsing media formats in Rust, but it's still an operational hurdle to grow a
+project's build process and to assess build times and binary sizes.
 
-[Nom](https://github.com/Geal/nom) is a
-[promising](http://spw17.langsec.org/papers/chifflier-parsing-in-2017.pdf)
-parser combinator library, in Rust. Puffs differs from nom by itself, in that
-Puffs is an end to end implementation, not limited to that part of a file
-format that is easily expressible as a formal grammar. In particular, it also
-handles entropy encodings such as LZW (for GIF), ZLIB (for PNG) and Huffman
-(for JPEG, TODO). Puffs differs from nom combined with other Rust code (e.g. a
-Rust LZW implementation) in that bounds and overflow checks not just ubiquitous
-but also completely eliminated at compile time.
+[Nom](https://github.com/Geal/nom) is a parser combinator library in Rust,
+described in ["Writing parsers like it is
+2017"](http://spw17.langsec.org/papers/chifflier-parsing-in-2017.pdf). Puffs
+differs from nom by itself, in that Puffs is an end to end implementation, not
+limited to that part of a file format that is easily expressible as a formal
+grammar. In particular, it also handles entropy encodings such as LZW (for
+GIF), ZLIB (for PNG) and Huffman (for JPEG, TODO). Puffs differs from nom
+combined with other Rust code (e.g. a Rust LZW implementation) in that bounds
+and overflow checks not just ubiquitous but also completely eliminated at
+compile time.
 
-[Kaitai Struct](http://kaitai.io/) is a similar project that also generates
-safe parsers, for multiple target programming languages. Again, Puffs differs
-in that it is a complete (and performant) end to end implementation, not just
-for the structured parts of a file format. For example, the difficulty in
-decoding the GIF format isn't in the regularly-expressible part of the format,
-it's in the LZW compression. [Kaitai's GIF
-parser](http://formats.kaitai.io/gif/index.html) returns the compressed LZW
-data as an opaque blob.
+[Kaitai Struct](http://kaitai.io/) is in a similar space, generating safe
+parsers for multiple target programming languages from one declarative
+specification. Again, Puffs differs in that it is a complete (and performant)
+end to end implementation, not just for the structured parts of a file format.
+Repeating a point in the previous paragraph, the difficulty in decoding the GIF
+format isn't in the regularly-expressible part of the format, it's in the LZW
+compression. [Kaitai's GIF parser](http://formats.kaitai.io/gif/index.html)
+returns the compressed LZW data as an opaque blob.
 
-Once again, we're not claiming that nom or Rust are unworkable, or that Kaitai
-is not useful, just different.
+Once again, we're not claiming that these other approaches are unworkable, or
+not useful, just different, with different trade-offs.
 
 
 ---
