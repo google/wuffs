@@ -82,14 +82,33 @@ despite the long history of functional languages and provability. Inner loop
 performance usage matters, and it is easier to match the optimization
 techniques of incumbent C libraries with a C-like language than with a
 functional language. Compared to something like
-[F*](https://www.fstar-lang.org/), [Idris](https://www.idris-lang.org/) or
-[Liquid Haskell](https://ucsd-progsys.github.io/liquidhaskell-blog/), Puffs
-has no garbage collector overhead, as it has no garbage collector.
+[F\*](https://www.fstar-lang.org/), [Idris](https://www.idris-lang.org/) or
+[Liquid Haskell](https://ucsd-progsys.github.io/liquidhaskell-blog/), Puffs has
+no garbage collector overhead, as it has no garbage collector.
 
 Memory usage also matters, again considering per-pixel costs can be multiplied
 by millions of pixels. It is important to represent e.g. an RGBA pixel as four
 u8 values (or one u32), not as four naturally-sized-for-the-CPU integers or
 four 'big integers'.
+
+[F\* / KreMLin](https://github.com/FStarLang/kremlin) is a subset of F\* that
+is similar in some sense to Puffs, in that it transpiles to C and cares about
+both safety and performance. Unlike Puffs, it is a functional language (with
+dependent types), not an imperative one (with a simpler type system), and uses
+a sophisticated theorem prover like Z3, with the same trade-offs as discussed
+above for Spark ADA and Dafny. It also tackles a more complicated problem, in
+attempting to prove correctness properties, not just safety properties. Further
+reading is in ["Everest: Towards a Verified, Drop-in Replacement of
+HTTPS"](https://project-everest.github.io/assets/snapl2017.pdf) and ["Verified
+Low-Level Programming Embedded in F\*"](https://arxiv.org/pdf/1703.00053.pdf).
+
+[Cryptol](https://github.com/GaloisInc/cryptol) is another project that, like
+F\* / KreMLin and its HACL\* sub-project, focuses on cryptographic algorithms,
+rather than Puffs' focus on file formats, and also relies on a sophisticated
+theorem prover like Z3.
+
+Once again, we're not claiming that such projects are unworkable, just
+different, with different trade-offs.
 
 
 ## Why Not Rust?
@@ -112,9 +131,19 @@ handles entropy encodings such as LZW (for GIF), ZLIB (for PNG) and Huffman
 Rust LZW implementation) in that bounds and overflow checks not just ubiquitous
 but also completely eliminated at compile time.
 
-Once again, we're not claiming that nom or Rust are unworkable, just different.
+[Kaitai Struct](http://kaitai.io/) is a similar project that also generates
+safe parsers, for multiple target programming languages. Again, Puffs differs
+in that it is a complete (and performant) end to end implementation, not just
+for the structured parts of a file format. For example, the difficulty in
+decoding the GIF format isn't in the regularly-expressible part of the format,
+it's in the LZW compression. [Kaitai's GIF
+parser](http://formats.kaitai.io/gif/index.html) returns the compressed LZW
+data as an opaque blob.
+
+Once again, we're not claiming that nom or Rust are unworkable, or that Kaitai
+is not useful, just different.
 
 
 ---
 
-Updated on August 2017.
+Updated on November 2017.
