@@ -1,8 +1,3 @@
-# We are moving to https://github.com/google/puffs
-
----
-
-
 # Parsing Untrusted File Formats Safely
 
 Puffs is a domain-specific language and library for parsing untrusted file
