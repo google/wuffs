@@ -74,7 +74,13 @@ uses Dafny to verify implementations of cryptographic algorithms. However,
 ["Vale: Verifying High-Performance Cryptographic Assembly
 Code"](http://www.andrew.cmu.edu/user/bparno/papers/vale.pdf) reports in Table
 1 that verification times are measured in *minutes*. Puffs aims for
-*sub-second* compilation times, including proofs of safety.
+*sub-second* compilation times, including proofs of (memory) safety. Figure 15
+in that paper suggests that Vale's verification times can grow exponentially in
+some cases, and also goes on to say, "Dafny/Z3 fails to verify the AES key
+inversion for 6 unrolled iterations and 9 unrolled iterations, indicating that
+SMT solvers like Z3 are still occasionally unpredictable". Of course, Vale is
+also tackling a much harder problem than Puffs: proving correctness, not just
+safety.
 
 Once again, we're not claiming that these other approaches are unworkable, or
 not useful, just different, with different trade-offs.
