@@ -26,7 +26,6 @@ bcheckOptimizeXxx methods."
 The benchmark programs aim to be runnable "out of the box" without any
 configuration or installation. For example, to run the `std/flate` benchmarks:
 
-    # TODO: confirm that we will live at github.com/google/puffs
     git clone https://github.com/google/puffs.git
     cd puffs/test/c/std
     gcc -O3 flate.c
