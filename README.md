@@ -42,83 +42,88 @@ For example, making this one-line edit to the GIF codec leads to a compile time
 error. `puffs gen` fails to generate the C code, i.e. fails to compile
 (transpile) the Puffs code to C code:
 
-    $ git diff
-    diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
-    index f878c5e..f10dcee 100644
-    --- a/std/gif/decode_lzw.puffs
-    +++ b/std/gif/decode_lzw.puffs
-    @@ -98,7 +98,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
-                            in.dst.write?(x:s)
+```diff
+diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
+index f878c5e..f10dcee 100644
+--- a/std/gif/decode_lzw.puffs
++++ b/std/gif/decode_lzw.puffs
+@@ -98,7 +98,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
+                        in.dst.write?(x:s)
 
-                            if use_save_code {
-    -                               this.suffixes[save_code] = c as u8
-    +                               this.suffixes[save_code] = (c + 1) as u8
-                                    this.prefixes[save_code] = prev_code as u16
-                            }
+                        if use_save_code {
+-                               this.suffixes[save_code] = c as u8
++                               this.suffixes[save_code] = (c + 1) as u8
+                                this.prefixes[save_code] = prev_code as u16
+                        }
+```
 
-    $ puffs gen std/gif
-    check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
-    /home/n/go/src/github.com/google/puffs/std/gif/decode_lzw.puffs:101. Facts:
-        n_bits < 8
-        c < 256
-        this.stack[s] == (c as u8)
-        use_save_code
+```bash
+$ puffs gen std/gif
+check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
+/home/n/go/src/github.com/google/puffs/std/gif/decode_lzw.puffs:101. Facts:
+    n_bits < 8
+    c < 256
+    this.stack[s] == (c as u8)
+    use_save_code
+```
 
 In comparison, this two-line edit will compile (but the "does it decode GIF
 correctly" tests then fail):
 
-    $ git diff
-    diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
-    index f878c5e..b43443d 100644
-    --- a/std/gif/decode_lzw.puffs
-    +++ b/std/gif/decode_lzw.puffs
-    @@ -97,8 +97,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
-                            // type checking, bounds checking and code generation for it).
-                            in.dst.write?(x:s)
+```diff
+diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
+index f878c5e..b43443d 100644
+--- a/std/gif/decode_lzw.puffs
++++ b/std/gif/decode_lzw.puffs
+@@ -97,8 +97,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
+                        // type checking, bounds checking and code generation for it).
+                        in.dst.write?(x:s)
 
-    -                       if use_save_code {
-    -                               this.suffixes[save_code] = c as u8
-    +                       if use_save_code and (c < 200) {
-    +                               this.suffixes[save_code] = (c + 1) as u8
-                                    this.prefixes[save_code] = prev_code as u16
-                            }
+-                       if use_save_code {
+-                               this.suffixes[save_code] = c as u8
++                       if use_save_code and (c < 200) {
++                               this.suffixes[save_code] = (c + 1) as u8
+                                this.prefixes[save_code] = prev_code as u16
+                        }
+```
 
-    $ puffs gen std/gif
-    gen wrote:      /home/n/go/src/github.com/google/puffs/gen/c/gif.c
-    gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
-    $ puffs test std/gif
-    gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/c/gif.c
-    gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
-    test:           /home/n/go/src/github.com/google/puffs/test/c/gif
-    gif/basic.c     clang   PASS (8 tests run)
-    gif/basic.c     gcc     PASS (8 tests run)
-    gif/gif.c       clang   FAIL test_lzw_decode: bufs1_equal: wi: got 19311, want 19200.
-    contents differ at byte 3 (in hex: 0x000003):
-      000000: dcdc dc00 00d9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
-      000010: 3a3b 618e c8e4 e4e4 e5e4 e600 00e4 bbbb  :;a.............
-      000020: eded 8f91 9191 9090 9090 9190 9192 9192  ................
-      000030: 9191 9292 9191 9293 93f0 f0f0 f1f1 f2f2  ................
-    excerpts of got (above) versus want (below):
-      000000: dcdc dcdc dcd9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
-      000010: 3a3a 618e c8e4 e4e4 e5e4 e6e4 e4e4 bbbb  ::a.............
-      000020: eded 8f91 9191 9090 9090 9090 9191 9191  ................
-      000030: 9191 9191 9191 9193 93f0 f0f0 f1f1 f2f2  ................
+```bash
+$ puffs gen std/gif
+gen wrote:      /home/n/go/src/github.com/google/puffs/gen/c/gif.c
+gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
+$ puffs test std/gif
+gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/c/gif.c
+gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
+test:           /home/n/go/src/github.com/google/puffs/test/c/gif
+gif/basic.c     clang   PASS (8 tests run)
+gif/basic.c     gcc     PASS (8 tests run)
+gif/gif.c       clang   FAIL test_lzw_decode: bufs1_equal: wi: got 19311, want 19200.
+contents differ at byte 3 (in hex: 0x000003):
+  000000: dcdc dc00 00d9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
+  000010: 3a3b 618e c8e4 e4e4 e5e4 e600 00e4 bbbb  :;a.............
+  000020: eded 8f91 9191 9090 9090 9190 9192 9192  ................
+  000030: 9191 9292 9191 9293 93f0 f0f0 f1f1 f2f2  ................
+excerpts of got (above) versus want (below):
+  000000: dcdc dcdc dcd9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
+  000010: 3a3a 618e c8e4 e4e4 e5e4 e6e4 e4e4 bbbb  ::a.............
+  000020: eded 8f91 9191 9090 9090 9090 9191 9191  ................
+  000030: 9191 9191 9191 9193 93f0 f0f0 f1f1 f2f2  ................
 
-    gif/gif.c       gcc     FAIL test_lzw_decode: bufs1_equal: wi: got 19311, want 19200.
-    contents differ at byte 3 (in hex: 0x000003):
-      000000: dcdc dc00 00d9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
-      000010: 3a3b 618e c8e4 e4e4 e5e4 e600 00e4 bbbb  :;a.............
-      000020: eded 8f91 9191 9090 9090 9190 9192 9192  ................
-      000030: 9191 9292 9191 9293 93f0 f0f0 f1f1 f2f2  ................
-    excerpts of got (above) versus want (below):
-      000000: dcdc dcdc dcd9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
-      000010: 3a3a 618e c8e4 e4e4 e5e4 e6e4 e4e4 bbbb  ::a.............
-      000020: eded 8f91 9191 9090 9090 9090 9191 9191  ................
-      000030: 9191 9191 9191 9193 93f0 f0f0 f1f1 f2f2  ................
+gif/gif.c       gcc     FAIL test_lzw_decode: bufs1_equal: wi: got 19311, want 19200.
+contents differ at byte 3 (in hex: 0x000003):
+  000000: dcdc dc00 00d9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
+  000010: 3a3b 618e c8e4 e4e4 e5e4 e600 00e4 bbbb  :;a.............
+  000020: eded 8f91 9191 9090 9090 9190 9192 9192  ................
+  000030: 9191 9292 9191 9293 93f0 f0f0 f1f1 f2f2  ................
+excerpts of got (above) versus want (below):
+  000000: dcdc dcdc dcd9 f5f9 f6df dc5f 393a 3a3a  ..........._9:::
+  000010: 3a3a 618e c8e4 e4e4 e5e4 e6e4 e4e4 bbbb  ::a.............
+  000020: eded 8f91 9191 9090 9090 9090 9191 9191  ................
+  000030: 9191 9191 9191 9193 93f0 f0f0 f1f1 f2f2  ................
 
-    puffs-test-c: some tests failed
-    puffs test: some tests failed
-
+puffs-test-c: some tests failed
+puffs test: some tests failed
+```
 
 # Background
 
