@@ -60,8 +60,8 @@ u16, etc.
 
 ## Operators
 
-All binary operators have equal precedence. `a * b + c` is an invalid
-expression. You must explicitly write either `(a * b) + c` or `a * (b + c)`.
+There is no operator precedence. `a * b + c` is an invalid expression. You must
+explicitly write either `(a * b) + c` or `a * (b + c)`.
 
 Some binary operators (`+`, `*`, `&`, `|`, `^`, `and`, `or`) are also
 associative: `(a + b) + c` and `a + (b + c)` are equivalent, and can be written
@@ -292,4 +292,4 @@ buffers of bytes, such as an I/O stream or a table of pixel data.
 
 ---
 
-Updated on August 2017.
+Updated on November 2017.
