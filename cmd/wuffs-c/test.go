@@ -142,7 +142,7 @@ func findPuffsMimicCflags(filename string) ([]string, error) {
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		t := s.Text()
-		const prefix = "// !! puffs mimic cflags:"
+		const prefix = "// !! wuffs mimic cflags:"
 		if strings.HasPrefix(t, prefix) {
 			t = strings.TrimSpace(t[len(prefix):])
 			return strings.Split(t, " "), nil

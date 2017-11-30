@@ -22,7 +22,7 @@
 #define BUFFER_SIZE (64 * 1024 * 1024)
 #define PALETTE_BUFFER_SIZE (4 * 245)
 
-#define PUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
@@ -82,10 +82,10 @@ bool check_focus() {
       // copy/paste a string with a trailing comma.
     } else {
       // Strip a leading "Benchmark", if present, from the [p, q) string.
-      // Idiomatic C function names look like "test_puffs_gif_lzw_decode_pi"
+      // Idiomatic C function names look like "test_wuffs_gif_lzw_decode_pi"
       // and won't start with "Benchmark". Stripping lets us conveniently
-      // copy/paste a string like "Benchmarkpuffs_gif_decode_10k/gcc" from the
-      // "puffs bench std/gif" output.
+      // copy/paste a string like "Benchmarkwuffs_gif_decode_10k/gcc" from the
+      // "wuffs bench std/gif" output.
       if ((q - p >= 9) && !strncmp(p, "Benchmark", 9)) {
         p += 9;
       }
@@ -175,7 +175,7 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
            name, cc, reps, nanos / reps,  //
            (int)(kb_per_s / 1000), (int)(kb_per_s % 1000));
   }
-  // Flush stdout so that "puffs bench | tee etc" still prints its numbers as
+  // Flush stdout so that "wuffs bench | tee etc" still prints its numbers as
   // soon as they are available.
   fflush(stdout);
 }
@@ -264,10 +264,10 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   return 0;
 }
 
-// PUFFS_BASE_HEADER_H is where puffs_base__buf1 is defined.
-#ifdef PUFFS_BASE_HEADER_H
+// WUFFS_BASE_HEADER_H is where wuffs_base__buf1 is defined.
+#ifdef WUFFS_BASE_HEADER_H
 
-bool read_file(puffs_base__buf1* dst, const char* path) {
+bool read_file(wuffs_base__buf1* dst, const char* path) {
   if (!dst || !path) {
     FAIL("read_file: NULL argument");
     return false;
@@ -322,7 +322,7 @@ bool read_file(puffs_base__buf1* dst, const char* path) {
   return true;
 }
 
-char* hex_dump(char* msg, puffs_base__buf1* buf, size_t i) {
+char* hex_dump(char* msg, wuffs_base__buf1* buf, size_t i) {
   if (!msg || !buf) {
     FAIL("hex_dump: NULL argument");
     return NULL;
@@ -373,8 +373,8 @@ char* hex_dump(char* msg, puffs_base__buf1* buf, size_t i) {
 }
 
 bool buf1s_equal(const char* prefix,
-                 puffs_base__buf1* got,
-                 puffs_base__buf1* want) {
+                 wuffs_base__buf1* got,
+                 wuffs_base__buf1* want) {
   if (!got || !want) {
     FAIL("%sbuf1s_equal: NULL argument", prefix);
     return false;
@@ -411,8 +411,8 @@ typedef enum {
   tc_src = 2,
 } throughput_counter;
 
-bool proc_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
-                                              puffs_base__buf1*,
+bool proc_buf1_buf1(const char* (*codec_func)(wuffs_base__buf1*,
+                                              wuffs_base__buf1*,
                                               uint64_t,
                                               uint64_t),
                     throughput_counter tc,
@@ -430,9 +430,9 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
     return false;
   }
 
-  puffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  puffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  puffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  wuffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
 
   if (!gt->src_filename) {
     src.closed = true;
@@ -492,8 +492,8 @@ bool proc_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
   return true;
 }
 
-bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
-                                                  puffs_base__buf1*,
+bool do_bench_buf1_buf1(const char* (*codec_func)(wuffs_base__buf1*,
+                                                  wuffs_base__buf1*,
                                                   uint64_t,
                                                   uint64_t),
                         throughput_counter tc,
@@ -504,8 +504,8 @@ bool do_bench_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
   return proc_buf1_buf1(codec_func, tc, gt, wlimit, rlimit, reps, true);
 }
 
-bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
-                                                 puffs_base__buf1*,
+bool do_test_buf1_buf1(const char* (*codec_func)(wuffs_base__buf1*,
+                                                 wuffs_base__buf1*,
                                                  uint64_t,
                                                  uint64_t),
                        golden_test* gt,
@@ -514,4 +514,4 @@ bool do_test_buf1_buf1(const char* (*codec_func)(puffs_base__buf1*,
   return proc_buf1_buf1(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
-#endif  // PUFFS_BASE_HEADER_H
+#endif  // WUFFS_BASE_HEADER_H

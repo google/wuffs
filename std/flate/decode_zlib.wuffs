@@ -21,7 +21,7 @@ pub error "TODO: unsupported zlib preset dictionary"
 // TODO: move this file from std/flate to std/zlib? In doing so, we could
 // rename both of "struct flate_decoder" and "struct zlib_decoder" to just
 // "struct decoder", to avoid stutter in the fully qualified C name such as
-// "puffs_flate__flate_decoder".
+// "wuffs_flate__flate_decoder".
 //
 // Would we then need to somehow share code between test/c/std/{flate,gzip}.c?
 
@@ -61,7 +61,7 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 	}
 }
 
-// TODO: drop the '?' but still generate puffs_flate_adler_initialize?
+// TODO: drop the '?' but still generate wuffs_flate_adler_initialize?
 pri struct adler32?(
 	state u32 = 1,
 )

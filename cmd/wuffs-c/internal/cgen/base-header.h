@@ -1,7 +1,7 @@
 // After editing this file, run "go generate" in this directory.
 
-#ifndef PUFFS_BASE_HEADER_H
-#define PUFFS_BASE_HEADER_H
+#ifndef WUFFS_BASE_HEADER_H
+#define WUFFS_BASE_HEADER_H
 
 // Copyright 2017 The Wuffs Authors.
 //
@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 
-// Puffs requires a word size of at least 32 bits because it assumes that
+// Wuffs requires a word size of at least 32 bits because it assumes that
 // converting a u32 to usize will never overflow. For example, the size of a
 // decoded image is often represented, explicitly or implicitly in an image
 // file, as a u32, and it is convenient to compare that to a buffer size.
@@ -29,12 +29,12 @@
 // Similarly, the word size is at most 64 bits because it assumes that
 // converting a usize to u64 will never overflow.
 #if __WORDSIZE < 32
-#error "Puffs requires a word size of at least 32 bits"
+#error "Wuffs requires a word size of at least 32 bits"
 #elif __WORDSIZE > 64
-#error "Puffs requires a word size of at most 64 bits"
+#error "Wuffs requires a word size of at most 64 bits"
 #endif
 
-// PUFFS_VERSION is the major.minor version number as a uint32. The major
+// WUFFS_VERSION is the major.minor version number as a uint32. The major
 // number is the high 16 bits. The minor number is the low 16 bits.
 //
 // The intention is to bump the version number at least on every API / ABI
@@ -43,17 +43,17 @@
 // For now, the API and ABI are simply unstable and can change at any time.
 //
 // TODO: don't hard code this in base-header.h.
-#define PUFFS_VERSION (0x00001)
+#define WUFFS_VERSION (0x00001)
 
-// puffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
+// wuffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
 typedef struct {
   uint8_t* ptr;
   size_t len;
-} puffs_base__slice_u8;
+} wuffs_base__slice_u8;
 
-// puffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
+// wuffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
 // additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
@@ -63,43 +63,43 @@ typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   bool closed;   // No further writes are expected.
-} puffs_base__buf1;
+} wuffs_base__buf1;
 
-// puffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
+// wuffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
 // written to the stream.
 //
 // A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct puffs_base__limit1 {
+typedef struct wuffs_base__limit1 {
   uint64_t* ptr_to_len;             // Pointer to N.
-  struct puffs_base__limit1* next;  // Linked list of limits.
-} puffs_base__limit1;
+  struct wuffs_base__limit1* next;  // Linked list of limits.
+} wuffs_base__limit1;
 
 typedef struct {
   // TODO: move buf into private_impl? As it is, it looks like users can modify
   // the buf field to point to a different buffer, which can turn the limit and
   // mark fields into dangling pointers.
-  puffs_base__buf1* buf;
+  wuffs_base__buf1* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    puffs_base__limit1 limit;
+    wuffs_base__limit1 limit;
     uint8_t* mark;
   } private_impl;
-} puffs_base__reader1;
+} wuffs_base__reader1;
 
 typedef struct {
   // TODO: move buf into private_impl? As it is, it looks like users can modify
   // the buf field to point to a different buffer, which can turn the limit and
   // mark fields into dangling pointers.
-  puffs_base__buf1* buf;
+  wuffs_base__buf1* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    puffs_base__limit1 limit;
+    wuffs_base__limit1 limit;
     uint8_t* mark;
   } private_impl;
-} puffs_base__writer1;
+} wuffs_base__writer1;
 
-#endif  // PUFFS_BASE_HEADER_H
+#endif  // WUFFS_BASE_HEADER_H

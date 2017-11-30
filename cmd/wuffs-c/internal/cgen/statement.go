@@ -23,10 +23,10 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-// genFilenameLineComments is whether to print "// foo.puffs:123\n" comments in
+// genFilenameLineComments is whether to print "// foo.wuffs:123\n" comments in
 // the generated code. This can be useful for debugging, although it is not
 // enabled by default as it can lead to many spurious changes in the generated
-// C code (due to line numbers changing) when editing Puffs code.
+// C code (due to line numbers changing) when editing Wuffs code.
 const genFilenameLineComments = false
 
 func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
@@ -168,7 +168,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		// TODO: don't assume that the slice is a slice of u8. In particular,
 		// the code gen can be subtle if the slice element type has zero size,
 		// such as the empty struct.
-		b.printf("puffs_base__slice_u8 %sslice_%s =", iPrefix, name)
+		b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
 		if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
 			return err
 		}
@@ -292,7 +292,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				}
 			} else if n.XType().Decorator().Key() == t.KeyColon {
 				// TODO: don't assume that the slice is a slice of u8.
-				b.printf("((puffs_base__slice_u8){})")
+				b.printf("((wuffs_base__slice_u8){})")
 			} else {
 				b.writeb('0')
 			}
@@ -346,7 +346,7 @@ func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 	if maybeSuspend {
 		macro = "_MAYBE_SUSPEND"
 	}
-	b.printf("PUFFS_BASE__COROUTINE_SUSPENSION_POINT%s(%d);\n", macro, g.currFunk.coroSuspPoint)
+	b.printf("WUFFS_BASE__COROUTINE_SUSPENSION_POINT%s(%d);\n", macro, g.currFunk.coroSuspPoint)
 	return nil
 }
 
@@ -447,7 +447,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.tempW++
 
 		if !n.ProvenNotToSuspend() {
-			b.printf("if (PUFFS_BASE__UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }",
+			b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }",
 				bPrefix, bPrefix)
 			g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 		}
@@ -658,7 +658,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: don't hard-code a_dst or v_r or l_rlimit or v_block_size.
 			b.writes("uint64_t l_rlimit0 = v_block_size;\n")
 			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst,"+
-				"puffs_base__reader1__limit(&%sr, &l_rlimit0));\n",
+				"wuffs_base__reader1__limit(&%sr, &l_rlimit0));\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, vPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
@@ -667,14 +667,14 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: check if tPrefix_temp is an error, and return?
 
 		default:
-			return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
+			return fmt.Errorf("cannot convert Wuffs call %q to C", n.String(g.tm))
 		}
 
 	} else {
 		// TODO: fix this.
 		//
 		// This might involve calling g.writeExpr with replaceNothing??
-		return fmt.Errorf("cannot convert Puffs call %q to C", n.String(g.tm))
+		return fmt.Errorf("cannot convert Wuffs call %q to C", n.String(g.tm))
 	}
 	return nil
 }
@@ -708,8 +708,8 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
 		cPrefix, g.currFunk.astFunc.Name().String(g.tm))
 
-	b.printf("if (PUFFS_BASE__LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
-	b.printf("%s%d = puffs_base__load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
+	b.printf("if (WUFFS_BASE__LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
+	b.printf("%s%d = wuffs_base__load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
 	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
@@ -718,7 +718,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	}
 	b.printf("while (true) {")
 
-	b.printf("if (PUFFS_BASE__UNLIKELY(%srptr_%s == %srend_%s)) { goto short_read_%s; }",
+	b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_%s == %srend_%s)) { goto short_read_%s; }",
 		bPrefix, name, bPrefix, name, name)
 	g.currFunk.shortReads = append(g.currFunk.shortReads, name)
 

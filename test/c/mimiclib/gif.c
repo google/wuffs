@@ -15,7 +15,7 @@
 #include "gif_lib.h"
 
 int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
-  puffs_base__buf1* src = (puffs_base__buf1*)(f->UserData);
+  wuffs_base__buf1* src = (wuffs_base__buf1*)(f->UserData);
   if (len < 0) {
     return 0;
   }
@@ -29,7 +29,7 @@ int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
   return n;
 }
 
-const char* mimic_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
+const char* mimic_gif_decode(wuffs_base__buf1* dst, wuffs_base__buf1* src) {
   const char* ret = NULL;
 
   // http://giflib.sourceforge.net/gif_lib.html#compatibility says that "A few
@@ -54,7 +54,7 @@ const char* mimic_gif_decode(puffs_base__buf1* dst, puffs_base__buf1* src) {
     goto cleanup1;
   }
 
-  // TODO: have Puffs accept multi-frame (animated) GIFs.
+  // TODO: have Wuffs accept multi-frame (animated) GIFs.
   if (f->ImageCount != 1) {
     ret = "GIF image has more than one frame";
     goto cleanup1;

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package builtin lists Puffs' built-in concepts such as status codes.
+// Package builtin lists Wuffs' built-in concepts such as status codes.
 package builtin
 
 import (
@@ -37,7 +37,7 @@ func (z Status) String() string {
 
 var StatusList = [...]Status{
 	{0, "ok"},
-	{t.IDError, "bad puffs version"},
+	{t.IDError, "bad wuffs version"},
 	{t.IDError, "bad receiver"},
 	{t.IDError, "bad argument"},
 	{t.IDError, "initializer not called"},
