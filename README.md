@@ -4,9 +4,9 @@
 Puffs](https://groups.google.com/d/topic/puffslang/cSrH-s7UqwA/discussion):
 Parsing Untrusted File Formats Safely).
 
-Wuffs is a domain-specific language and library for parsing untrusted file
-formats safely. Examples of such file formats include images, audio, video,
-fonts and compressed archives.
+Wuffs is a domain-specific language and library for wrangling untrusted file
+formats safely. Wrangling includes parsing, decoding and encoding. Examples of
+such file formats include images, audio, video, fonts and compressed archives.
 
 Unlike the C programming language, Wuffs is safe with respect to buffer
 overflows, integer arithmetic overflows and null pointer dereferences. The key
@@ -131,7 +131,7 @@ wuffs test: some tests failed
 
 # Background
 
-Parsing untrusted data, such as images downloaded from across the web, have a
+Decoding untrusted data, such as images downloaded from across the web, have a
 long history of security vulnerabilities. As of 2017, libpng is over 18 years
 old, and the [PNG specification is dated 2003](https://www.w3.org/TR/PNG/), but
 that well examined C library is still getting [CVE's published in
@@ -327,7 +327,7 @@ brushstrokes are there.
 # Discussion
 
 The mailing list is at
-[https://groups.google.com/forum/#!forum/puffslang](https://groups.google.com/forum/#!forum/puffslang).
+[https://groups.google.com/forum/#!forum/wuffs](https://groups.google.com/forum/#!forum/wuffs).
 
 
 # Contributing
