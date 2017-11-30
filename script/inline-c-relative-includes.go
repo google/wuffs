@@ -90,7 +90,7 @@ func do(w *bufio.Writer, dir string, filename string, depth int) error {
 					continue
 				} else if os.IsNotExist(err) {
 					// This is probably an #include of a system header, like
-					// `#include "zlib.h"`, and not of Puffs code. Fall through
+					// `#include "zlib.h"`, and not of Wuffs code. Fall through
 					// and print the #include line as normal.
 				} else {
 					return err

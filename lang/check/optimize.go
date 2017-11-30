@@ -15,7 +15,7 @@
 package check
 
 // TODO: should bounds checking even be responsible for selecting between
-// optimized implementations of e.g. read_u8? Instead, the Puffs code could
+// optimized implementations of e.g. read_u8? Instead, the Wuffs code could
 // explicitly call either read_u8 or read_u8_fast, with the latter having
 // stronger preconditions.
 //

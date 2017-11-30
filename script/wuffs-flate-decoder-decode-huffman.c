@@ -13,15 +13,15 @@
 // limitations under the License.
 
 // This file contains a hand-written C implementation of gen/c/std/flate.c's
-// generated puffs_flate__flate_decoder__decode_huffman_fast function.
+// generated wuffs_flate__flate_decoder__decode_huffman_fast function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
-// purpose is to give a rough upper bound on how fast Puffs' generated C code
-// can be, with a sufficiently smart Puffs compiler.
+// purpose is to give a rough upper bound on how fast Wuffs' generated C code
+// can be, with a sufficiently smart Wuffs compiler.
 //
 // To repeat, substituting in this C implementation is NOT SAFE, and may result
 // in buffer overflows. This code exists only to aid optimization of the (safe)
-// std/flate/*.puffs code and the Puffs compiler's code generation.
+// std/flate/*.wuffs code and the Wuffs compiler's code generation.
 //
 // ----------------
 //
@@ -32,16 +32,16 @@
 //
 // After that, add this line:
 //
-// #include "../../../script/puffs-flate-decoder-decode-huffman.c"
+// #include "../../../script/wuffs-flate-decoder-decode-huffman.c"
 //
-// Then find the call to puffs_flate__flate_decoder__decode_huffman_fast. It
-// should be inside the puffs_flate__flate_decoder__decode_blocks function body,
+// Then find the call to wuffs_flate__flate_decoder__decode_huffman_fast. It
+// should be inside the wuffs_flate__flate_decoder__decode_blocks function body,
 // and the lines of code should look something like
 //
 // status =
-//     puffs_flate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
+//     wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
 //
-// Change the "puffs" to "c_puffs", i.e. add a "c_" prefix. The net result
+// Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
 // should look something like:
 //
 // ----------------
@@ -51,20 +51,23 @@
 // index 47cb0a9..e7e12b6 100644
 // --- a/gen/c/std/flate.c
 // +++ b/gen/c/std/flate.c
-// @@ -336,6 +336,7 @@ puffs_flate__status puffs_flate__zlib_decoder__decode(
-//  #endif  // PUFFS_FLATE_H
+// @@ -336,6 +336,7 @@ wuffs_flate__status wuffs_flate__zlib_decoder__decode(
+//  #endif  // WUFFS_FLATE_H
 //
 //  // C HEADER ENDS HERE.
-// +#include "../../../script/puffs-flate-decoder-decode-huffman.c"
+// +#include "../../../script/wuffs-flate-decoder-decode-huffman.c"
 //
-//  #ifndef PUFFS_BASE_IMPL_H
-//  #define PUFFS_BASE_IMPL_H
-// @@ -1119,7 +1120,7 @@ static puffs_flate__status puffs_flate__flate_decoder__decode_blocks(
+//  #ifndef WUFFS_BASE_IMPL_H
+//  #define WUFFS_BASE_IMPL_H
+// @@ -1119,7 +1120,7 @@ static wuffs_flate__status
+// wuffs_flate__flate_decoder__decode_blocks(
 //          }
 //        }
 //        status =
-// -          puffs_flate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
-// +          c_puffs_flate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
+// -          wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst,
+// a_src);
+// +          c_wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst,
+// a_src);
 //        if (a_src.buf) {
 //          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
 //        }
@@ -72,16 +75,16 @@
 // ----------------
 //
 // That concludes the two edits to gen/c/std/flate.c. Run the tests and
-// benchmarks with the "-skipgen" flag, otherwise the "puffs" tool will
+// benchmarks with the "-skipgen" flag, otherwise the "wuffs" tool will
 // re-generate the C code and override your gen/c/std/flate.c edit:
 //
-// puffs test  -skipgen std/flate
-// puffs bench -skipgen std/flate
+// wuffs test  -skipgen std/flate
+// wuffs bench -skipgen std/flate
 //
 // You may also want to focus on one specific test, e.g.:
 //
-// puffs test  -skipgen -focus=puffs_flate_decode_midsummer std/flate
-// puffs bench -skipgen -focus=puffs_flate_decode_100k      std/flate
+// wuffs test  -skipgen -focus=wuffs_flate_decode_midsummer std/flate
+// wuffs bench -skipgen -focus=wuffs_flate_decode_100k      std/flate
 
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
@@ -89,53 +92,53 @@
 // Define this macro to further speed up this C implementation, using two
 // techniques that are not used by the zlib-the-library C implementation (as of
 // version 1.2.11, current as of November 2017). Doing so gives data for "how
-// fast can Puffs' zlib-the-format implementation be" instead of "is Puffs'
+// fast can Wuffs' zlib-the-format implementation be" instead of "is Wuffs'
 // generated C code as fast as zlib-the-library's hand-written C code".
 //
 // Whether the same techniques could apply to zlib-the-library is discussed at
 // https://github.com/madler/zlib/pull/292
 #ifdef __x86_64__
-//#define PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+//#define WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
 #endif
 
 // This is the generated function that we are explicitly overriding. Note that
-// the function name is "puffs_etc", not "c_puffs_etc".
-static puffs_flate__status puffs_flate__flate_decoder__decode_huffman_fast(
-    puffs_flate__flate_decoder* self,
-    puffs_base__writer1 a_dst,
-    puffs_base__reader1 a_src);
+// the function name is "wuffs_etc", not "c_wuffs_etc".
+static wuffs_flate__status wuffs_flate__flate_decoder__decode_huffman_fast(
+    wuffs_flate__flate_decoder* self,
+    wuffs_base__writer1 a_dst,
+    wuffs_base__reader1 a_src);
 
 // This is the overriding implementation.
-puffs_flate__status c_puffs_flate__flate_decoder__decode_huffman_fast(
-    puffs_flate__flate_decoder* self,
-    puffs_base__writer1 a_dst,
-    puffs_base__reader1 a_src) {
+wuffs_flate__status c_wuffs_flate__flate_decoder__decode_huffman_fast(
+    wuffs_flate__flate_decoder* self,
+    wuffs_base__writer1 a_dst,
+    wuffs_base__reader1 a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
-  // overridden puffs_flate__flate_decoder__decode_huffman_fast.
-  (void)(puffs_flate__flate_decoder__decode_huffman_fast);
+  // overridden wuffs_flate__flate_decoder__decode_huffman_fast.
+  (void)(wuffs_flate__flate_decoder__decode_huffman_fast);
 
   if (!a_dst.buf || !a_src.buf) {
-    return PUFFS_FLATE__ERROR_BAD_ARGUMENT;
+    return WUFFS_FLATE__ERROR_BAD_ARGUMENT;
   }
-  puffs_flate__status status = PUFFS_FLATE__STATUS_OK;
+  wuffs_flate__status status = WUFFS_FLATE__STATUS_OK;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
   uint8_t* pdst = a_dst.buf->ptr + a_dst.buf->wi;
   uint8_t* qdst = a_dst.buf->ptr + a_dst.buf->len;
   if ((qdst - pdst) < 258) {
-    return PUFFS_FLATE__STATUS_OK;
+    return WUFFS_FLATE__STATUS_OK;
   } else {
     qdst -= 258;
   }
   uint8_t* psrc = a_src.buf->ptr + a_src.buf->ri;
   uint8_t* qsrc = a_src.buf->ptr + a_src.buf->wi;
   if ((qsrc - psrc) < 12) {
-    return PUFFS_FLATE__STATUS_OK;
+    return WUFFS_FLATE__STATUS_OK;
   } else {
     qsrc -= 12;
   }
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
   uint64_t bits = self->private_impl.f_bits;
 #else
   uint32_t bits = self->private_impl.f_bits;
@@ -153,7 +156,7 @@ outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -187,7 +190,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -201,7 +204,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < n) {
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -218,7 +221,7 @@ outer_loop:
 
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -242,7 +245,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            PUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -256,7 +259,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < 15) {
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -275,13 +278,13 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(distance) > (pdst - pdst0)) {
-      status = PUFFS_FLATE__ERROR_BAD_ARGUMENT;
+      status = WUFFS_FLATE__ERROR_BAD_ARGUMENT;
       goto end;
     }
 
     uint8_t* pback = pdst - distance;
 
-#ifdef PUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
     // Back-copy fast path, copying 8 instead of 1 bytes at a time.
     //
     // This always copies 8*N bytes (where N is the smallest integer such that

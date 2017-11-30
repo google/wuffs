@@ -29,7 +29,7 @@ import (
 	"github.com/google/wuffs/lang/token"
 )
 
-func compareToPuffsfmt(tm *token.Map, tokens []token.Token, comments []string, src string) error {
+func compareToWuffsfmt(tm *token.Map, tokens []token.Token, comments []string, src string) error {
 	buf := &bytes.Buffer{}
 	if err := render.Render(buf, tm, tokens, comments); err != nil {
 		return err
@@ -55,7 +55,7 @@ func compareToPuffsfmt(tm *token.Map, tokens []token.Token, comments []string, s
 }
 
 func TestCheck(t *testing.T) {
-	const filename = "test.puffs"
+	const filename = "test.wuffs"
 	src := strings.TrimSpace(`
 		pri struct foo(
 			i i32,
@@ -104,8 +104,8 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 
-	if err := compareToPuffsfmt(tm, tokens, comments, src); err != nil {
-		t.Fatalf("compareToPuffsfmt: %v", err)
+	if err := compareToWuffsfmt(tm, tokens, comments, src); err != nil {
+		t.Fatalf("compareToWuffsfmt: %v", err)
 	}
 
 	c, err := Check(tm, file)
@@ -156,7 +156,7 @@ func TestCheck(t *testing.T) {
 }
 
 func TestConstValues(t *testing.T) {
-	const filename = "test.puffs"
+	const filename = "test.wuffs"
 	testCases := map[string]int64{
 		"var i i32 = 42": 42,
 

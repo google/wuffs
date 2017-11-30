@@ -31,7 +31,7 @@ type Generator func(packageName string, tm *token.Map, c *check.Checker, files [
 
 func Do(args []string, g Generator) error {
 	flags := flag.FlagSet{}
-	packageName := flags.String("package_name", "", "the package name of the Puffs input code")
+	packageName := flags.String("package_name", "", "the package name of the Wuffs input code")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}

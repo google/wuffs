@@ -22,7 +22,7 @@ import (
 )
 
 func TestString(t *testing.T) {
-	const filename = "test.puffs"
+	const filename = "test.wuffs"
 	testCases := []string{
 		"1",
 		"x",
