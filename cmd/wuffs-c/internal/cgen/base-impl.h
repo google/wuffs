@@ -3,7 +3,7 @@
 #ifndef PUFFS_BASE_IMPL_H
 #define PUFFS_BASE_IMPL_H
 
-// Copyright 2017 The Puffs Authors.
+// Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
