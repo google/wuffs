@@ -1,4 +1,8 @@
-# Parsing Untrusted File Formats Safely
+# Wrangling Untrusted File Formats Safely
+
+([Formerly known as
+PUFFS](https://groups.google.com/d/topic/puffslang/cSrH-s7UqwA/discussion):
+Parsing Untrusted File Formats Safely).
 
 Puffs is a domain-specific language and library for parsing untrusted file
 formats safely. Examples of such file formats include images, audio, video,
