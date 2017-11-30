@@ -1,16 +1,16 @@
 # Wrangling Untrusted File Formats Safely
 
 ([Formerly known as
-PUFFS](https://groups.google.com/d/topic/puffslang/cSrH-s7UqwA/discussion):
+Puffs](https://groups.google.com/d/topic/puffslang/cSrH-s7UqwA/discussion):
 Parsing Untrusted File Formats Safely).
 
-Puffs is a domain-specific language and library for parsing untrusted file
+Wuffs is a domain-specific language and library for parsing untrusted file
 formats safely. Examples of such file formats include images, audio, video,
 fonts and compressed archives.
 
-Unlike the C programming language, Puffs is safe with respect to buffer
+Unlike the C programming language, Wuffs is safe with respect to buffer
 overflows, integer arithmetic overflows and null pointer dereferences. The key
-difference between Puffs and other memory-safe languages is that all such
+difference between Wuffs and other memory-safe languages is that all such
 checks are done at compile time, not at run time. *If it compiles, it is safe*,
 with respect to those three bug classes.
 
@@ -20,37 +20,37 @@ are used. This includes very large C/C++ products, such as popular web browsers
 and operating systems (using that term to include desktop and mobile user
 interfaces, not just the kernel).
 
-The trade-off in aiming for both safety and speed is that Puffs programs take
+The trade-off in aiming for both safety and speed is that Wuffs programs take
 longer for a programmer to write, as they have to explicitly annotate their
 programs with proofs of safety. A statement like `x += 1` unsurprisingly means
-to increment the variable `x` by `1`. However, in Puffs, such a statement is a
+to increment the variable `x` by `1`. However, in Wuffs, such a statement is a
 compile time error unless the compiler can also prove that `x` is not the
 maximal value of `x`'s type (e.g. `x` is not `255` if `x` is a `u8`), as the
 increment would otherwise overflow. Similarly, an integer arithmetic expression
 like `x / y` is a compile time error unless the compiler can also prove that
 `y` is not zero.
 
-Puffs is not a general purpose programming language. While technically
-possible, it is unlikely that a Puffs compiler would be worth writing in Puffs.
+Wuffs is not a general purpose programming language. While technically
+possible, it is unlikely that a Wuffs compiler would be worth writing in Wuffs.
 
 
-## What Does Puffs Code Look Like?
+## What Does Wuffs Code Look Like?
 
-The [`std/gif/decode_lzw.puffs`](./std/gif/decode_lzw.puffs) file is a good
+The [`std/gif/decode_lzw.wuffs`](./std/gif/decode_lzw.wuffs) file is a good
 example. See the "Poking Around" section below for more guidance.
 
 
 ## What Does Compile Time Checking Look Like?
 
 For example, making this one-line edit to the GIF codec leads to a compile time
-error. `puffs gen` fails to generate the C code, i.e. fails to compile
-(transpile) the Puffs code to C code:
+error. `wuffs gen` fails to generate the C code, i.e. fails to compile
+(transpile) the Wuffs code to C code:
 
 ```diff
-diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
+diff --git a/std/gif/decode_lzw.wuffs b/std/gif/decode_lzw.wuffs
 index f878c5e..f10dcee 100644
---- a/std/gif/decode_lzw.puffs
-+++ b/std/gif/decode_lzw.puffs
+--- a/std/gif/decode_lzw.wuffs
++++ b/std/gif/decode_lzw.wuffs
 @@ -98,7 +98,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
                         in.dst.write?(x:s)
 
@@ -62,9 +62,9 @@ index f878c5e..f10dcee 100644
 ```
 
 ```bash
-$ puffs gen std/gif
+$ wuffs gen std/gif
 check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
-/home/n/go/src/github.com/google/wuffs/std/gif/decode_lzw.puffs:101. Facts:
+/home/n/go/src/github.com/google/wuffs/std/gif/decode_lzw.wuffs:101. Facts:
     n_bits < 8
     c < 256
     this.stack[s] == (c as u8)
@@ -75,10 +75,10 @@ In comparison, this two-line edit will compile (but the "does it decode GIF
 correctly" tests then fail):
 
 ```diff
-diff --git a/std/gif/decode_lzw.puffs b/std/gif/decode_lzw.puffs
+diff --git a/std/gif/decode_lzw.wuffs b/std/gif/decode_lzw.wuffs
 index f878c5e..b43443d 100644
---- a/std/gif/decode_lzw.puffs
-+++ b/std/gif/decode_lzw.puffs
+--- a/std/gif/decode_lzw.wuffs
++++ b/std/gif/decode_lzw.wuffs
 @@ -97,8 +97,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
                         // type checking, bounds checking and code generation for it).
                         in.dst.write?(x:s)
@@ -92,10 +92,10 @@ index f878c5e..b43443d 100644
 ```
 
 ```bash
-$ puffs gen std/gif
+$ wuffs gen std/gif
 gen wrote:      /home/n/go/src/github.com/google/wuffs/gen/c/gif.c
 gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/h/gif.h
-$ puffs test std/gif
+$ wuffs test std/gif
 gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/c/gif.c
 gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/h/gif.h
 test:           /home/n/go/src/github.com/google/wuffs/test/c/gif
@@ -125,8 +125,8 @@ excerpts of got (above) versus want (below):
   000020: eded 8f91 9191 9090 9090 9090 9191 9191  ................
   000030: 9191 9191 9191 9193 93f0 f0f0 f1f1 f2f2  ................
 
-puffs-test-c: some tests failed
-puffs test: some tests failed
+wuffs-test-c: some tests failed
+wuffs test: some tests failed
 ```
 
 # Background
@@ -186,15 +186,15 @@ The run time cost is small, measured in nanoseconds. But if an image decoding
 library has to eat this cost per pixel, and you have a megapixel image, then
 nanoseconds become milliseconds, and milliseconds can matter.
 
-In comparison, in Puffs, all bounds checks and arithmetic overflow checks
+In comparison, in Wuffs, all bounds checks and arithmetic overflow checks
 happen at compile time, with zero run time overhead.
 
 
 # Getting Started
 
-Puffs code (that is proved safe via explicit assertions) is compiled to C code
+Wuffs code (that is proved safe via explicit assertions) is compiled to C code
 (with those assertions removed) - it is transpiled. If you are a C/C++
-programmer and just want to *use* the C edition of the Puffs standard library,
+programmer and just want to *use* the C edition of the Wuffs standard library,
 then clone the repository and look at the files in the `gen/c` and `gen/h`
 directories. No other software tools are required and there are no library
 dependencies, other than C standard library concepts like `<stdint.h>`'s
@@ -213,38 +213,38 @@ gzip or zlib, roughly speaking) without necessarily processing PNG images.
 
 ## Getting Deeper
 
-If you want to modify the Puffs standard library, or compile your own Puffs
+If you want to modify the Wuffs standard library, or compile your own Wuffs
 code, you will need to do a little more work, and will have to install at least
-the Go toolchain in order to build the Puffs tools. To run the test suite, you
+the Go toolchain in order to build the Wuffs tools. To run the test suite, you
 might also have to install C compilers like clang and gcc, as well as C
 libraries (and their .h files) like libjpeg and libpng, as some tests compare
-that Puffs produces exactly the same output as these other libraries.
+that Wuffs produces exactly the same output as these other libraries.
 
 Running `go get -v github.com/google/wuffs/cmd/...` will download and install
-the Puffs tools. Change `get` to `install` to re-install those programs without
+the Wuffs tools. Change `get` to `install` to re-install those programs without
 downloading, e.g. after you've modified their source code, or after a manually
-issued `git pull`. The Puffs tools that you'll most often use are `puffsfmt`
-(analogous to `clang-format`, `gofmt` or `rustfmt`) and `puffs` (roughly
+issued `git pull`. The Wuffs tools that you'll most often use are `wuffsfmt`
+(analogous to `clang-format`, `gofmt` or `rustfmt`) and `wuffs` (roughly
 analogous to `make`, `go` or `cargo`).
 
-You should now be able to run `puffs test`. If all goes well, you should see
+You should now be able to run `wuffs test`. If all goes well, you should see
 some output containing the word "PASS" multiple times.
 
 
 ## Poking Around
 
-Feel free to edit the `std/gif/decode_lzw.puffs` file, which implements the GIF
-LZW decoder. After editing, run `puffs gen std/gif` or `puffs test std/gif` to
-re-generate the C edition of the Puffs standard library's GIF codec, and
+Feel free to edit the `std/gif/decode_lzw.wuffs` file, which implements the GIF
+LZW decoder. After editing, run `wuffs gen std/gif` or `wuffs test std/gif` to
+re-generate the C edition of the Wuffs standard library's GIF codec, and
 optionally run its tests.
 
-Try deleting an assert statement and re-running `puffs gen`. The result should
+Try deleting an assert statement and re-running `wuffs gen`. The result should
 be syntactically valid, but a compile error, as some bounds checks can no
 longer be proven.
 
 Find the line `var bits u32`, which declares the bits variable and initializes
 it to zero. Try adding `bits -= 1` on a new line of code after it. Again,
-`puffs gen` should fail, as the computation can underflow.
+`wuffs gen` should fail, as the computation can underflow.
 
 Similarly, replacing the line `var n_bits u32` with `var n_bits u32 = 10`
 should fail, as an `n_bits < 8` assertion, a pre-condition, a few lines further
@@ -254,8 +254,8 @@ Similarly, changing the `4095` in `var prev_code u32[..4095]` either higher or
 lower should fail.
 
 Try adding `assert false` at various places, which should obviously fail, but
-should also cause `puffs gen` to print what facts the compiler can prove at
-that point. This can be useful when debugging why Puffs can't prove something
+should also cause `wuffs gen` to print what facts the compiler can prove at
+that point. This can be useful when debugging why Wuffs can't prove something
 you think it should be able to.
 
 
@@ -265,14 +265,14 @@ If you've changed any of the tools (i.e. changed any `.go` code), re-run `go
 install -v github.com/google/wuffs/cmd/...` and `go test
 github.com/google/wuffs/lang/...`.
 
-If you've changed any of the libraries (i.e. changed any `.puffs` code), run
-`puffs test` or, ideally, `puffs test -mimic` to also check that Puffs' output
+If you've changed any of the libraries (i.e. changed any `.wuffs` code), run
+`wuffs test` or, ideally, `wuffs test -mimic` to also check that Wuffs' output
 mimics (i.e. exactly matches) other libraries' output, such as giflib for GIF,
 libpng for PNG, etc.
 
-If your library change is an optimization, run `puffs bench` or `puffs bench
+If your library change is an optimization, run `wuffs bench` or `wuffs bench
 -mimic` both before and after your change to quantify the improvement. The
-mimic benchmark numbers should't change if you're only changing `.puffs` code,
+mimic benchmark numbers should't change if you're only changing `.wuffs` code,
 but seeing zero change in those numbers is a sanity check on any unrelated
 system variance, such as software updates or virus checkers running in the
 background.
@@ -280,30 +280,30 @@ background.
 
 ## Directory Layout
 
-- `lang` holds the Go libraries that implement the Puffs language: tokenizer,
-  AST, parser, renderer, etc. The Puffs tools are written in Go, but as
-  mentioned above, Puffs transpiles to C code, and Go is not necessarily
-  involved if all you want is to use the C edition of Puffs.
-- `cmd` holds Puffs' command line tools, also written in Go.
-- `std` holds the Puffs standard library's code. The initial focus is on
+- `lang` holds the Go libraries that implement the Wuffs language: tokenizer,
+  AST, parser, renderer, etc. The Wuffs tools are written in Go, but as
+  mentioned above, Wuffs transpiles to C code, and Go is not necessarily
+  involved if all you want is to use the C edition of Wuffs.
+- `cmd` holds Wuffs' command line tools, also written in Go.
+- `std` holds the Wuffs standard library's code. The initial focus is on
   popular image codecs: BMP, GIF, JPEG, PNG, TIFF and WEBP.
 - `gen` holds the transpiled editions of that standard library. The initial
   focus is generating C code. Later on, the repository might include generated
   Go and Rust code.
-- `test` holds the tests for the Puffs standard library.
+- `test` holds the tests for the Wuffs standard library.
 - `script` holds miscellaneous utility programs.
 - `doc` holds documentation.
 - `example` holds example programs.
 
 For a guide on how various things work together, the "99ff8e2 Let fields have
-default values" commit is an example of adding new Puffs syntax and threading
+default values" commit is an example of adding new Wuffs syntax and threading
 that all the way through to C code generation and testing.
 
 
 # Documentation
 
 - [Wuffs the Language](./doc/wuffs-the-language.md)
-- Puffs the Library (TODO)
+- Wuffs the Library (TODO)
 - [Related Work](./doc/related-work.md)
 - [Roadmap](./doc/roadmap.md)
 
