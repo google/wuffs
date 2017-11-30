@@ -29,8 +29,8 @@ typedef struct {
 // It's not foolproof, given C doesn't automatically zero memory before use,
 // but it should catch 99.99% of cases.
 //
-// Its (non-zero) value is arbitrary, based on md5sum("puffs").
-#define WUFFS_BASE__MAGIC (0xCB3699CCU)
+// Its (non-zero) value is arbitrary, based on md5sum("wuffs").
+#define WUFFS_BASE__MAGIC (0x3CCB6C71U)
 
 // WUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
 // to a containee struct's initializer when the container has already zeroed
