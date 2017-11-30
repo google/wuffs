@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// puffsfmt formats Puffs programs.
+// wuffsfmt formats Wuffs programs.
 //
 // Without explicit paths, it rewrites the standard input to standard output.
 // Otherwise, the -l or -w or both flags must be given. Given a file path, it
-// operates on that file; given a directory path, it operates on all .puffs
+// operates on that file; given a directory path, it operates on all .wuffs
 // files in that directory, recursively. Files starting with a period are
 // ignored.
 package main
@@ -39,12 +39,12 @@ import (
 )
 
 var (
-	lFlag = flag.Bool("l", false, "list files whose formatting differs from puffsfmt's")
+	lFlag = flag.Bool("l", false, "list files whose formatting differs from wuffsfmt's")
 	wFlag = flag.Bool("w", false, "write result to (source) file instead of stdout")
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: puffsfmt [flags] [path ...]\n")
+	fmt.Fprintf(os.Stderr, "usage: wuffsfmt [flags] [path ...]\n")
 	flag.PrintDefaults()
 }
 
@@ -90,17 +90,17 @@ func main1() error {
 	return nil
 }
 
-func isPuffsFile(info os.FileInfo) bool {
+func isWuffsFile(info os.FileInfo) bool {
 	name := info.Name()
-	return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".puffs")
+	return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".wuffs")
 }
 
 func walk(filename string, info os.FileInfo, err error) error {
-	if err == nil && isPuffsFile(info) {
+	if err == nil && isWuffsFile(info) {
 		err = do(nil, filename)
 	}
 	// Don't complain if a file was deleted in the meantime (i.e. the directory
-	// changed concurrently while running puffsfmt).
+	// changed concurrently while running wuffsfmt).
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

@@ -13,17 +13,17 @@
 // limitations under the License.
 
 /*
-library exercises the software libraries built by `puffs genlib`.
+library exercises the software libraries built by `wuffs genlib`.
 
 To exercise the static library:
 
-$cc -static -I../../.. library.c ../../gen/lib/c/$cc-static/libpuffs.a
+$cc -static -I../../.. library.c ../../gen/lib/c/$cc-static/libwuffs.a
 ./a.out
 rm -f a.out
 
 To exercise the dynamic library:
 
-$cc -I../../.. library.c -L../../gen/lib/c/$cc-dynamic -lpuffs
+$cc -I../../.. library.c -L../../gen/lib/c/$cc-dynamic -lwuffs
 LD_LIBRARY_PATH=../../gen/lib/c/$cc-dynamic ./a.out
 rm -f a.out
 
@@ -32,7 +32,7 @@ for a C compiler $cc, such as clang or gcc.
 
 #include <unistd.h>
 
-#include "puffs/gen/h/std/flate.h"
+#include "wuffs/gen/h/std/flate.h"
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 
@@ -48,18 +48,18 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
-  puffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-  puffs_base__buf1 src = {
+  wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  wuffs_base__buf1 src = {
       .ptr = lgtm_ptr, .len = lgtm_len, .wi = lgtm_len, .closed = true};
-  puffs_base__writer1 dst_writer = {.buf = &dst};
-  puffs_base__reader1 src_reader = {.buf = &src};
+  wuffs_base__writer1 dst_writer = {.buf = &dst};
+  wuffs_base__reader1 src_reader = {.buf = &src};
 
-  puffs_flate__flate_decoder dec;
-  puffs_flate__flate_decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_flate__status s =
-      puffs_flate__flate_decoder__decode(&dec, dst_writer, src_reader);
+  wuffs_flate__flate_decoder dec;
+  wuffs_flate__flate_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_flate__status s =
+      wuffs_flate__flate_decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
-    return puffs_flate__status__string(s);
+    return wuffs_flate__status__string(s);
   }
   ignore_return_value(write(1, dst.ptr, dst.wi));
   return NULL;

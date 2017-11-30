@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // commonflags holds flag defaults and usage messages that are common to the
-// Puffs command line tools.
+// Wuffs command line tools.
 //
 // It also holds functions to parse and validate these flag values.
 package commonflags
@@ -23,10 +23,10 @@ const (
 	CcompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
 
 	FocusDefault = ""
-	FocusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "puffs_gif_decode"`
+	FocusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "wuffs_gif_decode"`
 
 	MimicDefault = false
-	MimicUsage   = `whether to compare Puffs' output with other libraries' output`
+	MimicUsage   = `whether to compare Wuffs' output with other libraries' output`
 
 	RepsDefault = 5
 	RepsMin     = 0

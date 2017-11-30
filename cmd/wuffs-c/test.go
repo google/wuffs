@@ -90,7 +90,7 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string, 
 	}
 	ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
 	if mimic {
-		extra, err := findPuffsMimicCflags(in)
+		extra, err := findWuffsMimicCflags(in)
 		if err != nil {
 			return false, err
 		}
@@ -132,7 +132,7 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string, 
 	return failed, nil
 }
 
-func findPuffsMimicCflags(filename string) ([]string, error) {
+func findWuffsMimicCflags(filename string) ([]string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err

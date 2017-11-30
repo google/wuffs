@@ -30,7 +30,7 @@ for a C compiler $cc, such as clang or gcc.
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
-#define PUFFS_EXAMPLE_USE_SECCOMP
+#define WUFFS_EXAMPLE_USE_SECCOMP
 #endif
 
 #define DST_BUFFER_SIZE (1024 * 1024)
@@ -47,18 +47,18 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
-  puffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-  puffs_base__buf1 src = {
+  wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  wuffs_base__buf1 src = {
       .ptr = pjw_ptr, .len = pjw_len, .wi = pjw_len, .closed = true};
-  puffs_base__writer1 dst_writer = {.buf = &dst};
-  puffs_base__reader1 src_reader = {.buf = &src};
+  wuffs_base__writer1 dst_writer = {.buf = &dst};
+  wuffs_base__reader1 src_reader = {.buf = &src};
 
-  puffs_gif__decoder dec;
-  puffs_gif__decoder__initialize(&dec, PUFFS_VERSION, 0);
-  puffs_gif__status s =
-      puffs_gif__decoder__decode(&dec, dst_writer, src_reader);
+  wuffs_gif__decoder dec;
+  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__status s =
+      wuffs_gif__decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
-    return puffs_gif__status__string(s);
+    return wuffs_gif__status__string(s);
   }
 
   if (dst.wi != WIDTH * HEIGHT) {
@@ -79,7 +79,7 @@ static const char* decode() {
 }
 
 int main(int argc, char** argv) {
-#ifdef PUFFS_EXAMPLE_USE_SECCOMP
+#ifdef WUFFS_EXAMPLE_USE_SECCOMP
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
     ignore_return_value(write(2, "\n", 1));
   }
 
-#ifdef PUFFS_EXAMPLE_USE_SECCOMP
+#ifdef WUFFS_EXAMPLE_USE_SECCOMP
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
   // SECCOMP_MODE_STRICT allows only the former.
   syscall(SYS_exit, status);

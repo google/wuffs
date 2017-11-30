@@ -103,13 +103,13 @@ func genLib(outDir string, cc string, dynamism string, filenames []string) error
 	args := []string(nil)
 	switch dynamism {
 	case "dynamic":
-		// TODO: add a "-Wl,-soname,libpuffs.so.1.2.3" argument?
+		// TODO: add a "-Wl,-soname,libwuffs.so.1.2.3" argument?
 		args = append(args, "-shared", "-fPIC", "-o")
 	case "static":
 		cc = "ar"
 		args = append(args, "rc")
 	}
-	out := filepath.Join(outDir, "libpuffs"+libExtensions[dynamism])
+	out := filepath.Join(outDir, "libwuffs"+libExtensions[dynamism])
 	args = append(args, out)
 
 	for _, filename := range filenames {
