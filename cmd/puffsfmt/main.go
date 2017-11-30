@@ -33,9 +33,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/google/puffs/lang/parse"
-	"github.com/google/puffs/lang/render"
-	"github.com/google/puffs/lang/token"
+	"github.com/google/wuffs/lang/parse"
+	"github.com/google/wuffs/lang/render"
+	"github.com/google/wuffs/lang/token"
 )
 
 var (

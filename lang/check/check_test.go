@@ -23,10 +23,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/puffs/lang/ast"
-	"github.com/google/puffs/lang/parse"
-	"github.com/google/puffs/lang/render"
-	"github.com/google/puffs/lang/token"
+	"github.com/google/wuffs/lang/ast"
+	"github.com/google/wuffs/lang/parse"
+	"github.com/google/wuffs/lang/render"
+	"github.com/google/wuffs/lang/token"
 )
 
 func compareToPuffsfmt(tm *token.Map, tokens []token.Token, comments []string, src string) error {

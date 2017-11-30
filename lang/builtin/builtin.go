@@ -16,7 +16,7 @@
 package builtin
 
 import (
-	t "github.com/google/puffs/lang/token"
+	t "github.com/google/wuffs/lang/token"
 )
 
 type Status struct {

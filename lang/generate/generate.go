@@ -21,10 +21,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/puffs/lang/ast"
-	"github.com/google/puffs/lang/check"
-	"github.com/google/puffs/lang/parse"
-	"github.com/google/puffs/lang/token"
+	"github.com/google/wuffs/lang/ast"
+	"github.com/google/wuffs/lang/check"
+	"github.com/google/wuffs/lang/parse"
+	"github.com/google/wuffs/lang/token"
 )
 
 type Generator func(packageName string, tm *token.Map, c *check.Checker, files []*ast.File) ([]byte, error)

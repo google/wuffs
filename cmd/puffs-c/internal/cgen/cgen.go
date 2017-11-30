@@ -24,13 +24,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/google/puffs/lang/base38"
-	"github.com/google/puffs/lang/builtin"
-	"github.com/google/puffs/lang/check"
-	"github.com/google/puffs/lang/generate"
+	"github.com/google/wuffs/lang/base38"
+	"github.com/google/wuffs/lang/builtin"
+	"github.com/google/wuffs/lang/check"
+	"github.com/google/wuffs/lang/generate"
 
-	a "github.com/google/puffs/lang/ast"
-	t "github.com/google/puffs/lang/token"
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 var (

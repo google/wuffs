@@ -22,7 +22,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/google/puffs/lang/token"
+	"github.com/google/wuffs/lang/token"
 )
 
 var newLine = []byte{'\n'}

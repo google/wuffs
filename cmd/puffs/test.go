@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	cf "github.com/google/puffs/cmd/commonflags"
+	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
 func doBench(puffsRoot string, args []string) error { return doBenchTest(puffsRoot, args, true) }

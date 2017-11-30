@@ -17,8 +17,8 @@
 package check
 
 import (
-	a "github.com/google/puffs/lang/ast"
-	t "github.com/google/puffs/lang/token"
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 var reasons = [...]struct {

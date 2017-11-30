@@ -19,10 +19,10 @@ package parse
 import (
 	"fmt"
 
-	"github.com/google/puffs/lang/base38"
+	"github.com/google/wuffs/lang/base38"
 
-	a "github.com/google/puffs/lang/ast"
-	t "github.com/google/puffs/lang/token"
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 func Parse(tm *t.Map, filename string, src []t.Token) (*a.File, error) {

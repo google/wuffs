@@ -17,7 +17,7 @@ package ast
 import (
 	"math/big"
 
-	t "github.com/google/puffs/lang/token"
+	t "github.com/google/wuffs/lang/token"
 )
 
 // Kind is what kind of node it is. For example, a top-level func or a numeric

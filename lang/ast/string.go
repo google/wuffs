@@ -15,7 +15,7 @@
 package ast
 
 import (
-	t "github.com/google/puffs/lang/token"
+	t "github.com/google/wuffs/lang/token"
 )
 
 // String returns a string form of n.

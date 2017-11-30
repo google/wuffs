@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	cf "github.com/google/puffs/cmd/commonflags"
+	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
 func doGenlib(args []string) error {

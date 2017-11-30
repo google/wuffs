@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/google/puffs/lang/base38"
-	"github.com/google/puffs/lang/builtin"
+	"github.com/google/wuffs/lang/base38"
+	"github.com/google/wuffs/lang/builtin"
 
-	a "github.com/google/puffs/lang/ast"
-	t "github.com/google/puffs/lang/token"
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 type Error struct {

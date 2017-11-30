@@ -64,7 +64,7 @@ index f878c5e..f10dcee 100644
 ```bash
 $ puffs gen std/gif
 check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
-/home/n/go/src/github.com/google/puffs/std/gif/decode_lzw.puffs:101. Facts:
+/home/n/go/src/github.com/google/wuffs/std/gif/decode_lzw.puffs:101. Facts:
     n_bits < 8
     c < 256
     this.stack[s] == (c as u8)
@@ -93,12 +93,12 @@ index f878c5e..b43443d 100644
 
 ```bash
 $ puffs gen std/gif
-gen wrote:      /home/n/go/src/github.com/google/puffs/gen/c/gif.c
-gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
+gen wrote:      /home/n/go/src/github.com/google/wuffs/gen/c/gif.c
+gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/h/gif.h
 $ puffs test std/gif
-gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/c/gif.c
-gen unchanged:  /home/n/go/src/github.com/google/puffs/gen/h/gif.h
-test:           /home/n/go/src/github.com/google/puffs/test/c/gif
+gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/c/gif.c
+gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/h/gif.h
+test:           /home/n/go/src/github.com/google/wuffs/test/c/gif
 gif/basic.c     clang   PASS (8 tests run)
 gif/basic.c     gcc     PASS (8 tests run)
 gif/gif.c       clang   FAIL test_lzw_decode: bufs1_equal: wi: got 19311, want 19200.
@@ -220,7 +220,7 @@ might also have to install C compilers like clang and gcc, as well as C
 libraries (and their .h files) like libjpeg and libpng, as some tests compare
 that Puffs produces exactly the same output as these other libraries.
 
-Running `go get -v github.com/google/puffs/cmd/...` will download and install
+Running `go get -v github.com/google/wuffs/cmd/...` will download and install
 the Puffs tools. Change `get` to `install` to re-install those programs without
 downloading, e.g. after you've modified their source code, or after a manually
 issued `git pull`. The Puffs tools that you'll most often use are `puffsfmt`
@@ -262,8 +262,8 @@ you think it should be able to.
 ## Running the Tests
 
 If you've changed any of the tools (i.e. changed any `.go` code), re-run `go
-install -v github.com/google/puffs/cmd/...` and `go test
-github.com/google/puffs/lang/...`.
+install -v github.com/google/wuffs/cmd/...` and `go test
+github.com/google/wuffs/lang/...`.
 
 If you've changed any of the libraries (i.e. changed any `.puffs` code), run
 `puffs test` or, ideally, `puffs test -mimic` to also check that Puffs' output

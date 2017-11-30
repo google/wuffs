@@ -26,7 +26,7 @@ bcheckOptimizeXxx methods."
 The benchmark programs aim to be runnable "out of the box" without any
 configuration or installation. For example, to run the `std/flate` benchmarks:
 
-    git clone https://github.com/google/puffs.git
+    git clone https://github.com/google/wuffs.git
     cd puffs/test/c/std
     gcc -O3 flate.c
     ./a.out -bench
@@ -48,7 +48,7 @@ As mentioned above, individual benchmark programs can be run manually. However,
 the canonical way to run the benchmarks (across multiple compilers and multiple
 packages like GIF and PNG) is to use the `puffs` command line tool, as it will
 also re-generate (transpile) the C code whenever you edit the \*.puffs code.
-Running `go install -v github.com/google/puffs/cmd/...` will install the Puffs
+Running `go install -v github.com/google/wuffs/cmd/...` will install the Puffs
 tools. After that, you can say
 
     puffs bench

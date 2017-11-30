@@ -17,8 +17,8 @@ package ast_test
 import (
 	"testing"
 
-	"github.com/google/puffs/lang/parse"
-	"github.com/google/puffs/lang/token"
+	"github.com/google/wuffs/lang/parse"
+	"github.com/google/wuffs/lang/token"
 )
 
 func TestString(t *testing.T) {

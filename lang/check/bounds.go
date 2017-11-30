@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"math/big"
 
-	a "github.com/google/puffs/lang/ast"
-	t "github.com/google/puffs/lang/token"
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 var numTypeBounds = [256][2]*big.Int{
