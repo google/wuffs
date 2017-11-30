@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// puffs-c handles the C language specific parts of the puffs tool.
+// wuffs-c handles the C language specific parts of the wuffs tool.
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/google/wuffs/cmd/puffs-c/internal/cgen"
+	"github.com/google/wuffs/cmd/wuffs-c/internal/cgen"
 )
 
 func main() {

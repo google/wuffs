@@ -72,7 +72,7 @@ func doBenchTest(args []string, bench bool) error {
 }
 
 func doBenchTest1(filename string, bench bool, ccompilers string, focus string, mimic bool, reps int) (failed bool, err error) {
-	workDir, err := ioutil.TempDir("", "puffs-c")
+	workDir, err := ioutil.TempDir("", "wuffs-c")
 	if err != nil {
 		return false, err
 	}
