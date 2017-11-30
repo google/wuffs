@@ -302,7 +302,7 @@ that all the way through to C code generation and testing.
 
 # Documentation
 
-- [Puffs the Language](./doc/puffs-the-language.md)
+- [Wuffs the Language](./doc/wuffs-the-language.md)
 - Puffs the Library (TODO)
 - [Related Work](./doc/related-work.md)
 - [Roadmap](./doc/roadmap.md)
