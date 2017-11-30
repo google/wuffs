@@ -26,10 +26,10 @@ import (
 	"strings"
 )
 
-func doGen(puffsRoot string, args []string) error    { return doGenGenlib(puffsRoot, args, false) }
-func doGenlib(puffsRoot string, args []string) error { return doGenGenlib(puffsRoot, args, true) }
+func doGen(wuffsRoot string, args []string) error    { return doGenGenlib(wuffsRoot, args, false) }
+func doGenlib(wuffsRoot string, args []string) error { return doGenGenlib(wuffsRoot, args, true) }
 
-func doGenGenlib(puffsRoot string, args []string, genlib bool) error {
+func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	if err := flags.Parse(args); err != nil {
@@ -51,27 +51,27 @@ func doGenGenlib(puffsRoot string, args []string, genlib bool) error {
 			arg = arg[:len(arg)-4]
 		}
 		var err error
-		affected, err = gen(affected, puffsRoot, arg, langs, recursive)
+		affected, err = gen(affected, wuffsRoot, arg, langs, recursive)
 		if err != nil {
 			return err
 		}
 	}
 
 	if genlib {
-		if err := genlibAffected(puffsRoot, langs, affected); err != nil {
+		if err := genlibAffected(wuffsRoot, langs, affected); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func gen(affected []string, puffsRoot, dirname string, langs []string, recursive bool) (retAffected []string, retErr error) {
-	filenames, dirnames, err := listDir(puffsRoot, dirname, recursive)
+func gen(affected []string, wuffsRoot, dirname string, langs []string, recursive bool) (retAffected []string, retErr error) {
+	filenames, dirnames, err := listDir(wuffsRoot, dirname, recursive)
 	if err != nil {
 		return nil, err
 	}
 	if len(filenames) > 0 {
-		if err := genDir(puffsRoot, dirname, filenames, langs); err != nil {
+		if err := genDir(wuffsRoot, dirname, filenames, langs); err != nil {
 			return nil, err
 		}
 		affected = append(affected, dirname)
@@ -79,7 +79,7 @@ func gen(affected []string, puffsRoot, dirname string, langs []string, recursive
 	if len(dirnames) > 0 {
 		for _, d := range dirnames {
 			var err error
-			affected, err = gen(affected, puffsRoot, dirname+"/"+d, langs, recursive)
+			affected, err = gen(affected, wuffsRoot, dirname+"/"+d, langs, recursive)
 			if err != nil {
 				return nil, err
 			}
@@ -88,9 +88,9 @@ func gen(affected []string, puffsRoot, dirname string, langs []string, recursive
 	return affected, nil
 }
 
-func genDir(puffsRoot string, dirname string, filenames []string, langs []string) error {
+func genDir(wuffsRoot string, dirname string, filenames []string, langs []string) error {
 	// TODO: skip the generation if the output file already exists and its
-	// mtime is newer than all inputs and the puffs-gen-foo command.
+	// mtime is newer than all inputs and the wuffs-gen-foo command.
 
 	packageName := path.Base(dirname)
 	if !validName(packageName) {
@@ -99,11 +99,11 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 	cmdArgs := []string{"gen", "-package_name", packageName}
 	for _, filename := range filenames {
 		cmdArgs = append(cmdArgs,
-			filepath.Join(puffsRoot, filepath.FromSlash(dirname), filename))
+			filepath.Join(wuffsRoot, filepath.FromSlash(dirname), filename))
 	}
 
 	for _, lang := range langs {
-		command := "puffs-" + lang
+		command := "wuffs-" + lang
 		stdout := &bytes.Buffer{}
 		cmd := exec.Command(command, cmdArgs...)
 		cmd.Stdin = nil
@@ -117,7 +117,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 		out := stdout.Bytes()
-		if err := genFile(puffsRoot, dirname, lang, out); err != nil {
+		if err := genFile(wuffsRoot, dirname, lang, out); err != nil {
 			return err
 		}
 
@@ -130,7 +130,7 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 		} else {
 			out = out[:i]
 		}
-		if err := genFile(puffsRoot, dirname, "h", out); err != nil {
+		if err := genFile(wuffsRoot, dirname, "h", out); err != nil {
 			return err
 		}
 	}
@@ -139,8 +139,8 @@ func genDir(puffsRoot string, dirname string, filenames []string, langs []string
 
 var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
 
-func genFile(puffsRoot string, dirname string, lang string, out []byte) error {
-	outFilename := filepath.Join(puffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
+func genFile(wuffsRoot string, dirname string, lang string, out []byte) error {
+	outFilename := filepath.Join(wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
 	if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
 		fmt.Println("gen unchanged: ", outFilename)
 		return nil
@@ -155,12 +155,12 @@ func genFile(puffsRoot string, dirname string, lang string, out []byte) error {
 	return nil
 }
 
-func genlibAffected(puffsRoot string, langs []string, affected []string) error {
+func genlibAffected(wuffsRoot string, langs []string, affected []string) error {
 	for _, lang := range langs {
-		command := "puffs-" + lang
+		command := "wuffs-" + lang
 		args := []string{"genlib"}
-		args = append(args, "-dstdir", filepath.Join(puffsRoot, "gen", "lib", lang))
-		args = append(args, "-srcdir", filepath.Join(puffsRoot, "gen", lang))
+		args = append(args, "-dstdir", filepath.Join(wuffsRoot, "gen", "lib", lang))
+		args = append(args, "-srcdir", filepath.Join(wuffsRoot, "gen", lang))
 		args = append(args, affected...)
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout

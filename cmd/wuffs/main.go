@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// puffs is a tool for managing Puffs source code.
+// wuffs is a tool for managing Wuffs source code.
 package main
 
 import (
@@ -28,7 +28,7 @@ import (
 
 var commands = []struct {
 	name string
-	do   func(puffsRoot string, args []string) error
+	do   func(wuffsRoot string, args []string) error
 }{
 	{"bench", doBench},
 	{"gen", doGen},
@@ -37,11 +37,11 @@ var commands = []struct {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `Puffs is a tool for managing Puffs source code.
+	fmt.Fprintf(os.Stderr, `Wuffs is a tool for managing Wuffs source code.
 
 Usage:
 
-	puffs command [arguments]
+	wuffs command [arguments]
 
 The commands are:
 
@@ -63,14 +63,14 @@ func main1() error {
 	flag.Usage = usage
 	flag.Parse()
 
-	puffsRoot, err := findPuffsRoot()
+	wuffsRoot, err := findWuffsRoot()
 	if err != nil {
 		return err
 	}
 	if args := flag.Args(); len(args) > 0 {
 		for _, c := range commands {
 			if args[0] == c.name {
-				return c.do(puffsRoot, args[1:])
+				return c.do(wuffsRoot, args[1:])
 			}
 		}
 	}
@@ -79,19 +79,19 @@ func main1() error {
 	return nil
 }
 
-func findPuffsRoot() (string, error) {
-	// TODO: look for a PUFFSROOT environment variable?
+func findWuffsRoot() (string, error) {
+	// TODO: look for a WUFFSROOT environment variable?
 	for _, p := range filepath.SplitList(build.Default.GOPATH) {
-		p = filepath.Join(p, "src", "github.com", "google", "puffs")
+		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
 		if o, err := os.Stat(p); err == nil && o.IsDir() {
 			return p, nil
 		}
 	}
-	return "", errors.New("could not find Puffs root directory")
+	return "", errors.New("could not find Wuffs root directory")
 }
 
-func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
-	f, err := os.Open(filepath.Join(puffsRoot, filepath.FromSlash(dirname)))
+func listDir(wuffsRoot string, dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
+	f, err := os.Open(filepath.Join(wuffsRoot, filepath.FromSlash(dirname)))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,7 +107,7 @@ func listDir(puffsRoot string, dirname string, returnSubdirs bool) (filenames []
 			if returnSubdirs {
 				dirnames = append(dirnames, name)
 			}
-		} else if strings.HasSuffix(name, ".puffs") {
+		} else if strings.HasSuffix(name, ".wuffs") {
 			filenames = append(filenames, name)
 		}
 	}

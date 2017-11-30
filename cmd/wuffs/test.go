@@ -25,10 +25,10 @@ import (
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
-func doBench(puffsRoot string, args []string) error { return doBenchTest(puffsRoot, args, true) }
-func doTest(puffsRoot string, args []string) error  { return doBenchTest(puffsRoot, args, false) }
+func doBench(wuffsRoot string, args []string) error { return doBenchTest(wuffsRoot, args, true) }
+func doTest(wuffsRoot string, args []string) error  { return doBenchTest(wuffsRoot, args, false) }
 
-func doBenchTest(puffsRoot string, args []string, bench bool) error {
+func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	flags := flag.NewFlagSet("test", flag.ExitOnError)
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
@@ -74,7 +74,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 	}
 
 	b := btHelper{
-		puffsRoot:  puffsRoot,
+		wuffsRoot:  wuffsRoot,
 		langs:      langs,
 		cmdArgs:    cmdArgs,
 		ccompilers: *ccompilersFlag,
@@ -89,7 +89,7 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 
 		// Ensure that we are testing the latest version of the generated code.
 		if !*skipgenFlag {
-			if _, err := gen(nil, puffsRoot, arg, langs, recursive); err != nil {
+			if _, err := gen(nil, wuffsRoot, arg, langs, recursive); err != nil {
 				return err
 			}
 		}
@@ -106,20 +106,20 @@ func doBenchTest(puffsRoot string, args []string, bench bool) error {
 		if bench {
 			s0, s1 = "bench", "benchmarks"
 		}
-		return fmt.Errorf("puffs %s: some %s failed", s0, s1)
+		return fmt.Errorf("wuffs %s: some %s failed", s0, s1)
 	}
 	return nil
 }
 
 type btHelper struct {
-	puffsRoot  string
+	wuffsRoot  string
 	langs      []string
 	cmdArgs    []string
 	ccompilers string
 }
 
 func (b *btHelper) benchTest(dirname string, recursive bool) (failed bool, err error) {
-	filenames, dirnames, err := listDir(b.puffsRoot, dirname, recursive)
+	filenames, dirnames, err := listDir(b.wuffsRoot, dirname, recursive)
 	if err != nil {
 		return false, err
 	}
@@ -148,13 +148,13 @@ func (b *btHelper) benchTestDir(dirname string) (failed bool, err error) {
 	}
 
 	for _, lang := range b.langs {
-		command := "puffs-" + lang
+		command := "wuffs-" + lang
 		args := []string(nil)
 		args = append(args, b.cmdArgs...)
 		if lang == "c" {
 			args = append(args, fmt.Sprintf("-ccompilers=%s", b.ccompilers))
 		}
-		args = append(args, filepath.Join(b.puffsRoot, "test", lang, filepath.FromSlash(dirname)))
+		args = append(args, filepath.Join(b.wuffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
