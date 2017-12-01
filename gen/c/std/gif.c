@@ -125,16 +125,17 @@ typedef int32_t wuffs_gif__status;
 
 #define wuffs_gif__packageid 1017222  // 0x000f8586
 
-#define WUFFS_GIF__STATUS_OK 0                               // 0x00000000
-#define WUFFS_GIF__ERROR_BAD_WUFFS_VERSION -2147483647       // 0x80000001
-#define WUFFS_GIF__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define WUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define WUFFS_GIF__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
-#define WUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
-#define WUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
-#define WUFFS_GIF__SUSPENSION_SHORT_READ 8                   // 0x00000008
-#define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
+#define WUFFS_GIF__STATUS_OK 0                                   // 0x00000000
+#define WUFFS_GIF__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
+#define WUFFS_GIF__ERROR_BAD_RECEIVER -2147483646                // 0x80000002
+#define WUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645                // 0x80000003
+#define WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644      // 0x80000004
+#define WUFFS_GIF__ERROR_INVALID_I_O_OPERATION -2147483643       // 0x80000005
+#define WUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483642           // 0x80000006
+#define WUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
+#define WUFFS_GIF__SUSPENSION_SHORT_READ 8                       // 0x00000008
+#define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
+#define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000a
 
 #define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
 #define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
@@ -632,7 +633,7 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
   return s < 0;
 }
 
-const char* wuffs_gif__status__strings0[10] = {
+const char* wuffs_gif__status__strings0[11] = {
     "gif: ok",
     "gif: bad wuffs version",
     "gif: bad receiver",
@@ -643,6 +644,7 @@ const char* wuffs_gif__status__strings0[10] = {
     "gif: unexpected EOF",
     "gif: short read",
     "gif: short write",
+    "gif: cannot return a suspension",
 };
 
 const char* wuffs_gif__status__strings1[8] = {
@@ -662,7 +664,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = wuffs_gif__status__strings0;
-      n = 10;
+      n = 11;
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings1;

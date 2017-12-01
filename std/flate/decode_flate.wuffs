@@ -127,7 +127,6 @@ pub func flate_decoder.decode?(dst writer1, src reader1)() {
 		in.dst.mark()
 		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
 		if not z.is_suspension() {
-			// TODO: rename "return" to "raise"?
 			return z
 		}
 		// TODO: should "since_mark" be "since_mark!", as the return value lets
@@ -171,7 +170,7 @@ pub func flate_decoder.decode?(dst writer1, src reader1)() {
 				this.history_index = (this.history_index & 0x7FFF) + ((n_copied & 0x7FFF) as u32) + already_full
 			}
 		}
-		return z
+		yield z
 	}
 }
 
@@ -239,9 +238,9 @@ pri func flate_decoder.decode_uncompressed?(dst writer1, src reader1)() {
 		length -= n_copied
 		if in.dst.available() == 0 {
 			// TODO: "closed for writes" instead?
-			return suspension "short write"
+			yield suspension "short write"
 		} else {
-			return suspension "short read"
+			yield suspension "short read"
 		}
 	}
 }

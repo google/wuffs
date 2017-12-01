@@ -219,8 +219,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.printf("goto label_%d_%s;\n", jt, keyword)
 		return nil
 
-	case a.KReturn:
-		n := n.Return()
+	case a.KRet:
+		n := n.Ret()
 		retExpr := n.Value()
 
 		if g.currFunk.suspendible {
@@ -238,15 +238,20 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			}
 			b.writes(";")
 
+			if n.Keyword().Key() == t.KeyYield {
+				return g.writeCoroSuspPoint(b, true)
+			}
+
 			switch retKeyword {
 			case t.KeyError:
 				b.writes("goto exit;")
-				return nil
 			case t.KeyStatus:
 				b.writes("goto ok;")
-				return nil
+			default:
+				b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
+					"status = %sERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;", g.PKGPREFIX)
 			}
-			return g.writeCoroSuspPoint(b, true)
+			return nil
 		}
 
 		b.writes("return ")

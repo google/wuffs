@@ -118,7 +118,7 @@ pub func lzw_decoder.decode?(dst writer1, src reader1)() {
 				}
 				s = (s + ((n_copied & 4095) as u32)) & 4095
 				// TODO: "closed for writes" instead?
-				return suspension "short write"
+				yield suspension "short write"
 			}
 
 			if save_code <= 4095 {

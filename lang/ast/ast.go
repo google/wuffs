@@ -44,7 +44,7 @@ const (
 	KIterate
 	KJump
 	KPackageID
-	KReturn
+	KRet
 	KStatus
 	KStruct
 	KTypeExpr
@@ -75,7 +75,7 @@ var kindStrings = [...]string{
 	KIterate:   "KIterate",
 	KJump:      "KJump",
 	KPackageID: "KPackageID",
-	KReturn:    "KReturn",
+	KRet:       "KRet",
 	KStatus:    "KStatus",
 	KStruct:    "KStruct",
 	KTypeExpr:  "KTypeExpr",
@@ -160,7 +160,7 @@ func (n *Node) Iterate() *Iterate     { return (*Iterate)(n) }
 func (n *Node) Jump() *Jump           { return (*Jump)(n) }
 func (n *Node) PackageID() *PackageID { return (*PackageID)(n) }
 func (n *Node) Raw() *Raw             { return (*Raw)(n) }
-func (n *Node) Return() *Return       { return (*Return)(n) }
+func (n *Node) Ret() *Ret             { return (*Ret)(n) }
 func (n *Node) Status() *Status       { return (*Status)(n) }
 func (n *Node) Struct() *Struct       { return (*Struct)(n) }
 func (n *Node) TypeExpr() *TypeExpr   { return (*TypeExpr)(n) }
@@ -507,16 +507,19 @@ func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node)
 	}
 }
 
-// Return is "return LHS":
+// Ret is "return LHS" or "yield LHS":
+//  - ID0:   <IDReturn|IDYield>
 //  - LHS:   <nil|Expr>
-type Return Node
+type Ret Node
 
-func (n *Return) Node() *Node  { return (*Node)(n) }
-func (n *Return) Value() *Expr { return n.lhs.Expr() }
+func (n *Ret) Node() *Node   { return (*Node)(n) }
+func (n *Ret) Keyword() t.ID { return n.id0 }
+func (n *Ret) Value() *Expr  { return n.lhs.Expr() }
 
-func NewReturn(value *Expr) *Return {
-	return &Return{
-		kind: KReturn,
+func NewRet(keyword t.ID, value *Expr) *Ret {
+	return &Ret{
+		kind: KRet,
+		id0:  keyword,
 		lhs:  value.Node(),
 	}
 }
@@ -663,7 +666,7 @@ const MaxBodyDepth = 255
 //  - If
 //  - Iterate
 //  - Jump
-//  - Return
+//  - Ret
 //  - Var
 //  - While
 type Func Node

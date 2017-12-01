@@ -54,7 +54,7 @@ pub func zlib_decoder.decode?(dst writer1, src reader1)() {
 		if z.is_ok() {
 			break
 		}
-		return z
+		yield z
 	}
 	if checksum != in.src.read_u32be?() {
 		return error "checksum mismatch"

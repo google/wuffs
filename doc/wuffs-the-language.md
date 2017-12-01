@@ -27,7 +27,7 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 - `pri`
 - `pub`
 
-7 keywords deal with control flow within a function:
+8 keywords deal with control flow within a function:
 
 - `break`
 - `continue`
@@ -36,6 +36,7 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 - `iterate`
 - `return`
 - `while`
+- `yield`
 
 5 keywords deal with assertions:
 

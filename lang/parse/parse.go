@@ -612,7 +612,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewIterate(label, unroll, vars, asserts, body).Node(), nil
 
-	case t.KeyReturn:
+	case t.KeyReturn, t.KeyYield:
 		p.src = p.src[1:]
 		value, err := (*a.Expr)(nil), error(nil)
 		if p.peek1().Key() != t.KeySemicolon {
@@ -621,7 +621,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 				return nil, err
 			}
 		}
-		return a.NewReturn(value).Node(), nil
+		return a.NewRet(x, value).Node(), nil
 
 	case t.KeyVar:
 		p.src = p.src[1:]

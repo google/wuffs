@@ -156,8 +156,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		n.SetJumpTarget(jumpTarget)
 
-	case a.KReturn:
-		n := n.Return()
+	case a.KRet:
+		n := n.Ret()
 		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err

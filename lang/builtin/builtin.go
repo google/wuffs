@@ -36,6 +36,7 @@ func (z Status) String() string {
 }
 
 var StatusList = [...]Status{
+	// TODO: sort these somehow, when the list has stabilized?
 	{0, "ok"},
 	{t.IDError, "bad wuffs version"},
 	{t.IDError, "bad receiver"},
@@ -46,6 +47,7 @@ var StatusList = [...]Status{
 	{t.IDError, "unexpected EOF"},    // Used if reading when closed == true.
 	{t.IDSuspension, "short read"},   // Used if reading when closed == false.
 	{t.IDSuspension, "short write"},
+	{t.IDError, "cannot return a suspension"},
 }
 
 var StatusMap = map[string]Status{}

@@ -218,12 +218,22 @@ func bcheckField(tm *t.Map, n *a.Field) error {
 }
 
 func (q *checker) bcheckBlock(block []*a.Node) error {
+loop:
 	for _, o := range block {
 		if err := q.bcheckStatement(o); err != nil {
 			return err
 		}
-		if k := o.Kind(); k == a.KJump || k == a.KReturn {
-			break
+		switch o.Kind() {
+		case a.KJump:
+			break loop
+		case a.KRet:
+			if o.Ret().Keyword().Key() == t.KeyReturn {
+				break loop
+			}
+			// o is a yield statement.
+			//
+			// TODO: invalidate this-, in- and out-related facts because the
+			// suspension can change the state of this and its fields.
 		}
 	}
 	return nil
@@ -276,7 +286,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		q.facts = q.facts[:0]
 		return nil
 
-	case a.KReturn:
+	case a.KRet:
 		// TODO.
 
 	case a.KVar:
@@ -475,8 +485,6 @@ func terminates(body []*a.Node) bool {
 	if len(body) > 0 {
 		n := body[len(body)-1]
 		switch n.Kind() {
-		case a.KReturn, a.KJump:
-			return true
 		case a.KIf:
 			n := n.If()
 			for {
@@ -492,6 +500,10 @@ func terminates(body []*a.Node) bool {
 					return len(bif) > 0
 				}
 			}
+		case a.KJump:
+			return true
+		case a.KRet:
+			return n.Ret().Keyword().Key() == t.KeyReturn
 		}
 		return false
 	}

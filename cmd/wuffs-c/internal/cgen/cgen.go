@@ -228,7 +228,7 @@ func (g *gen) genHeader(b *buffer) error {
 
 	for i, z := range builtin.StatusList {
 		code := uint32(0)
-		if z.Keyword == t.IDError {
+		if z.Keyword.Key() == t.KeyError {
 			code |= 1 << 31
 		}
 		code |= uint32(i)

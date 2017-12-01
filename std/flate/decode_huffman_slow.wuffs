@@ -212,13 +212,9 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 						}
 					}
 					// TODO: "closed for writes" instead?
-					return suspension "short write"
-					// TODO: this "assert false" should be a compiler error.
-					// This might mean differentiating "return" and "raise".
-					//
+					yield suspension "short write"
 					// TODO: invalidate this-related facts because the
 					// suspension can change the state of this and its fields.
-					assert false
 				}
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {
@@ -231,7 +227,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 						hlen -= n_copied
 						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
 						// TODO: "closed for writes" instead?
-						return suspension "short write"
+						yield suspension "short write"
 					}
 				}
 
@@ -249,7 +245,7 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			}
 			length -= n_copied
 			// TODO: "closed for writes" instead?
-			return suspension "short write"
+			yield suspension "short write"
 		}
 	}
 

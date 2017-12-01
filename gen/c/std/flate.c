@@ -125,16 +125,17 @@ typedef int32_t wuffs_flate__status;
 
 #define wuffs_flate__packageid 967230  // 0x000ec23e
 
-#define WUFFS_FLATE__STATUS_OK 0                               // 0x00000000
-#define WUFFS_FLATE__ERROR_BAD_WUFFS_VERSION -2147483647       // 0x80000001
-#define WUFFS_FLATE__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define WUFFS_FLATE__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define WUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define WUFFS_FLATE__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
-#define WUFFS_FLATE__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
-#define WUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
-#define WUFFS_FLATE__SUSPENSION_SHORT_READ 8                   // 0x00000008
-#define WUFFS_FLATE__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
+#define WUFFS_FLATE__STATUS_OK 0                                   // 0x00000000
+#define WUFFS_FLATE__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
+#define WUFFS_FLATE__ERROR_BAD_RECEIVER -2147483646                // 0x80000002
+#define WUFFS_FLATE__ERROR_BAD_ARGUMENT -2147483645                // 0x80000003
+#define WUFFS_FLATE__ERROR_INITIALIZER_NOT_CALLED -2147483644      // 0x80000004
+#define WUFFS_FLATE__ERROR_INVALID_I_O_OPERATION -2147483643       // 0x80000005
+#define WUFFS_FLATE__ERROR_CLOSED_FOR_WRITES -2147483642           // 0x80000006
+#define WUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
+#define WUFFS_FLATE__SUSPENSION_SHORT_READ 8                       // 0x00000008
+#define WUFFS_FLATE__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
+#define WUFFS_FLATE__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000a
 
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1157040128  // 0xbb08f800
@@ -690,7 +691,7 @@ bool wuffs_flate__status__is_error(wuffs_flate__status s) {
   return s < 0;
 }
 
-const char* wuffs_flate__status__strings0[10] = {
+const char* wuffs_flate__status__strings0[11] = {
     "flate: ok",
     "flate: bad wuffs version",
     "flate: bad receiver",
@@ -701,6 +702,7 @@ const char* wuffs_flate__status__strings0[10] = {
     "flate: unexpected EOF",
     "flate: short read",
     "flate: short write",
+    "flate: cannot return a suspension",
 };
 
 const char* wuffs_flate__status__strings1[22] = {
@@ -734,7 +736,7 @@ const char* wuffs_flate__status__string(wuffs_flate__status s) {
   switch ((s >> 10) & 0x1fffff) {
     case 0:
       a = wuffs_flate__status__strings0;
-      n = 10;
+      n = 11;
       break;
     case wuffs_flate__packageid:
       a = wuffs_flate__status__strings1;
@@ -962,7 +964,12 @@ wuffs_flate__status wuffs_flate__flate_decoder__decode(
       }
       if (!(v_z > 0)) {
         status = v_z;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+        if (status == 0) {
+          goto ok;
+        } else if (status > 0) {
+          status = WUFFS_FLATE__ERROR_CANNOT_RETURN_A_SUSPENSION;
+        }
+        goto exit;
       }
       v_written = ((wuffs_base__slice_u8){
           .ptr = a_dst.private_impl.mark,
@@ -1003,7 +1010,7 @@ wuffs_flate__status wuffs_flate__flate_decoder__decode(
         }
       }
       status = v_z;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
     }
 
     goto ok;
