@@ -123,7 +123,7 @@ extern "C" {
 // wuffs_gif__status__is_error instead.
 typedef int32_t wuffs_gif__status;
 
-#define wuffs_gif__packageid 1017222  // 0x000f8586
+#define wuffs_gif__packageid 1017222  // 0x000F8586
 
 #define WUFFS_GIF__STATUS_OK 0                                   // 0x00000000
 #define WUFFS_GIF__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
@@ -135,18 +135,18 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
 #define WUFFS_GIF__SUSPENSION_SHORT_READ 8                       // 0x00000008
 #define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
-#define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000a
+#define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 
-#define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xbe161800
-#define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xbe161801
-#define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xbe161802
-#define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xbe161803
+#define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xBE161800
+#define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xBE161801
+#define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xBE161803
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ \
-  -1105848316  // 0xbe161804
+  -1105848316  // 0xBE161804
 #define WUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848315                                                      // 0xbe161805
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848314      // 0xbe161806
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848313  // 0xbe161807
+  -1105848315                                                      // 0xBE161805
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848314      // 0xBE161806
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848313  // 0xBE161807
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -661,7 +661,7 @@ const char* wuffs_gif__status__strings1[8] = {
 const char* wuffs_gif__status__string(wuffs_gif__status s) {
   const char** a = NULL;
   uint32_t n = 0;
-  switch ((s >> 10) & 0x1fffff) {
+  switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_gif__status__strings0;
       n = 11;
@@ -671,7 +671,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
       n = 8;
       break;
   }
-  uint32_t i = s & 0xff;
+  uint32_t i = s & 0xFF;
   return i < n ? a[i] : "gif: unknown status";
 }
 

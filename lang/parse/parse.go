@@ -840,7 +840,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		if !x.IsAssociativeOp() || x != p.peek1() {
 			op := x.BinaryForm()
 			if op == 0 {
-				return nil, fmt.Errorf(`parse: internal error: no binary form for token.Key 0x%#02x`, x.Key())
+				return nil, fmt.Errorf(`parse: internal error: no binary form for token.Key 0x%02X`, x.Key())
 			}
 			return a.NewExpr(0, op, 0, lhs.Node(), nil, rhs, nil), nil
 		}
@@ -856,7 +856,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		}
 		op := x.AssociativeForm()
 		if op == 0 {
-			return nil, fmt.Errorf(`parse: internal error: no associative form for token.Key 0x%#02x`, x.Key())
+			return nil, fmt.Errorf(`parse: internal error: no associative form for token.Key 0x%02X`, x.Key())
 		}
 		return a.NewExpr(0, op, 0, nil, nil, nil, args), nil
 	}
@@ -873,7 +873,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		}
 		op := x.UnaryForm()
 		if op == 0 {
-			return nil, fmt.Errorf(`parse: internal error: no unary form for token.Key 0x%#02x`, x.Key())
+			return nil, fmt.Errorf(`parse: internal error: no unary form for token.Key 0x%02X`, x.Key())
 		}
 		return a.NewExpr(0, op, 0, nil, nil, rhs.Node(), nil), nil
 

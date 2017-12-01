@@ -123,7 +123,7 @@ extern "C" {
 // wuffs_flate__status__is_error instead.
 typedef int32_t wuffs_flate__status;
 
-#define wuffs_flate__packageid 967230  // 0x000ec23e
+#define wuffs_flate__packageid 967230  // 0x000EC23E
 
 #define WUFFS_FLATE__STATUS_OK 0                                   // 0x00000000
 #define WUFFS_FLATE__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
@@ -135,44 +135,44 @@ typedef int32_t wuffs_flate__status;
 #define WUFFS_FLATE__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
 #define WUFFS_FLATE__SUSPENSION_SHORT_READ 8                       // 0x00000008
 #define WUFFS_FLATE__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
-#define WUFFS_FLATE__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000a
+#define WUFFS_FLATE__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
-  -1157040128  // 0xbb08f800
+  -1157040128  // 0xBB08F800
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED \
-  -1157040127  // 0xbb08f801
+  -1157040127  // 0xBB08F801
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
-  -1157040126  // 0xbb08f802
+  -1157040126  // 0xBB08F802
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
-  -1157040125                                            // 0xbb08f803
-#define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE -1157040124  // 0xbb08f804
+  -1157040125                                            // 0xBB08F803
+#define WUFFS_FLATE__ERROR_BAD_HUFFMAN_CODE -1157040124  // 0xBB08F804
 #define WUFFS_FLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
-  -1157040123                                                   // 0xbb08f805
-#define WUFFS_FLATE__ERROR_BAD_DISTANCE -1157040122             // 0xbb08f806
-#define WUFFS_FLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xbb08f807
-#define WUFFS_FLATE__ERROR_BAD_FLATE_BLOCK -1157040120          // 0xbb08f808
+  -1157040123                                                   // 0xBB08F805
+#define WUFFS_FLATE__ERROR_BAD_DISTANCE -1157040122             // 0xBB08F806
+#define WUFFS_FLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xBB08F807
+#define WUFFS_FLATE__ERROR_BAD_FLATE_BLOCK -1157040120          // 0xBB08F808
 #define WUFFS_FLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040119                                             // 0xbb08f809
-#define WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH -1157040118  // 0xbb08f80a
+  -1157040119                                             // 0xBB08F809
+#define WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH -1157040118  // 0xBB08F80A
 #define WUFFS_FLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040117  // 0xbb08f80b
+  -1157040117  // 0xBB08F80B
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
-  -1157040116  // 0xbb08f80c
+  -1157040116  // 0xBB08F80C
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
-  -1157040115  // 0xbb08f80d
+  -1157040115  // 0xBB08F80D
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
-  -1157040114  // 0xbb08f80e
+  -1157040114  // 0xBB08F80E
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040113                                                     // 0xbb08f80f
-#define WUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040112  // 0xbb08f810
-#define WUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040111           // 0xbb08f811
+  -1157040113                                                     // 0xBB08F80F
+#define WUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040112  // 0xBB08F810
+#define WUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040111           // 0xBB08F811
 #define WUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040110  // 0xbb08f812
+  -1157040110  // 0xBB08F812
 #define WUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040109                                                     // 0xbb08f813
-#define WUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040108  // 0xbb08f814
+  -1157040109                                                     // 0xBB08F813
+#define WUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040108  // 0xBB08F814
 #define WUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040107  // 0xbb08f815
+  -1157040107  // 0xBB08F815
 
 bool wuffs_flate__status__is_error(wuffs_flate__status s);
 
@@ -733,7 +733,7 @@ const char* wuffs_flate__status__strings1[22] = {
 const char* wuffs_flate__status__string(wuffs_flate__status s) {
   const char** a = NULL;
   uint32_t n = 0;
-  switch ((s >> 10) & 0x1fffff) {
+  switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_flate__status__strings0;
       n = 11;
@@ -743,7 +743,7 @@ const char* wuffs_flate__status__string(wuffs_flate__status s) {
       n = 22;
       break;
   }
-  uint32_t i = s & 0xff;
+  uint32_t i = s & 0xFF;
   return i < n ? a[i] : "flate: unknown status";
 }
 

@@ -124,7 +124,7 @@ func main() {
         }
         fmt.Printf("uint8_t pjw_ptr[] = {\n")
         for _, c := range data {
-                fmt.Printf("%#02x,", c)
+                fmt.Printf("0x%02X,", c)
         }
         fmt.Printf("\n};\n")
         fmt.Printf("size_t pjw_len = %d;\n", len(data))

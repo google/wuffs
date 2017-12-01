@@ -224,7 +224,7 @@ func (g *gen) genHeader(b *buffer) error {
 		"// %sstatus__is_error instead.\n", g.pkgPrefix)
 	b.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
-	b.printf("#define %spackageid %d // %#08x\n\n", g.pkgPrefix, pkgID, pkgID)
+	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)
 
 	for i, z := range builtin.StatusList {
 		code := uint32(0)
@@ -232,7 +232,7 @@ func (g *gen) genHeader(b *buffer) error {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
-		b.printf("#define %s %d // %#08x\n", strings.ToUpper(g.cName(z.String())), int32(code), code)
+		b.printf("#define %s %d // 0x%08X\n", strings.ToUpper(g.cName(z.String())), int32(code), code)
 	}
 	b.writes("\n")
 
@@ -245,7 +245,7 @@ func (g *gen) genHeader(b *buffer) error {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
-		b.printf("#define %s %d // %#08x\n", s.name, int32(code), code)
+		b.printf("#define %s %d // 0x%08X\n", s.name, int32(code), code)
 	}
 	b.writes("\n")
 
@@ -305,13 +305,13 @@ func (g *gen) genImpl(b *buffer) error {
 	b.printf("const char* %sstatus__string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
 	b.printf("const char** a = NULL;\n")
 	b.printf("uint32_t n = 0;\n")
-	b.printf("switch ((s >> %d) & %#x) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
+	b.printf("switch ((s >> %d) & 0x%X) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
 	b.printf("case 0: a = %sstatus__strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
 	b.printf("case %spackageid: a = %sstatus__strings1; n = %d; break;\n",
 		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
 	// TODO: add cases for other packages used by this one.
 	b.printf("}\n")
-	b.printf("uint32_t i = s & %#0x;\n", 1<<statusCodeCodeBits-1)
+	b.printf("uint32_t i = s & 0x%X;\n", 1<<statusCodeCodeBits-1)
 	b.printf("return i < n ? a[i] : \"%s: unknown status\";\n", g.pkgName)
 	b.writes("}\n\n")
 
