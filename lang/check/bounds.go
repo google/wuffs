@@ -232,8 +232,16 @@ loop:
 			}
 			// o is a yield statement.
 			//
-			// TODO: invalidate this-, in- and out-related facts because the
-			// suspension can change the state of this and its fields.
+			// Drop any facts involving in, out or this.
+			if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+				if x.Mentions(exprIn) || x.Mentions(exprOut) || x.Mentions(exprThis) {
+					return nil, nil
+				}
+				return x, nil
+			}); err != nil {
+				return err
+			}
+			// TODO: drop any facts involving ptr-typed local variables?
 		}
 	}
 	return nil

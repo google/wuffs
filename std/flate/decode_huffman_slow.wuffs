@@ -213,8 +213,6 @@ pri func flate_decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 					}
 					// TODO: "closed for writes" instead?
 					yield suspension "short write"
-					// TODO: invalidate this-related facts because the
-					// suspension can change the state of this and its fields.
 				}
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {

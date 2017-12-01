@@ -59,6 +59,12 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
+var (
+	exprIn   = a.NewExpr(a.FlagsTypeChecked, 0, t.IDIn, nil, nil, nil, nil)
+	exprOut  = a.NewExpr(a.FlagsTypeChecked, 0, t.IDOut, nil, nil, nil, nil)
+	exprThis = a.NewExpr(a.FlagsTypeChecked, 0, t.IDThis, nil, nil, nil, nil)
+)
+
 // typeExprFoo is an *ast.Node MType (implicit type).
 var (
 	typeExprBool    = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
