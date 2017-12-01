@@ -63,8 +63,8 @@ const (
 // ID combines a Key and Flags.
 type ID uint32
 
-// String returns a string form of x.
-func (x ID) String(m *Map) string { return m.ByID(x) }
+// Str returns a string form of x.
+func (x ID) Str(m *Map) string { return m.ByID(x) }
 
 func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&(x>>KeyShift)] }
 func (x ID) UnaryForm() ID       { return unaryForms[0xFF&(x>>KeyShift)] }
@@ -99,8 +99,8 @@ func (x ID) IsXAssociativeOp() bool { return x.Key().isXOp() && x.IsAssociativeO
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
 
-// String returns a string form of x.
-func (x QID) String(m *Map) string {
+// Str returns a string form of x.
+func (x QID) Str(m *Map) string {
 	if x[0] == 0 {
 		return m.ByID(x[1])
 	}

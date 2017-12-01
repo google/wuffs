@@ -431,11 +431,11 @@ func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 			return 8, nil
 		}
 	}
-	return 0, fmt.Errorf("unknown sizeof for %q", typ.String(g.tm))
+	return 0, fmt.Errorf("unknown sizeof for %q", typ.Str(g.tm))
 }
 
 func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
-	raw := n.Message().String(g.tm)
+	raw := n.Message().Str(g.tm)
 	msg, ok := t.Unescape(raw)
 	if !ok {
 		return fmt.Errorf("bad status message %q", raw)
@@ -459,7 +459,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 		b.writes("static ")
 	}
 	b.writes("const ")
-	if err := g.writeCTypeName(b, n.XType(), g.pkgPrefix, n.Name().String(g.tm)); err != nil {
+	if err := g.writeCTypeName(b, n.XType(), g.pkgPrefix, n.Name().Str(g.tm)); err != nil {
 		return err
 	}
 	b.writes(" = ")
@@ -484,7 +484,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 		}
 		b.writeb('}')
 	default:
-		return fmt.Errorf("invalid const value %q", n.String(g.tm))
+		return fmt.Errorf("invalid const value %q", n.Str(g.tm))
 	}
 	return nil
 }
@@ -495,7 +495,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// set "self->private_impl.status = WUFFS_ETC__ERROR_BAD_WUFFS_VERSION;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
-	structName := n.Name().String(g.tm)
+	structName := n.Name().Str(g.tm)
 	b.writes("typedef struct {\n")
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
@@ -513,7 +513,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 
 	for _, o := range n.Fields() {
 		o := o.Field()
-		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().String(g.tm)); err != nil {
+		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
 			return err
 		}
 		b.writes(";\n")
@@ -546,7 +546,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				if k.usesScratch {
 					b.writes("uint64_t scratch;\n")
 				}
-				b.printf("} %s%s[%d];\n", cPrefix, o.Name().String(g.tm), maxDepth)
+				b.printf("} %s%s[%d];\n", cPrefix, o.Name().Str(g.tm), maxDepth)
 			}
 		}
 	}
@@ -556,7 +556,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 }
 
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
-	structName := n.Name().String(g.tm)
+	structName := n.Name().Str(g.tm)
 	if public {
 		b.printf("// %s%s__initialize is an initializer function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
@@ -605,7 +605,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		f := f.Field()
 		if dv := f.DefaultValue(); dv != nil {
 			// TODO: set default values for array types.
-			b.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().String(g.tm), dv.ConstValue())
+			b.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().Str(g.tm), dv.ConstValue())
 		}
 	}
 
@@ -622,7 +622,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		}
 		b.printf("%s%s__initialize(&self->private_impl.%s%s,"+
 			"WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);\n",
-			g.pkgPrefix, x.Name().String(g.tm), fPrefix, f.Name().String(g.tm))
+			g.pkgPrefix, x.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 	}
 
 	b.writes("}\n\n")

@@ -79,7 +79,7 @@ func (g *gen) findDerivedVars() {
 func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:in.src".
-	if name.String(g.tm) == "dummy" {
+	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
 	}
 
@@ -89,7 +89,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	if _, ok := g.currFunk.derivedVars[name]; !ok {
 		return nil
 	}
-	nameStr := name.String(g.tm)
+	nameStr := name.Str(g.tm)
 	switch typ.Name().Key() {
 	case t.KeyReader1:
 		if header {
@@ -156,7 +156,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:in.src".
-	if name.String(g.tm) == "dummy" {
+	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
 	}
 
@@ -166,7 +166,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 	if _, ok := g.currFunk.derivedVars[name]; !ok {
 		return nil
 	}
-	nameStr := name.String(g.tm)
+	nameStr := name.Str(g.tm)
 	switch typ.Name().Key() {
 	case t.KeyReader1:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
@@ -223,7 +223,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" {
+		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" {
 			continue
 		}
 		if err := g.writeLoadDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
@@ -243,7 +243,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().String(g.tm); s != "in.dst" && s != "in.src" {
+		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" {
 			continue
 		}
 		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
@@ -294,7 +294,7 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 }
 
 func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
-	local := fmt.Sprintf("%s%s", vPrefix, n.Name().String(g.tm))
+	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
 	if typ := n.XType(); typ.HasPointers() {
 		if suspend {
@@ -319,7 +319,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 	} else {
 		lhs := local
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.Name().String(g.tm), lhs)
+		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.Name().Str(g.tm), lhs)
 		if suspend {
 			lhs, rhs = rhs, lhs
 		}
@@ -342,7 +342,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 	}
 
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
-		n.Name().String(g.tm), n.XType().String(g.tm))
+		n.Name().Str(g.tm), n.XType().Str(g.tm))
 }
 
 func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool) error {
@@ -359,7 +359,7 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipI
 		if skipIterateVariables && n.IterateVariable() {
 			return nil
 		}
-		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().String(g.tm)); err != nil {
+		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().Str(g.tm)); err != nil {
 			return err
 		}
 		b.writes(";\n")

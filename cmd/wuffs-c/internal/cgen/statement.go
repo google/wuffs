@@ -162,7 +162,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			return fmt.Errorf("TODO: iterate over more than one variable")
 		}
 		v := vars[0].Var()
-		name := v.Name().String(g.tm)
+		name := v.Name().Str(g.tm)
 		b.writes("{\n")
 
 		// TODO: don't assume that the slice is a slice of u8. In particular,
@@ -252,7 +252,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.writes("return ")
 		if len(g.currFunk.astFunc.Out().Fields()) == 0 {
 			if retExpr != nil {
-				return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.String(g.tm))
+				return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.Str(g.tm))
 			}
 		} else if retExpr == nil {
 			// TODO: should a bare "return" imply "return out"?
@@ -277,15 +277,15 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				// cv := n.XType().ArrayLength().ConstValue()
 				// // TODO: check that cv is within size_t's range.
 				// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
-				// cv, vPrefix, n.Name().String(g.tm))
+				// cv, vPrefix, n.Name().Str(g.tm))
 				return fmt.Errorf("TODO: array initializers for non-zero default values")
 			}
 			// TODO: arrays of arrays.
-			name := n.Name().String(g.tm)
+			name := n.Name().Str(g.tm)
 			b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
 
 		default:
-			b.printf("%s%s = ", vPrefix, n.Name().String(g.tm))
+			b.printf("%s%s = ", vPrefix, n.Name().Str(g.tm))
 			if v := n.Value(); v != nil {
 				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 					return err
@@ -482,7 +482,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.usesScratch = true
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
 
 		b.printf("%s = ", scratchName)
 		x := n.Args()[0].Arg().Value()
@@ -521,7 +521,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_header", 1) {
 		b.printf("status = %s%s__decode_header(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -531,7 +531,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
 		b.printf("status = %s%s__decode_lsd(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -539,7 +539,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
 		b.printf("status = %s%s__decode_extension(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -547,7 +547,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		b.printf("status = %s%s__decode_id(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -563,7 +563,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 		b.printf("%sstatus %s%d = %s%s__decode_blocks(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, tPrefix, temp,
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -571,7 +571,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
 		b.printf("status = %s%s__decode_uncompressed(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -579,7 +579,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_huffman_fast", 2) {
 		b.printf("status = %s%s__decode_huffman_fast(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -587,7 +587,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "decode_huffman_slow", 2) {
 		b.printf("status = %s%s__decode_huffman_slow(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix, aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -595,7 +595,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_fixed_huffman", 0) {
 		b.printf("status = %s%s__init_fixed_huffman(self);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm))
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm))
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -603,7 +603,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
 		b.printf("status = %s%s__init_dynamic_huffman(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm), aPrefix)
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
@@ -611,7 +611,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	} else if isThisMethod(g.tm, n, "init_huff", 4) {
 		b.printf("status = %s%s__init_huff(self,",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().String(g.tm))
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm))
 		for i, o := range n.Args() {
 			if i != 0 {
 				b.writes(",")
@@ -667,14 +667,14 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: check if tPrefix_temp is an error, and return?
 
 		default:
-			return fmt.Errorf("cannot convert Wuffs call %q to C", n.String(g.tm))
+			return fmt.Errorf("cannot convert Wuffs call %q to C", n.Str(g.tm))
 		}
 
 	} else {
 		// TODO: fix this.
 		//
 		// This might involve calling g.writeExpr with replaceNothing??
-		return fmt.Errorf("cannot convert Wuffs call %q to C", n.String(g.tm))
+		return fmt.Errorf("cannot convert Wuffs call %q to C", n.Str(g.tm))
 	}
 	return nil
 }
@@ -706,7 +706,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	g.currFunk.usesScratch = true
 	// TODO: don't hard-code [0], and allow recursive coroutines.
 	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-		cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+		cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
 	b.printf("%s%d = wuffs_base__load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)

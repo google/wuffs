@@ -294,7 +294,7 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 		o.SetMType(typeExprIdeal)
 
 		if !n.CallSuspendible() {
-			return nil, fmt.Errorf("check: internal error: inconsistent suspendible-ness for %q", n.String(q.tm))
+			return nil, fmt.Errorf("check: internal error: inconsistent suspendible-ness for %q", n.Str(q.tm))
 		}
 		n.SetProvenNotToSuspend()
 

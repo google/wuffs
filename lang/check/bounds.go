@@ -110,10 +110,10 @@ func bitMask(nBits int) *big.Int {
 
 func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	if !n.MType().IsBool() {
-		return nil, fmt.Errorf("check: invert(%q) called on non-bool-typed expression", n.String(tm))
+		return nil, fmt.Errorf("check: invert(%q) called on non-bool-typed expression", n.Str(tm))
 	}
 	if cv := n.ConstValue(); cv != nil {
-		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.String(tm))
+		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.Str(tm))
 	}
 	id0, lhs, rhs, args := n.ID0(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
 	switch id0.Key() {
@@ -179,14 +179,14 @@ func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	if o := typ.Min(); o != nil {
 		cv := o.ConstValue()
 		if cv.Cmp(b[0]) < 0 {
-			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.String(tm))
+			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
 		}
 		b[0] = cv
 	}
 	if o := typ.Max(); o != nil {
 		cv := o.ConstValue()
 		if cv.Cmp(b[1]) > 0 {
-			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.String(tm))
+			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
 		}
 		b[1] = cv
 	}
@@ -202,7 +202,7 @@ func bcheckField(tm *t.Map, n *a.Field) error {
 	if nMin == nil {
 		if n.DefaultValue() != nil {
 			return fmt.Errorf("check: explicit default value %v for field %q of non-numeric innermost type %q",
-				n.DefaultValue().ConstValue(), n.Name().String(tm), innTyp.String(tm))
+				n.DefaultValue().ConstValue(), n.Name().Str(tm), innTyp.Str(tm))
 		}
 		return nil
 	}
@@ -212,7 +212,7 @@ func bcheckField(tm *t.Map, n *a.Field) error {
 	}
 	if dv.Cmp(nMin) < 0 || dv.Cmp(nMax) > 0 {
 		return fmt.Errorf("check: default value %v is not within bounds [%v..%v] for field %q",
-			dv, nMin, nMax, n.Name().String(tm))
+			dv, nMin, nMax, n.Name().Str(tm))
 	}
 	return nil
 }
@@ -327,7 +327,7 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 		if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
 			err = reasonFunc(q, n)
 		} else {
-			err = fmt.Errorf("no such reason %s", reasonID.String(q.tm))
+			err = fmt.Errorf("no such reason %s", reasonID.Str(q.tm))
 		}
 	} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
 		err = q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr())
@@ -335,9 +335,9 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 
 	if err != nil {
 		if err == errFailed {
-			return fmt.Errorf("check: cannot prove %q", condition.String(q.tm))
+			return fmt.Errorf("check: cannot prove %q", condition.Str(q.tm))
 		}
-		return fmt.Errorf("check: cannot prove %q: %v", condition.String(q.tm), err)
+		return fmt.Errorf("check: cannot prove %q: %v", condition.Str(q.tm), err)
 	}
 	o, err := simplify(q.tm, condition)
 	if err != nil {
@@ -455,10 +455,10 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 
 		if op == t.IDEq {
 			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-				rhs.String(q.tm), rMin, rMax, lMin, lMax)
+				rhs.Str(q.tm), rMin, rMax, lMin, lMax)
 		} else {
 			return fmt.Errorf("check: assignment %q bounds [%v..%v] is not within bounds [%v..%v]",
-				lhs.String(q.tm)+" "+op.String(q.tm)+" "+rhs.String(q.tm),
+				lhs.Str(q.tm)+" "+op.Str(q.tm)+" "+rhs.Str(q.tm),
 				rMin, rMax, lMin, lMax)
 		}
 	}
@@ -518,12 +518,12 @@ func (q *checker) unify(branches [][]*a.Expr) error {
 	m := map[string]int{}
 	for _, b := range branches {
 		for _, f := range b {
-			m[f.String(q.tm)]++
+			m[f.Str(q.tm)]++
 		}
 	}
 
 	return q.facts.update(func(n *a.Expr) (*a.Expr, error) {
-		if m[n.String(q.tm)] == len(branches) {
+		if m[n.Str(q.tm)] == len(branches) {
 			return n, nil
 		}
 		return nil, nil
@@ -713,7 +713,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error
 	}
 	if (nMin != nil && tMin != nil && nMin.Cmp(tMin) < 0) || (nMax != nil && tMax != nil && nMax.Cmp(tMax) > 0) {
 		return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-			n.String(q.tm), nMin, nMax, tMin, tMax)
+			n.Str(q.tm), nMin, nMax, tMin, tMax)
 	}
 	if err := q.optimizeNonSuspendible(n); err != nil {
 		return nil, nil, err
@@ -799,7 +799,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			// TODO: sixtyFour should actually be 8 * sizeof(n.LHS().Expr()).
 			if aMax.Cmp(sixtyFour) > 0 {
-				return nil, nil, fmt.Errorf("check: low_bits argument %q is possibly too large", a.String(q.tm))
+				return nil, nil, fmt.Errorf("check: low_bits argument %q is possibly too large", a.Str(q.tm))
 			}
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
@@ -817,7 +817,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 				return nil, nil, err
 			}
 			if aMin.Cmp(big.NewInt(2)) < 0 || aMax.Cmp(big.NewInt(8)) > 0 {
-				return nil, nil, fmt.Errorf("check: %q not in range [2..8]", a.String(q.tm))
+				return nil, nil, fmt.Errorf("check: %q not in range [2..8]", a.Str(q.tm))
 			}
 			return nil, nil, nil
 		}
@@ -918,7 +918,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			lTyp := n.LHS().Expr().MType()
 			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
-				n.ID1().String(q.tm), lTyp.Name().String(q.tm), n.String(q.tm))
+				n.ID1().Str(q.tm), lTyp.Name().Str(q.tm), n.Str(q.tm))
 		}
 
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
@@ -1005,10 +1005,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		// TODO: handle multiplication by negative numbers. Note that this
 		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
 		if lMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
 
@@ -1017,22 +1017,22 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 
 	case t.KeyXBinaryShiftL:
 		if lMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMax.Cmp(ffff) > 0 {
-			return nil, nil, fmt.Errorf("check: shift %q out of range", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
 		}
 		return big.NewInt(0).Lsh(lMin, uint(rMin.Uint64())), big.NewInt(0).Lsh(lMax, uint(rMax.Uint64())), nil
 
 	case t.KeyXBinaryShiftR:
 		if lMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMin.Cmp(maxIntBits) >= 0 {
 			return zero, zero, nil
@@ -1047,16 +1047,16 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
 		if lMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if lMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
 		}
 		if rMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
 		}
 		z := (*big.Int)(nil)
 		if op == t.KeyXBinaryAmp {
@@ -1076,10 +1076,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 
 	case t.KeyXBinaryPercent:
 		if lMin.Cmp(zero) < 0 {
-			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rMin.Cmp(zero) <= 0 {
-			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly non-positive", rhs.String(q.tm))
+			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		return zero, big.NewInt(0).Sub(rMax, one), nil
 

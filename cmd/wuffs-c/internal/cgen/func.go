@@ -59,9 +59,9 @@ func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
 
 func (g *gen) funcCName(n *a.Func) string {
 	if r := n.Receiver(); r != 0 {
-		return g.pkgPrefix + r.String(g.tm) + "__" + n.Name().String(g.tm)
+		return g.pkgPrefix + r.Str(g.tm) + "__" + n.Name().Str(g.tm)
 	}
-	return g.pkgPrefix + n.Name().String(g.tm)
+	return g.pkgPrefix + n.Name().Str(g.tm)
 }
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
@@ -88,7 +88,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 
 	comma := false
 	if r := n.Receiver(); r != 0 {
-		b.printf("%s%s *self", g.pkgPrefix, r.String(g.tm))
+		b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
 		comma = true
 	}
 	for _, o := range n.In().Fields() {
@@ -97,7 +97,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 		}
 		comma = true
 		o := o.Field()
-		if err := g.writeCTypeName(b, o.XType(), aPrefix, o.Name().String(g.tm)); err != nil {
+		if err := g.writeCTypeName(b, o.XType(), aPrefix, o.Name().Str(g.tm)); err != nil {
 			return err
 		}
 	}
@@ -224,7 +224,7 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 	if g.currFunk.suspendible {
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0].coro_susp_point;\n",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
 		b.printf("if (coro_susp_point) {\n")
 		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), false); err != nil {
 			return err
@@ -256,14 +256,14 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		b.writes("\ngoto ok;\n") // Avoid the "unused label" warning.
 		b.writes("ok:\n")
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = 0;\n",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
 		b.writes("goto exit; }\n\n") // Close the coroutine switch.
 
 		b.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		b.writes("suspend:\n")
 
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
-			cPrefix, g.currFunk.astFunc.Name().String(g.tm))
+			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
 		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), true); err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 
 		switch {
 		case oTyp.Decorator().Key() == t.KeyPtr:
-			checks = append(checks, fmt.Sprintf("!%s%s", aPrefix, o.Name().String(g.tm)))
+			checks = append(checks, fmt.Sprintf("!%s%s", aPrefix, o.Name().Str(g.tm)))
 
 		case oTyp.IsRefined():
 			bounds := [2]*big.Int{}
@@ -345,7 +345,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 					if i != 0 {
 						op = '>'
 					}
-					checks = append(checks, fmt.Sprintf("%s%s %c %s", aPrefix, o.Name().String(g.tm), op, bound))
+					checks = append(checks, fmt.Sprintf("%s%s %c %s", aPrefix, o.Name().Str(g.tm), op, bound))
 				}
 			}
 		}

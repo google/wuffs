@@ -123,15 +123,15 @@ func TestCheck(t *testing.T) {
 		break
 	}
 
-	if got, want := fooBar.QID.String(tm), "foo.bar"; got != want {
+	if got, want := fooBar.QID.Str(tm), "foo.bar"; got != want {
 		t.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
 	for id, typ := range fooBar.LocalVars {
 		got = append(got, [2]string{
-			id.String(tm),
-			typ.String(tm),
+			id.Str(tm),
+			typ.Str(tm),
 		})
 	}
 	sort.Slice(got, func(i, j int) bool {

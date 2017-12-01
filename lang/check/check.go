@@ -53,7 +53,7 @@ func (e *Error) Error() string {
 	b := append([]byte(s), ". Facts:\n"...)
 	for _, f := range e.Facts {
 		b = append(b, '\t')
-		b = append(b, f.String(e.TMap)...)
+		b = append(b, f.Str(e.TMap)...)
 		b = append(b, '\n')
 	}
 	return string(b)
@@ -209,7 +209,7 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 			OtherLine:     c.otherPackageID.Line(),
 		}
 	}
-	raw := n.ID().String(c.tm)
+	raw := n.ID().Str(c.tm)
 	s, ok := t.Unescape(raw)
 	if !ok {
 		return &Error{
@@ -241,7 +241,7 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	id := n.Message()
 	if other, ok := c.statuses[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate status %q", builtin.TrimQuotes(id.String(c.tm))),
+			Err:           fmt.Errorf("check: duplicate status %q", builtin.TrimQuotes(id.Str(c.tm))),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Status.Filename(),
@@ -261,7 +261,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	id := n.Name()
 	if other, ok := c.consts[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate const %q", id.String(c.tm)),
+			Err:           fmt.Errorf("check: duplicate const %q", id.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Const.Filename(),
@@ -278,10 +278,10 @@ func (c *Checker) checkConst(node *a.Node) error {
 		tm: c.tm,
 	}
 	if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
-		return fmt.Errorf("%v in const %q", err, id.String(c.tm))
+		return fmt.Errorf("%v in const %q", err, id.Str(c.tm))
 	}
 	if err := q.tcheckExpr(n.Value(), 0); err != nil {
-		return fmt.Errorf("%v in const %q", err, id.String(c.tm))
+		return fmt.Errorf("%v in const %q", err, id.Str(c.tm))
 	}
 
 	nLists := 0
@@ -294,17 +294,17 @@ func (c *Checker) checkConst(node *a.Node) error {
 		typ = typ.Inner()
 	}
 	if typ.Decorator() != 0 {
-		return fmt.Errorf("check: invalid const type %q for %q", n.XType().String(c.tm), id.String(c.tm))
+		return fmt.Errorf("check: invalid const type %q for %q", n.XType().Str(c.tm), id.Str(c.tm))
 	}
 	nMin, nMax, err := q.bcheckTypeExpr(typ)
 	if err != nil {
 		return err
 	}
 	if nMin == nil || nMax == nil {
-		return fmt.Errorf("check: invalid const type %q for %q", n.XType().String(c.tm), id.String(c.tm))
+		return fmt.Errorf("check: invalid const type %q for %q", n.XType().Str(c.tm), id.Str(c.tm))
 	}
 	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
-		return fmt.Errorf("check: %v for %q", err, id.String(c.tm))
+		return fmt.Errorf("check: %v for %q", err, id.Str(c.tm))
 	}
 	n.Node().SetTypeChecked()
 	return nil
@@ -314,7 +314,7 @@ func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLi
 	if nLists > 0 {
 		nLists--
 		if n.ID0().Key() != t.KeyDollar {
-			return fmt.Errorf("invalid const value %q", n.String(c.tm))
+			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {
 			if err := c.checkConstElement(o.Expr(), nMin, nMax, nLists); err != nil {
@@ -324,7 +324,7 @@ func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLi
 		return nil
 	}
 	if cv := n.ConstValue(); cv == nil || cv.Cmp(nMin) < 0 || cv.Cmp(nMax) > 0 {
-		return fmt.Errorf("invalid const value %q not within [%v..%v]", n.String(c.tm), nMin, nMax)
+		return fmt.Errorf("invalid const value %q not within [%v..%v]", n.Str(c.tm), nMin, nMax)
 	}
 	return nil
 }
@@ -334,7 +334,7 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	id := n.Name()
 	if other, ok := c.structs[id]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %q", id.String(c.tm)),
+			Err:           fmt.Errorf("check: duplicate struct %q", id.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Struct.Filename(),
@@ -360,7 +360,7 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 	n := node.Struct()
 	if err := c.checkFields(n.Fields(), true); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, n.Name().String(c.tm)),
+			Err:      fmt.Errorf("%v in struct %q", err, n.Name().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -382,19 +382,19 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 	for _, n := range fields {
 		f := n.Field()
 		if _, ok := fieldNames[f.Name()]; ok {
-			return fmt.Errorf("check: duplicate field %q", f.Name().String(c.tm))
+			return fmt.Errorf("check: duplicate field %q", f.Name().Str(c.tm))
 		}
 		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
-			return fmt.Errorf("%v in field %q", err, f.Name().String(c.tm))
+			return fmt.Errorf("%v in field %q", err, f.Name().Str(c.tm))
 		}
 		if banPtrTypes && f.XType().HasPointers() {
 			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
-				f.XType().String(c.tm), f.Name().String(c.tm))
+				f.XType().Str(c.tm), f.Name().Str(c.tm))
 		}
 		if dv := f.DefaultValue(); dv != nil {
 			if f.XType().Decorator() != 0 {
 				return fmt.Errorf("check: cannot set default value for qualified type %q for field %q",
-					f.XType().String(c.tm), f.Name().String(c.tm))
+					f.XType().Str(c.tm), f.Name().Str(c.tm))
 			}
 			if err := q.tcheckExpr(dv, 0); err != nil {
 				return err
@@ -414,7 +414,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.Func()
 	if err := c.checkFields(n.In().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().String(c.tm)),
+			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -422,7 +422,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().String(c.tm)),
+			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -436,7 +436,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	qid := n.QID()
 	if other, ok := c.funcs[qid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate function %q", qid.String(c.tm)),
+			Err:           fmt.Errorf("check: duplicate function %q", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Func.Filename(),
@@ -455,7 +455,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	if qid[0] != 0 {
 		if _, ok := c.structs[qid[0]]; !ok {
 			return &Error{
-				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.String(c.tm)),
+				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.Str(c.tm)),
 				Filename: n.Filename(),
 				Line:     n.Line(),
 			}
@@ -540,10 +540,10 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 			switch o.Kind() {
 			case a.KExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Expr().String(q.tm))
+					o.Kind(), o.Expr().Str(q.tm))
 			case a.KTypeExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.TypeExpr().String(q.tm))
+					o.Kind(), o.TypeExpr().Str(q.tm))
 			}
 			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
@@ -551,10 +551,10 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 			o := o.Expr()
 			if typ := o.MType(); typ == nil {
 				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
-					o.String(q.tm))
+					o.Str(q.tm))
 			} else if typ.IsIdeal() && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", o.String(q.tm))
+					"but no const value", o.Str(q.tm))
 			}
 		}
 		return nil
@@ -571,7 +571,7 @@ func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
 		qid := t.QID{n.Name(), o.Field().Name()}
 		if _, ok := c.funcs[qid]; ok {
 			return fmt.Errorf("check: struct %q has both a field and method named %q",
-				qid[0].String(c.tm), qid[1].String(c.tm))
+				qid[0].Str(c.tm), qid[1].Str(c.tm))
 		}
 	}
 	return nil

@@ -160,7 +160,7 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 
 		if changed && nMin.Cmp(nMax) > 0 {
 			return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] inconsistent with fact %q",
-				n.String(tm), originalNMin, originalNMax, x.String(tm))
+				n.Str(tm), originalNMin, originalNMax, x.Str(tm))
 		}
 	}
 
@@ -351,7 +351,7 @@ func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error
 	}
 	if err := q.proveBinaryOp(op.Key(), lhs, rhs); err != nil {
 		n := a.NewExpr(a.FlagsTypeChecked, op, 0, lhs.Node(), nil, rhs.Node(), nil)
-		return fmt.Errorf("cannot prove %q: %v", n.String(q.tm), err)
+		return fmt.Errorf("cannot prove %q: %v", n.Str(q.tm), err)
 	}
 	return nil
 }

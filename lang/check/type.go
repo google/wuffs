@@ -51,7 +51,7 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			o := o.Var()
 			name := o.Name()
 			if _, ok := q.f.LocalVars[name]; ok {
-				return fmt.Errorf("check: duplicate var %q", name.String(q.tm))
+				return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
 			}
 			if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
 				return err
@@ -92,7 +92,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 			if !cond.MType().IsBool() {
 				return fmt.Errorf("check: if condition %q, of type %q, does not have a boolean type",
-					cond.String(q.tm), cond.MType().String(q.tm))
+					cond.Str(q.tm), cond.MType().Str(q.tm))
 			}
 			for _, o := range n.BodyIfTrue() {
 				if err := q.tcheckStatement(o); err != nil {
@@ -117,7 +117,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 		if cv := unroll.ConstValue(); cv == nil {
-			return fmt.Errorf("check: unroll count %q is not constant", unroll.String(q.tm))
+			return fmt.Errorf("check: unroll count %q is not constant", unroll.Str(q.tm))
 		}
 		for _, o := range n.Variables() {
 			if err := q.tcheckStatement(o); err != nil {
@@ -144,10 +144,10 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if jumpTarget == nil {
 			sepStr, labelStr := "", ""
 			if id := n.Label(); id != 0 {
-				sepStr, labelStr = ":", id.String(q.tm)
+				sepStr, labelStr = ":", id.Str(q.tm)
 			}
 			return fmt.Errorf("no matching while/iterate statement for %s%s%s",
-				n.Keyword().String(q.tm), sepStr, labelStr)
+				n.Keyword().Str(q.tm), sepStr, labelStr)
 		}
 		if n.Keyword().Key() == t.KeyBreak {
 			jumpTarget.SetHasBreak()
@@ -169,7 +169,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KVar:
 		n := n.Var()
 		if !n.XType().Node().TypeChecked() {
-			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().String(q.tm))
+			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().Str(q.tm))
 		}
 		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
@@ -180,16 +180,16 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if n.IterateVariable() {
 				if lTyp.Decorator().Key() != t.KeyPtr {
 					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a pointer type",
-						n.Name().String(q.tm), lTyp.String(q.tm))
+						n.Name().Str(q.tm), lTyp.Str(q.tm))
 				}
 				if rTyp.Decorator().Key() != t.KeyColon {
 					return fmt.Errorf("check: iterate range %q, of type %q, does not have a slice type",
-						value.String(q.tm), rTyp.String(q.tm))
+						value.Str(q.tm), rTyp.Str(q.tm))
 				}
 				if !lTyp.Inner().Eq(rTyp.Inner()) {
 					return fmt.Errorf("check: cannot iterate %q of type %q over %q of type %q "+
 						"as their inner types don't match",
-						n.Name().String(q.tm), lTyp.String(q.tm), value.String(q.tm), rTyp.String(q.tm))
+						n.Name().Str(q.tm), lTyp.Str(q.tm), value.Str(q.tm), rTyp.Str(q.tm))
 				}
 
 			} else if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
@@ -197,7 +197,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 			} else {
 				return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-					value.String(q.tm), rTyp.String(q.tm), n.Name().String(q.tm), lTyp.String(q.tm))
+					value.Str(q.tm), rTyp.Str(q.tm), n.Name().Str(q.tm), lTyp.Str(q.tm))
 			}
 		} else {
 			// TODO: check that the default zero value is assignable to n.XType().
@@ -211,7 +211,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		if !cond.MType().IsBool() {
 			return fmt.Errorf("check: for-loop condition %q, of type %q, does not have a boolean type",
-				cond.String(q.tm), cond.MType().String(q.tm))
+				cond.Str(q.tm), cond.MType().Str(q.tm))
 		}
 		if err := q.tcheckLoop(n); err != nil {
 			return err
@@ -232,7 +232,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 	}
 	if !cond.MType().IsBool() {
 		return fmt.Errorf("check: assert condition %q, of type %q, does not have a boolean type",
-			cond.String(q.tm), cond.MType().String(q.tm))
+			cond.Str(q.tm), cond.MType().Str(q.tm))
 	}
 	for _, o := range n.Args() {
 		if err := q.tcheckExpr(o.Arg().Value(), 0); err != nil {
@@ -261,25 +261,25 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 			return nil
 		}
 		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-			rhs.String(q.tm), rTyp.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+			rhs.Str(q.tm), rTyp.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 	}
 
 	if !lTyp.IsNumType() {
 		return fmt.Errorf("check: assignment %q: assignee %q, of type %q, does not have numeric type",
-			n.Operator().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+			n.Operator().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 	}
 
 	switch n.Operator().Key() {
 	case t.KeyShiftLEq, t.KeyShiftREq:
 		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
-				n.Operator().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				n.Operator().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		return nil
 	case t.KeyTildePlusEq:
 		if !lTyp.IsUnsignedInteger() {
 			return fmt.Errorf("check: assignment %q: %q, of type %q, does not have unsigned integer type",
-				n.Operator().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+				n.Operator().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 	}
 
@@ -287,9 +287,9 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		return nil
 	}
 	return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
-		n.Operator().String(q.tm),
-		lhs.String(q.tm), rhs.String(q.tm),
-		lTyp.String(q.tm), rTyp.String(q.tm),
+		n.Operator().Str(q.tm),
+		lhs.Str(q.tm), rhs.Str(q.tm),
+		lTyp.Str(q.tm), rTyp.Str(q.tm),
 	)
 }
 
@@ -356,7 +356,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		id1 := n.ID1()
 		if id1.IsNumLiteral() {
 			z := big.NewInt(0)
-			s := id1.String(q.tm)
+			s := id1.Str(q.tm)
 			if _, ok := z.SetString(s, 0); !ok {
 				return fmt.Errorf("check: invalid numeric literal %q", s)
 			}
@@ -379,7 +379,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				return nil
 			}
 			// TODO: look for other (global) names: funcs, structs.
-			return fmt.Errorf("check: unrecognized identifier %q", id1.String(q.tm))
+			return fmt.Errorf("check: unrecognized identifier %q", id1.Str(q.tm))
 		}
 		switch id1.Key() {
 		case t.KeyFalse:
@@ -574,12 +574,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		lTyp := lhs.MType()
 		if key := lTyp.Decorator().Key(); key != t.KeyOpenBracket && key != t.KeyColon {
 			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
-				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 		rTyp := rhs.MType()
 		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: %s is an index expression but %s has type %s, not a numeric type",
-				n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				n.Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		n.SetMType(lTyp.Inner())
 		return nil
@@ -595,7 +595,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			mTyp := mhs.MType()
 			if !mTyp.IsNumTypeOrIdeal() {
 				return fmt.Errorf("check: %s is a slice expression but %s has type %s, not a numeric type",
-					n.String(q.tm), mhs.String(q.tm), mTyp.String(q.tm))
+					n.Str(q.tm), mhs.Str(q.tm), mTyp.Str(q.tm))
 			}
 		}
 		if rhs := n.RHS().Expr(); rhs != nil {
@@ -605,7 +605,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			rTyp := rhs.MType()
 			if !rTyp.IsNumTypeOrIdeal() {
 				return fmt.Errorf("check: %s is a slice expression but %s has type %s, not a numeric type",
-					n.String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+					n.Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 			}
 		}
 		lhs := n.LHS().Expr()
@@ -616,7 +616,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		switch lTyp.Decorator().Key() {
 		default:
 			return fmt.Errorf("check: %s is a slice expression but %s has type %s, not an array or slice type",
-				n.String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		case t.KeyOpenBracket:
 			n.SetMType(a.NewTypeExpr(t.IDColon, 0, nil, nil, lTyp.Inner()))
 		case t.KeyColon:
@@ -633,7 +633,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		if s, ok := q.c.statuses[n.ID1()]; ok {
 			declaredKeyword = s.Status.Keyword()
 		} else {
-			msg := builtin.TrimQuotes(n.ID1().String(q.tm))
+			msg := builtin.TrimQuotes(n.ID1().Str(q.tm))
 			z, ok := builtin.StatusMap[msg]
 			if !ok {
 				return fmt.Errorf("check: no error or status with message %q", msg)
@@ -642,7 +642,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		}
 		if nominalKeyword != declaredKeyword {
 			return fmt.Errorf("check: status literal says %q but declaration says %q",
-				nominalKeyword.String(q.tm), declaredKeyword.String(q.tm))
+				nominalKeyword.Str(q.tm), declaredKeyword.Str(q.tm))
 		}
 		n.SetMType(typeExprStatus)
 		return nil
@@ -658,7 +658,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		return nil
 	}
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) in expression %q for tcheckExprOther",
-		n.ID0().Key(), n.String(q.tm))
+		n.ID0().Key(), n.Str(q.tm))
 }
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
@@ -768,7 +768,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 	if s == nil {
 		return fmt.Errorf("check: no struct type %q found for expression %q",
-			lTyp.Name().String(q.tm), lhs.String(q.tm))
+			lTyp.Name().Str(q.tm), lhs.Str(q.tm))
 	}
 
 	for _, field := range s.Fields() {
@@ -785,7 +785,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	return fmt.Errorf("check: no field or method named %q found in struct type %q for expression %q",
-		n.ID1().String(q.tm), lTyp.Name().String(q.tm), n.String(q.tm))
+		n.ID1().Str(q.tm), lTyp.Name().Str(q.tm), n.Str(q.tm))
 }
 
 func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
@@ -799,7 +799,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryPlus, t.KeyXUnaryMinus:
 		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a numeric type",
-				n.ID0().AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				n.ID0().AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			if n.ID0().Key() == t.KeyXUnaryMinus {
@@ -813,7 +813,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryNot:
 		if !rTyp.IsBool() {
 			return fmt.Errorf("check: unary %q: %q, of type %q, does not have a boolean type",
-				n.ID0().AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				n.ID0().AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
 			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
@@ -827,7 +827,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 	case t.KeyXUnaryDeref:
 		if rTyp.Decorator().Key() != t.KeyPtr { // TODO: t.KeyNptr?
 			return fmt.Errorf("check: %q is a dereference of a non-pointer type %q",
-				n.String(q.tm), rTyp.String(q.tm))
+				n.Str(q.tm), rTyp.Str(q.tm))
 		}
 		n.SetMType(rTyp.Inner())
 		return nil
@@ -852,7 +852,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			return nil
 		}
 		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",
-			lhs.String(q.tm), lTyp.String(q.tm), rhs.String(q.tm))
+			lhs.Str(q.tm), lTyp.Str(q.tm), rhs.Str(q.tm))
 	}
 	rhs := n.RHS().Expr()
 	if err := q.tcheckExpr(rhs, depth); err != nil {
@@ -864,22 +864,22 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !lTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+				op.AmbiguousForm().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 	case t.KeyXBinaryNotEq, t.KeyXBinaryEqEq:
 		// No-op.
 	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		if !lTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				op.AmbiguousForm().String(q.tm), lhs.String(q.tm), lTyp.String(q.tm))
+				op.AmbiguousForm().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 		if !rTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
-				op.AmbiguousForm().String(q.tm), rhs.String(q.tm), rTyp.String(q.tm))
+				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 	}
 
@@ -887,18 +887,18 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	default:
 		if !lTyp.EqIgnoringRefinements(rTyp) && !lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
-				op.AmbiguousForm().String(q.tm),
-				lhs.String(q.tm), rhs.String(q.tm),
-				lTyp.String(q.tm), rTyp.String(q.tm),
+				op.AmbiguousForm().Str(q.tm),
+				lhs.Str(q.tm), rhs.Str(q.tm),
+				lTyp.Str(q.tm), rTyp.Str(q.tm),
 			)
 		}
 	case t.KeyXBinaryShiftL, t.KeyXBinaryShiftR:
 		if lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
-				op.AmbiguousForm().String(q.tm),
-				lhs.String(q.tm), rhs.String(q.tm),
-				lTyp.String(q.tm), rTyp.String(q.tm),
+				op.AmbiguousForm().Str(q.tm),
+				lhs.Str(q.tm), rhs.Str(q.tm),
+				lTyp.Str(q.tm), rTyp.Str(q.tm),
 			)
 		}
 	}
@@ -910,17 +910,17 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			typ = rTyp
 			if typ.IsIdeal() {
 				return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have non-ideal types",
-					op.AmbiguousForm().String(q.tm),
-					lhs.String(q.tm), rhs.String(q.tm),
-					lTyp.String(q.tm), rTyp.String(q.tm),
+					op.AmbiguousForm().Str(q.tm),
+					lhs.Str(q.tm), rhs.Str(q.tm),
+					lTyp.Str(q.tm), rTyp.Str(q.tm),
 				)
 			}
 		}
 		if !typ.IsUnsignedInteger() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have unsigned integer types",
-				op.AmbiguousForm().String(q.tm),
-				lhs.String(q.tm), rhs.String(q.tm),
-				lTyp.String(q.tm), rTyp.String(q.tm),
+				op.AmbiguousForm().Str(q.tm),
+				lhs.Str(q.tm), rhs.Str(q.tm),
+				lTyp.Str(q.tm), rTyp.Str(q.tm),
 			)
 		}
 	}
@@ -954,7 +954,7 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return big.NewInt(0).Mul(l, r), nil
 	case t.KeyXBinarySlash:
 		if r.Cmp(zero) == 0 {
-			return nil, fmt.Errorf("check: division by zero in const expression %q", n.String(tm))
+			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		// TODO: decide on Euclidean division vs other definitions. See "go doc
 		// math/big int.divmod" for details.
@@ -962,13 +962,13 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 	case t.KeyXBinaryShiftL:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(tm), n.String(tm))
+				n.RHS().Expr().Str(tm), n.Str(tm))
 		}
 		return big.NewInt(0).Lsh(l, uint(r.Uint64())), nil
 	case t.KeyXBinaryShiftR:
 		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().String(tm), n.String(tm))
+				n.RHS().Expr().Str(tm), n.Str(tm))
 		}
 		return big.NewInt(0).Rsh(l, uint(r.Uint64())), nil
 	case t.KeyXBinaryAmp:
@@ -981,7 +981,7 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return big.NewInt(0).Xor(l, r), nil
 	case t.KeyXBinaryPercent:
 		if r.Cmp(zero) == 0 {
-			return nil, fmt.Errorf("check: division by zero in const expression %q", n.String(tm))
+			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		return big.NewInt(0).Mod(l, r), nil
 	case t.KeyXBinaryNotEq:
@@ -1023,7 +1023,7 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 			}
 			if !oTyp.IsNumType() {
 				return fmt.Errorf("check: associative %q: %q, of type %q, does not have a numeric type",
-					n.ID0().AmbiguousForm().String(q.tm), o.String(q.tm), oTyp.String(q.tm))
+					n.ID0().AmbiguousForm().Str(q.tm), o.Str(q.tm), oTyp.Str(q.tm))
 			}
 			if typ == nil {
 				expr, typ = o, oTyp.Unrefined()
@@ -1032,9 +1032,9 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 			if !typ.EqIgnoringRefinements(oTyp) {
 				return fmt.Errorf("check: associative %q: %q and %q, of types %q and %q, "+
 					"do not have compatible types",
-					n.ID0().AmbiguousForm().String(q.tm),
-					expr.String(q.tm), o.String(q.tm),
-					expr.MType().String(q.tm), o.MType().String(q.tm))
+					n.ID0().AmbiguousForm().Str(q.tm),
+					expr.Str(q.tm), o.Str(q.tm),
+					expr.MType().Str(q.tm), o.MType().Str(q.tm))
 			}
 		}
 		if typ == nil {
@@ -1051,7 +1051,7 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 			}
 			if !o.MType().IsBool() {
 				return fmt.Errorf("check: associative %q: %q, of type %q, does not have a boolean type",
-					n.ID0().AmbiguousForm().String(q.tm), o.String(q.tm), o.MType().String(q.tm))
+					n.ID0().AmbiguousForm().Str(q.tm), o.Str(q.tm), o.MType().Str(q.tm))
 			}
 		}
 		n.SetMType(typeExprBool)
@@ -1079,7 +1079,7 @@ swtch:
 					return err
 				}
 				if b.ConstValue() == nil {
-					return fmt.Errorf("check: %q is not constant", b.String(q.tm))
+					return fmt.Errorf("check: %q is not constant", b.Str(q.tm))
 				}
 			}
 			break
@@ -1096,7 +1096,7 @@ swtch:
 				break swtch
 			}
 		}
-		return fmt.Errorf("check: %q is not a type", n.Name().String(q.tm))
+		return fmt.Errorf("check: %q is not a type", n.Name().Str(q.tm))
 
 	case t.KeyOpenBracket:
 		aLen := n.ArrayLength()
@@ -1104,7 +1104,7 @@ swtch:
 			return err
 		}
 		if aLen.ConstValue() == nil {
-			return fmt.Errorf("check: %q is not constant", aLen.String(q.tm))
+			return fmt.Errorf("check: %q is not constant", aLen.Str(q.tm))
 		}
 		fallthrough
 

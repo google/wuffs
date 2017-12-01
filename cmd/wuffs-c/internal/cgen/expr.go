@@ -52,7 +52,7 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 		} else if cv.Cmp(one) == 0 {
 			b.writes("true")
 		} else {
-			return fmt.Errorf("%v has type bool but constant value %v is neither 0 or 1", n.String(g.tm), cv)
+			return fmt.Errorf("%v has type bool but constant value %v is neither 0 or 1", n.Str(g.tm), cv)
 		}
 		return nil
 	}
@@ -92,7 +92,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			} else {
 				b.writes(vPrefix)
 			}
-			b.writes(id1.String(g.tm))
+			b.writes(id1.Str(g.tm))
 		}
 		return nil
 
@@ -305,7 +305,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			p0, p1 := "", ""
 			if o := n.LHS().Expr().LHS().Expr(); o != nil {
 				// TODO: don't hard-code these.
-				switch o.String(g.tm) {
+				switch o.Str(g.tm) {
 				case "in.dst":
 					p0 = bPrefix + "wend_dst"
 					p1 = bPrefix + "wptr_dst"
@@ -423,7 +423,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		lhs := n.LHS().Expr()
 		if lhs.ID1().Key() == t.KeyIn {
 			b.writes(aPrefix)
-			b.writes(n.ID1().String(g.tm))
+			b.writes(n.ID1().Str(g.tm))
 			return nil
 		}
 
@@ -436,13 +436,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(".")
 		}
 		b.writes("private_impl." + fPrefix)
-		b.writes(n.ID1().String(g.tm))
+		b.writes(n.ID1().Str(g.tm))
 		return nil
 
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
 		status := g.statusMap[n.ID1()]
 		if status.name == "" {
-			msg := builtin.TrimQuotes(n.ID1().String(g.tm))
+			msg := builtin.TrimQuotes(n.ID1().Str(g.tm))
 			z := builtin.StatusMap[msg]
 			if z.Message == "" {
 				return fmt.Errorf("no status code for %q", msg)
@@ -530,7 +530,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 			b.writes(varName)
 			return nil
 		}
-		return fmt.Errorf("cannot convert Wuffs type %q to C", n.String(g.tm))
+		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
 	}
 
 	// maxNumPointers is an arbitrary implementation restriction.
@@ -545,13 +545,13 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		// TODO: "nptr T", not just "ptr T".
 		if p := innermost.Decorator().Key(); p == t.KeyPtr {
 			if numPointers == maxNumPointers {
-				return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.String(g.tm))
+				return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.Str(g.tm))
 			}
 			numPointers++
 			continue
 		}
 		// TODO: fix this.
-		return fmt.Errorf("cannot convert Wuffs type %q to C", n.String(g.tm))
+		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
 	}
 
 	fallback := true
@@ -562,7 +562,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		}
 	}
 	if fallback {
-		b.printf("%s%s", g.pkgPrefix, innermost.Name().String(g.tm))
+		b.printf("%s%s", g.pkgPrefix, innermost.Name().Str(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {

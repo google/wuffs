@@ -82,7 +82,7 @@ func TestString(t *testing.T) {
 			t.Errorf("ParseExpr(%q): %v", tc, err)
 			continue
 		}
-		got := expr.String(tm)
+		got := expr.Str(tm)
 		if got != tc {
 			t.Errorf("got %q, want %q", got, tc)
 			continue

@@ -100,7 +100,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 		if k == t.KeyPackageID {
-			raw := path.String(p.tm)
+			raw := path.Str(p.tm)
 			s, ok := t.Unescape(raw)
 			if !ok {
 				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, raw)
@@ -801,7 +801,7 @@ func (p *parser) parseTryExpr() (*a.Expr, error) {
 	}
 	if call.ID0() != t.IDOpenParen {
 		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
-			call.String(p.tm), p.filename, p.line())
+			call.Str(p.tm), p.filename, p.line())
 	}
 	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, call.ID1(),
 		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
