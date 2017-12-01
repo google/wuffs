@@ -37,8 +37,14 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // !! wuffs mimic cflags: -DWUFFS_MIMIC -lgif
 
+// If building this program in an environment that doesn't easily accomodate
+// relative includes, you can use the script/inline-c-relative-includes.go
+// program to generate a stand-alone C file.
 #include "../../../gen/c/std/gif.c"
 #include "../testlib/testlib.c"
+#ifdef WUFFS_MIMIC
+#include "../mimiclib/gif.c"
+#endif
 
 // ---------------- Basic Tests
 
@@ -561,8 +567,6 @@ void test_wuffs_gif_decode_input_is_a_png() {
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
-
-#include "../mimiclib/gif.c"
 
 bool do_test_mimic_gif_decode(const char* filename) {
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};

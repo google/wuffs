@@ -23,6 +23,9 @@ for a C compiler $cc, such as clang or gcc.
 #include <string.h>
 #include <unistd.h>
 
+// If building this program in an environment that doesn't easily accomodate
+// relative includes, you can use the script/inline-c-relative-includes.go
+// program to generate a stand-alone C file.
 #include "../../gen/c/std/gif.c"
 
 #ifdef __linux__

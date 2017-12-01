@@ -37,8 +37,14 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // !! wuffs mimic cflags: -DWUFFS_MIMIC -lz
 
+// If building this program in an environment that doesn't easily accomodate
+// relative includes, you can use the script/inline-c-relative-includes.go
+// program to generate a stand-alone C file.
 #include "../../../gen/c/std/flate.c"
 #include "../testlib/testlib.c"
+#ifdef WUFFS_MIMIC
+#include "../mimiclib/flate.c"
+#endif
 
 // ---------------- Golden Tests
 
@@ -685,8 +691,6 @@ void test_wuffs_zlib_decode_pi() {
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
-
-#include "../mimiclib/flate.c"
 
 void test_mimic_flate_decode_256_bytes() {
   CHECK_FOCUS(__func__);
