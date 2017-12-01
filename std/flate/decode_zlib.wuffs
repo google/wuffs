@@ -18,13 +18,6 @@ pub error "invalid zlib parity check"
 
 pub error "TODO: unsupported zlib preset dictionary"
 
-// TODO: move this file from std/flate to std/zlib? In doing so, we could
-// rename both of "struct flate_decoder" and "struct zlib_decoder" to just
-// "struct decoder", to avoid stutter in the fully qualified C name such as
-// "wuffs_flate__flate_decoder".
-//
-// Would we then need to somehow share code between test/c/std/{flate,gzip}.c?
-
 pub struct zlib_decoder?(
 	flate flate_decoder,
 	adler adler32,

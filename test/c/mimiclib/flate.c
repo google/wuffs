@@ -14,6 +14,8 @@
 
 #include "zlib.h"
 
+// TODO: rename this file to "deflate-gzip-zlib.c".
+
 uint32_t global_mimiclib_flate_unused_u32;
 
 const char* mimic_bench_adler32(wuffs_base__buf1* dst,

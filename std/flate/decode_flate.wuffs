@@ -14,6 +14,15 @@
 
 packageid "flte"
 
+// TODO: rename "struct flate_decoder" to just "struct decoder", to avoid
+// stutter in the fully qualified C name such as "wuffs_flate__flate_decoder".
+//
+// TODO: delete std/flate/decode_zlib.wuffs, and update std/flate/README.md.
+//
+// Would we then need to somehow share code between test/c/std/{flate,gzip}.c?
+
+// TODO: rename flate to deflate, since that's what RFC 1951 calls it.
+
 pub error "bad Huffman code (over-subscribed)"
 pub error "bad Huffman code (under-subscribed)"
 pub error "bad Huffman code length count"
