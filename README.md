@@ -1,7 +1,7 @@
 # Wrangling Untrusted File Formats Safely
 
 ([Formerly known as
-Puffs](https://groups.google.com/d/topic/puffslang/cSrH-s7UqwA/discussion):
+Puffs](https://groups.google.com/d/topic/puffslang/ZX-ymyf8xh0/discussion):
 Parsing Untrusted File Formats Safely).
 
 Wuffs is a domain-specific language and library for wrangling untrusted file
