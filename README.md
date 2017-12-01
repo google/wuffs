@@ -302,10 +302,11 @@ that all the way through to C code generation and testing.
 
 # Documentation
 
-- [Wuffs the Language](./doc/wuffs-the-language.md)
-- Wuffs the Library (TODO)
+- [Changelog](./doc/changelog.md)
 - [Related Work](./doc/related-work.md)
 - [Roadmap](./doc/roadmap.md)
+- [Wuffs the Language](./doc/wuffs-the-language.md)
+- Wuffs the Library (TODO)
 
 Measurements:
 
