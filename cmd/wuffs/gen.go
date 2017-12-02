@@ -69,9 +69,17 @@ type genHelper struct {
 	wuffsRoot string
 	langs     []string
 	affected  []string
+	seen      map[string]struct{}
 }
 
 func (h *genHelper) gen(dirname string, recursive bool) error {
+	if h.seen == nil {
+		h.seen = map[string]struct{}{}
+	} else if _, ok := h.seen[dirname]; ok {
+		return nil
+	}
+	h.seen[dirname] = struct{}{}
+
 	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
 	if err != nil {
 		return err
