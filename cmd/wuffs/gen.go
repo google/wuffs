@@ -24,6 +24,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/wuffs/lang/builtin"
+	"github.com/google/wuffs/lang/generate"
+
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
 func doGen(wuffsRoot string, args []string) error    { return doGenGenlib(wuffsRoot, args, false) }
@@ -54,6 +60,9 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
+		if arg == "" {
+			continue
+		}
 		if err := h.gen(arg, recursive); err != nil {
 			return err
 		}
@@ -70,6 +79,7 @@ type genHelper struct {
 	langs     []string
 	affected  []string
 	seen      map[string]struct{}
+	tm        t.Map
 }
 
 func (h *genHelper) gen(dirname string, recursive bool) error {
@@ -79,6 +89,10 @@ func (h *genHelper) gen(dirname string, recursive bool) error {
 		return nil
 	}
 	h.seen[dirname] = struct{}{}
+
+	if dirname != path.Clean(dirname) || dirname == "" || dirname[0] == '.' || dirname[0] == '/' {
+		return fmt.Errorf("invalid package path %q", dirname)
+	}
 
 	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
 	if err != nil {
@@ -108,11 +122,15 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 	if !validName(packageName) {
 		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
-	cmdArgs := []string{"gen", "-package_name", packageName}
-	for _, filename := range filenames {
-		cmdArgs = append(cmdArgs,
-			filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname), filename))
+	qualifiedFilenames := make([]string, len(filenames))
+	for i, filename := range filenames {
+		qualifiedFilenames[i] = filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname), filename)
 	}
+	if err := h.genDirDependencies(qualifiedFilenames); err != nil {
+		return err
+	}
+	cmdArgs := []string{"gen", "-package_name", packageName}
+	cmdArgs = append(cmdArgs, qualifiedFilenames...)
 
 	for _, lang := range h.langs {
 		command := "wuffs-" + lang
@@ -150,6 +168,26 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 }
 
 var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
+
+func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
+	files, err := generate.ParseFiles(&h.tm, qualifiedFilenames)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		for _, n := range f.TopLevelDecls() {
+			if n.Kind() != a.KUse {
+				continue
+			}
+			useDirname := h.tm.ByID(n.Use().Path())
+			useDirname = builtin.TrimQuotes(useDirname)
+			if err := h.gen(useDirname, false); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 func (h *genHelper) genFile(dirname string, lang string, out []byte) error {
 	outFilename := filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)

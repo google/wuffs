@@ -39,10 +39,9 @@ func Do(args []string, g Generator) error {
 	if pkgName == "" {
 		return fmt.Errorf("prohibited package name %q", *packageName)
 	}
-	args = flags.Args()
 
 	tm := &token.Map{}
-	files, err := parseFiles(tm, args)
+	files, err := parseFiles(tm, flags.Args())
 	if err != nil {
 		return err
 	}
@@ -83,8 +82,8 @@ func checkPackageName(s string) string {
 	return s
 }
 
-func parseFiles(tm *token.Map, args []string) (files []*ast.File, err error) {
-	if len(args) == 0 {
+func parseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error) {
+	if len(filenames) == 0 {
 		const filename = "stdin"
 		src, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -100,8 +99,11 @@ func parseFiles(tm *token.Map, args []string) (files []*ast.File, err error) {
 		}
 		return []*ast.File{f}, nil
 	}
+	return ParseFiles(tm, filenames)
+}
 
-	for _, filename := range args {
+func ParseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error) {
+	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err
