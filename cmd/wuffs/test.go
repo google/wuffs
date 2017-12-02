@@ -73,7 +73,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 		cmdArgs = append(cmdArgs, "-mimic")
 	}
 
-	b := btHelper{
+	h := testHelper{
 		wuffsRoot:  wuffsRoot,
 		langs:      langs,
 		cmdArgs:    cmdArgs,
@@ -89,13 +89,17 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 
 		// Ensure that we are testing the latest version of the generated code.
 		if !*skipgenFlag {
-			if _, err := gen(nil, wuffsRoot, arg, langs, recursive); err != nil {
+			gh := genHelper{
+				wuffsRoot: wuffsRoot,
+				langs:     langs,
+			}
+			if err := gh.gen(arg, recursive); err != nil {
 				return err
 			}
 		}
 
 		// Proceed with benching / testing the generated code.
-		f, err := b.benchTest(arg, recursive)
+		f, err := h.benchTest(arg, recursive)
 		if err != nil {
 			return err
 		}
@@ -111,20 +115,20 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	return nil
 }
 
-type btHelper struct {
+type testHelper struct {
 	wuffsRoot  string
 	langs      []string
 	cmdArgs    []string
 	ccompilers string
 }
 
-func (b *btHelper) benchTest(dirname string, recursive bool) (failed bool, err error) {
-	filenames, dirnames, err := listDir(b.wuffsRoot, dirname, recursive)
+func (h *testHelper) benchTest(dirname string, recursive bool) (failed bool, err error) {
+	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
 	if err != nil {
 		return false, err
 	}
 	if len(filenames) > 0 {
-		f, err := b.benchTestDir(dirname)
+		f, err := h.benchTestDir(dirname)
 		if err != nil {
 			return false, err
 		}
@@ -132,7 +136,7 @@ func (b *btHelper) benchTest(dirname string, recursive bool) (failed bool, err e
 	}
 	if len(dirnames) > 0 {
 		for _, d := range dirnames {
-			f, err := b.benchTest(filepath.Join(dirname, d), recursive)
+			f, err := h.benchTest(filepath.Join(dirname, d), recursive)
 			if err != nil {
 				return false, err
 			}
@@ -142,19 +146,19 @@ func (b *btHelper) benchTest(dirname string, recursive bool) (failed bool, err e
 	return failed, nil
 }
 
-func (b *btHelper) benchTestDir(dirname string) (failed bool, err error) {
+func (h *testHelper) benchTestDir(dirname string) (failed bool, err error) {
 	if packageName := filepath.Base(dirname); !validName(packageName) {
 		return false, fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
 
-	for _, lang := range b.langs {
+	for _, lang := range h.langs {
 		command := "wuffs-" + lang
 		args := []string(nil)
-		args = append(args, b.cmdArgs...)
+		args = append(args, h.cmdArgs...)
 		if lang == "c" {
-			args = append(args, fmt.Sprintf("-ccompilers=%s", b.ccompilers))
+			args = append(args, fmt.Sprintf("-ccompilers=%s", h.ccompilers))
 		}
-		args = append(args, filepath.Join(b.wuffsRoot, "test", lang, filepath.FromSlash(dirname)))
+		args = append(args, filepath.Join(h.wuffsRoot, "test", lang, filepath.FromSlash(dirname)))
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

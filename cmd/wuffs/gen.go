@@ -44,51 +44,55 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 		args = []string{"std/..."}
 	}
 
-	affected := []string(nil)
+	h := genHelper{
+		wuffsRoot: wuffsRoot,
+		langs:     langs,
+	}
+
 	for _, arg := range args {
 		recursive := strings.HasSuffix(arg, "/...")
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-		var err error
-		affected, err = gen(affected, wuffsRoot, arg, langs, recursive)
-		if err != nil {
+		if err := h.gen(arg, recursive); err != nil {
 			return err
 		}
 	}
 
 	if genlib {
-		if err := genlibAffected(wuffsRoot, langs, affected); err != nil {
+		return h.genlibAffected()
+	}
+	return nil
+}
+
+type genHelper struct {
+	wuffsRoot string
+	langs     []string
+	affected  []string
+}
+
+func (h *genHelper) gen(dirname string, recursive bool) error {
+	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
+	if err != nil {
+		return err
+	}
+	if len(filenames) > 0 {
+		if err := h.genDir(dirname, filenames); err != nil {
 			return err
+		}
+		h.affected = append(h.affected, dirname)
+	}
+	if len(dirnames) > 0 {
+		for _, d := range dirnames {
+			if err := h.gen(dirname+"/"+d, recursive); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func gen(affected []string, wuffsRoot, dirname string, langs []string, recursive bool) (retAffected []string, retErr error) {
-	filenames, dirnames, err := listDir(wuffsRoot, dirname, recursive)
-	if err != nil {
-		return nil, err
-	}
-	if len(filenames) > 0 {
-		if err := genDir(wuffsRoot, dirname, filenames, langs); err != nil {
-			return nil, err
-		}
-		affected = append(affected, dirname)
-	}
-	if len(dirnames) > 0 {
-		for _, d := range dirnames {
-			var err error
-			affected, err = gen(affected, wuffsRoot, dirname+"/"+d, langs, recursive)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return affected, nil
-}
-
-func genDir(wuffsRoot string, dirname string, filenames []string, langs []string) error {
+func (h *genHelper) genDir(dirname string, filenames []string) error {
 	// TODO: skip the generation if the output file already exists and its
 	// mtime is newer than all inputs and the wuffs-gen-foo command.
 
@@ -99,10 +103,10 @@ func genDir(wuffsRoot string, dirname string, filenames []string, langs []string
 	cmdArgs := []string{"gen", "-package_name", packageName}
 	for _, filename := range filenames {
 		cmdArgs = append(cmdArgs,
-			filepath.Join(wuffsRoot, filepath.FromSlash(dirname), filename))
+			filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname), filename))
 	}
 
-	for _, lang := range langs {
+	for _, lang := range h.langs {
 		command := "wuffs-" + lang
 		stdout := &bytes.Buffer{}
 		cmd := exec.Command(command, cmdArgs...)
@@ -117,7 +121,7 @@ func genDir(wuffsRoot string, dirname string, filenames []string, langs []string
 			return err
 		}
 		out := stdout.Bytes()
-		if err := genFile(wuffsRoot, dirname, lang, out); err != nil {
+		if err := h.genFile(dirname, lang, out); err != nil {
 			return err
 		}
 
@@ -130,7 +134,7 @@ func genDir(wuffsRoot string, dirname string, filenames []string, langs []string
 		} else {
 			out = out[:i]
 		}
-		if err := genFile(wuffsRoot, dirname, "h", out); err != nil {
+		if err := h.genFile(dirname, "h", out); err != nil {
 			return err
 		}
 	}
@@ -139,8 +143,8 @@ func genDir(wuffsRoot string, dirname string, filenames []string, langs []string
 
 var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
 
-func genFile(wuffsRoot string, dirname string, lang string, out []byte) error {
-	outFilename := filepath.Join(wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
+func (h *genHelper) genFile(dirname string, lang string, out []byte) error {
+	outFilename := filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
 	if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
 		fmt.Println("gen unchanged: ", outFilename)
 		return nil
@@ -155,13 +159,13 @@ func genFile(wuffsRoot string, dirname string, lang string, out []byte) error {
 	return nil
 }
 
-func genlibAffected(wuffsRoot string, langs []string, affected []string) error {
-	for _, lang := range langs {
+func (h *genHelper) genlibAffected() error {
+	for _, lang := range h.langs {
 		command := "wuffs-" + lang
 		args := []string{"genlib"}
-		args = append(args, "-dstdir", filepath.Join(wuffsRoot, "gen", "lib", lang))
-		args = append(args, "-srcdir", filepath.Join(wuffsRoot, "gen", lang))
-		args = append(args, affected...)
+		args = append(args, "-dstdir", filepath.Join(h.wuffsRoot, "gen", "lib", lang))
+		args = append(args, "-srcdir", filepath.Join(h.wuffsRoot, "gen", lang))
+		args = append(args, h.affected...)
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
