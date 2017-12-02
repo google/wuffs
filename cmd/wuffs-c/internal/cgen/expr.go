@@ -442,7 +442,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
 		status := g.statusMap[n.ID1()]
 		if status.name == "" {
-			msg := builtin.TrimQuotes(n.ID1().Str(g.tm))
+			msg, _ := t.Unescape(n.ID1().Str(g.tm))
 			z := builtin.StatusMap[msg]
 			if z.Message == "" {
 				return fmt.Errorf("no status code for %q", msg)

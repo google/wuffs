@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/generate"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -180,7 +179,7 @@ func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 				continue
 			}
 			useDirname := h.tm.ByID(n.Use().Path())
-			useDirname = builtin.TrimQuotes(useDirname)
+			useDirname, _ = t.Unescape(useDirname)
 			if err := h.gen(useDirname, false); err != nil {
 				return err
 			}

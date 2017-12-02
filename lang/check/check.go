@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	"github.com/google/wuffs/lang/base38"
-	"github.com/google/wuffs/lang/builtin"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -246,8 +245,9 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	n := node.Status()
 	id := n.Message()
 	if other, ok := c.statuses[id]; ok {
+		s, _ := t.Unescape(id.Str(c.tm))
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate status %q", builtin.TrimQuotes(id.Str(c.tm))),
+			Err:           fmt.Errorf("check: duplicate status %q", s),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Status.Filename(),

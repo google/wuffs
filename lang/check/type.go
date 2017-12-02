@@ -633,7 +633,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		if s, ok := q.c.statuses[n.ID1()]; ok {
 			declaredKeyword = s.Status.Keyword()
 		} else {
-			msg := builtin.TrimQuotes(n.ID1().Str(q.tm))
+			msg, _ := t.Unescape(n.ID1().Str(q.tm))
 			z, ok := builtin.StatusMap[msg]
 			if !ok {
 				return fmt.Errorf("check: no error or status with message %q", msg)
