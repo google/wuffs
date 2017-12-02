@@ -107,6 +107,12 @@ typedef struct {
 
 #endif  // WUFFS_BASE_HEADER_H
 
+// ---------------- Use Declarations
+
+// ---------------- BEGIN USE "std/flate"
+
+// ---------------- END   USE "std/flate"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

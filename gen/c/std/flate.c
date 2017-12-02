@@ -107,6 +107,8 @@ typedef struct {
 
 #endif  // WUFFS_BASE_HEADER_H
 
+// ---------------- Use Declarations
+
 #ifdef __cplusplus
 extern "C" {
 #endif
