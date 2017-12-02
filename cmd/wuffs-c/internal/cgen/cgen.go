@@ -19,15 +19,19 @@ package cgen
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/wuffs/lang/base38"
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
+
+	cf "github.com/google/wuffs/cmd/commonflags"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -166,6 +170,7 @@ type gen struct {
 	structMap  map[t.ID]*a.Struct
 	currFunk   funk
 	funks      map[t.QID]funk
+	wuffsRoot  string
 	usesSeen   map[string]struct{}
 }
 
@@ -577,11 +582,16 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	return nil
 }
 
+var (
+	wuffsBaseHeaderHStart = []byte("#ifndef WUFFS_BASE_HEADER_H\n")
+	wuffsBaseHeaderHEnd   = []byte("#endif  // WUFFS_BASE_HEADER_H\n")
+)
+
 func (g *gen) writeUse(b *buffer, n *a.Use) error {
 	useDirname := g.tm.ByID(n.Path())
 	useDirname, _ = t.Unescape(useDirname)
 
-	// TODO: sanity check useDirname?
+	// TODO: sanity check useDirname via commonflags.IsValidUsePath?
 
 	if g.usesSeen == nil {
 		g.usesSeen = map[string]struct{}{}
@@ -590,7 +600,37 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 	}
 	g.usesSeen[useDirname] = struct{}{}
 
+	if g.wuffsRoot == "" {
+		var err error
+		g.wuffsRoot, err = cf.WuffsRoot()
+		if err != nil {
+			return err
+		}
+	}
+
+	hdrFilename := filepath.Join(g.wuffsRoot, "gen", "h", filepath.FromSlash(useDirname)+".h")
+	hdr, err := ioutil.ReadFile(hdrFilename)
+	if err != nil {
+		return err
+	}
+
 	b.printf("// ---------------- BEGIN USE %q\n\n", useDirname)
+
+	// Inline the previously generated .h file, stripping out the redundant
+	// copy of the WUFFS_BASE_HEADER_H code.
+	if i := bytes.Index(hdr, wuffsBaseHeaderHStart); i < 0 {
+		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
+	} else {
+		b.Write(hdr[:i])
+		hdr = hdr[i+len(wuffsBaseHeaderHStart):]
+	}
+	if i := bytes.Index(hdr, wuffsBaseHeaderHEnd); i < 0 {
+		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
+	} else {
+		b.Write(hdr[i+len(wuffsBaseHeaderHEnd):])
+	}
+
+	b.writeb('\n')
 	b.printf("// ---------------- END   USE %q\n\n", useDirname)
 	return nil
 }

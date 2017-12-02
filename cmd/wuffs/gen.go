@@ -27,6 +27,8 @@ import (
 
 	"github.com/google/wuffs/lang/generate"
 
+	cf "github.com/google/wuffs/cmd/commonflags"
+
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
@@ -89,7 +91,7 @@ func (h *genHelper) gen(dirname string, recursive bool) error {
 	}
 	h.seen[dirname] = struct{}{}
 
-	if dirname != path.Clean(dirname) || dirname == "" || dirname[0] == '.' || dirname[0] == '/' {
+	if !cf.IsValidUsePath(dirname) {
 		return fmt.Errorf("invalid package path %q", dirname)
 	}
 

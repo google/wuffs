@@ -16,14 +16,14 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"go/build"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
 var commands = []struct {
@@ -63,7 +63,7 @@ func main1() error {
 	flag.Usage = usage
 	flag.Parse()
 
-	wuffsRoot, err := findWuffsRoot()
+	wuffsRoot, err := cf.WuffsRoot()
 	if err != nil {
 		return err
 	}
@@ -77,17 +77,6 @@ func main1() error {
 	usage()
 	os.Exit(1)
 	return nil
-}
-
-func findWuffsRoot() (string, error) {
-	// TODO: look for a WUFFSROOT environment variable?
-	for _, p := range filepath.SplitList(build.Default.GOPATH) {
-		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
-		if o, err := os.Stat(p); err == nil && o.IsDir() {
-			return p, nil
-		}
-	}
-	return "", errors.New("could not find Wuffs root directory")
 }
 
 func listDir(wuffsRoot string, dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {

@@ -18,6 +18,14 @@
 // It also holds functions to parse and validate these flag values.
 package commonflags
 
+import (
+	"errors"
+	"go/build"
+	"os"
+	"path"
+	"path/filepath"
+)
+
 const (
 	CcompilersDefault = "clang,gcc"
 	CcompilersUsage   = `comma-separated list of C compilers, e.g. "clang,gcc"`
@@ -33,6 +41,9 @@ const (
 	RepsMax     = 1000000
 	RepsUsage   = `the number of repetitions per benchmark`
 )
+
+// TODO: do IsAlphaNumericIsh and IsValidUsePath belong in a separate package,
+// such as lang/validate? Perhaps together with token.Unescape?
 
 // IsAlphaNumericIsh returns whether s contains only ASCII alpha-numerics and a
 // limited set of punctuation such as commas and slahes, but not containing
@@ -50,4 +61,19 @@ func IsAlphaNumericIsh(s string) bool {
 		return false
 	}
 	return true
+}
+
+func IsValidUsePath(s string) bool {
+	return s == path.Clean(s) && s != "" && s[0] != '.' && s[0] != '/'
+}
+
+func WuffsRoot() (string, error) {
+	// TODO: look for a WUFFSROOT environment variable?
+	for _, p := range filepath.SplitList(build.Default.GOPATH) {
+		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
+		if o, err := os.Stat(p); err == nil && o.IsDir() {
+			return p, nil
+		}
+	}
+	return "", errors.New("could not find Wuffs root directory")
 }
