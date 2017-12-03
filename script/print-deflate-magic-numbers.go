@@ -16,10 +16,10 @@
 
 package main
 
-// print-flate-magic-numbers.go prints the std/flate lcode_magic_numbers values
-// based on the tables in RFC 1951 secion 3.2.5.
+// print-deflate-magic-numbers.go prints the std/deflate lcode_magic_numbers
+// values based on the tables in RFC 1951 secion 3.2.5.
 //
-// Usage: go run print-flate-magic-numbers.go
+// Usage: go run print-deflate-magic-numbers.go
 
 import (
 	"fmt"

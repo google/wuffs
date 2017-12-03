@@ -16,14 +16,14 @@
 
 package main
 
-// extract-flate-offsets.go extracts the start and end offsets of the
-// flate-compressed data wrapped in a .gz file.
+// extract-deflate-offsets.go extracts the start and end offsets of the
+// deflate-compressed data wrapped in a .gz file.
 //
-// Usage: go run extract-flate-offsets.go foo.gz bar.gz
+// Usage: go run extract-deflate-offsets.go foo.gz bar.gz
 //
-// Alternatively: go run extract-flate-offsets.go -write-flate foo.gz
+// Alternatively: go run extract-deflate-offsets.go -write-deflate foo.gz
 //
-// Alternatively: go run extract-flate-offsets.go -write-zlib foo.gz
+// Alternatively: go run extract-deflate-offsets.go -write-zlib foo.gz
 
 import (
 	"bytes"
@@ -39,11 +39,11 @@ import (
 )
 
 var (
-	writeFlate = flag.Bool("write-flate", false, "whether to convert gzip to raw flate")
-	writeZlib  = flag.Bool("write-zlib", false, "whether to convert gzip to zlib")
+	writeDeflate = flag.Bool("write-deflate", false, "whether to convert gzip to raw deflate")
+	writeZlib    = flag.Bool("write-zlib", false, "whether to convert gzip to zlib")
 )
 
-// GZIP wraps a header and footer around flate data. The format is described in
+// GZIP wraps a header and footer around deflate data. The format is described in
 // RFC 1952: https://www.ietf.org/rfc/rfc1952.txt
 const (
 	flagText    = 1 << 0
@@ -110,14 +110,14 @@ func decode(filename string) error {
 		return fmt.Errorf("TODO: support gzip HCRC flag")
 	}
 
-	// As a sanity check, the result should be valid flate.
-	uncompressed, err := checkFlate(src[i:])
+	// As a sanity check, the result should be valid deflate.
+	uncompressed, err := checkDeflate(src[i:])
 	if err != nil {
 		return err
 	}
 
-	if *writeFlate {
-		return doWriteFlate(src[i:], uncompressed, filename)
+	if *writeDeflate {
+		return doWriteDeflate(src[i:], uncompressed, filename)
 	} else if *writeZlib {
 		return doWriteZlib(src[i:], uncompressed, filename)
 	}
@@ -125,33 +125,33 @@ func decode(filename string) error {
 	return nil
 }
 
-func doWriteFlate(flateCompressed []byte, uncompressed []byte, filename string) error {
+func doWriteDeflate(deflateCompressed []byte, uncompressed []byte, filename string) error {
 	if strings.HasSuffix(filename, ".gz") {
 		filename = filename[:len(filename)-3]
 	}
-	filename += ".flate"
-	if err := ioutil.WriteFile(filename, flateCompressed, 0666); err != nil {
+	filename += ".deflate"
+	if err := ioutil.WriteFile(filename, deflateCompressed, 0666); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", filename)
 	return nil
 }
 
-func doWriteZlib(flateCompressed []byte, uncompressed []byte, filename string) error {
+func doWriteZlib(deflateCompressed []byte, uncompressed []byte, filename string) error {
 	buf := bytes.NewBuffer(nil)
 	// The ZLIB header (as per https://www.ietf.org/rfc/rfc1950.txt) is 2
 	// bytes.
 	//
-	// The first byte's low 4 bits is the compression method: 8 means flate.
+	// The first byte's low 4 bits is the compression method: 8 means deflate.
 	// The first byte's high 4 bits is the compression info: 7 means a 32KiB
-	// flate window size.
+	// deflate window size.
 	//
 	// The second byte's low 5 bits are a parity check. The 5th bit (0 in this
 	// case) indicates a preset dictionary. The high 2 bits (2 in this case)
 	// means the default compression algorithm.
 	buf.WriteString("\x78\x9c")
 	// Write the payload.
-	buf.Write(flateCompressed)
+	buf.Write(deflateCompressed)
 	// The ZLIB footer is 4 bytes: a big-endian checksum.
 	checksum := adler32.Checksum(uncompressed)
 	buf.WriteByte(uint8(checksum >> 24))
@@ -189,12 +189,12 @@ func readString(src []byte, i int) (int, error) {
 	}
 }
 
-func checkFlate(x []byte) ([]byte, error) {
+func checkDeflate(x []byte) ([]byte, error) {
 	rc := flate.NewReader(bytes.NewReader(x))
 	defer rc.Close()
 	x, err := ioutil.ReadAll(rc)
 	if err != nil {
-		return nil, fmt.Errorf("data is not valid flate: %v", err)
+		return nil, fmt.Errorf("data is not valid deflate: %v", err)
 	}
 	return x, nil
 }

@@ -32,7 +32,7 @@ pub error "internal error: inconsistent n_bits"
 pub error "missing end-of-block code"
 pub error "no Huffman codes"
 
-// The next two tables were created by script/print-flate-magic-numbers.go.
+// The next two tables were created by script/print-deflate-magic-numbers.go.
 //
 // The u32 values' meanings are the same as the decoder.huffs u32 values. In
 // particular, bit 30 indicates a base number + extra bits, bits 23-8 are the

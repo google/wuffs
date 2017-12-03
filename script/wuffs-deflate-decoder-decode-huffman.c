@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file contains a hand-written C implementation of gen/c/std/flate.c's
-// generated wuffs_flate__flate_decoder__decode_huffman_fast function.
+// This file contains a hand-written C implementation of gen/c/std/deflate.c's
+// generated wuffs_deflate__decoder__decode_huffman_fast function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
 // purpose is to give a rough upper bound on how fast Wuffs' generated C code
@@ -21,28 +21,30 @@
 //
 // To repeat, substituting in this C implementation is NOT SAFE, and may result
 // in buffer overflows. This code exists only to aid optimization of the (safe)
-// std/flate/*.wuffs code and the Wuffs compiler's code generation.
+// std/deflate/*.wuffs code and the Wuffs compiler's code generation.
 //
 // ----------------
 //
 // Having said that, to generate the benchmark numbers with this hand-written C
-// implementation, edit gen/c/std/flate.c and find the line that says
+// implementation, edit gen/c/std/deflate.c and find the line that says
 //
 // C HEADER ENDS HERE.
 //
 // After that, add this line:
 //
-// #include "../../../script/wuffs-flate-decoder-decode-huffman.c"
+// #include "../../../script/wuffs-deflate-decoder-decode-huffman.c"
 //
-// Then find the call to wuffs_flate__flate_decoder__decode_huffman_fast. It
-// should be inside the wuffs_flate__flate_decoder__decode_blocks function body,
-// and the lines of code should look something like
+// Then find the call to wuffs_deflate__decoder__decode_huffman_fast. It should
+// be inside the wuffs_deflate__decoder__decode_blocks function body, and the
+// lines of code should look something like
 //
 // status =
-//     wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
+//     wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 //
 // Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
 // should look something like:
+//
+// TODO: update this "git diff" snippet.
 //
 // ----------------
 //
@@ -74,17 +76,17 @@
 //
 // ----------------
 //
-// That concludes the two edits to gen/c/std/flate.c. Run the tests and
+// That concludes the two edits to gen/c/std/deflate.c. Run the tests and
 // benchmarks with the "-skipgen" flag, otherwise the "wuffs" tool will
-// re-generate the C code and override your gen/c/std/flate.c edit:
+// re-generate the C code and override your gen/c/std/deflate.c edit:
 //
-// wuffs test  -skipgen std/flate
-// wuffs bench -skipgen std/flate
+// wuffs test  -skipgen std/deflate
+// wuffs bench -skipgen std/deflate
 //
 // You may also want to focus on one specific test, e.g.:
 //
-// wuffs test  -skipgen -focus=wuffs_flate_decode_midsummer std/flate
-// wuffs bench -skipgen -focus=wuffs_flate_decode_100k      std/flate
+// wuffs test  -skipgen -focus=wuffs_deflate_decode_midsummer std/deflate
+// wuffs bench -skipgen -focus=wuffs_deflate_decode_100k      std/deflate
 
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
@@ -103,24 +105,24 @@
 
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
-static wuffs_flate__status wuffs_flate__flate_decoder__decode_huffman_fast(
-    wuffs_flate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
 // This is the overriding implementation.
-wuffs_flate__status c_wuffs_flate__flate_decoder__decode_huffman_fast(
-    wuffs_flate__flate_decoder* self,
+wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
-  // overridden wuffs_flate__flate_decoder__decode_huffman_fast.
-  (void)(wuffs_flate__flate_decoder__decode_huffman_fast);
+  // overridden wuffs_deflate__decoder__decode_huffman_fast.
+  (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
   if (!a_dst.buf || !a_src.buf) {
     return WUFFS_FLATE__ERROR_BAD_ARGUMENT;
   }
-  wuffs_flate__status status = WUFFS_FLATE__STATUS_OK;
+  wuffs_deflate__status status = WUFFS_FLATE__STATUS_OK;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
