@@ -14,9 +14,7 @@
 
 #include "zlib.h"
 
-// TODO: rename this file to "deflate-gzip-zlib.c".
-
-uint32_t global_mimiclib_flate_unused_u32;
+uint32_t global_mimiclib_deflate_unused_u32;
 
 const char* mimic_bench_adler32(wuffs_base__buf1* dst,
                                 wuffs_base__buf1* src,
@@ -28,7 +26,7 @@ const char* mimic_bench_adler32(wuffs_base__buf1* dst,
   if (len > 0x7FFFFFFF) {
     return "src length is too large";
   }
-  global_mimiclib_flate_unused_u32 = adler32(0L, ptr, len);
+  global_mimiclib_deflate_unused_u32 = adler32(0L, ptr, len);
   src->ri = src->wi;
   return NULL;
 }
@@ -43,7 +41,7 @@ const char* mimic_bench_crc32(wuffs_base__buf1* dst,
   if (len > 0x7FFFFFFF) {
     return "src length is too large";
   }
-  global_mimiclib_flate_unused_u32 = crc32(0L, ptr, len);
+  global_mimiclib_deflate_unused_u32 = crc32(0L, ptr, len);
   src->ri = src->wi;
   return NULL;
 }

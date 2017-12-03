@@ -44,7 +44,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #include "../../../gen/c/std/zlib.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC
-#include "../mimiclib/flate.c"
+#include "../mimiclib/deflate-gzip-zlib.c"
 #endif
 
 // ---------------- Golden Tests
