@@ -39,6 +39,8 @@ func doGenlib(wuffsRoot string, args []string) error { return doGenGenlib(wuffsR
 func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
+	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
+
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -52,8 +54,9 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	}
 
 	h := genHelper{
-		wuffsRoot: wuffsRoot,
-		langs:     langs,
+		wuffsRoot:   wuffsRoot,
+		langs:       langs,
+		skipgendeps: *skipgendepsFlag,
 	}
 
 	for _, arg := range args {
@@ -76,11 +79,13 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 }
 
 type genHelper struct {
-	wuffsRoot string
-	langs     []string
-	affected  []string
-	seen      map[string]struct{}
-	tm        t.Map
+	wuffsRoot   string
+	langs       []string
+	skipgendeps bool
+
+	affected []string
+	seen     map[string]struct{}
+	tm       t.Map
 }
 
 func (h *genHelper) gen(dirname string, recursive bool) error {
@@ -127,8 +132,10 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 	for i, filename := range filenames {
 		qualifiedFilenames[i] = filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname), filename)
 	}
-	if err := h.genDirDependencies(qualifiedFilenames); err != nil {
-		return err
+	if !h.skipgendeps {
+		if err := h.genDirDependencies(qualifiedFilenames); err != nil {
+			return err
+		}
 	}
 	cmdArgs := []string{"gen", "-package_name", packageName}
 	cmdArgs = append(cmdArgs, qualifiedFilenames...)

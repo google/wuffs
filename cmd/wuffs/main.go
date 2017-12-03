@@ -112,6 +112,9 @@ const (
 
 	skipgenDefault = false
 	skipgenUsage   = `whether to skip automatically generating code when testing`
+
+	skipgendepsDefault = false
+	skipgendepsUsage   = `whether to skip automatically generating packages' dependencies`
 )
 
 func parseLangs(commaSeparated string) ([]string, error) {

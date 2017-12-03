@@ -36,6 +36,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
 	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
+	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
 
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -90,8 +91,9 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 		// Ensure that we are testing the latest version of the generated code.
 		if !*skipgenFlag {
 			gh := genHelper{
-				wuffsRoot: wuffsRoot,
-				langs:     langs,
+				wuffsRoot:   wuffsRoot,
+				langs:       langs,
+				skipgendeps: *skipgendepsFlag,
 			}
 			if err := gh.gen(arg, recursive); err != nil {
 				return err
