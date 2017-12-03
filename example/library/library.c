@@ -32,11 +32,11 @@ for a C compiler $cc, such as clang or gcc.
 
 #include <unistd.h>
 
-#include "wuffs/gen/h/std/flate.h"
+#include "wuffs/gen/h/std/deflate.h"
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 
-// lgtm_ptr and lgtm_len hold a flate-encoded "LGTM" message.
+// lgtm_ptr and lgtm_len hold a deflate-encoded "LGTM" message.
 uint8_t lgtm_ptr[] = {
     0xf3, 0xc9, 0xcf, 0xcf, 0x2e, 0x56, 0x48, 0xcf, 0xcf, 0x4f,
     0x51, 0x28, 0xc9, 0x57, 0xc8, 0x4d, 0xd5, 0xe3, 0x02, 0x00,
@@ -54,12 +54,12 @@ static const char* decode() {
   wuffs_base__writer1 dst_writer = {.buf = &dst};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
-  wuffs_flate__flate_decoder dec;
-  wuffs_flate__flate_decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_flate__status s =
-      wuffs_flate__flate_decoder__decode(&dec, dst_writer, src_reader);
+  wuffs_deflate__decoder dec;
+  wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_deflate__status s =
+      wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
-    return wuffs_flate__status__string(s);
+    return wuffs_deflate__status__string(s);
   }
   ignore_return_value(write(1, dst.ptr, dst.wi));
   return NULL;
