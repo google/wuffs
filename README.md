@@ -206,8 +206,8 @@ might only need the .c files, not the .h files, as the .c files are designed to
 be a [drop-in library](http://gpfault.net/posts/drop-in-libraries.txt.html).
 For example, if you want a GIF decoder, you only need `gif.c`. See TODO for an
 example. More complicated decoders might require multiple .c files - multiple
-modules. For example, the PNG codec (TODO) requires the flate codec, but they
-are separate files, since HTTP can use also flate compression (also known as
+modules. For example, the PNG codec (TODO) requires the deflate codec, but they
+are separate files, since HTTP can use also deflate compression (also known as
 gzip or zlib, roughly speaking) without necessarily processing PNG images.
 
 

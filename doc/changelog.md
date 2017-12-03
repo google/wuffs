@@ -6,6 +6,7 @@
 - Renamed Puffs to Wuffs.
 - Added a `yield` keyword.
 - Spun `std/zlib` out of `std/flate`.
+- Renamed `std/flate` to `std/deflate`.
 
 
 ## 2017-11-16

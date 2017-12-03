@@ -3,6 +3,8 @@
 *Preliminary* measurements of `wuffs genlib` libraries' binary size on x86_64
 are below. Lower is better.
 
+TODO: re-do these numbers as we've spun std/zlib out of std/deflate.
+
     clang-dynamic:
     -rwxr-xr-x 1 nigeltao eng 38352 Nov  9 22:59 libwuffs.so
     -rw-r--r-- 1 nigeltao eng 22624 Nov  9 22:59 std-flate.lo
@@ -29,7 +31,8 @@ are below. Lower is better.
 Below are some standard C libraries shipped as part of Debian Testing as of
 November 2017. The numbers aren't directly comparable, as these libraries have
 a richer API, especially in providing an encoder and not just a decoder. Still,
-it is a reference point for e.g. Wuffs flate vs libz and Wuffs gif vs libgif.
+it is a reference point for e.g. Wuffs (deflate + gzip + zlib) vs libz and
+Wuffs gif vs libgif.
 
     dynamic:
     -rw-r--r-- 1 root root 105088 Jan 29  2017 /lib/x86_64-linux-gnu/libz.so.1.2.8
@@ -42,4 +45,4 @@ it is a reference point for e.g. Wuffs flate vs libz and Wuffs gif vs libgif.
 
 ---
 
-Updated on November 2017.
+Updated on December 2017.
