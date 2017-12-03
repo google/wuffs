@@ -181,7 +181,7 @@ const char* wuffs_deflate__status__string(wuffs_deflate__status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_deflate__flate_decoder__etc functions.
+  // wuffs_deflate__decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -252,25 +252,23 @@ typedef struct {
       uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
-} wuffs_deflate__flate_decoder;
+} wuffs_deflate__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_deflate__flate_decoder__initialize is an initializer function.
+// wuffs_deflate__decoder__initialize is an initializer function.
 //
-// It should be called before any other wuffs_deflate__flate_decoder__*
-// function.
+// It should be called before any other wuffs_deflate__decoder__* function.
 //
 // Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_deflate__flate_decoder__initialize(
-    wuffs_deflate__flate_decoder* self,
-    uint32_t wuffs_version,
-    uint32_t for_internal_use_only);
+void wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
+                                        uint32_t wuffs_version,
+                                        uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-wuffs_deflate__status wuffs_deflate__flate_decoder__decode(
-    wuffs_deflate__flate_decoder* self,
+wuffs_deflate__status wuffs_deflate__decoder__decode(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 

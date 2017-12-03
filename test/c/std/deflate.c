@@ -120,8 +120,8 @@ const char* wuffs_deflate_decode(wuffs_base__buf1* dst,
                                  wuffs_base__buf1* src,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
-  wuffs_deflate__flate_decoder dec;
-  wuffs_deflate__flate_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_deflate__decoder dec;
+  wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
   uint64_t wlim = 0;
   uint64_t rlim = 0;
   while (true) {
@@ -137,7 +137,7 @@ const char* wuffs_deflate_decode(wuffs_base__buf1* dst,
     }
 
     wuffs_deflate__status s =
-        wuffs_deflate__flate_decoder__decode(&dec, dst_writer, src_reader);
+        wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     if (s == WUFFS_DEFLATE__STATUS_OK) {
       return NULL;
@@ -211,7 +211,7 @@ void test_wuffs_deflate_decode_split_src() {
     return;
   }
 
-  wuffs_deflate__flate_decoder dec;
+  wuffs_deflate__decoder dec;
   wuffs_base__writer1 dst_writer = {.buf = &got};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
@@ -224,19 +224,19 @@ void test_wuffs_deflate_decode_split_src() {
     }
     got.wi = 0;
 
-    wuffs_deflate__flate_decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
     src.closed = false;
     src.ri = gt->src_offset0;
     src.wi = split;
     wuffs_deflate__status s0 =
-        wuffs_deflate__flate_decoder__decode(&dec, dst_writer, src_reader);
+        wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     src.closed = true;
     src.ri = split;
     src.wi = gt->src_offset1;
     wuffs_deflate__status s1 =
-        wuffs_deflate__flate_decoder__decode(&dec, dst_writer, src_reader);
+        wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     if (s0 != WUFFS_DEFLATE__SUSPENSION_SHORT_READ) {
       FAIL("i=%d: s0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s0,
@@ -265,7 +265,7 @@ bool do_test_wuffs_deflate_history(int i,
                                    golden_test* gt,
                                    wuffs_base__buf1* src,
                                    wuffs_base__buf1* got,
-                                   wuffs_deflate__flate_decoder* dec,
+                                   wuffs_deflate__decoder* dec,
                                    uint32_t starting_history_index,
                                    uint64_t limit,
                                    wuffs_deflate__status want_s) {
@@ -274,7 +274,7 @@ bool do_test_wuffs_deflate_history(int i,
   got->ri = 0;
   got->wi = 0;
 
-  wuffs_deflate__flate_decoder__initialize(dec, WUFFS_VERSION, 0);
+  wuffs_deflate__decoder__initialize(dec, WUFFS_VERSION, 0);
   wuffs_base__writer1 dst_writer = {.buf = got};
   wuffs_base__reader1 src_reader = {.buf = src};
 
@@ -283,7 +283,7 @@ bool do_test_wuffs_deflate_history(int i,
   dst_writer.private_impl.limit.ptr_to_len = &limit;
 
   wuffs_deflate__status got_s =
-      wuffs_deflate__flate_decoder__decode(dec, dst_writer, src_reader);
+      wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
   if (got_s != want_s) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
          ": decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
@@ -312,7 +312,7 @@ void test_wuffs_deflate_history_full() {
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
-    wuffs_deflate__flate_decoder dec;
+    wuffs_deflate__decoder dec;
     if (!do_test_wuffs_deflate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
             i >= 0 ? WUFFS_DEFLATE__STATUS_OK
@@ -374,7 +374,7 @@ void test_wuffs_deflate_history_partial() {
     const char* fragment = "3.14";
     const uint32_t fragment_length = 4;
 
-    wuffs_deflate__flate_decoder dec;
+    wuffs_deflate__decoder dec;
     if (!do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
                                        starting_history_index, fragment_length,
                                        WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE)) {
@@ -455,8 +455,8 @@ void test_wuffs_deflate_table_redirect() {
   // 1st is the key in the first level table (9 bits).
   // 2nd is the key in the second level table (variable bits).
 
-  wuffs_deflate__flate_decoder dec;
-  wuffs_deflate__flate_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_deflate__decoder dec;
+  wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   // The initializer should zero out dec's fields, but to be paranoid, we zero
   // it out explicitly.
@@ -480,7 +480,7 @@ void test_wuffs_deflate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
 
   wuffs_deflate__status s =
-      wuffs_deflate__flate_decoder__init_huff(&dec, 0, 0, n, 257);
+      wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
   if (s) {
     FAIL("%s", wuffs_deflate__status__string(s));
     return;

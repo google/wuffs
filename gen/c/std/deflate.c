@@ -181,7 +181,7 @@ const char* wuffs_deflate__status__string(wuffs_deflate__status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_deflate__flate_decoder__etc functions.
+  // wuffs_deflate__decoder__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -252,25 +252,23 @@ typedef struct {
       uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
-} wuffs_deflate__flate_decoder;
+} wuffs_deflate__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_deflate__flate_decoder__initialize is an initializer function.
+// wuffs_deflate__decoder__initialize is an initializer function.
 //
-// It should be called before any other wuffs_deflate__flate_decoder__*
-// function.
+// It should be called before any other wuffs_deflate__decoder__* function.
 //
 // Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_deflate__flate_decoder__initialize(
-    wuffs_deflate__flate_decoder* self,
-    uint32_t wuffs_version,
-    uint32_t for_internal_use_only);
+void wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
+                                        uint32_t wuffs_version,
+                                        uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-wuffs_deflate__status wuffs_deflate__flate_decoder__decode(
-    wuffs_deflate__flate_decoder* self,
+wuffs_deflate__status wuffs_deflate__decoder__decode(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
@@ -731,46 +729,45 @@ static const uint32_t wuffs_deflate__dcode_magic_numbers[32] = {
 
 // ---------------- Private Function Prototypes
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_uncompressed(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_fixed_huffman(
-    wuffs_deflate__flate_decoder* self);
+static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
+    wuffs_deflate__decoder* self);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_dynamic_huffman(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
+    wuffs_deflate__decoder* self,
     wuffs_base__reader1 a_src);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_huff(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__init_huff(
+    wuffs_deflate__decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
     uint32_t a_n_codes1,
     uint32_t a_base_symbol);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_huffman_fast(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_huffman_slow(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
 // ---------------- Initializer Implementations
 
-void wuffs_deflate__flate_decoder__initialize(
-    wuffs_deflate__flate_decoder* self,
-    uint32_t wuffs_version,
-    uint32_t for_internal_use_only) {
+void wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
+                                        uint32_t wuffs_version,
+                                        uint32_t for_internal_use_only) {
   if (!self) {
     return;
   }
@@ -786,8 +783,8 @@ void wuffs_deflate__flate_decoder__initialize(
 
 // ---------------- Function Implementations
 
-wuffs_deflate__status wuffs_deflate__flate_decoder__decode(
-    wuffs_deflate__flate_decoder* self,
+wuffs_deflate__status wuffs_deflate__decoder__decode(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   if (!self) {
@@ -850,7 +847,7 @@ wuffs_deflate__status wuffs_deflate__flate_decoder__decode(
           }
         }
         wuffs_deflate__status t_0 =
-            wuffs_deflate__flate_decoder__decode_blocks(self, a_dst, a_src);
+            wuffs_deflate__decoder__decode_blocks(self, a_dst, a_src);
         if (a_dst.buf) {
           b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
         }
@@ -938,8 +935,8 @@ exit:
   return status;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
@@ -1003,8 +1000,8 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
             }
           }
         }
-        status = wuffs_deflate__flate_decoder__decode_uncompressed(self, a_dst,
-                                                                   a_src);
+        status =
+            wuffs_deflate__decoder__decode_uncompressed(self, a_dst, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         }
@@ -1014,7 +1011,7 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
         goto label_0_continue;
       } else if (v_type == 1) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-        status = wuffs_deflate__flate_decoder__init_fixed_huffman(self);
+        status = wuffs_deflate__decoder__init_fixed_huffman(self);
         if (status) {
           goto suspend;
         }
@@ -1030,8 +1027,7 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
             }
           }
         }
-        status =
-            wuffs_deflate__flate_decoder__init_dynamic_huffman(self, a_src);
+        status = wuffs_deflate__decoder__init_dynamic_huffman(self, a_src);
         if (a_src.buf) {
           b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
         }
@@ -1054,8 +1050,7 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
           }
         }
       }
-      status =
-          wuffs_deflate__flate_decoder__decode_huffman_fast(self, a_dst, a_src);
+      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       }
@@ -1076,8 +1071,7 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_blocks(
           }
         }
       }
-      status =
-          wuffs_deflate__flate_decoder__decode_huffman_slow(self, a_dst, a_src);
+      status = wuffs_deflate__decoder__decode_huffman_slow(self, a_dst, a_src);
       if (a_src.buf) {
         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
       }
@@ -1129,8 +1123,8 @@ short_read_src:
   goto suspend;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_uncompressed(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
@@ -1291,8 +1285,8 @@ short_read_src:
   goto suspend;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_fixed_huffman(
-    wuffs_deflate__flate_decoder* self) {
+static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
+    wuffs_deflate__decoder* self) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
 
   uint32_t v_i;
@@ -1327,12 +1321,12 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__init_fixed_huffman(
       v_i += 1;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    status = wuffs_deflate__flate_decoder__init_huff(self, 0, 0, 288, 257);
+    status = wuffs_deflate__decoder__init_huff(self, 0, 0, 288, 257);
     if (status) {
       goto suspend;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    status = wuffs_deflate__flate_decoder__init_huff(self, 1, 288, 320, 0);
+    status = wuffs_deflate__decoder__init_huff(self, 1, 288, 320, 0);
     if (status) {
       goto suspend;
     }
@@ -1352,8 +1346,8 @@ exit:
   return status;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_dynamic_huffman(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
+    wuffs_deflate__decoder* self,
     wuffs_base__reader1 a_src) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
 
@@ -1459,7 +1453,7 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__init_dynamic_huffman(
       v_i += 1;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    status = wuffs_deflate__flate_decoder__init_huff(self, 0, 0, 19, 4095);
+    status = wuffs_deflate__decoder__init_huff(self, 0, 0, 19, 4095);
     if (status) {
       goto suspend;
     }
@@ -1555,13 +1549,13 @@ static wuffs_deflate__status wuffs_deflate__flate_decoder__init_dynamic_huffman(
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    status = wuffs_deflate__flate_decoder__init_huff(self, 0, 0, v_n_lit, 257);
+    status = wuffs_deflate__decoder__init_huff(self, 0, 0, v_n_lit, 257);
     if (status) {
       goto suspend;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-    status = wuffs_deflate__flate_decoder__init_huff(self, 1, v_n_lit,
-                                                     (v_n_lit + v_n_dist), 0);
+    status = wuffs_deflate__decoder__init_huff(self, 1, v_n_lit,
+                                               (v_n_lit + v_n_dist), 0);
     if (status) {
       goto suspend;
     }
@@ -1617,8 +1611,8 @@ short_read_src:
   goto suspend;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__init_huff(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__init_huff(
+    wuffs_deflate__decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
     uint32_t a_n_codes1,
@@ -1897,8 +1891,8 @@ exit:
   return status;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_huffman_fast(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
@@ -2281,8 +2275,8 @@ exit:
   return status;
 }
 
-static wuffs_deflate__status wuffs_deflate__flate_decoder__decode_huffman_slow(
-    wuffs_deflate__flate_decoder* self,
+static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
+    wuffs_deflate__decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;

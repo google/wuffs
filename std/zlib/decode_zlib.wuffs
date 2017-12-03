@@ -24,7 +24,7 @@ pub error "invalid zlib parity check"
 pub error "TODO: unsupported zlib preset dictionary"
 
 pub struct decoder?(
-	flate deflate.flate_decoder,
+	flate deflate.decoder,
 	adler adler32,
 )
 

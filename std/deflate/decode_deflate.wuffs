@@ -14,9 +14,6 @@
 
 packageid "dflt"
 
-// TODO: rename "struct flate_decoder" to just "struct decoder", to avoid
-// stutter in the fully qualified C name such as "wuffs_flate__flate_decoder".
-
 pub error "bad Huffman code (over-subscribed)"
 pub error "bad Huffman code (under-subscribed)"
 pub error "bad Huffman code length count"
@@ -37,9 +34,9 @@ pub error "no Huffman codes"
 
 // The next two tables were created by script/print-flate-magic-numbers.go.
 //
-// The u32 values' meanings are the same as the flate_decoder.huffs u32 values.
-// In particular, bit 30 indicates a base number + extra bits, bits 23-8 are
-// the base number and bits 7-4 are the number of those extra bits.
+// The u32 values' meanings are the same as the decoder.huffs u32 values. In
+// particular, bit 30 indicates a base number + extra bits, bits 23-8 are the
+// base number and bits 7-4 are the number of those extra bits.
 //
 // Some trailing elements are 0x08000000. Bit 27 indicates an invalid value.
 
@@ -57,7 +54,7 @@ pri const dcode_magic_numbers[32] u32 = $(
 	0x401001B0, 0x401801B0, 0x402001C0, 0x403001C0, 0x404001D0, 0x406001D0, 0x08000000, 0x08000000,
 )
 
-pub struct flate_decoder?(
+pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits u32,
 	n_bits u32,
@@ -69,17 +66,16 @@ pub struct flate_decoder?(
 	//  - huffs[0] is used for clcode and lcode.
 	//  - huffs[1] is used for dcode.
 	//
-	// The initial table key is the low n_huffs_bits of the flate_decoder.bits
-	// field. Keys longer than 9 bits require a two step lookup, the first step
+	// The initial table key is the low n_huffs_bits of the decoder.bits field.
+	// Keys longer than 9 bits require a two step lookup, the first step
 	// examines the low 9 bits, the second step examines the remaining bits.
 	// Two steps are required at most, as keys are at most 15 bits long.
 	//
-	// Using flate_decoder.bits's low n_huffs_bits as a table key is valid even
-	// if flate_decoder.n_bits is less than n_huffs_bits, because the immediate
-	// next step after indexing the table by the key is to compare
-	// flate_decoder.n_bits to the table value's number of flate_decoder.bits
-	// to consume. If it compares less, then more source bytes are read and the
-	// table lookup re-tried.
+	// Using decoder.bits's low n_huffs_bits as a table key is valid even if
+	// decoder.n_bits is less than n_huffs_bits, because the immediate next
+	// step after indexing the table by the key is to compare decoder.n_bits to
+	// the table value's number of decoder.bits to consume. If it compares
+	// less, then more source bytes are read and the table lookup re-tried.
 	//
 	// The table value is:
 	//  - bit     31 indicates the symbol is a literal.
@@ -90,7 +86,7 @@ pub struct flate_decoder?(
 	//  - bits 26-24 are zero.
 	//  - bits 23- 8 is the redirect offset, literal (in bits 15-8) or base number.
 	//  - bits  7- 4 is the redirected table's bits or number of extra bits.
-	//  - bits  3- 0 are the number of flate_decoder.bits to consume.
+	//  - bits  3- 0 are the number of decoder.bits to consume.
 	//
 	// Exactly one of the eight bits 31-24 should be set.
 	//
@@ -124,7 +120,7 @@ pub struct flate_decoder?(
 	end_of_block bool,
 )
 
-pub func flate_decoder.decode?(dst writer1, src reader1)() {
+pub func decoder.decode?(dst writer1, src reader1)() {
 	while true {
 		in.dst.mark()
 		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
@@ -176,7 +172,7 @@ pub func flate_decoder.decode?(dst writer1, src reader1)() {
 	}
 }
 
-pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
+pri func decoder.decode_blocks?(dst writer1, src reader1)() {
 	var final u32
 	while final == 0 {
 		while this.n_bits < 3,
@@ -216,7 +212,7 @@ pri func flate_decoder.decode_blocks?(dst writer1, src reader1)() {
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
-pri func flate_decoder.decode_uncompressed?(dst writer1, src reader1)() {
+pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
@@ -248,7 +244,7 @@ pri func flate_decoder.decode_uncompressed?(dst writer1, src reader1)() {
 }
 
 // init_fixed_huffman initializes this.huffs as per the RFC section 3.2.6.
-pri func flate_decoder.init_fixed_huffman?()() {
+pri func decoder.init_fixed_huffman?()() {
 	var i u32
 	while i < 144 {
 		this.code_lengths[i] = 8
@@ -275,7 +271,7 @@ pri func flate_decoder.init_fixed_huffman?()() {
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
-pri func flate_decoder.init_dynamic_huffman?(src reader1)() {
+pri func decoder.init_dynamic_huffman?(src reader1)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 	while n_bits < 14,
@@ -425,7 +421,7 @@ pri func flate_decoder.init_dynamic_huffman?(src reader1)() {
 // TODO: skip generating WUFFS_COROUTINE_SUSPENSION_POINTs for *callers* of
 // this function, as it can only return errors, not suspensions.
 
-pri func flate_decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..320], base_symbol u32)() {
+pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..320], base_symbol u32)() {
 	// For the clcode example in this package's README.md:
 	//  - n_codes0 = 0
 	//  - n_codes1 = 19

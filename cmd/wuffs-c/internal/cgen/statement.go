@@ -647,7 +647,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// package.
 			//
 			// TODO: don't hard-code a_dst or a_src.
-			b.printf("%sstatus %s%d = wuffs_deflate__flate_decoder__decode("+
+			b.printf("%sstatus %s%d = wuffs_deflate__decoder__decode("+
 				"&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
 				aPrefix, aPrefix)

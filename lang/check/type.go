@@ -1115,8 +1115,8 @@ swtch:
 		}
 
 	default:
-		// TODO: don't hard-code deflate.flate_decoder as an acceptable type.
-		if q.tm.ByID(n.Decorator()) == "deflate" && q.tm.ByID(n.Name()) == "flate_decoder" {
+		// TODO: don't hard-code deflate.decoder as an acceptable type.
+		if q.tm.ByID(n.Decorator()) == "deflate" && q.tm.ByID(n.Name()) == "decoder" {
 			break
 		}
 		return fmt.Errorf("check: unrecognized node for tcheckTypeExpr")
