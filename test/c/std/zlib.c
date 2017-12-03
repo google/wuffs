@@ -113,13 +113,13 @@ void test_wuffs_adler32() {
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
-    wuffs_flate__adler32 checksum;
-    wuffs_flate__adler32__initialize(&checksum, WUFFS_VERSION, 0);
+    wuffs_zlib__adler32 checksum;
+    wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
     uint32_t got =
-        wuffs_flate__adler32__update(&checksum, ((wuffs_base__slice_u8){
-                                                    .ptr = src.ptr + src.ri,
-                                                    .len = src.wi - src.ri,
-                                                }));
+        wuffs_zlib__adler32__update(&checksum, ((wuffs_base__slice_u8){
+                                                   .ptr = src.ptr + src.ri,
+                                                   .len = src.wi - src.ri,
+                                               }));
     if (got != test_cases[i].want) {
       FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
            i, test_cases[i].filename, got, test_cases[i].want);
@@ -134,8 +134,8 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
                               wuffs_base__buf1* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  wuffs_flate__zlib_decoder dec;
-  wuffs_flate__zlib_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_zlib__decoder dec;
+  wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   uint64_t wlim = 0;
   uint64_t rlim = 0;
@@ -151,17 +151,17 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
       src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
 
-    wuffs_flate__status s =
-        wuffs_flate__zlib_decoder__decode(&dec, dst_writer, src_reader);
+    wuffs_zlib__status s =
+        wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (s == WUFFS_FLATE__STATUS_OK) {
+    if (s == WUFFS_ZLIB__STATUS_OK) {
       return NULL;
     }
-    if ((wlimit && (s == WUFFS_FLATE__SUSPENSION_SHORT_WRITE)) ||
-        (rlimit && (s == WUFFS_FLATE__SUSPENSION_SHORT_READ))) {
+    if ((wlimit && (s == WUFFS_ZLIB__SUSPENSION_SHORT_WRITE)) ||
+        (rlimit && (s == WUFFS_ZLIB__SUSPENSION_SHORT_READ))) {
       continue;
     }
-    return wuffs_flate__status__string(s);
+    return wuffs_zlib__status__string(s);
   }
 }
 
@@ -181,18 +181,18 @@ void test_wuffs_zlib_checksum_mismatch() {
   // Flip a bit in the zlib checksum, which comes at the end of the file.
   src.ptr[src.wi - 1] ^= 1;
 
-  wuffs_flate__zlib_decoder dec;
-  wuffs_flate__zlib_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_zlib__decoder dec;
+  wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_base__writer1 got_writer = {.buf = &got};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
-  wuffs_flate__status status =
-      wuffs_flate__zlib_decoder__decode(&dec, got_writer, src_reader);
-  if (status != WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH) {
+  wuffs_zlib__status status =
+      wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
+  if (status != WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH) {
     FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-         wuffs_flate__status__string(status),
-         WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH,
-         wuffs_flate__status__string(WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH));
+         wuffs_zlib__status__string(status),
+         WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH,
+         wuffs_zlib__status__string(WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH));
     return;
   }
 }
@@ -232,13 +232,13 @@ const char* wuffs_bench_adler32(wuffs_base__buf1* dst,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
-  wuffs_flate__adler32 checksum;
-  wuffs_flate__adler32__initialize(&checksum, WUFFS_VERSION, 0);
+  wuffs_zlib__adler32 checksum;
+  wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
   global_wuffs_zlib_unused_u32 =
-      wuffs_flate__adler32__update(&checksum, ((wuffs_base__slice_u8){
-                                                  .ptr = src->ptr + src->ri,
-                                                  .len = src->wi - src->ri,
-                                              }));
+      wuffs_zlib__adler32__update(&checksum, ((wuffs_base__slice_u8){
+                                                 .ptr = src->ptr + src->ri,
+                                                 .len = src->wi - src->ri,
+                                             }));
   src->ri = src->wi;
   return NULL;
 }

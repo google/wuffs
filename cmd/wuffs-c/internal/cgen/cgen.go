@@ -696,12 +696,19 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			// TODO: arrays of sub-structs.
 			continue
 		}
-		if g.structMap[x.Name()] == nil {
+
+		prefix := g.pkgPrefix
+		if otherPkgID := x.Decorator(); otherPkgID != 0 {
+			// See gen.writeCTypeName for a related TODO with otherPkg.
+			otherPkg := g.tm.ByID(otherPkgID)
+			prefix = "wuffs_" + otherPkg + "__"
+		} else if g.structMap[x.Name()] == nil {
+			// Skip field types like u32 and bool.
 			continue
 		}
-		b.printf("%s%s__initialize(&self->private_impl.%s%s,"+
-			"WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);\n",
-			g.pkgPrefix, x.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
+
+		b.printf("%s%s__initialize(&self->private_impl.%s%s, WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);\n",
+			prefix, x.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 	}
 
 	b.writes("}\n\n")

@@ -901,6 +901,8 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  wuffs_flate__flate_decoder__initialize(
+      &self->private_impl.f_flate, WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);
   wuffs_zlib__adler32__initialize(&self->private_impl.f_adler, WUFFS_VERSION,
                                   WUFFS_BASE__ALREADY_ZEROED);
 }

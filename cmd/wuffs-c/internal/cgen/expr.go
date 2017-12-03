@@ -574,6 +574,8 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 			// to generating "wuffs_bar__qux".
 			//
 			// TODO: sanitize or validate otherPkg, e.g. that it's ASCII only?
+			//
+			// See gen.writeInitializerImpl for a similar use of otherPkg.
 			prefix = "wuffs_" + otherPkg + "__"
 		}
 		b.printf("%s%s", prefix, innermost.Name().Str(g.tm))
