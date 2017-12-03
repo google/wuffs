@@ -381,6 +381,15 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
 #define WUFFS_ZLIB__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 
+#define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672  // 0xFDFDE400
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
+  -33692671  // 0xFDFDE401
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
+  -33692670                                                    // 0xFDFDE402
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK -33692669  // 0xFDFDE403
+#define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+  -33692668  // 0xFDFDE404
+
 bool wuffs_zlib__status__is_error(wuffs_zlib__status s);
 
 const char* wuffs_zlib__status__string(wuffs_zlib__status s);
@@ -388,6 +397,23 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s);
 // ---------------- Public Consts
 
 // ---------------- Structs
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // wuffs_zlib__adler32__etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    wuffs_zlib__status status;
+    uint32_t magic;
+
+    uint32_t f_state;
+
+  } private_impl;
+} wuffs_zlib__adler32;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -402,7 +428,15 @@ typedef struct {
     uint32_t magic;
 
     wuffs_flate__flate_decoder f_flate;
+    wuffs_zlib__adler32 f_adler;
 
+    struct {
+      uint32_t coro_susp_point;
+      uint16_t v_x;
+      uint32_t v_checksum;
+      wuffs_zlib__status v_z;
+      uint64_t scratch;
+    } c_decode[1];
   } private_impl;
 } wuffs_zlib__decoder;
 
@@ -418,6 +452,10 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                      uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
+
+wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                                               wuffs_base__writer1 a_dst,
+                                               wuffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -792,7 +830,13 @@ const char* wuffs_zlib__status__strings0[11] = {
     "zlib: cannot return a suspension",
 };
 
-const char* wuffs_zlib__status__strings1[0] = {};
+const char* wuffs_zlib__status__strings1[5] = {
+    "zlib: checksum mismatch",
+    "zlib: invalid zlib compression method",
+    "zlib: invalid zlib compression window size",
+    "zlib: invalid zlib parity check",
+    "zlib: TODO: unsupported zlib preset dictionary",
+};
 
 const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
   const char** a = NULL;
@@ -804,7 +848,7 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
       break;
     case wuffs_zlib__packageid:
       a = wuffs_zlib__status__strings1;
-      n = 0;
+      n = 5;
       break;
   }
   uint32_t i = s & 0xFF;
@@ -815,9 +859,33 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
 
 // ---------------- Private Initializer Prototypes
 
+void wuffs_zlib__adler32__initialize(wuffs_zlib__adler32* self,
+                                     uint32_t wuffs_version,
+                                     uint32_t for_internal_use_only);
+
 // ---------------- Private Function Prototypes
 
+static uint32_t wuffs_zlib__adler32__update(wuffs_zlib__adler32* self,
+                                            wuffs_base__slice_u8 a_x);
+
 // ---------------- Initializer Implementations
+
+void wuffs_zlib__adler32__initialize(wuffs_zlib__adler32* self,
+                                     uint32_t wuffs_version,
+                                     uint32_t for_internal_use_only) {
+  if (!self) {
+    return;
+  }
+  if (wuffs_version != WUFFS_VERSION) {
+    self->private_impl.status = WUFFS_ZLIB__ERROR_BAD_WUFFS_VERSION;
+    return;
+  }
+  if (for_internal_use_only != WUFFS_BASE__ALREADY_ZEROED) {
+    memset(self, 0, sizeof(*self));
+  }
+  self->private_impl.magic = WUFFS_BASE__MAGIC;
+  self->private_impl.f_state = 1;
+}
 
 void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                      uint32_t wuffs_version,
@@ -833,6 +901,303 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
+  wuffs_zlib__adler32__initialize(&self->private_impl.f_adler, WUFFS_VERSION,
+                                  WUFFS_BASE__ALREADY_ZEROED);
 }
 
 // ---------------- Function Implementations
+
+wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                                               wuffs_base__writer1 a_dst,
+                                               wuffs_base__reader1 a_src) {
+  if (!self) {
+    return WUFFS_ZLIB__ERROR_BAD_RECEIVER;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status = WUFFS_ZLIB__ERROR_INITIALIZER_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return self->private_impl.status;
+  }
+  wuffs_zlib__status status = WUFFS_ZLIB__STATUS_OK;
+
+  uint16_t v_x;
+  uint32_t v_checksum;
+  wuffs_zlib__status v_z;
+
+  uint8_t* b_wptr_dst = NULL;
+  uint8_t* b_wstart_dst = NULL;
+  uint8_t* b_wend_dst = NULL;
+  if (a_dst.buf) {
+    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+    b_wstart_dst = b_wptr_dst;
+    b_wend_dst = b_wptr_dst;
+    if (!a_dst.buf->closed) {
+      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+      wuffs_base__limit1* lim;
+      for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
+        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+          len = *lim->ptr_to_len;
+        }
+      }
+      b_wend_dst += len;
+    }
+  }
+  uint8_t* b_rptr_src = NULL;
+  uint8_t* b_rstart_src = NULL;
+  uint8_t* b_rend_src = NULL;
+  if (a_src.buf) {
+    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    b_rstart_src = b_rptr_src;
+    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    wuffs_base__limit1* lim;
+    for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
+        len = *lim->ptr_to_len;
+      }
+    }
+    b_rend_src = b_rptr_src + len;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_x = self->private_impl.c_decode[0].v_x;
+    v_checksum = self->private_impl.c_decode[0].v_checksum;
+    v_z = self->private_impl.c_decode[0].v_z;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      uint16_t t_1;
+      if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 2)) {
+        t_1 = wuffs_base__load_u16be(b_rptr_src);
+        b_rptr_src += 2;
+      } else {
+        self->private_impl.c_decode[0].scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint32_t t_0 = self->private_impl.c_decode[0].scratch & 0xFF;
+          self->private_impl.c_decode[0].scratch >>= 8;
+          self->private_impl.c_decode[0].scratch <<= 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                    << (64 - t_0);
+          if (t_0 == 8) {
+            t_1 = self->private_impl.c_decode[0].scratch >> (64 - 16);
+            break;
+          }
+          t_0 += 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_0));
+        }
+      }
+      v_x = t_1;
+    }
+    if (((v_x >> 8) & 15) != 8) {
+      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD;
+      goto exit;
+    }
+    if ((v_x >> 12) > 7) {
+      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE;
+      goto exit;
+    }
+    if ((v_x & 32) != 0) {
+      status = WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY;
+      goto exit;
+    }
+    if ((v_x % 31) != 0) {
+      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK;
+      goto exit;
+    }
+    v_checksum = 0;
+    while (true) {
+      wuffs_base__writer1__mark(&a_dst, b_wptr_dst);
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+        if (a_dst.buf) {
+          size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+          a_dst.buf->wi += n;
+          wuffs_base__limit1* lim;
+          for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len) {
+              *lim->ptr_to_len -= n;
+            }
+          }
+        }
+        if (a_src.buf) {
+          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+          a_src.buf->ri += n;
+          wuffs_base__limit1* lim;
+          for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
+            if (lim->ptr_to_len) {
+              *lim->ptr_to_len -= n;
+            }
+          }
+        }
+        wuffs_zlib__status t_2 = wuffs_flate__flate_decoder__decode(
+            &self->private_impl.f_flate, a_dst, a_src);
+        if (a_dst.buf) {
+          b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+        }
+        if (a_src.buf) {
+          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        }
+        v_z = t_2;
+      }
+      v_checksum = wuffs_zlib__adler32__update(
+          &self->private_impl.f_adler,
+          ((wuffs_base__slice_u8){
+              .ptr = a_dst.private_impl.mark,
+              .len = a_dst.private_impl.mark
+                         ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
+                         : 0,
+          }));
+      if (v_z == 0) {
+        goto label_0_break;
+      }
+      status = v_z;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+    }
+  label_0_break:;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+    uint32_t t_4;
+    if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
+      t_4 = wuffs_base__load_u32be(b_rptr_src);
+      b_rptr_src += 4;
+    } else {
+      self->private_impl.c_decode[0].scratch = 0;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      while (true) {
+        if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+          goto short_read_src;
+        }
+        uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
+        self->private_impl.c_decode[0].scratch >>= 8;
+        self->private_impl.c_decode[0].scratch <<= 8;
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                  << (64 - t_3);
+        if (t_3 == 24) {
+          t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
+          break;
+        }
+        t_3 += 8;
+        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
+      }
+    }
+    if (v_checksum != t_4) {
+      status = WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
+      goto exit;
+    }
+
+    goto ok;
+  ok:
+    self->private_impl.c_decode[0].coro_susp_point = 0;
+    goto exit;
+  }
+
+  goto suspend;
+suspend:
+  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode[0].v_x = v_x;
+  self->private_impl.c_decode[0].v_checksum = v_checksum;
+  self->private_impl.c_decode[0].v_z = v_z;
+
+exit:
+  if (a_dst.buf) {
+    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
+    a_dst.buf->wi += n;
+    wuffs_base__limit1* lim;
+    for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
+    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
+  }
+  if (a_src.buf) {
+    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
+    a_src.buf->ri += n;
+    wuffs_base__limit1* lim;
+    for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
+      if (lim->ptr_to_len) {
+        *lim->ptr_to_len -= n;
+      }
+    }
+    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
+    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
+  }
+
+  self->private_impl.status = status;
+  return status;
+
+short_read_src:
+  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+    status = WUFFS_ZLIB__ERROR_UNEXPECTED_EOF;
+    goto exit;
+  }
+  status = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
+  goto suspend;
+}
+
+static uint32_t wuffs_zlib__adler32__update(wuffs_zlib__adler32* self,
+                                            wuffs_base__slice_u8 a_x) {
+  uint32_t v_s1;
+  uint32_t v_s2;
+  wuffs_base__slice_u8 v_remaining;
+
+  v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
+  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  while (((uint64_t)(a_x.len)) > 0) {
+    v_remaining = ((wuffs_base__slice_u8){});
+    if (((uint64_t)(a_x.len)) > 5552) {
+      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5552);
+      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5552);
+    }
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      uint8_t* v_p = i_slice_p.ptr;
+      uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+      while (v_p < i_end0_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+      }
+      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p < i_end1_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+      }
+    }
+    v_s1 %= 65521;
+    v_s2 %= 65521;
+    a_x = v_remaining;
+  }
+  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
+  return self->private_impl.f_state;
+}

@@ -381,6 +381,15 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
 #define WUFFS_ZLIB__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 
+#define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672  // 0xFDFDE400
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
+  -33692671  // 0xFDFDE401
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
+  -33692670                                                    // 0xFDFDE402
+#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK -33692669  // 0xFDFDE403
+#define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+  -33692668  // 0xFDFDE404
+
 bool wuffs_zlib__status__is_error(wuffs_zlib__status s);
 
 const char* wuffs_zlib__status__string(wuffs_zlib__status s);
@@ -388,6 +397,23 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s);
 // ---------------- Public Consts
 
 // ---------------- Structs
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so. Instead, use the
+  // wuffs_zlib__adler32__etc functions.
+  //
+  // In C++, these fields would be "private", but C does not support that.
+  //
+  // It is a struct, not a struct*, so that it can be stack allocated.
+  struct {
+    wuffs_zlib__status status;
+    uint32_t magic;
+
+    uint32_t f_state;
+
+  } private_impl;
+} wuffs_zlib__adler32;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -402,7 +428,15 @@ typedef struct {
     uint32_t magic;
 
     wuffs_flate__flate_decoder f_flate;
+    wuffs_zlib__adler32 f_adler;
 
+    struct {
+      uint32_t coro_susp_point;
+      uint16_t v_x;
+      uint32_t v_checksum;
+      wuffs_zlib__status v_z;
+      uint64_t scratch;
+    } c_decode[1];
   } private_impl;
 } wuffs_zlib__decoder;
 
@@ -418,6 +452,10 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                      uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
+
+wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                                               wuffs_base__writer1 a_dst,
+                                               wuffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -16,6 +16,80 @@ packageid "zlib"
 
 use "std/flate"
 
+pub error "checksum mismatch"
+pub error "invalid zlib compression method"
+pub error "invalid zlib compression window size"
+pub error "invalid zlib parity check"
+
+pub error "TODO: unsupported zlib preset dictionary"
+
 pub struct decoder?(
 	flate flate.flate_decoder,
+	adler adler32,
 )
+
+pub func decoder.decode?(dst writer1, src reader1)() {
+	var x u16 = in.src.read_u16be?()
+	if ((x >> 8) & 0x0F) != 0x08 {
+		return error "invalid zlib compression method"
+	}
+	if (x >> 12) > 0x07 {
+		return error "invalid zlib compression window size"
+	}
+	if (x & 0x20) != 0 {
+		return error "TODO: unsupported zlib preset dictionary"
+	}
+	if (x % 31) != 0 {
+		return error "invalid zlib parity check"
+	}
+	var checksum u32
+	while true {
+		in.dst.mark()
+		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
+		// TODO: expose some API to opt out of checksumming, trading off error
+		// detection for throughput.
+		checksum = this.adler.update(x:in.dst.since_mark())
+		if z.is_ok() {
+			break
+		}
+		yield z
+	}
+	if checksum != in.src.read_u32be?() {
+		return error "checksum mismatch"
+	}
+}
+
+// TODO: drop the '?' but still generate wuffs_zlib__adler_initialize?
+pri struct adler32?(
+	state u32 = 1,
+)
+
+// TODO: add a ! as this function is impure.
+pri func adler32.update(x[] u8)(checksum u32) {
+	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
+	// RFC 1950.
+
+	var s1 u32 = this.state.low_bits(n:16)
+	var s2 u32 = this.state.high_bits(n:16)
+
+	while in.x.length() > 0 {
+		var remaining[] u8
+		if in.x.length() > 5552 {
+			remaining = in.x[5552:]
+			in.x = in.x[:5552]
+		}
+
+		iterate.8 (p ptr u8:in.x) {
+			s1 ~+= deref p as u32
+			s2 ~+= s1
+		}
+
+		s1 %= 65521
+		s2 %= 65521
+
+		in.x = remaining
+	}
+
+	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
+	return this.state
+}

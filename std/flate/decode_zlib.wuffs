@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: delete this file. Its contents have been copy/pasted to std/zlib.
+
 pub error "invalid zlib compression method"
 pub error "invalid zlib compression window size"
 pub error "invalid zlib parity check"

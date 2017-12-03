@@ -635,7 +635,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 3) {
 
 		switch g.pkgName {
-		case "flate":
+		case "flate", "zlib": // TODO: remove "flate".
 			// TODO: don't hard code being inside a try call.
 			if g.currFunk.tempW > maxTemp {
 				return fmt.Errorf("too many temporary variables required")
@@ -643,10 +643,14 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
+			// TODO: don't hard-code the receiver being from the "flate"
+			// package.
+			//
 			// TODO: don't hard-code a_dst or a_src.
-			b.printf("%sstatus %s%d = %sflate_decoder__decode(&self->private_impl.f_flate, %sdst, %ssrc);\n",
+			b.printf("%sstatus %s%d = wuffs_flate__flate_decoder__decode("+
+				"&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
-				g.pkgPrefix, aPrefix, aPrefix)
+				aPrefix, aPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 				return err
 			}
