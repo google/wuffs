@@ -17,4 +17,5 @@ packageid "zlib"
 use "std/flate"
 
 pub struct decoder?(
+	flate flate.flate_decoder,
 )

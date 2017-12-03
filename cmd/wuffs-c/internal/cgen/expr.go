@@ -562,7 +562,21 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		}
 	}
 	if fallback {
-		b.printf("%s%s", g.pkgPrefix, innermost.Name().Str(g.tm))
+		prefix := g.pkgPrefix
+		if otherPkgID := innermost.Decorator(); otherPkgID != 0 {
+			otherPkg := g.tm.ByID(otherPkgID)
+			// TODO: map the "flate" in "flate.decoder" to the "flate" in `use
+			// "std/flate"`, and use the latter "flate".
+			//
+			// This is pretty academic at the moment, since they're the same
+			// "flate", but in the future, we might be able to rename used
+			// packages, e.g. `use "foo/bar" as "baz"`, so "baz.qux" would map
+			// to generating "wuffs_bar__qux".
+			//
+			// TODO: sanitize or validate otherPkg, e.g. that it's ASCII only?
+			prefix = "wuffs_" + otherPkg + "__"
+		}
+		b.printf("%s%s", prefix, innermost.Name().Str(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {

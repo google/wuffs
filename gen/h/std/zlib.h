@@ -401,6 +401,8 @@ typedef struct {
     wuffs_zlib__status status;
     uint32_t magic;
 
+    wuffs_flate__flate_decoder f_flate;
+
   } private_impl;
 } wuffs_zlib__decoder;
 
