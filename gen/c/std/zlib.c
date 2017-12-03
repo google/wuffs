@@ -163,27 +163,19 @@ typedef int32_t wuffs_flate__status;
 #define WUFFS_FLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1157040121  // 0xBB08F807
 #define WUFFS_FLATE__ERROR_BAD_FLATE_BLOCK -1157040120          // 0xBB08F808
 #define WUFFS_FLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1157040119                                             // 0xBB08F809
-#define WUFFS_FLATE__ERROR_CHECKSUM_MISMATCH -1157040118  // 0xBB08F80A
+  -1157040119  // 0xBB08F809
 #define WUFFS_FLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1157040117  // 0xBB08F80B
+  -1157040118  // 0xBB08F80A
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
-  -1157040116  // 0xBB08F80C
+  -1157040117  // 0xBB08F80B
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
-  -1157040115  // 0xBB08F80D
+  -1157040116  // 0xBB08F80C
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
-  -1157040114  // 0xBB08F80E
+  -1157040115  // 0xBB08F80D
 #define WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1157040113                                                     // 0xBB08F80F
-#define WUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040112  // 0xBB08F810
-#define WUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040111           // 0xBB08F811
-#define WUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -1157040110  // 0xBB08F812
-#define WUFFS_FLATE__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -1157040109                                                     // 0xBB08F813
-#define WUFFS_FLATE__ERROR_INVALID_ZLIB_PARITY_CHECK -1157040108  // 0xBB08F814
-#define WUFFS_FLATE__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
-  -1157040107  // 0xBB08F815
+  -1157040114                                                     // 0xBB08F80E
+#define WUFFS_FLATE__ERROR_MISSING_END_OF_BLOCK_CODE -1157040113  // 0xBB08F80F
+#define WUFFS_FLATE__ERROR_NO_HUFFMAN_CODES -1157040112           // 0xBB08F810
 
 bool wuffs_flate__status__is_error(wuffs_flate__status s);
 
@@ -269,48 +261,6 @@ typedef struct {
   } private_impl;
 } wuffs_flate__flate_decoder;
 
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_flate__adler32__etc functions.
-  //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
-  struct {
-    wuffs_flate__status status;
-    uint32_t magic;
-
-    uint32_t f_state;
-
-  } private_impl;
-} wuffs_flate__adler32;
-
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_flate__zlib_decoder__etc functions.
-  //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
-  struct {
-    wuffs_flate__status status;
-    uint32_t magic;
-
-    wuffs_flate__flate_decoder f_flate;
-    wuffs_flate__adler32 f_adler;
-
-    struct {
-      uint32_t coro_susp_point;
-      uint16_t v_x;
-      uint32_t v_checksum;
-      wuffs_flate__status v_z;
-      uint64_t scratch;
-    } c_decode[1];
-  } private_impl;
-} wuffs_flate__zlib_decoder;
-
 // ---------------- Public Initializer Prototypes
 
 // wuffs_flate__flate_decoder__initialize is an initializer function.
@@ -322,24 +272,10 @@ void wuffs_flate__flate_decoder__initialize(wuffs_flate__flate_decoder* self,
                                             uint32_t wuffs_version,
                                             uint32_t for_internal_use_only);
 
-// wuffs_flate__zlib_decoder__initialize is an initializer function.
-//
-// It should be called before any other wuffs_flate__zlib_decoder__* function.
-//
-// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_flate__zlib_decoder__initialize(wuffs_flate__zlib_decoder* self,
-                                           uint32_t wuffs_version,
-                                           uint32_t for_internal_use_only);
-
 // ---------------- Public Function Prototypes
 
 wuffs_flate__status wuffs_flate__flate_decoder__decode(
     wuffs_flate__flate_decoder* self,
-    wuffs_base__writer1 a_dst,
-    wuffs_base__reader1 a_src);
-
-wuffs_flate__status wuffs_flate__zlib_decoder__decode(
-    wuffs_flate__zlib_decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 

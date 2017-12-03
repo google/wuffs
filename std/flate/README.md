@@ -15,8 +15,11 @@ file formats.
 is another wrapper, similar to combining gzip with tar, that can compress
 multiple files into a single archive. Zip is widely used by the ECMA Office
 Open XML format, the OASIS Open Document Format for Office Applications and the
-Java JAR format. Parsing zip is not provided by this package, look at the
-`std/zip` package instead (TODO).
+Java JAR format.
+
+Wrangling those formats that build on flate (gzip, zip and zlib) is not
+provided by this package. For zlib, look at the `std/zlib` package instead. The
+other formats are TODO.
 
 For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
 
@@ -50,7 +53,8 @@ uncompressed file (0x3ae = 942 bytes).
     00000220: 7a59 610d 7f01 ef07 e5ab ae03 0000       zYa...........
 
 The zlib format wraps a 2 byte header and 4 byte footer around the raw flate
-data. The footer contains a 4 byte Adler32 checksum.
+data. The footer contains a 4 byte Adler32 checksum. TODO: move this to
+std/zlib/README.md.
 
     $ xxd test/testdata/romeo.txt.zlib
     00000000: 789c 4d53 c16e db30 0cbd f32b d853 2e46  x.MS.n.0...+.S.F
