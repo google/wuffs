@@ -643,11 +643,11 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			// TODO: don't hard-code the receiver being from the "flate"
+			// TODO: don't hard-code the receiver being from the "deflate"
 			// package.
 			//
 			// TODO: don't hard-code a_dst or a_src.
-			b.printf("%sstatus %s%d = wuffs_flate__flate_decoder__decode("+
+			b.printf("%sstatus %s%d = wuffs_deflate__flate_decoder__decode("+
 				"&self->private_impl.f_flate, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
 				aPrefix, aPrefix)

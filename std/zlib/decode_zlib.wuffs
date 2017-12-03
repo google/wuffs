@@ -14,7 +14,7 @@
 
 packageid "zlib"
 
-use "std/flate"
+use "std/deflate"
 
 pub error "checksum mismatch"
 pub error "invalid zlib compression method"
@@ -24,7 +24,7 @@ pub error "invalid zlib parity check"
 pub error "TODO: unsupported zlib preset dictionary"
 
 pub struct decoder?(
-	flate flate.flate_decoder,
+	flate deflate.flate_decoder,
 	adler adler32,
 )
 

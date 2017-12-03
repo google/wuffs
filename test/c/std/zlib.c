@@ -40,7 +40,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../../gen/c/std/flate.c"
+#include "../../../gen/c/std/deflate.c"
 #include "../../../gen/c/std/zlib.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC

@@ -46,13 +46,13 @@ const char* mimic_bench_crc32(wuffs_base__buf1* dst,
   return NULL;
 }
 
-unsigned int mimic_flate_read_func(void* ctx, unsigned char** buf) {
+unsigned int mimic_deflate_read_func(void* ctx, unsigned char** buf) {
   wuffs_base__buf1* src = (wuffs_base__buf1*)(ctx);
   *buf = src->ptr + src->ri;
   return src->wi - src->ri;
 }
 
-int mimic_flate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
+int mimic_deflate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
   wuffs_base__buf1* dst = (wuffs_base__buf1*)(ctx);
   size_t n = len;
   if (n > dst->len - dst->wi) {
@@ -63,10 +63,10 @@ int mimic_flate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
   return 0;
 }
 
-const char* mimic_flate_decode(wuffs_base__buf1* dst,
-                               wuffs_base__buf1* src,
-                               uint64_t wlimit,
-                               uint64_t rlimit) {
+const char* mimic_deflate_decode(wuffs_base__buf1* dst,
+                                 wuffs_base__buf1* src,
+                                 uint64_t wlimit,
+                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   const char* ret = NULL;
   uint8_t window[32 * 1024];
@@ -79,8 +79,8 @@ const char* mimic_flate_decode(wuffs_base__buf1* dst,
     goto cleanup0;
   }
 
-  int ib_err =
-      inflateBack(&z, mimic_flate_read_func, src, mimic_flate_write_func, dst);
+  int ib_err = inflateBack(&z, mimic_deflate_read_func, src,
+                           mimic_deflate_write_func, dst);
   if (ib_err != Z_STREAM_END) {
     ret = "inflateBack failed";
     goto cleanup1;

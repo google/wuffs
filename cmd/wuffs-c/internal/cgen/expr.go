@@ -565,11 +565,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		prefix := g.pkgPrefix
 		if otherPkgID := innermost.Decorator(); otherPkgID != 0 {
 			otherPkg := g.tm.ByID(otherPkgID)
-			// TODO: map the "flate" in "flate.decoder" to the "flate" in `use
-			// "std/flate"`, and use the latter "flate".
+			// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
+			// `use "std/deflate"`, and use the latter "deflate".
 			//
 			// This is pretty academic at the moment, since they're the same
-			// "flate", but in the future, we might be able to rename used
+			// "deflate", but in the future, we might be able to rename used
 			// packages, e.g. `use "foo/bar" as "baz"`, so "baz.qux" would map
 			// to generating "wuffs_bar__qux".
 			//

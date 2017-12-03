@@ -481,9 +481,9 @@ static inline uint32_t wuffs_base__writer1__copy_from_history32(
   } else {
     n = length;
   }
-  // TODO: unrolling by 3 seems best for the std/flate benchmarks, but that is
-  // mostly because 3 is the minimum length for the flate format. This function
-  // implementation shouldn't overfit to that one format. Perhaps the
+  // TODO: unrolling by 3 seems best for the std/deflate benchmarks, but that
+  // is mostly because 3 is the minimum length for the deflate format. This
+  // function implementation shouldn't overfit to that one format. Perhaps the
   // copy_from_history32 Wuffs method should also take an unroll hint argument,
   // and the cgen can look if that argument is the constant expression '3'.
   //

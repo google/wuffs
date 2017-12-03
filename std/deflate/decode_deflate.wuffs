@@ -17,8 +17,6 @@ packageid "flte"
 // TODO: rename "struct flate_decoder" to just "struct decoder", to avoid
 // stutter in the fully qualified C name such as "wuffs_flate__flate_decoder".
 
-// TODO: rename flate to deflate, since that's what RFC 1951 calls it.
-
 pub error "bad Huffman code (over-subscribed)"
 pub error "bad Huffman code (under-subscribed)"
 pub error "bad Huffman code length count"

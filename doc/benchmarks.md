@@ -24,11 +24,11 @@ bcheckOptimizeXxx methods."
 ## Reproducing
 
 The benchmark programs aim to be runnable "out of the box" without any
-configuration or installation. For example, to run the `std/flate` benchmarks:
+configuration or installation. For example, to run the `std/zlib` benchmarks:
 
     git clone https://github.com/google/wuffs.git
     cd wuffs/test/c/std
-    gcc -O3 flate.c
+    gcc -O3 zlib.c
     ./a.out -bench
     rm a.out
 
@@ -75,7 +75,7 @@ power management can be controlled with:
     sudo cpupower frequency-set --governor performance
 
 
-# Flate (including gzip and zlib)
+# Deflate (including gzip and zlib)
 
 The 1k, 10k, etc. numbers are approximately how many bytes there in the decoded
 output.
