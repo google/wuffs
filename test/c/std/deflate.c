@@ -72,10 +72,10 @@ golden_test deflate_256_bytes_gt = {
 golden_test deflate_deflate_backref_crosses_blocks_gt = {
     .want_filename =
         "../../testdata/artificial/"
-        "flate-backref-crosses-blocks.flate.decompressed",
+        "deflate-backref-crosses-blocks.deflate.decompressed",
     .src_filename =
         "../../testdata/artificial/"
-        "flate-backref-crosses-blocks.flate",
+        "deflate-backref-crosses-blocks.deflate",
 };
 
 golden_test deflate_midsummer_gt = {
@@ -100,8 +100,8 @@ golden_test deflate_romeo_gt = {
 };
 
 golden_test deflate_romeo_fixed_gt = {
-    .want_filename = "../../testdata/romeo.txt",                  //
-    .src_filename = "../../testdata/romeo.txt.fixed-huff.flate",  //
+    .want_filename = "../../testdata/romeo.txt",                    //
+    .src_filename = "../../testdata/romeo.txt.fixed-huff.deflate",  //
 };
 
 golden_test gzip_midsummer_gt = {
