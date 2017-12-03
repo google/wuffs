@@ -197,12 +197,12 @@ void test_basic_sub_struct_initializer() {
 
 // ---------------- LZW Tests
 
-bool do_test_wuffs_gif_lzw_decode(const char* src_filename,
-                                  uint64_t src_size,
-                                  const char* want_filename,
-                                  uint64_t want_size,
-                                  uint64_t wlimit,
-                                  uint64_t rlimit) {
+bool do_test_wuffs_lzw_decode(const char* src_filename,
+                              uint64_t src_size,
+                              const char* want_filename,
+                              uint64_t want_size,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
   wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -301,43 +301,41 @@ bool do_test_wuffs_gif_lzw_decode(const char* src_filename,
   return buf1s_equal("", &got, &want);
 }
 
-void test_wuffs_gif_lzw_decode_many_big_reads() {
+void test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
-                               14731, "../../testdata/bricks-gray.indexes",
-                               19200, 0, 4096);
+  do_test_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
+                           "../../testdata/bricks-gray.indexes", 19200, 0,
+                           4096);
 }
 
-void test_wuffs_gif_lzw_decode_many_small_writes_reads() {
+void test_wuffs_lzw_decode_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
-                               14731, "../../testdata/bricks-gray.indexes",
-                               19200, 41, 43);
+  do_test_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
+                           "../../testdata/bricks-gray.indexes", 19200, 41, 43);
 }
 
-void test_wuffs_gif_lzw_decode_bricks_dither() {
+void test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_lzw_decode("../../testdata/bricks-dither.indexes.giflzw",
-                               14923, "../../testdata/bricks-dither.indexes",
-                               19200, 0, 0);
+  do_test_wuffs_lzw_decode("../../testdata/bricks-dither.indexes.giflzw", 14923,
+                           "../../testdata/bricks-dither.indexes", 19200, 0, 0);
 }
 
-void test_wuffs_gif_lzw_decode_bricks_nodither() {
+void test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
-                               13382, "../../testdata/bricks-nodither.indexes",
-                               19200, 0, 0);
+  do_test_wuffs_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
+                           13382, "../../testdata/bricks-nodither.indexes",
+                           19200, 0, 0);
 }
 
-void test_wuffs_gif_lzw_decode_pi() {
+void test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
-                               "../../testdata/pi.txt", 100003, 0, 0);
+  do_test_wuffs_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
+                           "../../testdata/pi.txt", 100003, 0, 0);
 }
 
 // ---------------- LZW Benches
 
-bool do_bench_wuffs_gif_lzw_decode(const char* filename, uint64_t reps) {
+bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
   wuffs_base__buf1 dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   wuffs_base__writer1 dst_writer = {.buf = &dst};
@@ -376,15 +374,14 @@ bool do_bench_wuffs_gif_lzw_decode(const char* filename, uint64_t reps) {
   return true;
 }
 
-void bench_wuffs_gif_lzw_decode_20k() {
+void bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_gif_lzw_decode("../../testdata/bricks-gray.indexes.giflzw",
-                                5000);
+  do_bench_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 5000);
 }
 
-void bench_wuffs_gif_lzw_decode_100k() {
+void bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_gif_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
+  do_bench_wuffs_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
@@ -718,7 +715,10 @@ void bench_mimic_gif_decode_1000k() {
 
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
-    // Basic Tests
+
+    // These basic tests are really testing the Wuffs compiler. They aren't
+    // specific to the std/gif code, but putting them here is as good as any
+    // other place.
     test_basic_bad_argument_out_of_range,  //
     test_basic_bad_receiver,               //
     test_basic_initializer_not_called,     //
@@ -728,14 +728,12 @@ proc tests[] = {
     test_basic_status_strings,             //
     test_basic_sub_struct_initializer,     //
 
-    // LZW Tests
-    test_wuffs_gif_lzw_decode_many_big_reads,           //
-    test_wuffs_gif_lzw_decode_many_small_writes_reads,  //
-    test_wuffs_gif_lzw_decode_bricks_dither,            //
-    test_wuffs_gif_lzw_decode_bricks_nodither,          //
-    test_wuffs_gif_lzw_decode_pi,                       //
+    test_wuffs_lzw_decode_many_big_reads,           //
+    test_wuffs_lzw_decode_many_small_writes_reads,  //
+    test_wuffs_lzw_decode_bricks_dither,            //
+    test_wuffs_lzw_decode_bricks_nodither,          //
+    test_wuffs_lzw_decode_pi,                       //
 
-    // GIF Tests
     test_wuffs_gif_decode_input_is_a_gif,                          //
     test_wuffs_gif_decode_input_is_a_gif_many_big_reads,           //
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,        //
@@ -744,7 +742,6 @@ proc tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-    // Mimic Tests
     test_mimic_gif_decode_bricks_dither,    //
     test_mimic_gif_decode_bricks_gray,      //
     test_mimic_gif_decode_bricks_nodither,  //
@@ -760,11 +757,10 @@ proc tests[] = {
 
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
-    // LZW Benches
-    bench_wuffs_gif_lzw_decode_20k,   //
-    bench_wuffs_gif_lzw_decode_100k,  //
 
-    // GIF Benches
+    bench_wuffs_lzw_decode_20k,   //
+    bench_wuffs_lzw_decode_100k,  //
+
     bench_wuffs_gif_decode_1k,     //
     bench_wuffs_gif_decode_10k,    //
     bench_wuffs_gif_decode_100k,   //
@@ -772,7 +768,6 @@ proc benches[] = {
 
 #ifdef WUFFS_MIMIC
 
-    // Mimic Benches
     bench_mimic_gif_decode_1k,     //
     bench_mimic_gif_decode_10k,    //
     bench_mimic_gif_decode_100k,   //
