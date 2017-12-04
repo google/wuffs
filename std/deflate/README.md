@@ -1,12 +1,12 @@
-# Flate
+# Deflate
 
-Flate (also known as DEFLATE) is a general purpose compression format, using
-Huffman codes and Lempel-Ziv style length-distance back-references. It is
-specified in [RFC 1951](https://www.ietf.org/rfc/rfc1951.txt).
+Deflate is a general purpose compression format, using Huffman codes and
+Lempel-Ziv style length-distance back-references. It is specified in [RFC
+1951](https://www.ietf.org/rfc/rfc1951.txt).
 
 Gzip ([RFC 1952](https://www.ietf.org/rfc/rfc1952.txt)) and zlib ([RFC
 1950](https://www.ietf.org/rfc/rfc1950.txt)) are two thin wrappers (with
-similar purpose, but different wire formats) around the raw flate encoding.
+similar purpose, but different wire formats) around the raw deflate encoding.
 Gzip (the file format) is used by the `gzip` and `tar` command line tools and
 by the HTTP network protocol. Zlib is used by the ELF executable and PNG image
 file formats.
@@ -17,7 +17,7 @@ multiple files into a single archive. Zip is widely used by the ECMA Office
 Open XML format, the OASIS Open Document Format for Office Applications and the
 Java JAR format.
 
-Wrangling those formats that build on flate (gzip, zip and zlib) is not
+Wrangling those formats that build on deflate (gzip, zip and zlib) is not
 provided by this package. For zlib, look at the `std/zlib` package instead. The
 other formats are TODO.
 
@@ -30,9 +30,9 @@ For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
     00000390: 740a 536f 2073 7475 6d62 6c65 7374 206f  t.So stumblest o
     000003a0: 6e20 6d79 2063 6f75 6e73 656c 3f0a       n my counsel?.
 
-The raw flate encoding:
+The raw deflate encoding:
 
-    $ xxd test/testdata/romeo.txt.flate
+    $ xxd test/testdata/romeo.txt.deflate
     00000000: 4d53 c16e db30 0cbd f32b d853 2e46 0e3d  MS.n.0...+.S.F.=
     00000010: 2e87 20ed 0234 c5ba 0049 861e 861d 149b  .. ..4...I......
     etc
@@ -40,8 +40,8 @@ The raw flate encoding:
     00000210: 7f01                                     ..
 
 The gzip format wraps a variable length header (in this case, 20 bytes) and 8
-byte footer around the raw flate data. The header contains the NUL-terminated C
-string name of the original, uncompressed file, "romeo.txt", amongst other
+byte footer around the raw deflate data. The header contains the NUL-terminated
+C string name of the original, uncompressed file, "romeo.txt", amongst other
 data. The footer contains a 4 byte CRC32 checksum and a 4 byte length of the
 uncompressed file (0x3ae = 942 bytes).
 
@@ -52,7 +52,7 @@ uncompressed file (0x3ae = 942 bytes).
     00000210: de5d 2c67 7d13 8ffd b9a3 24bb 68f4 eb30  .],g}.....$.h..0
     00000220: 7a59 610d 7f01 ef07 e5ab ae03 0000       zYa...........
 
-The zlib format wraps a 2 byte header and 4 byte footer around the raw flate
+The zlib format wraps a 2 byte header and 4 byte footer around the raw deflate
 data. The footer contains a 4 byte Adler32 checksum. TODO: move this to
 std/zlib/README.md.
 
@@ -66,7 +66,7 @@ std/zlib/README.md.
 
 # Wire Format Worked Example
 
-Consider `test/testdata/romeo.txt.flate`. The relevant spec is RFC 1951.
+Consider `test/testdata/romeo.txt.deflate`. The relevant spec is RFC 1951.
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  M       0x4D    0b_0100_1101
@@ -115,7 +115,7 @@ compressed with dynamic Huffman codes. The first type is straightforward:
 containing a uint16 length `N` (and its complement, for error detection) and
 then `N` literal bytes. The second type is the same as the third type but with
 built-in `lcode` and `dcode` tables (see below). The third type is the
-interesting part of the flate format, and its deconstruction continues below.
+interesting part of the deflate format, and its deconstruction continues below.
 
 
 ## Dynamic Huffman Blocks
