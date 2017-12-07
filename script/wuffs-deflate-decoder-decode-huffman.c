@@ -38,44 +38,37 @@
 // be inside the wuffs_deflate__decoder__decode_blocks function body, and the
 // lines of code should look something like
 //
-// status =
-//     wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+// status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 //
 // Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
 // should look something like:
-//
-// TODO: update this "git diff" snippet.
-//
-// ----------------
-//
-// $ git diff gen/c/std/flate.c
-// diff --git a/gen/c/std/flate.c b/gen/c/std/flate.c
-// index 47cb0a9..e7e12b6 100644
-// --- a/gen/c/std/flate.c
-// +++ b/gen/c/std/flate.c
-// @@ -336,6 +336,7 @@ wuffs_flate__status wuffs_flate__zlib_decoder__decode(
-//  #endif  // WUFFS_FLATE_H
-//
-//  // C HEADER ENDS HERE.
-// +#include "../../../script/wuffs-flate-decoder-decode-huffman.c"
-//
-//  #ifndef WUFFS_BASE_IMPL_H
-//  #define WUFFS_BASE_IMPL_H
-// @@ -1119,7 +1120,7 @@ static wuffs_flate__status
-// wuffs_flate__flate_decoder__decode_blocks(
-//          }
-//        }
-//        status =
-// -          wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst,
-// a_src);
-// +          c_wuffs_flate__flate_decoder__decode_huffman_fast(self, a_dst,
-// a_src);
-//        if (a_src.buf) {
-//          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
-//        }
-//
-// ----------------
-//
+
+/*
+$ git diff gen/c/std/deflate.c
+diff --git a/gen/c/std/deflate.c b/gen/c/std/deflate.c
+index 3698e98..4bee3b0 100644
+--- a/gen/c/std/deflate.c
++++ b/gen/c/std/deflate.c
+@@ -279,6 +279,8 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
+ #endif  // WUFFS_DEFLATE_H
+
+ // C HEADER ENDS HERE.
++#include "../../../script/wuffs-deflate-decoder-decode-huffman.c"
++
+
+ #ifndef WUFFS_BASE_IMPL_H
+ #define WUFFS_BASE_IMPL_H
+@@ -1050,7 +1052,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
+           }
+         }
+       }
+-      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
++      status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+       if (a_src.buf) {
+         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+       }
+*/
+
 // That concludes the two edits to gen/c/std/deflate.c. Run the tests and
 // benchmarks with the "-skipgen" flag, otherwise the "wuffs" tool will
 // re-generate the C code and override your gen/c/std/deflate.c edit:
@@ -100,7 +93,7 @@
 // Whether the same techniques could apply to zlib-the-library is discussed at
 // https://github.com/madler/zlib/pull/292
 #ifdef __x86_64__
-//#define WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+//#define WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
 #endif
 
 // This is the generated function that we are explicitly overriding. Note that
@@ -120,27 +113,27 @@ wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
   (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
   if (!a_dst.buf || !a_src.buf) {
-    return WUFFS_FLATE__ERROR_BAD_ARGUMENT;
+    return WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
   }
-  wuffs_deflate__status status = WUFFS_FLATE__STATUS_OK;
+  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
   uint8_t* pdst = a_dst.buf->ptr + a_dst.buf->wi;
   uint8_t* qdst = a_dst.buf->ptr + a_dst.buf->len;
   if ((qdst - pdst) < 258) {
-    return WUFFS_FLATE__STATUS_OK;
+    return WUFFS_DEFLATE__STATUS_OK;
   } else {
     qdst -= 258;
   }
   uint8_t* psrc = a_src.buf->ptr + a_src.buf->ri;
   uint8_t* qsrc = a_src.buf->ptr + a_src.buf->wi;
   if ((qsrc - psrc) < 12) {
-    return WUFFS_FLATE__STATUS_OK;
+    return WUFFS_DEFLATE__STATUS_OK;
   } else {
     qsrc -= 12;
   }
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
   uint64_t bits = self->private_impl.f_bits;
 #else
   uint32_t bits = self->private_impl.f_bits;
@@ -158,7 +151,7 @@ outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -192,7 +185,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -206,7 +199,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < n) {
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -223,7 +216,7 @@ outer_loop:
 
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
       bits |= *((uint64_t*)psrc) << n_bits;
       psrc += 6;
       n_bits += 48;
@@ -247,7 +240,7 @@ outer_loop:
       }
       if ((table_entry >> 24) != 0x10) {
         status =
-            WUFFS_FLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -261,7 +254,7 @@ outer_loop:
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
         if (n_bits < 15) {
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
           bits |= *((uint64_t*)psrc) << n_bits;
           psrc += 6;
           n_bits += 48;
@@ -280,13 +273,13 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(distance) > (pdst - pdst0)) {
-      status = WUFFS_FLATE__ERROR_BAD_ARGUMENT;
+      status = WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
       goto end;
     }
 
     uint8_t* pback = pdst - distance;
 
-#ifdef WUFFS_FLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
     // Back-copy fast path, copying 8 instead of 1 bytes at a time.
     //
     // This always copies 8*N bytes (where N is the smallest integer such that
