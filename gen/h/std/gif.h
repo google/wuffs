@@ -245,15 +245,6 @@ typedef struct {
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gif__lzw_decoder__initialize is an initializer function.
-//
-// It should be called before any other wuffs_gif__lzw_decoder__* function.
-//
-// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
-                                        uint32_t wuffs_version,
-                                        uint32_t for_internal_use_only);
-
 // wuffs_gif__decoder__initialize is an initializer function.
 //
 // It should be called before any other wuffs_gif__decoder__* function.
@@ -268,13 +259,6 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 wuffs_gif__status wuffs_gif__decoder__decode(wuffs_gif__decoder* self,
                                              wuffs_base__writer1 a_dst,
                                              wuffs_base__reader1 a_src);
-
-void wuffs_gif__lzw_decoder__set_literal_width(wuffs_gif__lzw_decoder* self,
-                                               uint32_t a_lw);
-
-wuffs_gif__status wuffs_gif__lzw_decoder__decode(wuffs_gif__lzw_decoder* self,
-                                                 wuffs_base__writer1 a_dst,
-                                                 wuffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

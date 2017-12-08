@@ -245,15 +245,6 @@ typedef struct {
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gif__lzw_decoder__initialize is an initializer function.
-//
-// It should be called before any other wuffs_gif__lzw_decoder__* function.
-//
-// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
-                                        uint32_t wuffs_version,
-                                        uint32_t for_internal_use_only);
-
 // wuffs_gif__decoder__initialize is an initializer function.
 //
 // It should be called before any other wuffs_gif__decoder__* function.
@@ -268,13 +259,6 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 wuffs_gif__status wuffs_gif__decoder__decode(wuffs_gif__decoder* self,
                                              wuffs_base__writer1 a_dst,
                                              wuffs_base__reader1 a_src);
-
-void wuffs_gif__lzw_decoder__set_literal_width(wuffs_gif__lzw_decoder* self,
-                                               uint32_t a_lw);
-
-wuffs_gif__status wuffs_gif__lzw_decoder__decode(wuffs_gif__lzw_decoder* self,
-                                                 wuffs_base__writer1 a_dst,
-                                                 wuffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -681,6 +665,10 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
 
 // ---------------- Private Initializer Prototypes
 
+void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
+                                        uint32_t wuffs_version,
+                                        uint32_t for_internal_use_only);
+
 // ---------------- Private Function Prototypes
 
 static wuffs_gif__status wuffs_gif__decoder__decode_header(
@@ -697,6 +685,15 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
 
 static wuffs_gif__status wuffs_gif__decoder__decode_id(
     wuffs_gif__decoder* self,
+    wuffs_base__writer1 a_dst,
+    wuffs_base__reader1 a_src);
+
+static void wuffs_gif__lzw_decoder__set_literal_width(
+    wuffs_gif__lzw_decoder* self,
+    uint32_t a_lw);
+
+static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
+    wuffs_gif__lzw_decoder* self,
     wuffs_base__writer1 a_dst,
     wuffs_base__reader1 a_src);
 
@@ -1418,37 +1415,16 @@ short_read_src:
   goto suspend;
 }
 
-void wuffs_gif__lzw_decoder__set_literal_width(wuffs_gif__lzw_decoder* self,
-                                               uint32_t a_lw) {
-  if (!self) {
-    return;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return;
-  }
-  if (a_lw < 2 || a_lw > 8) {
-    self->private_impl.status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
-    return;
-  }
-
+static void wuffs_gif__lzw_decoder__set_literal_width(
+    wuffs_gif__lzw_decoder* self,
+    uint32_t a_lw) {
   self->private_impl.f_literal_width = a_lw;
 }
 
-wuffs_gif__status wuffs_gif__lzw_decoder__decode(wuffs_gif__lzw_decoder* self,
-                                                 wuffs_base__writer1 a_dst,
-                                                 wuffs_base__reader1 a_src) {
-  if (!self) {
-    return WUFFS_GIF__ERROR_BAD_RECEIVER;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return self->private_impl.status;
-  }
+static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
+    wuffs_gif__lzw_decoder* self,
+    wuffs_base__writer1 a_dst,
+    wuffs_base__reader1 a_src) {
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
   uint32_t v_clear_code;
@@ -1659,7 +1635,6 @@ exit:
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
