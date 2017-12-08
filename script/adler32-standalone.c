@@ -24,10 +24,13 @@
 // $ gcc       -O3 adler32-standalone.c; ./a.out
 //     3052 MiB/s, gcc 7.2.1 20171025
 //
-// which suggest that clang's code performs at about 76% the rate of gcc's.
+// which suggest that clang's code performs at about 76% the throughput of
+// gcc's. This is filed as https://bugs.llvm.org/show_bug.cgi?id=35567
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 
 #define BUFFER_SIZE (1024 * 1024)
@@ -111,16 +114,27 @@ static uint32_t calculate_hash(uint8_t* x_ptr, size_t x_len) {
 uint8_t buffer[BUFFER_SIZE] = {0};
 
 int main(int argc, char** argv) {
+  bool nocheck = false;
+  int i;
+  for (i = 0; i < argc; i++) {
+    if (!strcmp(argv[i], "-nocheck")) {
+      nocheck = true;
+    }
+  }
+
   struct timeval bench_start_tv;
   gettimeofday(&bench_start_tv, NULL);
 
   const int num_reps = 1000;
+
+  // If changing BUFFER_SIZE, re-calculate this expected value with
+  // https://play.golang.org/p/IU2T58P00C
   const uint32_t expected_hash_of_1mib_of_zeroes = 0x00f00001UL;
+
   int num_bad = 0;
-  int i;
   for (i = 0; i < num_reps; i++) {
     uint32_t actual_hash = calculate_hash(buffer, BUFFER_SIZE);
-    if (actual_hash != expected_hash_of_1mib_of_zeroes) {
+    if (!nocheck && (actual_hash != expected_hash_of_1mib_of_zeroes)) {
       num_bad++;
     }
   }
@@ -135,8 +149,9 @@ int main(int argc, char** argv) {
   int64_t micros =
       (int64_t)(bench_finish_tv.tv_sec - bench_start_tv.tv_sec) * 1000000 +
       (int64_t)(bench_finish_tv.tv_usec - bench_start_tv.tv_usec);
-  int64_t num_mibibytes = (int64_t)(num_reps) * (BUFFER_SIZE / ONE_MIBIBYTE);
-  int64_t mib_per_s = num_mibibytes * 1000000 / micros;
+  int64_t numer = ((int64_t)num_reps) * BUFFER_SIZE * 1000000;
+  int64_t denom = micros * ONE_MIBIBYTE;
+  int64_t mib_per_s = denom ? numer / denom : 0;
 
   printf("%8d MiB/s, %s %s\n", (int)mib_per_s, cc, cc_version);
   return 0;
