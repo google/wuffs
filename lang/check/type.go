@@ -191,14 +191,10 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 						"as their inner types don't match",
 						n.Name().Str(q.tm), lTyp.Str(q.tm), value.Str(q.tm), rTyp.Str(q.tm))
 				}
-
-			} else if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
-				// No-op.
-
-			} else {
-				return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-					value.Str(q.tm), rTyp.Str(q.tm), n.Name().Str(q.tm), lTyp.Str(q.tm))
+			} else if err := q.tcheckEq(n.Name(), nil, lTyp, value, rTyp); err != nil {
+				return err
 			}
+
 		} else {
 			// TODO: check that the default zero value is assignable to n.XType().
 		}
@@ -244,6 +240,20 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 	return nil
 }
 
+func (q *checker) tcheckEq(lID t.ID, lhs *a.Expr, lTyp *a.TypeExpr, rhs *a.Expr, rTyp *a.TypeExpr) error {
+	if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+		return nil
+	}
+	lStr := "???"
+	if lID != 0 {
+		lStr = lID.Str(q.tm)
+	} else if lhs != nil {
+		lStr = lhs.Str(q.tm)
+	}
+	return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
+		rhs.Str(q.tm), rTyp.Str(q.tm), lStr, lTyp.Str(q.tm))
+}
+
 func (q *checker) tcheckAssign(n *a.Assign) error {
 	lhs := n.LHS()
 	rhs := n.RHS()
@@ -257,11 +267,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	rTyp := rhs.MType()
 
 	if n.Operator().Key() == t.KeyEq {
-		if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
-			return nil
-		}
-		return fmt.Errorf("check: cannot assign %q of type %q to %q of type %q",
-			rhs.Str(q.tm), rTyp.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
+		return q.tcheckEq(0, lhs, lTyp, rhs, rTyp)
 	}
 
 	if !lTyp.IsNumType() {
@@ -293,8 +299,21 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	)
 }
 
-func (q *checker) tcheckArg(n *a.Arg, depth uint32) error {
+func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, depth uint32) error {
 	if err := q.tcheckExpr(n.Value(), depth); err != nil {
+		return err
+	}
+
+	if inField == nil {
+		// TODO: panic.
+		n.Node().SetTypeChecked()
+		return nil
+	}
+
+	if n.Name() != inField.Name() {
+		return fmt.Errorf("check: argument name: got %q, want %q", n.Name().Str(q.tm), inField.Name().Str(q.tm))
+	}
+	if err := q.tcheckEq(inField.Name(), nil, inField.XType(), n.Value(), n.Value().MType()); err != nil {
 		return err
 	}
 	n.Node().SetTypeChecked()
@@ -423,7 +442,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				return err
 			}
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -456,7 +475,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -474,7 +493,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -490,7 +509,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -509,7 +528,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -531,7 +550,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -547,7 +566,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
 					return err
 				}
 			}
@@ -675,11 +694,10 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		return fmt.Errorf("check: %q has %d arguments but %d were given",
 			lTyp.Str(q.tm), len(inFields), len(n.Args()))
 	}
-	for _, o := range n.Args() {
-		// TODO: tcheckArg should take inFields[i], checking both assignability
-		// of types and that the "name" in the arg "name:val" matches the field
-		// name.
-		if err := q.tcheckArg(o.Arg(), depth); err != nil {
+	for i, o := range n.Args() {
+		// TODO: inline tcheckArg here, after removing the special-cased hacks
+		// in tcheckExprOther.
+		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), depth); err != nil {
 			return err
 		}
 	}
