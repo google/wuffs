@@ -677,22 +677,30 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.ID0().Key(), n.Str(q.tm))
 }
 
+func (q *checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
+	// TODO: look up funcs in used packages.
+	f := q.c.funcs[t.QID{typ.Receiver().Name(), typ.Name()}]
+	if f.Func == nil {
+		return nil, fmt.Errorf("check: cannot look up %q", typ.Str(q.tm))
+	}
+	return f.Func, nil
+}
+
 func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
-	if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
+	lhs := n.LHS().Expr()
+	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
-	lTyp := n.LHS().Expr().MType()
-	// TODO: look up funcs in used packages. Factor out a resolveFunc method?
-	f := q.c.funcs[t.QID{lTyp.Receiver().Name(), lTyp.Name()}]
-	if f.Func == nil {
-		return fmt.Errorf("check: cannot look up %q", lTyp.Str(q.tm))
+	f, err := q.resolveFunc(lhs.MType())
+	if err != nil {
+		return err
 	}
 
 	// Check that the func's in type matches the arguments.
-	inFields := f.Func.In().Fields()
+	inFields := f.In().Fields()
 	if len(inFields) != len(n.Args()) {
 		return fmt.Errorf("check: %q has %d arguments but %d were given",
-			lTyp.Str(q.tm), len(inFields), len(n.Args()))
+			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
 		// TODO: inline tcheckArg here, after removing the special-cased hacks
@@ -709,8 +717,8 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if n.ID0().Key() == t.KeyTry {
 		n.SetMType(typeExprStatus)
 	} else {
-		// TODO: figure out how to translate f.Func.Out(), which is an
-		// *ast.Struct, to an *ast.TypeExpr we can pass to n.SetMType.
+		// TODO: figure out how to translate f.Out(), which is an *ast.Struct,
+		// to an *ast.TypeExpr we can pass to n.SetMType.
 		n.SetMType(typeExprPlaceholder) // HACK.
 	}
 	return nil
@@ -760,23 +768,7 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
 }
 
-func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
-	// TODO: check that n.Args() is "(src:in.src)".
-	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
-		return false
-	}
-	if len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName(methodName) {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
-}
-
-// isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
+// isThatMethod matches foo.methodName(etc) where etc has nArgs elements.
 func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return false

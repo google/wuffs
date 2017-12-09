@@ -447,7 +447,15 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	if err != nil {
 		return err
 	}
-	lMin, lMax, err := q.bcheckTypeExpr(lhs.MType())
+	return q.bcheckAssignment2(lhs, lhs.MType(), op, rhs)
+}
+
+func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+	if lhs == nil && op != t.IDEq {
+		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op.Key())
+	}
+
+	lMin, lMax, err := q.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
@@ -767,8 +775,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// No-op.
 
 	case t.KeyOpenParen, t.KeyTry:
-		_, _, err := q.bcheckExpr(n.LHS().Expr(), depth)
-		if err != nil {
+		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
 			return nil, nil, err
 		}
 
@@ -782,12 +789,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
 			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
-			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
-			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
-			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_blocks", 2) ||
-			isThisMethod(q.tm, n, "decode_huffman_slow", 2) || isThisMethod(q.tm, n, "decode_huffman_fast", 2) ||
-			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
-			isThisMethod(q.tm, n, "init_huff", 4) ||
 			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimit, 1) ||
 			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
 
@@ -862,17 +863,18 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if isThatMethod(q.tm, n, t.KeyLength, 0) || isThatMethod(q.tm, n, t.KeyAvailable, 0) {
 			break
 		}
-		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+
+		if err := q.bcheckExprCall(n, depth); err != nil {
+			return nil, nil, err
+		}
 
 	case t.KeyOpenBracket:
 		lhs := n.LHS().Expr()
-		_, _, err := q.bcheckExpr(lhs, depth)
-		if err != nil {
+		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
 		rhs := n.RHS().Expr()
-		_, _, err = q.bcheckExpr(rhs, depth)
-		if err != nil {
+		if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
 			return nil, nil, err
 		}
 
@@ -952,6 +954,24 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
 	}
 	return q.bcheckTypeExpr(n.MType())
+}
+
+func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
+	// TODO: handle func pre/post conditions.
+	//
+	// TODO: bcheck the receiver, e.g. ptr vs nptr.
+	lhs := n.LHS().Expr()
+	f, err := q.resolveFunc(lhs.MType())
+	if err != nil {
+		return err
+	}
+	inFields := f.In().Fields()
+	for i, o := range n.Args() {
+		if err := q.bcheckAssignment2(nil, inFields[i].Field().XType(), t.IDEq, o.Arg().Value()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
