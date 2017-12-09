@@ -375,7 +375,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(decorator, 0, lhs, nil, rhs), nil
+		return a.NewTypeExpr(decorator, 0, lhs.Node(), nil, rhs), nil
 	}
 
 	pkg, name, err := p.parseQualifiedIdent()
@@ -391,7 +391,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		}
 	}
 
-	return a.NewTypeExpr(pkg, name, lhs, mhs, nil), nil
+	return a.NewTypeExpr(pkg, name, lhs.Node(), mhs, nil), nil
 }
 
 // parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A double dot replaces

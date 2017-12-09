@@ -202,6 +202,11 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	case t.KeyColon:
 		buf = append(buf, "[] "...)
 		return n.Inner().appendStr(buf, tm, depth)
+	case t.KeyOpenParen:
+		buf = append(buf, "func "...)
+		buf = n.Receiver().appendStr(buf, tm, depth)
+		buf = append(buf, '.')
+		return append(buf, tm.ByID(n.Name())...)
 	default:
 		buf = append(buf, tm.ByID(n.Decorator())...)
 		buf = append(buf, '.')

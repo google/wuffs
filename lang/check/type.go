@@ -416,12 +416,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
 			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
 			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
-			isThisMethod(q.tm, n, "decode_header", 1) || isThisMethod(q.tm, n, "decode_lsd", 1) ||
-			isThisMethod(q.tm, n, "decode_extension", 1) || isThisMethod(q.tm, n, "decode_id", 2) ||
-			isThisMethod(q.tm, n, "decode_uncompressed", 2) || isThisMethod(q.tm, n, "decode_blocks", 2) ||
-			isThisMethod(q.tm, n, "decode_huffman_slow", 2) || isThisMethod(q.tm, n, "decode_huffman_fast", 2) ||
-			isThisMethod(q.tm, n, "init_fixed_huffman", 0) || isThisMethod(q.tm, n, "init_dynamic_huffman", 1) ||
-			isThisMethod(q.tm, n, "init_huff", 4) ||
 			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimit, 1) ||
 			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
 
@@ -561,6 +555,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 
+		return q.tcheckExprCall(n, depth)
+
 	case t.KeyOpenBracket:
 		// n is an index.
 		lhs := n.LHS().Expr()
@@ -657,8 +653,49 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.SetMType(typeExprList)
 		return nil
 	}
+
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) in expression %q for tcheckExprOther",
 		n.ID0().Key(), n.Str(q.tm))
+}
+
+func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
+	if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
+		return err
+	}
+	lTyp := n.LHS().Expr().MType()
+	// TODO: look up funcs in used packages. Factor out a resolveFunc method?
+	f := q.c.funcs[t.QID{lTyp.Receiver().Name(), lTyp.Name()}]
+	if f.Func == nil {
+		return fmt.Errorf("check: cannot look up %q", lTyp.Str(q.tm))
+	}
+
+	// Check that the func's in type matches the arguments.
+	inFields := f.Func.In().Fields()
+	if len(inFields) != len(n.Args()) {
+		return fmt.Errorf("check: %q has %d arguments but %d were given",
+			lTyp.Str(q.tm), len(inFields), len(n.Args()))
+	}
+	for _, o := range n.Args() {
+		// TODO: tcheckArg should take inFields[i], checking both assignability
+		// of types and that the "name" in the arg "name:val" matches the field
+		// name.
+		if err := q.tcheckArg(o.Arg(), depth); err != nil {
+			return err
+		}
+	}
+
+	// TODO: distinguish t.KeyOpenParen vs t.KeyTry in a more principled way?
+	//
+	// TODO: figure out calls with and without "?" should interact with the out
+	// type.
+	if n.ID0().Key() == t.KeyTry {
+		n.SetMType(typeExprStatus)
+	} else {
+		// TODO: figure out how to translate f.Func.Out(), which is an
+		// *ast.Struct, to an *ast.TypeExpr we can pass to n.SetMType.
+		n.SetMType(typeExprPlaceholder) // HACK.
+	}
+	return nil
 }
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
@@ -738,9 +775,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
-	lTyp := lhs.MType()
-	for ; lTyp.Decorator().Key() == t.KeyPtr; lTyp = lTyp.Inner() {
-	}
+	lTyp := lhs.MType().Pointee()
 
 	if lTyp.Decorator() != 0 {
 		// TODO.
@@ -780,7 +815,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	if f := q.c.funcs[t.QID{lTyp.Name(), n.ID1()}]; f.Func != nil {
-		n.SetMType(typeExprPlaceholder) // HACK.
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
 		return nil
 	}
 
