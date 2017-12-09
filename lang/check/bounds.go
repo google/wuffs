@@ -1168,35 +1168,35 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 	return lMin, lMax, nil
 }
 
-func (q *checker) bcheckTypeExpr(n *a.TypeExpr) (*big.Int, *big.Int, error) {
-	if n.IsIdeal() {
+func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
+	if typ.IsIdeal() {
 		// TODO: can an ideal type be refined??
 		return nil, nil, nil
 	}
 
-	switch n.Decorator().Key() {
+	switch typ.Decorator().Key() {
 	case t.KeyPtr, t.KeyOpenBracket, t.KeyColon:
 		return nil, nil, nil
 	}
-	switch n.Name().Key() {
+	switch typ.Name().Key() {
 	case t.KeyReader1, t.KeyWriter1:
 		return nil, nil, nil
 	}
 
 	b := [2]*big.Int{}
-	if key := n.Name().Key(); key < t.Key(len(numTypeBounds)) {
+	if key := typ.Name().Key(); key < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[key]
 	}
 	if b[0] == nil || b[1] == nil {
 		return nil, nil, nil
 	}
-	if n.IsRefined() {
-		if x := n.Min(); x != nil {
+	if typ.IsRefined() {
+		if x := typ.Min(); x != nil {
 			if cv := x.ConstValue(); cv != nil && b[0].Cmp(cv) < 0 {
 				b[0] = cv
 			}
 		}
-		if x := n.Max(); x != nil {
+		if x := typ.Max(); x != nil {
 			if cv := x.ConstValue(); cv != nil && b[1].Cmp(cv) > 0 {
 				b[1] = cv
 			}

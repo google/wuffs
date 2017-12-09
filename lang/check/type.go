@@ -1106,17 +1106,17 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 	return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExprAssociativeOp", n.ID0().Key())
 }
 
-func (q *checker) tcheckTypeExpr(n *a.TypeExpr, depth uint32) error {
+func (q *checker) tcheckTypeExpr(typ *a.TypeExpr, depth uint32) error {
 	if depth > a.MaxTypeExprDepth {
 		return fmt.Errorf("check: type expression recursion depth too large")
 	}
 	depth++
 
 swtch:
-	switch n.Decorator().Key() {
+	switch typ.Decorator().Key() {
 	case 0:
-		if n.Name().IsNumType() {
-			for _, b := range n.Bounds() {
+		if typ.Name().IsNumType() {
+			for _, b := range typ.Bounds() {
 				if b == nil {
 					continue
 				}
@@ -1129,22 +1129,22 @@ swtch:
 			}
 			break
 		}
-		if n.Min() != nil || n.Max() != nil {
+		if typ.Min() != nil || typ.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		switch n.Name().Key() {
+		switch typ.Name().Key() {
 		case t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
 			break swtch
 		}
 		for _, s := range q.c.structs {
-			if s.ID == n.Name() {
+			if s.ID == typ.Name() {
 				break swtch
 			}
 		}
-		return fmt.Errorf("check: %q is not a type", n.Name().Str(q.tm))
+		return fmt.Errorf("check: %q is not a type", typ.Name().Str(q.tm))
 
 	case t.KeyOpenBracket:
-		aLen := n.ArrayLength()
+		aLen := typ.ArrayLength()
 		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
 		}
@@ -1155,18 +1155,18 @@ swtch:
 
 	// TODO: also check t.KeyNptr? Where else should we look for nptr?
 	case t.KeyPtr, t.KeyColon:
-		if err := q.tcheckTypeExpr(n.Inner(), depth); err != nil {
+		if err := q.tcheckTypeExpr(typ.Inner(), depth); err != nil {
 			return err
 		}
 
 	default:
 		// TODO: don't hard-code deflate.decoder as an acceptable type.
-		if q.tm.ByID(n.Decorator()) == "deflate" && q.tm.ByID(n.Name()) == "decoder" {
+		if q.tm.ByID(typ.Decorator()) == "deflate" && q.tm.ByID(typ.Name()) == "decoder" {
 			break
 		}
 		return fmt.Errorf("check: unrecognized node for tcheckTypeExpr")
 	}
-	n.Node().SetTypeChecked()
+	typ.Node().SetTypeChecked()
 	return nil
 }
 
