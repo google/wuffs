@@ -12,6 +12,69 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Uncomment this line to test and bench miniz instead of zlib-the-library.
+// #define WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB 1
+
+#ifdef WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
+#include "/path/to/your/copy/of/github.com/richgel999/miniz/miniz_tinfl.c"
+
+const char* mimic_bench_adler32(wuffs_base__buf1* dst,
+                                wuffs_base__buf1* src,
+                                uint64_t wlimit,
+                                uint64_t rlimit) {
+  return "miniz does not independently compute Adler32";
+}
+
+const char* mimic_bench_crc32(wuffs_base__buf1* dst,
+                              wuffs_base__buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  return "miniz does not implement CRC32";
+}
+
+const char* mimic_deflate_zlib_decode(wuffs_base__buf1* dst,
+                                      wuffs_base__buf1* src,
+                                      uint64_t wlimit,
+                                      uint64_t rlimit,
+                                      bool deflate_instead_of_zlib) {
+  // TODO: don't ignore wlimit and rlimit.
+  int flags = 0;
+  if (!deflate_instead_of_zlib) {
+    flags |= TINFL_FLAG_PARSE_ZLIB_HEADER;
+  }
+  size_t n =
+      tinfl_decompress_mem_to_mem(dst->ptr + dst->wi, dst->len - dst->wi,
+                                  src->ptr + src->ri, src->wi - src->ri, flags);
+  if (n == TINFL_DECOMPRESS_MEM_TO_MEM_FAILED) {
+    return "TINFL_DECOMPRESS_MEM_TO_MEM_FAILED";
+  }
+  dst->wi += n;
+  src->ri = src->wi;
+  return NULL;
+}
+
+const char* mimic_deflate_decode(wuffs_base__buf1* dst,
+                                 wuffs_base__buf1* src,
+                                 uint64_t wlimit,
+                                 uint64_t rlimit) {
+  return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, true);
+}
+
+const char* mimic_gzip_decode(wuffs_base__buf1* dst,
+                              wuffs_base__buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  return "miniz does not implement gzip";
+}
+
+const char* mimic_zlib_decode(wuffs_base__buf1* dst,
+                              wuffs_base__buf1* src,
+                              uint64_t wlimit,
+                              uint64_t rlimit) {
+  return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, false);
+}
+
+#else  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
 #include "zlib.h"
 
 uint32_t global_mimiclib_deflate_unused_u32;
@@ -175,3 +238,5 @@ const char* mimic_zlib_decode(wuffs_base__buf1* dst,
                               uint64_t rlimit) {
   return mimic_gzip_zlib_decode(dst, src, wlimit, rlimit, false);
 }
+
+#endif  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB

@@ -654,7 +654,9 @@ void bench_mimic_gzip_decode_100k() {
 
 // ---------------- Manifest
 
-// TODO: move crc32 and gzip tests and benches from std/flate to std/gzip.
+// TODO: move crc32 and gzip tests and benches from std/deflate to std/gzip.
+// Note that these crc32 and gzip tests and benches don't work with
+// WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
