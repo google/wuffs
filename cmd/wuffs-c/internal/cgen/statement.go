@@ -295,7 +295,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 					return err
 				}
-			} else if n.XType().Decorator().Key() == t.KeyColon {
+			} else if n.XType().IsSliceType() {
 				// TODO: don't assume that the slice is a slice of u8.
 				b.printf("((wuffs_base__slice_u8){})")
 			} else {

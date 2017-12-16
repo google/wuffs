@@ -70,37 +70,63 @@ var builtInTypeMap = TypeMap{
 
 func (c *Checker) builtInFunc(qid t.QID) (*a.Func, error) {
 	if c.builtInFuncs == nil {
-		c.builtInFuncs = map[t.QID]*a.Func{}
-
-		buf := []byte(nil)
-		opts := parse.Options{
-			AllowBuiltIns: true,
-		}
-		for _, s := range builtin.Funcs {
-			buf = buf[:0]
-			buf = append(buf, "pub func "...)
-			buf = append(buf, s...)
-			buf = append(buf, "{}\n"...)
-
-			const filename = "builtin.wuffs"
-			tokens, _, err := t.Tokenize(c.tm, filename, buf)
-			if err != nil {
-				return nil, err
-			}
-			file, err := parse.Parse(c.tm, filename, tokens, &opts)
-			if err != nil {
-				return nil, err
-			}
-
-			tlds := file.TopLevelDecls()
-			if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
-				return nil, fmt.Errorf("parsing %c: got %d top level decls, want %d", s, len(tlds), 1)
-			}
-			f := tlds[0].Func()
-			c.builtInFuncs[f.QID()] = f
+		err := error(nil)
+		c.builtInFuncs, err = parseBuiltInFuncs(c.tm, builtin.Funcs, false)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return c.builtInFuncs[qid], nil
+}
+
+func (c *Checker) builtInSliceFunc(qid t.QID) (*a.Func, error) {
+	if c.builtInSliceFuncs == nil {
+		err := error(nil)
+		c.builtInSliceFuncs, err = parseBuiltInFuncs(c.tm, builtin.SliceFuncs, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c.builtInSliceFuncs[qid], nil
+}
+
+func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QID]*a.Func, error) {
+	m := map[t.QID]*a.Func{}
+	buf := []byte(nil)
+	opts := parse.Options{
+		AllowBuiltIns: true,
+	}
+	for _, s := range ss {
+		buf = buf[:0]
+		buf = append(buf, "pub func "...)
+		buf = append(buf, s...)
+		buf = append(buf, "{}\n"...)
+
+		const filename = "builtin.wuffs"
+		tokens, _, err := t.Tokenize(tm, filename, buf)
+		if err != nil {
+			return nil, fmt.Errorf("check: could not tokenize built-in funcs: %v", err)
+		}
+		if generic {
+			for i := range tokens {
+				if tokens[i].ID == builtin.GenericReplaceFrom {
+					tokens[i].ID = builtin.GenericReplaceTo
+				}
+			}
+		}
+		file, err := parse.Parse(tm, filename, tokens, &opts)
+		if err != nil {
+			return nil, fmt.Errorf("check: could not parse built-in funcs: %v", err)
+		}
+
+		tlds := file.TopLevelDecls()
+		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
+			return nil, fmt.Errorf("parsing %c: got %d top level decls, want %d", s, len(tlds), 1)
+		}
+		f := tlds[0].Func()
+		m[f.QID()] = f
+	}
+	return m, nil
 }
 
 func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
@@ -116,6 +142,13 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	}
 	if f := c.funcs[qid].Func; f != nil {
 		return f, nil
+	}
+	if typ.Receiver().IsSliceType() {
+		if f, err := c.builtInSliceFunc(t.QID{t.IDDiamond, qid[1]}); err != nil {
+			return nil, err
+		} else if f != nil {
+			return f, nil
+		}
 	}
 	return nil, fmt.Errorf("check: resolveFunc cannot look up %q", typ.Str(c.tm))
 }

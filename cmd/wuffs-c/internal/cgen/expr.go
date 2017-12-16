@@ -365,7 +365,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if err := g.writeExpr(b, n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
-		if lTyp := n.LHS().Expr().MType(); lTyp.Decorator().Key() == t.KeyColon {
+		if lTyp := n.LHS().Expr().MType(); lTyp.IsSliceType() {
 			// TODO: don't assume that the slice is a slice of u8.
 			b.writes(".ptr")
 		}
@@ -521,7 +521,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 
 	// TODO: fix this, allow slices of all types, not just of u8's. Also allow
 	// arrays of slices, slices of pointers, etc.
-	if n.Decorator().Key() == t.KeyColon {
+	if n.IsSliceType() {
 		o := n.Inner()
 		if o.Decorator() == 0 && o.Name().Key() == t.KeyU8 && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")

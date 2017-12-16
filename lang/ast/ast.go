@@ -617,6 +617,10 @@ func (n *TypeExpr) IsRefined() bool {
 	return n.id0.Key() != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
 }
 
+func (n *TypeExpr) IsSliceType() bool {
+	return n.id0.Key() == t.KeyColon
+}
+
 func (n *TypeExpr) IsUnsignedInteger() bool {
 	return n.id0 == 0 && (n.id1.Key() == t.KeyU8 || n.id1.Key() == t.KeyU16 ||
 		n.id1.Key() == t.KeyU32 || n.id1.Key() == t.KeyU64) // TODO: t.KeyUsize?

@@ -182,7 +182,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a pointer type",
 						n.Name().Str(q.tm), lTyp.Str(q.tm))
 				}
-				if rTyp.Decorator().Key() != t.KeyColon {
+				if !rTyp.IsSliceType() {
 					return fmt.Errorf("check: iterate range %q, of type %q, does not have a slice type",
 						value.Str(q.tm), rTyp.Str(q.tm))
 				}
@@ -464,9 +464,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			}
 			return nil
 		}
-		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) || isThatMethod(q.tm, n, t.KeyLength, 0) ||
-			isThatMethod(q.tm, n, t.KeyAvailable, 0) {
+		// TODO: delete this hack that only matches "foo.copy_from_slice(etc)".
+		if isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -594,6 +593,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if err != nil {
 		return err
 	}
+	// TODO: check if f is generic (its receiver is t.IDDiamond).
 
 	// Check that the func's in type matches the arguments.
 	inFields := f.In().Fields()
@@ -704,6 +704,17 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lTyp := lhs.MType().Pointee()
 
 	if lTyp.Decorator() != 0 {
+		if lTyp.IsSliceType() {
+			f, err := q.c.builtInSliceFunc(t.QID{t.IDDiamond, n.ID1()})
+			if err != nil {
+				return err
+			}
+			if f == nil {
+				return fmt.Errorf("check: no slice method %q", n.ID1().Str(q.tm))
+			}
+			n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+			return nil
+		}
 		// TODO.
 		return fmt.Errorf("check: unsupported decorator for tcheckDot")
 	}

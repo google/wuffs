@@ -126,3 +126,19 @@ var Funcs = []string{
 	"writer1.mark()()",
 	"writer1.since_mark()(ret[] u8)",
 }
+
+const (
+	GenericReplaceFrom = t.IDCapitalT
+	GenericReplaceTo   = t.IDDiamond
+)
+
+var SliceFuncs = []string{
+	// The "T" types here are generic placeholders for every "[] etc" slice
+	// type. When parsing these strings (e.g. in the lang/check package), "T"
+	// will be replaced by the "◊" diamond to denote a generic slice method, to
+	// avoid any possible ambiguity with a user-defined, non-generic "T" type.
+	"T.copy_from_slice(s T)(ret u64)",
+	"T.length()(ret u64)",
+	"T.prefix(up_to u64)(ret T)",
+	"T.suffix(up_to u64)(ret T)",
+}

@@ -168,8 +168,9 @@ type Checker struct {
 	statuses map[t.ID]Status
 	structs  map[t.ID]Struct
 
-	builtInFuncs    map[t.QID]*a.Func
-	unsortedStructs []*a.Struct
+	builtInFuncs      map[t.QID]*a.Func
+	builtInSliceFuncs map[t.QID]*a.Func
+	unsortedStructs   []*a.Struct
 }
 
 func (c *Checker) PackageID() uint32         { return c.packageID }

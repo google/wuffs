@@ -158,6 +158,7 @@ const (
 	KeyInvalid = Key(0)
 
 	KeyDoubleZ = Key(IDDoubleZ >> KeyShift)
+	KeyDiamond = Key(IDDiamond >> KeyShift)
 
 	KeyOpenParen    = Key(IDOpenParen >> KeyShift)
 	KeyCloseParen   = Key(IDCloseParen >> KeyShift)
@@ -253,6 +254,7 @@ const (
 	KeyThis       = Key(IDThis >> KeyShift)
 	KeyIn         = Key(IDIn >> KeyShift)
 	KeyOut        = Key(IDOut >> KeyShift)
+	KeyCapitalT   = Key(IDCapitalT >> KeyShift)
 
 	KeyI8      = Key(IDI8 >> KeyShift)
 	KeyI16     = Key(IDI16 >> KeyShift)
@@ -347,6 +349,7 @@ const (
 	IDInvalid = ID(0)
 
 	IDDoubleZ = ID(0x01<<KeyShift | FlagsOther)
+	IDDiamond = ID(0x02<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDOpenParen    = ID(0x10<<KeyShift | FlagsOpen | FlagsTightRight)
 	IDCloseParen   = ID(0x11<<KeyShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
@@ -442,6 +445,7 @@ const (
 	IDThis       = ID(0x79<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDIn         = ID(0x7A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDOut        = ID(0x7B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDCapitalT   = ID(0x7C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDI8      = ID(0x80<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDI16     = ID(0x81<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
@@ -543,16 +547,21 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	name string
 	id   ID
 }{
-	// KeyDoubleZ (and IDDoubleZ) are never returned by the tokenizer, as the
-	// tokenizer rejects non-ASCII input. It is used by the type checker as a
-	// dummy-valued built-in Key to represent an ideal integer type (in
-	// mathematical terms, the integer ring ℤ), as opposed to a realized
-	// integer type whose range is restricted. For example, the u16 type is
-	// restricted to [0x0000, 0xFFFF].
+	// KeyDoubleZ and KeyDiamond (and IDDoubleZ and IDDiamond) are never
+	// returned by the tokenizer, as the tokenizer rejects non-ASCII input.
 	//
-	// The string representation "ℤ" is specifically non-ASCII so that no
-	// user-defined (non built-in) identifier will conflict with this.
+	// The string representations "ℤ" and "◊" are specifically non-ASCII so
+	// that no user-defined (non built-in) identifier will conflict with them.
+
+	// KeyDoubleZ is used by the type checker as a dummy-valued built-in Key to
+	// represent an ideal integer type (in mathematical terms, the integer ring
+	// ℤ), as opposed to a realized integer type whose range is restricted. For
+	// example, the u16 type is restricted to [0x0000, 0xFFFF].
 	KeyDoubleZ: {"ℤ", IDDoubleZ}, // U+2124 DOUBLE-STRUCK CAPITAL Z
+
+	// KeyDiamond is used by the type checker as a dummy-valued built-in Key to
+	// represent a generic type.
+	KeyDiamond: {"◊", IDDiamond}, // U+25C7 WHITE DIAMOND
 
 	KeyOpenParen:    {"(", IDOpenParen},
 	KeyCloseParen:   {")", IDCloseParen},
@@ -647,6 +656,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyThis:       {"this", IDThis},
 	KeyIn:         {"in", IDIn},
 	KeyOut:        {"out", IDOut},
+	KeyCapitalT:   {"T", IDCapitalT},
 
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 
