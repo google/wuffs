@@ -76,8 +76,20 @@ var Types = []string{
 var Funcs = []string{
 	// TODO: some methods like "mark" should probably have a trailing "!".
 	//
-	// TODO: status methods (is_error, etc), [] u8 methods (length, etc), u32
-	// methods (low_bits, etc).
+	// TODO: [] u8 methods (length, etc).
+
+	"u8.high_bits(n u32)(ret u8)",
+	"u8.low_bits(n u32)(ret u8)",
+	"u16.high_bits(n u32)(ret u16)",
+	"u16.low_bits(n u32)(ret u16)",
+	"u32.high_bits(n u32)(ret u32)",
+	"u32.low_bits(n u32)(ret u32)",
+	"u64.high_bits(n u32)(ret u64)",
+	"u64.low_bits(n u32)(ret u64)",
+
+	"status.is_error()(ret bool)",
+	"status.is_ok()(ret bool)",
+	"status.is_suspension()(ret bool)",
 
 	"reader1.read_u8?()(ret u8)",
 	"reader1.read_u16be?()(ret u16)",

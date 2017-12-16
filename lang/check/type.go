@@ -425,40 +425,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n.LHS().Expr().LHS().Expr(). Doing this properly will probably
 		// require a TypeExpr being able to express function and method types.
 
-		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isThatMethod(q.tm, n, t.KeyLowBits, 1) || isThatMethod(q.tm, n, t.KeyHighBits, 1) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			n.SetMType(foo.MType().Unrefined())
-			return nil
-		}
-		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isThatMethod(q.tm, n, t.KeyIsError, 0) ||
-			isThatMethod(q.tm, n, t.KeyIsOK, 0) ||
-			isThatMethod(q.tm, n, t.KeyIsSuspension, 0) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			n.SetMType(typeExprBool)
-			return nil
-		}
 		// TODO: delete this hack that only matches "foo.suffix(etc)".
 		if isThatMethod(q.tm, n, t.KeySuffix, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
