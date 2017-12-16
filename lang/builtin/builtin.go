@@ -60,3 +60,57 @@ func init() {
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,
 // deref, false, true, in, out, this, u8, u16, etc?
+
+var Types = []string{
+	// TODO: i8, i16, i32, i64.
+	"u8",
+	"u16",
+	"u32",
+	"u64",
+	"bool",
+	"status",
+	"reader1",
+	"writer1",
+}
+
+var Funcs = []string{
+	// TODO: some methods like "mark" should probably have a trailing "!".
+	//
+	// TODO: status methods (is_error, etc), [] u8 methods (length, etc), u32
+	// methods (low_bits, etc).
+
+	"reader1.read_u8?()(ret u8)",
+	"reader1.read_u16be?()(ret u16)",
+	"reader1.read_u16le?()(ret u16)",
+	"reader1.read_u32be?()(ret u32)",
+	"reader1.read_u32le?()(ret u32)",
+	"reader1.read_u64be?()(ret u64)",
+	"reader1.read_u64le?()(ret u64)",
+
+	"reader1.available()(ret u64)",
+	"reader1.is_marked()(ret bool)",
+	"reader1.limit(l u64)(ret reader1)",
+	"reader1.mark()()",
+	"reader1.since_mark()(ret[] u8)",
+	"reader1.skip32?(n u32)()",
+	"reader1.skip64?(n u64)()",
+	"reader1.unread_u8?()()",
+
+	"writer1.write_u8?(x u8)()",
+	"writer1.write_u16be?(x u16)()",
+	"writer1.write_u16le?(x u16)()",
+	"writer1.write_u32be?(x u32)()",
+	"writer1.write_u32le?(x u32)()",
+	"writer1.write_u64be?(x u64)()",
+	"writer1.write_u64le?(x u64)()",
+
+	"writer1.available()(ret u64)",
+	"writer1.copy_from_history32(distance u32, length u32)(ret u32)",
+	"writer1.copy_from_reader32(r reader1, length u32)(ret u32)",
+	"writer1.copy_from_slice(s[] u8)(ret u64)",
+	"writer1.copy_from_slice32(s[] u8, length u32)(ret u32)",
+	"writer1.is_marked()(ret bool)",
+	"writer1.limit(l u64)(ret writer1)",
+	"writer1.mark()()",
+	"writer1.since_mark()(ret[] u8)",
+}

@@ -25,34 +25,45 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-func Parse(tm *t.Map, filename string, src []t.Token) (*a.File, error) {
+type Options struct {
+	AllowBuiltIns bool
+}
+
+func Parse(tm *t.Map, filename string, src []t.Token, opts *Options) (*a.File, error) {
 	p := &parser{
-		src:      src,
 		tm:       tm,
 		filename: filename,
+		src:      src,
 	}
 	if len(src) > 0 {
 		p.lastLine = src[len(src)-1].Line
+	}
+	if opts != nil {
+		p.opts = *opts
 	}
 	return p.parseFile()
 }
 
-func ParseExpr(tm *t.Map, filename string, src []t.Token) (*a.Expr, error) {
+func ParseExpr(tm *t.Map, filename string, src []t.Token, opts *Options) (*a.Expr, error) {
 	p := &parser{
-		src:      src,
 		tm:       tm,
 		filename: filename,
+		src:      src,
 	}
 	if len(src) > 0 {
 		p.lastLine = src[len(src)-1].Line
+	}
+	if opts != nil {
+		p.opts = *opts
 	}
 	return p.parseExpr()
 }
 
 type parser struct {
-	src      []t.Token
 	tm       *t.Map
 	filename string
+	src      []t.Token
+	opts     Options
 	lastLine uint32
 }
 
@@ -160,11 +171,11 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if id0 != 0 && id0.IsBuiltIn() {
+			if id0 != 0 && id0.IsBuiltIn() && !p.opts.AllowBuiltIns {
 				return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
 					p.tm.ByID(id0), p.filename, p.line())
 			}
-			if id1.IsBuiltIn() {
+			if id1.IsBuiltIn() && !p.opts.AllowBuiltIns {
 				return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
 					p.tm.ByID(id1), p.filename, p.line())
 			}
@@ -230,7 +241,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if name.IsBuiltIn() {
+			if name.IsBuiltIn() && !p.opts.AllowBuiltIns {
 				return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
 					p.tm.ByID(name), p.filename, p.line())
 			}

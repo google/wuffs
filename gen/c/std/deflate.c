@@ -1981,7 +1981,7 @@ label_0_continue:;
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
     if ((v_table_entry >> 31) != 0) {
-      *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
+      *b_wptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
       goto label_0_continue;
     } else if ((v_table_entry >> 30) != 0) {
     } else if ((v_table_entry >> 29) != 0) {
@@ -2014,7 +2014,7 @@ label_0_continue:;
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
       if ((v_table_entry >> 31) != 0) {
-        *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
+        *b_wptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
@@ -2388,7 +2388,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           status = WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE;
           goto suspend;
         }
-        *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
+        *b_wptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
@@ -2429,7 +2429,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
             status = WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE;
             goto suspend;
           }
-          *b_wptr_dst++ = ((v_table_entry >> 8) & 255);
+          *b_wptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
           goto label_0_continue;
         } else if ((v_table_entry >> 30) != 0) {
         } else if ((v_table_entry >> 29) != 0) {

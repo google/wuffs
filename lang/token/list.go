@@ -262,12 +262,12 @@ const (
 	KeyU16     = Key(IDU16 >> KeyShift)
 	KeyU32     = Key(IDU32 >> KeyShift)
 	KeyU64     = Key(IDU64 >> KeyShift)
-	KeyUsize   = Key(IDUsize >> KeyShift)
+	KeyUsize   = Key(IDUsize >> KeyShift) // TODO: unused?
 	KeyBool    = Key(IDBool >> KeyShift)
-	KeyBuf1    = Key(IDBuf1 >> KeyShift)
+	KeyBuf1    = Key(IDBuf1 >> KeyShift) // TODO: unused?
 	KeyReader1 = Key(IDReader1 >> KeyShift)
 	KeyWriter1 = Key(IDWriter1 >> KeyShift)
-	KeyBuf2    = Key(IDBuf2 >> KeyShift)
+	KeyBuf2    = Key(IDBuf2 >> KeyShift) // TODO: unused?
 	KeyStatus  = Key(IDStatus >> KeyShift)
 
 	KeyMark       = Key(IDMark >> KeyShift)

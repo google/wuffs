@@ -92,7 +92,7 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 
 		if (table_entry >> 31) != 0 {
 			// Literal.
-			in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
+			in.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as u8)
 			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
@@ -131,7 +131,7 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 
 			if (table_entry >> 31) != 0 {
 				// Literal.
-				in.dst.write_u8?(x:(table_entry >> 8) & 0xFF)
+				in.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as u8)
 				continue:loop
 			} else if (table_entry >> 30) != 0 {
 				// No-op; code continues past the if-else chain.

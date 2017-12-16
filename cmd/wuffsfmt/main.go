@@ -125,7 +125,7 @@ func do(r io.Reader, filename string) error {
 	}
 	// We don't need the AST node to pretty-print, but it's worth rejecting
 	// syntax errors early. This is just a parse, not a full type check.
-	if _, err := parse.Parse(tm, filename, tokens); err != nil {
+	if _, err := parse.Parse(tm, filename, tokens, nil); err != nil {
 		return err
 	}
 	buf := &bytes.Buffer{}

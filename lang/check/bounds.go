@@ -961,7 +961,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	//
 	// TODO: bcheck the receiver, e.g. ptr vs nptr.
 	lhs := n.LHS().Expr()
-	f, err := q.resolveFunc(lhs.MType())
+	f, err := q.c.resolveFunc(lhs.MType())
 	if err != nil {
 		return err
 	}

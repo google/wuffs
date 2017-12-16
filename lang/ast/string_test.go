@@ -77,7 +77,7 @@ func TestString(t *testing.T) {
 			t.Errorf("Tokenize(%q): %v", tc, err)
 			continue
 		}
-		expr, err := parse.ParseExpr(tm, filename, tokens)
+		expr, err := parse.ParseExpr(tm, filename, tokens, nil)
 		if err != nil {
 			t.Errorf("ParseExpr(%q): %v", tc, err)
 			continue

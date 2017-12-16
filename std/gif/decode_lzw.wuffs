@@ -111,8 +111,7 @@ pri func lzw_decoder.decode?(dst writer1, src reader1)() {
 				inv c < 256,
 			{
 				var expansion[] u8 = this.stack[s:]
-				// TODO: "x:" instead of "s:" should be a compiler error.
-				var n_copied u64 = in.dst.copy_from_slice(x:expansion)
+				var n_copied u64 = in.dst.copy_from_slice(s:expansion)
 				if n_copied == expansion.length() {
 					break
 				}

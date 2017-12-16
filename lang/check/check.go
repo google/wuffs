@@ -58,32 +58,6 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
-var (
-	exprIn   = a.NewExpr(a.FlagsTypeChecked, 0, t.IDIn, nil, nil, nil, nil)
-	exprOut  = a.NewExpr(a.FlagsTypeChecked, 0, t.IDOut, nil, nil, nil, nil)
-	exprThis = a.NewExpr(a.FlagsTypeChecked, 0, t.IDThis, nil, nil, nil, nil)
-)
-
-// typeExprFoo is an *ast.Node MType (implicit type).
-var (
-	typeExprBool    = a.NewTypeExpr(0, t.IDBool, nil, nil, nil)
-	typeExprIdeal   = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
-	typeExprList    = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
-	typeExprStatus  = a.NewTypeExpr(0, t.IDStatus, nil, nil, nil)
-	typeExprU8      = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
-	typeExprU32     = a.NewTypeExpr(0, t.IDU32, nil, nil, nil)
-	typeExprU64     = a.NewTypeExpr(0, t.IDU64, nil, nil, nil)
-	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, nil, nil, typeExprU8)
-
-	// TODO: delete this.
-	typeExprPlaceholder   = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
-	typeExprPlaceholder16 = a.NewTypeExpr(0, t.IDU16, nil, nil, nil)
-	typeExprPlaceholder32 = a.NewTypeExpr(0, t.IDU32, nil, nil, nil)
-)
-
-// TypeMap maps from variable names (as token IDs) to types.
-type TypeMap map[t.ID]*a.TypeExpr
-
 type Const struct {
 	ID    t.ID // ID of the const name.
 	Const *a.Const
@@ -194,6 +168,7 @@ type Checker struct {
 	statuses map[t.ID]Status
 	structs  map[t.ID]Struct
 
+	builtInFuncs    map[t.QID]*a.Func
 	unsortedStructs []*a.Struct
 }
 

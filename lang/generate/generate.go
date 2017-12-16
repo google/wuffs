@@ -93,7 +93,7 @@ func parseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error
 		if err != nil {
 			return nil, err
 		}
-		f, err := parse.Parse(tm, filename, tokens)
+		f, err := parse.Parse(tm, filename, tokens, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func ParseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error
 		if err != nil {
 			return nil, err
 		}
-		f, err := parse.Parse(tm, filename, tokens)
+		f, err := parse.Parse(tm, filename, tokens, nil)
 		if err != nil {
 			return nil, err
 		}

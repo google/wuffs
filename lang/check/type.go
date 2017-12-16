@@ -425,47 +425,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n.LHS().Expr().LHS().Expr(). Doing this properly will probably
 		// require a TypeExpr being able to express function and method types.
 
-		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyUnreadU8, 0) ||
-			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
-			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
-			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||
-			isInSrc(q.tm, n, t.KeyMark, 0) || isInSrc(q.tm, n, t.KeyLimit, 1) ||
-			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
-			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
-			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
-			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
-			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimit, 1) ||
-			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
-
-			if err := q.tcheckExpr(n.LHS().Expr(), depth); err != nil {
-				return err
-			}
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			if n.ID0().Key() == t.KeyTry {
-				n.SetMType(typeExprStatus)
-			} else if isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) {
-				n.SetMType(typeExprPlaceholder32) // HACK.
-			} else if isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU16LE, 0) {
-				n.SetMType(typeExprPlaceholder16) // HACK.
-			} else if isInSrc(q.tm, n, t.KeySinceMark, 0) || isInDst(q.tm, n, t.KeySinceMark, 0) {
-				n.SetMType(typeExprSliceU8) // HACK.
-			} else if isInDst(q.tm, n, t.KeyCopyFromSlice, 1) {
-				n.SetMType(typeExprU64) // HACK.
-			} else if isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) || isInDst(q.tm, n, t.KeyCopyFromReader32, 2) ||
-				isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) {
-				n.SetMType(typeExprU32) // HACK.
-			} else if isInDst(q.tm, n, t.KeyIsMarked, 0) {
-				n.SetMType(typeExprBool) // HACK.
-			} else {
-				n.SetMType(typeExprPlaceholder) // HACK.
-			}
-			return nil
-		}
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
 		if isThatMethod(q.tm, n, t.KeyLowBits, 1) || isThatMethod(q.tm, n, t.KeyHighBits, 1) {
 			foo := n.LHS().Expr().LHS().Expr()
@@ -517,9 +476,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprSliceU8)
 			return nil
 		}
-		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
+		// TODO: delete this hack that only matches "foo.decode(etc)".
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
 			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
@@ -555,22 +513,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				}
 			}
 			n.SetMType(typeExprU64)
-			return nil
-		}
-		// TODO: delete this hack that only matches "foo.update(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("update").Key(), 1) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			n.SetMType(typeExprU32)
 			return nil
 		}
 
@@ -677,21 +619,12 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.ID0().Key(), n.Str(q.tm))
 }
 
-func (q *checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
-	// TODO: look up funcs in used packages.
-	f := q.c.funcs[t.QID{typ.Receiver().Name(), typ.Name()}]
-	if f.Func == nil {
-		return nil, fmt.Errorf("check: cannot look up %q", typ.Str(q.tm))
-	}
-	return f.Func, nil
-}
-
 func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
-	f, err := q.resolveFunc(lhs.MType())
+	f, err := q.c.resolveFunc(lhs.MType())
 	if err != nil {
 		return err
 	}
@@ -717,9 +650,18 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if n.ID0().Key() == t.KeyTry {
 		n.SetMType(typeExprStatus)
 	} else {
-		// TODO: figure out how to translate f.Out(), which is an *ast.Struct,
-		// to an *ast.TypeExpr we can pass to n.SetMType.
-		n.SetMType(typeExprPlaceholder) // HACK.
+		outFields := f.Out().Fields()
+		switch len(outFields) {
+		default:
+			// TODO: figure out how to translate f.Out(), which is an
+			// *ast.Struct, to an *ast.TypeExpr we can pass to n.SetMType.
+			return fmt.Errorf("TODO: translate an *ast.Struct to an *ast.TypeExpr")
+		case 0:
+			// TODO: use a "unit", "void" or "empty struct" type.
+			n.SetMType(typeExprPlaceholder)
+		case 1:
+			n.SetMType(outFields[0].Field().XType())
+		}
 	}
 	return nil
 }
@@ -777,7 +719,15 @@ func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
+	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
+		return false
+	}
+	n = n.LHS().Expr()
+	if n.ID0().Key() == t.KeyDot &&
+		(n.ID1() == tm.ByName("src") || n.ID1() == tm.ByName("dst")) {
+		return false
+	}
+	return true
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
@@ -792,44 +742,46 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return fmt.Errorf("check: unsupported decorator for tcheckDot")
 	}
 
-	s := (*a.Struct)(nil)
-	if q.f.Func != nil {
-		switch name := lTyp.Name(); name.Key() {
-		case t.KeyIn:
-			s = q.f.Func.In()
-		case t.KeyOut:
-			s = q.f.Func.Out()
-		case t.KeyReader1, t.KeyWriter1:
-			// TODO: remove this hack and be more principled about the built-in
-			// buf1, reader1, writer1 types.
-			//
-			// Another hack is using typeExprPlaceholder until a TypeExpr can
-			// represent function types.
-			n.SetMType(typeExprPlaceholder)
-			return nil
-		default:
-			s = q.c.structs[name].Struct
-		}
+	qid := t.QID{lTyp.Name(), n.ID1()}
+	f, err := q.c.builtInFunc(qid)
+	if err != nil {
+		return err
+	} else if f == nil {
+		f = q.c.funcs[qid].Func
 	}
-	if s == nil {
-		return fmt.Errorf("check: no struct type %q found for expression %q",
-			lTyp.Name().Str(q.tm), lhs.Str(q.tm))
-	}
-
-	for _, field := range s.Fields() {
-		f := field.Field()
-		if f.Name() == n.ID1() {
-			n.SetMType(f.XType())
-			return nil
-		}
-	}
-
-	if f := q.c.funcs[t.QID{lTyp.Name(), n.ID1()}]; f.Func != nil {
+	if f != nil {
 		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
 		return nil
 	}
 
-	return fmt.Errorf("check: no field or method named %q found in struct type %q for expression %q",
+	s := (*a.Struct)(nil)
+	if q.f.Func != nil {
+		switch lTyp.Name().Key() {
+		case t.KeyIn:
+			s = q.f.Func.In()
+		case t.KeyOut:
+			s = q.f.Func.Out()
+		}
+	}
+	if s == nil {
+		name := lTyp.Name()
+		s = q.c.structs[name].Struct
+		if s == nil && builtInTypeMap[name] == nil {
+			return fmt.Errorf("check: no struct type %q found for expression %q", name.Str(q.tm), lhs.Str(q.tm))
+		}
+	}
+
+	if s != nil {
+		for _, field := range s.Fields() {
+			f := field.Field()
+			if f.Name() == n.ID1() {
+				n.SetMType(f.XType())
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("check: no field or method named %q found in type %q for expression %q",
 		n.ID1().Str(q.tm), lTyp.Name().Str(q.tm), n.Str(q.tm))
 }
 
@@ -1132,8 +1084,7 @@ swtch:
 		if typ.Min() != nil || typ.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		switch typ.Name().Key() {
-		case t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
+		if _, ok := builtInTypeMap[typ.Name()]; ok {
 			break swtch
 		}
 		for _, s := range q.c.structs {

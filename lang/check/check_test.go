@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/wuffs/lang/ast"
+	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/parse"
 	"github.com/google/wuffs/lang/render"
 	"github.com/google/wuffs/lang/token"
@@ -99,7 +100,7 @@ func TestCheck(t *testing.T) {
 		t.Fatalf("Tokenize: %v", err)
 	}
 
-	file, err := parse.Parse(tm, filename, tokens)
+	file, err := parse.Parse(tm, filename, tokens, nil)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -199,7 +200,7 @@ func TestConstValues(t *testing.T) {
 			continue
 		}
 
-		file, err := parse.Parse(tm, filename, tokens)
+		file, err := parse.Parse(tm, filename, tokens, nil)
 		if err != nil {
 			t.Errorf("%q: Parse: %v", s, err)
 			continue
@@ -274,6 +275,22 @@ func TestBitMask(t *testing.T) {
 		want := big.NewInt(0).SetUint64(tc[1])
 		if got.Cmp(want) != 0 {
 			t.Errorf("roundUpToPowerOf2Minus1(%v): got %v, want %v", tc[0], got, tc[1])
+		}
+	}
+}
+
+func TestBuiltInTypeMap(t *testing.T) {
+	if got, want := len(builtInTypeMap), len(builtin.Types); got != want {
+		t.Fatalf("lengths: got %d, want %d", got, want)
+	}
+	tm := token.Map{}
+	for _, s := range builtin.Types {
+		id := tm.ByName(s)
+		if id == 0 {
+			t.Fatalf("ID(%q): got 0, want non-0", s)
+		}
+		if _, ok := builtInTypeMap[id]; !ok {
+			t.Fatalf("no builtInTypeMap entry for %q", s)
 		}
 	}
 }
