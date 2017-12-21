@@ -34,8 +34,9 @@ var (
 
 // typeExprFoo is an *ast.Node MType (implicit type).
 var (
-	typeExprIdeal = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
-	typeExprList  = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
+	typeExprGeneric = a.NewTypeExpr(0, t.IDDiamond, nil, nil, nil)
+	typeExprIdeal   = a.NewTypeExpr(0, t.IDDoubleZ, nil, nil, nil)
+	typeExprList    = a.NewTypeExpr(0, t.IDDollar, nil, nil, nil)
 
 	typeExprU8      = a.NewTypeExpr(0, t.IDU8, nil, nil, nil)
 	typeExprU16     = a.NewTypeExpr(0, t.IDU16, nil, nil, nil)

@@ -425,23 +425,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n.LHS().Expr().LHS().Expr(). Doing this properly will probably
 		// require a TypeExpr being able to express function and method types.
 
-		// TODO: delete this hack that only matches "foo.suffix(etc)".
-		if isThatMethod(q.tm, n, t.KeySuffix, 1) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			// TODO: don't assume that the slice is a slice of u8.
-			n.SetMType(typeExprSliceU8)
-			return nil
-		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
 			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) {
@@ -593,7 +576,11 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if err != nil {
 		return err
 	}
-	// TODO: check if f is generic (its receiver is t.IDDiamond).
+
+	genericType := (*a.TypeExpr)(nil)
+	if f.Receiver().Key() == t.KeyDiamond {
+		genericType = lhs.MType().Receiver()
+	}
 
 	// Check that the func's in type matches the arguments.
 	inFields := f.In().Fields()
@@ -626,7 +613,12 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			// TODO: use a "unit", "void" or "empty struct" type.
 			n.SetMType(typeExprPlaceholder)
 		case 1:
-			n.SetMType(outFields[0].Field().XType())
+			oTyp := outFields[0].Field().XType()
+			if genericType != nil && oTyp.Eq(typeExprGeneric) {
+				n.SetMType(genericType)
+			} else {
+				n.SetMType(oTyp)
+			}
 		}
 	}
 	return nil
