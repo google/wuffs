@@ -299,7 +299,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	)
 }
 
-func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, depth uint32) error {
+func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr, depth uint32) error {
 	if err := q.tcheckExpr(n.Value(), depth); err != nil {
 		return err
 	}
@@ -313,7 +313,11 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, depth uint32) error {
 	if n.Name() != inField.Name() {
 		return fmt.Errorf("check: argument name: got %q, want %q", n.Name().Str(q.tm), inField.Name().Str(q.tm))
 	}
-	if err := q.tcheckEq(inField.Name(), nil, inField.XType(), n.Value(), n.Value().MType()); err != nil {
+	inFieldTyp := inField.XType()
+	if genericType != nil && inFieldTyp.Eq(typeExprGeneric) {
+		inFieldTyp = genericType
+	}
+	if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, n.Value(), n.Value().MType()); err != nil {
 		return err
 	}
 	n.Node().SetTypeChecked()
@@ -435,7 +439,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.LHS().SetTypeChecked()
 			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
 			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
+				if err := q.tcheckArg(o.Arg(), nil, nil, depth); err != nil {
 					return err
 				}
 			}
@@ -445,22 +449,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			} else {
 				n.SetMType(typeExprPlaceholder) // HACK.
 			}
-			return nil
-		}
-		// TODO: delete this hack that only matches "foo.copy_from_slice(etc)".
-		if isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) {
-			foo := n.LHS().Expr().LHS().Expr()
-			if err := q.tcheckExpr(foo, depth); err != nil {
-				return err
-			}
-			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
-			for _, o := range n.Args() {
-				if err := q.tcheckArg(o.Arg(), nil, depth); err != nil {
-					return err
-				}
-			}
-			n.SetMType(typeExprU64)
 			return nil
 		}
 
@@ -591,7 +579,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	for i, o := range n.Args() {
 		// TODO: inline tcheckArg here, after removing the special-cased hacks
 		// in tcheckExprOther.
-		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), depth); err != nil {
+		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), genericType, depth); err != nil {
 			return err
 		}
 	}
