@@ -26,7 +26,12 @@ import (
 )
 
 type Options struct {
-	AllowBuiltIns bool
+	AllowBuiltIns              bool
+	AllowDoubleUnderscoreNames bool
+}
+
+func isDoubleUnderscore(s string) bool {
+	return len(s) >= 2 && s[0] == '_' && s[1] == '_'
 }
 
 func Parse(tm *t.Map, filename string, src []t.Token, opts *Options) (*a.File, error) {
@@ -136,6 +141,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
+			// TODO: check AllowBuiltIns and AllowDoubleUnderscoreNames?
+
 			typ, err := p.parseTypeExpr()
 			if err != nil {
 				return nil, err
@@ -171,14 +178,23 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if id0 != 0 && id0.IsBuiltIn() && !p.opts.AllowBuiltIns {
-				return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
-					p.tm.ByID(id0), p.filename, p.line())
+			// TODO: should we require id0 != 0? In other words, always methods
+			// (attached to receivers) and never free standing functions?
+			if !p.opts.AllowBuiltIns {
+				if id0 != 0 && id0.IsBuiltIn() {
+					return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
+						p.tm.ByID(id0), p.filename, p.line())
+				}
+				if id1.IsBuiltIn() {
+					return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
+						p.tm.ByID(id1), p.filename, p.line())
+				}
 			}
-			if id1.IsBuiltIn() && !p.opts.AllowBuiltIns {
-				return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
+			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(id1)) {
+				return nil, fmt.Errorf(`parse: double-underscore %q used for func name at %s:%d`,
 					p.tm.ByID(id1), p.filename, p.line())
 			}
+
 			switch p.peek1().Key() {
 			case t.KeyExclam:
 				flags |= a.FlagsImpure
@@ -241,10 +257,15 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			if name.IsBuiltIn() && !p.opts.AllowBuiltIns {
+			if !p.opts.AllowBuiltIns && name.IsBuiltIn() {
 				return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
 					p.tm.ByID(name), p.filename, p.line())
 			}
+			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(name)) {
+				return nil, fmt.Errorf(`parse: double-underscore %q used for struct name at %s:%d`,
+					p.tm.ByID(name), p.filename, p.line())
+			}
+
 			if p.peek1().Key() == t.KeyQuestion {
 				flags |= a.FlagsSuspendible
 				p.src = p.src[1:]
