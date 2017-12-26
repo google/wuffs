@@ -139,6 +139,7 @@ var phases = [...]struct {
 	check func(*Checker, *a.Node) error
 }{
 	{a.KPackageID, (*Checker).checkPackageID},
+	{a.KInvalid, (*Checker).checkPackageIDExists},
 	{a.KUse, (*Checker).checkUse},
 	{a.KStatus, (*Checker).checkStatus},
 	{a.KConst, (*Checker).checkConst},
@@ -209,6 +210,13 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 	}
 	c.packageID = u
 	c.otherPackageID = n
+	return nil
+}
+
+func (c *Checker) checkPackageIDExists(node *a.Node) error {
+	if c.otherPackageID == nil {
+		return fmt.Errorf("check: missing packageid declaration")
+	}
 	return nil
 }
 
