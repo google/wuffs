@@ -99,10 +99,10 @@ func parseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error
 		}
 		return []*ast.File{f}, nil
 	}
-	return ParseFiles(tm, filenames)
+	return ParseFiles(tm, filenames, nil)
 }
 
-func ParseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error) {
+func ParseFiles(tm *token.Map, filenames []string, opts *parse.Options) (files []*ast.File, err error) {
 	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
@@ -112,7 +112,7 @@ func ParseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error
 		if err != nil {
 			return nil, err
 		}
-		f, err := parse.Parse(tm, filename, tokens, nil)
+		f, err := parse.Parse(tm, filename, tokens, opts)
 		if err != nil {
 			return nil, err
 		}
