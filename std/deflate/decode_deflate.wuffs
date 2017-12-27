@@ -25,12 +25,13 @@ pub error "bad distance code count"
 pub error "bad flate block"
 pub error "bad literal/length code count"
 pub error "inconsistent stored block length"
+pub error "missing end-of-block code"
+pub error "no Huffman codes"
+
 pri error "internal error: inconsistent Huffman decoder state"
 pri error "internal error: inconsistent Huffman end_of_block"
 pri error "internal error: inconsistent distance"
 pri error "internal error: inconsistent n_bits"
-pub error "missing end-of-block code"
-pub error "no Huffman codes"
 
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //

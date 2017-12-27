@@ -158,17 +158,17 @@ typedef int32_t wuffs_deflate__status;
   -1278585847  // 0xB3CA5409
 #define WUFFS_DEFLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
   -1278585846  // 0xB3CA540A
-#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
-  -1278585845  // 0xB3CA540B
-#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
-  -1278585844  // 0xB3CA540C
-#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
-  -1278585843  // 0xB3CA540D
-#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1278585842  // 0xB3CA540E
 #define WUFFS_DEFLATE__ERROR_MISSING_END_OF_BLOCK_CODE \
-  -1278585841                                              // 0xB3CA540F
-#define WUFFS_DEFLATE__ERROR_NO_HUFFMAN_CODES -1278585840  // 0xB3CA5410
+  -1278585845                                              // 0xB3CA540B
+#define WUFFS_DEFLATE__ERROR_NO_HUFFMAN_CODES -1278585844  // 0xB3CA540C
+#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
+  -1278585843  // 0xB3CA540D
+#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
+  -1278585842  // 0xB3CA540E
+#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
+  -1278585841  // 0xB3CA540F
+#define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
+  -1278585840  // 0xB3CA5410
 
 bool wuffs_deflate__status__is_error(wuffs_deflate__status s);
 
@@ -657,12 +657,12 @@ const char* wuffs_deflate__status__strings1[17] = {
     "deflate: bad flate block",
     "deflate: bad literal/length code count",
     "deflate: inconsistent stored block length",
+    "deflate: missing end-of-block code",
+    "deflate: no Huffman codes",
     "deflate: internal error: inconsistent Huffman decoder state",
     "deflate: internal error: inconsistent Huffman end_of_block",
     "deflate: internal error: inconsistent distance",
     "deflate: internal error: inconsistent n_bits",
-    "deflate: missing end-of-block code",
-    "deflate: no Huffman codes",
 };
 
 const char* wuffs_deflate__status__string(wuffs_deflate__status s) {
