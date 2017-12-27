@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -161,17 +162,20 @@ type gen struct {
 	pkgPrefix string // e.g. "wuffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
-	tm         *t.Map
-	checker    *check.Checker
-	files      []*a.File
+	tm      *t.Map
+	checker *check.Checker
+	files   []*a.File
+
 	statusList []status
 	statusMap  map[t.ID]status
 	structList []*a.Struct
 	structMap  map[t.ID]*a.Struct
-	currFunk   funk
-	funks      map[t.QID]funk
-	wuffsRoot  string
-	usesSeen   map[string]struct{}
+	usesList   []string
+	usesMap    map[string]struct{}
+
+	currFunk  funk
+	funks     map[t.QID]funk
+	wuffsRoot string
 }
 
 func (g *gen) generate() ([]byte, error) {
@@ -322,7 +326,12 @@ func (g *gen) genImpl(b *buffer) error {
 	b.printf("case 0: a = %sstatus__strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
 	b.printf("case %spackageid: a = %sstatus__strings1; n = %d; break;\n",
 		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
-	// TODO: add cases for other packages used by this one.
+	for _, u := range g.usesList {
+		// TODO: is path.Base always correct? Should we check
+		// validName(packageName)?
+		useePkgName := path.Base(u)
+		b.printf("case wuffs_%s__packageid: return wuffs_%s__status__string(s);\n", useePkgName, useePkgName)
+	}
 	b.printf("}\n")
 	b.printf("uint32_t i = s & 0x%X;\n", 1<<statusCodeCodeBits-1)
 	b.printf("return i < n ? a[i] : \"%s: unknown status\";\n", g.pkgName)
@@ -593,12 +602,13 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 
 	// TODO: sanity check useDirname via commonflags.IsValidUsePath?
 
-	if g.usesSeen == nil {
-		g.usesSeen = map[string]struct{}{}
-	} else if _, ok := g.usesSeen[useDirname]; ok {
+	if g.usesMap == nil {
+		g.usesMap = map[string]struct{}{}
+	} else if _, ok := g.usesMap[useDirname]; ok {
 		return nil
 	}
-	g.usesSeen[useDirname] = struct{}{}
+	g.usesList = append(g.usesList, useDirname)
+	g.usesMap[useDirname] = struct{}{}
 
 	if g.wuffsRoot == "" {
 		var err error

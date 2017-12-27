@@ -67,6 +67,21 @@ golden_test zlib_pi_gt = {
     .src_filename = "../../testdata/pi.txt.zlib",  //
 };
 
+// ---------------- Basic Tests
+
+void test_basic_status_used_package() {
+  CHECK_FOCUS(__func__);
+  // The function call here is from "std/zlib" but the argument is from
+  // "std/deflate". The former package depends on the latter.
+  const char* s0 =
+      wuffs_zlib__status__string(WUFFS_DEFLATE__ERROR_BAD_DISTANCE);
+  const char* t0 = "deflate: bad distance";
+  if (strcmp(s0, t0)) {
+    FAIL("got \"%s\", want \"%s\"", s0, t0);
+    return;
+  }
+}
+
 // ---------------- Adler32 Tests
 
 void test_wuffs_adler32() {
@@ -299,6 +314,11 @@ void bench_mimic_zlib_decode_100k() {
 
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
+
+    // These basic tests are really testing the Wuffs compiler. They aren't
+    // specific to the std/zlib code, but putting them here is as good as any
+    // other place.
+    test_basic_status_used_package,  //
 
     test_wuffs_adler32,  //
 

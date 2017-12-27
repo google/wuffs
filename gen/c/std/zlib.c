@@ -788,6 +788,8 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
       a = wuffs_zlib__status__strings1;
       n = 5;
       break;
+    case wuffs_deflate__packageid:
+      return wuffs_deflate__status__string(s);
   }
   uint32_t i = s & 0xFF;
   return i < n ? a[i] : "zlib: unknown status";
