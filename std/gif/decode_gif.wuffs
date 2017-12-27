@@ -19,7 +19,7 @@ pub error "bad GIF extension label"
 pub error "bad GIF header"
 pub error "bad LZW literal width"
 
-pub error "internal error: inconsistent limited read"
+pri error "internal error: inconsistent limited read"
 
 pub error "TODO: unsupported Local Color Table"
 
