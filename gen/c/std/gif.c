@@ -611,6 +611,20 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   return ((wuffs_base__empty_struct){});
 }
 
+static const char* wuffs_base__status__strings[11] = {
+    "ok",
+    "bad wuffs version",
+    "bad receiver",
+    "bad argument",
+    "initializer not called",
+    "invalid I/O operation",
+    "closed for writes",
+    "unexpected EOF",
+    "short read",
+    "short write",
+    "cannot return a suspension",
+};
+
 #endif  // WUFFS_BASE_IMPL_H
 
 // ---------------- Status Codes Implementations
@@ -619,21 +633,7 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
   return s < 0;
 }
 
-const char* wuffs_gif__status__strings0[11] = {
-    "gif: ok",
-    "gif: bad wuffs version",
-    "gif: bad receiver",
-    "gif: bad argument",
-    "gif: initializer not called",
-    "gif: invalid I/O operation",
-    "gif: closed for writes",
-    "gif: unexpected EOF",
-    "gif: short read",
-    "gif: short write",
-    "gif: cannot return a suspension",
-};
-
-const char* wuffs_gif__status__strings1[8] = {
+const char* wuffs_gif__status__strings[8] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
@@ -649,16 +649,16 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
   uint32_t n = 0;
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
-      a = wuffs_gif__status__strings0;
+      a = wuffs_base__status__strings;
       n = 11;
       break;
     case wuffs_gif__packageid:
-      a = wuffs_gif__status__strings1;
+      a = wuffs_gif__status__strings;
       n = 8;
       break;
   }
   uint32_t i = s & 0xFF;
-  return i < n ? a[i] : "gif: unknown status";
+  return i < n ? a[i] : "unknown status";
 }
 
 // ---------------- Private Consts

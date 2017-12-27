@@ -119,20 +119,20 @@ void test_basic_status_is_error() {
 void test_basic_status_strings() {
   CHECK_FOCUS(__func__);
   const char* s0 = wuffs_gif__status__string(WUFFS_GIF__STATUS_OK);
-  const char* t0 = "gif: ok";
+  const char* t0 = "ok";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
   }
   const char* s1 =
       wuffs_gif__status__string(WUFFS_GIF__ERROR_BAD_WUFFS_VERSION);
-  const char* t1 = "gif: bad wuffs version";
+  const char* t1 = "bad wuffs version";
   if (strcmp(s1, t1)) {
     FAIL("got \"%s\", want \"%s\"", s1, t1);
     return;
   }
   const char* s2 = wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_WRITE);
-  const char* t2 = "gif: short write";
+  const char* t2 = "short write";
   if (strcmp(s2, t2)) {
     FAIL("got \"%s\", want \"%s\"", s2, t2);
     return;
@@ -145,7 +145,7 @@ void test_basic_status_strings() {
     return;
   }
   const char* s4 = wuffs_gif__status__string(-254);
-  const char* t4 = "gif: unknown status";
+  const char* t4 = "unknown status";
   if (strcmp(s4, t4)) {
     FAIL("got \"%s\", want \"%s\"", s4, t4);
     return;

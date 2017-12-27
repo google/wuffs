@@ -1,8 +1,5 @@
 // After editing this file, run "go generate" in this directory.
 
-#ifndef WUFFS_BASE_IMPL_H
-#define WUFFS_BASE_IMPL_H
-
 // Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -342,5 +339,3 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
-
-#endif  // WUFFS_BASE_IMPL_H

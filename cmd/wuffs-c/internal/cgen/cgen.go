@@ -301,19 +301,20 @@ func (g *gen) genHeader(b *buffer) error {
 }
 
 func (g *gen) genImpl(b *buffer) error {
+	b.writes("#ifndef WUFFS_BASE_IMPL_H\n#define WUFFS_BASE_IMPL_H\n\n")
 	b.writes(baseImpl)
 	b.writes("\n")
+	b.printf("static const char* wuffs_base__status__strings[%d] = {\n", len(builtin.StatusList))
+	for _, z := range builtin.StatusList {
+		b.printf("%q,", z.Message)
+	}
+	b.writes("};\n\n")
+	b.writes("#endif  // WUFFS_BASE_IMPL_H\n\n")
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
-	b.printf("const char* %sstatus__strings0[%d] = {\n", g.pkgPrefix, len(builtin.StatusList))
-	for _, z := range builtin.StatusList {
-		b.printf("%q,", g.pkgName+": "+z.Message)
-	}
-	b.writes("};\n\n")
-
-	b.printf("const char* %sstatus__strings1[%d] = {\n", g.pkgPrefix, len(g.statusList))
+	b.printf("const char* %sstatus__strings[%d] = {\n", g.pkgPrefix, len(g.statusList))
 	for _, s := range g.statusList {
 		b.printf("%q,", g.pkgName+": "+s.msg)
 	}
@@ -323,8 +324,8 @@ func (g *gen) genImpl(b *buffer) error {
 	b.printf("const char** a = NULL;\n")
 	b.printf("uint32_t n = 0;\n")
 	b.printf("switch ((s >> %d) & 0x%X) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
-	b.printf("case 0: a = %sstatus__strings0; n = %d; break;\n", g.pkgPrefix, len(builtin.StatusList))
-	b.printf("case %spackageid: a = %sstatus__strings1; n = %d; break;\n",
+	b.printf("case 0: a = wuffs_base__status__strings; n = %d; break;\n", len(builtin.StatusList))
+	b.printf("case %spackageid: a = %sstatus__strings; n = %d; break;\n",
 		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
 	for _, u := range g.usesList {
 		// TODO: is path.Base always correct? Should we check
@@ -334,7 +335,7 @@ func (g *gen) genImpl(b *buffer) error {
 	}
 	b.printf("}\n")
 	b.printf("uint32_t i = s & 0x%X;\n", 1<<statusCodeCodeBits-1)
-	b.printf("return i < n ? a[i] : \"%s: unknown status\";\n", g.pkgName)
+	b.printf("return i < n ? a[i] : \"unknown status\";\n")
 	b.writes("}\n\n")
 
 	b.writes("// ---------------- Private Consts\n\n")

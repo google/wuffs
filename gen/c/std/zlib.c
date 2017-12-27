@@ -746,6 +746,20 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   return ((wuffs_base__empty_struct){});
 }
 
+static const char* wuffs_base__status__strings[11] = {
+    "ok",
+    "bad wuffs version",
+    "bad receiver",
+    "bad argument",
+    "initializer not called",
+    "invalid I/O operation",
+    "closed for writes",
+    "unexpected EOF",
+    "short read",
+    "short write",
+    "cannot return a suspension",
+};
+
 #endif  // WUFFS_BASE_IMPL_H
 
 // ---------------- Status Codes Implementations
@@ -754,21 +768,7 @@ bool wuffs_zlib__status__is_error(wuffs_zlib__status s) {
   return s < 0;
 }
 
-const char* wuffs_zlib__status__strings0[11] = {
-    "zlib: ok",
-    "zlib: bad wuffs version",
-    "zlib: bad receiver",
-    "zlib: bad argument",
-    "zlib: initializer not called",
-    "zlib: invalid I/O operation",
-    "zlib: closed for writes",
-    "zlib: unexpected EOF",
-    "zlib: short read",
-    "zlib: short write",
-    "zlib: cannot return a suspension",
-};
-
-const char* wuffs_zlib__status__strings1[5] = {
+const char* wuffs_zlib__status__strings[5] = {
     "zlib: checksum mismatch",
     "zlib: invalid zlib compression method",
     "zlib: invalid zlib compression window size",
@@ -781,18 +781,18 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
   uint32_t n = 0;
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
-      a = wuffs_zlib__status__strings0;
+      a = wuffs_base__status__strings;
       n = 11;
       break;
     case wuffs_zlib__packageid:
-      a = wuffs_zlib__status__strings1;
+      a = wuffs_zlib__status__strings;
       n = 5;
       break;
     case wuffs_deflate__packageid:
       return wuffs_deflate__status__string(s);
   }
   uint32_t i = s & 0xFF;
-  return i < n ? a[i] : "zlib: unknown status";
+  return i < n ? a[i] : "unknown status";
 }
 
 // ---------------- Private Consts

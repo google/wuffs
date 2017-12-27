@@ -623,6 +623,20 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   return ((wuffs_base__empty_struct){});
 }
 
+static const char* wuffs_base__status__strings[11] = {
+    "ok",
+    "bad wuffs version",
+    "bad receiver",
+    "bad argument",
+    "initializer not called",
+    "invalid I/O operation",
+    "closed for writes",
+    "unexpected EOF",
+    "short read",
+    "short write",
+    "cannot return a suspension",
+};
+
 #endif  // WUFFS_BASE_IMPL_H
 
 // ---------------- Status Codes Implementations
@@ -631,21 +645,7 @@ bool wuffs_deflate__status__is_error(wuffs_deflate__status s) {
   return s < 0;
 }
 
-const char* wuffs_deflate__status__strings0[11] = {
-    "deflate: ok",
-    "deflate: bad wuffs version",
-    "deflate: bad receiver",
-    "deflate: bad argument",
-    "deflate: initializer not called",
-    "deflate: invalid I/O operation",
-    "deflate: closed for writes",
-    "deflate: unexpected EOF",
-    "deflate: short read",
-    "deflate: short write",
-    "deflate: cannot return a suspension",
-};
-
-const char* wuffs_deflate__status__strings1[17] = {
+const char* wuffs_deflate__status__strings[17] = {
     "deflate: bad Huffman code (over-subscribed)",
     "deflate: bad Huffman code (under-subscribed)",
     "deflate: bad Huffman code length count",
@@ -670,16 +670,16 @@ const char* wuffs_deflate__status__string(wuffs_deflate__status s) {
   uint32_t n = 0;
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
-      a = wuffs_deflate__status__strings0;
+      a = wuffs_base__status__strings;
       n = 11;
       break;
     case wuffs_deflate__packageid:
-      a = wuffs_deflate__status__strings1;
+      a = wuffs_deflate__status__strings;
       n = 17;
       break;
   }
   uint32_t i = s & 0xFF;
-  return i < n ? a[i] : "deflate: unknown status";
+  return i < n ? a[i] : "unknown status";
 }
 
 // ---------------- Private Consts
