@@ -134,8 +134,9 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	if typ.Decorator().Key() != t.KeyOpenParen {
 		return nil, fmt.Errorf("check: resolveFunc cannot look up non-func TypeExpr %q", typ.Str(c.tm))
 	}
-	qid := t.QID{typ.Receiver().Name(), typ.Name()}
-	switch lTyp := typ.Receiver(); lTyp.Decorator().Key() {
+	lTyp := typ.Receiver()
+	qid := t.QID{lTyp.Name(), typ.Name()}
+	switch lTyp.Decorator().Key() {
 	case 0:
 		if f, err := c.builtInFunc(qid); err != nil {
 			return nil, err
@@ -147,6 +148,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		}
 
 	case t.KeyColon:
+		// lTyp is a slice.
 		qid[0] = t.IDDiamond
 		if f, err := c.builtInSliceFunc(qid); err != nil {
 			return nil, err
@@ -155,6 +157,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		}
 
 	default:
+		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
 		u := c.usees[lTyp.Decorator()]
 		if u == nil {
 			return nil, fmt.Errorf("check: cannot resolve %q in type %q",

@@ -681,35 +681,35 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return err
 	}
 	lTyp := lhs.MType().Pointee()
+	qid := t.QID{lTyp.Name(), n.ID1()}
+	switch lTyp.Decorator().Key() {
+	case 0:
+		// No-op.
 
-	if lTyp.Decorator() != 0 {
-		if lTyp.IsSliceType() {
-			f, err := q.c.builtInSliceFunc(t.QID{t.IDDiamond, n.ID1()})
-			if err != nil {
-				return err
-			}
-			if f == nil {
-				return fmt.Errorf("check: no slice method %q", n.ID1().Str(q.tm))
-			}
-			n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
-			return nil
+	case t.KeyColon:
+		// lTyp is a slice.
+		qid[0] = t.IDDiamond
+		if f, err := q.c.builtInSliceFunc(qid); err != nil {
+			return err
+		} else if f == nil {
+			return fmt.Errorf("check: no slice method %q", n.ID1().Str(q.tm))
 		}
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+		return nil
 
+	default:
 		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
-		u := q.c.usees[lTyp.Decorator()]
-		if u == nil {
+		if u := q.c.usees[lTyp.Decorator()]; u == nil {
 			return fmt.Errorf("check: cannot resolve %q in type %q for expression %q",
 				lTyp.Decorator().Str(q.tm), lTyp.Str(q.tm), lhs.Str(q.tm))
+		} else if u.funcs[qid] == nil {
+			return fmt.Errorf("check: no method named %q found in type %q for expression %q",
+				n.ID1().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
 		}
-		if f := u.funcs[t.QID{lTyp.Name(), n.ID1()}]; f != nil {
-			n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
-			return nil
-		}
-		return fmt.Errorf("check: no method named %q found in type %q for expression %q",
-			n.ID1().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+		return nil
 	}
 
-	qid := t.QID{lTyp.Name(), n.ID1()}
 	f, err := q.c.builtInFunc(qid)
 	if err != nil {
 		return err
