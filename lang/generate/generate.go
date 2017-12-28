@@ -50,7 +50,7 @@ func Do(args []string, g Generator) error {
 		return err
 	}
 
-	c, err := check.Check(tm, files...)
+	c, err := check.Check(tm, files, resolveUse)
 	if err != nil {
 		return err
 	}
@@ -123,6 +123,14 @@ func ParseFiles(tm *token.Map, filenames []string, opts *parse.Options) (files [
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+func resolveUse(usePath string) ([]byte, error) {
+	wuffsRoot, err := WuffsRoot()
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadFile(filepath.Join(wuffsRoot, "gen", "wuffs", filepath.FromSlash(usePath)))
 }
 
 var cachedWuffsRoot struct {

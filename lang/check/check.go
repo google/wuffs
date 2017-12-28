@@ -20,8 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"path"
 
 	"github.com/google/wuffs/lang/base38"
+	"github.com/google/wuffs/lang/parse"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -79,7 +81,14 @@ type Struct struct {
 	Struct *a.Struct
 }
 
-func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
+type usee struct {
+	consts   map[t.ID]*a.Const
+	funcs    map[t.QID]*a.Func
+	statuses map[t.ID]*a.Status
+	structs  map[t.ID]*a.Struct
+}
+
+func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, error)) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {
 			return nil, errors.New("check: Check given a nil *ast.File")
@@ -103,13 +112,15 @@ func Check(tm *t.Map, files ...*a.File) (*Checker, error) {
 		}
 	}
 	c := &Checker{
-		tm:        tm,
-		reasonMap: rMap,
-		packageID: base38.Max + 1,
-		consts:    map[t.ID]Const{},
-		funcs:     map[t.QID]Func{},
-		statuses:  map[t.ID]Status{},
-		structs:   map[t.ID]Struct{},
+		tm:         tm,
+		resolveUse: resolveUse,
+		reasonMap:  rMap,
+		packageID:  base38.Max + 1,
+		consts:     map[t.ID]Const{},
+		funcs:      map[t.QID]Func{},
+		statuses:   map[t.ID]Status{},
+		structs:    map[t.ID]Struct{},
+		usees:      map[t.ID]*usee{},
 	}
 
 	for _, phase := range phases {
@@ -158,8 +169,9 @@ type reason func(q *checker, n *a.Assert) error
 type reasonMap map[t.Key]reason
 
 type Checker struct {
-	tm        *t.Map
-	reasonMap reasonMap
+	tm         *t.Map
+	resolveUse func(usePath string) ([]byte, error)
+	reasonMap  reasonMap
 
 	packageID      uint32
 	otherPackageID *a.PackageID
@@ -168,6 +180,10 @@ type Checker struct {
 	funcs    map[t.QID]Func
 	statuses map[t.ID]Status
 	structs  map[t.ID]Struct
+
+	// usees are the packages referred to in the `use "foo/bar"` lines. The
+	// keys are the use path base: `bar`, not `"foo/bar"`.
+	usees map[t.ID]*usee
 
 	builtInFuncs      map[t.QID]*a.Func
 	builtInSliceFuncs map[t.QID]*a.Func
@@ -221,7 +237,61 @@ func (c *Checker) checkPackageIDExists(node *a.Node) error {
 }
 
 func (c *Checker) checkUse(node *a.Node) error {
-	// TODO.
+	usePath := node.Use().Path()
+	filename, ok := t.Unescape(usePath.Str(c.tm))
+	if !ok {
+		return fmt.Errorf("check: cannot resolve `use %s`", usePath.Str(c.tm))
+	}
+	base, err := c.tm.Insert(path.Base(filename))
+	if err != nil {
+		return fmt.Errorf("check: cannot resolve `use %s`: %v", usePath.Str(c.tm), err)
+	}
+	filename += ".wuffs"
+	if _, ok := c.usees[base]; ok {
+		return fmt.Errorf("check: duplicate use-name %q", base.Str(c.tm))
+	}
+
+	if c.resolveUse == nil {
+		return fmt.Errorf("check: cannot resolve a use declaration")
+	}
+	src, err := c.resolveUse(filename)
+	if err != nil {
+		return err
+	}
+	tokens, _, err := t.Tokenize(c.tm, filename, src)
+	if err != nil {
+		return err
+	}
+	f, err := parse.Parse(c.tm, filename, tokens, &parse.Options{
+		AllowDoubleUnderscoreNames: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	u := &usee{
+		consts:   map[t.ID]*a.Const{},
+		funcs:    map[t.QID]*a.Func{},
+		statuses: map[t.ID]*a.Status{},
+		structs:  map[t.ID]*a.Struct{},
+	}
+	for _, n := range f.TopLevelDecls() {
+		switch n.Kind() {
+		case a.KConst:
+			n := n.Const()
+			u.consts[n.Name()] = n
+		case a.KFunc:
+			n := n.Func()
+			u.funcs[n.QID()] = n
+		case a.KStatus:
+			n := n.Status()
+			u.statuses[n.Message()] = n
+		case a.KStruct:
+			n := n.Struct()
+			u.structs[n.Name()] = n
+		}
+	}
+	c.usees[base] = u
 	return nil
 }
 

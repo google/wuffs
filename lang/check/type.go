@@ -430,8 +430,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// require a TypeExpr being able to express function and method types.
 
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
@@ -695,8 +694,19 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 			n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
 			return nil
 		}
-		// TODO.
-		return fmt.Errorf("check: unsupported decorator for tcheckDot")
+
+		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
+		u := q.c.usees[lTyp.Decorator()]
+		if u == nil {
+			return fmt.Errorf("check: cannot resolve %q in type %q for expression %q",
+				lTyp.Decorator().Str(q.tm), lTyp.Str(q.tm), lhs.Str(q.tm))
+		}
+		if f := u.funcs[t.QID{lTyp.Name(), n.ID1()}]; f != nil {
+			n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+			return nil
+		}
+		return fmt.Errorf("check: no method named %q found in type %q for expression %q",
+			n.ID1().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
 	}
 
 	qid := t.QID{lTyp.Name(), n.ID1()}
@@ -724,7 +734,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		name := lTyp.Name()
 		s = q.c.structs[name].Struct
 		if s == nil && builtInTypeMap[name] == nil {
-			return fmt.Errorf("check: no struct type %q found for expression %q", name.Str(q.tm), lhs.Str(q.tm))
+			return fmt.Errorf("check: no struct type %q found for expression %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 		}
 	}
 
@@ -739,7 +749,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	return fmt.Errorf("check: no field or method named %q found in type %q for expression %q",
-		n.ID1().Str(q.tm), lTyp.Name().Str(q.tm), n.Str(q.tm))
+		n.ID1().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
 }
 
 func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
@@ -1068,11 +1078,11 @@ swtch:
 		}
 
 	default:
-		// TODO: don't hard-code deflate.decoder as an acceptable type.
-		if q.tm.ByID(typ.Decorator()) == "deflate" && q.tm.ByID(typ.Name()) == "decoder" {
-			break
+		if u := q.c.usees[typ.Decorator()]; u == nil {
+			return fmt.Errorf("check: cannot resolve %q in type %q", typ.Decorator().Str(q.tm), typ.Str(q.tm))
+		} else if u.structs[typ.Name()] == nil {
+			return fmt.Errorf("check: cannot resolve type %q", typ.Str(q.tm))
 		}
-		return fmt.Errorf("check: unrecognized node for tcheckTypeExpr")
 	}
 	typ.Node().SetTypeChecked()
 	return nil

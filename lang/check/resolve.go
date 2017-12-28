@@ -131,23 +131,38 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QID]*a.Func,
 }
 
 func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
-	// TODO: look up funcs in used packages.
 	if typ.Decorator().Key() != t.KeyOpenParen {
 		return nil, fmt.Errorf("check: resolveFunc cannot look up non-func TypeExpr %q", typ.Str(c.tm))
 	}
 	qid := t.QID{typ.Receiver().Name(), typ.Name()}
-	if f, err := c.builtInFunc(qid); err != nil {
-		return nil, err
-	} else if f != nil {
-		return f, nil
-	}
-	if f := c.funcs[qid].Func; f != nil {
-		return f, nil
-	}
-	if typ.Receiver().IsSliceType() {
-		if f, err := c.builtInSliceFunc(t.QID{t.IDDiamond, qid[1]}); err != nil {
+	switch lTyp := typ.Receiver(); lTyp.Decorator().Key() {
+	case 0:
+		if f, err := c.builtInFunc(qid); err != nil {
 			return nil, err
 		} else if f != nil {
+			return f, nil
+		}
+		if f := c.funcs[qid].Func; f != nil {
+			return f, nil
+		}
+
+	case t.KeyColon:
+		qid[0] = t.IDDiamond
+		if f, err := c.builtInSliceFunc(qid); err != nil {
+			return nil, err
+		} else if f != nil {
+			return f, nil
+		}
+
+	default:
+		u := c.usees[lTyp.Decorator()]
+		if u == nil {
+			return nil, fmt.Errorf("check: cannot resolve %q in type %q",
+				lTyp.Decorator().Str(c.tm), lTyp.Str(c.tm))
+		}
+		if f := u.funcs[qid]; f != nil {
+			// TODO: f.Receiver().Str(c.tm) should be "deflate.decoder", not
+			// just "decoder".
 			return f, nil
 		}
 	}
