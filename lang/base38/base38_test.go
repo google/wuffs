@@ -18,25 +18,25 @@ import (
 	"testing"
 )
 
-func TestMax(t *testing.T) {
+func TestMax(tt *testing.T) {
 	if Max == 38*38*38*38-1 {
 		return
 	}
-	t.Fatal("Max does not satisfy its definition")
+	tt.Fatal("Max does not satisfy its definition")
 }
 
-func TestMaxBits(t *testing.T) {
+func TestMaxBits(tt *testing.T) {
 	if (1<<(MaxBits-1) <= Max) && (Max < 1<<MaxBits) {
 		return
 	}
-	t.Fatal("MaxBits does not satisfy its definition")
+	tt.Fatal("MaxBits does not satisfy its definition")
 }
 
 func mk(a, b, c, d uint32) uint32 {
 	return a*38*38*38 + b*38*38 + c*38 + d
 }
 
-func TestValid(t *testing.T) {
+func TestValid(tt *testing.T) {
 	testCases := []struct {
 		s    string
 		want uint32
@@ -64,25 +64,25 @@ func TestValid(t *testing.T) {
 	for _, tc := range testCases {
 		got, gotOK := Encode(tc.s)
 		if !gotOK {
-			t.Errorf("%q: ok: got %t, want %t", tc.s, gotOK, true)
+			tt.Errorf("%q: ok: got %t, want %t", tc.s, gotOK, true)
 			continue
 		}
 		if got != tc.want {
-			t.Errorf("%q: got %d, want %d", tc.s, got, tc.want)
+			tt.Errorf("%q: got %d, want %d", tc.s, got, tc.want)
 			continue
 		}
 		if got > Max || got > 1<<MaxBits-1 {
-			t.Errorf("%q: got %d, want <= %d and <= %d", tc.s, got, Max, 1<<MaxBits-1)
+			tt.Errorf("%q: got %d, want <= %d and <= %d", tc.s, got, Max, 1<<MaxBits-1)
 			continue
 		}
 		maxSeen = maxSeen || (got == Max)
 	}
 	if !maxSeen {
-		t.Error("Max was not seen")
+		tt.Error("Max was not seen")
 	}
 }
 
-func TestInvalid(t *testing.T) {
+func TestInvalid(tt *testing.T) {
 	testCases := []string{
 		"",
 		" ",
@@ -99,7 +99,7 @@ func TestInvalid(t *testing.T) {
 
 	for _, tc := range testCases {
 		if _, gotOK := Encode(tc); gotOK {
-			t.Errorf("%q: ok: got %t, want %t", tc, gotOK, false)
+			tt.Errorf("%q: ok: got %t, want %t", tc, gotOK, false)
 			continue
 		}
 	}

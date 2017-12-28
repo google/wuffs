@@ -55,7 +55,7 @@ func compareToWuffsfmt(tm *token.Map, tokens []token.Token, comments []string, s
 	return nil
 }
 
-func TestCheck(t *testing.T) {
+func TestCheck(tt *testing.T) {
 	const filename = "test.wuffs"
 	src := strings.TrimSpace(`
 		packageid "test"
@@ -99,26 +99,26 @@ func TestCheck(t *testing.T) {
 
 	tokens, comments, err := token.Tokenize(tm, filename, []byte(src))
 	if err != nil {
-		t.Fatalf("Tokenize: %v", err)
+		tt.Fatalf("Tokenize: %v", err)
 	}
 
 	file, err := parse.Parse(tm, filename, tokens, nil)
 	if err != nil {
-		t.Fatalf("Parse: %v", err)
+		tt.Fatalf("Parse: %v", err)
 	}
 
 	if err := compareToWuffsfmt(tm, tokens, comments, src); err != nil {
-		t.Fatalf("compareToWuffsfmt: %v", err)
+		tt.Fatalf("compareToWuffsfmt: %v", err)
 	}
 
 	c, err := Check(tm, []*ast.File{file}, nil)
 	if err != nil {
-		t.Fatalf("Check: %v", err)
+		tt.Fatalf("Check: %v", err)
 	}
 
 	funcs := c.Funcs()
 	if len(funcs) != 1 {
-		t.Fatalf("Funcs: got %d elements, want 1", len(funcs))
+		tt.Fatalf("Funcs: got %d elements, want 1", len(funcs))
 	}
 	fooBar := Func{}
 	for _, f := range funcs {
@@ -127,7 +127,7 @@ func TestCheck(t *testing.T) {
 	}
 
 	if got, want := fooBar.QID.Str(tm), "foo.bar"; got != want {
-		t.Fatalf("Funcs[0] name: got %q, want %q", got, want)
+		tt.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
@@ -154,11 +154,11 @@ func TestCheck(t *testing.T) {
 		{"z", "u64[..123]"},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("\ngot  %v\nwant %v", got, want)
+		tt.Fatalf("\ngot  %v\nwant %v", got, want)
 	}
 }
 
-func TestConstValues(t *testing.T) {
+func TestConstValues(tt *testing.T) {
 	const filename = "test.wuffs"
 	testCases := map[string]int64{
 		"var i i32 = 42": 42,
@@ -198,25 +198,25 @@ func TestConstValues(t *testing.T) {
 
 		tokens, _, err := token.Tokenize(tm, filename, []byte(src))
 		if err != nil {
-			t.Errorf("%q: Tokenize: %v", s, err)
+			tt.Errorf("%q: Tokenize: %v", s, err)
 			continue
 		}
 
 		file, err := parse.Parse(tm, filename, tokens, nil)
 		if err != nil {
-			t.Errorf("%q: Parse: %v", s, err)
+			tt.Errorf("%q: Parse: %v", s, err)
 			continue
 		}
 
 		c, err := Check(tm, []*ast.File{file}, nil)
 		if err != nil {
-			t.Errorf("%q: Check: %v", s, err)
+			tt.Errorf("%q: Check: %v", s, err)
 			continue
 		}
 
 		funcs := c.Funcs()
 		if len(funcs) != 1 {
-			t.Errorf("%q: Funcs: got %d elements, want 1", s, len(funcs))
+			tt.Errorf("%q: Funcs: got %d elements, want 1", s, len(funcs))
 			continue
 		}
 		foo := Func{}
@@ -226,24 +226,24 @@ func TestConstValues(t *testing.T) {
 		}
 		body := foo.Func.Body()
 		if len(body) != 1 {
-			t.Errorf("%q: Body: got %d elements, want 1", s, len(body))
+			tt.Errorf("%q: Body: got %d elements, want 1", s, len(body))
 			continue
 		}
 		if body[0].Kind() != ast.KVar {
-			t.Errorf("%q: Body[0]: got %s, want %s", s, body[0].Kind(), ast.KVar)
+			tt.Errorf("%q: Body[0]: got %s, want %s", s, body[0].Kind(), ast.KVar)
 			continue
 		}
 
 		got := body[0].Var().Value().ConstValue()
 		want := big.NewInt(wantInt64)
 		if got == nil || want == nil || got.Cmp(want) != 0 {
-			t.Errorf("%q: got %v, want %v", s, got, want)
+			tt.Errorf("%q: got %v, want %v", s, got, want)
 			continue
 		}
 	}
 }
 
-func TestBitMask(t *testing.T) {
+func TestBitMask(tt *testing.T) {
 	testCases := [][2]uint64{
 		{0, 0},
 		{1, 1},
@@ -276,23 +276,23 @@ func TestBitMask(t *testing.T) {
 		got := bitMask(big.NewInt(0).SetUint64(tc[0]).BitLen())
 		want := big.NewInt(0).SetUint64(tc[1])
 		if got.Cmp(want) != 0 {
-			t.Errorf("roundUpToPowerOf2Minus1(%v): got %v, want %v", tc[0], got, tc[1])
+			tt.Errorf("roundUpToPowerOf2Minus1(%v): got %v, want %v", tc[0], got, tc[1])
 		}
 	}
 }
 
-func TestBuiltInTypeMap(t *testing.T) {
+func TestBuiltInTypeMap(tt *testing.T) {
 	if got, want := len(builtInTypeMap), len(builtin.Types); got != want {
-		t.Fatalf("lengths: got %d, want %d", got, want)
+		tt.Fatalf("lengths: got %d, want %d", got, want)
 	}
 	tm := token.Map{}
 	for _, s := range builtin.Types {
 		id := tm.ByName(s)
 		if id == 0 {
-			t.Fatalf("ID(%q): got 0, want non-0", s)
+			tt.Fatalf("ID(%q): got 0, want non-0", s)
 		}
 		if _, ok := builtInTypeMap[id]; !ok {
-			t.Fatalf("no builtInTypeMap entry for %q", s)
+			tt.Fatalf("no builtInTypeMap entry for %q", s)
 		}
 	}
 }

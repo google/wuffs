@@ -21,7 +21,7 @@ import (
 	"github.com/google/wuffs/lang/token"
 )
 
-func TestString(t *testing.T) {
+func TestString(tt *testing.T) {
 	const filename = "test.wuffs"
 	testCases := []string{
 		"1",
@@ -74,17 +74,17 @@ func TestString(t *testing.T) {
 	for _, tc := range testCases {
 		tokens, _, err := token.Tokenize(tm, filename, []byte(tc))
 		if err != nil {
-			t.Errorf("Tokenize(%q): %v", tc, err)
+			tt.Errorf("Tokenize(%q): %v", tc, err)
 			continue
 		}
 		expr, err := parse.ParseExpr(tm, filename, tokens, nil)
 		if err != nil {
-			t.Errorf("ParseExpr(%q): %v", tc, err)
+			tt.Errorf("ParseExpr(%q): %v", tc, err)
 			continue
 		}
 		got := expr.Str(tm)
 		if got != tc {
-			t.Errorf("got %q, want %q", got, tc)
+			tt.Errorf("got %q, want %q", got, tc)
 			continue
 		}
 	}
