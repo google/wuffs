@@ -148,7 +148,7 @@ type Node struct {
 	// Jump          keyword       label         .             Jump
 	// PackageID     .             literal       .             PackageID
 	// Ret           keyword       .             .             Ret
-	// Status        keyword       .             .             Status
+	// Status        keyword       literal       .             Status
 	// Struct        .             .             name          Struct
 	// TypeExpr      decorator     .             name          TypeExpr
 	// Use           .             literal       .             Use
