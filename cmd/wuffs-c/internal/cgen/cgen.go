@@ -32,8 +32,6 @@ import (
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
 
-	cf "github.com/google/wuffs/cmd/commonflags"
-
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
@@ -613,7 +611,7 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 
 	if g.wuffsRoot == "" {
 		var err error
-		g.wuffsRoot, err = cf.WuffsRoot()
+		g.wuffsRoot, err = generate.WuffsRoot()
 		if err != nil {
 			return err
 		}

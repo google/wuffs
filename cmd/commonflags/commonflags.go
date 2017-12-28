@@ -19,11 +19,7 @@
 package commonflags
 
 import (
-	"errors"
-	"go/build"
-	"os"
 	"path"
-	"path/filepath"
 )
 
 const (
@@ -65,15 +61,4 @@ func IsAlphaNumericIsh(s string) bool {
 
 func IsValidUsePath(s string) bool {
 	return s == path.Clean(s) && s != "" && s[0] != '.' && s[0] != '/'
-}
-
-func WuffsRoot() (string, error) {
-	// TODO: look for a WUFFSROOT environment variable?
-	for _, p := range filepath.SplitList(build.Default.GOPATH) {
-		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
-		if o, err := os.Stat(p); err == nil && o.IsDir() {
-			return p, nil
-		}
-	}
-	return "", errors.New("could not find Wuffs root directory")
 }

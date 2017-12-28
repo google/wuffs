@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	cf "github.com/google/wuffs/cmd/commonflags"
+	"github.com/google/wuffs/lang/generate"
 )
 
 var commands = []struct {
@@ -63,7 +63,7 @@ func main1() error {
 	flag.Usage = usage
 	flag.Parse()
 
-	wuffsRoot, err := cf.WuffsRoot()
+	wuffsRoot, err := generate.WuffsRoot()
 	if err != nil {
 		return err
 	}
