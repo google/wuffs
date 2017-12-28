@@ -131,6 +131,29 @@ type Node struct {
 	filename string
 	line     uint32
 
+	// The idX fields' meaning depend on what kind of node it is.
+	//
+	// kind          id0           id1           kind
+	// ----------------------------------------------
+	// Arg           .             name          Arg
+	// Assert        keyword       reason        Assert
+	// Assign        operator      .             Assign
+	// Const         .             name          Const
+	// Expr          operator      literal/id    Expr
+	// Field         .             name          Field
+	// File          .             .             File
+	// Func          receiver      name          Func
+	// If            .             .             If
+	// Iterate       .             label         Iterate
+	// Jump          keyword       label         Jump
+	// PackageID     .             literal       PackageID
+	// Ret           keyword       .             Ret
+	// Status        keyword       .             Status
+	// Struct        .             name          Struct
+	// TypeExpr      decorator     name          TypeExpr
+	// Use           .             literal       Use
+	// Var           operator      name          Var
+	// While         .             label         While
 	id0 t.ID
 	id1 t.ID
 
