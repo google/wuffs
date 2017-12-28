@@ -58,6 +58,8 @@ func compareToWuffsfmt(tm *token.Map, tokens []token.Token, comments []string, s
 func TestCheck(t *testing.T) {
 	const filename = "test.wuffs"
 	src := strings.TrimSpace(`
+		packageid "test"
+
 		pri struct foo(
 			i i32,
 		)
@@ -192,7 +194,7 @@ func TestConstValues(t *testing.T) {
 
 	tm := &token.Map{}
 	for s, wantInt64 := range testCases {
-		src := "pri func foo()() {\n\t" + s + "\n}\n"
+		src := "packageid \"test\"\npri func foo()() {\n\t" + s + "\n}\n"
 
 		tokens, _, err := token.Tokenize(tm, filename, []byte(src))
 		if err != nil {

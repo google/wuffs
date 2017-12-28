@@ -122,7 +122,7 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QID]*a.Func,
 
 		tlds := file.TopLevelDecls()
 		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
-			return nil, fmt.Errorf("parsing %c: got %d top level decls, want %d", s, len(tlds), 1)
+			return nil, fmt.Errorf("check: parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
 		}
 		f := tlds[0].Func()
 		m[f.QID()] = f
