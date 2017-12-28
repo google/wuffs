@@ -18,7 +18,8 @@ import (
 	"testing"
 
 	"github.com/google/wuffs/lang/parse"
-	"github.com/google/wuffs/lang/token"
+
+	t "github.com/google/wuffs/lang/token"
 )
 
 func TestString(tt *testing.T) {
@@ -70,9 +71,9 @@ func TestString(tt *testing.T) {
 		"x as [8 + (2 * N)] ptr [4] ptr pkg.T[i..j]",
 	}
 
-	tm := &token.Map{}
+	tm := &t.Map{}
 	for _, tc := range testCases {
-		tokens, _, err := token.Tokenize(tm, filename, []byte(tc))
+		tokens, _, err := t.Tokenize(tm, filename, []byte(tc))
 		if err != nil {
 			tt.Errorf("Tokenize(%q): %v", tc, err)
 			continue

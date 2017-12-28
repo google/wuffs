@@ -23,14 +23,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/wuffs/lang/ast"
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/parse"
 	"github.com/google/wuffs/lang/render"
-	"github.com/google/wuffs/lang/token"
+
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
-func compareToWuffsfmt(tm *token.Map, tokens []token.Token, comments []string, src string) error {
+func compareToWuffsfmt(tm *t.Map, tokens []t.Token, comments []string, src string) error {
 	buf := &bytes.Buffer{}
 	if err := render.Render(buf, tm, tokens, comments); err != nil {
 		return err
@@ -95,9 +96,9 @@ func TestCheck(tt *testing.T) {
 		}
 	`) + "\n"
 
-	tm := &token.Map{}
+	tm := &t.Map{}
 
-	tokens, comments, err := token.Tokenize(tm, filename, []byte(src))
+	tokens, comments, err := t.Tokenize(tm, filename, []byte(src))
 	if err != nil {
 		tt.Fatalf("Tokenize: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestCheck(tt *testing.T) {
 		tt.Fatalf("compareToWuffsfmt: %v", err)
 	}
 
-	c, err := Check(tm, []*ast.File{file}, nil)
+	c, err := Check(tm, []*a.File{file}, nil)
 	if err != nil {
 		tt.Fatalf("Check: %v", err)
 	}
@@ -192,11 +193,11 @@ func TestConstValues(tt *testing.T) {
 		"var b bool = false  or true": 1,
 	}
 
-	tm := &token.Map{}
+	tm := &t.Map{}
 	for s, wantInt64 := range testCases {
 		src := "packageid \"test\"\npri func foo()() {\n\t" + s + "\n}\n"
 
-		tokens, _, err := token.Tokenize(tm, filename, []byte(src))
+		tokens, _, err := t.Tokenize(tm, filename, []byte(src))
 		if err != nil {
 			tt.Errorf("%q: Tokenize: %v", s, err)
 			continue
@@ -208,7 +209,7 @@ func TestConstValues(tt *testing.T) {
 			continue
 		}
 
-		c, err := Check(tm, []*ast.File{file}, nil)
+		c, err := Check(tm, []*a.File{file}, nil)
 		if err != nil {
 			tt.Errorf("%q: Check: %v", s, err)
 			continue
@@ -229,8 +230,8 @@ func TestConstValues(tt *testing.T) {
 			tt.Errorf("%q: Body: got %d elements, want 1", s, len(body))
 			continue
 		}
-		if body[0].Kind() != ast.KVar {
-			tt.Errorf("%q: Body[0]: got %s, want %s", s, body[0].Kind(), ast.KVar)
+		if body[0].Kind() != a.KVar {
+			tt.Errorf("%q: Body[0]: got %s, want %s", s, body[0].Kind(), a.KVar)
 			continue
 		}
 
@@ -285,7 +286,7 @@ func TestBuiltInTypeMap(tt *testing.T) {
 	if got, want := len(builtInTypeMap), len(builtin.Types); got != want {
 		tt.Fatalf("lengths: got %d, want %d", got, want)
 	}
-	tm := token.Map{}
+	tm := t.Map{}
 	for _, s := range builtin.Types {
 		id := tm.ByName(s)
 		if id == 0 {

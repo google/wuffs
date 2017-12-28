@@ -22,12 +22,12 @@ import (
 	"errors"
 	"io"
 
-	"github.com/google/wuffs/lang/token"
+	t "github.com/google/wuffs/lang/token"
 )
 
 var newLine = []byte{'\n'}
 
-func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (err error) {
+func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error) {
 	if len(src) == 0 {
 		return nil
 	}
@@ -77,7 +77,7 @@ func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (e
 		// Strip any trailing semi-colons.
 		hanging := prevLineHanging
 		prevLineHanging = true
-		for len(lineTokens) > 0 && lineTokens[len(lineTokens)-1].ID == token.IDSemicolon {
+		for len(lineTokens) > 0 && lineTokens[len(lineTokens)-1].ID == t.IDSemicolon {
 			prevLineHanging = false
 			lineTokens = lineTokens[:len(lineTokens)-1]
 		}
@@ -99,52 +99,52 @@ func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (e
 		indentAdjustment := 0
 		if lineTokens[0].ID.IsClose() {
 			indentAdjustment--
-		} else if hanging && lineTokens[0].ID != token.IDOpenCurly {
+		} else if hanging && lineTokens[0].ID != t.IDOpenCurly {
 			indentAdjustment++
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)
 
 		// Render the lineTokens.
-		prevID, prevIsTightRight := token.ID(0), false
-		for _, t := range lineTokens {
+		prevID, prevIsTightRight := t.ID(0), false
+		for _, tok := range lineTokens {
 			const (
-				flagsCIL = token.FlagsClose | token.FlagsIdent | token.FlagsLiteral
-				flagsCIS = token.FlagsClose | token.FlagsIdent | token.FlagsStrLiteral
-				flagsUB  = token.FlagsUnaryOp | token.FlagsBinaryOp
+				flagsCIL = t.FlagsClose | t.FlagsIdent | t.FlagsLiteral
+				flagsCIS = t.FlagsClose | t.FlagsIdent | t.FlagsStrLiteral
+				flagsUB  = t.FlagsUnaryOp | t.FlagsBinaryOp
 			)
 
-			if prevID != 0 && !prevIsTightRight && !t.IsTightLeft() {
+			if prevID != 0 && !prevIsTightRight && !tok.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if t.ID.Key() != token.KeyOpenParen || prevID.Flags()&flagsCIS == 0 {
+				if tok.ID.Key() != t.KeyOpenParen || prevID.Flags()&flagsCIS == 0 {
 					buf = append(buf, ' ')
 				}
 			}
 
-			buf = append(buf, tm.ByToken(t)...)
+			buf = append(buf, tm.ByToken(tok)...)
 
-			if t.ID.Key() == token.KeyOpenCurly {
+			if tok.ID.Key() == t.KeyOpenCurly {
 				if indent == maxIndent {
 					return errors.New("render: too many \"{\" tokens")
 				}
 				indent++
-			} else if t.ID.Key() == token.KeyCloseCurly {
+			} else if tok.ID.Key() == t.KeyCloseCurly {
 				if indent == 0 {
 					return errors.New("render: too many \"}\" tokens")
 				}
 				indent--
 			}
 
-			prevIsTightRight = t.ID.IsTightRight()
+			prevIsTightRight = tok.ID.IsTightRight()
 			// The "+" and "-" tokens' tight-right-ness is context dependent.
 			// The unary flavor is tight-right, the binary flavor is not.
-			if prevID != 0 && t.ID.Flags()&flagsUB == flagsUB {
+			if prevID != 0 && tok.ID.Flags()&flagsUB == flagsUB {
 				// Token-based (not ast.Node-based) heuristic for whether the
 				// operator looks unary instead of binary.
 				prevIsTightRight = prevID.Flags()&flagsCIL == 0
 			}
 
-			prevID = t.ID
+			prevID = tok.ID
 		}
 
 		buf = appendComment(buf, comments, line, 0, false)
@@ -154,7 +154,7 @@ func Render(w io.Writer, tm *token.Map, src []token.Token, comments []string) (e
 		}
 		commentLine = line + 1
 		prevLine = line
-		prevLineHanging = prevLineHanging && lineTokens[len(lineTokens)-1].ID != token.IDOpenCurly
+		prevLineHanging = prevLineHanging && lineTokens[len(lineTokens)-1].ID != t.IDOpenCurly
 	}
 
 	// Print any trailing comments.

@@ -25,13 +25,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/wuffs/lang/ast"
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/parse"
-	"github.com/google/wuffs/lang/token"
+
+	a "github.com/google/wuffs/lang/ast"
+	t "github.com/google/wuffs/lang/token"
 )
 
-type Generator func(packageName string, tm *token.Map, c *check.Checker, files []*ast.File) ([]byte, error)
+type Generator func(packageName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error)
 
 func Do(args []string, g Generator) error {
 	flags := flag.FlagSet{}
@@ -44,7 +45,7 @@ func Do(args []string, g Generator) error {
 		return fmt.Errorf("prohibited package name %q", *packageName)
 	}
 
-	tm := &token.Map{}
+	tm := &t.Map{}
 	files, err := parseFiles(tm, flags.Args())
 	if err != nil {
 		return err
@@ -86,14 +87,14 @@ func checkPackageName(s string) string {
 	return s
 }
 
-func parseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error) {
+func parseFiles(tm *t.Map, filenames []string) (files []*a.File, err error) {
 	if len(filenames) == 0 {
 		const filename = "stdin"
 		src, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			return nil, err
 		}
-		tokens, _, err := token.Tokenize(tm, filename, src)
+		tokens, _, err := t.Tokenize(tm, filename, src)
 		if err != nil {
 			return nil, err
 		}
@@ -101,18 +102,18 @@ func parseFiles(tm *token.Map, filenames []string) (files []*ast.File, err error
 		if err != nil {
 			return nil, err
 		}
-		return []*ast.File{f}, nil
+		return []*a.File{f}, nil
 	}
 	return ParseFiles(tm, filenames, nil)
 }
 
-func ParseFiles(tm *token.Map, filenames []string, opts *parse.Options) (files []*ast.File, err error) {
+func ParseFiles(tm *t.Map, filenames []string, opts *parse.Options) (files []*a.File, err error) {
 	for _, filename := range filenames {
 		src, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
-		tokens, _, err := token.Tokenize(tm, filename, src)
+		tokens, _, err := t.Tokenize(tm, filename, src)
 		if err != nil {
 			return nil, err
 		}

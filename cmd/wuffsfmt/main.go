@@ -35,7 +35,8 @@ import (
 
 	"github.com/google/wuffs/lang/parse"
 	"github.com/google/wuffs/lang/render"
-	"github.com/google/wuffs/lang/token"
+
+	t "github.com/google/wuffs/lang/token"
 )
 
 var (
@@ -118,8 +119,8 @@ func do(r io.Reader, filename string) error {
 		return err
 	}
 
-	tm := &token.Map{}
-	tokens, comments, err := token.Tokenize(tm, filename, src)
+	tm := &t.Map{}
+	tokens, comments, err := t.Tokenize(tm, filename, src)
 	if err != nil {
 		return err
 	}
