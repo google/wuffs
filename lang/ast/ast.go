@@ -203,24 +203,10 @@ type Loop interface {
 type Raw Node
 
 func (n *Raw) Node() *Node                    { return (*Node)(n) }
-func (n *Raw) Kind() Kind                     { return n.kind }
 func (n *Raw) Flags() Flags                   { return n.flags }
-func (n *Raw) ConstValue() *big.Int           { return n.constValue }
-func (n *Raw) MType() *TypeExpr               { return n.mType }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
-func (n *Raw) Filename() string               { return n.filename }
-func (n *Raw) Line() uint32                   { return n.line }
-func (n *Raw) QID() t.QID                     { return t.QID{n.id0, n.id1} }
-func (n *Raw) ID0() t.ID                      { return n.id0 }
-func (n *Raw) ID1() t.ID                      { return n.id1 }
 func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.rhs} }
-func (n *Raw) LHS() *Node                     { return n.lhs }
-func (n *Raw) MHS() *Node                     { return n.mhs }
-func (n *Raw) RHS() *Node                     { return n.rhs }
 func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
-func (n *Raw) List0() []*Node                 { return n.list0 }
-func (n *Raw) List1() []*Node                 { return n.list1 }
-func (n *Raw) List2() []*Node                 { return n.list2 }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
