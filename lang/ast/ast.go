@@ -133,29 +133,30 @@ type Node struct {
 
 	// The idX fields' meaning depend on what kind of node it is.
 	//
-	// kind          id0           id1           kind
-	// ----------------------------------------------
-	// Arg           .             name          Arg
-	// Assert        keyword       reason        Assert
-	// Assign        operator      .             Assign
-	// Const         .             name          Const
-	// Expr          operator      literal/id    Expr
-	// Field         .             name          Field
-	// File          .             .             File
-	// Func          receiver      name          Func
-	// If            .             .             If
-	// Iterate       .             label         Iterate
-	// Jump          keyword       label         Jump
-	// PackageID     .             literal       PackageID
-	// Ret           keyword       .             Ret
-	// Status        keyword       .             Status
-	// Struct        .             name          Struct
-	// TypeExpr      decorator     name          TypeExpr
-	// Use           .             literal       Use
-	// Var           operator      name          Var
-	// While         .             label         While
+	// kind          id0           id1           id2           kind
+	// ------------------------------------------------------------
+	// Arg           .             .             name          Arg
+	// Assert        keyword       reason        .             Assert
+	// Assign        operator      .             .             Assign
+	// Const         .             .             name          Const
+	// Expr          operator      literal/ident .             Expr
+	// Field         .             .             name          Field
+	// File          .             .             .             File
+	// Func          receiver      .             name          Func
+	// If            .             .             .             If
+	// Iterate       .             label         .             Iterate
+	// Jump          keyword       label         .             Jump
+	// PackageID     .             literal       .             PackageID
+	// Ret           keyword       .             .             Ret
+	// Status        keyword       .             .             Status
+	// Struct        .             .             name          Struct
+	// TypeExpr      decorator     .             name          TypeExpr
+	// Use           .             literal       .             Use
+	// Var           operator      .             name          Var
+	// While         .             label         .             While
 	id0 t.ID
 	id1 t.ID
+	id2 t.ID
 
 	lhs *Node // Left Hand Side.
 	mhs *Node // Middle Hand Side.
@@ -349,18 +350,18 @@ func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert
 }
 
 // Arg is "name:value".
-//  - ID1:   <ident> name
+//  - ID2:   <ident> name
 //  - RHS:   <Expr> value
 type Arg Node
 
 func (n *Arg) Node() *Node  { return (*Node)(n) }
-func (n *Arg) Name() t.ID   { return n.id1 }
+func (n *Arg) Name() t.ID   { return n.id2 }
 func (n *Arg) Value() *Expr { return n.rhs.Expr() }
 
 func NewArg(name t.ID, value *Expr) *Arg {
 	return &Arg{
 		kind: KArg,
-		id1:  name,
+		id2:  name,
 		rhs:  value.Node(),
 	}
 }
@@ -388,14 +389,14 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 // Var is "var ID1 LHS" or "var ID1 LHS = RHS" or an iterate variable
 // declaration "ID1 LHS : RHS":
 //  - ID0:   <0|IDEq|IDColon>
-//  - ID1:   name
+//  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Var Node
 
 func (n *Var) Node() *Node           { return (*Node)(n) }
 func (n *Var) IterateVariable() bool { return n.id0 == t.IDColon }
-func (n *Var) Name() t.ID            { return n.id1 }
+func (n *Var) Name() t.ID            { return n.id2 }
 func (n *Var) XType() *TypeExpr      { return n.lhs.TypeExpr() }
 func (n *Var) Value() *Expr          { return n.rhs.Expr() }
 
@@ -403,27 +404,27 @@ func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 	return &Var{
 		kind: KVar,
 		id0:  op,
-		id1:  name,
+		id2:  name,
 		lhs:  xType.Node(),
 		rhs:  value.Node(),
 	}
 }
 
 // Field is a "name type = default_value" struct field:
-//  - ID1:   name
+//  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Field Node
 
 func (n *Field) Node() *Node         { return (*Node)(n) }
-func (n *Field) Name() t.ID          { return n.id1 }
+func (n *Field) Name() t.ID          { return n.id2 }
 func (n *Field) XType() *TypeExpr    { return n.lhs.TypeExpr() }
 func (n *Field) DefaultValue() *Expr { return n.rhs.Expr() }
 
 func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 	return &Field{
 		kind: KField,
-		id1:  name,
+		id2:  name,
 		lhs:  xType.Node(),
 		rhs:  defaultValue.Node(),
 	}
@@ -559,7 +560,7 @@ const MaxTypeExprDepth = 63
 // TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
 // T", "[8] T" or "[] T":
 //  - ID0:   <0|package name|IDPtr|IDOpenBracket|IDColon>
-//  - ID1:   <0|type name>
+//  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
 //  - RHS:   <nil|TypeExpr>
@@ -586,7 +587,7 @@ type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node         { return (*Node)(n) }
 func (n *TypeExpr) Decorator() t.ID     { return n.id0 }
-func (n *TypeExpr) Name() t.ID          { return n.id1 }
+func (n *TypeExpr) Name() t.ID          { return n.id2 }
 func (n *TypeExpr) ArrayLength() *Expr  { return n.lhs.Expr() }
 func (n *TypeExpr) Receiver() *TypeExpr { return n.lhs.TypeExpr() }
 func (n *TypeExpr) Bounds() [2]*Expr    { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
@@ -607,19 +608,19 @@ func (n *TypeExpr) Pointee() *TypeExpr {
 }
 
 func (n *TypeExpr) IsBool() bool {
-	return n.id0 == 0 && n.id1.Key() == t.KeyBool
+	return n.id0 == 0 && n.id2.Key() == t.KeyBool
 }
 
 func (n *TypeExpr) IsIdeal() bool {
-	return n.id0 == 0 && n.id1.Key() == t.KeyDoubleZ
+	return n.id0 == 0 && n.id2.Key() == t.KeyDoubleZ
 }
 
 func (n *TypeExpr) IsNumType() bool {
-	return n.id0 == 0 && n.id1.IsNumType()
+	return n.id0 == 0 && n.id2.IsNumType()
 }
 
 func (n *TypeExpr) IsNumTypeOrIdeal() bool {
-	return n.id0 == 0 && (n.id1.IsNumType() || n.id1.Key() == t.KeyDoubleZ)
+	return n.id0 == 0 && (n.id2.IsNumType() || n.id2.Key() == t.KeyDoubleZ)
 }
 
 func (n *TypeExpr) IsRefined() bool {
@@ -631,15 +632,15 @@ func (n *TypeExpr) IsSliceType() bool {
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
-	return n.id0 == 0 && (n.id1.Key() == t.KeyU8 || n.id1.Key() == t.KeyU16 ||
-		n.id1.Key() == t.KeyU32 || n.id1.Key() == t.KeyU64) // TODO: t.KeyUsize?
+	return n.id0 == 0 && (n.id2.Key() == t.KeyU8 || n.id2.Key() == t.KeyU16 ||
+		n.id2.Key() == t.KeyU32 || n.id2.Key() == t.KeyU64) // TODO: t.KeyUsize?
 }
 
 func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
 		switch n.id0.Key() {
 		case 0:
-			switch n.id1.Key() {
+			switch n.id2.Key() {
 			case t.KeyBuf1, t.KeyReader1, t.KeyWriter1, t.KeyBuf2:
 				return true
 			}
@@ -660,11 +661,11 @@ func (n *TypeExpr) Unrefined() *TypeExpr {
 	return &o
 }
 
-func NewTypeExpr(pkgOrDec t.ID, name t.ID, alenRecvMin *Node, max *Expr, inner *TypeExpr) *TypeExpr {
+func NewTypeExpr(decorator t.ID, name t.ID, alenRecvMin *Node, max *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,
-		id0:  pkgOrDec,
-		id1:  name,
+		id0:  decorator,
+		id2:  name,
 		lhs:  alenRecvMin,
 		mhs:  max.Node(),
 		rhs:  inner.Node(),
@@ -679,7 +680,7 @@ const MaxBodyDepth = 255
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   <0|receiver>
-//  - ID1:   name
+//  - ID2:   name
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
 //  - List1: <Assert> asserts
@@ -704,9 +705,9 @@ func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Func) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Func) Filename() string  { return n.filename }
 func (n *Func) Line() uint32      { return n.line }
-func (n *Func) QID() t.QID        { return t.QID{n.id0, n.id1} }
+func (n *Func) QID() t.QID        { return t.QID{n.id0, n.id2} }
 func (n *Func) Receiver() t.ID    { return n.id0 }
-func (n *Func) Name() t.ID        { return n.id1 }
+func (n *Func) Name() t.ID        { return n.id2 }
 func (n *Func) In() *Struct       { return n.lhs.Struct() }
 func (n *Func) Out() *Struct      { return n.rhs.Struct() }
 func (n *Func) Asserts() []*Node  { return n.list1 }
@@ -719,7 +720,7 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 		filename: filename,
 		line:     line,
 		id0:      receiver,
-		id1:      name,
+		id2:      name,
 		lhs:      in.Node(),
 		rhs:      out.Node(),
 		list1:    asserts,
@@ -753,7 +754,7 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message 
 
 // Const is "const ID1 LHS = RHS":
 //  - FlagsPublic      is "pub" vs "pri"
-//  - ID1:   name
+//  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <Expr>
 type Const Node
@@ -762,7 +763,7 @@ func (n *Const) Node() *Node      { return (*Node)(n) }
 func (n *Const) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Const) Filename() string { return n.filename }
 func (n *Const) Line() uint32     { return n.line }
-func (n *Const) Name() t.ID       { return n.id1 }
+func (n *Const) Name() t.ID       { return n.id2 }
 func (n *Const) XType() *TypeExpr { return n.lhs.TypeExpr() }
 func (n *Const) Value() *Expr     { return n.rhs.Expr() }
 
@@ -772,7 +773,7 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 		flags:    flags,
 		filename: filename,
 		line:     line,
-		id1:      name,
+		id2:      name,
 		lhs:      xType.Node(),
 		rhs:      value.Node(),
 	}
@@ -781,7 +782,7 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 // Struct is "struct ID1(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - FlagsPublic      is "pub" vs "pri"
-//  - ID1:   name
+//  - ID2:   name
 //  - List0: <Field> fields
 type Struct Node
 
@@ -790,7 +791,7 @@ func (n *Struct) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Struct) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string  { return n.filename }
 func (n *Struct) Line() uint32      { return n.line }
-func (n *Struct) Name() t.ID        { return n.id1 }
+func (n *Struct) Name() t.ID        { return n.id2 }
 func (n *Struct) Fields() []*Node   { return n.list0 }
 
 func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*Node) *Struct {
@@ -799,7 +800,7 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 		flags:    flags,
 		filename: filename,
 		line:     line,
-		id1:      name,
+		id2:      name,
 		list0:    fields,
 	}
 }
@@ -841,7 +842,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 }
 
 // File is a file of source code:
-//  - List0: <Func|PackageID|Status|Struct|Use> top-level declarations
+//  - List0: <Const|Func|PackageID|Status|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) Node() *Node            { return (*Node)(n) }

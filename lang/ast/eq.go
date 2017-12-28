@@ -35,7 +35,8 @@ func (n *Expr) Eq(o *Expr) bool {
 		return n.constValue.Cmp(o.constValue) == 0
 	}
 
-	if (n.flags&flagsThatMatterForEq) != (o.flags&flagsThatMatterForEq) || n.id0 != o.id0 || n.id1 != o.id1 {
+	if (n.flags&flagsThatMatterForEq) != (o.flags&flagsThatMatterForEq) ||
+		n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
 		return false
 	}
 	if !n.lhs.Expr().Eq(o.lhs.Expr()) {
@@ -101,7 +102,7 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 		if n == nil || o == nil {
 			return false
 		}
-		if n.id0 != o.id0 || n.id1 != o.id1 {
+		if n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
 			return false
 		}
 		if n.id0.Key() == t.KeyOpenBracket || !ignoreRefinements {
