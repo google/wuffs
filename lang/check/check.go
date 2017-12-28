@@ -61,7 +61,7 @@ func (e *Error) Error() string {
 }
 
 type Const struct {
-	ID    t.ID // ID of the const name.
+	QID   t.QID // Qualified ID of the const name.
 	Const *a.Const
 }
 
@@ -72,7 +72,7 @@ type Func struct {
 }
 
 type Status struct {
-	ID     t.ID // ID of the status message.
+	QID    t.QID // Qualified ID of the status message.
 	Status *a.Status
 }
 
@@ -82,9 +82,9 @@ type Struct struct {
 }
 
 type usee struct {
-	consts   map[t.ID]*a.Const
+	consts   map[t.QID]*a.Const
 	funcs    map[t.QID]*a.Func
-	statuses map[t.ID]*a.Status
+	statuses map[t.QID]*a.Status
 	structs  map[t.ID]*a.Struct
 }
 
@@ -116,9 +116,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		resolveUse: resolveUse,
 		reasonMap:  rMap,
 		packageID:  base38.Max + 1,
-		consts:     map[t.ID]Const{},
+		consts:     map[t.QID]Const{},
 		funcs:      map[t.QID]Func{},
-		statuses:   map[t.ID]Status{},
+		statuses:   map[t.QID]Status{},
 		structs:    map[t.ID]Struct{},
 		usees:      map[t.ID]*usee{},
 	}
@@ -176,9 +176,9 @@ type Checker struct {
 	packageID      uint32
 	otherPackageID *a.PackageID
 
-	consts   map[t.ID]Const
+	consts   map[t.QID]Const
 	funcs    map[t.QID]Func
-	statuses map[t.ID]Status
+	statuses map[t.QID]Status
 	structs  map[t.ID]Struct
 
 	// usees are the packages referred to in the `use "foo/bar"` lines. The
@@ -190,11 +190,11 @@ type Checker struct {
 	unsortedStructs   []*a.Struct
 }
 
-func (c *Checker) PackageID() uint32         { return c.packageID }
-func (c *Checker) Consts() map[t.ID]Const    { return c.consts }
-func (c *Checker) Funcs() map[t.QID]Func     { return c.funcs }
-func (c *Checker) Statuses() map[t.ID]Status { return c.statuses }
-func (c *Checker) Structs() map[t.ID]Struct  { return c.structs }
+func (c *Checker) PackageID() uint32          { return c.packageID }
+func (c *Checker) Consts() map[t.QID]Const    { return c.consts }
+func (c *Checker) Funcs() map[t.QID]Func      { return c.funcs }
+func (c *Checker) Statuses() map[t.QID]Status { return c.statuses }
+func (c *Checker) Structs() map[t.ID]Struct   { return c.structs }
 
 func (c *Checker) checkPackageID(node *a.Node) error {
 	n := node.PackageID()
@@ -270,22 +270,25 @@ func (c *Checker) checkUse(node *a.Node) error {
 	}
 
 	u := &usee{
-		consts:   map[t.ID]*a.Const{},
+		consts:   map[t.QID]*a.Const{},
 		funcs:    map[t.QID]*a.Func{},
-		statuses: map[t.ID]*a.Status{},
+		statuses: map[t.QID]*a.Status{},
 		structs:  map[t.ID]*a.Struct{},
 	}
 	for _, n := range f.TopLevelDecls() {
+		if err := n.Raw().SetPackage(c.tm, base); err != nil {
+			return err
+		}
 		switch n.Kind() {
 		case a.KConst:
 			n := n.Const()
-			u.consts[n.Name()] = n
+			u.consts[n.QID()] = n
 		case a.KFunc:
 			n := n.Func()
 			u.funcs[n.QID()] = n
 		case a.KStatus:
 			n := n.Status()
-			u.statuses[n.Message()] = n
+			u.statuses[n.QID()] = n
 		case a.KStruct:
 			n := n.Struct()
 			u.structs[n.Name()] = n
@@ -297,19 +300,18 @@ func (c *Checker) checkUse(node *a.Node) error {
 
 func (c *Checker) checkStatus(node *a.Node) error {
 	n := node.Status()
-	id := n.Message()
-	if other, ok := c.statuses[id]; ok {
-		s, _ := t.Unescape(id.Str(c.tm))
+	qid := n.QID()
+	if other, ok := c.statuses[qid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate status %q", s),
+			Err:           fmt.Errorf("check: duplicate status %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Status.Filename(),
 			OtherLine:     other.Status.Line(),
 		}
 	}
-	c.statuses[id] = Status{
-		ID:     id,
+	c.statuses[qid] = Status{
+		QID:    qid,
 		Status: n,
 	}
 	n.Node().SetTypeChecked()
@@ -318,18 +320,18 @@ func (c *Checker) checkStatus(node *a.Node) error {
 
 func (c *Checker) checkConst(node *a.Node) error {
 	n := node.Const()
-	id := n.Name()
-	if other, ok := c.consts[id]; ok {
+	qid := n.QID()
+	if other, ok := c.consts[qid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate const %q", id.Str(c.tm)),
+			Err:           fmt.Errorf("check: duplicate const %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Const.Filename(),
 			OtherLine:     other.Const.Line(),
 		}
 	}
-	c.consts[id] = Const{
-		ID:    id,
+	c.consts[qid] = Const{
+		QID:   qid,
 		Const: n,
 	}
 
@@ -338,10 +340,10 @@ func (c *Checker) checkConst(node *a.Node) error {
 		tm: c.tm,
 	}
 	if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
-		return fmt.Errorf("%v in const %q", err, id.Str(c.tm))
+		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
 	}
 	if err := q.tcheckExpr(n.Value(), 0); err != nil {
-		return fmt.Errorf("%v in const %q", err, id.Str(c.tm))
+		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
 	}
 
 	nLists := 0
@@ -354,17 +356,17 @@ func (c *Checker) checkConst(node *a.Node) error {
 		typ = typ.Inner()
 	}
 	if typ.Decorator() != 0 {
-		return fmt.Errorf("check: invalid const type %q for %q", n.XType().Str(c.tm), id.Str(c.tm))
+		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
 	nMin, nMax, err := q.bcheckTypeExpr(typ)
 	if err != nil {
 		return err
 	}
 	if nMin == nil || nMax == nil {
-		return fmt.Errorf("check: invalid const type %q for %q", n.XType().Str(c.tm), id.Str(c.tm))
+		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
 	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
-		return fmt.Errorf("check: %v for %q", err, id.Str(c.tm))
+		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
 	n.Node().SetTypeChecked()
 	return nil

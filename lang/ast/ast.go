@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"fmt"
 	"math/big"
 
 	t "github.com/google/wuffs/lang/token"
@@ -138,7 +139,7 @@ type Node struct {
 	// Arg           .             .             name          Arg
 	// Assert        keyword       reason        .             Assert
 	// Assign        operator      .             .             Assign
-	// Const         .             .             name          Const
+	// Const         .             pkg           name          Const
 	// Expr          operator      literal/ident .             Expr
 	// Field         .             .             name          Field
 	// File          .             .             .             File
@@ -148,7 +149,7 @@ type Node struct {
 	// Jump          keyword       label         .             Jump
 	// PackageID     .             literal       .             PackageID
 	// Ret           keyword       .             .             Ret
-	// Status        keyword       literal       .             Status
+	// Status        keyword       pkg           literal       Status
 	// Struct        .             .             name          Struct
 	// TypeExpr      decorator     .             name          TypeExpr
 	// Use           .             literal       .             Use
@@ -233,6 +234,20 @@ func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.
 func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
+
+func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
+	return n.Node().Walk(func(o *Node) error {
+		switch o.Kind() {
+		case KConst, KStatus:
+			if o.id1 != 0 {
+				return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
+					pkg.Str(tm), o.id1.Str(tm))
+			}
+			o.id1 = pkg
+		}
+		return nil
+	})
+}
 
 // MaxExprDepth is an advisory limit for an Expr's recursion depth.
 const MaxExprDepth = 255
@@ -731,7 +746,8 @@ func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID
 // Status is "error ID1" or "suspension ID1":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   <IDError|IDSuspension>
-//  - ID1:   message
+//  - ID1:   <0|pkg> (set by calling SetPackage)
+//  - ID2:   message
 type Status Node
 
 func (n *Status) Node() *Node      { return (*Node)(n) }
@@ -739,7 +755,7 @@ func (n *Status) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Status) Filename() string { return n.filename }
 func (n *Status) Line() uint32     { return n.line }
 func (n *Status) Keyword() t.ID    { return n.id0 }
-func (n *Status) Message() t.ID    { return n.id1 }
+func (n *Status) QID() t.QID       { return t.QID{n.id1, n.id2} }
 
 func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message t.ID) *Status {
 	return &Status{
@@ -748,12 +764,13 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message 
 		filename: filename,
 		line:     line,
 		id0:      keyword,
-		id1:      message,
+		id2:      message,
 	}
 }
 
 // Const is "const ID1 LHS = RHS":
 //  - FlagsPublic      is "pub" vs "pri"
+//  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <Expr>
@@ -763,7 +780,7 @@ func (n *Const) Node() *Node      { return (*Node)(n) }
 func (n *Const) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Const) Filename() string { return n.filename }
 func (n *Const) Line() uint32     { return n.line }
-func (n *Const) Name() t.ID       { return n.id2 }
+func (n *Const) QID() t.QID       { return t.QID{n.id1, n.id2} }
 func (n *Const) XType() *TypeExpr { return n.lhs.TypeExpr() }
 func (n *Const) Value() *Expr     { return n.rhs.Expr() }
 

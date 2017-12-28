@@ -249,6 +249,13 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 	for _, f := range files {
 		for _, n := range f.TopLevelDecls() {
 			switch n.Kind() {
+			case a.KConst:
+				n := n.Const()
+				if !n.Public() {
+					continue
+				}
+				return fmt.Errorf("TODO: genWuffs for consts")
+
 			case a.KFunc:
 				n := n.Func()
 				if !n.Public() {
@@ -286,7 +293,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				if !n.Public() {
 					continue
 				}
-				fmt.Fprintf(out, "pub %s %s\n", n.Keyword().Str(&h.tm), n.Message().Str(&h.tm))
+				fmt.Fprintf(out, "pub %s %s\n", n.Keyword().Str(&h.tm), n.QID().Str(&h.tm))
 
 			case a.KStruct:
 				n := n.Struct()

@@ -394,14 +394,15 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					return nil
 				}
 			}
-			if c, ok := q.c.consts[id1]; ok {
+			if c, ok := q.c.consts[t.QID{0, id1}]; ok {
 				// TODO: check somewhere that a global ident (i.e. a const) is
 				// not directly in the LHS of an assignment.
 				n.SetGlobalIdent()
 				n.SetMType(c.Const.XType())
 				return nil
 			}
-			// TODO: look for other (global) names: funcs, structs.
+			// TODO: look for other (global) names: consts, funcs, statuses,
+			// structs from used packages.
 			return fmt.Errorf("check: unrecognized identifier %q", id1.Str(q.tm))
 		}
 		switch id1.Key() {
@@ -522,7 +523,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
 		nominalKeyword := n.ID0()
 		declaredKeyword := t.ID(0)
-		if s, ok := q.c.statuses[n.ID1()]; ok {
+		if s, ok := q.c.statuses[t.QID{0, n.ID1()}]; ok {
 			declaredKeyword = s.Status.Keyword()
 		} else {
 			msg, _ := t.Unescape(n.ID1().Str(q.tm))

@@ -470,7 +470,7 @@ func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 }
 
 func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
-	raw := n.Message().Str(g.tm)
+	raw := n.QID()[1].Str(g.tm)
 	msg, ok := t.Unescape(raw)
 	if !ok {
 		return fmt.Errorf("bad status message %q", raw)
@@ -485,7 +485,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 		keyword: n.Keyword(),
 	}
 	g.statusList = append(g.statusList, s)
-	g.statusMap[n.Message()] = s
+	g.statusMap[n.QID()[1]] = s
 	return nil
 }
 
@@ -494,7 +494,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 		b.writes("static ")
 	}
 	b.writes("const ")
-	if err := g.writeCTypeName(b, n.XType(), g.pkgPrefix, n.Name().Str(g.tm)); err != nil {
+	if err := g.writeCTypeName(b, n.XType(), g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
 		return err
 	}
 	b.writes(" = ")
