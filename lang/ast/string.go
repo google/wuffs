@@ -50,6 +50,8 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 				if n.flags&FlagsSuspendible != 0 {
 					buf = append(buf, '?')
+				} else if n.flags&FlagsImpure != 0 {
+					buf = append(buf, '!')
 				}
 				buf = append(buf, '(')
 				for i, o := range n.list0 {
