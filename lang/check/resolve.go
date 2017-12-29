@@ -155,14 +155,6 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		if f := c.funcs[qqid]; f != nil {
 			return f, nil
 		}
-		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
-		u := c.usees[qqid[0]]
-		if u == nil {
-			return nil, fmt.Errorf("check: cannot resolve %q in type %q", qqid[0].Str(c.tm), lTyp.Str(c.tm))
-		}
-		if f := u.funcs[qqid]; f != nil {
-			return f, nil
-		}
 	}
 	return nil, fmt.Errorf("check: resolveFunc cannot look up %q", typ.Str(c.tm))
 }

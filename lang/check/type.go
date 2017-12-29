@@ -700,19 +700,6 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 	}
 
-	if qqid[0] != 0 {
-		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
-		if u := q.c.usees[qqid[0]]; u == nil {
-			return fmt.Errorf("check: cannot resolve %q in type %q for expression %q",
-				qqid[0].Str(q.tm), lTyp.Str(q.tm), lhs.Str(q.tm))
-		} else if u.funcs[qqid] == nil {
-			return fmt.Errorf("check: no method named %q found in type %q for expression %q",
-				n.Ident().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
-		}
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.Ident(), lTyp.Node(), nil, nil))
-		return nil
-	}
-
 	f, err := q.c.builtInFunc(qqid)
 	if err != nil {
 		return err
@@ -1038,15 +1025,6 @@ swtch:
 	// TODO: also check t.KeyOpenParen.
 	case 0:
 		qid := typ.QID()
-		if qid[0] != 0 {
-			if u := q.c.usees[qid[0]]; u == nil {
-				return fmt.Errorf("check: cannot resolve %q in type %q", qid[0].Str(q.tm), typ.Str(q.tm))
-			} else if u.structs[qid] == nil {
-				return fmt.Errorf("check: cannot resolve type %q", typ.Str(q.tm))
-			}
-			break
-		}
-
 		if qid[1].IsNumType() {
 			for _, b := range typ.Bounds() {
 				if b == nil {

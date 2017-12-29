@@ -60,13 +60,6 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
-type usee struct {
-	consts   map[t.QID]*a.Const
-	funcs    map[t.QQID]*a.Func
-	statuses map[t.QID]*a.Status
-	structs  map[t.QID]*a.Struct
-}
-
 func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, error)) (*Checker, error) {
 	for _, f := range files {
 		if f == nil {
@@ -91,16 +84,16 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		}
 	}
 	c := &Checker{
-		tm:         tm,
-		resolveUse: resolveUse,
-		reasonMap:  rMap,
-		packageID:  base38.Max + 1,
-		consts:     map[t.QID]*a.Const{},
-		funcs:      map[t.QQID]*a.Func{},
-		localVars:  map[t.QQID]typeMap{},
-		statuses:   map[t.QID]*a.Status{},
-		structs:    map[t.QID]*a.Struct{},
-		usees:      map[t.ID]*usee{},
+		tm:           tm,
+		resolveUse:   resolveUse,
+		reasonMap:    rMap,
+		packageID:    base38.Max + 1,
+		consts:       map[t.QID]*a.Const{},
+		funcs:        map[t.QQID]*a.Func{},
+		localVars:    map[t.QQID]typeMap{},
+		statuses:     map[t.QID]*a.Status{},
+		structs:      map[t.QID]*a.Struct{},
+		useBaseNames: map[t.ID]struct{}{},
 	}
 
 	for _, phase := range phases {
@@ -162,9 +155,9 @@ type Checker struct {
 	statuses  map[t.QID]*a.Status
 	structs   map[t.QID]*a.Struct
 
-	// usees are the packages referred to in the `use "foo/bar"` lines. The
-	// keys are the use path base: `bar`, not `"foo/bar"`.
-	usees map[t.ID]*usee
+	// useBaseNames are the base names of packages referred to by `use
+	// "foo/bar"` lines. The keys are `bar`, not `"foo/bar"`.
+	useBaseNames map[t.ID]struct{}
 
 	builtInFuncs      map[t.QQID]*a.Func
 	builtInSliceFuncs map[t.QQID]*a.Func
@@ -219,13 +212,13 @@ func (c *Checker) checkUse(node *a.Node) error {
 	if !ok {
 		return fmt.Errorf("check: cannot resolve `use %s`", usePath.Str(c.tm))
 	}
-	base, err := c.tm.Insert(path.Base(filename))
+	baseName, err := c.tm.Insert(path.Base(filename))
 	if err != nil {
 		return fmt.Errorf("check: cannot resolve `use %s`: %v", usePath.Str(c.tm), err)
 	}
 	filename += ".wuffs"
-	if _, ok := c.usees[base]; ok {
-		return fmt.Errorf("check: duplicate use-name %q", base.Str(c.tm))
+	if _, ok := c.useBaseNames[baseName]; ok {
+		return fmt.Errorf("check: duplicate `use \"etc\"` base name %q", baseName.Str(c.tm))
 	}
 
 	if c.resolveUse == nil {
@@ -246,32 +239,52 @@ func (c *Checker) checkUse(node *a.Node) error {
 		return err
 	}
 
-	u := &usee{
-		consts:   map[t.QID]*a.Const{},
-		funcs:    map[t.QQID]*a.Func{},
-		statuses: map[t.QID]*a.Status{},
-		structs:  map[t.QID]*a.Struct{},
-	}
 	for _, n := range f.TopLevelDecls() {
-		if err := n.Raw().SetPackage(c.tm, base); err != nil {
+		if err := n.Raw().SetPackage(c.tm, baseName); err != nil {
 			return err
 		}
+
+		duplicate := ""
 		switch n.Kind() {
 		case a.KConst:
 			n := n.Const()
-			u.consts[n.QID()] = n
+			qid := n.QID()
+			if _, ok := c.consts[qid]; ok {
+				duplicate = qid.Str(c.tm)
+			} else {
+				c.consts[qid] = n
+			}
 		case a.KFunc:
 			n := n.Func()
-			u.funcs[n.QQID()] = n
+			qqid := n.QQID()
+			if _, ok := c.funcs[qqid]; ok {
+				duplicate = qqid.Str(c.tm)
+			} else {
+				c.funcs[qqid] = n
+			}
 		case a.KStatus:
 			n := n.Status()
-			u.statuses[n.QID()] = n
+			qid := n.QID()
+			if _, ok := c.statuses[qid]; ok {
+				duplicate = qid.Str(c.tm)
+			} else {
+				c.statuses[qid] = n
+			}
 		case a.KStruct:
 			n := n.Struct()
-			u.structs[n.QID()] = n
+			qid := n.QID()
+			if _, ok := c.structs[qid]; ok {
+				duplicate = qid.Str(c.tm)
+			} else {
+				c.structs[qid] = n
+			}
+		}
+
+		if duplicate != "" {
+			return fmt.Errorf("check: duplicate name %s", duplicate)
 		}
 	}
-	c.usees[base] = u
+	c.useBaseNames[baseName] = struct{}{}
 	return nil
 }
 
