@@ -47,7 +47,7 @@ var (
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
-	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, t.IDZero, nil, nil, nil, nil)
+	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.IDZero, nil, nil, nil, nil)
 )
 
 func init() {
@@ -163,7 +163,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	default:
 		op, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
-	o := a.NewExpr(n.Node().Raw().Flags(), op, 0, lhs.Node(), nil, rhs.Node(), args)
+	o := a.NewExpr(n.Node().Raw().Flags(), op, 0, 0, lhs.Node(), nil, rhs.Node(), args)
 	o.SetMType(n.MType())
 	return o, nil
 }
@@ -384,7 +384,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 
 		if lhs.Pure() && rhs.Pure() && lhs.MType().IsNumType() {
-			o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, lhs.Node(), nil, rhs.Node(), nil)
+			o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
 			o.SetMType(lhs.MType())
 			q.facts.appendFact(o)
 		}
@@ -403,13 +403,13 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			}
 			switch op.Key() {
 			case t.KeyPlusEq, t.KeyMinusEq:
-				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, xRHS.Node(), nil, rhs.Node(), nil)
+				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, 0, xRHS.Node(), nil, rhs.Node(), nil)
 				oRHS.SetMType(xRHS.MType())
 				oRHS, err := simplify(q.tm, oRHS)
 				if err != nil {
 					return nil, err
 				}
-				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, xLHS.Node(), nil, oRHS.Node(), nil)
+				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, 0, xLHS.Node(), nil, oRHS.Node(), nil)
 				o.SetMType(x.MType())
 				return o, nil
 			}
@@ -711,7 +711,7 @@ func (q *checker) bcheckVar(n *a.Var) error {
 			return err
 		}
 	}
-	lhs := a.NewExpr(a.FlagsTypeChecked, 0, n.Name(), nil, nil, nil, nil)
+	lhs := a.NewExpr(a.FlagsTypeChecked, 0, 0, n.Name(), nil, nil, nil, nil)
 	lhs.SetMType(n.XType())
 	rhs := n.Value()
 	if rhs == nil {
@@ -977,9 +977,9 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 }
 
 func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
-	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, t.IDLength, slice.Node(), nil, nil, nil)
+	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
 	x.SetMType(typeExprPlaceholder) // HACK.
-	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, x.Node(), nil, nil, nil)
+	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
 }
@@ -1163,7 +1163,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 		if i == 0 {
 			continue
 		}
-		lhs := a.NewExpr(n.Node().Raw().Flags(), n.Operator(), n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
+		lhs := a.NewExpr(n.Node().Raw().Flags(), n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
 		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.Expr(), depth)
 		if err != nil {
 			return nil, nil, err

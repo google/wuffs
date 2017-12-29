@@ -327,7 +327,7 @@ func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 func (n *Expr) SetProvenNotToSuspend()   { n.flags |= FlagsProvenNotToSuspend }
 
-func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
+func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {
 		flags |= lhs.flags & (FlagsImpure | FlagsSuspendible)
 	}
@@ -345,6 +345,7 @@ func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *
 		kind:  KExpr,
 		flags: flags,
 		id0:   operator,
+		id1:   statusPkg,
 		id2:   ident,
 		lhs:   lhs,
 		mhs:   mhs,

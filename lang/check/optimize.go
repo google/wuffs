@@ -289,7 +289,7 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 		if err != nil {
 			return nil, err
 		}
-		o := a.NewExpr(a.FlagsTypeChecked, 0, id, nil, nil, nil, nil)
+		o := a.NewExpr(a.FlagsTypeChecked, 0, 0, id, nil, nil, nil, nil)
 		o.SetConstValue(rcv)
 		o.SetMType(typeExprIdeal)
 
@@ -298,7 +298,7 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 		}
 		n.SetProvenNotToSuspend()
 
-		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, x.LHS(), nil, o.Node(), nil), nil
+		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.Node(), nil), nil
 	})
 }
 

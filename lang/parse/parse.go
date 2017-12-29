@@ -624,7 +624,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 				unrollStr, p.filename, p.line())
 		case "1", "2", "4", "8", "16", "32", "64", "128", "256":
 		}
-		unroll := a.NewExpr(0, 0, unrollID, nil, nil, nil, nil)
+		unroll := a.NewExpr(0, 0, 0, unrollID, nil, nil, nil, nil)
 
 		label, err := p.parseLabel()
 		if err != nil {
@@ -818,7 +818,7 @@ func (p *parser) parseDollarExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewExpr(0, t.IDDollar, 0, nil, nil, nil, args), nil
+	return a.NewExpr(0, t.IDDollar, 0, 0, nil, nil, nil, args), nil
 }
 
 func (p *parser) parseTryExpr() (*a.Expr, error) {
@@ -835,7 +835,7 @@ func (p *parser) parseTryExpr() (*a.Expr, error) {
 		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
 			call.Str(p.tm), p.filename, p.line())
 	}
-	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, call.Ident(),
+	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, 0, call.Ident(),
 		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
 }
 
@@ -874,7 +874,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 			if op == 0 {
 				return nil, fmt.Errorf(`parse: internal error: no binary form for token.Key 0x%02X`, x.Key())
 			}
-			return a.NewExpr(0, op, 0, lhs.Node(), nil, rhs, nil), nil
+			return a.NewExpr(0, op, 0, 0, lhs.Node(), nil, rhs, nil), nil
 		}
 
 		args := []*a.Node{lhs.Node(), rhs}
@@ -890,7 +890,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 		if op == 0 {
 			return nil, fmt.Errorf(`parse: internal error: no associative form for token.Key 0x%02X`, x.Key())
 		}
-		return a.NewExpr(0, op, 0, nil, nil, nil, args), nil
+		return a.NewExpr(0, op, 0, 0, nil, nil, nil, args), nil
 	}
 	return lhs, nil
 }
@@ -907,11 +907,11 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		if op == 0 {
 			return nil, fmt.Errorf(`parse: internal error: no unary form for token.Key 0x%02X`, x.Key())
 		}
-		return a.NewExpr(0, op, 0, nil, nil, rhs.Node(), nil), nil
+		return a.NewExpr(0, op, 0, 0, nil, nil, rhs.Node(), nil), nil
 
 	case x.IsLiteral():
 		p.src = p.src[1:]
-		return a.NewExpr(0, 0, x, nil, nil, nil, nil), nil
+		return a.NewExpr(0, 0, 0, x, nil, nil, nil, nil), nil
 
 	default:
 		switch x.Key() {
@@ -933,12 +933,13 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			p.src = p.src[1:]
 			message := p.peek1()
 			// TODO: parse the "pkg" in `error pkg."foo"`.
+			statusPkg := t.ID(0)
 			if !message.IsStrLiteral() {
 				got := p.tm.ByID(message)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewExpr(0, keyword, message, nil, nil, nil, nil), nil
+			return a.NewExpr(0, keyword, statusPkg, message, nil, nil, nil, nil), nil
 		}
 	}
 
@@ -946,7 +947,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	lhs := a.NewExpr(0, 0, id, nil, nil, nil, nil)
+	lhs := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
 
 	for {
 		flags := a.Flags(0)
@@ -967,14 +968,14 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(flags, t.IDOpenParen, 0, lhs.Node(), nil, nil, args)
+			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.Node(), nil, nil, args)
 
 		case t.KeyOpenBracket:
 			id0, mhs, rhs, err := p.parseBracket(t.IDColon)
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(0, id0, 0, lhs.Node(), mhs.Node(), rhs.Node(), nil)
+			lhs = a.NewExpr(0, id0, 0, 0, lhs.Node(), mhs.Node(), rhs.Node(), nil)
 
 		case t.KeyDot:
 			p.src = p.src[1:]
@@ -982,7 +983,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(0, t.IDDot, selector, lhs.Node(), nil, nil, nil)
+			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.Node(), nil, nil, nil)
 		}
 	}
 }
