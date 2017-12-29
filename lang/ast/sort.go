@@ -22,14 +22,14 @@ func TopologicalSortStructs(ns []*Struct) (sorted []*Struct, ok bool) {
 	// Algorithm is a depth-first search as per
 	// https://en.wikipedia.org/wiki/Topological_sorting#Depth-first_search
 	sorted = make([]*Struct, 0, len(ns))
-	byName := map[t.ID]*Struct{}
+	byQID := map[t.QID]*Struct{}
 	for _, n := range ns {
-		byName[n.Name()] = n
+		byQID[n.QID()] = n
 	}
 	marks := map[*Struct]uint8{}
 	for _, n := range ns {
 		if _, ok := marks[n]; !ok {
-			sorted, ok = tssVisit(sorted, n, byName, marks)
+			sorted, ok = tssVisit(sorted, n, byQID, marks)
 			if !ok {
 				return nil, false
 			}
@@ -38,7 +38,7 @@ func TopologicalSortStructs(ns []*Struct) (sorted []*Struct, ok bool) {
 	return sorted, true
 }
 
-func tssVisit(dst []*Struct, n *Struct, byName map[t.ID]*Struct, marks map[*Struct]uint8) ([]*Struct, bool) {
+func tssVisit(dst []*Struct, n *Struct, byQID map[t.QID]*Struct, marks map[*Struct]uint8) ([]*Struct, bool) {
 	const (
 		unmarked  = 0
 		temporary = 1
@@ -54,12 +54,9 @@ func tssVisit(dst []*Struct, n *Struct, byName map[t.ID]*Struct, marks map[*Stru
 
 	for _, f := range n.Fields() {
 		x := f.Field().XType().Innermost()
-		if x.Decorator() != 0 {
-			continue
-		}
-		if o := byName[x.Name()]; o != nil {
+		if o := byQID[x.QID()]; o != nil {
 			var ok bool
-			dst, ok = tssVisit(dst, o, byName, marks)
+			dst, ok = tssVisit(dst, o, byQID, marks)
 			if !ok {
 				return nil, false
 			}

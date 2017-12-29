@@ -511,7 +511,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return fmt.Errorf("check: %s is a slice expression but %s has type %s, not an array or slice type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		case t.KeyOpenBracket:
-			n.SetMType(a.NewTypeExpr(t.IDColon, 0, nil, nil, lTyp.Inner()))
+			n.SetMType(a.NewTypeExpr(t.IDColon, 0, 0, nil, nil, lTyp.Inner()))
 		case t.KeyColon:
 			n.SetMType(lTyp)
 		}
@@ -566,7 +566,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	}
 
 	genericType := (*a.TypeExpr)(nil)
-	if f.Receiver().Key() == t.KeyDiamond {
+	if f.Receiver() == (t.QID{0, t.IDDiamond}) {
 		genericType = lhs.MType().Receiver()
 	}
 
@@ -682,49 +682,51 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return err
 	}
 	lTyp := lhs.MType().Pointee()
-	qid := t.QID{lTyp.Name(), n.ID1()}
-	switch lTyp.Decorator().Key() {
-	case 0:
-		// No-op.
+	lQID := lTyp.QID()
+	qqid := t.QQID{lQID[0], lQID[1], n.ID1()}
 
-	case t.KeyColon:
+	if key := lTyp.Decorator().Key(); key == t.KeyColon {
 		// lTyp is a slice.
-		qid[0] = t.IDDiamond
-		if f, err := q.c.builtInSliceFunc(qid); err != nil {
+		qqid[0] = 0
+		qqid[1] = t.IDDiamond
+		if f, err := q.c.builtInSliceFunc(qqid); err != nil {
 			return err
 		} else if f == nil {
 			return fmt.Errorf("check: no slice method %q", n.ID1().Str(q.tm))
 		}
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.ID1(), lTyp.Node(), nil, nil))
 		return nil
+	} else if key != 0 {
+		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
+	}
 
-	default:
+	if qqid[0] != 0 {
 		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.
-		if u := q.c.usees[lTyp.Decorator()]; u == nil {
+		if u := q.c.usees[qqid[0]]; u == nil {
 			return fmt.Errorf("check: cannot resolve %q in type %q for expression %q",
-				lTyp.Decorator().Str(q.tm), lTyp.Str(q.tm), lhs.Str(q.tm))
-		} else if u.funcs[qid] == nil {
+				qqid[0].Str(q.tm), lTyp.Str(q.tm), lhs.Str(q.tm))
+		} else if u.funcs[qqid] == nil {
 			return fmt.Errorf("check: no method named %q found in type %q for expression %q",
 				n.ID1().Str(q.tm), lTyp.Str(q.tm), n.Str(q.tm))
 		}
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.ID1(), lTyp.Node(), nil, nil))
 		return nil
 	}
 
-	f, err := q.c.builtInFunc(qid)
+	f, err := q.c.builtInFunc(qqid)
 	if err != nil {
 		return err
 	} else if f == nil {
-		f = q.c.funcs[qid].Func
+		f = q.c.funcs[qqid].Func
 	}
 	if f != nil {
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, n.ID1(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.ID1(), lTyp.Node(), nil, nil))
 		return nil
 	}
 
 	s := (*a.Struct)(nil)
-	if q.f.Func != nil {
-		switch lTyp.Name().Key() {
+	if q.f.Func != nil && lQID[0] == 0 {
+		switch lQID[1].Key() {
 		case t.KeyIn:
 			s = q.f.Func.In()
 		case t.KeyOut:
@@ -732,9 +734,8 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		}
 	}
 	if s == nil {
-		name := lTyp.Name()
-		s = q.c.structs[name].Struct
-		if s == nil && builtInTypeMap[name] == nil {
+		s = q.c.structs[lQID].Struct
+		if s == nil && builtInTypeMap[lQID[1]] == nil {
 			return fmt.Errorf("check: no struct type %q found for expression %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 		}
 	}
@@ -1034,8 +1035,19 @@ func (q *checker) tcheckTypeExpr(typ *a.TypeExpr, depth uint32) error {
 
 swtch:
 	switch typ.Decorator().Key() {
+	// TODO: also check t.KeyOpenParen.
 	case 0:
-		if typ.Name().IsNumType() {
+		qid := typ.QID()
+		if qid[0] != 0 {
+			if u := q.c.usees[qid[0]]; u == nil {
+				return fmt.Errorf("check: cannot resolve %q in type %q", qid[0].Str(q.tm), typ.Str(q.tm))
+			} else if u.structs[qid] == nil {
+				return fmt.Errorf("check: cannot resolve type %q", typ.Str(q.tm))
+			}
+			break
+		}
+
+		if qid[1].IsNumType() {
 			for _, b := range typ.Bounds() {
 				if b == nil {
 					continue
@@ -1052,15 +1064,15 @@ swtch:
 		if typ.Min() != nil || typ.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		if _, ok := builtInTypeMap[typ.Name()]; ok {
+		if _, ok := builtInTypeMap[qid[1]]; ok {
 			break swtch
 		}
 		for _, s := range q.c.structs {
-			if s.ID == typ.Name() {
+			if s.QID == qid {
 				break swtch
 			}
 		}
-		return fmt.Errorf("check: %q is not a type", typ.Name().Str(q.tm))
+		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 
 	case t.KeyOpenBracket:
 		aLen := typ.ArrayLength()
@@ -1079,11 +1091,7 @@ swtch:
 		}
 
 	default:
-		if u := q.c.usees[typ.Decorator()]; u == nil {
-			return fmt.Errorf("check: cannot resolve %q in type %q", typ.Decorator().Str(q.tm), typ.Str(q.tm))
-		} else if u.structs[typ.Name()] == nil {
-			return fmt.Errorf("check: cannot resolve type %q", typ.Str(q.tm))
-		}
+		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
 	typ.Node().SetTypeChecked()
 	return nil

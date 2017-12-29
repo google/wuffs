@@ -66,7 +66,7 @@ type Const struct {
 }
 
 type Func struct {
-	QID       t.QID // Qualified ID of the func name.
+	QQID      t.QQID // Double-qualified ID of the func name.
 	Func      *a.Func
 	LocalVars TypeMap
 }
@@ -77,15 +77,15 @@ type Status struct {
 }
 
 type Struct struct {
-	ID     t.ID // ID of the struct name.
+	QID    t.QID // Qualified ID of the struct name.
 	Struct *a.Struct
 }
 
 type usee struct {
 	consts   map[t.QID]*a.Const
-	funcs    map[t.QID]*a.Func
+	funcs    map[t.QQID]*a.Func
 	statuses map[t.QID]*a.Status
-	structs  map[t.ID]*a.Struct
+	structs  map[t.QID]*a.Struct
 }
 
 func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, error)) (*Checker, error) {
@@ -117,9 +117,9 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		reasonMap:  rMap,
 		packageID:  base38.Max + 1,
 		consts:     map[t.QID]Const{},
-		funcs:      map[t.QID]Func{},
+		funcs:      map[t.QQID]Func{},
 		statuses:   map[t.QID]Status{},
-		structs:    map[t.ID]Struct{},
+		structs:    map[t.QID]Struct{},
 		usees:      map[t.ID]*usee{},
 	}
 
@@ -177,24 +177,24 @@ type Checker struct {
 	otherPackageID *a.PackageID
 
 	consts   map[t.QID]Const
-	funcs    map[t.QID]Func
+	funcs    map[t.QQID]Func
 	statuses map[t.QID]Status
-	structs  map[t.ID]Struct
+	structs  map[t.QID]Struct
 
 	// usees are the packages referred to in the `use "foo/bar"` lines. The
 	// keys are the use path base: `bar`, not `"foo/bar"`.
 	usees map[t.ID]*usee
 
-	builtInFuncs      map[t.QID]*a.Func
-	builtInSliceFuncs map[t.QID]*a.Func
+	builtInFuncs      map[t.QQID]*a.Func
+	builtInSliceFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct
 }
 
 func (c *Checker) PackageID() uint32          { return c.packageID }
 func (c *Checker) Consts() map[t.QID]Const    { return c.consts }
-func (c *Checker) Funcs() map[t.QID]Func      { return c.funcs }
+func (c *Checker) Funcs() map[t.QQID]Func     { return c.funcs }
 func (c *Checker) Statuses() map[t.QID]Status { return c.statuses }
-func (c *Checker) Structs() map[t.ID]Struct   { return c.structs }
+func (c *Checker) Structs() map[t.QID]Struct  { return c.structs }
 
 func (c *Checker) checkPackageID(node *a.Node) error {
 	n := node.PackageID()
@@ -271,9 +271,9 @@ func (c *Checker) checkUse(node *a.Node) error {
 
 	u := &usee{
 		consts:   map[t.QID]*a.Const{},
-		funcs:    map[t.QID]*a.Func{},
+		funcs:    map[t.QQID]*a.Func{},
 		statuses: map[t.QID]*a.Status{},
-		structs:  map[t.ID]*a.Struct{},
+		structs:  map[t.QID]*a.Struct{},
 	}
 	for _, n := range f.TopLevelDecls() {
 		if err := n.Raw().SetPackage(c.tm, base); err != nil {
@@ -285,13 +285,13 @@ func (c *Checker) checkUse(node *a.Node) error {
 			u.consts[n.QID()] = n
 		case a.KFunc:
 			n := n.Func()
-			u.funcs[n.QID()] = n
+			u.funcs[n.QQID()] = n
 		case a.KStatus:
 			n := n.Status()
 			u.statuses[n.QID()] = n
 		case a.KStruct:
 			n := n.Struct()
-			u.structs[n.Name()] = n
+			u.structs[n.QID()] = n
 		}
 	}
 	c.usees[base] = u
@@ -393,18 +393,18 @@ func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLi
 
 func (c *Checker) checkStructDecl(node *a.Node) error {
 	n := node.Struct()
-	id := n.Name()
-	if other, ok := c.structs[id]; ok {
+	qid := n.QID()
+	if other, ok := c.structs[qid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate struct %q", id.Str(c.tm)),
+			Err:           fmt.Errorf("check: duplicate struct %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Struct.Filename(),
 			OtherLine:     other.Struct.Line(),
 		}
 	}
-	c.structs[id] = Struct{
-		ID:     id,
+	c.structs[qid] = Struct{
+		QID:    qid,
 		Struct: n,
 	}
 	c.unsortedStructs = append(c.unsortedStructs, n)
@@ -422,7 +422,7 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 	n := node.Struct()
 	if err := c.checkFields(n.Fields(), true); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in struct %q", err, n.Name().Str(c.tm)),
+			Err:      fmt.Errorf("%v in struct %s", err, n.QID().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -455,7 +455,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 		}
 		if dv := f.DefaultValue(); dv != nil {
 			if f.XType().Decorator() != 0 {
-				return fmt.Errorf("check: cannot set default value for qualified type %q for field %q",
+				return fmt.Errorf("check: cannot set default value for type %q for field %q",
 					f.XType().Str(c.tm), f.Name().Str(c.tm))
 			}
 			if err := q.tcheckExpr(dv, 0); err != nil {
@@ -476,7 +476,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.Func()
 	if err := c.checkFields(n.In().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in in-params for func %q", err, n.Name().Str(c.tm)),
+			Err:      fmt.Errorf("%v in in-params for func %s", err, n.QQID().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -484,7 +484,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %q", err, n.Name().Str(c.tm)),
+			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
 			Filename: n.Filename(),
 			Line:     n.Line(),
 		}
@@ -495,10 +495,10 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	// suspendible), that we end with a return statement? Or is that an
 	// implicit "return out"?
 
-	qid := n.QID()
-	if other, ok := c.funcs[qid]; ok {
+	qqid := n.QQID()
+	if other, ok := c.funcs[qqid]; ok {
 		return &Error{
-			Err:           fmt.Errorf("check: duplicate function %q", qid.Str(c.tm)),
+			Err:           fmt.Errorf("check: duplicate function %s", qqid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
 			OtherFilename: other.Func.Filename(),
@@ -506,30 +506,32 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 
-	inTyp := a.NewTypeExpr(0, n.In().Name(), nil, nil, nil)
+	iQID := n.In().QID()
+	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
 	inTyp.Node().SetTypeChecked()
-	outTyp := a.NewTypeExpr(0, n.Out().Name(), nil, nil, nil)
+	oQID := n.Out().QID()
+	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
 	outTyp.Node().SetTypeChecked()
 	localVars := TypeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
 	}
-	if qid[0] != 0 {
-		if _, ok := c.structs[qid[0]]; !ok {
+	if qqid[1] != 0 {
+		if _, ok := c.structs[t.QID{qqid[0], qqid[1]}]; !ok {
 			return &Error{
-				Err:      fmt.Errorf("check: no receiver struct defined for function %q", qid.Str(c.tm)),
+				Err:      fmt.Errorf("check: no receiver struct defined for function %s", qqid.Str(c.tm)),
 				Filename: n.Filename(),
 				Line:     n.Line(),
 			}
 		}
-		sTyp := a.NewTypeExpr(0, qid[0], nil, nil, nil)
+		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
 		sTyp.Node().SetTypeChecked()
-		pTyp := a.NewTypeExpr(t.IDPtr, 0, nil, nil, sTyp)
+		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
 		pTyp.Node().SetTypeChecked()
 		localVars[t.IDThis] = pTyp
 	}
-	c.funcs[qid] = Func{
-		QID:       qid,
+	c.funcs[qqid] = Func{
+		QQID:      qqid,
 		Func:      n,
 		LocalVars: localVars,
 	}
@@ -559,7 +561,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		c:         c,
 		tm:        c.tm,
 		reasonMap: c.reasonMap,
-		f:         c.funcs[n.QID()],
+		f:         c.funcs[n.QQID()],
 	}
 
 	// Fill in the TypeMap with all local variables. Note that they have
@@ -630,10 +632,11 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
 	n := node.Struct()
 	for _, o := range n.Fields() {
-		qid := t.QID{n.Name(), o.Field().Name()}
-		if _, ok := c.funcs[qid]; ok {
+		nQID := n.QID()
+		qqid := t.QQID{nQID[0], nQID[1], o.Field().Name()}
+		if _, ok := c.funcs[qqid]; ok {
 			return fmt.Errorf("check: struct %q has both a field and method named %q",
-				qid[0].Str(c.tm), qid[1].Str(c.tm))
+				nQID.Str(c.tm), qqid[2].Str(c.tm))
 		}
 	}
 	return nil

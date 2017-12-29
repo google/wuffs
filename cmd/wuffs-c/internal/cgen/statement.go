@@ -275,8 +275,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				return err
 			}
 		}
-		switch n.XType().Decorator().Key() {
-		case t.KeyOpenBracket:
+		if n.XType().Decorator().Key() == t.KeyOpenBracket {
 			if n.Value() != nil {
 				// TODO: something like:
 				// cv := n.XType().ArrayLength().ConstValue()
@@ -289,7 +288,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			name := n.Name().Str(g.tm)
 			b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
 
-		default:
+		} else {
 			b.printf("%s%s = ", vPrefix, n.Name().Str(g.tm))
 			if v := n.Value(); v != nil {
 				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
@@ -487,7 +486,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.usesScratch = true
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
+			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 		b.printf("%s = ", scratchName)
 		x := n.Args()[0].Arg().Value()
@@ -715,7 +714,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	g.currFunk.usesScratch = true
 	// TODO: don't hard-code [0], and allow recursive coroutines.
 	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-		cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
+		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
 	b.printf("%s%d = wuffs_base__load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)

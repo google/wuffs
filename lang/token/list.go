@@ -99,12 +99,30 @@ func (x ID) IsXAssociativeOp() bool { return x.Key().isXOp() && x.IsAssociativeO
 // "bar"'s. QID[0] may be 0 for a plain "bar".
 type QID [2]ID
 
+func (x QID) IsZero() bool { return x == QID{} }
+
 // Str returns a string form of x.
 func (x QID) Str(m *Map) string {
-	if x[0] == 0 {
-		return m.ByID(x[1])
+	if x[0] != 0 {
+		return m.ByID(x[0]) + "." + m.ByID(x[1])
 	}
-	return m.ByID(x[0]) + "." + m.ByID(x[1])
+	return m.ByID(x[1])
+}
+
+// QQID is a double-qualified ID, such as "receiverPkg.receiverName.funcName".
+type QQID [3]ID
+
+func (x QQID) IsZero() bool { return x == QQID{} }
+
+// Str returns a string form of x.
+func (x QQID) Str(m *Map) string {
+	if x[0] != 0 {
+		return m.ByID(x[0]) + "." + m.ByID(x[1]) + "." + m.ByID(x[2])
+	}
+	if x[1] != 0 {
+		return m.ByID(x[1]) + "." + m.ByID(x[2])
+	}
+	return m.ByID(x[2])
 }
 
 // Token combines an ID and the line number it was seen.

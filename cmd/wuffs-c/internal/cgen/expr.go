@@ -440,7 +440,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		return nil
 
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
-		status := g.statusMap[n.ID1()]
+		status := g.statusMap[t.QID{0, n.ID1()}]
 		if status.name == "" {
 			msg, _ := t.Unescape(n.ID1().Str(g.tm))
 			z := builtin.StatusMap[msg]
@@ -523,7 +523,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	// arrays of slices, slices of pointers, etc.
 	if n.IsSliceType() {
 		o := n.Inner()
-		if o.Decorator() == 0 && o.Name().Key() == t.KeyU8 && !o.IsRefined() {
+		if o.Decorator() == 0 && o.QID() == (t.QID{0, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")
 			b.writeb(' ')
 			b.writes(varNamePrefix)
@@ -555,16 +555,19 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	fallback := true
-	if key := innermost.Name().Key(); key < t.Key(len(cTypeNames)) {
-		if s := cTypeNames[key]; s != "" {
-			b.writes(s)
-			fallback = false
+	if qid := innermost.QID(); qid[0] == 0 {
+		if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
+			if s := cTypeNames[key]; s != "" {
+				b.writes(s)
+				fallback = false
+			}
 		}
 	}
 	if fallback {
 		prefix := g.pkgPrefix
-		if otherPkgID := innermost.Decorator(); otherPkgID != 0 {
-			otherPkg := g.tm.ByID(otherPkgID)
+		qid := innermost.QID()
+		if qid[0] != 0 {
+			otherPkg := g.tm.ByID(qid[0])
 			// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
 			// `use "std/deflate"`, and use the latter "deflate".
 			//
@@ -578,7 +581,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 			// See gen.writeInitializerImpl for a similar use of otherPkg.
 			prefix = "wuffs_" + otherPkg + "__"
 		}
-		b.printf("%s%s", prefix, innermost.Name().Str(g.tm))
+		b.printf("%s%s", prefix, qid[1].Str(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {

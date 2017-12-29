@@ -127,7 +127,7 @@ func TestCheck(tt *testing.T) {
 		break
 	}
 
-	if got, want := fooBar.QID.Str(tm), "foo.bar"; got != want {
+	if got, want := fooBar.QQID.Str(tm), "foo.bar"; got != want {
 		tt.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 

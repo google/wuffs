@@ -176,7 +176,7 @@ func (n *TypeExpr) Str(tm *t.Map) string {
 		return ""
 	}
 	if n.Decorator() == 0 && n.Min() == nil && n.Max() == nil {
-		return tm.ByID(n.Name())
+		return n.QID().Str(tm)
 	}
 	return string(n.appendStr(nil, tm, 0))
 }
@@ -192,7 +192,7 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 
 	switch n.Decorator().Key() {
 	case 0:
-		buf = append(buf, tm.ByID(n.Name())...)
+		buf = append(buf, n.QID().Str(tm)...)
 	case t.KeyPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendStr(buf, tm, depth)
@@ -208,11 +208,9 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 		buf = append(buf, "func "...)
 		buf = n.Receiver().appendStr(buf, tm, depth)
 		buf = append(buf, '.')
-		return append(buf, tm.ByID(n.Name())...)
+		return append(buf, n.FuncName().Str(tm)...)
 	default:
-		buf = append(buf, tm.ByID(n.Decorator())...)
-		buf = append(buf, '.')
-		buf = append(buf, tm.ByID(n.Name())...)
+		return append(buf, "!invalid_type!"...)
 	}
 	if n.Min() != nil || n.Max() != nil {
 		buf = append(buf, '[')

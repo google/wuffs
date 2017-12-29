@@ -58,10 +58,13 @@ func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
 }
 
 func (g *gen) funcCName(n *a.Func) string {
-	if r := n.Receiver(); r != 0 {
-		return g.pkgPrefix + r.Str(g.tm) + "__" + n.Name().Str(g.tm)
+	if r := n.Receiver(); !r.IsZero() {
+		// TODO: this isn't right if r[0] != 0, i.e. the receiver is from a
+		// used package. There might be similar cases elsewhere in this
+		// package.
+		return g.pkgPrefix + r.Str(g.tm) + "__" + n.FuncName().Str(g.tm)
 	}
-	return g.pkgPrefix + n.Name().Str(g.tm)
+	return g.pkgPrefix + n.FuncName().Str(g.tm)
 }
 
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
@@ -87,7 +90,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 	b.writeb('(')
 
 	comma := false
-	if r := n.Receiver(); r != 0 {
+	if r := n.Receiver(); !r.IsZero() {
 		b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
 		comma = true
 	}
@@ -115,7 +118,7 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 }
 
 func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
-	k := g.funks[n.QID()]
+	k := g.funks[n.QQID()]
 
 	if err := g.writeFuncSignature(b, n); err != nil {
 		return err
@@ -161,13 +164,13 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	if g.currFunk.tempW != g.currFunk.tempR {
 		return fmt.Errorf("internal error: temporary variable count out of sync")
 	}
-	g.funks[n.QID()] = g.currFunk
+	g.funks[n.QQID()] = g.currFunk
 	return nil
 }
 
 func (g *gen) writeFuncImplHeader(b *buffer) error {
 	// Check the previous status and the "self" arg.
-	if g.currFunk.public && g.currFunk.astFunc.Receiver() != 0 {
+	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
 		b.writes("if (!self) {")
 		if g.currFunk.suspendible {
 			b.printf("return %sERROR_BAD_RECEIVER;", g.PKGPREFIX)
@@ -224,7 +227,7 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 	if g.currFunk.suspendible {
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0].coro_susp_point;\n",
-			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
+			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.printf("if (coro_susp_point) {\n")
 		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), false); err != nil {
 			return err
@@ -256,14 +259,14 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		b.writes("\ngoto ok;\n") // Avoid the "unused label" warning.
 		b.writes("ok:\n")
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = 0;\n",
-			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
+			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.writes("goto exit; }\n\n") // Close the coroutine switch.
 
 		b.writes("goto suspend;\n") // Avoid the "unused label" warning.
 		b.writes("suspend:\n")
 
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
-			cPrefix, g.currFunk.astFunc.Name().Str(g.tm))
+			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), true); err != nil {
 			return err
 		}
@@ -330,12 +333,14 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 					}
 				}
 			}
-			if key := oTyp.Name().Key(); key < t.Key(len(numTypeBounds)) {
-				ntb := numTypeBounds[key]
-				for i := 0; i < 2; i++ {
-					if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
-						bounds[i] = nil
-						continue
+			if qid := oTyp.QID(); qid[0] == 0 {
+				if key := qid[1].Key(); key < t.Key(len(numTypeBounds)) {
+					ntb := numTypeBounds[key]
+					for i := 0; i < 2; i++ {
+						if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
+							bounds[i] = nil
+							continue
+						}
 					}
 				}
 			}
@@ -365,7 +370,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	b.writes(") {")
 	if g.currFunk.suspendible {
 		b.printf("status = %sERROR_BAD_ARGUMENT; goto exit;", g.PKGPREFIX)
-	} else if n.Receiver() != 0 {
+	} else if !n.Receiver().IsZero() {
 		b.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT; return;", g.PKGPREFIX)
 	} else {
 		b.printf("return;")

@@ -143,15 +143,15 @@ type Node struct {
 	// Expr          operator      literal/ident .             Expr
 	// Field         .             .             name          Field
 	// File          .             .             .             File
-	// Func          receiver      .             name          Func
+	// Func          funcName      receiverPkg   receiverName  Func
 	// If            .             .             .             If
 	// Iterate       .             label         .             Iterate
 	// Jump          keyword       label         .             Jump
 	// PackageID     .             literal       .             PackageID
 	// Ret           keyword       .             .             Ret
 	// Status        keyword       pkg           literal       Status
-	// Struct        .             .             name          Struct
-	// TypeExpr      decorator     .             name          TypeExpr
+	// Struct        .             pkg           name          Struct
+	// TypeExpr      decorator     pkg           name          TypeExpr
 	// Use           .             literal       .             Use
 	// Var           operator      .             name          Var
 	// While         .             label         .             While
@@ -238,11 +238,21 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 	return n.Node().Walk(func(o *Node) error {
 		switch o.Kind() {
-		case KConst, KStatus:
+		case KConst, KFunc, KStatus, KStruct, KTypeExpr:
 			if o.id1 != 0 {
 				return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
 					pkg.Str(tm), o.id1.Str(tm))
 			}
+
+			// TODO: Add signed integer types, as per the builtin.Types var?
+			//
+			// Or, don't hard code these, and instead require built-in types to
+			// have qualified names, such as "builtin.u8" or "base.reader1"?
+			switch o.id2.Key() {
+			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64, t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
+				return nil
+			}
+
 			o.id1 = pkg
 		}
 		return nil
@@ -574,7 +584,8 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
 // T", "[8] T" or "[] T":
-//  - ID0:   <0|package name|IDPtr|IDOpenBracket|IDColon>
+//  - ID0:   <0|IDPtr|IDOpenBracket|IDColon|IDOpenParen>
+//  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
@@ -586,23 +597,25 @@ const MaxTypeExprDepth = 63
 //
 // An IDColon ID0 means "[] RHS". RHS is the inner type.
 //
-// An IDOpenParen ID0 means "LHS.ID1", a function or method type. LHS is the
+// An IDOpenParen ID0 means "LHS.ID2", a function or method type. LHS is the
 // receiver type, which may be nil. If non-nil, it will be a pointee type: "T"
 // instead of "ptr T", "ptr ptr T", etc.
 //
 // TODO: method effects: "foo" vs "foo!" vs "foo?".
 //
-// Other ID0 values mean a (possibly package-qualified) type like "pkg.foo" or
-// "foo". ID0 is the "pkg" or zero, ID1 is the "foo". Such a type can be
-// refined as "foo[LHS..MHS]". LHS and MHS are Expr's, possibly nil. For
-// example, the LHS for "u32[..4095]" is nil.
+// A zero ID0 means a (possibly package-qualified) type like "pkg.foo" or
+// "foo". ID1 is the "pkg" or zero, ID2 is the "foo".
 //
-// TODO: struct types, list types.
+// Numeric types can be refined as "foo[LHS..MHS]". LHS and MHS are Expr's,
+// possibly nil. For example, the LHS for "u32[..4095]" is nil.
+//
+// TODO: struct types, list types, nptr vs ptr.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node         { return (*Node)(n) }
 func (n *TypeExpr) Decorator() t.ID     { return n.id0 }
-func (n *TypeExpr) Name() t.ID          { return n.id2 }
+func (n *TypeExpr) QID() t.QID          { return t.QID{n.id1, n.id2} }
+func (n *TypeExpr) FuncName() t.ID      { return n.id2 }
 func (n *TypeExpr) ArrayLength() *Expr  { return n.lhs.Expr() }
 func (n *TypeExpr) Receiver() *TypeExpr { return n.lhs.TypeExpr() }
 func (n *TypeExpr) Bounds() [2]*Expr    { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
@@ -676,10 +689,11 @@ func (n *TypeExpr) Unrefined() *TypeExpr {
 	return &o
 }
 
-func NewTypeExpr(decorator t.ID, name t.ID, alenRecvMin *Node, max *Expr, inner *TypeExpr) *TypeExpr {
+func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Expr, inner *TypeExpr) *TypeExpr {
 	return &TypeExpr{
 		kind: KTypeExpr,
 		id0:  decorator,
+		id1:  pkg,
 		id2:  name,
 		lhs:  alenRecvMin,
 		mhs:  max.Node(),
@@ -694,8 +708,9 @@ const MaxBodyDepth = 255
 //  - FlagsImpure      is "ID1" vs "ID1!"
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - FlagsPublic      is "pub" vs "pri"
-//  - ID0:   <0|receiver>
-//  - ID2:   name
+//  - ID0:   funcName
+//  - ID1:   <0|receiverPkg> (set by calling SetPackage)
+//  - ID2:   <0|receiverName>
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
 //  - List1: <Assert> asserts
@@ -720,22 +735,22 @@ func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Func) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Func) Filename() string  { return n.filename }
 func (n *Func) Line() uint32      { return n.line }
-func (n *Func) QID() t.QID        { return t.QID{n.id0, n.id2} }
-func (n *Func) Receiver() t.ID    { return n.id0 }
-func (n *Func) Name() t.ID        { return n.id2 }
+func (n *Func) QQID() t.QQID      { return t.QQID{n.id1, n.id2, n.id0} }
+func (n *Func) Receiver() t.QID   { return t.QID{n.id1, n.id2} }
+func (n *Func) FuncName() t.ID    { return n.id0 }
 func (n *Func) In() *Struct       { return n.lhs.Struct() }
 func (n *Func) Out() *Struct      { return n.rhs.Struct() }
 func (n *Func) Asserts() []*Node  { return n.list1 }
 func (n *Func) Body() []*Node     { return n.list2 }
 
-func NewFunc(flags Flags, filename string, line uint32, receiver t.ID, name t.ID, in *Struct, out *Struct, asserts []*Node, body []*Node) *Func {
+func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *Struct, asserts []*Node, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
 		flags:    flags,
 		filename: filename,
 		line:     line,
-		id0:      receiver,
-		id2:      name,
+		id0:      funcName,
+		id2:      receiverName,
 		lhs:      in.Node(),
 		rhs:      out.Node(),
 		list1:    asserts,
@@ -799,6 +814,7 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 // Struct is "struct ID1(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - FlagsPublic      is "pub" vs "pri"
+//  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
 //  - List0: <Field> fields
 type Struct Node
@@ -808,7 +824,7 @@ func (n *Struct) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Struct) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string  { return n.filename }
 func (n *Struct) Line() uint32      { return n.line }
-func (n *Struct) Name() t.ID        { return n.id2 }
+func (n *Struct) QID() t.QID        { return t.QID{n.id1, n.id2} }
 func (n *Struct) Fields() []*Node   { return n.list0 }
 
 func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*Node) *Struct {

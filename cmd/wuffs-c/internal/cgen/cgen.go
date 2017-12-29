@@ -165,21 +165,21 @@ type gen struct {
 	files   []*a.File
 
 	statusList []status
-	statusMap  map[t.ID]status
+	statusMap  map[t.QID]status
 	structList []*a.Struct
-	structMap  map[t.ID]*a.Struct
+	structMap  map[t.QID]*a.Struct
 	usesList   []string
 	usesMap    map[string]struct{}
 
 	currFunk  funk
-	funks     map[t.QID]funk
+	funks     map[t.QQID]funk
 	wuffsRoot string
 }
 
 func (g *gen) generate() ([]byte, error) {
 	b := new(buffer)
 
-	g.statusMap = map[t.ID]status{}
+	g.statusMap = map[t.QID]status{}
 	if err := g.forEachStatus(b, bothPubPri, (*gen).gatherStatuses); err != nil {
 		return nil, err
 	}
@@ -198,12 +198,12 @@ func (g *gen) generate() ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("cyclical struct definitions")
 	}
-	g.structMap = map[t.ID]*a.Struct{}
+	g.structMap = map[t.QID]*a.Struct{}
 	for _, n := range g.structList {
-		g.structMap[n.Name()] = n
+		g.structMap[n.QID()] = n
 	}
 
-	g.funks = map[t.QID]funk{}
+	g.funks = map[t.QQID]funk{}
 	if err := g.forEachFunc(nil, bothPubPri, (*gen).gatherFuncImpl); err != nil {
 		return nil, err
 	}
@@ -455,15 +455,17 @@ func (g *gen) cName(name string) string {
 
 func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 	if typ.Decorator() == 0 {
-		switch typ.Name().Key() {
-		case t.KeyU8:
-			return 1, nil
-		case t.KeyU16:
-			return 2, nil
-		case t.KeyU32:
-			return 4, nil
-		case t.KeyU64:
-			return 8, nil
+		if qid := typ.QID(); qid[0] == 0 {
+			switch qid[1].Key() {
+			case t.KeyU8:
+				return 1, nil
+			case t.KeyU16:
+				return 2, nil
+			case t.KeyU32:
+				return 4, nil
+			case t.KeyU64:
+				return 8, nil
+			}
 		}
 	}
 	return 0, fmt.Errorf("unknown sizeof for %q", typ.Str(g.tm))
@@ -485,7 +487,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 		keyword: n.Keyword(),
 	}
 	g.statusList = append(g.statusList, s)
-	g.statusMap[n.QID()[1]] = s
+	g.statusMap[n.QID()] = s
 	return nil
 }
 
@@ -530,7 +532,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// set "self->private_impl.status = WUFFS_ETC__ERROR_BAD_WUFFS_VERSION;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
-	structName := n.Name().Str(g.tm)
+	structName := n.QID().Str(g.tm)
 	b.writes("typedef struct {\n")
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
@@ -562,10 +564,10 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 					continue
 				}
 				o := tld.Func()
-				if o.Receiver() != n.Name() || !o.Suspendible() {
+				if o.Receiver() != n.QID() || !o.Suspendible() {
 					continue
 				}
-				k := g.funks[o.QID()]
+				k := g.funks[o.QQID()]
 				if k.coroSuspPoint == 0 && !k.usesScratch {
 					continue
 				}
@@ -581,7 +583,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				if k.usesScratch {
 					b.writes("uint64_t scratch;\n")
 				}
-				b.printf("} %s%s[%d];\n", cPrefix, o.Name().Str(g.tm), maxDepth)
+				b.printf("} %s%s[%d];\n", cPrefix, o.FuncName().Str(g.tm), maxDepth)
 			}
 		}
 	}
@@ -645,7 +647,7 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 }
 
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
-	structName := n.Name().Str(g.tm)
+	structName := n.QID().Str(g.tm)
 	if public {
 		b.printf("// %s%s__initialize is an initializer function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
@@ -707,17 +709,18 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		}
 
 		prefix := g.pkgPrefix
-		if otherPkgID := x.Decorator(); otherPkgID != 0 {
+		qid := x.QID()
+		if qid[0] != 0 {
 			// See gen.writeCTypeName for a related TODO with otherPkg.
-			otherPkg := g.tm.ByID(otherPkgID)
+			otherPkg := g.tm.ByID(qid[0])
 			prefix = "wuffs_" + otherPkg + "__"
-		} else if g.structMap[x.Name()] == nil {
+		} else if g.structMap[qid] == nil {
 			// Skip field types like u32 and bool.
 			continue
 		}
 
 		b.printf("%s%s__initialize(&self->private_impl.%s%s, WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);\n",
-			prefix, x.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
+			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm))
 	}
 
 	b.writes("}\n\n")

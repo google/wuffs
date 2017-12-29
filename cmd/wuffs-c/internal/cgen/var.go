@@ -63,8 +63,11 @@ func (g *gen) findDerivedVars() {
 		if oTyp.Decorator() != 0 {
 			continue
 		}
-		if key := oTyp.Name().Key(); key != t.KeyReader1 && key != t.KeyWriter1 {
+		switch oTyp.QID() {
+		default:
 			continue
+		case t.QID{0, t.IDReader1}, t.QID{0, t.IDWriter1}:
+			// No-op.
 		}
 		if !g.needDerivedVar(o.Name()) {
 			continue
@@ -90,8 +93,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 		return nil
 	}
 	nameStr := name.Str(g.tm)
-	switch typ.Name().Key() {
-	case t.KeyReader1:
+	switch typ.QID() {
+	case t.QID{0, t.IDReader1}:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
@@ -119,7 +122,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("}\n")
 
-	case t.KeyWriter1:
+	case t.QID{0, t.IDWriter1}:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
@@ -167,8 +170,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		return nil
 	}
 	nameStr := name.Str(g.tm)
-	switch typ.Name().Key() {
-	case t.KeyReader1:
+	switch typ.QID() {
+	case t.QID{0, t.IDReader1}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
@@ -189,7 +192,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 
 		b.printf("}\n")
 
-	case t.KeyWriter1:
+	case t.QID{0, t.IDWriter1}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
@@ -304,8 +307,10 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 
 		switch typ.Decorator().Key() {
 		case 0:
-			if key := typ.Name().Key(); key < t.Key(len(cTypeNames)) {
-				rhs = cTypeNames[key]
+			if qid := typ.QID(); qid[0] == 0 {
+				if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
+					rhs = cTypeNames[key]
+				}
 			}
 		case t.KeyColon:
 			// TODO: don't assume that the slice is a slice of u8.
@@ -319,7 +324,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 	} else {
 		lhs := local
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.Name().Str(g.tm), lhs)
+		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
 		if suspend {
 			lhs, rhs = rhs, lhs
 		}
@@ -333,7 +338,11 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 			if inner.Decorator() != 0 {
 				break
 			}
-			switch inner.Name().Key() {
+			qid := inner.QID()
+			if qid[0] != 0 {
+				break
+			}
+			switch qid[1].Key() {
 			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64:
 				b.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
 				return nil

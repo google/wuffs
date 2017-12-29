@@ -170,8 +170,10 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 
 func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	b := [2]*big.Int{}
-	if key := typ.Name().Key(); typ.Decorator() == 0 && key < t.Key(len(numTypeBounds)) {
-		b = numTypeBounds[key]
+	if typ.Decorator() == 0 {
+		if qid := typ.QID(); qid[0] == 0 && qid[1].Key() < t.Key(len(numTypeBounds)) {
+			b = numTypeBounds[qid[1].Key()]
+		}
 	}
 	if b[0] == nil || b[1] == nil {
 		return nil, nil, nil
@@ -940,7 +942,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			lTyp := n.LHS().Expr().MType()
 			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
-				n.ID1().Str(q.tm), lTyp.Name().Str(q.tm), n.Str(q.tm))
+				n.ID1().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
@@ -1135,8 +1137,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		if typ.IsIdeal() {
 			typ = rhs.MType()
 		}
-		b := numTypeBounds[typ.Name().Key()]
-		return b[0], b[1], nil
+		if qid := typ.QID(); qid[0] == 0 {
+			b := numTypeBounds[qid[1].Key()]
+			return b[0], b[1], nil
+		}
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
 }
@@ -1175,18 +1179,26 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	switch typ.Decorator().Key() {
+	// TODO: case t.KeyOpenParen.
 	case t.KeyPtr, t.KeyOpenBracket, t.KeyColon:
 		return nil, nil, nil
 	}
-	switch typ.Name().Key() {
-	case t.KeyReader1, t.KeyWriter1:
-		return nil, nil, nil
+
+	// TODO: is the special cases for reader1 and writer1 superfluous with the
+	// general purpose code for built-ins below?
+	if qid := typ.QID(); qid[0] == 0 {
+		switch qid[1].Key() {
+		case t.KeyReader1, t.KeyWriter1:
+			return nil, nil, nil
+		}
 	}
 
 	b := [2]*big.Int{}
-	if key := typ.Name().Key(); key < t.Key(len(numTypeBounds)) {
-		b = numTypeBounds[key]
+	if qid := typ.QID(); qid[0] == 0 && qid[1].Key() < t.Key(len(numTypeBounds)) {
+		b = numTypeBounds[qid[1].Key()]
 	}
+	// TODO: should || be && instead (see also func typeBounds)? Is this if
+	// code superfluous?
 	if b[0] == nil || b[1] == nil {
 		return nil, nil, nil
 	}
