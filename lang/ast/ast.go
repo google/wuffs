@@ -137,7 +137,7 @@ type Node struct {
 	// kind          id0           id1           id2           kind
 	// ------------------------------------------------------------
 	// Arg           .             .             name          Arg
-	// Assert        keyword       reason        .             Assert
+	// Assert        keyword       .             lit(reason)   Assert
 	// Assign        operator      .             .             Assign
 	// Const         .             pkg           name          Const
 	// Expr          operator      pkg           literal/ident Expr
@@ -147,12 +147,12 @@ type Node struct {
 	// If            .             .             .             If
 	// Iterate       .             label         .             Iterate
 	// Jump          keyword       label         .             Jump
-	// PackageID     .             literal       .             PackageID
+	// PackageID     .             .             lit(pkgID)    PackageID
 	// Ret           keyword       .             .             Ret
-	// Status        keyword       pkg           literal       Status
+	// Status        keyword       pkg           lit(message)  Status
 	// Struct        .             pkg           name          Struct
 	// TypeExpr      decorator     pkg           name          TypeExpr
-	// Use           .             literal       .             Use
+	// Use           .             .             lit(path)     Use
 	// Var           operator      .             name          Var
 	// While         .             label         .             While
 	id0 t.ID
@@ -354,16 +354,16 @@ func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, 
 	}
 }
 
-// Assert is "assert RHS via ID1(args)", "pre etc", "inv etc" or "post etc":
+// Assert is "assert RHS via ID2(args)", "pre etc", "inv etc" or "post etc":
 //  - ID0:   <IDAssert|IDPre|IDInv|IDPost>
-//  - ID1:   <string literal> reason
+//  - ID2:   <string literal> reason
 //  - RHS:   <Expr>
 //  - List0: <Arg> reason arguments
 type Assert Node
 
 func (n *Assert) Node() *Node      { return (*Node)(n) }
 func (n *Assert) Keyword() t.ID    { return n.id0 }
-func (n *Assert) Reason() t.ID     { return n.id1 }
+func (n *Assert) Reason() t.ID     { return n.id2 }
 func (n *Assert) Condition() *Expr { return n.rhs.Expr() }
 func (n *Assert) Args() []*Node    { return n.list0 }
 
@@ -371,7 +371,7 @@ func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert
 	return &Assert{
 		kind:  KAssert,
 		id0:   keyword,
-		id1:   reason,
+		id2:   reason,
 		rhs:   condition.Node(),
 		list0: args,
 	}
@@ -414,7 +414,7 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
-// Var is "var ID1 LHS" or "var ID1 LHS = RHS" or an iterate variable
+// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or an iterate variable
 // declaration "ID1 LHS : RHS":
 //  - ID0:   <0|IDEq|IDColon>
 //  - ID2:   name
@@ -462,6 +462,7 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID1:   <0|label>
+//  - LHS:   <Expr> unroll count
 //  - List0: <Var> variables
 //  - List1: <Assert> asserts
 //  - List2: <Statement> loop body
@@ -707,7 +708,7 @@ func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Ex
 // MaxBodyDepth is an advisory limit for a function body's recursion depth.
 const MaxBodyDepth = 255
 
-// Func is "func ID0.ID1(LHS)(RHS) { List2 }":
+// Func is "func ID2.ID0(LHS)(RHS) { List2 }":
 //  - FlagsImpure      is "ID1" vs "ID1!"
 //  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - FlagsPublic      is "pub" vs "pri"
@@ -761,7 +762,7 @@ func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcN
 	}
 }
 
-// Status is "error ID1" or "suspension ID1":
+// Status is "error ID2" or "suspension ID2":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   <IDError|IDSuspension>
 //  - ID1:   <0|pkg> (set by calling SetPackage)
@@ -786,7 +787,7 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message 
 	}
 }
 
-// Const is "const ID1 LHS = RHS":
+// Const is "const ID2 LHS = RHS":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
@@ -814,7 +815,7 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 	}
 }
 
-// Struct is "struct ID1(List0)":
+// Struct is "struct ID2(List0)":
 //  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
@@ -841,39 +842,39 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 	}
 }
 
-// PackageID is "packageid ID1":
-//  - ID1:   <string literal> package ID
+// PackageID is "packageid ID2":
+//  - ID2:   <string literal> package ID
 type PackageID Node
 
 func (n *PackageID) Node() *Node      { return (*Node)(n) }
 func (n *PackageID) Filename() string { return n.filename }
 func (n *PackageID) Line() uint32     { return n.line }
-func (n *PackageID) ID() t.ID         { return n.id1 }
+func (n *PackageID) ID() t.ID         { return n.id2 }
 
 func NewPackageID(filename string, line uint32, id t.ID) *PackageID {
 	return &PackageID{
 		kind:     KPackageID,
 		filename: filename,
 		line:     line,
-		id1:      id,
+		id2:      id,
 	}
 }
 
-// Use is "use ID1":
-//  - ID1:   <string literal> package path
+// Use is "use ID2":
+//  - ID2:   <string literal> package path
 type Use Node
 
 func (n *Use) Node() *Node      { return (*Node)(n) }
 func (n *Use) Filename() string { return n.filename }
 func (n *Use) Line() uint32     { return n.line }
-func (n *Use) Path() t.ID       { return n.id1 }
+func (n *Use) Path() t.ID       { return n.id2 }
 
 func NewUse(filename string, line uint32, path t.ID) *Use {
 	return &Use{
 		kind:     KUse,
 		filename: filename,
 		line:     line,
-		id1:      path,
+		id2:      path,
 	}
 }
 
