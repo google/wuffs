@@ -27,7 +27,7 @@ import (
 // binary-op expression like "thisHS == thatHS" or "thatHS < thisHS" (which is
 // equivalent to "thisHS > thatHS"). If not, it returns (0, nil).
 func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
-	op = n.ID0()
+	op = n.Operator()
 
 	reverseOp := t.ID(0)
 	switch op.Key() {
@@ -66,7 +66,7 @@ func (z *facts) appendFact(fact *a.Expr) {
 		}
 	}
 
-	switch fact.ID0().Key() {
+	switch fact.Operator().Key() {
 	case 0:
 		for _, x := range *z {
 			if op, other := otherHandSide(x, fact); op.Key() == t.KeyXBinaryEqEq {
@@ -239,10 +239,10 @@ func argValue(tm *t.Map, args []*a.Node, name string) *a.Expr {
 
 // parseBinaryOp parses n as "lhs op rhs".
 func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
-	if !n.ID0().IsBinaryOp() {
+	if !n.Operator().IsBinaryOp() {
 		return 0, nil, nil
 	}
-	op = n.ID0()
+	op = n.Operator()
 	if op.Key() == t.KeyAs {
 		return 0, nil, nil
 	}
@@ -293,7 +293,7 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 		if !x.LHS().Expr().Eq(lhs) {
 			continue
 		}
-		factOp := x.ID0().Key()
+		factOp := x.Operator().Key()
 		if opImpliesOp(factOp, op) && x.RHS().Expr().Eq(rhs) {
 			return nil
 		}

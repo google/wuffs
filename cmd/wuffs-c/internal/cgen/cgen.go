@@ -508,7 +508,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
-	switch n.ID0().Key() {
+	switch n.Operator().Key() {
 	case 0:
 		b.writes(n.ConstValue().String())
 	case t.KeyDollar:

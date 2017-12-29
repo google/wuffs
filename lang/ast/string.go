@@ -24,7 +24,7 @@ func (n *Expr) Str(tm *t.Map) string {
 		return ""
 	}
 	if n.id0 == 0 {
-		return tm.ByID(n.id1)
+		return tm.ByID(n.id2)
 	}
 	return string(n.appendStr(nil, tm, false, 0))
 }
@@ -40,7 +40,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		case 0:
 			switch n.id0.Key() {
 			case 0:
-				buf = append(buf, tm.ByID(n.id1)...)
+				buf = append(buf, tm.ByID(n.id2)...)
 
 			case t.KeyTry:
 				buf = append(buf, "try "...)
@@ -81,7 +81,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			case t.KeyDot:
 				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 				buf = append(buf, '.')
-				buf = append(buf, tm.ByID(n.id1)...)
+				buf = append(buf, tm.ByID(n.id2)...)
 
 			case t.KeyDollar:
 				buf = append(buf, "$("...)

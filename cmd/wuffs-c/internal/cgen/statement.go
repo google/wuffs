@@ -229,7 +229,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			if retExpr == nil {
 				b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
 			} else {
-				retKeyword = retExpr.ID0().Key()
+				retKeyword = retExpr.Operator().Key()
 				// TODO: check that retExpr has no call-suspendibles.
 				if err := g.writeExpr(
 					b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
@@ -772,19 +772,19 @@ func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 	callSuspendible := methodName != t.KeySinceMark &&
 		methodName != t.KeyMark &&
 		methodName != t.KeyLimit
-	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
+	if n.Operator().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
+	if n.Operator().Key() != t.KeyDot || n.Ident().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("src") {
+	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName("src") {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+	return n.Operator() == 0 && n.Ident().Key() == t.KeyIn
 }
 
 func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
@@ -797,45 +797,45 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
 		methodName != t.KeyMark &&
 		methodName != t.KeyLimit
 	// TODO: check that n.Args() is "(x:bar)".
-	if n.ID0().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
+	if n.Operator().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1().Key() != methodName {
+	if n.Operator().Key() != t.KeyDot || n.Ident().Key() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName("dst") {
+	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName("dst") {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0() == 0 && n.ID1().Key() == t.KeyIn
+	return n.Operator() == 0 && n.Ident().Key() == t.KeyIn
 }
 
 func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return false
 	}
 	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot || n.ID1() != tm.ByName(methodName) {
+	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName(methodName) {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0() == 0 && n.ID1().Key() == t.KeyThis
+	return n.Operator() == 0 && n.Ident().Key() == t.KeyThis
 }
 
 // isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
 func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return false
 	}
 	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.ID0().Key() == t.KeyDot && n.ID1().Key() == methodName
+	return n.Operator().Key() == t.KeyDot && n.Ident().Key() == methodName
 }

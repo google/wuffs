@@ -32,19 +32,19 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 				return nil
 			}
 			q := p.Expr()
-			if q.ID0().Key() != t.KeyOpenParen {
+			if q.Operator().Key() != t.KeyOpenParen {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.ID0().Key() != t.KeyDot {
+			if q.Operator().Key() != t.KeyDot {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.ID0().Key() != t.KeyDot || q.ID1() != name {
+			if q.Operator().Key() != t.KeyDot || q.Ident() != name {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.ID0() != 0 || q.ID1().Key() != t.KeyIn {
+			if q.Operator() != 0 || q.Ident().Key() != t.KeyIn {
 				return nil
 			}
 			return errNeedDerivedVar
@@ -220,7 +220,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return nil
 	}
 	for _, o := range n.Args() {
@@ -240,7 +240,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.ID0().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
 		return nil
 	}
 	for _, o := range n.Args() {

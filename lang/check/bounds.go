@@ -115,22 +115,22 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	if cv := n.ConstValue(); cv != nil {
 		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.Str(tm))
 	}
-	id0, lhs, rhs, args := n.ID0(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
-	switch id0.Key() {
+	op, lhs, rhs, args := n.Operator(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
+	switch op.Key() {
 	case t.KeyXUnaryNot:
 		return rhs, nil
 	case t.KeyXBinaryNotEq:
-		id0 = t.IDXBinaryEqEq
+		op = t.IDXBinaryEqEq
 	case t.KeyXBinaryLessThan:
-		id0 = t.IDXBinaryGreaterEq
+		op = t.IDXBinaryGreaterEq
 	case t.KeyXBinaryLessEq:
-		id0 = t.IDXBinaryGreaterThan
+		op = t.IDXBinaryGreaterThan
 	case t.KeyXBinaryEqEq:
-		id0 = t.IDXBinaryNotEq
+		op = t.IDXBinaryNotEq
 	case t.KeyXBinaryGreaterEq:
-		id0 = t.IDXBinaryLessThan
+		op = t.IDXBinaryLessThan
 	case t.KeyXBinaryGreaterThan:
-		id0 = t.IDXBinaryLessEq
+		op = t.IDXBinaryLessEq
 	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
 		var err error
 		lhs, err = invert(tm, lhs)
@@ -141,10 +141,10 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		if id0.Key() == t.KeyXBinaryAnd {
-			id0 = t.IDXBinaryOr
+		if op.Key() == t.KeyXBinaryAnd {
+			op = t.IDXBinaryOr
 		} else {
-			id0 = t.IDXBinaryAnd
+			op = t.IDXBinaryAnd
 		}
 	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
 		args = make([]*a.Node, 0, len(n.Args()))
@@ -155,15 +155,15 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			}
 			args = append(args, v.Node())
 		}
-		if id0.Key() == t.KeyXAssociativeAnd {
-			id0 = t.IDXAssociativeOr
+		if op.Key() == t.KeyXAssociativeAnd {
+			op = t.IDXAssociativeOr
 		} else {
-			id0 = t.IDXAssociativeAnd
+			op = t.IDXAssociativeAnd
 		}
 	default:
-		id0, lhs, rhs = t.IDXUnaryNot, nil, n
+		op, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
-	o := a.NewExpr(n.Node().Raw().Flags(), id0, 0, lhs.Node(), nil, rhs.Node(), args)
+	o := a.NewExpr(n.Node().Raw().Flags(), op, 0, lhs.Node(), nil, rhs.Node(), args)
 	o.SetMType(n.MType())
 	return o, nil
 }
@@ -349,8 +349,8 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 		} else {
 			err = fmt.Errorf("no such reason %s", reasonID.Str(q.tm))
 		}
-	} else if condition.ID0().IsBinaryOp() && condition.ID0().Key() != t.KeyAs {
-		err = q.proveBinaryOp(condition.ID0().Key(), condition.LHS().Expr(), condition.RHS().Expr())
+	} else if condition.Operator().IsBinaryOp() && condition.Operator().Key() != t.KeyAs {
+		err = q.proveBinaryOp(condition.Operator().Key(), condition.LHS().Expr(), condition.RHS().Expr())
 	}
 
 	if err != nil {
@@ -755,24 +755,24 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 	if cv := n.ConstValue(); cv != nil {
 		return cv, cv, nil
 	}
-	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
+	switch n.Operator().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
 		return q.bcheckExprOther(n, depth)
 	case t.FlagsUnaryOp:
 		return q.bcheckExprUnaryOp(n, depth)
 	case t.FlagsBinaryOp:
-		if n.ID0().Key() == t.KeyXBinaryAs {
+		if n.Operator().Key() == t.KeyXBinaryAs {
 			return q.bcheckExpr(n.LHS().Expr(), depth)
 		}
-		return q.bcheckExprBinaryOp(n.ID0().Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
+		return q.bcheckExprBinaryOp(n.Operator().Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
 	case t.FlagsAssociativeOp:
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.ID0().Key())
+	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.Operator().Key())
 }
 
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	switch n.ID0().Key() {
+	switch n.Operator().Key() {
 	case 0:
 		// No-op.
 
@@ -933,16 +933,16 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.KeyDot:
 		// TODO: delete this hack that only matches "in".
-		if n.LHS().Expr().ID1().Key() == t.KeyIn {
+		if n.LHS().Expr().Ident().Key() == t.KeyIn {
 			for _, o := range q.f.Func.In().Fields() {
 				o := o.Field()
-				if o.Name() == n.ID1() {
+				if o.Name() == n.Ident() {
 					return q.bcheckTypeExpr(o.XType())
 				}
 			}
 			lTyp := n.LHS().Expr().MType()
 			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
-				n.ID1().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
+				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
@@ -953,7 +953,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// No-op.
 
 	default:
-		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.ID0().Key())
+		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.Operator().Key())
 	}
 	return q.bcheckTypeExpr(n.MType())
 }
@@ -990,7 +990,7 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 		return nil, nil, err
 	}
 
-	switch n.ID0().Key() {
+	switch n.Operator().Key() {
 	case t.KeyXUnaryPlus:
 		return rMin, rMax, nil
 	case t.KeyXUnaryMinus:
@@ -1001,7 +1001,7 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 		return q.bcheckTypeExpr(n.MType())
 	}
 
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.ID0().Key())
+	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.Operator().Key())
 }
 
 func (q *checker) bcheckExprBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
@@ -1146,10 +1146,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 }
 
 func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	op := n.ID0().AmbiguousForm().BinaryForm().Key()
+	op := n.Operator().AmbiguousForm().BinaryForm().Key()
 	if op == 0 {
 		return nil, nil, fmt.Errorf(
-			"check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.ID0().Key())
+			"check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.Operator().Key())
 	}
 	args := n.Args()
 	if len(args) < 1 {
@@ -1163,7 +1163,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 		if i == 0 {
 			continue
 		}
-		lhs := a.NewExpr(n.Node().Raw().Flags(), n.ID0(), n.ID1(), n.LHS(), n.MHS(), n.RHS(), args[:i])
+		lhs := a.NewExpr(n.Node().Raw().Flags(), n.Operator(), n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
 		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.Expr(), depth)
 		if err != nil {
 			return nil, nil, err

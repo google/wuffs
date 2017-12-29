@@ -375,7 +375,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if n.ID0().Key() != t.KeyDollar {
+		if n.Operator().Key() != t.KeyDollar {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {

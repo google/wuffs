@@ -34,15 +34,15 @@ import (
 // splitReceiverMethodArgs returns the "receiver", "method" and "args" in the
 // expression "receiver.method(args)".
 func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.Key, args []*a.Node) {
-	if n.ID0().Key() != t.KeyOpenParen {
+	if n.Operator().Key() != t.KeyOpenParen {
 		return nil, 0, nil
 	}
 	args = n.Args()
 	n = n.LHS().Expr()
-	if n.ID0().Key() != t.KeyDot {
+	if n.Operator().Key() != t.KeyDot {
 		return nil, 0, nil
 	}
-	return n.LHS().Expr(), n.ID1().Key(), args
+	return n.LHS().Expr(), n.Ident().Key(), args
 }
 
 // TODO: should optimizeNonSuspendible be optimizeExpr and check both
@@ -113,7 +113,7 @@ check0:
 check1:
 	for {
 		for _, x := range q.facts {
-			if x.ID0().Key() != t.KeyXBinaryGreaterThan {
+			if x.Operator().Key() != t.KeyXBinaryGreaterThan {
 				continue
 			}
 			if lhs := x.LHS().Expr(); !lhs.Eq(d) {
@@ -131,13 +131,13 @@ check1:
 check2:
 	for {
 		for _, x := range q.facts {
-			if x.ID0().Key() != t.KeyXBinaryLessEq {
+			if x.Operator().Key() != t.KeyXBinaryLessEq {
 				continue
 			}
 
 			// Check that the LHS is "d as u64".
 			lhs := x.LHS().Expr()
-			if lhs.ID0().Key() != t.KeyXBinaryAs {
+			if lhs.Operator().Key() != t.KeyXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
@@ -167,13 +167,13 @@ check2:
 check3:
 	for {
 		for _, x := range q.facts {
-			if x.ID0().Key() != t.KeyXBinaryLessEq {
+			if x.Operator().Key() != t.KeyXBinaryLessEq {
 				continue
 			}
 
 			// Check that the LHS is "l as u64".
 			lhs := x.LHS().Expr()
-			if lhs.ID0().Key() != t.KeyXBinaryAs {
+			if lhs.Operator().Key() != t.KeyXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
@@ -247,7 +247,7 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 
 func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-		op := x.ID0().Key()
+		op := x.Operator().Key()
 		if op != t.KeyXBinaryGreaterEq && op != t.KeyXBinaryGreaterThan {
 			return x, nil
 		}
@@ -259,11 +259,11 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 
 		// Check that lhs is "receiver.available()".
 		lhs := x.LHS().Expr()
-		if lhs.ID0().Key() != t.KeyOpenParen || len(lhs.Args()) != 0 {
+		if lhs.Operator().Key() != t.KeyOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
 		}
 		lhs = lhs.LHS().Expr()
-		if lhs.ID0().Key() != t.KeyDot || lhs.ID1().Key() != t.KeyAvailable {
+		if lhs.Operator().Key() != t.KeyDot || lhs.Ident().Key() != t.KeyAvailable {
 			return x, nil
 		}
 		lhs = lhs.LHS().Expr()

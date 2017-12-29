@@ -140,7 +140,7 @@ type Node struct {
 	// Assert        keyword       reason        .             Assert
 	// Assign        operator      .             .             Assign
 	// Const         .             pkg           name          Const
-	// Expr          operator      literal/ident .             Expr
+	// Expr          operator      .             literal/ident Expr
 	// Field         .             .             name          Field
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
@@ -268,13 +268,13 @@ const MaxExprDepth = 255
 //  - FlagsCallImpure      is "f(x)" vs "f!(x)"
 //  - FlagsCallSuspendible is "f(x)" vs "f?(x)", it implies FlagsCallImpure
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
-//  - ID1:   <0|ident|literal>
+//  - ID2:   <0|literal|ident>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
 //  - RHS:   <nil|Expr|TypeExpr>
 //  - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
-// A zero ID0 means an identifier or literal in ID1, like "foo" or "42".
+// A zero ID0 means an identifier or literal in ID2, like "foo" or "42".
 //
 // For unary operators, ID0 is the operator and RHS is the operand.
 //
@@ -293,7 +293,7 @@ const MaxExprDepth = 255
 //
 // For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
 //
-// For selectors, like "LHS.ID1", ID0 is IDDot.
+// For selectors, like "LHS.ID2", ID0 is IDDot.
 //
 // For lists, like "$(0, 1, 2)", ID0 is IDDollar.
 //
@@ -312,8 +312,8 @@ func (n *Expr) ProvenNotToSuspend() bool   { return n.flags&FlagsProvenNotToSusp
 func (n *Expr) BoundsCheckOptimized() bool { return n.flags&FlagsBoundsCheckOptimized != 0 }
 func (n *Expr) ConstValue() *big.Int       { return n.constValue }
 func (n *Expr) MType() *TypeExpr           { return n.mType }
-func (n *Expr) ID0() t.ID                  { return n.id0 }
-func (n *Expr) ID1() t.ID                  { return n.id1 }
+func (n *Expr) Operator() t.ID             { return n.id0 }
+func (n *Expr) Ident() t.ID                { return n.id2 }
 func (n *Expr) LHS() *Node                 { return n.lhs }
 func (n *Expr) MHS() *Node                 { return n.mhs }
 func (n *Expr) RHS() *Node                 { return n.rhs }
@@ -325,7 +325,7 @@ func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 func (n *Expr) SetProvenNotToSuspend()   { n.flags |= FlagsProvenNotToSuspend }
 
-func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
+func NewExpr(flags Flags, operator t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {
 		flags |= lhs.flags & (FlagsImpure | FlagsSuspendible)
 	}
@@ -343,7 +343,7 @@ func NewExpr(flags Flags, operator t.ID, nameLiteralSelector t.ID, lhs *Node, mh
 		kind:  KExpr,
 		flags: flags,
 		id0:   operator,
-		id1:   nameLiteralSelector,
+		id2:   ident,
 		lhs:   lhs,
 		mhs:   mhs,
 		rhs:   rhs,

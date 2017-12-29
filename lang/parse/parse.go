@@ -831,11 +831,11 @@ func (p *parser) parseTryExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if call.ID0() != t.IDOpenParen {
+	if call.Operator() != t.IDOpenParen {
 		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
 			call.Str(p.tm), p.filename, p.line())
 	}
-	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, call.ID1(),
+	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, call.Ident(),
 		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
 }
 

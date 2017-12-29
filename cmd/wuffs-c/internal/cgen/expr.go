@@ -57,7 +57,7 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 		return nil
 	}
 
-	switch n.ID0().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
+	switch n.Operator().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 	case 0:
 		if err := g.writeExprOther(b, n, rp, pp, depth); err != nil {
 			return err
@@ -75,16 +75,16 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 			return err
 		}
 	default:
-		return fmt.Errorf("unrecognized token.Key (0x%X) for writeExpr", n.ID0().Key())
+		return fmt.Errorf("unrecognized token.Key (0x%X) for writeExpr", n.Operator().Key())
 	}
 
 	return nil
 }
 
 func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	switch n.ID0().Key() {
+	switch n.Operator().Key() {
 	case 0:
-		if id1 := n.ID1(); id1.Key() == t.KeyThis {
+		if id1 := n.Ident(); id1.Key() == t.KeyThis {
 			b.writes("self")
 		} else {
 			if n.GlobalIdent() {
@@ -142,7 +142,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
-			switch key := n.LHS().Expr().ID1().Key(); key {
+			switch key := n.LHS().Expr().Ident().Key(); key {
 			case t.KeyIsError:
 				b.writes(" < 0")
 			case t.KeyIsOK:
@@ -421,9 +421,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 
 	case t.KeyDot:
 		lhs := n.LHS().Expr()
-		if lhs.ID1().Key() == t.KeyIn {
+		if lhs.Ident().Key() == t.KeyIn {
 			b.writes(aPrefix)
-			b.writes(n.ID1().Str(g.tm))
+			b.writes(n.Ident().Str(g.tm))
 			return nil
 		}
 
@@ -436,13 +436,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(".")
 		}
 		b.writes("private_impl." + fPrefix)
-		b.writes(n.ID1().Str(g.tm))
+		b.writes(n.Ident().Str(g.tm))
 		return nil
 
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
-		status := g.statusMap[t.QID{0, n.ID1()}]
+		status := g.statusMap[t.QID{0, n.Ident()}]
 		if status.name == "" {
-			msg, _ := t.Unescape(n.ID1().Str(g.tm))
+			msg, _ := t.Unescape(n.Ident().Str(g.tm))
 			z := builtin.StatusMap[msg]
 			if z.Message == "" {
 				return fmt.Errorf("no status code for %q", msg)
@@ -452,16 +452,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		b.writes(status.name)
 		return nil
 	}
-	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.ID0().Key())
+	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.Operator().Key())
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	b.writes(cOpNames[0xFF&n.ID0().Key()])
+	b.writes(cOpNames[0xFF&n.Operator().Key()])
 	return g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	op := n.ID0()
+	op := n.Operator()
 	if op.Key() == t.KeyXBinaryAs {
 		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
 	}
@@ -501,7 +501,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 	if pp == parenthesesMandatory {
 		b.writeb('(')
 	}
-	opName := cOpNames[0xFF&n.ID0().Key()]
+	opName := cOpNames[0xFF&n.Operator().Key()]
 	for i, o := range n.Args() {
 		if i != 0 {
 			b.writes(opName)
