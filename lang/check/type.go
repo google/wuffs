@@ -523,7 +523,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
 		nominalKeyword := n.Operator()
 		declaredKeyword := t.ID(0)
-		if s, ok := q.c.statuses[t.QID{0, n.Ident()}]; ok {
+		if s, ok := q.c.statuses[n.StatusQID()]; ok {
 			declaredKeyword = s.Status.Keyword()
 		} else {
 			msg, _ := t.Unescape(n.Ident().Str(q.tm))

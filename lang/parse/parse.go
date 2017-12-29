@@ -932,6 +932,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			keyword := x
 			p.src = p.src[1:]
 			message := p.peek1()
+			// TODO: parse the "pkg" in `error pkg."foo"`.
 			if !message.IsStrLiteral() {
 				got := p.tm.ByID(message)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())

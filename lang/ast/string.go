@@ -23,7 +23,7 @@ func (n *Expr) Str(tm *t.Map) string {
 	if n == nil {
 		return ""
 	}
-	if n.id0 == 0 {
+	if n.id0 == 0 && n.id1 == 0 {
 		return tm.ByID(n.id2)
 	}
 	return string(n.appendStr(nil, tm, false, 0))
@@ -39,6 +39,21 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		switch n.id0.Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
 		case 0:
 			switch n.id0.Key() {
+			case t.KeyError, t.KeyStatus, t.KeySuspension:
+				switch n.id0.Key() {
+				case t.KeyError:
+					buf = append(buf, "error "...)
+				case t.KeyStatus:
+					buf = append(buf, "status "...)
+				case t.KeySuspension:
+					buf = append(buf, "suspension "...)
+				}
+				if n.id1 != 0 {
+					buf = append(buf, tm.ByID(n.id1)...)
+					buf = append(buf, '.')
+				}
+				fallthrough
+
 			case 0:
 				buf = append(buf, tm.ByID(n.id2)...)
 

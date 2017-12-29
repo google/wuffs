@@ -140,7 +140,7 @@ type Node struct {
 	// Assert        keyword       reason        .             Assert
 	// Assign        operator      .             .             Assign
 	// Const         .             pkg           name          Const
-	// Expr          operator      .             literal/ident Expr
+	// Expr          operator      pkg           literal/ident Expr
 	// Field         .             .             name          Field
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
@@ -238,7 +238,7 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 	return n.Node().Walk(func(o *Node) error {
 		switch o.Kind() {
-		case KConst, KFunc, KStatus, KStruct, KTypeExpr:
+		case KConst, KExpr, KFunc, KStatus, KStruct, KTypeExpr:
 			if o.id1 != 0 {
 				return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
 					pkg.Str(tm), o.id1.Str(tm))
@@ -268,6 +268,7 @@ const MaxExprDepth = 255
 //  - FlagsCallImpure      is "f(x)" vs "f!(x)"
 //  - FlagsCallSuspendible is "f(x)" vs "f?(x)", it implies FlagsCallImpure
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
+//  - ID1:   <0|pkg> (for statuses)
 //  - ID2:   <0|literal|ident>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
@@ -297,8 +298,8 @@ const MaxExprDepth = 255
 //
 // For lists, like "$(0, 1, 2)", ID0 is IDDollar.
 //
-// For statuses, like `error "foo"` and `"suspension "bar"`, ID0 is the keyword
-// and ID1 is the message.
+// For statuses, like `error "foo"` and `suspension bar."baz"`, ID0 is the
+// keyword, ID1 is the package and ID2 is the message.
 type Expr Node
 
 func (n *Expr) Node() *Node                { return (*Node)(n) }
@@ -313,6 +314,7 @@ func (n *Expr) BoundsCheckOptimized() bool { return n.flags&FlagsBoundsCheckOpti
 func (n *Expr) ConstValue() *big.Int       { return n.constValue }
 func (n *Expr) MType() *TypeExpr           { return n.mType }
 func (n *Expr) Operator() t.ID             { return n.id0 }
+func (n *Expr) StatusQID() t.QID           { return t.QID{n.id1, n.id2} }
 func (n *Expr) Ident() t.ID                { return n.id2 }
 func (n *Expr) LHS() *Node                 { return n.lhs }
 func (n *Expr) MHS() *Node                 { return n.mhs }

@@ -440,7 +440,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		return nil
 
 	case t.KeyError, t.KeyStatus, t.KeySuspension:
-		status := g.statusMap[t.QID{0, n.Ident()}]
+		status := g.statusMap[n.StatusQID()]
 		if status.name == "" {
 			msg, _ := t.Unescape(n.Ident().Str(g.tm))
 			z := builtin.StatusMap[msg]
