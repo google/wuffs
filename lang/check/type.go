@@ -50,13 +50,13 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 		case a.KVar:
 			o := o.Var()
 			name := o.Name()
-			if _, ok := q.f.LocalVars[name]; ok {
+			if _, ok := q.localVars[name]; ok {
 				return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
 			}
 			if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
 				return err
 			}
-			q.f.LocalVars[name] = o.XType()
+			q.localVars[name] = o.XType()
 
 		case a.KWhile:
 			if err := q.tcheckVars(o.While().Body()); err != nil {
@@ -388,8 +388,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 
 		} else if id1.IsIdent() {
-			if q.f.LocalVars != nil {
-				if typ, ok := q.f.LocalVars[id1]; ok {
+			if q.localVars != nil {
+				if typ, ok := q.localVars[id1]; ok {
 					n.SetMType(typ)
 					return nil
 				}
@@ -398,7 +398,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				// TODO: check somewhere that a global ident (i.e. a const) is
 				// not directly in the LHS of an assignment.
 				n.SetGlobalIdent()
-				n.SetMType(c.Const.XType())
+				n.SetMType(c.XType())
 				return nil
 			}
 			// TODO: look for other (global) names: consts, funcs, statuses,
@@ -524,7 +524,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		nominalKeyword := n.Operator()
 		declaredKeyword := t.ID(0)
 		if s, ok := q.c.statuses[n.StatusQID()]; ok {
-			declaredKeyword = s.Status.Keyword()
+			declaredKeyword = s.Keyword()
 		} else {
 			msg, _ := t.Unescape(n.Ident().Str(q.tm))
 			z, ok := builtin.StatusMap[msg]
@@ -717,7 +717,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if err != nil {
 		return err
 	} else if f == nil {
-		f = q.c.funcs[qqid].Func
+		f = q.c.funcs[qqid]
 	}
 	if f != nil {
 		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.Ident(), lTyp.Node(), nil, nil))
@@ -725,16 +725,16 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	s := (*a.Struct)(nil)
-	if q.f.Func != nil && lQID[0] == 0 {
+	if q.astFunc != nil && lQID[0] == 0 {
 		switch lQID[1].Key() {
 		case t.KeyIn:
-			s = q.f.Func.In()
+			s = q.astFunc.In()
 		case t.KeyOut:
-			s = q.f.Func.Out()
+			s = q.astFunc.Out()
 		}
 	}
 	if s == nil {
-		s = q.c.structs[lQID].Struct
+		s = q.c.structs[lQID]
 		if s == nil && builtInTypeMap[lQID[1]] == nil {
 			return fmt.Errorf("check: no struct type %q found for expression %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 		}
@@ -1068,7 +1068,7 @@ swtch:
 			break swtch
 		}
 		for _, s := range q.c.structs {
-			if s.QID == qid {
+			if s.QID() == qid {
 				break swtch
 			}
 		}

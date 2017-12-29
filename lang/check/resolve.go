@@ -55,10 +55,10 @@ var (
 	typeExprPlaceholder32 = a.NewTypeExpr(0, 0, t.IDU32, nil, nil, nil)
 )
 
-// TypeMap maps from variable names (as token IDs) to types.
-type TypeMap map[t.ID]*a.TypeExpr
+// typeMap maps from variable names (as token IDs) to types.
+type typeMap map[t.ID]*a.TypeExpr
 
-var builtInTypeMap = TypeMap{
+var builtInTypeMap = typeMap{
 	t.IDU8:      typeExprU8,
 	t.IDU16:     typeExprU16,
 	t.IDU32:     typeExprU32,
@@ -152,7 +152,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		} else if f != nil {
 			return f, nil
 		}
-		if f := c.funcs[qqid].Func; f != nil {
+		if f := c.funcs[qqid]; f != nil {
 			return f, nil
 		}
 		// lTyp is from a used package: `use "foo"` followed by `foo.bar`.

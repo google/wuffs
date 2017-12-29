@@ -934,7 +934,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 	case t.KeyDot:
 		// TODO: delete this hack that only matches "in".
 		if n.LHS().Expr().Ident().Key() == t.KeyIn {
-			for _, o := range q.f.Func.In().Fields() {
+			for _, o := range q.astFunc.In().Fields() {
 				o := o.Field()
 				if o.Name() == n.Ident() {
 					return q.bcheckTypeExpr(o.XType())

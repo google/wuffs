@@ -60,27 +60,6 @@ func (e *Error) Error() string {
 	return string(b)
 }
 
-type Const struct {
-	QID   t.QID // Qualified ID of the const name.
-	Const *a.Const
-}
-
-type Func struct {
-	QQID      t.QQID // Double-qualified ID of the func name.
-	Func      *a.Func
-	LocalVars TypeMap
-}
-
-type Status struct {
-	QID    t.QID // Qualified ID of the status message.
-	Status *a.Status
-}
-
-type Struct struct {
-	QID    t.QID // Qualified ID of the struct name.
-	Struct *a.Struct
-}
-
 type usee struct {
 	consts   map[t.QID]*a.Const
 	funcs    map[t.QQID]*a.Func
@@ -116,10 +95,11 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		resolveUse: resolveUse,
 		reasonMap:  rMap,
 		packageID:  base38.Max + 1,
-		consts:     map[t.QID]Const{},
-		funcs:      map[t.QQID]Func{},
-		statuses:   map[t.QID]Status{},
-		structs:    map[t.QID]Struct{},
+		consts:     map[t.QID]*a.Const{},
+		funcs:      map[t.QQID]*a.Func{},
+		localVars:  map[t.QQID]typeMap{},
+		statuses:   map[t.QID]*a.Status{},
+		structs:    map[t.QID]*a.Struct{},
 		usees:      map[t.ID]*usee{},
 	}
 
@@ -176,10 +156,11 @@ type Checker struct {
 	packageID      uint32
 	otherPackageID *a.PackageID
 
-	consts   map[t.QID]Const
-	funcs    map[t.QQID]Func
-	statuses map[t.QID]Status
-	structs  map[t.QID]Struct
+	consts    map[t.QID]*a.Const
+	funcs     map[t.QQID]*a.Func
+	localVars map[t.QQID]typeMap
+	statuses  map[t.QID]*a.Status
+	structs   map[t.QID]*a.Struct
 
 	// usees are the packages referred to in the `use "foo/bar"` lines. The
 	// keys are the use path base: `bar`, not `"foo/bar"`.
@@ -190,11 +171,7 @@ type Checker struct {
 	unsortedStructs   []*a.Struct
 }
 
-func (c *Checker) PackageID() uint32          { return c.packageID }
-func (c *Checker) Consts() map[t.QID]Const    { return c.consts }
-func (c *Checker) Funcs() map[t.QQID]Func     { return c.funcs }
-func (c *Checker) Statuses() map[t.QID]Status { return c.statuses }
-func (c *Checker) Structs() map[t.QID]Struct  { return c.structs }
+func (c *Checker) PackageID() uint32 { return c.packageID }
 
 func (c *Checker) checkPackageID(node *a.Node) error {
 	n := node.PackageID()
@@ -306,14 +283,11 @@ func (c *Checker) checkStatus(node *a.Node) error {
 			Err:           fmt.Errorf("check: duplicate status %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
-			OtherFilename: other.Status.Filename(),
-			OtherLine:     other.Status.Line(),
+			OtherFilename: other.Filename(),
+			OtherLine:     other.Line(),
 		}
 	}
-	c.statuses[qid] = Status{
-		QID:    qid,
-		Status: n,
-	}
+	c.statuses[qid] = n
 	n.Node().SetTypeChecked()
 	return nil
 }
@@ -326,14 +300,11 @@ func (c *Checker) checkConst(node *a.Node) error {
 			Err:           fmt.Errorf("check: duplicate const %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
-			OtherFilename: other.Const.Filename(),
-			OtherLine:     other.Const.Line(),
+			OtherFilename: other.Filename(),
+			OtherLine:     other.Line(),
 		}
 	}
-	c.consts[qid] = Const{
-		QID:   qid,
-		Const: n,
-	}
+	c.consts[qid] = n
 
 	q := &checker{
 		c:  c,
@@ -399,14 +370,11 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 			Err:           fmt.Errorf("check: duplicate struct %s", qid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
-			OtherFilename: other.Struct.Filename(),
-			OtherLine:     other.Struct.Line(),
+			OtherFilename: other.Filename(),
+			OtherLine:     other.Line(),
 		}
 	}
-	c.structs[qid] = Struct{
-		QID:    qid,
-		Struct: n,
-	}
+	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
 	return nil
 }
@@ -501,8 +469,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Err:           fmt.Errorf("check: duplicate function %s", qqid.Str(c.tm)),
 			Filename:      n.Filename(),
 			Line:          n.Line(),
-			OtherFilename: other.Func.Filename(),
-			OtherLine:     other.Func.Line(),
+			OtherFilename: other.Filename(),
+			OtherLine:     other.Line(),
 		}
 	}
 
@@ -512,7 +480,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
 	outTyp.Node().SetTypeChecked()
-	localVars := TypeMap{
+	localVars := typeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
 	}
@@ -530,11 +498,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		pTyp.Node().SetTypeChecked()
 		localVars[t.IDThis] = pTyp
 	}
-	c.funcs[qqid] = Func{
-		QQID:      qqid,
-		Func:      n,
-		LocalVars: localVars,
-	}
+	c.funcs[qqid] = n
+	c.localVars[qqid] = localVars
 	return nil
 }
 
@@ -561,7 +526,8 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		c:         c,
 		tm:        c.tm,
 		reasonMap: c.reasonMap,
-		f:         c.funcs[n.QQID()],
+		astFunc:   c.funcs[n.QQID()],
+		localVars: c.localVars[n.QQID()],
 	}
 
 	// Fill in the TypeMap with all local variables. Note that they have
@@ -646,7 +612,8 @@ type checker struct {
 	c         *Checker
 	tm        *t.Map
 	reasonMap reasonMap
-	f         Func
+	astFunc   *a.Func
+	localVars typeMap
 
 	errFilename string
 	errLine     uint32
