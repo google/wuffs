@@ -4,9 +4,16 @@
 ## Work In Progress
 
 - Renamed Puffs to Wuffs.
+- Added a `skipgendeps` flag.
+- Added a `use` keyword.
 - Added a `yield` keyword.
 - Spun `std/zlib` out of `std/flate`.
 - Renamed `std/flate` to `std/deflate`.
+- Mark the `std/gif` LZW decoder as private.
+- Mark some internal status codes as private.
+- Changed the string messages for built-in status codes.
+- Make a packageid declaration mandatory.
+- Disallow `__double_underscore` prefixed names.
 
 
 ## 2017-11-16
