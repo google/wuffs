@@ -769,7 +769,7 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 				n.Operator().AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		if cv := rhs.ConstValue(); cv != nil {
-			n.SetConstValue(btoi(cv.Cmp(zero) == 0))
+			n.SetConstValue(btoi(cv.Sign() == 0))
 		}
 		n.SetMType(typeExprBool)
 		return nil
@@ -906,20 +906,20 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 	case t.KeyXBinaryStar:
 		return big.NewInt(0).Mul(l, r), nil
 	case t.KeyXBinarySlash:
-		if r.Cmp(zero) == 0 {
+		if r.Sign() == 0 {
 			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		// TODO: decide on Euclidean division vs other definitions. See "go doc
 		// math/big int.divmod" for details.
 		return big.NewInt(0).Div(l, r), nil
 	case t.KeyXBinaryShiftL:
-		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
+		if r.Sign() < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
 				n.RHS().Expr().Str(tm), n.Str(tm))
 		}
 		return big.NewInt(0).Lsh(l, uint(r.Uint64())), nil
 	case t.KeyXBinaryShiftR:
-		if r.Cmp(zero) < 0 || r.Cmp(ffff) > 0 {
+		if r.Sign() < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
 				n.RHS().Expr().Str(tm), n.Str(tm))
 		}
@@ -933,7 +933,7 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 	case t.KeyXBinaryHat:
 		return big.NewInt(0).Xor(l, r), nil
 	case t.KeyXBinaryPercent:
-		if r.Cmp(zero) == 0 {
+		if r.Sign() == 0 {
 			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		return big.NewInt(0).Mod(l, r), nil
@@ -950,9 +950,9 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 	case t.KeyXBinaryGreaterThan:
 		return btoi(l.Cmp(r) > 0), nil
 	case t.KeyXBinaryAnd:
-		return btoi((l.Cmp(zero) != 0) && (r.Cmp(zero) != 0)), nil
+		return btoi((l.Sign() != 0) && (r.Sign() != 0)), nil
 	case t.KeyXBinaryOr:
-		return btoi((l.Cmp(zero) != 0) || (r.Cmp(zero) != 0)), nil
+		return btoi((l.Sign() != 0) || (r.Sign() != 0)), nil
 	case t.KeyXBinaryTildePlus:
 		return nil, fmt.Errorf("check: cannot apply ~+ operator to ideal numbers")
 	}

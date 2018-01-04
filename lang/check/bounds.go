@@ -660,7 +660,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		}
 	}
 
-	if cv := n.Condition().ConstValue(); cv != nil && cv.Cmp(zero) == 0 {
+	if cv := n.Condition().ConstValue(); cv != nil && cv.Sign() == 0 {
 		// We effectively have a "while false { etc }" loop. There's no need to
 		// check the body.
 	} else {
@@ -815,7 +815,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			if err != nil {
 				return nil, nil, err
 			}
-			if aMin.Cmp(zero) < 0 {
+			if aMin.Sign() < 0 {
 				// TODO: error, but a better check than aMin < 0 is that
 				// a.MType() is u32. Checking this properly should fall out
 				// when a *a.TypeExpr can express function types.
@@ -1046,10 +1046,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 	case t.KeyXBinaryStar:
 		// TODO: handle multiplication by negative numbers. Note that this
 		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
-		if lMin.Cmp(zero) < 0 {
+		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Cmp(zero) < 0 {
+		if rMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
@@ -1058,10 +1058,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		// TODO.
 
 	case t.KeyXBinaryShiftL:
-		if lMin.Cmp(zero) < 0 {
+		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Cmp(zero) < 0 {
+		if rMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMax.Cmp(ffff) > 0 {
@@ -1070,10 +1070,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		return big.NewInt(0).Lsh(lMin, uint(rMin.Uint64())), big.NewInt(0).Lsh(lMax, uint(rMax.Uint64())), nil
 
 	case t.KeyXBinaryShiftR:
-		if lMin.Cmp(zero) < 0 {
+		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Cmp(zero) < 0 {
+		if rMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMin.Cmp(maxIntBits) >= 0 {
@@ -1088,13 +1088,13 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 	case t.KeyXBinaryAmp, t.KeyXBinaryPipe:
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
-		if lMin.Cmp(zero) < 0 {
+		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if lMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
 		}
-		if rMin.Cmp(zero) < 0 {
+		if rMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
@@ -1117,10 +1117,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		// TODO.
 
 	case t.KeyXBinaryPercent:
-		if lMin.Cmp(zero) < 0 {
+		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Cmp(zero) <= 0 {
+		if rMin.Sign() <= 0 {
 			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		return zero, big.NewInt(0).Sub(rMax, one), nil

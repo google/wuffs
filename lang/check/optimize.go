@@ -119,7 +119,7 @@ check1:
 			if lhs := x.LHS().Expr(); !lhs.Eq(d) {
 				continue
 			}
-			if rcv := x.RHS().Expr().ConstValue(); rcv == nil || rcv.Cmp(zero) != 0 {
+			if rcv := x.RHS().Expr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
 				continue
 			}
 			break check1
