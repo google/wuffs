@@ -9,6 +9,7 @@
 - Added a `yield` keyword.
 - Spun `std/zlib` out of `std/flate`.
 - Renamed `std/flate` to `std/deflate`.
+- Speed up the mimic\_deflate\_xxx benchmarks.
 - Mark the `std/gif` LZW decoder as private.
 - Mark some internal status codes as private.
 - Changed the string messages for built-in status codes.

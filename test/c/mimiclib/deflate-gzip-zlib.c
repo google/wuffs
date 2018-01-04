@@ -109,79 +109,38 @@ const char* mimic_bench_crc32(wuffs_base__buf1* dst,
   return NULL;
 }
 
-unsigned int mimic_deflate_read_func(void* ctx, unsigned char** buf) {
-  wuffs_base__buf1* src = (wuffs_base__buf1*)(ctx);
-  *buf = src->ptr + src->ri;
-  return src->wi - src->ri;
-}
+typedef enum {
+  zlib_flavor_raw,
+  zlib_flavor_gzip,
+  zlib_flavor_zlib,
+} zlib_flavor;
 
-int mimic_deflate_write_func(void* ctx, unsigned char* ptr, unsigned int len) {
-  wuffs_base__buf1* dst = (wuffs_base__buf1*)(ctx);
-  size_t n = len;
-  if (n > dst->len - dst->wi) {
-    return 1;
-  }
-  memmove(dst->ptr + dst->wi, ptr, n);
-  dst->wi += n;
-  return 0;
-}
-
-const char* mimic_deflate_decode(wuffs_base__buf1* dst,
-                                 wuffs_base__buf1* src,
-                                 uint64_t wlimit,
-                                 uint64_t rlimit) {
-  // TODO: don't ignore wlimit and rlimit.
-  const char* ret = NULL;
-  uint8_t window[32 * 1024];
-
-  z_stream z = {0};
-  const int window_bits = 15;
-  int ibi_err = inflateBackInit(&z, window_bits, window);
-  if (ibi_err != Z_OK) {
-    ret = "inflateBackInit failed";
-    goto cleanup0;
-  }
-
-  int ib_err = inflateBack(&z, mimic_deflate_read_func, src,
-                           mimic_deflate_write_func, dst);
-  if (ib_err != Z_STREAM_END) {
-    ret = "inflateBack failed";
-    goto cleanup1;
-  }
-
-  size_t readable = src->wi - src->ri;
-  size_t r_remaining = z.avail_in;
-  if (readable < r_remaining) {
-    ret = "inconsistent avail_in";
-    goto cleanup1;
-  }
-  src->ri += readable - r_remaining;
-
-cleanup1:;
-  int ibe_err = inflateBackEnd(&z);
-  if ((ibe_err != Z_OK) && !ret) {
-    ret = "inflateBackEnd failed";
-  }
-
-cleanup0:;
-  return ret;
-}
-
-const char* mimic_gzip_zlib_decode(wuffs_base__buf1* dst,
-                                   wuffs_base__buf1* src,
-                                   uint64_t wlimit,
-                                   uint64_t rlimit,
-                                   bool gzip_instead_of_zlib) {
+const char* mimic_deflate_gzip_zlib_decode(wuffs_base__buf1* dst,
+                                           wuffs_base__buf1* src,
+                                           uint64_t wlimit,
+                                           uint64_t rlimit,
+                                           zlib_flavor flavor) {
   // TODO: don't ignore wlimit and rlimit.
   const char* ret = NULL;
 
-  z_stream z = {0};
-  int window_bits = 15;
-  if (gzip_instead_of_zlib) {
-    // See inflateInit2 in the zlib manual, or in zlib.h, for details about
-    // this magic constant.
-    window_bits |= 16;
+  // See inflateInit2 in the zlib manual, or in zlib.h, for details about how
+  // the window_bits int also encodes the wire format wrapper.
+  int window_bits = 0;
+  switch (flavor) {
+    case zlib_flavor_raw:
+      window_bits = -15;
+      break;
+    case zlib_flavor_gzip:
+      window_bits = +15 | 16;
+      break;
+    case zlib_flavor_zlib:
+      window_bits = +15;
+      break;
+    default:
+      ret = "invalid zlib_flavor";
+      goto cleanup0;
   }
+  z_stream z = {0};
   int ii2_err = inflateInit2(&z, window_bits);
   if (ii2_err != Z_OK) {
     ret = "inflateInit2 failed";
@@ -225,18 +184,28 @@ cleanup0:;
   return ret;
 }
 
+const char* mimic_deflate_decode(wuffs_base__buf1* dst,
+                                 wuffs_base__buf1* src,
+                                 uint64_t wlimit,
+                                 uint64_t rlimit) {
+  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+                                        zlib_flavor_raw);
+}
+
 const char* mimic_gzip_decode(wuffs_base__buf1* dst,
                               wuffs_base__buf1* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  return mimic_gzip_zlib_decode(dst, src, wlimit, rlimit, true);
+  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+                                        zlib_flavor_gzip);
 }
 
 const char* mimic_zlib_decode(wuffs_base__buf1* dst,
                               wuffs_base__buf1* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  return mimic_gzip_zlib_decode(dst, src, wlimit, rlimit, false);
+  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+                                        zlib_flavor_zlib);
 }
 
 #endif  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
