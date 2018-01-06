@@ -1,0 +1,699 @@
+// Copyright 2018 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package interval
+
+import (
+	"fmt"
+	"math/big"
+	"math/rand"
+	"sort"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+// TestMotivatingExample tests the "motivating example" given in the package
+// doc comment.
+func TestMotivatingExample(tt *testing.T) {
+	i := Int{big.NewInt(0), big.NewInt(255)}
+	j := Int{big.NewInt(0), big.NewInt(3)}
+	four := Int{big.NewInt(4), big.NewInt(4)}
+	got := four.Mul(i).Add(j)
+	want := Int{big.NewInt(0), big.NewInt(1023)}
+	if !got.Eq(want) {
+		tt.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+func TestBigIntShifts(tt *testing.T) {
+	// These alternative implementations always take the fallback code path of
+	// bigIntLsh and bigIntRsh. This test checks that those fallback paths give
+	// the same results as *big.Int's Lsh and Rsh methods. There are fallback
+	// and non-fallback code paths in interval.go because those *big.Int
+	// methods aren't applicable if j's value doesn't fit in a uint.
+
+	alternativeBigIntLsh := func(i *big.Int, j *big.Int) *big.Int {
+		// Fallback code path, copy-pasted from interval.go.
+		k := big.NewInt(2)
+		k.Exp(k, j, nil)
+		k.Mul(i, k)
+		return k
+	}
+
+	alternativeBigIntRsh := func(i *big.Int, j *big.Int) *big.Int {
+		// Fallback code path, copy-pasted from interval.go.
+		k := big.NewInt(2)
+		k.Exp(k, j, nil)
+		k.Div(i, k) // This is explicitly Div, not Quo.
+		return k
+	}
+
+	xs := []*big.Int{
+		big.NewInt(-9),
+		big.NewInt(-8),
+		big.NewInt(-7),
+
+		big.NewInt(-2),
+		big.NewInt(-1),
+		big.NewInt(+0),
+		big.NewInt(+1),
+		big.NewInt(+2),
+
+		big.NewInt(+7),
+		big.NewInt(+8),
+		big.NewInt(+9),
+	}
+
+	ys := []*big.Int{
+		big.NewInt(+0),
+		big.NewInt(+1),
+		big.NewInt(+2),
+		big.NewInt(+3),
+		big.NewInt(+4),
+	}
+
+	for _, x := range xs {
+		for _, y := range ys {
+			{
+				got := bigIntLsh(x, y)
+				want := alternativeBigIntLsh(x, y)
+				if got.Cmp(want) != 0 {
+					tt.Errorf("%v << %v: got %v, want %v", x, y, got, want)
+				}
+			}
+
+			{
+				got := bigIntRsh(x, y)
+				want := alternativeBigIntRsh(x, y)
+				if got.Cmp(want) != 0 {
+					tt.Errorf("%v >> %v: got %v, want %v", x, y, got, want)
+				}
+			}
+		}
+	}
+}
+
+func trimLeadingSpaces(s string) string {
+	for ; len(s) > 0 && s[0] == ' '; s = s[1:] {
+	}
+	return s
+}
+
+func trimTrailingSpaces(s string) string {
+	for ; len(s) > 0 && s[len(s)-1] == ' '; s = s[:len(s)-1] {
+	}
+	return s
+}
+
+func parseInt(s string) (x *big.Int, remaining string, err error) {
+	s = trimLeadingSpaces(s)
+	i := 0
+	for ; i < len(s); i++ {
+		if c := s[i]; c == ')' || c == ',' || c == ']' {
+			break
+		}
+	}
+	s, remaining = trimTrailingSpaces(s[:i]), s[i:]
+	switch s {
+	case "-∞", "+∞":
+		// No-op.
+	default:
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, "", fmt.Errorf("parseInt(%q): %v", s, err)
+		}
+		x = big.NewInt(int64(n))
+	}
+	return x, remaining, nil
+}
+
+// parseInterval parses a string like "[-3, +4] etcetera", returning the
+// interval itself and the remaining string " etcetera".
+//
+// It also parses infinite (unbounded) intervals like "[0, +∞)". The brackets
+// here are square brackets (to ease the parsing algorithm) even though, in
+// mathematical interval notation, parentheses would be more traditional.
+//
+// It also parses the special syntax "[...empty..]" for an empty interval (one
+// that contains no elements).
+func parseInterval(s string) (x Int, remaining string, err error) {
+	const emptySyntax = "[...empty..]"
+	s = trimLeadingSpaces(s)
+	if strings.HasPrefix(s, emptySyntax) {
+		s = s[len(emptySyntax):]
+		return Int{big.NewInt(+1), big.NewInt(-1)}, s, nil
+	}
+
+	if s[0] != '(' && s[0] != '[' {
+		return Int{}, "", fmt.Errorf("expected '(' or '['")
+	}
+	s = s[1:]
+	x0, s, err := parseInt(s)
+	if err != nil {
+		return Int{}, "", err
+	}
+	if s[0] != ',' {
+		return Int{}, "", fmt.Errorf("expected ','")
+	}
+	s = s[1:]
+	x1, s, err := parseInt(s)
+	if err != nil {
+		return Int{}, "", err
+	}
+	if s[0] != ')' && s[0] != ']' {
+		return Int{}, "", fmt.Errorf("expected ')' or ']'")
+	}
+	s = s[1:]
+	if x0 != nil && x1 != nil && x0.Cmp(x1) > 0 {
+		return Int{}, "", fmt.Errorf("invalid empty interval")
+	}
+	return Int{x0, x1}, s, nil
+}
+
+func TestContainsEtc(tt *testing.T) {
+	testCases := []struct {
+		s  string
+		cn uint32
+		cz uint32
+		cp uint32
+	}{
+		{"<empty-->", 0, 0, 0},
+		{"<empty0->", 0, 0, 0},
+		{"<empty+->", 0, 0, 0},
+		{"<empty+0>", 0, 0, 0},
+		{"<empty++>", 0, 0, 0},
+
+		{"(-∞, -1]", 1, 0, 0},
+		{"(-∞,  0]", 1, 1, 0},
+		{"(-∞, +1]", 1, 1, 1},
+		{"(-∞, +∞)", 1, 1, 1},
+
+		{"[-1, -1]", 1, 0, 0},
+		{"[-1,  0]", 1, 1, 0},
+		{"[-1, +1]", 1, 1, 1},
+		{"[-1, +∞)", 1, 1, 1},
+
+		{"[ 0,  0]", 0, 1, 0},
+		{"[ 0, +1]", 0, 1, 1},
+		{"[ 0, +∞)", 0, 1, 1},
+
+		{"[+1, +1]", 0, 0, 1},
+		{"[+1, +∞)", 0, 0, 1},
+	}
+
+	// eqTestCases is appended to throughout the "range testCases" loop, but it
+	// always contains exactly one empty Int.
+	eqTestCases := []Int{
+		empty(),
+	}
+
+	for _, tc := range testCases {
+		x := Int{}
+		switch tc.s {
+		case "<empty-->":
+			x = Int{big.NewInt(-1), big.NewInt(-2)}
+		case "<empty0->":
+			x = Int{big.NewInt(00), big.NewInt(-2)}
+		case "<empty+->":
+			x = Int{big.NewInt(+2), big.NewInt(-2)}
+		case "<empty+0>":
+			x = Int{big.NewInt(+2), big.NewInt(00)}
+		case "<empty++>":
+			x = Int{big.NewInt(+2), big.NewInt(+1)}
+		default:
+			err := error(nil)
+			x, _, err = parseInterval(tc.s)
+			if err != nil {
+				tt.Errorf("%s: %v", tc.s, err)
+				continue
+			}
+		}
+
+		if got, want := x.ContainsNegative(), tc.cn != 0; got != want {
+			tt.Errorf("%s.ContainsNegative(): got %t, want %t", tc.s, got, want)
+		}
+		if got, want := x.ContainsZero(), tc.cz != 0; got != want {
+			tt.Errorf("%s.ContainsZero(): got %t, want %t", tc.s, got, want)
+		}
+		if got, want := x.ContainsPositive(), tc.cp != 0; got != want {
+			tt.Errorf("%s.ContainsPositive(): got %t, want %t", tc.s, got, want)
+		}
+
+		if got, want := x.Empty(), strings.Contains(tc.s, "empty"); got != want {
+			tt.Errorf("%s.Empty(): got %t, want %t", tc.s, got, want)
+		} else if !got {
+			eqTestCases = append(eqTestCases, x)
+		} else if !x.Eq(empty()) {
+			tt.Errorf("%v eq %v: got %t, want %t", x, empty(), got, want)
+		}
+
+		if got, want := x.justZero(), tc.s == "[ 0,  0]"; got != want {
+			tt.Errorf("%s.justZero(): got %t, want %t", tc.s, got, want)
+		}
+	}
+
+	for i, x := range eqTestCases {
+		for j, y := range eqTestCases {
+			got := x.Eq(y)
+			want := i == j
+			if got != want {
+				tt.Errorf("%v eq %v: got %t, want %t", x, y, got, want)
+			}
+		}
+	}
+
+	for _, x := range eqTestCases {
+		neg, pos, negEmpty, hasZero, posEmpty := x.split()
+		if got, want := neg.Empty(), negEmpty; got != want {
+			tt.Errorf("%v: neg.Empty() == %t, negEmpty == %t", x, got, want)
+		}
+		if got, want := !x.ContainsNegative(), negEmpty; got != want {
+			tt.Errorf("%v: !x.ContainsNegative() == %t, negEmpty == %t", x, got, want)
+		}
+		if got, want := x.ContainsZero(), hasZero; got != want {
+			tt.Errorf("%v: x.ContainsZero() == %t, hasZero == %t", x, got, want)
+		}
+		if got, want := !x.ContainsPositive(), posEmpty; got != want {
+			tt.Errorf("%v: !x.ContainsPositive() == %t, posEmpty == %t", x, got, want)
+		}
+		if got, want := pos.Empty(), posEmpty; got != want {
+			tt.Errorf("%v: pos.Empty() == %t, posEmpty == %t", x, got, want)
+		}
+	}
+}
+
+func testBruteForceAgrees(x Int, y Int, opKey string) error {
+	brute, bruteOK := bruteForce(x, y, opKey)
+	got, gotOK := intOperators[opKey](x, y)
+	if !got.Eq(brute) || gotOK != bruteOK {
+		return fmt.Errorf("got %v, %t, brute force gave %v, %t", got, gotOK, brute, bruteOK)
+	}
+	return nil
+}
+
+func TestBruteForceAgreesSystematically(tt *testing.T) {
+	ints := []*big.Int{
+		big.NewInt(-7),
+		big.NewInt(-6),
+		big.NewInt(-5),
+		big.NewInt(-4),
+		big.NewInt(-3),
+		big.NewInt(-2),
+		big.NewInt(-1),
+		big.NewInt(+0),
+		big.NewInt(+1),
+		big.NewInt(+2),
+		big.NewInt(+3),
+		big.NewInt(+4),
+		big.NewInt(+5),
+		big.NewInt(+6),
+		big.NewInt(+7),
+		nil,
+	}
+
+	for _, opKey := range intOperatorsKeys {
+
+		for _, x0 := range ints {
+			for _, x1 := range ints {
+				x := Int{x0, x1}
+
+				for _, y0 := range ints {
+					for _, y1 := range ints {
+						y := Int{y0, y1}
+
+						if err := testBruteForceAgrees(x, y, opKey); err != nil {
+							tt.Fatalf("%v %s %v: %v", x, opKey, y, err)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestBruteForceAgreesRandomly(tt *testing.T) {
+	gen := func(rng *rand.Rand) *big.Int {
+		r := rng.Intn(2*riRadius+2) - (riRadius + 1)
+		if r == -(riRadius + 1) {
+			return nil
+		}
+		return big.NewInt(int64(r))
+	}
+
+	rng := rand.New(rand.NewSource(0))
+	for _, opKey := range intOperatorsKeys {
+		for i := 0; i < 10000; i++ {
+			x := Int{gen(rng), gen(rng)}
+			y := Int{gen(rng), gen(rng)}
+			if err := testBruteForceAgrees(x, y, opKey); err != nil {
+				tt.Fatalf("%v %s %v: %v", x, opKey, y, err)
+			}
+		}
+	}
+}
+
+func testOp(tt *testing.T, testCases ...string) {
+	for _, tc := range testCases {
+		if err := testOp1(tc); err != nil {
+			tt.Errorf("%q: %v", tc, err)
+		}
+	}
+}
+
+func testOp1(s string) error {
+	x, s, err := parseInterval(s)
+	if err != nil {
+		return err
+	}
+	s = trimLeadingSpaces(s)
+
+	i := 0
+	for ; i < len(s) && s[i] != ' '; i++ {
+	}
+	opKey, s := s[:i], s[i:]
+
+	y, s, err := parseInterval(s)
+	if err != nil {
+		return err
+	}
+	s = trimLeadingSpaces(s)
+	if !strings.HasPrefix(s, "==") {
+		return fmt.Errorf(`expected "=="`)
+	}
+	s = s[2:]
+	s = trimLeadingSpaces(s)
+	want, wantOK := Int{}, false
+	if s == "invalid" {
+		s = ""
+	} else {
+		wantOK = true
+		want, s, err = parseInterval(s)
+		if err != nil {
+			return err
+		}
+		s = trimLeadingSpaces(s)
+		if s != "" {
+			return fmt.Errorf("trailing specification %q", s)
+		}
+	}
+
+	if err := testBruteForceAgrees(x, y, opKey); err != nil {
+		return err
+	}
+
+	got, gotOK := intOperators[opKey](x, y)
+	if !got.Eq(want) || gotOK != wantOK {
+		return fmt.Errorf("package code: got %v, %t, want %v, %t", got, gotOK, want, wantOK)
+	}
+	return nil
+}
+
+var intOperators = map[string]func(Int, Int) (Int, bool){
+	"+":  func(x Int, y Int) (z Int, ok bool) { return x.Add(y), true },
+	"-":  func(x Int, y Int) (z Int, ok bool) { return x.Sub(y), true },
+	"*":  func(x Int, y Int) (z Int, ok bool) { return x.Mul(y), true },
+	"/":  Int.Quo,
+	"<<": Int.Lsh,
+	">>": Int.Rsh,
+}
+
+var intOperatorsKeys []string
+
+func init() {
+	for k := range intOperators {
+		intOperatorsKeys = append(intOperatorsKeys, k)
+	}
+	sort.Strings(intOperatorsKeys)
+}
+
+func TestOpAdd(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   +  [  -5,   -5]  ==  [  -2,   -2]",
+		"[   3,    3]   +  [   0,    0]  ==  [   3,    3]",
+		"[   0,    0]   +  [  -7,    7]  ==  [  -7,    7]",
+		"[   0,    2]   +  [   0,    5]  ==  [   0,    7]",
+		"[   3,    6]   +  [  10,   15]  ==  [  13,   21]",
+		"[   3,   +∞)   +  [  -4,   -2]  ==  [  -1,   +∞)",
+		"[   3,   +∞)   +  [  10,   15]  ==  [  13,   +∞)",
+		"[   3,   +∞)   +  (  -∞,   15]  ==  (  -∞,   +∞)",
+		"[   3,    6]   +  (  -∞,   15]  ==  (  -∞,   21]",
+		"[   3,    6]   +  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   +  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   +  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   +  [   0,    0]  ==  (  -∞,   +∞)",
+		"[   3,    6]   +  [...empty..]  ==  [...empty..]",
+		"[...empty..]   +  [  10,   15]  ==  [...empty..]",
+		"[...empty..]   +  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   +  [...empty..]  ==  [...empty..]",
+	)
+}
+
+func TestOpSub(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   -  [  -5,   -5]  ==  [   8,    8]",
+		"[   3,    3]   -  [   0,    0]  ==  [   3,    3]",
+		"[   0,    0]   -  [  -7,    7]  ==  [  -7,    7]",
+		"[   0,    2]   -  [   0,    5]  ==  [  -5,    2]",
+		"[   3,    6]   -  [  10,   15]  ==  [ -12,   -4]",
+		"[   3,   +∞)   -  [  -4,   -2]  ==  [   5,   +∞)",
+		"[   3,   +∞)   -  [  10,   15]  ==  [ -12,   +∞)",
+		"[   3,   +∞)   -  (  -∞,   15]  ==  (  -∞,   +∞)",
+		"[   3,    6]   -  (  -∞,   15]  ==  [ -12,   +∞)",
+		"[   3,    6]   -  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   -  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   -  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   -  [   0,    0]  ==  (  -∞,   +∞)",
+		"[   3,    6]   -  [...empty..]  ==  [...empty..]",
+		"[...empty..]   -  [  10,   15]  ==  [...empty..]",
+		"[...empty..]   -  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   -  [...empty..]  ==  [...empty..]",
+	)
+}
+
+func TestOpMul(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   *  [  -5,   -5]  ==  [ -15,  -15]",
+		"[   3,    3]   *  [   0,    0]  ==  [   0,    0]",
+		"[   0,    0]   *  [  -7,    7]  ==  [   0,    0]",
+		"[   0,    2]   *  [   0,    5]  ==  [   0,   10]",
+		"[   3,    6]   *  [  10,   15]  ==  [  30,   90]",
+		"[   3,   +∞)   *  [  -4,   -2]  ==  (  -∞,   -6]",
+		"[   3,   +∞)   *  [  10,   15]  ==  [  30,   +∞)",
+		"[   3,   +∞)   *  (  -∞,   15]  ==  (  -∞,   +∞)",
+		"[   3,    6]   *  (  -∞,   15]  ==  (  -∞,   90]",
+		"[   3,    6]   *  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   *  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   *  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   *  [   0,    0]  ==  [   0,    0]",
+		"[   3,    6]   *  [...empty..]  ==  [...empty..]",
+		"[...empty..]   *  [  10,   15]  ==  [...empty..]",
+		"[...empty..]   *  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   *  [...empty..]  ==  [...empty..]",
+
+		"[  -3,   -1]   *  [ -11,  -10]  ==  [  10,   33]",
+		"[  -3,    0]   *  [ -11,  -10]  ==  [   0,   33]",
+		"[  -3,    1]   *  [ -11,  -10]  ==  [ -11,   33]",
+		"[  -3,    4]   *  [ -11,  -10]  ==  [ -44,   33]",
+		"[  -1,    4]   *  [ -11,  -10]  ==  [ -44,   11]",
+		"[   0,    4]   *  [ -11,  -10]  ==  [ -44,    0]",
+		"[   1,    4]   *  [ -11,  -10]  ==  [ -44,  -10]",
+
+		"[  -3,   -1]   *  [  -6,    2]  ==  [  -6,   18]",
+		"[  -3,    0]   *  [  -6,    2]  ==  [  -6,   18]",
+		"[  -3,    1]   *  [  -6,    2]  ==  [  -6,   18]",
+		"[  -3,    4]   *  [  -6,    2]  ==  [ -24,   18]",
+		"[  -1,    4]   *  [  -6,    2]  ==  [ -24,    8]",
+		"[   0,    4]   *  [  -6,    2]  ==  [ -24,    8]",
+		"[   1,    4]   *  [  -6,    2]  ==  [ -24,    8]",
+
+		"[  -3,   -1]   *  [   0,    3]  ==  [  -9,    0]",
+		"[  -3,    0]   *  [   0,    3]  ==  [  -9,    0]",
+		"[  -3,    1]   *  [   0,    3]  ==  [  -9,    3]",
+		"[  -3,    4]   *  [   0,    3]  ==  [  -9,   12]",
+		"[  -1,    4]   *  [   0,    3]  ==  [  -3,   12]",
+		"[   0,    4]   *  [   0,    3]  ==  [   0,   12]",
+		"[   1,    4]   *  [   0,    3]  ==  [   0,   12]",
+
+		"[  -3,   -1]   *  [   2,    3]  ==  [  -9,   -2]",
+		"[  -3,    0]   *  [   2,    3]  ==  [  -9,    0]",
+		"[  -3,    1]   *  [   2,    3]  ==  [  -9,    3]",
+		"[  -3,    4]   *  [   2,    3]  ==  [  -9,   12]",
+		"[  -1,    4]   *  [   2,    3]  ==  [  -3,   12]",
+		"[   0,    4]   *  [   2,    3]  ==  [   0,   12]",
+		"[   1,    4]   *  [   2,    3]  ==  [   2,   12]",
+
+		"[  -9,   +∞)   *  [   2,   +∞)  ==  (  -∞,   +∞)",
+		"[  -1,   +∞)   *  [   2,   +∞)  ==  (  -∞,   +∞)",
+		"[   0,   +∞)   *  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   1,   +∞)   *  [   2,   +∞)  ==  [   2,   +∞)",
+		"[   7,   +∞)   *  [   2,   +∞)  ==  [  14,   +∞)",
+		"[  -1,    1]   *  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"[   0,    0]   *  (  -∞,   +∞)  ==  [   0,    0]",
+		"[   1,    1]   *  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+	)
+}
+
+func TestOpQuo(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   /  [  -5,   -5]  ==  [   0,    0]",
+		"[   3,    3]   /  [   0,    0]  ==  invalid",
+		"[   0,    0]   /  [  -7,    7]  ==  invalid",
+		"[   0,    2]   /  [   0,    5]  ==  invalid",
+		"[   3,    6]   /  [  10,   15]  ==  [   0,    0]",
+		"[   3,   +∞)   /  [  -4,   -2]  ==  (  -∞,    0]",
+		"[   3,   +∞)   /  [  10,   15]  ==  [   0,   +∞)",
+		"[   3,   +∞)   /  (  -∞,   15]  ==  invalid",
+		"[   3,    6]   /  (  -∞,   15]  ==  invalid",
+		"[   3,    6]   /  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)   /  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)   /  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   /  [   0,    0]  ==  invalid",
+		"[   3,    6]   /  [...empty..]  ==  [...empty..]",
+		"[...empty..]   /  [  10,   15]  ==  [...empty..]",
+		"[...empty..]   /  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   /  [...empty..]  ==  [...empty..]",
+
+		"[   1,    4]   /  [ -11,  -10]  ==  [   0,    0]",
+
+		"[   1,    4]   /  [  -6,    2]  ==  invalid",
+
+		"[  -3,   -1]   /  [   1,    3]  ==  [  -3,    0]",
+		"[  -3,    0]   /  [   1,    3]  ==  [  -3,    0]",
+		"[  -3,    1]   /  [   1,    3]  ==  [  -3,    1]",
+		"[  -3,    4]   /  [   1,    3]  ==  [  -3,    4]",
+		"[  -1,    4]   /  [   1,    3]  ==  [  -1,    4]",
+		"[   0,    4]   /  [   1,    3]  ==  [   0,    4]",
+		"[   1,    4]   /  [   1,    3]  ==  [   0,    4]",
+
+		"[  -3,   -1]   /  [   2,    3]  ==  [  -1,    0]",
+		"[  -3,    0]   /  [   2,    3]  ==  [  -1,    0]",
+		"[  -3,    1]   /  [   2,    3]  ==  [  -1,    0]",
+		"[  -3,    4]   /  [   2,    3]  ==  [  -1,    2]",
+		"[  -1,    4]   /  [   2,    3]  ==  [   0,    2]",
+		"[   0,    4]   /  [   2,    3]  ==  [   0,    2]",
+		"[   1,    4]   /  [   2,    3]  ==  [   0,    2]",
+
+		"[  -9,   +∞)   /  [   2,   +∞)  ==  [  -4,   +∞)",
+		"[  -1,   +∞)   /  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   0,   +∞)   /  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   1,   +∞)   /  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   7,   +∞)   /  [   2,   +∞)  ==  [   0,   +∞)",
+		"[  -1,    1]   /  (  -∞,   +∞)  ==  invalid",
+		"[   0,    0]   /  (  -∞,   +∞)  ==  invalid",
+		"[   1,    1]   /  (  -∞,   +∞)  ==  invalid",
+	)
+}
+
+func TestOpLsh(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]  <<  [  -5,   -5]  ==  invalid",
+		"[   3,    3]  <<  [   0,    0]  ==  [   3,    3]",
+		"[   0,    0]  <<  [  -7,    7]  ==  invalid",
+		"[   0,    2]  <<  [   0,    5]  ==  [   0,   64]",
+		"[   3,    6]  <<  [  10,   15]  ==  [3072, 196608]",
+		"[   3,   +∞)  <<  [  -4,   -2]  ==  invalid",
+		"[   3,   +∞)  <<  [  10,   15]  ==  [3072,   +∞)",
+		"[   3,   +∞)  <<  (  -∞,   15]  ==  invalid",
+		"[   3,    6]  <<  (  -∞,   15]  ==  invalid",
+		"[   3,    6]  <<  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)  <<  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)  <<  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)  <<  [   0,    0]  ==  (  -∞,   +∞)",
+		"[   3,    6]  <<  [...empty..]  ==  [...empty..]",
+		"[...empty..]  <<  [  10,   15]  ==  [...empty..]",
+		"[...empty..]  <<  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)  <<  [...empty..]  ==  [...empty..]",
+
+		"[   1,    4]  <<  [ -11,  -10]  ==  invalid",
+
+		"[   1,    4]  <<  [  -6,    2]  ==  invalid",
+
+		"[  -3,   -1]  <<  [   0,    3]  ==  [ -24,   -1]",
+		"[  -3,    0]  <<  [   0,    3]  ==  [ -24,    0]",
+		"[  -3,    1]  <<  [   0,    3]  ==  [ -24,    8]",
+		"[  -3,    4]  <<  [   0,    3]  ==  [ -24,   32]",
+		"[  -1,    4]  <<  [   0,    3]  ==  [  -8,   32]",
+		"[   0,    4]  <<  [   0,    3]  ==  [   0,   32]",
+		"[   1,    4]  <<  [   0,    3]  ==  [   1,   32]",
+
+		"[  -3,   -1]  <<  [   2,    3]  ==  [ -24,   -4]",
+		"[  -3,    0]  <<  [   2,    3]  ==  [ -24,    0]",
+		"[  -3,    1]  <<  [   2,    3]  ==  [ -24,    8]",
+		"[  -3,    4]  <<  [   2,    3]  ==  [ -24,   32]",
+		"[  -1,    4]  <<  [   2,    3]  ==  [  -8,   32]",
+		"[   0,    4]  <<  [   2,    3]  ==  [   0,   32]",
+		"[   1,    4]  <<  [   2,    3]  ==  [   4,   32]",
+
+		"[  -9,   +∞)  <<  [   2,   +∞)  ==  (  -∞,   +∞)",
+		"[  -1,   +∞)  <<  [   2,   +∞)  ==  (  -∞,   +∞)",
+		"[   0,   +∞)  <<  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   1,   +∞)  <<  [   2,   +∞)  ==  [   4,   +∞)",
+		"[   7,   +∞)  <<  [   2,   +∞)  ==  [  28,   +∞)",
+		"[  -1,    1]  <<  (  -∞,   +∞)  ==  invalid",
+		"[   0,    0]  <<  (  -∞,   +∞)  ==  invalid",
+		"[   1,    1]  <<  (  -∞,   +∞)  ==  invalid",
+	)
+}
+
+func TestOpRsh(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]  >>  [  -5,   -5]  ==  invalid",
+		"[   3,    3]  >>  [   0,    0]  ==  [   3,    3]",
+		"[   0,    0]  >>  [  -7,    7]  ==  invalid",
+		"[   0,    2]  >>  [   0,    5]  ==  [   0,    2]",
+		"[   3,    6]  >>  [  10,   15]  ==  [   0,    0]",
+		"[   3,   +∞)  >>  [  -4,   -2]  ==  invalid",
+		"[   3,   +∞)  >>  [  10,   15]  ==  [   0,   +∞)",
+		"[   3,   +∞)  >>  (  -∞,   15]  ==  invalid",
+		"[   3,    6]  >>  (  -∞,   15]  ==  invalid",
+		"[   3,    6]  >>  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)  >>  (  -∞,   +∞)  ==  invalid",
+		"(  -∞,   +∞)  >>  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)  >>  [   0,    0]  ==  (  -∞,   +∞)",
+		"[   3,    6]  >>  [...empty..]  ==  [...empty..]",
+		"[...empty..]  >>  [  10,   15]  ==  [...empty..]",
+		"[...empty..]  >>  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)  >>  [...empty..]  ==  [...empty..]",
+
+		"[   1,    4]  >>  [ -11,  -10]  ==  invalid",
+
+		"[   1,    4]  >>  [  -6,    2]  ==  invalid",
+
+		"[  -3,   -1]  >>  [   0,    3]  ==  [  -3,   -1]",
+		"[  -3,    0]  >>  [   0,    3]  ==  [  -3,    0]",
+		"[  -3,    1]  >>  [   0,    3]  ==  [  -3,    1]",
+		"[  -3,    4]  >>  [   0,    3]  ==  [  -3,    4]",
+		"[  -1,    4]  >>  [   0,    3]  ==  [  -1,    4]",
+		"[   0,    4]  >>  [   0,    3]  ==  [   0,    4]",
+		"[   1,    4]  >>  [   0,    3]  ==  [   0,    4]",
+
+		"[  -3,   -1]  >>  [   1,    3]  ==  [  -2,   -1]",
+		"[  -3,    0]  >>  [   1,    3]  ==  [  -2,    0]",
+		"[  -3,    1]  >>  [   1,    3]  ==  [  -2,    0]",
+		"[  -3,    4]  >>  [   1,    3]  ==  [  -2,    2]",
+		"[  -1,    4]  >>  [   1,    3]  ==  [  -1,    2]",
+		"[   0,    4]  >>  [   1,    3]  ==  [   0,    2]",
+		"[   1,    4]  >>  [   1,    3]  ==  [   0,    2]",
+
+		"[  -9,   +∞)  >>  [   2,   +∞)  ==  [  -3,   +∞)",
+		"[  -1,   +∞)  >>  [   2,   +∞)  ==  [  -1,   +∞)",
+		"[   0,   +∞)  >>  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   1,   +∞)  >>  [   2,   +∞)  ==  [   0,   +∞)",
+		"[   7,   +∞)  >>  [   2,   +∞)  ==  [   0,   +∞)",
+		"[  -1,    1]  >>  (  -∞,   +∞)  ==  invalid",
+		"[   0,    0]  >>  (  -∞,   +∞)  ==  invalid",
+		"[   1,    1]  >>  (  -∞,   +∞)  ==  invalid",
+	)
+}
