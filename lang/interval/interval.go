@@ -25,7 +25,7 @@
 // As a motivating example, if a compiler knows that the integer-typed
 // variables i and j are in the intervals [0, 255] and [0, 3], and that the
 // array a has 1024 elements, then it can prove that the array-index expression
-// a[4*i + j] is memory-safe without needing a at-runtime bounds check.
+// a[4*i + j] is memory-safe without needing an at-runtime bounds check.
 //
 // This package depends only on the standard math/big package.
 package interval
