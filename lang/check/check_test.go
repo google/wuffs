@@ -117,22 +117,26 @@ func TestCheck(tt *testing.T) {
 		tt.Fatalf("Check: %v", err)
 	}
 
-	funcs := c.Funcs()
-	if len(funcs) != 1 {
-		tt.Fatalf("Funcs: got %d elements, want 1", len(funcs))
+	if len(c.funcs) != 1 {
+		tt.Fatalf("Funcs: got %d elements, want 1", len(c.funcs))
 	}
-	fooBar := Func{}
-	for _, f := range funcs {
+	fooBar := (*a.Func)(nil)
+	fooBarLocalVars := typeMap(nil)
+	for _, f := range c.funcs {
 		fooBar = f
 		break
 	}
+	for _, v := range c.localVars {
+		fooBarLocalVars = v
+		break
+	}
 
-	if got, want := fooBar.QQID.Str(tm), "foo.bar"; got != want {
+	if got, want := fooBar.QQID().Str(tm), "foo.bar"; got != want {
 		tt.Fatalf("Funcs[0] name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
-	for id, typ := range fooBar.LocalVars {
+	for id, typ := range fooBarLocalVars {
 		got = append(got, [2]string{
 			id.Str(tm),
 			typ.Str(tm),
@@ -215,17 +219,16 @@ func TestConstValues(tt *testing.T) {
 			continue
 		}
 
-		funcs := c.Funcs()
-		if len(funcs) != 1 {
-			tt.Errorf("%q: Funcs: got %d elements, want 1", s, len(funcs))
+		if len(c.funcs) != 1 {
+			tt.Errorf("%q: Funcs: got %d elements, want 1", s, len(c.funcs))
 			continue
 		}
-		foo := Func{}
-		for _, f := range funcs {
+		foo := (*a.Func)(nil)
+		for _, f := range c.funcs {
 			foo = f
 			break
 		}
-		body := foo.Func.Body()
+		body := foo.Body()
 		if len(body) != 1 {
 			tt.Errorf("%q: Body: got %d elements, want 1", s, len(body))
 			continue
