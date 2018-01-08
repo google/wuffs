@@ -142,12 +142,9 @@ func parseInt(s string) (x *big.Int, remaining string, err error) {
 // parseInterval parses a string like "[-3, +4] etcetera", returning the
 // interval itself and the remaining string " etcetera".
 //
-// It also parses infinite (unbounded) intervals like "[0, +∞)". The brackets
-// here are square brackets (to ease the parsing algorithm) even though, in
-// mathematical interval notation, parentheses would be more traditional.
-//
-// It also parses the special syntax "[...empty..]" for an empty interval (one
-// that contains no elements).
+// It also parses infinite (unbounded) intervals like "[0, +∞)", and the
+// special syntax "[...empty..]" for an empty interval (one that contains no
+// elements).
 func parseInterval(s string) (x Int, remaining string, err error) {
 	const emptySyntax = "[...empty..]"
 	s = trimLeadingSpaces(s)
