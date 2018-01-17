@@ -60,7 +60,7 @@ package interval
 // useful. They are only used for brute force testing in interval_test.go. When
 // tests in that other file use radial numbers (via calling the bruteForce
 // function), the test cases are constructed so that every non-nil member of an
-// interval.Int maps to a "small" radialInput, and asSmallRadialInput will
+// interval.IntRange maps to a "small" radialInput, and asSmallRadialInput will
 // panic if that doesn't hold.
 //
 // These types exist in order to simplify calculations. The general problem of
@@ -128,7 +128,7 @@ func asSmallRadialInput(x *big.Int, defaultIfXIsNil radialInput) radialInput {
 	return radialInput(i)
 }
 
-func enumerate(x Int) (min radialInput, max radialInput) {
+func enumerate(x IntRange) (min radialInput, max radialInput) {
 	if x.Empty() {
 		return +1, -1
 	}
@@ -346,7 +346,7 @@ var riOperators = map[string]func(radialInput, radialInput) radialOutPair{
 	">>": radialInput.Rsh,
 }
 
-func bruteForce(x Int, y Int, opKey string) (z Int, ok bool) {
+func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {
 	op := riOperators[opKey]
 	iMin, iMax := enumerate(x)
 	jMin, jMax := enumerate(y)
@@ -357,7 +357,7 @@ func bruteForce(x Int, y Int, opKey string) (z Int, ok bool) {
 		for j := jMin; j <= jMax; j++ {
 			k := op(i, j)
 			if k[0] == radialNaN || k[1] == radialNaN {
-				return Int{}, false
+				return IntRange{}, false
 			}
 			if first {
 				result = k
@@ -376,5 +376,5 @@ func bruteForce(x Int, y Int, opKey string) (z Int, ok bool) {
 	if first {
 		return empty(), true
 	}
-	return Int{result[0].bigInt(), result[1].bigInt()}, true
+	return IntRange{result[0].bigInt(), result[1].bigInt()}, true
 }

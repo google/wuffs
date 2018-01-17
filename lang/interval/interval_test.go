@@ -27,11 +27,11 @@ import (
 // TestMotivatingExample tests the "motivating example" given in the package
 // doc comment.
 func TestMotivatingExample(tt *testing.T) {
-	i := Int{big.NewInt(0), big.NewInt(255)}
-	j := Int{big.NewInt(0), big.NewInt(3)}
-	four := Int{big.NewInt(4), big.NewInt(4)}
+	i := IntRange{big.NewInt(0), big.NewInt(255)}
+	j := IntRange{big.NewInt(0), big.NewInt(3)}
+	four := IntRange{big.NewInt(4), big.NewInt(4)}
 	got := four.Mul(i).Add(j)
-	want := Int{big.NewInt(0), big.NewInt(1023)}
+	want := IntRange{big.NewInt(0), big.NewInt(1023)}
 	if !got.Eq(want) {
 		tt.Fatalf("got %v, want %v", got, want)
 	}
@@ -145,38 +145,38 @@ func parseInt(s string) (x *big.Int, remaining string, err error) {
 // It also parses infinite (unbounded) intervals like "[0, +∞)", and the
 // special syntax "[...empty..]" for an empty interval (one that contains no
 // elements).
-func parseInterval(s string) (x Int, remaining string, err error) {
+func parseInterval(s string) (x IntRange, remaining string, err error) {
 	const emptySyntax = "[...empty..]"
 	s = trimLeadingSpaces(s)
 	if strings.HasPrefix(s, emptySyntax) {
 		s = s[len(emptySyntax):]
-		return Int{big.NewInt(+1), big.NewInt(-1)}, s, nil
+		return IntRange{big.NewInt(+1), big.NewInt(-1)}, s, nil
 	}
 
 	if s[0] != '(' && s[0] != '[' {
-		return Int{}, "", fmt.Errorf("expected '(' or '['")
+		return IntRange{}, "", fmt.Errorf("expected '(' or '['")
 	}
 	s = s[1:]
 	x0, s, err := parseInt(s)
 	if err != nil {
-		return Int{}, "", err
+		return IntRange{}, "", err
 	}
 	if s[0] != ',' {
-		return Int{}, "", fmt.Errorf("expected ','")
+		return IntRange{}, "", fmt.Errorf("expected ','")
 	}
 	s = s[1:]
 	x1, s, err := parseInt(s)
 	if err != nil {
-		return Int{}, "", err
+		return IntRange{}, "", err
 	}
 	if s[0] != ')' && s[0] != ']' {
-		return Int{}, "", fmt.Errorf("expected ')' or ']'")
+		return IntRange{}, "", fmt.Errorf("expected ')' or ']'")
 	}
 	s = s[1:]
 	if x0 != nil && x1 != nil && x0.Cmp(x1) > 0 {
-		return Int{}, "", fmt.Errorf("invalid empty interval")
+		return IntRange{}, "", fmt.Errorf("invalid empty interval")
 	}
-	return Int{x0, x1}, s, nil
+	return IntRange{x0, x1}, s, nil
 }
 
 func TestContainsEtc(tt *testing.T) {
@@ -211,24 +211,24 @@ func TestContainsEtc(tt *testing.T) {
 	}
 
 	// eqTestCases is appended to throughout the "range testCases" loop, but it
-	// always contains exactly one empty Int.
-	eqTestCases := []Int{
+	// always contains exactly one empty IntRange.
+	eqTestCases := []IntRange{
 		empty(),
 	}
 
 	for _, tc := range testCases {
-		x := Int{}
+		x := IntRange{}
 		switch tc.s {
 		case "<empty-->":
-			x = Int{big.NewInt(-1), big.NewInt(-2)}
+			x = IntRange{big.NewInt(-1), big.NewInt(-2)}
 		case "<empty0->":
-			x = Int{big.NewInt(00), big.NewInt(-2)}
+			x = IntRange{big.NewInt(00), big.NewInt(-2)}
 		case "<empty+->":
-			x = Int{big.NewInt(+2), big.NewInt(-2)}
+			x = IntRange{big.NewInt(+2), big.NewInt(-2)}
 		case "<empty+0>":
-			x = Int{big.NewInt(+2), big.NewInt(00)}
+			x = IntRange{big.NewInt(+2), big.NewInt(00)}
 		case "<empty++>":
-			x = Int{big.NewInt(+2), big.NewInt(+1)}
+			x = IntRange{big.NewInt(+2), big.NewInt(+1)}
 		default:
 			err := error(nil)
 			x, _, err = parseInterval(tc.s)
@@ -291,7 +291,7 @@ func TestContainsEtc(tt *testing.T) {
 	}
 }
 
-func testBruteForceAgrees(x Int, y Int, opKey string) error {
+func testBruteForceAgrees(x IntRange, y IntRange, opKey string) error {
 	brute, bruteOK := bruteForce(x, y, opKey)
 	got, gotOK := intOperators[opKey](x, y)
 	if !got.Eq(brute) || gotOK != bruteOK {
@@ -324,11 +324,11 @@ func TestBruteForceAgreesSystematically(tt *testing.T) {
 
 		for _, x0 := range ints {
 			for _, x1 := range ints {
-				x := Int{x0, x1}
+				x := IntRange{x0, x1}
 
 				for _, y0 := range ints {
 					for _, y1 := range ints {
-						y := Int{y0, y1}
+						y := IntRange{y0, y1}
 
 						if err := testBruteForceAgrees(x, y, opKey); err != nil {
 							tt.Fatalf("%v %s %v: %v", x, opKey, y, err)
@@ -352,8 +352,8 @@ func TestBruteForceAgreesRandomly(tt *testing.T) {
 	rng := rand.New(rand.NewSource(0))
 	for _, opKey := range intOperatorsKeys {
 		for i := 0; i < 10000; i++ {
-			x := Int{gen(rng), gen(rng)}
-			y := Int{gen(rng), gen(rng)}
+			x := IntRange{gen(rng), gen(rng)}
+			y := IntRange{gen(rng), gen(rng)}
 			if err := testBruteForceAgrees(x, y, opKey); err != nil {
 				tt.Fatalf("%v %s %v: %v", x, opKey, y, err)
 			}
@@ -391,7 +391,7 @@ func testOp1(s string) error {
 	}
 	s = s[2:]
 	s = trimLeadingSpaces(s)
-	want, wantOK := Int{}, false
+	want, wantOK := IntRange{}, false
 	if s == "invalid" {
 		s = ""
 	} else {
@@ -417,13 +417,13 @@ func testOp1(s string) error {
 	return nil
 }
 
-var intOperators = map[string]func(Int, Int) (Int, bool){
-	"+":  func(x Int, y Int) (z Int, ok bool) { return x.Add(y), true },
-	"-":  func(x Int, y Int) (z Int, ok bool) { return x.Sub(y), true },
-	"*":  func(x Int, y Int) (z Int, ok bool) { return x.Mul(y), true },
-	"/":  Int.Quo,
-	"<<": Int.Lsh,
-	">>": Int.Rsh,
+var intOperators = map[string]func(IntRange, IntRange) (IntRange, bool){
+	"+":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Add(y), true },
+	"-":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Sub(y), true },
+	"*":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Mul(y), true },
+	"/":  IntRange.Quo,
+	"<<": IntRange.Lsh,
+	">>": IntRange.Rsh,
 }
 
 var intOperatorsKeys []string

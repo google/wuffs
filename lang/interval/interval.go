@@ -96,14 +96,14 @@ func (x *biggerIntPair) raiseMax(y biggerInt) {
 	}
 }
 
-func (x *biggerIntPair) toInt() Int {
+func (x *biggerIntPair) toIntRange() IntRange {
 	if x[0].extra > 0 || x[1].extra < 0 {
 		return empty()
 	}
-	return Int{x[0].i, x[1].i}
+	return IntRange{x[0].i, x[1].i}
 }
 
-func (x *biggerIntPair) fromInt(y Int) {
+func (x *biggerIntPair) fromIntRange(y IntRange) {
 	if y[0] != nil {
 		x[0] = biggerInt{i: big.NewInt(0).Set(y[0])}
 	} else {
@@ -116,9 +116,9 @@ func (x *biggerIntPair) fromInt(y Int) {
 	}
 }
 
-// Int is an integer interval. The array elements are the minimum and maximum
-// values, inclusive (if non-nil) on both ends. A nil element means unbounded:
-// negative or positive infinity.
+// IntRange is an integer interval. The array elements are the minimum and
+// maximum values, inclusive (if non-nil) on both ends. A nil element means
+// unbounded: negative or positive infinity.
 //
 // The zero value (zero in the Go sense, not in the integer sense) is a valid,
 // infinitely sized interval, unbounded at both ends.
@@ -131,10 +131,14 @@ func (x *biggerIntPair) fromInt(y Int) {
 // It is also valid for the first element to be greater than the second
 // element. This represents an empty interval. There is more than one
 // representation of an empty interval.
-type Int [2]*big.Int
+//
+// "Int" abbreviates "Integer" (the same as for big.Int), not "Interval".
+// Similarly, we use "Range" instead of "Interval" to avoid unnecessary
+// confusion, even though this type is indeed an integer interval.
+type IntRange [2]*big.Int
 
 // String returns a string representation of x.
-func (x Int) String() string {
+func (x IntRange) String() string {
 	if x.Empty() {
 		return "<empty>"
 	}
@@ -155,13 +159,13 @@ func (x Int) String() string {
 	return string(buf)
 }
 
-// empty returns an empty Int: one that contains no elements.
-func empty() Int {
-	return Int{big.NewInt(+1), big.NewInt(-1)}
+// empty returns an empty IntRange: one that contains no elements.
+func empty() IntRange {
+	return IntRange{big.NewInt(+1), big.NewInt(-1)}
 }
 
 // ContainsNegative returns whether x contains at least one negative value.
-func (x Int) ContainsNegative() bool {
+func (x IntRange) ContainsNegative() bool {
 	if x[0] == nil {
 		return true
 	}
@@ -172,7 +176,7 @@ func (x Int) ContainsNegative() bool {
 }
 
 // ContainsPositive returns whether x contains at least one positive value.
-func (x Int) ContainsPositive() bool {
+func (x IntRange) ContainsPositive() bool {
 	if x[1] == nil {
 		return true
 	}
@@ -183,13 +187,13 @@ func (x Int) ContainsPositive() bool {
 }
 
 // ContainsZero returns whether x contains zero.
-func (x Int) ContainsZero() bool {
+func (x IntRange) ContainsZero() bool {
 	return (x[0] == nil || x[0].Sign() <= 0) &&
 		(x[1] == nil || x[1].Sign() >= 0)
 }
 
 // Eq returns whether x equals y.
-func (x Int) Eq(y Int) bool {
+func (x IntRange) Eq(y IntRange) bool {
 	if xe, ye := x.Empty(), y.Empty(); xe || ye {
 		return xe == ye
 	}
@@ -207,20 +211,20 @@ func (x Int) Eq(y Int) bool {
 }
 
 // Empty returns whether x is empty.
-func (x Int) Empty() bool {
+func (x IntRange) Empty() bool {
 	return x[0] != nil && x[1] != nil && x[0].Cmp(x[1]) > 0
 }
 
 // justZero returns whether x is the [0, 0] interval, containing exactly one
 // element: the integer zero.
-func (x Int) justZero() bool {
+func (x IntRange) justZero() bool {
 	return x[0] != nil && x[1] != nil && x[0].Sign() == 0 && x[1].Sign() == 0
 }
 
-// split splits x into negative, zero and positive sub-intervals. The Int
+// split splits x into negative, zero and positive sub-intervals. The IntRange
 // values returned may be empty, which means that x does not contain any
 // negative or positive elements.
-func (x Int) split() (neg Int, pos Int, negEmpty bool, hasZero bool, posEmpty bool) {
+func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bool, posEmpty bool) {
 	if x[0] != nil && x[0].Sign() > 0 {
 		return empty(), x, true, false, x.Empty()
 	}
@@ -244,7 +248,7 @@ func (x Int) split() (neg Int, pos Int, negEmpty bool, hasZero bool, posEmpty bo
 }
 
 // Add returns z = x + y.
-func (x Int) Add(y Int) (z Int) {
+func (x IntRange) Add(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
 		return empty()
 	}
@@ -258,7 +262,7 @@ func (x Int) Add(y Int) (z Int) {
 }
 
 // Sub returns z = x - y.
-func (x Int) Sub(y Int) (z Int) {
+func (x IntRange) Sub(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
 		return empty()
 	}
@@ -272,28 +276,28 @@ func (x Int) Sub(y Int) (z Int) {
 }
 
 // Mul returns z = x * y.
-func (x Int) Mul(y Int) (z Int) {
+func (x IntRange) Mul(y IntRange) (z IntRange) {
 	return x.mulLsh(y, false)
 }
 
 // Lsh returns z = x << y.
 //
-// ok is false (and z will be Int{nil, nil}) if x is non-empty and y contains
-// at least one negative value, as it's invalid to shift by a negative number.
-// Otherwise, ok is true.
-func (x Int) Lsh(y Int) (z Int, ok bool) {
+// ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
+// contains at least one negative value, as it's invalid to shift by a negative
+// number. Otherwise, ok is true.
+func (x IntRange) Lsh(y IntRange) (z IntRange, ok bool) {
 	if !x.Empty() && y.ContainsNegative() {
-		return Int{}, false
+		return IntRange{}, false
 	}
 	return x.mulLsh(y, true), true
 }
 
-func (x Int) mulLsh(y Int, shift bool) (z Int) {
+func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 	if x.Empty() || y.Empty() {
 		return empty()
 	}
 	if x.justZero() || (!shift && y.justZero()) {
-		return Int{big.NewInt(0), big.NewInt(0)}
+		return IntRange{big.NewInt(0), big.NewInt(0)}
 	}
 
 	combine := bigIntMul
@@ -308,7 +312,7 @@ func (x Int) mulLsh(y Int, shift bool) (z Int) {
 	negY, posY, negYEmpty, zeroY, posYEmpty := y.split()
 
 	if zeroY && shift {
-		ret.fromInt(x)
+		ret.fromIntRange(x)
 	} else if (zeroY && !shift) || zeroX {
 		ret[0] = biggerInt{i: big.NewInt(0)}
 		ret[1] = biggerInt{i: big.NewInt(0)}
@@ -364,23 +368,23 @@ func (x Int) mulLsh(y Int, shift bool) (z Int) {
 		}
 	}
 
-	return ret.toInt()
+	return ret.toIntRange()
 }
 
 // Quo returns z = x / y. Like the big.Int.Quo method (and unlike the
 // big.Int.Div method), it truncates towards zero.
 //
-// ok is false (and z will be Int{nil, nil}) if x is non-empty and y contains
-// zero, as it's invalid to divide by zero. Otherwise, ok is true.
-func (x Int) Quo(y Int) (z Int, ok bool) {
+// ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
+// contains zero, as it's invalid to divide by zero. Otherwise, ok is true.
+func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return empty(), true
 	}
 	if y.ContainsZero() {
-		return Int{}, false
+		return IntRange{}, false
 	}
 	if x.justZero() {
-		return Int{big.NewInt(0), big.NewInt(0)}, true
+		return IntRange{big.NewInt(0), big.NewInt(0)}, true
 	}
 
 	ret := newBiggerIntPair()
@@ -454,23 +458,23 @@ func (x Int) Quo(y Int) (z Int, ok bool) {
 		}
 	}
 
-	return ret.toInt(), true
+	return ret.toIntRange(), true
 }
 
 // Rsh returns z = x >> y.
 //
-// ok is false (and z will be Int{nil, nil}) if x is non-empty and y contains
-// at least one negative value, as it's invalid to shift by a negative number.
-// Otherwise, ok is true.
-func (x Int) Rsh(y Int) (z Int, ok bool) {
+// ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
+// contains at least one negative value, as it's invalid to shift by a negative
+// number. Otherwise, ok is true.
+func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return empty(), true
 	}
 	if y.ContainsNegative() {
-		return Int{}, false
+		return IntRange{}, false
 	}
 	if x.justZero() {
-		return Int{big.NewInt(0), big.NewInt(0)}, true
+		return IntRange{big.NewInt(0), big.NewInt(0)}, true
 	}
 
 	ret := newBiggerIntPair()
@@ -511,5 +515,5 @@ func (x Int) Rsh(y Int) (z Int, ok bool) {
 		}
 	}
 
-	return ret.toInt(), true
+	return ret.toIntRange(), true
 }
