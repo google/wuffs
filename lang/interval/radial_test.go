@@ -38,7 +38,8 @@ package interval
 // If x and y are "small" radialInput values or one of the two "smallest large"
 // radialInput values, i.e. x and y are in the range [-16, +16], then (x op y)
 // will always be a "small" radialOutput value, for the common binary
-// operators: add, subtract, multiply, divide, left-shift, right-shift.
+// operators: add, subtract, multiply, divide, left-shift, right-shift, and,
+// or.
 //
 // Both of these radialInput and radialOutput types are encoded as an int32:
 //  - math.MinInt32 (which equals -1 << 31) encodes a NaN.
@@ -82,6 +83,7 @@ import (
 const (
 	radialNaN = -1 << 31
 
+	// Note that radialInput.Or requires that (riRadius + 1) is a power of 2.
 	riRadius = 15
 	roRadius = 16 << 16
 
@@ -337,6 +339,62 @@ func (x radialInput) Rsh(y radialInput) radialOutPair {
 	}
 }
 
+func (x radialInput) And(y radialInput) radialOutPair {
+	if x == radialNaN || y == radialNaN {
+		return radialOutPair{radialNaN, radialNaN}
+	}
+	if x < 0 || y < 0 {
+		// TODO: handle negative numbers.
+		return radialOutPair{radialNaN, radialNaN}
+	}
+	ox := x.canonicalize()
+	oy := y.canonicalize()
+
+	if ox <= +riRadius {
+		if oy <= +riRadius {
+			return radialOutPair{ox & oy, ox & oy}
+		} else {
+			return radialOutPair{0, ox}
+		}
+	} else {
+		if oy <= +riRadius {
+			return radialOutPair{0, oy}
+		} else {
+			return radialOutPair{0, roLargePos}
+		}
+	}
+}
+
+func (x radialInput) Or(y radialInput) radialOutPair {
+	if x == radialNaN || y == radialNaN {
+		return radialOutPair{radialNaN, radialNaN}
+	}
+	if x < 0 || y < 0 {
+		// TODO: handle negative numbers.
+		return radialOutPair{radialNaN, radialNaN}
+	}
+	ox := x.canonicalize()
+	oy := y.canonicalize()
+
+	// r is a power of 2, so that its binary representation contains one "1"
+	// digit, and that digit is not shared with any "small" value <= riRadius.
+	const r = riRadius + 1
+
+	if ox <= +riRadius {
+		if oy <= +riRadius {
+			return radialOutPair{ox | oy, ox | oy}
+		} else {
+			return radialOutPair{ox | r, roLargePos}
+		}
+	} else {
+		if oy <= +riRadius {
+			return radialOutPair{oy | r, roLargePos}
+		} else {
+			return radialOutPair{r, roLargePos}
+		}
+	}
+}
+
 var riOperators = map[string]func(radialInput, radialInput) radialOutPair{
 	"+":  radialInput.Add,
 	"-":  radialInput.Sub,
@@ -344,6 +402,8 @@ var riOperators = map[string]func(radialInput, radialInput) radialOutPair{
 	"/":  radialInput.Quo,
 	"<<": radialInput.Lsh,
 	">>": radialInput.Rsh,
+	"&":  radialInput.And,
+	"|":  radialInput.Or,
 }
 
 func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {

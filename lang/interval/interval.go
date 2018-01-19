@@ -34,6 +34,10 @@ import (
 	"math/big"
 )
 
+var (
+	one = big.NewInt(1)
+)
+
 func bigIntMul(i *big.Int, j *big.Int) *big.Int { return big.NewInt(0).Mul(i, j) }
 func bigIntQuo(i *big.Int, j *big.Int) *big.Int { return big.NewInt(0).Quo(i, j) }
 
@@ -190,6 +194,12 @@ func (x IntRange) ContainsPositive() bool {
 func (x IntRange) ContainsZero() bool {
 	return (x[0] == nil || x[0].Sign() <= 0) &&
 		(x[1] == nil || x[1].Sign() >= 0)
+}
+
+// Contains returns whether x contains i.
+func (x IntRange) Contains(i *big.Int) bool {
+	return (x[0] == nil || x[0].Cmp(i) <= 0) &&
+		(x[1] == nil || x[1].Cmp(i) >= 0)
 }
 
 // Eq returns whether x equals y.
@@ -516,4 +526,364 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 	}
 
 	return ret.toIntRange(), true
+}
+
+// And returns z = x & y.
+//
+// ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
+// one negative value. Otherwise, ok is true.
+//
+// TODO: implement bit-wise operations (with tight bounds) on negative
+// integers. In that case, we could drop the "ok" return value.
+func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
+	if x.Empty() || y.Empty() {
+		return empty(), true
+	}
+	if x.ContainsNegative() || y.ContainsNegative() {
+		return IntRange{}, false
+	}
+
+	zMax := (*big.Int)(nil)
+	if x[1] != nil {
+		if y[1] != nil {
+			zMax = x.andMax(y)
+		} else {
+			return IntRange{big.NewInt(0), x[1]}, true
+		}
+	} else {
+		if y[1] != nil {
+			return IntRange{big.NewInt(0), y[1]}, true
+		} else {
+			return IntRange{big.NewInt(0), nil}, true
+		}
+	}
+
+	// andMin(x, y) is ~orMax(~x, ~y).
+	notX := IntRange{
+		big.NewInt(0).Not(x[1]),
+		big.NewInt(0).Not(x[0]),
+	}
+	notY := IntRange{
+		big.NewInt(0).Not(y[1]),
+		big.NewInt(0).Not(y[0]),
+	}
+	zMin := notX.orMax(notY)
+	zMin.Not(zMin)
+
+	return IntRange{zMin, zMax}, true
+}
+
+// Or returns z = x | y.
+//
+// ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
+// one negative value. Otherwise, ok is true.
+//
+// TODO: implement bit-wise operations (with tight bounds) on negative
+// integers. In that case, we could drop the "ok" return value.
+func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
+	if x.Empty() || y.Empty() {
+		return empty(), true
+	}
+	if x.ContainsNegative() || y.ContainsNegative() {
+		return IntRange{}, false
+	}
+
+	zMax := (*big.Int)(nil)
+	if x[1] != nil && y[1] != nil {
+		zMax = x.orMax(y)
+	} else {
+		// Keep zMax as nil, which means that (x | y) can be arbitrarily large.
+		//
+		// If the integers xx and yy are in the intervals x and y, then (xx |
+		// yy) is at least yy, since a bit-wise or can only turn bits on, and
+		// yy is at least y's lower bound, y[0].
+		//
+		// Therefore, (z[0] >= x[0]) && (z[0] >= y[0]) is a necessary bound.
+		// The smaller of those is also a sufficient bound if that smaller
+		// value is contained in the other interval. For example, if both xx
+		// and yy can be x[0], then (x[0] | x[0]) is simply x[0].
+		if x.Contains(y[0]) {
+			return IntRange{y[0], nil}, true
+		}
+		if y.Contains(x[0]) {
+			return IntRange{x[0], nil}, true
+		}
+		if x[1] == nil && y[1] == nil {
+			panic("unreachable")
+		}
+
+		// The two intervals are non-empty but don't overlap. Furthermore,
+		// exactly one of the two intervals have an infinite upper bound.
+		// Without loss of generality, assume that that interval is y.
+		//
+		// Therefore, (x[0] <= x[1]) && (x[1] < y[0]) && (y[1] == nil).
+		if x[1] == nil {
+			x, y = y, x
+		}
+		if x[1].Cmp(y[0]) >= 0 {
+			panic("unreachable")
+		}
+
+		// We've already calculated zMax: it is infinite. To calculate zMin,
+		// also known as z[0], replace the infinite upper bound y[1] with a
+		// finite value equal to right-filling all of y[0]'s bits.
+		y[1] = big.NewInt(0).Set(y[0])
+		bitFillRight(y[1])
+	}
+
+	// orMin(x, y) is ~andMax(~x, ~y).
+	notX := IntRange{
+		big.NewInt(0).Not(x[1]),
+		big.NewInt(0).Not(x[0]),
+	}
+	notY := IntRange{
+		big.NewInt(0).Not(y[1]),
+		big.NewInt(0).Not(y[0]),
+	}
+	zMin := notX.andMax(notY)
+	zMin.Not(zMin)
+
+	return IntRange{zMin, zMax}, true
+}
+
+// andMax returns an exact solution for the maximum possible (xx & yy), for all
+// possible xx in x and yy in y. Denoting those intervals' bounds as [xMin,
+// xMax] and [yMin, yMax], all four bounds are assumed non-negative and
+// non-nil.
+//
+// Algorithm:
+//  // If the two intervals overlap, the result is the minimum of the two
+//  // intervals' maxima.
+//  //
+//  // This overlaps code path is just an optimization.
+//  if overlaps(x, y) {
+//    return min(xMax, yMax)
+//  }
+//  xFlip   = bitFillRight(bitFillRight(xMax & ~xMin) & xMax & ~yMax)
+//  xResult = yMax & ((xMax & ~xFlip) | (xFlip >> 1))
+//  yFlip   = bitFillRight(bitFillRight(yMax & ~yMin) & yMax & ~xMax)
+//  yResult = xMax & ((yMax & ~yFlip) | (yFlip >> 1))
+//  return max(xResult, yResult)
+//
+// If xMin and yMin are both zero, the overlaps branch is taken.
+//
+// TODO: can this algorithm be simplified??
+func (x IntRange) andMax(y IntRange) *big.Int {
+	// Check for overlap.
+	if (y[1].Cmp(x[0]) >= 0) && (x[1].Cmp(y[0]) >= 0) {
+		min := x[1]
+		if x[1].Cmp(y[1]) > 0 {
+			min = y[1]
+		}
+		return min
+	}
+
+	// Otherwise, x and y don't overlap. Four examples:
+	//  - Example #0: x is [1, 3] and y is [ 4,  9], andMax is 3.
+	//  - Example #1: x is [3, 4] and y is [ 5,  6], andMax is 4.
+	//  - Example #2: x is [4, 5] and y is [ 6,  7], andMax is 5.
+	//  - Example #3: x is [7, 7] and y is [12, 14], andMax is 6.
+
+	i := big.NewInt(0)
+	j := big.NewInt(0)
+	k := big.NewInt(0)
+
+	// Calculate xFlip and xResult.
+	{
+		// j = bitFillRight(xMax & ~xMin)
+		//
+		// For example #0, j = bfr(3 & ~1) = bfr(2) = 3.
+		// For example #1, j = bfr(4 & ~3) = bfr(4) = 7.
+		// For example #2, j = bfr(5 & ~4) = bfr(1) = 1.
+		// For example #3, j = bfr(7 & ~7) = bfr(0) = 0.
+		j.Not(x[0])
+		j.And(j, x[1])
+		bitFillRight(j)
+
+		// j = xFlip = bitFillRight(j & xMax & ~yMax)
+		//
+		// For example #0, j = bfr(3 & 3 & ~ 9) = bfr(2) = 3.
+		// For example #1, j = bfr(7 & 4 & ~ 6) = bfr(0) = 0.
+		// For example #2, j = bfr(1 & 5 & ~ 7) = bfr(0) = 0.
+		// For example #3, j = bfr(0 & 7 & ~15) = bfr(0) = 0.
+		i.Not(y[1])
+		j.And(j, i)
+		j.And(j, x[1])
+		bitFillRight(j)
+
+		// i = xMax & ~xFlip
+		//
+		// For example #0, i = 3 & ~3 = 0.
+		// For example #1, i = 4 & ~0 = 4.
+		// For example #2, i = 5 & ~0 = 5.
+		// For example #3, i = 7 & ~0 = 7.
+		i.Not(j)
+		i.And(i, x[1])
+
+		// j = xResult = yMax & (i | (xFlip >> 1))
+		//
+		// For example #0, j =  9 & (0 | (3 >> 1)) = 1.
+		// For example #1, j =  6 & (4 | (0 >> 1)) = 4.
+		// For example #2, j =  7 & (5 | (0 >> 1)) = 5.
+		// For example #3, j = 14 & (7 | (0 >> 1)) = 6.
+		j.Rsh(j, 1)
+		j.Or(j, i)
+		j.And(j, y[1])
+	}
+
+	// Calculate yFlip and yResult.
+	{
+		// k = bitFillRight(yMax & ~yMin)
+		//
+		// For example #0, k = bfr( 9 & ~ 4) = bfr(9) = 15.
+		// For example #1, k = bfr( 6 & ~ 5) = bfr(2) =  3.
+		// For example #2, k = bfr( 7 & ~ 6) = bfr(1) =  1.
+		// For example #3, k = bfr(14 & ~12) = bfr(2) =  3.
+		k.Not(y[0])
+		k.And(k, y[1])
+		bitFillRight(k)
+
+		// k = yFlip = bitFillRight(k & yMax & ~xMax)
+		//
+		// For example #0, k = bfr(15 &  9 & ~3) = bfr(8) = 15.
+		// For example #1, k = bfr( 3 &  6 & ~4) = bfr(2) =  3.
+		// For example #2, k = bfr( 1 & 14 & ~5) = bfr(0) =  0.
+		// For example #3, k = bfr( 3 &  7 & ~7) = bfr(0) =  0.
+		i.Not(x[1])
+		k.And(k, i)
+		k.And(k, y[1])
+		bitFillRight(k)
+
+		// i = yMax & ~yFlip
+		//
+		// For example #0, i =  9 & ~15 =  0.
+		// For example #1, i =  6 & ~ 3 =  4.
+		// For example #2, i =  7 & ~ 0 =  7.
+		// For example #3, i = 14 & ~ 0 = 14.
+		i.Not(k)
+		i.And(i, y[1])
+
+		// k = yResult = xMax & (i | (yFlip >> 1))
+		//
+		// For example #0, k = 3 & ( 0 | (15 >> 1)) = 3.
+		// For example #1, k = 4 & ( 4 | ( 3 >> 1)) = 4.
+		// For example #2, k = 5 & ( 7 | ( 0 >> 1)) = 5.
+		// For example #3, k = 7 & (14 | ( 0 >> 1)) = 6.
+		k.Rsh(k, 1)
+		k.Or(k, i)
+		k.And(k, x[1])
+	}
+
+	// return max(xResult, yResult)
+	//
+	// For example #0, return max(1, 3).
+	// For example #1, return max(4, 4).
+	// For example #2, return max(5, 5).
+	// For example #3, return max(6, 6).
+	if j.Cmp(k) < 0 {
+		return k
+	}
+	return j
+}
+
+// orMax returns an exact solution for the maximum possible (xx | yy), for all
+// possible xx in x and yy in y. Denoting those intervals' bounds as [xMin,
+// xMax] and [yMin, yMax], all four bounds are assumed non-negative and
+// non-nil.
+//
+// Algorithm:
+//  droppable = bitFillRight((xMax & ~xMin) | (yMax & ~yMin))
+//  available = xMax & yMax & droppable
+//  return xMax | yMax | (bitFillRight(available) >> 1)
+//
+// If xMin and yMin are both zero, this simplifies to:
+//  available = xMax & yMax
+//  return xMax | yMax | (bitFillRight(available) >> 1)
+func (x IntRange) orMax(y IntRange) *big.Int {
+	if x[0].Sign() == 0 && y[0].Sign() == 0 {
+		i := big.NewInt(0)
+		i.And(x[1], y[1])
+		bitFillRight(i)
+		i.Rsh(i, 1)
+		i.Or(i, x[1])
+		i.Or(i, y[1])
+		return i
+	}
+
+	// Four examples:
+	//  - Example #0: x is [1, 3] and y is [ 4,  9], orMax is 11.
+	//  - Example #1: x is [3, 4] and y is [ 5,  6], orMax is  7.
+	//  - Example #2: x is [4, 5] and y is [ 6,  7], orMax is  7.
+	//  - Example #3: x is [7, 7] and y is [12, 14], orMax is 15.
+
+	i := big.NewInt(0)
+	j := big.NewInt(0)
+
+	// j = droppable = bitFillRight((xMax & ~xMin) | (yMax & ~yMin))
+	//
+	// For example #0, j = bfr((3 & ~1) | ( 9 & ~ 4)) = bfr(2 | 9) = 15.
+	// For example #1, j = bfr((4 & ~3) | ( 6 & ~ 5)) = bfr(4 | 2) =  7.
+	// For example #2, j = bfr((5 & ~4) | ( 7 & ~ 6)) = bfr(1 | 1) =  1.
+	// For example #3, j = bfr((7 & ~7) | (14 & ~12)) = bfr(0 | 2) =  3.
+	i.Not(x[0])
+	i.And(i, x[1])
+	j.Not(y[0])
+	j.And(j, y[1])
+	j.Or(j, i)
+	bitFillRight(j)
+
+	// j = available = xMax & yMax & j
+	//
+	// For example #0, j = 3 &  9 & 15 = 1.
+	// For example #1, j = 4 &  6 &  7 = 4.
+	// For example #2, j = 5 &  7 &  1 = 1.
+	// For example #3, j = 7 & 14 &  3 = 2.
+	j.And(j, x[1])
+	j.And(j, y[1])
+
+	// j = bitFillRight(j) >> 1
+	//
+	// For example #0, j = bfr(1) >> 1 = 0.
+	// For example #1, j = bfr(4) >> 1 = 3.
+	// For example #2, j = bfr(1) >> 1 = 0.
+	// For example #3, j = bfr(2) >> 1 = 1.
+	bitFillRight(j)
+	j.Rsh(j, 1)
+
+	// return xMax | yMax | j
+	//
+	// For example #0, return 3 |  9 | 0 = 11.
+	// For example #1, return 4 |  6 | 3 =  7.
+	// For example #2, return 5 |  7 | 0 =  7.
+	// For example #3, return 7 | 14 | 1 = 15.
+	j.Or(j, x[1])
+	j.Or(j, y[1])
+	return j
+}
+
+// bitFillRight modifies i to round up to the next power of 2 minus 1:
+//  - If i is +0 then bitFillRight(i) sets i to  0.
+//  - If i is +1 then bitFillRight(i) sets i to  1.
+//  - If i is +2 then bitFillRight(i) sets i to  3.
+//  - If i is +3 then bitFillRight(i) sets i to  3.
+//  - If i is +4 then bitFillRight(i) sets i to  7.
+//  - If i is +5 then bitFillRight(i) sets i to  7.
+//  - If i is +6 then bitFillRight(i) sets i to  7.
+//  - If i is +7 then bitFillRight(i) sets i to  7.
+//  - If i is +8 then bitFillRight(i) sets i to 15.
+//  - If i is +9 then bitFillRight(i) sets i to 15.
+//  - Etc.
+func bitFillRight(i *big.Int) {
+	if s := i.Sign(); s < 0 {
+		panic("TODO: implement bit-wise operations on negative integers")
+	} else if s == 0 {
+		return
+	}
+	n := i.BitLen()
+	if n > 0xFFFF {
+		panic("interval: input is too large")
+	}
+	i.SetInt64(1)
+	i.Lsh(i, uint(n))
+	i.Sub(i, one)
 }
