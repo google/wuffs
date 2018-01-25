@@ -696,8 +696,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, j = bfr(4 & ~3) = bfr(4) = 7.
 		// For example #2, j = bfr(5 & ~4) = bfr(1) = 1.
 		// For example #3, j = bfr(7 & ~7) = bfr(0) = 0.
-		j.Not(x[0])
-		j.And(j, x[1])
+		j.AndNot(x[1], x[0])
 		bitFillRight(j)
 
 		// j = xFlip = bitFillRight(j & xMax & ~yMax)
@@ -706,9 +705,8 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, j = bfr(7 & 4 & ~ 6) = bfr(0) = 0.
 		// For example #2, j = bfr(1 & 5 & ~ 7) = bfr(0) = 0.
 		// For example #3, j = bfr(0 & 7 & ~15) = bfr(0) = 0.
-		i.Not(y[1])
-		j.And(j, i)
 		j.And(j, x[1])
+		j.AndNot(j, y[1])
 		bitFillRight(j)
 
 		// i = xMax & ~xFlip
@@ -717,8 +715,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, i = 4 & ~0 = 4.
 		// For example #2, i = 5 & ~0 = 5.
 		// For example #3, i = 7 & ~0 = 7.
-		i.Not(j)
-		i.And(i, x[1])
+		i.AndNot(x[1], j)
 
 		// j = xResult = yMax & (i | (xFlip >> 1))
 		//
@@ -739,8 +736,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, k = bfr( 6 & ~ 5) = bfr(2) =  3.
 		// For example #2, k = bfr( 7 & ~ 6) = bfr(1) =  1.
 		// For example #3, k = bfr(14 & ~12) = bfr(2) =  3.
-		k.Not(y[0])
-		k.And(k, y[1])
+		k.AndNot(y[1], y[0])
 		bitFillRight(k)
 
 		// k = yFlip = bitFillRight(k & yMax & ~xMax)
@@ -749,9 +745,8 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, k = bfr( 3 &  6 & ~4) = bfr(2) =  3.
 		// For example #2, k = bfr( 1 & 14 & ~5) = bfr(0) =  0.
 		// For example #3, k = bfr( 3 &  7 & ~7) = bfr(0) =  0.
-		i.Not(x[1])
-		k.And(k, i)
 		k.And(k, y[1])
+		k.AndNot(k, x[1])
 		bitFillRight(k)
 
 		// i = yMax & ~yFlip
@@ -760,8 +755,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		// For example #1, i =  6 & ~ 3 =  4.
 		// For example #2, i =  7 & ~ 0 =  7.
 		// For example #3, i = 14 & ~ 0 = 14.
-		i.Not(k)
-		i.And(i, y[1])
+		i.AndNot(y[1], k)
 
 		// k = yResult = xMax & (i | (yFlip >> 1))
 		//
@@ -825,10 +819,8 @@ func (x IntRange) orMax(y IntRange) *big.Int {
 	// For example #1, j = bfr((4 & ~3) | ( 6 & ~ 5)) = bfr(4 | 2) =  7.
 	// For example #2, j = bfr((5 & ~4) | ( 7 & ~ 6)) = bfr(1 | 1) =  1.
 	// For example #3, j = bfr((7 & ~7) | (14 & ~12)) = bfr(0 | 2) =  3.
-	i.Not(x[0])
-	i.And(i, x[1])
-	j.Not(y[0])
-	j.And(j, y[1])
+	i.AndNot(x[1], x[0])
+	j.AndNot(y[1], y[0])
 	j.Or(j, i)
 	bitFillRight(j)
 
