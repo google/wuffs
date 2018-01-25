@@ -646,10 +646,49 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 	return IntRange{zMin, zMax}, true
 }
 
+// The andMax and orMax algorithms are tricky.
+//
+// First, some notation. Let x and y be intervals, and in math notation, denote
+// those intervals' bounds as [xMin, xMax] and [yMin, yMax]. In Go terms, x is
+// an IntRange, xMin is x[0], xMax is x[1], and likewise for y. In the
+// algorithm discussion below, we'll use square brackets only for denoting
+// intervals, not array indices, and so we'll say xMin instead of x[0].
+//
+// xMin, xMax, yMin and yMax are all assumed to be finite (i.e. a non-nil
+// *big.Int) and non-negative. The caller is responsible for enforcing this.
+//
+// For a given range r, define maximal(r) to be the integers in r for which you
+// cannot flip any bits from 0 to 1 and have the result still be in r. Clearly
+// rMax is in maximal(r), but there are other elements as well -- for each bit
+// that is set in rMax, if you unset that bit, and set all bits to its right,
+// the result is also in maximal(r) as long as it is >= rMin (which is true iff
+// the bit is in bitFillRight(rMax & ~rMin).
+//
+// Clearly x.andMax(y) == maximal(x).andMax(maximal(y)) and x.orMax(y) ==
+// maximal(x).orMax(maximal(y)) -- that is, we only need to consider the
+// maximal elements in each range.
+//
+// For orMax, the max is achieved by starting with xMax | yMax, and then
+// realizing that we can get a larger result by choosing the leftmost bit in
+// xMax & yMax (which we effectively have twice), flipping it to zero in either
+// of the inputs, and replacing all bits to its right with 1s. However, that
+// might end up with the input being below the minimum in its range, so instead
+// of considering all bits in xMax & yMax, we have to restrict to those that
+// are also set in either bitFillRight(xMax & ~xMin) or bitFillRight(yMax &
+// ~yMin).
+//
+// For andMax, we can again only consider the maximal elements. Here, we have
+// either yMax and the best maximal element from x, or xMax and the best
+// maximal element from y. For symmetry assume it's the former (though we must
+// actually check both).
+//
+// We take yMax, and then the maximal element from x that is chosen by flipping
+// the leftmost bit in xMax that will result in a number that is >= xMin and is
+// not also set in yMax. That is, the leftmost bit in bitFillRight(xMax &
+// ~xMin) & xMax & ~yMax.
+
 // andMax returns an exact solution for the maximum possible (xx & yy), for all
-// possible xx in x and yy in y. Denoting those intervals' bounds as [xMin,
-// xMax] and [yMin, yMax], all four bounds are assumed non-negative and
-// non-nil.
+// possible xx in x and yy in y.
 //
 // Algorithm:
 //  // If the two intervals overlap, the result is the minimum of the two
@@ -781,9 +820,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 }
 
 // orMax returns an exact solution for the maximum possible (xx | yy), for all
-// possible xx in x and yy in y. Denoting those intervals' bounds as [xMin,
-// xMax] and [yMin, yMax], all four bounds are assumed non-negative and
-// non-nil.
+// possible xx in x and yy in y.
 //
 // Algorithm:
 //  droppable = bitFillRight((xMax & ~xMin) | (yMax & ~yMin))
