@@ -2,4 +2,6 @@
 *~
 /gen/lib
 /gen/wuffs
+Cargo.lock
 a.out
+target
