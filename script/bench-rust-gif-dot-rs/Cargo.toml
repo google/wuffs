@@ -1,5 +1,5 @@
 [package]
-name    = "bench_gif_dot_rs"
+name    = "bench_rust_gif_dot_rs"
 version = "0.0.1"
 authors = ["Nigel Tao <nigeltao@golang.org>"]
 
