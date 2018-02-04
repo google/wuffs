@@ -138,6 +138,7 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__SUSPENSION_SHORT_READ 8                       // 0x00000008
 #define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
 #define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
+#define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 
 #define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xBE161800
 #define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xBE161801
@@ -206,14 +207,18 @@ typedef struct {
 
     uint32_t f_width;
     uint32_t f_height;
+    uint8_t f_call_sequence;
     uint8_t f_background_color_index;
     uint8_t f_gct[768];
     wuffs_gif__lzw_decoder f_lzw;
 
     struct {
       uint32_t coro_susp_point;
+    } c_decode_config[1];
+    struct {
+      uint32_t coro_susp_point;
       uint8_t v_c;
-    } c_decode[1];
+    } c_decode_frame[1];
     struct {
       uint32_t coro_susp_point;
       uint8_t v_c[6];
@@ -256,9 +261,13 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_gif__status wuffs_gif__decoder__decode(wuffs_gif__decoder* self,
-                                             wuffs_base__writer1 a_dst,
-                                             wuffs_base__reader1 a_src);
+wuffs_gif__status wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
+                                                    wuffs_base__writer1 a_dst,
+                                                    wuffs_base__reader1 a_src);
+
+wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
+                                                   wuffs_base__writer1 a_dst,
+                                                   wuffs_base__reader1 a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

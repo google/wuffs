@@ -59,7 +59,11 @@ static const char* decode() {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_gif__status s =
-      wuffs_gif__decoder__decode(&dec, dst_writer, src_reader);
+      wuffs_gif__decoder__decode_config(&dec, dst_writer, src_reader);
+  if (s) {
+    return wuffs_gif__status__string(s);
+  }
+  s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
   }

@@ -26,23 +26,45 @@ pub error "TODO: unsupported Local Color Table"
 pub struct decoder?(
 	width u32[..65535],
 	height u32[..65535],
+
+	// Call sequence state transitions:
+	//  - 0 -> 1: via decode_config.
+	//  - 1 -> 1: via decode_frame.
+	call_sequence u8,
+
 	background_color_index u8,
+
 	// gct is the Global Color Table: 256 (R, G, B) entries.
 	//
 	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?
 	gct[3 * 256] u8,
+
 	lzw lzw_decoder,
 )
 
-pub func decoder.decode?(dst writer1, src reader1)() {
+// TODO: dst should be an image_config, not a writer1.
+pub func decoder.decode_config?(dst writer1, src reader1)() {
+	if this.call_sequence >= 1 {
+		return error "invalid call sequence"
+	}
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
+	this.call_sequence = 1
+}
+
+pub func decoder.decode_frame?(dst writer1, src reader1)() {
+	if this.call_sequence < 1 {
+		return error "invalid call sequence"
+	}
 	while true {
 		var c u8 = in.src.read_u8?()
 		if c == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
 			this.decode_extension?(src:in.src)
 		} else if c == 0x2C {  // The spec calls 0x2C the "Image Separator".
-			// TODO: animated GIFs can have multiple Image Descriptors.
+			// TODO: animated GIFs can have multiple Image Descriptors. What's
+			// the API? Should the 0x3B Trailer byte result in a "no more
+			// frames" suspension instead of ok? Do we need additional
+			// destination arguments for timing and palette?
 			//
 			// TODO: reset this.lzw if it's not the first ID.
 			this.decode_id?(dst:in.dst, src:in.src)

@@ -48,6 +48,7 @@ var StatusList = [...]Status{
 	{t.IDSuspension, "short read"},   // Used if reading when closed == false.
 	{t.IDSuspension, "short write"},
 	{t.IDError, "cannot return a suspension"},
+	{t.IDError, "invalid call sequence"},
 }
 
 var StatusMap = map[string]Status{}
