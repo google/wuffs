@@ -42,13 +42,14 @@ pub struct decoder?(
 	lzw lzw_decoder,
 )
 
-// TODO: dst should be an image_config, not a writer1.
-pub func decoder.decode_config?(dst writer1, src reader1)() {
+// TODO: should dst be an nptr instead of a ptr?
+pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
+	// TODO: fill in dst.
 	this.call_sequence = 1
 }
 

@@ -50,9 +50,9 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 void test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
-  wuffs_base__writer1 dst = {0};
+  wuffs_base__image_config ic = {{0}};
   wuffs_base__reader1 src = {0};
-  wuffs_gif__status status = wuffs_gif__decoder__decode_config(NULL, dst, src);
+  wuffs_gif__status status = wuffs_gif__decoder__decode_config(NULL, &ic, src);
   if (status != WUFFS_GIF__ERROR_BAD_RECEIVER) {
     FAIL("status: got %d, want %d", status, WUFFS_GIF__ERROR_BAD_RECEIVER);
   }
@@ -61,9 +61,9 @@ void test_basic_bad_receiver() {
 void test_basic_initializer_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = {{0}};
-  wuffs_base__writer1 dst = {0};
+  wuffs_base__image_config ic = {{0}};
   wuffs_base__reader1 src = {0};
-  wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, dst, src);
+  wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
   if (status != WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED) {
     FAIL("status: got %d, want %d", status,
          WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED);
@@ -362,10 +362,11 @@ void bench_wuffs_lzw_decode_100k() {
 const char* wuffs_gif_decode(wuffs_base__buf1* dst, wuffs_base__buf1* src) {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_base__image_config ic = {{0}};
   wuffs_base__writer1 dst_writer = {.buf = dst};
   wuffs_base__reader1 src_reader = {.buf = src};
   wuffs_gif__status s =
-      wuffs_gif__decoder__decode_config(&dec, dst_writer, src_reader);
+      wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
   }
@@ -392,10 +393,10 @@ bool do_test_wuffs_gif_decode(const char* filename,
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   {
-    wuffs_base__writer1 got_writer = {.buf = &got};
+    wuffs_base__image_config ic = {{0}};
     wuffs_base__reader1 src_reader = {.buf = &src};
     wuffs_gif__status status =
-        wuffs_gif__decoder__decode_config(&dec, got_writer, src_reader);
+        wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
       FAIL("status: got %" PRIi32 " (%s)", status,
            wuffs_gif__status__string(status));
@@ -555,7 +556,6 @@ void test_wuffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
 void test_wuffs_gif_decode_input_is_a_png() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, "../../testdata/bricks-dither.png")) {
@@ -564,11 +564,11 @@ void test_wuffs_gif_decode_input_is_a_png() {
 
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_base__writer1 got_writer = {.buf = &got};
+  wuffs_base__image_config ic = {{0}};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
   wuffs_gif__status status =
-      wuffs_gif__decoder__decode_config(&dec, got_writer, src_reader);
+      wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (status != WUFFS_GIF__ERROR_BAD_GIF_HEADER) {
     FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status), WUFFS_GIF__ERROR_BAD_GIF_HEADER,

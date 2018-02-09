@@ -49,6 +49,9 @@ size_t pjw_len;
 static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
+  wuffs_gif__decoder dec;
+  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_base__image_config ic = {{0}};
   uint8_t dst_buffer[DST_BUFFER_SIZE];
   wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
   wuffs_base__buf1 src = {
@@ -56,10 +59,8 @@ static const char* decode() {
   wuffs_base__writer1 dst_writer = {.buf = &dst};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_gif__status s =
-      wuffs_gif__decoder__decode_config(&dec, dst_writer, src_reader);
+      wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
   }

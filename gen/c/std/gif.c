@@ -48,6 +48,8 @@
 // TODO: don't hard code this in base-header.h.
 #define WUFFS_VERSION (0x00001)
 
+// ---------------- I/O
+
 // wuffs_base__slice_u8 is a 1-dimensional buffer (a pointer and length).
 //
 // A value with all fields NULL or zero is a valid, empty slice.
@@ -104,6 +106,74 @@ typedef struct {
     uint8_t* mark;
   } private_impl;
 } wuffs_base__writer1;
+
+// ---------------- Images
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so.
+  struct {
+    uint32_t flags;
+    uint32_t w;
+    uint32_t h;
+    // TODO: color model, including both packed RGBA and planar,
+    // chroma-subsampled YCbCr.
+  } private_impl;
+} wuffs_base__image_config;
+
+static inline void wuffs_base__image_config__invalidate(
+    wuffs_base__image_config* c) {
+  if (c) {
+    *c = ((wuffs_base__image_config){});
+  }
+}
+
+static inline bool wuffs_base__image_config__valid(
+    wuffs_base__image_config* c) {
+  if (!c || !(c->private_impl.flags & 1)) {
+    return false;
+  }
+  uint64_t wh = ((uint64_t)c->private_impl.w) * ((uint64_t)c->private_impl.h);
+  // TODO: handle things other than 1 byte per pixel.
+  return wh <= ((uint64_t)SIZE_MAX);
+}
+
+static inline uint32_t wuffs_base__image_config__width(
+    wuffs_base__image_config* c) {
+  return wuffs_base__image_config__valid(c) ? c->private_impl.w : 0;
+}
+
+static inline uint32_t wuffs_base__image_config__height(
+    wuffs_base__image_config* c) {
+  return wuffs_base__image_config__valid(c) ? c->private_impl.h : 0;
+}
+
+// TODO: this is the right API for planar (not packed) pixbufs? Should it allow
+// decoding into a color model different from the format's intrinsic one? For
+// example, decoding a JPEG image straight to RGBA instead of to YCbCr?
+static inline size_t wuffs_base__image_config__pixbuf_size(
+    wuffs_base__image_config* c) {
+  if (wuffs_base__image_config__valid(c)) {
+    uint64_t wh = ((uint64_t)c->private_impl.w) * ((uint64_t)c->private_impl.h);
+    // TODO: handle things other than 1 byte per pixel.
+    return (size_t)wh;
+  }
+  return 0;
+}
+
+static inline void wuffs_base__image_config__initialize(
+    wuffs_base__image_config* c,
+    uint32_t width,
+    uint32_t height,
+    uint32_t TODO_color_model) {
+  if (!c) {
+    return;
+  }
+  c->private_impl.flags = 1;
+  c->private_impl.w = width;
+  c->private_impl.h = height;
+  // TODO: color model.
+}
 
 #endif  // WUFFS_BASE_HEADER_H
 
@@ -261,9 +331,10 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_gif__status wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
-                                                    wuffs_base__writer1 a_dst,
-                                                    wuffs_base__reader1 a_src);
+wuffs_gif__status wuffs_gif__decoder__decode_config(
+    wuffs_gif__decoder* self,
+    wuffs_base__image_config* a_dst,
+    wuffs_base__reader1 a_src);
 
 wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                                    wuffs_base__writer1 a_dst,
@@ -746,9 +817,10 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 // ---------------- Function Implementations
 
-wuffs_gif__status wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
-                                                    wuffs_base__writer1 a_dst,
-                                                    wuffs_base__reader1 a_src) {
+wuffs_gif__status wuffs_gif__decoder__decode_config(
+    wuffs_gif__decoder* self,
+    wuffs_base__image_config* a_dst,
+    wuffs_base__reader1 a_src) {
   if (!self) {
     return WUFFS_GIF__ERROR_BAD_RECEIVER;
   }
@@ -759,6 +831,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
     return self->private_impl.status;
   }
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  if (!a_dst) {
+    status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
+    goto exit;
+  }
 
   uint32_t coro_susp_point =
       self->private_impl.c_decode_config[0].coro_susp_point;

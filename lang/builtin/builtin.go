@@ -72,6 +72,7 @@ var Types = []string{
 	"status",
 	"reader1",
 	"writer1",
+	"image_config",
 }
 
 var Funcs = []string{

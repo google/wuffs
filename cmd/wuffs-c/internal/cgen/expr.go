@@ -581,6 +581,11 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 			// See gen.writeInitializerImpl for a similar use of otherPkg.
 			prefix = "wuffs_" + otherPkg + "__"
 		}
+		// TODO: remove this hack when "image_config" in Wuffs code becomes
+		// "base.image_config".
+		if qid[1] == t.IDImageConfig {
+			prefix = "wuffs_base__"
+		}
 		b.printf("%s%s", prefix, qid[1].Str(g.tm))
 	}
 

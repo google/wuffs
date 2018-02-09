@@ -38,14 +38,15 @@ var (
 	typeExprIdeal   = a.NewTypeExpr(0, 0, t.IDDoubleZ, nil, nil, nil)
 	typeExprList    = a.NewTypeExpr(0, 0, t.IDDollar, nil, nil, nil)
 
-	typeExprU8      = a.NewTypeExpr(0, 0, t.IDU8, nil, nil, nil)
-	typeExprU16     = a.NewTypeExpr(0, 0, t.IDU16, nil, nil, nil)
-	typeExprU32     = a.NewTypeExpr(0, 0, t.IDU32, nil, nil, nil)
-	typeExprU64     = a.NewTypeExpr(0, 0, t.IDU64, nil, nil, nil)
-	typeExprBool    = a.NewTypeExpr(0, 0, t.IDBool, nil, nil, nil)
-	typeExprStatus  = a.NewTypeExpr(0, 0, t.IDStatus, nil, nil, nil)
-	typeExprReader1 = a.NewTypeExpr(0, 0, t.IDReader1, nil, nil, nil)
-	typeExprWriter1 = a.NewTypeExpr(0, 0, t.IDWriter1, nil, nil, nil)
+	typeExprU8          = a.NewTypeExpr(0, 0, t.IDU8, nil, nil, nil)
+	typeExprU16         = a.NewTypeExpr(0, 0, t.IDU16, nil, nil, nil)
+	typeExprU32         = a.NewTypeExpr(0, 0, t.IDU32, nil, nil, nil)
+	typeExprU64         = a.NewTypeExpr(0, 0, t.IDU64, nil, nil, nil)
+	typeExprBool        = a.NewTypeExpr(0, 0, t.IDBool, nil, nil, nil)
+	typeExprStatus      = a.NewTypeExpr(0, 0, t.IDStatus, nil, nil, nil)
+	typeExprReader1     = a.NewTypeExpr(0, 0, t.IDReader1, nil, nil, nil)
+	typeExprWriter1     = a.NewTypeExpr(0, 0, t.IDWriter1, nil, nil, nil)
+	typeExprImageConfig = a.NewTypeExpr(0, 0, t.IDImageConfig, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, 0, nil, nil, typeExprU8)
 
@@ -59,14 +60,15 @@ var (
 type typeMap map[t.ID]*a.TypeExpr
 
 var builtInTypeMap = typeMap{
-	t.IDU8:      typeExprU8,
-	t.IDU16:     typeExprU16,
-	t.IDU32:     typeExprU32,
-	t.IDU64:     typeExprU64,
-	t.IDBool:    typeExprBool,
-	t.IDStatus:  typeExprStatus,
-	t.IDReader1: typeExprReader1,
-	t.IDWriter1: typeExprWriter1,
+	t.IDU8:          typeExprU8,
+	t.IDU16:         typeExprU16,
+	t.IDU32:         typeExprU32,
+	t.IDU64:         typeExprU64,
+	t.IDBool:        typeExprBool,
+	t.IDStatus:      typeExprStatus,
+	t.IDReader1:     typeExprReader1,
+	t.IDWriter1:     typeExprWriter1,
+	t.IDImageConfig: typeExprImageConfig,
 }
 
 func (c *Checker) builtInFunc(qqid t.QQID) (*a.Func, error) {
