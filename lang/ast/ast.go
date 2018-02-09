@@ -99,9 +99,13 @@ const (
 	FlagsGlobalIdent     = Flags(0x00000100)
 )
 
-// flagsThatMatterForEq is the bitwise or of all flags that matter for the
-// Expr.Eq method.
-const flagsThatMatterForEq = Flags(0x0000FFFF)
+const (
+	flagEffect = FlagsImpure | FlagsSuspendible
+
+	// flagsThatMatterForEq is the bitwise or of all flags that matter for the
+	// Expr.Eq method.
+	flagsThatMatterForEq = Flags(0x0000FFFF)
+)
 
 // These flags are set by the bounds checker to generate optimized code.
 const (
@@ -120,6 +124,20 @@ const (
 	//  - since_mark
 	FlagsBoundsCheckOptimized = Flags(0x00020000)
 )
+
+type Effect uint32
+
+func (e Effect) String() string {
+	switch e {
+	case Effect(0):
+		return ""
+	case Effect(FlagsImpure):
+		return "!"
+	case Effect(FlagsImpure | FlagsSuspendible):
+		return "?"
+	}
+	return "INVALID_EFFECT"
+}
 
 type Node struct {
 	kind  Kind
@@ -303,6 +321,7 @@ const MaxExprDepth = 255
 type Expr Node
 
 func (n *Expr) Node() *Node                { return (*Node)(n) }
+func (n *Expr) Effect() Effect             { return Effect(n.flags & flagEffect) }
 func (n *Expr) Pure() bool                 { return n.flags&FlagsImpure == 0 }
 func (n *Expr) Impure() bool               { return n.flags&FlagsImpure != 0 }
 func (n *Expr) Suspendible() bool          { return n.flags&FlagsSuspendible != 0 }
@@ -733,6 +752,7 @@ const MaxBodyDepth = 255
 type Func Node
 
 func (n *Func) Node() *Node       { return (*Node)(n) }
+func (n *Func) Effect() Effect    { return Effect(n.flags & flagEffect) }
 func (n *Func) Pure() bool        { return n.flags&FlagsImpure == 0 }
 func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
 func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }

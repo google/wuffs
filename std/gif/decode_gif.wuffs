@@ -49,7 +49,7 @@ pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 	}
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
-	// TODO: fill in dst.
+	in.dst.initialize!(width:this.width, height:this.height, color_model:0)
 	this.call_sequence = 1
 }
 

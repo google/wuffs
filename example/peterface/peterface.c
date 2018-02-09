@@ -37,10 +37,7 @@ for a C compiler $cc, such as clang or gcc.
 #endif
 
 #define DST_BUFFER_SIZE (1024 * 1024)
-
-// TODO: provide API to get the width and height. Don't hard code 32/32.
-#define WIDTH 32
-#define HEIGHT 32
+#define PRINT_BUFFER_SIZE (1024)
 
 uint8_t pjw_ptr[];
 size_t pjw_len;
@@ -51,37 +48,42 @@ static void ignore_return_value(int ignored) {}
 static const char* decode() {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_base__image_config ic = {{0}};
-  uint8_t dst_buffer[DST_BUFFER_SIZE];
-  wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+
   wuffs_base__buf1 src = {
       .ptr = pjw_ptr, .len = pjw_len, .wi = pjw_len, .closed = true};
-  wuffs_base__writer1 dst_writer = {.buf = &dst};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
+  wuffs_base__image_config ic = {{0}};
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
   }
+  uint32_t width = wuffs_base__image_config__width(&ic);
+  uint32_t height = wuffs_base__image_config__height(&ic);
+  if ((width > PRINT_BUFFER_SIZE - 1) ||
+      (wuffs_base__image_config__pixbuf_size(&ic) > DST_BUFFER_SIZE)) {
+    return "image is too large";
+  }
+
+  uint8_t dst_buffer[DST_BUFFER_SIZE];
+  wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  wuffs_base__writer1 dst_writer = {.buf = &dst};
   s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
   }
 
-  if (dst.wi != WIDTH * HEIGHT) {
-    return "image dimensions not 32x32";
-  }
+  uint8_t buf[PRINT_BUFFER_SIZE];
   uint8_t* p = dst.ptr;
-  int y;
-  for (y = 0; y < HEIGHT; y++) {
-    uint8_t buf[WIDTH + 1];
-    int x;
-    for (x = 0; x < WIDTH; x++) {
+  uint32_t y;
+  for (y = 0; y < height; y++) {
+    uint32_t x;
+    for (x = 0; x < width; x++) {
       buf[x] = *p++ ? '-' : '8';
     }
-    buf[WIDTH] = '\n';
-    ignore_return_value(write(1, buf, WIDTH + 1));
+    buf[width] = '\n';
+    ignore_return_value(write(1, buf, width + 1));
   }
   return NULL;
 }

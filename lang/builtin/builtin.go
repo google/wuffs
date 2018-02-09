@@ -127,6 +127,8 @@ var Funcs = []string{
 	"writer1.limit(l u64)(ret writer1)",
 	"writer1.mark()()",
 	"writer1.since_mark()(ret[] u8)",
+
+	"image_config.initialize!(width u32, height u32, color_model u32)()",
 }
 
 const (

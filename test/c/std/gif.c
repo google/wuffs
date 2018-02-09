@@ -402,6 +402,16 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_gif__status__string(status));
       return false;
     }
+    if (wuffs_base__image_config__width(&ic) != 160) {
+      FAIL("width: got %" PRIu32 ", want 160",
+           wuffs_base__image_config__width(&ic));
+      return false;
+    }
+    if (wuffs_base__image_config__height(&ic) != 120) {
+      FAIL("height: got %" PRIu32 ", want 120",
+           wuffs_base__image_config__height(&ic));
+      return false;
+    }
   }
 
   int num_iters = 0;
@@ -469,16 +479,6 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
   }
 
-  // TODO: provide a public API for getting the width and height.
-  if (dec.private_impl.f_width != 160) {
-    FAIL("width: got %d, want %d", dec.private_impl.f_width, 160);
-    return false;
-  }
-  if (dec.private_impl.f_height != 120) {
-    FAIL("height: got %d, want %d", dec.private_impl.f_height, 120);
-    return false;
-  }
-
   // TODO: provide a public API for getting the palette.
   wuffs_base__buf1 pal_got = {.ptr = dec.private_impl.f_gct, .len = 3 * 256};
   wuffs_base__buf1 pal_want = {.ptr = global_palette_buffer, .len = 3 * 256};
@@ -541,9 +541,11 @@ void test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../testdata/bricks-dither.gif",
                            "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes", 0,
-                           787);  // 787 tickles being in the middle of a
-                                  // decode_extension skip32 call.
+                           "../../testdata/bricks-dither.indexes", 0, 787);
+  // The magic 787 tickles being in the middle of a decode_extension skip32
+  // call.
+  //
+  // TODO: has 787 changed since we decode the image_config separately?
 }
 
 void test_wuffs_gif_decode_input_is_a_gif_many_small_writes_reads() {

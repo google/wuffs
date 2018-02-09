@@ -857,6 +857,8 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     if (status) {
       goto suspend;
     }
+    wuffs_base__image_config__initialize(a_dst, self->private_impl.f_width,
+                                         self->private_impl.f_height, 0);
     self->private_impl.f_call_sequence = 1;
 
     goto ok;
