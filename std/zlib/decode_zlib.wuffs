@@ -59,7 +59,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	}
 }
 
-// TODO: drop the '?' but still generate wuffs_zlib__adler_initialize?
+// TODO: drop the '?' but still generate wuffs_zlib__adler32__initialize?
 pri struct adler32?(
 	state u32 = 1,
 )
