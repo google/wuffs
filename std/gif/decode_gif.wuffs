@@ -177,7 +177,7 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 	if (lw < 2) or (8 < lw) {
 		return error "bad LZW literal width"
 	}
-	this.lzw.set_literal_width(lw:lw as u32)
+	this.lzw.set_literal_width!(lw:lw as u32)
 
 	while true {
 		var block_size u64 = in.src.read_u8?() as u64
