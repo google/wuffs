@@ -204,7 +204,7 @@ void test_wuffs_zlib_checksum_mismatch() {
   wuffs_zlib__status status =
       wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
   if (status != WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH) {
-    FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+    FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_zlib__status__string(status),
          WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH,
          wuffs_zlib__status__string(WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH));

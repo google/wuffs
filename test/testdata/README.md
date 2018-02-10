@@ -22,6 +22,9 @@ world examples of various file formats, or deriviations of them.
 
 
 
+animated-red-blue.gif is an original animation by Nigel Tao
+<nigeltao@golang.org>.
+
 bricks-\* are various encodings of an original photo by Nigel Tao
 <nigeltao@golang.org>.
 
