@@ -27,20 +27,20 @@ bricks-\* are various encodings of an original photo by Nigel Tao
 
 harvesters.\* are various encodings of a photo of "The Harvesters" by Pieter
 Bruegel the Elder, held by the Metropolitan Museum of Art.
-http://www.metmuseum.org/art/collection/search/435809 lists that image as in
+`http://www.metmuseum.org/art/collection/search/435809` lists that image as in
 the public domain.
 
 hat.\* are various encodings of a photo of "Self-Portrait with a Straw Hat
 (obverse: The Potato Peeler)" by Vincent van Gogh, held by the Metropolitan
-Museum of art. http://www.metmuseum.org/art/collection/search/436532 lists that
-image as in the public domain.
+Museum of art. `http://www.metmuseum.org/art/collection/search/436532` lists
+that image as in the public domain.
 
 hibiscus.\* are various encodings of a photo of "Hibiscus and Parrots" by Louis
 Comfort Tiffany, held by the Metropolitan Museum of Art.
-http://www.metmuseum.org/art/collection/search/13503 lists that image as in the
-public domain.
+`http://www.metmuseum.org/art/collection/search/13503` lists that image as in
+the public domain.
 
-http://www.metmuseum.org/about-the-met/policies-and-documents/image-resources
+`http://www.metmuseum.org/about-the-met/policies-and-documents/image-resources`
 says that "You are welcome to use images of artworks in The Met collection that
 the Museum believes to be in the public domain, or those to which the Museum
 waives any copyright it might have, for any purpose, including commercial and
@@ -48,7 +48,11 @@ noncommercial use, free of charge and without requiring permission from the
 Museum."
 
 midsummer.txt is an excerpt of Shakespeare's "A Midsummer Night's Dream",
-copied from http://shakespeare.mit.edu/midsummer/midsummer.1.1.html
+copied from `http://shakespeare.mit.edu/midsummer/midsummer.1.1.html`
+
+muybridge.gif is derived from
+`https://en.wikipedia.org/wiki/File:Muybridge_race_horse_animated.gif` which is
+in the public domain.
 
 pi.txt contains the digits of pi.
 
@@ -56,7 +60,7 @@ pjw-thumbnail.\* are various encodings of an image derived from an iconic,
 original photo of Peter J. Weinberger by Rob Pike <r@golang.org>.
 
 romeo.txt is an excerpt of Shakespeare's "Romeo and Juliet", copied from
-http://shakespeare.mit.edu/romeo_juliet/romeo_juliet.2.2.html
+`http://shakespeare.mit.edu/romeo_juliet/romeo_juliet.2.2.html`
 
 romeo.txt.fixed-huff.deflate was derived from romeo.txt by a custom program to
 use fixed (not dynamic) Huffman tables for the deflate encoding.
