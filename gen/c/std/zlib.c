@@ -219,6 +219,7 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_CANNOT_RETURN_A_SUSPENSION \
   -2147483638                                                   // 0x8000000A
 #define WUFFS_DEFLATE__ERROR_INVALID_CALL_SEQUENCE -2147483637  // 0x8000000B
+#define WUFFS_DEFLATE__SUSPENSION_END_OF_DATA 12                // 0x0000000C
 
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1278585856  // 0xB3CA5400
@@ -390,6 +391,7 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
 #define WUFFS_ZLIB__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 #define WUFFS_ZLIB__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
+#define WUFFS_ZLIB__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
 #define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672  // 0xFDFDE400
 #define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
@@ -818,7 +820,7 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   return ((wuffs_base__empty_struct){});
 }
 
-static const char* wuffs_base__status__strings[12] = {
+static const char* wuffs_base__status__strings[13] = {
     "ok",
     "bad wuffs version",
     "bad receiver",
@@ -831,6 +833,7 @@ static const char* wuffs_base__status__strings[12] = {
     "short write",
     "cannot return a suspension",
     "invalid call sequence",
+    "end of data",
 };
 
 #endif  // WUFFS_BASE_IMPL_H
@@ -855,7 +858,7 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_base__status__strings;
-      n = 12;
+      n = 13;
       break;
     case wuffs_zlib__packageid:
       a = wuffs_zlib__status__strings;

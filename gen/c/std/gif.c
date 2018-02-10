@@ -209,6 +209,7 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
 #define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
 #define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
+#define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
 #define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xBE161800
 #define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xBE161801
@@ -691,7 +692,7 @@ static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
   return ((wuffs_base__empty_struct){});
 }
 
-static const char* wuffs_base__status__strings[12] = {
+static const char* wuffs_base__status__strings[13] = {
     "ok",
     "bad wuffs version",
     "bad receiver",
@@ -704,6 +705,7 @@ static const char* wuffs_base__status__strings[12] = {
     "short write",
     "cannot return a suspension",
     "invalid call sequence",
+    "end of data",
 };
 
 #endif  // WUFFS_BASE_IMPL_H
@@ -731,7 +733,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_base__status__strings;
-      n = 12;
+      n = 13;
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings;
@@ -967,13 +969,19 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-      } else if (v_c == 59) {
         status = WUFFS_GIF__STATUS_OK;
         goto ok;
+      } else if (v_c == 59) {
+        goto label_0_break;
       } else {
         status = WUFFS_GIF__ERROR_BAD_GIF_BLOCK;
         goto exit;
       }
+    }
+  label_0_break:;
+    while (true) {
+      status = WUFFS_GIF__SUSPENSION_END_OF_DATA;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
     }
 
     goto ok;

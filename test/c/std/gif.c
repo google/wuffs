@@ -228,7 +228,7 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
         wuffs_gif__lzw_decoder__decode(&dec, got_writer, src_reader);
     if (status == WUFFS_GIF__STATUS_OK) {
       if (src.ri != src.wi) {
-        FAIL("decode returned ok but src was not exhausted");
+        FAIL("decode returned \"ok\" but src was not exhausted");
         return false;
       }
       break;
@@ -435,10 +435,6 @@ bool do_test_wuffs_gif_decode(const char* filename,
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
     if (status == WUFFS_GIF__STATUS_OK) {
-      if (src.ri != src.wi) {
-        FAIL("decode returned ok but src was not exhausted");
-        return false;
-      }
       break;
     }
     if ((status != WUFFS_GIF__SUSPENSION_SHORT_READ) &&
@@ -494,7 +490,32 @@ bool do_test_wuffs_gif_decode(const char* filename,
   if (!read_file(&ind_want, indexes_filename)) {
     return false;
   }
-  return buf1s_equal("indexes ", &got, &ind_want);
+  if (!buf1s_equal("indexes ", &got, &ind_want)) {
+    return false;
+  }
+
+  {
+    if (src.ri == src.wi) {
+      FAIL("decode_config returned \"ok\" but src was exhausted");
+      return false;
+    }
+    wuffs_base__writer1 got_writer = {.buf = &got};
+    wuffs_base__reader1 src_reader = {.buf = &src};
+    wuffs_gif__status status =
+        wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
+    if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
+      FAIL("status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+           wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_END_OF_DATA,
+           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_END_OF_DATA));
+      return false;
+    }
+    if (src.ri != src.wi) {
+      FAIL("decode_config returned \"end of data\" but src was not exhausted");
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void test_wuffs_gif_call_sequence() {

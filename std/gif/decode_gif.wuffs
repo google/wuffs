@@ -69,11 +69,15 @@ pub func decoder.decode_frame?(dst writer1, src reader1)() {
 			//
 			// TODO: reset this.lzw if it's not the first ID.
 			this.decode_id?(dst:in.dst, src:in.src)
-		} else if c == 0x3B {  // The spec calls 0x3B the "Trailer".
 			return
+		} else if c == 0x3B {  // The spec calls 0x3B the "Trailer".
+			break
 		} else {
 			return error "bad GIF block"
 		}
+	}
+	while true {
+		yield suspension "end of data"
 	}
 }
 

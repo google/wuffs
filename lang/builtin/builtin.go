@@ -49,6 +49,7 @@ var StatusList = [...]Status{
 	{t.IDSuspension, "short write"},
 	{t.IDError, "cannot return a suspension"},
 	{t.IDError, "invalid call sequence"},
+	{t.IDSuspension, "end of data"},
 }
 
 var StatusMap = map[string]Status{}
