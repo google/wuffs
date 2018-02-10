@@ -403,6 +403,8 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_gif__status__string(status));
       return false;
     }
+
+    // bricks-dither.gif is a 160 × 120 static (not animated) GIF.
     if (wuffs_base__image_config__width(&ic) != 160) {
       FAIL("width: got %" PRIu32 ", want 160",
            wuffs_base__image_config__width(&ic));
@@ -411,6 +413,11 @@ bool do_test_wuffs_gif_decode(const char* filename,
     if (wuffs_base__image_config__height(&ic) != 120) {
       FAIL("height: got %" PRIu32 ", want 120",
            wuffs_base__image_config__height(&ic));
+      return false;
+    }
+    // TODO: provide a public API for getting num_loops.
+    if (dec.private_impl.f_num_loops != 1) {
+      FAIL("num_loops: got %" PRIu32 ", want 1", dec.private_impl.f_num_loops);
       return false;
     }
   }
@@ -571,7 +578,15 @@ void test_wuffs_gif_decode_animated() {
     return;
   }
 
-  // TODO: check the loop count.
+  // animated-red-blue.gif's num_loops should be 3. The value explicitly in the
+  // wire format is 0x0002, but that value means "repeat 2 times after the
+  // first play", so the total number of loops is 3.
+  //
+  // TODO: provide a public API for getting num_loops.
+  if (dec.private_impl.f_num_loops != 3) {
+    FAIL("num_loops: got %" PRIu32 ", want 3", dec.private_impl.f_num_loops);
+    return;
+  }
 
   // animated-red-blue.gif should have 4 frames.
   int i;

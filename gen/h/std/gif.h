@@ -280,6 +280,10 @@ typedef struct {
     uint32_t f_height;
     uint8_t f_call_sequence;
     uint8_t f_background_color_index;
+    uint8_t f_block_type;
+    bool f_peek_block_type;
+    bool f_seen_num_loops;
+    uint32_t f_num_loops;
     uint8_t f_gct[768];
     wuffs_gif__lzw_decoder f_lzw;
 
@@ -288,7 +292,6 @@ typedef struct {
     } c_decode_config[1];
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_c;
     } c_decode_frame[1];
     struct {
       uint32_t coro_susp_point;
@@ -304,9 +307,18 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint8_t v_label;
+    } c_decode_extension[1];
+    struct {
+      uint32_t coro_susp_point;
       uint8_t v_block_size;
       uint64_t scratch;
-    } c_decode_extension[1];
+    } c_skip_blocks[1];
+    struct {
+      uint32_t coro_susp_point;
+      uint8_t v_c;
+      uint8_t v_block_size;
+      uint64_t scratch;
+    } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
       uint8_t v_c[9];

@@ -34,6 +34,14 @@ pub struct decoder?(
 
 	background_color_index u8,
 
+	block_type u8,
+	peek_block_type bool,
+
+	// Absent a NETSCAPE2.0 extension, the implicit number of animation loops
+	// is 1.
+	seen_num_loops bool,
+	num_loops u32 = 1,
+
 	// gct is the Global Color Table: 256 (R, G, B) entries.
 	//
 	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?
@@ -49,6 +57,16 @@ pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 	}
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
+
+	while true {
+		this.peek_block_type = true
+		this.block_type = in.src.read_u8?()
+		if this.seen_num_loops or (this.block_type != 0x21) {  // The spec calls 0x21 the "Extension Introducer".
+			break
+		}
+		this.decode_extension?(src:in.src)
+	}
+
 	in.dst.initialize!(width:this.width, height:this.height, color_model:0)
 	this.call_sequence = 1
 }
@@ -57,11 +75,17 @@ pub func decoder.decode_frame?(dst writer1, src reader1)() {
 	if this.call_sequence < 1 {
 		return error "invalid call sequence"
 	}
+
 	while true {
-		var c u8 = in.src.read_u8?()
-		if c == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
+		if this.peek_block_type {
+			this.peek_block_type = false
+		} else {
+			this.block_type = in.src.read_u8?()
+		}
+
+		if this.block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
 			this.decode_extension?(src:in.src)
-		} else if c == 0x2C {  // The spec calls 0x2C the "Image Separator".
+		} else if this.block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
 			// TODO: animated GIFs can have multiple Image Descriptors. What's
 			// the API? Should the 0x3B Trailer byte result in a "no more
 			// frames" suspension instead of ok? Do we need additional
@@ -70,12 +94,13 @@ pub func decoder.decode_frame?(dst writer1, src reader1)() {
 			// TODO: reset this.lzw if it's not the first ID.
 			this.decode_id?(dst:in.dst, src:in.src)
 			return
-		} else if c == 0x3B {  // The spec calls 0x3B the "Trailer".
+		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
 			break
 		} else {
 			return error "bad GIF block"
 		}
 	}
+
 	while true {
 		yield suspension "end of data"
 	}
@@ -135,22 +160,91 @@ pri func decoder.decode_lsd?(src reader1)() {
 //  - section 26 "Application Extension" on page 21.
 pri func decoder.decode_extension?(src reader1)() {
 	var label u8 = in.src.read_u8?()
-	if label == 0x01 {  // The spec calls 0x01 the "Plain Text Label".
-	} else if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
-	} else if label == 0xFE {  // The spec calls 0xFE the "Comment Label".
+	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
+		// TODO.
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
-	} else {
-		return error "bad GIF extension label"
+		this.decode_ae?(src:in.src)
+		return
 	}
+	// We skip over all other extensions, including 0x01 "Plain Text Label" and
+	// 0xFE "Comment Label".
+	this.skip_blocks?(src:in.src)
+}
 
-	// Skip the data blocks.
+pri func decoder.skip_blocks?(src reader1)() {
 	while true {
 		var block_size u8 = in.src.read_u8?()
 		if block_size == 0 {
-			break
+			return
 		}
 		in.src.skip32?(n:block_size as u32)
 	}
+}
+
+// netscape2dot0 is "NETSCAPE2.0" as bytes.
+pri const netscape2dot0[11] u8 = $(
+	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
+)
+
+// decode_ae reads an Application Extension.
+pri func decoder.decode_ae?(src reader1)() {
+	// This "while true" always executes exactly once, as it ends with a
+	// "break", but using "break"s throughout simplifies the control flow.
+	while:loop true {
+		var c u8
+		var block_size u8 = in.src.read_u8?()
+		if block_size == 0 {
+			return
+		}
+
+		// Look only for an 11 byte "NETSCAPE2.0" extension, as per
+		// http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
+		if block_size != 11 {
+			in.src.skip32?(n:block_size as u32)
+			break
+		}
+		block_size = 0  // Re-purpose the block_size variable as a counter.
+		while block_size < 11 {
+			c = in.src.read_u8?()
+			if c != netscape2dot0[block_size] {
+				in.src.skip32?(n:(10 - block_size) as u32)
+				break:loop
+			}
+			block_size += 1
+		}
+
+		// Those 11 bytes should be followed by 0x03, 0x01 and then the loop
+		// count.
+		block_size = in.src.read_u8?()
+		if block_size != 3 {
+			in.src.skip32?(n:block_size as u32)
+			break
+		}
+		c = in.src.read_u8?()
+		if c != 0x01 {
+			in.src.skip32?(n:2)
+			break
+		}
+		this.num_loops = in.src.read_u16le?() as u32
+		this.seen_num_loops = true
+
+		// A loop count of N, in the wire format, actually means "repeat N
+		// times after the first play", if N is positive. A zero N means to
+		// loop forever. Playing the frames exactly once is denoted by the
+		// *absence* of this NETSCAPE2.0 application extension.
+		//
+		// For example, if there are four frames: A, B, C, D, and N is 2, then
+		// each frame is actually played N+1 or 3 times: ABCDABCDABCD.
+		//
+		// Thus, we increment N if it is positive. The comparison against
+		// 0xFFFF will never fail, but is necessary for the overflow checker.
+		if (0 < this.num_loops) and (this.num_loops <= 0xFFFF) {
+			this.num_loops += 1
+		}
+
+		break
+	}
+	this.skip_blocks?(src:in.src)
 }
 
 // decode_id reads an Image Descriptor. The Image Separator byte has already

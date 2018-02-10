@@ -549,9 +549,25 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes("if (status) { goto suspend; }\n")
 
+	} else if isThisMethod(g.tm, n, "decode_ae", 1) {
+		b.printf("status = %s%s__decode_ae(self, %ssrc);\n",
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
+		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
+			return err
+		}
+		b.writes("if (status) { goto suspend; }\n")
+
 	} else if isThisMethod(g.tm, n, "decode_id", 2) {
 		b.printf("status = %s%s__decode_id(self, %sdst, %ssrc);\n",
 			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
+		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
+			return err
+		}
+		b.writes("if (status) { goto suspend; }\n")
+
+	} else if isThisMethod(g.tm, n, "skip_blocks", 1) {
+		b.printf("status = %s%s__skip_blocks(self, %ssrc);\n",
+			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
 		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 			return err
 		}
