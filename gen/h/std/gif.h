@@ -216,11 +216,9 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xBE161802
 #define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xBE161803
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ \
-  -1105848316  // 0xBE161804
-#define WUFFS_GIF__ERROR_TODO_UNSUPPORTED_LOCAL_COLOR_TABLE \
-  -1105848315                                                      // 0xBE161805
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848314      // 0xBE161806
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848313  // 0xBE161807
+  -1105848316                                                      // 0xBE161804
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xBE161805
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xBE161806
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -285,6 +283,7 @@ typedef struct {
     bool f_seen_num_loops;
     uint32_t f_num_loops;
     uint8_t f_gct[768];
+    uint8_t f_lct[768];
     wuffs_gif__lzw_decoder f_lzw;
 
     struct {
@@ -324,6 +323,7 @@ typedef struct {
       uint8_t v_c[9];
       uint32_t v_i;
       bool v_interlace;
+      uint32_t v_lct_size;
       uint8_t v_lw;
       uint64_t v_block_size;
       wuffs_gif__status v_z;

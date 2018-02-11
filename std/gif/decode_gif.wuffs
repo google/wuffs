@@ -21,8 +21,6 @@ pub error "bad LZW literal width"
 
 pri error "internal error: inconsistent limited read"
 
-pub error "TODO: unsupported Local Color Table"
-
 pub struct decoder?(
 	width u32[..65535],
 	height u32[..65535],
@@ -42,10 +40,11 @@ pub struct decoder?(
 	seen_num_loops bool,
 	num_loops u32 = 1,
 
-	// gct is the Global Color Table: 256 (R, G, B) entries.
+	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
 	//
 	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?
 	gct[3 * 256] u8,
+	lct[3 * 256] u8,
 
 	lzw lzw_decoder,
 )
@@ -90,8 +89,6 @@ pub func decoder.decode_frame?(dst writer1, src reader1)() {
 			// the API? Should the 0x3B Trailer byte result in a "no more
 			// frames" suspension instead of ok? Do we need additional
 			// destination arguments for timing and palette?
-			//
-			// TODO: reset this.lzw if it's not the first ID.
 			this.decode_id?(dst:in.dst, src:in.src)
 			return
 		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
@@ -266,9 +263,17 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 	if interlace {  // Avoid "unused variable" C compiler warning.
 	}
 
-	// TODO: read the optional Local Color Table.
+	// Read the optional Local Color Table.
 	if (c[8] & 0x80) != 0 {
-		return error "TODO: unsupported Local Color Table"
+		var lct_size u32[..256] = (1 as u32) << (1 + (c[8] & 0x07))
+		i = 0
+		while i < lct_size {
+			assert i < 256 via "a < b: a < c; c <= b"(c:lct_size)
+			this.lct[(3 * i) + 0] = in.src.read_u8?()
+			this.lct[(3 * i) + 1] = in.src.read_u8?()
+			this.lct[(3 * i) + 2] = in.src.read_u8?()
+			i += 1
+		}
 	}
 
 	var lw u8 = in.src.read_u8?()

@@ -590,7 +590,7 @@ void test_wuffs_gif_decode_animated() {
 
   // animated-red-blue.gif should have 4 frames.
   int i;
-  for (i = 0; i < 0; i++) {  // TODO: increase the 0 in "i < 0" to 4.
+  for (i = 0; i < 4; i++) {
     got.wi = 0;
     status = wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
@@ -598,6 +598,16 @@ void test_wuffs_gif_decode_animated() {
            wuffs_gif__status__string(status));
       return;
     }
+  }
+
+  // There should be no more frames.
+  got.wi = 0;
+  status = wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
+  if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
+    FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+         wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_END_OF_DATA,
+         wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_END_OF_DATA));
+    return;
   }
 }
 
