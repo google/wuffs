@@ -66,6 +66,7 @@ pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 		this.decode_extension?(src:in.src)
 	}
 
+	// TODO: rename initialize to set?
 	in.dst.initialize!(width:this.width, height:this.height, color_model:0)
 	this.call_sequence = 1
 }
