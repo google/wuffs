@@ -598,6 +598,11 @@ void test_wuffs_gif_decode_animated() {
            wuffs_gif__status__string(status));
       return;
     }
+    // TODO: check that the frame top/left/width/height is:
+    //  -  0, 0,64,48 for frame #0
+    //  - 15,31,37, 9 for frame #1
+    //  - 15, 0,49,40 for frame #2
+    //  - 15, 0,49,40 for frame #3
   }
 
   // There should be no more frames.

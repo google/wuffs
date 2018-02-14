@@ -35,10 +35,20 @@ pub struct decoder?(
 	block_type u8,
 	peek_block_type bool,
 
+	have_gct bool,
+	have_lct bool,
+
+	interlace bool,
+
 	// Absent a NETSCAPE2.0 extension, the implicit number of animation loops
 	// is 1.
 	seen_num_loops bool,
 	num_loops u32 = 1,
+
+	frame_top u32[..65535],
+	frame_left u32[..65535],
+	frame_width u32[..65535],
+	frame_height u32[..65535],
 
 	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
 	//
@@ -130,12 +140,14 @@ pri func decoder.decode_lsd?(src reader1)() {
 		c[i] = in.src.read_u8?()
 		i += 1
 	}
+	// TODO: use read_u16le.
 	this.width = (c[0] as u32) | ((c[1] as u32) << 8)
 	this.height = (c[2] as u32) | ((c[3] as u32) << 8)
 	this.background_color_index = c[5]
 
 	// Read the optional Global Color Table.
-	if (c[4] & 0x80) != 0 {
+	this.have_gct = (c[4] & 0x80) != 0
+	if this.have_gct {
 		var gct_size u32[..256] = (1 as u32) << (1 + (c[4] & 0x07))
 		i = 0
 		while i < gct_size {
@@ -250,24 +262,21 @@ pri func decoder.decode_ae?(src reader1)() {
 //
 // See the spec section 20 "Image Descriptor" on page 11.
 pri func decoder.decode_id?(dst writer1, src reader1)() {
-	var c[9] u8
-	var i u32
-	while i < 9 {
-		c[i] = in.src.read_u8?()
-		i += 1
-	}
+	// TODO: check that the frame rect is inside the image rect??
+	this.frame_left = in.src.read_u16le?() as u32
+	this.frame_top = in.src.read_u16le?() as u32
+	this.frame_width = in.src.read_u16le?() as u32
+	this.frame_height = in.src.read_u16le?() as u32
 
-	// TODO: use image left/top/width/height.
-
-	// TODO: use interlace.
-	var interlace bool = (c[8] & 0x40) != 0
-	if interlace {  // Avoid "unused variable" C compiler warning.
-	}
+	// TODO: use this.interlace.
+	var flags u8 = in.src.read_u8?()
+	this.interlace = (flags & 0x40) != 0
 
 	// Read the optional Local Color Table.
-	if (c[8] & 0x80) != 0 {
-		var lct_size u32[..256] = (1 as u32) << (1 + (c[8] & 0x07))
-		i = 0
+	this.have_lct = (flags & 0x80) != 0
+	if this.have_lct {
+		var lct_size u32[..256] = (1 as u32) << (1 + (flags & 0x07))
+		var i u32
 		while i < lct_size {
 			assert i < 256 via "a < b: a < c; c <= b"(c:lct_size)
 			this.lct[(3 * i) + 0] = in.src.read_u8?()
