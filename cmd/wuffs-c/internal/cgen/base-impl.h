@@ -36,6 +36,17 @@ typedef struct {
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
 #define WUFFS_BASE__ALREADY_ZEROED (0x68602EF1U)
 
+// Denote intentional fallthroughs for -Wimplicit-fallthrough.
+//
+// The order matters here. Clang also defines "__GNUC__".
+#if defined(__clang__) && __cplusplus >= 201103L
+#define WUFFS_BASE__FALLTHROUGH [[clang::fallthrough]]
+#elif !defined(__clang__) && defined(__GNUC__) && (__GNUC__ >= 7)
+#define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))
+#else
+#define WUFFS_BASE__FALLTHROUGH
+#endif
+
 // Use switch cases for coroutine suspension points, similar to the technique
 // in https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
 //
@@ -44,6 +55,7 @@ typedef struct {
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0 case 0:;
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT(n) \
   coro_susp_point = n;                            \
+  WUFFS_BASE__FALLTHROUGH;                        \
   case n:;
 
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
