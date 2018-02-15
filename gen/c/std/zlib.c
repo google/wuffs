@@ -441,6 +441,7 @@ typedef struct {
 
     wuffs_deflate__decoder f_flate;
     wuffs_zlib__adler32 f_adler;
+    bool f_ignore_checksum;
 
     struct {
       uint32_t coro_susp_point;
@@ -464,6 +465,9 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                      uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
+
+void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
+                                              bool a_ic);
 
 wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__writer1 a_dst,
@@ -937,6 +941,21 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 
 // ---------------- Function Implementations
 
+void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
+                                              bool a_ic) {
+  if (!self) {
+    return;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status = WUFFS_ZLIB__ERROR_INITIALIZER_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return;
+  }
+
+  self->private_impl.f_ignore_checksum = a_ic;
+}
+
 wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__writer1 a_dst,
                                                wuffs_base__reader1 a_src) {
@@ -1077,14 +1096,16 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         }
         v_z = t_2;
       }
-      v_checksum = wuffs_zlib__adler32__update(
-          &self->private_impl.f_adler,
-          ((wuffs_base__slice_u8){
-              .ptr = a_dst.private_impl.mark,
-              .len = a_dst.private_impl.mark
-                         ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
-                         : 0,
-          }));
+      if (!self->private_impl.f_ignore_checksum) {
+        v_checksum = wuffs_zlib__adler32__update(
+            &self->private_impl.f_adler,
+            ((wuffs_base__slice_u8){
+                .ptr = a_dst.private_impl.mark,
+                .len = a_dst.private_impl.mark
+                           ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
+                           : 0,
+            }));
+      }
       if (v_z == 0) {
         goto label_0_break;
       }
@@ -1117,7 +1138,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
       }
     }
-    if (v_checksum != t_4) {
+    if (!self->private_impl.f_ignore_checksum && (v_checksum != t_4)) {
       status = WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
       goto exit;
     }

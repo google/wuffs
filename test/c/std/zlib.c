@@ -180,36 +180,48 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
   }
 }
 
-void test_wuffs_zlib_checksum_mismatch() {
-  CHECK_FOCUS(__func__);
-
+bool do_test_wuffs_zlib_checksum(bool ignore_checksum) {
   wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
-    return;
+    return false;
   }
   if (src.wi == 0) {
     FAIL("source file was empty");
-    return;
+    return false;
   }
   // Flip a bit in the zlib checksum, which comes at the end of the file.
   src.ptr[src.wi - 1] ^= 1;
 
   wuffs_zlib__decoder dec;
   wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
   wuffs_base__writer1 got_writer = {.buf = &got};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
   wuffs_zlib__status status =
       wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
-  if (status != WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH) {
+  wuffs_zlib__status want = ignore_checksum
+                                ? WUFFS_ZLIB__STATUS_OK
+                                : WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
+  if (status != want) {
     FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-         wuffs_zlib__status__string(status),
-         WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH,
-         wuffs_zlib__status__string(WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH));
-    return;
+         wuffs_zlib__status__string(status), want,
+         wuffs_zlib__status__string(want));
+    return false;
   }
+  return true;
+}
+
+void test_wuffs_zlib_checksum_ignore() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_zlib_checksum(true);
+}
+
+void test_wuffs_zlib_checksum_verify() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_zlib_checksum(false);
 }
 
 void test_wuffs_zlib_decode_midsummer() {
@@ -322,9 +334,10 @@ proc tests[] = {
 
     test_wuffs_adler32,  //
 
-    test_wuffs_zlib_checksum_mismatch,  //
-    test_wuffs_zlib_decode_midsummer,   //
-    test_wuffs_zlib_decode_pi,          //
+    test_wuffs_zlib_checksum_ignore,   //
+    test_wuffs_zlib_checksum_verify,   //
+    test_wuffs_zlib_decode_midsummer,  //
+    test_wuffs_zlib_decode_pi,         //
 
 #ifdef WUFFS_MIMIC
 

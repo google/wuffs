@@ -26,7 +26,12 @@ pub error "TODO: unsupported zlib preset dictionary"
 pub struct decoder?(
 	flate deflate.decoder,
 	adler adler32,
+	ignore_checksum bool,
 )
+
+pub func decoder.set_ignore_checksum!(ic bool)() {
+	this.ignore_checksum = in.ic
+}
 
 pub func decoder.decode?(dst writer1, src reader1)() {
 	var x u16 = in.src.read_u16be?()
@@ -46,15 +51,15 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	while true {
 		in.dst.mark()
 		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
-		// TODO: expose some API to opt out of checksumming, trading off error
-		// detection for throughput.
-		checksum = this.adler.update(x:in.dst.since_mark())
+		if not this.ignore_checksum {
+			checksum = this.adler.update(x:in.dst.since_mark())
+		}
 		if z.is_ok() {
 			break
 		}
 		yield z
 	}
-	if checksum != in.src.read_u32be?() {
+	if (not this.ignore_checksum) and (checksum != in.src.read_u32be?()) {
 		return error "checksum mismatch"
 	}
 }

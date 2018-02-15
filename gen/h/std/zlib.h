@@ -441,6 +441,7 @@ typedef struct {
 
     wuffs_deflate__decoder f_flate;
     wuffs_zlib__adler32 f_adler;
+    bool f_ignore_checksum;
 
     struct {
       uint32_t coro_susp_point;
@@ -464,6 +465,9 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                      uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
+
+void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
+                                              bool a_ic);
 
 wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__writer1 a_dst,
