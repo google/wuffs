@@ -191,16 +191,16 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		b.writes("}\n")
 	}
 
-	if g.currFunk.suspendible {
-		b.printf("%sstatus status = %sSTATUS_OK;\n", g.pkgPrefix, g.PKGPREFIX)
-	}
-
 	// For public functions, check (at runtime) the other args for bounds and
 	// null-ness. For private functions, those checks are done at compile time.
 	if g.currFunk.public {
 		if err := g.writeFuncImplArgChecks(b, g.currFunk.astFunc); err != nil {
 			return err
 		}
+	}
+
+	if g.currFunk.suspendible {
+		b.printf("%sstatus status = %sSTATUS_OK;\n", g.pkgPrefix, g.PKGPREFIX)
 	}
 	b.writes("\n")
 
@@ -369,8 +369,12 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	}
 	b.writes(") {")
 	if g.currFunk.suspendible {
-		b.printf("status = %sERROR_BAD_ARGUMENT; goto exit;", g.PKGPREFIX)
+		if g.currFunk.public {
+			b.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT;\n", g.PKGPREFIX)
+		}
+		b.printf("return %sERROR_BAD_ARGUMENT;\n\n", g.PKGPREFIX)
 	} else if !n.Receiver().IsZero() {
+		// TODO: unused code path??
 		b.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT; return;", g.PKGPREFIX)
 	} else {
 		b.printf("return;")

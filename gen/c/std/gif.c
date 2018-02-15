@@ -869,11 +869,11 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
   if (!a_dst) {
-    status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
-    goto exit;
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
+    return WUFFS_GIF__ERROR_BAD_ARGUMENT;
   }
+  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
