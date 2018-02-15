@@ -40,8 +40,8 @@ pub struct decoder?(
 
 	interlace bool,
 
-	// Absent a NETSCAPE2.0 extension, the implicit number of animation loops
-	// is 1.
+	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
+	// animation loops is 1.
 	seen_num_loops bool,
 	num_loops u32 = 1,
 
@@ -191,6 +191,11 @@ pri func decoder.skip_blocks?(src reader1)() {
 	}
 }
 
+// animexts1dot0 is "ANIMEXTS1.0" as bytes.
+pri const animexts1dot0[11] u8 = $(
+	0x41, 0x4E, 0x49, 0x4D, 0x45, 0x58, 0x54, 0x53, 0x31, 0x2E, 0x30,
+)
+
 // netscape2dot0 is "NETSCAPE2.0" as bytes.
 pri const netscape2dot0[11] u8 = $(
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
@@ -200,27 +205,32 @@ pri const netscape2dot0[11] u8 = $(
 pri func decoder.decode_ae?(src reader1)() {
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
-	while:loop true {
+	while true {
 		var c u8
 		var block_size u8 = in.src.read_u8?()
 		if block_size == 0 {
 			return
 		}
 
-		// Look only for an 11 byte "NETSCAPE2.0" extension, as per
-		// http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
+		// Look only for an 11 byte "ANIMEXTS1.0" or "NETSCAPE2.0" extension,
+		// as per:
+		//  - http://www.vurdalakov.net/misc/gif/animexts-looping-application-extension
+		//  - http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
 		if block_size != 11 {
 			in.src.skip32?(n:block_size as u32)
 			break
 		}
+		var not_animexts bool
+		var not_netscape bool
 		block_size = 0  // Re-purpose the block_size variable as a counter.
 		while block_size < 11 {
 			c = in.src.read_u8?()
-			if c != netscape2dot0[block_size] {
-				in.src.skip32?(n:(10 - block_size) as u32)
-				break:loop
-			}
+			not_animexts = not_animexts or (c != animexts1dot0[block_size])
+			not_netscape = not_netscape or (c != netscape2dot0[block_size])
 			block_size += 1
+		}
+		if not_animexts and not_netscape {
+			break
 		}
 
 		// Those 11 bytes should be followed by 0x03, 0x01 and then the loop

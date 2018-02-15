@@ -323,6 +323,8 @@ typedef struct {
       uint32_t coro_susp_point;
       uint8_t v_c;
       uint8_t v_block_size;
+      bool v_not_animexts;
+      bool v_not_netscape;
       uint64_t scratch;
     } c_decode_ae[1];
     struct {
