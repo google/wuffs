@@ -23,7 +23,7 @@ such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 When working on the fuzz implementation, or as a sanity check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
-g++ -DWUFFS_CONFIG__FUZZLIB_MAIN gif.cc
+g++ -DWUFFS_CONFIG__FUZZLIB_MAIN gif_fuzzer.cc
 ./a.out ../../../test/testdata/*.gif
 rm -f ./a.out
 
