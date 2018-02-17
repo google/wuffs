@@ -23,7 +23,8 @@ such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 When working on the fuzz implementation, or as a sanity check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
-gcc -DWUFFS_CONFIG__FUZZLIB_MAIN gif.c && ./a.out ../../../test/testdata/*.gif
+g++ -DWUFFS_CONFIG__FUZZLIB_MAIN gif.cc
+./a.out ../../../test/testdata/*.gif
 rm -f ./a.out
 
 It should print "PASS", amongst other information, and exit(0).
@@ -35,7 +36,7 @@ It should print "PASS", amongst other information, and exit(0).
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../../gen/c/std/gif.c"
-#include "../fuzzlib/fuzzlib.c"
+#include "../fuzzlib/fuzzlib.cc"
 
 void fuzz(wuffs_base__reader1 src_reader, uint32_t hash) {
   void* pixbuf = NULL;

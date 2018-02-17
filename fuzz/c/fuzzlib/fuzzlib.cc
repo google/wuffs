@@ -28,11 +28,7 @@ void intentional_segfault() {
 
 void fuzz(wuffs_base__reader1 src_reader, uint32_t hash);
 
-#ifdef __cplusplus
-extern "C"
-#endif
-    int
-    LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Hash input as per https://en.wikipedia.org/wiki/Jenkins_hash_function
   size_t i = 0;
   uint32_t hash = 0;
@@ -45,8 +41,11 @@ extern "C"
   hash ^= hash >> 11;
   hash += hash << 15;
 
-  wuffs_base__buf1 src = {
-      .ptr = (uint8_t*)(data), .len = size, .wi = size, .closed = true};
+  wuffs_base__buf1 src = {.ptr = (uint8_t*)(data),
+                          .len = size,
+                          .wi = size,
+                          .ri = 0,
+                          .closed = true};
   fuzz((wuffs_base__reader1){.buf = &src}, hash);
   return 0;
 }
@@ -85,7 +84,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    int fuzz = LLVMFuzzerTestOneInput(data, n);
+    int fuzz = LLVMFuzzerTestOneInput((const uint8_t*)(data), n);
     if (fuzz) {
       return fuzz;
     }
