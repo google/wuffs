@@ -290,7 +290,8 @@ background.
 - `gen` holds the transpiled editions of that standard library. The initial
   focus is generating C code. Later on, the repository might include generated
   Go and Rust code.
-- `test` holds the tests for the Wuffs standard library.
+- `test` holds the regular tests for the Wuffs standard library.
+- `fuzz` holds the fuzz tests for the Wuffs standard library.
 - `script` holds miscellaneous utility programs.
 - `doc` holds documentation.
 - `example` holds example programs.
