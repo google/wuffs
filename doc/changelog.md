@@ -7,14 +7,21 @@
 - Added a `skipgendeps` flag.
 - Added a `use` keyword.
 - Added a `yield` keyword.
+- Added an image\_config built-in concept.
 - Spun `std/zlib` out of `std/flate`.
+- Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
-- Speed up the mimic\_deflate\_xxx benchmarks.
-- Mark the `std/gif` LZW decoder as private.
-- Mark some internal status codes as private.
+- Supported animated (not just single frame) GIFs.
+- Marked the `std/gif` LZW decoder as private.
+- Marked some internal status codes as private.
 - Changed the string messages for built-in status codes.
-- Make a packageid declaration mandatory.
-- Disallow `__double_underscore` prefixed names.
+- Made a packageid declaration mandatory.
+- Disallowed certain packageid's like `base` or `config`.
+- Disallowed `__double_underscore` prefixed names.
+- Added a stand-alone lang/interval package.
+- Added fuzz tests.
+- Added some Go and Rust benchmarks.
+- Sped up the mimic\_deflate\_xxx benchmarks.
 
 
 ## 2017-11-16
