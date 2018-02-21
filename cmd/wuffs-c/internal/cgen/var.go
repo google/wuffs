@@ -296,11 +296,11 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 	return nil
 }
 
-func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
+func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTypedVars bool) error {
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
 	if typ := n.XType(); typ.HasPointers() {
-		if suspend {
+		if suspend || initBoolTypedVars {
 			return nil
 		}
 		rhs := ""
@@ -323,8 +323,35 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 
 	} else {
 		lhs := local
+		rhs := ""
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
+		if !initBoolTypedVars {
+			rhs = fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
+		} else if typ.QID() != (t.QID{0, t.IDBool}) {
+			return nil
+		} else if typ.Decorator() != 0 {
+			goto fail
+		} else {
+			// Explicitly initialize the bool-typed local variable to false.
+			//
+			// Otherwise, the variable (in C) can hold an uninitialized value.
+			// In terms of registers and memory (which work in integers, not
+			// bools), that uninitialized value could be something like 255,
+			// not 0 or 1.
+			//
+			// In the Wuffs language, a variable "foo" cannot be used before
+			// initialization, but that's not easily seen by running C language
+			// tools on Wuffs' generated C code. In C, that uninitialized v_foo
+			// local variable could be suspended to and then resumed from the
+			// f_foo coroutine state.
+			//
+			// This generated code explicitly initializes bool typed variables,
+			// in order to avoid ubsan (undefined behavior sanitizer) warnings.
+			//
+			// In general, we don't zero-initialize all of the v_etc local
+			// variables due to the negative performance impact.
+			rhs = "false"
+		}
 		if suspend {
 			lhs, rhs = rhs, lhs
 		}
@@ -350,13 +377,14 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool) error {
 		}
 	}
 
+fail:
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
 		n.Name().Str(g.tm), n.XType().Str(g.tm))
 }
 
-func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool) error {
+func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool, initBoolTypedVars bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
-		return g.writeResumeSuspend1(b, n, suspend)
+		return g.writeResumeSuspend1(b, n, suspend, initBoolTypedVars)
 	})
 }
 

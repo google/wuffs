@@ -906,6 +906,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   uint32_t coro_susp_point =
       self->private_impl.c_decode_config[0].coro_susp_point;
   if (coro_susp_point) {
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1057,6 +1058,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   uint32_t coro_susp_point =
       self->private_impl.c_decode_frame[0].coro_susp_point;
   if (coro_susp_point) {
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1196,6 +1198,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_header(
   if (coro_susp_point) {
     memcpy(v_c, self->private_impl.c_decode_header[0].v_c, sizeof(v_c));
     v_i = self->private_impl.c_decode_header[0].v_i;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1286,6 +1289,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
     memcpy(v_c, self->private_impl.c_decode_lsd[0].v_c, sizeof(v_c));
     v_i = self->private_impl.c_decode_lsd[0].v_i;
     v_gct_size = self->private_impl.c_decode_lsd[0].v_gct_size;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1406,6 +1410,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
       self->private_impl.c_decode_extension[0].coro_susp_point;
   if (coro_susp_point) {
     v_label = self->private_impl.c_decode_extension[0].v_label;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1523,6 +1528,7 @@ static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
       self->private_impl.c_skip_blocks[0].coro_susp_point;
   if (coro_susp_point) {
     v_block_size = self->private_impl.c_skip_blocks[0].v_block_size;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1620,6 +1626,9 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
     v_block_size = self->private_impl.c_decode_ae[0].v_block_size;
     v_not_animexts = self->private_impl.c_decode_ae[0].v_not_animexts;
     v_not_netscape = self->private_impl.c_decode_ae[0].v_not_netscape;
+  } else {
+    v_not_animexts = false;
+    v_not_netscape = false;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1848,6 +1857,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     v_block_size = self->private_impl.c_decode_id[0].v_block_size;
     v_r = ((wuffs_base__reader1){});
     v_z = self->private_impl.c_decode_id[0].v_z;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -2202,6 +2212,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     v_c = self->private_impl.c_decode[0].v_c;
     v_expansion = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;

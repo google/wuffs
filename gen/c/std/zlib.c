@@ -1013,6 +1013,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     v_x = self->private_impl.c_decode[0].v_x;
     v_checksum = self->private_impl.c_decode[0].v_checksum;
     v_z = self->private_impl.c_decode[0].v_z;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;

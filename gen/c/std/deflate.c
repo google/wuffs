@@ -914,6 +914,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
     v_written = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
     v_already_full = self->private_impl.c_decode[0].v_already_full;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1051,6 +1052,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
   if (coro_susp_point) {
     v_final = self->private_impl.c_decode_blocks[0].v_final;
     v_type = self->private_impl.c_decode_blocks[0].v_type;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1257,6 +1259,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
   if (coro_susp_point) {
     v_length = self->private_impl.c_decode_uncompressed[0].v_length;
     v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1381,6 +1384,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
       self->private_impl.c_init_fixed_huffman[0].coro_susp_point;
   if (coro_susp_point) {
     v_i = self->private_impl.c_init_fixed_huffman[0].v_i;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -1483,6 +1487,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
         self->private_impl.c_init_dynamic_huffman[0].v_n_extra_bits;
     v_rep_symbol = self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol;
     v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -2432,6 +2437,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
     v_n_copied = self->private_impl.c_decode_huffman_slow[0].v_n_copied;
     v_hlen = self->private_impl.c_decode_huffman_slow[0].v_hlen;
     v_hdist = self->private_impl.c_decode_huffman_slow[0].v_hdist;
+  } else {
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
