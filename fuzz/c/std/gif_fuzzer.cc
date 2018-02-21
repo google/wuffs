@@ -54,19 +54,6 @@ void fuzz(wuffs_base__reader1 src_reader, uint32_t hash) {
       goto exit;
     }
 
-    // Intentionally crash on 0.1% of all possible image widths.
-    //
-    // TODO: remove this. This intentional segfault is a temporary measure to
-    // check that oss-fuzz' fuzzing and reporting works as advertised.
-    {
-      uint32_t width = wuffs_base__image_config__width(&ic);
-      if ((width % 1000) == 123) {
-        fprintf(stderr, "intentional segfault for width == %" PRIu32 "\n",
-                width);
-        intentional_segfault();
-      }
-    }
-
     size_t pixbuf_size = wuffs_base__image_config__pixbuf_size(&ic);
     // Don't try to allocate more than 64 MiB.
     if (pixbuf_size > 64 * 1024 * 1024) {
