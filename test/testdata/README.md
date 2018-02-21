@@ -28,6 +28,9 @@ animated-red-blue.gif is an original animation by Nigel Tao
 bricks-\* are various encodings of an original photo by Nigel Tao
 <nigeltao@golang.org>.
 
+gifplayer-muybridge.gif is an original animation by Nigel Tao
+<nigeltao@golang.org>.
+
 harvesters.\* are various encodings of a photo of "The Harvesters" by Pieter
 Bruegel the Elder, held by the Metropolitan Museum of Art.
 `http://www.metmuseum.org/art/collection/search/435809` lists that image as in
