@@ -752,7 +752,8 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		b.printf("& 0xFF;")
 		b.printf("%s >>= 8;", scratchName)
 		b.printf("%s <<= 8;", scratchName)
-		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << (64 - %s%d);",
+		// TODO: make a test case for 56 (correct) vs 64 (incorrect).
+		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << (56 - %s%d);",
 			scratchName, bPrefix, name, tPrefix, temp0)
 	case "le":
 		b.printf(">> 56;")

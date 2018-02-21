@@ -1035,7 +1035,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           self->private_impl.c_decode[0].scratch >>= 8;
           self->private_impl.c_decode[0].scratch <<= 8;
           self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
-                                                    << (64 - t_0);
+                                                    << (56 - t_0);
           if (t_0 == 8) {
             t_1 = self->private_impl.c_decode[0].scratch >> (64 - 16);
             break;
@@ -1130,7 +1130,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         self->private_impl.c_decode[0].scratch >>= 8;
         self->private_impl.c_decode[0].scratch <<= 8;
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
-                                                  << (64 - t_3);
+                                                  << (56 - t_3);
         if (t_3 == 24) {
           t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
           break;
