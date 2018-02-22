@@ -296,6 +296,7 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 	return nil
 }
 
+// TODO: initBoolTypedVars is never used.
 func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTypedVars bool) error {
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 

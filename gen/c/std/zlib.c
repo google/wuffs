@@ -1008,13 +1008,10 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     b_rend_src = b_rptr_src + len;
   }
 
+  v_x = self->private_impl.c_decode[0].v_x;
+  v_checksum = self->private_impl.c_decode[0].v_checksum;
+  v_z = self->private_impl.c_decode[0].v_z;
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
-  if (coro_susp_point) {
-    v_x = self->private_impl.c_decode[0].v_x;
-    v_checksum = self->private_impl.c_decode[0].v_checksum;
-    v_z = self->private_impl.c_decode[0].v_z;
-  } else {
-  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
