@@ -133,7 +133,7 @@ wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
   } else {
     qsrc -= 12;
   }
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#if defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
   uint64_t bits = self->private_impl.f_bits;
 #else
   uint32_t bits = self->private_impl.f_bits;
@@ -149,19 +149,34 @@ wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
 outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
+#if defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
+    // Ensure that we have at least 56 bits of input.
+    //
+    // This is "Variant 4" of
+    // https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
+    //
+    // 56, the number of bits in 7 bytes, is a property of that "Variant 4"
+    // bit-reading technique, and not related to the DEFLATE format per se.
+    //
+    // Specifically for DEFLATE, we need only up to 48 bits per outer_loop
+    // iteration. The maximum input bits used by a length/distance pair is 15
+    // bits for the length code, 5 bits for the length extra, 15 bits for the
+    // distance code, and 13 bits for the distance extra. This totals 48 bits.
+    //
+    // The fact that the 48 we need is less than the 56 we get is a happy
+    // coincidence. It lets us eliminate any other loads in the loop body.
+    bits |= *((uint64_t*)psrc) << n_bits;
+    psrc += (63 - n_bits) >> 3;
+    n_bits |= 56;
+#else
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
-      bits |= *((uint64_t*)psrc) << n_bits;
-      psrc += 6;
-      n_bits += 48;
-#else
       bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
       bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
-#endif
     }
+#endif
 
     // Decode an lcode symbol from H-L.
     uint32_t table_entry = self->private_impl.f_huffs[0][bits & lmask];
@@ -198,35 +213,27 @@ outer_loop:
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
+#if !defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
         if (n_bits < n) {
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
-          bits |= *((uint64_t*)psrc) << n_bits;
-          psrc += 6;
-          n_bits += 48;
-#else
           bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
-#endif
         }
+#endif
         length += bits & ((((uint32_t)(1)) << n) - 1);
         bits >>= n;
         n_bits -= n;
       }
     }
 
+#if !defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
     // Ensure that we have at least 15 bits of input.
     if (n_bits < 15) {
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
-      bits |= *((uint64_t*)psrc) << n_bits;
-      psrc += 6;
-      n_bits += 48;
-#else
       bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
       bits |= ((uint32_t)(*psrc++)) << n_bits;
       n_bits += 8;
-#endif
     }
+#endif
 
     // Decode a dcode symbol from H-D.
     table_entry = self->private_impl.f_huffs[1][bits & dmask];
@@ -253,18 +260,15 @@ outer_loop:
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
+#if !defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
+        // Ensure that we have at least 15 bits of input.
         if (n_bits < 15) {
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
-          bits |= *((uint64_t*)psrc) << n_bits;
-          psrc += 6;
-          n_bits += 48;
-#else
           bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
           bits |= ((uint32_t)(*psrc++)) << n_bits;
           n_bits += 8;
-#endif
         }
+#endif
         distance += bits & ((((uint32_t)(1)) << n) - 1);
         bits >>= n;
         n_bits -= n;
@@ -279,7 +283,7 @@ outer_loop:
 
     uint8_t* pback = pdst - distance;
 
-#ifdef WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
+#if defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
     // Back-copy fast path, copying 8 instead of 1 bytes at a time.
     //
     // This always copies 8*N bytes (where N is the smallest integer such that
