@@ -908,11 +908,14 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
     }
   }
 
-  v_z = self->private_impl.c_decode[0].v_z;
-  v_written = ((wuffs_base__slice_u8){});
-  v_n_copied = self->private_impl.c_decode[0].v_n_copied;
-  v_already_full = self->private_impl.c_decode[0].v_already_full;
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_z = self->private_impl.c_decode[0].v_z;
+    v_written = ((wuffs_base__slice_u8){});
+    v_n_copied = self->private_impl.c_decode[0].v_n_copied;
+    v_already_full = self->private_impl.c_decode[0].v_already_full;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -1044,10 +1047,13 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
     b_rend_src = b_rptr_src + len;
   }
 
-  v_final = self->private_impl.c_decode_blocks[0].v_final;
-  v_type = self->private_impl.c_decode_blocks[0].v_type;
   uint32_t coro_susp_point =
       self->private_impl.c_decode_blocks[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_final = self->private_impl.c_decode_blocks[0].v_final;
+    v_type = self->private_impl.c_decode_blocks[0].v_type;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -1248,10 +1254,13 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
     b_rend_src = b_rptr_src + len;
   }
 
-  v_length = self->private_impl.c_decode_uncompressed[0].v_length;
-  v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
   uint32_t coro_susp_point =
       self->private_impl.c_decode_uncompressed[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_length = self->private_impl.c_decode_uncompressed[0].v_length;
+    v_n_copied = self->private_impl.c_decode_uncompressed[0].v_n_copied;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -1371,9 +1380,12 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
 
   uint32_t v_i;
 
-  v_i = self->private_impl.c_init_fixed_huffman[0].v_i;
   uint32_t coro_susp_point =
       self->private_impl.c_init_fixed_huffman[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_i = self->private_impl.c_init_fixed_huffman[0].v_i;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -1458,21 +1470,25 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
     b_rend_src = b_rptr_src + len;
   }
 
-  v_bits = self->private_impl.c_init_dynamic_huffman[0].v_bits;
-  v_n_bits = self->private_impl.c_init_dynamic_huffman[0].v_n_bits;
-  v_n_lit = self->private_impl.c_init_dynamic_huffman[0].v_n_lit;
-  v_n_dist = self->private_impl.c_init_dynamic_huffman[0].v_n_dist;
-  v_n_clen = self->private_impl.c_init_dynamic_huffman[0].v_n_clen;
-  v_i = self->private_impl.c_init_dynamic_huffman[0].v_i;
-  v_mask = self->private_impl.c_init_dynamic_huffman[0].v_mask;
-  v_table_entry = self->private_impl.c_init_dynamic_huffman[0].v_table_entry;
-  v_table_entry_n_bits =
-      self->private_impl.c_init_dynamic_huffman[0].v_table_entry_n_bits;
-  v_n_extra_bits = self->private_impl.c_init_dynamic_huffman[0].v_n_extra_bits;
-  v_rep_symbol = self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol;
-  v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
   uint32_t coro_susp_point =
       self->private_impl.c_init_dynamic_huffman[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_bits = self->private_impl.c_init_dynamic_huffman[0].v_bits;
+    v_n_bits = self->private_impl.c_init_dynamic_huffman[0].v_n_bits;
+    v_n_lit = self->private_impl.c_init_dynamic_huffman[0].v_n_lit;
+    v_n_dist = self->private_impl.c_init_dynamic_huffman[0].v_n_dist;
+    v_n_clen = self->private_impl.c_init_dynamic_huffman[0].v_n_clen;
+    v_i = self->private_impl.c_init_dynamic_huffman[0].v_i;
+    v_mask = self->private_impl.c_init_dynamic_huffman[0].v_mask;
+    v_table_entry = self->private_impl.c_init_dynamic_huffman[0].v_table_entry;
+    v_table_entry_n_bits =
+        self->private_impl.c_init_dynamic_huffman[0].v_table_entry_n_bits;
+    v_n_extra_bits =
+        self->private_impl.c_init_dynamic_huffman[0].v_n_extra_bits;
+    v_rep_symbol = self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol;
+    v_rep_count = self->private_impl.c_init_dynamic_huffman[0].v_rep_count;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
@@ -2404,22 +2420,25 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
     b_rend_src = b_rptr_src + len;
   }
 
-  v_bits = self->private_impl.c_decode_huffman_slow[0].v_bits;
-  v_n_bits = self->private_impl.c_decode_huffman_slow[0].v_n_bits;
-  v_table_entry = self->private_impl.c_decode_huffman_slow[0].v_table_entry;
-  v_table_entry_n_bits =
-      self->private_impl.c_decode_huffman_slow[0].v_table_entry_n_bits;
-  v_lmask = self->private_impl.c_decode_huffman_slow[0].v_lmask;
-  v_dmask = self->private_impl.c_decode_huffman_slow[0].v_dmask;
-  v_redir_top = self->private_impl.c_decode_huffman_slow[0].v_redir_top;
-  v_redir_mask = self->private_impl.c_decode_huffman_slow[0].v_redir_mask;
-  v_length = self->private_impl.c_decode_huffman_slow[0].v_length;
-  v_distance = self->private_impl.c_decode_huffman_slow[0].v_distance;
-  v_n_copied = self->private_impl.c_decode_huffman_slow[0].v_n_copied;
-  v_hlen = self->private_impl.c_decode_huffman_slow[0].v_hlen;
-  v_hdist = self->private_impl.c_decode_huffman_slow[0].v_hdist;
   uint32_t coro_susp_point =
       self->private_impl.c_decode_huffman_slow[0].coro_susp_point;
+  if (coro_susp_point) {
+    v_bits = self->private_impl.c_decode_huffman_slow[0].v_bits;
+    v_n_bits = self->private_impl.c_decode_huffman_slow[0].v_n_bits;
+    v_table_entry = self->private_impl.c_decode_huffman_slow[0].v_table_entry;
+    v_table_entry_n_bits =
+        self->private_impl.c_decode_huffman_slow[0].v_table_entry_n_bits;
+    v_lmask = self->private_impl.c_decode_huffman_slow[0].v_lmask;
+    v_dmask = self->private_impl.c_decode_huffman_slow[0].v_dmask;
+    v_redir_top = self->private_impl.c_decode_huffman_slow[0].v_redir_top;
+    v_redir_mask = self->private_impl.c_decode_huffman_slow[0].v_redir_mask;
+    v_length = self->private_impl.c_decode_huffman_slow[0].v_length;
+    v_distance = self->private_impl.c_decode_huffman_slow[0].v_distance;
+    v_n_copied = self->private_impl.c_decode_huffman_slow[0].v_n_copied;
+    v_hlen = self->private_impl.c_decode_huffman_slow[0].v_hlen;
+    v_hdist = self->private_impl.c_decode_huffman_slow[0].v_hdist;
+  } else {
+  }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
