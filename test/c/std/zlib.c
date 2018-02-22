@@ -180,7 +180,7 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
   }
 }
 
-bool do_test_wuffs_zlib_checksum(bool ignore_checksum) {
+bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
   wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -192,36 +192,69 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum) {
     return false;
   }
   // Flip a bit in the zlib checksum, which comes at the end of the file.
-  src.ptr[src.wi - 1] ^= 1;
+  if (bad_checksum) {
+    src.ptr[src.wi - 1] ^= 1;
+  }
 
-  wuffs_zlib__decoder dec;
-  wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
-  wuffs_base__writer1 got_writer = {.buf = &got};
-  wuffs_base__reader1 src_reader = {.buf = &src};
+  int end_limit;
+  for (end_limit = 0; end_limit < 8; end_limit++) {
+    wuffs_zlib__decoder dec;
+    wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
+    got.wi = 0;
+    wuffs_base__writer1 got_writer = {.buf = &got};
+    src.ri = 0;
+    wuffs_base__reader1 src_reader = {.buf = &src};
 
-  wuffs_zlib__status status =
-      wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
-  wuffs_zlib__status want = ignore_checksum
-                                ? WUFFS_ZLIB__STATUS_OK
-                                : WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
-  if (status != want) {
-    FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-         wuffs_zlib__status__string(status), want,
-         wuffs_zlib__status__string(want));
-    return false;
+    // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
+    // or isn't zero.
+    int i;
+    for (i = 0; i < 2; i++) {
+      wuffs_zlib__status want = 0;
+      if (i == 0) {
+        if (end_limit == 0) {
+          continue;
+        }
+        if (src.wi < end_limit) {
+          FAIL("end_limit=%d: not enough source data", end_limit);
+          return false;
+        }
+        uint64_t rlim = src.wi - (uint64_t)(end_limit);
+        src_reader.private_impl.limit.ptr_to_len = &rlim;
+        want = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
+      } else {
+        src_reader.private_impl.limit.ptr_to_len = NULL;
+        want = (bad_checksum && !ignore_checksum)
+                   ? WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH
+                   : WUFFS_ZLIB__STATUS_OK;
+      }
+
+      wuffs_zlib__status status =
+          wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
+      if (status != want) {
+        FAIL("end_limit=%d: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
+             end_limit, status, wuffs_zlib__status__string(status), want,
+             wuffs_zlib__status__string(want));
+        return false;
+      }
+    }
   }
   return true;
 }
 
 void test_wuffs_zlib_checksum_ignore() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(true);
+  do_test_wuffs_zlib_checksum(true, true);
 }
 
-void test_wuffs_zlib_checksum_verify() {
+void test_wuffs_zlib_checksum_verify_bad() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(false);
+  do_test_wuffs_zlib_checksum(false, true);
+}
+
+void test_wuffs_zlib_checksum_verify_good() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_zlib_checksum(false, false);
 }
 
 void test_wuffs_zlib_decode_midsummer() {
@@ -334,10 +367,11 @@ proc tests[] = {
 
     test_wuffs_adler32,  //
 
-    test_wuffs_zlib_checksum_ignore,   //
-    test_wuffs_zlib_checksum_verify,   //
-    test_wuffs_zlib_decode_midsummer,  //
-    test_wuffs_zlib_decode_pi,         //
+    test_wuffs_zlib_checksum_ignore,       //
+    test_wuffs_zlib_checksum_verify_bad,   //
+    test_wuffs_zlib_checksum_verify_good,  //
+    test_wuffs_zlib_decode_midsummer,      //
+    test_wuffs_zlib_decode_pi,             //
 
 #ifdef WUFFS_MIMIC
 
