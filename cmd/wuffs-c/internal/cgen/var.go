@@ -348,8 +348,10 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 			// This generated code explicitly initializes bool typed variables,
 			// in order to avoid ubsan (undefined behavior sanitizer) warnings.
 			//
-			// In general, we don't zero-initialize all of the v_etc local
-			// variables due to the negative performance impact.
+			// In general, we don't initialize (set to zero or assign from
+			// "this" fields) all of the v_etc local variables when not
+			// resuming a coroutine, due to the performance impact. Commit
+			// 2b6b0ac "Unconditionally resume local vars" has some numbers.
 			rhs = "false"
 		}
 		if suspend {
