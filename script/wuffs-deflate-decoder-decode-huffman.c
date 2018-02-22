@@ -96,6 +96,26 @@ index 3698e98..4bee3b0 100644
 //#define WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS
 #endif
 
+// wuffs_base__width_to_mask_table is the width_to_mask_table from
+// https://fgiesen.wordpress.com/2018/02/19/reading-bits-in-far-too-many-ways-part-1/
+//
+// Look for "It may feel ridiculous" on that page for the rationale.
+static const uint32_t wuffs_base__width_to_mask_table[33] = {
+    0x00000000u,
+
+    0x00000001u, 0x00000003u, 0x00000007u, 0x0000000Fu,
+    0x0000001Fu, 0x0000003Fu, 0x0000007Fu, 0x000000FFu,
+
+    0x000001FFu, 0x000003FFu, 0x000007FFu, 0x00000FFFu,
+    0x00001FFFu, 0x00003FFFu, 0x00007FFFu, 0x0000FFFFu,
+
+    0x0001FFFFu, 0x0003FFFFu, 0x0007FFFFu, 0x000FFFFFu,
+    0x001FFFFFu, 0x003FFFFFu, 0x007FFFFFu, 0x00FFFFFFu,
+
+    0x01FFFFFFu, 0x03FFFFFFu, 0x07FFFFFFu, 0x0FFFFFFFu,
+    0x1FFFFFFFu, 0x3FFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu,
+};
+
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
 static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
@@ -143,9 +163,9 @@ wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
   // Initialize other local variables.
   uint8_t* pdst0 = pdst;
   uint32_t lmask =
-      ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+      wuffs_base__width_to_mask_table[self->private_impl.f_n_huffs_bits[0]];
   uint32_t dmask =
-      ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
+      wuffs_base__width_to_mask_table[self->private_impl.f_n_huffs_bits[1]];
 
 outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
@@ -204,7 +224,8 @@ outer_loop:
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
-      uint32_t mask = ((((uint32_t)(1)) << ((table_entry >> 4) & 0x0F)) - 1);
+      uint32_t mask =
+          wuffs_base__width_to_mask_table[(table_entry >> 4) & 0x0F];
       table_entry = self->private_impl.f_huffs[0][top + (bits & mask)];
     }
 
@@ -219,7 +240,7 @@ outer_loop:
           n_bits += 8;
         }
 #endif
-        length += bits & ((((uint32_t)(1)) << n) - 1);
+        length += bits & wuffs_base__width_to_mask_table[n];
         bits >>= n;
         n_bits -= n;
       }
@@ -251,7 +272,8 @@ outer_loop:
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
-      uint32_t mask = ((((uint32_t)(1)) << ((table_entry >> 4) & 0x0F)) - 1);
+      uint32_t mask =
+          wuffs_base__width_to_mask_table[(table_entry >> 4) & 0x0F];
       table_entry = self->private_impl.f_huffs[1][top + (bits & mask)];
     }
 
@@ -269,7 +291,7 @@ outer_loop:
           n_bits += 8;
         }
 #endif
-        distance += bits & ((((uint32_t)(1)) << n) - 1);
+        distance += bits & wuffs_base__width_to_mask_table[n];
         bits >>= n;
         n_bits -= n;
       }
@@ -321,7 +343,7 @@ end:
   for (; n_bits >= 8; n_bits -= 8) {
     psrc--;
   }
-  bits &= (((uint32_t)(1)) << n_bits) - 1;
+  bits &= wuffs_base__width_to_mask_table[n_bits];
 
   // Save contextual state.
   a_dst.buf->wi = pdst - a_dst.buf->ptr;
