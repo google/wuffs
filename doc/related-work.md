@@ -17,7 +17,12 @@ this function returns, that array's elements will be sorted in increasing
 order", is less of a concern for Wuffs the Language than for other projects.
 This is especially as higher level concerns like "correctly implements the JPEG
 specification" are less amenable to formalization than foundational concepts
-like searching and sorting.
+like searching and sorting. Even with something as mathematical and
+conceptually simple as Quicksort, compare a two-line [Haskell
+implementation](https://rosettacode.org/wiki/Sorting_algorithms/Quicksort#Haskell)
+with the essay that is an [Idris
+implementation](https://github.com/bmsherman/blog/wiki/Quicksort-in-Idris).
+Proving *correctness* is an admirable goal, but it is not Wuffs' goal.
 
 For Wuffs the Library, confidence about correctness is instead based on
 testing, both unit testing and for e.g. media codecs, corpora of test files. A
@@ -129,9 +134,68 @@ Once again, we're not claiming that these other approaches are unworkable, or
 not useful, just different, with different trade-offs.
 
 
+## Why Not ATS?
+
+ATS (Applied Type System) is a statically typed programming language that
+unifies implementation with formal specification. Its goals sound similar to
+Wuffs in the abstract, but they differ in their approach. That's not to say
+that one is better or worse than the other, they're just different.
+
+Graydon Hoare, on the topic of ["Extended static checking (ESC), refinement
+types, general dependent-typed
+languages"](https://graydon2.dreamwidth.org/253769.html) says of existing
+approaches, including ATS, "So far, most exercises in this space have ended in
+frustration... the complexity wall here can make other areas of computering
+[sic] look... a bit like child's play. It gets very dense, very fast."
+
+In contrast, Wuffs aims to be significantly simpler. The trade-off is, of
+course, that Wuffs is not and does not aim to be a general purpose language.
+ATS might be more powerful and therefore placed higher in the [Blub
+Paradox](http://www.paulgraham.com/avg.html) analogy, but the flip side of that
+is that, unlike Lisp, ATS is much more complicated to learn and to understand,
+perhaps dauntingly so. For example, [its
+manual](http://ats-lang.sourceforge.net/DOCUMENT/INT2PROGINATS/HTML/book1.html)
+mentions that types, sorts, views, viewtypes, dataviews, datatypes and
+dataviewtypes are all similar-sounding but distinct ATS concepts. As of
+February 2018, the [ATS home page](http://www.ats-lang.org/) says that "the
+current implementation... [consists] of more than 180K lines of code" and that
+"in general, one should expect to encounter many unfamiliar programming
+concepts and features in ATS and be prepared to spend a substantial amount of
+time on learning them." In the [words of one
+commentator](https://www.reddit.com/r/rust/comments/7d85sj/puffs_a_new_language_for_parsing_untrusted_files/dpx0hp7/),
+"the cognitive overhead of managing your proof-threading in ATS is much higher
+than managing your lifetimes/borrows in Rust, which is by far the biggest cliff
+of Rust's learning curve. Not to mention ATS is syntactically... challenging".
+
+On verification, [ATS' Examples](http://www.ats-lang.org/Examples.html) says
+that "A fully verified implementaion of the [Fibonacci] function in ATS can now
+be given... Please click
+[here](http://www.ats-lang.org/SERVER/MYCODE/Patsoptaas_serve.php?mycode_fil=fibats)
+if you are interested in compiling and running this example on-line." Modifying
+that example's "N" value from 10 to 10000 yields "fibats(10000) = Infinity",
+which is clearly incorrect. Somewhere along the way, there's been a breakdown
+between numbers in the ideal mathematical sense (often used by proof systems)
+and numbers in practice (whether fixed width integers or floating point) as
+actually computed on by CPUs. Regardless of where that breakdown is in this
+case, it doesn't build confidence that, in general, ATS programs are guaranteed
+free of arithmetic overflow despite compiler-verified proofs.
+
+Once again, we're not claiming that these other approaches are unworkable, or
+not useful, just different, with different trade-offs.
+
+
 ## Why Not Rust?
 
-Wuffs transpiles to standard C99 code with no dependencies, and should run
+Rust is a general purpose programming language, which aims for C-like
+performance in general. Wuffs aims for C-like performance specifically for the
+limited problem space of bits-and-bytes level CPU-intensive computation (while
+doing that safely). As one data point, a [GIF decoding
+benchmark](https://github.com/google/wuffs/commit/9a463d46) measures Wuffs as
+4x faster than two separate Rust implementations, including the one that
+[crates.io calls "gif"](https://crates.io/crates/gif), and one based on Nom
+(discussed below).
+
+Wuffs also transpiles to standard C99 code with no dependencies, and should run
 anywhere that has a C99 compliant C compiler. An existing C/C++ project, such
 as the Chromium web browser, can choose to replace e.g. libpng with Wuffs PNG,
 without needing any additional toolchains. Sure, languages like D and Rust have
@@ -165,4 +229,4 @@ not useful, just different, with different trade-offs.
 
 ---
 
-Updated on November 2017.
+Updated on February 2018.
