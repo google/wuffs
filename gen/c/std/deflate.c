@@ -2645,6 +2645,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
+      if (v_distance <= 0) {
+        status =
+            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        goto exit;
+      }
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)(v_distance)) >

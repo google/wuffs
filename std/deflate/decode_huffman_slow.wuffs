@@ -158,6 +158,8 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 		}
 
 		// distance = base number + extra bits.
+		//
+		// TODO: the upper bound isn't right. 0x8000 is a valid distance.
 		var distance u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
@@ -171,6 +173,9 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			distance = (distance + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
+		}
+		if distance <= 0 {
+			return error "internal error: inconsistent Huffman decoder state"
 		}
 
 		var n_copied u32
