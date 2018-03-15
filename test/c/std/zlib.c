@@ -50,21 +50,21 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test adler32_midsummer_gt = {
-    .src_filename = "../../testdata/midsummer.txt",  //
+    .src_filename = "../../data/midsummer.txt",  //
 };
 
 golden_test adler32_pi_gt = {
-    .src_filename = "../../testdata/pi.txt",  //
+    .src_filename = "../../data/pi.txt",  //
 };
 
 golden_test zlib_midsummer_gt = {
-    .want_filename = "../../testdata/midsummer.txt",      //
-    .src_filename = "../../testdata/midsummer.txt.zlib",  //
+    .want_filename = "../../data/midsummer.txt",      //
+    .src_filename = "../../data/midsummer.txt.zlib",  //
 };
 
 golden_test zlib_pi_gt = {
-    .want_filename = "../../testdata/pi.txt",      //
-    .src_filename = "../../testdata/pi.txt.zlib",  //
+    .want_filename = "../../data/pi.txt",      //
+    .src_filename = "../../data/pi.txt.zlib",  //
 };
 
 // ---------------- Basic Tests
@@ -93,31 +93,31 @@ void test_wuffs_adler32() {
     uint32_t want;
   } test_cases[] = {
       {
-          .filename = "../../testdata/hat.bmp",
+          .filename = "../../data/hat.bmp",
           .want = 0x3D26D034,
       },
       {
-          .filename = "../../testdata/hat.gif",
+          .filename = "../../data/hat.gif",
           .want = 0x2A5EB144,
       },
       {
-          .filename = "../../testdata/hat.jpeg",
+          .filename = "../../data/hat.jpeg",
           .want = 0x3A503B1A,
       },
       {
-          .filename = "../../testdata/hat.lossless.webp",
+          .filename = "../../data/hat.lossless.webp",
           .want = 0xD059D427,
       },
       {
-          .filename = "../../testdata/hat.lossy.webp",
+          .filename = "../../data/hat.lossy.webp",
           .want = 0xF1BB258D,
       },
       {
-          .filename = "../../testdata/hat.png",
+          .filename = "../../data/hat.png",
           .want = 0xDFC6C9C6,
       },
       {
-          .filename = "../../testdata/hat.tiff",
+          .filename = "../../data/hat.tiff",
           .want = 0xBDC011E9,
       },
   };

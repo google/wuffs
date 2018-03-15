@@ -16,7 +16,7 @@
 gifplayer prints an ASCII representation of the GIF image read from stdin. To
 play Eadweard Muybridge's iconic galloping horse animation, run:
 
-$cc gifplayer.c && ./a.out < ../../test/testdata/muybridge.gif; rm -f a.out
+$cc gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
 
 for a C compiler $cc, such as clang or gcc.
 */

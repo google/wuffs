@@ -7,7 +7,7 @@ specification](https://www.w3.org/Graphics/GIF/spec-gif89a.txt).
 
 # Wire Format Worked Example
 
-Consider `test/testdata/bricks-nodither.gif`.
+Consider `test/data/bricks-nodither.gif`.
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  G       0x47    0b_0100_0111
@@ -206,10 +206,10 @@ Significant Bits) and MSB (Most Significant Bits) first. The GIF format uses
 LSB first. The PDF and TIFF formats use MSB first, but are not discussed here.
 
 It is not an official format, but the
-`test/testdata/bricks-nodither.indexes.giflzw` file contains the extracted
-"Pixel Data" payload from `test/testdata/bricks-nodither.gif`, preceded by the
-one byte `log2(literal_width)`. Deriving a separate file, as a separate,
-contiguous stream, makes it easier to discuss the LZW compression format.
+`test/data/bricks-nodither.indexes.giflzw` file contains the extracted "Pixel
+Data" payload from `test/data/bricks-nodither.gif`, preceded by the one byte
+`log2(literal_width)`. Deriving a separate file, as a separate, contiguous
+stream, makes it easier to discuss the LZW compression format.
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0x08    0b_0000_1000
@@ -284,8 +284,8 @@ depending on `max`. For example, if `max` is in the range [256, 511] then the
 next code takes 9 bits, if `max` is in the range [512, 1023] then `width ==
 10`, and so on. For GIF, when a code spans multiple bytes, codes are formed
 Least Significant Bits first. For the
-`test/testdata/bricks-nodither.indexes.giflzw` example, `l2lw == 8` and so
-`width` starts at 9 bits. Printing the bits on byte boundaries give:
+`test/data/bricks-nodither.indexes.giflzw` example, `l2lw == 8` and so `width`
+starts at 9 bits. Printing the bits on byte boundaries give:
 
     offset  xoffset ASCII   hex     binary
     000001  0x0001  .       0x00    0b_0000_0000
@@ -452,8 +452,8 @@ bytes and then an 0xD9.
 ## Actual Pixel Indexes
 
 It is also not an official format, but for reference, the
-`test/testdata/bricks-nodither.indexes` contains the decoded
-`test/testdata/bricks-nodither.indexes.giflzw` data:
+`test/data/bricks-nodither.indexes` contains the decoded
+`test/data/bricks-nodither.indexes.giflzw` data:
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0xDC    0b_1101_1100
@@ -486,6 +486,6 @@ We have 19200 = 160 × 120 pixels. The top row starts with five pixels with RGB
 values indexed by 0xDC (or 220 in decimal, and recall that the GCT maps color
 220 to {0x0F, 0xA7, 0xF6}), the bottom row ends with index 0x4F.
 
-Indeed, opening `test/testdata/bricks-nodither.gif` in an image editor should
+Indeed, opening `test/data/bricks-nodither.gif` in an image editor should
 verify that the top left pixel's RGB is {0x0F, 0xA7, 0xF6}, and likewise the
 bottom right pixel's RGB is {0x01, 0x24, 0x63}.

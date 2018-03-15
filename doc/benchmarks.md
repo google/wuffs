@@ -110,9 +110,9 @@ output.
 # GIF
 
 The 1k, 10k, etc. numbers are approximately how many bytes of pixel data there
-are in the decoded image. For example, the `test/testdata/harvesters.*` images
-are 1165 × 859 (approximately 1000k pixels) and a GIF image (a paletted image)
-is 1 byte per pixel.
+are in the decoded image. For example, the `test/data/harvesters.*` images are
+1165 × 859 (approximately 1000k pixels) and a GIF image (a paletted image) is 1
+byte per pixel.
 
     name                             speed
 

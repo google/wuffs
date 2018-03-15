@@ -21,9 +21,9 @@ Wrangling those formats that build on deflate (gzip, zip and zlib) is not
 provided by this package. For zlib, look at the `std/zlib` package instead. The
 other formats are TODO.
 
-For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
+For example, look at `test/data/romeo.txt*`. First, the uncompressed text:
 
-    $ xxd test/testdata/romeo.txt
+    $ xxd test/data/romeo.txt
     00000000: 526f 6d65 6f20 616e 6420 4a75 6c69 6574  Romeo and Juliet
     00000010: 0a45 7863 6572 7074 2066 726f 6d20 4163  .Excerpt from Ac
     etc
@@ -32,7 +32,7 @@ For example, look at `test/testdata/romeo.txt*`. First, the uncompressed text:
 
 The raw deflate encoding:
 
-    $ xxd test/testdata/romeo.txt.deflate
+    $ xxd test/data/romeo.txt.deflate
     00000000: 4d53 c16e db30 0cbd f32b d853 2e46 0e3d  MS.n.0...+.S.F.=
     00000010: 2e87 20ed 0234 c5ba 0049 861e 861d 149b  .. ..4...I......
     etc
@@ -45,7 +45,7 @@ C string name of the original, uncompressed file, "romeo.txt", amongst other
 data. The footer contains a 4 byte CRC32 checksum and a 4 byte length of the
 uncompressed file (0x3ae = 942 bytes).
 
-    $ xxd test/testdata/romeo.txt.gz
+    $ xxd test/data/romeo.txt.gz
     00000000: 1f8b 0808 26d8 5d59 0003 726f 6d65 6f2e  ....&.]Y..romeo.
     00000010: 7478 7400 4d53 c16e db30 0cbd f32b d853  txt.MS.n.0...+.S
     etc
@@ -56,7 +56,7 @@ The zlib format wraps a 2 byte header and 4 byte footer around the raw deflate
 data. The footer contains a 4 byte Adler32 checksum. TODO: move this to
 std/zlib/README.md.
 
-    $ xxd test/testdata/romeo.txt.zlib
+    $ xxd test/data/romeo.txt.zlib
     00000000: 789c 4d53 c16e db30 0cbd f32b d853 2e46  x.MS.n.0...+.S.F
     00000010: 0e3d 2e87 20ed 0234 c5ba 0049 861e 861d  .=.. ..4...I....
     etc
@@ -66,7 +66,7 @@ std/zlib/README.md.
 
 # Wire Format Worked Example
 
-Consider `test/testdata/romeo.txt.deflate`. The relevant spec is RFC 1951.
+Consider `test/data/romeo.txt.deflate`. The relevant spec is RFC 1951.
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  M       0x4D    0b_0100_1101

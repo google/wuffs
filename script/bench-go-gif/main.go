@@ -57,7 +57,7 @@ func main() {
 }
 
 func main1() error {
-	src, err := ioutil.ReadFile("../../test/testdata/harvesters.gif")
+	src, err := ioutil.ReadFile("../../test/data/harvesters.gif")
 	if err != nil {
 		return err
 	}

@@ -50,7 +50,7 @@ const LAST_PIXEL: u8 = 1; // Bottom right pixel's palette index is 0x01.
 
 fn main() {
     let mut dst = [0; NUM_BYTES];
-    let src = include_bytes!("../../../test/testdata/harvesters.gif");
+    let src = include_bytes!("../../../test/data/harvesters.gif");
 
     let start = Instant::now();
 

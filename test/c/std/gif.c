@@ -277,34 +277,32 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
 
 void test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                           "../../testdata/bricks-gray.indexes", 19200, 0,
-                           4096);
+  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
+                           "../../data/bricks-gray.indexes", 19200, 0, 4096);
 }
 
 void test_wuffs_lzw_decode_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 14731,
-                           "../../testdata/bricks-gray.indexes", 19200, 41, 43);
+  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
+                           "../../data/bricks-gray.indexes", 19200, 41, 43);
 }
 
 void test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../testdata/bricks-dither.indexes.giflzw", 14923,
-                           "../../testdata/bricks-dither.indexes", 19200, 0, 0);
+  do_test_wuffs_lzw_decode("../../data/bricks-dither.indexes.giflzw", 14923,
+                           "../../data/bricks-dither.indexes", 19200, 0, 0);
 }
 
 void test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../testdata/bricks-nodither.indexes.giflzw",
-                           13382, "../../testdata/bricks-nodither.indexes",
-                           19200, 0, 0);
+  do_test_wuffs_lzw_decode("../../data/bricks-nodither.indexes.giflzw", 13382,
+                           "../../data/bricks-nodither.indexes", 19200, 0, 0);
 }
 
 void test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../testdata/pi.txt.giflzw", 50550,
-                           "../../testdata/pi.txt", 100003, 0, 0);
+  do_test_wuffs_lzw_decode("../../data/pi.txt.giflzw", 50550,
+                           "../../data/pi.txt", 100003, 0, 0);
 }
 
 // ---------------- LZW Benches
@@ -350,12 +348,12 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
 
 void bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../testdata/bricks-gray.indexes.giflzw", 5000);
+  do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 5000);
 }
 
 void bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../testdata/pi.txt.giflzw", 1000);
+  do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 1000);
 }
 
 // ---------------- GIF Tests
@@ -532,7 +530,7 @@ void test_wuffs_gif_call_sequence() {
   wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&src, "../../testdata/bricks-dither.gif")) {
+  if (!read_file(&src, "../../data/bricks-dither.gif")) {
     return;
   }
 
@@ -559,7 +557,7 @@ void test_wuffs_gif_decode_animated() {
   wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&src, "../../testdata/animated-red-blue.gif")) {
+  if (!read_file(&src, "../../data/animated-red-blue.gif")) {
     return;
   }
 
@@ -618,23 +616,23 @@ void test_wuffs_gif_decode_animated() {
 
 void test_wuffs_gif_decode_input_is_a_gif() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode("../../testdata/bricks-dither.gif",
-                           "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes", 0, 0);
+  do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
+                           "../../data/bricks-dither.palette",
+                           "../../data/bricks-dither.indexes", 0, 0);
 }
 
 void test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode("../../testdata/bricks-dither.gif",
-                           "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes", 0, 4096);
+  do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
+                           "../../data/bricks-dither.palette",
+                           "../../data/bricks-dither.indexes", 0, 4096);
 }
 
 void test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode("../../testdata/bricks-dither.gif",
-                           "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes", 0, 787);
+  do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
+                           "../../data/bricks-dither.palette",
+                           "../../data/bricks-dither.indexes", 0, 787);
   // The magic 787 tickles being in the middle of a decode_extension skip32
   // call.
   //
@@ -643,9 +641,9 @@ void test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
 
 void test_wuffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode("../../testdata/bricks-dither.gif",
-                           "../../testdata/bricks-dither.palette",
-                           "../../testdata/bricks-dither.indexes", 11, 13);
+  do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
+                           "../../data/bricks-dither.palette",
+                           "../../data/bricks-dither.indexes", 11, 13);
 }
 
 void test_wuffs_gif_decode_input_is_a_png() {
@@ -653,7 +651,7 @@ void test_wuffs_gif_decode_input_is_a_png() {
 
   wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&src, "../../testdata/bricks-dither.png")) {
+  if (!read_file(&src, "../../data/bricks-dither.png")) {
     return;
   }
 
@@ -709,37 +707,37 @@ bool do_test_mimic_gif_decode(const char* filename) {
 
 void test_mimic_gif_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/bricks-dither.gif");
+  do_test_mimic_gif_decode("../../data/bricks-dither.gif");
 }
 
 void test_mimic_gif_decode_bricks_gray() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/bricks-gray.gif");
+  do_test_mimic_gif_decode("../../data/bricks-gray.gif");
 }
 
 void test_mimic_gif_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/bricks-nodither.gif");
+  do_test_mimic_gif_decode("../../data/bricks-nodither.gif");
 }
 
 void test_mimic_gif_decode_harvesters() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/harvesters.gif");
+  do_test_mimic_gif_decode("../../data/harvesters.gif");
 }
 
 void test_mimic_gif_decode_hat() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/hat.gif");
+  do_test_mimic_gif_decode("../../data/hat.gif");
 }
 
 void test_mimic_gif_decode_hibiscus() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/hibiscus.gif");
+  do_test_mimic_gif_decode("../../data/hibiscus.gif");
 }
 
 void test_mimic_gif_decode_pjw_thumbnail() {
   CHECK_FOCUS(__func__);
-  do_test_mimic_gif_decode("../../testdata/pjw-thumbnail.gif");
+  do_test_mimic_gif_decode("../../data/pjw-thumbnail.gif");
 }
 
 #endif  // WUFFS_MIMIC
@@ -776,23 +774,22 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__buf1*,
 
 void bench_wuffs_gif_decode_1k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../testdata/pjw-thumbnail.gif",
-                      200000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/pjw-thumbnail.gif", 200000);
 }
 
 void bench_wuffs_gif_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../testdata/hat.gif", 10000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/hat.gif", 10000);
 }
 
 void bench_wuffs_gif_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../testdata/hibiscus.gif", 1000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/hibiscus.gif", 1000);
 }
 
 void bench_wuffs_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../testdata/harvesters.gif", 100);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/harvesters.gif", 100);
 }
 
 // ---------------- Mimic Benches
@@ -801,23 +798,22 @@ void bench_wuffs_gif_decode_1000k() {
 
 void bench_mimic_gif_decode_1k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../testdata/pjw-thumbnail.gif",
-                      200000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/pjw-thumbnail.gif", 200000);
 }
 
 void bench_mimic_gif_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../testdata/hat.gif", 10000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/hat.gif", 10000);
 }
 
 void bench_mimic_gif_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../testdata/hibiscus.gif", 1000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/hibiscus.gif", 1000);
 }
 
 void bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../testdata/harvesters.gif", 100);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/harvesters.gif", 100);
 }
 
 #endif  // WUFFS_MIMIC

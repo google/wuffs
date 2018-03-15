@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 /*
 The remainder of this C program was generated from running this Go program via:
 
-go run x.go < ../../test/testdata/pjw-thumbnail.gif
+go run x.go < ../../test/data/pjw-thumbnail.gif
 
 ----
 package main

@@ -62,7 +62,7 @@ const LAST_PIXEL: u8 = 3; // Bottom right pixel's blue component is 0x03.
 
 fn main() {
     let mut dst = [0; NUM_BYTES];
-    let src = include_bytes!("../../../test/testdata/harvesters.gif");
+    let src = include_bytes!("../../../test/data/harvesters.gif");
 
     let start = Instant::now();
 

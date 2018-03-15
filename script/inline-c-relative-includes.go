@@ -20,7 +20,7 @@ package main
 // #include lines that uses "quoted files" (but not <bracketed files>).
 //
 // The output should be a stand-alone C file that other people can easily
-// compile and run with no further dependencies, other than testdata files.
+// compile and run with no further dependencies, other than test/data files.
 //
 // Usage: go run inline-c-relative-includes.go path/to/foo.c
 
