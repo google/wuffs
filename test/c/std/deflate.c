@@ -78,6 +78,15 @@ golden_test deflate_deflate_backref_crosses_blocks_gt = {
         "deflate-backref-crosses-blocks.deflate",
 };
 
+golden_test deflate_deflate_distance_32768_gt = {
+    .want_filename =
+        "../../data/artificial/"
+        "deflate-distance-32768.deflate.decompressed",
+    .src_filename =
+        "../../data/artificial/"
+        "deflate-distance-32768.deflate",
+};
+
 golden_test deflate_midsummer_gt = {
     .want_filename = "../../data/midsummer.txt",    //
     .src_filename = "../../data/midsummer.txt.gz",  //
@@ -155,10 +164,16 @@ void test_wuffs_deflate_decode_256_bytes() {
   do_test_buf1_buf1(wuffs_deflate_decode, &deflate_256_bytes_gt, 0, 0);
 }
 
-void test_wuffs_deflate_decode_flate_backref_crosses_blocks() {
+void test_wuffs_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   do_test_buf1_buf1(wuffs_deflate_decode,
                     &deflate_deflate_backref_crosses_blocks_gt, 0, 0);
+}
+
+void test_wuffs_deflate_decode_deflate_distance_32768() {
+  CHECK_FOCUS(__func__);
+  do_test_buf1_buf1(wuffs_deflate_decode, &deflate_deflate_distance_32768_gt, 0,
+                    0);
 }
 
 void test_wuffs_deflate_decode_midsummer() {
@@ -550,10 +565,16 @@ void test_mimic_deflate_decode_256_bytes() {
   do_test_buf1_buf1(mimic_deflate_decode, &deflate_256_bytes_gt, 0, 0);
 }
 
-void test_mimic_deflate_decode_flate_backref_crosses_blocks() {
+void test_mimic_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   do_test_buf1_buf1(mimic_deflate_decode,
                     &deflate_deflate_backref_crosses_blocks_gt, 0, 0);
+}
+
+void test_mimic_deflate_decode_deflate_distance_32768() {
+  CHECK_FOCUS(__func__);
+  do_test_buf1_buf1(mimic_deflate_decode, &deflate_deflate_distance_32768_gt, 0,
+                    0);
 }
 
 void test_mimic_deflate_decode_midsummer() {
@@ -661,28 +682,30 @@ void bench_mimic_gzip_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_deflate_decode_256_bytes,                     //
-    test_wuffs_deflate_decode_flate_backref_crosses_blocks,  //
-    test_wuffs_deflate_decode_midsummer,                     //
-    test_wuffs_deflate_decode_pi,                            //
-    test_wuffs_deflate_decode_pi_many_big_reads,             //
-    test_wuffs_deflate_decode_pi_many_medium_reads,          //
-    test_wuffs_deflate_decode_pi_many_small_writes_reads,    //
-    test_wuffs_deflate_decode_romeo,                         //
-    test_wuffs_deflate_decode_romeo_fixed,                   //
-    test_wuffs_deflate_decode_split_src,                     //
-    test_wuffs_deflate_history_full,                         //
-    test_wuffs_deflate_history_partial,                      //
-    test_wuffs_deflate_table_redirect,                       //
+    test_wuffs_deflate_decode_256_bytes,                       //
+    test_wuffs_deflate_decode_deflate_backref_crosses_blocks,  //
+    // test_wuffs_deflate_decode_deflate_distance_32768,          // TODO: uncomment.
+    test_wuffs_deflate_decode_midsummer,                       //
+    test_wuffs_deflate_decode_pi,                              //
+    test_wuffs_deflate_decode_pi_many_big_reads,               //
+    test_wuffs_deflate_decode_pi_many_medium_reads,            //
+    test_wuffs_deflate_decode_pi_many_small_writes_reads,      //
+    test_wuffs_deflate_decode_romeo,                           //
+    test_wuffs_deflate_decode_romeo_fixed,                     //
+    test_wuffs_deflate_decode_split_src,                       //
+    test_wuffs_deflate_history_full,                           //
+    test_wuffs_deflate_history_partial,                        //
+    test_wuffs_deflate_table_redirect,                         //
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_deflate_decode_256_bytes,                     //
-    test_mimic_deflate_decode_flate_backref_crosses_blocks,  //
-    test_mimic_deflate_decode_midsummer,                     //
-    test_mimic_deflate_decode_pi,                            //
-    test_mimic_deflate_decode_romeo,                         //
-    test_mimic_deflate_decode_romeo_fixed,                   //
+    test_mimic_deflate_decode_256_bytes,                       //
+    test_mimic_deflate_decode_deflate_backref_crosses_blocks,  //
+    test_mimic_deflate_decode_deflate_distance_32768,          //
+    test_mimic_deflate_decode_midsummer,                       //
+    test_mimic_deflate_decode_pi,                              //
+    test_mimic_deflate_decode_romeo,                           //
+    test_mimic_deflate_decode_romeo_fixed,                     //
 
     test_mimic_gzip_decode_midsummer,  //
     test_mimic_gzip_decode_pi,         //
