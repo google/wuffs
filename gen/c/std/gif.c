@@ -177,7 +177,7 @@ static inline void wuffs_base__image_config__initialize(
 
 #endif  // WUFFS_BASE_HEADER_H
 
-// ---------------- Use Declarations
+  // ---------------- Use Declarations
 
 #ifdef __cplusplus
 extern "C" {

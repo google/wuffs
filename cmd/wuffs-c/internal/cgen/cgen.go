@@ -74,7 +74,7 @@ func Do(args []string) error {
 			return nil, err
 		}
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command("clang-format", "-style=Chromium")
+		cmd := exec.Command("clang-format-5.0", "-style=Chromium")
 		cmd.Stdin = bytes.NewReader(unformatted)
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr
