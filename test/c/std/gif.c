@@ -670,7 +670,7 @@ void test_wuffs_gif_decode_input_is_a_png() {
   }
 }
 
-// ---------------- Mimic Tests
+  // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -792,7 +792,7 @@ void bench_wuffs_gif_decode_1000k() {
   do_bench_gif_decode(wuffs_gif_decode, "../../data/harvesters.gif", 100);
 }
 
-// ---------------- Mimic Benches
+  // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

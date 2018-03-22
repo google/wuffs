@@ -267,7 +267,7 @@ void test_wuffs_zlib_decode_pi() {
   do_test_buf1_buf1(wuffs_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
-// ---------------- Mimic Tests
+  // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -327,7 +327,7 @@ void bench_wuffs_zlib_decode_100k() {
   do_bench_buf1_buf1(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
 }
 
-// ---------------- Mimic Benches
+  // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
