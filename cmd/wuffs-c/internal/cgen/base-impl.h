@@ -232,7 +232,7 @@ static inline uint32_t wuffs_base__writer1__copy_from_history32(
 // version of the wuffs_base__writer1__copy_from_history32 function above. The
 // caller needs to prove that:
 //  - start    != NULL
-//  - distance != 0
+//  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
 static inline uint32_t wuffs_base__writer1__copy_from_history32__bco(

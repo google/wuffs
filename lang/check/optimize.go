@@ -82,7 +82,7 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 // Check Optimized version of CopyFromHistory32. As per cgen/base-impl.h, the
 // conditions are:
 //  - start    != NULL
-//  - distance != 0
+//  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
 func (q *checker) optimizeCopyFromHistory32(n *a.Expr) error {
@@ -106,10 +106,7 @@ check0:
 		return nil
 	}
 
-	// Check "distance != 0".
-	//
-	// TODO: check that typeof(distance) is an unsigned integer type, so that
-	// an equivalent test is "distance > 0".
+	// Check "distance > 0".
 check1:
 	for {
 		for _, x := range q.facts {
