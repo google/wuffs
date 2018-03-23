@@ -30,12 +30,14 @@ import (
 )
 
 var reasons = [...]string{
+	"a < b: b > a",
 	"a < b: a < c; c < b",
 	"a < b: a < c; c == b",
 	"a < b: a == c; c < b",
 	"a < b: a < c; c <= b",
 	"a < b: a <= c; c < b",
 
+	"a <= b: b >= a",
 	"a <= b: a <= c; c <= b",
 	"a <= b: a <= c; c == b",
 	"a <= b: a == c; c <= b",

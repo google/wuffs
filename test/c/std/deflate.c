@@ -684,7 +684,7 @@ proc tests[] = {
 
     test_wuffs_deflate_decode_256_bytes,                       //
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,  //
-    // test_wuffs_deflate_decode_deflate_distance_32768,          // TODO: uncomment.
+    test_wuffs_deflate_decode_deflate_distance_32768,          //
     test_wuffs_deflate_decode_midsummer,                       //
     test_wuffs_deflate_decode_pi,                              //
     test_wuffs_deflate_decode_pi_many_big_reads,               //

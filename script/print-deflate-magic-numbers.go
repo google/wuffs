@@ -17,7 +17,14 @@
 package main
 
 // print-deflate-magic-numbers.go prints the std/deflate lcode_magic_numbers
-// values based on the tables in RFC 1951 secion 3.2.5.
+// and dcode_magic_numbers values based on the tables in RFC 1951 secion 3.2.5.
+//
+// The dcode base numbers are biased by -1 so that (base_number_minus_1 +
+// extra_bits) fits in the range [0, 32767]. This makes a bitwise and with
+// 0x7FFF a no-op, in terms of computed value, but proves to the compiler that
+// the result is within a certain range. Furthermore, proving that (d + 1) > 0
+// is trivial, for d of type u32[..something], compared to proving that d > 0,
+// which usually requires a runtime check (an if branch).
 //
 // Usage: go run print-deflate-magic-numbers.go
 
@@ -35,13 +42,15 @@ func main() {
 
 func main1() error {
 	for i := 0; i < 2; i++ {
+		bias := uint32(0)
 		if i != 0 {
 			fmt.Println()
+			bias = 1 // See the "dcode base numbers" comment above.
 		}
 		for j := 0; j < 32; j++ {
 			x := uint32(0x08000000)
-			if baseNumbers[i][j] != bad {
-				x = 0x40000000 | (baseNumbers[i][j] << 8) | (extraBits[i][j] << 4)
+			if bn := baseNumbers[i][j]; bn != bad {
+				x = 0x40000000 | ((bn - bias) << 8) | (extraBits[i][j] << 4)
 			}
 			fmt.Printf("0x%08X,", x)
 			if j&7 == 7 {

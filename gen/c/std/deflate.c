@@ -803,11 +803,11 @@ static const uint32_t wuffs_deflate__lcode_magic_numbers[32] = {
 };
 
 static const uint32_t wuffs_deflate__dcode_magic_numbers[32] = {
-    1073742080, 1073742336, 1073742592, 1073742848, 1073743120, 1073743632,
-    1073744160, 1073745184, 1073746224, 1073748272, 1073750336, 1073754432,
-    1073758544, 1073766736, 1073774944, 1073791328, 1073807728, 1073840496,
-    1073873280, 1073938816, 1074004368, 1074135440, 1074266528, 1074528672,
-    1074790832, 1075315120, 1075839424, 1076888000, 1077936592, 1080033744,
+    1073741824, 1073742080, 1073742336, 1073742592, 1073742864, 1073743376,
+    1073743904, 1073744928, 1073745968, 1073748016, 1073750080, 1073754176,
+    1073758288, 1073766480, 1073774688, 1073791072, 1073807472, 1073840240,
+    1073873024, 1073938560, 1074004112, 1074135184, 1074266272, 1074528416,
+    1074790576, 1075314864, 1075839168, 1076887744, 1077936336, 1080033488,
     134217728,  134217728,
 };
 
@@ -2234,14 +2234,9 @@ label_0_continue:;
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
     }
-    if (v_distance <= 0) {
-      status =
-          WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-      goto exit;
-    }
     v_n_copied = 0;
     while (true) {
-      if (((uint64_t)(v_distance)) >
+      if (((uint64_t)((v_distance + 1))) >
           ((uint64_t)(
               ((wuffs_base__slice_u8){
                    .ptr = a_dst.private_impl.mark,
@@ -2252,7 +2247,7 @@ label_0_continue:;
                   .len))) {
         v_hlen = 0;
         v_hdist = ((uint32_t)((
-            ((uint64_t)(v_distance)) -
+            ((uint64_t)((v_distance + 1))) -
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2277,14 +2272,14 @@ label_0_continue:;
           status = WUFFS_DEFLATE__ERROR_BAD_DISTANCE;
           goto exit;
         }
-        v_hdist = ((self->private_impl.f_history_index - v_hdist) & 32767);
+        v_hdist = (self->private_impl.f_history_index - v_hdist);
         while (true) {
           v_n_copied = wuffs_base__writer1__copy_from_slice32(
               &b_wptr_dst, b_wend_dst,
               wuffs_base__slice_u8__subslice_i(
                   ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                           .len = 32768}),
-                  v_hdist),
+                  v_hdist & 32767),
               v_hlen);
           if (v_hlen <= v_n_copied) {
             goto label_1_break;
@@ -2301,7 +2296,7 @@ label_0_continue:;
         if (v_length == 0) {
           goto label_0_continue;
         }
-        if (((uint64_t)(v_distance)) >
+        if (((uint64_t)((v_distance + 1))) >
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2315,7 +2310,7 @@ label_0_continue:;
         }
       }
       wuffs_base__writer1__copy_from_history32__bco(
-          &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
+          &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance + 1,
           v_length);
       goto label_2_break;
     }
@@ -2645,14 +2640,9 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
-      if (v_distance <= 0) {
-        status =
-            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
-        goto exit;
-      }
       v_n_copied = 0;
       while (true) {
-        if (((uint64_t)(v_distance)) >
+        if (((uint64_t)((v_distance + 1))) >
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2663,7 +2653,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                     .len))) {
           v_hlen = 0;
           v_hdist = ((uint32_t)(
-              (((uint64_t)(v_distance)) -
+              (((uint64_t)((v_distance + 1))) -
                ((uint64_t)(((wuffs_base__slice_u8){
                                 .ptr = a_dst.private_impl.mark,
                                 .len = a_dst.private_impl.mark
@@ -2683,14 +2673,14 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
             status = WUFFS_DEFLATE__ERROR_BAD_DISTANCE;
             goto exit;
           }
-          v_hdist = ((self->private_impl.f_history_index - v_hdist) & 32767);
+          v_hdist = (self->private_impl.f_history_index - v_hdist);
           while (true) {
             v_n_copied = wuffs_base__writer1__copy_from_slice32(
                 &b_wptr_dst, b_wend_dst,
                 wuffs_base__slice_u8__subslice_i(
                     ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                             .len = 32768}),
-                    v_hdist),
+                    v_hdist & 32767),
                 v_hlen);
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
@@ -2714,14 +2704,14 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                   wuffs_base__slice_u8__subslice_i(
                       ((wuffs_base__slice_u8){
                           .ptr = self->private_impl.f_history, .len = 32768}),
-                      v_hdist),
+                      v_hdist & 32767),
                   v_hlen);
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
                 goto label_6_break;
               }
               v_hlen -= v_n_copied;
-              v_hdist = ((v_hdist + (v_n_copied & 32767)) & 32767);
+              v_hdist = (v_hdist + v_n_copied);
               status = WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE;
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
             }
@@ -2732,7 +2722,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
         }
         v_n_copied = wuffs_base__writer1__copy_from_history32(
-            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance,
+            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance + 1,
             v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;

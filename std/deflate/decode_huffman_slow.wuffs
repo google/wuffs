@@ -99,7 +99,7 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 
-		// length = base number + extra bits.
+		// length = base_number + extra_bits.
 		var length u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
@@ -149,7 +149,7 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			}
 		}
 
-		// For H-D, all symbols should be base number + extra bits.
+		// For H-D, all symbols should be base_number + extra_bits.
 		if (table_entry >> 24) != 0x40 {
 			if (table_entry >> 24) == 0x08 {
 				return error "bad Huffman code"
@@ -157,9 +157,13 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 
-		// distance = base number + extra bits.
+		// distance = base_number_minus_1 + extra_bits.
 		//
-		// TODO: the upper bound isn't right. 0x8000 is a valid distance.
+		// TODO: rename distance to dist_minus_1.
+		//
+		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
+		// That bias makes the "& 0x7FFF" 15-ish lines below correct and
+		// undoing that bias makes proving (distance + 1) > 0 trivial.
 		var distance u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
@@ -174,20 +178,20 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		}
-		if distance <= 0 {
-			return error "internal error: inconsistent Huffman decoder state"
-		}
 
 		var n_copied u32
 		while true {
 			// Copy from this.history.
-			if (distance as u64) > in.dst.since_mark().length() {
+			if ((distance + 1) as u64) > in.dst.since_mark().length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from in.dst.
 				var hlen u32[..0x7FFF]
-				var hdist u32[..0x7FFF] = ((distance as u64) - in.dst.since_mark().length()) as u32
+				var hdist u32 =
+					(((distance + 1) as u64) - in.dst.since_mark().length()) as u32
 				if length > hdist {
+					assert hdist < length via "a < b: b > a"()
+					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)
 					length -= hdist
 					hlen = hdist
 				} else {
@@ -199,11 +203,12 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 				}
 				// Re-purpose the hdist variable as the this.history index to
 				// start copying from.
-				hdist = (this.history_index - hdist) & 0x7FFF
+				hdist = this.history_index - hdist
 
 				// Copy from hdist to the end of this.history.
 				while true {
-					n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
+					n_copied = in.dst.copy_from_slice32(
+						s:this.history[hdist & 0x7FFF:], length:hlen)
 					if hlen <= n_copied {
 						hlen = 0
 						break
@@ -222,13 +227,14 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {
 					while true {
-						n_copied = in.dst.copy_from_slice32(s:this.history[hdist:], length:hlen)
+						n_copied = in.dst.copy_from_slice32(
+							s:this.history[hdist & 0x7FFF:], length:hlen)
 						if hlen <= n_copied {
 							hlen = 0
 							break
 						}
 						hlen -= n_copied
-						hdist = (hdist + (n_copied & 0x7FFF)) & 0x7FFF
+						hdist = hdist ~+ n_copied
 						// TODO: "closed for writes" instead?
 						yield suspension "short write"
 					}
@@ -241,7 +247,7 @@ pri func decoder.decode_huffman_slow?(dst writer1, src reader1)() {
 			}
 
 			// Copy from in.dst.
-			n_copied = in.dst.copy_from_history32(distance:distance, length:length)
+			n_copied = in.dst.copy_from_history32(distance:(distance + 1), length:length)
 			if length <= n_copied {
 				length = 0
 				break

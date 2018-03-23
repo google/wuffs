@@ -210,7 +210,7 @@ outer_loop:
         goto outer_loop;
       }
       if ((table_entry >> 30) != 0) {
-        // Back-reference; length = base number + extra bits.
+        // Back-reference; length = base_number + extra_bits.
         break;
       }
       if ((table_entry >> 29) != 0) {
@@ -229,7 +229,7 @@ outer_loop:
       table_entry = self->private_impl.f_huffs[0][top + (bits & mask)];
     }
 
-    // length = base number + extra bits.
+    // length = base_number + extra_bits.
     uint32_t length = (table_entry >> 8) & 0xFFFF;
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
@@ -263,7 +263,7 @@ outer_loop:
       bits >>= n;
       n_bits -= n;
       if ((table_entry >> 30) != 0) {
-        // Back-reference; distance = base number + extra bits.
+        // Back-reference; distance = base_number + extra_bits.
         break;
       }
       if ((table_entry >> 24) != 0x10) {
@@ -277,8 +277,9 @@ outer_loop:
       table_entry = self->private_impl.f_huffs[1][top + (bits & mask)];
     }
 
-    // distance = base number + extra bits.
-    uint32_t distance = (table_entry >> 8) & 0xFFFF;
+    // dist_minus_1 = base_number_minus_1 + extra_bits + 1.
+    // distance = dist_minus_1 + 1.
+    uint32_t dist_minus_1 = (table_entry >> 8) & 0xFFFF;
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
@@ -291,19 +292,19 @@ outer_loop:
           n_bits += 8;
         }
 #endif
-        distance += bits & wuffs_base__width_to_mask_table[n];
+        dist_minus_1 += bits & wuffs_base__width_to_mask_table[n];
         bits >>= n;
         n_bits -= n;
       }
     }
 
     // TODO: look at a sliding window, not just output written so far to dst.
-    if ((ptrdiff_t)(distance) > (pdst - pdst0)) {
+    if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst0)) {
       status = WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
       goto end;
     }
 
-    uint8_t* pback = pdst - distance;
+    uint8_t* pback = pdst - (dist_minus_1 + 1);
 
 #if defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
     // Back-copy fast path, copying 8 instead of 1 bytes at a time.
@@ -312,7 +313,7 @@ outer_loop:
     // 8*N >= length, i.e. we round length up to a multiple of 8), instead of
     // only length bytes, but that's OK, as subsequent iterations will fix up
     // the overrun.
-    if (distance >= 8) {
+    if (dist_minus_1 + 1 >= 8) {
       while (1) {
         *((uint64_t*)(pdst)) = *((uint64_t*)(pback));
         if (length <= 8) {
