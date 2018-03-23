@@ -327,7 +327,7 @@ typedef struct {
       uint32_t v_redir_top;
       uint32_t v_redir_mask;
       uint32_t v_length;
-      uint32_t v_distance;
+      uint32_t v_dist_minus_1;
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;

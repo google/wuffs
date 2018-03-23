@@ -318,7 +318,7 @@ typedef struct {
       uint32_t v_redir_top;
       uint32_t v_redir_mask;
       uint32_t v_length;
-      uint32_t v_distance;
+      uint32_t v_dist_minus_1;
       uint32_t v_n_copied;
       uint32_t v_hlen;
       uint32_t v_hdist;
@@ -1997,7 +1997,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
   uint32_t v_redir_top;
   uint32_t v_redir_mask;
   uint32_t v_length;
-  uint32_t v_distance;
+  uint32_t v_dist_minus_1;
   uint32_t v_n_copied;
   uint32_t v_hlen;
   uint32_t v_hdist;
@@ -2213,7 +2213,7 @@ label_0_continue:;
           WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
       goto exit;
     }
-    v_distance = ((v_table_entry >> 8) & 32767);
+    v_dist_minus_1 = ((v_table_entry >> 8) & 32767);
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
     if (v_table_entry_n_bits > 0) {
       if (v_n_bits < 15) {
@@ -2228,15 +2228,15 @@ label_0_continue:;
         }
         v_n_bits += 8;
       }
-      v_distance =
-          ((v_distance + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
+      v_dist_minus_1 =
+          ((v_dist_minus_1 + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
            32767);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
     }
     v_n_copied = 0;
     while (true) {
-      if (((uint64_t)((v_distance + 1))) >
+      if (((uint64_t)((v_dist_minus_1 + 1))) >
           ((uint64_t)(
               ((wuffs_base__slice_u8){
                    .ptr = a_dst.private_impl.mark,
@@ -2247,7 +2247,7 @@ label_0_continue:;
                   .len))) {
         v_hlen = 0;
         v_hdist = ((uint32_t)((
-            ((uint64_t)((v_distance + 1))) -
+            ((uint64_t)((v_dist_minus_1 + 1))) -
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2296,7 +2296,7 @@ label_0_continue:;
         if (v_length == 0) {
           goto label_0_continue;
         }
-        if (((uint64_t)((v_distance + 1))) >
+        if (((uint64_t)((v_dist_minus_1 + 1))) >
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2310,7 +2310,7 @@ label_0_continue:;
         }
       }
       wuffs_base__writer1__copy_from_history32__bco(
-          &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance + 1,
+          &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_dist_minus_1 + 1,
           v_length);
       goto label_2_break;
     }
@@ -2376,7 +2376,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
   uint32_t v_redir_top;
   uint32_t v_redir_mask;
   uint32_t v_length;
-  uint32_t v_distance;
+  uint32_t v_dist_minus_1;
   uint32_t v_n_copied;
   uint32_t v_hlen;
   uint32_t v_hdist;
@@ -2428,7 +2428,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
     v_redir_top = self->private_impl.c_decode_huffman_slow[0].v_redir_top;
     v_redir_mask = self->private_impl.c_decode_huffman_slow[0].v_redir_mask;
     v_length = self->private_impl.c_decode_huffman_slow[0].v_length;
-    v_distance = self->private_impl.c_decode_huffman_slow[0].v_distance;
+    v_dist_minus_1 = self->private_impl.c_decode_huffman_slow[0].v_dist_minus_1;
     v_n_copied = self->private_impl.c_decode_huffman_slow[0].v_n_copied;
     v_hlen = self->private_impl.c_decode_huffman_slow[0].v_hlen;
     v_hdist = self->private_impl.c_decode_huffman_slow[0].v_hdist;
@@ -2620,7 +2620,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
             WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
       }
-      v_distance = ((v_table_entry >> 8) & 32767);
+      v_dist_minus_1 = ((v_table_entry >> 8) & 32767);
       v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
       if (v_table_entry_n_bits > 0) {
         while (v_n_bits < v_table_entry_n_bits) {
@@ -2634,15 +2634,15 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
           v_n_bits += 8;
         }
-        v_distance =
-            ((v_distance + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
-             32767);
+        v_dist_minus_1 = ((v_dist_minus_1 +
+                           ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
+                          32767);
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
       v_n_copied = 0;
       while (true) {
-        if (((uint64_t)((v_distance + 1))) >
+        if (((uint64_t)((v_dist_minus_1 + 1))) >
             ((uint64_t)(
                 ((wuffs_base__slice_u8){
                      .ptr = a_dst.private_impl.mark,
@@ -2653,7 +2653,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                     .len))) {
           v_hlen = 0;
           v_hdist = ((uint32_t)(
-              (((uint64_t)((v_distance + 1))) -
+              (((uint64_t)((v_dist_minus_1 + 1))) -
                ((uint64_t)(((wuffs_base__slice_u8){
                                 .ptr = a_dst.private_impl.mark,
                                 .len = a_dst.private_impl.mark
@@ -2722,8 +2722,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
         }
         v_n_copied = wuffs_base__writer1__copy_from_history32(
-            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_distance + 1,
-            v_length);
+            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst,
+            v_dist_minus_1 + 1, v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_7_break;
@@ -2762,7 +2762,7 @@ suspend:
   self->private_impl.c_decode_huffman_slow[0].v_redir_top = v_redir_top;
   self->private_impl.c_decode_huffman_slow[0].v_redir_mask = v_redir_mask;
   self->private_impl.c_decode_huffman_slow[0].v_length = v_length;
-  self->private_impl.c_decode_huffman_slow[0].v_distance = v_distance;
+  self->private_impl.c_decode_huffman_slow[0].v_dist_minus_1 = v_dist_minus_1;
   self->private_impl.c_decode_huffman_slow[0].v_n_copied = v_n_copied;
   self->private_impl.c_decode_huffman_slow[0].v_hlen = v_hlen;
   self->private_impl.c_decode_huffman_slow[0].v_hdist = v_hdist;

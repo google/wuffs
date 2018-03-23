@@ -245,14 +245,13 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 
-		// distance = base_number_minus_1 + extra_bits.
-		//
-		// TODO: rename distance to dist_minus_1.
+		// dist_minus_1 = base_number_minus_1 + extra_bits.
+		// distance     = dist_minus_1 + 1.
 		//
 		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
 		// That bias makes the "& 0x7FFF" 15-ish lines below correct and
-		// undoing that bias makes proving (distance + 1) > 0 trivial.
-		var distance u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
+		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
+		var dist_minus_1 u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			// Ensure that we have at least 15 bits of input.
@@ -267,7 +266,7 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			// Once again, redundant but explicit assertions.
 			assert n_bits >= 15
 
-			distance = (distance + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+			dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		}
@@ -282,13 +281,13 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 			inv in.dst.is_marked(),
 		{
 			// Copy from this.history.
-			if ((distance + 1) as u64) > in.dst.since_mark().length() {
+			if ((dist_minus_1 + 1) as u64) > in.dst.since_mark().length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from in.dst.
 				var hlen u32[..0x7FFF]
 				var hdist u32 =
-					(((distance + 1) as u64) - in.dst.since_mark().length()) as u32
+					(((dist_minus_1 + 1) as u64) - in.dst.since_mark().length()) as u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)
@@ -343,23 +342,23 @@ pri func decoder.decode_huffman_fast?(dst writer1, src reader1)() {
 					continue:loop
 				}
 
-				if ((distance + 1) as u64) > in.dst.since_mark().length() {
+				if ((dist_minus_1 + 1) as u64) > in.dst.since_mark().length() {
 					return error "internal error: inconsistent distance"
 				}
 			}
 			// Once again, redundant but explicit assertions.
 			assert length <= 258
-			assert ((distance + 1) as u64) <= in.dst.since_mark().length()
+			assert ((dist_minus_1 + 1) as u64) <= in.dst.since_mark().length()
 			assert in.dst.available() >= 258
 			assert in.dst.is_marked()
 
 			// We can therefore prove:
-			assert (distance + 1) > 0
+			assert (dist_minus_1 + 1) > 0
 			assert (length as u64) <= 258
 			assert (length as u64) <= in.dst.available() via "a <= b: a <= c; c <= b"(c:258)
 
 			// Copy from in.dst.
-			in.dst.copy_from_history32(distance:(distance + 1), length:length)
+			in.dst.copy_from_history32(distance:(dist_minus_1 + 1), length:length)
 			break
 		}
 	}
