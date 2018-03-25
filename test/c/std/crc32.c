@@ -211,6 +211,9 @@ void bench_mimic_crc32_ieee_100k() {
 
 // ---------------- Manifest
 
+// Note that the mimic tests and benches don't work with
+// WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
+
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 

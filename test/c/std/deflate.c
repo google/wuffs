@@ -54,14 +54,6 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 //
 // The empty comments forces clang-format to place one element per line.
 
-golden_test crc32_midsummer_gt = {
-    .src_filename = "../../data/midsummer.txt",  //
-};
-
-golden_test crc32_pi_gt = {
-    .src_filename = "../../data/pi.txt",  //
-};
-
 golden_test deflate_256_bytes_gt = {
     .want_filename = "../../data/artificial/256.bytes",    //
     .src_filename = "../../data/artificial/256.bytes.gz",  //
@@ -632,17 +624,6 @@ void bench_wuffs_deflate_decode_100k() {
 
 #ifdef WUFFS_MIMIC
 
-void bench_mimic_crc32_10k() {
-  CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
-                     100000);
-}
-
-void bench_mimic_crc32_100k() {
-  CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 10000);
-}
-
 void bench_mimic_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
   do_bench_buf1_buf1(mimic_deflate_decode, tc_dst, &deflate_romeo_gt, 0, 0,
@@ -675,8 +656,8 @@ void bench_mimic_gzip_decode_100k() {
 
 // ---------------- Manifest
 
-// TODO: move crc32 and gzip tests and benches from std/deflate to std/gzip.
-// Note that these crc32 and gzip tests and benches don't work with
+// TODO: move gzip tests and benches from std/deflate to std/gzip.
+// Note that the gzip mimic tests and benches don't work with
 // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
 // The empty comments forces clang-format to place one element per line.
@@ -723,9 +704,6 @@ proc benches[] = {
     bench_wuffs_deflate_decode_100k,  //
 
 #ifdef WUFFS_MIMIC
-
-    bench_mimic_crc32_10k,   //
-    bench_mimic_crc32_100k,  //
 
     bench_mimic_deflate_decode_1k,    //
     bench_mimic_deflate_decode_10k,   //
