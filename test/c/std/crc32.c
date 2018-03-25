@@ -170,7 +170,7 @@ void bench_mimic_crc32_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    // test_wuffs_crc32,  // TODO: uncomment.
+    test_wuffs_crc32,  //
 
     NULL,
 };

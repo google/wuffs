@@ -1085,7 +1085,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		}
 		return big.NewInt(0).Rsh(lMin, uint(rMax.Uint64())), nMax, nil
 
-	case t.KeyXBinaryAmp, t.KeyXBinaryPipe:
+	case t.KeyXBinaryAmp, t.KeyXBinaryPipe, t.KeyXBinaryHat:
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
 		if lMin.Sign() < 0 {
@@ -1101,9 +1101,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
 		}
 		z := (*big.Int)(nil)
-		if op == t.KeyXBinaryAmp {
+		switch op {
+		case t.KeyXBinaryAmp:
 			z = min(lMax, rMax)
-		} else {
+		case t.KeyXBinaryPipe, t.KeyXBinaryHat:
 			z = max(lMax, rMax)
 		}
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
@@ -1111,9 +1112,6 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		return zero, bitMask(z.BitLen()), nil
 
 	case t.KeyXBinaryAmpHat:
-		// TODO.
-
-	case t.KeyXBinaryHat:
 		// TODO.
 
 	case t.KeyXBinaryPercent:
