@@ -16,9 +16,15 @@ packageid "crc3"
 
 // TODO: drop the '?' but still generate wuffs_crc32__ieee__initialize?
 pub struct ieee?(
+	state u32,
 )
 
 // TODO: add a ! as this function is impure.
-pub func ieee.update(x[] u8)() {
+//
+// TODO: should it be ? instead of ! because it's public, and might need a way
+// to signal "initializer not called"? Should the return type, in the generated
+// C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
+pub func ieee.update(x[] u8)(checksum u32) {
 	// TODO: implement.
+	return this.state
 }

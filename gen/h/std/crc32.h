@@ -231,6 +231,8 @@ typedef struct {
     wuffs_crc32__status status;
     uint32_t magic;
 
+    uint32_t f_state;
+
   } private_impl;
 } wuffs_crc32__ieee;
 
@@ -247,8 +249,8 @@ void wuffs_crc32__ieee__initialize(wuffs_crc32__ieee* self,
 
 // ---------------- Public Function Prototypes
 
-void wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
-                               wuffs_base__slice_u8 a_x);
+uint32_t wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
+                                   wuffs_base__slice_u8 a_x);
 
 #ifdef __cplusplus
 }  // extern "C"

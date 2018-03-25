@@ -231,6 +231,8 @@ typedef struct {
     wuffs_crc32__status status;
     uint32_t magic;
 
+    uint32_t f_state;
+
   } private_impl;
 } wuffs_crc32__ieee;
 
@@ -247,8 +249,8 @@ void wuffs_crc32__ieee__initialize(wuffs_crc32__ieee* self,
 
 // ---------------- Public Function Prototypes
 
-void wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
-                               wuffs_base__slice_u8 a_x);
+uint32_t wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
+                                   wuffs_base__slice_u8 a_x);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -682,15 +684,17 @@ void wuffs_crc32__ieee__initialize(wuffs_crc32__ieee* self,
 
 // ---------------- Function Implementations
 
-void wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
-                               wuffs_base__slice_u8 a_x) {
+uint32_t wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
+                                   wuffs_base__slice_u8 a_x) {
   if (!self) {
-    return;
+    return 0;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     self->private_impl.status = WUFFS_CRC32__ERROR_INITIALIZER_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
-    return;
+    return 0;
   }
+
+  return self->private_impl.f_state;
 }

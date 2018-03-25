@@ -74,11 +74,11 @@ const char* wuffs_bench_crc32(wuffs_base__buf1* dst,
   // TODO: don't ignore wlimit and rlimit.
   wuffs_crc32__ieee checksum;
   wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
-  // TODO: global_wuffs_crc32_unused_u32 =
-  wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
-                                           .ptr = src->ptr + src->ri,
-                                           .len = src->wi - src->ri,
-                                       }));
+  global_wuffs_crc32_unused_u32 =
+      wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
+                                               .ptr = src->ptr + src->ri,
+                                               .len = src->wi - src->ri,
+                                           }));
   src->ri = src->wi;
   return NULL;
 }

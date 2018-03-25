@@ -171,11 +171,18 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 func (g *gen) writeFuncImplHeader(b *buffer) error {
 	// Check the previous status and the "self" arg.
 	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
+		outFields := g.currFunk.astFunc.Out().Fields()
+
 		b.writes("if (!self) {")
 		if g.currFunk.suspendible {
 			b.printf("return %sERROR_BAD_RECEIVER;", g.PKGPREFIX)
-		} else {
+		} else if len(outFields) == 0 {
 			b.printf("return;")
+		} else if len(outFields) == 1 {
+			// TODO: don't assume that the return type is an integer.
+			b.printf("return 0;")
+		} else {
+			return fmt.Errorf("TODO: handle structured return types")
 		}
 		b.writes("}")
 
@@ -185,8 +192,13 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		b.writes("if (self->private_impl.status < 0) {")
 		if g.currFunk.suspendible {
 			b.writes("return self->private_impl.status;")
-		} else {
+		} else if len(outFields) == 0 {
 			b.writes("return;")
+		} else if len(outFields) == 1 {
+			// TODO: don't assume that the return type is an integer.
+			b.writes("return 0;")
+		} else {
+			return fmt.Errorf("TODO: handle structured return types")
 		}
 		b.writes("}\n")
 	}
