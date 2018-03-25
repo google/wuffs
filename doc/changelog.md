@@ -8,6 +8,7 @@
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Added an image\_config built-in concept.
+- Added `std/crc32`.
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
@@ -33,4 +34,4 @@
 
 ---
 
-Updated on December 2017.
+Updated on March 2018.
