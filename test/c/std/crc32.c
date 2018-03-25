@@ -58,7 +58,7 @@ golden_test crc32_pi_gt = {
 
 // ---------------- CRC32 Tests
 
-void test_wuffs_crc32() {
+void test_wuffs_crc32_ieee_golden() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -117,14 +117,58 @@ void test_wuffs_crc32() {
   }
 }
 
+void test_wuffs_crc32_ieee_pi() {
+  CHECK_FOCUS(__func__);
+
+  const char* digits =
+      "3.1415926535897932384626433832795028841971693993751058209749445";
+  if (strlen(digits) != 63) {
+    FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
+    return;
+  }
+
+  // The want values are determined by script/checksum.go.
+  //
+  // wants[i] is the checksum of the first i bytes of the digits string.
+  uint32_t wants[64] = {
+      0x00000000, 0x6DD28E9B, 0x69647A00, 0x83B58BCD, 0x16E010BE, 0xAF13912C,
+      0xB6C654DC, 0x02D43F2E, 0xC60167FD, 0xDE72F5D2, 0xECB2EAA3, 0x22E1CE23,
+      0x26F4BB12, 0x099FD2E0, 0x2D041A2F, 0xC14373C1, 0x61A5D6D0, 0xEB60F999,
+      0x93EDF514, 0x779BB713, 0x7EC98D7A, 0x43184A97, 0x739064B9, 0xA81B2541,
+      0x1CCB1037, 0x4B177527, 0xC8932C85, 0xF0C86A18, 0xE99C072F, 0xC6EA2FC5,
+      0xF11D621D, 0x09483B39, 0xD20BA7B6, 0xA66136B0, 0x3F1C0D9B, 0x7D37E8CC,
+      0x68AFEE60, 0xB7DA99A5, 0x55BD96C6, 0xF18E35A4, 0x5C4D8E41, 0x6B38760A,
+      0x63623EDF, 0x0BB7D76F, 0x5001AC9B, 0x0A5FC5FB, 0xA76213D4, 0x0C1E135B,
+      0x916718F4, 0xD0FE1B9F, 0xE4D15B60, 0xCE8A5FB4, 0x381922EB, 0xB351097C,
+      0xA3003B0D, 0x64C7C28B, 0x8ED5424B, 0x6C872ADF, 0x7CBF02ED, 0x2D713AFF,
+      0xA028F932, 0x3BC16241, 0xF256AB5C, 0xE69E60DA,
+  };
+
+  int i;
+  for (i = 0; i < 64; i++) {
+    wuffs_crc32__ieee checksum;
+    wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
+    uint32_t got =
+        wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
+                                                 .ptr = (uint8_t*)(digits),
+                                                 .len = i,
+                                             }));
+    if (got != wants[i]) {
+      FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n", i, got,
+           wants[i]);
+      return;
+    }
+  }
+}
+
 // ---------------- CRC32 Benches
 
 uint32_t global_wuffs_crc32_unused_u32;
 
-const char* wuffs_bench_crc32(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
+const char* wuffs_bench_crc32_ieee(wuffs_base__buf1* dst,
+                                   wuffs_base__buf1* src,
+                                   uint64_t wlimit,
+                                   uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   wuffs_crc32__ieee checksum;
   wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
@@ -137,30 +181,30 @@ const char* wuffs_bench_crc32(wuffs_base__buf1* dst,
   return NULL;
 }
 
-void bench_wuffs_crc32_10k() {
+void bench_wuffs_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_crc32, tc_src, &crc32_midsummer_gt, 0, 0,
+  do_bench_buf1_buf1(wuffs_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
                      150000);
 }
 
-void bench_wuffs_crc32_100k() {
+void bench_wuffs_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_crc32, tc_src, &crc32_pi_gt, 0, 0, 15000);
+  do_bench_buf1_buf1(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 15000);
 }
 
   // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-void bench_mimic_crc32_10k() {
+void bench_mimic_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &crc32_midsummer_gt, 0, 0,
+  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
                      150000);
 }
 
-void bench_mimic_crc32_100k() {
+void bench_mimic_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &crc32_pi_gt, 0, 0, 15000);
+  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 15000);
 }
 
 #endif  // WUFFS_MIMIC
@@ -170,7 +214,8 @@ void bench_mimic_crc32_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_crc32,  //
+    test_wuffs_crc32_ieee_golden,  //
+    test_wuffs_crc32_ieee_pi,      //
 
     NULL,
 };
@@ -178,13 +223,13 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_crc32_10k,   //
-    bench_wuffs_crc32_100k,  //
+    bench_wuffs_crc32_ieee_10k,   //
+    bench_wuffs_crc32_ieee_100k,  //
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_crc32_10k,   //
-    bench_mimic_crc32_100k,  //
+    bench_mimic_crc32_ieee_10k,   //
+    bench_mimic_crc32_ieee_100k,  //
 
 #endif  // WUFFS_MIMIC
 

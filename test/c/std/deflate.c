@@ -634,13 +634,13 @@ void bench_wuffs_deflate_decode_100k() {
 
 void bench_mimic_crc32_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &crc32_midsummer_gt, 0, 0,
+  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
                      100000);
 }
 
 void bench_mimic_crc32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32, tc_src, &crc32_pi_gt, 0, 0, 10000);
+  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 10000);
 }
 
 void bench_mimic_deflate_decode_1k() {

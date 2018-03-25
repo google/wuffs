@@ -16,8 +16,8 @@
 
 package main
 
-// checksum.go prints a checksum of stdin's bytes. Checksum algorithms include
-// "adler32" and "crc32/ieee".
+// checksum.go prints a checksum of stdin's bytes, or of the opening digits of
+// π. Checksum algorithms include "adler32" and "crc32/ieee".
 //
 // Usage: go run checksum.go -algorithm=crc32/ieee < foo.bar
 
@@ -29,10 +29,12 @@ import (
 	"hash/crc32"
 	"io"
 	"os"
+	"strings"
 )
 
 var (
 	algorithm = flag.String("algorithm", "adler32", "checksum algorithm")
+	pi        = flag.Bool("pi", false, "checksum the digits of pi instead of stdin")
 )
 
 func main() {
@@ -45,21 +47,51 @@ func main() {
 func main1() error {
 	flag.Parse()
 
-	h32 := hash.Hash32(nil)
+	if *pi {
+		const digits = "3.1415926535897932384626433832795028841971693993751058209749445"
+		if len(digits) != 63 {
+			panic("bad len(digits)")
+		}
+		for i := 0; i < 64; i++ {
+			if err := do(strings.NewReader(digits[:i])); err != nil {
+				return err
+			}
+			fmt.Print(",")
+			if i&7 == 7 {
+				fmt.Println()
+			}
+		}
+	} else {
+		if err := do(os.Stdin); err != nil {
+			return err
+		}
+		fmt.Println()
+	}
+	return nil
+}
+
+func do(r io.Reader) error {
+	h := io.Writer(nil)
 	switch *algorithm {
 	case "adler32":
-		h32 = adler32.New()
+		h = adler32.New()
 	case "crc32/ieee":
-		h32 = crc32.NewIEEE()
+		h = crc32.NewIEEE()
 	default:
 		return fmt.Errorf("unknown algorithm %q", *algorithm)
 	}
 
-	if h32 != nil {
-		if _, err := io.Copy(h32, os.Stdin); err != nil {
-			return err
-		}
-		fmt.Printf("0x%08X\n", h32.Sum32())
+	if _, err := io.Copy(h, r); err != nil {
+		return err
+	}
+
+	switch h := h.(type) {
+	case hash.Hash32:
+		fmt.Printf("0x%08X", h.Sum32())
+	case hash.Hash64:
+		fmt.Printf("0x%016X", h.Sum64())
+	default:
+		return fmt.Errorf("algorithm %q is not a Hash32 or Hash64", *algorithm)
 	}
 	return nil
 }

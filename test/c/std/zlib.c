@@ -84,7 +84,7 @@ void test_basic_status_used_package() {
 
 // ---------------- Adler32 Tests
 
-void test_wuffs_adler32() {
+void test_wuffs_adler32_golden() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -138,6 +138,50 @@ void test_wuffs_adler32() {
     if (got != test_cases[i].want) {
       FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
            i, test_cases[i].filename, got, test_cases[i].want);
+      return;
+    }
+  }
+}
+
+void test_wuffs_adler32_pi() {
+  CHECK_FOCUS(__func__);
+
+  const char* digits =
+      "3.1415926535897932384626433832795028841971693993751058209749445";
+  if (strlen(digits) != 63) {
+    FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
+    return;
+  }
+
+  // The want values are determined by script/checksum.go.
+  //
+  // wants[i] is the checksum of the first i bytes of the digits string.
+  uint32_t wants[64] = {
+      0x00000001, 0x00340034, 0x00960062, 0x01290093, 0x01F000C7, 0x02E800F8,
+      0x0415012D, 0x057B0166, 0x07130198, 0x08E101CE, 0x0AE40203, 0x0D1A0236,
+      0x0F85026B, 0x122802A3, 0x150402DC, 0x18170313, 0x1B63034C, 0x1EE2037F,
+      0x229303B1, 0x267703E4, 0x2A93041C, 0x2EE30450, 0x33690486, 0x382104B8,
+      0x3D0F04EE, 0x42310522, 0x47860555, 0x4D0E0588, 0x52CE05C0, 0x58C105F3,
+      0x5EE60625, 0x6542065C, 0x6BD70695, 0x72A106CA, 0x799B06FA, 0x80C7072C,
+      0x882B0764, 0x8FC7079C, 0x979707D0, 0x9F980801, 0xA7D2083A, 0xB0430871,
+      0xB8E508A2, 0xC1BD08D8, 0xCACE0911, 0xD4120944, 0xDD8F097D, 0xE74509B6,
+      0xF12E09E9, 0xFB4E0A20, 0x05B20A55, 0x10380A86, 0x1AEE0AB6, 0x25D90AEB,
+      0x30FC0B23, 0x3C510B55, 0x47D60B85, 0x53940BBE, 0x5F890BF5, 0x6BB20C29,
+      0x78140C62, 0x84AA0C96, 0x91740CCA, 0x9E730CFF,
+  };
+
+  int i;
+  for (i = 0; i < 64; i++) {
+    wuffs_zlib__adler32 checksum;
+    wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
+    uint32_t got =
+        wuffs_zlib__adler32__update(&checksum, ((wuffs_base__slice_u8){
+                                                   .ptr = (uint8_t*)(digits),
+                                                   .len = i,
+                                               }));
+    if (got != wants[i]) {
+      FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n", i, got,
+           wants[i]);
       return;
     }
   }
@@ -365,7 +409,8 @@ proc tests[] = {
     // other place.
     test_basic_status_used_package,  //
 
-    test_wuffs_adler32,  //
+    test_wuffs_adler32_golden,  //
+    test_wuffs_adler32_pi,      //
 
     test_wuffs_zlib_checksum_ignore,       //
     test_wuffs_zlib_checksum_verify_bad,   //

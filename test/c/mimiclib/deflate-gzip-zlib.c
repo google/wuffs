@@ -25,11 +25,11 @@ const char* mimic_bench_adler32(wuffs_base__buf1* dst,
   return "miniz does not independently compute Adler32";
 }
 
-const char* mimic_bench_crc32(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
-  return "miniz does not implement CRC32";
+const char* mimic_bench_crc32_ieee(wuffs_base__buf1* dst,
+                                   wuffs_base__buf1* src,
+                                   uint64_t wlimit,
+                                   uint64_t rlimit) {
+  return "miniz does not implement CRC32/IEEE";
 }
 
 const char* mimic_deflate_zlib_decode(wuffs_base__buf1* dst,
@@ -94,10 +94,10 @@ const char* mimic_bench_adler32(wuffs_base__buf1* dst,
   return NULL;
 }
 
-const char* mimic_bench_crc32(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
+const char* mimic_bench_crc32_ieee(wuffs_base__buf1* dst,
+                                   wuffs_base__buf1* src,
+                                   uint64_t wlimit,
+                                   uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
   uint8_t* ptr = src->ptr + src->ri;
   size_t len = src->wi - src->ri;
