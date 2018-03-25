@@ -60,7 +60,61 @@ golden_test crc32_pi_gt = {
 
 void test_wuffs_crc32() {
   CHECK_FOCUS(__func__);
-  // TODO: implement.
+
+  struct {
+    const char* filename;
+    // The want values are determined by script/checksum.go.
+    uint32_t want;
+  } test_cases[] = {
+      {
+          .filename = "../../data/hat.bmp",
+          .want = 0xA95A578B,
+      },
+      {
+          .filename = "../../data/hat.gif",
+          .want = 0xD9743B6A,
+      },
+      {
+          .filename = "../../data/hat.jpeg",
+          .want = 0x7F1A90CD,
+      },
+      {
+          .filename = "../../data/hat.lossless.webp",
+          .want = 0x485AA040,
+      },
+      {
+          .filename = "../../data/hat.lossy.webp",
+          .want = 0x89F53B4E,
+      },
+      {
+          .filename = "../../data/hat.png",
+          .want = 0xD5DA5C2F,
+      },
+      {
+          .filename = "../../data/hat.tiff",
+          .want = 0xBEF54503,
+      },
+  };
+
+  int i;
+  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
+    wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+    if (!read_file(&src, test_cases[i].filename)) {
+      return;
+    }
+    wuffs_crc32__ieee checksum;
+    wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
+    uint32_t got =
+        wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
+                                                 .ptr = src.ptr + src.ri,
+                                                 .len = src.wi - src.ri,
+                                             }));
+    if (got != test_cases[i].want) {
+      FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
+           i, test_cases[i].filename, got, test_cases[i].want);
+      return;
+    }
+  }
 }
 
 // ---------------- CRC32 Benches
@@ -116,7 +170,7 @@ void bench_mimic_crc32_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_crc32,  //
+    // test_wuffs_crc32,  // TODO: uncomment.
 
     NULL,
 };

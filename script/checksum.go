@@ -16,15 +16,23 @@
 
 package main
 
-// adler32sum.go prints the Adler-32 checksum of stdin's bytes.
+// checksum.go prints a checksum of stdin's bytes. Checksum algorithms include
+// "adler32" and "crc32/ieee".
 //
-// Usage: go run adler32sum.go < foo.bar
+// Usage: go run checksum.go -algorithm=crc32/ieee < foo.bar
 
 import (
+	"flag"
 	"fmt"
+	"hash"
 	"hash/adler32"
+	"hash/crc32"
 	"io"
 	"os"
+)
+
+var (
+	algorithm = flag.String("algorithm", "adler32", "checksum algorithm")
 )
 
 func main() {
@@ -35,10 +43,23 @@ func main() {
 }
 
 func main1() error {
-	a := adler32.New()
-	if _, err := io.Copy(a, os.Stdin); err != nil {
-		return err
+	flag.Parse()
+
+	h32 := hash.Hash32(nil)
+	switch *algorithm {
+	case "adler32":
+		h32 = adler32.New()
+	case "crc32/ieee":
+		h32 = crc32.NewIEEE()
+	default:
+		return fmt.Errorf("unknown algorithm %q", *algorithm)
 	}
-	fmt.Printf("0x%08X\n", a.Sum32())
+
+	if h32 != nil {
+		if _, err := io.Copy(h32, os.Stdin); err != nil {
+			return err
+		}
+		fmt.Printf("0x%08X\n", h32.Sum32())
+	}
 	return nil
 }

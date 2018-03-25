@@ -89,7 +89,7 @@ void test_wuffs_adler32() {
 
   struct {
     const char* filename;
-    // The want values are determined by script/adler32sum.go.
+    // The want values are determined by script/checksum.go.
     uint32_t want;
   } test_cases[] = {
       {
