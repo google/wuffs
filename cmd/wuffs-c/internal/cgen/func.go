@@ -293,6 +293,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 
 func (g *gen) writeFuncImplFooter(b *buffer) error {
 	if g.currFunk.suspendible {
+		b.writes("goto exit;\n") // Avoid the "unused label" warning.
 		b.writes("exit:")
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {

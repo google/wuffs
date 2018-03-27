@@ -1004,6 +1004,7 @@ suspend:
   self->private_impl.c_decode[0].v_n_copied = v_n_copied;
   self->private_impl.c_decode[0].v_already_full = v_already_full;
 
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -1186,6 +1187,7 @@ suspend:
   self->private_impl.c_decode_blocks[0].v_final = v_final;
   self->private_impl.c_decode_blocks[0].v_type = v_type;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1337,6 +1339,7 @@ suspend:
   self->private_impl.c_decode_uncompressed[0].v_length = v_length;
   self->private_impl.c_decode_uncompressed[0].v_n_copied = v_n_copied;
 
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -1432,6 +1435,7 @@ suspend:
   self->private_impl.c_init_fixed_huffman[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_init_fixed_huffman[0].v_i = v_i;
 
+  goto exit;
 exit:
   return status;
 }
@@ -1677,6 +1681,7 @@ suspend:
   self->private_impl.c_init_dynamic_huffman[0].v_rep_symbol = v_rep_symbol;
   self->private_impl.c_init_dynamic_huffman[0].v_rep_count = v_rep_count;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1978,6 +1983,7 @@ label_1_break:;
     }
   }
 label_3_break:;
+  goto exit;
 exit:
   return status;
 }
@@ -2332,6 +2338,7 @@ label_0_break:;
     status = WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;
     goto exit;
   }
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
@@ -2767,6 +2774,7 @@ suspend:
   self->private_impl.c_decode_huffman_slow[0].v_hlen = v_hlen;
   self->private_impl.c_decode_huffman_slow[0].v_hdist = v_hdist;
 
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

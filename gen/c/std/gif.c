@@ -999,6 +999,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
 suspend:
   self->private_impl.c_decode_config[0].coro_susp_point = coro_susp_point;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1143,6 +1144,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 suspend:
   self->private_impl.c_decode_frame[0].coro_susp_point = coro_susp_point;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1234,6 +1236,7 @@ suspend:
   memcpy(self->private_impl.c_decode_header[0].v_c, v_c, sizeof(v_c));
   self->private_impl.c_decode_header[0].v_i = v_i;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1358,6 +1361,7 @@ suspend:
   self->private_impl.c_decode_lsd[0].v_i = v_i;
   self->private_impl.c_decode_lsd[0].v_gct_size = v_gct_size;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1476,6 +1480,7 @@ suspend:
   self->private_impl.c_decode_extension[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode_extension[0].v_label = v_label;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1569,6 +1574,7 @@ suspend:
   self->private_impl.c_skip_blocks[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_skip_blocks[0].v_block_size = v_block_size;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -1793,6 +1799,7 @@ suspend:
   self->private_impl.c_decode_ae[0].v_not_animexts = v_not_animexts;
   self->private_impl.c_decode_ae[0].v_not_netscape = v_not_netscape;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -2114,6 +2121,7 @@ suspend:
   self->private_impl.c_decode_id[0].v_block_size = v_block_size;
   self->private_impl.c_decode_id[0].v_z = v_z;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
@@ -2334,6 +2342,7 @@ suspend:
   self->private_impl.c_decode[0].v_c = v_c;
   self->private_impl.c_decode[0].v_n_copied = v_n_copied;
 
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

@@ -1157,6 +1157,7 @@ suspend:
   self->private_impl.c_decode[0].v_checksum = v_checksum;
   self->private_impl.c_decode[0].v_z = v_z;
 
+  goto exit;
 exit:
   if (a_dst.buf) {
     size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);

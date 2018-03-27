@@ -1032,6 +1032,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
 
+  goto exit;
 exit:
   if (a_src.buf) {
     size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
