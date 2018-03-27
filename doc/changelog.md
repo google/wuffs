@@ -8,7 +8,7 @@
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Added an image\_config built-in concept.
-- Added `std/crc32`.
+- Added `std/crc32` and `std/gzip`.
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.

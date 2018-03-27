@@ -105,16 +105,6 @@ golden_test deflate_romeo_fixed_gt = {
     .src_filename = "../../data/romeo.txt.fixed-huff.deflate",  //
 };
 
-golden_test gzip_midsummer_gt = {
-    .want_filename = "../../data/midsummer.txt",    //
-    .src_filename = "../../data/midsummer.txt.gz",  //
-};
-
-golden_test gzip_pi_gt = {
-    .want_filename = "../../data/pi.txt",    //
-    .src_filename = "../../data/pi.txt.gz",  //
-};
-
 // ---------------- Deflate Tests
 
 const char* wuffs_deflate_decode(wuffs_base__buf1* dst,
@@ -589,16 +579,6 @@ void test_mimic_deflate_decode_romeo_fixed() {
   do_test_buf1_buf1(mimic_deflate_decode, &deflate_romeo_fixed_gt, 0, 0);
 }
 
-void test_mimic_gzip_decode_midsummer() {
-  CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt, 0, 0);
-}
-
-void test_mimic_gzip_decode_pi() {
-  CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 0, 0);
-}
-
 #endif  // WUFFS_MIMIC
 
 // ---------------- Deflate Benches
@@ -641,24 +621,9 @@ void bench_mimic_deflate_decode_100k() {
   do_bench_buf1_buf1(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0, 3000);
 }
 
-void bench_mimic_gzip_decode_10k() {
-  CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
-                     30000);
-}
-
-void bench_mimic_gzip_decode_100k() {
-  CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
-}
-
 #endif  // WUFFS_MIMIC
 
 // ---------------- Manifest
-
-// TODO: move gzip tests and benches from std/deflate to std/gzip.
-// Note that the gzip mimic tests and benches don't work with
-// WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
 
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
@@ -688,9 +653,6 @@ proc tests[] = {
     test_mimic_deflate_decode_romeo,                           //
     test_mimic_deflate_decode_romeo_fixed,                     //
 
-    test_mimic_gzip_decode_midsummer,  //
-    test_mimic_gzip_decode_pi,         //
-
 #endif  // WUFFS_MIMIC
 
     NULL,
@@ -708,9 +670,6 @@ proc benches[] = {
     bench_mimic_deflate_decode_1k,    //
     bench_mimic_deflate_decode_10k,   //
     bench_mimic_deflate_decode_100k,  //
-
-    bench_mimic_gzip_decode_10k,   //
-    bench_mimic_gzip_decode_100k,  //
 
 #endif  // WUFFS_MIMIC
 
