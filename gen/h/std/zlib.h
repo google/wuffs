@@ -448,6 +448,7 @@ typedef struct {
       uint16_t v_x;
       uint32_t v_checksum_got;
       wuffs_zlib__status v_z;
+      uint32_t v_checksum_want;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;

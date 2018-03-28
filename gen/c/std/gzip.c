@@ -520,6 +520,7 @@ typedef struct {
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       wuffs_gzip__status v_z;
+      uint32_t v_checksum_want;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
@@ -1024,6 +1025,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   uint16_t v_xlen;
   uint32_t v_checksum_got;
   wuffs_gzip__status v_z;
+  uint32_t v_checksum_want;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1066,6 +1068,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     v_xlen = self->private_impl.c_decode[0].v_xlen;
     v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_z = self->private_impl.c_decode[0].v_z;
+    v_checksum_want = self->private_impl.c_decode[0].v_checksum_want;
   } else {
   }
   switch (coro_susp_point) {
@@ -1246,32 +1249,36 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
     }
   label_2_break:;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
-    uint32_t t_10;
-    if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_10 = wuffs_base__load_u32be(b_rptr_src);
-      b_rptr_src += 4;
-    } else {
-      self->private_impl.c_decode[0].scratch = 0;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
-      while (true) {
-        if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
+      uint32_t t_10;
+      if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
+        t_10 = wuffs_base__load_u32be(b_rptr_src);
+        b_rptr_src += 4;
+      } else {
+        self->private_impl.c_decode[0].scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint32_t t_9 = self->private_impl.c_decode[0].scratch & 0xFF;
+          self->private_impl.c_decode[0].scratch >>= 8;
+          self->private_impl.c_decode[0].scratch <<= 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                    << (56 - t_9);
+          if (t_9 == 24) {
+            t_10 = self->private_impl.c_decode[0].scratch >> (64 - 32);
+            break;
+          }
+          t_9 += 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_9));
         }
-        uint32_t t_9 = self->private_impl.c_decode[0].scratch & 0xFF;
-        self->private_impl.c_decode[0].scratch >>= 8;
-        self->private_impl.c_decode[0].scratch <<= 8;
-        self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
-                                                  << (56 - t_9);
-        if (t_9 == 24) {
-          t_10 = self->private_impl.c_decode[0].scratch >> (64 - 32);
-          break;
-        }
-        t_9 += 8;
-        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_9));
       }
+      v_checksum_want = t_10;
     }
-    if (!self->private_impl.f_ignore_checksum && (v_checksum_got != t_10)) {
+    if (!self->private_impl.f_ignore_checksum &&
+        (v_checksum_got != v_checksum_want)) {
     }
 
     goto ok;
@@ -1288,6 +1295,7 @@ suspend:
   self->private_impl.c_decode[0].v_xlen = v_xlen;
   self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_z = v_z;
+  self->private_impl.c_decode[0].v_checksum_want = v_checksum_want;
 
   goto exit;
 exit:

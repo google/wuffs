@@ -101,8 +101,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		}
 		yield z
 	}
-	// TODO: read the 4 bytes regardless of this.ignore_checksum.
-	if (not this.ignore_checksum) and (checksum_got != in.src.read_u32be?()) {
+	var checksum_want u32 = in.src.read_u32be?()
+	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
 		// TODO: return error "checksum mismatch"
 	}
 	// TODO: handle the 4 byte ISIZE field.

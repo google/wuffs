@@ -448,6 +448,7 @@ typedef struct {
       uint16_t v_x;
       uint32_t v_checksum_got;
       wuffs_zlib__status v_z;
+      uint32_t v_checksum_want;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
@@ -973,6 +974,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   uint16_t v_x;
   uint32_t v_checksum_got;
   wuffs_zlib__status v_z;
+  uint32_t v_checksum_want;
 
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
@@ -1013,6 +1015,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     v_x = self->private_impl.c_decode[0].v_x;
     v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_z = self->private_impl.c_decode[0].v_z;
+    v_checksum_want = self->private_impl.c_decode[0].v_checksum_want;
   } else {
   }
   switch (coro_susp_point) {
@@ -1114,32 +1117,36 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
     }
   label_0_break:;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-    uint32_t t_4;
-    if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
-      t_4 = wuffs_base__load_u32be(b_rptr_src);
-      b_rptr_src += 4;
-    } else {
-      self->private_impl.c_decode[0].scratch = 0;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-      while (true) {
-        if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
-          goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      uint32_t t_4;
+      if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
+        t_4 = wuffs_base__load_u32be(b_rptr_src);
+        b_rptr_src += 4;
+      } else {
+        self->private_impl.c_decode[0].scratch = 0;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+        while (true) {
+          if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
+            goto short_read_src;
+          }
+          uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
+          self->private_impl.c_decode[0].scratch >>= 8;
+          self->private_impl.c_decode[0].scratch <<= 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
+                                                    << (56 - t_3);
+          if (t_3 == 24) {
+            t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
+            break;
+          }
+          t_3 += 8;
+          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
         }
-        uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
-        self->private_impl.c_decode[0].scratch >>= 8;
-        self->private_impl.c_decode[0].scratch <<= 8;
-        self->private_impl.c_decode[0].scratch |= ((uint64_t)(*b_rptr_src++))
-                                                  << (56 - t_3);
-        if (t_3 == 24) {
-          t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
-          break;
-        }
-        t_3 += 8;
-        self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
       }
+      v_checksum_want = t_4;
     }
-    if (!self->private_impl.f_ignore_checksum && (v_checksum_got != t_4)) {
+    if (!self->private_impl.f_ignore_checksum &&
+        (v_checksum_got != v_checksum_want)) {
       status = WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
       goto exit;
     }
@@ -1156,6 +1163,7 @@ suspend:
   self->private_impl.c_decode[0].v_x = v_x;
   self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_z = v_z;
+  self->private_impl.c_decode[0].v_checksum_want = v_checksum_want;
 
   goto exit;
 exit:

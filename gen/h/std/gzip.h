@@ -520,6 +520,7 @@ typedef struct {
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       wuffs_gzip__status v_z;
+      uint32_t v_checksum_want;
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
