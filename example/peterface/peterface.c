@@ -21,10 +21,7 @@ for a C compiler $cc, such as clang or gcc.
 */
 
 // TODO: delete this program, as example/gifplayer is a more interesting
-// example of Wuffs' GIF codec. This program's seccomp code should move
-// somewhere before we delete it, though, as that's still a feature worth
-// demonstrating. The gifplayer program can't use SECCOMP_MODE_STRICT, as it
-// needs to sleep between animation frames.
+// example of Wuffs' GIF codec.
 
 #include <string.h>
 #include <unistd.h>

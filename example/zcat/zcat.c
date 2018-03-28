@@ -1,0 +1,120 @@
+// Copyright 2018 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/*
+zcat decodes gzip'ed data to stdout. It is similar to the standard /bin/zcat
+program, except that this example program only reads from stdin. On Linux, it
+also self-imposes a SECCOMP_MODE_STRICT sandbox. To run:
+
+$cc zcat.c && ./a.out < ../../test/data/romeo.txt.gz; rm -f a.out
+
+for a C compiler $cc, such as clang or gcc.
+*/
+
+#include <errno.h>
+#include <unistd.h>
+
+// If building this program in an environment that doesn't easily accomodate
+// relative includes, you can use the script/inline-c-relative-includes.go
+// program to generate a stand-alone C file.
+#include "../../gen/c/std/crc32.c"
+#include "../../gen/c/std/deflate.c"
+#include "../../gen/c/std/gzip.c"
+
+#ifdef __linux__
+#include <linux/prctl.h>
+#include <linux/seccomp.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#define WUFFS_EXAMPLE_USE_SECCOMP
+#endif
+
+#ifndef DST_BUFFER_SIZE
+#define DST_BUFFER_SIZE (16 * 1024)
+#endif
+
+#ifndef SRC_BUFFER_SIZE
+#define SRC_BUFFER_SIZE (16 * 1024)
+#endif
+
+char dst_buffer[DST_BUFFER_SIZE];
+char src_buffer[SRC_BUFFER_SIZE];
+
+static const char* decode() {
+  wuffs_gzip__decoder dec;
+  wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
+
+  while (true) {
+    const int stdin_fd = 0;
+    ssize_t n_src = read(stdin_fd, src_buffer, SRC_BUFFER_SIZE);
+    if (n_src < 0) {
+      if (errno != EINTR) {
+        return strerror(errno);
+      }
+      continue;
+    }
+
+    wuffs_base__buf1 src = {.ptr = src_buffer,
+                            .len = SRC_BUFFER_SIZE,
+                            .wi = n_src,
+                            .closed = n_src == 0};
+    wuffs_base__reader1 src_reader = {.buf = &src};
+
+    while (true) {
+      wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+      wuffs_base__writer1 dst_writer = {.buf = &dst};
+      wuffs_gzip__status s =
+          wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
+
+      if (dst.wi) {
+        // TODO: handle EINTR and other write errors; see "man 2 write".
+        const int stdout_fd = 1;
+        write(stdout_fd, dst_buffer, dst.wi);
+      }
+
+      if (s == WUFFS_GZIP__STATUS_OK) {
+        return NULL;
+      }
+      if (s == WUFFS_GZIP__SUSPENSION_SHORT_READ) {
+        break;
+      }
+      if (s != WUFFS_GZIP__SUSPENSION_SHORT_WRITE) {
+        return wuffs_gzip__status__string(s);
+      }
+    }
+  }
+}
+
+int fail(const char* msg) {
+  const int stderr_fd = 2;
+  write(stderr_fd, msg, strnlen(msg, 4095));
+  write(stderr_fd, "\n", 1);
+  return 1;
+}
+
+int main(int argc, char** argv) {
+#ifdef WUFFS_EXAMPLE_USE_SECCOMP
+  prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
+#endif
+
+  const char* msg = decode();
+  int status = msg ? fail(msg) : 0;
+
+#ifdef WUFFS_EXAMPLE_USE_SECCOMP
+  // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
+  // SECCOMP_MODE_STRICT allows only the former.
+  syscall(SYS_exit, status);
+#endif
+  return status;
+}

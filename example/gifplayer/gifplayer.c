@@ -36,23 +36,23 @@ for a C compiler $cc, such as clang or gcc.
 //
 // We keep the whole input in memory, instead of one-pass stream processing,
 // because playing a looping animation requires re-winding the input.
-#define SRC_BUF_SIZE (64 * 1024 * 1024)
+#define SRC_BUFFER_SIZE (64 * 1024 * 1024)
 #define MAX_DIMENSION (4096)
 
-uint8_t src_buf[SRC_BUF_SIZE] = {0};
+uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
-uint8_t* dst_buf = NULL;
+uint8_t* dst_buffer = NULL;
 size_t dst_len = 0;
-uint8_t* print_buf = NULL;
+uint8_t* print_buffer = NULL;
 size_t print_len = 0;
 
 bool seen_num_loops = false;
 uint32_t num_loops_remaining = 0;
 
 const char* read_stdin() {
-  while (src_len < SRC_BUF_SIZE) {
+  while (src_len < SRC_BUFFER_SIZE) {
     const int stdin_fd = 0;
-    ssize_t n = read(stdin_fd, src_buf + src_len, SRC_BUF_SIZE - src_len);
+    ssize_t n = read(stdin_fd, src_buffer + src_len, SRC_BUFFER_SIZE - src_len);
     if (n > 0) {
       src_len += n;
     } else if (n == 0) {
@@ -71,7 +71,7 @@ const char* play() {
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   wuffs_base__buf1 src = {
-      .ptr = src_buf, .len = src_len, .wi = src_len, .closed = true};
+      .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true};
   wuffs_base__reader1 src_reader = {.buf = &src};
 
   wuffs_base__image_config ic = {{0}};
@@ -88,18 +88,18 @@ const char* play() {
   if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
     return "image dimensions are too large";
   }
-  if (!dst_buf) {
+  if (!dst_buffer) {
     dst_len = wuffs_base__image_config__pixbuf_size(&ic);
-    dst_buf = malloc(dst_len);
-    if (!dst_buf) {
+    dst_buffer = malloc(dst_len);
+    if (!dst_buffer) {
       return "could not allocate dst buffer";
     }
     uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
     if (plen <= (uint64_t)SIZE_MAX) {
       print_len = (size_t)plen;
-      print_buf = malloc(print_len);
+      print_buffer = malloc(print_len);
     }
-    if (!print_buf) {
+    if (!print_buffer) {
       return "could not allocate print buffer";
     }
   }
@@ -111,7 +111,7 @@ const char* play() {
   }
 
   while (true) {
-    wuffs_base__buf1 dst = {.ptr = dst_buf, .len = dst_len};
+    wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = dst_len};
     wuffs_base__writer1 dst_writer = {.buf = &dst};
     // TODO: provide API and support for when the frame rect is different from
     // the image rect.
@@ -129,8 +129,8 @@ const char* play() {
     // usleep arg should also take into account the decoding time.
     usleep(100000);
 
-    uint8_t* d = dst_buf;
-    uint8_t* p = print_buf;
+    uint8_t* d = dst_buffer;
+    uint8_t* p = print_buffer;
     *p++ = '\n';
     uint32_t y;
     for (y = 0; y < height; y++) {
@@ -143,7 +143,8 @@ const char* play() {
       }
       *p++ = '\n';
     }
-    write(1, print_buf, print_len);
+    const int stdout_fd = 1;
+    write(stdout_fd, print_buffer, print_len);
   }
   return NULL;
 }
