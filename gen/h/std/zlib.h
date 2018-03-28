@@ -440,13 +440,13 @@ typedef struct {
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
-    wuffs_zlib__adler32 f_adler;
+    wuffs_zlib__adler32 f_checksum;
     bool f_ignore_checksum;
 
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
-      uint32_t v_checksum;
+      uint32_t v_checksum_got;
       wuffs_zlib__status v_z;
       uint64_t scratch;
     } c_decode[1];

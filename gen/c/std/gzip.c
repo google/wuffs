@@ -518,7 +518,7 @@ typedef struct {
       uint8_t v_flags;
       uint8_t v_c;
       uint16_t v_xlen;
-      uint32_t v_checksum;
+      uint32_t v_checksum_got;
       wuffs_gzip__status v_z;
       uint64_t scratch;
     } c_decode[1];
@@ -1022,7 +1022,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   uint8_t v_flags;
   uint8_t v_c;
   uint16_t v_xlen;
-  uint32_t v_checksum;
+  uint32_t v_checksum_got;
   wuffs_gzip__status v_z;
 
   uint8_t* b_wptr_dst = NULL;
@@ -1064,7 +1064,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     v_flags = self->private_impl.c_decode[0].v_flags;
     v_c = self->private_impl.c_decode[0].v_c;
     v_xlen = self->private_impl.c_decode[0].v_xlen;
-    v_checksum = self->private_impl.c_decode[0].v_checksum;
+    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_z = self->private_impl.c_decode[0].v_z;
   } else {
   }
@@ -1202,7 +1202,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       status = WUFFS_GZIP__ERROR_INVALID_GZIP_ENCODING_FLAGS;
       goto exit;
     }
-    v_checksum = 0;
+    v_checksum_got = 0;
     while (true) {
       wuffs_base__writer1__mark(&a_dst, b_wptr_dst);
       {
@@ -1271,7 +1271,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_9));
       }
     }
-    if (!self->private_impl.f_ignore_checksum && (v_checksum != t_10)) {
+    if (!self->private_impl.f_ignore_checksum && (v_checksum_got != t_10)) {
     }
 
     goto ok;
@@ -1286,7 +1286,7 @@ suspend:
   self->private_impl.c_decode[0].v_flags = v_flags;
   self->private_impl.c_decode[0].v_c = v_c;
   self->private_impl.c_decode[0].v_xlen = v_xlen;
-  self->private_impl.c_decode[0].v_checksum = v_checksum;
+  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_z = v_z;
 
   goto exit;

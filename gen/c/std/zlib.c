@@ -440,13 +440,13 @@ typedef struct {
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
-    wuffs_zlib__adler32 f_adler;
+    wuffs_zlib__adler32 f_checksum;
     bool f_ignore_checksum;
 
     struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
-      uint32_t v_checksum;
+      uint32_t v_checksum_got;
       wuffs_zlib__status v_z;
       uint64_t scratch;
     } c_decode[1];
@@ -935,7 +935,7 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   wuffs_deflate__decoder__initialize(&self->private_impl.f_flate, WUFFS_VERSION,
                                      WUFFS_BASE__ALREADY_ZEROED);
-  wuffs_zlib__adler32__initialize(&self->private_impl.f_adler, WUFFS_VERSION,
+  wuffs_zlib__adler32__initialize(&self->private_impl.f_checksum, WUFFS_VERSION,
                                   WUFFS_BASE__ALREADY_ZEROED);
 }
 
@@ -971,7 +971,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   wuffs_zlib__status status = WUFFS_ZLIB__STATUS_OK;
 
   uint16_t v_x;
-  uint32_t v_checksum;
+  uint32_t v_checksum_got;
   wuffs_zlib__status v_z;
 
   uint8_t* b_wptr_dst = NULL;
@@ -1011,7 +1011,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
     v_x = self->private_impl.c_decode[0].v_x;
-    v_checksum = self->private_impl.c_decode[0].v_checksum;
+    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_z = self->private_impl.c_decode[0].v_z;
   } else {
   }
@@ -1062,7 +1062,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK;
       goto exit;
     }
-    v_checksum = 0;
+    v_checksum_got = 0;
     while (true) {
       wuffs_base__writer1__mark(&a_dst, b_wptr_dst);
       {
@@ -1098,8 +1098,8 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         v_z = t_2;
       }
       if (!self->private_impl.f_ignore_checksum) {
-        v_checksum = wuffs_zlib__adler32__update(
-            &self->private_impl.f_adler,
+        v_checksum_got = wuffs_zlib__adler32__update(
+            &self->private_impl.f_checksum,
             ((wuffs_base__slice_u8){
                 .ptr = a_dst.private_impl.mark,
                 .len = a_dst.private_impl.mark
@@ -1139,7 +1139,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
       }
     }
-    if (!self->private_impl.f_ignore_checksum && (v_checksum != t_4)) {
+    if (!self->private_impl.f_ignore_checksum && (v_checksum_got != t_4)) {
       status = WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
       goto exit;
     }
@@ -1154,7 +1154,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_decode[0].v_x = v_x;
-  self->private_impl.c_decode[0].v_checksum = v_checksum;
+  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_z = v_z;
 
   goto exit;

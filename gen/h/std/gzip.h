@@ -518,7 +518,7 @@ typedef struct {
       uint8_t v_flags;
       uint8_t v_c;
       uint16_t v_xlen;
-      uint32_t v_checksum;
+      uint32_t v_checksum_got;
       wuffs_gzip__status v_z;
       uint64_t scratch;
     } c_decode[1];
