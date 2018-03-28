@@ -519,6 +519,7 @@ typedef struct {
       uint8_t v_c;
       uint16_t v_xlen;
       uint32_t v_checksum_got;
+      uint32_t v_decoded_length_got;
       wuffs_gzip__status v_z;
       uint32_t v_checksum_want;
       uint32_t v_decoded_length_want;
@@ -1025,6 +1026,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   uint8_t v_c;
   uint16_t v_xlen;
   uint32_t v_checksum_got;
+  uint32_t v_decoded_length_got;
   wuffs_gzip__status v_z;
   uint32_t v_checksum_want;
   uint32_t v_decoded_length_want;
@@ -1069,6 +1071,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     v_c = self->private_impl.c_decode[0].v_c;
     v_xlen = self->private_impl.c_decode[0].v_xlen;
     v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
+    v_decoded_length_got = self->private_impl.c_decode[0].v_decoded_length_got;
     v_z = self->private_impl.c_decode[0].v_z;
     v_checksum_want = self->private_impl.c_decode[0].v_checksum_want;
     v_decoded_length_want =
@@ -1210,6 +1213,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       goto exit;
     }
     v_checksum_got = 0;
+    v_decoded_length_got = 0;
     while (true) {
       wuffs_base__writer1__mark(&a_dst, b_wptr_dst);
       {
@@ -1253,6 +1257,18 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                            ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
                            : 0,
             }));
+        v_decoded_length_got =
+            (v_decoded_length_got +
+             ((uint32_t)((
+                 ((uint64_t)(((wuffs_base__slice_u8){
+                                  .ptr = a_dst.private_impl.mark,
+                                  .len = a_dst.private_impl.mark
+                                             ? (size_t)(b_wptr_dst -
+                                                        a_dst.private_impl.mark)
+                                             : 0,
+                              })
+                                 .len)) &
+                 4294967295))));
       }
       if (v_z == 0) {
         goto label_2_break;
@@ -1318,11 +1334,10 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       v_decoded_length_want = t_12;
     }
     if (!self->private_impl.f_ignore_checksum &&
-        (v_checksum_got != v_checksum_want)) {
+        ((v_checksum_got != v_checksum_want) ||
+         (v_decoded_length_got != v_decoded_length_want))) {
       status = WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH;
       goto exit;
-    }
-    if (v_decoded_length_want != 0) {
     }
 
     goto ok;
@@ -1338,6 +1353,7 @@ suspend:
   self->private_impl.c_decode[0].v_c = v_c;
   self->private_impl.c_decode[0].v_xlen = v_xlen;
   self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
+  self->private_impl.c_decode[0].v_decoded_length_got = v_decoded_length_got;
   self->private_impl.c_decode[0].v_z = v_z;
   self->private_impl.c_decode[0].v_checksum_want = v_checksum_want;
   self->private_impl.c_decode[0].v_decoded_length_want = v_decoded_length_want;

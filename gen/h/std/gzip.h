@@ -519,6 +519,7 @@ typedef struct {
       uint8_t v_c;
       uint16_t v_xlen;
       uint32_t v_checksum_got;
+      uint32_t v_decoded_length_got;
       wuffs_gzip__status v_z;
       uint32_t v_checksum_want;
       uint32_t v_decoded_length_want;

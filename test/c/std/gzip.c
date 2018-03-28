@@ -245,7 +245,7 @@ void bench_mimic_gzip_decode_100k() {
 proc tests[] = {
 
     test_wuffs_gzip_checksum_ignore,       //
-    // test_wuffs_gzip_checksum_verify_bad1,  // TODO: uncomment
+    test_wuffs_gzip_checksum_verify_bad1,  //
     test_wuffs_gzip_checksum_verify_bad7,  //
     test_wuffs_gzip_checksum_verify_good,  //
     test_wuffs_gzip_decode_midsummer,      //

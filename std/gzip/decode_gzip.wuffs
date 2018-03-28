@@ -90,11 +90,14 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 
 	// Decode and checksum the DEFLATE-encoded payload.
 	var checksum_got u32
+	var decoded_length_got u32
 	while true {
 		in.dst.mark()
 		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update(x:in.dst.since_mark())
+			decoded_length_got = decoded_length_got ~+
+				((in.dst.since_mark().length() & 0xFFFFFFFF) as u32)
 		}
 		if z.is_ok() {
 			break
@@ -103,10 +106,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	}
 	var checksum_want u32 = in.src.read_u32le?()
 	var decoded_length_want u32 = in.src.read_u32le?()
-	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
+	if (not this.ignore_checksum) and
+		((checksum_got != checksum_want) or (decoded_length_got != decoded_length_want)) {
 		return error "checksum mismatch"
-	}
-	if decoded_length_want != 0 {
-		// TODO: compare with decoded_length_got.
 	}
 }
