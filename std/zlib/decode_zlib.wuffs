@@ -47,6 +47,8 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	if (x % 31) != 0 {
 		return error "invalid zlib parity check"
 	}
+
+	// Decode and checksum the DEFLATE-encoded payload.
 	var checksum u32
 	while true {
 		in.dst.mark()
@@ -59,6 +61,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		}
 		yield z
 	}
+	// TODO: read the 4 bytes regardless of this.ignore_checksum.
 	if (not this.ignore_checksum) and (checksum != in.src.read_u32be?()) {
 		return error "checksum mismatch"
 	}

@@ -483,7 +483,11 @@ typedef int32_t wuffs_gzip__status;
 #define WUFFS_GZIP__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GZIP__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GZIP__ERROR_BAD_GZIP_HEADER -1080566784  // 0xBF97DC00
+#define WUFFS_GZIP__ERROR_BAD_GZIP_HEADER -1080566784    // 0xBF97DC00
+#define WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH -1080566783  // 0xBF97DC01
+#define WUFFS_GZIP__ERROR_INVALID_GZIP_COMPRESSION_METHOD \
+  -1080566782                                                      // 0xBF97DC02
+#define WUFFS_GZIP__ERROR_INVALID_GZIP_ENCODING_FLAGS -1080566781  // 0xBF97DC03
 
 bool wuffs_gzip__status__is_error(wuffs_gzip__status s);
 
@@ -505,8 +509,18 @@ typedef struct {
     wuffs_gzip__status status;
     uint32_t magic;
 
+    wuffs_deflate__decoder f_flate;
+    wuffs_crc32__ieee f_checksum;
+    bool f_ignore_checksum;
+
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_flags;
+      uint8_t v_c;
+      uint16_t v_xlen;
+      uint32_t v_checksum;
+      wuffs_gzip__status v_z;
+      uint64_t scratch;
     } c_decode[1];
   } private_impl;
 } wuffs_gzip__decoder;
@@ -523,6 +537,9 @@ void wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
                                      uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
+
+void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
+                                              bool a_ic);
 
 wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                                                wuffs_base__writer1 a_dst,

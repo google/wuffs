@@ -650,7 +650,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 3) {
 
 		switch g.pkgName {
-		case "zlib":
+		case "gzip", "zlib":
 			// TODO: don't hard code being inside a try call.
 			if g.currFunk.tempW > maxTemp {
 				return fmt.Errorf("too many temporary variables required")

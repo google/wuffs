@@ -17,17 +17,93 @@ packageid "gzip"
 use "std/crc32"
 use "std/deflate"
 
-pub error "bad Gzip header"
+pub error "bad gzip header"
+pub error "checksum mismatch"
+pub error "invalid gzip compression method"
+pub error "invalid gzip encoding flags"
 
 pub struct decoder?(
+	flate deflate.decoder,
+	checksum crc32.ieee,
+	ignore_checksum bool,
 )
+
+pub func decoder.set_ignore_checksum!(ic bool)() {
+	this.ignore_checksum = in.ic
+}
 
 pub func decoder.decode?(dst writer1, src reader1)() {
 	// Read the header.
 	if in.src.read_u8?() != 0x1F {
-		return error "bad Gzip header"
+		return error "bad gzip header"
 	}
 	if in.src.read_u8?() != 0x8B {
-		return error "bad Gzip header"
+		return error "bad gzip header"
 	}
+	if in.src.read_u8?() != 0x08 {
+		return error "invalid gzip compression method"
+	}
+	var flags u8 = in.src.read_u8?()
+	// TODO: API for returning the header's MTIME field.
+	in.src.skip32?(n:6)
+	var c u8
+
+	// Handle FEXTRA.
+	if (flags & 0x04) != 0 {
+		var xlen u16 = in.src.read_u16le?()
+		in.src.skip32?(n:xlen as u32)
+	}
+
+	// Handle FNAME.
+	//
+	// TODO: API for returning the header's FNAME field. This might require
+	// converting ISO 8859-1 to UTF-8. We may also want to cap the UTF-8
+	// filename length to NAME_MAX, which is 255.
+	if (flags & 0x08) != 0 {
+		while true {
+			c = in.src.read_u8?()
+			if c == 0 {
+				break
+			}
+		}
+	}
+
+	// Handle FCOMMENT.
+	if (flags & 0x10) != 0 {
+		while true {
+			c = in.src.read_u8?()
+			if c == 0 {
+				break
+			}
+		}
+	}
+
+	// Handle FHCRC.
+	if (flags & 0x02) != 0 {
+		in.src.skip32?(n:2)
+	}
+
+	// Reserved flags bits must be zero.
+	if (flags & 0xE0) != 0 {
+		return error "invalid gzip encoding flags"
+	}
+
+	// Decode and checksum the DEFLATE-encoded payload.
+	var checksum u32
+	while true {
+		in.dst.mark()
+		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
+		if not this.ignore_checksum {
+			// TODO: checksum = this.checksum.update(x:in.dst.since_mark())
+		}
+		if z.is_ok() {
+			break
+		}
+		yield z
+	}
+	// TODO: read the 4 bytes regardless of this.ignore_checksum.
+	if (not this.ignore_checksum) and (checksum != in.src.read_u32be?()) {
+		// TODO: return error "checksum mismatch"
+	}
+	// TODO: handle the 4 byte ISIZE field.
 }

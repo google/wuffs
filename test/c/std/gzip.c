@@ -66,8 +66,35 @@ const char* wuffs_gzip_decode(wuffs_base__buf1* dst,
                               wuffs_base__buf1* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  // TODO.
-  return NULL;
+  wuffs_gzip__decoder dec;
+  wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
+
+  uint64_t wlim = 0;
+  uint64_t rlim = 0;
+  while (true) {
+    wuffs_base__writer1 dst_writer = {.buf = dst};
+    if (wlimit) {
+      wlim = wlimit;
+      dst_writer.private_impl.limit.ptr_to_len = &wlim;
+    }
+    wuffs_base__reader1 src_reader = {.buf = src};
+    if (rlimit) {
+      rlim = rlimit;
+      src_reader.private_impl.limit.ptr_to_len = &rlim;
+    }
+
+    wuffs_gzip__status s =
+        wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
+
+    if (s == WUFFS_GZIP__STATUS_OK) {
+      return NULL;
+    }
+    if ((wlimit && (s == WUFFS_GZIP__SUSPENSION_SHORT_WRITE)) ||
+        (rlimit && (s == WUFFS_GZIP__SUSPENSION_SHORT_READ))) {
+      continue;
+    }
+    return wuffs_gzip__status__string(s);
+  }
 }
 
 void test_wuffs_gzip_decode_midsummer() {
@@ -134,8 +161,8 @@ void bench_mimic_gzip_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-// test_wuffs_gzip_decode_midsummer,  // TODO: uncomment.
-// test_wuffs_gzip_decode_pi,         // TODO: uncomment.
+    test_wuffs_gzip_decode_midsummer,  //
+    test_wuffs_gzip_decode_pi,         //
 
 #ifdef WUFFS_MIMIC
 
