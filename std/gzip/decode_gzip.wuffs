@@ -94,16 +94,19 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 		in.dst.mark()
 		var z status = try this.flate.decode?(dst:in.dst, src:in.src)
 		if not this.ignore_checksum {
-			// TODO: checksum_got = this.checksum.update(x:in.dst.since_mark())
+			checksum_got = this.checksum.update(x:in.dst.since_mark())
 		}
 		if z.is_ok() {
 			break
 		}
 		yield z
 	}
-	var checksum_want u32 = in.src.read_u32be?()
+	var checksum_want u32 = in.src.read_u32le?()
+	var decoded_length_want u32 = in.src.read_u32le?()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
-		// TODO: return error "checksum mismatch"
+		return error "checksum mismatch"
 	}
-	// TODO: handle the 4 byte ISIZE field.
+	if decoded_length_want != 0 {
+		// TODO: compare with decoded_length_got.
+	}
 }

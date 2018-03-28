@@ -324,8 +324,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("update").Key(), 1) {
-			// TODO: don't hard-code this.checksum.
-			b.printf("%sadler32__update(&self->private_impl.f_checksum, ", g.pkgPrefix)
+			// TODO: don't hard-code the class name or this.checksum.
+			class := "wuffs_crc32__ieee"
+			if g.pkgName == "zlib" {
+				class = "wuffs_zlib__adler32"
+			}
+			b.printf("%s__update(&self->private_impl.f_checksum, ", class)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err

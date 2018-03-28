@@ -231,17 +231,17 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
     return false;
   }
-  if (src.wi == 0) {
-    FAIL("source file was empty");
+  // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
+  if (src.wi < 4) {
+    FAIL("source file was too short");
     return false;
   }
-  // Flip a bit in the zlib checksum, which comes at the end of the file.
   if (bad_checksum) {
-    src.ptr[src.wi - 1] ^= 1;
+    src.ptr[src.wi - 1 - (bad_checksum & 3)] ^= 1;
   }
 
   int end_limit;
-  for (end_limit = 0; end_limit < 8; end_limit++) {
+  for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_zlib__decoder dec;
     wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
@@ -288,17 +288,17 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
 
 void test_wuffs_zlib_checksum_ignore() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(true, true);
+  do_test_wuffs_zlib_checksum(true, 1);
 }
 
 void test_wuffs_zlib_checksum_verify_bad() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(false, true);
+  do_test_wuffs_zlib_checksum(false, 1);
 }
 
 void test_wuffs_zlib_checksum_verify_good() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(false, false);
+  do_test_wuffs_zlib_checksum(false, 0);
 }
 
 void test_wuffs_zlib_decode_midsummer() {

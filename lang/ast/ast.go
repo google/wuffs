@@ -256,12 +256,24 @@ func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 	return n.Node().Walk(func(o *Node) error {
 		switch o.Kind() {
-		case KConst, KExpr, KFunc, KStatus, KStruct, KTypeExpr:
-			if o.id1 != 0 {
-				return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
-					pkg.Str(tm), o.id1.Str(tm))
+		default:
+			return nil
+
+		case KConst, KFunc, KStatus, KStruct:
+			// No-op.
+
+		case KExpr:
+			switch o.id0.Key() {
+			default:
+				return nil
+			case t.KeyError, t.KeyStatus, t.KeySuspension:
+				// No-op.
 			}
 
+		case KTypeExpr:
+			if o.id0.Key() != 0 {
+				return nil
+			}
 			// TODO: Add signed integer types, as per the builtin.Types var?
 			//
 			// Or, don't hard code these, and instead require built-in types to
@@ -270,9 +282,13 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64, t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
 				return nil
 			}
-
-			o.id1 = pkg
 		}
+
+		if o.id1 != 0 {
+			return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
+				pkg.Str(tm), o.id1.Str(tm))
+		}
+		o.id1 = pkg
 		return nil
 	})
 }
