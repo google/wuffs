@@ -774,7 +774,17 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	switch n.Operator().Key() {
 	case 0:
-		// No-op.
+		// Look for named consts.
+		//
+		// TODO: look up "foo[i]" const expressions.
+		//
+		// TODO: allow imported consts, "foo.bar", not just "bar"?
+		qid := t.QID{0, n.Ident()}
+		if c, ok := q.c.consts[qid]; ok {
+			if cv := c.Value().ConstValue(); cv != nil {
+				return cv, cv, nil
+			}
+		}
 
 	case t.KeyOpenParen, t.KeyTry:
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
