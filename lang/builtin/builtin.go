@@ -78,8 +78,6 @@ var Types = []string{
 
 var Funcs = []string{
 	// TODO: some methods like "mark" should probably have a trailing "!".
-	//
-	// TODO: [] u8 methods (length, etc).
 
 	"u8.high_bits(n u32)(ret u8)",
 	"u8.low_bits(n u32)(ret u8)",
