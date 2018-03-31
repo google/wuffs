@@ -508,10 +508,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
-	switch n.Operator().Key() {
-	case 0:
-		b.writes(n.ConstValue().String())
-	case t.KeyDollar:
+	if n.Operator().Key() == t.KeyDollar {
 		b.writeb('{')
 		for _, o := range n.Args() {
 			if err := g.writeConstList(b, o.Expr()); err != nil {
@@ -520,7 +517,9 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 			b.writeb(',')
 		}
 		b.writeb('}')
-	default:
+	} else if cv := n.ConstValue(); cv != nil {
+		b.writes(cv.String())
+	} else {
 		return fmt.Errorf("invalid const value %q", n.Str(g.tm))
 	}
 	return nil
