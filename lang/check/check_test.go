@@ -69,7 +69,7 @@ func TestCheck(tt *testing.T) {
 			var x u8
 			var y i32 = +2
 			var z u64[..123]
-			var a[4] u8
+			var a array[4] u8
 			var b bool
 
 			x = 0
@@ -147,7 +147,7 @@ func TestCheck(tt *testing.T) {
 	})
 
 	want := [][2]string{
-		{"a", "[4] u8"},
+		{"a", "array[4] u8"},
 		{"b", "bool"},
 		{"in", "in"},
 		{"out", "out"},

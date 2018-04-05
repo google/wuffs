@@ -78,9 +78,9 @@ Converting an expression `x` to the type `T` is written as `x as T`.
 
 ## Types
 
-Types read from left to right: `ptr [100] u32` is a pointer to a 100-element
-array of unsigned 32-bit integers. `ptr` here means a non-null pointer. Use
-`nptr` for a nullable pointer type.
+Types read from left to right: `ptr array [100] u32` is a pointer to a
+100-element array of unsigned 32-bit integers. `ptr` here means a non-null
+pointer. Use `nptr` for a nullable pointer type.
 
 Integer types can also be refined: `var x u32[10..20]` defines a variable x
 that is stored as 4 bytes (32 bits) and can be combined arithmetically (e.g.

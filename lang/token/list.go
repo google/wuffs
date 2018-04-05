@@ -276,7 +276,7 @@ const (
 	KeyThis       = Key(IDThis >> KeyShift)
 	KeyIn         = Key(IDIn >> KeyShift)
 	KeyOut        = Key(IDOut >> KeyShift)
-	KeyCapitalT   = Key(IDCapitalT >> KeyShift)
+	KeySLICE      = Key(IDSLICE >> KeyShift)
 
 	KeyI8          = Key(IDI8 >> KeyShift)
 	KeyI16         = Key(IDI16 >> KeyShift)
@@ -468,7 +468,7 @@ const (
 	IDThis       = ID(0x79<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDIn         = ID(0x7A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDOut        = ID(0x7B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCapitalT   = ID(0x7C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDSLICE      = ID(0x7C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDI8          = ID(0x80<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDI16         = ID(0x81<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
@@ -680,7 +680,7 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyThis:       {"this", IDThis},
 	KeyIn:         {"in", IDIn},
 	KeyOut:        {"out", IDOut},
-	KeyCapitalT:   {"T", IDCapitalT},
+	KeySLICE:      {"SLICE", IDSLICE},
 
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 

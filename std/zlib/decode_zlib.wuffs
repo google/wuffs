@@ -73,7 +73,7 @@ pri struct adler32?(
 )
 
 // TODO: add a ! as this function is impure.
-pri func adler32.update(x[] u8)(checksum u32) {
+pri func adler32.update(x slice u8)(checksum u32) {
 	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
 	// RFC 1950.
 
@@ -81,7 +81,7 @@ pri func adler32.update(x[] u8)(checksum u32) {
 	var s2 u32 = this.state.high_bits(n:16)
 
 	while in.x.length() > 0 {
-		var remaining[] u8
+		var remaining slice u8
 		if in.x.length() > 5552 {
 			remaining = in.x[5552:]
 			in.x = in.x[:5552]

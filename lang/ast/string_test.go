@@ -67,8 +67,8 @@ func TestString(tt *testing.T) {
 		"x as T[i..j]",
 		"x as pkg.T",
 		"x as ptr T",
-		"x as [4] T",
-		"x as [8 + (2 * N)] ptr [4] ptr pkg.T[i..j]",
+		"x as array[4] T",
+		"x as array[8 + (2 * N)] ptr array[4] ptr pkg.T[i..j]",
 	}
 
 	tm := &t.Map{}

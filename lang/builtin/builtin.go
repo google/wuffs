@@ -104,7 +104,7 @@ var Funcs = []string{
 	"io_reader.is_marked()(ret bool)",
 	"io_reader.limit(l u64)(ret io_reader)",
 	"io_reader.mark()()",
-	"io_reader.since_mark()(ret[] u8)",
+	"io_reader.since_mark()(ret slice u8)",
 	"io_reader.skip32?(n u32)()",
 	"io_reader.skip64?(n u64)()",
 	"io_reader.unread_u8?()()",
@@ -120,28 +120,28 @@ var Funcs = []string{
 	"io_writer.available()(ret u64)",
 	"io_writer.copy_from_history32(distance u32, length u32)(ret u32)",
 	"io_writer.copy_from_reader32(r io_reader, length u32)(ret u32)",
-	"io_writer.copy_from_slice(s[] u8)(ret u64)",
-	"io_writer.copy_from_slice32(s[] u8, length u32)(ret u32)",
+	"io_writer.copy_from_slice(s slice u8)(ret u64)",
+	"io_writer.copy_from_slice32(s slice u8, length u32)(ret u32)",
 	"io_writer.is_marked()(ret bool)",
 	"io_writer.limit(l u64)(ret io_writer)",
 	"io_writer.mark()()",
-	"io_writer.since_mark()(ret[] u8)",
+	"io_writer.since_mark()(ret slice u8)",
 
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
 
 const (
-	GenericReplaceFrom = t.IDCapitalT
+	GenericReplaceFrom = t.IDSLICE
 	GenericReplaceTo   = t.IDDiamond
 )
 
 var SliceFuncs = []string{
-	// The "T" types here are generic placeholders for every "[] etc" slice
-	// type. When parsing these strings (e.g. in the lang/check package), "T"
-	// will be replaced by the "◊" diamond to denote a generic slice method, to
-	// avoid any possible ambiguity with a user-defined, non-generic "T" type.
-	"T.copy_from_slice(s T)(ret u64)",
-	"T.length()(ret u64)",
-	"T.prefix(up_to u64)(ret T)",
-	"T.suffix(up_to u64)(ret T)",
+	// The "SLICE" types here are generic placeholders for every "slice T"
+	// type. After parsing these strings (e.g. in the lang/check package),
+	// replace "SLICE" with the "◊" diamond to denote a generic slice method,
+	// to avoid ambiguity with a user-defined, non-generic "SLICE" type.
+	"SLICE.copy_from_slice(s SLICE)(ret u64)",
+	"SLICE.length()(ret u64)",
+	"SLICE.prefix(up_to u64)(ret SLICE)",
+	"SLICE.suffix(up_to u64)(ret SLICE)",
 }

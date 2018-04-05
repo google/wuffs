@@ -19,9 +19,9 @@ pub error "LZW prefix chain is cyclical"
 
 pri struct lzw_decoder?(
 	literal_width u32[2..8] = 8,
-	stack[4096] u8,
-	suffixes[4096] u8,
-	prefixes[4096] u16[..4095],
+	stack array[4096] u8,
+	suffixes array[4096] u8,
+	prefixes array[4096] u16[..4095],
 )
 
 pri func lzw_decoder.set_literal_width!(lw u32[2..8] = 8)() {
@@ -109,7 +109,7 @@ pri func lzw_decoder.decode?(dst io_writer, src io_reader)() {
 				inv n_bits < 8,
 				inv c < 256,
 			{
-				var expansion[] u8 = this.stack[s:]
+				var expansion slice u8 = this.stack[s:]
 				var n_copied u64 = in.dst.copy_from_slice(s:expansion)
 				if n_copied == expansion.length() {
 					break

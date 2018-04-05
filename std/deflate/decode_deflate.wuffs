@@ -41,14 +41,14 @@ pri error "internal error: inconsistent n_bits"
 //
 // Some trailing elements are 0x08000000. Bit 27 indicates an invalid value.
 
-pri const lcode_magic_numbers[32] u32 = $(
+pri const lcode_magic_numbers array[32] u32 = $(
 	0x40000300, 0x40000400, 0x40000500, 0x40000600, 0x40000700, 0x40000800, 0x40000900, 0x40000A00,
 	0x40000B10, 0x40000D10, 0x40000F10, 0x40001110, 0x40001320, 0x40001720, 0x40001B20, 0x40001F20,
 	0x40002330, 0x40002B30, 0x40003330, 0x40003B30, 0x40004340, 0x40005340, 0x40006340, 0x40007340,
 	0x40008350, 0x4000A350, 0x4000C350, 0x4000E350, 0x40010200, 0x08000000, 0x08000000, 0x08000000,
 )
 
-pri const dcode_magic_numbers[32] u32 = $(
+pri const dcode_magic_numbers array[32] u32 = $(
 	0x40000000, 0x40000100, 0x40000200, 0x40000300, 0x40000410, 0x40000610, 0x40000820, 0x40000C20,
 	0x40001030, 0x40001830, 0x40002040, 0x40003040, 0x40004050, 0x40006050, 0x40008060, 0x4000C060,
 	0x40010070, 0x40018070, 0x40020080, 0x40030080, 0x40040090, 0x40060090, 0x400800A0, 0x400C00A0,
@@ -93,8 +93,8 @@ pub struct decoder?(
 	//
 	// TODO: replace the magic "big enough" 1234 with something more
 	// principled, perhaps discovered via an exhaustive search.
-	huffs[2][1234] u32,
-	n_huffs_bits[2] u32[..9],
+	huffs array[2] array[1234] u32,
+	n_huffs_bits array[2] u32[..9],
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
 	// was incomplete (e.g. due to a short read or write). RFC 1951 (DEFLATE)
@@ -107,13 +107,13 @@ pub struct decoder?(
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history[0x8000] u8,  // 32 KiB.
+	history array[0x8000] u8,  // 32 KiB.
 	history_index u32,
 
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
 	// code_lengths[in.n_codes0 + i] holds the number of bits in the i'th code.
-	code_lengths[320] u8[..15],
+	code_lengths array[320] u8[..15],
 
 	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
 	//
@@ -131,7 +131,7 @@ pub func decoder.decode?(dst io_writer, src io_reader)() {
 		// TODO: should "since_mark" be "since_mark!", as the return value lets
 		// you modify the state of in.dst, so future mutations (via the slice)
 		// can change the veracity of any in.dst assertions?
-		var written[] u8 = in.dst.since_mark()
+		var written slice u8 = in.dst.since_mark()
 		// Append written, the decoded output, to the history ringbuffer.
 		if written.length() >= 0x8000 {
 			// If written is longer than the ringbuffer, we can ignore the
@@ -456,7 +456,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	//  - counts[4] = 1
 	//  - counts[5] = 2
 	//  - all other counts elements are 0.
-	var counts[16] u16[..320]
+	var counts array[16] u16[..320]
 	var i u32 = in.n_codes0
 	while i < in.n_codes1 {
 		assert i < 320 via "a < b: a < c; c <= b"(c:in.n_codes1)
@@ -504,7 +504,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	//  - offsets[6] = 10
 	//  - all other offsets elements are 10.
 	//  - n_symbols = 10
-	var offsets[16] u16[..320]
+	var offsets array[16] u16[..320]
 	var n_symbols u32[..320]
 	i = 1
 	while i <= 15 {
@@ -541,7 +541,7 @@ pri func decoder.init_huff?(which u32[..1], n_codes0 u32[..320], n_codes1 u32[..
 	//  - offsets[3] =  7, formerly 0
 	//  - offsets[4] =  8, formerly 7
 	//  - offsets[5] = 10, formerly 8
-	var symbols[320] u16[..319]
+	var symbols array[320] u16[..319]
 	i = in.n_codes0
 	while i < in.n_codes1,
 		inv n_symbols <= 288,

@@ -622,7 +622,7 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
-// T", "[8] T" or "[] T":
+// T", "array[8] T" or "slice T":
 //  - ID0:   <0|IDPtr|IDArray|IDSlice|IDOpenParen>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
@@ -632,9 +632,9 @@ const MaxTypeExprDepth = 63
 //
 // An IDPtr ID0 means "ptr RHS". RHS is the inner type.
 //
-// An IDArray ID0 means "[LHS] RHS". RHS is the inner type.
+// An IDArray ID0 means "array[LHS] RHS". RHS is the inner type.
 //
-// An IDSlice ID0 means "[] RHS". RHS is the inner type.
+// An IDSlice ID0 means "slice RHS". RHS is the inner type.
 //
 // An IDOpenParen ID0 means "LHS.ID2", a function or method type. LHS is the
 // receiver type, which may be nil. If non-nil, it will be a pointee type: "T"

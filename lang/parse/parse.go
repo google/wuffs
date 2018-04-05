@@ -387,27 +387,41 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		return a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, rhs), nil
 	}
 
-	if p.peek1().Key() == t.KeyOpenBracket {
+	decorator, arrayLength := t.ID(0), (*a.Expr)(nil)
+	switch p.peek1().Key() {
+	case t.KeyArray:
+		decorator = t.IDArray
 		p.src = p.src[1:]
-		decorator, lhs := t.IDSlice, (*a.Expr)(nil)
-		if p.peek1().Key() != t.KeyCloseBracket {
-			decorator = t.IDArray
-			var err error
-			lhs, err = p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
-			if x := p.peek1().Key(); x != t.KeyCloseBracket {
-				got := p.tm.ByKey(x)
-				return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
-			}
+
+		if x := p.peek1().Key(); x != t.KeyOpenBracket {
+			got := p.tm.ByKey(x)
+			return nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
+
+		var err error
+		arrayLength, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+
+		if x := p.peek1().Key(); x != t.KeyCloseBracket {
+			got := p.tm.ByKey(x)
+			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+
+	case t.KeySlice:
+		decorator = t.IDSlice
+		p.src = p.src[1:]
+	}
+
+	if decorator != 0 {
 		rhs, err := p.parseTypeExpr()
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(decorator, 0, 0, lhs.Node(), nil, rhs), nil
+		return a.NewTypeExpr(decorator, 0, 0, arrayLength.Node(), nil, rhs), nil
 	}
 
 	pkg, name, err := p.parseQualifiedIdent()
