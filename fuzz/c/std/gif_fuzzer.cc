@@ -38,7 +38,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/std/gif.c"
 #include "../fuzzlib/fuzzlib.cc"
 
-void fuzz(wuffs_base__reader1 src_reader, uint32_t hash) {
+void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   void* pixbuf = NULL;
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
@@ -64,8 +64,8 @@ void fuzz(wuffs_base__reader1 src_reader, uint32_t hash) {
       goto exit;
     }
 
-    wuffs_base__buf1 dst = {.ptr = (uint8_t*)(pixbuf), .len = pixbuf_size};
-    wuffs_base__writer1 dst_writer = {.buf = &dst};
+    wuffs_base__io_buffer dst = {.ptr = (uint8_t*)(pixbuf), .len = pixbuf_size};
+    wuffs_base__io_writer dst_writer = {.buf = &dst};
 
     while (true) {
       // TODO: handle the frame rect being larger than the image rect. The

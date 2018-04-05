@@ -23,16 +23,15 @@ import (
 )
 
 var numTypeBounds = [256][2]*big.Int{
-	t.KeyI8:    {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
-	t.KeyI16:   {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
-	t.KeyI32:   {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
-	t.KeyI64:   {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
-	t.KeyU8:    {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
-	t.KeyU16:   {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
-	t.KeyU32:   {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
-	t.KeyU64:   {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
-	t.KeyUsize: {zero, zero},
-	t.KeyBool:  {zero, one},
+	t.KeyI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
+	t.KeyI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
+	t.KeyI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
+	t.KeyI64:  {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
+	t.KeyU8:   {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
+	t.KeyU16:  {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
+	t.KeyU32:  {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
+	t.KeyU64:  {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
+	t.KeyBool: {zero, one},
 }
 
 var (
@@ -1192,11 +1191,11 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 		return nil, nil, nil
 	}
 
-	// TODO: is the special cases for reader1 and writer1 superfluous with the
-	// general purpose code for built-ins below?
+	// TODO: is the special cases for io_reader and io_writer superfluous with
+	// the general purpose code for built-ins below?
 	if qid := typ.QID(); qid[0] == 0 {
 		switch qid[1].Key() {
-		case t.KeyReader1, t.KeyWriter1:
+		case t.KeyIOReader, t.KeyIOWriter:
 			return nil, nil, nil
 		}
 	}

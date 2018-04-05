@@ -277,9 +277,9 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 			// TODO: Add signed integer types, as per the builtin.Types var?
 			//
 			// Or, don't hard code these, and instead require built-in types to
-			// have qualified names, such as "builtin.u8" or "base.reader1"?
+			// have qualified names, such as "builtin.u8" or "base.io_reader"?
 			switch o.id2.Key() {
-			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64, t.KeyBool, t.KeyStatus, t.KeyReader1, t.KeyWriter1:
+			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64, t.KeyBool, t.KeyStatus, t.KeyIOReader, t.KeyIOWriter:
 				return nil
 			}
 		}
@@ -700,7 +700,7 @@ func (n *TypeExpr) IsSliceType() bool {
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
 	return n.id0 == 0 && (n.id2.Key() == t.KeyU8 || n.id2.Key() == t.KeyU16 ||
-		n.id2.Key() == t.KeyU32 || n.id2.Key() == t.KeyU64) // TODO: t.KeyUsize?
+		n.id2.Key() == t.KeyU32 || n.id2.Key() == t.KeyU64)
 }
 
 func (n *TypeExpr) HasPointers() bool {
@@ -708,7 +708,7 @@ func (n *TypeExpr) HasPointers() bool {
 		switch n.id0.Key() {
 		case 0:
 			switch n.id2.Key() {
-			case t.KeyBuf1, t.KeyReader1, t.KeyWriter1, t.KeyBuf2:
+			case t.KeyIOReader, t.KeyIOWriter:
 				return true
 			}
 		case t.KeyPtr, t.KeyNptr, t.KeyColon:

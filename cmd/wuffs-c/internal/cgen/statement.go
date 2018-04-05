@@ -442,7 +442,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	//
-	// TODO: check reader1.buf and writer1.buf is non-NULL.
+	// TODO: check io_reader.buf and io_writer.buf is non-NULL.
 	if isInSrc(g.tm, n, t.KeyReadU8, 0) {
 		if g.currFunk.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
@@ -682,7 +682,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			// TODO: don't hard-code a_dst or v_r or l_rlimit or v_block_size.
 			b.writes("uint64_t l_rlimit0 = v_block_size;\n")
 			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst,"+
-				"wuffs_base__reader1__limit(&%sr, &l_rlimit0));\n",
+				"wuffs_base__io_reader__limit(&%sr, &l_rlimit0));\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, vPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {

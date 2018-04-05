@@ -62,8 +62,8 @@ golden_test gzip_pi_gt = {
 
 // ---------------- Gzip Tests
 
-const char* wuffs_gzip_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_gzip__decoder dec;
@@ -72,12 +72,12 @@ const char* wuffs_gzip_decode(wuffs_base__buf1* dst,
   uint64_t wlim = 0;
   uint64_t rlim = 0;
   while (true) {
-    wuffs_base__writer1 dst_writer = {.buf = dst};
+    wuffs_base__io_writer dst_writer = {.buf = dst};
     if (wlimit) {
       wlim = wlimit;
       dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__reader1 src_reader = {.buf = src};
+    wuffs_base__io_reader src_reader = {.buf = src};
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -98,8 +98,8 @@ const char* wuffs_gzip_decode(wuffs_base__buf1* dst,
 }
 
 bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
-  wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, gzip_midsummer_gt.src_filename)) {
     return false;
@@ -120,9 +120,9 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
     wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.wi = 0;
-    wuffs_base__writer1 got_writer = {.buf = &got};
+    wuffs_base__io_writer got_writer = {.buf = &got};
     src.ri = 0;
-    wuffs_base__reader1 src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = {.buf = &src};
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
@@ -182,12 +182,12 @@ void test_wuffs_gzip_checksum_verify_good() {
 
 void test_wuffs_gzip_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(wuffs_gzip_decode, &gzip_midsummer_gt, 0, 0);
+  do_test_io_buffers(wuffs_gzip_decode, &gzip_midsummer_gt, 0, 0);
 }
 
 void test_wuffs_gzip_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(wuffs_gzip_decode, &gzip_pi_gt, 0, 0);
+  do_test_io_buffers(wuffs_gzip_decode, &gzip_pi_gt, 0, 0);
 }
 
   // ---------------- Mimic Tests
@@ -196,12 +196,12 @@ void test_wuffs_gzip_decode_pi() {
 
 void test_mimic_gzip_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_gzip_decode, &gzip_midsummer_gt, 0, 0);
+  do_test_io_buffers(mimic_gzip_decode, &gzip_midsummer_gt, 0, 0);
 }
 
 void test_mimic_gzip_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_gzip_decode, &gzip_pi_gt, 0, 0);
+  do_test_io_buffers(mimic_gzip_decode, &gzip_pi_gt, 0, 0);
 }
 
 #endif  // WUFFS_MIMIC
@@ -210,13 +210,13 @@ void test_mimic_gzip_decode_pi() {
 
 void bench_wuffs_gzip_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
-                     30000);
+  do_bench_io_buffers(wuffs_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
+                      30000);
 }
 
 void bench_wuffs_gzip_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(wuffs_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
 }
 
   // ---------------- Mimic Benches
@@ -225,13 +225,13 @@ void bench_wuffs_gzip_decode_100k() {
 
 void bench_mimic_gzip_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
-                     30000);
+  do_bench_io_buffers(mimic_gzip_decode, tc_dst, &gzip_midsummer_gt, 0, 0,
+                      30000);
 }
 
 void bench_mimic_gzip_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(mimic_gzip_decode, tc_dst, &gzip_pi_gt, 0, 0, 3000);
 }
 
 #endif  // WUFFS_MIMIC

@@ -44,8 +44,8 @@ var (
 	typeExprU64         = a.NewTypeExpr(0, 0, t.IDU64, nil, nil, nil)
 	typeExprBool        = a.NewTypeExpr(0, 0, t.IDBool, nil, nil, nil)
 	typeExprStatus      = a.NewTypeExpr(0, 0, t.IDStatus, nil, nil, nil)
-	typeExprReader1     = a.NewTypeExpr(0, 0, t.IDReader1, nil, nil, nil)
-	typeExprWriter1     = a.NewTypeExpr(0, 0, t.IDWriter1, nil, nil, nil)
+	typeExprIOReader    = a.NewTypeExpr(0, 0, t.IDIOReader, nil, nil, nil)
+	typeExprIOWriter    = a.NewTypeExpr(0, 0, t.IDIOWriter, nil, nil, nil)
 	typeExprImageConfig = a.NewTypeExpr(0, 0, t.IDImageConfig, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, 0, nil, nil, typeExprU8)
@@ -66,8 +66,8 @@ var builtInTypeMap = typeMap{
 	t.IDU64:         typeExprU64,
 	t.IDBool:        typeExprBool,
 	t.IDStatus:      typeExprStatus,
-	t.IDReader1:     typeExprReader1,
-	t.IDWriter1:     typeExprWriter1,
+	t.IDIOReader:    typeExprIOReader,
+	t.IDIOWriter:    typeExprIOWriter,
 	t.IDImageConfig: typeExprImageConfig,
 }
 

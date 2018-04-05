@@ -282,12 +282,9 @@ const (
 	KeyU16         = Key(IDU16 >> KeyShift)
 	KeyU32         = Key(IDU32 >> KeyShift)
 	KeyU64         = Key(IDU64 >> KeyShift)
-	KeyUsize       = Key(IDUsize >> KeyShift) // TODO: unused?
 	KeyBool        = Key(IDBool >> KeyShift)
-	KeyBuf1        = Key(IDBuf1 >> KeyShift) // TODO: unused?
-	KeyReader1     = Key(IDReader1 >> KeyShift)
-	KeyWriter1     = Key(IDWriter1 >> KeyShift)
-	KeyBuf2        = Key(IDBuf2 >> KeyShift) // TODO: unused?
+	KeyIOReader    = Key(IDIOReader >> KeyShift)
+	KeyIOWriter    = Key(IDIOWriter >> KeyShift)
 	KeyStatus      = Key(IDStatus >> KeyShift)
 	KeyImageConfig = Key(IDImageConfig >> KeyShift)
 
@@ -474,14 +471,11 @@ const (
 	IDU16         = ID(0x85<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDU32         = ID(0x86<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
 	IDU64         = ID(0x87<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDUsize       = ID(0x88<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDBool        = ID(0x89<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf1        = ID(0x8A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReader1     = ID(0x8B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriter1     = ID(0x8C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBuf2        = ID(0x8D<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDStatus      = ID(0x8E<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDImageConfig = ID(0x8F<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBool        = ID(0x88<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIOReader    = ID(0x89<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDIOWriter    = ID(0x8A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDStatus      = ID(0x8B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDImageConfig = ID(0x8C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 
 	IDMark       = ID(0x90<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDReadU8     = ID(0x91<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -688,12 +682,9 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyU16:         {"u16", IDU16},
 	KeyU32:         {"u32", IDU32},
 	KeyU64:         {"u64", IDU64},
-	KeyUsize:       {"usize", IDUsize},
 	KeyBool:        {"bool", IDBool},
-	KeyBuf1:        {"buf1", IDBuf1},
-	KeyReader1:     {"reader1", IDReader1},
-	KeyWriter1:     {"writer1", IDWriter1},
-	KeyBuf2:        {"buf2", IDBuf2},
+	KeyIOReader:    {"io_reader", IDIOReader},
+	KeyIOWriter:    {"io_writer", IDIOWriter},
 	KeyStatus:      {"status", IDStatus},
 	KeyImageConfig: {"image_config", IDImageConfig},
 

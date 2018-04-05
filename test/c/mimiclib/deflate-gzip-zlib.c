@@ -18,22 +18,22 @@
 #ifdef WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
 #include "/path/to/your/copy/of/github.com/richgel999/miniz/miniz_tinfl.c"
 
-const char* mimic_bench_adler32(wuffs_base__buf1* dst,
-                                wuffs_base__buf1* src,
+const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
+                                wuffs_base__io_buffer* src,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   return "miniz does not independently compute Adler32";
 }
 
-const char* mimic_bench_crc32_ieee(wuffs_base__buf1* dst,
-                                   wuffs_base__buf1* src,
+const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
+                                   wuffs_base__io_buffer* src,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   return "miniz does not implement CRC32/IEEE";
 }
 
-const char* mimic_deflate_zlib_decode(wuffs_base__buf1* dst,
-                                      wuffs_base__buf1* src,
+const char* mimic_deflate_zlib_decode(wuffs_base__io_buffer* dst,
+                                      wuffs_base__io_buffer* src,
                                       uint64_t wlimit,
                                       uint64_t rlimit,
                                       bool deflate_instead_of_zlib) {
@@ -53,22 +53,22 @@ const char* mimic_deflate_zlib_decode(wuffs_base__buf1* dst,
   return NULL;
 }
 
-const char* mimic_deflate_decode(wuffs_base__buf1* dst,
-                                 wuffs_base__buf1* src,
+const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
+                                 wuffs_base__io_buffer* src,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, true);
 }
 
-const char* mimic_gzip_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return "miniz does not implement gzip";
 }
 
-const char* mimic_zlib_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, false);
@@ -79,8 +79,8 @@ const char* mimic_zlib_decode(wuffs_base__buf1* dst,
 
 uint32_t global_mimiclib_deflate_unused_u32;
 
-const char* mimic_bench_adler32(wuffs_base__buf1* dst,
-                                wuffs_base__buf1* src,
+const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
+                                wuffs_base__io_buffer* src,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
@@ -94,8 +94,8 @@ const char* mimic_bench_adler32(wuffs_base__buf1* dst,
   return NULL;
 }
 
-const char* mimic_bench_crc32_ieee(wuffs_base__buf1* dst,
-                                   wuffs_base__buf1* src,
+const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
+                                   wuffs_base__io_buffer* src,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
@@ -115,8 +115,8 @@ typedef enum {
   zlib_flavor_zlib,
 } zlib_flavor;
 
-const char* mimic_deflate_gzip_zlib_decode(wuffs_base__buf1* dst,
-                                           wuffs_base__buf1* src,
+const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
+                                           wuffs_base__io_buffer* src,
                                            uint64_t wlimit,
                                            uint64_t rlimit,
                                            zlib_flavor flavor) {
@@ -184,24 +184,24 @@ cleanup0:;
   return ret;
 }
 
-const char* mimic_deflate_decode(wuffs_base__buf1* dst,
-                                 wuffs_base__buf1* src,
+const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
+                                 wuffs_base__io_buffer* src,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
                                         zlib_flavor_raw);
 }
 
-const char* mimic_gzip_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
                                         zlib_flavor_gzip);
 }
 
-const char* mimic_zlib_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,

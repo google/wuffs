@@ -120,14 +120,14 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 // the function name is "wuffs_etc", not "c_wuffs_etc".
 static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
-    wuffs_base__writer1 a_dst,
-    wuffs_base__reader1 a_src);
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src);
 
 // This is the overriding implementation.
 wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
-    wuffs_base__writer1 a_dst,
-    wuffs_base__reader1 a_src) {
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
   // overridden wuffs_deflate__decoder__decode_huffman_fast.
   (void)(wuffs_deflate__decoder__decode_huffman_fast);

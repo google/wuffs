@@ -186,9 +186,9 @@ static inline uint64_t wuffs_base__slice_u8__copy_from_slice(
   return length;
 }
 
-static inline uint32_t wuffs_base__writer1__copy_from_history32(
+static inline uint32_t wuffs_base__io_writer__copy_from_history32(
     uint8_t** ptr_ptr,
-    uint8_t* start,  // May be NULL, meaning an unmarked writer1.
+    uint8_t* start,  // May be NULL, meaning an unmarked io_writer.
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
@@ -212,7 +212,7 @@ static inline uint32_t wuffs_base__writer1__copy_from_history32(
   // copy_from_history32 Wuffs method should also take an unroll hint argument,
   // and the cgen can look if that argument is the constant expression '3'.
   //
-  // See also wuffs_base__writer1__copy_from_history32__bco below.
+  // See also wuffs_base__io_writer__copy_from_history32__bco below.
   //
   // Alternatively, or additionally, have a sloppy_copy_from_history32 method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
@@ -228,14 +228,14 @@ static inline uint32_t wuffs_base__writer1__copy_from_history32(
   return length;
 }
 
-// wuffs_base__writer1__copy_from_history32__bco is a Bounds Check Optimized
-// version of the wuffs_base__writer1__copy_from_history32 function above. The
-// caller needs to prove that:
+// wuffs_base__io_writer__copy_from_history32__bco is a Bounds Check Optimized
+// version of the wuffs_base__io_writer__copy_from_history32 function above.
+// The caller needs to prove that:
 //  - start    != NULL
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
-static inline uint32_t wuffs_base__writer1__copy_from_history32__bco(
+static inline uint32_t wuffs_base__io_writer__copy_from_history32__bco(
     uint8_t** ptr_ptr,
     uint8_t* start,
     uint8_t* end,
@@ -256,7 +256,7 @@ static inline uint32_t wuffs_base__writer1__copy_from_history32__bco(
   return length;
 }
 
-static inline uint32_t wuffs_base__writer1__copy_from_reader32(
+static inline uint32_t wuffs_base__io_writer__copy_from_reader32(
     uint8_t** ptr_wptr,
     uint8_t* wend,
     uint8_t** ptr_rptr,
@@ -279,7 +279,7 @@ static inline uint32_t wuffs_base__writer1__copy_from_reader32(
   return n;
 }
 
-static inline uint64_t wuffs_base__writer1__copy_from_slice(
+static inline uint64_t wuffs_base__io_writer__copy_from_slice(
     uint8_t** ptr_wptr,
     uint8_t* wend,
     wuffs_base__slice_u8 src) {
@@ -295,7 +295,7 @@ static inline uint64_t wuffs_base__writer1__copy_from_slice(
   return n;
 }
 
-static inline uint32_t wuffs_base__writer1__copy_from_slice32(
+static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
     uint8_t** ptr_wptr,
     uint8_t* wend,
     wuffs_base__slice_u8 src,
@@ -317,7 +317,7 @@ static inline uint32_t wuffs_base__writer1__copy_from_slice32(
 
 // Note that the *__limit and *__mark methods are private (in base-impl.h) not
 // public (in base-header.h). We assume that, at the boundary between user code
-// and Wuffs code, the reader1 and writer1's private_impl fields (including
+// and Wuffs code, the io_reader and io_writer's private_impl fields (including
 // limit and mark) are NULL. Otherwise, some internal assumptions break down.
 // For example, limits could be represented as pointers, even though
 // conceptually they are counts, but that pointer-to-count correspondence
@@ -327,26 +327,26 @@ static inline uint32_t wuffs_base__writer1__copy_from_slice32(
 // code is still Wuffs code, not user code. Other Wuffs test code modifies
 // private_impl fields directly.
 
-static inline wuffs_base__reader1 wuffs_base__reader1__limit(
-    wuffs_base__reader1* o,
+static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
+    wuffs_base__io_reader* o,
     uint64_t* ptr_to_len) {
-  wuffs_base__reader1 ret = *o;
+  wuffs_base__io_reader ret = *o;
   ret.private_impl.limit.ptr_to_len = ptr_to_len;
   ret.private_impl.limit.next = &o->private_impl.limit;
   return ret;
 }
 
-static inline wuffs_base__empty_struct wuffs_base__reader1__mark(
-    wuffs_base__reader1* o,
+static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
+    wuffs_base__io_reader* o,
     uint8_t* mark) {
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
 
-// TODO: static inline wuffs_base__writer1 wuffs_base__writer1__limit()
+// TODO: static inline wuffs_base__io_writer wuffs_base__io_writer__limit()
 
-static inline wuffs_base__empty_struct wuffs_base__writer1__mark(
-    wuffs_base__writer1* o,
+static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
+    wuffs_base__io_writer* o,
     uint8_t* mark) {
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});

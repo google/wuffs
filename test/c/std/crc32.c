@@ -98,7 +98,7 @@ void test_wuffs_crc32_ieee_golden() {
 
   int i;
   for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
-    wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+    wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
@@ -165,8 +165,8 @@ void test_wuffs_crc32_ieee_pi() {
 
 uint32_t global_wuffs_crc32_unused_u32;
 
-const char* wuffs_bench_crc32_ieee(wuffs_base__buf1* dst,
-                                   wuffs_base__buf1* src,
+const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
+                                   wuffs_base__io_buffer* src,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
@@ -183,13 +183,14 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__buf1* dst,
 
 void bench_wuffs_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
-                     150000);
+  do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
+                      150000);
 }
 
 void bench_wuffs_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
+                      15000);
 }
 
   // ---------------- Mimic Benches
@@ -198,13 +199,14 @@ void bench_wuffs_crc32_ieee_100k() {
 
 void bench_mimic_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
-                     150000);
+  do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
+                      150000);
 }
 
 void bench_mimic_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
+                      15000);
 }
 
 #endif  // WUFFS_MIMIC

@@ -124,7 +124,7 @@ void test_wuffs_adler32_golden() {
 
   int i;
   for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
-    wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+    wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
@@ -189,8 +189,8 @@ void test_wuffs_adler32_pi() {
 
 // ---------------- Zlib Tests
 
-const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
-                              wuffs_base__buf1* src,
+const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
+                              wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec;
@@ -199,12 +199,12 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
   uint64_t wlim = 0;
   uint64_t rlim = 0;
   while (true) {
-    wuffs_base__writer1 dst_writer = {.buf = dst};
+    wuffs_base__io_writer dst_writer = {.buf = dst};
     if (wlimit) {
       wlim = wlimit;
       dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__reader1 src_reader = {.buf = src};
+    wuffs_base__io_reader src_reader = {.buf = src};
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -225,8 +225,8 @@ const char* wuffs_zlib_decode(wuffs_base__buf1* dst,
 }
 
 bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
-  wuffs_base__buf1 got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__buf1 src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
     return false;
@@ -246,9 +246,9 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
     wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.wi = 0;
-    wuffs_base__writer1 got_writer = {.buf = &got};
+    wuffs_base__io_writer got_writer = {.buf = &got};
     src.ri = 0;
-    wuffs_base__reader1 src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = {.buf = &src};
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
@@ -303,12 +303,12 @@ void test_wuffs_zlib_checksum_verify_good() {
 
 void test_wuffs_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(wuffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
+  do_test_io_buffers(wuffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
 }
 
 void test_wuffs_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(wuffs_zlib_decode, &zlib_pi_gt, 0, 0);
+  do_test_io_buffers(wuffs_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
   // ---------------- Mimic Tests
@@ -317,12 +317,12 @@ void test_wuffs_zlib_decode_pi() {
 
 void test_mimic_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_zlib_decode, &zlib_midsummer_gt, 0, 0);
+  do_test_io_buffers(mimic_zlib_decode, &zlib_midsummer_gt, 0, 0);
 }
 
 void test_mimic_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_buf1_buf1(mimic_zlib_decode, &zlib_pi_gt, 0, 0);
+  do_test_io_buffers(mimic_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
 #endif  // WUFFS_MIMIC
@@ -331,8 +331,8 @@ void test_mimic_zlib_decode_pi() {
 
 uint32_t global_wuffs_zlib_unused_u32;
 
-const char* wuffs_bench_adler32(wuffs_base__buf1* dst,
-                                wuffs_base__buf1* src,
+const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
+                                wuffs_base__io_buffer* src,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
@@ -349,26 +349,26 @@ const char* wuffs_bench_adler32(wuffs_base__buf1* dst,
 
 void bench_wuffs_adler32_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                     150000);
+  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
+                      150000);
 }
 
 void bench_wuffs_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
 }
 
 // ---------------- Zlib Benches
 
 void bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                     30000);
+  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
+                      30000);
 }
 
 void bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
 }
 
   // ---------------- Mimic Benches
@@ -377,24 +377,24 @@ void bench_wuffs_zlib_decode_100k() {
 
 void bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                     150000);
+  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
+                      150000);
 }
 
 void bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
 }
 
 void bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                     30000);
+  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
+                      30000);
 }
 
 void bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_buf1_buf1(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
 }
 
 #endif  // WUFFS_MIMIC

@@ -121,7 +121,7 @@ pub struct decoder?(
 	end_of_block bool,
 )
 
-pub func decoder.decode?(dst writer1, src reader1)() {
+pub func decoder.decode?(dst io_writer, src io_reader)() {
 	while true {
 		in.dst.mark()
 		var z status = try this.decode_blocks?(dst:in.dst, src:in.src)
@@ -173,7 +173,7 @@ pub func decoder.decode?(dst writer1, src reader1)() {
 	}
 }
 
-pri func decoder.decode_blocks?(dst writer1, src reader1)() {
+pri func decoder.decode_blocks?(dst io_writer, src io_reader)() {
 	var final u32
 	while final == 0 {
 		while this.n_bits < 3,
@@ -213,7 +213,7 @@ pri func decoder.decode_blocks?(dst writer1, src reader1)() {
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
-pri func decoder.decode_uncompressed?(dst writer1, src reader1)() {
+pri func decoder.decode_uncompressed?(dst io_writer, src io_reader)() {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
@@ -272,7 +272,7 @@ pri func decoder.init_fixed_huffman?()() {
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
-pri func decoder.init_dynamic_huffman?(src reader1)() {
+pri func decoder.init_dynamic_huffman?(src io_reader)() {
 	var bits u32 = this.bits
 	var n_bits u32 = this.n_bits
 	while n_bits < 14,

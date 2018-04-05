@@ -175,7 +175,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return fmt.Errorf(`TODO: cgen an "in.src.limit" expression`)
 		}
 		if isInSrc(g.tm, n, t.KeyMark, 0) {
-			b.printf("wuffs_base__reader1__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
+			b.printf("wuffs_base__io_reader__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil
 		}
 		if isInSrc(g.tm, n, t.KeySinceMark, 0) {
@@ -185,16 +185,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
-		// TODO: reader1.is_marked, not just writer1.is_marked?
+		// TODO: io_reader.is_marked, not just io_writer.is_marked?
 		if isInDst(g.tm, n, t.KeyLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
 		if isInDst(g.tm, n, t.KeyMark, 0) {
 			// TODO: is a private_impl.mark the right representation? What if
-			// the function is passed a (ptr writer1) instead of a (writer1)?
-			// Do we still want to have that mark live outside of the function
-			// scope?
-			b.printf("wuffs_base__writer1__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
+			// the function is passed a (ptr io_writer) instead of a
+			// (io_writer)? Do we still want to have that mark live outside of
+			// the function scope?
+			b.printf("wuffs_base__io_writer__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeySinceMark, 0) {
@@ -224,7 +224,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
-			b.printf("wuffs_base__writer1__copy_from_reader32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			b.printf("wuffs_base__io_writer__copy_from_reader32(&%swptr_dst, %swend_dst",
+				bPrefix, bPrefix)
 			// TODO: don't assume that the first argument is "in.src".
 			b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
 			a := n.Args()[1].Arg().Value()
@@ -239,7 +240,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if n.BoundsCheckOptimized() {
 				bco = "__bco"
 			}
-			b.printf("wuffs_base__writer1__copy_from_history32%s(&%swptr_dst, %sdst.private_impl.mark , %swend_dst",
+			b.printf("wuffs_base__io_writer__copy_from_history32%s("+
+				"&%swptr_dst, %sdst.private_impl.mark , %swend_dst",
 				bco, bPrefix, aPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
@@ -251,7 +253,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromSlice32, 2) {
-			b.printf("wuffs_base__writer1__copy_from_slice32(&%swptr_dst, %swend_dst", bPrefix, bPrefix)
+			b.printf("wuffs_base__io_writer__copy_from_slice32("+
+				"&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
@@ -262,7 +265,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
-			b.printf("wuffs_base__writer1__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
+			b.printf("wuffs_base__io_writer__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
 				return err
@@ -352,7 +355,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isThatMethod(g.tm, n, t.KeyMark, 0) {
 			// TODO: don't hard-code v_r or b_rptr_src.
-			b.printf("wuffs_base__reader1__mark(&v_r, b_rptr_src)")
+			b.printf("wuffs_base__io_reader__mark(&v_r, b_rptr_src)")
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeySinceMark, 0) {
@@ -624,20 +627,17 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 }
 
 var cTypeNames = [...]string{
-	t.KeyI8:      "int8_t",
-	t.KeyI16:     "int16_t",
-	t.KeyI32:     "int32_t",
-	t.KeyI64:     "int64_t",
-	t.KeyU8:      "uint8_t",
-	t.KeyU16:     "uint16_t",
-	t.KeyU32:     "uint32_t",
-	t.KeyU64:     "uint64_t",
-	t.KeyUsize:   "size_t",
-	t.KeyBool:    "bool",
-	t.KeyBuf1:    "wuffs_base__buf1",
-	t.KeyReader1: "wuffs_base__reader1",
-	t.KeyWriter1: "wuffs_base__writer1",
-	t.KeyBuf2:    "wuffs_base__buf2",
+	t.KeyI8:       "int8_t",
+	t.KeyI16:      "int16_t",
+	t.KeyI32:      "int32_t",
+	t.KeyI64:      "int64_t",
+	t.KeyU8:       "uint8_t",
+	t.KeyU16:      "uint16_t",
+	t.KeyU32:      "uint32_t",
+	t.KeyU64:      "uint64_t",
+	t.KeyBool:     "bool",
+	t.KeyIOReader: "wuffs_base__io_reader",
+	t.KeyIOWriter: "wuffs_base__io_writer",
 }
 
 var cOpNames = [256]string{

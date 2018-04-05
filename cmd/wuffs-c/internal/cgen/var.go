@@ -66,7 +66,7 @@ func (g *gen) findDerivedVars() {
 		switch oTyp.QID() {
 		default:
 			continue
-		case t.QID{0, t.IDReader1}, t.QID{0, t.IDWriter1}:
+		case t.QID{0, t.IDIOReader}, t.QID{0, t.IDIOWriter}:
 			// No-op.
 		}
 		if !g.needDerivedVar(o.Name()) {
@@ -94,7 +94,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	}
 	nameStr := name.Str(g.tm)
 	switch typ.QID() {
-	case t.QID{0, t.IDReader1}:
+	case t.QID{0, t.IDIOReader}:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
@@ -110,7 +110,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 			b.printf("uint64_t len = %s%s.buf->wi - %s%s.buf->ri;", aPrefix, nameStr, aPrefix, nameStr)
 
-			b.printf("wuffs_base__limit1* lim;\n")
+			b.printf("wuffs_base__io_limit* lim;\n")
 			b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
 			b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {\n")
 			b.printf("len = *lim->ptr_to_len;\n")
@@ -122,7 +122,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("}\n")
 
-	case t.QID{0, t.IDWriter1}:
+	case t.QID{0, t.IDIOWriter}:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
@@ -140,7 +140,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			b.printf("if (!%s%s.buf->closed) {", aPrefix, nameStr)
 			b.printf("uint64_t len = %s%s.buf->len - %s%s.buf->wi;", aPrefix, nameStr, aPrefix, nameStr)
 
-			b.printf("wuffs_base__limit1* lim;\n")
+			b.printf("wuffs_base__io_limit* lim;\n")
 			b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
 			b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {\n")
 			b.printf("len = *lim->ptr_to_len;\n")
@@ -171,14 +171,14 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 	}
 	nameStr := name.Str(g.tm)
 	switch typ.QID() {
-	case t.QID{0, t.IDReader1}:
+	case t.QID{0, t.IDIOReader}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->ri += n;", aPrefix, nameStr)
 
-		b.printf("wuffs_base__limit1* lim;\n")
+		b.printf("wuffs_base__io_limit* lim;\n")
 		b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) {\n")
 		b.printf("*lim->ptr_to_len -= n;\n")
@@ -192,14 +192,14 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 
 		b.printf("}\n")
 
-	case t.QID{0, t.IDWriter1}:
+	case t.QID{0, t.IDIOWriter}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.buf->wi += n;", aPrefix, nameStr)
 
-		b.printf("wuffs_base__limit1* lim;\n")
+		b.printf("wuffs_base__io_limit* lim;\n")
 		b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
 		b.printf("if (lim->ptr_to_len) {\n")
 		b.printf("*lim->ptr_to_len -= n;\n")

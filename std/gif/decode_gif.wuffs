@@ -60,7 +60,7 @@ pub struct decoder?(
 )
 
 // TODO: should dst be an nptr instead of a ptr?
-pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
+pub func decoder.decode_config?(dst ptr image_config, src io_reader)() {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
@@ -85,7 +85,7 @@ pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 	this.call_sequence = 1
 }
 
-pub func decoder.decode_frame?(dst writer1, src reader1)() {
+pub func decoder.decode_frame?(dst io_writer, src io_reader)() {
 	if this.call_sequence < 1 {
 		return error "invalid call sequence"
 	}
@@ -121,7 +121,7 @@ pub func decoder.decode_frame?(dst writer1, src reader1)() {
 // decode_header reads either "GIF87a" or "GIF89a".
 //
 // See the spec section 17 "Header" on page 7.
-pri func decoder.decode_header?(src reader1)() {
+pri func decoder.decode_header?(src io_reader)() {
 	var c[6] u8
 	var i u32
 	while i < 6 {
@@ -137,7 +137,7 @@ pri func decoder.decode_header?(src reader1)() {
 // decode_lsd reads the Logical Screen Descriptor.
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
-pri func decoder.decode_lsd?(src reader1)() {
+pri func decoder.decode_lsd?(src io_reader)() {
 	var c[7] u8
 	var i u32
 	while i < 7 {
@@ -172,7 +172,7 @@ pri func decoder.decode_lsd?(src reader1)() {
 //  - section 24 "Comment Extension" on page 17.
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
-pri func decoder.decode_extension?(src reader1)() {
+pri func decoder.decode_extension?(src io_reader)() {
 	var label u8 = in.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		// TODO.
@@ -185,7 +185,7 @@ pri func decoder.decode_extension?(src reader1)() {
 	this.skip_blocks?(src:in.src)
 }
 
-pri func decoder.skip_blocks?(src reader1)() {
+pri func decoder.skip_blocks?(src io_reader)() {
 	while true {
 		var block_size u8 = in.src.read_u8?()
 		if block_size == 0 {
@@ -206,7 +206,7 @@ pri const netscape2dot0[11] u8 = $(
 )
 
 // decode_ae reads an Application Extension.
-pri func decoder.decode_ae?(src reader1)() {
+pri func decoder.decode_ae?(src io_reader)() {
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
 	while true {
@@ -275,7 +275,7 @@ pri func decoder.decode_ae?(src reader1)() {
 // been read.
 //
 // See the spec section 20 "Image Descriptor" on page 11.
-pri func decoder.decode_id?(dst writer1, src reader1)() {
+pri func decoder.decode_id?(dst io_writer, src io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
 	this.frame_left = in.src.read_u16le?() as u32
 	this.frame_top = in.src.read_u16le?() as u32
@@ -312,9 +312,9 @@ pri func decoder.decode_id?(dst writer1, src reader1)() {
 			break
 		}
 		while true {
-			var r reader1 = in.src
+			var r io_reader = in.src
 			// TODO: should "mark" be "set_mark"? Unlike "limit", "mark" does
-			// not return a different reader1.
+			// not return a different io_reader.
 			r.mark()
 			// TODO: remove the dummy param. It's needed for now so that
 			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived

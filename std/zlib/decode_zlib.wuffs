@@ -33,7 +33,7 @@ pub func decoder.set_ignore_checksum!(ic bool)() {
 	this.ignore_checksum = in.ic
 }
 
-pub func decoder.decode?(dst writer1, src reader1)() {
+pub func decoder.decode?(dst io_writer, src io_reader)() {
 	var x u16 = in.src.read_u16be?()
 	if ((x >> 8) & 0x0F) != 0x08 {
 		return error "invalid zlib compression method"

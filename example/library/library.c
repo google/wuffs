@@ -48,11 +48,11 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
-  wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-  wuffs_base__buf1 src = {
+  wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+  wuffs_base__io_buffer src = {
       .ptr = lgtm_ptr, .len = lgtm_len, .wi = lgtm_len, .closed = true};
-  wuffs_base__writer1 dst_writer = {.buf = &dst};
-  wuffs_base__reader1 src_reader = {.buf = &src};
+  wuffs_base__io_writer dst_writer = {.buf = &dst};
+  wuffs_base__io_reader src_reader = {.buf = &src};
 
   wuffs_deflate__decoder dec;
   wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);

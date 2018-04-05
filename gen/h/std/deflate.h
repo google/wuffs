@@ -99,9 +99,7 @@ typedef struct {
 
 // ---------------- I/O
 
-// TODO: rename buf1 to io_buffer, writer1 to io_writer, etc.
-
-// wuffs_base__buf1 is a 1-dimensional buffer (a pointer and length), plus
+// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
 // additional indexes into that buffer, plus an opened / closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
@@ -111,44 +109,44 @@ typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   bool closed;   // No further writes are expected.
-} wuffs_base__buf1;
+} wuffs_base__io_buffer;
 
-// wuffs_base__limit1 provides a limited view of a 1-dimensional byte stream:
+// wuffs_base__io_limit provides a limited view of a 1-dimensional byte stream:
 // its first N bytes. That N can be greater than a buffer's current read or
 // write capacity. N decreases naturally over time as bytes are read from or
 // written to the stream.
 //
 // A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct wuffs_base__limit1 {
-  uint64_t* ptr_to_len;             // Pointer to N.
-  struct wuffs_base__limit1* next;  // Linked list of limits.
-} wuffs_base__limit1;
+typedef struct wuffs_base__io_limit {
+  uint64_t* ptr_to_len;               // Pointer to N.
+  struct wuffs_base__io_limit* next;  // Linked list of limits.
+} wuffs_base__io_limit;
 
 typedef struct {
   // TODO: move buf into private_impl? As it is, it looks like users can modify
   // the buf field to point to a different buffer, which can turn the limit and
   // mark fields into dangling pointers.
-  wuffs_base__buf1* buf;
+  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__limit1 limit;
+    wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
-} wuffs_base__reader1;
+} wuffs_base__io_reader;
 
 typedef struct {
   // TODO: move buf into private_impl? As it is, it looks like users can modify
   // the buf field to point to a different buffer, which can turn the limit and
   // mark fields into dangling pointers.
-  wuffs_base__buf1* buf;
+  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__limit1 limit;
+    wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
-} wuffs_base__writer1;
+} wuffs_base__io_writer;
 
 // ---------------- Images
 
@@ -740,8 +738,8 @@ void wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 
 wuffs_deflate__status wuffs_deflate__decoder__decode(
     wuffs_deflate__decoder* self,
-    wuffs_base__writer1 a_dst,
-    wuffs_base__reader1 a_src);
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

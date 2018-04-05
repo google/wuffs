@@ -65,15 +65,15 @@ static const char* decode() {
       continue;
     }
 
-    wuffs_base__buf1 src = {.ptr = src_buffer,
-                            .len = SRC_BUFFER_SIZE,
-                            .wi = n_src,
-                            .closed = n_src == 0};
-    wuffs_base__reader1 src_reader = {.buf = &src};
+    wuffs_base__io_buffer src = {.ptr = src_buffer,
+                                 .len = SRC_BUFFER_SIZE,
+                                 .wi = n_src,
+                                 .closed = n_src == 0};
+    wuffs_base__io_reader src_reader = {.buf = &src};
 
     while (true) {
-      wuffs_base__buf1 dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-      wuffs_base__writer1 dst_writer = {.buf = &dst};
+      wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+      wuffs_base__io_writer dst_writer = {.buf = &dst};
       wuffs_gzip__status s =
           wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
 

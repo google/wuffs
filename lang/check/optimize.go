@@ -60,7 +60,7 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 		return nil
 	}
 
-	// TODO: check that nReceiver's type is actually a reader1 or writer1.
+	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
 
 	switch nMethod {
 	case t.KeyCopyFromHistory32:
@@ -225,7 +225,7 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	// TODO: check that nReceiver's type is actually a reader1 or writer1.
+	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
 
 	if nMethod == t.KeyUnreadU8 {
 		// unread_u8 can never suspend, only succeed or fail.
