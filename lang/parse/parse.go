@@ -620,11 +620,17 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.KeyIterate:
 		p.src = p.src[1:]
-		if x := p.peek1().Key(); x != t.KeyDot {
+		label, err := p.parseLabel()
+		if err != nil {
+			return nil, err
+		}
+
+		if x := p.peek1().Key(); x != t.KeyOpenBracket {
 			got := p.tm.ByKey(x)
-			return nil, fmt.Errorf(`parse: expected ".", got %q at %s:%d`, got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
+		// TODO: allow expressions, not just literals, as unroll counts?
 		unrollID := p.peek1()
 		unrollStr := p.tm.ByKey(unrollID.Key())
 		if !unrollID.IsLiteral() {
@@ -639,11 +645,12 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		case "1", "2", "4", "8", "16", "32", "64", "128", "256":
 		}
 		unroll := a.NewExpr(0, 0, 0, unrollID, nil, nil, nil, nil)
-
-		label, err := p.parseLabel()
-		if err != nil {
-			return nil, err
+		if x := p.peek1().Key(); x != t.KeyCloseBracket {
+			got := p.tm.ByKey(x)
+			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
 		}
+		p.src = p.src[1:]
+
 		vars, err := p.parseList(t.KeyCloseParen, (*parser).parseIterateVariableNode)
 		if err != nil {
 			return nil, err

@@ -14,6 +14,7 @@
 - Renamed `std/flate` to `std/deflate`.
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
+- Renamed `iterate.N` to `iterate[N]`.
 - Supported animated (not just single frame) GIFs.
 - Marked the `std/gif` LZW decoder as private.
 - Marked some internal status codes as private.

@@ -27,7 +27,7 @@ pub struct ieee?(
 pub func ieee.update(x slice u8)(checksum u32) {
 	var s u32 = 0xFFFFFFFF ^ this.state
 
-	iterate.1 (p ptr u8:in.x) {
+	iterate[1](p ptr u8:in.x) {
 		s = ieee_table[((s & 0xFF) as u8) ^ deref p] ^ (s >> 8)
 	}
 
