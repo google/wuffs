@@ -91,11 +91,11 @@ const (
 	statusCodeNamespaceShift = 10
 	statusCodeCodeBits       = 8
 	statusCodeDescription    = "" +
-		"// Status codes are int32_t values:\n" +
-		"//  - the sign bit indicates a non-recoverable status code: an error\n" +
-		"//  - bits 10-30 hold the packageid: a namespace\n" +
-		"//  - bits 8-9 are reserved\n" +
-		"//  - bits 0-7 are a package-namespaced numeric code\n"
+		"// Status codes are int32_t values. Its bits:\n" +
+		"//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.\n" +
+		"//  - bits 30 .. 10 are the packageid: a namespace.\n" +
+		"//  - bits  9 ..  8 are reserved.\n" +
+		"//  - bits  7 ..  0 are a package-namespaced numeric code.\n"
 )
 
 func init() {
@@ -235,8 +235,9 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes\n\n")
 	b.writes(statusCodeDescription)
-	b.printf("//\n// Do not manipulate these bits directly. Use the API functions such as\n"+
-		"// %sstatus__is_error instead.\n", g.pkgPrefix)
+	b.printf("//\n// Do not manipulate these bits directly; they are private implementation\n"+
+		"// details. Use methods such as %sstatus__is_error instead.\n", g.pkgPrefix)
+
 	b.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)

@@ -50,7 +50,7 @@ void fuzz(wuffs_base__reader1 src_reader, uint32_t hash) {
 
     wuffs_base__image_config ic = {{0}};
     s = wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
-    if (s || !wuffs_base__image_config__valid(&ic)) {
+    if (s || !wuffs_base__image_config__is_valid(&ic)) {
       goto exit;
     }
 

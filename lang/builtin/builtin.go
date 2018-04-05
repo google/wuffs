@@ -127,7 +127,7 @@ var Funcs = []string{
 	"writer1.mark()()",
 	"writer1.since_mark()(ret[] u8)",
 
-	"image_config.initialize!(width u32, height u32, color_model u32)()",
+	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
 
 const (

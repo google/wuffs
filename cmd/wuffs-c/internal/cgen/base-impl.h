@@ -27,14 +27,14 @@ typedef struct {
 // but it should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("wuffs").
-#define WUFFS_BASE__MAGIC (0x3CCB6C71U)
+#define WUFFS_BASE__MAGIC 0x3CCB6C71U
 
 // WUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
 // to a containee struct's initializer when the container has already zeroed
 // the containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define WUFFS_BASE__ALREADY_ZEROED (0x68602EF1U)
+#define WUFFS_BASE__ALREADY_ZEROED 0x68602EF1U
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //

@@ -77,7 +77,11 @@ pub func decoder.decode_config?(dst ptr image_config, src reader1)() {
 	}
 
 	// TODO: rename initialize to set?
-	in.dst.initialize!(width:this.width, height:this.height, color_model:0)
+	//
+	// TODO: a Wuffs (not just C) name for the
+	// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
+	in.dst.initialize!(pixfmt:0x22088888, pixsub:0,
+		width:this.width, height:this.height, num_loops:this.num_loops)
 	this.call_sequence = 1
 }
 

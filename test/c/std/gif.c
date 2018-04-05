@@ -401,8 +401,15 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_gif__status__string(status));
       return false;
     }
+    if (wuffs_base__image_config__pixel_format(&ic) !=
+        WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED) {
+      FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+           wuffs_base__image_config__pixel_format(&ic),
+           WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED);
+      return false;
+    }
 
-    // bricks-dither.gif is a 160 × 120 static (not animated) GIF.
+    // bricks-dither.gif is a 160 × 120 still (not animated) GIF.
     if (wuffs_base__image_config__width(&ic) != 160) {
       FAIL("width: got %" PRIu32 ", want 160",
            wuffs_base__image_config__width(&ic));
@@ -413,9 +420,9 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_base__image_config__height(&ic));
       return false;
     }
-    // TODO: provide a public API for getting num_loops.
-    if (dec.private_impl.f_num_loops != 1) {
-      FAIL("num_loops: got %" PRIu32 ", want 1", dec.private_impl.f_num_loops);
+    if (wuffs_base__image_config__num_loops(&ic) != 1) {
+      FAIL("num_loops: got %" PRIu32 ", want 1",
+           wuffs_base__image_config__num_loops(&ic));
       return false;
     }
   }
@@ -579,10 +586,9 @@ void test_wuffs_gif_decode_animated() {
   // animated-red-blue.gif's num_loops should be 3. The value explicitly in the
   // wire format is 0x0002, but that value means "repeat 2 times after the
   // first play", so the total number of loops is 3.
-  //
-  // TODO: provide a public API for getting num_loops.
-  if (dec.private_impl.f_num_loops != 3) {
-    FAIL("num_loops: got %" PRIu32 ", want 3", dec.private_impl.f_num_loops);
+  if (wuffs_base__image_config__num_loops(&ic) != 3) {
+    FAIL("num_loops: got %" PRIu32 ", want 3",
+         wuffs_base__image_config__num_loops(&ic));
     return;
   }
 
@@ -612,6 +618,8 @@ void test_wuffs_gif_decode_animated() {
          wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_END_OF_DATA));
     return;
   }
+
+  // TODO: test calling wuffs_base__image_buffer__loop.
 }
 
 void test_wuffs_gif_decode_input_is_a_gif() {

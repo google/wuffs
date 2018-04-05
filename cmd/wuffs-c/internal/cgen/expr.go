@@ -362,7 +362,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				".len = v_r.private_impl.mark ? (size_t)(b_rptr_src - v_r.private_impl.mark) : 0, })")
 			return nil
 		}
-		if isThatMethod(g.tm, n, g.tm.ByName("initialize").Key(), 3) {
+		if isThatMethod(g.tm, n, g.tm.ByName("initialize").Key(), 5) {
 			// TODO: don't hard-code a_dst.
 			b.printf("wuffs_base__image_config__initialize(a_dst")
 			for _, o := range n.Args() {

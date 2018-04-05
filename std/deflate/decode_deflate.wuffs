@@ -78,16 +78,16 @@ pub struct decoder?(
 	// the table value's number of decoder.bits to consume. If it compares
 	// less, then more source bytes are read and the table lookup re-tried.
 	//
-	// The table value is:
-	//  - bit     31 indicates the symbol is a literal.
-	//  - bit     30 indicates the symbol is a base number + extra bits.
-	//  - bit     29 indicates the symbol is the end-of-block.
-	//  - bit     28 indicates a redirect to another part of the table.
-	//  - bit     27 indicates an invalid value.
-	//  - bits 26-24 are zero.
-	//  - bits 23- 8 is the redirect offset, literal (in bits 15-8) or base number.
-	//  - bits  7- 4 is the redirected table's bits or number of extra bits.
-	//  - bits  3- 0 are the number of decoder.bits to consume.
+	// The table value's bits:
+	//  - bit        31 indicates a literal.
+	//  - bit        30 indicates a base number + extra bits.
+	//  - bit        29 indicates end-of-block.
+	//  - bit        28 indicates a redirect to another part of the table.
+	//  - bit        27 indicates an invalid value.
+	//  - bits 26 .. 24 are zero.
+	//  - bits 23 ..  8 are the redirect offset, literal (in bits 15-8) or base number.
+	//  - bits  7 ..  4 are the redirected table's bits or number of extra bits.
+	//  - bits  3 ..  0 are the number of decoder.bits to consume.
 	//
 	// Exactly one of the eight bits 31-24 should be set.
 	//
