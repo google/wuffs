@@ -409,7 +409,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes("wuffs_base__slice_u8__subslice_ij(")
 		}
 
-		lhsIsArray := lhs.MType().Decorator().Key() == t.KeyOpenBracket
+		lhsIsArray := lhs.MType().IsArrayType()
 		if lhsIsArray {
 			// TODO: don't assume that the slice is a slice of u8.
 			b.writes("((wuffs_base__slice_u8){.ptr=")
@@ -556,7 +556,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	const maxNumPointers = 16
 
 	x := n
-	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
+	for ; x != nil && x.IsArrayType(); x = x.Inner() {
 	}
 
 	numPointers, innermost := 0, x
@@ -617,7 +617,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	b.writes(varName)
 
 	x = n
-	for ; x != nil && x.Decorator().Key() == t.KeyOpenBracket; x = x.Inner() {
+	for ; x != nil && x.IsArrayType(); x = x.Inner() {
 		b.writeb('[')
 		b.writes(x.ArrayLength().ConstValue().String())
 		b.writeb(']')

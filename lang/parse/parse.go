@@ -389,9 +389,9 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 
 	if p.peek1().Key() == t.KeyOpenBracket {
 		p.src = p.src[1:]
-		decorator, lhs := t.IDColon, (*a.Expr)(nil)
+		decorator, lhs := t.IDSlice, (*a.Expr)(nil)
 		if p.peek1().Key() != t.KeyCloseBracket {
-			decorator = t.IDOpenBracket
+			decorator = t.IDArray
 			var err error
 			lhs, err = p.parseExpr()
 			if err != nil {

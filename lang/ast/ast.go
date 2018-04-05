@@ -623,7 +623,7 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
 // T", "[8] T" or "[] T":
-//  - ID0:   <0|IDPtr|IDOpenBracket|IDColon|IDOpenParen>
+//  - ID0:   <0|IDPtr|IDArray|IDSlice|IDOpenParen>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
@@ -632,9 +632,9 @@ const MaxTypeExprDepth = 63
 //
 // An IDPtr ID0 means "ptr RHS". RHS is the inner type.
 //
-// An IDOpenBracket ID0 means "[LHS] RHS". RHS is the inner type.
+// An IDArray ID0 means "[LHS] RHS". RHS is the inner type.
 //
-// An IDColon ID0 means "[] RHS". RHS is the inner type.
+// An IDSlice ID0 means "[] RHS". RHS is the inner type.
 //
 // An IDOpenParen ID0 means "LHS.ID2", a function or method type. LHS is the
 // receiver type, which may be nil. If non-nil, it will be a pointee type: "T"
@@ -648,7 +648,7 @@ const MaxTypeExprDepth = 63
 // Numeric types can be refined as "foo[LHS..MHS]". LHS and MHS are Expr's,
 // possibly nil. For example, the LHS for "u32[..4095]" is nil.
 //
-// TODO: struct types, list types, nptr vs ptr.
+// TODO: struct types, list types, nptr vs ptr, table types.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node         { return (*Node)(n) }
@@ -691,11 +691,15 @@ func (n *TypeExpr) IsNumTypeOrIdeal() bool {
 }
 
 func (n *TypeExpr) IsRefined() bool {
-	return n.id0.Key() != t.KeyOpenBracket && (n.lhs != nil || n.mhs != nil)
+	return n.id0.Key() != t.KeyArray && (n.lhs != nil || n.mhs != nil)
+}
+
+func (n *TypeExpr) IsArrayType() bool {
+	return n.id0.Key() == t.KeyArray
 }
 
 func (n *TypeExpr) IsSliceType() bool {
-	return n.id0.Key() == t.KeyColon
+	return n.id0.Key() == t.KeySlice
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
@@ -711,7 +715,7 @@ func (n *TypeExpr) HasPointers() bool {
 			case t.KeyIOReader, t.KeyIOWriter:
 				return true
 			}
-		case t.KeyPtr, t.KeyNptr, t.KeyColon:
+		case t.KeyPtr, t.KeyNptr, t.KeySlice:
 			return true
 		}
 	}

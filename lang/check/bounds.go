@@ -439,9 +439,10 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	case t.KeyPtr:
 		// TODO: handle.
 		return nil
-	case t.KeyOpenBracket:
+	case t.KeyArray:
 		// TODO: handle.
 		return nil
+		// TODO: t.KeySlice?
 	}
 
 	_, _, err := q.bcheckExpr(lhs, 0)
@@ -890,7 +891,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 		lengthExpr := (*a.Expr)(nil)
-		if lTyp := lhs.MType(); lTyp.Decorator().Key() == t.KeyOpenBracket {
+		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			lengthExpr = lTyp.ArrayLength()
 		} else {
 			lengthExpr = makeSliceLengthExpr(lhs)
@@ -912,7 +913,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 		lengthExpr := (*a.Expr)(nil)
-		if lTyp := lhs.MType(); lTyp.Decorator().Key() == t.KeyOpenBracket {
+		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			lengthExpr = lTyp.ArrayLength()
 		} else {
 			lengthExpr = makeSliceLengthExpr(lhs)
@@ -1187,7 +1188,7 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 
 	switch typ.Decorator().Key() {
 	// TODO: case t.KeyOpenParen.
-	case t.KeyPtr, t.KeyOpenBracket, t.KeyColon:
+	case t.KeyPtr, t.KeyArray, t.KeySlice:
 		return nil, nil, nil
 	}
 

@@ -105,7 +105,7 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 		if n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
 			return false
 		}
-		if n.id0.Key() == t.KeyOpenBracket || !ignoreRefinements {
+		if n.IsArrayType() || !ignoreRefinements {
 			if !n.lhs.Expr().Eq(o.lhs.Expr()) || !n.mhs.Expr().Eq(o.mhs.Expr()) {
 				return false
 			}

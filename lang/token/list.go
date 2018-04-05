@@ -162,7 +162,8 @@ func (t Token) IsXAssociativeOp() bool { return t.ID.Key().isXOp() && t.ID.IsAss
 //  - [0x20, 0x2F] are squiggly assignments, such as "=" and "+=".
 //  - [0x30, 0x4F] are operators, such as "+", "==" and "not".
 //  - [0x50, 0x6F] are keywords, such as "if" and "return".
-//  - [0x70, 0x77] are literals, such as "false" and "true".
+//  - [0x70, 0x73] are type modifiers, such as "ptr" and "slice".
+//  - [0x74, 0x77] are literals, such as "false" and "true".
 //  - [0x78, 0xCF] are identifiers, such as "bool", "u32" and "read_u8".
 //  - [0xD0, 0xFF] are disambiguation forms, e.g. unary "+" vs binary "+".
 //
@@ -238,7 +239,6 @@ const (
 
 	// TODO: sort these by name, when the list has stabilized.
 	KeyFunc       = Key(IDFunc >> KeyShift)
-	KeyPtr        = Key(IDPtr >> KeyShift)
 	KeyAssert     = Key(IDAssert >> KeyShift)
 	KeyWhile      = Key(IDWhile >> KeyShift)
 	KeyIf         = Key(IDIf >> KeyShift)
@@ -249,7 +249,6 @@ const (
 	KeyStruct     = Key(IDStruct >> KeyShift)
 	KeyUse        = Key(IDUse >> KeyShift)
 	KeyVar        = Key(IDVar >> KeyShift)
-	KeyNptr       = Key(IDNptr >> KeyShift)
 	KeyPre        = Key(IDPre >> KeyShift)
 	KeyInv        = Key(IDInv >> KeyShift)
 	KeyPost       = Key(IDPost >> KeyShift)
@@ -263,6 +262,11 @@ const (
 	KeyTry        = Key(IDTry >> KeyShift)
 	KeyIterate    = Key(IDIterate >> KeyShift)
 	KeyYield      = Key(IDYield >> KeyShift)
+
+	KeyArray = Key(IDArray >> KeyShift)
+	KeyNptr  = Key(IDNptr >> KeyShift)
+	KeyPtr   = Key(IDPtr >> KeyShift)
+	KeySlice = Key(IDSlice >> KeyShift)
 
 	KeyFalse = Key(IDFalse >> KeyShift)
 	KeyTrue  = Key(IDTrue >> KeyShift)
@@ -427,35 +431,38 @@ const (
 
 	// TODO: sort these by name, when the list has stabilized.
 	IDFunc       = ID(0x50<<KeyShift | FlagsOther)
-	IDPtr        = ID(0x51<<KeyShift | FlagsOther)
-	IDAssert     = ID(0x52<<KeyShift | FlagsOther)
-	IDWhile      = ID(0x53<<KeyShift | FlagsOther)
-	IDIf         = ID(0x54<<KeyShift | FlagsOther)
-	IDElse       = ID(0x55<<KeyShift | FlagsOther)
-	IDReturn     = ID(0x56<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDBreak      = ID(0x57<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDContinue   = ID(0x58<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDStruct     = ID(0x59<<KeyShift | FlagsOther)
-	IDUse        = ID(0x5A<<KeyShift | FlagsOther)
-	IDVar        = ID(0x5B<<KeyShift | FlagsOther)
-	IDNptr       = ID(0x5C<<KeyShift | FlagsOther)
-	IDPre        = ID(0x5D<<KeyShift | FlagsOther)
-	IDInv        = ID(0x5E<<KeyShift | FlagsOther)
-	IDPost       = ID(0x5F<<KeyShift | FlagsOther)
-	IDVia        = ID(0x60<<KeyShift | FlagsOther)
-	IDPub        = ID(0x61<<KeyShift | FlagsOther)
-	IDPri        = ID(0x62<<KeyShift | FlagsOther)
-	IDError      = ID(0x63<<KeyShift | FlagsOther)
-	IDSuspension = ID(0x64<<KeyShift | FlagsOther)
-	IDPackageID  = ID(0x65<<KeyShift | FlagsOther)
-	IDConst      = ID(0x66<<KeyShift | FlagsOther)
-	IDTry        = ID(0x67<<KeyShift | FlagsOther)
-	IDIterate    = ID(0x68<<KeyShift | FlagsOther)
-	IDYield      = ID(0x69<<KeyShift | FlagsOther)
+	IDAssert     = ID(0x51<<KeyShift | FlagsOther)
+	IDWhile      = ID(0x52<<KeyShift | FlagsOther)
+	IDIf         = ID(0x53<<KeyShift | FlagsOther)
+	IDElse       = ID(0x54<<KeyShift | FlagsOther)
+	IDReturn     = ID(0x55<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDBreak      = ID(0x56<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDContinue   = ID(0x57<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDStruct     = ID(0x58<<KeyShift | FlagsOther)
+	IDUse        = ID(0x59<<KeyShift | FlagsOther)
+	IDVar        = ID(0x5A<<KeyShift | FlagsOther)
+	IDPre        = ID(0x5B<<KeyShift | FlagsOther)
+	IDInv        = ID(0x5C<<KeyShift | FlagsOther)
+	IDPost       = ID(0x5D<<KeyShift | FlagsOther)
+	IDVia        = ID(0x5E<<KeyShift | FlagsOther)
+	IDPub        = ID(0x5F<<KeyShift | FlagsOther)
+	IDPri        = ID(0x60<<KeyShift | FlagsOther)
+	IDError      = ID(0x61<<KeyShift | FlagsOther)
+	IDSuspension = ID(0x62<<KeyShift | FlagsOther)
+	IDPackageID  = ID(0x63<<KeyShift | FlagsOther)
+	IDConst      = ID(0x64<<KeyShift | FlagsOther)
+	IDTry        = ID(0x65<<KeyShift | FlagsOther)
+	IDIterate    = ID(0x66<<KeyShift | FlagsOther)
+	IDYield      = ID(0x67<<KeyShift | FlagsOther)
 
-	IDFalse = ID(0x70<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDTrue  = ID(0x71<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDZero  = ID(0x72<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
+	IDArray = ID(0x70<<KeyShift | FlagsOther)
+	IDNptr  = ID(0x71<<KeyShift | FlagsOther)
+	IDPtr   = ID(0x72<<KeyShift | FlagsOther)
+	IDSlice = ID(0x73<<KeyShift | FlagsOther)
+
+	IDFalse = ID(0x74<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDTrue  = ID(0x75<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
+	IDZero  = ID(0x76<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
 
 	IDUnderscore = ID(0x78<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
 	IDThis       = ID(0x79<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
@@ -636,7 +643,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyDeref: {"deref", IDDeref},
 
 	KeyFunc:       {"func", IDFunc},
-	KeyPtr:        {"ptr", IDPtr},
 	KeyAssert:     {"assert", IDAssert},
 	KeyWhile:      {"while", IDWhile},
 	KeyIf:         {"if", IDIf},
@@ -647,7 +653,6 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyStruct:     {"struct", IDStruct},
 	KeyUse:        {"use", IDUse},
 	KeyVar:        {"var", IDVar},
-	KeyNptr:       {"nptr", IDNptr},
 	KeyPre:        {"pre", IDPre},
 	KeyInv:        {"inv", IDInv},
 	KeyPost:       {"post", IDPost},
@@ -661,6 +666,11 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyTry:        {"try", IDTry},
 	KeyIterate:    {"iterate", IDIterate},
 	KeyYield:      {"yield", IDYield},
+
+	KeyArray: {"array", IDArray},
+	KeyNptr:  {"nptr", IDNptr},
+	KeyPtr:   {"ptr", IDPtr},
+	KeySlice: {"slice", IDSlice},
 
 	KeyFalse: {"false", IDFalse},
 	KeyTrue:  {"true", IDTrue},

@@ -211,12 +211,12 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	case t.KeyPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.KeyOpenBracket:
+	case t.KeyArray:
 		buf = append(buf, '[')
 		buf = n.ArrayLength().appendStr(buf, tm, false, 0)
 		buf = append(buf, "] "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.KeyColon:
+	case t.KeySlice:
 		buf = append(buf, "[] "...)
 		return n.Inner().appendStr(buf, tm, depth)
 	case t.KeyOpenParen:

@@ -275,7 +275,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				return err
 			}
 		}
-		if n.XType().Decorator().Key() == t.KeyOpenBracket {
+		if n.XType().IsArrayType() {
 			if n.Value() != nil {
 				// TODO: something like:
 				// cv := n.XType().ArrayLength().ConstValue()

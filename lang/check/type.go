@@ -465,7 +465,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if key := lTyp.Decorator().Key(); key != t.KeyOpenBracket && key != t.KeyColon {
+		if key := lTyp.Decorator().Key(); key != t.KeyArray && key != t.KeySlice {
 			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
@@ -510,9 +510,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		default:
 			return fmt.Errorf("check: %s is a slice expression but %s has type %s, not an array or slice type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
-		case t.KeyOpenBracket:
-			n.SetMType(a.NewTypeExpr(t.IDColon, 0, 0, nil, nil, lTyp.Inner()))
-		case t.KeyColon:
+		case t.KeyArray:
+			n.SetMType(a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, lTyp.Inner()))
+		case t.KeySlice:
 			n.SetMType(lTyp)
 		}
 		return nil
@@ -689,8 +689,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], n.Ident()}
 
-	if key := lTyp.Decorator().Key(); key == t.KeyColon {
-		// lTyp is a slice.
+	if lTyp.IsSliceType() {
 		qqid[0] = 0
 		qqid[1] = t.IDDiamond
 		if f, err := q.c.builtInSliceFunc(qqid); err != nil {
@@ -700,7 +699,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		}
 		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.Ident(), lTyp.Node(), nil, nil))
 		return nil
-	} else if key != 0 {
+	} else if lTyp.Decorator().Key() != 0 {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 	}
 
@@ -1056,7 +1055,7 @@ swtch:
 		}
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 
-	case t.KeyOpenBracket:
+	case t.KeyArray:
 		aLen := typ.ArrayLength()
 		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
@@ -1067,7 +1066,7 @@ swtch:
 		fallthrough
 
 	// TODO: also check t.KeyNptr? Where else should we look for nptr?
-	case t.KeyPtr, t.KeyColon:
+	case t.KeyPtr, t.KeySlice:
 		if err := q.tcheckTypeExpr(typ.Inner(), depth); err != nil {
 			return err
 		}

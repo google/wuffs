@@ -48,7 +48,7 @@ var (
 	typeExprIOWriter    = a.NewTypeExpr(0, 0, t.IDIOWriter, nil, nil, nil)
 	typeExprImageConfig = a.NewTypeExpr(0, 0, t.IDImageConfig, nil, nil, nil)
 
-	typeExprSliceU8 = a.NewTypeExpr(t.IDColon, 0, 0, nil, nil, typeExprU8)
+	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
 
 	// TODO: delete this.
 	typeExprPlaceholder   = a.NewTypeExpr(0, 0, t.IDU8, nil, nil, nil)
@@ -139,8 +139,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	lTyp := typ.Receiver()
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], typ.FuncName()}
-	if lTyp.Decorator().Key() == t.KeyColon {
-		// lTyp is a slice.
+	if lTyp.IsSliceType() {
 		qqid[0] = 0
 		qqid[1] = t.IDDiamond
 		if f, err := c.builtInSliceFunc(qqid); err != nil {

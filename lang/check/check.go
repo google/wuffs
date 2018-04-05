@@ -332,7 +332,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 
 	nLists := 0
 	typ := n.XType()
-	for typ.Decorator().Key() == t.KeyOpenBracket {
+	for typ.IsArrayType() {
 		if nLists == a.MaxTypeExprDepth {
 			return fmt.Errorf("check: type expression recursion depth too large")
 		}

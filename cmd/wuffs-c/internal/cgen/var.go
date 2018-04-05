@@ -312,7 +312,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 					rhs = cTypeNames[key]
 				}
 			}
-		case t.KeyColon:
+		case t.KeySlice:
 			// TODO: don't assume that the slice is a slice of u8.
 			rhs = "wuffs_base__slice_u8"
 		}
@@ -362,7 +362,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 		case 0:
 			b.printf("%s = %s;\n", lhs, rhs)
 			return nil
-		case t.KeyOpenBracket:
+		case t.KeyArray:
 			inner := typ.Inner()
 			if inner.Decorator() != 0 {
 				break
