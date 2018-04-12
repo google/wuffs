@@ -24,20 +24,14 @@
 #include <stdint.h>
 #include <string.h>
 
-// Wuffs requires a word size of at least 32 bits because it assumes that
-// converting a u32 to usize will never overflow. For example, the size of a
-// decoded image is often represented, explicitly or implicitly in an image
-// file, as a u32, and it is convenient to compare that to a buffer size.
-//
-// Similarly, the word size is at most 64 bits because it assumes that
-// converting a usize to u64 will never overflow.
-#if __WORDSIZE < 32
-#error "Wuffs requires a word size of at least 32 bits"
-#elif __WORDSIZE > 64
-#error "Wuffs requires a word size of at most 64 bits"
+// Wuffs assumes that:
+//  - converting a uint32_t to a size_t will never overflow.
+//  - converting a size_t to a uint64_t will never overflow.
+#if (__WORDSIZE != 32) && (__WORDSIZE != 64)
+#error "Wuffs requires a word size of either 32 or 64 bits"
 #endif
 
-// WUFFS_VERSION is the major.minor version number as a uint32. The major
+// WUFFS_VERSION is the major.minor version number as a uint32_t. The major
 // number is the high 16 bits. The minor number is the low 16 bits.
 //
 // The intention is to bump the version number at least on every API / ABI
@@ -46,7 +40,7 @@
 // For now, the API and ABI are simply unstable and can change at any time.
 //
 // TODO: don't hard code this in base-header.h.
-#define WUFFS_VERSION 0x00001
+#define WUFFS_VERSION ((uint32_t)0x00001)
 
 // ---------------- Fundamentals
 
@@ -54,7 +48,7 @@
 // second. See https://github.com/OculusVR/Flicks
 typedef uint64_t wuffs_base__flicks;
 
-#define WUFFS_BASE__FLICKS_PER_SECOND 705600000ULL
+#define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
 
 // Saturating arithmetic (sat_add, sat_sub) branchless bit-twiddling algorithms
 // are per https://locklessinc.com/articles/sat_arithmetic/
@@ -928,14 +922,14 @@ typedef struct {
 // but it should catch 99.99% of cases.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("wuffs").
-#define WUFFS_BASE__MAGIC 0x3CCB6C71U
+#define WUFFS_BASE__MAGIC ((uint32_t)0x3CCB6C71)
 
 // WUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
 // to a containee struct's initializer when the container has already zeroed
 // the containee's memory.
 //
 // Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define WUFFS_BASE__ALREADY_ZEROED 0x68602EF1U
+#define WUFFS_BASE__ALREADY_ZEROED ((uint32_t)0x68602EF1)
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
