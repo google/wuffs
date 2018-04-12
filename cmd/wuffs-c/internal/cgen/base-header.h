@@ -53,27 +53,176 @@ typedef uint64_t wuffs_base__flicks;
 
 #define WUFFS_BASE__FLICKS_PER_SECOND 705600000ULL
 
-// wuffs_base__rectangle is a rectangle on the integer grid. It contains all
-// points (x, y) such that ((min_x <= x) && (x < max_x)) and likewise for y. It
-// is therefore empty if min_x >= max_x. There are multiple representations of
-// an empty rectangle.
+// Saturating arithmetic (sat_add, sat_sub) branchless bit-twiddling algorithms
+// are per https://locklessinc.com/articles/sat_arithmetic/
 //
-// A value with all fields zero is a valid, empty rectangle.
+// It is important that the underlying types are unsigned integers, as signed
+// integer arithmetic overflow is undefined behavior in C.
+
+static inline uint32_t wuffs_base__u32__sat_add(uint32_t x, uint32_t y) {
+  uint32_t res = x + y;
+  res |= -(res < x);
+  return res;
+}
+
+static inline uint32_t wuffs_base__u32__sat_sub(uint32_t x, uint32_t y) {
+  uint32_t res = x - y;
+  res &= -(res <= x);
+  return res;
+}
+
+static inline uint64_t wuffs_base__u64__sat_add(uint64_t x, uint64_t y) {
+  uint64_t res = x + y;
+  res |= -(res < x);
+  return res;
+}
+
+static inline uint64_t wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
+  uint64_t res = x - y;
+  res &= -(res <= x);
+  return res;
+}
+
+// Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
+// high end. Both the "ii" and "ie" flavors are useful in practice.
+//
+// The "ei" and "ee" flavors also exist in theory, but aren't widely used. In
+// Wuffs, the low end is always inclusive.
+//
+// The "ii" (closed interval) flavor is useful when refining e.g. "the set of
+// all uint32_t values" to a contiguous subset: "uint32_t values in the closed
+// interval [M, N]", for uint32_t values M and N. An unrefined type (in other
+// words, the set of all uint32_t values) is not representable in the "ie"
+// flavor because if N equals ((1<<32) - 1) then (N + 1) will overflow.
+//
+// On the other hand, the "ie" (half-open interval) flavor is recommended by
+// Dijkstra's "Why numbering should start at zero" at
+// http://www.cs.utexas.edu/users/EWD/ewd08xx/EWD831.PDF and a further
+// discussion of motivating rationale is at
+// https://www.quora.com/Why-are-Python-ranges-half-open-exclusive-instead-of-closed-inclusive
+//
+// For example, with "ie", the number of elements in "uint32_t values in the
+// half-open interval [M, N)" is equal to max(0, N-M). Furthermore, that number
+// of elements (in one dimension, a length, in two dimensions, a width or
+// height) is itself representable as a uint32_t without overflow, again for
+// uint32_t values M and N. In the contrasting "ii" flavor, the length of the
+// closed interval [0, (1<<32) - 1] is 1<<32, which cannot be represented as a
+// uint32_t. In Wuffs, because of this potential overflow, the "ie" flavor has
+// length / width / height methods, but the "ii" flavor does not.
+//
+// It is valid for min > max (for range_ii) or for min >= max (for range_ie),
+// in which case the range is empty. There are multiple representations of an
+// empty range.
+
+typedef struct {
+  uint32_t min_inclusive;
+  uint32_t max_inclusive;
+} wuffs_base__range_ii_u32;
+
+static inline bool wuffs_base__range_ii_u32__contains(
+    wuffs_base__range_ii_u32 r,
+    uint32_t x) {
+  return (r.min_inclusive <= x) && (x <= r.max_inclusive);
+}
+
+typedef struct {
+  uint32_t min_inclusive;
+  uint32_t max_exclusive;
+} wuffs_base__range_ie_u32;
+
+static inline bool wuffs_base__range_ie_u32__contains(
+    wuffs_base__range_ie_u32 r,
+    uint32_t x) {
+  return (r.min_inclusive <= x) && (x < r.max_exclusive);
+}
+
+static inline uint32_t wuffs_base__range_ie_u32__length(
+    wuffs_base__range_ie_u32 r) {
+  return wuffs_base__u32__sat_sub(r.max_exclusive, r.min_inclusive);
+}
+
+typedef struct {
+  uint64_t min_inclusive;
+  uint64_t max_inclusive;
+} wuffs_base__range_ii_u64;
+
+static inline bool wuffs_base__range_ii_u64__contains(
+    wuffs_base__range_ii_u64 r,
+    uint64_t x) {
+  return (r.min_inclusive <= x) && (x <= r.max_inclusive);
+}
+
+typedef struct {
+  uint64_t min_inclusive;
+  uint64_t max_exclusive;
+} wuffs_base__range_ie_u64;
+
+static inline bool wuffs_base__range_ie_u64__contains(
+    wuffs_base__range_ie_u64 r,
+    uint64_t x) {
+  return (r.min_inclusive <= x) && (x < r.max_exclusive);
+}
+
+static inline uint64_t wuffs_base__range_ie_u64__length(
+    wuffs_base__range_ie_u64 r) {
+  return wuffs_base__u64__sat_sub(r.max_exclusive, r.min_inclusive);
+}
+
+// wuffs_base__rect_ii_u32 is a rectangle (a 2-dimensional range) on the
+// integer grid. The "ii" means that the bounds are inclusive on the low end
+// and inclusive on the high end. It contains all points (x, y) such that
+// ((min_inclusive_x <= x) && (x <= max_inclusive_x)) and likewise for y.
+//
+// It is valid for min > max, in which case the rectangle is empty. There are
+// multiple representations of an empty rectangle.
 //
 // The X and Y axes increase right and down.
 typedef struct {
-  uint32_t min_x;
-  uint32_t min_y;
-  uint32_t max_x;
-  uint32_t max_y;
-} wuffs_base__rectangle;
+  uint32_t min_inclusive_x;
+  uint32_t min_inclusive_y;
+  uint32_t max_inclusive_x;
+  uint32_t max_inclusive_y;
+} wuffs_base__rect_ii_u32;
 
-static inline uint32_t wuffs_base__rectangle__width(wuffs_base__rectangle r) {
-  return r.max_x > r.min_x ? r.max_x - r.min_x : 0;
+static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32 r,
+                                                     uint32_t x,
+                                                     uint32_t y) {
+  return (r.min_inclusive_x <= x) && (x <= r.max_inclusive_x) &&
+         (r.min_inclusive_y <= y) && (y <= r.max_inclusive_y);
 }
 
-static inline uint32_t wuffs_base__rectangle__height(wuffs_base__rectangle r) {
-  return r.max_y > r.min_y ? r.max_y - r.min_y : 0;
+// wuffs_base__rect_ie_u32 is a rectangle (a 2-dimensional range) on the
+// integer grid. The "ie" means that the bounds are inclusive on the low end
+// and exclusive on the high end. It contains all points (x, y) such that
+// ((min_inclusive_x <= x) && (x < max_exclusive_x)) and likewise for y.
+//
+// It is valid for min >= max, in which case the rectangle is empty. There are
+// multiple representations of an empty rectangle, including a value with all
+// fields zero.
+//
+// The X and Y axes increase right and down.
+typedef struct {
+  uint32_t min_inclusive_x;
+  uint32_t min_inclusive_y;
+  uint32_t max_exclusive_x;
+  uint32_t max_exclusive_y;
+} wuffs_base__rect_ie_u32;
+
+static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32 r,
+                                                     uint32_t x,
+                                                     uint32_t y) {
+  return (r.min_inclusive_x <= x) && (x < r.max_exclusive_x) &&
+         (r.min_inclusive_y <= y) && (y < r.max_exclusive_y);
+}
+
+static inline uint32_t wuffs_base__rect_ie_u32__width(
+    wuffs_base__rect_ie_u32 r) {
+  return wuffs_base__u32__sat_sub(r.max_exclusive_x, r.min_inclusive_x);
+}
+
+static inline uint32_t wuffs_base__rect_ie_u32__height(
+    wuffs_base__rect_ie_u32 r) {
+  return wuffs_base__u32__sat_sub(r.max_exclusive_y, r.min_inclusive_y);
 }
 
 // wuffs_base__slice_u8 is a 1-dimensional buffer.
@@ -494,7 +643,7 @@ typedef struct {
     uint32_t loop_count;  // 0-based count of the current loop.
     wuffs_base__pixel_buffer pixbuf;
     // TODO: color spaces.
-    wuffs_base__rectangle dirty_rect;
+    wuffs_base__rect_ie_u32 dirty_rect;
     wuffs_base__flicks duration;
     uint8_t palette[1024];
   } private_impl;
@@ -514,7 +663,7 @@ static inline void wuffs_base__image_buffer__initialize(
 
 static inline void wuffs_base__image_buffer__update(
     wuffs_base__image_buffer* f,
-    wuffs_base__rectangle dirty_rect,
+    wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
     uint8_t* palette_ptr,
     size_t palette_len) {
@@ -550,9 +699,9 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* f) {
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
 // this frame's pixels differs from the previous frame.
-static inline wuffs_base__rectangle wuffs_base__image_buffer__dirty_rect(
+static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
     wuffs_base__image_buffer* f) {
-  return f ? f->private_impl.dirty_rect : ((wuffs_base__rectangle){0});
+  return f ? f->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){0});
 }
 
 // wuffs_base__image_buffer__duration returns the amount of time to display
