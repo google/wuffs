@@ -34,26 +34,26 @@ var (
 
 // typeExprFoo is an *ast.Node MType (implicit type).
 var (
-	typeExprGeneric = a.NewTypeExpr(0, 0, t.IDDiamond, nil, nil, nil)
-	typeExprIdeal   = a.NewTypeExpr(0, 0, t.IDDoubleZ, nil, nil, nil)
-	typeExprList    = a.NewTypeExpr(0, 0, t.IDDollar, nil, nil, nil)
+	typeExprGeneric = a.NewTypeExpr(0, t.IDBase, t.IDDiamond, nil, nil, nil)
+	typeExprIdeal   = a.NewTypeExpr(0, t.IDBase, t.IDDoubleZ, nil, nil, nil)
+	typeExprList    = a.NewTypeExpr(0, t.IDBase, t.IDDollar, nil, nil, nil)
 
-	typeExprU8          = a.NewTypeExpr(0, 0, t.IDU8, nil, nil, nil)
-	typeExprU16         = a.NewTypeExpr(0, 0, t.IDU16, nil, nil, nil)
-	typeExprU32         = a.NewTypeExpr(0, 0, t.IDU32, nil, nil, nil)
-	typeExprU64         = a.NewTypeExpr(0, 0, t.IDU64, nil, nil, nil)
-	typeExprBool        = a.NewTypeExpr(0, 0, t.IDBool, nil, nil, nil)
-	typeExprStatus      = a.NewTypeExpr(0, 0, t.IDStatus, nil, nil, nil)
-	typeExprIOReader    = a.NewTypeExpr(0, 0, t.IDIOReader, nil, nil, nil)
-	typeExprIOWriter    = a.NewTypeExpr(0, 0, t.IDIOWriter, nil, nil, nil)
-	typeExprImageConfig = a.NewTypeExpr(0, 0, t.IDImageConfig, nil, nil, nil)
+	typeExprU8          = a.NewTypeExpr(0, t.IDBase, t.IDU8, nil, nil, nil)
+	typeExprU16         = a.NewTypeExpr(0, t.IDBase, t.IDU16, nil, nil, nil)
+	typeExprU32         = a.NewTypeExpr(0, t.IDBase, t.IDU32, nil, nil, nil)
+	typeExprU64         = a.NewTypeExpr(0, t.IDBase, t.IDU64, nil, nil, nil)
+	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
+	typeExprStatus      = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
+	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
+	typeExprIOWriter    = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
+	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
 
 	// TODO: delete this.
-	typeExprPlaceholder   = a.NewTypeExpr(0, 0, t.IDU8, nil, nil, nil)
-	typeExprPlaceholder16 = a.NewTypeExpr(0, 0, t.IDU16, nil, nil, nil)
-	typeExprPlaceholder32 = a.NewTypeExpr(0, 0, t.IDU32, nil, nil, nil)
+	typeExprPlaceholder   = a.NewTypeExpr(0, t.IDBase, t.IDU8, nil, nil, nil)
+	typeExprPlaceholder16 = a.NewTypeExpr(0, t.IDBase, t.IDU16, nil, nil, nil)
+	typeExprPlaceholder32 = a.NewTypeExpr(0, t.IDBase, t.IDU32, nil, nil, nil)
 )
 
 // typeMap maps from variable names (as token IDs) to types.
@@ -127,6 +127,7 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QQID]*a.Func
 			return nil, fmt.Errorf("check: parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
 		}
 		f := tlds[0].Func()
+		f.Node().Raw().SetPackage(tm, t.IDBase)
 		m[f.QQID()] = f
 	}
 	return m, nil
@@ -140,7 +141,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], typ.FuncName()}
 	if lTyp.IsSliceType() {
-		qqid[0] = 0
+		qqid[0] = t.IDBase
 		qqid[1] = t.IDDiamond
 		if f, err := c.builtInSliceFunc(qqid); err != nil {
 			return nil, err

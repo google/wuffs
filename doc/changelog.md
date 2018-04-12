@@ -7,14 +7,15 @@
 - Added a `skipgendeps` flag.
 - Added a `use` keyword.
 - Added a `yield` keyword.
-- Added an image\_config built-in concept.
 - Added `std/crc32` and `std/gzip`.
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
-- Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
 - Renamed `iterate.N` to `iterate[N]`.
+- Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
+- Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
+- Added a `base.image_config` type.
 - Supported animated (not just single frame) GIFs.
 - Marked the `std/gif` LZW decoder as private.
 - Marked some internal status codes as private.
@@ -37,4 +38,4 @@
 
 ---
 
-Updated on March 2018.
+Updated on April 2018.

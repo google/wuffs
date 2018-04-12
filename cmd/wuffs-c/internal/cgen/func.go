@@ -350,7 +350,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 					}
 				}
 			}
-			if qid := oTyp.QID(); qid[0] == 0 {
+			if qid := oTyp.QID(); qid[0] == t.IDBase {
 				if key := qid[1].Key(); key < t.Key(len(numTypeBounds)) {
 					ntb := numTypeBounds[key]
 					for i := 0; i < 2; i++ {

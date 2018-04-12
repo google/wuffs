@@ -89,7 +89,7 @@ func (n *TypeExpr) Eq(o *TypeExpr) bool {
 }
 
 // EqIgnoringRefinements returns whether n and o are equal, ignoring the
-// "[i:j]" in "u32[i:j]".
+// "[i:j]" in "base.u32[i:j]".
 func (n *TypeExpr) EqIgnoringRefinements(o *TypeExpr) bool {
 	return n.eq(o, true)
 }

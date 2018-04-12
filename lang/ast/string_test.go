@@ -52,14 +52,14 @@ func TestString(tt *testing.T) {
 
 		"x + 42",
 		"x and (y < z)",
-		"x & (y as u8)",
+		"x & (y as base.u8)",
 		"x * ((a / b) - (i / j))",
 
 		"x + y + z",
 		"x + (i * j.k[l] * (-m << 4) * (n & o(o0:p, o1:q[:r.s + 5]))) + z",
 
-		"x as bool",
-		"x as u32",
+		"x as base.bool",
+		"x as base.u32",
 		"x as T",
 		"x as T",
 		"x as T[i..]",

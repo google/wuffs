@@ -165,9 +165,9 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		name := v.Name().Str(g.tm)
 		b.writes("{\n")
 
-		// TODO: don't assume that the slice is a slice of u8. In particular,
-		// the code gen can be subtle if the slice element type has zero size,
-		// such as the empty struct.
+		// TODO: don't assume that the slice is a slice of base.u8. In
+		// particular, the code gen can be subtle if the slice element type has
+		// zero size, such as the empty struct.
 		b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
 		if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
 			return err
@@ -295,7 +295,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 					return err
 				}
 			} else if n.XType().IsSliceType() {
-				// TODO: don't assume that the slice is a slice of u8.
+				// TODO: don't assume that the slice is a slice of base.u8.
 				b.printf("((wuffs_base__slice_u8){})")
 			} else {
 				b.writeb('0')

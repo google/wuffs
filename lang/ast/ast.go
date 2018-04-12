@@ -274,16 +274,11 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 			if o.id0.Key() != 0 {
 				return nil
 			}
-			// TODO: Add signed integer types, as per the builtin.Types var?
-			//
-			// Or, don't hard code these, and instead require built-in types to
-			// have qualified names, such as "builtin.u8" or "base.io_reader"?
-			switch o.id2.Key() {
-			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64, t.KeyBool, t.KeyStatus, t.KeyIOReader, t.KeyIOWriter:
-				return nil
-			}
 		}
 
+		if o.id1 == t.IDBase {
+			return nil
+		}
 		if o.id1 != 0 {
 			return fmt.Errorf(`invalid SetPackage(%q) call: old package: got %q, want ""`,
 				pkg.Str(tm), o.id1.Str(tm))
@@ -621,8 +616,8 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 // MaxTypeExprDepth is an advisory limit for a TypeExpr's recursion depth.
 const MaxTypeExprDepth = 63
 
-// TypeExpr is a type expression, such as "u32", "u32[..8]", "pkg.foo", "ptr
-// T", "array[8] T" or "slice T":
+// TypeExpr is a type expression, such as "base.u32", "base.u32[..8]", "foo",
+// "pkg.bar", "ptr T", "array[8] T" or "slice T":
 //  - ID0:   <0|IDPtr|IDArray|IDSlice|IDOpenParen>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
@@ -646,7 +641,7 @@ const MaxTypeExprDepth = 63
 // "foo". ID1 is the "pkg" or zero, ID2 is the "foo".
 //
 // Numeric types can be refined as "foo[LHS..MHS]". LHS and MHS are Expr's,
-// possibly nil. For example, the LHS for "u32[..4095]" is nil.
+// possibly nil. For example, the LHS for "base.u32[..4095]" is nil.
 //
 // TODO: struct types, list types, nptr vs ptr, table types.
 type TypeExpr Node

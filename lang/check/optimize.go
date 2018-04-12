@@ -132,7 +132,7 @@ check2:
 				continue
 			}
 
-			// Check that the LHS is "d as u64".
+			// Check that the LHS is "d as base.u64".
 			lhs := x.LHS().Expr()
 			if lhs.Operator().Key() != t.KeyXBinaryAs {
 				continue
@@ -168,7 +168,7 @@ check3:
 				continue
 			}
 
-			// Check that the LHS is "l as u64".
+			// Check that the LHS is "l as base.u64".
 			lhs := x.LHS().Expr()
 			if lhs.Operator().Key() != t.KeyXBinaryAs {
 				continue

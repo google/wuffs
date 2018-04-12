@@ -66,7 +66,7 @@ func (g *gen) findDerivedVars() {
 		switch oTyp.QID() {
 		default:
 			continue
-		case t.QID{0, t.IDIOReader}, t.QID{0, t.IDIOWriter}:
+		case t.QID{t.IDBase, t.IDIOReader}, t.QID{t.IDBase, t.IDIOWriter}:
 			// No-op.
 		}
 		if !g.needDerivedVar(o.Name()) {
@@ -94,7 +94,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	}
 	nameStr := name.Str(g.tm)
 	switch typ.QID() {
-	case t.QID{0, t.IDIOReader}:
+	case t.QID{t.IDBase, t.IDIOReader}:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
@@ -122,7 +122,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 		b.printf("}\n")
 
-	case t.QID{0, t.IDIOWriter}:
+	case t.QID{t.IDBase, t.IDIOWriter}:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
 			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
@@ -171,7 +171,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 	}
 	nameStr := name.Str(g.tm)
 	switch typ.QID() {
-	case t.QID{0, t.IDIOReader}:
+	case t.QID{t.IDBase, t.IDIOReader}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %srptr_%s - (%s%s.buf->ptr + %s%s.buf->ri);",
@@ -192,7 +192,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 
 		b.printf("}\n")
 
-	case t.QID{0, t.IDIOWriter}:
+	case t.QID{t.IDBase, t.IDIOWriter}:
 		b.printf("if (%s%s.buf) {", aPrefix, nameStr)
 
 		b.printf("size_t n = %swptr_%s - (%s%s.buf->ptr + %s%s.buf->wi);",
@@ -307,13 +307,13 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 
 		switch typ.Decorator().Key() {
 		case 0:
-			if qid := typ.QID(); qid[0] == 0 {
+			if qid := typ.QID(); qid[0] == t.IDBase {
 				if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
 					rhs = cTypeNames[key]
 				}
 			}
 		case t.KeySlice:
-			// TODO: don't assume that the slice is a slice of u8.
+			// TODO: don't assume that the slice is a slice of base.u8.
 			rhs = "wuffs_base__slice_u8"
 		}
 		if rhs != "" {
@@ -327,7 +327,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		if !initBoolTypedVars {
 			rhs = fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
-		} else if typ.QID() != (t.QID{0, t.IDBool}) {
+		} else if typ.QID() != (t.QID{t.IDBase, t.IDBool}) {
 			return nil
 		} else if typ.Decorator() != 0 {
 			goto fail
@@ -368,7 +368,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 				break
 			}
 			qid := inner.QID()
-			if qid[0] != 0 {
+			if qid[0] != t.IDBase {
 				break
 			}
 			switch qid[1].Key() {

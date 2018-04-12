@@ -456,7 +456,7 @@ func (g *gen) cName(name string) string {
 
 func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 	if typ.Decorator() == 0 {
-		if qid := typ.QID(); qid[0] == 0 {
+		if qid := typ.QID(); qid[0] == t.IDBase {
 			switch qid[1].Key() {
 			case t.KeyU8:
 				return 1, nil
@@ -710,12 +710,14 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 		prefix := g.pkgPrefix
 		qid := x.QID()
-		if qid[0] != 0 {
+		if qid[0] == t.IDBase {
+			// Base types don't need further initialization.
+			continue
+		} else if qid[0] != 0 {
 			// See gen.writeCTypeName for a related TODO with otherPkg.
 			otherPkg := g.tm.ByID(qid[0])
 			prefix = "wuffs_" + otherPkg + "__"
 		} else if g.structMap[qid] == nil {
-			// Skip field types like u32 and bool.
 			continue
 		}
 

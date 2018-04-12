@@ -570,7 +570,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	}
 
 	genericType := (*a.TypeExpr)(nil)
-	if f.Receiver() == (t.QID{0, t.IDDiamond}) {
+	if f.Receiver() == (t.QID{t.IDBase, t.IDDiamond}) {
 		genericType = lhs.MType().Receiver()
 	}
 
@@ -690,7 +690,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	qqid := t.QQID{lQID[0], lQID[1], n.Ident()}
 
 	if lTyp.IsSliceType() {
-		qqid[0] = 0
+		qqid[0] = t.IDBase
 		qqid[1] = t.IDDiamond
 		if f, err := q.c.builtInSliceFunc(qqid); err != nil {
 			return err
@@ -725,18 +725,16 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 	if s == nil {
 		s = q.c.structs[lQID]
-		if s == nil && builtInTypeMap[lQID[1]] == nil {
+		if s == nil {
 			return fmt.Errorf("check: no struct type %q found for expression %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 		}
 	}
 
-	if s != nil {
-		for _, field := range s.Fields() {
-			f := field.Field()
-			if f.Name() == n.Ident() {
-				n.SetMType(f.XType())
-				return nil
-			}
+	for _, field := range s.Fields() {
+		f := field.Field()
+		if f.Name() == n.Ident() {
+			n.SetMType(f.XType())
+			return nil
 		}
 	}
 
@@ -1028,7 +1026,7 @@ swtch:
 	// TODO: also check t.KeyOpenParen.
 	case 0:
 		qid := typ.QID()
-		if qid[1].IsNumType() {
+		if qid[0] == t.IDBase && qid[1].IsNumType() {
 			for _, b := range typ.Bounds() {
 				if b == nil {
 					continue
@@ -1045,8 +1043,10 @@ swtch:
 		if typ.Min() != nil || typ.Max() != nil {
 			// TODO: reject. You can only refine numeric types.
 		}
-		if _, ok := builtInTypeMap[qid[1]]; ok {
-			break swtch
+		if qid[0] == t.IDBase {
+			if _, ok := builtInTypeMap[qid[1]]; ok {
+				break swtch
+			}
 		}
 		for _, s := range q.c.structs {
 			if s.QID() == qid {

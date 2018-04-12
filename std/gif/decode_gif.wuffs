@@ -22,45 +22,45 @@ pub error "bad LZW literal width"
 pri error "internal error: inconsistent limited read"
 
 pub struct decoder?(
-	width u32[..65535],
-	height u32[..65535],
+	width base.u32[..65535],
+	height base.u32[..65535],
 
 	// Call sequence state transitions:
 	//  - 0 -> 1: via decode_config.
 	//  - 1 -> 1: via decode_frame.
-	call_sequence u8,
+	call_sequence base.u8,
 
-	background_color_index u8,
+	background_color_index base.u8,
 
-	block_type u8,
-	peek_block_type bool,
+	block_type base.u8,
+	peek_block_type base.bool,
 
-	have_gct bool,
-	have_lct bool,
+	have_gct base.bool,
+	have_lct base.bool,
 
-	interlace bool,
+	interlace base.bool,
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
-	seen_num_loops bool,
-	num_loops u32 = 1,
+	seen_num_loops base.bool,
+	num_loops base.u32 = 1,
 
-	frame_top u32[..65535],
-	frame_left u32[..65535],
-	frame_width u32[..65535],
-	frame_height u32[..65535],
+	frame_top base.u32[..65535],
+	frame_left base.u32[..65535],
+	frame_width base.u32[..65535],
+	frame_height base.u32[..65535],
 
 	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
 	//
 	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?
-	gct array[3 * 256] u8,
-	lct array[3 * 256] u8,
+	gct array[3 * 256] base.u8,
+	lct array[3 * 256] base.u8,
 
 	lzw lzw_decoder,
 )
 
 // TODO: should dst be an nptr instead of a ptr?
-pub func decoder.decode_config?(dst ptr image_config, src io_reader)() {
+pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)() {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
@@ -85,7 +85,7 @@ pub func decoder.decode_config?(dst ptr image_config, src io_reader)() {
 	this.call_sequence = 1
 }
 
-pub func decoder.decode_frame?(dst io_writer, src io_reader)() {
+pub func decoder.decode_frame?(dst base.io_writer, src base.io_reader)() {
 	if this.call_sequence < 1 {
 		return error "invalid call sequence"
 	}
@@ -121,9 +121,9 @@ pub func decoder.decode_frame?(dst io_writer, src io_reader)() {
 // decode_header reads either "GIF87a" or "GIF89a".
 //
 // See the spec section 17 "Header" on page 7.
-pri func decoder.decode_header?(src io_reader)() {
-	var c array[6] u8
-	var i u32
+pri func decoder.decode_header?(src base.io_reader)() {
+	var c array[6] base.u8
+	var i base.u32
 	while i < 6 {
 		c[i] = in.src.read_u8?()
 		i += 1
@@ -137,22 +137,22 @@ pri func decoder.decode_header?(src io_reader)() {
 // decode_lsd reads the Logical Screen Descriptor.
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
-pri func decoder.decode_lsd?(src io_reader)() {
-	var c array[7] u8
-	var i u32
+pri func decoder.decode_lsd?(src base.io_reader)() {
+	var c array[7] base.u8
+	var i base.u32
 	while i < 7 {
 		c[i] = in.src.read_u8?()
 		i += 1
 	}
 	// TODO: use read_u16le.
-	this.width = (c[0] as u32) | ((c[1] as u32) << 8)
-	this.height = (c[2] as u32) | ((c[3] as u32) << 8)
+	this.width = (c[0] as base.u32) | ((c[1] as base.u32) << 8)
+	this.height = (c[2] as base.u32) | ((c[3] as base.u32) << 8)
 	this.background_color_index = c[5]
 
 	// Read the optional Global Color Table.
 	this.have_gct = (c[4] & 0x80) != 0
 	if this.have_gct {
-		var gct_size u32[..256] = (1 as u32) << (1 + (c[4] & 0x07))
+		var gct_size base.u32[..256] = (1 as base.u32) << (1 + (c[4] & 0x07))
 		i = 0
 		while i < gct_size {
 			assert i < 256 via "a < b: a < c; c <= b"(c:gct_size)
@@ -172,8 +172,8 @@ pri func decoder.decode_lsd?(src io_reader)() {
 //  - section 24 "Comment Extension" on page 17.
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
-pri func decoder.decode_extension?(src io_reader)() {
-	var label u8 = in.src.read_u8?()
+pri func decoder.decode_extension?(src base.io_reader)() {
+	var label base.u8 = in.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		// TODO.
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
@@ -185,33 +185,33 @@ pri func decoder.decode_extension?(src io_reader)() {
 	this.skip_blocks?(src:in.src)
 }
 
-pri func decoder.skip_blocks?(src io_reader)() {
+pri func decoder.skip_blocks?(src base.io_reader)() {
 	while true {
-		var block_size u8 = in.src.read_u8?()
+		var block_size base.u8 = in.src.read_u8?()
 		if block_size == 0 {
 			return
 		}
-		in.src.skip32?(n:block_size as u32)
+		in.src.skip32?(n:block_size as base.u32)
 	}
 }
 
 // animexts1dot0 is "ANIMEXTS1.0" as bytes.
-pri const animexts1dot0 array[11] u8 = $(
+pri const animexts1dot0 array[11] base.u8 = $(
 	0x41, 0x4E, 0x49, 0x4D, 0x45, 0x58, 0x54, 0x53, 0x31, 0x2E, 0x30,
 )
 
 // netscape2dot0 is "NETSCAPE2.0" as bytes.
-pri const netscape2dot0 array[11] u8 = $(
+pri const netscape2dot0 array[11] base.u8 = $(
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
 )
 
 // decode_ae reads an Application Extension.
-pri func decoder.decode_ae?(src io_reader)() {
+pri func decoder.decode_ae?(src base.io_reader)() {
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
 	while true {
-		var c u8
-		var block_size u8 = in.src.read_u8?()
+		var c base.u8
+		var block_size base.u8 = in.src.read_u8?()
 		if block_size == 0 {
 			return
 		}
@@ -221,11 +221,11 @@ pri func decoder.decode_ae?(src io_reader)() {
 		//  - http://www.vurdalakov.net/misc/gif/animexts-looping-application-extension
 		//  - http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
 		if block_size != 11 {
-			in.src.skip32?(n:block_size as u32)
+			in.src.skip32?(n:block_size as base.u32)
 			break
 		}
-		var not_animexts bool
-		var not_netscape bool
+		var not_animexts base.bool
+		var not_netscape base.bool
 		block_size = 0  // Re-purpose the block_size variable as a counter.
 		while block_size < 11 {
 			c = in.src.read_u8?()
@@ -241,7 +241,7 @@ pri func decoder.decode_ae?(src io_reader)() {
 		// count.
 		block_size = in.src.read_u8?()
 		if block_size != 3 {
-			in.src.skip32?(n:block_size as u32)
+			in.src.skip32?(n:block_size as base.u32)
 			break
 		}
 		c = in.src.read_u8?()
@@ -249,7 +249,7 @@ pri func decoder.decode_ae?(src io_reader)() {
 			in.src.skip32?(n:2)
 			break
 		}
-		this.num_loops = in.src.read_u16le?() as u32
+		this.num_loops = in.src.read_u16le?() as base.u32
 		this.seen_num_loops = true
 
 		// A loop count of N, in the wire format, actually means "repeat N
@@ -275,22 +275,22 @@ pri func decoder.decode_ae?(src io_reader)() {
 // been read.
 //
 // See the spec section 20 "Image Descriptor" on page 11.
-pri func decoder.decode_id?(dst io_writer, src io_reader)() {
+pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
-	this.frame_left = in.src.read_u16le?() as u32
-	this.frame_top = in.src.read_u16le?() as u32
-	this.frame_width = in.src.read_u16le?() as u32
-	this.frame_height = in.src.read_u16le?() as u32
+	this.frame_left = in.src.read_u16le?() as base.u32
+	this.frame_top = in.src.read_u16le?() as base.u32
+	this.frame_width = in.src.read_u16le?() as base.u32
+	this.frame_height = in.src.read_u16le?() as base.u32
 
 	// TODO: use this.interlace.
-	var flags u8 = in.src.read_u8?()
+	var flags base.u8 = in.src.read_u8?()
 	this.interlace = (flags & 0x40) != 0
 
 	// Read the optional Local Color Table.
 	this.have_lct = (flags & 0x80) != 0
 	if this.have_lct {
-		var lct_size u32[..256] = (1 as u32) << (1 + (flags & 0x07))
-		var i u32
+		var lct_size base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
+		var i base.u32
 		while i < lct_size {
 			assert i < 256 via "a < b: a < c; c <= b"(c:lct_size)
 			this.lct[(3 * i) + 0] = in.src.read_u8?()
@@ -300,19 +300,19 @@ pri func decoder.decode_id?(dst io_writer, src io_reader)() {
 		}
 	}
 
-	var lw u8 = in.src.read_u8?()
+	var lw base.u8 = in.src.read_u8?()
 	if (lw < 2) or (8 < lw) {
 		return error "bad LZW literal width"
 	}
-	this.lzw.set_literal_width!(lw:lw as u32)
+	this.lzw.set_literal_width!(lw:lw as base.u32)
 
 	while true {
-		var block_size u64 = in.src.read_u8?() as u64
+		var block_size base.u64 = in.src.read_u8?() as base.u64
 		if block_size == 0 {
 			break
 		}
 		while true {
-			var r io_reader = in.src
+			var r base.io_reader = in.src
 			// TODO: should "mark" be "set_mark"? Unlike "limit", "mark" does
 			// not return a different io_reader.
 			r.mark()
@@ -321,7 +321,7 @@ pri func decoder.decode_id?(dst io_writer, src io_reader)() {
 			// variables.
 			//
 			// TODO: enforce that limit can only be called in a "foo?" call?
-			var z status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
+			var z base.status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
 			if z.is_ok() {
 				break
 			}

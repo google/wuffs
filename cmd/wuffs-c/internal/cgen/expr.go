@@ -158,7 +158,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.KeySuffix, 1) {
-			// TODO: don't assume that the slice is a slice of u8.
+			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("wuffs_base__slice_u8_suffix(")
 			x := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
@@ -385,7 +385,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return err
 		}
 		if lTyp := n.LHS().Expr().MType(); lTyp.IsSliceType() {
-			// TODO: don't assume that the slice is a slice of u8.
+			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes(".ptr")
 		}
 		b.writeb('[')
@@ -411,7 +411,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 
 		lhsIsArray := lhs.MType().IsArrayType()
 		if lhsIsArray {
-			// TODO: don't assume that the slice is a slice of u8.
+			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("((wuffs_base__slice_u8){.ptr=")
 		}
 		if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
@@ -538,11 +538,11 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, varName string) error {
 	// It may help to refer to http://unixwiz.net/techtips/reading-cdecl.html
 
-	// TODO: fix this, allow slices of all types, not just of u8's. Also allow
-	// arrays of slices, slices of pointers, etc.
+	// TODO: fix this, allow slices of all types, not just of base.u8's. Also
+	// allow arrays of slices, slices of pointers, etc.
 	if n.IsSliceType() {
 		o := n.Inner()
-		if o.Decorator() == 0 && o.QID() == (t.QID{0, t.IDU8}) && !o.IsRefined() {
+		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
 			b.writes("wuffs_base__slice_u8")
 			b.writeb(' ')
 			b.writes(varNamePrefix)
@@ -574,7 +574,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	fallback := true
-	if qid := innermost.QID(); qid[0] == 0 {
+	if qid := innermost.QID(); qid[0] == t.IDBase {
 		if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
 			if s := cTypeNames[key]; s != "" {
 				b.writes(s)
@@ -585,7 +585,12 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	if fallback {
 		prefix := g.pkgPrefix
 		qid := innermost.QID()
-		if qid[0] != 0 {
+		if qid == (t.QID{t.IDBase, t.IDStatus}) {
+			// No-op: special case "base.status" as being inside this package.
+			//
+			// TODO: change "base.status" in Wuffs code to just "status"? Or
+			// change the C code's "wuffs_foo__status" to "wuffs_base__status"?
+		} else if qid[0] != 0 {
 			otherPkg := g.tm.ByID(qid[0])
 			// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
 			// `use "std/deflate"`, and use the latter "deflate".
@@ -599,11 +604,6 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 			//
 			// See gen.writeInitializerImpl for a similar use of otherPkg.
 			prefix = "wuffs_" + otherPkg + "__"
-		}
-		// TODO: remove this hack when "image_config" in Wuffs code becomes
-		// "base.image_config".
-		if qid[1] == t.IDImageConfig {
-			prefix = "wuffs_base__"
 		}
 		b.printf("%s%s", prefix, qid[1].Str(g.tm))
 	}

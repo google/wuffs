@@ -62,15 +62,15 @@ func TestCheck(tt *testing.T) {
 		packageid "test"
 
 		pri struct foo(
-			i i32,
+			i base.i32,
 		)
 
 		pri func foo.bar()() {
-			var x u8
-			var y i32 = +2
-			var z u64[..123]
-			var a array[4] u8
-			var b bool
+			var x base.u8
+			var y base.i32 = +2
+			var z base.u64[..123]
+			var a array[4] base.u8
+			var b base.bool
 
 			x = 0
 			x = 1 + (x * 0)
@@ -78,10 +78,10 @@ func TestCheck(tt *testing.T) {
 			y = this.i
 			b = not true
 
-			y = x as i32
+			y = x as base.i32
 
-			var p i32
-			var q i32[0..8]
+			var p base.i32
+			var q base.i32[0..8]
 
 			assert true
 
@@ -147,16 +147,16 @@ func TestCheck(tt *testing.T) {
 	})
 
 	want := [][2]string{
-		{"a", "array[4] u8"},
-		{"b", "bool"},
+		{"a", "array[4] base.u8"},
+		{"b", "base.bool"},
 		{"in", "in"},
 		{"out", "out"},
-		{"p", "i32"},
-		{"q", "i32[0..8]"},
+		{"p", "base.i32"},
+		{"q", "base.i32[0..8]"},
 		{"this", "ptr foo"},
-		{"x", "u8"},
-		{"y", "i32"},
-		{"z", "u64[..123]"},
+		{"x", "base.u8"},
+		{"y", "base.i32"},
+		{"z", "base.u64[..123]"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		tt.Fatalf("\ngot  %v\nwant %v", got, want)
@@ -166,35 +166,35 @@ func TestCheck(tt *testing.T) {
 func TestConstValues(tt *testing.T) {
 	const filename = "test.wuffs"
 	testCases := map[string]int64{
-		"var i i32 = 42": 42,
+		"var i base.i32 = 42": 42,
 
-		"var i i32 = +7": +7,
-		"var i i32 = -7": -7,
+		"var i base.i32 = +7": +7,
+		"var i base.i32 = -7": -7,
 
-		"var b bool = false":         0,
-		"var b bool = not false":     1,
-		"var b bool = not not false": 0,
+		"var b base.bool = false":         0,
+		"var b base.bool = not false":     1,
+		"var b base.bool = not not false": 0,
 
-		"var i i32 = 10  + 3": 13,
-		"var i i32 = 10  - 3": 7,
-		"var i i32 = 10  * 3": 30,
-		"var i i32 = 10  / 3": 3,
-		"var i i32 = 10 << 3": 80,
-		"var i i32 = 10 >> 3": 1,
-		"var i i32 = 10  & 3": 2,
-		"var i i32 = 10 &^ 3": 8,
-		"var i i32 = 10  | 3": 11,
-		"var i i32 = 10  ^ 3": 9,
+		"var i base.i32 = 10  + 3": 13,
+		"var i base.i32 = 10  - 3": 7,
+		"var i base.i32 = 10  * 3": 30,
+		"var i base.i32 = 10  / 3": 3,
+		"var i base.i32 = 10 << 3": 80,
+		"var i base.i32 = 10 >> 3": 1,
+		"var i base.i32 = 10  & 3": 2,
+		"var i base.i32 = 10 &^ 3": 8,
+		"var i base.i32 = 10  | 3": 11,
+		"var i base.i32 = 10  ^ 3": 9,
 
-		"var b bool = 10 != 3": 1,
-		"var b bool = 10  < 3": 0,
-		"var b bool = 10 <= 3": 0,
-		"var b bool = 10 == 3": 0,
-		"var b bool = 10 >= 3": 1,
-		"var b bool = 10  > 3": 1,
+		"var b base.bool = 10 != 3": 1,
+		"var b base.bool = 10  < 3": 0,
+		"var b base.bool = 10 <= 3": 0,
+		"var b base.bool = 10 == 3": 0,
+		"var b base.bool = 10 >= 3": 1,
+		"var b base.bool = 10  > 3": 1,
 
-		"var b bool = false and true": 0,
-		"var b bool = false  or true": 1,
+		"var b base.bool = false and true": 0,
+		"var b base.bool = false  or true": 1,
 	}
 
 	tm := &t.Map{}

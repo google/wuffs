@@ -170,7 +170,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	b := [2]*big.Int{}
 	if typ.Decorator() == 0 {
-		if qid := typ.QID(); qid[0] == 0 && qid[1].Key() < t.Key(len(numTypeBounds)) {
+		if qid := typ.QID(); qid[0] == t.IDBase && qid[1].Key() < t.Key(len(numTypeBounds)) {
 			b = numTypeBounds[qid[1].Key()]
 		}
 	}
@@ -827,8 +827,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			if aMin.Sign() < 0 {
 				// TODO: error, but a better check than aMin < 0 is that
-				// a.MType() is u32. Checking this properly should fall out
-				// when a *a.TypeExpr can express function types.
+				// a.MType() is base.u32. Checking this properly should fall
+				// out when a *a.TypeExpr can express function types.
 			}
 			// TODO: sixtyFour should actually be 8 * sizeof(n.LHS().Expr()).
 			if aMax.Cmp(sixtyFour) > 0 {
@@ -1145,7 +1145,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		if typ.IsIdeal() {
 			typ = rhs.MType()
 		}
-		if qid := typ.QID(); qid[0] == 0 {
+		if qid := typ.QID(); qid[0] == t.IDBase {
 			b := numTypeBounds[qid[1].Key()]
 			return b[0], b[1], nil
 		}
@@ -1194,7 +1194,7 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 
 	// TODO: is the special cases for io_reader and io_writer superfluous with
 	// the general purpose code for built-ins below?
-	if qid := typ.QID(); qid[0] == 0 {
+	if qid := typ.QID(); qid[0] == t.IDBase {
 		switch qid[1].Key() {
 		case t.KeyIOReader, t.KeyIOWriter:
 			return nil, nil, nil
@@ -1202,7 +1202,7 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	b := [2]*big.Int{}
-	if qid := typ.QID(); qid[0] == 0 && qid[1].Key() < t.Key(len(numTypeBounds)) {
+	if qid := typ.QID(); qid[0] == t.IDBase && qid[1].Key() < t.Key(len(numTypeBounds)) {
 		b = numTypeBounds[qid[1].Key()]
 	}
 	// TODO: should || be && instead (see also func typeBounds)? Is this if
