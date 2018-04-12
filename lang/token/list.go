@@ -636,11 +636,10 @@ var builtInsByKey = [nBuiltInKeys]struct {
 	KeyGreaterEq:   {">=", IDGreaterEq},
 	KeyGreaterThan: {">", IDGreaterThan},
 
-	KeyAnd: {"and", IDAnd},
-	KeyOr:  {"or", IDOr},
-	KeyNot: {"not", IDNot},
-	KeyAs:  {"as", IDAs},
-	// TODO: do we need a "~as" form of the as operator, similar to "~+".
+	KeyAnd:   {"and", IDAnd},
+	KeyOr:    {"or", IDOr},
+	KeyNot:   {"not", IDNot},
+	KeyAs:    {"as", IDAs},
 	KeyRef:   {"ref", IDRef},
 	KeyDeref: {"deref", IDDeref},
 
