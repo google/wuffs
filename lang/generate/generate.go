@@ -34,8 +34,7 @@ import (
 
 type Generator func(packageName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error)
 
-func Do(args []string, g Generator) error {
-	flags := flag.FlagSet{}
+func Do(flags *flag.FlagSet, args []string, g Generator) error {
 	packageName := flags.String("package_name", "", "the package name of the Wuffs input code")
 	if err := flags.Parse(args); err != nil {
 		return err

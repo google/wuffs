@@ -24,7 +24,10 @@ import (
 
 const (
 	CcompilersDefault = "clang-5.0,gcc"
-	CcompilersUsage   = `comma-separated list of C compilers, e.g. "clang-5.0,gcc"`
+	CcompilersUsage   = `comma-separated list of C compilers`
+
+	CformatterDefault = "clang-format-5.0"
+	CformatterUsage   = `C formatter`
 
 	FocusDefault = ""
 	FocusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "wuffs_gif_decode"`

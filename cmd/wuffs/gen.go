@@ -39,11 +39,15 @@ func doGenlib(wuffsRoot string, args []string) error { return doGenGenlib(wuffsR
 
 func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	flags := flag.NewFlagSet("gen", flag.ExitOnError)
+	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
 
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	if !cf.IsAlphaNumericIsh(*cformatterFlag) {
+		return fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
 	}
 	langs, err := parseLangs(*langsFlag)
 	if err != nil {
@@ -57,6 +61,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	h := genHelper{
 		wuffsRoot:   wuffsRoot,
 		langs:       langs,
+		cformatter:  *cformatterFlag,
 		skipgendeps: *skipgendepsFlag,
 	}
 
@@ -82,6 +87,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 type genHelper struct {
 	wuffsRoot   string
 	langs       []string
+	cformatter  string
 	skipgendeps bool
 
 	affected []string
@@ -138,12 +144,16 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 			return err
 		}
 	}
-	cmdArgs := []string{"gen", "-package_name", packageName}
-	cmdArgs = append(cmdArgs, qualifiedFilenames...)
 
 	for _, lang := range h.langs {
 		command := "wuffs-" + lang
+		cmdArgs := []string{"gen", "-package_name", packageName}
+		if lang == "c" {
+			cmdArgs = append(cmdArgs, fmt.Sprintf("-cformatter=%s", h.cformatter))
+		}
+		cmdArgs = append(cmdArgs, qualifiedFilenames...)
 		stdout := &bytes.Buffer{}
+
 		cmd := exec.Command(command, cmdArgs...)
 		cmd.Stdin = nil
 		cmd.Stdout = stdout

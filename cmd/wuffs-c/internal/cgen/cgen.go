@@ -18,6 +18,7 @@ package cgen
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -31,6 +32,8 @@ import (
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
+
+	cf "github.com/google/wuffs/cmd/commonflags"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -60,7 +63,14 @@ const (
 //
 // The generated program is written to stdout.
 func Do(args []string) error {
-	return generate.Do(args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
+	flags := flag.FlagSet{}
+	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
+
+	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
+		if !cf.IsAlphaNumericIsh(*cformatterFlag) {
+			return nil, fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
+		}
+
 		g := &gen{
 			PKGPREFIX: "WUFFS_" + strings.ToUpper(pkgName) + "__",
 			pkgPrefix: "wuffs_" + pkgName + "__",
@@ -74,7 +84,7 @@ func Do(args []string) error {
 			return nil, err
 		}
 		stdout := &bytes.Buffer{}
-		cmd := exec.Command("clang-format-5.0", "-style=Chromium")
+		cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 		cmd.Stdin = bytes.NewReader(unformatted)
 		cmd.Stdout = stdout
 		cmd.Stderr = os.Stderr
