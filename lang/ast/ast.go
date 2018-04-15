@@ -670,11 +670,11 @@ func (n *TypeExpr) Pointee() *TypeExpr {
 }
 
 func (n *TypeExpr) IsBool() bool {
-	return n.id0 == 0 && n.id2 == t.IDBool
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDBool
 }
 
 func (n *TypeExpr) IsIdeal() bool {
-	return n.id0 == 0 && n.id2 == t.IDDoubleZ
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDDoubleZ
 }
 
 func (n *TypeExpr) IsNumType() bool {
@@ -682,7 +682,7 @@ func (n *TypeExpr) IsNumType() bool {
 }
 
 func (n *TypeExpr) IsNumTypeOrIdeal() bool {
-	return n.id0 == 0 && n.id1 == t.IDBase && (n.id2.IsNumType() || n.id2 == t.IDDoubleZ)
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumTypeOrIdeal()
 }
 
 func (n *TypeExpr) IsRefined() bool {
@@ -698,7 +698,7 @@ func (n *TypeExpr) IsSliceType() bool {
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
-	return n.id0 == 0 &&
+	return n.id0 == 0 && n.id1 == t.IDBase &&
 		(n.id2 == t.IDU8 || n.id2 == t.IDU16 || n.id2 == t.IDU32 || n.id2 == t.IDU64)
 }
 
@@ -706,9 +706,11 @@ func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
 		switch n.id0 {
 		case 0:
-			switch n.id2 {
-			case t.IDIOReader, t.IDIOWriter:
-				return true
+			if n.id1 == t.IDBase {
+				switch n.id2 {
+				case t.IDIOReader, t.IDIOWriter:
+					return true
+				}
 			}
 		case t.IDPtr, t.IDNptr, t.IDSlice:
 			return true

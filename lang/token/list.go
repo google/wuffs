@@ -104,8 +104,9 @@ func (x ID) IsClose() bool      { return x < ID(len(isClose)) && isClose[x] }
 func (x ID) IsTightLeft() bool  { return x < ID(len(isTightLeft)) && isTightLeft[x] }
 func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRight[x] }
 
-func (x ID) IsAssign() bool  { return minAssign <= x && x <= maxAssign }
-func (x ID) IsNumType() bool { return minNumType <= x && x <= maxNumType }
+func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
+func (x ID) IsNumType() bool        { return minNumType <= x && x <= maxNumType }
+func (x ID) IsNumTypeOrIdeal() bool { return minNumTypeOrIdeal <= x && x <= maxNumTypeOrIdeal }
 
 func (x ID) IsImplicitSemicolon(m *Map) bool {
 	return x.IsLiteral(m) || x.IsIdent(m) ||
@@ -336,10 +337,12 @@ const (
 )
 
 const (
-	minBuiltInIdent = 0x98
-	minNumType      = 0x98
-	maxNumType      = 0x9F
-	maxBuiltInIdent = 0xFF
+	minBuiltInIdent   = 0x98
+	minNumTypeOrIdeal = 0x98
+	minNumType        = 0x98
+	maxNumType        = 0x9F
+	maxNumTypeOrIdeal = 0xA0
+	maxBuiltInIdent   = 0xFF
 
 	IDI8  = ID(0x98)
 	IDI16 = ID(0x99)
@@ -350,7 +353,10 @@ const (
 	IDU32 = ID(0x9E)
 	IDU64 = ID(0x9F)
 
+	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
+	// See the ID.IsNumTypeOrIdeal method.
 	IDDoubleZ = ID(0xA0)
+
 	IDDiamond = ID(0xA1)
 
 	IDUnderscore = ID(0xA2)
