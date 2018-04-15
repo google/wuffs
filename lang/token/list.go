@@ -30,7 +30,6 @@ type Flags uint32
 
 const (
 	FlagsOther         = Flags(0x0001)
-	FlagsUnaryOp       = Flags(0x0002)
 	FlagsBinaryOp      = Flags(0x0004)
 	FlagsAssociativeOp = Flags(0x0008)
 	FlagsLiteral       = Flags(0x0010)
@@ -59,6 +58,7 @@ type ID uint32
 // Str returns a string form of x.
 func (x ID) Str(m *Map) string { return m.ByID(x) }
 
+// TODO: the XxxForm methods should return 0 if x > 0xFF.
 func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&(x>>KeyShift)] }
 func (x ID) UnaryForm() ID       { return unaryForms[0xFF&(x>>KeyShift)] }
 func (x ID) BinaryForm() ID      { return binaryForms[0xFF&(x>>KeyShift)] }
@@ -69,7 +69,7 @@ func (x ID) Flags() Flags { return Flags(x & FlagsMask) }
 
 func (x ID) IsBuiltIn() bool { return Key(x>>KeyShift) < nBuiltInKeys }
 
-func (x ID) IsUnaryOp() bool       { return Flags(x)&FlagsUnaryOp != 0 }
+func (x ID) IsUnaryOp() bool       { return x.Key() <= 0xFF && x.UnaryForm() != 0 }
 func (x ID) IsBinaryOp() bool      { return Flags(x)&FlagsBinaryOp != 0 }
 func (x ID) IsAssociativeOp() bool { return Flags(x)&FlagsAssociativeOp != 0 }
 
@@ -381,8 +381,8 @@ const (
 	IDPercentEq   = ID(0x2B<<KeyShift | FlagsOther)
 	IDTildePlusEq = ID(0x2C<<KeyShift | FlagsOther)
 
-	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp | FlagsUnaryOp | FlagsAssociativeOp)
-	IDMinus     = ID(0x32<<KeyShift | FlagsBinaryOp | FlagsUnaryOp)
+	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDMinus     = ID(0x32<<KeyShift | FlagsBinaryOp)
 	IDStar      = ID(0x33<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
 	IDSlash     = ID(0x34<<KeyShift | FlagsBinaryOp)
 	IDShiftL    = ID(0x35<<KeyShift | FlagsBinaryOp)
@@ -404,10 +404,10 @@ const (
 	// TODO: sort these by name, when the list has stabilized.
 	IDAnd   = ID(0x48<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
 	IDOr    = ID(0x49<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDNot   = ID(0x4A<<KeyShift | FlagsUnaryOp)
+	IDNot   = ID(0x4A<<KeyShift | FlagsOther)
 	IDAs    = ID(0x4B<<KeyShift | FlagsBinaryOp)
-	IDRef   = ID(0x4C<<KeyShift | FlagsUnaryOp)
-	IDDeref = ID(0x4D<<KeyShift | FlagsUnaryOp)
+	IDRef   = ID(0x4C<<KeyShift | FlagsOther)
+	IDDeref = ID(0x4D<<KeyShift | FlagsOther)
 
 	// TODO: sort these by name, when the list has stabilized.
 	IDFunc       = ID(0x50<<KeyShift | FlagsOther)
@@ -512,11 +512,11 @@ const (
 	minXKey = 0xD0
 	maxXKey = 0xFF
 
-	IDXUnaryPlus  = ID(0xD0<<KeyShift | FlagsUnaryOp)
-	IDXUnaryMinus = ID(0xD1<<KeyShift | FlagsUnaryOp)
-	IDXUnaryNot   = ID(0xD2<<KeyShift | FlagsUnaryOp)
-	IDXUnaryRef   = ID(0xD3<<KeyShift | FlagsUnaryOp)
-	IDXUnaryDeref = ID(0xD4<<KeyShift | FlagsUnaryOp)
+	IDXUnaryPlus  = ID(0xD0<<KeyShift | FlagsOther)
+	IDXUnaryMinus = ID(0xD1<<KeyShift | FlagsOther)
+	IDXUnaryNot   = ID(0xD2<<KeyShift | FlagsOther)
+	IDXUnaryRef   = ID(0xD3<<KeyShift | FlagsOther)
+	IDXUnaryDeref = ID(0xD4<<KeyShift | FlagsOther)
 
 	IDXBinaryPlus        = ID(0xD8<<KeyShift | FlagsBinaryOp)
 	IDXBinaryMinus       = ID(0xD9<<KeyShift | FlagsBinaryOp)
@@ -857,6 +857,32 @@ var ambiguousForms = [256]ID{
 	KeyXAssociativeHat:  IDHat,
 	KeyXAssociativeAnd:  IDAnd,
 	KeyXAssociativeOr:   IDOr,
+}
+
+func init() {
+	addXForms(&unaryForms)
+	addXForms(&binaryForms)
+	addXForms(&associativeForms)
+}
+
+// addXForms modifies table so that, if table[x] == y, then table[y] = y.
+//
+// For example, for the unaryForms table, the explicit entries are like:
+//  KeyPlus:        IDXUnaryPlus,
+// and this function implicitly addes entries like:
+//  KeyXUnaryPlus:  IDXUnaryPlus,
+func addXForms(table *[256]ID) {
+	implicitEntries := [256]ID{}
+	for _, y := range table {
+		if y != 0 {
+			implicitEntries[y.Key()] = y
+		}
+	}
+	for _, y := range implicitEntries {
+		if y != 0 {
+			table[y.Key()] = y
+		}
+	}
 }
 
 var unaryForms = [256]ID{

@@ -36,8 +36,8 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 	depth++
 
 	if n != nil {
-		switch n.id0.Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-		case 0:
+		switch {
+		default:
 			switch n.id0.Key() {
 			case t.KeyError, t.KeyStatus, t.KeySuspension:
 				switch n.id0.Key() {
@@ -109,11 +109,11 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				buf = append(buf, ')')
 			}
 
-		case t.FlagsUnaryOp:
+		case n.id0.IsXUnaryOp():
 			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
 			buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
 
-		case t.FlagsBinaryOp:
+		case n.id0.IsXBinaryOp():
 			if parenthesize {
 				buf = append(buf, '(')
 			}
@@ -128,7 +128,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				buf = append(buf, ')')
 			}
 
-		case t.FlagsAssociativeOp:
+		case n.id0.IsXAssociativeOp():
 			if parenthesize {
 				buf = append(buf, '(')
 			}

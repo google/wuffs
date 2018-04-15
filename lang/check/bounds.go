@@ -755,20 +755,19 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 	if cv := n.ConstValue(); cv != nil {
 		return cv, cv, nil
 	}
-	switch n.Operator().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-	case 0:
-		return q.bcheckExprOther(n, depth)
-	case t.FlagsUnaryOp:
+	switch op := n.Operator(); {
+	case op.IsXUnaryOp():
 		return q.bcheckExprUnaryOp(n, depth)
-	case t.FlagsBinaryOp:
-		if n.Operator().Key() == t.KeyXBinaryAs {
+	case op.IsXBinaryOp():
+		if op.Key() == t.KeyXBinaryAs {
 			return q.bcheckExpr(n.LHS().Expr(), depth)
 		}
-		return q.bcheckExprBinaryOp(n.Operator().Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
-	case t.FlagsAssociativeOp:
+		return q.bcheckExprBinaryOp(op.Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
+	case op.IsXAssociativeOp():
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExpr", n.Operator().Key())
+
+	return q.bcheckExprOther(n, depth)
 }
 
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {

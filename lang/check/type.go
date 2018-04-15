@@ -349,25 +349,23 @@ func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	}
 	depth++
 
-	switch n.Operator().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-	case 0:
-		if err := q.tcheckExprOther(n, depth); err != nil {
-			return err
-		}
-	case t.FlagsUnaryOp:
+	switch op := n.Operator(); {
+	case op.IsXUnaryOp():
 		if err := q.tcheckExprUnaryOp(n, depth); err != nil {
 			return err
 		}
-	case t.FlagsBinaryOp:
+	case op.IsXBinaryOp():
 		if err := q.tcheckExprBinaryOp(n, depth); err != nil {
 			return err
 		}
-	case t.FlagsAssociativeOp:
+	case op.IsXAssociativeOp():
 		if err := q.tcheckExprAssociativeOp(n, depth); err != nil {
 			return err
 		}
 	default:
-		return fmt.Errorf("check: unrecognized token.Key (0x%X) for tcheckExpr", n.Operator().Key())
+		if err := q.tcheckExprOther(n, depth); err != nil {
+			return err
+		}
 	}
 	n.Node().SetTypeChecked()
 	return nil

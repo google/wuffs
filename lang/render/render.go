@@ -107,10 +107,6 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		// Render the lineTokens.
 		prevID, prevIsTightRight := t.ID(0), false
 		for _, tok := range lineTokens {
-			const (
-				flagsUB = t.FlagsUnaryOp | t.FlagsBinaryOp
-			)
-
 			if prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
@@ -136,7 +132,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			prevIsTightRight = tok.ID.IsTightRight()
 			// The "+" and "-" tokens' tight-right-ness is context dependent.
 			// The unary flavor is tight-right, the binary flavor is not.
-			if prevID != 0 && tok.ID.Flags()&flagsUB == flagsUB {
+			if prevID != 0 && tok.ID.IsUnaryOp() && tok.ID.IsBinaryOp() {
 				// Token-based (not ast.Node-based) heuristic for whether the
 				// operator looks unary instead of binary.
 				prevIsTightRight = !isCloseIdentLiteral(prevID)

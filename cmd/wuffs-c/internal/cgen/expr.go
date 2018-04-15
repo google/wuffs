@@ -57,28 +57,15 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 		return nil
 	}
 
-	switch n.Operator().Flags() & (t.FlagsUnaryOp | t.FlagsBinaryOp | t.FlagsAssociativeOp) {
-	case 0:
-		if err := g.writeExprOther(b, n, rp, pp, depth); err != nil {
-			return err
-		}
-	case t.FlagsUnaryOp:
-		if err := g.writeExprUnaryOp(b, n, rp, pp, depth); err != nil {
-			return err
-		}
-	case t.FlagsBinaryOp:
-		if err := g.writeExprBinaryOp(b, n, rp, pp, depth); err != nil {
-			return err
-		}
-	case t.FlagsAssociativeOp:
-		if err := g.writeExprAssociativeOp(b, n, rp, pp, depth); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unrecognized token.Key (0x%X) for writeExpr", n.Operator().Key())
+	switch op := n.Operator(); {
+	case op.IsXUnaryOp():
+		return g.writeExprUnaryOp(b, n, rp, pp, depth)
+	case op.IsXBinaryOp():
+		return g.writeExprBinaryOp(b, n, rp, pp, depth)
+	case op.IsXAssociativeOp():
+		return g.writeExprAssociativeOp(b, n, rp, pp, depth)
 	}
-
-	return nil
+	return g.writeExprOther(b, n, rp, pp, depth)
 }
 
 func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
