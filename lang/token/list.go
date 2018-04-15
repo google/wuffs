@@ -29,14 +29,13 @@ const MaxIntBits = 64
 type Flags uint32
 
 const (
-	FlagsOther         = Flags(0x0001)
-	FlagsBinaryOp      = Flags(0x0004)
-	FlagsAssociativeOp = Flags(0x0008)
-	FlagsLiteral       = Flags(0x0010)
-	FlagsNumLiteral    = Flags(0x0020)
-	FlagsStrLiteral    = Flags(0x0040)
-	FlagsIdent         = Flags(0x0080)
-	flagsUnused        = Flags(0x8000)
+	FlagsOther      = Flags(0x0001)
+	FlagsBinaryOp   = Flags(0x0004)
+	FlagsLiteral    = Flags(0x0010)
+	FlagsNumLiteral = Flags(0x0020)
+	FlagsStrLiteral = Flags(0x0040)
+	FlagsIdent      = Flags(0x0080)
+	flagsUnused     = Flags(0x8000)
 )
 
 // Key is the high 16 bits of an ID. It is the map key for a Map.
@@ -71,7 +70,7 @@ func (x ID) IsBuiltIn() bool { return Key(x>>KeyShift) < nBuiltInKeys }
 
 func (x ID) IsUnaryOp() bool       { return x.Key() <= 0xFF && x.UnaryForm() != 0 }
 func (x ID) IsBinaryOp() bool      { return Flags(x)&FlagsBinaryOp != 0 }
-func (x ID) IsAssociativeOp() bool { return Flags(x)&FlagsAssociativeOp != 0 }
+func (x ID) IsAssociativeOp() bool { return x.Key() <= 0xFF && x.AssociativeForm() != 0 }
 
 func (x ID) IsLiteral() bool    { return Flags(x)&FlagsLiteral != 0 }
 func (x ID) IsNumLiteral() bool { return Flags(x)&FlagsNumLiteral != 0 }
@@ -381,16 +380,16 @@ const (
 	IDPercentEq   = ID(0x2B<<KeyShift | FlagsOther)
 	IDTildePlusEq = ID(0x2C<<KeyShift | FlagsOther)
 
-	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp)
 	IDMinus     = ID(0x32<<KeyShift | FlagsBinaryOp)
-	IDStar      = ID(0x33<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDStar      = ID(0x33<<KeyShift | FlagsBinaryOp)
 	IDSlash     = ID(0x34<<KeyShift | FlagsBinaryOp)
 	IDShiftL    = ID(0x35<<KeyShift | FlagsBinaryOp)
 	IDShiftR    = ID(0x36<<KeyShift | FlagsBinaryOp)
-	IDAmp       = ID(0x37<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDAmp       = ID(0x37<<KeyShift | FlagsBinaryOp)
 	IDAmpHat    = ID(0x38<<KeyShift | FlagsBinaryOp)
-	IDPipe      = ID(0x39<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDHat       = ID(0x3A<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDPipe      = ID(0x39<<KeyShift | FlagsBinaryOp)
+	IDHat       = ID(0x3A<<KeyShift | FlagsBinaryOp)
 	IDPercent   = ID(0x3B<<KeyShift | FlagsBinaryOp)
 	IDTildePlus = ID(0x3C<<KeyShift | FlagsBinaryOp)
 
@@ -402,8 +401,8 @@ const (
 	IDGreaterThan = ID(0x45<<KeyShift | FlagsBinaryOp)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDAnd   = ID(0x48<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDOr    = ID(0x49<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
+	IDAnd   = ID(0x48<<KeyShift | FlagsBinaryOp)
+	IDOr    = ID(0x49<<KeyShift | FlagsBinaryOp)
 	IDNot   = ID(0x4A<<KeyShift | FlagsOther)
 	IDAs    = ID(0x4B<<KeyShift | FlagsBinaryOp)
 	IDRef   = ID(0x4C<<KeyShift | FlagsOther)
@@ -540,13 +539,13 @@ const (
 	IDXBinaryAs          = ID(0xEB<<KeyShift | FlagsBinaryOp)
 	IDXBinaryTildePlus   = ID(0xEC<<KeyShift | FlagsBinaryOp)
 
-	IDXAssociativePlus = ID(0xF0<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativeStar = ID(0xF1<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativeAmp  = ID(0xF2<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativePipe = ID(0xF3<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativeHat  = ID(0xF4<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativeAnd  = ID(0xF5<<KeyShift | FlagsAssociativeOp)
-	IDXAssociativeOr   = ID(0xF6<<KeyShift | FlagsAssociativeOp)
+	IDXAssociativePlus = ID(0xF0<<KeyShift | FlagsOther)
+	IDXAssociativeStar = ID(0xF1<<KeyShift | FlagsOther)
+	IDXAssociativeAmp  = ID(0xF2<<KeyShift | FlagsOther)
+	IDXAssociativePipe = ID(0xF3<<KeyShift | FlagsOther)
+	IDXAssociativeHat  = ID(0xF4<<KeyShift | FlagsOther)
+	IDXAssociativeAnd  = ID(0xF5<<KeyShift | FlagsOther)
+	IDXAssociativeOr   = ID(0xF6<<KeyShift | FlagsOther)
 )
 
 var builtInsByKey = [nBuiltInKeys]struct {
