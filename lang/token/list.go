@@ -29,17 +29,39 @@ type ID uint32
 // Str returns a string form of x.
 func (x ID) Str(m *Map) string { return m.ByID(x) }
 
-// TODO: the XxxForm methods should return 0 if x > 0xFF.
-func (x ID) AmbiguousForm() ID   { return ambiguousForms[0xFF&x] }
-func (x ID) UnaryForm() ID       { return unaryForms[0xFF&x] }
-func (x ID) BinaryForm() ID      { return binaryForms[0xFF&x] }
-func (x ID) AssociativeForm() ID { return associativeForms[0xFF&x] }
+func (x ID) AmbiguousForm() ID {
+	if x >= nBuiltInIDs {
+		return 0
+	}
+	return ambiguousForms[x]
+}
+
+func (x ID) UnaryForm() ID {
+	if x >= nBuiltInIDs {
+		return 0
+	}
+	return unaryForms[x]
+}
+
+func (x ID) BinaryForm() ID {
+	if x >= nBuiltInIDs {
+		return 0
+	}
+	return binaryForms[x]
+}
+
+func (x ID) AssociativeForm() ID {
+	if x >= nBuiltInIDs {
+		return 0
+	}
+	return associativeForms[x]
+}
 
 func (x ID) IsBuiltIn() bool { return x < nBuiltInIDs }
 
-func (x ID) IsUnaryOp() bool       { return minOp <= x && x <= maxOp && x.UnaryForm() != 0 }
-func (x ID) IsBinaryOp() bool      { return minOp <= x && x <= maxOp && x.BinaryForm() != 0 }
-func (x ID) IsAssociativeOp() bool { return minOp <= x && x <= maxOp && x.AssociativeForm() != 0 }
+func (x ID) IsUnaryOp() bool       { return minOp <= x && x <= maxOp && unaryForms[x] != 0 }
+func (x ID) IsBinaryOp() bool      { return minOp <= x && x <= maxOp && binaryForms[x] != 0 }
+func (x ID) IsAssociativeOp() bool { return minOp <= x && x <= maxOp && associativeForms[x] != 0 }
 
 func (x ID) IsLiteral(m *Map) bool {
 	if x < nBuiltInIDs {
@@ -91,9 +113,9 @@ func (x ID) IsImplicitSemicolon(m *Map) bool {
 }
 
 func (x ID) IsXOp() bool            { return minXOp <= x && x <= maxXOp }
-func (x ID) IsXUnaryOp() bool       { return x.IsXOp() && x.IsUnaryOp() }
-func (x ID) IsXBinaryOp() bool      { return x.IsXOp() && x.IsBinaryOp() }
-func (x ID) IsXAssociativeOp() bool { return x.IsXOp() && x.IsAssociativeOp() }
+func (x ID) IsXUnaryOp() bool       { return minXOp <= x && x <= maxXOp && unaryForms[x] != 0 }
+func (x ID) IsXBinaryOp() bool      { return minXOp <= x && x <= maxXOp && binaryForms[x] != 0 }
+func (x ID) IsXAssociativeOp() bool { return minXOp <= x && x <= maxXOp && associativeForms[x] != 0 }
 
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
