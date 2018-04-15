@@ -40,8 +40,6 @@ const (
 // Key is the high 16 bits of an ID. It is the map key for a Map.
 type Key uint32
 
-func (k Key) isXOp() bool { return minXOpKey <= k && k <= maxXOpKey }
-
 const (
 	FlagsBits = 16
 	FlagsMask = 1<<FlagsBits - 1
@@ -93,9 +91,10 @@ func (x ID) IsImplicitSemicolon() bool {
 		(x.Key() < Key(len(isImplicitSemicolon)) && isImplicitSemicolon[x.Key()])
 }
 
-func (x ID) IsXUnaryOp() bool       { return x.Key().isXOp() && x.IsUnaryOp() }
-func (x ID) IsXBinaryOp() bool      { return x.Key().isXOp() && x.IsBinaryOp() }
-func (x ID) IsXAssociativeOp() bool { return x.Key().isXOp() && x.IsAssociativeOp() }
+func (x ID) IsXOp() bool            { return minXOpKey <= x.Key() && x.Key() <= maxXOpKey }
+func (x ID) IsXUnaryOp() bool       { return x.IsXOp() && x.IsUnaryOp() }
+func (x ID) IsXBinaryOp() bool      { return x.IsXOp() && x.IsBinaryOp() }
+func (x ID) IsXAssociativeOp() bool { return x.IsXOp() && x.IsAssociativeOp() }
 
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".

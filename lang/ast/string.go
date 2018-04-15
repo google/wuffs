@@ -35,80 +35,12 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 	}
 	depth++
 
-	if n != nil {
+	if n == nil {
+		return buf
+	}
+
+	if n.id0.IsXOp() {
 		switch {
-		default:
-			switch n.id0.Key() {
-			case t.KeyError, t.KeyStatus, t.KeySuspension:
-				switch n.id0.Key() {
-				case t.KeyError:
-					buf = append(buf, "error "...)
-				case t.KeyStatus:
-					buf = append(buf, "status "...)
-				case t.KeySuspension:
-					buf = append(buf, "suspension "...)
-				}
-				if n.id1 != 0 {
-					buf = append(buf, tm.ByID(n.id1)...)
-					buf = append(buf, '.')
-				}
-				fallthrough
-
-			case 0:
-				buf = append(buf, tm.ByID(n.id2)...)
-
-			case t.KeyTry:
-				buf = append(buf, "try "...)
-				fallthrough
-
-			case t.KeyOpenParen:
-				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-				if n.flags&FlagsSuspendible != 0 {
-					buf = append(buf, '?')
-				} else if n.flags&FlagsImpure != 0 {
-					buf = append(buf, '!')
-				}
-				buf = append(buf, '(')
-				for i, o := range n.list0 {
-					if i != 0 {
-						buf = append(buf, ", "...)
-					}
-					buf = append(buf, tm.ByID(o.Arg().Name())...)
-					buf = append(buf, ':')
-					buf = o.Arg().Value().appendStr(buf, tm, false, depth)
-				}
-				buf = append(buf, ')')
-
-			case t.KeyOpenBracket:
-				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-				buf = append(buf, '[')
-				buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
-				buf = append(buf, ']')
-
-			case t.KeyColon:
-				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-				buf = append(buf, '[')
-				buf = n.mhs.Expr().appendStr(buf, tm, false, depth)
-				buf = append(buf, ':')
-				buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
-				buf = append(buf, ']')
-
-			case t.KeyDot:
-				buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-				buf = append(buf, '.')
-				buf = append(buf, tm.ByID(n.id2)...)
-
-			case t.KeyDollar:
-				buf = append(buf, "$("...)
-				for i, o := range n.list0 {
-					if i != 0 {
-						buf = append(buf, ", "...)
-					}
-					buf = o.Expr().appendStr(buf, tm, false, depth)
-				}
-				buf = append(buf, ')')
-			}
-
 		case n.id0.IsXUnaryOp():
 			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
 			buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
@@ -142,6 +74,78 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			if parenthesize {
 				buf = append(buf, ')')
 			}
+		}
+
+	} else {
+		switch n.id0.Key() {
+		case t.KeyError, t.KeyStatus, t.KeySuspension:
+			switch n.id0.Key() {
+			case t.KeyError:
+				buf = append(buf, "error "...)
+			case t.KeyStatus:
+				buf = append(buf, "status "...)
+			case t.KeySuspension:
+				buf = append(buf, "suspension "...)
+			}
+			if n.id1 != 0 {
+				buf = append(buf, tm.ByID(n.id1)...)
+				buf = append(buf, '.')
+			}
+			fallthrough
+
+		case 0:
+			buf = append(buf, tm.ByID(n.id2)...)
+
+		case t.KeyTry:
+			buf = append(buf, "try "...)
+			fallthrough
+
+		case t.KeyOpenParen:
+			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			if n.flags&FlagsSuspendible != 0 {
+				buf = append(buf, '?')
+			} else if n.flags&FlagsImpure != 0 {
+				buf = append(buf, '!')
+			}
+			buf = append(buf, '(')
+			for i, o := range n.list0 {
+				if i != 0 {
+					buf = append(buf, ", "...)
+				}
+				buf = append(buf, tm.ByID(o.Arg().Name())...)
+				buf = append(buf, ':')
+				buf = o.Arg().Value().appendStr(buf, tm, false, depth)
+			}
+			buf = append(buf, ')')
+
+		case t.KeyOpenBracket:
+			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = append(buf, '[')
+			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
+			buf = append(buf, ']')
+
+		case t.KeyColon:
+			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = append(buf, '[')
+			buf = n.mhs.Expr().appendStr(buf, tm, false, depth)
+			buf = append(buf, ':')
+			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
+			buf = append(buf, ']')
+
+		case t.KeyDot:
+			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = append(buf, '.')
+			buf = append(buf, tm.ByID(n.id2)...)
+
+		case t.KeyDollar:
+			buf = append(buf, "$("...)
+			for i, o := range n.list0 {
+				if i != 0 {
+					buf = append(buf, ", "...)
+				}
+				buf = o.Expr().appendStr(buf, tm, false, depth)
+			}
+			buf = append(buf, ')')
 		}
 	}
 
