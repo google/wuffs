@@ -29,22 +29,15 @@ const MaxIntBits = 64
 type Flags uint32
 
 const (
-	FlagsOther             = Flags(0x0001)
-	FlagsUnaryOp           = Flags(0x0002)
-	FlagsBinaryOp          = Flags(0x0004)
-	FlagsAssociativeOp     = Flags(0x0008)
-	FlagsLiteral           = Flags(0x0010)
-	FlagsNumLiteral        = Flags(0x0020)
-	FlagsStrLiteral        = Flags(0x0040)
-	FlagsIdent             = Flags(0x0080)
-	FlagsOpen              = Flags(0x0100)
-	FlagsClose             = Flags(0x0200)
-	FlagsTightLeft         = Flags(0x0400)
-	FlagsTightRight        = Flags(0x0800)
-	FlagsAssign            = Flags(0x1000)
-	FlagsImplicitSemicolon = Flags(0x2000)
-	FlagsNumType           = Flags(0x4000)
-	flagsUnused            = Flags(0x8000)
+	FlagsOther         = Flags(0x0001)
+	FlagsUnaryOp       = Flags(0x0002)
+	FlagsBinaryOp      = Flags(0x0004)
+	FlagsAssociativeOp = Flags(0x0008)
+	FlagsLiteral       = Flags(0x0010)
+	FlagsNumLiteral    = Flags(0x0020)
+	FlagsStrLiteral    = Flags(0x0040)
+	FlagsIdent         = Flags(0x0080)
+	flagsUnused        = Flags(0x8000)
 )
 
 // Key is the high 16 bits of an ID. It is the map key for a Map.
@@ -76,20 +69,27 @@ func (x ID) Flags() Flags { return Flags(x & FlagsMask) }
 
 func (x ID) IsBuiltIn() bool { return Key(x>>KeyShift) < nBuiltInKeys }
 
-func (x ID) IsUnaryOp() bool           { return Flags(x)&FlagsUnaryOp != 0 }
-func (x ID) IsBinaryOp() bool          { return Flags(x)&FlagsBinaryOp != 0 }
-func (x ID) IsAssociativeOp() bool     { return Flags(x)&FlagsAssociativeOp != 0 }
-func (x ID) IsLiteral() bool           { return Flags(x)&FlagsLiteral != 0 }
-func (x ID) IsNumLiteral() bool        { return Flags(x)&FlagsNumLiteral != 0 }
-func (x ID) IsStrLiteral() bool        { return Flags(x)&FlagsStrLiteral != 0 }
-func (x ID) IsIdent() bool             { return Flags(x)&FlagsIdent != 0 }
-func (x ID) IsOpen() bool              { return Flags(x)&FlagsOpen != 0 }
-func (x ID) IsClose() bool             { return Flags(x)&FlagsClose != 0 }
-func (x ID) IsTightLeft() bool         { return Flags(x)&FlagsTightLeft != 0 }
-func (x ID) IsTightRight() bool        { return Flags(x)&FlagsTightRight != 0 }
-func (x ID) IsAssign() bool            { return Flags(x)&FlagsAssign != 0 }
-func (x ID) IsImplicitSemicolon() bool { return Flags(x)&FlagsImplicitSemicolon != 0 }
-func (x ID) IsNumType() bool           { return Flags(x)&FlagsNumType != 0 }
+func (x ID) IsUnaryOp() bool       { return Flags(x)&FlagsUnaryOp != 0 }
+func (x ID) IsBinaryOp() bool      { return Flags(x)&FlagsBinaryOp != 0 }
+func (x ID) IsAssociativeOp() bool { return Flags(x)&FlagsAssociativeOp != 0 }
+
+func (x ID) IsLiteral() bool    { return Flags(x)&FlagsLiteral != 0 }
+func (x ID) IsNumLiteral() bool { return Flags(x)&FlagsNumLiteral != 0 }
+func (x ID) IsStrLiteral() bool { return Flags(x)&FlagsStrLiteral != 0 }
+func (x ID) IsIdent() bool      { return Flags(x)&FlagsIdent != 0 }
+
+func (x ID) IsOpen() bool       { return x.Key() < Key(len(isOpen)) && isOpen[x.Key()] }
+func (x ID) IsClose() bool      { return x.Key() < Key(len(isClose)) && isClose[x.Key()] }
+func (x ID) IsTightLeft() bool  { return x.Key() < Key(len(isTightLeft)) && isTightLeft[x.Key()] }
+func (x ID) IsTightRight() bool { return x.Key() < Key(len(isTightRight)) && isTightRight[x.Key()] }
+
+func (x ID) IsAssign() bool  { return minAssignKey <= x.Key() && x.Key() <= maxAssignKey }
+func (x ID) IsNumType() bool { return minNumTypeKey <= x.Key() && x.Key() <= maxNumTypeKey }
+
+func (x ID) IsImplicitSemicolon() bool {
+	return x.IsLiteral() || x.IsIdent() ||
+		(x.Key() < Key(len(isImplicitSemicolon)) && isImplicitSemicolon[x.Key()])
+}
 
 func (x ID) IsXUnaryOp() bool       { return x.Key().isXOp() && x.IsUnaryOp() }
 func (x ID) IsXBinaryOp() bool      { return x.Key().isXOp() && x.IsBinaryOp() }
@@ -130,30 +130,6 @@ type Token struct {
 	ID   ID
 	Line uint32
 }
-
-func (t Token) Key() Key     { return Key(t.ID >> KeyShift) }
-func (t Token) Flags() Flags { return Flags(t.ID & FlagsMask) }
-
-func (t Token) IsBuiltIn() bool { return Key(t.ID>>KeyShift) < nBuiltInKeys }
-
-func (t Token) IsUnaryOp() bool           { return Flags(t.ID)&FlagsUnaryOp != 0 }
-func (t Token) IsBinaryOp() bool          { return Flags(t.ID)&FlagsBinaryOp != 0 }
-func (t Token) IsAssociativeOp() bool     { return Flags(t.ID)&FlagsAssociativeOp != 0 }
-func (t Token) IsLiteral() bool           { return Flags(t.ID)&FlagsLiteral != 0 }
-func (t Token) IsNumLiteral() bool        { return Flags(t.ID)&FlagsNumLiteral != 0 }
-func (t Token) IsStrLiteral() bool        { return Flags(t.ID)&FlagsStrLiteral != 0 }
-func (t Token) IsIdent() bool             { return Flags(t.ID)&FlagsIdent != 0 }
-func (t Token) IsOpen() bool              { return Flags(t.ID)&FlagsOpen != 0 }
-func (t Token) IsClose() bool             { return Flags(t.ID)&FlagsClose != 0 }
-func (t Token) IsTightLeft() bool         { return Flags(t.ID)&FlagsTightLeft != 0 }
-func (t Token) IsTightRight() bool        { return Flags(t.ID)&FlagsTightRight != 0 }
-func (t Token) IsAssign() bool            { return Flags(t.ID)&FlagsAssign != 0 }
-func (t Token) IsImplicitSemicolon() bool { return Flags(t.ID)&FlagsImplicitSemicolon != 0 }
-func (t Token) IsNumType() bool           { return Flags(t.ID)&FlagsNumType != 0 }
-
-func (t Token) IsXUnaryOp() bool       { return t.ID.Key().isXOp() && t.ID.IsUnaryOp() }
-func (t Token) IsXBinaryOp() bool      { return t.ID.Key().isXOp() && t.ID.IsBinaryOp() }
-func (t Token) IsXAssociativeOp() bool { return t.ID.Key().isXOp() && t.ID.IsAssociativeOp() }
 
 // nBuiltInKeys is the number of built-in Keys. The packing is:
 //  - Zero is invalid.
@@ -370,37 +346,40 @@ const (
 	IDInvalid = ID(0)
 
 	IDDoubleZ = ID(0x01<<KeyShift | FlagsOther)
-	IDDiamond = ID(0x02<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDDiamond = ID(0x02<<KeyShift | FlagsIdent)
 
-	IDOpenParen    = ID(0x10<<KeyShift | FlagsOpen | FlagsTightRight)
-	IDCloseParen   = ID(0x11<<KeyShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
-	IDOpenBracket  = ID(0x12<<KeyShift | FlagsOpen | FlagsTightLeft | FlagsTightRight)
-	IDCloseBracket = ID(0x13<<KeyShift | FlagsClose | FlagsTightLeft | FlagsImplicitSemicolon)
-	IDOpenCurly    = ID(0x14<<KeyShift | FlagsOpen)
-	IDCloseCurly   = ID(0x15<<KeyShift | FlagsClose | FlagsImplicitSemicolon)
+	IDOpenParen    = ID(0x10<<KeyShift | FlagsOther)
+	IDCloseParen   = ID(0x11<<KeyShift | FlagsOther)
+	IDOpenBracket  = ID(0x12<<KeyShift | FlagsOther)
+	IDCloseBracket = ID(0x13<<KeyShift | FlagsOther)
+	IDOpenCurly    = ID(0x14<<KeyShift | FlagsOther)
+	IDCloseCurly   = ID(0x15<<KeyShift | FlagsOther)
 
-	IDDot       = ID(0x18<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDDotDot    = ID(0x19<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDComma     = ID(0x1A<<KeyShift | FlagsTightLeft)
-	IDExclam    = ID(0x1B<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDQuestion  = ID(0x1C<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDColon     = ID(0x1D<<KeyShift | FlagsTightLeft | FlagsTightRight)
-	IDSemicolon = ID(0x1E<<KeyShift | FlagsTightLeft)
-	IDDollar    = ID(0x1F<<KeyShift | FlagsTightRight)
+	IDDot       = ID(0x18<<KeyShift | FlagsOther)
+	IDDotDot    = ID(0x19<<KeyShift | FlagsOther)
+	IDComma     = ID(0x1A<<KeyShift | FlagsOther)
+	IDExclam    = ID(0x1B<<KeyShift | FlagsOther)
+	IDQuestion  = ID(0x1C<<KeyShift | FlagsOther)
+	IDColon     = ID(0x1D<<KeyShift | FlagsOther)
+	IDSemicolon = ID(0x1E<<KeyShift | FlagsOther)
+	IDDollar    = ID(0x1F<<KeyShift | FlagsOther)
 
-	IDEq          = ID(0x20<<KeyShift | FlagsAssign)
-	IDPlusEq      = ID(0x21<<KeyShift | FlagsAssign)
-	IDMinusEq     = ID(0x22<<KeyShift | FlagsAssign)
-	IDStarEq      = ID(0x23<<KeyShift | FlagsAssign)
-	IDSlashEq     = ID(0x24<<KeyShift | FlagsAssign)
-	IDShiftLEq    = ID(0x25<<KeyShift | FlagsAssign)
-	IDShiftREq    = ID(0x26<<KeyShift | FlagsAssign)
-	IDAmpEq       = ID(0x27<<KeyShift | FlagsAssign)
-	IDAmpHatEq    = ID(0x28<<KeyShift | FlagsAssign)
-	IDPipeEq      = ID(0x29<<KeyShift | FlagsAssign)
-	IDHatEq       = ID(0x2A<<KeyShift | FlagsAssign)
-	IDPercentEq   = ID(0x2B<<KeyShift | FlagsAssign)
-	IDTildePlusEq = ID(0x2C<<KeyShift | FlagsAssign)
+	minAssignKey = 0x20
+	maxAssignKey = 0x2F
+
+	IDEq          = ID(0x20<<KeyShift | FlagsOther)
+	IDPlusEq      = ID(0x21<<KeyShift | FlagsOther)
+	IDMinusEq     = ID(0x22<<KeyShift | FlagsOther)
+	IDStarEq      = ID(0x23<<KeyShift | FlagsOther)
+	IDSlashEq     = ID(0x24<<KeyShift | FlagsOther)
+	IDShiftLEq    = ID(0x25<<KeyShift | FlagsOther)
+	IDShiftREq    = ID(0x26<<KeyShift | FlagsOther)
+	IDAmpEq       = ID(0x27<<KeyShift | FlagsOther)
+	IDAmpHatEq    = ID(0x28<<KeyShift | FlagsOther)
+	IDPipeEq      = ID(0x29<<KeyShift | FlagsOther)
+	IDHatEq       = ID(0x2A<<KeyShift | FlagsOther)
+	IDPercentEq   = ID(0x2B<<KeyShift | FlagsOther)
+	IDTildePlusEq = ID(0x2C<<KeyShift | FlagsOther)
 
 	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp | FlagsUnaryOp | FlagsAssociativeOp)
 	IDMinus     = ID(0x32<<KeyShift | FlagsBinaryOp | FlagsUnaryOp)
@@ -436,9 +415,9 @@ const (
 	IDWhile      = ID(0x52<<KeyShift | FlagsOther)
 	IDIf         = ID(0x53<<KeyShift | FlagsOther)
 	IDElse       = ID(0x54<<KeyShift | FlagsOther)
-	IDReturn     = ID(0x55<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDBreak      = ID(0x56<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
-	IDContinue   = ID(0x57<<KeyShift | FlagsOther | FlagsImplicitSemicolon)
+	IDReturn     = ID(0x55<<KeyShift | FlagsOther)
+	IDBreak      = ID(0x56<<KeyShift | FlagsOther)
+	IDContinue   = ID(0x57<<KeyShift | FlagsOther)
 	IDStruct     = ID(0x58<<KeyShift | FlagsOther)
 	IDUse        = ID(0x59<<KeyShift | FlagsOther)
 	IDVar        = ID(0x5A<<KeyShift | FlagsOther)
@@ -461,66 +440,70 @@ const (
 	IDPtr   = ID(0x72<<KeyShift | FlagsOther)
 	IDSlice = ID(0x73<<KeyShift | FlagsOther)
 
-	IDFalse = ID(0x74<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDTrue  = ID(0x75<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon)
-	IDZero  = ID(0x76<<KeyShift | FlagsLiteral | FlagsImplicitSemicolon | FlagsNumLiteral)
+	IDFalse = ID(0x74<<KeyShift | FlagsLiteral)
+	IDTrue  = ID(0x75<<KeyShift | FlagsLiteral)
+	IDZero  = ID(0x76<<KeyShift | FlagsLiteral | FlagsNumLiteral)
 
-	IDUnderscore = ID(0x78<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDThis       = ID(0x79<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIn         = ID(0x7A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDOut        = ID(0x7B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSLICE      = ID(0x7C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDBase       = ID(0x7D<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDUnderscore = ID(0x78<<KeyShift | FlagsIdent)
+	IDThis       = ID(0x79<<KeyShift | FlagsIdent)
+	IDIn         = ID(0x7A<<KeyShift | FlagsIdent)
+	IDOut        = ID(0x7B<<KeyShift | FlagsIdent)
+	IDSLICE      = ID(0x7C<<KeyShift | FlagsIdent)
+	IDBase       = ID(0x7D<<KeyShift | FlagsIdent)
 
-	IDI8          = ID(0x80<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI16         = ID(0x81<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI32         = ID(0x82<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDI64         = ID(0x83<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU8          = ID(0x84<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU16         = ID(0x85<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU32         = ID(0x86<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDU64         = ID(0x87<<KeyShift | FlagsIdent | FlagsImplicitSemicolon | FlagsNumType)
-	IDBool        = ID(0x88<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIOReader    = ID(0x89<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIOWriter    = ID(0x8A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDStatus      = ID(0x8B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDImageConfig = ID(0x8C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	minNumTypeKey = 0x80
+	maxNumTypeKey = 0x87
 
-	IDMark       = ID(0x90<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU8     = ID(0x91<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU16BE  = ID(0x92<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU16LE  = ID(0x93<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU32BE  = ID(0x94<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU32LE  = ID(0x95<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU64BE  = ID(0x96<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDReadU64LE  = ID(0x97<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSinceMark  = ID(0x98<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU8    = ID(0x99<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU16BE = ID(0x9A<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU16LE = ID(0x9B<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU32BE = ID(0x9C<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU32LE = ID(0x9D<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU64BE = ID(0x9E<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDWriteU64LE = ID(0x9F<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDI8  = ID(0x80<<KeyShift | FlagsIdent)
+	IDI16 = ID(0x81<<KeyShift | FlagsIdent)
+	IDI32 = ID(0x82<<KeyShift | FlagsIdent)
+	IDI64 = ID(0x83<<KeyShift | FlagsIdent)
+	IDU8  = ID(0x84<<KeyShift | FlagsIdent)
+	IDU16 = ID(0x85<<KeyShift | FlagsIdent)
+	IDU32 = ID(0x86<<KeyShift | FlagsIdent)
+	IDU64 = ID(0x87<<KeyShift | FlagsIdent)
 
-	IDIsError           = ID(0xA0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsOK              = ID(0xA1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsSuspension      = ID(0xA2<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFromHistory32 = ID(0xA3<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFromReader32  = ID(0xA4<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFromSlice     = ID(0xA5<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDCopyFromSlice32   = ID(0xA6<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip32            = ID(0xA7<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSkip64            = ID(0xA8<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLength            = ID(0xA9<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDAvailable         = ID(0xAA<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDPrefix            = ID(0xAB<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDSuffix            = ID(0xAC<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLimit             = ID(0xAD<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDLowBits           = ID(0xAE<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDHighBits          = ID(0xAF<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDUnreadU8          = ID(0xB0<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
-	IDIsMarked          = ID(0xB1<<KeyShift | FlagsIdent | FlagsImplicitSemicolon)
+	IDBool        = ID(0x88<<KeyShift | FlagsIdent)
+	IDIOReader    = ID(0x89<<KeyShift | FlagsIdent)
+	IDIOWriter    = ID(0x8A<<KeyShift | FlagsIdent)
+	IDStatus      = ID(0x8B<<KeyShift | FlagsIdent)
+	IDImageConfig = ID(0x8C<<KeyShift | FlagsIdent)
+
+	IDMark       = ID(0x90<<KeyShift | FlagsIdent)
+	IDReadU8     = ID(0x91<<KeyShift | FlagsIdent)
+	IDReadU16BE  = ID(0x92<<KeyShift | FlagsIdent)
+	IDReadU16LE  = ID(0x93<<KeyShift | FlagsIdent)
+	IDReadU32BE  = ID(0x94<<KeyShift | FlagsIdent)
+	IDReadU32LE  = ID(0x95<<KeyShift | FlagsIdent)
+	IDReadU64BE  = ID(0x96<<KeyShift | FlagsIdent)
+	IDReadU64LE  = ID(0x97<<KeyShift | FlagsIdent)
+	IDSinceMark  = ID(0x98<<KeyShift | FlagsIdent)
+	IDWriteU8    = ID(0x99<<KeyShift | FlagsIdent)
+	IDWriteU16BE = ID(0x9A<<KeyShift | FlagsIdent)
+	IDWriteU16LE = ID(0x9B<<KeyShift | FlagsIdent)
+	IDWriteU32BE = ID(0x9C<<KeyShift | FlagsIdent)
+	IDWriteU32LE = ID(0x9D<<KeyShift | FlagsIdent)
+	IDWriteU64BE = ID(0x9E<<KeyShift | FlagsIdent)
+	IDWriteU64LE = ID(0x9F<<KeyShift | FlagsIdent)
+
+	IDIsError           = ID(0xA0<<KeyShift | FlagsIdent)
+	IDIsOK              = ID(0xA1<<KeyShift | FlagsIdent)
+	IDIsSuspension      = ID(0xA2<<KeyShift | FlagsIdent)
+	IDCopyFromHistory32 = ID(0xA3<<KeyShift | FlagsIdent)
+	IDCopyFromReader32  = ID(0xA4<<KeyShift | FlagsIdent)
+	IDCopyFromSlice     = ID(0xA5<<KeyShift | FlagsIdent)
+	IDCopyFromSlice32   = ID(0xA6<<KeyShift | FlagsIdent)
+	IDSkip32            = ID(0xA7<<KeyShift | FlagsIdent)
+	IDSkip64            = ID(0xA8<<KeyShift | FlagsIdent)
+	IDLength            = ID(0xA9<<KeyShift | FlagsIdent)
+	IDAvailable         = ID(0xAA<<KeyShift | FlagsIdent)
+	IDPrefix            = ID(0xAB<<KeyShift | FlagsIdent)
+	IDSuffix            = ID(0xAC<<KeyShift | FlagsIdent)
+	IDLimit             = ID(0xAD<<KeyShift | FlagsIdent)
+	IDLowBits           = ID(0xAE<<KeyShift | FlagsIdent)
+	IDHighBits          = ID(0xAF<<KeyShift | FlagsIdent)
+	IDUnreadU8          = ID(0xB0<<KeyShift | FlagsIdent)
+	IDIsMarked          = ID(0xB1<<KeyShift | FlagsIdent)
 )
 
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
@@ -929,4 +912,52 @@ var associativeForms = [256]ID{
 	KeyHat:  IDXAssociativeHat,
 	KeyAnd:  IDXAssociativeAnd,
 	KeyOr:   IDXAssociativeOr,
+}
+
+var isOpen = [...]bool{
+	KeyOpenParen:   true,
+	KeyOpenBracket: true,
+	KeyOpenCurly:   true,
+}
+
+var isClose = [...]bool{
+	KeyCloseParen:   true,
+	KeyCloseBracket: true,
+	KeyCloseCurly:   true,
+}
+
+var isTightLeft = [...]bool{
+	KeyCloseParen:   true,
+	KeyOpenBracket:  true,
+	KeyCloseBracket: true,
+
+	KeyDot:       true,
+	KeyDotDot:    true,
+	KeyComma:     true,
+	KeyExclam:    true,
+	KeyQuestion:  true,
+	KeyColon:     true,
+	KeySemicolon: true,
+}
+
+var isTightRight = [...]bool{
+	KeyOpenParen:   true,
+	KeyOpenBracket: true,
+
+	KeyDot:      true,
+	KeyDotDot:   true,
+	KeyExclam:   true,
+	KeyQuestion: true,
+	KeyColon:    true,
+	KeyDollar:   true,
+}
+
+var isImplicitSemicolon = [...]bool{
+	KeyCloseParen:   true,
+	KeyCloseBracket: true,
+	KeyCloseCurly:   true,
+
+	KeyReturn:   true,
+	KeyBreak:    true,
+	KeyContinue: true,
 }

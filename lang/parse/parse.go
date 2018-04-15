@@ -309,7 +309,7 @@ func (p *parser) parseIdent() (t.ID, error) {
 		return 0, fmt.Errorf(`parse: expected identifier at %s:%d`, p.filename, p.line())
 	}
 	x := p.src[0]
-	if !x.IsIdent() {
+	if !x.ID.IsIdent() {
 		got := p.tm.ByToken(x)
 		return 0, fmt.Errorf(`parse: expected identifier, got %q at %s:%d`, got, p.filename, p.line())
 	}
@@ -978,7 +978,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 
 		case t.KeyExclam, t.KeyQuestion:
 			flags |= a.FlagsImpure | a.FlagsCallImpure
-			if p.src[0].Key() == t.KeyQuestion {
+			if p.src[0].ID.Key() == t.KeyQuestion {
 				flags |= a.FlagsSuspendible | a.FlagsCallSuspendible
 			}
 			p.src = p.src[1:]

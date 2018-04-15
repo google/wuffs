@@ -54,7 +54,7 @@ func (m *Map) Insert(name string) (ID, error) {
 	if key > maxKey {
 		return 0, errors.New("token: too many distinct tokens")
 	}
-	flags := FlagsImplicitSemicolon
+	flags := Flags(0)
 	if numeric(name[0]) {
 		flags |= FlagsLiteral | FlagsNumLiteral
 	} else if name[0] == '"' {
@@ -132,7 +132,7 @@ loop:
 
 		if c <= ' ' {
 			if c == '\n' {
-				if len(tokens) > 0 && tokens[len(tokens)-1].IsImplicitSemicolon() {
+				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon() {
 					tokens = append(tokens, Token{IDSemicolon, line})
 				}
 				if line == maxLine {
