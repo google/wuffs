@@ -391,8 +391,8 @@ const (
 	IDAmpHat    = ID(0x38<<KeyShift | FlagsBinaryOp)
 	IDPipe      = ID(0x39<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
 	IDHat       = ID(0x3A<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDPercent   = ID(0x3B<<KeyShift | FlagsBinaryOp | FlagsAssociativeOp)
-	IDTildePlus = ID(0x3C<<KeyShift | FlagsBinaryOp) // TODO: FlagsAssociativeOp?
+	IDPercent   = ID(0x3B<<KeyShift | FlagsBinaryOp)
+	IDTildePlus = ID(0x3C<<KeyShift | FlagsBinaryOp)
 
 	IDNotEq       = ID(0x40<<KeyShift | FlagsBinaryOp)
 	IDLessThan    = ID(0x41<<KeyShift | FlagsBinaryOp)
@@ -938,6 +938,7 @@ var associativeForms = [256]ID{
 	KeyHat:  IDXAssociativeHat,
 	KeyAnd:  IDXAssociativeAnd,
 	KeyOr:   IDXAssociativeOr,
+	// TODO: KeyTildePlus?
 }
 
 var isOpen = [...]bool{
