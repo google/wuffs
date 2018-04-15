@@ -678,11 +678,11 @@ func (n *TypeExpr) IsIdeal() bool {
 }
 
 func (n *TypeExpr) IsNumType() bool {
-	return n.id0 == 0 && n.id2.IsNumType()
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumType()
 }
 
 func (n *TypeExpr) IsNumTypeOrIdeal() bool {
-	return n.id0 == 0 && (n.id2.IsNumType() || n.id2 == t.IDDoubleZ)
+	return n.id0 == 0 && n.id1 == t.IDBase && (n.id2.IsNumType() || n.id2 == t.IDDoubleZ)
 }
 
 func (n *TypeExpr) IsRefined() bool {
