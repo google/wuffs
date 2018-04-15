@@ -128,7 +128,7 @@ func genParseBinaryOps(n *node, arg string) error {
 		return fmt.Errorf("bad op %q", n.op)
 	}
 	fmt.Fprintf(&out, "op, %s, %s := parseBinaryOp(%s)\n", l, r, arg)
-	fmt.Fprintf(&out, "if op.Key() != t.Key%s { return errFailed }\n", key)
+	fmt.Fprintf(&out, "if op != t.ID%s { return errFailed }\n", key)
 	if l[0] == 't' {
 		if err := genParseBinaryOps(n.lhs, l); err != nil {
 			return err

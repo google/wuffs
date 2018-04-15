@@ -82,7 +82,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			return err
 		}
 		// TODO: does KeyAmpHatEq need special consideration?
-		b.writes(cOpNames[0xFF&n.Operator().Key()])
+		b.writes(cOpNames[0xFF&n.Operator()])
 		if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
@@ -213,7 +213,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			return err
 		}
 		keyword := "continue"
-		if n.Keyword().Key() == t.KeyBreak {
+		if n.Keyword() == t.IDBreak {
 			keyword = "break"
 		}
 		b.printf("goto label_%d_%s;\n", jt, keyword)
@@ -225,11 +225,11 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 		if g.currFunk.suspendible {
 			b.writes("status = ")
-			retKeyword := t.KeyStatus
+			retKeyword := t.IDStatus
 			if retExpr == nil {
 				b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
 			} else {
-				retKeyword = retExpr.Operator().Key()
+				retKeyword = retExpr.Operator()
 				// TODO: check that retExpr has no call-suspendibles.
 				if err := g.writeExpr(
 					b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
@@ -238,14 +238,14 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			}
 			b.writes(";")
 
-			if n.Keyword().Key() == t.KeyYield {
+			if n.Keyword() == t.IDYield {
 				return g.writeCoroSuspPoint(b, true)
 			}
 
 			switch retKeyword {
-			case t.KeyError:
+			case t.IDError:
 				b.writes("goto exit;")
-			case t.KeyStatus:
+			case t.IDStatus:
 				b.writes("goto ok;")
 			default:
 				b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
@@ -443,7 +443,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
 	//
 	// TODO: check io_reader.buf and io_writer.buf is non-NULL.
-	if isInSrc(g.tm, n, t.KeyReadU8, 0) {
+	if isInSrc(g.tm, n, t.IDReadU8, 0) {
 		if g.currFunk.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
 		}
@@ -463,26 +463,26 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.printf(" = *%srptr_src++;\n", bPrefix)
 
-	} else if isInSrc(g.tm, n, t.KeyUnreadU8, 0) {
+	} else if isInSrc(g.tm, n, t.IDUnreadU8, 0) {
 		b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
 			bPrefix, bPrefix, g.PKGPREFIX)
 		b.writes("goto exit;")
 		b.writes("}\n")
 		b.printf("%srptr_src--;\n", bPrefix)
 
-	} else if isInSrc(g.tm, n, t.KeyReadU16BE, 0) {
+	} else if isInSrc(g.tm, n, t.IDReadU16BE, 0) {
 		return g.writeReadUXX(b, n, "src", 16, "be")
 
-	} else if isInSrc(g.tm, n, t.KeyReadU16LE, 0) {
+	} else if isInSrc(g.tm, n, t.IDReadU16LE, 0) {
 		return g.writeReadUXX(b, n, "src", 16, "le")
 
-	} else if isInSrc(g.tm, n, t.KeyReadU32BE, 0) {
+	} else if isInSrc(g.tm, n, t.IDReadU32BE, 0) {
 		return g.writeReadUXX(b, n, "src", 32, "be")
 
-	} else if isInSrc(g.tm, n, t.KeyReadU32LE, 0) {
+	} else if isInSrc(g.tm, n, t.IDReadU32LE, 0) {
 		return g.writeReadUXX(b, n, "src", 32, "le")
 
-	} else if isInSrc(g.tm, n, t.KeySkip32, 1) {
+	} else if isInSrc(g.tm, n, t.IDSkip32, 1) {
 		g.currFunk.usesScratch = true
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
@@ -508,7 +508,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
 
-	} else if isInDst(g.tm, n, t.KeyWriteU8, 1) {
+	} else if isInDst(g.tm, n, t.IDWriteU8, 1) {
 		if !n.ProvenNotToSuspend() {
 			b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
 				bPrefix, bPrefix, g.PKGPREFIX)
@@ -646,8 +646,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes("if (status) { goto suspend; }\n")
 
-	} else if isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 2) ||
-		isThatMethod(g.tm, n, g.tm.ByName("decode").Key(), 3) {
+	} else if isThatMethod(g.tm, n, g.tm.ByName("decode"), 2) ||
+		isThatMethod(g.tm, n, g.tm.ByName("decode"), 3) {
 
 		switch g.pkgName {
 		case "gzip", "zlib":
@@ -784,74 +784,74 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	return nil
 }
 
-func isInSrc(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeySinceMark &&
-		methodName != t.KeyMark &&
-		methodName != t.KeyLimit
-	if n.Operator().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
+func isInSrc(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
+	callSuspendible := methodName != t.IDSinceMark &&
+		methodName != t.IDMark &&
+		methodName != t.IDLimit
+	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot || n.Ident().Key() != methodName {
+	if n.Operator() != t.IDDot || n.Ident() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName("src") {
+	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("src") {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident().Key() == t.KeyIn
+	return n.Operator() == 0 && n.Ident() == t.IDIn
 }
 
-func isInDst(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	callSuspendible := methodName != t.KeyCopyFromReader32 &&
-		methodName != t.KeyCopyFromHistory32 &&
-		methodName != t.KeyCopyFromSlice32 &&
-		methodName != t.KeyCopyFromSlice &&
-		methodName != t.KeySinceMark &&
-		methodName != t.KeyIsMarked &&
-		methodName != t.KeyMark &&
-		methodName != t.KeyLimit
+func isInDst(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
+	callSuspendible := methodName != t.IDCopyFromReader32 &&
+		methodName != t.IDCopyFromHistory32 &&
+		methodName != t.IDCopyFromSlice32 &&
+		methodName != t.IDCopyFromSlice &&
+		methodName != t.IDSinceMark &&
+		methodName != t.IDIsMarked &&
+		methodName != t.IDMark &&
+		methodName != t.IDLimit
 	// TODO: check that n.Args() is "(x:bar)".
-	if n.Operator().Key() != t.KeyOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
+	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot || n.Ident().Key() != methodName {
+	if n.Operator() != t.IDDot || n.Ident() != methodName {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName("dst") {
+	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("dst") {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident().Key() == t.KeyIn
+	return n.Operator() == 0 && n.Ident() == t.IDIn
 }
 
 func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
 	// TODO: check that n.Args() is "(src:in.src)".
-	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
 		return false
 	}
 	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot || n.Ident() != tm.ByName(methodName) {
+	if n.Operator() != t.IDDot || n.Ident() != tm.ByName(methodName) {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident().Key() == t.KeyThis
+	return n.Operator() == 0 && n.Ident() == t.IDThis
 }
 
 // isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
-func isThatMethod(tm *t.Map, n *a.Expr, methodName t.Key, nArgs int) bool {
-	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+func isThatMethod(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
+	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
 		return false
 	}
 	if len(n.Args()) != nArgs {
 		return false
 	}
 	n = n.LHS().Expr()
-	return n.Operator().Key() == t.KeyDot && n.Ident().Key() == methodName
+	return n.Operator() == t.IDDot && n.Ident() == methodName
 }

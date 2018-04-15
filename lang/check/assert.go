@@ -30,18 +30,18 @@ func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
 	op = n.Operator()
 
 	reverseOp := t.ID(0)
-	switch op.Key() {
-	case t.KeyXBinaryNotEq:
+	switch op {
+	case t.IDXBinaryNotEq:
 		reverseOp = t.IDXBinaryNotEq
-	case t.KeyXBinaryLessThan:
+	case t.IDXBinaryLessThan:
 		reverseOp = t.IDXBinaryGreaterThan
-	case t.KeyXBinaryLessEq:
+	case t.IDXBinaryLessEq:
 		reverseOp = t.IDXBinaryGreaterEq
-	case t.KeyXBinaryEqEq:
+	case t.IDXBinaryEqEq:
 		reverseOp = t.IDXBinaryEqEq
-	case t.KeyXBinaryGreaterEq:
+	case t.IDXBinaryGreaterEq:
 		reverseOp = t.IDXBinaryLessEq
-	case t.KeyXBinaryGreaterThan:
+	case t.IDXBinaryGreaterThan:
 		reverseOp = t.IDXBinaryLessThan
 	}
 
@@ -66,18 +66,18 @@ func (z *facts) appendFact(fact *a.Expr) {
 		}
 	}
 
-	switch fact.Operator().Key() {
+	switch fact.Operator() {
 	case 0:
 		for _, x := range *z {
-			if op, other := otherHandSide(x, fact); op.Key() == t.KeyXBinaryEqEq {
+			if op, other := otherHandSide(x, fact); op == t.IDXBinaryEqEq {
 				z.appendFact(other)
 			}
 		}
-	case t.KeyXBinaryAnd:
+	case t.IDXBinaryAnd:
 		z.appendFact(fact.LHS().Expr())
 		z.appendFact(fact.RHS().Expr())
 		return
-	case t.KeyXAssociativeAnd:
+	case t.IDXAssociativeAnd:
 		for _, a := range fact.Args() {
 			z.appendFact(a.Expr())
 		}
@@ -124,8 +124,8 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 		}
 
 		originalNMin, originalNMax, changed := nMin, nMax, false
-		switch op.Key() {
-		case t.KeyXBinaryNotEq:
+		switch op {
+		case t.IDXBinaryNotEq:
 			if nMin.Cmp(cv) == 0 {
 				nMin = add1(nMin)
 				changed = true
@@ -133,25 +133,25 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 				nMax = sub1(nMax)
 				changed = true
 			}
-		case t.KeyXBinaryLessThan:
+		case t.IDXBinaryLessThan:
 			if nMax.Cmp(cv) >= 0 {
 				nMax = sub1(cv)
 				changed = true
 			}
-		case t.KeyXBinaryLessEq:
+		case t.IDXBinaryLessEq:
 			if nMax.Cmp(cv) > 0 {
 				nMax = cv
 				changed = true
 			}
-		case t.KeyXBinaryEqEq:
+		case t.IDXBinaryEqEq:
 			nMin, nMax = cv, cv
 			changed = true
-		case t.KeyXBinaryGreaterEq:
+		case t.IDXBinaryGreaterEq:
 			if nMin.Cmp(cv) < 0 {
 				nMin = cv
 				changed = true
 			}
-		case t.KeyXBinaryGreaterThan:
+		case t.IDXBinaryGreaterThan:
 			if nMin.Cmp(cv) <= 0 {
 				nMin = add1(cv)
 				changed = true
@@ -188,15 +188,15 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		}
 	}
 
-	switch op.Key() {
-	case t.KeyXBinaryPlus:
+	switch op {
+	case t.IDXBinaryPlus:
 		// TODO: more constant folding, so ((x + 1) + 1) becomes (x + 2).
 
-	case t.KeyXBinaryMinus:
+	case t.IDXBinaryMinus:
 		if lhs.Eq(rhs) {
 			return zeroExpr, nil
 		}
-		if lOp, lLHS, lRHS := parseBinaryOp(lhs); lOp.Key() == t.KeyXBinaryPlus {
+		if lOp, lLHS, lRHS := parseBinaryOp(lhs); lOp == t.IDXBinaryPlus {
 			if lLHS.Eq(rhs) {
 				return lRHS, nil
 			}
@@ -205,8 +205,8 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			}
 		}
 
-	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq,
-		t.KeyXBinaryEqEq, t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan:
+	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq,
+		t.IDXBinaryEqEq, t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan:
 
 		l, err := simplify(tm, lhs)
 		if err != nil {
@@ -243,31 +243,31 @@ func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
 		return 0, nil, nil
 	}
 	op = n.Operator()
-	if op.Key() == t.KeyAs {
+	if op == t.IDAs {
 		return 0, nil, nil
 	}
 	return op, n.LHS().Expr(), n.RHS().Expr()
 }
 
-func proveBinaryOpConstValues(op t.Key, lMin *big.Int, lMax *big.Int, rMin *big.Int, rMax *big.Int) (ok bool) {
+func proveBinaryOpConstValues(op t.ID, lMin *big.Int, lMax *big.Int, rMin *big.Int, rMax *big.Int) (ok bool) {
 	switch op {
-	case t.KeyXBinaryNotEq:
+	case t.IDXBinaryNotEq:
 		return lMax.Cmp(rMin) < 0 || lMin.Cmp(rMax) > 0
-	case t.KeyXBinaryLessThan:
+	case t.IDXBinaryLessThan:
 		return lMax.Cmp(rMin) < 0
-	case t.KeyXBinaryLessEq:
+	case t.IDXBinaryLessEq:
 		return lMax.Cmp(rMin) <= 0
-	case t.KeyXBinaryEqEq:
+	case t.IDXBinaryEqEq:
 		return lMin.Cmp(rMax) == 0 && lMax.Cmp(rMin) == 0
-	case t.KeyXBinaryGreaterEq:
+	case t.IDXBinaryGreaterEq:
 		return lMin.Cmp(rMax) >= 0
-	case t.KeyXBinaryGreaterThan:
+	case t.IDXBinaryGreaterThan:
 		return lMin.Cmp(rMax) > 0
 	}
 	return false
 }
 
-func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
+func (q *checker) proveBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	lcv := lhs.ConstValue()
 	if lcv != nil {
 		rMin, rMax, err := q.bcheckExpr(rhs, 0)
@@ -293,25 +293,25 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 		if !x.LHS().Expr().Eq(lhs) {
 			continue
 		}
-		factOp := x.Operator().Key()
+		factOp := x.Operator()
 		if opImpliesOp(factOp, op) && x.RHS().Expr().Eq(rhs) {
 			return nil
 		}
 
-		if factOp == t.KeyXBinaryEqEq && rcv != nil {
+		if factOp == t.IDXBinaryEqEq && rcv != nil {
 			if factCV := x.RHS().Expr().ConstValue(); factCV != nil {
 				switch op {
-				case t.KeyXBinaryNotEq:
+				case t.IDXBinaryNotEq:
 					return errFailedOrNil(factCV.Cmp(rcv) != 0)
-				case t.KeyXBinaryLessThan:
+				case t.IDXBinaryLessThan:
 					return errFailedOrNil(factCV.Cmp(rcv) < 0)
-				case t.KeyXBinaryLessEq:
+				case t.IDXBinaryLessEq:
 					return errFailedOrNil(factCV.Cmp(rcv) <= 0)
-				case t.KeyXBinaryEqEq:
+				case t.IDXBinaryEqEq:
 					return errFailedOrNil(factCV.Cmp(rcv) == 0)
-				case t.KeyXBinaryGreaterEq:
+				case t.IDXBinaryGreaterEq:
 					return errFailedOrNil(factCV.Cmp(rcv) >= 0)
-				case t.KeyXBinaryGreaterThan:
+				case t.IDXBinaryGreaterThan:
 					return errFailedOrNil(factCV.Cmp(rcv) > 0)
 				}
 			}
@@ -322,15 +322,15 @@ func (q *checker) proveBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr) error {
 
 // opImpliesOp returns whether the first op implies the second. For example,
 // knowing "x < y" implies that "x != y" and "x <= y".
-func opImpliesOp(op0 t.Key, op1 t.Key) bool {
+func opImpliesOp(op0 t.ID, op1 t.ID) bool {
 	if op0 == op1 {
 		return true
 	}
 	switch op0 {
-	case t.KeyXBinaryLessThan:
-		return op1 == t.KeyXBinaryNotEq || op1 == t.KeyXBinaryLessEq
-	case t.KeyXBinaryGreaterThan:
-		return op1 == t.KeyXBinaryNotEq || op1 == t.KeyXBinaryGreaterEq
+	case t.IDXBinaryLessThan:
+		return op1 == t.IDXBinaryNotEq || op1 == t.IDXBinaryLessEq
+	case t.IDXBinaryGreaterThan:
+		return op1 == t.IDXBinaryNotEq || op1 == t.IDXBinaryGreaterEq
 	}
 	return false
 }
@@ -347,9 +347,9 @@ var errFailed = errors.New("failed")
 func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	if !op.IsXBinaryOp() {
 		return fmt.Errorf(
-			"check: internal error: proveReasonRequirement token.Key (0x%02X) is not an XBinaryOp", op.Key())
+			"check: internal error: proveReasonRequirement token (0x%02X) is not an XBinaryOp", op)
 	}
-	if err := q.proveBinaryOp(op.Key(), lhs, rhs); err != nil {
+	if err := q.proveBinaryOp(op, lhs, rhs); err != nil {
 		n := a.NewExpr(a.FlagsTypeChecked, op, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
 		return fmt.Errorf("cannot prove %q: %v", n.Str(q.tm), err)
 	}

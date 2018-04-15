@@ -69,9 +69,9 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthes
 }
 
 func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	switch n.Operator().Key() {
+	switch n.Operator() {
 	case 0:
-		if id1 := n.Ident(); id1.Key() == t.KeyThis {
+		if id1 := n.Ident(); id1 == t.IDThis {
 			b.writes("self")
 		} else {
 			if n.GlobalIdent() {
@@ -83,10 +83,10 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		return nil
 
-	case t.KeyOpenParen:
+	case t.IDOpenParen:
 		// n is a function call.
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isThatMethod(g.tm, n, t.KeyLowBits, 1) {
+		if isThatMethod(g.tm, n, t.IDLowBits, 1) {
 			// "x.low_bits(n:etc)" in C is "((x) & ((1 << (n)) - 1))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
@@ -100,7 +100,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")) - 1))")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyHighBits, 1) {
+		if isThatMethod(g.tm, n, t.IDHighBits, 1) {
 			// "x.high_bits(n:etc)" in C is "((x) >> (8*sizeof(x) - (n)))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
@@ -120,8 +120,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")))")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyIsError, 0) || isThatMethod(g.tm, n, t.KeyIsOK, 0) ||
-			isThatMethod(g.tm, n, t.KeyIsSuspension, 0) {
+		if isThatMethod(g.tm, n, t.IDIsError, 0) || isThatMethod(g.tm, n, t.IDIsOK, 0) ||
+			isThatMethod(g.tm, n, t.IDIsSuspension, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -129,22 +129,22 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
-			switch key := n.LHS().Expr().Ident().Key(); key {
-			case t.KeyIsError:
+			switch key := n.LHS().Expr().Ident(); key {
+			case t.IDIsError:
 				b.writes(" < 0")
-			case t.KeyIsOK:
+			case t.IDIsOK:
 				b.writes(" == 0")
-			case t.KeyIsSuspension:
+			case t.IDIsSuspension:
 				b.writes(" > 0")
 			default:
-				return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther's IsXxx", key)
+				return fmt.Errorf("unrecognized token (0x%X) for writeExprOther's IsXxx", key)
 			}
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeySuffix, 1) {
+		if isThatMethod(g.tm, n, t.IDSuffix, 1) {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("wuffs_base__slice_u8_suffix(")
 			x := n.LHS().Expr().LHS().Expr()
@@ -158,14 +158,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")")
 			return nil
 		}
-		if isInSrc(g.tm, n, t.KeyLimit, 1) {
+		if isInSrc(g.tm, n, t.IDLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.src.limit" expression`)
 		}
-		if isInSrc(g.tm, n, t.KeyMark, 0) {
+		if isInSrc(g.tm, n, t.IDMark, 0) {
 			b.printf("wuffs_base__io_reader__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil
 		}
-		if isInSrc(g.tm, n, t.KeySinceMark, 0) {
+		if isInSrc(g.tm, n, t.IDSinceMark, 0) {
 			b.printf("((wuffs_base__slice_u8){ "+
 				".ptr = %ssrc.private_impl.mark, "+
 				".len = %ssrc.private_impl.mark ? (size_t)(%srptr_src - %ssrc.private_impl.mark) : 0, })",
@@ -173,10 +173,10 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		// TODO: io_reader.is_marked, not just io_writer.is_marked?
-		if isInDst(g.tm, n, t.KeyLimit, 1) {
+		if isInDst(g.tm, n, t.IDLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
-		if isInDst(g.tm, n, t.KeyMark, 0) {
+		if isInDst(g.tm, n, t.IDMark, 0) {
 			// TODO: is a private_impl.mark the right representation? What if
 			// the function is passed a (ptr io_writer) instead of a
 			// (io_writer)? Do we still want to have that mark live outside of
@@ -184,7 +184,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.printf("wuffs_base__io_writer__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeySinceMark, 0) {
+		if isInDst(g.tm, n, t.IDSinceMark, 0) {
 			// Write .len as either "foo ? bar : baz" or "bar".
 			//
 			// TODO: drop the "true" in the "if true", provided that the
@@ -200,7 +200,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, len0, bPrefix, aPrefix, len1)
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyIsMarked, 0) {
+		if isInDst(g.tm, n, t.IDIsMarked, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -210,7 +210,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyFromReader32, 2) {
+		if isInDst(g.tm, n, t.IDCopyFromReader32, 2) {
 			b.printf("wuffs_base__io_writer__copy_from_reader32(&%swptr_dst, %swend_dst",
 				bPrefix, bPrefix)
 			// TODO: don't assume that the first argument is "in.src".
@@ -222,7 +222,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyFromHistory32, 2) {
+		if isInDst(g.tm, n, t.IDCopyFromHistory32, 2) {
 			bco := ""
 			if n.BoundsCheckOptimized() {
 				bco = "__bco"
@@ -239,7 +239,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyFromSlice32, 2) {
+		if isInDst(g.tm, n, t.IDCopyFromSlice32, 2) {
 			b.printf("wuffs_base__io_writer__copy_from_slice32("+
 				"&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			for _, o := range n.Args() {
@@ -251,7 +251,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
-		if isInDst(g.tm, n, t.KeyCopyFromSlice, 1) {
+		if isInDst(g.tm, n, t.IDCopyFromSlice, 1) {
 			b.printf("wuffs_base__io_writer__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
 			a := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
@@ -260,7 +260,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writeb(')')
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyCopyFromSlice, 1) {
+		if isThatMethod(g.tm, n, t.IDCopyFromSlice, 1) {
 			b.writes("wuffs_base__slice_u8__copy_from_slice(")
 			receiver := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, receiver, rp, parenthesesOptional, depth); err != nil {
@@ -274,7 +274,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyLength, 0) {
+		if isThatMethod(g.tm, n, t.IDLength, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -288,7 +288,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyAvailable, 0) {
+		if isThatMethod(g.tm, n, t.IDAvailable, 0) {
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
@@ -313,7 +313,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
-		if isThatMethod(g.tm, n, g.tm.ByName("update").Key(), 1) {
+		if isThatMethod(g.tm, n, g.tm.ByName("update"), 1) {
 			// TODO: don't hard-code the class name or this.checksum.
 			class := "wuffs_crc32__ieee"
 			if g.pkgName == "zlib" {
@@ -327,7 +327,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
-		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width").Key(), 1) {
+		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width"), 1) {
 			// TODO: don't hard-code lzw.
 			b.printf("%slzw_decoder__set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
 			a := n.Args()[0].Arg().Value()
@@ -337,22 +337,22 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeyLimit, 1) {
+		if isThatMethod(g.tm, n, t.IDLimit, 1) {
 			return fmt.Errorf(`TODO: cgen a "foo.limit" expression`)
 		}
-		if isThatMethod(g.tm, n, t.KeyMark, 0) {
+		if isThatMethod(g.tm, n, t.IDMark, 0) {
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("wuffs_base__io_reader__mark(&v_r, b_rptr_src)")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.KeySinceMark, 0) {
+		if isThatMethod(g.tm, n, t.IDSinceMark, 0) {
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("((wuffs_base__slice_u8){ " +
 				".ptr = v_r.private_impl.mark, " +
 				".len = v_r.private_impl.mark ? (size_t)(b_rptr_src - v_r.private_impl.mark) : 0, })")
 			return nil
 		}
-		if isThatMethod(g.tm, n, g.tm.ByName("initialize").Key(), 5) {
+		if isThatMethod(g.tm, n, g.tm.ByName("initialize"), 5) {
 			// TODO: don't hard-code a_dst.
 			b.printf("wuffs_base__image_config__initialize(a_dst")
 			for _, o := range n.Args() {
@@ -366,7 +366,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		// TODO.
 
-	case t.KeyOpenBracket:
+	case t.IDOpenBracket:
 		// n is an index.
 		if err := g.writeExpr(b, n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
@@ -382,7 +382,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		b.writeb(']')
 		return nil
 
-	case t.KeyColon:
+	case t.IDColon:
 		// n is a slice.
 		lhs := n.LHS().Expr()
 		mhs := n.MHS().Expr()
@@ -425,9 +425,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		return nil
 
-	case t.KeyDot:
+	case t.IDDot:
 		lhs := n.LHS().Expr()
-		if lhs.Ident().Key() == t.KeyIn {
+		if lhs.Ident() == t.IDIn {
 			b.writes(aPrefix)
 			b.writes(n.Ident().Str(g.tm))
 			return nil
@@ -436,7 +436,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
-		if key := lhs.MType().Decorator().Key(); key == t.KeyPtr || key == t.KeyNptr {
+		if key := lhs.MType().Decorator(); key == t.IDPtr || key == t.IDNptr {
 			b.writes("->")
 		} else {
 			b.writes(".")
@@ -445,7 +445,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		b.writes(n.Ident().Str(g.tm))
 		return nil
 
-	case t.KeyError, t.KeyStatus, t.KeySuspension:
+	case t.IDError, t.IDStatus, t.IDSuspension:
 		status := g.statusMap[n.StatusQID()]
 		if status.name == "" {
 			msg, _ := t.Unescape(n.Ident().Str(g.tm))
@@ -458,17 +458,17 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		b.writes(status.name)
 		return nil
 	}
-	return fmt.Errorf("unrecognized token.Key (0x%X) for writeExprOther", n.Operator().Key())
+	return fmt.Errorf("unrecognized token (0x%X) for writeExprOther", n.Operator())
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	b.writes(cOpNames[0xFF&n.Operator().Key()])
+	b.writes(cOpNames[0xFF&n.Operator()])
 	return g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	op := n.Operator()
-	if op.Key() == t.KeyXBinaryAs {
+	if op == t.IDXBinaryAs {
 		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
 	}
 	if pp == parenthesesMandatory {
@@ -478,7 +478,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp p
 		return err
 	}
 	// TODO: does KeyXBinaryAmpHat need special consideration?
-	b.writes(cOpNames[0xFF&op.Key()])
+	b.writes(cOpNames[0xFF&op])
 	if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
@@ -507,7 +507,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 	if pp == parenthesesMandatory {
 		b.writeb('(')
 	}
-	opName := cOpNames[0xFF&n.Operator().Key()]
+	opName := cOpNames[0xFF&n.Operator()]
 	for i, o := range n.Args() {
 		if i != 0 {
 			b.writes(opName)
@@ -549,7 +549,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	numPointers, innermost := 0, x
 	for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
 		// TODO: "nptr T", not just "ptr T".
-		if p := innermost.Decorator().Key(); p == t.KeyPtr {
+		if p := innermost.Decorator(); p == t.IDPtr {
 			if numPointers == maxNumPointers {
 				return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.Str(g.tm))
 			}
@@ -562,7 +562,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 
 	fallback := true
 	if qid := innermost.QID(); qid[0] == t.IDBase {
-		if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
+		if key := qid[1]; key < t.ID(len(cTypeNames)) {
 			if s := cTypeNames[key]; s != "" {
 				b.writes(s)
 				fallback = false
@@ -614,67 +614,67 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 }
 
 var cTypeNames = [...]string{
-	t.KeyI8:       "int8_t",
-	t.KeyI16:      "int16_t",
-	t.KeyI32:      "int32_t",
-	t.KeyI64:      "int64_t",
-	t.KeyU8:       "uint8_t",
-	t.KeyU16:      "uint16_t",
-	t.KeyU32:      "uint32_t",
-	t.KeyU64:      "uint64_t",
-	t.KeyBool:     "bool",
-	t.KeyIOReader: "wuffs_base__io_reader",
-	t.KeyIOWriter: "wuffs_base__io_writer",
+	t.IDI8:       "int8_t",
+	t.IDI16:      "int16_t",
+	t.IDI32:      "int32_t",
+	t.IDI64:      "int64_t",
+	t.IDU8:       "uint8_t",
+	t.IDU16:      "uint16_t",
+	t.IDU32:      "uint32_t",
+	t.IDU64:      "uint64_t",
+	t.IDBool:     "bool",
+	t.IDIOReader: "wuffs_base__io_reader",
+	t.IDIOWriter: "wuffs_base__io_writer",
 }
 
 var cOpNames = [256]string{
-	t.KeyEq:          " = ",
-	t.KeyPlusEq:      " += ",
-	t.KeyMinusEq:     " -= ",
-	t.KeyStarEq:      " *= ",
-	t.KeySlashEq:     " /= ",
-	t.KeyShiftLEq:    " <<= ",
-	t.KeyShiftREq:    " >>= ",
-	t.KeyAmpEq:       " &= ",
-	t.KeyAmpHatEq:    " no_such_amp_hat_C_operator ",
-	t.KeyPipeEq:      " |= ",
-	t.KeyHatEq:       " ^= ",
-	t.KeyPercentEq:   " %= ",
-	t.KeyTildePlusEq: " += ",
+	t.IDEq:          " = ",
+	t.IDPlusEq:      " += ",
+	t.IDMinusEq:     " -= ",
+	t.IDStarEq:      " *= ",
+	t.IDSlashEq:     " /= ",
+	t.IDShiftLEq:    " <<= ",
+	t.IDShiftREq:    " >>= ",
+	t.IDAmpEq:       " &= ",
+	t.IDAmpHatEq:    " no_such_amp_hat_C_operator ",
+	t.IDPipeEq:      " |= ",
+	t.IDHatEq:       " ^= ",
+	t.IDPercentEq:   " %= ",
+	t.IDTildePlusEq: " += ",
 
-	t.KeyXUnaryPlus:  " + ",
-	t.KeyXUnaryMinus: " - ",
-	t.KeyXUnaryNot:   " ! ",
-	t.KeyXUnaryRef:   " & ",
-	t.KeyXUnaryDeref: " * ",
+	t.IDXUnaryPlus:  " + ",
+	t.IDXUnaryMinus: " - ",
+	t.IDXUnaryNot:   " ! ",
+	t.IDXUnaryRef:   " & ",
+	t.IDXUnaryDeref: " * ",
 
-	t.KeyXBinaryPlus:        " + ",
-	t.KeyXBinaryMinus:       " - ",
-	t.KeyXBinaryStar:        " * ",
-	t.KeyXBinarySlash:       " / ",
-	t.KeyXBinaryShiftL:      " << ",
-	t.KeyXBinaryShiftR:      " >> ",
-	t.KeyXBinaryAmp:         " & ",
-	t.KeyXBinaryAmpHat:      " no_such_amp_hat_C_operator ",
-	t.KeyXBinaryPipe:        " | ",
-	t.KeyXBinaryHat:         " ^ ",
-	t.KeyXBinaryPercent:     " % ",
-	t.KeyXBinaryNotEq:       " != ",
-	t.KeyXBinaryLessThan:    " < ",
-	t.KeyXBinaryLessEq:      " <= ",
-	t.KeyXBinaryEqEq:        " == ",
-	t.KeyXBinaryGreaterEq:   " >= ",
-	t.KeyXBinaryGreaterThan: " > ",
-	t.KeyXBinaryAnd:         " && ",
-	t.KeyXBinaryOr:          " || ",
-	t.KeyXBinaryAs:          " no_such_as_C_operator ",
-	t.KeyXBinaryTildePlus:   " + ",
+	t.IDXBinaryPlus:        " + ",
+	t.IDXBinaryMinus:       " - ",
+	t.IDXBinaryStar:        " * ",
+	t.IDXBinarySlash:       " / ",
+	t.IDXBinaryShiftL:      " << ",
+	t.IDXBinaryShiftR:      " >> ",
+	t.IDXBinaryAmp:         " & ",
+	t.IDXBinaryAmpHat:      " no_such_amp_hat_C_operator ",
+	t.IDXBinaryPipe:        " | ",
+	t.IDXBinaryHat:         " ^ ",
+	t.IDXBinaryPercent:     " % ",
+	t.IDXBinaryNotEq:       " != ",
+	t.IDXBinaryLessThan:    " < ",
+	t.IDXBinaryLessEq:      " <= ",
+	t.IDXBinaryEqEq:        " == ",
+	t.IDXBinaryGreaterEq:   " >= ",
+	t.IDXBinaryGreaterThan: " > ",
+	t.IDXBinaryAnd:         " && ",
+	t.IDXBinaryOr:          " || ",
+	t.IDXBinaryAs:          " no_such_as_C_operator ",
+	t.IDXBinaryTildePlus:   " + ",
 
-	t.KeyXAssociativePlus: " + ",
-	t.KeyXAssociativeStar: " * ",
-	t.KeyXAssociativeAmp:  " & ",
-	t.KeyXAssociativePipe: " | ",
-	t.KeyXAssociativeHat:  " ^ ",
-	t.KeyXAssociativeAnd:  " && ",
-	t.KeyXAssociativeOr:   " || ",
+	t.IDXAssociativePlus: " + ",
+	t.IDXAssociativeStar: " * ",
+	t.IDXAssociativeAmp:  " & ",
+	t.IDXAssociativePipe: " | ",
+	t.IDXAssociativeHat:  " ^ ",
+	t.IDXAssociativeAnd:  " && ",
+	t.IDXAssociativeOr:   " || ",
 }

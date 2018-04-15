@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	maxID        = 1048575
 	maxLine      = 1048575
 	maxTokenSize = 1023
 )
@@ -33,7 +34,7 @@ func Unescape(s string) (unescaped string, ok bool) {
 
 type Map struct {
 	byName map[string]ID
-	byKey  []string
+	byID   []string
 }
 
 func (m *Map) Insert(name string) (ID, error) {
@@ -50,13 +51,12 @@ func (m *Map) Insert(name string) (ID, error) {
 		return id, nil
 	}
 
-	key := nBuiltInKeys + Key(len(m.byKey))
-	if key > maxKey {
+	id := nBuiltInIDs + ID(len(m.byID))
+	if id > maxID {
 		return 0, errors.New("token: too many distinct tokens")
 	}
-	id := ID(key << KeyShift)
 	m.byName[name] = id
-	m.byKey = append(m.byKey, name)
+	m.byID = append(m.byID, name)
 	return id, nil
 }
 
@@ -70,16 +70,13 @@ func (m *Map) ByName(name string) ID {
 	return 0
 }
 
-func (m *Map) ByID(x ID) string       { return m.ByKey(Key(x >> KeyShift)) }
-func (m *Map) ByToken(t Token) string { return m.ByKey(Key(t.ID >> KeyShift)) }
-
-func (m *Map) ByKey(k Key) string {
-	if k < nBuiltInKeys {
-		return builtInsByKey[k].name
+func (m *Map) ByID(x ID) string {
+	if x < nBuiltInIDs {
+		return builtInsByID[x].name
 	}
-	k -= nBuiltInKeys
-	if uint(k) < uint(len(m.byKey)) {
-		return m.byKey[k]
+	x -= nBuiltInIDs
+	if uint(x) < uint(len(m.byID)) {
+		return m.byID[x]
 	}
 	return ""
 }

@@ -28,7 +28,7 @@ var reasons = [...]struct {
 
 	{`"a < b: b > a"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// b > a
@@ -40,7 +40,7 @@ var reasons = [...]struct {
 
 	{`"a < b: a < c; c < b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// a < c
@@ -60,7 +60,7 @@ var reasons = [...]struct {
 
 	{`"a < b: a < c; c == b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// a < c
@@ -80,7 +80,7 @@ var reasons = [...]struct {
 
 	{`"a < b: a == c; c < b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// a == c
@@ -100,7 +100,7 @@ var reasons = [...]struct {
 
 	{`"a < b: a < c; c <= b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// a < c
@@ -120,7 +120,7 @@ var reasons = [...]struct {
 
 	{`"a < b: a <= c; c < b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		// a <= c
@@ -140,7 +140,7 @@ var reasons = [...]struct {
 
 	{`"a <= b: b >= a"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessEq {
+		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
 		// b >= a
@@ -152,7 +152,7 @@ var reasons = [...]struct {
 
 	{`"a <= b: a <= c; c <= b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessEq {
+		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
 		// a <= c
@@ -172,7 +172,7 @@ var reasons = [...]struct {
 
 	{`"a <= b: a <= c; c == b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessEq {
+		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
 		// a <= c
@@ -192,7 +192,7 @@ var reasons = [...]struct {
 
 	{`"a <= b: a == c; c <= b"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessEq {
+		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
 		// a == c
@@ -212,11 +212,11 @@ var reasons = [...]struct {
 
 	{`"a < (b + c): a < c; 0 <= b"`, func(q *checker, n *a.Assert) error {
 		op, xa, t0 := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		op, xb, xc := parseBinaryOp(t0)
-		if op.Key() != t.KeyXBinaryPlus {
+		if op != t.IDXBinaryPlus {
 			return errFailed
 		}
 		// a < c
@@ -232,11 +232,11 @@ var reasons = [...]struct {
 
 	{`"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"`, func(q *checker, n *a.Assert) error {
 		op, xa, t0 := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessThan {
+		if op != t.IDXBinaryLessThan {
 			return errFailed
 		}
 		op, xb, xc := parseBinaryOp(t0)
-		if op.Key() != t.KeyXBinaryPlus {
+		if op != t.IDXBinaryPlus {
 			return errFailed
 		}
 		// a < (b0 + c0)
@@ -265,11 +265,11 @@ var reasons = [...]struct {
 
 	{`"(a + b) <= c: a <= (c - b)"`, func(q *checker, n *a.Assert) error {
 		op, t0, xc := parseBinaryOp(n.Condition())
-		if op.Key() != t.KeyXBinaryLessEq {
+		if op != t.IDXBinaryLessEq {
 			return errFailed
 		}
 		op, xa, xb := parseBinaryOp(t0)
-		if op.Key() != t.KeyXBinaryPlus {
+		if op != t.IDXBinaryPlus {
 			return errFailed
 		}
 		// a <= (c - b)

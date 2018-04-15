@@ -263,15 +263,15 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 			// No-op.
 
 		case KExpr:
-			switch o.id0.Key() {
+			switch o.id0 {
 			default:
 				return nil
-			case t.KeyError, t.KeyStatus, t.KeySuspension:
+			case t.IDError, t.IDStatus, t.IDSuspension:
 				// No-op.
 			}
 
 		case KTypeExpr:
-			if o.id0.Key() != 0 {
+			if o.id0 != 0 {
 				return nil
 			}
 		}
@@ -664,17 +664,17 @@ func (n *TypeExpr) Innermost() *TypeExpr {
 }
 
 func (n *TypeExpr) Pointee() *TypeExpr {
-	for ; n != nil && n.id0.Key() == t.KeyPtr; n = n.Inner() {
+	for ; n != nil && n.id0 == t.IDPtr; n = n.Inner() {
 	}
 	return n
 }
 
 func (n *TypeExpr) IsBool() bool {
-	return n.id0 == 0 && n.id2.Key() == t.KeyBool
+	return n.id0 == 0 && n.id2 == t.IDBool
 }
 
 func (n *TypeExpr) IsIdeal() bool {
-	return n.id0 == 0 && n.id2.Key() == t.KeyDoubleZ
+	return n.id0 == 0 && n.id2 == t.IDDoubleZ
 }
 
 func (n *TypeExpr) IsNumType() bool {
@@ -682,35 +682,35 @@ func (n *TypeExpr) IsNumType() bool {
 }
 
 func (n *TypeExpr) IsNumTypeOrIdeal() bool {
-	return n.id0 == 0 && (n.id2.IsNumType() || n.id2.Key() == t.KeyDoubleZ)
+	return n.id0 == 0 && (n.id2.IsNumType() || n.id2 == t.IDDoubleZ)
 }
 
 func (n *TypeExpr) IsRefined() bool {
-	return n.id0.Key() != t.KeyArray && (n.lhs != nil || n.mhs != nil)
+	return n.id0 != t.IDArray && (n.lhs != nil || n.mhs != nil)
 }
 
 func (n *TypeExpr) IsArrayType() bool {
-	return n.id0.Key() == t.KeyArray
+	return n.id0 == t.IDArray
 }
 
 func (n *TypeExpr) IsSliceType() bool {
-	return n.id0.Key() == t.KeySlice
+	return n.id0 == t.IDSlice
 }
 
 func (n *TypeExpr) IsUnsignedInteger() bool {
-	return n.id0 == 0 && (n.id2.Key() == t.KeyU8 || n.id2.Key() == t.KeyU16 ||
-		n.id2.Key() == t.KeyU32 || n.id2.Key() == t.KeyU64)
+	return n.id0 == 0 &&
+		(n.id2 == t.IDU8 || n.id2 == t.IDU16 || n.id2 == t.IDU32 || n.id2 == t.IDU64)
 }
 
 func (n *TypeExpr) HasPointers() bool {
 	for ; n != nil; n = n.Inner() {
-		switch n.id0.Key() {
+		switch n.id0 {
 		case 0:
-			switch n.id2.Key() {
-			case t.KeyIOReader, t.KeyIOWriter:
+			switch n.id2 {
+			case t.IDIOReader, t.IDIOWriter:
 				return true
 			}
-		case t.KeyPtr, t.KeyNptr, t.KeySlice:
+		case t.IDPtr, t.IDNptr, t.IDSlice:
 			return true
 		}
 	}

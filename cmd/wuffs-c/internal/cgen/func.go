@@ -332,13 +332,13 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	for _, o := range n.In().Fields() {
 		o := o.Field()
 		oTyp := o.XType()
-		if oTyp.Decorator().Key() != t.KeyPtr && !oTyp.IsRefined() {
+		if oTyp.Decorator() != t.IDPtr && !oTyp.IsRefined() {
 			// TODO: Also check elements, for array-typed arguments.
 			continue
 		}
 
 		switch {
-		case oTyp.Decorator().Key() == t.KeyPtr:
+		case oTyp.Decorator() == t.IDPtr:
 			checks = append(checks, fmt.Sprintf("!%s%s", aPrefix, o.Name().Str(g.tm)))
 
 		case oTyp.IsRefined():
@@ -351,7 +351,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 				}
 			}
 			if qid := oTyp.QID(); qid[0] == t.IDBase {
-				if key := qid[1].Key(); key < t.Key(len(numTypeBounds)) {
+				if key := qid[1]; key < t.ID(len(numTypeBounds)) {
 					ntb := numTypeBounds[key]
 					for i := 0; i < 2; i++ {
 						if bounds[i] != nil && ntb[i] != nil && bounds[i].Cmp(ntb[i]) == 0 {
@@ -401,13 +401,13 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 }
 
 var numTypeBounds = [256][2]*big.Int{
-	t.KeyI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
-	t.KeyI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
-	t.KeyI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
-	t.KeyI64:  {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
-	t.KeyU8:   {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
-	t.KeyU16:  {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
-	t.KeyU32:  {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
-	t.KeyU64:  {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
-	t.KeyBool: {zero, one},
+	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
+	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
+	t.IDI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
+	t.IDI64:  {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
+	t.IDU8:   {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
+	t.IDU16:  {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
+	t.IDU32:  {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
+	t.IDU64:  {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
+	t.IDBool: {zero, one},
 }

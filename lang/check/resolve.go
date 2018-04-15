@@ -134,7 +134,7 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QQID]*a.Func
 }
 
 func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
-	if typ.Decorator().Key() != t.KeyOpenParen {
+	if typ.Decorator() != t.IDOpenParen {
 		return nil, fmt.Errorf("check: resolveFunc cannot look up non-func TypeExpr %q", typ.Str(c.tm))
 	}
 	lTyp := typ.Receiver()

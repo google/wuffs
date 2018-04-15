@@ -80,7 +80,7 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 	rMap := reasonMap{}
 	for _, r := range reasons {
 		if id := tm.ByName(r.s); id != 0 {
-			rMap[id.Key()] = r.r
+			rMap[id] = r.r
 		}
 	}
 	c := &Checker{
@@ -139,7 +139,7 @@ var phases = [...]struct {
 
 type reason func(q *checker, n *a.Assert) error
 
-type reasonMap map[t.Key]reason
+type reasonMap map[t.ID]reason
 
 type Checker struct {
 	tm         *t.Map
@@ -359,7 +359,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if n.Operator().Key() != t.KeyDollar {
+		if n.Operator() != t.IDDollar {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {

@@ -46,7 +46,7 @@ func (n *Expr) Eq(o *Expr) bool {
 		return false
 	}
 
-	if n.id0.Key() == t.KeyXBinaryAs {
+	if n.id0 == t.IDXBinaryAs {
 		if !n.rhs.TypeExpr().Eq(o.rhs.TypeExpr()) {
 			return false
 		}
@@ -72,7 +72,7 @@ func (n *Expr) Mentions(o *Expr) bool {
 	if n.Eq(o) ||
 		n.lhs.Expr().Mentions(o) ||
 		n.mhs.Expr().Mentions(o) ||
-		(n.id0.Key() != t.KeyXBinaryAs && n.rhs.Expr().Mentions(o)) {
+		(n.id0 != t.IDXBinaryAs && n.rhs.Expr().Mentions(o)) {
 		return true
 	}
 	for _, x := range n.list0 {

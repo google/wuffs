@@ -23,15 +23,15 @@ import (
 )
 
 var numTypeBounds = [256][2]*big.Int{
-	t.KeyI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
-	t.KeyI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
-	t.KeyI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
-	t.KeyI64:  {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
-	t.KeyU8:   {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
-	t.KeyU16:  {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
-	t.KeyU32:  {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
-	t.KeyU64:  {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
-	t.KeyBool: {zero, one},
+	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
+	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
+	t.IDI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
+	t.IDI64:  {big.NewInt(-1 << 63), big.NewInt(1<<63 - 1)},
+	t.IDU8:   {zero, big.NewInt(0).SetUint64(1<<8 - 1)},
+	t.IDU16:  {zero, big.NewInt(0).SetUint64(1<<16 - 1)},
+	t.IDU32:  {zero, big.NewInt(0).SetUint64(1<<32 - 1)},
+	t.IDU64:  {zero, big.NewInt(0).SetUint64(1<<64 - 1)},
+	t.IDBool: {zero, one},
 }
 
 var (
@@ -95,13 +95,13 @@ func bitMask(nBits int) *big.Int {
 	case 1:
 		return one
 	case 8:
-		return numTypeBounds[t.KeyU8][1]
+		return numTypeBounds[t.IDU8][1]
 	case 16:
-		return numTypeBounds[t.KeyU16][1]
+		return numTypeBounds[t.IDU16][1]
 	case 32:
-		return numTypeBounds[t.KeyU32][1]
+		return numTypeBounds[t.IDU32][1]
 	case 64:
-		return numTypeBounds[t.KeyU64][1]
+		return numTypeBounds[t.IDU64][1]
 	}
 	z := big.NewInt(0).Lsh(one, uint(nBits))
 	return z.Sub(z, one)
@@ -115,22 +115,22 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.Str(tm))
 	}
 	op, lhs, rhs, args := n.Operator(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
-	switch op.Key() {
-	case t.KeyXUnaryNot:
+	switch op {
+	case t.IDXUnaryNot:
 		return rhs, nil
-	case t.KeyXBinaryNotEq:
+	case t.IDXBinaryNotEq:
 		op = t.IDXBinaryEqEq
-	case t.KeyXBinaryLessThan:
+	case t.IDXBinaryLessThan:
 		op = t.IDXBinaryGreaterEq
-	case t.KeyXBinaryLessEq:
+	case t.IDXBinaryLessEq:
 		op = t.IDXBinaryGreaterThan
-	case t.KeyXBinaryEqEq:
+	case t.IDXBinaryEqEq:
 		op = t.IDXBinaryNotEq
-	case t.KeyXBinaryGreaterEq:
+	case t.IDXBinaryGreaterEq:
 		op = t.IDXBinaryLessThan
-	case t.KeyXBinaryGreaterThan:
+	case t.IDXBinaryGreaterThan:
 		op = t.IDXBinaryLessEq
-	case t.KeyXBinaryAnd, t.KeyXBinaryOr:
+	case t.IDXBinaryAnd, t.IDXBinaryOr:
 		var err error
 		lhs, err = invert(tm, lhs)
 		if err != nil {
@@ -140,12 +140,12 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		if op.Key() == t.KeyXBinaryAnd {
+		if op == t.IDXBinaryAnd {
 			op = t.IDXBinaryOr
 		} else {
 			op = t.IDXBinaryAnd
 		}
-	case t.KeyXAssociativeAnd, t.KeyXAssociativeOr:
+	case t.IDXAssociativeAnd, t.IDXAssociativeOr:
 		args = make([]*a.Node, 0, len(n.Args()))
 		for _, a := range n.Args() {
 			v, err := invert(tm, a.Expr())
@@ -154,7 +154,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			}
 			args = append(args, v.Node())
 		}
-		if op.Key() == t.KeyXAssociativeAnd {
+		if op == t.IDXAssociativeAnd {
 			op = t.IDXAssociativeOr
 		} else {
 			op = t.IDXAssociativeAnd
@@ -170,8 +170,8 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	b := [2]*big.Int{}
 	if typ.Decorator() == 0 {
-		if qid := typ.QID(); qid[0] == t.IDBase && qid[1].Key() < t.Key(len(numTypeBounds)) {
-			b = numTypeBounds[qid[1].Key()]
+		if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
+			b = numTypeBounds[qid[1]]
 		}
 	}
 	if b[0] == nil || b[1] == nil {
@@ -228,7 +228,7 @@ loop:
 		case a.KJump:
 			break loop
 		case a.KRet:
-			if o.Ret().Keyword().Key() == t.KeyReturn {
+			if o.Ret().Keyword() == t.IDReturn {
 				break loop
 			}
 			// o is a yield statement.
@@ -280,12 +280,12 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KJump:
 		n := n.Jump()
-		skip := t.KeyPost
-		if n.Keyword().Key() == t.KeyBreak {
-			skip = t.KeyPre
+		skip := t.IDPost
+		if n.Keyword() == t.IDBreak {
+			skip = t.IDPre
 		}
 		for _, o := range n.JumpTarget().Asserts() {
-			if o.Assert().Keyword().Key() == skip {
+			if o.Assert().Keyword() == skip {
 				continue
 			}
 			if err := q.bcheckAssert(o.Assert()); err != nil {
@@ -343,13 +343,13 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 			err = nil
 		}
 	} else if reasonID := n.Reason(); reasonID != 0 {
-		if reasonFunc := q.reasonMap[reasonID.Key()]; reasonFunc != nil {
+		if reasonFunc := q.reasonMap[reasonID]; reasonFunc != nil {
 			err = reasonFunc(q, n)
 		} else {
 			err = fmt.Errorf("no such reason %s", reasonID.Str(q.tm))
 		}
-	} else if condition.Operator().IsBinaryOp() && condition.Operator().Key() != t.KeyAs {
-		err = q.proveBinaryOp(condition.Operator().Key(), condition.LHS().Expr(), condition.RHS().Expr())
+	} else if condition.Operator().IsBinaryOp() && condition.Operator() != t.IDAs {
+		err = q.proveBinaryOp(condition.Operator(), condition.LHS().Expr(), condition.RHS().Expr())
 	}
 
 	if err != nil {
@@ -400,8 +400,8 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			if xRHS.Mentions(lhs) {
 				return nil, nil
 			}
-			switch op.Key() {
-			case t.KeyPlusEq, t.KeyMinusEq:
+			switch op {
+			case t.IDPlusEq, t.IDMinusEq:
 				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, 0, xRHS.Node(), nil, rhs.Node(), nil)
 				oRHS.SetMType(xRHS.MType())
 				oRHS, err := simplify(q.tm, oRHS)
@@ -435,14 +435,14 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 }
 
 func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	switch lhs.MType().Decorator().Key() {
-	case t.KeyPtr:
+	switch lhs.MType().Decorator() {
+	case t.IDPtr:
 		// TODO: handle.
 		return nil
-	case t.KeyArray:
+	case t.IDArray:
 		// TODO: handle.
 		return nil
-		// TODO: t.KeySlice?
+		// TODO: t.IDSlice?
 	}
 
 	_, _, err := q.bcheckExpr(lhs, 0)
@@ -454,7 +454,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 
 func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	if lhs == nil && op != t.IDEq {
-		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op.Key())
+		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
 	lMin, lMax, err := q.bcheckTypeExpr(lTyp)
@@ -472,7 +472,7 @@ func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		}
 		rMin, rMax, err = q.bcheckExpr(rhs, 0)
 	} else {
-		rMin, rMax, err = q.bcheckExprBinaryOp(op.BinaryForm().Key(), lhs, rhs, 0)
+		rMin, rMax, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)
 	}
 	if err != nil {
 		return err
@@ -521,7 +521,7 @@ func terminates(body []*a.Node) bool {
 		case a.KJump:
 			return true
 		case a.KRet:
-			return n.Ret().Keyword().Key() == t.KeyReturn
+			return n.Ret().Keyword() == t.IDReturn
 		}
 		return false
 	}
@@ -612,7 +612,7 @@ func (q *checker) bcheckIf(n *a.If) error {
 func (q *checker) bcheckWhile(n *a.While) error {
 	// Check the pre and inv conditions on entry.
 	for _, o := range n.Asserts() {
-		if o.Assert().Keyword().Key() == t.KeyPost {
+		if o.Assert().Keyword() == t.IDPost {
 			continue
 		}
 		if err := q.bcheckAssert(o.Assert()); err != nil {
@@ -641,7 +641,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	} else {
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword().Key() == t.KeyPost {
+			if o.Assert().Keyword() == t.IDPost {
 				continue
 			}
 			q.facts.appendFact(o.Assert().Condition())
@@ -652,7 +652,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			q.facts.appendFact(inverse)
 		}
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword().Key() == t.KeyPost {
+			if o.Assert().Keyword() == t.IDPost {
 				if err := q.bcheckAssert(o.Assert()); err != nil {
 					return err
 				}
@@ -667,7 +667,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// Assume the pre and inv conditions...
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword().Key() == t.KeyPost {
+			if o.Assert().Keyword() == t.IDPost {
 				continue
 			}
 			q.facts.appendFact(o.Assert().Condition())
@@ -684,7 +684,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// body.
 		if !terminates(n.Body()) {
 			for _, o := range n.Asserts() {
-				if o.Assert().Keyword().Key() == t.KeyPost {
+				if o.Assert().Keyword() == t.IDPost {
 					continue
 				}
 				if err := q.bcheckAssert(o.Assert()); err != nil {
@@ -697,7 +697,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	// Assume the inv and post conditions.
 	q.facts = q.facts[:0]
 	for _, o := range n.Asserts() {
-		if o.Assert().Keyword().Key() == t.KeyPre {
+		if o.Assert().Keyword() == t.IDPre {
 			continue
 		}
 		q.facts.appendFact(o.Assert().Condition())
@@ -759,10 +759,10 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 	case op.IsXUnaryOp():
 		return q.bcheckExprUnaryOp(n, depth)
 	case op.IsXBinaryOp():
-		if op.Key() == t.KeyXBinaryAs {
+		if op == t.IDXBinaryAs {
 			return q.bcheckExpr(n.LHS().Expr(), depth)
 		}
-		return q.bcheckExprBinaryOp(op.Key(), n.LHS().Expr(), n.RHS().Expr(), depth)
+		return q.bcheckExprBinaryOp(op, n.LHS().Expr(), n.RHS().Expr(), depth)
 	case op.IsXAssociativeOp():
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
@@ -771,7 +771,7 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 }
 
 func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	switch n.Operator().Key() {
+	switch n.Operator() {
 	case 0:
 		// Look for named consts.
 		//
@@ -785,23 +785,23 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 		}
 
-	case t.KeyOpenParen, t.KeyTry:
+	case t.IDOpenParen, t.IDTry:
 		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
 			return nil, nil, err
 		}
 
 		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.KeyReadU8, 0) || isInSrc(q.tm, n, t.KeyUnreadU8, 0) ||
-			isInSrc(q.tm, n, t.KeyReadU16BE, 0) || isInSrc(q.tm, n, t.KeyReadU32BE, 0) ||
-			isInSrc(q.tm, n, t.KeyReadU32BE, 0) || isInSrc(q.tm, n, t.KeyReadU32LE, 0) ||
-			isInSrc(q.tm, n, t.KeySkip32, 1) || isInSrc(q.tm, n, t.KeySinceMark, 0) ||
-			isInSrc(q.tm, n, t.KeyMark, 0) || isInSrc(q.tm, n, t.KeyLimit, 1) ||
-			isInDst(q.tm, n, t.KeyCopyFromSlice, 1) || isInDst(q.tm, n, t.KeyCopyFromSlice32, 2) ||
-			isInDst(q.tm, n, t.KeyCopyFromReader32, 2) || isInDst(q.tm, n, t.KeyCopyFromHistory32, 2) ||
-			isInDst(q.tm, n, t.KeyWriteU8, 1) || isInDst(q.tm, n, t.KeySinceMark, 0) ||
-			isInDst(q.tm, n, t.KeyMark, 0) || isInDst(q.tm, n, t.KeyIsMarked, 0) ||
-			isThatMethod(q.tm, n, t.KeyMark, 0) || isThatMethod(q.tm, n, t.KeyLimit, 1) ||
-			isThatMethod(q.tm, n, t.KeySinceMark, 0) {
+		if isInSrc(q.tm, n, t.IDReadU8, 0) || isInSrc(q.tm, n, t.IDUnreadU8, 0) ||
+			isInSrc(q.tm, n, t.IDReadU16BE, 0) || isInSrc(q.tm, n, t.IDReadU32BE, 0) ||
+			isInSrc(q.tm, n, t.IDReadU32BE, 0) || isInSrc(q.tm, n, t.IDReadU32LE, 0) ||
+			isInSrc(q.tm, n, t.IDSkip32, 1) || isInSrc(q.tm, n, t.IDSinceMark, 0) ||
+			isInSrc(q.tm, n, t.IDMark, 0) || isInSrc(q.tm, n, t.IDLimit, 1) ||
+			isInDst(q.tm, n, t.IDCopyFromSlice, 1) || isInDst(q.tm, n, t.IDCopyFromSlice32, 2) ||
+			isInDst(q.tm, n, t.IDCopyFromReader32, 2) || isInDst(q.tm, n, t.IDCopyFromHistory32, 2) ||
+			isInDst(q.tm, n, t.IDWriteU8, 1) || isInDst(q.tm, n, t.IDSinceMark, 0) ||
+			isInDst(q.tm, n, t.IDMark, 0) || isInDst(q.tm, n, t.IDIsMarked, 0) ||
+			isThatMethod(q.tm, n, t.IDMark, 0) || isThatMethod(q.tm, n, t.IDLimit, 1) ||
+			isThatMethod(q.tm, n, t.IDSinceMark, 0) {
 
 			for _, o := range n.Args() {
 				a := o.Arg().Value()
@@ -818,7 +818,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			break
 		}
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isThatMethod(q.tm, n, t.KeyLowBits, 1) || isThatMethod(q.tm, n, t.KeyHighBits, 1) {
+		if isThatMethod(q.tm, n, t.IDLowBits, 1) || isThatMethod(q.tm, n, t.IDHighBits, 1) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {
@@ -836,13 +836,13 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
 		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isThatMethod(q.tm, n, t.KeyIsError, 0) || isThatMethod(q.tm, n, t.KeyIsOK, 0) ||
-			isThatMethod(q.tm, n, t.KeyIsSuspension, 0) || isThatMethod(q.tm, n, t.KeySuffix, 1) {
+		if isThatMethod(q.tm, n, t.IDIsError, 0) || isThatMethod(q.tm, n, t.IDIsOK, 0) ||
+			isThatMethod(q.tm, n, t.IDIsSuspension, 0) || isThatMethod(q.tm, n, t.IDSuffix, 1) {
 			// TODO: should return be break? Ditto below.
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width").Key(), 1) {
+		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width"), 1) {
 			a := n.Args()[0].Arg().Value()
 			aMin, aMax, err := q.bcheckExpr(a, depth)
 			if err != nil {
@@ -854,10 +854,10 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 2) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode").Key(), 3) ||
-			isThatMethod(q.tm, n, t.KeyCopyFromSlice, 1) ||
-			isThatMethod(q.tm, n, q.tm.ByName("update").Key(), 1) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode"), 2) ||
+			isThatMethod(q.tm, n, q.tm.ByName("decode"), 3) ||
+			isThatMethod(q.tm, n, t.IDCopyFromSlice, 1) ||
+			isThatMethod(q.tm, n, q.tm.ByName("update"), 1) {
 			for _, o := range n.Args() {
 				a := o.Arg().Value()
 				aMin, aMax, err := q.bcheckExpr(a, depth)
@@ -871,7 +871,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.KeyLength, 0) || isThatMethod(q.tm, n, t.KeyAvailable, 0) {
+		if isThatMethod(q.tm, n, t.IDLength, 0) || isThatMethod(q.tm, n, t.IDAvailable, 0) {
 			break
 		}
 
@@ -879,7 +879,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 
-	case t.KeyOpenBracket:
+	case t.IDOpenBracket:
 		lhs := n.LHS().Expr()
 		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
@@ -903,7 +903,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 
-	case t.KeyColon:
+	case t.IDColon:
 		lhs := n.LHS().Expr()
 		mhs := n.MHS().Expr()
 		rhs := n.RHS().Expr()
@@ -940,9 +940,9 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 		return nil, nil, nil
 
-	case t.KeyDot:
+	case t.IDDot:
 		// TODO: delete this hack that only matches "in".
-		if n.LHS().Expr().Ident().Key() == t.KeyIn {
+		if n.LHS().Expr().Ident() == t.IDIn {
 			for _, o := range q.astFunc.In().Fields() {
 				o := o.Field()
 				if o.Name() == n.Ident() {
@@ -958,11 +958,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 
-	case t.KeyError, t.KeyStatus, t.KeySuspension:
+	case t.IDError, t.IDStatus, t.IDSuspension:
 		// No-op.
 
 	default:
-		return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprOther", n.Operator().Key())
+		return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
 	return q.bcheckTypeExpr(n.MType())
 }
@@ -999,21 +999,21 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 		return nil, nil, err
 	}
 
-	switch n.Operator().Key() {
-	case t.KeyXUnaryPlus:
+	switch n.Operator() {
+	case t.IDXUnaryPlus:
 		return rMin, rMax, nil
-	case t.KeyXUnaryMinus:
+	case t.IDXUnaryMinus:
 		return neg(rMax), neg(rMin), nil
-	case t.KeyXUnaryNot:
+	case t.IDXUnaryNot:
 		return zero, one, nil
-	case t.KeyXUnaryRef, t.KeyXUnaryDeref:
+	case t.IDXUnaryRef, t.IDXUnaryDeref:
 		return q.bcheckTypeExpr(n.MType())
 	}
 
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprUnaryOp", n.Operator().Key())
+	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
 }
 
-func (q *checker) bcheckExprBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	lMin, lMax, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
 		return nil, nil, err
@@ -1021,17 +1021,17 @@ func (q *checker) bcheckExprBinaryOp(op t.Key, lhs *a.Expr, rhs *a.Expr, depth u
 	return q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, rhs, depth)
 }
 
-func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	rMin, rMax, err := q.bcheckExpr(rhs, depth)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	switch op {
-	case t.KeyXBinaryPlus:
+	case t.IDXBinaryPlus:
 		return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
 
-	case t.KeyXBinaryMinus:
+	case t.IDXBinaryMinus:
 		nMin := big.NewInt(0).Sub(lMin, rMax)
 		nMax := big.NewInt(0).Sub(lMax, rMin)
 		for _, x := range q.facts {
@@ -1039,20 +1039,20 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 			if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
 				continue
 			}
-			switch xOp.Key() {
-			case t.KeyXBinaryLessThan:
+			switch xOp {
+			case t.IDXBinaryLessThan:
 				nMax = min(nMax, minusOne)
-			case t.KeyXBinaryLessEq:
+			case t.IDXBinaryLessEq:
 				nMax = min(nMax, zero)
-			case t.KeyXBinaryGreaterEq:
+			case t.IDXBinaryGreaterEq:
 				nMin = max(nMin, zero)
-			case t.KeyXBinaryGreaterThan:
+			case t.IDXBinaryGreaterThan:
 				nMin = max(nMin, one)
 			}
 		}
 		return nMin, nMax, nil
 
-	case t.KeyXBinaryStar:
+	case t.IDXBinaryStar:
 		// TODO: handle multiplication by negative numbers. Note that this
 		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
 		if lMin.Sign() < 0 {
@@ -1063,10 +1063,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		}
 		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
 
-	case t.KeyXBinarySlash:
+	case t.IDXBinarySlash:
 		// TODO.
 
-	case t.KeyXBinaryShiftL:
+	case t.IDXBinaryShiftL:
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
@@ -1078,7 +1078,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		}
 		return big.NewInt(0).Lsh(lMin, uint(rMin.Uint64())), big.NewInt(0).Lsh(lMax, uint(rMax.Uint64())), nil
 
-	case t.KeyXBinaryShiftR:
+	case t.IDXBinaryShiftR:
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
@@ -1094,36 +1094,36 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		}
 		return big.NewInt(0).Rsh(lMin, uint(rMax.Uint64())), nMax, nil
 
-	case t.KeyXBinaryAmp, t.KeyXBinaryPipe, t.KeyXBinaryHat:
+	case t.IDXBinaryAmp, t.IDXBinaryPipe, t.IDXBinaryHat:
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if lMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
+		if lMax.Cmp(numTypeBounds[t.IDU64][1]) > 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
 		}
 		if rMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rMax.Cmp(numTypeBounds[t.KeyU64][1]) > 0 {
+		if rMax.Cmp(numTypeBounds[t.IDU64][1]) > 0 {
 			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
 		}
 		z := (*big.Int)(nil)
 		switch op {
-		case t.KeyXBinaryAmp:
+		case t.IDXBinaryAmp:
 			z = min(lMax, rMax)
-		case t.KeyXBinaryPipe, t.KeyXBinaryHat:
+		case t.IDXBinaryPipe, t.IDXBinaryHat:
 			z = max(lMax, rMax)
 		}
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
 		// conservative, but works fine in practice.
 		return zero, bitMask(z.BitLen()), nil
 
-	case t.KeyXBinaryAmpHat:
+	case t.IDXBinaryAmpHat:
 		// TODO.
 
-	case t.KeyXBinaryPercent:
+	case t.IDXBinaryPercent:
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.Str(q.tm))
 		}
@@ -1132,31 +1132,31 @@ func (q *checker) bcheckExprBinaryOp1(op t.Key, lhs *a.Expr, lMin *big.Int, lMax
 		}
 		return zero, big.NewInt(0).Sub(rMax, one), nil
 
-	case t.KeyXBinaryNotEq, t.KeyXBinaryLessThan, t.KeyXBinaryLessEq, t.KeyXBinaryEqEq,
-		t.KeyXBinaryGreaterEq, t.KeyXBinaryGreaterThan, t.KeyXBinaryAnd, t.KeyXBinaryOr:
+	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,
+		t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan, t.IDXBinaryAnd, t.IDXBinaryOr:
 		return zero, one, nil
 
-	case t.KeyXBinaryAs:
+	case t.IDXBinaryAs:
 		// Unreachable, as this is checked by the caller.
 
-	case t.KeyXBinaryTildePlus:
+	case t.IDXBinaryTildePlus:
 		typ := lhs.MType()
 		if typ.IsIdeal() {
 			typ = rhs.MType()
 		}
 		if qid := typ.QID(); qid[0] == t.IDBase {
-			b := numTypeBounds[qid[1].Key()]
+			b := numTypeBounds[qid[1]]
 			return b[0], b[1], nil
 		}
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token.Key (0x%X) for bcheckExprBinaryOp", op)
+	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
 }
 
 func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	op := n.Operator().AmbiguousForm().BinaryForm().Key()
+	op := n.Operator().AmbiguousForm().BinaryForm()
 	if op == 0 {
 		return nil, nil, fmt.Errorf(
-			"check: unrecognized token.Key (0x%X) for bcheckExprAssociativeOp", n.Operator().Key())
+			"check: unrecognized token (0x%X) for bcheckExprAssociativeOp", n.Operator())
 	}
 	args := n.Args()
 	if len(args) < 1 {
@@ -1185,24 +1185,24 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 		return nil, nil, nil
 	}
 
-	switch typ.Decorator().Key() {
-	// TODO: case t.KeyOpenParen.
-	case t.KeyPtr, t.KeyArray, t.KeySlice:
+	switch typ.Decorator() {
+	// TODO: case t.IDOpenParen.
+	case t.IDPtr, t.IDArray, t.IDSlice:
 		return nil, nil, nil
 	}
 
 	// TODO: is the special cases for io_reader and io_writer superfluous with
 	// the general purpose code for built-ins below?
 	if qid := typ.QID(); qid[0] == t.IDBase {
-		switch qid[1].Key() {
-		case t.KeyIOReader, t.KeyIOWriter:
+		switch qid[1] {
+		case t.IDIOReader, t.IDIOWriter:
 			return nil, nil, nil
 		}
 	}
 
 	b := [2]*big.Int{}
-	if qid := typ.QID(); qid[0] == t.IDBase && qid[1].Key() < t.Key(len(numTypeBounds)) {
-		b = numTypeBounds[qid[1].Key()]
+	if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
+		b = numTypeBounds[qid[1]]
 	}
 	// TODO: should || be && instead (see also func typeBounds)? Is this if
 	// code superfluous?

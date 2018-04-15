@@ -33,16 +33,16 @@ import (
 
 // splitReceiverMethodArgs returns the "receiver", "method" and "args" in the
 // expression "receiver.method(args)".
-func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.Key, args []*a.Node) {
-	if n.Operator().Key() != t.KeyOpenParen {
+func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.ID, args []*a.Node) {
+	if n.Operator() != t.IDOpenParen {
 		return nil, 0, nil
 	}
 	args = n.Args()
 	n = n.LHS().Expr()
-	if n.Operator().Key() != t.KeyDot {
+	if n.Operator() != t.IDDot {
 		return nil, 0, nil
 	}
-	return n.LHS().Expr(), n.Ident().Key(), args
+	return n.LHS().Expr(), n.Ident(), args
 }
 
 // TODO: should optimizeNonSuspendible be optimizeExpr and check both
@@ -63,12 +63,12 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
 
 	switch nMethod {
-	case t.KeyCopyFromHistory32:
+	case t.IDCopyFromHistory32:
 		return q.optimizeCopyFromHistory32(n)
-	case t.KeySinceMark:
+	case t.IDSinceMark:
 		for _, x := range q.facts {
 			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
-			if xMethod == t.KeyIsMarked && xReceiver.Eq(nReceiver) {
+			if xMethod == t.IDIsMarked && xReceiver.Eq(nReceiver) {
 				n.SetBoundsCheckOptimized()
 				return nil
 			}
@@ -99,7 +99,7 @@ check0:
 	for {
 		for _, x := range q.facts {
 			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
-			if xMethod == t.KeyIsMarked && xReceiver.Eq(nReceiver) {
+			if xMethod == t.IDIsMarked && xReceiver.Eq(nReceiver) {
 				break check0
 			}
 		}
@@ -110,7 +110,7 @@ check0:
 check1:
 	for {
 		for _, x := range q.facts {
-			if x.Operator().Key() != t.KeyXBinaryGreaterThan {
+			if x.Operator() != t.IDXBinaryGreaterThan {
 				continue
 			}
 			if lhs := x.LHS().Expr(); !lhs.Eq(d) {
@@ -128,13 +128,13 @@ check1:
 check2:
 	for {
 		for _, x := range q.facts {
-			if x.Operator().Key() != t.KeyXBinaryLessEq {
+			if x.Operator() != t.IDXBinaryLessEq {
 				continue
 			}
 
 			// Check that the LHS is "d as base.u64".
 			lhs := x.LHS().Expr()
-			if lhs.Operator().Key() != t.KeyXBinaryAs {
+			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
@@ -144,11 +144,11 @@ check2:
 
 			// Check that the RHS is "nReceiver.since_mark().length()".
 			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
-			if method != t.KeyLength || len(yArgs) != 0 {
+			if method != t.IDLength || len(yArgs) != 0 {
 				continue
 			}
 			z, method, zArgs := splitReceiverMethodArgs(y)
-			if method != t.KeySinceMark || len(zArgs) != 0 {
+			if method != t.IDSinceMark || len(zArgs) != 0 {
 				continue
 			}
 			if !z.Eq(nReceiver) {
@@ -164,13 +164,13 @@ check2:
 check3:
 	for {
 		for _, x := range q.facts {
-			if x.Operator().Key() != t.KeyXBinaryLessEq {
+			if x.Operator() != t.IDXBinaryLessEq {
 				continue
 			}
 
 			// Check that the LHS is "l as base.u64".
 			lhs := x.LHS().Expr()
-			if lhs.Operator().Key() != t.KeyXBinaryAs {
+			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
 			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
@@ -180,7 +180,7 @@ check3:
 
 			// Check that the RHS is "nReceiver.available()".
 			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
-			if method != t.KeyAvailable || len(yArgs) != 0 {
+			if method != t.IDAvailable || len(yArgs) != 0 {
 				continue
 			}
 			if !y.Eq(nReceiver) {
@@ -227,13 +227,13 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 
 	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
 
-	if nMethod == t.KeyUnreadU8 {
+	if nMethod == t.IDUnreadU8 {
 		// unread_u8 can never suspend, only succeed or fail.
 		n.SetProvenNotToSuspend()
 		return nil
 	}
 
-	if nMethod < t.Key(len(ioMethodAdvances)) {
+	if nMethod < t.ID(len(ioMethodAdvances)) {
 		if advance := ioMethodAdvances[nMethod]; advance != nil {
 			return q.optimizeIOMethodAdvance(n, nReceiver, advance)
 		}
@@ -244,8 +244,8 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 
 func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
 	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-		op := x.Operator().Key()
-		if op != t.KeyXBinaryGreaterEq && op != t.KeyXBinaryGreaterThan {
+		op := x.Operator()
+		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
 			return x, nil
 		}
 
@@ -256,11 +256,11 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 
 		// Check that lhs is "receiver.available()".
 		lhs := x.LHS().Expr()
-		if lhs.Operator().Key() != t.KeyOpenParen || len(lhs.Args()) != 0 {
+		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
 		}
 		lhs = lhs.LHS().Expr()
-		if lhs.Operator().Key() != t.KeyDot || lhs.Ident().Key() != t.KeyAvailable {
+		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDAvailable {
 			return x, nil
 		}
 		lhs = lhs.LHS().Expr()
@@ -272,8 +272,8 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 		// rcv to be the bytes remaining. If not, discard the fact x.
 		//
 		// TODO: mark the call as proven not to suspend.
-		if op == t.KeyXBinaryGreaterThan {
-			op = t.KeyXBinaryGreaterEq
+		if op == t.IDXBinaryGreaterThan {
+			op = t.IDXBinaryGreaterEq
 			rcv = big.NewInt(0).Add(rcv, one)
 		}
 		if rcv.Cmp(advance) < 0 {
@@ -300,19 +300,19 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 }
 
 var ioMethodAdvances = [256]*big.Int{
-	t.KeyReadU8:    one,
-	t.KeyReadU16BE: two,
-	t.KeyReadU16LE: two,
-	t.KeyReadU32BE: four,
-	t.KeyReadU32LE: four,
-	t.KeyReadU64BE: eight,
-	t.KeyReadU64LE: eight,
+	t.IDReadU8:    one,
+	t.IDReadU16BE: two,
+	t.IDReadU16LE: two,
+	t.IDReadU32BE: four,
+	t.IDReadU32LE: four,
+	t.IDReadU64BE: eight,
+	t.IDReadU64LE: eight,
 
-	t.KeyWriteU8:    one,
-	t.KeyWriteU16BE: two,
-	t.KeyWriteU16LE: two,
-	t.KeyWriteU32BE: four,
-	t.KeyWriteU32LE: four,
-	t.KeyWriteU64BE: eight,
-	t.KeyWriteU64LE: eight,
+	t.IDWriteU8:    one,
+	t.IDWriteU16BE: two,
+	t.IDWriteU16LE: two,
+	t.IDWriteU32BE: four,
+	t.IDWriteU32LE: four,
+	t.IDWriteU64BE: eight,
+	t.IDWriteU64LE: eight,
 }

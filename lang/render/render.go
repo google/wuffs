@@ -110,19 +110,19 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if tok.ID.Key() != t.KeyOpenParen || !isCloseIdentStrLiteral(tm, prevID) {
+				if tok.ID != t.IDOpenParen || !isCloseIdentStrLiteral(tm, prevID) {
 					buf = append(buf, ' ')
 				}
 			}
 
-			buf = append(buf, tm.ByToken(tok)...)
+			buf = append(buf, tm.ByID(tok.ID)...)
 
-			if tok.ID.Key() == t.KeyOpenCurly {
+			if tok.ID == t.IDOpenCurly {
 				if indent == maxIndent {
 					return errors.New("render: too many \"{\" tokens")
 				}
 				indent++
-			} else if tok.ID.Key() == t.KeyCloseCurly {
+			} else if tok.ID == t.IDCloseCurly {
 				if indent == 0 {
 					return errors.New("render: too many \"}\" tokens")
 				}

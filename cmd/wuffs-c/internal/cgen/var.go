@@ -32,19 +32,19 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 				return nil
 			}
 			q := p.Expr()
-			if q.Operator().Key() != t.KeyOpenParen {
+			if q.Operator() != t.IDOpenParen {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.Operator().Key() != t.KeyDot {
+			if q.Operator() != t.IDDot {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.Operator().Key() != t.KeyDot || q.Ident() != name {
+			if q.Operator() != t.IDDot || q.Ident() != name {
 				return nil
 			}
 			q = q.LHS().Expr()
-			if q.Operator() != 0 || q.Ident().Key() != t.KeyIn {
+			if q.Operator() != 0 || q.Ident() != t.IDIn {
 				return nil
 			}
 			return errNeedDerivedVar
@@ -220,7 +220,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
 		return nil
 	}
 	for _, o := range n.Args() {
@@ -240,7 +240,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.Operator().Key(); k != t.KeyOpenParen && k != t.KeyTry {
+	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
 		return nil
 	}
 	for _, o := range n.Args() {
@@ -305,14 +305,14 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 		}
 		rhs := ""
 
-		switch typ.Decorator().Key() {
+		switch typ.Decorator() {
 		case 0:
 			if qid := typ.QID(); qid[0] == t.IDBase {
-				if key := qid[1].Key(); key < t.Key(len(cTypeNames)) {
+				if key := qid[1]; key < t.ID(len(cTypeNames)) {
 					rhs = cTypeNames[key]
 				}
 			}
-		case t.KeySlice:
+		case t.IDSlice:
 			// TODO: don't assume that the slice is a slice of base.u8.
 			rhs = "wuffs_base__slice_u8"
 		}
@@ -358,11 +358,11 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 			lhs, rhs = rhs, lhs
 		}
 
-		switch typ.Decorator().Key() {
+		switch typ.Decorator() {
 		case 0:
 			b.printf("%s = %s;\n", lhs, rhs)
 			return nil
-		case t.KeyArray:
+		case t.IDArray:
 			inner := typ.Inner()
 			if inner.Decorator() != 0 {
 				break
@@ -371,8 +371,8 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 			if qid[0] != t.IDBase {
 				break
 			}
-			switch qid[1].Key() {
-			case t.KeyU8, t.KeyU16, t.KeyU32, t.KeyU64:
+			switch qid[1] {
+			case t.IDU8, t.IDU16, t.IDU32, t.IDU64:
 				b.printf("memcpy(%s, %s, sizeof(%s));\n", lhs, rhs, local)
 				return nil
 			}

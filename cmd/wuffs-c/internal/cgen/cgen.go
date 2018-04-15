@@ -254,7 +254,7 @@ func (g *gen) genHeader(b *buffer) error {
 
 	for i, z := range builtin.StatusList {
 		code := uint32(0)
-		if z.Keyword.Key() == t.KeyError {
+		if z.Keyword == t.IDError {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
@@ -267,7 +267,7 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	for i, s := range g.statusList {
 		code := pkgID << statusCodeNamespaceShift
-		if s.keyword.Key() == t.KeyError {
+		if s.keyword == t.IDError {
 			code |= 1 << 31
 		}
 		code |= uint32(i)
@@ -467,14 +467,14 @@ func (g *gen) cName(name string) string {
 func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 	if typ.Decorator() == 0 {
 		if qid := typ.QID(); qid[0] == t.IDBase {
-			switch qid[1].Key() {
-			case t.KeyU8:
+			switch qid[1] {
+			case t.IDU8:
 				return 1, nil
-			case t.KeyU16:
+			case t.IDU16:
 				return 2, nil
-			case t.KeyU32:
+			case t.IDU32:
 				return 4, nil
-			case t.KeyU64:
+			case t.IDU64:
 				return 8, nil
 			}
 		}
@@ -489,7 +489,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 		return fmt.Errorf("bad status message %q", raw)
 	}
 	prefix := "SUSPENSION_"
-	if n.Keyword().Key() == t.KeyError {
+	if n.Keyword() == t.IDError {
 		prefix = "ERROR_"
 	}
 	s := status{
@@ -519,7 +519,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
-	if n.Operator().Key() == t.KeyDollar {
+	if n.Operator() == t.IDDollar {
 		b.writeb('{')
 		for _, o := range n.Args() {
 			if err := g.writeConstList(b, o.Expr()); err != nil {

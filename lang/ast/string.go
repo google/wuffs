@@ -42,7 +42,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 	if n.id0.IsXOp() {
 		switch {
 		case n.id0.IsXUnaryOp():
-			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
+			buf = append(buf, opStrings[0xFF&n.id0]...)
 			buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
 
 		case n.id0.IsXBinaryOp():
@@ -50,8 +50,8 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				buf = append(buf, '(')
 			}
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-			buf = append(buf, opStrings[0xFF&n.id0.Key()]...)
-			if n.id0.Key() == t.KeyXBinaryAs {
+			buf = append(buf, opStrings[0xFF&n.id0]...)
+			if n.id0 == t.IDXBinaryAs {
 				buf = append(buf, n.rhs.TypeExpr().Str(tm)...)
 			} else {
 				buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
@@ -64,7 +64,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			if parenthesize {
 				buf = append(buf, '(')
 			}
-			op := opStrings[0xFF&n.id0.Key()]
+			op := opStrings[0xFF&n.id0]
 			for i, o := range n.list0 {
 				if i != 0 {
 					buf = append(buf, op...)
@@ -77,14 +77,14 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		}
 
 	} else {
-		switch n.id0.Key() {
-		case t.KeyError, t.KeyStatus, t.KeySuspension:
-			switch n.id0.Key() {
-			case t.KeyError:
+		switch n.id0 {
+		case t.IDError, t.IDStatus, t.IDSuspension:
+			switch n.id0 {
+			case t.IDError:
 				buf = append(buf, "error "...)
-			case t.KeyStatus:
+			case t.IDStatus:
 				buf = append(buf, "status "...)
-			case t.KeySuspension:
+			case t.IDSuspension:
 				buf = append(buf, "suspension "...)
 			}
 			if n.id1 != 0 {
@@ -96,11 +96,11 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		case 0:
 			buf = append(buf, tm.ByID(n.id2)...)
 
-		case t.KeyTry:
+		case t.IDTry:
 			buf = append(buf, "try "...)
 			fallthrough
 
-		case t.KeyOpenParen:
+		case t.IDOpenParen:
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 			if n.flags&FlagsSuspendible != 0 {
 				buf = append(buf, '?')
@@ -118,13 +118,13 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			}
 			buf = append(buf, ')')
 
-		case t.KeyOpenBracket:
+		case t.IDOpenBracket:
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '[')
 			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ']')
 
-		case t.KeyColon:
+		case t.IDColon:
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '[')
 			buf = n.mhs.Expr().appendStr(buf, tm, false, depth)
@@ -132,12 +132,12 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ']')
 
-		case t.KeyDot:
+		case t.IDDot:
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '.')
 			buf = append(buf, tm.ByID(n.id2)...)
 
-		case t.KeyDollar:
+		case t.IDDollar:
 			buf = append(buf, "$("...)
 			for i, o := range n.list0 {
 				if i != 0 {
@@ -153,40 +153,40 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 }
 
 var opStrings = [256]string{
-	t.KeyXUnaryPlus:  "+",
-	t.KeyXUnaryMinus: "-",
-	t.KeyXUnaryNot:   "not ",
-	t.KeyXUnaryRef:   "ref ",
-	t.KeyXUnaryDeref: "deref ",
+	t.IDXUnaryPlus:  "+",
+	t.IDXUnaryMinus: "-",
+	t.IDXUnaryNot:   "not ",
+	t.IDXUnaryRef:   "ref ",
+	t.IDXUnaryDeref: "deref ",
 
-	t.KeyXBinaryPlus:        " + ",
-	t.KeyXBinaryMinus:       " - ",
-	t.KeyXBinaryStar:        " * ",
-	t.KeyXBinarySlash:       " / ",
-	t.KeyXBinaryShiftL:      " << ",
-	t.KeyXBinaryShiftR:      " >> ",
-	t.KeyXBinaryAmp:         " & ",
-	t.KeyXBinaryAmpHat:      " &^ ",
-	t.KeyXBinaryPipe:        " | ",
-	t.KeyXBinaryHat:         " ^ ",
-	t.KeyXBinaryNotEq:       " != ",
-	t.KeyXBinaryLessThan:    " < ",
-	t.KeyXBinaryLessEq:      " <= ",
-	t.KeyXBinaryEqEq:        " == ",
-	t.KeyXBinaryGreaterEq:   " >= ",
-	t.KeyXBinaryGreaterThan: " > ",
-	t.KeyXBinaryAnd:         " and ",
-	t.KeyXBinaryOr:          " or ",
-	t.KeyXBinaryAs:          " as ",
-	t.KeyXBinaryTildePlus:   " ~+ ",
+	t.IDXBinaryPlus:        " + ",
+	t.IDXBinaryMinus:       " - ",
+	t.IDXBinaryStar:        " * ",
+	t.IDXBinarySlash:       " / ",
+	t.IDXBinaryShiftL:      " << ",
+	t.IDXBinaryShiftR:      " >> ",
+	t.IDXBinaryAmp:         " & ",
+	t.IDXBinaryAmpHat:      " &^ ",
+	t.IDXBinaryPipe:        " | ",
+	t.IDXBinaryHat:         " ^ ",
+	t.IDXBinaryNotEq:       " != ",
+	t.IDXBinaryLessThan:    " < ",
+	t.IDXBinaryLessEq:      " <= ",
+	t.IDXBinaryEqEq:        " == ",
+	t.IDXBinaryGreaterEq:   " >= ",
+	t.IDXBinaryGreaterThan: " > ",
+	t.IDXBinaryAnd:         " and ",
+	t.IDXBinaryOr:          " or ",
+	t.IDXBinaryAs:          " as ",
+	t.IDXBinaryTildePlus:   " ~+ ",
 
-	t.KeyXAssociativePlus: " + ",
-	t.KeyXAssociativeStar: " * ",
-	t.KeyXAssociativeAmp:  " & ",
-	t.KeyXAssociativePipe: " | ",
-	t.KeyXAssociativeHat:  " ^ ",
-	t.KeyXAssociativeAnd:  " and ",
-	t.KeyXAssociativeOr:   " or ",
+	t.IDXAssociativePlus: " + ",
+	t.IDXAssociativeStar: " * ",
+	t.IDXAssociativeAmp:  " & ",
+	t.IDXAssociativePipe: " | ",
+	t.IDXAssociativeHat:  " ^ ",
+	t.IDXAssociativeAnd:  " and ",
+	t.IDXAssociativeOr:   " or ",
 }
 
 // Str returns a string form of n.
@@ -209,21 +209,21 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 		return append(buf, "!invalid_type!"...)
 	}
 
-	switch n.Decorator().Key() {
+	switch n.Decorator() {
 	case 0:
 		buf = append(buf, n.QID().Str(tm)...)
-	case t.KeyPtr:
+	case t.IDPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.KeyArray:
+	case t.IDArray:
 		buf = append(buf, "array["...)
 		buf = n.ArrayLength().appendStr(buf, tm, false, 0)
 		buf = append(buf, "] "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.KeySlice:
+	case t.IDSlice:
 		buf = append(buf, "slice "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.KeyOpenParen:
+	case t.IDOpenParen:
 		buf = append(buf, "func "...)
 		buf = n.Receiver().appendStr(buf, tm, depth)
 		buf = append(buf, '.')
