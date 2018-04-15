@@ -70,8 +70,7 @@ func (x ID) IsStrLiteral(m *Map) bool {
 
 func (x ID) IsIdent(m *Map) bool {
 	if x < nBuiltInIDs {
-		// TODO: move DoubleZ and Diamond into the built-in ident space.
-		return x == IDDoubleZ || x == IDDiamond || (minBuiltInIdent <= x && x <= maxBuiltInIdent)
+		return minBuiltInIdent <= x && x <= maxBuiltInIdent
 	} else if s := m.ByID(x); s != "" {
 		return alpha(s[0])
 	}
@@ -134,15 +133,14 @@ type Token struct {
 
 // nBuiltInIDs is the number of built-in IDs. The packing is:
 //  - Zero is invalid.
-//  - [0x01, 0x0F] are reserved for implementation details.
-//  - [0x10, 0x1F] are squiggly punctuation, such as "(", ")" and ";".
-//  - [0x20, 0x2F] are squiggly assignments, such as "=" and "+=".
-//  - [0x30, 0x4F] are operators, such as "+", "==" and "not".
-//  - [0x50, 0x7F] are x-ops (disambiguation forms), e.g. unary vs binary "+".
-//  - [0x80, 0x9F] are keywords, such as "if" and "return".
-//  - [0xA0, 0xA3] are type modifiers, such as "ptr" and "slice".
-//  - [0xA4, 0xA7] are literals, such as "false" and "true".
-//  - [0xA8, 0xFF] are identifiers, such as "bool", "u32" and "read_u8".
+//  - [0x01, 0x0F] are squiggly punctuation, such as "(", ")" and ";".
+//  - [0x10, 0x1F] are squiggly assignments, such as "=" and "+=".
+//  - [0x20, 0x3F] are operators, such as "+", "==" and "not".
+//  - [0x40, 0x6F] are x-ops (disambiguation forms), e.g. unary vs binary "+".
+//  - [0x70, 0x8F] are keywords, such as "if" and "return".
+//  - [0x90, 0x93] are type modifiers, such as "ptr" and "slice".
+//  - [0x94, 0x97] are literals, such as "false" and "true".
+//  - [0x98, 0xFF] are identifiers, such as "bool", "u32" and "read_u8".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Roughly speaking, their IDs range in [0x01, 0x4F], or disambiguation
@@ -153,225 +151,234 @@ const nBuiltInIDs = ID(256)
 const (
 	IDInvalid = ID(0)
 
-	IDDoubleZ = ID(0x01)
-	IDDiamond = ID(0x02)
+	IDOpenParen    = ID(0x02)
+	IDCloseParen   = ID(0x03)
+	IDOpenBracket  = ID(0x04)
+	IDCloseBracket = ID(0x05)
+	IDOpenCurly    = ID(0x06)
+	IDCloseCurly   = ID(0x07)
 
-	IDOpenParen    = ID(0x10)
-	IDCloseParen   = ID(0x11)
-	IDOpenBracket  = ID(0x12)
-	IDCloseBracket = ID(0x13)
-	IDOpenCurly    = ID(0x14)
-	IDCloseCurly   = ID(0x15)
-
-	IDDot       = ID(0x18)
-	IDDotDot    = ID(0x19)
-	IDComma     = ID(0x1A)
-	IDExclam    = ID(0x1B)
-	IDQuestion  = ID(0x1C)
-	IDColon     = ID(0x1D)
-	IDSemicolon = ID(0x1E)
-	IDDollar    = ID(0x1F)
+	IDDot       = ID(0x08)
+	IDDotDot    = ID(0x09)
+	IDComma     = ID(0x0A)
+	IDExclam    = ID(0x0B)
+	IDQuestion  = ID(0x0C)
+	IDColon     = ID(0x0D)
+	IDSemicolon = ID(0x0E)
+	IDDollar    = ID(0x0F)
 )
 
 const (
-	minAssign = 0x20
-	maxAssign = 0x2F
+	minAssign = 0x10
+	maxAssign = 0x1F
 
-	IDEq          = ID(0x20)
-	IDPlusEq      = ID(0x21)
-	IDMinusEq     = ID(0x22)
-	IDStarEq      = ID(0x23)
-	IDSlashEq     = ID(0x24)
-	IDShiftLEq    = ID(0x25)
-	IDShiftREq    = ID(0x26)
-	IDAmpEq       = ID(0x27)
-	IDAmpHatEq    = ID(0x28)
-	IDPipeEq      = ID(0x29)
-	IDHatEq       = ID(0x2A)
-	IDPercentEq   = ID(0x2B)
-	IDTildePlusEq = ID(0x2C)
+	IDEq          = ID(0x10)
+	IDPlusEq      = ID(0x11)
+	IDMinusEq     = ID(0x12)
+	IDStarEq      = ID(0x13)
+	IDSlashEq     = ID(0x14)
+	IDShiftLEq    = ID(0x15)
+	IDShiftREq    = ID(0x16)
+	IDAmpEq       = ID(0x17)
+	IDAmpHatEq    = ID(0x18)
+	IDPipeEq      = ID(0x19)
+	IDHatEq       = ID(0x1A)
+	IDPercentEq   = ID(0x1B)
+	IDTildePlusEq = ID(0x1C)
 )
 
 const (
-	minOp  = 0x30
-	minXOp = 0x50
-	maxXOp = 0x7F
-	maxOp  = 0x7F
+	minOp          = 0x20
+	minAmbiguousOp = 0x20
+	maxAmbiguousOp = 0x3F
+	minXOp         = 0x40
+	maxXOp         = 0x6F
+	maxOp          = 0x6F
 
-	IDPlus      = ID(0x31)
-	IDMinus     = ID(0x32)
-	IDStar      = ID(0x33)
-	IDSlash     = ID(0x34)
-	IDShiftL    = ID(0x35)
-	IDShiftR    = ID(0x36)
-	IDAmp       = ID(0x37)
-	IDAmpHat    = ID(0x38)
-	IDPipe      = ID(0x39)
-	IDHat       = ID(0x3A)
-	IDPercent   = ID(0x3B)
-	IDTildePlus = ID(0x3C)
+	IDPlus      = ID(0x21)
+	IDMinus     = ID(0x22)
+	IDStar      = ID(0x23)
+	IDSlash     = ID(0x24)
+	IDShiftL    = ID(0x25)
+	IDShiftR    = ID(0x26)
+	IDAmp       = ID(0x27)
+	IDAmpHat    = ID(0x28)
+	IDPipe      = ID(0x29)
+	IDHat       = ID(0x2A)
+	IDPercent   = ID(0x2B)
+	IDTildePlus = ID(0x2C)
 
-	IDNotEq       = ID(0x40)
-	IDLessThan    = ID(0x41)
-	IDLessEq      = ID(0x42)
-	IDEqEq        = ID(0x43)
-	IDGreaterEq   = ID(0x44)
-	IDGreaterThan = ID(0x45)
+	IDNotEq       = ID(0x30)
+	IDLessThan    = ID(0x31)
+	IDLessEq      = ID(0x32)
+	IDEqEq        = ID(0x33)
+	IDGreaterEq   = ID(0x34)
+	IDGreaterThan = ID(0x35)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDAnd   = ID(0x48)
-	IDOr    = ID(0x49)
-	IDNot   = ID(0x4A)
-	IDAs    = ID(0x4B)
-	IDRef   = ID(0x4C)
-	IDDeref = ID(0x4D)
+	IDAnd   = ID(0x38)
+	IDOr    = ID(0x39)
+	IDNot   = ID(0x3A)
+	IDAs    = ID(0x3B)
+	IDRef   = ID(0x3C)
+	IDDeref = ID(0x3D)
 
 	// The IDXFoo IDs are not returned by the tokenizer. They are used by the
 	// ast.Node ID-typed fields to disambiguate e.g. unary vs binary plus.
 
-	IDXUnaryPlus  = ID(0x50)
-	IDXUnaryMinus = ID(0x51)
-	IDXUnaryNot   = ID(0x52)
-	IDXUnaryRef   = ID(0x53)
-	IDXUnaryDeref = ID(0x54)
+	IDXUnaryPlus  = ID(0x40)
+	IDXUnaryMinus = ID(0x41)
+	IDXUnaryNot   = ID(0x42)
+	IDXUnaryRef   = ID(0x43)
+	IDXUnaryDeref = ID(0x44)
 
-	IDXBinaryPlus        = ID(0x58)
-	IDXBinaryMinus       = ID(0x59)
-	IDXBinaryStar        = ID(0x5A)
-	IDXBinarySlash       = ID(0x5B)
-	IDXBinaryShiftL      = ID(0x5C)
-	IDXBinaryShiftR      = ID(0x5D)
-	IDXBinaryAmp         = ID(0x5E)
-	IDXBinaryAmpHat      = ID(0x5F)
-	IDXBinaryPipe        = ID(0x60)
-	IDXBinaryHat         = ID(0x61)
-	IDXBinaryPercent     = ID(0x62)
-	IDXBinaryNotEq       = ID(0x63)
-	IDXBinaryLessThan    = ID(0x64)
-	IDXBinaryLessEq      = ID(0x65)
-	IDXBinaryEqEq        = ID(0x66)
-	IDXBinaryGreaterEq   = ID(0x67)
-	IDXBinaryGreaterThan = ID(0x68)
-	IDXBinaryAnd         = ID(0x69)
-	IDXBinaryOr          = ID(0x6A)
-	IDXBinaryAs          = ID(0x6B)
-	IDXBinaryTildePlus   = ID(0x6C)
+	IDXBinaryPlus        = ID(0x48)
+	IDXBinaryMinus       = ID(0x49)
+	IDXBinaryStar        = ID(0x4A)
+	IDXBinarySlash       = ID(0x4B)
+	IDXBinaryShiftL      = ID(0x4C)
+	IDXBinaryShiftR      = ID(0x4D)
+	IDXBinaryAmp         = ID(0x4E)
+	IDXBinaryAmpHat      = ID(0x4F)
+	IDXBinaryPipe        = ID(0x50)
+	IDXBinaryHat         = ID(0x51)
+	IDXBinaryPercent     = ID(0x52)
+	IDXBinaryNotEq       = ID(0x53)
+	IDXBinaryLessThan    = ID(0x54)
+	IDXBinaryLessEq      = ID(0x55)
+	IDXBinaryEqEq        = ID(0x56)
+	IDXBinaryGreaterEq   = ID(0x57)
+	IDXBinaryGreaterThan = ID(0x58)
+	IDXBinaryAnd         = ID(0x59)
+	IDXBinaryOr          = ID(0x5A)
+	IDXBinaryAs          = ID(0x5B)
+	IDXBinaryTildePlus   = ID(0x5C)
 
-	IDXAssociativePlus = ID(0x70)
-	IDXAssociativeStar = ID(0x71)
-	IDXAssociativeAmp  = ID(0x72)
-	IDXAssociativePipe = ID(0x73)
-	IDXAssociativeHat  = ID(0x74)
-	IDXAssociativeAnd  = ID(0x75)
-	IDXAssociativeOr   = ID(0x76)
+	IDXAssociativePlus = ID(0x60)
+	IDXAssociativeStar = ID(0x61)
+	IDXAssociativeAmp  = ID(0x62)
+	IDXAssociativePipe = ID(0x63)
+	IDXAssociativeHat  = ID(0x64)
+	IDXAssociativeAnd  = ID(0x65)
+	IDXAssociativeOr   = ID(0x66)
 )
 
 const (
+	minKeyword = 0x70
+	maxKeyword = 0x8F
+
 	// TODO: sort these by name, when the list has stabilized.
-	IDFunc       = ID(0x80)
-	IDAssert     = ID(0x81)
-	IDWhile      = ID(0x82)
-	IDIf         = ID(0x83)
-	IDElse       = ID(0x84)
-	IDReturn     = ID(0x85)
-	IDBreak      = ID(0x86)
-	IDContinue   = ID(0x87)
-	IDStruct     = ID(0x88)
-	IDUse        = ID(0x89)
-	IDVar        = ID(0x8A)
-	IDPre        = ID(0x8B)
-	IDInv        = ID(0x8C)
-	IDPost       = ID(0x8D)
-	IDVia        = ID(0x8E)
-	IDPub        = ID(0x8F)
-	IDPri        = ID(0x90)
-	IDError      = ID(0x91)
-	IDSuspension = ID(0x92)
-	IDPackageID  = ID(0x93)
-	IDConst      = ID(0x94)
-	IDTry        = ID(0x95)
-	IDIterate    = ID(0x96)
-	IDYield      = ID(0x97)
-
-	IDArray = ID(0xA0)
-	IDNptr  = ID(0xA1)
-	IDPtr   = ID(0xA2)
-	IDSlice = ID(0xA3)
+	IDFunc       = ID(0x70)
+	IDAssert     = ID(0x71)
+	IDWhile      = ID(0x72)
+	IDIf         = ID(0x73)
+	IDElse       = ID(0x74)
+	IDReturn     = ID(0x75)
+	IDBreak      = ID(0x76)
+	IDContinue   = ID(0x77)
+	IDStruct     = ID(0x78)
+	IDUse        = ID(0x79)
+	IDVar        = ID(0x7A)
+	IDPre        = ID(0x7B)
+	IDInv        = ID(0x7C)
+	IDPost       = ID(0x7D)
+	IDVia        = ID(0x7E)
+	IDPub        = ID(0x7F)
+	IDPri        = ID(0x80)
+	IDError      = ID(0x81)
+	IDSuspension = ID(0x82)
+	IDPackageID  = ID(0x83)
+	IDConst      = ID(0x84)
+	IDTry        = ID(0x85)
+	IDIterate    = ID(0x86)
+	IDYield      = ID(0x87)
 )
 
 const (
-	minBuiltInLiteral = 0xA4
-	maxBuiltInLiteral = 0xA7
+	minTypeModifier = 0x90
+	maxTypeModifier = 0x93
 
-	IDFalse = ID(0xA4)
-	IDTrue  = ID(0xA5)
-	IDZero  = ID(0xA6)
+	IDArray = ID(0x90)
+	IDNptr  = ID(0x91)
+	IDPtr   = ID(0x92)
+	IDSlice = ID(0x93)
 )
 
 const (
-	minBuiltInIdent = 0xA8
+	minBuiltInLiteral = 0x94
+	maxBuiltInLiteral = 0x97
+
+	IDFalse = ID(0x94)
+	IDTrue  = ID(0x95)
+	IDZero  = ID(0x96)
+)
+
+const (
+	minBuiltInIdent = 0x98
+	minNumType      = 0x98
+	maxNumType      = 0x9F
 	maxBuiltInIdent = 0xFF
 
-	IDUnderscore = ID(0xA8)
-	IDThis       = ID(0xA9)
-	IDIn         = ID(0xAA)
-	IDOut        = ID(0xAB)
-	IDSLICE      = ID(0xAC)
-	IDBase       = ID(0xAD)
+	IDI8  = ID(0x98)
+	IDI16 = ID(0x99)
+	IDI32 = ID(0x9A)
+	IDI64 = ID(0x9B)
+	IDU8  = ID(0x9C)
+	IDU16 = ID(0x9D)
+	IDU32 = ID(0x9E)
+	IDU64 = ID(0x9F)
 
-	minNumType = 0xB0
-	maxNumType = 0xB7
+	IDDoubleZ = ID(0xA0)
+	IDDiamond = ID(0xA1)
 
-	IDI8  = ID(0xB0)
-	IDI16 = ID(0xB1)
-	IDI32 = ID(0xB2)
-	IDI64 = ID(0xB3)
-	IDU8  = ID(0xB4)
-	IDU16 = ID(0xB5)
-	IDU32 = ID(0xB6)
-	IDU64 = ID(0xB7)
+	IDUnderscore = ID(0xA2)
+	IDThis       = ID(0xA3)
+	IDIn         = ID(0xA4)
+	IDOut        = ID(0xA5)
+	IDSLICE      = ID(0xA6)
+	IDBase       = ID(0xA7)
 
-	IDBool        = ID(0xB8)
-	IDIOReader    = ID(0xB9)
-	IDIOWriter    = ID(0xBA)
-	IDStatus      = ID(0xBB)
-	IDImageConfig = ID(0xBC)
+	IDBool        = ID(0xA8)
+	IDIOReader    = ID(0xA9)
+	IDIOWriter    = ID(0xAA)
+	IDStatus      = ID(0xAB)
+	IDImageConfig = ID(0xAC)
 
-	IDMark       = ID(0xC0)
-	IDReadU8     = ID(0xC1)
-	IDReadU16BE  = ID(0xC2)
-	IDReadU16LE  = ID(0xC3)
-	IDReadU32BE  = ID(0xC4)
-	IDReadU32LE  = ID(0xC5)
-	IDReadU64BE  = ID(0xC6)
-	IDReadU64LE  = ID(0xC7)
-	IDSinceMark  = ID(0xC8)
-	IDWriteU8    = ID(0xC9)
-	IDWriteU16BE = ID(0xCA)
-	IDWriteU16LE = ID(0xCB)
-	IDWriteU32BE = ID(0xCC)
-	IDWriteU32LE = ID(0xCD)
-	IDWriteU64BE = ID(0xCE)
-	IDWriteU64LE = ID(0xCF)
+	IDMark       = ID(0xB0)
+	IDReadU8     = ID(0xB1)
+	IDReadU16BE  = ID(0xB2)
+	IDReadU16LE  = ID(0xB3)
+	IDReadU32BE  = ID(0xB4)
+	IDReadU32LE  = ID(0xB5)
+	IDReadU64BE  = ID(0xB6)
+	IDReadU64LE  = ID(0xB7)
+	IDSinceMark  = ID(0xB8)
+	IDWriteU8    = ID(0xB9)
+	IDWriteU16BE = ID(0xBA)
+	IDWriteU16LE = ID(0xBB)
+	IDWriteU32BE = ID(0xBC)
+	IDWriteU32LE = ID(0xBD)
+	IDWriteU64BE = ID(0xBE)
+	IDWriteU64LE = ID(0xBF)
 
-	IDIsError           = ID(0xD0)
-	IDIsOK              = ID(0xD1)
-	IDIsSuspension      = ID(0xD2)
-	IDCopyFromHistory32 = ID(0xD3)
-	IDCopyFromReader32  = ID(0xD4)
-	IDCopyFromSlice     = ID(0xD5)
-	IDCopyFromSlice32   = ID(0xD6)
-	IDSkip32            = ID(0xD7)
-	IDSkip64            = ID(0xD8)
-	IDLength            = ID(0xD9)
-	IDAvailable         = ID(0xDA)
-	IDPrefix            = ID(0xDB)
-	IDSuffix            = ID(0xDC)
-	IDLimit             = ID(0xDD)
-	IDLowBits           = ID(0xDE)
-	IDHighBits          = ID(0xDF)
-	IDUnreadU8          = ID(0xE0)
-	IDIsMarked          = ID(0xE1)
+	IDIsError           = ID(0xC0)
+	IDIsOK              = ID(0xC1)
+	IDIsSuspension      = ID(0xC2)
+	IDCopyFromHistory32 = ID(0xC3)
+	IDCopyFromReader32  = ID(0xC4)
+	IDCopyFromSlice     = ID(0xC5)
+	IDCopyFromSlice32   = ID(0xC6)
+	IDSkip32            = ID(0xC7)
+	IDSkip64            = ID(0xC8)
+	IDLength            = ID(0xC9)
+	IDAvailable         = ID(0xCA)
+	IDPrefix            = ID(0xCB)
+	IDSuffix            = ID(0xCC)
+	IDLimit             = ID(0xCD)
+	IDLowBits           = ID(0xCE)
+	IDHighBits          = ID(0xCF)
+	IDUnreadU8          = ID(0xD0)
+	IDIsMarked          = ID(0xD1)
 )
 
 // TODO: the struct{string, ID} can now just be a string.
@@ -379,22 +386,6 @@ var builtInsByID = [nBuiltInIDs]struct {
 	name string
 	id   ID
 }{
-	// IDDoubleZ and IDDiamond are never returned by the tokenizer, as the
-	// tokenizer rejects non-ASCII input.
-	//
-	// The string representations "ℤ" and "◊" are specifically non-ASCII so
-	// that no user-defined (non built-in) identifier will conflict with them.
-
-	// IDDoubleZ is used by the type checker as a dummy-valued built-in ID to
-	// represent an ideal integer type (in mathematical terms, the integer ring
-	// ℤ), as opposed to a realized integer type whose range is restricted. For
-	// example, the u16 type is restricted to [0x0000, 0xFFFF].
-	IDDoubleZ: {"ℤ", IDDoubleZ}, // U+2124 DOUBLE-STRUCK CAPITAL Z
-
-	// IDDiamond is used by the type checker as a dummy-valued built-in ID to
-	// represent a generic type.
-	IDDiamond: {"◊", IDDiamond}, // U+25C7 WHITE DIAMOND
-
 	IDOpenParen:    {"(", IDOpenParen},
 	IDCloseParen:   {")", IDCloseParen},
 	IDOpenBracket:  {"[", IDOpenBracket},
@@ -486,6 +477,32 @@ var builtInsByID = [nBuiltInIDs]struct {
 	IDTrue:  {"true", IDTrue},
 	IDZero:  {"0", IDZero},
 
+	// Change MaxIntBits if a future update adds an i128 or u128 type.
+	IDI8:  {"i8", IDI8},
+	IDI16: {"i16", IDI16},
+	IDI32: {"i32", IDI32},
+	IDI64: {"i64", IDI64},
+	IDU8:  {"u8", IDU8},
+	IDU16: {"u16", IDU16},
+	IDU32: {"u32", IDU32},
+	IDU64: {"u64", IDU64},
+
+	// IDDoubleZ and IDDiamond are never returned by the tokenizer, as the
+	// tokenizer rejects non-ASCII input.
+	//
+	// The string representations "ℤ" and "◊" are specifically non-ASCII so
+	// that no user-defined (non built-in) identifier will conflict with them.
+
+	// IDDoubleZ is used by the type checker as a dummy-valued built-in ID to
+	// represent an ideal integer type (in mathematical terms, the integer ring
+	// ℤ), as opposed to a realized integer type whose range is restricted. For
+	// example, the base.u16 type is restricted to [0x0000, 0xFFFF].
+	IDDoubleZ: {"ℤ", IDDoubleZ}, // U+2124 DOUBLE-STRUCK CAPITAL Z
+
+	// IDDiamond is used by the type checker as a dummy-valued built-in ID to
+	// represent a generic type.
+	IDDiamond: {"◊", IDDiamond}, // U+25C7 WHITE DIAMOND
+
 	IDUnderscore: {"_", IDUnderscore},
 	IDThis:       {"this", IDThis},
 	IDIn:         {"in", IDIn},
@@ -493,16 +510,6 @@ var builtInsByID = [nBuiltInIDs]struct {
 	IDSLICE:      {"SLICE", IDSLICE},
 	IDBase:       {"base", IDBase},
 
-	// Change MaxIntBits if a future update adds an i128 or u128 type.
-
-	IDI8:          {"i8", IDI8},
-	IDI16:         {"i16", IDI16},
-	IDI32:         {"i32", IDI32},
-	IDI64:         {"i64", IDI64},
-	IDU8:          {"u8", IDU8},
-	IDU16:         {"u16", IDU16},
-	IDU32:         {"u32", IDU32},
-	IDU64:         {"u64", IDU64},
 	IDBool:        {"bool", IDBool},
 	IDIOReader:    {"io_reader", IDIOReader},
 	IDIOWriter:    {"io_writer", IDIOWriter},
