@@ -29,12 +29,8 @@ const MaxIntBits = 64
 type Flags uint32
 
 const (
-	FlagsOther      = Flags(0x0001)
-	FlagsLiteral    = Flags(0x0010)
-	FlagsNumLiteral = Flags(0x0020)
-	FlagsStrLiteral = Flags(0x0040)
-	FlagsIdent      = Flags(0x0080)
-	flagsUnused     = Flags(0x8000)
+	FlagsOther  = Flags(0x0001)
+	flagsUnused = Flags(0x8000)
 )
 
 // Key is the high 16 bits of an ID. It is the map key for a Map.
@@ -73,10 +69,42 @@ func (x ID) IsAssociativeOp() bool {
 	return minOpKey <= x.Key() && x.Key() <= maxOpKey && x.AssociativeForm() != 0
 }
 
-func (x ID) IsLiteral(m *Map) bool    { return Flags(x)&FlagsLiteral != 0 }
-func (x ID) IsNumLiteral(m *Map) bool { return Flags(x)&FlagsNumLiteral != 0 }
-func (x ID) IsStrLiteral(m *Map) bool { return Flags(x)&FlagsStrLiteral != 0 }
-func (x ID) IsIdent(m *Map) bool      { return Flags(x)&FlagsIdent != 0 }
+func (x ID) IsLiteral(m *Map) bool {
+	if k := x.Key(); k < nBuiltInKeys {
+		return minBuiltInLiteralKey <= k && k <= maxBuiltInLiteralKey
+	} else if s := m.ByKey(k); s != "" {
+		return !alpha(s[0])
+	}
+	return false
+}
+
+func (x ID) IsNumLiteral(m *Map) bool {
+	if k := x.Key(); k < nBuiltInKeys {
+		return k == KeyZero
+	} else if s := m.ByKey(k); s != "" {
+		return numeric(s[0])
+	}
+	return false
+}
+
+func (x ID) IsStrLiteral(m *Map) bool {
+	if k := x.Key(); k < nBuiltInKeys {
+		return false
+	} else if s := m.ByKey(k); s != "" {
+		return s[0] == '"'
+	}
+	return false
+}
+
+func (x ID) IsIdent(m *Map) bool {
+	if k := x.Key(); k < nBuiltInKeys {
+		// TODO: move Diamond into the built-in ident space.
+		return k == KeyDiamond || (minBuiltInIdentKey <= k && k <= maxBuiltInIdentKey)
+	} else if s := m.ByKey(k); s != "" {
+		return alpha(s[0])
+	}
+	return false
+}
 
 func (x ID) IsOpen() bool       { return x.Key() < Key(len(isOpen)) && isOpen[x.Key()] }
 func (x ID) IsClose() bool      { return x.Key() < Key(len(isClose)) && isClose[x.Key()] }
@@ -347,7 +375,7 @@ const (
 	IDInvalid = ID(0)
 
 	IDDoubleZ = ID(0x01<<KeyShift | FlagsOther)
-	IDDiamond = ID(0x02<<KeyShift | FlagsIdent)
+	IDDiamond = ID(0x02<<KeyShift | FlagsOther)
 
 	IDOpenParen    = ID(0x10<<KeyShift | FlagsOther)
 	IDCloseParen   = ID(0x11<<KeyShift | FlagsOther)
@@ -490,71 +518,81 @@ const (
 	IDNptr  = ID(0xA1<<KeyShift | FlagsOther)
 	IDPtr   = ID(0xA2<<KeyShift | FlagsOther)
 	IDSlice = ID(0xA3<<KeyShift | FlagsOther)
+)
 
-	IDFalse = ID(0xA4<<KeyShift | FlagsLiteral)
-	IDTrue  = ID(0xA5<<KeyShift | FlagsLiteral)
-	IDZero  = ID(0xA6<<KeyShift | FlagsLiteral | FlagsNumLiteral)
+const (
+	minBuiltInLiteralKey = 0xA4
+	maxBuiltInLiteralKey = 0xA7
 
-	IDUnderscore = ID(0xA8<<KeyShift | FlagsIdent)
-	IDThis       = ID(0xA9<<KeyShift | FlagsIdent)
-	IDIn         = ID(0xAA<<KeyShift | FlagsIdent)
-	IDOut        = ID(0xAB<<KeyShift | FlagsIdent)
-	IDSLICE      = ID(0xAC<<KeyShift | FlagsIdent)
-	IDBase       = ID(0xAD<<KeyShift | FlagsIdent)
+	IDFalse = ID(0xA4<<KeyShift | FlagsOther)
+	IDTrue  = ID(0xA5<<KeyShift | FlagsOther)
+	IDZero  = ID(0xA6<<KeyShift | FlagsOther)
+)
+
+const (
+	minBuiltInIdentKey = 0xA8
+	maxBuiltInIdentKey = 0xFF
+
+	IDUnderscore = ID(0xA8<<KeyShift | FlagsOther)
+	IDThis       = ID(0xA9<<KeyShift | FlagsOther)
+	IDIn         = ID(0xAA<<KeyShift | FlagsOther)
+	IDOut        = ID(0xAB<<KeyShift | FlagsOther)
+	IDSLICE      = ID(0xAC<<KeyShift | FlagsOther)
+	IDBase       = ID(0xAD<<KeyShift | FlagsOther)
 
 	minNumTypeKey = 0xB0
 	maxNumTypeKey = 0xB7
 
-	IDI8  = ID(0xB0<<KeyShift | FlagsIdent)
-	IDI16 = ID(0xB1<<KeyShift | FlagsIdent)
-	IDI32 = ID(0xB2<<KeyShift | FlagsIdent)
-	IDI64 = ID(0xB3<<KeyShift | FlagsIdent)
-	IDU8  = ID(0xB4<<KeyShift | FlagsIdent)
-	IDU16 = ID(0xB5<<KeyShift | FlagsIdent)
-	IDU32 = ID(0xB6<<KeyShift | FlagsIdent)
-	IDU64 = ID(0xB7<<KeyShift | FlagsIdent)
+	IDI8  = ID(0xB0<<KeyShift | FlagsOther)
+	IDI16 = ID(0xB1<<KeyShift | FlagsOther)
+	IDI32 = ID(0xB2<<KeyShift | FlagsOther)
+	IDI64 = ID(0xB3<<KeyShift | FlagsOther)
+	IDU8  = ID(0xB4<<KeyShift | FlagsOther)
+	IDU16 = ID(0xB5<<KeyShift | FlagsOther)
+	IDU32 = ID(0xB6<<KeyShift | FlagsOther)
+	IDU64 = ID(0xB7<<KeyShift | FlagsOther)
 
-	IDBool        = ID(0xB8<<KeyShift | FlagsIdent)
-	IDIOReader    = ID(0xB9<<KeyShift | FlagsIdent)
-	IDIOWriter    = ID(0xBA<<KeyShift | FlagsIdent)
-	IDStatus      = ID(0xBB<<KeyShift | FlagsIdent)
-	IDImageConfig = ID(0xBC<<KeyShift | FlagsIdent)
+	IDBool        = ID(0xB8<<KeyShift | FlagsOther)
+	IDIOReader    = ID(0xB9<<KeyShift | FlagsOther)
+	IDIOWriter    = ID(0xBA<<KeyShift | FlagsOther)
+	IDStatus      = ID(0xBB<<KeyShift | FlagsOther)
+	IDImageConfig = ID(0xBC<<KeyShift | FlagsOther)
 
-	IDMark       = ID(0xC0<<KeyShift | FlagsIdent)
-	IDReadU8     = ID(0xC1<<KeyShift | FlagsIdent)
-	IDReadU16BE  = ID(0xC2<<KeyShift | FlagsIdent)
-	IDReadU16LE  = ID(0xC3<<KeyShift | FlagsIdent)
-	IDReadU32BE  = ID(0xC4<<KeyShift | FlagsIdent)
-	IDReadU32LE  = ID(0xC5<<KeyShift | FlagsIdent)
-	IDReadU64BE  = ID(0xC6<<KeyShift | FlagsIdent)
-	IDReadU64LE  = ID(0xC7<<KeyShift | FlagsIdent)
-	IDSinceMark  = ID(0xC8<<KeyShift | FlagsIdent)
-	IDWriteU8    = ID(0xC9<<KeyShift | FlagsIdent)
-	IDWriteU16BE = ID(0xCA<<KeyShift | FlagsIdent)
-	IDWriteU16LE = ID(0xCB<<KeyShift | FlagsIdent)
-	IDWriteU32BE = ID(0xCC<<KeyShift | FlagsIdent)
-	IDWriteU32LE = ID(0xCD<<KeyShift | FlagsIdent)
-	IDWriteU64BE = ID(0xCE<<KeyShift | FlagsIdent)
-	IDWriteU64LE = ID(0xCF<<KeyShift | FlagsIdent)
+	IDMark       = ID(0xC0<<KeyShift | FlagsOther)
+	IDReadU8     = ID(0xC1<<KeyShift | FlagsOther)
+	IDReadU16BE  = ID(0xC2<<KeyShift | FlagsOther)
+	IDReadU16LE  = ID(0xC3<<KeyShift | FlagsOther)
+	IDReadU32BE  = ID(0xC4<<KeyShift | FlagsOther)
+	IDReadU32LE  = ID(0xC5<<KeyShift | FlagsOther)
+	IDReadU64BE  = ID(0xC6<<KeyShift | FlagsOther)
+	IDReadU64LE  = ID(0xC7<<KeyShift | FlagsOther)
+	IDSinceMark  = ID(0xC8<<KeyShift | FlagsOther)
+	IDWriteU8    = ID(0xC9<<KeyShift | FlagsOther)
+	IDWriteU16BE = ID(0xCA<<KeyShift | FlagsOther)
+	IDWriteU16LE = ID(0xCB<<KeyShift | FlagsOther)
+	IDWriteU32BE = ID(0xCC<<KeyShift | FlagsOther)
+	IDWriteU32LE = ID(0xCD<<KeyShift | FlagsOther)
+	IDWriteU64BE = ID(0xCE<<KeyShift | FlagsOther)
+	IDWriteU64LE = ID(0xCF<<KeyShift | FlagsOther)
 
-	IDIsError           = ID(0xD0<<KeyShift | FlagsIdent)
-	IDIsOK              = ID(0xD1<<KeyShift | FlagsIdent)
-	IDIsSuspension      = ID(0xD2<<KeyShift | FlagsIdent)
-	IDCopyFromHistory32 = ID(0xD3<<KeyShift | FlagsIdent)
-	IDCopyFromReader32  = ID(0xD4<<KeyShift | FlagsIdent)
-	IDCopyFromSlice     = ID(0xD5<<KeyShift | FlagsIdent)
-	IDCopyFromSlice32   = ID(0xD6<<KeyShift | FlagsIdent)
-	IDSkip32            = ID(0xD7<<KeyShift | FlagsIdent)
-	IDSkip64            = ID(0xD8<<KeyShift | FlagsIdent)
-	IDLength            = ID(0xD9<<KeyShift | FlagsIdent)
-	IDAvailable         = ID(0xDA<<KeyShift | FlagsIdent)
-	IDPrefix            = ID(0xDB<<KeyShift | FlagsIdent)
-	IDSuffix            = ID(0xDC<<KeyShift | FlagsIdent)
-	IDLimit             = ID(0xDD<<KeyShift | FlagsIdent)
-	IDLowBits           = ID(0xDE<<KeyShift | FlagsIdent)
-	IDHighBits          = ID(0xDF<<KeyShift | FlagsIdent)
-	IDUnreadU8          = ID(0xE0<<KeyShift | FlagsIdent)
-	IDIsMarked          = ID(0xE1<<KeyShift | FlagsIdent)
+	IDIsError           = ID(0xD0<<KeyShift | FlagsOther)
+	IDIsOK              = ID(0xD1<<KeyShift | FlagsOther)
+	IDIsSuspension      = ID(0xD2<<KeyShift | FlagsOther)
+	IDCopyFromHistory32 = ID(0xD3<<KeyShift | FlagsOther)
+	IDCopyFromReader32  = ID(0xD4<<KeyShift | FlagsOther)
+	IDCopyFromSlice     = ID(0xD5<<KeyShift | FlagsOther)
+	IDCopyFromSlice32   = ID(0xD6<<KeyShift | FlagsOther)
+	IDSkip32            = ID(0xD7<<KeyShift | FlagsOther)
+	IDSkip64            = ID(0xD8<<KeyShift | FlagsOther)
+	IDLength            = ID(0xD9<<KeyShift | FlagsOther)
+	IDAvailable         = ID(0xDA<<KeyShift | FlagsOther)
+	IDPrefix            = ID(0xDB<<KeyShift | FlagsOther)
+	IDSuffix            = ID(0xDC<<KeyShift | FlagsOther)
+	IDLimit             = ID(0xDD<<KeyShift | FlagsOther)
+	IDLowBits           = ID(0xDE<<KeyShift | FlagsOther)
+	IDHighBits          = ID(0xDF<<KeyShift | FlagsOther)
+	IDUnreadU8          = ID(0xE0<<KeyShift | FlagsOther)
+	IDIsMarked          = ID(0xE1<<KeyShift | FlagsOther)
 )
 
 var builtInsByKey = [nBuiltInKeys]struct {

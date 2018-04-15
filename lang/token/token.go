@@ -54,15 +54,7 @@ func (m *Map) Insert(name string) (ID, error) {
 	if key > maxKey {
 		return 0, errors.New("token: too many distinct tokens")
 	}
-	flags := Flags(0)
-	if numeric(name[0]) {
-		flags |= FlagsLiteral | FlagsNumLiteral
-	} else if name[0] == '"' {
-		flags |= FlagsLiteral | FlagsStrLiteral
-	} else {
-		flags |= FlagsIdent
-	}
-	id := ID(key<<KeyShift) | ID(flags)
+	id := ID(key << KeyShift)
 	m.byName[name] = id
 	m.byKey = append(m.byKey, name)
 	return id, nil

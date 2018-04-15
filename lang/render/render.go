@@ -110,7 +110,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft() {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
-				if tok.ID.Key() != t.KeyOpenParen || !isCloseIdentStrLiteral(prevID) {
+				if tok.ID.Key() != t.KeyOpenParen || !isCloseIdentStrLiteral(tm, prevID) {
 					buf = append(buf, ' ')
 				}
 			}
@@ -135,7 +135,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if prevID != 0 && tok.ID.IsUnaryOp() && tok.ID.IsBinaryOp() {
 				// Token-based (not ast.Node-based) heuristic for whether the
 				// operator looks unary instead of binary.
-				prevIsTightRight = !isCloseIdentLiteral(prevID)
+				prevIsTightRight = !isCloseIdentLiteral(tm, prevID)
 			}
 
 			prevID = tok.ID
@@ -205,12 +205,10 @@ func appendTabs(buf []byte, n int) []byte {
 	return buf
 }
 
-func isCloseIdentLiteral(x t.ID) bool {
-	const flags = t.FlagsIdent | t.FlagsLiteral
-	return x.IsClose() || x.Flags()&flags != 0
+func isCloseIdentLiteral(tm *t.Map, x t.ID) bool {
+	return x.IsClose() || x.IsIdent(tm) || x.IsLiteral(tm)
 }
 
-func isCloseIdentStrLiteral(x t.ID) bool {
-	const flags = t.FlagsIdent | t.FlagsStrLiteral
-	return x.IsClose() || x.Flags()&flags != 0
+func isCloseIdentStrLiteral(tm *t.Map, x t.ID) bool {
+	return x.IsClose() || x.IsIdent(tm) || x.IsStrLiteral(tm)
 }
