@@ -72,7 +72,7 @@ func (m *Map) ByName(name string) ID {
 
 func (m *Map) ByID(x ID) string {
 	if x < nBuiltInIDs {
-		return builtInsByID[x].name
+		return builtInsByID[x]
 	}
 	x -= nBuiltInIDs
 	if uint(x) < uint(len(m.byID)) {
