@@ -30,7 +30,6 @@ type Flags uint32
 
 const (
 	FlagsOther      = Flags(0x0001)
-	FlagsBinaryOp   = Flags(0x0004)
 	FlagsLiteral    = Flags(0x0010)
 	FlagsNumLiteral = Flags(0x0020)
 	FlagsStrLiteral = Flags(0x0040)
@@ -41,7 +40,7 @@ const (
 // Key is the high 16 bits of an ID. It is the map key for a Map.
 type Key uint32
 
-func (k Key) isXOp() bool { return minXKey <= k && k <= maxXKey }
+func (k Key) isXOp() bool { return minXOpKey <= k && k <= maxXOpKey }
 
 const (
 	FlagsBits = 16
@@ -68,9 +67,13 @@ func (x ID) Flags() Flags { return Flags(x & FlagsMask) }
 
 func (x ID) IsBuiltIn() bool { return Key(x>>KeyShift) < nBuiltInKeys }
 
-func (x ID) IsUnaryOp() bool       { return x.Key() <= 0xFF && x.UnaryForm() != 0 }
-func (x ID) IsBinaryOp() bool      { return Flags(x)&FlagsBinaryOp != 0 }
-func (x ID) IsAssociativeOp() bool { return x.Key() <= 0xFF && x.AssociativeForm() != 0 }
+func (x ID) IsUnaryOp() bool { return minOpKey <= x.Key() && x.Key() <= maxOpKey && x.UnaryForm() != 0 }
+func (x ID) IsBinaryOp() bool {
+	return minOpKey <= x.Key() && x.Key() <= maxOpKey && x.BinaryForm() != 0
+}
+func (x ID) IsAssociativeOp() bool {
+	return minOpKey <= x.Key() && x.Key() <= maxOpKey && x.AssociativeForm() != 0
+}
 
 func (x ID) IsLiteral() bool    { return Flags(x)&FlagsLiteral != 0 }
 func (x ID) IsNumLiteral() bool { return Flags(x)&FlagsNumLiteral != 0 }
@@ -141,6 +144,7 @@ type Token struct {
 //  - [0x74, 0x77] are literals, such as "false" and "true".
 //  - [0x78, 0xCF] are identifiers, such as "bool", "u32" and "read_u8".
 //  - [0xD0, 0xFF] are disambiguation forms, e.g. unary "+" vs binary "+".
+// TODO: move the ops and x-ops together.
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Roughly speaking, their Keys range in [0x01, 0x4F], or disambiguation
@@ -380,31 +384,34 @@ const (
 	IDPercentEq   = ID(0x2B<<KeyShift | FlagsOther)
 	IDTildePlusEq = ID(0x2C<<KeyShift | FlagsOther)
 
-	IDPlus      = ID(0x31<<KeyShift | FlagsBinaryOp)
-	IDMinus     = ID(0x32<<KeyShift | FlagsBinaryOp)
-	IDStar      = ID(0x33<<KeyShift | FlagsBinaryOp)
-	IDSlash     = ID(0x34<<KeyShift | FlagsBinaryOp)
-	IDShiftL    = ID(0x35<<KeyShift | FlagsBinaryOp)
-	IDShiftR    = ID(0x36<<KeyShift | FlagsBinaryOp)
-	IDAmp       = ID(0x37<<KeyShift | FlagsBinaryOp)
-	IDAmpHat    = ID(0x38<<KeyShift | FlagsBinaryOp)
-	IDPipe      = ID(0x39<<KeyShift | FlagsBinaryOp)
-	IDHat       = ID(0x3A<<KeyShift | FlagsBinaryOp)
-	IDPercent   = ID(0x3B<<KeyShift | FlagsBinaryOp)
-	IDTildePlus = ID(0x3C<<KeyShift | FlagsBinaryOp)
+	minOpKey = 0x30
+	maxOpKey = 0xFF
 
-	IDNotEq       = ID(0x40<<KeyShift | FlagsBinaryOp)
-	IDLessThan    = ID(0x41<<KeyShift | FlagsBinaryOp)
-	IDLessEq      = ID(0x42<<KeyShift | FlagsBinaryOp)
-	IDEqEq        = ID(0x43<<KeyShift | FlagsBinaryOp)
-	IDGreaterEq   = ID(0x44<<KeyShift | FlagsBinaryOp)
-	IDGreaterThan = ID(0x45<<KeyShift | FlagsBinaryOp)
+	IDPlus      = ID(0x31<<KeyShift | FlagsOther)
+	IDMinus     = ID(0x32<<KeyShift | FlagsOther)
+	IDStar      = ID(0x33<<KeyShift | FlagsOther)
+	IDSlash     = ID(0x34<<KeyShift | FlagsOther)
+	IDShiftL    = ID(0x35<<KeyShift | FlagsOther)
+	IDShiftR    = ID(0x36<<KeyShift | FlagsOther)
+	IDAmp       = ID(0x37<<KeyShift | FlagsOther)
+	IDAmpHat    = ID(0x38<<KeyShift | FlagsOther)
+	IDPipe      = ID(0x39<<KeyShift | FlagsOther)
+	IDHat       = ID(0x3A<<KeyShift | FlagsOther)
+	IDPercent   = ID(0x3B<<KeyShift | FlagsOther)
+	IDTildePlus = ID(0x3C<<KeyShift | FlagsOther)
+
+	IDNotEq       = ID(0x40<<KeyShift | FlagsOther)
+	IDLessThan    = ID(0x41<<KeyShift | FlagsOther)
+	IDLessEq      = ID(0x42<<KeyShift | FlagsOther)
+	IDEqEq        = ID(0x43<<KeyShift | FlagsOther)
+	IDGreaterEq   = ID(0x44<<KeyShift | FlagsOther)
+	IDGreaterThan = ID(0x45<<KeyShift | FlagsOther)
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDAnd   = ID(0x48<<KeyShift | FlagsBinaryOp)
-	IDOr    = ID(0x49<<KeyShift | FlagsBinaryOp)
+	IDAnd   = ID(0x48<<KeyShift | FlagsOther)
+	IDOr    = ID(0x49<<KeyShift | FlagsOther)
 	IDNot   = ID(0x4A<<KeyShift | FlagsOther)
-	IDAs    = ID(0x4B<<KeyShift | FlagsBinaryOp)
+	IDAs    = ID(0x4B<<KeyShift | FlagsOther)
 	IDRef   = ID(0x4C<<KeyShift | FlagsOther)
 	IDDeref = ID(0x4D<<KeyShift | FlagsOther)
 
@@ -508,8 +515,8 @@ const (
 // The IDXFoo IDs are not returned by the tokenizer. They are used by the
 // ast.Node ID-typed fields to disambiguate e.g. unary vs binary plus.
 const (
-	minXKey = 0xD0
-	maxXKey = 0xFF
+	minXOpKey = 0xD0
+	maxXOpKey = 0xFF
 
 	IDXUnaryPlus  = ID(0xD0<<KeyShift | FlagsOther)
 	IDXUnaryMinus = ID(0xD1<<KeyShift | FlagsOther)
@@ -517,27 +524,27 @@ const (
 	IDXUnaryRef   = ID(0xD3<<KeyShift | FlagsOther)
 	IDXUnaryDeref = ID(0xD4<<KeyShift | FlagsOther)
 
-	IDXBinaryPlus        = ID(0xD8<<KeyShift | FlagsBinaryOp)
-	IDXBinaryMinus       = ID(0xD9<<KeyShift | FlagsBinaryOp)
-	IDXBinaryStar        = ID(0xDA<<KeyShift | FlagsBinaryOp)
-	IDXBinarySlash       = ID(0xDB<<KeyShift | FlagsBinaryOp)
-	IDXBinaryShiftL      = ID(0xDC<<KeyShift | FlagsBinaryOp)
-	IDXBinaryShiftR      = ID(0xDD<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAmp         = ID(0xDE<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAmpHat      = ID(0xDF<<KeyShift | FlagsBinaryOp)
-	IDXBinaryPipe        = ID(0xE0<<KeyShift | FlagsBinaryOp)
-	IDXBinaryHat         = ID(0xE1<<KeyShift | FlagsBinaryOp)
-	IDXBinaryPercent     = ID(0xE2<<KeyShift | FlagsBinaryOp)
-	IDXBinaryNotEq       = ID(0xE3<<KeyShift | FlagsBinaryOp)
-	IDXBinaryLessThan    = ID(0xE4<<KeyShift | FlagsBinaryOp)
-	IDXBinaryLessEq      = ID(0xE5<<KeyShift | FlagsBinaryOp)
-	IDXBinaryEqEq        = ID(0xE6<<KeyShift | FlagsBinaryOp)
-	IDXBinaryGreaterEq   = ID(0xE7<<KeyShift | FlagsBinaryOp)
-	IDXBinaryGreaterThan = ID(0xE8<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAnd         = ID(0xE9<<KeyShift | FlagsBinaryOp)
-	IDXBinaryOr          = ID(0xEA<<KeyShift | FlagsBinaryOp)
-	IDXBinaryAs          = ID(0xEB<<KeyShift | FlagsBinaryOp)
-	IDXBinaryTildePlus   = ID(0xEC<<KeyShift | FlagsBinaryOp)
+	IDXBinaryPlus        = ID(0xD8<<KeyShift | FlagsOther)
+	IDXBinaryMinus       = ID(0xD9<<KeyShift | FlagsOther)
+	IDXBinaryStar        = ID(0xDA<<KeyShift | FlagsOther)
+	IDXBinarySlash       = ID(0xDB<<KeyShift | FlagsOther)
+	IDXBinaryShiftL      = ID(0xDC<<KeyShift | FlagsOther)
+	IDXBinaryShiftR      = ID(0xDD<<KeyShift | FlagsOther)
+	IDXBinaryAmp         = ID(0xDE<<KeyShift | FlagsOther)
+	IDXBinaryAmpHat      = ID(0xDF<<KeyShift | FlagsOther)
+	IDXBinaryPipe        = ID(0xE0<<KeyShift | FlagsOther)
+	IDXBinaryHat         = ID(0xE1<<KeyShift | FlagsOther)
+	IDXBinaryPercent     = ID(0xE2<<KeyShift | FlagsOther)
+	IDXBinaryNotEq       = ID(0xE3<<KeyShift | FlagsOther)
+	IDXBinaryLessThan    = ID(0xE4<<KeyShift | FlagsOther)
+	IDXBinaryLessEq      = ID(0xE5<<KeyShift | FlagsOther)
+	IDXBinaryEqEq        = ID(0xE6<<KeyShift | FlagsOther)
+	IDXBinaryGreaterEq   = ID(0xE7<<KeyShift | FlagsOther)
+	IDXBinaryGreaterThan = ID(0xE8<<KeyShift | FlagsOther)
+	IDXBinaryAnd         = ID(0xE9<<KeyShift | FlagsOther)
+	IDXBinaryOr          = ID(0xEA<<KeyShift | FlagsOther)
+	IDXBinaryAs          = ID(0xEB<<KeyShift | FlagsOther)
+	IDXBinaryTildePlus   = ID(0xEC<<KeyShift | FlagsOther)
 
 	IDXAssociativePlus = ID(0xF0<<KeyShift | FlagsOther)
 	IDXAssociativeStar = ID(0xF1<<KeyShift | FlagsOther)
