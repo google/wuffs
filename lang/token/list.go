@@ -70,8 +70,8 @@ func (x ID) IsStrLiteral(m *Map) bool {
 
 func (x ID) IsIdent(m *Map) bool {
 	if x < nBuiltInIDs {
-		// TODO: move Diamond into the built-in ident space.
-		return x == IDDiamond || (minBuiltInIdent <= x && x <= maxBuiltInIdent)
+		// TODO: move DoubleZ and Diamond into the built-in ident space.
+		return x == IDDoubleZ || x == IDDiamond || (minBuiltInIdent <= x && x <= maxBuiltInIdent)
 	} else if s := m.ByID(x); s != "" {
 		return alpha(s[0])
 	}
