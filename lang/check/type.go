@@ -375,7 +375,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	switch n.Operator().Key() {
 	case 0:
 		id1 := n.Ident()
-		if id1.IsNumLiteral() {
+		if id1.IsNumLiteral(q.tm) {
 			z := big.NewInt(0)
 			s := id1.Str(q.tm)
 			if _, ok := z.SetString(s, 0); !ok {
@@ -385,7 +385,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprIdeal)
 			return nil
 
-		} else if id1.IsIdent() {
+		} else if id1.IsIdent(q.tm) {
 			if q.localVars != nil {
 				if typ, ok := q.localVars[id1]; ok {
 					n.SetMType(typ)

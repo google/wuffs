@@ -73,10 +73,10 @@ func (x ID) IsAssociativeOp() bool {
 	return minOpKey <= x.Key() && x.Key() <= maxOpKey && x.AssociativeForm() != 0
 }
 
-func (x ID) IsLiteral() bool    { return Flags(x)&FlagsLiteral != 0 }
-func (x ID) IsNumLiteral() bool { return Flags(x)&FlagsNumLiteral != 0 }
-func (x ID) IsStrLiteral() bool { return Flags(x)&FlagsStrLiteral != 0 }
-func (x ID) IsIdent() bool      { return Flags(x)&FlagsIdent != 0 }
+func (x ID) IsLiteral(m *Map) bool    { return Flags(x)&FlagsLiteral != 0 }
+func (x ID) IsNumLiteral(m *Map) bool { return Flags(x)&FlagsNumLiteral != 0 }
+func (x ID) IsStrLiteral(m *Map) bool { return Flags(x)&FlagsStrLiteral != 0 }
+func (x ID) IsIdent(m *Map) bool      { return Flags(x)&FlagsIdent != 0 }
 
 func (x ID) IsOpen() bool       { return x.Key() < Key(len(isOpen)) && isOpen[x.Key()] }
 func (x ID) IsClose() bool      { return x.Key() < Key(len(isClose)) && isClose[x.Key()] }
@@ -86,8 +86,8 @@ func (x ID) IsTightRight() bool { return x.Key() < Key(len(isTightRight)) && isT
 func (x ID) IsAssign() bool  { return minAssignKey <= x.Key() && x.Key() <= maxAssignKey }
 func (x ID) IsNumType() bool { return minNumTypeKey <= x.Key() && x.Key() <= maxNumTypeKey }
 
-func (x ID) IsImplicitSemicolon() bool {
-	return x.IsLiteral() || x.IsIdent() ||
+func (x ID) IsImplicitSemicolon(m *Map) bool {
+	return x.IsLiteral(m) || x.IsIdent(m) ||
 		(x.Key() < Key(len(isImplicitSemicolon)) && isImplicitSemicolon[x.Key()])
 }
 

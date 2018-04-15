@@ -132,7 +132,7 @@ loop:
 
 		if c <= ' ' {
 			if c == '\n' {
-				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon() {
+				if len(tokens) > 0 && tokens[len(tokens)-1].ID.IsImplicitSemicolon(m) {
 					tokens = append(tokens, Token{IDSemicolon, line})
 				}
 				if line == maxLine {

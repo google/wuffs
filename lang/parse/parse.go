@@ -105,7 +105,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	case t.KeyPackageID, t.KeyUse:
 		p.src = p.src[1:]
 		path := p.peek1()
-		if !path.IsStrLiteral() {
+		if !path.IsStrLiteral(p.tm) {
 			got := p.tm.ByID(path)
 			return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 		}
@@ -239,7 +239,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			keyword := p.src[0].ID
 			p.src = p.src[1:]
 			message := p.peek1()
-			if !message.IsStrLiteral() {
+			if !message.IsStrLiteral(p.tm) {
 				got := p.tm.ByID(message)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
@@ -309,7 +309,7 @@ func (p *parser) parseIdent() (t.ID, error) {
 		return 0, fmt.Errorf(`parse: expected identifier at %s:%d`, p.filename, p.line())
 	}
 	x := p.src[0]
-	if !x.ID.IsIdent() {
+	if !x.ID.IsIdent(p.tm) {
 		got := p.tm.ByToken(x)
 		return 0, fmt.Errorf(`parse: expected identifier, got %q at %s:%d`, got, p.filename, p.line())
 	}
@@ -561,7 +561,7 @@ func (p *parser) parseAssertNode() (*a.Node, error) {
 		if p.peek1().Key() == t.KeyVia {
 			p.src = p.src[1:]
 			reason = p.peek1()
-			if !reason.IsStrLiteral() {
+			if !reason.IsStrLiteral(p.tm) {
 				got := p.tm.ByID(reason)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
@@ -633,7 +633,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		// TODO: allow expressions, not just literals, as unroll counts?
 		unrollID := p.peek1()
 		unrollStr := p.tm.ByKey(unrollID.Key())
-		if !unrollID.IsLiteral() {
+		if !unrollID.IsLiteral(p.tm) {
 			return nil, fmt.Errorf(`parse: expected literal unroll count, got %q at %s:%d`,
 				unrollStr, p.filename, p.line())
 		}
@@ -930,7 +930,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		}
 		return a.NewExpr(0, op, 0, 0, nil, nil, rhs.Node(), nil), nil
 
-	case x.IsLiteral():
+	case x.IsLiteral(p.tm):
 		p.src = p.src[1:]
 		return a.NewExpr(0, 0, 0, x, nil, nil, nil, nil), nil
 
@@ -955,7 +955,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			message := p.peek1()
 			// TODO: parse the "pkg" in `error pkg."foo"`.
 			statusPkg := t.ID(0)
-			if !message.IsStrLiteral() {
+			if !message.IsStrLiteral(p.tm) {
 				got := p.tm.ByID(message)
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
