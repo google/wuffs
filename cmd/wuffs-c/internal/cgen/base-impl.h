@@ -80,8 +80,6 @@ typedef struct {
 // Uncomment this #include for printf-debugging.
 // #include <stdio.h>
 
-// ---------------- Static Inline Functions
-//
 // The helpers below are functions, instead of macros, because their arguments
 // can be an expression that we shouldn't evaluate more than once.
 //
@@ -97,6 +95,8 @@ typedef struct {
 // They are explicitly marked inline, even if modern compilers don't use the
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
+
+// ---------------- Fundamentals
 
 static inline uint16_t wuffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
@@ -185,6 +185,8 @@ static inline uint64_t wuffs_base__slice_u8__copy_from_slice(
   }
   return length;
 }
+
+// ---------------- I/O
 
 static inline uint32_t wuffs_base__io_writer__copy_from_history32(
     uint8_t** ptr_ptr,
@@ -351,3 +353,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
+
+// ---------------- Images
+
+// No Images related helpers yet.

@@ -98,17 +98,36 @@ func genBase(out *bytes.Buffer) error {
 		}
 
 		fmt.Fprintf(out, "const %s = \"\" +\n", f.varname)
-		for len(in) > 0 {
-			s := in
-			if len(s) > columns {
-				s = s[:columns]
-			}
-			in = in[len(s):]
-			fmt.Fprintf(out, "%q +\n", s)
-		}
+		writeStringConst(out, in)
 		out.WriteString("\"\"\n\n")
 	}
 	return nil
+}
+
+var dashDashDashDash = []byte("// ----")
+
+func writeStringConst(out *bytes.Buffer, s []byte) {
+	for len(s) > 0 {
+		remaining := []byte(nil)
+		if i := bytes.Index(s[1:], dashDashDashDash); i >= 0 {
+			s, remaining = s[:i+1], s[i+1:]
+		}
+
+		for len(s) > 0 {
+			t := s
+			if len(t) > columns {
+				t = t[:columns]
+			}
+			s = s[len(t):]
+			fmt.Fprintf(out, "%q +\n", t)
+		}
+
+		s = remaining
+		if len(s) > 0 {
+			out.WriteString("\"\" +\n")
+		}
+	}
+
 }
 
 type template struct {
