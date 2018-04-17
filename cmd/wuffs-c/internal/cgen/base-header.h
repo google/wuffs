@@ -53,6 +53,30 @@ typedef uint64_t wuffs_base__flicks;
 // It is important that the underlying types are unsigned integers, as signed
 // integer arithmetic overflow is undefined behavior in C.
 
+static inline uint8_t wuffs_base__u8__sat_add(uint8_t x, uint8_t y) {
+  uint8_t res = x + y;
+  res |= -(res < x);
+  return res;
+}
+
+static inline uint8_t wuffs_base__u8__sat_sub(uint8_t x, uint8_t y) {
+  uint8_t res = x - y;
+  res &= -(res <= x);
+  return res;
+}
+
+static inline uint16_t wuffs_base__u16__sat_add(uint16_t x, uint16_t y) {
+  uint16_t res = x + y;
+  res |= -(res < x);
+  return res;
+}
+
+static inline uint16_t wuffs_base__u16__sat_sub(uint16_t x, uint16_t y) {
+  uint16_t res = x - y;
+  res &= -(res <= x);
+  return res;
+}
+
 static inline uint32_t wuffs_base__u32__sat_add(uint32_t x, uint32_t y) {
   uint32_t res = x + y;
   res |= -(res < x);
