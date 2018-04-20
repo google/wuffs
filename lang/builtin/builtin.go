@@ -69,6 +69,8 @@ var Types = []string{
 	"u16",
 	"u32",
 	"u64",
+
+	"empty_struct",
 	"bool",
 	"status",
 	"io_reader",

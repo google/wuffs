@@ -366,11 +366,12 @@ const (
 	IDSLICE      = ID(0xA6)
 	IDBase       = ID(0xA7)
 
-	IDBool        = ID(0xA8)
-	IDIOReader    = ID(0xA9)
-	IDIOWriter    = ID(0xAA)
-	IDStatus      = ID(0xAB)
-	IDImageConfig = ID(0xAC)
+	IDEmptyStruct = ID(0xA8)
+	IDBool        = ID(0xA9)
+	IDStatus      = ID(0xAA)
+	IDIOReader    = ID(0xAB)
+	IDIOWriter    = ID(0xAC)
+	IDImageConfig = ID(0xAD)
 
 	IDMark       = ID(0xB0)
 	IDReadU8     = ID(0xB1)
@@ -534,10 +535,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSLICE:      "SLICE",
 	IDBase:       "base",
 
+	IDEmptyStruct: "empty_struct",
 	IDBool:        "bool",
+	IDStatus:      "status",
 	IDIOReader:    "io_reader",
 	IDIOWriter:    "io_writer",
-	IDStatus:      "status",
 	IDImageConfig: "image_config",
 
 	IDMark:       "mark",

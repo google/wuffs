@@ -38,10 +38,12 @@ var (
 	typeExprIdeal   = a.NewTypeExpr(0, t.IDBase, t.IDDoubleZ, nil, nil, nil)
 	typeExprList    = a.NewTypeExpr(0, t.IDBase, t.IDDollar, nil, nil, nil)
 
-	typeExprU8          = a.NewTypeExpr(0, t.IDBase, t.IDU8, nil, nil, nil)
-	typeExprU16         = a.NewTypeExpr(0, t.IDBase, t.IDU16, nil, nil, nil)
-	typeExprU32         = a.NewTypeExpr(0, t.IDBase, t.IDU32, nil, nil, nil)
-	typeExprU64         = a.NewTypeExpr(0, t.IDBase, t.IDU64, nil, nil, nil)
+	typeExprU8  = a.NewTypeExpr(0, t.IDBase, t.IDU8, nil, nil, nil)
+	typeExprU16 = a.NewTypeExpr(0, t.IDBase, t.IDU16, nil, nil, nil)
+	typeExprU32 = a.NewTypeExpr(0, t.IDBase, t.IDU32, nil, nil, nil)
+	typeExprU64 = a.NewTypeExpr(0, t.IDBase, t.IDU64, nil, nil, nil)
+
+	typeExprEmptyStruct = a.NewTypeExpr(0, t.IDBase, t.IDEmptyStruct, nil, nil, nil)
 	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
 	typeExprStatus      = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
 	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
@@ -49,11 +51,6 @@ var (
 	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
-
-	// TODO: delete this.
-	typeExprPlaceholder   = a.NewTypeExpr(0, t.IDBase, t.IDU8, nil, nil, nil)
-	typeExprPlaceholder16 = a.NewTypeExpr(0, t.IDBase, t.IDU16, nil, nil, nil)
-	typeExprPlaceholder32 = a.NewTypeExpr(0, t.IDBase, t.IDU32, nil, nil, nil)
 )
 
 // typeMap maps from variable names (as token IDs) to types.

@@ -429,24 +429,23 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// require a TypeExpr being able to express function and method types.
 
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode"), 3) {
+		if idDecode := q.tm.ByName("decode"); isThatMethod(q.tm, n, idDecode, 3) {
 			foo := n.LHS().Expr().LHS().Expr()
 			if err := q.tcheckExpr(foo, depth); err != nil {
 				return err
 			}
 			n.LHS().SetTypeChecked()
-			n.LHS().Expr().SetMType(typeExprPlaceholder) // HACK.
+			n.LHS().Expr().SetMType(a.NewTypeExpr(t.IDFunc, 0, idDecode, foo.MType().Node(), nil, nil))
 			for _, o := range n.Args() {
 				if err := q.tcheckArg(o.Arg(), nil, nil, depth); err != nil {
 					return err
 				}
 			}
-			if n.Operator() == t.IDTry {
-				// TODO: be more principled about inferring "try etc"'s type.
-				n.SetMType(typeExprStatus)
-			} else {
-				n.SetMType(typeExprPlaceholder) // HACK.
+			if n.Operator() != t.IDTry {
+				return fmt.Errorf("TODO: foo.decode(etc) outside of a try statement")
 			}
+			// TODO: be more principled about inferring "try etc"'s type.
+			n.SetMType(typeExprStatus)
 			return nil
 		}
 
@@ -600,8 +599,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			// *ast.Struct, to an *ast.TypeExpr we can pass to n.SetMType.
 			return fmt.Errorf("TODO: translate an *ast.Struct to an *ast.TypeExpr")
 		case 0:
-			// TODO: use a "unit", "void" or "empty struct" type.
-			n.SetMType(typeExprPlaceholder)
+			n.SetMType(typeExprEmptyStruct)
 		case 1:
 			oTyp := outFields[0].Field().XType()
 			if genericType != nil && oTyp.Eq(typeExprGeneric) {
