@@ -870,10 +870,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return nil, nil, nil
 		}
-		// TODO: delete this hack that only matches "foo.length(etc)".
-		if isThatMethod(q.tm, n, t.IDLength, 0) || isThatMethod(q.tm, n, t.IDAvailable, 0) {
-			break
-		}
 
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return nil, nil, err
@@ -987,7 +983,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 
 func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
 	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
-	x.SetMType(typeExprPlaceholder) // HACK.
+	x.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, t.IDLength, slice.MType().Node(), nil, nil))
 	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
