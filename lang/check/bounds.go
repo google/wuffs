@@ -790,33 +790,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 
-		// TODO: delete this hack that only matches "in.src.read_u8?()" etc.
-		if isInSrc(q.tm, n, t.IDReadU8, 0) || isInSrc(q.tm, n, t.IDUnreadU8, 0) ||
-			isInSrc(q.tm, n, t.IDReadU16BE, 0) || isInSrc(q.tm, n, t.IDReadU32BE, 0) ||
-			isInSrc(q.tm, n, t.IDReadU32BE, 0) || isInSrc(q.tm, n, t.IDReadU32LE, 0) ||
-			isInSrc(q.tm, n, t.IDSkip32, 1) || isInSrc(q.tm, n, t.IDSinceMark, 0) ||
-			isInSrc(q.tm, n, t.IDMark, 0) || isInSrc(q.tm, n, t.IDLimit, 1) ||
-			isInDst(q.tm, n, t.IDCopyFromSlice, 1) || isInDst(q.tm, n, t.IDCopyFromSlice32, 2) ||
-			isInDst(q.tm, n, t.IDCopyFromReader32, 2) || isInDst(q.tm, n, t.IDCopyFromHistory32, 2) ||
-			isInDst(q.tm, n, t.IDWriteU8, 1) || isInDst(q.tm, n, t.IDSinceMark, 0) ||
-			isInDst(q.tm, n, t.IDMark, 0) || isInDst(q.tm, n, t.IDIsMarked, 0) ||
-			isThatMethod(q.tm, n, t.IDMark, 0) || isThatMethod(q.tm, n, t.IDLimit, 1) ||
-			isThatMethod(q.tm, n, t.IDSinceMark, 0) {
-
-			for _, o := range n.Args() {
-				a := o.Arg().Value()
-				// TODO: check that the arg range at the caller and the
-				// signature are compatible.
-				aMin, aMax, err := q.bcheckExpr(a, depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				// TODO: check that aMin and aMax is within the function's
-				// declared arg bounds.
-				_, _ = aMin, aMax
-			}
-			break
-		}
 		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
 		if isThatMethod(q.tm, n, t.IDLowBits, 1) || isThatMethod(q.tm, n, t.IDHighBits, 1) {
 			a := n.Args()[0].Arg().Value()
@@ -835,12 +808,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			}
 			return zero, bitMask(int(aMax.Int64())), nil
 		}
-		// TODO: delete this hack that only matches "foo.is_suspension(etc)".
-		if isThatMethod(q.tm, n, t.IDIsError, 0) || isThatMethod(q.tm, n, t.IDIsOK, 0) ||
-			isThatMethod(q.tm, n, t.IDIsSuspension, 0) || isThatMethod(q.tm, n, t.IDSuffix, 1) {
-			// TODO: should return be break? Ditto below.
-			return nil, nil, nil
-		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width"), 1) {
 			a := n.Args()[0].Arg().Value()
@@ -851,6 +818,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			if aMin.Cmp(big.NewInt(2)) < 0 || aMax.Cmp(big.NewInt(8)) > 0 {
 				return nil, nil, fmt.Errorf("check: %q not in range [2..8]", a.Str(q.tm))
 			}
+			// TODO: should return be break?
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".

@@ -612,50 +612,6 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func isInSrc(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	callSuspendible := methodName != t.IDSinceMark &&
-		methodName != t.IDMark &&
-		methodName != t.IDLimit
-	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != methodName {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("src") {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident() == t.IDIn
-}
-
-func isInDst(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	callSuspendible := methodName != t.IDCopyFromReader32 &&
-		methodName != t.IDCopyFromHistory32 &&
-		methodName != t.IDCopyFromSlice32 &&
-		methodName != t.IDCopyFromSlice &&
-		methodName != t.IDSinceMark &&
-		methodName != t.IDIsMarked &&
-		methodName != t.IDMark &&
-		methodName != t.IDLimit
-	// TODO: check that n.Args() is "(x:bar)".
-	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != methodName {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("dst") {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident() == t.IDIn
-}
-
 // isThatMethod matches foo.methodName(etc) where etc has nArgs elements.
 func isThatMethod(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
 	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
