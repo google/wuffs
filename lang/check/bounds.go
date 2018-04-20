@@ -854,10 +854,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode"), 2) ||
-			isThatMethod(q.tm, n, q.tm.ByName("decode"), 3) ||
-			isThatMethod(q.tm, n, t.IDCopyFromSlice, 1) ||
-			isThatMethod(q.tm, n, q.tm.ByName("update"), 1) {
+		if isThatMethod(q.tm, n, q.tm.ByName("decode"), 3) {
 			for _, o := range n.Args() {
 				a := o.Arg().Value()
 				aMin, aMax, err := q.bcheckExpr(a, depth)
@@ -973,6 +970,10 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 		return err
 	}
 	inFields := f.In().Fields()
+	if len(inFields) != len(n.Args()) {
+		return fmt.Errorf("check: %q has %d arguments but %d were given",
+			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
+	}
 	for i, o := range n.Args() {
 		if err := q.bcheckAssignment2(nil, inFields[i].Field().XType(), t.IDEq, o.Arg().Value()); err != nil {
 			return err
