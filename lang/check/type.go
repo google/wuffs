@@ -695,7 +695,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		} else if f == nil {
 			return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
 		}
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.Ident(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
 		return nil
 	} else if lTyp.Decorator() != 0 {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
@@ -708,7 +708,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		f = q.c.funcs[qqid]
 	}
 	if f != nil {
-		n.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, n.Ident(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
 		return nil
 	}
 
@@ -1021,7 +1021,7 @@ func (q *checker) tcheckTypeExpr(typ *a.TypeExpr, depth uint32) error {
 
 swtch:
 	switch typ.Decorator() {
-	// TODO: also check t.IDOpenParen.
+	// TODO: also check t.IDFunc.
 	case 0:
 		qid := typ.QID()
 		if qid[0] == t.IDBase && qid[1].IsNumType() {

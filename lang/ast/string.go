@@ -223,7 +223,7 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	case t.IDSlice:
 		buf = append(buf, "slice "...)
 		return n.Inner().appendStr(buf, tm, depth)
-	case t.IDOpenParen:
+	case t.IDFunc:
 		buf = append(buf, "func "...)
 		if r := n.Receiver(); r != nil {
 			buf = append(buf, '(')

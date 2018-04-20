@@ -618,7 +618,7 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "base.u32", "base.u32[..8]", "foo",
 // "pkg.bar", "ptr T", "array[8] T" or "slice T":
-//  - ID0:   <0|IDPtr|IDArray|IDSlice|IDOpenParen>
+//  - ID0:   <0|IDPtr|IDArray|IDSlice|IDFunc>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
@@ -631,9 +631,9 @@ const MaxTypeExprDepth = 63
 //
 // An IDSlice ID0 means "slice RHS". RHS is the inner type.
 //
-// An IDOpenParen ID0 means "LHS.ID2", a function or method type. LHS is the
-// receiver type, which may be nil. If non-nil, it will be a pointee type: "T"
-// instead of "ptr T", "ptr ptr T", etc.
+// An IDFunc ID0 means "func ID2" or "func (LHS).ID2", a function or method
+// type. LHS is the receiver type, which may be nil. If non-nil, it will be a
+// pointee type: "T" instead of "ptr T", "ptr ptr T", etc.
 //
 // TODO: method effects: "foo" vs "foo!" vs "foo?".
 //

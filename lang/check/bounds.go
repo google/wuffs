@@ -983,7 +983,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 
 func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
 	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
-	x.SetMType(a.NewTypeExpr(t.IDOpenParen, 0, t.IDLength, slice.MType().Node(), nil, nil))
+	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().Node(), nil, nil))
 	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
@@ -1182,7 +1182,7 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 
 	switch typ.Decorator() {
-	// TODO: case t.IDOpenParen.
+	// TODO: case t.IDFunc.
 	case t.IDPtr, t.IDArray, t.IDSlice:
 		return nil, nil, nil
 	}
