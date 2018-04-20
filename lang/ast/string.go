@@ -225,8 +225,11 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 		return n.Inner().appendStr(buf, tm, depth)
 	case t.IDOpenParen:
 		buf = append(buf, "func "...)
-		buf = n.Receiver().appendStr(buf, tm, depth)
-		buf = append(buf, '.')
+		if r := n.Receiver(); r != nil {
+			buf = append(buf, '(')
+			buf = r.appendStr(buf, tm, depth)
+			buf = append(buf, ")."...)
+		}
 		return append(buf, n.FuncName().Str(tm)...)
 	default:
 		return append(buf, "!invalid_type!"...)
