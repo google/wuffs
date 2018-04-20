@@ -50,6 +50,66 @@ typedef uint64_t wuffs_base__flicks;
 
 #define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
 
+// wuffs_base__empty_struct is used when a Wuffs function returns an empty
+// struct. In C, if a function f returns void, you can't say "x = f()", but in
+// Wuffs, if a function g returns empty, you can say "y = g()".
+typedef struct {
+} wuffs_base__empty_struct;
+
+// wuffs_base__slice_u8 is a 1-dimensional buffer.
+//
+// A value with all fields NULL or zero is a valid, empty slice.
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} wuffs_base__slice_u8;
+
+// wuffs_base__table_u8 is a 2-dimensional buffer.
+//
+// A value with all fields NULL or zero is a valid, empty table.
+typedef struct {
+  uint8_t* ptr;
+  size_t width;
+  size_t height;
+  size_t stride;
+} wuffs_base__table_u8;
+
+// --------
+
+static inline uint8_t wuffs_base__u8__min(uint8_t x, uint8_t y) {
+  return x < y ? x : y;
+}
+
+static inline uint8_t wuffs_base__u8__max(uint8_t x, uint8_t y) {
+  return x > y ? x : y;
+}
+
+static inline uint16_t wuffs_base__u16__min(uint16_t x, uint16_t y) {
+  return x < y ? x : y;
+}
+
+static inline uint16_t wuffs_base__u16__max(uint16_t x, uint16_t y) {
+  return x > y ? x : y;
+}
+
+static inline uint32_t wuffs_base__u32__min(uint32_t x, uint32_t y) {
+  return x < y ? x : y;
+}
+
+static inline uint32_t wuffs_base__u32__max(uint32_t x, uint32_t y) {
+  return x > y ? x : y;
+}
+
+static inline uint64_t wuffs_base__u64__min(uint64_t x, uint64_t y) {
+  return x < y ? x : y;
+}
+
+static inline uint64_t wuffs_base__u64__max(uint64_t x, uint64_t y) {
+  return x > y ? x : y;
+}
+
+// --------
+
 // Saturating arithmetic (sat_add, sat_sub) branchless bit-twiddling algorithms
 // are per https://locklessinc.com/articles/sat_arithmetic/
 //
@@ -104,6 +164,8 @@ static inline uint64_t wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   return res;
 }
 
+// ---------------- Ranges and Rects
+
 // Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
 // high end. Both the "ii" and "ie" flavors are useful in practice.
 //
@@ -140,16 +202,50 @@ typedef struct {
   uint32_t max_inclusive;
 } wuffs_base__range_ii_u32;
 
+static inline bool wuffs_base__range_ii_u32__is_empty(
+    wuffs_base__range_ii_u32 r) {
+  return r.min_inclusive > r.max_inclusive;
+}
+
 static inline bool wuffs_base__range_ii_u32__contains(
     wuffs_base__range_ii_u32 r,
     uint32_t x) {
   return (r.min_inclusive <= x) && (x <= r.max_inclusive);
 }
 
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersection(
+    wuffs_base__range_ii_u32 r,
+    wuffs_base__range_ii_u32 s) {
+  r.min_inclusive = wuffs_base__u32__max(r.min_inclusive, s.min_inclusive);
+  r.max_inclusive = wuffs_base__u32__min(r.max_inclusive, s.max_inclusive);
+  return r;
+}
+
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__union(
+    wuffs_base__range_ii_u32 r,
+    wuffs_base__range_ii_u32 s) {
+  if (wuffs_base__range_ii_u32__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__range_ii_u32__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive = wuffs_base__u32__min(r.min_inclusive, s.min_inclusive);
+  r.max_inclusive = wuffs_base__u32__max(r.max_inclusive, s.max_inclusive);
+  return r;
+}
+
+// --------
+
 typedef struct {
   uint32_t min_inclusive;
   uint32_t max_exclusive;
 } wuffs_base__range_ie_u32;
+
+static inline bool wuffs_base__range_ie_u32__is_empty(
+    wuffs_base__range_ie_u32 r) {
+  return r.min_inclusive >= r.max_exclusive;
+}
 
 static inline bool wuffs_base__range_ie_u32__contains(
     wuffs_base__range_ie_u32 r,
@@ -157,15 +253,44 @@ static inline bool wuffs_base__range_ie_u32__contains(
   return (r.min_inclusive <= x) && (x < r.max_exclusive);
 }
 
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersection(
+    wuffs_base__range_ie_u32 r,
+    wuffs_base__range_ie_u32 s) {
+  r.min_inclusive = wuffs_base__u32__max(r.min_inclusive, s.min_inclusive);
+  r.max_exclusive = wuffs_base__u32__min(r.max_exclusive, s.max_exclusive);
+  return r;
+}
+
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__union(
+    wuffs_base__range_ie_u32 r,
+    wuffs_base__range_ie_u32 s) {
+  if (wuffs_base__range_ie_u32__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__range_ie_u32__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive = wuffs_base__u32__min(r.min_inclusive, s.min_inclusive);
+  r.max_exclusive = wuffs_base__u32__max(r.max_exclusive, s.max_exclusive);
+  return r;
+}
+
 static inline uint32_t wuffs_base__range_ie_u32__length(
     wuffs_base__range_ie_u32 r) {
   return wuffs_base__u32__sat_sub(r.max_exclusive, r.min_inclusive);
 }
 
+// --------
+
 typedef struct {
   uint64_t min_inclusive;
   uint64_t max_inclusive;
 } wuffs_base__range_ii_u64;
+
+static inline bool wuffs_base__range_ii_u64__is_empty(
+    wuffs_base__range_ii_u64 r) {
+  return r.min_inclusive > r.max_inclusive;
+}
 
 static inline bool wuffs_base__range_ii_u64__contains(
     wuffs_base__range_ii_u64 r,
@@ -173,10 +298,39 @@ static inline bool wuffs_base__range_ii_u64__contains(
   return (r.min_inclusive <= x) && (x <= r.max_inclusive);
 }
 
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersection(
+    wuffs_base__range_ii_u64 r,
+    wuffs_base__range_ii_u64 s) {
+  r.min_inclusive = wuffs_base__u64__max(r.min_inclusive, s.min_inclusive);
+  r.max_inclusive = wuffs_base__u64__min(r.max_inclusive, s.max_inclusive);
+  return r;
+}
+
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__union(
+    wuffs_base__range_ii_u64 r,
+    wuffs_base__range_ii_u64 s) {
+  if (wuffs_base__range_ii_u64__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__range_ii_u64__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive = wuffs_base__u64__min(r.min_inclusive, s.min_inclusive);
+  r.max_inclusive = wuffs_base__u64__max(r.max_inclusive, s.max_inclusive);
+  return r;
+}
+
+// --------
+
 typedef struct {
   uint64_t min_inclusive;
   uint64_t max_exclusive;
 } wuffs_base__range_ie_u64;
+
+static inline bool wuffs_base__range_ie_u64__is_empty(
+    wuffs_base__range_ie_u64 r) {
+  return r.min_inclusive >= r.max_exclusive;
+}
 
 static inline bool wuffs_base__range_ie_u64__contains(
     wuffs_base__range_ie_u64 r,
@@ -184,10 +338,34 @@ static inline bool wuffs_base__range_ie_u64__contains(
   return (r.min_inclusive <= x) && (x < r.max_exclusive);
 }
 
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersection(
+    wuffs_base__range_ie_u64 r,
+    wuffs_base__range_ie_u64 s) {
+  r.min_inclusive = wuffs_base__u64__max(r.min_inclusive, s.min_inclusive);
+  r.max_exclusive = wuffs_base__u64__min(r.max_exclusive, s.max_exclusive);
+  return r;
+}
+
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__union(
+    wuffs_base__range_ie_u64 r,
+    wuffs_base__range_ie_u64 s) {
+  if (wuffs_base__range_ie_u64__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__range_ie_u64__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive = wuffs_base__u64__min(r.min_inclusive, s.min_inclusive);
+  r.max_exclusive = wuffs_base__u64__max(r.max_exclusive, s.max_exclusive);
+  return r;
+}
+
 static inline uint64_t wuffs_base__range_ie_u64__length(
     wuffs_base__range_ie_u64 r) {
   return wuffs_base__u64__sat_sub(r.max_exclusive, r.min_inclusive);
 }
+
+// --------
 
 // wuffs_base__rect_ii_u32 is a rectangle (a 2-dimensional range) on the
 // integer grid. The "ii" means that the bounds are inclusive on the low end
@@ -205,12 +383,54 @@ typedef struct {
   uint32_t max_inclusive_y;
 } wuffs_base__rect_ii_u32;
 
+static inline bool wuffs_base__rect_ii_u32__is_empty(
+    wuffs_base__rect_ii_u32 r) {
+  return (r.min_inclusive_x > r.max_inclusive_x) ||
+         (r.min_inclusive_y > r.max_inclusive_y);
+}
+
 static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32 r,
                                                      uint32_t x,
                                                      uint32_t y) {
   return (r.min_inclusive_x <= x) && (x <= r.max_inclusive_x) &&
          (r.min_inclusive_y <= y) && (y <= r.max_inclusive_y);
 }
+
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersection(
+    wuffs_base__rect_ii_u32 r,
+    wuffs_base__rect_ii_u32 s) {
+  r.min_inclusive_x =
+      wuffs_base__u32__max(r.min_inclusive_x, s.min_inclusive_x);
+  r.min_inclusive_y =
+      wuffs_base__u32__max(r.min_inclusive_y, s.min_inclusive_y);
+  r.max_inclusive_x =
+      wuffs_base__u32__min(r.max_inclusive_x, s.max_inclusive_x);
+  r.max_inclusive_y =
+      wuffs_base__u32__min(r.max_inclusive_y, s.max_inclusive_y);
+  return r;
+}
+
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__union(
+    wuffs_base__rect_ii_u32 r,
+    wuffs_base__rect_ii_u32 s) {
+  if (wuffs_base__rect_ii_u32__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__rect_ii_u32__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive_x =
+      wuffs_base__u32__min(r.min_inclusive_x, s.min_inclusive_x);
+  r.min_inclusive_y =
+      wuffs_base__u32__min(r.min_inclusive_y, s.min_inclusive_y);
+  r.max_inclusive_x =
+      wuffs_base__u32__max(r.max_inclusive_x, s.max_inclusive_x);
+  r.max_inclusive_y =
+      wuffs_base__u32__max(r.max_inclusive_y, s.max_inclusive_y);
+  return r;
+}
+
+// --------
 
 // wuffs_base__rect_ie_u32 is a rectangle (a 2-dimensional range) on the
 // integer grid. The "ie" means that the bounds are inclusive on the low end
@@ -229,11 +449,51 @@ typedef struct {
   uint32_t max_exclusive_y;
 } wuffs_base__rect_ie_u32;
 
+static inline bool wuffs_base__rect_ie_u32__is_empty(
+    wuffs_base__rect_ie_u32 r) {
+  return (r.min_inclusive_x >= r.max_exclusive_x) ||
+         (r.min_inclusive_y >= r.max_exclusive_y);
+}
+
 static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32 r,
                                                      uint32_t x,
                                                      uint32_t y) {
   return (r.min_inclusive_x <= x) && (x < r.max_exclusive_x) &&
          (r.min_inclusive_y <= y) && (y < r.max_exclusive_y);
+}
+
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersection(
+    wuffs_base__rect_ie_u32 r,
+    wuffs_base__rect_ie_u32 s) {
+  r.min_inclusive_x =
+      wuffs_base__u32__max(r.min_inclusive_x, s.min_inclusive_x);
+  r.min_inclusive_y =
+      wuffs_base__u32__max(r.min_inclusive_y, s.min_inclusive_y);
+  r.max_exclusive_x =
+      wuffs_base__u32__min(r.max_exclusive_x, s.max_exclusive_x);
+  r.max_exclusive_y =
+      wuffs_base__u32__min(r.max_exclusive_y, s.max_exclusive_y);
+  return r;
+}
+
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__union(
+    wuffs_base__rect_ie_u32 r,
+    wuffs_base__rect_ie_u32 s) {
+  if (wuffs_base__rect_ie_u32__is_empty(r)) {
+    return s;
+  }
+  if (wuffs_base__rect_ie_u32__is_empty(s)) {
+    return r;
+  }
+  r.min_inclusive_x =
+      wuffs_base__u32__min(r.min_inclusive_x, s.min_inclusive_x);
+  r.min_inclusive_y =
+      wuffs_base__u32__min(r.min_inclusive_y, s.min_inclusive_y);
+  r.max_exclusive_x =
+      wuffs_base__u32__max(r.max_exclusive_x, s.max_exclusive_x);
+  r.max_exclusive_y =
+      wuffs_base__u32__max(r.max_exclusive_y, s.max_exclusive_y);
+  return r;
 }
 
 static inline uint32_t wuffs_base__rect_ie_u32__width(
@@ -245,24 +505,6 @@ static inline uint32_t wuffs_base__rect_ie_u32__height(
     wuffs_base__rect_ie_u32 r) {
   return wuffs_base__u32__sat_sub(r.max_exclusive_y, r.min_inclusive_y);
 }
-
-// wuffs_base__slice_u8 is a 1-dimensional buffer.
-//
-// A value with all fields NULL or zero is a valid, empty slice.
-typedef struct {
-  uint8_t* ptr;
-  size_t len;
-} wuffs_base__slice_u8;
-
-// wuffs_base__table_u8 is a 2-dimensional buffer.
-//
-// A value with all fields NULL or zero is a valid, empty table.
-typedef struct {
-  uint8_t* ptr;
-  size_t width;
-  size_t height;
-  size_t stride;
-} wuffs_base__table_u8;
 
 // ---------------- I/O
 
@@ -488,6 +730,8 @@ typedef struct {
   wuffs_base__table_u8 planes[WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX];
 } wuffs_base__pixel_buffer;
 
+// --------
+
 // wuffs_base__pixel_subsampling encodes the mapping of pixel space coordinates
 // (x, y) to pixel buffer indices (i, j). That mapping can differ for each
 // plane p. For a depth of 8 bits (1 byte), the p'th plane's sample starts at
@@ -565,6 +809,8 @@ static inline uint32_t wuffs_base__pixel_subsampling__shift_y(
   uint32_t shift = ((plane & 0x03) * 8) + 0;
   return (s >> shift) & 0x03;
 }
+
+// --------
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -655,6 +901,8 @@ static inline size_t wuffs_base__image_config__pixbuf_size(
   }
   return 0;
 }
+
+// --------
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -950,12 +1198,6 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// wuffs_base__empty_struct is used when a Wuffs function returns an empty
-// struct. In C, if a function f returns void, you can't say "x = f()", but in
-// Wuffs, if a function g returns empty, you can say "y = g()".
-typedef struct {
-} wuffs_base__empty_struct;
 
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
@@ -1290,10 +1532,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
-
-// ---------------- Images
-
-// No Images related helpers yet.
 
 static const char* wuffs_base__status__strings[13] = {
     "ok",

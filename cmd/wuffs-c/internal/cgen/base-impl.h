@@ -14,12 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// wuffs_base__empty_struct is used when a Wuffs function returns an empty
-// struct. In C, if a function f returns void, you can't say "x = f()", but in
-// Wuffs, if a function g returns empty, you can say "y = g()".
-typedef struct {
-} wuffs_base__empty_struct;
-
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -353,7 +347,3 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
-
-// ---------------- Images
-
-// No Images related helpers yet.
