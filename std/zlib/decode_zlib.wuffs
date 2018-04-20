@@ -66,38 +66,3 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 		return error "checksum mismatch"
 	}
 }
-
-// TODO: drop the '?' but still generate wuffs_zlib__adler32__initialize?
-pri struct adler32?(
-	state base.u32 = 1,
-)
-
-// TODO: add a ! as this function is impure.
-pri func adler32.update(x slice base.u8)(checksum base.u32) {
-	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
-	// RFC 1950.
-
-	var s1 base.u32 = this.state.low_bits(n:16)
-	var s2 base.u32 = this.state.high_bits(n:16)
-
-	while in.x.length() > 0 {
-		var remaining slice base.u8
-		if in.x.length() > 5552 {
-			remaining = in.x[5552:]
-			in.x = in.x[:5552]
-		}
-
-		iterate[8](p ptr base.u8:in.x) {
-			s1 ~+= deref p as base.u32
-			s2 ~+= s1
-		}
-
-		s1 %= 65521
-		s2 %= 65521
-
-		in.x = remaining
-	}
-
-	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
-	return this.state
-}

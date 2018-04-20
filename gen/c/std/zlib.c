@@ -1750,6 +1750,65 @@ void wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 
 // ---------------- Function Implementations
 
+static uint32_t wuffs_zlib__adler32__update(wuffs_zlib__adler32* self,
+                                            wuffs_base__slice_u8 a_x) {
+  uint32_t v_s1;
+  uint32_t v_s2;
+  wuffs_base__slice_u8 v_remaining;
+
+  v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
+  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
+  while (((uint64_t)(a_x.len)) > 0) {
+    v_remaining = ((wuffs_base__slice_u8){});
+    if (((uint64_t)(a_x.len)) > 5552) {
+      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5552);
+      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5552);
+    }
+    {
+      wuffs_base__slice_u8 i_slice_p = a_x;
+      uint8_t* v_p = i_slice_p.ptr;
+      uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+      while (v_p < i_end0_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+      }
+      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p < i_end1_p) {
+        v_s1 += ((uint32_t)(*v_p));
+        v_s2 += v_s1;
+        v_p++;
+      }
+    }
+    v_s1 %= 65521;
+    v_s2 %= 65521;
+    a_x = v_remaining;
+  }
+  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
+  return self->private_impl.f_state;
+}
+
 void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
                                               bool a_ic) {
   if (!self) {
@@ -2010,63 +2069,4 @@ short_read_src:
   }
   status = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
   goto suspend;
-}
-
-static uint32_t wuffs_zlib__adler32__update(wuffs_zlib__adler32* self,
-                                            wuffs_base__slice_u8 a_x) {
-  uint32_t v_s1;
-  uint32_t v_s2;
-  wuffs_base__slice_u8 v_remaining;
-
-  v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
-  v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
-  while (((uint64_t)(a_x.len)) > 0) {
-    v_remaining = ((wuffs_base__slice_u8){});
-    if (((uint64_t)(a_x.len)) > 5552) {
-      v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5552);
-      a_x = wuffs_base__slice_u8__subslice_j(a_x, 5552);
-    }
-    {
-      wuffs_base__slice_u8 i_slice_p = a_x;
-      uint8_t* v_p = i_slice_p.ptr;
-      uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
-      while (v_p < i_end0_p) {
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-      }
-      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
-      while (v_p < i_end1_p) {
-        v_s1 += ((uint32_t)(*v_p));
-        v_s2 += v_s1;
-        v_p++;
-      }
-    }
-    v_s1 %= 65521;
-    v_s2 %= 65521;
-    a_x = v_remaining;
-  }
-  self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
-  return self->private_impl.f_state;
 }
