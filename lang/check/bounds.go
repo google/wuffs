@@ -41,6 +41,8 @@ var (
 	two       = big.NewInt(+2)
 	four      = big.NewInt(+4)
 	eight     = big.NewInt(+8)
+	sixteen   = big.NewInt(+16)
+	thirtyTwo = big.NewInt(+32)
 	sixtyFour = big.NewInt(+64)
 	ffff      = big.NewInt(0xFFFF)
 
@@ -786,28 +788,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.IDOpenParen, t.IDTry:
-		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
+		lhs := n.LHS().Expr()
+		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
 
-		// TODO: delete this hack that only matches "foo.bar_bits(etc)".
-		if isThatMethod(q.tm, n, t.IDLowBits, 1) || isThatMethod(q.tm, n, t.IDHighBits, 1) {
-			a := n.Args()[0].Arg().Value()
-			aMin, aMax, err := q.bcheckExpr(a, depth)
-			if err != nil {
-				return nil, nil, err
-			}
-			if aMin.Sign() < 0 {
-				// TODO: error, but a better check than aMin < 0 is that
-				// a.MType() is base.u32. Checking this properly should fall
-				// out when a *a.TypeExpr can express function types.
-			}
-			// TODO: sixtyFour should actually be 8 * sizeof(n.LHS().Expr()).
-			if aMax.Cmp(sixtyFour) > 0 {
-				return nil, nil, fmt.Errorf("check: low_bits argument %q is possibly too large", a.Str(q.tm))
-			}
-			return zero, bitMask(int(aMax.Int64())), nil
-		}
 		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
 		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width"), 1) {
 			a := n.Args()[0].Arg().Value()
@@ -838,6 +823,16 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return nil, nil, err
+		}
+
+		// Special case for a numeric type's low_bits and high_bits methods.
+		// The bound on the output is dependent on bound on the input, similar
+		// to dependent types, and isn't expressible in Wuffs' function syntax
+		// and type system.
+		if methodName := lhs.Ident(); methodName == t.IDLowBits || methodName == t.IDHighBits {
+			if recv := lhs.MType().Receiver(); recv != nil && recv.IsNumType() {
+				return q.bcheckLowHighBitsCall(n, depth)
+			}
 		}
 
 	case t.IDOpenBracket:
@@ -926,6 +921,36 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
 	return q.bcheckTypeExpr(n.MType())
+}
+
+func (q *checker) bcheckLowHighBitsCall(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	max := (*big.Int)(nil)
+	qid := n.LHS().Expr().MType().Receiver().QID()
+	switch qid[1] {
+	case t.IDU8:
+		max = eight
+	case t.IDU16:
+		max = sixteen
+	case t.IDU32:
+		max = thirtyTwo
+	case t.IDU64:
+		max = sixtyFour
+	}
+	if qid[0] != t.IDBase || max == nil {
+		return nil, nil, fmt.Errorf("check: internal error: bad low_bits / high_bits receiver")
+	}
+
+	a := n.Args()[0].Arg().Value()
+	_, aMax, err := q.bcheckExpr(a, depth)
+	if err != nil {
+		return nil, nil, err
+	}
+	if aMax.Cmp(max) > 0 {
+		return nil, nil, fmt.Errorf(
+			"check: internal error: bad low_bits / high_bits argument, despite type checking")
+	}
+
+	return zero, bitMask(int(aMax.Int64())), nil
 }
 
 func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
@@ -1176,12 +1201,16 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	}
 	if typ.IsRefined() {
 		if x := typ.Min(); x != nil {
-			if cv := x.ConstValue(); cv != nil && b[0].Cmp(cv) < 0 {
+			if cv := x.ConstValue(); cv == nil {
+				return nil, nil, fmt.Errorf("check: internal error: refinement has no const-value")
+			} else if b[0].Cmp(cv) < 0 {
 				b[0] = cv
 			}
 		}
 		if x := typ.Max(); x != nil {
-			if cv := x.ConstValue(); cv != nil && b[1].Cmp(cv) > 0 {
+			if cv := x.ConstValue(); cv == nil {
+				return nil, nil, fmt.Errorf("check: internal error: refinement has no const-value")
+			} else if b[1].Cmp(cv) > 0 {
 				b[1] = cv
 			}
 		}

@@ -686,7 +686,7 @@ func (n *TypeExpr) IsNumTypeOrIdeal() bool {
 }
 
 func (n *TypeExpr) IsRefined() bool {
-	return n.id0 != t.IDArray && (n.lhs != nil || n.mhs != nil)
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumType() && (n.lhs != nil || n.mhs != nil)
 }
 
 func (n *TypeExpr) IsArrayType() bool {

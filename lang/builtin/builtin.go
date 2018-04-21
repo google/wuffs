@@ -81,6 +81,7 @@ var Types = []string{
 var Funcs = []string{
 	// TODO: some methods like "mark" should probably have a trailing "!".
 
+	// TODO: refine n's type from u32 to u32[..8], u32[..16], etc.
 	"u8.high_bits(n u32)(ret u8)",
 	"u8.low_bits(n u32)(ret u8)",
 	"u16.high_bits(n u32)(ret u16)",
