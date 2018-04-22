@@ -1,0 +1,16 @@
+# This file maps file formats to file extensions, and specifically, to a set of
+# files used to seed fuzz testing.
+#
+# The map is often trivial. For example, the "gif" implementation is tested on
+# files matching "*.gif". However, for some formats, the format name and the
+# conventional file extension differ, such as "gzip" and "gz". There may also
+# be multiple file extensions: both "jpeg" and "jpg" are widely used. First
+# party test data will usually use "jpeg", but third party test data, such as a
+# web crawl sample, may use "jpg".
+#
+# This file is not used by Wuffs per se, but it is used by the "projects/wuffs"
+# directory in the https://github.com/google/oss-fuzz repository.
+
+gif:    test/data/*.gif
+gzip:   test/data/*.gz
+zlib:   test/data/*.zlib
