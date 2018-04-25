@@ -61,7 +61,7 @@ index f878c5e..f10dcee 100644
                         }
 ```
 
-```bash
+```
 $ wuffs gen std/gif
 check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
 /home/n/go/src/github.com/google/wuffs/std/gif/decode_lzw.wuffs:101. Facts:
@@ -91,7 +91,7 @@ index f878c5e..b43443d 100644
                         }
 ```
 
-```bash
+```
 $ wuffs gen std/gif
 gen wrote:      /home/n/go/src/github.com/google/wuffs/gen/c/gif.c
 gen unchanged:  /home/n/go/src/github.com/google/wuffs/gen/h/gif.h
