@@ -1277,6 +1277,20 @@ static inline uint32_t wuffs_base__load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
+static inline uint64_t wuffs_base__load_u64be(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 56) | ((uint64_t)(p[1]) << 48) |
+         ((uint64_t)(p[2]) << 40) | ((uint64_t)(p[3]) << 32) |
+         ((uint64_t)(p[4]) << 24) | ((uint64_t)(p[5]) << 16) |
+         ((uint64_t)(p[6]) << 8) | ((uint64_t)(p[7]) << 0);
+}
+
+static inline uint64_t wuffs_base__load_u64le(uint8_t* p) {
+  return ((uint64_t)(p[0]) << 0) | ((uint64_t)(p[1]) << 8) |
+         ((uint64_t)(p[2]) << 16) | ((uint64_t)(p[3]) << 24) |
+         ((uint64_t)(p[4]) << 32) | ((uint64_t)(p[5]) << 40) |
+         ((uint64_t)(p[6]) << 48) | ((uint64_t)(p[7]) << 56);
+}
+
 static inline wuffs_base__slice_u8 wuffs_base__slice_u8__subslice_i(
     wuffs_base__slice_u8 s,
     uint64_t i) {
