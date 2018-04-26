@@ -164,6 +164,38 @@ static inline uint64_t wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   return res;
 }
 
+static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_sub(*x, y);
+}
+
 // ---------------- Ranges and Rects
 
 // Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
