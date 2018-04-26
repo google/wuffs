@@ -182,7 +182,6 @@ func TestConstValues(tt *testing.T) {
 		"var i base.i32 = 10 << 3": 80,
 		"var i base.i32 = 10 >> 3": 1,
 		"var i base.i32 = 10  & 3": 2,
-		"var i base.i32 = 10 &^ 3": 8,
 		"var i base.i32 = 10  | 3": 11,
 		"var i base.i32 = 10  ^ 3": 9,
 
