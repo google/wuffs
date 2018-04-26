@@ -61,6 +61,7 @@ var builtInTypeMap = typeMap{
 	t.IDU16:         typeExprU16,
 	t.IDU32:         typeExprU32,
 	t.IDU64:         typeExprU64,
+	t.IDEmptyStruct: typeExprEmptyStruct,
 	t.IDBool:        typeExprBool,
 	t.IDStatus:      typeExprStatus,
 	t.IDIOReader:    typeExprIOReader,
