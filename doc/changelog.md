@@ -12,6 +12,7 @@
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
 - Renamed `~+` to `~mod+`; added `~mod-`, `~sat+` and `~sat-`.
+- Removed `&^`.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
 - Renamed `iterate.N` to `iterate[N]`.
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
@@ -27,7 +28,7 @@
 - Added a stand-alone lang/interval package.
 - Added fuzz tests.
 - Added some Go and Rust benchmarks.
-- Sped up the mimic\_deflate\_xxx benchmarks.
+- Sped up the `mimic_deflate_xxx` benchmarks.
 
 
 ## 2017-11-16

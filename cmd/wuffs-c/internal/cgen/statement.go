@@ -81,7 +81,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
-		// TODO: `~sat+=`, `~sat-=` and `&^=` need special consideration.
+		// TODO: `~sat+=` and `~sat-=` need special consideration.
 		op := n.Operator()
 		opName := cOpNames[0xFF&op]
 		if opName == "" {

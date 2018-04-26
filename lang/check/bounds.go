@@ -1118,9 +1118,6 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		// conservative, but works fine in practice.
 		return zero, bitMask(z.BitLen()), nil
 
-	case t.IDXBinaryAmpHat:
-		// TODO.
-
 	case t.IDXBinaryPercent:
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.Str(q.tm))

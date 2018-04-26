@@ -517,7 +517,6 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp p
 	if err := g.writeExpr(b, n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
-	// TODO: does KeyXBinaryAmpHat need special consideration?
 	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
@@ -681,7 +680,6 @@ var cOpNames = [256]string{
 	t.IDShiftLEq:        " <<= ",
 	t.IDShiftREq:        " >>= ",
 	t.IDAmpEq:           " &= ",
-	t.IDAmpHatEq:        " no_such_C_operator ",
 	t.IDPipeEq:          " |= ",
 	t.IDHatEq:           " ^= ",
 	t.IDPercentEq:       " %= ",
@@ -703,7 +701,6 @@ var cOpNames = [256]string{
 	t.IDXBinaryShiftL:        " << ",
 	t.IDXBinaryShiftR:        " >> ",
 	t.IDXBinaryAmp:           " & ",
-	t.IDXBinaryAmpHat:        " no_such_C_operator ",
 	t.IDXBinaryPipe:          " | ",
 	t.IDXBinaryHat:           " ^ ",
 	t.IDXBinaryPercent:       " % ",

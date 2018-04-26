@@ -880,8 +880,6 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return big.NewInt(0).Rsh(l, uint(r.Uint64())), nil
 	case t.IDXBinaryAmp:
 		return big.NewInt(0).And(l, r), nil
-	case t.IDXBinaryAmpHat:
-		return big.NewInt(0).AndNot(l, r), nil
 	case t.IDXBinaryPipe:
 		return big.NewInt(0).Or(l, r), nil
 	case t.IDXBinaryHat:

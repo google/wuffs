@@ -166,7 +166,6 @@ var opStrings = [256]string{
 	t.IDXBinaryShiftL:        " << ",
 	t.IDXBinaryShiftR:        " >> ",
 	t.IDXBinaryAmp:           " & ",
-	t.IDXBinaryAmpHat:        " &^ ",
 	t.IDXBinaryPipe:          " | ",
 	t.IDXBinaryHat:           " ^ ",
 	t.IDXBinaryTildeModPlus:  " ~mod+ ",

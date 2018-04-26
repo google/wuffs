@@ -203,14 +203,13 @@ const (
 	IDShiftLEq        = ID(0x15)
 	IDShiftREq        = ID(0x16)
 	IDAmpEq           = ID(0x17)
-	IDAmpHatEq        = ID(0x18)
-	IDPipeEq          = ID(0x19)
-	IDHatEq           = ID(0x1A)
-	IDPercentEq       = ID(0x1B)
-	IDTildeModPlusEq  = ID(0x1C)
-	IDTildeModMinusEq = ID(0x1D)
-	IDTildeSatPlusEq  = ID(0x1E)
-	IDTildeSatMinusEq = ID(0x1F)
+	IDPipeEq          = ID(0x18)
+	IDHatEq           = ID(0x19)
+	IDPercentEq       = ID(0x1A)
+	IDTildeModPlusEq  = ID(0x1B)
+	IDTildeModMinusEq = ID(0x1C)
+	IDTildeSatPlusEq  = ID(0x1D)
+	IDTildeSatMinusEq = ID(0x1E)
 )
 
 const (
@@ -228,14 +227,13 @@ const (
 	IDShiftL        = ID(0x25)
 	IDShiftR        = ID(0x26)
 	IDAmp           = ID(0x27)
-	IDAmpHat        = ID(0x28)
-	IDPipe          = ID(0x29)
-	IDHat           = ID(0x2A)
-	IDPercent       = ID(0x2B)
-	IDTildeModPlus  = ID(0x2C)
-	IDTildeModMinus = ID(0x2D)
-	IDTildeSatPlus  = ID(0x2E)
-	IDTildeSatMinus = ID(0x2F)
+	IDPipe          = ID(0x28)
+	IDHat           = ID(0x29)
+	IDPercent       = ID(0x2A)
+	IDTildeModPlus  = ID(0x2B)
+	IDTildeModMinus = ID(0x2C)
+	IDTildeSatPlus  = ID(0x2D)
+	IDTildeSatMinus = ID(0x2E)
 
 	IDNotEq       = ID(0x30)
 	IDLessThan    = ID(0x31)
@@ -267,23 +265,22 @@ const (
 	IDXBinaryShiftL        = ID(0x4C)
 	IDXBinaryShiftR        = ID(0x4D)
 	IDXBinaryAmp           = ID(0x4E)
-	IDXBinaryAmpHat        = ID(0x4F)
-	IDXBinaryPipe          = ID(0x50)
-	IDXBinaryHat           = ID(0x51)
-	IDXBinaryPercent       = ID(0x52)
-	IDXBinaryTildeModPlus  = ID(0x53)
-	IDXBinaryTildeModMinus = ID(0x54)
-	IDXBinaryTildeSatPlus  = ID(0x55)
-	IDXBinaryTildeSatMinus = ID(0x56)
-	IDXBinaryNotEq         = ID(0x57)
-	IDXBinaryLessThan      = ID(0x58)
-	IDXBinaryLessEq        = ID(0x59)
-	IDXBinaryEqEq          = ID(0x5A)
-	IDXBinaryGreaterEq     = ID(0x5B)
-	IDXBinaryGreaterThan   = ID(0x5C)
-	IDXBinaryAnd           = ID(0x5D)
-	IDXBinaryOr            = ID(0x5E)
-	IDXBinaryAs            = ID(0x5F)
+	IDXBinaryPipe          = ID(0x4F)
+	IDXBinaryHat           = ID(0x50)
+	IDXBinaryPercent       = ID(0x51)
+	IDXBinaryTildeModPlus  = ID(0x52)
+	IDXBinaryTildeModMinus = ID(0x53)
+	IDXBinaryTildeSatPlus  = ID(0x54)
+	IDXBinaryTildeSatMinus = ID(0x55)
+	IDXBinaryNotEq         = ID(0x56)
+	IDXBinaryLessThan      = ID(0x57)
+	IDXBinaryLessEq        = ID(0x58)
+	IDXBinaryEqEq          = ID(0x59)
+	IDXBinaryGreaterEq     = ID(0x5A)
+	IDXBinaryGreaterThan   = ID(0x5B)
+	IDXBinaryAnd           = ID(0x5C)
+	IDXBinaryOr            = ID(0x5D)
+	IDXBinaryAs            = ID(0x5E)
 
 	IDXAssociativePlus = ID(0x60)
 	IDXAssociativeStar = ID(0x61)
@@ -443,7 +440,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDShiftLEq:        "<<=",
 	IDShiftREq:        ">>=",
 	IDAmpEq:           "&=",
-	IDAmpHatEq:        "&^=",
 	IDPipeEq:          "|=",
 	IDHatEq:           "^=",
 	IDPercentEq:       "%=",
@@ -459,7 +455,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDShiftL:        "<<",
 	IDShiftR:        ">>",
 	IDAmp:           "&",
-	IDAmpHat:        "&^",
 	IDPipe:          "|",
 	IDHat:           "^",
 	IDPercent:       "%",
@@ -639,8 +634,6 @@ var lexers = [nBuiltInIDs][]suffixLexer{
 		{"", IDExclam},
 	},
 	'&': {
-		{"^=", IDAmpHatEq},
-		{"^", IDAmpHat},
 		{"=", IDAmpEq},
 		{"", IDAmp},
 	},
@@ -714,7 +707,6 @@ var ambiguousForms = [nBuiltInIDs]ID{
 	IDXBinaryShiftL:        IDShiftL,
 	IDXBinaryShiftR:        IDShiftR,
 	IDXBinaryAmp:           IDAmp,
-	IDXBinaryAmpHat:        IDAmpHat,
 	IDXBinaryPipe:          IDPipe,
 	IDXBinaryHat:           IDHat,
 	IDXBinaryPercent:       IDPercent,
@@ -783,7 +775,6 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDShiftLEq:        IDXBinaryShiftL,
 	IDShiftREq:        IDXBinaryShiftR,
 	IDAmpEq:           IDXBinaryAmp,
-	IDAmpHatEq:        IDXBinaryAmpHat,
 	IDPipeEq:          IDXBinaryPipe,
 	IDHatEq:           IDXBinaryHat,
 	IDPercentEq:       IDXBinaryPercent,
@@ -799,7 +790,6 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDShiftL:        IDXBinaryShiftL,
 	IDShiftR:        IDXBinaryShiftR,
 	IDAmp:           IDXBinaryAmp,
-	IDAmpHat:        IDXBinaryAmpHat,
 	IDPipe:          IDXBinaryPipe,
 	IDHat:           IDXBinaryHat,
 	IDPercent:       IDXBinaryPercent,
