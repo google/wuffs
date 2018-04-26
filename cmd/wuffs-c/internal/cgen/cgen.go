@@ -464,19 +464,26 @@ func (g *gen) cName(name string) string {
 	return string(s)
 }
 
+func uintBits(qid t.QID) uint32 {
+	if qid[0] == t.IDBase {
+		switch qid[1] {
+		case t.IDU8:
+			return 8
+		case t.IDU16:
+			return 16
+		case t.IDU32:
+			return 32
+		case t.IDU64:
+			return 64
+		}
+	}
+	return 0
+}
+
 func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 	if typ.Decorator() == 0 {
-		if qid := typ.QID(); qid[0] == t.IDBase {
-			switch qid[1] {
-			case t.IDU8:
-				return 1, nil
-			case t.IDU16:
-				return 2, nil
-			case t.IDU32:
-				return 4, nil
-			case t.IDU64:
-				return 8, nil
-			}
+		if n := uintBits(typ.QID()); n != 0 {
+			return n / 8, nil
 		}
 	}
 	return 0, fmt.Errorf("unknown sizeof for %q", typ.Str(g.tm))

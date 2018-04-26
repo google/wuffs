@@ -478,27 +478,15 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp p
 	op := n.Operator()
 	switch op {
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
-		uType := ""
-		qid := n.MType().QID()
-		switch qid[1] {
-		case t.IDU8:
-			uType = "8"
-		case t.IDU16:
-			uType = "16"
-		case t.IDU32:
-			uType = "32"
-		case t.IDU64:
-			uType = "64"
-		}
-		if qid[0] != t.IDBase || uType == "" {
+		uBits := uintBits(n.MType().QID())
+		if uBits == 0 {
 			return fmt.Errorf("unsupported tilde-operator type %q", n.MType().Str(g.tm))
 		}
-
 		uOp := "add"
 		if op != t.IDXBinaryTildeSatPlus {
 			uOp = "sub"
 		}
-		b.printf("wuffs_base__u%s__sat_%s", uType, uOp)
+		b.printf("wuffs_base__u%d__sat_%s", uBits, uOp)
 		opName, tilde = ",", true
 
 	case t.IDXBinaryAs:

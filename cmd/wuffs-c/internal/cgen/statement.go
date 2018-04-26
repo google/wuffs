@@ -78,18 +78,38 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if err := g.writeSuspendibles(b, n.RHS(), depth); err != nil {
 			return err
 		}
+		opName, tilde := "", false
+
+		op := n.Operator()
+		switch op {
+		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+			uBits := uintBits(n.LHS().MType().QID())
+			if uBits == 0 {
+				return fmt.Errorf("unsupported tilde-operator type %q", n.LHS().MType().Str(g.tm))
+			}
+			uOp := "add"
+			if op != t.IDTildeSatPlusEq {
+				uOp = "sub"
+			}
+			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+			opName, tilde = ",", true
+
+		default:
+			opName = cOpNames[0xFF&op]
+			if opName == "" {
+				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+			}
+		}
+
 		if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
-		}
-		// TODO: `~sat+=` and `~sat-=` need special consideration.
-		op := n.Operator()
-		opName := cOpNames[0xFF&op]
-		if opName == "" {
-			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 		}
 		b.writes(opName)
 		if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
+		}
+		if tilde {
+			b.writeb(')')
 		}
 		b.writes(";\n")
 		return nil
