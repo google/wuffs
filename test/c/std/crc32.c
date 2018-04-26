@@ -102,17 +102,35 @@ void test_wuffs_crc32_ieee_golden() {
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
-    wuffs_crc32__ieee checksum;
-    wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
-    uint32_t got =
-        wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
-                                                 .ptr = src.ptr + src.ri,
-                                                 .len = src.wi - src.ri,
-                                             }));
-    if (got != test_cases[i].want) {
-      FAIL("i=%d, filename=\"%s\": got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n",
-           i, test_cases[i].filename, got, test_cases[i].want);
-      return;
+
+    int j;
+    for (j = 0; j < 2; j++) {
+      wuffs_crc32__ieee checksum;
+      wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
+
+      uint32_t got;
+      size_t num_fragments = 0;
+      size_t num_bytes = 0;
+      do {
+        wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
+            .ptr = src.ptr + num_bytes,
+            .len = src.wi - num_bytes,
+        });
+        size_t limit = 101 + 103 * num_fragments;
+        if ((j > 0) && (data.len > limit)) {
+          data.len = limit;
+        }
+        got = wuffs_crc32__ieee__update(&checksum, data);
+        num_fragments++;
+        num_bytes += data.len;
+      } while (num_bytes < src.wi);
+
+      if (got != test_cases[i].want) {
+        FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
+             ", want 0x%08" PRIX32 "\n",
+             i, j, test_cases[i].filename, got, test_cases[i].want);
+        return;
+      }
     }
   }
 }
