@@ -81,8 +81,13 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}
-		// TODO: does KeyAmpHatEq need special consideration?
-		b.writes(cOpNames[0xFF&n.Operator()])
+		// TODO: `~sat+=`, `~sat-=` and `&^=` need special consideration.
+		op := n.Operator()
+		opName := cOpNames[0xFF&op]
+		if opName == "" {
+			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+		}
+		b.writes(opName)
 		if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
 			return err
 		}

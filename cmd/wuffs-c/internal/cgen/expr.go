@@ -462,27 +462,67 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
-	b.writes(cOpNames[0xFF&n.Operator()])
+	op := n.Operator()
+	opName := cOpNames[0xFF&op]
+	if opName == "" {
+		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+	}
+
+	b.writes(opName)
 	return g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
+	opName, tilde := "", false
+
 	op := n.Operator()
-	if op == t.IDXBinaryAs {
+	switch op {
+	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
+		uType := ""
+		qid := n.MType().QID()
+		switch qid[1] {
+		case t.IDU8:
+			uType = "8"
+		case t.IDU16:
+			uType = "16"
+		case t.IDU32:
+			uType = "32"
+		case t.IDU64:
+			uType = "64"
+		}
+		if qid[0] != t.IDBase || uType == "" {
+			return fmt.Errorf("unsupported tilde-operator type %q", n.MType().Str(g.tm))
+		}
+
+		uOp := "add"
+		if op != t.IDXBinaryTildeSatPlus {
+			uOp = "sub"
+		}
+		b.printf("wuffs_base__u%s__sat_%s", uType, uOp)
+		opName, tilde = ",", true
+
+	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
+
+	default:
+		opName = cOpNames[0xFF&op]
+		if opName == "" {
+			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+		}
 	}
-	if pp == parenthesesMandatory {
+
+	if pp == parenthesesMandatory || tilde {
 		b.writeb('(')
 	}
 	if err := g.writeExpr(b, n.LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
 	// TODO: does KeyXBinaryAmpHat need special consideration?
-	b.writes(cOpNames[0xFF&op])
+	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 		return err
 	}
-	if pp == parenthesesMandatory {
+	if pp == parenthesesMandatory || tilde {
 		b.writeb(')')
 	}
 	return nil
@@ -504,10 +544,15 @@ func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, rp replacemen
 }
 
 func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
+	op := n.Operator()
+	opName := cOpNames[0xFF&op]
+	if opName == "" {
+		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+	}
+
 	if pp == parenthesesMandatory {
 		b.writeb('(')
 	}
-	opName := cOpNames[0xFF&n.Operator()]
 	for i, o := range n.Args() {
 		if i != 0 {
 			b.writes(opName)
@@ -636,12 +681,14 @@ var cOpNames = [256]string{
 	t.IDShiftLEq:        " <<= ",
 	t.IDShiftREq:        " >>= ",
 	t.IDAmpEq:           " &= ",
-	t.IDAmpHatEq:        " no_such_amp_hat_C_operator ",
+	t.IDAmpHatEq:        " no_such_C_operator ",
 	t.IDPipeEq:          " |= ",
 	t.IDHatEq:           " ^= ",
 	t.IDPercentEq:       " %= ",
 	t.IDTildeModPlusEq:  " += ",
 	t.IDTildeModMinusEq: " -= ",
+	t.IDTildeSatPlusEq:  " no_such_C_operator ",
+	t.IDTildeSatMinusEq: " no_such_C_operator ",
 
 	t.IDXUnaryPlus:  " + ",
 	t.IDXUnaryMinus: " - ",
@@ -656,12 +703,14 @@ var cOpNames = [256]string{
 	t.IDXBinaryShiftL:        " << ",
 	t.IDXBinaryShiftR:        " >> ",
 	t.IDXBinaryAmp:           " & ",
-	t.IDXBinaryAmpHat:        " no_such_amp_hat_C_operator ",
+	t.IDXBinaryAmpHat:        " no_such_C_operator ",
 	t.IDXBinaryPipe:          " | ",
 	t.IDXBinaryHat:           " ^ ",
 	t.IDXBinaryPercent:       " % ",
 	t.IDXBinaryTildeModPlus:  " + ",
 	t.IDXBinaryTildeModMinus: " - ",
+	t.IDXBinaryTildeSatPlus:  " no_such_C_operator ",
+	t.IDXBinaryTildeSatMinus: " no_such_C_operator ",
 	t.IDXBinaryNotEq:         " != ",
 	t.IDXBinaryLessThan:      " < ",
 	t.IDXBinaryLessEq:        " <= ",
@@ -670,7 +719,7 @@ var cOpNames = [256]string{
 	t.IDXBinaryGreaterThan:   " > ",
 	t.IDXBinaryAnd:           " && ",
 	t.IDXBinaryOr:            " || ",
-	t.IDXBinaryAs:            " no_such_as_C_operator ",
+	t.IDXBinaryAs:            " no_such_C_operator ",
 
 	t.IDXAssociativePlus: " + ",
 	t.IDXAssociativeStar: " * ",

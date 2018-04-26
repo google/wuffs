@@ -171,6 +171,8 @@ var opStrings = [256]string{
 	t.IDXBinaryHat:           " ^ ",
 	t.IDXBinaryTildeModPlus:  " ~mod+ ",
 	t.IDXBinaryTildeModMinus: " ~mod- ",
+	t.IDXBinaryTildeSatPlus:  " ~sat+ ",
+	t.IDXBinaryTildeSatMinus: " ~sat- ",
 	t.IDXBinaryNotEq:         " != ",
 	t.IDXBinaryLessThan:      " < ",
 	t.IDXBinaryLessEq:        " <= ",

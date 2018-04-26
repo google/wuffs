@@ -1003,6 +1003,32 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int
 	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
 }
 
+func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, rMin *big.Int, rMax *big.Int) (*big.Int, *big.Int, error) {
+	return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
+}
+
+func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, rMin *big.Int, rMax *big.Int) (*big.Int, *big.Int, error) {
+	nMin := big.NewInt(0).Sub(lMin, rMax)
+	nMax := big.NewInt(0).Sub(lMax, rMin)
+	for _, x := range q.facts {
+		xOp, xLHS, xRHS := parseBinaryOp(x)
+		if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
+			continue
+		}
+		switch xOp {
+		case t.IDXBinaryLessThan:
+			nMax = min(nMax, minusOne)
+		case t.IDXBinaryLessEq:
+			nMax = min(nMax, zero)
+		case t.IDXBinaryGreaterEq:
+			nMin = max(nMin, zero)
+		case t.IDXBinaryGreaterThan:
+			nMin = max(nMin, one)
+		}
+	}
+	return nMin, nMax, nil
+}
+
 func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
 	lMin, lMax, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
@@ -1019,28 +1045,10 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 
 	switch op {
 	case t.IDXBinaryPlus:
-		return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
+		return q.bcheckExprXBinaryPlus(lhs, lMin, lMax, rhs, rMin, rMax)
 
 	case t.IDXBinaryMinus:
-		nMin := big.NewInt(0).Sub(lMin, rMax)
-		nMax := big.NewInt(0).Sub(lMax, rMin)
-		for _, x := range q.facts {
-			xOp, xLHS, xRHS := parseBinaryOp(x)
-			if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
-				continue
-			}
-			switch xOp {
-			case t.IDXBinaryLessThan:
-				nMax = min(nMax, minusOne)
-			case t.IDXBinaryLessEq:
-				nMax = min(nMax, zero)
-			case t.IDXBinaryGreaterEq:
-				nMin = max(nMin, zero)
-			case t.IDXBinaryGreaterThan:
-				nMin = max(nMin, one)
-			}
-		}
-		return nMin, nMax, nil
+		return q.bcheckExprXBinaryMinus(lhs, lMin, lMax, rhs, rMin, rMax)
 
 	case t.IDXBinaryStar:
 		// TODO: handle multiplication by negative numbers. Note that this
@@ -1130,6 +1138,33 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		if qid := typ.QID(); qid[0] == t.IDBase {
 			b := numTypeBounds[qid[1]]
 			return b[0], b[1], nil
+		}
+
+	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
+		typ := lhs.MType()
+		if typ.IsIdeal() {
+			typ = rhs.MType()
+		}
+		if qid := typ.QID(); qid[0] == t.IDBase {
+			b := numTypeBounds[qid[1]]
+
+			nFunc := (*checker).bcheckExprXBinaryPlus
+			if op != t.IDXBinaryTildeSatPlus {
+				nFunc = (*checker).bcheckExprXBinaryMinus
+			}
+			nMin, nMax, err := nFunc(q, lhs, lMin, lMax, rhs, rMin, rMax)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if op == t.IDXBinaryTildeSatPlus {
+				nMin = min(nMin, b[1])
+				nMax = min(nMax, b[1])
+			} else {
+				nMin = max(nMin, b[0])
+				nMax = max(nMax, b[0])
+			}
+			return nMin, nMax, nil
 		}
 
 	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,

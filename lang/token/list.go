@@ -209,6 +209,8 @@ const (
 	IDPercentEq       = ID(0x1B)
 	IDTildeModPlusEq  = ID(0x1C)
 	IDTildeModMinusEq = ID(0x1D)
+	IDTildeSatPlusEq  = ID(0x1E)
+	IDTildeSatMinusEq = ID(0x1F)
 )
 
 const (
@@ -232,6 +234,8 @@ const (
 	IDPercent       = ID(0x2B)
 	IDTildeModPlus  = ID(0x2C)
 	IDTildeModMinus = ID(0x2D)
+	IDTildeSatPlus  = ID(0x2E)
+	IDTildeSatMinus = ID(0x2F)
 
 	IDNotEq       = ID(0x30)
 	IDLessThan    = ID(0x31)
@@ -268,17 +272,19 @@ const (
 	IDXBinaryPipe          = ID(0x50)
 	IDXBinaryHat           = ID(0x51)
 	IDXBinaryPercent       = ID(0x52)
-	IDXBinaryNotEq         = ID(0x53)
-	IDXBinaryLessThan      = ID(0x54)
-	IDXBinaryLessEq        = ID(0x55)
-	IDXBinaryEqEq          = ID(0x56)
-	IDXBinaryGreaterEq     = ID(0x57)
-	IDXBinaryGreaterThan   = ID(0x58)
-	IDXBinaryAnd           = ID(0x59)
-	IDXBinaryOr            = ID(0x5A)
-	IDXBinaryAs            = ID(0x5B)
-	IDXBinaryTildeModPlus  = ID(0x5C)
-	IDXBinaryTildeModMinus = ID(0x5D)
+	IDXBinaryTildeModPlus  = ID(0x53)
+	IDXBinaryTildeModMinus = ID(0x54)
+	IDXBinaryTildeSatPlus  = ID(0x55)
+	IDXBinaryTildeSatMinus = ID(0x56)
+	IDXBinaryNotEq         = ID(0x57)
+	IDXBinaryLessThan      = ID(0x58)
+	IDXBinaryLessEq        = ID(0x59)
+	IDXBinaryEqEq          = ID(0x5A)
+	IDXBinaryGreaterEq     = ID(0x5B)
+	IDXBinaryGreaterThan   = ID(0x5C)
+	IDXBinaryAnd           = ID(0x5D)
+	IDXBinaryOr            = ID(0x5E)
+	IDXBinaryAs            = ID(0x5F)
 
 	IDXAssociativePlus = ID(0x60)
 	IDXAssociativeStar = ID(0x61)
@@ -444,6 +450,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPercentEq:       "%=",
 	IDTildeModPlusEq:  "~mod+=",
 	IDTildeModMinusEq: "~mod-=",
+	IDTildeSatPlusEq:  "~sat+=",
+	IDTildeSatMinusEq: "~sat-=",
 
 	IDPlus:          "+",
 	IDMinus:         "-",
@@ -458,6 +466,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPercent:       "%",
 	IDTildeModPlus:  "~mod+",
 	IDTildeModMinus: "~mod-",
+	IDTildeSatPlus:  "~sat+",
+	IDTildeSatMinus: "~sat-",
 
 	IDNotEq:       "!=",
 	IDLessThan:    "<",
@@ -684,6 +694,10 @@ var lexers = [nBuiltInIDs][]suffixLexer{
 		{"mod+", IDTildeModPlus},
 		{"mod-=", IDTildeModMinusEq},
 		{"mod-", IDTildeModMinus},
+		{"sat+=", IDTildeSatPlusEq},
+		{"sat+", IDTildeSatPlus},
+		{"sat-=", IDTildeSatMinusEq},
+		{"sat-", IDTildeSatMinus},
 	},
 }
 
@@ -705,6 +719,10 @@ var ambiguousForms = [nBuiltInIDs]ID{
 	IDXBinaryPipe:          IDPipe,
 	IDXBinaryHat:           IDHat,
 	IDXBinaryPercent:       IDPercent,
+	IDXBinaryTildeModPlus:  IDTildeModPlus,
+	IDXBinaryTildeModMinus: IDTildeModMinus,
+	IDXBinaryTildeSatPlus:  IDTildeSatPlus,
+	IDXBinaryTildeSatMinus: IDTildeSatMinus,
 	IDXBinaryNotEq:         IDNotEq,
 	IDXBinaryLessThan:      IDLessThan,
 	IDXBinaryLessEq:        IDLessEq,
@@ -714,8 +732,6 @@ var ambiguousForms = [nBuiltInIDs]ID{
 	IDXBinaryAnd:           IDAnd,
 	IDXBinaryOr:            IDOr,
 	IDXBinaryAs:            IDAs,
-	IDXBinaryTildeModPlus:  IDTildeModPlus,
-	IDXBinaryTildeModMinus: IDTildeModMinus,
 
 	IDXAssociativePlus: IDPlus,
 	IDXAssociativeStar: IDStar,
@@ -774,6 +790,8 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDPercentEq:       IDXBinaryPercent,
 	IDTildeModPlusEq:  IDXBinaryTildeModPlus,
 	IDTildeModMinusEq: IDXBinaryTildeModMinus,
+	IDTildeSatPlusEq:  IDXBinaryTildeSatPlus,
+	IDTildeSatMinusEq: IDXBinaryTildeSatMinus,
 
 	IDPlus:          IDXBinaryPlus,
 	IDMinus:         IDXBinaryMinus,
@@ -788,6 +806,8 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDPercent:       IDXBinaryPercent,
 	IDTildeModPlus:  IDXBinaryTildeModPlus,
 	IDTildeModMinus: IDXBinaryTildeModMinus,
+	IDTildeSatPlus:  IDXBinaryTildeSatPlus,
+	IDTildeSatMinus: IDXBinaryTildeSatMinus,
 
 	IDNotEq:       IDXBinaryNotEq,
 	IDLessThan:    IDXBinaryLessThan,
@@ -806,7 +826,7 @@ var associativeForms = [nBuiltInIDs]ID{
 	IDAmp:  IDXAssociativeAmp,
 	IDPipe: IDXAssociativePipe,
 	IDHat:  IDXAssociativeHat,
-	// TODO: IDTildeModPlus, IDTildeModMinus?
+	// TODO: IDTildeModPlus, IDTildeSatPlus?
 	IDAnd: IDXAssociativeAnd,
 	IDOr:  IDXAssociativeOr,
 }
