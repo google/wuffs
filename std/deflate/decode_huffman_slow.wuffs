@@ -214,7 +214,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader)() 
 					}
 					if n_copied > 0 {
 						hlen -= n_copied
-						hdist = (hdist ~+ n_copied) & 0x7FFF
+						hdist = (hdist ~mod+ n_copied) & 0x7FFF
 						if hdist == 0 {
 							// Wrap around the this.history ringbuffer.
 							break
@@ -233,7 +233,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader)() 
 							break
 						}
 						hlen -= n_copied
-						hdist = hdist ~+ n_copied
+						hdist ~mod+= n_copied
 						// TODO: "closed for writes" instead?
 						yield suspension "short write"
 					}

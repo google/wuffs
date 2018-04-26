@@ -11,6 +11,7 @@
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
+- Renamed `~+` to `~mod+`; add `~mod-`.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
 - Renamed `iterate.N` to `iterate[N]`.
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.

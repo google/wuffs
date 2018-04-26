@@ -282,7 +282,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 				n.Operator().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 		return nil
-	case t.IDTildePlusEq:
+	case t.IDTildeModPlusEq, t.IDTildeModMinusEq:
 		if !lTyp.IsUnsignedInteger() {
 			return fmt.Errorf("check: assignment %q: %q, of type %q, does not have unsigned integer type",
 				n.Operator().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
@@ -810,7 +810,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	}
 
 	switch op {
-	case t.IDXBinaryTildePlus:
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lTyp
 		if typ.IsIdeal() {
 			typ = rTyp
@@ -890,6 +890,8 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		return big.NewInt(0).Mod(l, r), nil
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
+		return nil, fmt.Errorf("check: cannot apply tilde-operators to ideal numbers")
 	case t.IDXBinaryNotEq:
 		return btoi(l.Cmp(r) != 0), nil
 	case t.IDXBinaryLessThan:
@@ -906,8 +908,6 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return btoi((l.Sign() != 0) && (r.Sign() != 0)), nil
 	case t.IDXBinaryOr:
 		return btoi((l.Sign() != 0) || (r.Sign() != 0)), nil
-	case t.IDXBinaryTildePlus:
-		return nil, fmt.Errorf("check: cannot apply ~+ operator to ideal numbers")
 	}
 	return nil, fmt.Errorf("check: unrecognized token (0x%02X) for evalConstValueBinaryOp", n.Operator())
 }

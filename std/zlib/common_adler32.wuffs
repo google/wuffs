@@ -33,8 +33,8 @@ pri func adler32.update(x slice base.u8)(checksum base.u32) {
 		}
 
 		iterate[8](p ptr base.u8:in.x) {
-			s1 ~+= deref p as base.u32
-			s2 ~+= s1
+			s1 ~mod+= deref p as base.u32
+			s2 ~mod+= s1
 		}
 
 		s1 %= 65521

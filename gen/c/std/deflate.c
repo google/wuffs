@@ -3540,7 +3540,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                 goto label_6_break;
               }
               v_hlen -= v_n_copied;
-              v_hdist = (v_hdist + v_n_copied);
+              v_hdist += v_n_copied;
               status = WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE;
               WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(10);
             }

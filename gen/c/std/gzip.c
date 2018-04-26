@@ -2079,18 +2079,16 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                            ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
                            : 0,
             }));
-        v_decoded_length_got =
-            (v_decoded_length_got +
-             ((uint32_t)((
-                 ((uint64_t)(((wuffs_base__slice_u8){
-                                  .ptr = a_dst.private_impl.mark,
-                                  .len = a_dst.private_impl.mark
-                                             ? (size_t)(b_wptr_dst -
-                                                        a_dst.private_impl.mark)
-                                             : 0,
-                              })
-                                 .len)) &
-                 4294967295))));
+        v_decoded_length_got += ((uint32_t)((
+            ((uint64_t)(
+                ((wuffs_base__slice_u8){
+                     .ptr = a_dst.private_impl.mark,
+                     .len = a_dst.private_impl.mark
+                                ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
+                                : 0,
+                 })
+                    .len)) &
+            4294967295)));
       }
       if (v_z == 0) {
         goto label_2_break;

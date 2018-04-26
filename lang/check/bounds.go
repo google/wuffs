@@ -1122,14 +1122,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		}
 		return zero, big.NewInt(0).Sub(rMax, one), nil
 
-	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,
-		t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan, t.IDXBinaryAnd, t.IDXBinaryOr:
-		return zero, one, nil
-
-	case t.IDXBinaryAs:
-		// Unreachable, as this is checked by the caller.
-
-	case t.IDXBinaryTildePlus:
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lhs.MType()
 		if typ.IsIdeal() {
 			typ = rhs.MType()
@@ -1138,6 +1131,13 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 			b := numTypeBounds[qid[1]]
 			return b[0], b[1], nil
 		}
+
+	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,
+		t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan, t.IDXBinaryAnd, t.IDXBinaryOr:
+		return zero, one, nil
+
+	case t.IDXBinaryAs:
+		// Unreachable, as this is checked by the caller.
 	}
 	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
 }

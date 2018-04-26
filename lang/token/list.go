@@ -195,19 +195,20 @@ const (
 	minAssign = 0x10
 	maxAssign = 0x1F
 
-	IDEq          = ID(0x10)
-	IDPlusEq      = ID(0x11)
-	IDMinusEq     = ID(0x12)
-	IDStarEq      = ID(0x13)
-	IDSlashEq     = ID(0x14)
-	IDShiftLEq    = ID(0x15)
-	IDShiftREq    = ID(0x16)
-	IDAmpEq       = ID(0x17)
-	IDAmpHatEq    = ID(0x18)
-	IDPipeEq      = ID(0x19)
-	IDHatEq       = ID(0x1A)
-	IDPercentEq   = ID(0x1B)
-	IDTildePlusEq = ID(0x1C)
+	IDEq              = ID(0x10)
+	IDPlusEq          = ID(0x11)
+	IDMinusEq         = ID(0x12)
+	IDStarEq          = ID(0x13)
+	IDSlashEq         = ID(0x14)
+	IDShiftLEq        = ID(0x15)
+	IDShiftREq        = ID(0x16)
+	IDAmpEq           = ID(0x17)
+	IDAmpHatEq        = ID(0x18)
+	IDPipeEq          = ID(0x19)
+	IDHatEq           = ID(0x1A)
+	IDPercentEq       = ID(0x1B)
+	IDTildeModPlusEq  = ID(0x1C)
+	IDTildeModMinusEq = ID(0x1D)
 )
 
 const (
@@ -218,18 +219,19 @@ const (
 	maxXOp         = 0x6F
 	maxOp          = 0x6F
 
-	IDPlus      = ID(0x21)
-	IDMinus     = ID(0x22)
-	IDStar      = ID(0x23)
-	IDSlash     = ID(0x24)
-	IDShiftL    = ID(0x25)
-	IDShiftR    = ID(0x26)
-	IDAmp       = ID(0x27)
-	IDAmpHat    = ID(0x28)
-	IDPipe      = ID(0x29)
-	IDHat       = ID(0x2A)
-	IDPercent   = ID(0x2B)
-	IDTildePlus = ID(0x2C)
+	IDPlus          = ID(0x21)
+	IDMinus         = ID(0x22)
+	IDStar          = ID(0x23)
+	IDSlash         = ID(0x24)
+	IDShiftL        = ID(0x25)
+	IDShiftR        = ID(0x26)
+	IDAmp           = ID(0x27)
+	IDAmpHat        = ID(0x28)
+	IDPipe          = ID(0x29)
+	IDHat           = ID(0x2A)
+	IDPercent       = ID(0x2B)
+	IDTildeModPlus  = ID(0x2C)
+	IDTildeModMinus = ID(0x2D)
 
 	IDNotEq       = ID(0x30)
 	IDLessThan    = ID(0x31)
@@ -255,27 +257,28 @@ const (
 	IDXUnaryRef   = ID(0x43)
 	IDXUnaryDeref = ID(0x44)
 
-	IDXBinaryPlus        = ID(0x48)
-	IDXBinaryMinus       = ID(0x49)
-	IDXBinaryStar        = ID(0x4A)
-	IDXBinarySlash       = ID(0x4B)
-	IDXBinaryShiftL      = ID(0x4C)
-	IDXBinaryShiftR      = ID(0x4D)
-	IDXBinaryAmp         = ID(0x4E)
-	IDXBinaryAmpHat      = ID(0x4F)
-	IDXBinaryPipe        = ID(0x50)
-	IDXBinaryHat         = ID(0x51)
-	IDXBinaryPercent     = ID(0x52)
-	IDXBinaryNotEq       = ID(0x53)
-	IDXBinaryLessThan    = ID(0x54)
-	IDXBinaryLessEq      = ID(0x55)
-	IDXBinaryEqEq        = ID(0x56)
-	IDXBinaryGreaterEq   = ID(0x57)
-	IDXBinaryGreaterThan = ID(0x58)
-	IDXBinaryAnd         = ID(0x59)
-	IDXBinaryOr          = ID(0x5A)
-	IDXBinaryAs          = ID(0x5B)
-	IDXBinaryTildePlus   = ID(0x5C)
+	IDXBinaryPlus          = ID(0x48)
+	IDXBinaryMinus         = ID(0x49)
+	IDXBinaryStar          = ID(0x4A)
+	IDXBinarySlash         = ID(0x4B)
+	IDXBinaryShiftL        = ID(0x4C)
+	IDXBinaryShiftR        = ID(0x4D)
+	IDXBinaryAmp           = ID(0x4E)
+	IDXBinaryAmpHat        = ID(0x4F)
+	IDXBinaryPipe          = ID(0x50)
+	IDXBinaryHat           = ID(0x51)
+	IDXBinaryPercent       = ID(0x52)
+	IDXBinaryNotEq         = ID(0x53)
+	IDXBinaryLessThan      = ID(0x54)
+	IDXBinaryLessEq        = ID(0x55)
+	IDXBinaryEqEq          = ID(0x56)
+	IDXBinaryGreaterEq     = ID(0x57)
+	IDXBinaryGreaterThan   = ID(0x58)
+	IDXBinaryAnd           = ID(0x59)
+	IDXBinaryOr            = ID(0x5A)
+	IDXBinaryAs            = ID(0x5B)
+	IDXBinaryTildeModPlus  = ID(0x5C)
+	IDXBinaryTildeModMinus = ID(0x5D)
 
 	IDXAssociativePlus = ID(0x60)
 	IDXAssociativeStar = ID(0x61)
@@ -427,32 +430,34 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSemicolon: ";",
 	IDDollar:    "$",
 
-	IDEq:          "=",
-	IDPlusEq:      "+=",
-	IDMinusEq:     "-=",
-	IDStarEq:      "*=",
-	IDSlashEq:     "/=",
-	IDShiftLEq:    "<<=",
-	IDShiftREq:    ">>=",
-	IDAmpEq:       "&=",
-	IDAmpHatEq:    "&^=",
-	IDPipeEq:      "|=",
-	IDHatEq:       "^=",
-	IDPercentEq:   "%=",
-	IDTildePlusEq: "~+=",
+	IDEq:              "=",
+	IDPlusEq:          "+=",
+	IDMinusEq:         "-=",
+	IDStarEq:          "*=",
+	IDSlashEq:         "/=",
+	IDShiftLEq:        "<<=",
+	IDShiftREq:        ">>=",
+	IDAmpEq:           "&=",
+	IDAmpHatEq:        "&^=",
+	IDPipeEq:          "|=",
+	IDHatEq:           "^=",
+	IDPercentEq:       "%=",
+	IDTildeModPlusEq:  "~mod+=",
+	IDTildeModMinusEq: "~mod-=",
 
-	IDPlus:      "+",
-	IDMinus:     "-",
-	IDStar:      "*",
-	IDSlash:     "/",
-	IDShiftL:    "<<",
-	IDShiftR:    ">>",
-	IDAmp:       "&",
-	IDAmpHat:    "&^",
-	IDPipe:      "|",
-	IDHat:       "^",
-	IDPercent:   "%",
-	IDTildePlus: "~+",
+	IDPlus:          "+",
+	IDMinus:         "-",
+	IDStar:          "*",
+	IDSlash:         "/",
+	IDShiftL:        "<<",
+	IDShiftR:        ">>",
+	IDAmp:           "&",
+	IDAmpHat:        "&^",
+	IDPipe:          "|",
+	IDHat:           "^",
+	IDPercent:       "%",
+	IDTildeModPlus:  "~mod+",
+	IDTildeModMinus: "~mod-",
 
 	IDNotEq:       "!=",
 	IDLessThan:    "<",
@@ -675,8 +680,10 @@ var lexers = [nBuiltInIDs][]suffixLexer{
 		{"", IDGreaterThan},
 	},
 	'~': {
-		{"+=", IDTildePlusEq},
-		{"+", IDTildePlus},
+		{"mod+=", IDTildeModPlusEq},
+		{"mod+", IDTildeModPlus},
+		{"mod-=", IDTildeModMinusEq},
+		{"mod-", IDTildeModMinus},
 	},
 }
 
@@ -687,27 +694,28 @@ var ambiguousForms = [nBuiltInIDs]ID{
 	IDXUnaryRef:   IDRef,
 	IDXUnaryDeref: IDDeref,
 
-	IDXBinaryPlus:        IDPlus,
-	IDXBinaryMinus:       IDMinus,
-	IDXBinaryStar:        IDStar,
-	IDXBinarySlash:       IDSlash,
-	IDXBinaryShiftL:      IDShiftL,
-	IDXBinaryShiftR:      IDShiftR,
-	IDXBinaryAmp:         IDAmp,
-	IDXBinaryAmpHat:      IDAmpHat,
-	IDXBinaryPipe:        IDPipe,
-	IDXBinaryHat:         IDHat,
-	IDXBinaryPercent:     IDPercent,
-	IDXBinaryNotEq:       IDNotEq,
-	IDXBinaryLessThan:    IDLessThan,
-	IDXBinaryLessEq:      IDLessEq,
-	IDXBinaryEqEq:        IDEqEq,
-	IDXBinaryGreaterEq:   IDGreaterEq,
-	IDXBinaryGreaterThan: IDGreaterThan,
-	IDXBinaryAnd:         IDAnd,
-	IDXBinaryOr:          IDOr,
-	IDXBinaryAs:          IDAs,
-	IDXBinaryTildePlus:   IDTildePlus,
+	IDXBinaryPlus:          IDPlus,
+	IDXBinaryMinus:         IDMinus,
+	IDXBinaryStar:          IDStar,
+	IDXBinarySlash:         IDSlash,
+	IDXBinaryShiftL:        IDShiftL,
+	IDXBinaryShiftR:        IDShiftR,
+	IDXBinaryAmp:           IDAmp,
+	IDXBinaryAmpHat:        IDAmpHat,
+	IDXBinaryPipe:          IDPipe,
+	IDXBinaryHat:           IDHat,
+	IDXBinaryPercent:       IDPercent,
+	IDXBinaryNotEq:         IDNotEq,
+	IDXBinaryLessThan:      IDLessThan,
+	IDXBinaryLessEq:        IDLessEq,
+	IDXBinaryEqEq:          IDEqEq,
+	IDXBinaryGreaterEq:     IDGreaterEq,
+	IDXBinaryGreaterThan:   IDGreaterThan,
+	IDXBinaryAnd:           IDAnd,
+	IDXBinaryOr:            IDOr,
+	IDXBinaryAs:            IDAs,
+	IDXBinaryTildeModPlus:  IDTildeModPlus,
+	IDXBinaryTildeModMinus: IDTildeModMinus,
 
 	IDXAssociativePlus: IDPlus,
 	IDXAssociativeStar: IDStar,
@@ -753,30 +761,34 @@ var unaryForms = [nBuiltInIDs]ID{
 }
 
 var binaryForms = [nBuiltInIDs]ID{
-	IDPlusEq:      IDXBinaryPlus,
-	IDMinusEq:     IDXBinaryMinus,
-	IDStarEq:      IDXBinaryStar,
-	IDSlashEq:     IDXBinarySlash,
-	IDShiftLEq:    IDXBinaryShiftL,
-	IDShiftREq:    IDXBinaryShiftR,
-	IDAmpEq:       IDXBinaryAmp,
-	IDAmpHatEq:    IDXBinaryAmpHat,
-	IDPipeEq:      IDXBinaryPipe,
-	IDHatEq:       IDXBinaryHat,
-	IDPercentEq:   IDXBinaryPercent,
-	IDTildePlusEq: IDXBinaryTildePlus,
+	IDPlusEq:          IDXBinaryPlus,
+	IDMinusEq:         IDXBinaryMinus,
+	IDStarEq:          IDXBinaryStar,
+	IDSlashEq:         IDXBinarySlash,
+	IDShiftLEq:        IDXBinaryShiftL,
+	IDShiftREq:        IDXBinaryShiftR,
+	IDAmpEq:           IDXBinaryAmp,
+	IDAmpHatEq:        IDXBinaryAmpHat,
+	IDPipeEq:          IDXBinaryPipe,
+	IDHatEq:           IDXBinaryHat,
+	IDPercentEq:       IDXBinaryPercent,
+	IDTildeModPlusEq:  IDXBinaryTildeModPlus,
+	IDTildeModMinusEq: IDXBinaryTildeModMinus,
 
-	IDPlus:        IDXBinaryPlus,
-	IDMinus:       IDXBinaryMinus,
-	IDStar:        IDXBinaryStar,
-	IDSlash:       IDXBinarySlash,
-	IDShiftL:      IDXBinaryShiftL,
-	IDShiftR:      IDXBinaryShiftR,
-	IDAmp:         IDXBinaryAmp,
-	IDAmpHat:      IDXBinaryAmpHat,
-	IDPipe:        IDXBinaryPipe,
-	IDHat:         IDXBinaryHat,
-	IDPercent:     IDXBinaryPercent,
+	IDPlus:          IDXBinaryPlus,
+	IDMinus:         IDXBinaryMinus,
+	IDStar:          IDXBinaryStar,
+	IDSlash:         IDXBinarySlash,
+	IDShiftL:        IDXBinaryShiftL,
+	IDShiftR:        IDXBinaryShiftR,
+	IDAmp:           IDXBinaryAmp,
+	IDAmpHat:        IDXBinaryAmpHat,
+	IDPipe:          IDXBinaryPipe,
+	IDHat:           IDXBinaryHat,
+	IDPercent:       IDXBinaryPercent,
+	IDTildeModPlus:  IDXBinaryTildeModPlus,
+	IDTildeModMinus: IDXBinaryTildeModMinus,
+
 	IDNotEq:       IDXBinaryNotEq,
 	IDLessThan:    IDXBinaryLessThan,
 	IDLessEq:      IDXBinaryLessEq,
@@ -786,7 +798,6 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDAnd:         IDXBinaryAnd,
 	IDOr:          IDXBinaryOr,
 	IDAs:          IDXBinaryAs,
-	IDTildePlus:   IDXBinaryTildePlus,
 }
 
 var associativeForms = [nBuiltInIDs]ID{
@@ -795,9 +806,9 @@ var associativeForms = [nBuiltInIDs]ID{
 	IDAmp:  IDXAssociativeAmp,
 	IDPipe: IDXAssociativePipe,
 	IDHat:  IDXAssociativeHat,
-	IDAnd:  IDXAssociativeAnd,
-	IDOr:   IDXAssociativeOr,
-	// TODO: IDTildePlus?
+	// TODO: IDTildeModPlus, IDTildeModMinus?
+	IDAnd: IDXAssociativeAnd,
+	IDOr:  IDXAssociativeOr,
 }
 
 var isOpen = [...]bool{
