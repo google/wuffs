@@ -244,7 +244,6 @@ const (
 	IDGreaterEq   = ID(0x34)
 	IDGreaterThan = ID(0x35)
 
-	// TODO: sort these by name, when the list has stabilized.
 	IDAnd   = ID(0x38)
 	IDOr    = ID(0x39)
 	IDNot   = ID(0x3A)
