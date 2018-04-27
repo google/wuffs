@@ -1613,6 +1613,29 @@ static inline uint64_t wuffs_base__slice_u8__copy_from_slice(
 
 // ---------------- I/O
 
+static inline bool wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
+  return (buf.ptr || (buf.len == 0)) && (buf.len >= buf.wi) &&
+         (buf.wi >= buf.ri);
+}
+
+static inline bool wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
+  wuffs_base__io_buffer* buf = o.private_impl.buf;
+  return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
+                (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
+                (o.private_impl.bounds[1] <= buf->ptr + buf->len))
+             : ((o.private_impl.bounds[0] == NULL) &&
+                (o.private_impl.bounds[1] == NULL));
+}
+
+static inline bool wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
+  wuffs_base__io_buffer* buf = o.private_impl.buf;
+  return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
+                (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
+                (o.private_impl.bounds[1] <= buf->ptr + buf->len))
+             : ((o.private_impl.bounds[0] == NULL) &&
+                (o.private_impl.bounds[1] == NULL));
+}
+
 static inline uint32_t wuffs_base__io_writer__copy_from_history32(
     uint8_t** ptr_ptr,
     uint8_t* start,  // May be NULL, meaning an unmarked io_writer.
