@@ -212,12 +212,12 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
   uint64_t rlim = 0;
   while (true) {
     num_iters++;
-    wuffs_base__io_writer got_writer = {.buf = &got};
+    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     if (wlimit) {
       wlim = wlimit;
       got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -310,8 +310,8 @@ void test_wuffs_lzw_decode_pi() {
 bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
   wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_writer dst_writer = {.buf = &dst};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (!read_file(&src, filename)) {
     return false;
@@ -363,8 +363,8 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_writer dst_writer = {.buf = dst};
-  wuffs_base__io_reader src_reader = {.buf = src};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
@@ -394,7 +394,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
 
   {
     wuffs_base__image_config ic = {{0}};
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
@@ -433,12 +433,12 @@ bool do_test_wuffs_gif_decode(const char* filename,
   uint64_t rlim = 0;
   while (true) {
     num_iters++;
-    wuffs_base__io_writer got_writer = {.buf = &got};
+    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     if (wlimit) {
       wlim = wlimit;
       got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -516,8 +516,8 @@ bool do_test_wuffs_gif_decode(const char* filename,
       FAIL("decode_frame returned \"ok\" but src was exhausted");
       return false;
     }
-    wuffs_base__io_writer got_writer = {.buf = &got};
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
     if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
@@ -548,8 +548,8 @@ void test_wuffs_gif_call_sequence() {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
-  wuffs_base__io_writer got_writer = {.buf = &got};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
       wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
@@ -576,8 +576,8 @@ void test_wuffs_gif_decode_animated() {
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_writer got_writer = {.buf = &got};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -670,7 +670,7 @@ void test_wuffs_gif_decode_input_is_a_png() {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);

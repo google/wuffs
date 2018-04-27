@@ -116,12 +116,12 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
   uint64_t wlim = 0;
   uint64_t rlim = 0;
   while (true) {
-    wuffs_base__io_writer dst_writer = {.buf = dst};
+    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
       wlim = wlimit;
       dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__io_reader src_reader = {.buf = src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -209,8 +209,8 @@ void test_wuffs_deflate_decode_split_src() {
   }
 
   wuffs_deflate__decoder dec;
-  wuffs_base__io_writer dst_writer = {.buf = &got};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&got);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   int i;
   for (i = 1; i < 32; i++) {
@@ -272,8 +272,8 @@ bool do_test_wuffs_deflate_history(int i,
   got->wi = 0;
 
   wuffs_deflate__decoder__initialize(dec, WUFFS_VERSION, 0);
-  wuffs_base__io_writer dst_writer = {.buf = got};
-  wuffs_base__io_reader src_reader = {.buf = src};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(got);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
 
   dec->private_impl.f_history_index = starting_history_index;
 

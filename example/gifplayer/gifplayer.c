@@ -72,7 +72,7 @@ const char* play() {
 
   wuffs_base__io_buffer src = {
       .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_base__image_config ic = {{0}};
   wuffs_gif__status s =
@@ -112,7 +112,7 @@ const char* play() {
 
   while (true) {
     wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = dst_len};
-    wuffs_base__io_writer dst_writer = {.buf = &dst};
+    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
     // TODO: provide API and support for when the frame rect is different from
     // the image rect.
     s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);

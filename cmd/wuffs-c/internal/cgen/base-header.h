@@ -586,6 +586,24 @@ typedef struct {
   } private_impl;
 } wuffs_base__io_writer;
 
+static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
+    wuffs_base__io_buffer* buf) {
+  wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
+  if (buf) {
+    ret.buf = buf;
+  }
+  return ret;
+}
+
+static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
+    wuffs_base__io_buffer* buf) {
+  wuffs_base__io_writer ret = ((wuffs_base__io_writer){});
+  if (buf) {
+    ret.buf = buf;
+  }
+  return ret;
+}
+
 // ---------------- Images
 
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an

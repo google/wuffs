@@ -218,8 +218,8 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
                                 .len = SRC_BUFFER_SIZE,
                                 .wi = idat_splits[num_idat_chunks],
                                 .closed = true};
-  wuffs_base__io_writer dst_writer = {.buf = &dst};
-  wuffs_base__io_reader idat_reader = {.buf = &idat};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
+  wuffs_base__io_reader idat_reader = wuffs_base__io_buffer__reader(&idat);
 
   uint32_t i = 0;  // Number of dst fragments processed, if frag_dst.
   if (frag_dst) {

@@ -72,12 +72,12 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
   uint64_t wlim = 0;
   uint64_t rlim = 0;
   while (true) {
-    wuffs_base__io_writer dst_writer = {.buf = dst};
+    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
       wlim = wlimit;
       dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
-    wuffs_base__io_reader src_reader = {.buf = src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
@@ -120,9 +120,9 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
     wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.wi = 0;
-    wuffs_base__io_writer got_writer = {.buf = &got};
+    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     src.ri = 0;
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.

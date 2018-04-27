@@ -51,8 +51,8 @@ static const char* decode() {
   wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
   wuffs_base__io_buffer src = {
       .ptr = lgtm_ptr, .len = lgtm_len, .wi = lgtm_len, .closed = true};
-  wuffs_base__io_writer dst_writer = {.buf = &dst};
-  wuffs_base__io_reader src_reader = {.buf = &src};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_deflate__decoder dec;
   wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);

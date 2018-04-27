@@ -69,11 +69,11 @@ static const char* decode() {
                                  .len = SRC_BUFFER_SIZE,
                                  .wi = n_src,
                                  .closed = n_src == 0};
-    wuffs_base__io_reader src_reader = {.buf = &src};
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
     while (true) {
       wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
-      wuffs_base__io_writer dst_writer = {.buf = &dst};
+      wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
       wuffs_gzip__status s =
           wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
 

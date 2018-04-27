@@ -53,7 +53,7 @@ void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const size_t dstbuf_size = 65536;
   uint8_t dstbuf[dstbuf_size];
   wuffs_base__io_buffer dst = {.ptr = dstbuf, .len = dstbuf_size};
-  wuffs_base__io_writer dst_writer = {.buf = &dst};
+  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
 
   while (true) {
     dst.wi = 0;

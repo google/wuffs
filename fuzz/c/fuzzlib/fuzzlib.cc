@@ -46,7 +46,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
                                .wi = size,
                                .ri = 0,
                                .closed = true};
-  fuzz((wuffs_base__io_reader){.buf = &src}, hash);
+  fuzz(wuffs_base__io_buffer__reader(&src), hash);
   return 0;
 }
 
