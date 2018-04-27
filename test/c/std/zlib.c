@@ -40,6 +40,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
+#include "../../../gen/c/std/adler32.c"
 #include "../../../gen/c/std/deflate.c"
 #include "../../../gen/c/std/zlib.c"
 #include "../testlib/testlib.c"
@@ -48,14 +49,6 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #endif
 
 // ---------------- Golden Tests
-
-golden_test adler32_midsummer_gt = {
-    .src_filename = "../../data/midsummer.txt",  //
-};
-
-golden_test adler32_pi_gt = {
-    .src_filename = "../../data/pi.txt",  //
-};
 
 golden_test zlib_midsummer_gt = {
     .want_filename = "../../data/midsummer.txt",      //
@@ -79,129 +72,6 @@ void test_basic_status_used_package() {
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
-  }
-}
-
-// ---------------- Adler32 Tests
-
-void test_wuffs_adler32_golden() {
-  CHECK_FOCUS(__func__);
-
-  struct {
-    const char* filename;
-    // The want values are determined by script/checksum.go.
-    uint32_t want;
-  } test_cases[] = {
-      {
-          .filename = "../../data/hat.bmp",
-          .want = 0x3D26D034,
-      },
-      {
-          .filename = "../../data/hat.gif",
-          .want = 0x2A5EB144,
-      },
-      {
-          .filename = "../../data/hat.jpeg",
-          .want = 0x3A503B1A,
-      },
-      {
-          .filename = "../../data/hat.lossless.webp",
-          .want = 0xD059D427,
-      },
-      {
-          .filename = "../../data/hat.lossy.webp",
-          .want = 0xF1BB258D,
-      },
-      {
-          .filename = "../../data/hat.png",
-          .want = 0xDFC6C9C6,
-      },
-      {
-          .filename = "../../data/hat.tiff",
-          .want = 0xBDC011E9,
-      },
-  };
-
-  int i;
-  for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
-    wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-    if (!read_file(&src, test_cases[i].filename)) {
-      return;
-    }
-
-    int j;
-    for (j = 0; j < 2; j++) {
-      wuffs_zlib__adler32 checksum;
-      wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
-
-      uint32_t got;
-      size_t num_fragments = 0;
-      size_t num_bytes = 0;
-      do {
-        wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
-            .ptr = src.ptr + num_bytes,
-            .len = src.wi - num_bytes,
-        });
-        size_t limit = 101 + 103 * num_fragments;
-        if ((j > 0) && (data.len > limit)) {
-          data.len = limit;
-        }
-        got = wuffs_zlib__adler32__update(&checksum, data);
-        num_fragments++;
-        num_bytes += data.len;
-      } while (num_bytes < src.wi);
-
-      if (got != test_cases[i].want) {
-        FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
-             ", want 0x%08" PRIX32 "\n",
-             i, j, test_cases[i].filename, got, test_cases[i].want);
-        return;
-      }
-    }
-  }
-}
-
-void test_wuffs_adler32_pi() {
-  CHECK_FOCUS(__func__);
-
-  const char* digits =
-      "3.1415926535897932384626433832795028841971693993751058209749445";
-  if (strlen(digits) != 63) {
-    FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
-    return;
-  }
-
-  // The want values are determined by script/checksum.go.
-  //
-  // wants[i] is the checksum of the first i bytes of the digits string.
-  uint32_t wants[64] = {
-      0x00000001, 0x00340034, 0x00960062, 0x01290093, 0x01F000C7, 0x02E800F8,
-      0x0415012D, 0x057B0166, 0x07130198, 0x08E101CE, 0x0AE40203, 0x0D1A0236,
-      0x0F85026B, 0x122802A3, 0x150402DC, 0x18170313, 0x1B63034C, 0x1EE2037F,
-      0x229303B1, 0x267703E4, 0x2A93041C, 0x2EE30450, 0x33690486, 0x382104B8,
-      0x3D0F04EE, 0x42310522, 0x47860555, 0x4D0E0588, 0x52CE05C0, 0x58C105F3,
-      0x5EE60625, 0x6542065C, 0x6BD70695, 0x72A106CA, 0x799B06FA, 0x80C7072C,
-      0x882B0764, 0x8FC7079C, 0x979707D0, 0x9F980801, 0xA7D2083A, 0xB0430871,
-      0xB8E508A2, 0xC1BD08D8, 0xCACE0911, 0xD4120944, 0xDD8F097D, 0xE74509B6,
-      0xF12E09E9, 0xFB4E0A20, 0x05B20A55, 0x10380A86, 0x1AEE0AB6, 0x25D90AEB,
-      0x30FC0B23, 0x3C510B55, 0x47D60B85, 0x53940BBE, 0x5F890BF5, 0x6BB20C29,
-      0x78140C62, 0x84AA0C96, 0x91740CCA, 0x9E730CFF,
-  };
-
-  int i;
-  for (i = 0; i < 64; i++) {
-    wuffs_zlib__adler32 checksum;
-    wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
-    uint32_t got =
-        wuffs_zlib__adler32__update(&checksum, ((wuffs_base__slice_u8){
-                                                   .ptr = (uint8_t*)(digits),
-                                                   .len = i,
-                                               }));
-    if (got != wants[i]) {
-      FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n", i, got,
-           wants[i]);
-      return;
-    }
   }
 }
 
@@ -345,37 +215,6 @@ void test_mimic_zlib_decode_pi() {
 
 #endif  // WUFFS_MIMIC
 
-// ---------------- Adler32 Benches
-
-uint32_t global_wuffs_zlib_unused_u32;
-
-const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
-                                wuffs_base__io_buffer* src,
-                                uint64_t wlimit,
-                                uint64_t rlimit) {
-  // TODO: don't ignore wlimit and rlimit.
-  wuffs_zlib__adler32 checksum;
-  wuffs_zlib__adler32__initialize(&checksum, WUFFS_VERSION, 0);
-  global_wuffs_zlib_unused_u32 =
-      wuffs_zlib__adler32__update(&checksum, ((wuffs_base__slice_u8){
-                                                 .ptr = src->ptr + src->ri,
-                                                 .len = src->wi - src->ri,
-                                             }));
-  src->ri = src->wi;
-  return NULL;
-}
-
-void bench_wuffs_adler32_10k() {
-  CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      150000);
-}
-
-void bench_wuffs_adler32_100k() {
-  CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
-}
-
 // ---------------- Zlib Benches
 
 void bench_wuffs_zlib_decode_10k() {
@@ -393,17 +232,6 @@ void bench_wuffs_zlib_decode_100k() {
 
 #ifdef WUFFS_MIMIC
 
-void bench_mimic_adler32_10k() {
-  CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      150000);
-}
-
-void bench_mimic_adler32_100k() {
-  CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
-}
-
 void bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
@@ -419,9 +247,6 @@ void bench_mimic_zlib_decode_100k() {
 
 // ---------------- Manifest
 
-// Note that the adler32 mimic tests and benches don't work with
-// WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB.
-
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
@@ -429,9 +254,6 @@ proc tests[] = {
     // specific to the std/zlib code, but putting them here is as good as any
     // other place.
     test_basic_status_used_package,  //
-
-    test_wuffs_adler32_golden,  //
-    test_wuffs_adler32_pi,      //
 
     test_wuffs_zlib_checksum_ignore,       //
     test_wuffs_zlib_checksum_verify_bad,   //
@@ -452,16 +274,10 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_adler32_10k,   //
-    bench_wuffs_adler32_100k,  //
-
     bench_wuffs_zlib_decode_10k,   //
     bench_wuffs_zlib_decode_100k,  //
 
 #ifdef WUFFS_MIMIC
-
-    bench_mimic_adler32_10k,   //
-    bench_mimic_adler32_100k,  //
 
     bench_mimic_zlib_decode_10k,   //
     bench_mimic_zlib_decode_100k,  //

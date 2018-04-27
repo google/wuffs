@@ -317,7 +317,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't hard-code the class name or this.checksum.
 			class := "wuffs_crc32__ieee"
 			if g.pkgName == "zlib" {
-				class = "wuffs_zlib__adler32"
+				class = "wuffs_adler32__hasher"
 			}
 			b.printf("%s__update(&self->private_impl.f_checksum, ", class)
 			a := n.Args()[0].Arg().Value()

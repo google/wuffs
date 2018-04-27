@@ -7,7 +7,7 @@
 - Added a `skipgendeps` flag.
 - Added a `use` keyword.
 - Added a `yield` keyword.
-- Added `std/crc32` and `std/gzip`.
+- Added `std/adler32`, `std/crc32` and `std/gzip`.
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
