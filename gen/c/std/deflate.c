@@ -538,7 +538,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -549,7 +548,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_writer;
 
@@ -1442,11 +1440,11 @@ static inline bool wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
 
 static inline uint32_t wuffs_base__io_writer__copy_from_history32(
     uint8_t** ptr_ptr,
-    uint8_t* start,  // May be NULL, meaning an unmarked io_writer.
+    uint8_t* start,
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
-  if (!start || !distance) {
+  if (!distance) {
     return 0;
   }
   uint8_t* ptr = *ptr_ptr;
@@ -1485,7 +1483,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32(
 // wuffs_base__io_writer__copy_from_history32__bco is a Bounds Check Optimized
 // version of the wuffs_base__io_writer__copy_from_history32 function above.
 // The caller needs to prove that:
-//  - start    != NULL
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
@@ -1569,18 +1566,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   return n;
 }
 
-// Note that the *__limit and *__mark methods are private (in base-impl.h) not
-// public (in base-header.h). We assume that, at the boundary between user code
-// and Wuffs code, the io_reader and io_writer's private_impl fields (including
-// limit and mark) are NULL. Otherwise, some internal assumptions break down.
-// For example, limits could be represented as pointers, even though
-// conceptually they are counts, but that pointer-to-count correspondence
-// becomes invalid if a buffer is re-used (e.g. on resuming a coroutine).
-//
-// Admittedly, some of the Wuffs test code calls these methods, but that test
-// code is still Wuffs code, not user code. Other Wuffs test code modifies
-// private_impl fields directly.
-
 static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
     wuffs_base__io_reader* o,
     uint64_t* ptr_to_len) {
@@ -1593,7 +1578,7 @@ static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
 static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
-  o->private_impl.mark = mark;
+  o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -1602,7 +1587,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
 static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {
-  o->private_impl.mark = mark;
+  o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -1850,9 +1835,9 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
         goto exit;
       }
       v_written = ((wuffs_base__slice_u8){
-          .ptr = a_dst.private_impl.mark,
-          .len = a_dst.private_impl.mark
-                     ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
+          .ptr = a_dst.private_impl.bounds[0],
+          .len = a_dst.private_impl.bounds[0]
+                     ? (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0])
                      : 0,
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
@@ -2954,7 +2939,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
     b_rend_src = b_rptr_src + len;
   }
 
-  if (!(a_dst.private_impl.mark != NULL)) {
+  if (!(a_dst.private_impl.bounds[0] != NULL)) {
     status = WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
     goto exit;
   }
@@ -3155,25 +3140,25 @@ label_0_continue:;
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)((v_dist_minus_1 + 1))) >
-          ((uint64_t)(
-              ((wuffs_base__slice_u8){
-                   .ptr = a_dst.private_impl.mark,
-                   .len = a_dst.private_impl.mark
-                              ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
-                              : 0,
-               })
-                  .len))) {
+          ((uint64_t)(((wuffs_base__slice_u8){
+                           .ptr = a_dst.private_impl.bounds[0],
+                           .len = a_dst.private_impl.bounds[0]
+                                      ? (size_t)(b_wptr_dst -
+                                                 a_dst.private_impl.bounds[0])
+                                      : 0,
+                       })
+                          .len))) {
         v_hlen = 0;
         v_hdist = ((uint32_t)((
             ((uint64_t)((v_dist_minus_1 + 1))) -
-            ((uint64_t)(
-                ((wuffs_base__slice_u8){
-                     .ptr = a_dst.private_impl.mark,
-                     .len = a_dst.private_impl.mark
-                                ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
-                                : 0,
-                 })
-                    .len)))));
+            ((uint64_t)(((wuffs_base__slice_u8){
+                             .ptr = a_dst.private_impl.bounds[0],
+                             .len = a_dst.private_impl.bounds[0]
+                                        ? (size_t)(b_wptr_dst -
+                                                   a_dst.private_impl.bounds[0])
+                                        : 0,
+                         })
+                            .len)))));
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
@@ -3215,21 +3200,21 @@ label_0_continue:;
           goto label_0_continue;
         }
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(
-                ((wuffs_base__slice_u8){
-                     .ptr = a_dst.private_impl.mark,
-                     .len = a_dst.private_impl.mark
-                                ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
-                                : 0,
-                 })
-                    .len))) {
+            ((uint64_t)(((wuffs_base__slice_u8){
+                             .ptr = a_dst.private_impl.bounds[0],
+                             .len = a_dst.private_impl.bounds[0]
+                                        ? (size_t)(b_wptr_dst -
+                                                   a_dst.private_impl.bounds[0])
+                                        : 0,
+                         })
+                            .len))) {
           status = WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE;
           goto exit;
         }
       }
       wuffs_base__io_writer__copy_from_history32__bco(
-          &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst, v_dist_minus_1 + 1,
-          v_length);
+          &b_wptr_dst, a_dst.private_impl.bounds[0], b_wend_dst,
+          v_dist_minus_1 + 1, v_length);
       goto label_2_break;
     }
   label_2_break:;
@@ -3564,25 +3549,26 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(
-                ((wuffs_base__slice_u8){
-                     .ptr = a_dst.private_impl.mark,
-                     .len = a_dst.private_impl.mark
-                                ? (size_t)(b_wptr_dst - a_dst.private_impl.mark)
-                                : 0,
-                 })
-                    .len))) {
+            ((uint64_t)(((wuffs_base__slice_u8){
+                             .ptr = a_dst.private_impl.bounds[0],
+                             .len = a_dst.private_impl.bounds[0]
+                                        ? (size_t)(b_wptr_dst -
+                                                   a_dst.private_impl.bounds[0])
+                                        : 0,
+                         })
+                            .len))) {
           v_hlen = 0;
           v_hdist = ((uint32_t)(
               (((uint64_t)((v_dist_minus_1 + 1))) -
-               ((uint64_t)(((wuffs_base__slice_u8){
-                                .ptr = a_dst.private_impl.mark,
-                                .len = a_dst.private_impl.mark
-                                           ? (size_t)(b_wptr_dst -
-                                                      a_dst.private_impl.mark)
-                                           : 0,
-                            })
-                               .len)))));
+               ((uint64_t)(
+                   ((wuffs_base__slice_u8){
+                        .ptr = a_dst.private_impl.bounds[0],
+                        .len = a_dst.private_impl.bounds[0]
+                                   ? (size_t)(b_wptr_dst -
+                                              a_dst.private_impl.bounds[0])
+                                   : 0,
+                    })
+                       .len)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;
@@ -3643,7 +3629,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
         }
         v_n_copied = wuffs_base__io_writer__copy_from_history32(
-            &b_wptr_dst, a_dst.private_impl.mark, b_wend_dst,
+            &b_wptr_dst, a_dst.private_impl.bounds[0], b_wend_dst,
             v_dist_minus_1 + 1, v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;

@@ -412,7 +412,7 @@ const (
 	IDLowBits           = ID(0xCE)
 	IDHighBits          = ID(0xCF)
 	IDUnreadU8          = ID(0xD0)
-	IDIsMarked          = ID(0xD1)
+	IDIsMarked          = ID(0xD1) // TODO: obsolete; delete.
 )
 
 var builtInsByID = [nBuiltInIDs]string{

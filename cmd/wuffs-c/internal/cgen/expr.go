@@ -167,8 +167,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isInSrc(g.tm, n, t.IDSinceMark, 0) {
 			b.printf("((wuffs_base__slice_u8){ "+
-				".ptr = %ssrc.private_impl.mark, "+
-				".len = %ssrc.private_impl.mark ? (size_t)(%srptr_src - %ssrc.private_impl.mark) : 0, })",
+				".ptr = %ssrc.private_impl.bounds[0], "+
+				".len = %ssrc.private_impl.bounds[0] ? (size_t)(%srptr_src - %ssrc.private_impl.bounds[0]) : 0, })",
 				aPrefix, aPrefix, bPrefix, aPrefix)
 			return nil
 		}
@@ -177,8 +177,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
 		if isInDst(g.tm, n, t.IDMark, 0) {
-			// TODO: is a private_impl.mark the right representation? What if
-			// the function is passed a (ptr io_writer) instead of a
+			// TODO: is a private_impl.bounds[0] the right representation? What
+			// if the function is passed a (ptr io_writer) instead of a
 			// (io_writer)? Do we still want to have that mark live outside of
 			// the function scope?
 			b.printf("wuffs_base__io_writer__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
@@ -191,12 +191,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// benchmark numbers improve.
 			len0, len1 := "", ""
 			if true || !n.BoundsCheckOptimized() {
-				len0 = aPrefix + "dst.private_impl.mark ?"
+				len0 = aPrefix + "dst.private_impl.bounds[0] ?"
 				len1 = ": 0"
 			}
 			b.printf("((wuffs_base__slice_u8){ "+
-				".ptr = %sdst.private_impl.mark, "+
-				".len = %s (size_t)(%swptr_dst - %sdst.private_impl.mark) %s, })",
+				".ptr = %sdst.private_impl.bounds[0], "+
+				".len = %s (size_t)(%swptr_dst - %sdst.private_impl.bounds[0]) %s, })",
 				aPrefix, len0, bPrefix, aPrefix, len1)
 			return nil
 		}
@@ -204,7 +204,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if pp == parenthesesMandatory {
 				b.writeb('(')
 			}
-			b.printf("%sdst.private_impl.mark != NULL", aPrefix)
+			b.printf("%sdst.private_impl.bounds[0] != NULL", aPrefix)
 			if pp == parenthesesMandatory {
 				b.writeb(')')
 			}
@@ -228,7 +228,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				bco = "__bco"
 			}
 			b.printf("wuffs_base__io_writer__copy_from_history32%s("+
-				"&%swptr_dst, %sdst.private_impl.mark , %swend_dst",
+				"&%swptr_dst, %sdst.private_impl.bounds[0] , %swend_dst",
 				bco, bPrefix, aPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
@@ -348,8 +348,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isThatMethod(g.tm, n, t.IDSinceMark, 0) {
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("((wuffs_base__slice_u8){ " +
-				".ptr = v_r.private_impl.mark, " +
-				".len = v_r.private_impl.mark ? (size_t)(b_rptr_src - v_r.private_impl.mark) : 0, })")
+				".ptr = v_r.private_impl.bounds[0], " +
+				".len = v_r.private_impl.bounds[0] ? (size_t)(b_rptr_src - v_r.private_impl.bounds[0]) : 0, })")
 			return nil
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("initialize"), 5) {

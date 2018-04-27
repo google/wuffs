@@ -535,7 +535,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -546,7 +545,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_writer;
 

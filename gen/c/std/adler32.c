@@ -538,7 +538,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -549,7 +548,6 @@ typedef struct {
     wuffs_base__io_buffer* buf;
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
-    uint8_t* mark;
   } private_impl;
 } wuffs_base__io_writer;
 
@@ -1351,11 +1349,11 @@ static inline bool wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
 
 static inline uint32_t wuffs_base__io_writer__copy_from_history32(
     uint8_t** ptr_ptr,
-    uint8_t* start,  // May be NULL, meaning an unmarked io_writer.
+    uint8_t* start,
     uint8_t* end,
     uint32_t distance,
     uint32_t length) {
-  if (!start || !distance) {
+  if (!distance) {
     return 0;
   }
   uint8_t* ptr = *ptr_ptr;
@@ -1394,7 +1392,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32(
 // wuffs_base__io_writer__copy_from_history32__bco is a Bounds Check Optimized
 // version of the wuffs_base__io_writer__copy_from_history32 function above.
 // The caller needs to prove that:
-//  - start    != NULL
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
@@ -1478,18 +1475,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   return n;
 }
 
-// Note that the *__limit and *__mark methods are private (in base-impl.h) not
-// public (in base-header.h). We assume that, at the boundary between user code
-// and Wuffs code, the io_reader and io_writer's private_impl fields (including
-// limit and mark) are NULL. Otherwise, some internal assumptions break down.
-// For example, limits could be represented as pointers, even though
-// conceptually they are counts, but that pointer-to-count correspondence
-// becomes invalid if a buffer is re-used (e.g. on resuming a coroutine).
-//
-// Admittedly, some of the Wuffs test code calls these methods, but that test
-// code is still Wuffs code, not user code. Other Wuffs test code modifies
-// private_impl fields directly.
-
 static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
     wuffs_base__io_reader* o,
     uint64_t* ptr_to_len) {
@@ -1502,7 +1487,7 @@ static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
 static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
-  o->private_impl.mark = mark;
+  o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -1511,7 +1496,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
 static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {
-  o->private_impl.mark = mark;
+  o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
