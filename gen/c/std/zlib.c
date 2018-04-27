@@ -564,26 +564,20 @@ typedef struct wuffs_base__io_limit {
 } wuffs_base__io_limit;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
@@ -593,7 +587,7 @@ static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }
@@ -602,7 +596,7 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_writer ret = ((wuffs_base__io_writer){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }
@@ -1903,12 +1897,12 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
-  if (a_dst.buf) {
-    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+  if (a_dst.private_impl.buf) {
+    b_wptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
-    if (!a_dst.buf->closed) {
-      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+    if (!a_dst.private_impl.buf->closed) {
+      uint64_t len = a_dst.private_impl.buf->len - a_dst.private_impl.buf->wi;
       wuffs_base__io_limit* lim;
       for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1921,10 +1915,10 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1994,9 +1988,10 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-        if (a_dst.buf) {
-          size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
-          a_dst.buf->wi += n;
+        if (a_dst.private_impl.buf) {
+          size_t n = b_wptr_dst -
+                     (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
+          a_dst.private_impl.buf->wi += n;
           wuffs_base__io_limit* lim;
           for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -2004,9 +1999,10 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
             }
           }
         }
-        if (a_src.buf) {
-          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-          a_src.buf->ri += n;
+        if (a_src.private_impl.buf) {
+          size_t n = b_rptr_src -
+                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+          a_src.private_impl.buf->ri += n;
           wuffs_base__io_limit* lim;
           for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -2016,11 +2012,11 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         }
         wuffs_zlib__status t_2 = wuffs_deflate__decoder__decode(
             &self->private_impl.f_flate, a_dst, a_src);
-        if (a_dst.buf) {
-          b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+        if (a_dst.private_impl.buf) {
+          b_wptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
         }
-        if (a_src.buf) {
-          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        if (a_src.private_impl.buf) {
+          b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
         }
         v_z = t_2;
       }
@@ -2091,9 +2087,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_dst.buf) {
-    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
-    a_dst.buf->wi += n;
+  if (a_dst.private_impl.buf) {
+    size_t n =
+        b_wptr_dst - (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
+    a_dst.private_impl.buf->wi += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2103,9 +2100,10 @@ exit:
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2120,7 +2118,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_ZLIB__ERROR_UNEXPECTED_EOF;
     goto exit;
   }

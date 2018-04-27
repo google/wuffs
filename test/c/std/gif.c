@@ -51,7 +51,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 void test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_reader src = {0};
+  wuffs_base__io_reader src = {{0}};
   wuffs_gif__status status = wuffs_gif__decoder__decode_config(NULL, &ic, src);
   if (status != WUFFS_GIF__ERROR_BAD_RECEIVER) {
     FAIL("decode_config: got %d, want %d", status,
@@ -63,7 +63,7 @@ void test_basic_initializer_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = {{0}};
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_reader src = {0};
+  wuffs_base__io_reader src = {{0}};
   wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
   if (status != WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED) {
     FAIL("decode_config: got %d, want %d", status,

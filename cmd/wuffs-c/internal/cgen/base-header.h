@@ -561,26 +561,20 @@ typedef struct wuffs_base__io_limit {
 } wuffs_base__io_limit;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
@@ -590,7 +584,7 @@ static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }
@@ -599,7 +593,7 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_writer ret = ((wuffs_base__io_writer){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }

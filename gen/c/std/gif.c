@@ -564,26 +564,20 @@ typedef struct wuffs_base__io_limit {
 } wuffs_base__io_limit;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
 } wuffs_base__io_reader;
 
 typedef struct {
-  // TODO: move buf into private_impl? As it is, it looks like users can modify
-  // the buf field to point to a different buffer, which can turn the limit and
-  // mark fields into dangling pointers.
-  wuffs_base__io_buffer* buf;
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
+    wuffs_base__io_buffer* buf;
     wuffs_base__io_limit limit;
     uint8_t* mark;
   } private_impl;
@@ -593,7 +587,7 @@ static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }
@@ -602,7 +596,7 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_writer ret = ((wuffs_base__io_writer){});
   if (buf) {
-    ret.buf = buf;
+    ret.private_impl.buf = buf;
   }
   return ret;
 }
@@ -1762,10 +1756,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1788,9 +1782,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
+    if (a_src.private_impl.buf) {
+      size_t n = b_rptr_src -
+                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+      a_src.private_impl.buf->ri += n;
       wuffs_base__io_limit* lim;
       for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
@@ -1799,16 +1794,17 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
       }
     }
     status = wuffs_gif__decoder__decode_header(self, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    if (a_src.private_impl.buf) {
+      b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     }
     if (status) {
       goto suspend;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
+    if (a_src.private_impl.buf) {
+      size_t n = b_rptr_src -
+                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+      a_src.private_impl.buf->ri += n;
       wuffs_base__io_limit* lim;
       for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
@@ -1817,8 +1813,8 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
       }
     }
     status = wuffs_gif__decoder__decode_lsd(self, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    if (a_src.private_impl.buf) {
+      b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     }
     if (status) {
       goto suspend;
@@ -1838,9 +1834,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
         goto label_0_break;
       }
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      if (a_src.buf) {
-        size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-        a_src.buf->ri += n;
+      if (a_src.private_impl.buf) {
+        size_t n = b_rptr_src -
+                   (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+        a_src.private_impl.buf->ri += n;
         wuffs_base__io_limit* lim;
         for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -1849,8 +1846,8 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
         }
       }
       status = wuffs_gif__decoder__decode_extension(self, a_src);
-      if (a_src.buf) {
-        b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+      if (a_src.private_impl.buf) {
+        b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
       }
       if (status) {
         goto suspend;
@@ -1874,9 +1871,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -1891,7 +1889,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -1917,10 +1916,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -1957,9 +1956,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
       }
       if (self->private_impl.f_block_type == 33) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        if (a_src.buf) {
-          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-          a_src.buf->ri += n;
+        if (a_src.private_impl.buf) {
+          size_t n = b_rptr_src -
+                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+          a_src.private_impl.buf->ri += n;
           wuffs_base__io_limit* lim;
           for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -1968,17 +1968,18 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
           }
         }
         status = wuffs_gif__decoder__decode_extension(self, a_src);
-        if (a_src.buf) {
-          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        if (a_src.private_impl.buf) {
+          b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
         }
         if (status) {
           goto suspend;
         }
       } else if (self->private_impl.f_block_type == 44) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-        if (a_src.buf) {
-          size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-          a_src.buf->ri += n;
+        if (a_src.private_impl.buf) {
+          size_t n = b_rptr_src -
+                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+          a_src.private_impl.buf->ri += n;
           wuffs_base__io_limit* lim;
           for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
             if (lim->ptr_to_len) {
@@ -1987,8 +1988,8 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
           }
         }
         status = wuffs_gif__decoder__decode_id(self, a_dst, a_src);
-        if (a_src.buf) {
-          b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+        if (a_src.private_impl.buf) {
+          b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
         }
         if (status) {
           goto suspend;
@@ -2020,9 +2021,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2037,7 +2039,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2056,10 +2059,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_header(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2112,9 +2115,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2128,7 +2132,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2148,10 +2153,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2237,9 +2242,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2253,7 +2259,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2271,10 +2278,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2304,9 +2311,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
     if (v_label == 249) {
     } else if (v_label == 255) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-      if (a_src.buf) {
-        size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-        a_src.buf->ri += n;
+      if (a_src.private_impl.buf) {
+        size_t n = b_rptr_src -
+                   (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+        a_src.private_impl.buf->ri += n;
         wuffs_base__io_limit* lim;
         for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
           if (lim->ptr_to_len) {
@@ -2315,8 +2323,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
         }
       }
       status = wuffs_gif__decoder__decode_ae(self, a_src);
-      if (a_src.buf) {
-        b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+      if (a_src.private_impl.buf) {
+        b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
       }
       if (status) {
         goto suspend;
@@ -2325,9 +2333,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
       goto ok;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
+    if (a_src.private_impl.buf) {
+      size_t n = b_rptr_src -
+                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+      a_src.private_impl.buf->ri += n;
       wuffs_base__io_limit* lim;
       for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
@@ -2336,8 +2345,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
       }
     }
     status = wuffs_gif__decoder__skip_blocks(self, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    if (a_src.private_impl.buf) {
+      b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     }
     if (status) {
       goto suspend;
@@ -2356,9 +2365,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2372,7 +2382,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2390,10 +2401,10 @@ static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2450,9 +2461,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2466,7 +2478,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2487,10 +2500,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2641,9 +2654,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
     }
   label_0_break:;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
-    if (a_src.buf) {
-      size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-      a_src.buf->ri += n;
+    if (a_src.private_impl.buf) {
+      size_t n = b_rptr_src -
+                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+      a_src.private_impl.buf->ri += n;
       wuffs_base__io_limit* lim;
       for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len) {
@@ -2652,8 +2666,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
       }
     }
     status = wuffs_gif__decoder__skip_blocks(self, a_src);
-    if (a_src.buf) {
-      b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+    if (a_src.private_impl.buf) {
+      b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     }
     if (status) {
       goto suspend;
@@ -2675,9 +2689,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -2691,7 +2706,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2716,10 +2732,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -2927,9 +2943,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         wuffs_base__io_reader__mark(&v_r, b_rptr_src);
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
-          if (a_src.buf) {
-            size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-            a_src.buf->ri += n;
+          if (a_src.private_impl.buf) {
+            size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
+                                     a_src.private_impl.buf->ri);
+            a_src.private_impl.buf->ri += n;
             wuffs_base__io_limit* lim;
             for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
               if (lim->ptr_to_len) {
@@ -2941,8 +2958,9 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
               &self->private_impl.f_lzw, a_dst,
               wuffs_base__io_reader__limit(&v_r, &l_rlimit0));
-          if (a_src.buf) {
-            b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+          if (a_src.private_impl.buf) {
+            b_rptr_src =
+                a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
           }
           v_z = t_14;
         }
@@ -2997,9 +3015,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -3013,7 +3032,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -3049,12 +3069,12 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   uint8_t* b_wptr_dst = NULL;
   uint8_t* b_wstart_dst = NULL;
   uint8_t* b_wend_dst = NULL;
-  if (a_dst.buf) {
-    b_wptr_dst = a_dst.buf->ptr + a_dst.buf->wi;
+  if (a_dst.private_impl.buf) {
+    b_wptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
-    if (!a_dst.buf->closed) {
-      uint64_t len = a_dst.buf->len - a_dst.buf->wi;
+    if (!a_dst.private_impl.buf->closed) {
+      uint64_t len = a_dst.private_impl.buf->len - a_dst.private_impl.buf->wi;
       wuffs_base__io_limit* lim;
       for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
         if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -3067,10 +3087,10 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
   uint8_t* b_rend_src = NULL;
-  if (a_src.buf) {
-    b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+  if (a_src.private_impl.buf) {
+    b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     b_rstart_src = b_rptr_src;
-    uint64_t len = a_src.buf->wi - a_src.buf->ri;
+    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
@@ -3218,9 +3238,10 @@ suspend:
 
   goto exit;
 exit:
-  if (a_dst.buf) {
-    size_t n = b_wptr_dst - (a_dst.buf->ptr + a_dst.buf->wi);
-    a_dst.buf->wi += n;
+  if (a_dst.private_impl.buf) {
+    size_t n =
+        b_wptr_dst - (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
+    a_dst.private_impl.buf->wi += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -3230,9 +3251,10 @@ exit:
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
-  if (a_src.buf) {
-    size_t n = b_rptr_src - (a_src.buf->ptr + a_src.buf->ri);
-    a_src.buf->ri += n;
+  if (a_src.private_impl.buf) {
+    size_t n =
+        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
+    a_src.private_impl.buf->ri += n;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
       if (lim->ptr_to_len) {
@@ -3246,7 +3268,8 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.buf && a_src.buf->closed && !a_src.private_impl.limit.ptr_to_len) {
+  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
+      !a_src.private_impl.limit.ptr_to_len) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
