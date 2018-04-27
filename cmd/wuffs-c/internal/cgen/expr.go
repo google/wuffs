@@ -315,7 +315,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("update"), 1) {
 			// TODO: don't hard-code the class name or this.checksum.
-			class := "wuffs_crc32__ieee"
+			class := "wuffs_crc32__ieee_hasher"
 			if g.pkgName == "zlib" {
 				class = "wuffs_adler32__hasher"
 			}

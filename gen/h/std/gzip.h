@@ -1075,7 +1075,7 @@ const char* wuffs_crc32__status__string(wuffs_crc32__status s);
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_crc32__ieee__etc functions.
+  // wuffs_crc32__ieee_hasher__etc functions.
   //
   // In C++, these fields would be "private", but C does not support that.
   //
@@ -1087,23 +1087,23 @@ typedef struct {
     uint32_t f_state;
 
   } private_impl;
-} wuffs_crc32__ieee;
+} wuffs_crc32__ieee_hasher;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_crc32__ieee__initialize is an initializer function.
+// wuffs_crc32__ieee_hasher__initialize is an initializer function.
 //
-// It should be called before any other wuffs_crc32__ieee__* function.
+// It should be called before any other wuffs_crc32__ieee_hasher__* function.
 //
 // Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_crc32__ieee__initialize(wuffs_crc32__ieee* self,
-                                   uint32_t wuffs_version,
-                                   uint32_t for_internal_use_only);
+void wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
+                                          uint32_t wuffs_version,
+                                          uint32_t for_internal_use_only);
 
 // ---------------- Public Function Prototypes
 
-uint32_t wuffs_crc32__ieee__update(wuffs_crc32__ieee* self,
-                                   wuffs_base__slice_u8 a_x);
+uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
+                                          wuffs_base__slice_u8 a_x);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1354,7 +1354,7 @@ typedef struct {
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
-    wuffs_crc32__ieee f_checksum;
+    wuffs_crc32__ieee_hasher f_checksum;
     bool f_ignore_checksum;
 
     struct {

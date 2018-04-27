@@ -105,8 +105,8 @@ void test_wuffs_crc32_ieee_golden() {
 
     int j;
     for (j = 0; j < 2; j++) {
-      wuffs_crc32__ieee checksum;
-      wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
+      wuffs_crc32__ieee_hasher checksum;
+      wuffs_crc32__ieee_hasher__initialize(&checksum, WUFFS_VERSION, 0);
 
       uint32_t got;
       size_t num_fragments = 0;
@@ -120,7 +120,7 @@ void test_wuffs_crc32_ieee_golden() {
         if ((j > 0) && (data.len > limit)) {
           data.len = limit;
         }
-        got = wuffs_crc32__ieee__update(&checksum, data);
+        got = wuffs_crc32__ieee_hasher__update(&checksum, data);
         num_fragments++;
         num_bytes += data.len;
       } while (num_bytes < src.wi);
@@ -164,13 +164,13 @@ void test_wuffs_crc32_ieee_pi() {
 
   int i;
   for (i = 0; i < 64; i++) {
-    wuffs_crc32__ieee checksum;
-    wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
-    uint32_t got =
-        wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
-                                                 .ptr = (uint8_t*)(digits),
-                                                 .len = i,
-                                             }));
+    wuffs_crc32__ieee_hasher checksum;
+    wuffs_crc32__ieee_hasher__initialize(&checksum, WUFFS_VERSION, 0);
+    uint32_t got = wuffs_crc32__ieee_hasher__update(
+        &checksum, ((wuffs_base__slice_u8){
+                       .ptr = (uint8_t*)(digits),
+                       .len = i,
+                   }));
     if (got != wants[i]) {
       FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n", i, got,
            wants[i]);
@@ -188,13 +188,13 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
-  wuffs_crc32__ieee checksum;
-  wuffs_crc32__ieee__initialize(&checksum, WUFFS_VERSION, 0);
+  wuffs_crc32__ieee_hasher checksum;
+  wuffs_crc32__ieee_hasher__initialize(&checksum, WUFFS_VERSION, 0);
   global_wuffs_crc32_unused_u32 =
-      wuffs_crc32__ieee__update(&checksum, ((wuffs_base__slice_u8){
-                                               .ptr = src->ptr + src->ri,
-                                               .len = src->wi - src->ri,
-                                           }));
+      wuffs_crc32__ieee_hasher__update(&checksum, ((wuffs_base__slice_u8){
+                                                      .ptr = src->ptr + src->ri,
+                                                      .len = src->wi - src->ri,
+                                                  }));
   src->ri = src->wi;
   return NULL;
 }

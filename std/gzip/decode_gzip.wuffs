@@ -24,7 +24,7 @@ pub error "invalid gzip encoding flags"
 
 pub struct decoder?(
 	flate deflate.decoder,
-	checksum crc32.ieee,
+	checksum crc32.ieee_hasher,
 	ignore_checksum base.bool,
 )
 
