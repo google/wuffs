@@ -312,10 +312,10 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			break
 		}
 		while true {
-			var r base.io_reader = in.src
 			// TODO: should "mark" be "set_mark"? Unlike "limit", "mark" does
 			// not return a different io_reader.
-			r.mark()
+			in.src.mark()
+			var r base.io_reader = in.src
 			// TODO: remove the dummy param. It's needed for now so that
 			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
 			// variables.
@@ -325,10 +325,10 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			if z.is_ok() {
 				break
 			}
-			if block_size < r.since_mark().length() {
+			if block_size < in.src.since_mark().length() {
 				return error "internal error: inconsistent limited read"
 			}
-			block_size -= r.since_mark().length()
+			block_size -= in.src.since_mark().length()
 			if (block_size == 0) and (z == suspension "short read") {
 				break
 			}

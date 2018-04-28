@@ -2957,8 +2957,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         goto label_0_break;
       }
       while (true) {
+        wuffs_base__io_reader__mark(&a_src, b_rptr_src);
         v_r = a_src;
-        wuffs_base__io_reader__mark(&v_r, b_rptr_src);
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
           if (a_src.private_impl.buf) {
@@ -2987,8 +2987,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         }
         if (v_block_size <
             ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = v_r.private_impl.bounds[0],
-                             .len = b_rptr_src - v_r.private_impl.bounds[0],
+                             .ptr = a_src.private_impl.bounds[0],
+                             .len = b_rptr_src - a_src.private_impl.bounds[0],
                          })
                             .len))) {
           status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ;
@@ -2996,8 +2996,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         }
         v_block_size -=
             ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = v_r.private_impl.bounds[0],
-                             .len = b_rptr_src - v_r.private_impl.bounds[0],
+                             .ptr = a_src.private_impl.bounds[0],
+                             .len = b_rptr_src - a_src.private_impl.bounds[0],
                          })
                             .len));
         if ((v_block_size == 0) && (v_z == WUFFS_GIF__SUSPENSION_SHORT_READ)) {
