@@ -19,8 +19,6 @@ pub error "bad GIF extension label"
 pub error "bad GIF header"
 pub error "bad LZW literal width"
 
-pri error "internal error: inconsistent limited read"
-
 pub struct decoder?(
 	width base.u32[..65535],
 	height base.u32[..65535],
@@ -325,10 +323,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			if z.is_ok() {
 				break
 			}
-			if block_size < in.src.since_mark().length() {
-				return error "internal error: inconsistent limited read"
-			}
-			block_size -= in.src.since_mark().length()
+			block_size ~sat-= in.src.since_mark().length()
 			if (block_size == 0) and (z == suspension "short read") {
 				break
 			}

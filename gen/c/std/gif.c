@@ -1039,14 +1039,12 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320            // 0xBE161800
-#define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319  // 0xBE161801
-#define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318           // 0xBE161802
-#define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317    // 0xBE161803
-#define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ \
-  -1105848316                                                      // 0xBE161804
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xBE161805
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xBE161806
+#define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320                 // 0xBE161800
+#define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319       // 0xBE161801
+#define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318                // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317         // 0xBE161803
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848316      // 0xBE161804
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848315  // 0xBE161805
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1633,12 +1631,11 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
   return s < 0;
 }
 
-const char* wuffs_gif__status__strings[7] = {
+const char* wuffs_gif__status__strings[6] = {
     "gif: bad GIF block",
     "gif: bad GIF extension label",
     "gif: bad GIF header",
     "gif: bad LZW literal width",
-    "gif: internal error: inconsistent limited read",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -1653,7 +1650,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings;
-      n = 7;
+      n = 6;
       break;
   }
   uint32_t i = s & 0xFF;
@@ -2985,21 +2982,13 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         if (v_z == 0) {
           goto label_1_break;
         }
-        if (v_block_size <
+        wuffs_base__u64__sat_sub_indirect(
+            &v_block_size,
             ((uint64_t)(((wuffs_base__slice_u8){
                              .ptr = a_src.private_impl.bounds[0],
                              .len = b_rptr_src - a_src.private_impl.bounds[0],
                          })
-                            .len))) {
-          status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ;
-          goto exit;
-        }
-        v_block_size -=
-            ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = a_src.private_impl.bounds[0],
-                             .len = b_rptr_src - a_src.private_impl.bounds[0],
-                         })
-                            .len));
+                            .len)));
         if ((v_block_size == 0) && (v_z == WUFFS_GIF__SUSPENSION_SHORT_READ)) {
           goto label_1_break;
         }
