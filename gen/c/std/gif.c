@@ -2988,23 +2988,18 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         if (v_block_size <
             ((uint64_t)(((wuffs_base__slice_u8){
                              .ptr = v_r.private_impl.bounds[0],
-                             .len = v_r.private_impl.bounds[0]
-                                        ? (size_t)(b_rptr_src -
-                                                   v_r.private_impl.bounds[0])
-                                        : 0,
+                             .len = b_rptr_src - v_r.private_impl.bounds[0],
                          })
                             .len))) {
           status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_LIMITED_READ;
           goto exit;
         }
-        v_block_size -= ((uint64_t)(
-            ((wuffs_base__slice_u8){
-                 .ptr = v_r.private_impl.bounds[0],
-                 .len = v_r.private_impl.bounds[0]
-                            ? (size_t)(b_rptr_src - v_r.private_impl.bounds[0])
-                            : 0,
-             })
-                .len));
+        v_block_size -=
+            ((uint64_t)(((wuffs_base__slice_u8){
+                             .ptr = v_r.private_impl.bounds[0],
+                             .len = b_rptr_src - v_r.private_impl.bounds[0],
+                         })
+                            .len));
         if ((v_block_size == 0) && (v_z == WUFFS_GIF__SUSPENSION_SHORT_READ)) {
           goto label_1_break;
         }

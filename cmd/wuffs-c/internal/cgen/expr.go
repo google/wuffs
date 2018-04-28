@@ -168,8 +168,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isInSrc(g.tm, n, t.IDSinceMark, 0) {
 			b.printf("((wuffs_base__slice_u8){ "+
 				".ptr = %ssrc.private_impl.bounds[0], "+
-				".len = %ssrc.private_impl.bounds[0] ? (size_t)(%srptr_src - %ssrc.private_impl.bounds[0]) : 0, })",
-				aPrefix, aPrefix, bPrefix, aPrefix)
+				".len = %srptr_src - %ssrc.private_impl.bounds[0], })",
+				aPrefix, bPrefix, aPrefix)
 			return nil
 		}
 		// TODO: io_reader.is_marked, not just io_writer.is_marked?
@@ -349,7 +349,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't hard-code v_r or b_rptr_src.
 			b.printf("((wuffs_base__slice_u8){ " +
 				".ptr = v_r.private_impl.bounds[0], " +
-				".len = v_r.private_impl.bounds[0] ? (size_t)(b_rptr_src - v_r.private_impl.bounds[0]) : 0, })")
+				".len = b_rptr_src - v_r.private_impl.bounds[0], })")
 			return nil
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("initialize"), 5) {
