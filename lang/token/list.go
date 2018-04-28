@@ -320,6 +320,7 @@ const (
 	IDTry        = ID(0x85)
 	IDIterate    = ID(0x86)
 	IDYield      = ID(0x87)
+	IDIOBind     = ID(0x88)
 )
 
 const (
@@ -500,6 +501,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDTry:        "try",
 	IDIterate:    "iterate",
 	IDYield:      "yield",
+	IDIOBind:     "io_bind",
 
 	IDArray: "array",
 	IDNptr:  "nptr",

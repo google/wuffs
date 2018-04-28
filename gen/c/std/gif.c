@@ -2955,6 +2955,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       }
       while (true) {
         wuffs_base__io_reader__mark(&a_src, b_rptr_src);
+        // io_bind placeholder {
         v_r = a_src;
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
@@ -2979,6 +2980,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           }
           v_z = t_14;
         }
+        // io_bind placeholder }
         if (v_z == 0) {
           goto label_1_break;
         }

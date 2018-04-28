@@ -5,6 +5,7 @@
 
 - Renamed Puffs to Wuffs.
 - Added a `skipgendeps` flag.
+- Added an `io_bind` keyword.
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Added `std/adler32`, `std/crc32` and `std/gzip`.

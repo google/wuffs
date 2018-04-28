@@ -128,6 +128,17 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		b.writes(";\n")
 		return nil
 
+	case a.KIOBind:
+		n := n.IOBind()
+		b.writes("// io_bind placeholder {\n")
+		for _, o := range n.Body() {
+			if err := g.writeStatement(b, o, depth); err != nil {
+				return err
+			}
+		}
+		b.writes("// io_bind placeholder }\n")
+		return nil
+
 	case a.KIf:
 		// TODO: for writeSuspendibles, make sure that we get order of
 		// sub-expression evaluation correct.

@@ -313,13 +313,16 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			// TODO: should "mark" be "set_mark"? Unlike "limit", "mark" does
 			// not return a different io_reader.
 			in.src.mark()
-			var r base.io_reader = in.src
-			// TODO: remove the dummy param. It's needed for now so that
-			// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
-			// variables.
-			//
-			// TODO: enforce that limit can only be called in a "foo?" call?
-			var z base.status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
+			io_bind (in.src) {
+				var r base.io_reader = in.src
+				// TODO: remove the dummy param. It's needed for now so that
+				// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
+				// variables.
+				//
+				// TODO: enforce that limit can only be called in a "foo?"
+				// call?
+				var z base.status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
+			}
 			if z.is_ok() {
 				break
 			}

@@ -41,6 +41,7 @@ const (
 	KField
 	KFile
 	KFunc
+	KIOBind
 	KIf
 	KIterate
 	KJump
@@ -72,6 +73,7 @@ var kindStrings = [...]string{
 	KField:     "KField",
 	KFile:      "KFile",
 	KFunc:      "KFunc",
+	KIOBind:    "KIOBind",
 	KIf:        "KIf",
 	KIterate:   "KIterate",
 	KJump:      "KJump",
@@ -162,6 +164,7 @@ type Node struct {
 	// Field         .             .             name          Field
 	// File          .             .             .             File
 	// Func          funcName      receiverPkg   receiverName  Func
+	// IOBind        .             .             .             IOBind
 	// If            .             .             .             If
 	// Iterate       .             label         .             Iterate
 	// Jump          keyword       label         .             Jump
@@ -198,6 +201,7 @@ func (n *Node) Expr() *Expr           { return (*Expr)(n) }
 func (n *Node) Field() *Field         { return (*Field)(n) }
 func (n *Node) File() *File           { return (*File)(n) }
 func (n *Node) Func() *Func           { return (*Func)(n) }
+func (n *Node) IOBind() *IOBind       { return (*IOBind)(n) }
 func (n *Node) If() *If               { return (*If)(n) }
 func (n *Node) Iterate() *Iterate     { return (*Iterate)(n) }
 func (n *Node) Jump() *Jump           { return (*Jump)(n) }
@@ -488,7 +492,24 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 	}
 }
 
-// Iterate is "iterate.LHS:ID1 (vars), List1 { List2 }":
+// IOBind is "io_bind (in_fields) { List2 }":
+//  - List0: <Expr> in.something fields
+//  - List2: <Statement> loop body
+type IOBind Node
+
+func (n *IOBind) Node() *Node       { return (*Node)(n) }
+func (n *IOBind) InFields() []*Node { return n.list0 }
+func (n *IOBind) Body() []*Node     { return n.list2 }
+
+func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
+	return &IOBind{
+		kind:  KIOBind,
+		list0: in_fields,
+		list2: body,
+	}
+}
+
+// Iterate is "iterate[LHS]:ID1 (vars), List1 { List2 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID1:   <0|label>
@@ -760,6 +781,7 @@ const MaxBodyDepth = 255
 //  - Assert
 //  - Assign
 //  - Expr
+//  - IOBind
 //  - If
 //  - Iterate
 //  - Jump

@@ -55,8 +55,8 @@ be enclosed by curly `{}`s. There is no 'dangling else' ambiguity.
 
 - `var`
 
-TODO: categorize and, or, not, as, ref, deref, false, true, in, out, this, u8,
-u16, etc.
+TODO: categorize try, io\_bind. Also: and, or, not, as, ref, deref, false,
+true, in, out, this, u8, u16, etc.
 
 
 ## Operators
@@ -293,4 +293,4 @@ buffers of bytes, such as an I/O stream or a table of pixel data.
 
 ---
 
-Updated on November 2017.
+Updated on April 2018.

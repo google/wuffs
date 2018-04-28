@@ -614,6 +614,18 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewJump(x, label).Node(), nil
 
+	case t.IDIOBind:
+		p.src = p.src[1:]
+		in_fields, err := p.parseList(t.IDCloseParen, (*parser).parseIOBindExprNode)
+		if err != nil {
+			return nil, err
+		}
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewIOBind(in_fields, body).Node(), nil
+
 	case t.IDIf:
 		o, err := p.parseIf()
 		return o.Node(), err
@@ -651,7 +663,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		p.src = p.src[1:]
 
-		vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVariableNode)
+		vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
 		if err != nil {
 			return nil, err
 		}
@@ -678,7 +690,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDVar:
 		p.src = p.src[1:]
-		return p.parseVar(false)
+		return p.parseVarNode(false)
 
 	case t.IDWhile:
 		p.src = p.src[1:]
@@ -782,11 +794,24 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 	return a.NewArg(name, value).Node(), nil
 }
 
-func (p *parser) parseIterateVariableNode() (*a.Node, error) {
-	return p.parseVar(true)
+func (p *parser) parseIOBindExprNode() (*a.Node, error) {
+	e, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if e.Operator() == t.IDDot {
+		if lhs := e.LHS().Expr(); lhs.Operator() == 0 && lhs.Ident() == t.IDIn {
+			return e.Node(), nil
+		}
+	}
+	return nil, fmt.Errorf(`parse: expected "in.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
 }
 
-func (p *parser) parseVar(inIterate bool) (*a.Node, error) {
+func (p *parser) parseIterateVarNode() (*a.Node, error) {
+	return p.parseVarNode(true)
+}
+
+func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 	id, err := p.parseIdent()
 	if err != nil {
 		return nil, err

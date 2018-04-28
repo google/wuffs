@@ -303,6 +303,14 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	case a.KVar:
 		return q.bcheckVar(n.Var())
 
+	case a.KIOBind:
+		n := n.IOBind()
+		if err := q.bcheckBlock(n.Body()); err != nil {
+			return err
+		}
+		// TODO: invalidate any facts regarding the io_bind expressions.
+		return nil
+
 	case a.KIterate:
 		n := n.Iterate()
 		for _, o := range n.Variables() {

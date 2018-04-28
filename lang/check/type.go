@@ -39,6 +39,11 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 				}
 			}
 
+		case a.KIOBind:
+			if err := q.tcheckVars(o.IOBind().Body()); err != nil {
+				return err
+			}
+
 		case a.KIterate:
 			if err := q.tcheckVars(o.Iterate().Variables()); err != nil {
 				return err
@@ -109,6 +114,31 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			n.Node().SetTypeChecked()
 		}
 		return nil
+
+	case a.KIOBind:
+		n := n.IOBind()
+		for _, o := range n.InFields() {
+			if err := q.tcheckExpr(o.Expr(), 0); err != nil {
+				return err
+			}
+			isIOType := false
+			if typ := o.Expr().MType(); typ.Decorator() == 0 {
+				if qid := typ.QID(); qid[0] == t.IDBase && (qid[1] == t.IDIOReader || qid[1] == t.IDIOWriter) {
+					isIOType = true
+				}
+			}
+			if !isIOType {
+				return fmt.Errorf("check: io_bind expression %q, of type %q, does not have an I/O type",
+					o.Expr().Str(q.tm), o.Expr().MType().Str(q.tm))
+			}
+		}
+		for _, o := range n.Body() {
+			// TODO: prohibit jumps (breaks, continues), rets (returns, yields)
+			// and retry-calling ? methods while inside an io_bind body.
+			if err := q.tcheckStatement(o); err != nil {
+				return err
+			}
+		}
 
 	case a.KIterate:
 		n := n.Iterate()

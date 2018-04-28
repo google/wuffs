@@ -276,8 +276,8 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 				}
 			}
 
-		case a.KVar:
-			if err := f(g, b, o.Var()); err != nil {
+		case a.KIOBind:
+			if err := g.visitVars(b, o.IOBind().Body(), depth, f); err != nil {
 				return err
 			}
 
@@ -286,6 +286,11 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 				return err
 			}
 			if err := g.visitVars(b, o.Iterate().Body(), depth, f); err != nil {
+				return err
+			}
+
+		case a.KVar:
+			if err := f(g, b, o.Var()); err != nil {
 				return err
 			}
 
