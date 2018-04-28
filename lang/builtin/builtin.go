@@ -104,7 +104,6 @@ var Funcs = []string{
 	"io_reader.read_u64le?()(ret u64)",
 
 	"io_reader.available()(ret u64)",
-	"io_reader.is_marked()(ret bool)",
 	"io_reader.limit(l u64)(ret io_reader)",
 	"io_reader.mark()()",
 	"io_reader.since_mark()(ret slice u8)",
@@ -125,7 +124,6 @@ var Funcs = []string{
 	"io_writer.copy_from_reader32(r io_reader, length u32)(ret u32)",
 	"io_writer.copy_from_slice(s slice u8)(ret u64)",
 	"io_writer.copy_from_slice32(s slice u8, length u32)(ret u32)",
-	"io_writer.is_marked()(ret bool)",
 	"io_writer.limit(l u64)(ret io_writer)",
 	"io_writer.mark()()",
 	"io_writer.since_mark()(ret slice u8)",

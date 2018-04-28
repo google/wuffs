@@ -65,14 +65,6 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 	switch nMethod {
 	case t.IDCopyFromHistory32:
 		return q.optimizeCopyFromHistory32(n)
-	case t.IDSinceMark:
-		for _, x := range q.facts {
-			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
-			if xMethod == t.IDIsMarked && xReceiver.Eq(nReceiver) {
-				n.SetBoundsCheckOptimized()
-				return nil
-			}
-		}
 	}
 
 	return nil
@@ -81,7 +73,6 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 // optimizeCopyFromHistory32 checks if the code generator can call the Bounds
 // Check Optimized version of CopyFromHistory32. As per cgen/base-impl.h, the
 // conditions are:
-//  - start    != NULL  // TODO: obsolete.
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
@@ -94,20 +85,8 @@ func (q *checker) optimizeCopyFromHistory32(n *a.Expr) error {
 	d := args[0].Arg().Value()
 	l := args[1].Arg().Value()
 
-	// Check "start != NULL".
-check0:
-	for {
-		for _, x := range q.facts {
-			xReceiver, xMethod, _ := splitReceiverMethodArgs(x)
-			if xMethod == t.IDIsMarked && xReceiver.Eq(nReceiver) {
-				break check0
-			}
-		}
-		return nil
-	}
-
 	// Check "distance > 0".
-check1:
+check0:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryGreaterThan {
@@ -119,13 +98,13 @@ check1:
 			if rcv := x.RHS().Expr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
 				continue
 			}
-			break check1
+			break check0
 		}
 		return nil
 	}
 
 	// Check "distance <= (*ptr_ptr - start)".
-check2:
+check1:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryLessEq {
@@ -155,13 +134,13 @@ check2:
 				continue
 			}
 
-			break check2
+			break check1
 		}
 		return nil
 	}
 
 	// Check "length <= (end - *ptr_ptr)".
-check3:
+check2:
 	for {
 		for _, x := range q.facts {
 			if x.Operator() != t.IDXBinaryLessEq {
@@ -187,7 +166,7 @@ check3:
 				continue
 			}
 
-			break check3
+			break check2
 		}
 		return nil
 	}

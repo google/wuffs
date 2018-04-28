@@ -2939,10 +2939,6 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
     b_rend_src = b_rptr_src + len;
   }
 
-  if (!(a_dst.private_impl.bounds[0] != NULL)) {
-    status = WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
-    goto exit;
-  }
   if ((self->private_impl.f_n_bits >= 8) ||
       ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
     status = WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS;

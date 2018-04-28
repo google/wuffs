@@ -172,7 +172,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, bPrefix, aPrefix)
 			return nil
 		}
-		// TODO: io_reader.is_marked, not just io_writer.is_marked?
 		if isInDst(g.tm, n, t.IDLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.dst.limit" expression`)
 		}
@@ -190,7 +189,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: drop the "true" in the "if true", provided that the
 			// benchmark numbers improve.
 			len0, len1 := "", ""
-			if true || !n.BoundsCheckOptimized() {
+			if true {
 				len0 = aPrefix + "dst.private_impl.bounds[0] ?"
 				len1 = ": 0"
 			}
@@ -198,16 +197,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				".ptr = %sdst.private_impl.bounds[0], "+
 				".len = %s (size_t)(%swptr_dst - %sdst.private_impl.bounds[0]) %s, })",
 				aPrefix, len0, bPrefix, aPrefix, len1)
-			return nil
-		}
-		if isInDst(g.tm, n, t.IDIsMarked, 0) {
-			if pp == parenthesesMandatory {
-				b.writeb('(')
-			}
-			b.printf("%sdst.private_impl.bounds[0] != NULL", aPrefix)
-			if pp == parenthesesMandatory {
-				b.writeb(')')
-			}
 			return nil
 		}
 		if isInDst(g.tm, n, t.IDCopyFromReader32, 2) {

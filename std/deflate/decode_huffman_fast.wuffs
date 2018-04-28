@@ -20,11 +20,6 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	// TODO: make this a func pre-condition.
-	if not in.dst.is_marked() {
-		return error "bad argument"
-	}
-
 	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return error "internal error: inconsistent n_bits"
 	}
@@ -64,9 +59,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 	// for each. There are also up to 13 extra bits, or 2 bytes. Thus, each
 	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
 	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
-	while:loop(in.dst.available() >= 258) and (in.src.available() >= 12),
-		inv in.dst.is_marked(),
-	{
+	while:loop(in.dst.available() >= 258) and (in.src.available() >= 12) {
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
@@ -278,7 +271,6 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 		while true,
 			pre length <= 258,
 			pre in.dst.available() >= 258,
-			inv in.dst.is_marked(),
 		{
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > in.dst.since_mark().length() {
@@ -322,7 +314,6 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 				while true,
 					inv length <= 258,
 					inv in.dst.available() >= 258,
-					inv in.dst.is_marked(),
 				{
 					// TODO: copy_from_slice32 should probably update the
 					// "in.dst.available() >= 258" fact. It should certainly
@@ -350,7 +341,6 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			assert length <= 258
 			assert ((dist_minus_1 + 1) as base.u64) <= in.dst.since_mark().length()
 			assert in.dst.available() >= 258
-			assert in.dst.is_marked()
 
 			// We can therefore prove:
 			assert (dist_minus_1 + 1) > 0
