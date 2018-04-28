@@ -1769,11 +1769,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -1929,11 +1928,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2072,11 +2070,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_header(
   uint32_t v_i;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2166,11 +2163,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
   uint32_t v_gct_size;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2291,11 +2287,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
   uint8_t v_label;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2414,11 +2409,10 @@ static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
   uint8_t v_block_size;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2513,11 +2507,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
   bool v_not_netscape;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -2745,11 +2738,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   wuffs_gif__status v_z;
 
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
@@ -3075,11 +3067,10 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   uint64_t v_n_copied;
 
   uint8_t* b_wptr_dst = NULL;
-  uint8_t* b_wstart_dst = NULL;
-  uint8_t* b_wend_dst = NULL;
+  uint8_t* b_wstart_dst = a_dst.private_impl.bounds[0];
+  uint8_t* b_wend_dst = a_dst.private_impl.bounds[1];
   if (a_dst.private_impl.buf) {
     b_wptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
-    b_wstart_dst = b_wptr_dst;
     b_wend_dst = b_wptr_dst;
     if (!a_dst.private_impl.buf->closed) {
       uint64_t len = a_dst.private_impl.buf->len - a_dst.private_impl.buf->wi;
@@ -3093,11 +3084,10 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     }
   }
   uint8_t* b_rptr_src = NULL;
-  uint8_t* b_rstart_src = NULL;
-  uint8_t* b_rend_src = NULL;
+  uint8_t* b_rstart_src = a_src.private_impl.bounds[0];
+  uint8_t* b_rend_src = a_src.private_impl.bounds[1];
   if (a_src.private_impl.buf) {
     b_rptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-    b_rstart_src = b_rptr_src;
     uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
     wuffs_base__io_limit* lim;
     for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {

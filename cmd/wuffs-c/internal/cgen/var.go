@@ -97,8 +97,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.QID{t.IDBase, t.IDIOReader}:
 		if header {
 			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %srstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
+			b.printf("uint8_t* %srend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
 		}
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
@@ -106,8 +106,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
-			b.printf("%srstart_%s = %srptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
-
 			b.printf("uint64_t len = %s%s.private_impl.buf->wi - %s%s.private_impl.buf->ri;",
 				aPrefix, nameStr, aPrefix, nameStr)
 
@@ -126,8 +124,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	case t.QID{t.IDBase, t.IDIOWriter}:
 		if header {
 			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* %swstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
+			b.printf("uint8_t* %swend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
 		}
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
@@ -135,8 +133,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
-			b.printf("%swstart_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
-
 			b.printf("%swend_%s = %swptr_%s;", bPrefix, nameStr, bPrefix, nameStr)
 			b.printf("if (!%s%s.private_impl.buf->closed) {", aPrefix, nameStr)
 			b.printf("uint64_t len = %s%s.private_impl.buf->len - %s%s.private_impl.buf->wi;",
