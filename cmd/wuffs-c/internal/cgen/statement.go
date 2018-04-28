@@ -130,10 +130,39 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	case a.KIOBind:
 		n := n.IOBind()
+		inFields := n.InFields()
+
+		if g.currFunk.ioBinds > maxIOBinds || len(inFields) > maxIOBindInFields {
+			return fmt.Errorf("too many temporary variables required")
+		}
+		ioBindNum := g.currFunk.ioBinds
+		g.currFunk.ioBinds++
+
+		// TODO: do these variables need to be func-scoped (bigger scope)
+		// instead of block-scoped (smaller scope) if the coro_susp_point
+		// switch can jump past this initialization??
 		b.writes("{\n")
+		for i := 0; i < len(inFields); i++ {
+			e := inFields[i].Expr()
+			name := e.Ident().Str(g.tm)
+			for j := 0; j < 2; j++ {
+				b.printf("uint8_t* %s%d_bounds%d_%s = %s%s.private_impl.bounds[%d];\n",
+					oPrefix, ioBindNum, j, name, aPrefix, name, j)
+			}
+		}
+
 		for _, o := range n.Body() {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
+			}
+		}
+
+		for i := len(inFields) - 1; i >= 0; i-- {
+			e := inFields[i].Expr()
+			name := e.Ident().Str(g.tm)
+			for j := 1; j >= 0; j-- {
+				b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s;\n",
+					aPrefix, name, j, oPrefix, ioBindNum, j, name)
 			}
 		}
 		b.writes("}\n")

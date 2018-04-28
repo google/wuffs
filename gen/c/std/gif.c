@@ -2956,6 +2956,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       while (true) {
         wuffs_base__io_reader__mark(&a_src, b_rptr_src);
         {
+          uint8_t* o_0_bounds0_src = a_src.private_impl.bounds[0];
+          uint8_t* o_0_bounds1_src = a_src.private_impl.bounds[1];
           v_r = a_src;
           {
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
@@ -2980,6 +2982,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             }
             v_z = t_14;
           }
+          a_src.private_impl.bounds[1] = o_0_bounds1_src;
+          a_src.private_impl.bounds[0] = o_0_bounds0_src;
         }
         if (v_z == 0) {
           goto label_1_break;

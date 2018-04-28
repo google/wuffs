@@ -52,6 +52,7 @@ const (
 	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
 	iPrefix = "i_" // Iterate variable.
+	oPrefix = "o_" // Temporary io_bind variable.
 	tPrefix = "t_" // Temporary local variable.
 	vPrefix = "v_" // Local variable.
 )
@@ -145,7 +146,11 @@ const (
 	priOnly
 )
 
-const maxTemp = 10000
+const (
+	maxIOBinds        = 100
+	maxIOBindInFields = 100
+	maxTemp           = 10000
+)
 
 type status struct {
 	name    string
