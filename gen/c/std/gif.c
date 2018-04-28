@@ -49,6 +49,7 @@
 typedef uint64_t wuffs_base__flicks;
 
 #define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
+#define WUFFS_BASE__FLICKS_PER_MILLISECOND ((uint64_t)705600)
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
