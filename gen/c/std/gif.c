@@ -2955,32 +2955,32 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       }
       while (true) {
         wuffs_base__io_reader__mark(&a_src, b_rptr_src);
-        // io_bind placeholder {
-        v_r = a_src;
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
-          if (a_src.private_impl.buf) {
-            size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
-                                     a_src.private_impl.buf->ri);
-            a_src.private_impl.buf->ri += n;
-            wuffs_base__io_limit* lim;
-            for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
-              if (lim->ptr_to_len) {
-                *lim->ptr_to_len -= n;
+          v_r = a_src;
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
+            if (a_src.private_impl.buf) {
+              size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
+                                       a_src.private_impl.buf->ri);
+              a_src.private_impl.buf->ri += n;
+              wuffs_base__io_limit* lim;
+              for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
+                if (lim->ptr_to_len) {
+                  *lim->ptr_to_len -= n;
+                }
               }
             }
+            uint64_t l_rlimit0 = v_block_size;
+            wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
+                &self->private_impl.f_lzw, a_dst,
+                wuffs_base__io_reader__limit(&v_r, &l_rlimit0));
+            if (a_src.private_impl.buf) {
+              b_rptr_src =
+                  a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
+            }
+            v_z = t_14;
           }
-          uint64_t l_rlimit0 = v_block_size;
-          wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
-              &self->private_impl.f_lzw, a_dst,
-              wuffs_base__io_reader__limit(&v_r, &l_rlimit0));
-          if (a_src.private_impl.buf) {
-            b_rptr_src =
-                a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-          }
-          v_z = t_14;
         }
-        // io_bind placeholder }
         if (v_z == 0) {
           goto label_1_break;
         }

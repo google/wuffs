@@ -130,13 +130,13 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	case a.KIOBind:
 		n := n.IOBind()
-		b.writes("// io_bind placeholder {\n")
+		b.writes("{\n")
 		for _, o := range n.Body() {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
 			}
 		}
-		b.writes("// io_bind placeholder }\n")
+		b.writes("}\n")
 		return nil
 
 	case a.KIf:
