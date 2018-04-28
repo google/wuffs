@@ -161,6 +161,15 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isInSrc(g.tm, n, t.IDLimit, 1) {
 			return fmt.Errorf(`TODO: cgen an "in.src.limit" expression`)
 		}
+		if isInSrc(g.tm, n, t.IDSetLimit, 1) {
+			b.printf("wuffs_base__io_reader__set_limit(&%ssrc,", aPrefix)
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			// TODO: update the bPrefix variables?
+			return nil
+		}
 		if isInSrc(g.tm, n, t.IDMark, 0) {
 			b.printf("wuffs_base__io_reader__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil

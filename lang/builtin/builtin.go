@@ -79,7 +79,8 @@ var Types = []string{
 }
 
 var Funcs = []string{
-	// TODO: some methods like "mark" should probably have a trailing "!".
+	// TODO: some methods like "mark" and "set_limit" should probably have a
+	// trailing "!".
 
 	// TODO: refine n's type from u32 to u32[..8], u32[..16], etc.
 	"u8.high_bits(n u32)(ret u8)",
@@ -105,6 +106,7 @@ var Funcs = []string{
 
 	"io_reader.available()(ret u64)",
 	"io_reader.limit(l u64)(ret io_reader)",
+	"io_reader.set_limit(l u64)()",
 	"io_reader.mark()()",
 	"io_reader.since_mark()(ret slice u8)",
 	"io_reader.skip32?(n u32)()",
@@ -125,6 +127,7 @@ var Funcs = []string{
 	"io_writer.copy_from_slice(s slice u8)(ret u64)",
 	"io_writer.copy_from_slice32(s slice u8, length u32)(ret u32)",
 	"io_writer.limit(l u64)(ret io_writer)",
+	"io_writer.set_limit(l u64)()",
 	"io_writer.mark()()",
 	"io_writer.since_mark()(ret slice u8)",
 

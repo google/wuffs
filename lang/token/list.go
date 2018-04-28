@@ -413,6 +413,7 @@ const (
 	IDLowBits           = ID(0xCE)
 	IDHighBits          = ID(0xCF)
 	IDUnreadU8          = ID(0xD0)
+	IDSetLimit          = ID(0xD1)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -586,6 +587,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
 	IDUnreadU8:          "unread_u8",
+	IDSetLimit:          "set_limit",
 }
 
 var builtInsByName = map[string]ID{}
