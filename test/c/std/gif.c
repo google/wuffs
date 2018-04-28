@@ -214,11 +214,13 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     num_iters++;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     if (wlimit) {
+      wuffs_base__io_writer__set_limit(&got_writer, wlimit);
       wlim = wlimit;
       got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
+      wuffs_base__io_reader__set_limit(&src_reader, rlimit);
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
@@ -435,11 +437,13 @@ bool do_test_wuffs_gif_decode(const char* filename,
     num_iters++;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     if (wlimit) {
+      wuffs_base__io_writer__set_limit(&got_writer, wlimit);
       wlim = wlimit;
       got_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
+      wuffs_base__io_reader__set_limit(&src_reader, rlimit);
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
     }

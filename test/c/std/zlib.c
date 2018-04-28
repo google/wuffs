@@ -89,11 +89,13 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
+      wuffs_base__io_writer__set_limit(&dst_writer, wlimit);
       wlim = wlimit;
       dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
+      wuffs_base__io_reader__set_limit(&src_reader, rlimit);
       rlim = rlimit;
       src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
@@ -136,12 +138,12 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
     got.wi = 0;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     src.ri = 0;
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
     int i;
     for (i = 0; i < 2; i++) {
+      wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
       wuffs_zlib__status want = 0;
       if (i == 0) {
         if (end_limit == 0) {
@@ -152,6 +154,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
           return false;
         }
         uint64_t rlim = src.wi - (uint64_t)(end_limit);
+        wuffs_base__io_reader__set_limit(&src_reader, rlim);
         src_reader.private_impl.limit.ptr_to_len = &rlim;
         want = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
       } else {

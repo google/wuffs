@@ -187,15 +187,18 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    wuffs_base__io_buffer* src,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
-  // TODO: don't ignore wlimit and rlimit.
+  uint64_t len = src->wi - src->ri;
+  if (rlimit) {
+    len = wuffs_base__u64__min(len, rlimit);
+  }
   wuffs_crc32__ieee_hasher checksum;
   wuffs_crc32__ieee_hasher__initialize(&checksum, WUFFS_VERSION, 0);
   global_wuffs_crc32_unused_u32 =
       wuffs_crc32__ieee_hasher__update(&checksum, ((wuffs_base__slice_u8){
                                                       .ptr = src->ptr + src->ri,
-                                                      .len = src->wi - src->ri,
+                                                      .len = len,
                                                   }));
-  src->ri = src->wi;
+  src->ri += len;
   return NULL;
 }
 
