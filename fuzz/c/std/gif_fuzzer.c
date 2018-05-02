@@ -38,7 +38,8 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/std/gif.c"
 #include "../fuzzlib/fuzzlib.c"
 
-void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+  const char* ret = NULL;
   void* pixbuf = NULL;
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
@@ -50,23 +51,31 @@ void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
     wuffs_base__image_config ic = {{0}};
     s = wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
-    if (s || !wuffs_base__image_config__is_valid(&ic)) {
+    if (s) {
+      ret = wuffs_gif__status__string(s);
+      goto exit;
+    }
+    if (!wuffs_base__image_config__is_valid(&ic)) {
+      ret = "invalid image_config";
       goto exit;
     }
 
     size_t pixbuf_size = wuffs_base__image_config__pixbuf_size(&ic);
     // Don't try to allocate more than 64 MiB.
     if (pixbuf_size > 64 * 1024 * 1024) {
+      ret = "image too large";
       goto exit;
     }
     pixbuf = malloc(pixbuf_size);
     if (!pixbuf) {
+      ret = "out of memory";
       goto exit;
     }
 
     wuffs_base__io_buffer dst = {.ptr = (uint8_t*)(pixbuf), .len = pixbuf_size};
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
 
+    bool seen_ok = false;
     while (true) {
       // TODO: handle the frame rect being larger than the image rect. The
       // GIF89a spec doesn't disallow this and the Wuffs code tolerates it, in
@@ -76,8 +85,13 @@ void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       dst.wi = 0;
       s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
       if (s) {
-        break;
+        if ((s == WUFFS_GIF__SUSPENSION_END_OF_DATA) && seen_ok) {
+          s = WUFFS_GIF__STATUS_OK;
+        }
+        ret = wuffs_gif__status__string(s);
+        goto exit;
       }
+      seen_ok = true;
     }
   }
 
@@ -85,4 +99,5 @@ exit:
   if (pixbuf) {
     free(pixbuf);
   }
+  return ret;
 }

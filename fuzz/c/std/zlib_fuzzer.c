@@ -40,7 +40,8 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/std/zlib.c"
 #include "../fuzzlib/fuzzlib.c"
 
-void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+  const char* ret = NULL;
   wuffs_zlib__status s;
   wuffs_zlib__decoder dec;
   wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
@@ -59,6 +60,7 @@ void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     dst.wi = 0;
     s = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
     if (s != WUFFS_ZLIB__SUSPENSION_SHORT_WRITE) {
+      ret = wuffs_zlib__status__string(s);
       break;
     }
     if (dst.wi == 0) {
@@ -66,4 +68,5 @@ void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       intentional_segfault();
     }
   }
+  return ret;
 }

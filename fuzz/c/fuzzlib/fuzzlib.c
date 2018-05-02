@@ -26,13 +26,9 @@ void intentional_segfault() {
   *intentional_segfault_ptr = 0;
 }
 
-void fuzz(wuffs_base__io_reader src_reader, uint32_t hash);
+const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Hash input as per https://en.wikipedia.org/wiki/Jenkins_hash_function
   size_t i = 0;
   uint32_t hash = 0;
@@ -50,7 +46,15 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
                                .wi = size,
                                .ri = 0,
                                .closed = true};
-  fuzz(wuffs_base__io_buffer__reader(&src), hash);
+  return fuzz(wuffs_base__io_buffer__reader(&src), hash);
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  llvmFuzzerTestOneInput(data, size);
   return 0;
 }
 
@@ -69,33 +73,38 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 int main(int argc, char** argv) {
   int i;
   for (i = 1; i < argc; i++) {
-    printf("Processing %s\n", argv[i]);
+    printf("%-50s", argv[i]);
 
     struct stat z;
     int fd = open(argv[i], O_RDONLY, 0);
     if (fd == -1) {
+      printf("\n");
       fprintf(stderr, "FAIL: open: %s\n", strerror(errno));
       return 1;
     }
     if (fstat(fd, &z)) {
+      printf("\n");
       fprintf(stderr, "FAIL: fstat: %s\n", strerror(errno));
       return 1;
     }
     if ((z.st_size < 0) || (0x7FFFFFFF < z.st_size)) {
+      printf("\n");
       fprintf(stderr, "FAIL: file size out of bounds");
       return 1;
     }
     size_t n = z.st_size;
     void* data = mmap(NULL, n, PROT_READ, MAP_SHARED, fd, 0);
     if (data == MAP_FAILED) {
+      printf("\n");
       fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
       return 1;
     }
 
-    int fuzz = LLVMFuzzerTestOneInput((const uint8_t*)(data), n);
-    if (fuzz) {
-      return fuzz;
+    const char* msg = llvmFuzzerTestOneInput((const uint8_t*)(data), n);
+    if (!msg) {
+      msg = "(null)";
     }
+    printf(" %s\n", msg);
 
     if (munmap(data, n)) {
       fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
