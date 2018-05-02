@@ -23,8 +23,7 @@
 
 template short_read(string qPKGPREFIXq, string qnameq) {
 short_read_qnameq:
-  if (a_qnameq.private_impl.buf && a_qnameq.private_impl.buf->closed &&
-      !a_qnameq.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_qnameq)) {
     status = qPKGPREFIXqERROR_UNEXPECTED_EOF;
     goto exit;
   }

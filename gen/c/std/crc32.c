@@ -1361,6 +1361,11 @@ static inline bool wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
          (buf.wi >= buf.ri);
 }
 
+static inline bool wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
+  wuffs_base__io_buffer* buf = o.private_impl.buf;
+  return buf && buf->closed && (buf->ptr + buf->wi == o.private_impl.bounds[1]);
+}
+
 static inline bool wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it

@@ -1469,6 +1469,11 @@ static inline bool wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
          (buf.wi >= buf.ri);
 }
 
+static inline bool wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
+  wuffs_base__io_buffer* buf = o.private_impl.buf;
+  return buf && buf->closed && (buf->ptr + buf->wi == o.private_impl.bounds[1]);
+}
+
 static inline bool wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it
@@ -1963,8 +1968,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2095,8 +2099,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2182,8 +2185,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2303,8 +2305,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2408,8 +2409,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2498,8 +2498,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -2714,8 +2713,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -3026,8 +3024,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
@@ -3250,8 +3247,7 @@ exit:
   return status;
 
 short_read_src:
-  if (a_src.private_impl.buf && a_src.private_impl.buf->closed &&
-      !a_src.private_impl.limit.ptr_to_len) {
+  if (wuffs_base__io_reader__is_eof(a_src)) {
     status = WUFFS_GIF__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
