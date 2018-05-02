@@ -2026,6 +2026,11 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -2047,6 +2052,11 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }

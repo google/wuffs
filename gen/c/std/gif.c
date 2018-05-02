@@ -1872,6 +1872,11 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
         len = *lim->ptr_to_len;
       }
     }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
+    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -2040,6 +2045,11 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
         len = *lim->ptr_to_len;
       }
     }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
+    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -2191,6 +2201,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_header(
         len = *lim->ptr_to_len;
       }
     }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
+    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -2292,6 +2307,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -2426,6 +2446,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
         len = *lim->ptr_to_len;
       }
     }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
+    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -2557,6 +2582,11 @@ static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
         len = *lim->ptr_to_len;
       }
     }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
+    }
     b_rend_src = b_rptr_src + len;
   }
 
@@ -2663,6 +2693,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -2903,6 +2938,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -3253,6 +3293,11 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -3274,6 +3319,11 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }

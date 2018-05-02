@@ -1881,6 +1881,11 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -2029,6 +2034,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -2238,6 +2248,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -2259,6 +2274,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -2490,6 +2510,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -3057,6 +3082,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -3078,6 +3108,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }
@@ -3442,6 +3477,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           len = *lim->ptr_to_len;
         }
       }
+      if (b_wend_dst != b_wptr_dst + len) {
+        status = 102;
+        self->private_impl.status = status;
+        return status;
+      }
       b_wend_dst = b_wptr_dst + len;
     }
   }
@@ -3463,6 +3503,11 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
       if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
         len = *lim->ptr_to_len;
       }
+    }
+    if (b_rend_src != b_rptr_src + len) {
+      status = 101;
+      self->private_impl.status = status;
+      return status;
     }
     b_rend_src = b_rptr_src + len;
   }

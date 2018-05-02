@@ -125,6 +125,10 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			b.printf("}\n")
 			b.printf("}\n")
 
+			// TODO: remove this temporary consistency check.
+			b.printf("if (%srend_%s != %srptr_%s + len) { status = 101; self->private_impl.status = status; return status; }",
+				bPrefix, nameStr, bPrefix, nameStr)
+
 			b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
 		}
 
@@ -165,6 +169,10 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 			b.printf("len = *lim->ptr_to_len;\n")
 			b.printf("}\n")
 			b.printf("}\n")
+
+			// TODO: remove this temporary consistency check.
+			b.printf("if (%swend_%s != %swptr_%s + len) { status = 102; self->private_impl.status = status; return status; }",
+				bPrefix, nameStr, bPrefix, nameStr)
 
 			b.printf("%swend_%s = %swptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
 			b.printf("}\n")
