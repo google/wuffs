@@ -2071,14 +2071,10 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
       {
         if (a_dst.private_impl.buf) {
-          size_t n = b_wptr_dst -
-                     (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
-          a_dst.private_impl.buf->wi += n;
+          a_dst.private_impl.buf->wi = b_wptr_dst - a_dst.private_impl.buf->ptr;
         }
         if (a_src.private_impl.buf) {
-          size_t n = b_rptr_src -
-                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-          a_src.private_impl.buf->ri += n;
+          a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
         }
         wuffs_zlib__status t_2 = wuffs_deflate__decoder__decode(
             &self->private_impl.f_flate, a_dst, a_src);
@@ -2156,16 +2152,12 @@ suspend:
   goto exit;
 exit:
   if (a_dst.private_impl.buf) {
-    size_t n =
-        b_wptr_dst - (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
-    a_dst.private_impl.buf->wi += n;
+    a_dst.private_impl.buf->wi = b_wptr_dst - a_dst.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }

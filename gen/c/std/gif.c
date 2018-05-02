@@ -1863,9 +1863,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     if (a_src.private_impl.buf) {
-      size_t n = b_rptr_src -
-                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-      a_src.private_impl.buf->ri += n;
+      a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     }
     status = wuffs_gif__decoder__decode_header(self, a_src);
     if (a_src.private_impl.buf) {
@@ -1876,9 +1874,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
     if (a_src.private_impl.buf) {
-      size_t n = b_rptr_src -
-                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-      a_src.private_impl.buf->ri += n;
+      a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     }
     status = wuffs_gif__decoder__decode_lsd(self, a_src);
     if (a_src.private_impl.buf) {
@@ -1903,9 +1899,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
       }
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (a_src.private_impl.buf) {
-        size_t n = b_rptr_src -
-                   (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-        a_src.private_impl.buf->ri += n;
+        a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
       }
       status = wuffs_gif__decoder__decode_extension(self, a_src);
       if (a_src.private_impl.buf) {
@@ -1934,9 +1928,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2012,9 +2004,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
       if (self->private_impl.f_block_type == 33) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         if (a_src.private_impl.buf) {
-          size_t n = b_rptr_src -
-                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-          a_src.private_impl.buf->ri += n;
+          a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
         }
         status = wuffs_gif__decoder__decode_extension(self, a_src);
         if (a_src.private_impl.buf) {
@@ -2026,9 +2016,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
       } else if (self->private_impl.f_block_type == 44) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (a_src.private_impl.buf) {
-          size_t n = b_rptr_src -
-                     (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-          a_src.private_impl.buf->ri += n;
+          a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
         }
         status = wuffs_gif__decoder__decode_id(self, a_dst, a_src);
         if (a_src.private_impl.buf) {
@@ -2065,9 +2053,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2152,9 +2138,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2272,9 +2256,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2334,9 +2316,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
     } else if (v_label == 255) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
       if (a_src.private_impl.buf) {
-        size_t n = b_rptr_src -
-                   (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-        a_src.private_impl.buf->ri += n;
+        a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
       }
       status = wuffs_gif__decoder__decode_ae(self, a_src);
       if (a_src.private_impl.buf) {
@@ -2350,9 +2330,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_extension(
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
     if (a_src.private_impl.buf) {
-      size_t n = b_rptr_src -
-                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-      a_src.private_impl.buf->ri += n;
+      a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     }
     status = wuffs_gif__decoder__skip_blocks(self, a_src);
     if (a_src.private_impl.buf) {
@@ -2376,9 +2354,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2465,9 +2441,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2651,9 +2625,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
   label_0_break:;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
     if (a_src.private_impl.buf) {
-      size_t n = b_rptr_src -
-                 (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-      a_src.private_impl.buf->ri += n;
+      a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     }
     status = wuffs_gif__decoder__skip_blocks(self, a_src);
     if (a_src.private_impl.buf) {
@@ -2680,9 +2652,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -2931,9 +2901,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                   : 0);
           {
             if (a_src.private_impl.buf) {
-              size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
-                                       a_src.private_impl.buf->ri);
-              a_src.private_impl.buf->ri += n;
+              a_src.private_impl.buf->ri =
+                  b_rptr_src - a_src.private_impl.buf->ptr;
             }
             wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
                 &self->private_impl.f_lzw, a_dst, a_src);
@@ -2986,9 +2955,7 @@ suspend:
   goto exit;
 exit:
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
@@ -3202,16 +3169,12 @@ suspend:
   goto exit;
 exit:
   if (a_dst.private_impl.buf) {
-    size_t n =
-        b_wptr_dst - (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
-    a_dst.private_impl.buf->wi += n;
+    a_dst.private_impl.buf->wi = b_wptr_dst - a_dst.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
   if (a_src.private_impl.buf) {
-    size_t n =
-        b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
-    a_src.private_impl.buf->ri += n;
+    a_src.private_impl.buf->ri = b_rptr_src - a_src.private_impl.buf->ptr;
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }

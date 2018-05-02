@@ -167,9 +167,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 	case t.QID{t.IDBase, t.IDIOReader}:
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("size_t n = %srptr_%s - (%s%s.private_impl.buf->ptr + %s%s.private_impl.buf->ri);",
-			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("%s%s.private_impl.buf->ri += n;", aPrefix, nameStr)
+		b.printf("%s%s.private_impl.buf->ri = %srptr_%s - %s%s.private_impl.buf->ptr;",
+			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
 
 		if footer {
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
@@ -181,9 +180,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 	case t.QID{t.IDBase, t.IDIOWriter}:
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("size_t n = %swptr_%s - (%s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi);",
-			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-		b.printf("%s%s.private_impl.buf->wi += n;", aPrefix, nameStr)
+		b.printf("%s%s.private_impl.buf->wi = %swptr_%s - %s%s.private_impl.buf->ptr;",
+			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
 
 		if footer {
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
