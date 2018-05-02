@@ -744,10 +744,10 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			// TODO: don't hard-code a_dst or v_r.
-			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %sr);\n",
+			// TODO: don't hard-code a_dst or a_src.
+			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %ssrc);\n",
 				g.pkgPrefix, tPrefix, temp,
-				g.pkgPrefix, aPrefix, vPrefix)
+				g.pkgPrefix, aPrefix, aPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 				return err
 			}

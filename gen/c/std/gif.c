@@ -2711,7 +2711,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   uint32_t v_i;
   uint8_t v_lw;
   uint64_t v_block_size;
-  wuffs_base__io_reader v_r;
   wuffs_gif__status v_z;
 
   uint8_t* b_rptr_src = NULL;
@@ -2735,7 +2734,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     v_i = self->private_impl.c_decode_id[0].v_i;
     v_lw = self->private_impl.c_decode_id[0].v_lw;
     v_block_size = self->private_impl.c_decode_id[0].v_block_size;
-    v_r = ((wuffs_base__io_reader){});
     v_z = self->private_impl.c_decode_id[0].v_z;
   } else {
   }
@@ -2931,15 +2929,23 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
               a_src.private_impl.buf
                   ? (b_rptr_src - a_src.private_impl.buf->ptr)
                   : 0);
-          v_r = a_src;
           {
             if (a_src.private_impl.buf) {
               size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
                                        a_src.private_impl.buf->ri);
               a_src.private_impl.buf->ri += n;
             }
+            if (a_src.private_impl.buf) {
+              size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
+                                       a_src.private_impl.buf->ri);
+              a_src.private_impl.buf->ri += n;
+            }
             wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
-                &self->private_impl.f_lzw, a_dst, v_r);
+                &self->private_impl.f_lzw, a_dst, a_src);
+            if (a_src.private_impl.buf) {
+              b_rptr_src =
+                  a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
+            }
             if (a_src.private_impl.buf) {
               b_rptr_src =
                   a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;

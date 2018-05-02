@@ -321,11 +321,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")\n")
 			return nil
 		}
-		if isThatMethod(g.tm, n, t.IDMark, 0) {
-			// TODO: don't hard-code v_r or b_rptr_src.
-			b.printf("wuffs_base__io_reader__mark(&v_r, b_rptr_src)")
-			return nil
-		}
 		if isThatMethod(g.tm, n, g.tm.ByName("initialize"), 5) {
 			// TODO: don't hard-code a_dst.
 			b.printf("wuffs_base__image_config__initialize(a_dst")
