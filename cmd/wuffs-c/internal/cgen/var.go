@@ -114,22 +114,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 			b.printf("%srstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
 			b.printf("%srend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
-
-			b.printf("uint64_t len = %s%s.private_impl.buf->wi - %s%s.private_impl.buf->ri;",
-				aPrefix, nameStr, aPrefix, nameStr)
-
-			b.printf("wuffs_base__io_limit* lim;\n")
-			b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
-			b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {\n")
-			b.printf("len = *lim->ptr_to_len;\n")
-			b.printf("}\n")
-			b.printf("}\n")
-
-			// TODO: remove this temporary consistency check.
-			b.printf("if (%srend_%s != %srptr_%s + len) { status = 101; self->private_impl.status = status; return status; }",
-				bPrefix, nameStr, bPrefix, nameStr)
-
-			b.printf("%srend_%s = %srptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
 		}
 
 		b.printf("}\n")
@@ -158,24 +142,6 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 
 			b.printf("%swstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
 			b.printf("%swend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
-
-			b.printf("if (!%s%s.private_impl.buf->closed) {", aPrefix, nameStr)
-			b.printf("uint64_t len = %s%s.private_impl.buf->len - %s%s.private_impl.buf->wi;",
-				aPrefix, nameStr, aPrefix, nameStr)
-
-			b.printf("wuffs_base__io_limit* lim;\n")
-			b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
-			b.printf("if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {\n")
-			b.printf("len = *lim->ptr_to_len;\n")
-			b.printf("}\n")
-			b.printf("}\n")
-
-			// TODO: remove this temporary consistency check.
-			b.printf("if (%swend_%s != %swptr_%s + len) { status = 102; self->private_impl.status = status; return status; }",
-				bPrefix, nameStr, bPrefix, nameStr)
-
-			b.printf("%swend_%s = %swptr_%s + len;", bPrefix, nameStr, bPrefix, nameStr)
-			b.printf("}\n")
 		}
 
 		b.printf("}\n")
@@ -205,13 +171,6 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.private_impl.buf->ri += n;", aPrefix, nameStr)
 
-		b.printf("wuffs_base__io_limit* lim;\n")
-		b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
-		b.printf("if (lim->ptr_to_len) {\n")
-		b.printf("*lim->ptr_to_len -= n;\n")
-		b.printf("}\n")
-		b.printf("}\n")
-
 		if footer {
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
@@ -225,13 +184,6 @@ func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer 
 		b.printf("size_t n = %swptr_%s - (%s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi);",
 			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 		b.printf("%s%s.private_impl.buf->wi += n;", aPrefix, nameStr)
-
-		b.printf("wuffs_base__io_limit* lim;\n")
-		b.printf("for (lim = &%s%s.private_impl.limit; lim; lim = lim->next) {\n", aPrefix, nameStr)
-		b.printf("if (lim->ptr_to_len) {\n")
-		b.printf("*lim->ptr_to_len -= n;\n")
-		b.printf("}\n")
-		b.printf("}\n")
 
 		if footer {
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)

@@ -2018,21 +2018,6 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     b_wstart_dst = a_dst.private_impl.bounds[0];
     b_wend_dst = a_dst.private_impl.bounds[1];
-    if (!a_dst.private_impl.buf->closed) {
-      uint64_t len = a_dst.private_impl.buf->len - a_dst.private_impl.buf->wi;
-      wuffs_base__io_limit* lim;
-      for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
-        if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-          len = *lim->ptr_to_len;
-        }
-      }
-      if (b_wend_dst != b_wptr_dst + len) {
-        status = 102;
-        self->private_impl.status = status;
-        return status;
-      }
-      b_wend_dst = b_wptr_dst + len;
-    }
   }
   uint8_t* b_rptr_src = NULL;
   uint8_t* b_rstart_src = NULL;
@@ -2046,19 +2031,6 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     b_rstart_src = a_src.private_impl.bounds[0];
     b_rend_src = a_src.private_impl.bounds[1];
-    uint64_t len = a_src.private_impl.buf->wi - a_src.private_impl.buf->ri;
-    wuffs_base__io_limit* lim;
-    for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len && (len > *lim->ptr_to_len)) {
-        len = *lim->ptr_to_len;
-      }
-    }
-    if (b_rend_src != b_rptr_src + len) {
-      status = 101;
-      self->private_impl.status = status;
-      return status;
-    }
-    b_rend_src = b_rptr_src + len;
   }
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
@@ -2217,23 +2189,11 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           size_t n = b_wptr_dst -
                      (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
           a_dst.private_impl.buf->wi += n;
-          wuffs_base__io_limit* lim;
-          for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
-            }
-          }
         }
         if (a_src.private_impl.buf) {
           size_t n = b_rptr_src -
                      (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
           a_src.private_impl.buf->ri += n;
-          wuffs_base__io_limit* lim;
-          for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
-            if (lim->ptr_to_len) {
-              *lim->ptr_to_len -= n;
-            }
-          }
         }
         wuffs_gzip__status t_8 = wuffs_deflate__decoder__decode(
             &self->private_impl.f_flate, a_dst, a_src);
@@ -2355,12 +2315,6 @@ exit:
     size_t n =
         b_wptr_dst - (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
     a_dst.private_impl.buf->wi += n;
-    wuffs_base__io_limit* lim;
-    for (lim = &a_dst.private_impl.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wstart_dst);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_dst);
   }
@@ -2368,12 +2322,6 @@ exit:
     size_t n =
         b_rptr_src - (a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri);
     a_src.private_impl.buf->ri += n;
-    wuffs_base__io_limit* lim;
-    for (lim = &a_src.private_impl.limit; lim; lim = lim->next) {
-      if (lim->ptr_to_len) {
-        *lim->ptr_to_len -= n;
-      }
-    }
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rstart_src);
     WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_rend_src);
   }
