@@ -239,6 +239,8 @@ static inline bool wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
 
 static inline bool wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
+  // Note: if making this function public (i.e. moving it to base-header.h), it
+  // also needs to allow NULL (i.e. implicit, callee-calculated) bounds.
   return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
                 (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
                 (o.private_impl.bounds[1] <= buf->ptr + buf->len))
@@ -248,6 +250,8 @@ static inline bool wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
 
 static inline bool wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
+  // Note: if making this function public (i.e. moving it to base-header.h), it
+  // also needs to allow NULL (i.e. implicit, callee-calculated) bounds.
   return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
                 (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
                 (o.private_impl.bounds[1] <= buf->ptr + buf->len))

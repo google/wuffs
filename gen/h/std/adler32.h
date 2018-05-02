@@ -571,6 +571,9 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__io_buffer* buf;
+    // The bounds values are typically NULL, when created by the Wuffs public
+    // API. NULL means that the callee substitutes the implicit bounds derived
+    // from buf.
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
   } private_impl;
@@ -581,6 +584,9 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__io_buffer* buf;
+    // The bounds values are typically NULL, when created by the Wuffs public
+    // API. NULL means that the callee substitutes the implicit bounds derived
+    // from buf.
     uint8_t* bounds[2];
     wuffs_base__io_limit limit;
   } private_impl;
@@ -589,22 +595,14 @@ typedef struct {
 static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
-  if (buf) {
-    ret.private_impl.buf = buf;
-    ret.private_impl.bounds[0] = buf->ptr + buf->ri;
-    ret.private_impl.bounds[1] = buf->ptr + buf->wi;
-  }
+  ret.private_impl.buf = buf;
   return ret;
 }
 
 static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_writer ret = ((wuffs_base__io_writer){});
-  if (buf) {
-    ret.private_impl.buf = buf;
-    ret.private_impl.bounds[0] = buf->ptr + buf->wi;
-    ret.private_impl.bounds[1] = buf->ptr + buf->len;
-  }
+  ret.private_impl.buf = buf;
   return ret;
 }
 
