@@ -392,16 +392,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   return n;
 }
 
-// TODO: delete.
-static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
-    wuffs_base__io_reader* o,
-    uint64_t* ptr_to_len) {
-  wuffs_base__io_reader ret = *o;
-  ret.private_impl.limit.ptr_to_len = ptr_to_len;
-  ret.private_impl.limit.next = &o->private_impl.limit;
-  return ret;
-}
-
 static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
     wuffs_base__io_reader* o,
     uint64_t limit) {

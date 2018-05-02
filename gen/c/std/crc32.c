@@ -555,17 +555,6 @@ typedef struct {
   bool closed;   // No further writes are expected.
 } wuffs_base__io_buffer;
 
-// wuffs_base__io_limit provides a limited view of a 1-dimensional byte stream:
-// its first N bytes. That N can be greater than a buffer's current read or
-// write capacity. N decreases naturally over time as bytes are read from or
-// written to the stream.
-//
-// A value with all fields NULL or zero is a valid, unlimited view.
-typedef struct wuffs_base__io_limit {
-  uint64_t* ptr_to_len;               // Pointer to N.
-  struct wuffs_base__io_limit* next;  // Linked list of limits.
-} wuffs_base__io_limit;
-
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
@@ -575,7 +564,6 @@ typedef struct {
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
     uint8_t* bounds[2];
-    wuffs_base__io_limit limit;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -588,7 +576,6 @@ typedef struct {
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
     uint8_t* bounds[2];
-    wuffs_base__io_limit limit;
   } private_impl;
 } wuffs_base__io_writer;
 
@@ -1514,16 +1501,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
     *ptr_wptr += n;
   }
   return n;
-}
-
-// TODO: delete.
-static inline wuffs_base__io_reader wuffs_base__io_reader__limit(
-    wuffs_base__io_reader* o,
-    uint64_t* ptr_to_len) {
-  wuffs_base__io_reader ret = *o;
-  ret.private_impl.limit.ptr_to_len = ptr_to_len;
-  ret.private_impl.limit.next = &o->private_impl.limit;
-  return ret;
 }
 
 static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(

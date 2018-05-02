@@ -69,20 +69,14 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
   wuffs_gzip__decoder dec;
   wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
-  uint64_t wlim = 0;
-  uint64_t rlim = 0;
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
       wuffs_base__io_writer__set_limit(&dst_writer, wlimit);
-      wlim = wlimit;
-      dst_writer.private_impl.limit.ptr_to_len = &wlim;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
       wuffs_base__io_reader__set_limit(&src_reader, rlimit);
-      rlim = rlimit;
-      src_reader.private_impl.limit.ptr_to_len = &rlim;
     }
 
     wuffs_gzip__status s =
@@ -139,12 +133,10 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
           FAIL("end_limit=%d: not enough source data", end_limit);
           return false;
         }
-        uint64_t rlim = src.wi - (uint64_t)(end_limit);
-        wuffs_base__io_reader__set_limit(&src_reader, rlim);
-        src_reader.private_impl.limit.ptr_to_len = &rlim;
+        wuffs_base__io_reader__set_limit(&src_reader,
+                                         src.wi - (uint64_t)(end_limit));
         want = WUFFS_GZIP__SUSPENSION_SHORT_READ;
       } else {
-        src_reader.private_impl.limit.ptr_to_len = NULL;
         want = (bad_checksum && !ignore_checksum)
                    ? WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH
                    : WUFFS_GZIP__STATUS_OK;
