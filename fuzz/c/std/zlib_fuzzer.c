@@ -23,7 +23,7 @@ such as https://github.com/google/oss-fuzz calling LLVMFuzzerTestOneInput.
 When working on the fuzz implementation, or as a sanity check, defining
 WUFFS_CONFIG__FUZZLIB_MAIN will let you manually run fuzz over a set of files:
 
-g++ -DWUFFS_CONFIG__FUZZLIB_MAIN zlib_fuzzer.cc
+gcc -DWUFFS_CONFIG__FUZZLIB_MAIN zlib_fuzzer.c
 ./a.out ../../../test/data/*.zlib
 rm -f ./a.out
 
@@ -38,7 +38,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../gen/c/std/adler32.c"
 #include "../../../gen/c/std/deflate.c"
 #include "../../../gen/c/std/zlib.c"
-#include "../fuzzlib/fuzzlib.cc"
+#include "../fuzzlib/fuzzlib.c"
 
 void fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   wuffs_zlib__status s;

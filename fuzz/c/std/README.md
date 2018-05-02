@@ -1,5 +1,5 @@
 This directory contains multiple programs to fuzz Wuffs' implementations of
-various codecs. For example, `gif_fuzzer.cc` is a program to fuzz Wuffs' GIF
+various codecs. For example, `gif_fuzzer.c` is a program to fuzz Wuffs' GIF
 implementation.
 
 They are typically run indirectly, by a fuzzing framework such as
@@ -9,5 +9,5 @@ directory's code.
 
 When working on these files, it is possible to run them directly on an explicit
 test suite, in order to speed up the edit-compile-run cycle. Look for
-`WUFFS_CONFIG__FUZZLIB_MAIN` in the C++ code for more details, and in
-`seed_corpora.txt` for suggested test data.
+`WUFFS_CONFIG__FUZZLIB_MAIN` for more details, and in `seed_corpora.txt` for
+suggested test data.
