@@ -2116,7 +2116,6 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     while (true) {
       wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
       {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (a_dst.private_impl.buf) {
           size_t n = b_wptr_dst -
                      (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
@@ -2161,18 +2160,18 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         goto label_0_break;
       }
       status = v_z;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
     }
   label_0_break:;
     {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       uint32_t t_4;
       if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
         t_4 = wuffs_base__load_u32be(b_rptr_src);
         b_rptr_src += 4;
       } else {
         self->private_impl.c_decode[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
             goto short_read_src;

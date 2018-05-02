@@ -3152,7 +3152,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                   : 0);
           v_r = a_src;
           {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
             if (a_src.private_impl.buf) {
               size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
                                        a_src.private_impl.buf->ri);
@@ -3191,7 +3190,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           goto label_1_break;
         }
         status = v_z;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(15);
       }
     label_1_break:;
     }

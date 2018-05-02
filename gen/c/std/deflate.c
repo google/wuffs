@@ -1904,7 +1904,6 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
     while (true) {
       wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
       {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
         if (a_dst.private_impl.buf) {
           size_t n = b_wptr_dst -
                      (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
@@ -1969,7 +1968,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
         }
       }
       status = v_z;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
 
     goto ok;

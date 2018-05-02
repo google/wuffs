@@ -428,7 +428,7 @@ func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 	mightActuallySuspend := err != nil
-	if mightActuallySuspend {
+	if mightActuallySuspend && n.Operator() != t.IDTry {
 		if err := g.writeCoroSuspPoint(b, false); err != nil {
 			return err
 		}

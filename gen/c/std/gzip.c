@@ -2213,7 +2213,6 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     while (true) {
       wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
       {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);
         if (a_dst.private_impl.buf) {
           size_t n = b_wptr_dst -
                      (a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi);
@@ -2265,18 +2264,18 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         goto label_2_break;
       }
       status = v_z;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(15);
     }
   label_2_break:;
     {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
       uint32_t t_10;
       if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
         t_10 = wuffs_base__load_u32le(b_rptr_src);
         b_rptr_src += 4;
       } else {
         self->private_impl.c_decode[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(17);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
             goto short_read_src;
@@ -2297,14 +2296,14 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       v_checksum_want = t_10;
     }
     {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(19);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(18);
       uint32_t t_12;
       if (WUFFS_BASE__LIKELY(b_rend_src - b_rptr_src >= 4)) {
         t_12 = wuffs_base__load_u32le(b_rptr_src);
         b_rptr_src += 4;
       } else {
         self->private_impl.c_decode[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(20);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(19);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
             goto short_read_src;
