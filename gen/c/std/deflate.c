@@ -1933,7 +1933,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
       }
       v_written = ((wuffs_base__slice_u8){
           .ptr = a_dst.private_impl.bounds[0],
-          .len = b_wptr_dst - a_dst.private_impl.bounds[0],
+          .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = wuffs_base__slice_u8_suffix(v_written, 32768);
@@ -3313,19 +3313,21 @@ label_0_continue:;
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)((v_dist_minus_1 + 1))) >
-          ((uint64_t)(((wuffs_base__slice_u8){
-                           .ptr = a_dst.private_impl.bounds[0],
-                           .len = b_wptr_dst - a_dst.private_impl.bounds[0],
-                       })
-                          .len))) {
+          ((uint64_t)(
+              ((wuffs_base__slice_u8){
+                   .ptr = a_dst.private_impl.bounds[0],
+                   .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
+               })
+                  .len))) {
         v_hlen = 0;
-        v_hdist = ((uint32_t)(
-            (((uint64_t)((v_dist_minus_1 + 1))) -
-             ((uint64_t)(((wuffs_base__slice_u8){
-                              .ptr = a_dst.private_impl.bounds[0],
-                              .len = b_wptr_dst - a_dst.private_impl.bounds[0],
-                          })
-                             .len)))));
+        v_hdist = ((uint32_t)((
+            ((uint64_t)((v_dist_minus_1 + 1))) -
+            ((uint64_t)(
+                ((wuffs_base__slice_u8){
+                     .ptr = a_dst.private_impl.bounds[0],
+                     .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
+                 })
+                    .len)))));
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
@@ -3367,11 +3369,12 @@ label_0_continue:;
           goto label_0_continue;
         }
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = a_dst.private_impl.bounds[0],
-                             .len = b_wptr_dst - a_dst.private_impl.bounds[0],
-                         })
-                            .len))) {
+            ((uint64_t)(
+                ((wuffs_base__slice_u8){
+                     .ptr = a_dst.private_impl.bounds[0],
+                     .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
+                 })
+                    .len))) {
           status = WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE;
           goto exit;
         }
@@ -3739,19 +3742,21 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = a_dst.private_impl.bounds[0],
-                             .len = b_wptr_dst - a_dst.private_impl.bounds[0],
-                         })
-                            .len))) {
+            ((uint64_t)(
+                ((wuffs_base__slice_u8){
+                     .ptr = a_dst.private_impl.bounds[0],
+                     .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
+                 })
+                    .len))) {
           v_hlen = 0;
-          v_hdist = ((uint32_t)((
-              ((uint64_t)((v_dist_minus_1 + 1))) -
-              ((uint64_t)(((wuffs_base__slice_u8){
-                               .ptr = a_dst.private_impl.bounds[0],
-                               .len = b_wptr_dst - a_dst.private_impl.bounds[0],
-                           })
-                              .len)))));
+          v_hdist = ((uint32_t)(
+              (((uint64_t)((v_dist_minus_1 + 1))) -
+               ((uint64_t)(((wuffs_base__slice_u8){
+                                .ptr = a_dst.private_impl.bounds[0],
+                                .len = (size_t)(b_wptr_dst -
+                                                a_dst.private_impl.bounds[0]),
+                            })
+                               .len)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;

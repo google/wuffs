@@ -2153,7 +2153,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
             &self->private_impl.f_checksum,
             ((wuffs_base__slice_u8){
                 .ptr = a_dst.private_impl.bounds[0],
-                .len = b_wptr_dst - a_dst.private_impl.bounds[0],
+                .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
             }));
       }
       if (v_z == 0) {

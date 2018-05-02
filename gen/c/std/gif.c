@@ -3181,11 +3181,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         }
         wuffs_base__u64__sat_sub_indirect(
             &v_block_size,
-            ((uint64_t)(((wuffs_base__slice_u8){
-                             .ptr = a_src.private_impl.bounds[0],
-                             .len = b_rptr_src - a_src.private_impl.bounds[0],
-                         })
-                            .len)));
+            ((uint64_t)(
+                ((wuffs_base__slice_u8){
+                     .ptr = a_src.private_impl.bounds[0],
+                     .len = (size_t)(b_rptr_src - a_src.private_impl.bounds[0]),
+                 })
+                    .len)));
         if ((v_block_size == 0) && (v_z == WUFFS_GIF__SUSPENSION_SHORT_READ)) {
           goto label_1_break;
         }
