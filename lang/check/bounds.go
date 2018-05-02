@@ -814,20 +814,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			// TODO: should return be break?
 			return nil, nil, nil
 		}
-		// TODO: delete this hack that only matches "foo.decode(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("decode"), 3) {
-			for _, o := range n.Args() {
-				a := o.Arg().Value()
-				aMin, aMax, err := q.bcheckExpr(a, depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				// TODO: check that aMin and aMax is within the function's
-				// declared arg bounds.
-				_, _ = aMin, aMax
-			}
-			return nil, nil, nil
-		}
 
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return nil, nil, err

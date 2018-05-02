@@ -314,10 +314,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			in.src.mark()
 			io_bind (in.src) {
 				in.src.set_limit(l:block_size)
-				// TODO: remove the dummy param. It's needed for now so that
-				// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
-				// variables.
-				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src, dummy:in.src)
+				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
 			}
 			if z.is_ok() {
 				break

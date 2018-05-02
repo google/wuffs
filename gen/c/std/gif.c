@@ -2935,17 +2935,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                                        a_src.private_impl.buf->ri);
               a_src.private_impl.buf->ri += n;
             }
-            if (a_src.private_impl.buf) {
-              size_t n = b_rptr_src - (a_src.private_impl.buf->ptr +
-                                       a_src.private_impl.buf->ri);
-              a_src.private_impl.buf->ri += n;
-            }
             wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
                 &self->private_impl.f_lzw, a_dst, a_src);
-            if (a_src.private_impl.buf) {
-              b_rptr_src =
-                  a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-            }
             if (a_src.private_impl.buf) {
               b_rptr_src =
                   a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
