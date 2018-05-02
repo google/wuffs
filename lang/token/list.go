@@ -409,11 +409,10 @@ const (
 	IDAvailable         = ID(0xCA)
 	IDPrefix            = ID(0xCB)
 	IDSuffix            = ID(0xCC)
-	IDLimit             = ID(0xCD)
+	IDSetLimit          = ID(0xCD)
 	IDLowBits           = ID(0xCE)
 	IDHighBits          = ID(0xCF)
 	IDUnreadU8          = ID(0xD0)
-	IDSetLimit          = ID(0xD1)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -583,11 +582,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDAvailable:         "available",
 	IDPrefix:            "prefix",
 	IDSuffix:            "suffix",
-	IDLimit:             "limit",
+	IDSetLimit:          "set_limit",
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
 	IDUnreadU8:          "unread_u8",
-	IDSetLimit:          "set_limit",
 }
 
 var builtInsByName = map[string]ID{}

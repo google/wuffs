@@ -850,8 +850,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
 	callSuspendible := methodName != t.IDSinceMark &&
 		methodName != t.IDMark &&
-		methodName != t.IDSetLimit &&
-		methodName != t.IDLimit
+		methodName != t.IDSetLimit
 	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false
 	}
@@ -873,8 +872,7 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
 		methodName != t.IDCopyFromSlice32 &&
 		methodName != t.IDCopyFromSlice &&
 		methodName != t.IDSinceMark &&
-		methodName != t.IDMark &&
-		methodName != t.IDLimit
+		methodName != t.IDMark
 	// TODO: check that n.Args() is "(x:bar)".
 	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
 		return false

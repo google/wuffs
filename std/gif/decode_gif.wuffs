@@ -310,8 +310,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 			break
 		}
 		while true {
-			// TODO: should "mark" be "set_mark" or "set_mark_here"? Unlike
-			// "limit", "mark" does not return a different io_reader.
+			// TODO: should "mark" be "set_mark" or "set_mark_here"?
 			in.src.mark()
 			io_bind (in.src) {
 				in.src.set_limit(l:block_size)
@@ -319,10 +318,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				// TODO: remove the dummy param. It's needed for now so that
 				// writeSaveExprDerivedVars updates e.g. the b_rptr_src derived
 				// variables.
-				//
-				// TODO: enforce that limit can only be called in a "foo?"
-				// call?
-				var z base.status = try this.lzw.decode?(dst:in.dst, src:r.limit(l:block_size), dummy:in.src)
+				var z base.status = try this.lzw.decode?(dst:in.dst, src:r, dummy:in.src)
 			}
 			if z.is_ok() {
 				break
