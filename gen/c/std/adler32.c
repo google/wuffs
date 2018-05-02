@@ -1643,6 +1643,8 @@ void wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
 
 // ---------------- Function Implementations
 
+// -------- func hasher.update
+
 uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
                                        wuffs_base__slice_u8 a_x) {
   if (!self) {

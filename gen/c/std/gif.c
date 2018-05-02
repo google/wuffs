@@ -1822,6 +1822,8 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 
 // ---------------- Function Implementations
 
+// -------- func decoder.decode_config
+
 wuffs_gif__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
     wuffs_base__image_config* a_dst,
@@ -1985,6 +1987,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.decode_frame
+
 wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__io_writer a_dst,
@@ -2134,6 +2138,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.decode_header
+
 static wuffs_gif__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
@@ -2225,6 +2231,8 @@ short_read_src:
   status = WUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
+
+// -------- func decoder.decode_lsd
 
 static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
     wuffs_gif__decoder* self,
@@ -2352,6 +2360,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.decode_extension
+
 static wuffs_gif__status wuffs_gif__decoder__decode_extension(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
@@ -2474,6 +2484,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.skip_blocks
+
 static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
@@ -2568,6 +2580,8 @@ short_read_src:
   status = WUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
+
+// -------- func decoder.decode_ae
 
 static wuffs_gif__status wuffs_gif__decoder__decode_ae(
     wuffs_gif__decoder* self,
@@ -2795,6 +2809,8 @@ short_read_src:
   status = WUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
 }
+
+// -------- func decoder.decode_id
 
 static wuffs_gif__status wuffs_gif__decoder__decode_id(
     wuffs_gif__decoder* self,
@@ -3119,11 +3135,15 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func lzw_decoder.set_literal_width
+
 static void wuffs_gif__lzw_decoder__set_literal_width(
     wuffs_gif__lzw_decoder* self,
     uint32_t a_lw) {
   self->private_impl.f_literal_width = a_lw;
 }
+
+// -------- func lzw_decoder.decode
 
 static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     wuffs_gif__lzw_decoder* self,

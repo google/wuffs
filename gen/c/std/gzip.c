@@ -1951,6 +1951,8 @@ void wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
 
 // ---------------- Function Implementations
 
+// -------- func decoder.set_ignore_checksum
+
 void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
                                               bool a_ic) {
   if (!self) {
@@ -1965,6 +1967,8 @@ void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
 
   self->private_impl.f_ignore_checksum = a_ic;
 }
+
+// -------- func decoder.decode
 
 wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                                                wuffs_base__io_writer a_dst,

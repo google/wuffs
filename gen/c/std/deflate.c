@@ -1826,6 +1826,8 @@ void wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 
 // ---------------- Function Implementations
 
+// -------- func decoder.decode
+
 wuffs_deflate__status wuffs_deflate__decoder__decode(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
@@ -1978,6 +1980,8 @@ exit:
   self->private_impl.status = status;
   return status;
 }
+
+// -------- func decoder.decode_blocks
 
 static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
     wuffs_deflate__decoder* self,
@@ -2174,6 +2178,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.decode_uncompressed
+
 static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
@@ -2339,6 +2345,8 @@ short_read_src:
   goto suspend;
 }
 
+// -------- func decoder.init_fixed_huffman
+
 static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
     wuffs_deflate__decoder* self) {
   wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
@@ -2401,6 +2409,8 @@ suspend:
 exit:
   return status;
 }
+
+// -------- func decoder.init_dynamic_huffman
 
 static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
     wuffs_deflate__decoder* self,
@@ -2669,6 +2679,8 @@ short_read_src:
   status = WUFFS_DEFLATE__SUSPENSION_SHORT_READ;
   goto suspend;
 }
+
+// -------- func decoder.init_huff
 
 static wuffs_deflate__status wuffs_deflate__decoder__init_huff(
     wuffs_deflate__decoder* self,
@@ -2950,6 +2962,8 @@ label_3_break:;
 exit:
   return status;
 }
+
+// -------- func decoder.decode_huffman_fast
 
 static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
@@ -3317,6 +3331,8 @@ exit:
 
   return status;
 }
+
+// -------- func decoder.decode_huffman_slow
 
 static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,
