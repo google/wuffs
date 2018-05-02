@@ -1618,6 +1618,11 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
     uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->ri;
+    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->wi;
+    if (!o->private_impl.bounds[0]) {
+      o->private_impl.bounds[0] = p;
+      o->private_impl.bounds[1] = q;
+    }
     if ((o->private_impl.bounds[1] - p) > limit) {
       o->private_impl.bounds[1] = p + limit;
     }
@@ -1650,6 +1655,11 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_limit(
     uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->wi;
+    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->len;
+    if (!o->private_impl.bounds[0]) {
+      o->private_impl.bounds[0] = p;
+      o->private_impl.bounds[1] = q;
+    }
     if ((o->private_impl.bounds[1] - p) > limit) {
       o->private_impl.bounds[1] = p + limit;
     }
