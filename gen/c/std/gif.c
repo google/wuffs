@@ -165,6 +165,40 @@ static inline uint64_t wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
   return res;
 }
 
+// --------
+
+// Clang also defines "__GNUC__".
+
+static inline uint16_t wuffs_base__u16__byte_swapped(uint16_t x) {
+#if defined(__GNUC__)
+  return __builtin_bswap16(x);
+#else
+  return (x >> 8) | (x << 8);
+#endif
+}
+
+static inline uint32_t wuffs_base__u32__byte_swapped(uint32_t x) {
+#if defined(__GNUC__)
+  return __builtin_bswap32(x);
+#else
+  static const uint32_t mask8 = 0x00FF00FF;
+  x = ((x >> 8) & mask8) | ((x & mask8) << 8);
+  return (x >> 16) | (x << 16);
+#endif
+}
+
+static inline uint64_t wuffs_base__u64__byte_swapped(uint64_t x) {
+#if defined(__GNUC__)
+  return __builtin_bswap64(x);
+#else
+  static const uint64_t mask8 = 0x00FF00FF00FF00FF;
+  static const uint64_t mask16 = 0x0000FFFF0000FFFF;
+  x = ((x >> 8) & mask8) | ((x & mask8) << 8);
+  x = ((x >> 16) & mask16) | ((x & mask16) << 16);
+  return (x >> 32) | (x << 32);
+#endif
+}
+
 // ---------------- Ranges and Rects
 
 // Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
