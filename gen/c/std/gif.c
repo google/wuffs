@@ -1639,6 +1639,19 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
   return ((wuffs_base__empty_struct){});
 }
 
+static inline wuffs_base__empty_struct
+wuffs_base__io_reader__set_limit_internal(wuffs_base__io_reader* o,
+                                          uint64_t limit,
+                                          size_t ri_override) {
+  if (o && o->private_impl.buf) {
+    uint8_t* p = o->private_impl.buf->ptr + ri_override;
+    if ((o->private_impl.bounds[1] - p) > limit) {
+      o->private_impl.bounds[1] = p + limit;
+    }
+  }
+  return ((wuffs_base__empty_struct){});
+}
+
 static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
@@ -3008,7 +3021,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         {
           uint8_t* o_0_bounds0_src = a_src.private_impl.bounds[0];
           uint8_t* o_0_bounds1_src = a_src.private_impl.bounds[1];
-          wuffs_base__io_reader__set_limit(&a_src, v_block_size);
+          wuffs_base__io_reader__set_limit_internal(
+              &a_src, v_block_size,
+              a_src.private_impl.buf
+                  ? (b_rptr_src - a_src.private_impl.buf->ptr)
+                  : 0);
           v_r = a_src;
           {
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT(15);

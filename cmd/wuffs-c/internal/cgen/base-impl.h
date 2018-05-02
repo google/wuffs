@@ -405,6 +405,19 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
   return ((wuffs_base__empty_struct){});
 }
 
+static inline wuffs_base__empty_struct
+wuffs_base__io_reader__set_limit_internal(wuffs_base__io_reader* o,
+                                          uint64_t limit,
+                                          size_t ri_override) {
+  if (o && o->private_impl.buf) {
+    uint8_t* p = o->private_impl.buf->ptr + ri_override;
+    if ((o->private_impl.bounds[1] - p) > limit) {
+      o->private_impl.bounds[1] = p + limit;
+    }
+  }
+  return ((wuffs_base__empty_struct){});
+}
+
 static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
