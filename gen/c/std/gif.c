@@ -2961,10 +2961,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                                        a_src.private_impl.buf->ri);
               a_src.private_impl.buf->ri += n;
             }
-            uint64_t l_rlimit0 = v_block_size;
             wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
-                &self->private_impl.f_lzw, a_dst,
-                wuffs_base__io_reader__limit(&v_r, &l_rlimit0));
+                &self->private_impl.f_lzw, a_dst, v_r);
             if (a_src.private_impl.buf) {
               b_rptr_src =
                   a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;

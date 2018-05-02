@@ -744,10 +744,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			// TODO: don't hard-code a_dst or v_r or l_rlimit or v_block_size.
-			b.writes("uint64_t l_rlimit0 = v_block_size;\n")
-			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst,"+
-				"wuffs_base__io_reader__limit(&%sr, &l_rlimit0));\n",
+			// TODO: don't hard-code a_dst or v_r.
+			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sdst, %sr);\n",
 				g.pkgPrefix, tPrefix, temp,
 				g.pkgPrefix, aPrefix, vPrefix)
 			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
