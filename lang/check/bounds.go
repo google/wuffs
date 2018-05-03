@@ -277,8 +277,33 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		}
 		return nil
 
+	case a.KIOBind:
+		n := n.IOBind()
+		if err := q.bcheckBlock(n.Body()); err != nil {
+			return err
+		}
+		// TODO: invalidate any facts regarding the io_bind expressions.
+		return nil
+
 	case a.KIf:
 		return q.bcheckIf(n.If())
+
+	case a.KIterate:
+		n := n.Iterate()
+		for _, o := range n.Variables() {
+			if err := q.bcheckVar(o.Var()); err != nil {
+				return err
+			}
+		}
+		// TODO: this isn't right, as the body is a loop, not an
+		// execute-exactly-once block. We should have pre / inv / post
+		// conditions, a la bcheckWhile.
+		for _, o := range n.Body() {
+			if err := q.bcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		return nil
 
 	case a.KJump:
 		n := n.Jump()
@@ -302,31 +327,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KVar:
 		return q.bcheckVar(n.Var())
-
-	case a.KIOBind:
-		n := n.IOBind()
-		if err := q.bcheckBlock(n.Body()); err != nil {
-			return err
-		}
-		// TODO: invalidate any facts regarding the io_bind expressions.
-		return nil
-
-	case a.KIterate:
-		n := n.Iterate()
-		for _, o := range n.Variables() {
-			if err := q.bcheckVar(o.Var()); err != nil {
-				return err
-			}
-		}
-		// TODO: this isn't right, as the body is a loop, not an
-		// execute-exactly-once block. We should have pre / inv / post
-		// conditions, a la bcheckWhile.
-		for _, o := range n.Body() {
-			if err := q.bcheckStatement(o); err != nil {
-				return err
-			}
-		}
-		return nil
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
