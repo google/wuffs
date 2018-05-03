@@ -74,7 +74,7 @@ func (x ID) IsLiteral(m *Map) bool {
 
 func (x ID) IsNumLiteral(m *Map) bool {
 	if x < nBuiltInIDs {
-		return x == IDZero
+		return minBuiltInNumLiteral <= x && x <= maxBuiltInNumLiteral
 	} else if s := m.ByID(x); s != "" {
 		return numeric(s[0])
 	}
@@ -117,6 +117,30 @@ func (x ID) IsXOp() bool            { return minXOp <= x && x <= maxXOp }
 func (x ID) IsXUnaryOp() bool       { return minXOp <= x && x <= maxXOp && unaryForms[x] != 0 }
 func (x ID) IsXBinaryOp() bool      { return minXOp <= x && x <= maxXOp && binaryForms[x] != 0 }
 func (x ID) IsXAssociativeOp() bool { return minXOp <= x && x <= maxXOp && associativeForms[x] != 0 }
+
+func (x ID) SmallPowerOf2Value() int {
+	switch x {
+	case ID1:
+		return 1
+	case ID2:
+		return 2
+	case ID4:
+		return 4
+	case ID8:
+		return 8
+	case ID16:
+		return 16
+	case ID32:
+		return 32
+	case ID64:
+		return 64
+	case ID128:
+		return 128
+	case ID256:
+		return 256
+	}
+	return 0
+}
 
 // QID is a qualified ID, such as "foo.bar". QID[0] is "foo"'s ID and QID[1] is
 // "bar"'s. QID[0] may be 0 for a plain "bar".
@@ -162,8 +186,8 @@ type Token struct {
 //  - [0x40, 0x6F] are x-ops (disambiguation forms), e.g. unary vs binary "+".
 //  - [0x70, 0x8F] are keywords, such as "if" and "return".
 //  - [0x90, 0x93] are type modifiers, such as "ptr" and "slice".
-//  - [0x94, 0x97] are literals, such as "false" and "true".
-//  - [0x98, 0xFF] are identifiers, such as "bool", "u32" and "read_u8".
+//  - [0x94, 0x9F] are literals, such as "false" and "true".
+//  - [0xA0, 0xFF] are identifiers, such as "bool", "u32" and "read_u8".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
 // "&=". Roughly speaking, their IDs range in [0x01, 0x4F], or disambiguation
@@ -334,50 +358,54 @@ const (
 )
 
 const (
-	minBuiltInLiteral = 0x94
-	maxBuiltInLiteral = 0x97
+	minBuiltInLiteral    = 0x94
+	minBuiltInNumLiteral = 0x96
+	maxBuiltInNumLiteral = 0x9F
+	maxBuiltInLiteral    = 0x9F
 
 	IDFalse = ID(0x94)
 	IDTrue  = ID(0x95)
-	IDZero  = ID(0x96)
+	ID0     = ID(0x96)
+	ID1     = ID(0x97)
+	ID2     = ID(0x98)
+	ID4     = ID(0x99)
+	ID8     = ID(0x9A)
+	ID16    = ID(0x9B)
+	ID32    = ID(0x9C)
+	ID64    = ID(0x9D)
+	ID128   = ID(0x9E)
+	ID256   = ID(0x9F)
 )
 
 const (
-	minBuiltInIdent   = 0x98
-	minNumTypeOrIdeal = 0x98
-	minNumType        = 0x98
-	maxNumType        = 0x9F
-	maxNumTypeOrIdeal = 0xA0
+	minBuiltInIdent   = 0xA0
+	minNumTypeOrIdeal = 0xA0
+	minNumType        = 0xA0
+	maxNumType        = 0xA7
+	maxNumTypeOrIdeal = 0xA8
 	maxBuiltInIdent   = 0xFF
 
-	IDI8  = ID(0x98)
-	IDI16 = ID(0x99)
-	IDI32 = ID(0x9A)
-	IDI64 = ID(0x9B)
-	IDU8  = ID(0x9C)
-	IDU16 = ID(0x9D)
-	IDU32 = ID(0x9E)
-	IDU64 = ID(0x9F)
+	IDI8  = ID(0xA0)
+	IDI16 = ID(0xA1)
+	IDI32 = ID(0xA2)
+	IDI64 = ID(0xA3)
+	IDU8  = ID(0xA4)
+	IDU16 = ID(0xA5)
+	IDU32 = ID(0xA6)
+	IDU64 = ID(0xA7)
 
 	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDDoubleZ = ID(0xA0)
+	IDDoubleZ = ID(0xA8)
 
-	IDDiamond = ID(0xA1)
+	IDDiamond = ID(0xA9)
 
-	IDUnderscore = ID(0xA2)
-	IDThis       = ID(0xA3)
-	IDIn         = ID(0xA4)
-	IDOut        = ID(0xA5)
-	IDSLICE      = ID(0xA6)
-	IDBase       = ID(0xA7)
-
-	IDEmptyStruct = ID(0xA8)
-	IDBool        = ID(0xA9)
-	IDStatus      = ID(0xAA)
-	IDIOReader    = ID(0xAB)
-	IDIOWriter    = ID(0xAC)
-	IDImageConfig = ID(0xAD)
+	IDUnderscore = ID(0xAA)
+	IDThis       = ID(0xAB)
+	IDIn         = ID(0xAC)
+	IDOut        = ID(0xAD)
+	IDSLICE      = ID(0xAE)
+	IDBase       = ID(0xAF)
 
 	IDMark       = ID(0xB0)
 	IDReadU8     = ID(0xB1)
@@ -413,6 +441,13 @@ const (
 	IDLowBits           = ID(0xCE)
 	IDHighBits          = ID(0xCF)
 	IDUnreadU8          = ID(0xD0)
+
+	IDEmptyStruct = ID(0xF8)
+	IDBool        = ID(0xF9)
+	IDStatus      = ID(0xFA)
+	IDIOReader    = ID(0xFB)
+	IDIOWriter    = ID(0xFC)
+	IDImageConfig = ID(0xFD)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -510,7 +545,16 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDFalse: "false",
 	IDTrue:  "true",
-	IDZero:  "0",
+	ID0:     "0",
+	ID1:     "1",
+	ID2:     "2",
+	ID4:     "4",
+	ID8:     "8",
+	ID16:    "16",
+	ID32:    "32",
+	ID64:    "64",
+	ID128:   "128",
+	ID256:   "256",
 
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 	IDI8:  "i8",
@@ -544,13 +588,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDOut:        "out",
 	IDSLICE:      "SLICE",
 	IDBase:       "base",
-
-	IDEmptyStruct: "empty_struct",
-	IDBool:        "bool",
-	IDStatus:      "status",
-	IDIOReader:    "io_reader",
-	IDIOWriter:    "io_writer",
-	IDImageConfig: "image_config",
 
 	IDMark:       "mark",
 	IDReadU8:     "read_u8",
@@ -586,6 +623,13 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
 	IDUnreadU8:          "unread_u8",
+
+	IDEmptyStruct: "empty_struct",
+	IDBool:        "bool",
+	IDStatus:      "status",
+	IDIOReader:    "io_reader",
+	IDIOWriter:    "io_writer",
+	IDImageConfig: "image_config",
 }
 
 var builtInsByName = map[string]ID{}

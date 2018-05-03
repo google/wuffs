@@ -48,7 +48,7 @@ var (
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
-	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.IDZero, nil, nil, nil, nil)
+	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.ID0, nil, nil, nil, nil)
 )
 
 func init() {
