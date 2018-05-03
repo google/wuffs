@@ -666,10 +666,10 @@ void test_wuffs_gif_decode_input_is_a_png() {
 
   wuffs_gif__status status =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
-  if (status != WUFFS_GIF__ERROR_BAD_GIF_HEADER) {
+  if (status != WUFFS_GIF__ERROR_BAD_HEADER) {
     FAIL("decode_config: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
-         wuffs_gif__status__string(status), WUFFS_GIF__ERROR_BAD_GIF_HEADER,
-         wuffs_gif__status__string(WUFFS_GIF__ERROR_BAD_GIF_HEADER));
+         wuffs_gif__status__string(status), WUFFS_GIF__ERROR_BAD_HEADER,
+         wuffs_gif__status__string(WUFFS_GIF__ERROR_BAD_HEADER));
     return;
   }
 }

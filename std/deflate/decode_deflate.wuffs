@@ -20,9 +20,9 @@ pub error "bad Huffman code length count"
 pub error "bad Huffman code length repetition"
 pub error "bad Huffman code"
 pub error "bad Huffman minimum code length"
+pub error "bad block"
 pub error "bad distance"
 pub error "bad distance code count"
-pub error "bad flate block"
 pub error "bad literal/length code count"
 pub error "inconsistent stored block length"
 pub error "missing end-of-block code"
@@ -195,7 +195,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader)() {
 		} else if type == 2 {
 			this.init_dynamic_huffman?(src:in.src)
 		} else {
-			return error "bad flate block"
+			return error "bad block"
 		}
 
 		this.end_of_block = false

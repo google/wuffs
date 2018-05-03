@@ -1059,10 +1059,10 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GIF__ERROR_BAD_GIF_BLOCK -1105848320                 // 0xBE161800
-#define WUFFS_GIF__ERROR_BAD_GIF_EXTENSION_LABEL -1105848319       // 0xBE161801
-#define WUFFS_GIF__ERROR_BAD_GIF_HEADER -1105848318                // 0xBE161802
-#define WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH -1105848317         // 0xBE161803
+#define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320                     // 0xBE161800
+#define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319           // 0xBE161801
+#define WUFFS_GIF__ERROR_BAD_HEADER -1105848318                    // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848317             // 0xBE161803
 #define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848316      // 0xBE161804
 #define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848315  // 0xBE161805
 
@@ -1697,10 +1697,10 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
 }
 
 const char* wuffs_gif__status__strings[6] = {
-    "gif: bad GIF block",
-    "gif: bad GIF extension label",
-    "gif: bad GIF header",
-    "gif: bad LZW literal width",
+    "gif: bad block",
+    "gif: bad extension label",
+    "gif: bad header",
+    "gif: bad literal width",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -2030,7 +2030,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
       } else if (self->private_impl.f_block_type == 59) {
         goto label_0_break;
       } else {
-        status = WUFFS_GIF__ERROR_BAD_GIF_BLOCK;
+        status = WUFFS_GIF__ERROR_BAD_BLOCK;
         goto exit;
       }
     }
@@ -2119,7 +2119,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_header(
     }
     if ((v_c[0] != 71) || (v_c[1] != 73) || (v_c[2] != 70) || (v_c[3] != 56) ||
         ((v_c[4] != 55) && (v_c[4] != 57)) || (v_c[5] != 97)) {
-      status = WUFFS_GIF__ERROR_BAD_GIF_HEADER;
+      status = WUFFS_GIF__ERROR_BAD_HEADER;
       goto exit;
     }
 
@@ -2872,7 +2872,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       v_lw = t_12;
     }
     if ((v_lw < 2) || (8 < v_lw)) {
-      status = WUFFS_GIF__ERROR_BAD_LZW_LITERAL_WIDTH;
+      status = WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH;
       goto exit;
     }
     wuffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,

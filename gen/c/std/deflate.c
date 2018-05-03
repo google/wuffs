@@ -1071,9 +1071,9 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE -1278585852  // 0xB3CA5404
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
   -1278585851                                                     // 0xB3CA5405
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585850             // 0xB3CA5406
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585849  // 0xB3CA5407
-#define WUFFS_DEFLATE__ERROR_BAD_FLATE_BLOCK -1278585848          // 0xB3CA5408
+#define WUFFS_DEFLATE__ERROR_BAD_BLOCK -1278585850                // 0xB3CA5406
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585849             // 0xB3CA5407
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585848  // 0xB3CA5408
 #define WUFFS_DEFLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
   -1278585847  // 0xB3CA5409
 #define WUFFS_DEFLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
@@ -1687,9 +1687,9 @@ const char* wuffs_deflate__status__strings[17] = {
     "deflate: bad Huffman code length repetition",
     "deflate: bad Huffman code",
     "deflate: bad Huffman minimum code length",
+    "deflate: bad block",
     "deflate: bad distance",
     "deflate: bad distance code count",
-    "deflate: bad flate block",
     "deflate: bad literal/length code count",
     "deflate: inconsistent stored block length",
     "deflate: missing end-of-block code",
@@ -2042,7 +2042,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
           goto suspend;
         }
       } else {
-        status = WUFFS_DEFLATE__ERROR_BAD_FLATE_BLOCK;
+        status = WUFFS_DEFLATE__ERROR_BAD_BLOCK;
         goto exit;
       }
       self->private_impl.f_end_of_block = false;

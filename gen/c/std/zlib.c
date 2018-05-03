@@ -1171,9 +1171,9 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE -1278585852  // 0xB3CA5404
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
   -1278585851                                                     // 0xB3CA5405
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585850             // 0xB3CA5406
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585849  // 0xB3CA5407
-#define WUFFS_DEFLATE__ERROR_BAD_FLATE_BLOCK -1278585848          // 0xB3CA5408
+#define WUFFS_DEFLATE__ERROR_BAD_BLOCK -1278585850                // 0xB3CA5406
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585849             // 0xB3CA5407
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585848  // 0xB3CA5408
 #define WUFFS_DEFLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
   -1278585847  // 0xB3CA5409
 #define WUFFS_DEFLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
@@ -1332,13 +1332,12 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_ZLIB__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672  // 0xFDFDE400
-#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD \
-  -33692671  // 0xFDFDE401
-#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE \
-  -33692670                                                    // 0xFDFDE402
-#define WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK -33692669  // 0xFDFDE403
-#define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY \
+#define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672           // 0xFDFDE400
+#define WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_METHOD -33692671  // 0xFDFDE401
+#define WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_WINDOW_SIZE \
+  -33692670                                               // 0xFDFDE402
+#define WUFFS_ZLIB__ERROR_INVALID_PARITY_CHECK -33692669  // 0xFDFDE403
+#define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_PRESET_DICTIONARY \
   -33692668  // 0xFDFDE404
 
 bool wuffs_zlib__status__is_error(wuffs_zlib__status s);
@@ -1886,10 +1885,10 @@ bool wuffs_zlib__status__is_error(wuffs_zlib__status s) {
 
 const char* wuffs_zlib__status__strings[5] = {
     "zlib: checksum mismatch",
-    "zlib: invalid zlib compression method",
-    "zlib: invalid zlib compression window size",
-    "zlib: invalid zlib parity check",
-    "zlib: TODO: unsupported zlib preset dictionary",
+    "zlib: invalid compression method",
+    "zlib: invalid compression window size",
+    "zlib: invalid parity check",
+    "zlib: TODO: unsupported preset dictionary",
 };
 
 const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
@@ -2051,19 +2050,19 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       v_x = t_1;
     }
     if (((v_x >> 8) & 15) != 8) {
-      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_METHOD;
+      status = WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_METHOD;
       goto exit;
     }
     if ((v_x >> 12) > 7) {
-      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_COMPRESSION_WINDOW_SIZE;
+      status = WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_WINDOW_SIZE;
       goto exit;
     }
     if ((v_x & 32) != 0) {
-      status = WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_ZLIB_PRESET_DICTIONARY;
+      status = WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_PRESET_DICTIONARY;
       goto exit;
     }
     if ((v_x % 31) != 0) {
-      status = WUFFS_ZLIB__ERROR_INVALID_ZLIB_PARITY_CHECK;
+      status = WUFFS_ZLIB__ERROR_INVALID_PARITY_CHECK;
       goto exit;
     }
     v_checksum_got = 0;

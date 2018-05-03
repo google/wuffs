@@ -1170,9 +1170,9 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE -1278585852  // 0xB3CA5404
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
   -1278585851                                                     // 0xB3CA5405
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585850             // 0xB3CA5406
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585849  // 0xB3CA5407
-#define WUFFS_DEFLATE__ERROR_BAD_FLATE_BLOCK -1278585848          // 0xB3CA5408
+#define WUFFS_DEFLATE__ERROR_BAD_BLOCK -1278585850                // 0xB3CA5406
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585849             // 0xB3CA5407
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585848  // 0xB3CA5408
 #define WUFFS_DEFLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
   -1278585847  // 0xB3CA5409
 #define WUFFS_DEFLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
@@ -1331,11 +1331,10 @@ typedef int32_t wuffs_gzip__status;
 #define WUFFS_GZIP__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GZIP__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GZIP__ERROR_BAD_GZIP_HEADER -1080566784    // 0xBF97DC00
-#define WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH -1080566783  // 0xBF97DC01
-#define WUFFS_GZIP__ERROR_INVALID_GZIP_COMPRESSION_METHOD \
-  -1080566782                                                      // 0xBF97DC02
-#define WUFFS_GZIP__ERROR_INVALID_GZIP_ENCODING_FLAGS -1080566781  // 0xBF97DC03
+#define WUFFS_GZIP__ERROR_BAD_HEADER -1080566784                  // 0xBF97DC00
+#define WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH -1080566783           // 0xBF97DC01
+#define WUFFS_GZIP__ERROR_INVALID_COMPRESSION_METHOD -1080566782  // 0xBF97DC02
+#define WUFFS_GZIP__ERROR_INVALID_ENCODING_FLAGS -1080566781      // 0xBF97DC03
 
 bool wuffs_gzip__status__is_error(wuffs_gzip__status s);
 
@@ -1885,10 +1884,10 @@ bool wuffs_gzip__status__is_error(wuffs_gzip__status s) {
 }
 
 const char* wuffs_gzip__status__strings[4] = {
-    "gzip: bad gzip header",
+    "gzip: bad header",
     "gzip: checksum mismatch",
-    "gzip: invalid gzip compression method",
-    "gzip: invalid gzip encoding flags",
+    "gzip: invalid compression method",
+    "gzip: invalid encoding flags",
 };
 
 const char* wuffs_gzip__status__string(wuffs_gzip__status s) {
@@ -2037,7 +2036,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     uint8_t t_0 = *b_rptr_src++;
     if (t_0 != 31) {
-      status = WUFFS_GZIP__ERROR_BAD_GZIP_HEADER;
+      status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
@@ -2046,7 +2045,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     uint8_t t_1 = *b_rptr_src++;
     if (t_1 != 139) {
-      status = WUFFS_GZIP__ERROR_BAD_GZIP_HEADER;
+      status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -2055,7 +2054,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     uint8_t t_2 = *b_rptr_src++;
     if (t_2 != 8) {
-      status = WUFFS_GZIP__ERROR_INVALID_GZIP_COMPRESSION_METHOD;
+      status = WUFFS_GZIP__ERROR_INVALID_COMPRESSION_METHOD;
       goto exit;
     }
     {
@@ -2159,7 +2158,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       b_rptr_src += self->private_impl.c_decode[0].scratch;
     }
     if ((v_flags & 224) != 0) {
-      status = WUFFS_GZIP__ERROR_INVALID_GZIP_ENCODING_FLAGS;
+      status = WUFFS_GZIP__ERROR_INVALID_ENCODING_FLAGS;
       goto exit;
     }
     v_checksum_got = 0;

@@ -14,10 +14,10 @@
 
 packageid "gif "
 
-pub error "bad GIF block"
-pub error "bad GIF extension label"
-pub error "bad GIF header"
-pub error "bad LZW literal width"
+pub error "bad block"
+pub error "bad extension label"
+pub error "bad header"
+pub error "bad literal width"
 
 pub struct decoder?(
 	width base.u32[..65535],
@@ -107,7 +107,7 @@ pub func decoder.decode_frame?(dst base.io_writer, src base.io_reader)() {
 		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
 			break
 		} else {
-			return error "bad GIF block"
+			return error "bad block"
 		}
 	}
 
@@ -128,7 +128,7 @@ pri func decoder.decode_header?(src base.io_reader)() {
 	}
 	if (c[0] != 0x47) or (c[1] != 0x49) or (c[2] != 0x46) or (c[3] != 0x38) or
 		((c[4] != 0x37) and (c[4] != 0x39)) or (c[5] != 0x61) {
-		return error "bad GIF header"
+		return error "bad header"
 	}
 }
 
@@ -300,7 +300,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 
 	var lw base.u8 = in.src.read_u8?()
 	if (lw < 2) or (8 < lw) {
-		return error "bad LZW literal width"
+		return error "bad literal width"
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
