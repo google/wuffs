@@ -515,7 +515,8 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 	}
 }
 
-// Iterate is "iterate[ID0, ID2]:ID1 (vars), List1 { List2 }":
+// Iterate is
+// "iterate:ID1 (step:ID2, unroll:ID0)(vars), List1 { List2 } else { List3 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
@@ -541,7 +542,7 @@ func (n *Iterate) Tail() []*Node      { return n.list3 }
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(unroll t.ID, step t.ID, label t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
+func NewIterate(label t.ID, step t.ID, unroll t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
