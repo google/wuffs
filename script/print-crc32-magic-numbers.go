@@ -34,10 +34,28 @@ func main() {
 }
 
 func main1() error {
-	for i, x := range crc32.MakeTable(crc32.IEEE) {
-		fmt.Printf("0x%08X,", x)
-		if i&7 == 7 {
+	tables := [8]crc32.Table{}
+	tables[0] = *crc32.MakeTable(crc32.IEEE)
+
+	// This slicing-by-8 table generation algorithm is based on that from Go's
+	// standard library (the hash/crc32 package).
+	for i := 0; i < 256; i++ {
+		crc := tables[0][i]
+		for j := 1; j < 8; j++ {
+			crc = tables[0][crc&0xFF] ^ (crc >> 8)
+			tables[j][i] = crc
+		}
+	}
+
+	for i, t := range tables {
+		if i != 0 {
 			fmt.Println()
+		}
+		for j, x := range t {
+			fmt.Printf("0x%08X,", x)
+			if j&7 == 7 {
+				fmt.Println()
+			}
 		}
 	}
 	return nil
