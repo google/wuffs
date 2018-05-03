@@ -2016,6 +2016,11 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
   {
     wuffs_base__slice_u8 i_slice_p = a_x;
     uint8_t* v_p = i_slice_p.ptr;
+    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 0;
+    while (v_p < i_end0_p) {
+      v_s ^= 1234;
+      v_p += 8;
+    }
     uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
     while (v_p < i_end1_p) {
       v_s = (wuffs_crc32__ieee_table[0][((uint8_t)((v_s & 255))) ^ *v_p] ^
