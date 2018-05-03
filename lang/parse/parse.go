@@ -152,18 +152,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 					p.tm.ByID(id), p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			value := (*a.Expr)(nil)
-			// TODO: parse lists of lists.
-			if p.peek1() == t.IDDollar {
-				value, err = p.parseDollarExpr()
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				value, err = p.parseExpr()
-				if err != nil {
-					return nil, err
-				}
+			value, err := p.parsePossibleDollarExpr()
+			if err != nil {
+				return nil, err
 			}
 			if x := p.peek1(); x != t.IDSemicolon {
 				got := p.tm.ByID(x)
@@ -854,13 +845,20 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 	return a.NewVar(op, id, typ, value).Node(), nil
 }
 
-func (p *parser) parseDollarExpr() (*a.Expr, error) {
+func (p *parser) parsePossibleDollarExprNode() (*a.Node, error) {
+	n, err := p.parsePossibleDollarExpr()
+	if err != nil {
+		return nil, err
+	}
+	return n.Node(), err
+}
+
+func (p *parser) parsePossibleDollarExpr() (*a.Expr, error) {
 	if x := p.peek1(); x != t.IDDollar {
-		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected "$", got %q at %s:%d`, got, p.filename, p.line())
+		return p.parseExpr()
 	}
 	p.src = p.src[1:]
-	args, err := p.parseList(t.IDCloseParen, (*parser).parseExprNode)
+	args, err := p.parseList(t.IDCloseParen, (*parser).parsePossibleDollarExprNode)
 	if err != nil {
 		return nil, err
 	}
