@@ -51,6 +51,9 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			if err := q.tcheckVars(o.Iterate().Body()); err != nil {
 				return err
 			}
+			if err := q.tcheckVars(o.Iterate().Tail()); err != nil {
+				return err
+			}
 
 		case a.KVar:
 			o := o.Var()
@@ -142,18 +145,13 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		n := n.Iterate()
-		unroll := n.UnrollCount()
-		if err := q.tcheckExpr(unroll, 0); err != nil {
-			return err
-		}
-		if cv := unroll.ConstValue(); cv == nil {
-			return fmt.Errorf("check: unroll count %q is not constant", unroll.Str(q.tm))
-		}
 		for _, o := range n.Variables() {
 			if err := q.tcheckStatement(o); err != nil {
 				return err
 			}
 		}
+		// TODO: prohibit jumps (breaks, continues), rets (returns, yields) and
+		// retry-calling ? methods while inside an iterate body.
 		if err := q.tcheckLoop(n); err != nil {
 			return err
 		}
@@ -368,6 +366,13 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 	for _, o := range n.Body() {
 		if err := q.tcheckStatement(o); err != nil {
 			return err
+		}
+	}
+	if n, ok := n.(a.TailedLoop); ok {
+		for _, o := range n.Tail() {
+			if err := q.tcheckStatement(o); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

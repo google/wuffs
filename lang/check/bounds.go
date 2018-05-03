@@ -291,18 +291,26 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	case a.KIterate:
 		n := n.Iterate()
 		for _, o := range n.Variables() {
-			if err := q.bcheckVar(o.Var()); err != nil {
+			if err := q.bcheckVar(o.Var(), true); err != nil {
 				return err
 			}
 		}
 		// TODO: this isn't right, as the body is a loop, not an
 		// execute-exactly-once block. We should have pre / inv / post
 		// conditions, a la bcheckWhile.
+		q.facts = q.facts[:0]
 		for _, o := range n.Body() {
 			if err := q.bcheckStatement(o); err != nil {
 				return err
 			}
 		}
+		q.facts = q.facts[:0]
+		for _, o := range n.Tail() {
+			if err := q.bcheckStatement(o); err != nil {
+				return err
+			}
+		}
+		q.facts = q.facts[:0]
 		return nil
 
 	case a.KJump:
@@ -326,7 +334,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// TODO.
 
 	case a.KVar:
-		return q.bcheckVar(n.Var())
+		return q.bcheckVar(n.Var(), false)
 
 	case a.KWhile:
 		return q.bcheckWhile(n.While())
@@ -715,12 +723,17 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	return nil
 }
 
-func (q *checker) bcheckVar(n *a.Var) error {
+func (q *checker) bcheckVar(n *a.Var, iterateVariable bool) error {
 	if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
 		if _, _, err := typeBounds(q.tm, innTyp); err != nil {
 			return err
 		}
 	}
+	if iterateVariable {
+		// TODO.
+		return nil
+	}
+
 	lhs := a.NewExpr(a.FlagsTypeChecked, 0, 0, n.Name(), nil, nil, nil, nil)
 	lhs.SetMType(n.XType())
 	rhs := n.Value()

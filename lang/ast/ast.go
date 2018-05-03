@@ -166,7 +166,7 @@ type Node struct {
 	// Func          funcName      receiverPkg   receiverName  Func
 	// IOBind        .             .             .             IOBind
 	// If            .             .             .             If
-	// Iterate       .             label         .             Iterate
+	// Iterate       unroll        label         step          Iterate
 	// Jump          keyword       label         .             Jump
 	// PackageID     .             .             lit(pkgID)    PackageID
 	// Ret           keyword       .             .             Ret
@@ -187,6 +187,7 @@ type Node struct {
 	list0 []*Node
 	list1 []*Node
 	list2 []*Node
+	list3 []*Node
 }
 
 func (n *Node) Kind() Kind        { return n.kind }
@@ -247,13 +248,18 @@ type Loop interface {
 	SetHasContinue()
 }
 
+type TailedLoop interface {
+	Loop
+	Tail() []*Node
+}
+
 type Raw Node
 
 func (n *Raw) Node() *Node                    { return (*Node)(n) }
 func (n *Raw) Flags() Flags                   { return n.flags }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
 func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.rhs} }
-func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
+func (n *Raw) SubLists() [4][]*Node           { return [4][]*Node{n.list0, n.list1, n.list2, n.list3} }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
@@ -494,7 +500,7 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 
 // IOBind is "io_bind (in_fields) { List2 }":
 //  - List0: <Expr> in.something fields
-//  - List2: <Statement> loop body
+//  - List2: <Statement> body
 type IOBind Node
 
 func (n *IOBind) Node() *Node       { return (*Node)(n) }
@@ -509,36 +515,42 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 	}
 }
 
-// Iterate is "iterate[LHS]:ID1 (vars), List1 { List2 }":
+// Iterate is "iterate[ID0, ID2]:ID1 (vars), List1 { List2 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
+//  - ID0:   unroll
 //  - ID1:   <0|label>
-//  - LHS:   <Expr> unroll count
+//  - ID2:   step
 //  - List0: <Var> variables
 //  - List1: <Assert> asserts
-//  - List2: <Statement> loop body
+//  - List2: <Statement> body
+//  - List3: <Statement> tail
 type Iterate Node
 
 func (n *Iterate) Node() *Node        { return (*Node)(n) }
 func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
+func (n *Iterate) Unroll() t.ID       { return n.id0 }
 func (n *Iterate) Label() t.ID        { return n.id1 }
-func (n *Iterate) UnrollCount() *Expr { return n.lhs.Expr() }
+func (n *Iterate) Step() t.ID         { return n.id2 }
 func (n *Iterate) Variables() []*Node { return n.list0 }
 func (n *Iterate) Asserts() []*Node   { return n.list1 }
 func (n *Iterate) Body() []*Node      { return n.list2 }
+func (n *Iterate) Tail() []*Node      { return n.list3 }
 
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, unrollCount *Expr, variables []*Node, asserts []*Node, body []*Node) *Iterate {
+func NewIterate(unroll t.ID, step t.ID, label t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
+		id0:   unroll,
 		id1:   label,
-		lhs:   unrollCount.Node(),
+		id2:   step,
 		list0: variables,
 		list1: asserts,
 		list2: body,
+		list3: tail,
 	}
 }
 
@@ -548,7 +560,7 @@ func NewIterate(label t.ID, unrollCount *Expr, variables []*Node, asserts []*Nod
 //  - ID1:   <0|label>
 //  - MHS:   <Expr>
 //  - List1: <Assert> asserts
-//  - List2: <Statement> loop body
+//  - List2: <Statement> body
 //
 // TODO: should we be able to unroll while loops too?
 type While Node
@@ -577,23 +589,23 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 // If is "if MHS { List0 } else RHS" or "if MHS { List0 } else { List1 }":
 //  - MHS:   <Expr>
 //  - RHS:   <nil|If>
-//  - List0: <Statement> if-true body
-//  - List1: <Statement> if-false body
+//  - List2: <Statement> if-true body
+//  - List3: <Statement> if-false body
 type If Node
 
 func (n *If) Node() *Node          { return (*Node)(n) }
 func (n *If) Condition() *Expr     { return n.mhs.Expr() }
 func (n *If) ElseIf() *If          { return n.rhs.If() }
-func (n *If) BodyIfTrue() []*Node  { return n.list0 }
-func (n *If) BodyIfFalse() []*Node { return n.list1 }
+func (n *If) BodyIfTrue() []*Node  { return n.list2 }
+func (n *If) BodyIfFalse() []*Node { return n.list3 }
 
 func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node) *If {
 	return &If{
 		kind:  KIf,
 		mhs:   condition.Node(),
 		rhs:   elseIf.Node(),
-		list0: bodyIfTrue,
-		list1: bodyIfFalse,
+		list2: bodyIfTrue,
+		list3: bodyIfFalse,
 	}
 }
 
@@ -775,7 +787,7 @@ const MaxBodyDepth = 255
 //  - LHS:   <Struct> in-parameters
 //  - RHS:   <Struct> out-parameters
 //  - List1: <Assert> asserts
-//  - List2: <Statement> function body
+//  - List2: <Statement> body
 //
 // Statement means one of:
 //  - Assert

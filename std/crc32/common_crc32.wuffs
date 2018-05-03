@@ -27,7 +27,9 @@ pub struct ieee_hasher?(
 pub func ieee_hasher.update(x slice base.u8)(checksum base.u32) {
 	var s base.u32 = 0xFFFFFFFF ^ this.state
 
-	iterate[1](p ptr base.u8:in.x) {
+	iterate[1, 8](p ptr base.u8:in.x) {
+		// TODO.
+	} else {
 		s = ieee_table[0][((s & 0xFF) as base.u8) ^ deref p] ^ (s >> 8)
 	}
 
