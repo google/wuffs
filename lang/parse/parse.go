@@ -622,76 +622,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return o.Node(), err
 
 	case t.IDIterate:
-		p.src = p.src[1:]
-		label, err := p.parseLabel()
-		if err != nil {
-			return nil, err
-		}
-
-		if x := p.peek1(); x != t.IDOpenBracket {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		unroll := p.peek1()
-		if unroll.SmallPowerOf2Value() == 0 {
-			return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1..256], got %q at %s:%d`,
-				p.tm.ByID(unroll), p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		if x := p.peek1(); x != t.IDComma {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		step := p.peek1()
-		if step.SmallPowerOf2Value() == 0 {
-			return nil, fmt.Errorf(`parse: expected power-of-2 step count in [1..256], got %q at %s:%d`,
-				p.tm.ByID(step), p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		if x := p.peek1(); x != t.IDCloseBracket {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
-		if err != nil {
-			return nil, err
-		}
-		asserts, err := p.parseAsserts()
-		if err != nil {
-			return nil, err
-		}
-		body, err := p.parseBlock()
-		if err != nil {
-			return nil, err
-		}
-
-		tail := ([]*a.Node)(nil)
-		if step == t.ID1 {
-			if x := p.peek1(); x == t.IDElse {
-				got := p.tm.ByID(x)
-				return nil, fmt.Errorf(`parse: expected non-"else", got %q at %s:%d`, got, p.filename, p.line())
-			}
-		} else {
-			if x := p.peek1(); x != t.IDElse {
-				got := p.tm.ByID(x)
-				return nil, fmt.Errorf(`parse: expected "else", got %q at %s:%d`, got, p.filename, p.line())
-			}
-			p.src = p.src[1:]
-			tail, err = p.parseBlock()
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		return a.NewIterate(unroll, step, label, vars, asserts, body, tail).Node(), nil
+		return p.parseIterateNode()
 
 	case t.IDReturn, t.IDYield:
 		p.src = p.src[1:]
@@ -791,6 +722,83 @@ func (p *parser) parseIf() (*a.If, error) {
 		}
 	}
 	return a.NewIf(condition, elseIf, bodyIfTrue, bodyIfFalse), nil
+}
+
+func (p *parser) parseIterateNode() (*a.Node, error) {
+	if x := p.peek1(); x != t.IDIterate {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "if", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+	label, err := p.parseLabel()
+	if err != nil {
+		return nil, err
+	}
+
+	if x := p.peek1(); x != t.IDOpenBracket {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "[", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	unroll := p.peek1()
+	if unroll.SmallPowerOf2Value() == 0 {
+		return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1..256], got %q at %s:%d`,
+			p.tm.ByID(unroll), p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDComma {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	step := p.peek1()
+	if step.SmallPowerOf2Value() == 0 {
+		return nil, fmt.Errorf(`parse: expected power-of-2 step count in [1..256], got %q at %s:%d`,
+			p.tm.ByID(step), p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDCloseBracket {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "]", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
+	if err != nil {
+		return nil, err
+	}
+	asserts, err := p.parseAsserts()
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	tail := ([]*a.Node)(nil)
+	if step == t.ID1 {
+		if x := p.peek1(); x == t.IDElse {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected non-"else", got %q at %s:%d`, got, p.filename, p.line())
+		}
+	} else {
+		if x := p.peek1(); x != t.IDElse {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected "else", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		tail, err = p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return a.NewIterate(unroll, step, label, vars, asserts, body, tail).Node(), nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {
