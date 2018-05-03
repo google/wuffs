@@ -404,7 +404,7 @@ const (
 	IDThis       = ID(0xAB)
 	IDIn         = ID(0xAC)
 	IDOut        = ID(0xAD)
-	IDSLICE      = ID(0xAE)
+	IDCapitalT   = ID(0xAE)
 	IDBase       = ID(0xAF)
 
 	IDMark       = ID(0xB0)
@@ -588,7 +588,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDThis:       "this",
 	IDIn:         "in",
 	IDOut:        "out",
-	IDSLICE:      "SLICE",
+	IDCapitalT:   "T",
 	IDBase:       "base",
 
 	IDMark:       "mark",

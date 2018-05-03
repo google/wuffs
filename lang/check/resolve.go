@@ -110,8 +110,8 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, generic bool) (map[t.QQID]*a.Func
 		}
 		if generic {
 			for i := range tokens {
-				if tokens[i].ID == builtin.GenericReplaceFrom {
-					tokens[i].ID = builtin.GenericReplaceTo
+				if tokens[i].ID == builtin.PlaceholderOldName {
+					tokens[i].ID = builtin.PlaceholderNewName
 				}
 			}
 		}

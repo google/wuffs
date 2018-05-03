@@ -134,18 +134,19 @@ var Funcs = []string{
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
 
+// The "T" types here are generic placeholders for every "slice U" type. After
+// parsing these SliceFunc strings (e.g. in the lang/check package), replace
+// "T" with the "◊" diamond to denote a generic slice method, to avoid
+// ambiguity with a user-defined, non-generic "T" type.
+
 const (
-	GenericReplaceFrom = t.IDSLICE
-	GenericReplaceTo   = t.IDDiamond
+	PlaceholderOldName = t.IDCapitalT
+	PlaceholderNewName = t.IDDiamond
 )
 
 var SliceFuncs = []string{
-	// The "SLICE" types here are generic placeholders for every "slice T"
-	// type. After parsing these strings (e.g. in the lang/check package),
-	// replace "SLICE" with the "◊" diamond to denote a generic slice method,
-	// to avoid ambiguity with a user-defined, non-generic "SLICE" type.
-	"SLICE.copy_from_slice(s SLICE)(ret u64)",
-	"SLICE.length()(ret u64)",
-	"SLICE.prefix(up_to u64)(ret SLICE)",
-	"SLICE.suffix(up_to u64)(ret SLICE)",
+	"T.copy_from_slice(s T)(ret u64)",
+	"T.length()(ret u64)",
+	"T.prefix(up_to u64)(ret T)",
+	"T.suffix(up_to u64)(ret T)",
 }
