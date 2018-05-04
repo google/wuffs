@@ -16,6 +16,7 @@
 - Removed `&^`.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
 - Renamed `iterate.U` to `iterate (step:S, unroll:U)`.
+- Changed iterate variable types from ptr T to slice T.
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
 - Added a `base.image_config` type.

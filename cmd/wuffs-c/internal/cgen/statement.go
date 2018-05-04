@@ -238,29 +238,31 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 			return err
 		}
 		b.writes(";\n")
-		b.printf("uint8_t* %s%s = %sslice_%s.ptr;\n", vPrefix, name, iPrefix, name)
+		b.printf("wuffs_base__slice_u8 %s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 		// TODO: look at n.HasContinue() and n.HasBreak().
 
 		unroll := n.Unroll().SmallPowerOf2Value()
 		step := n.Step().SmallPowerOf2Value()
 		if uStep := unroll * step; uStep != 1 {
+			b.printf("%s%s.len = %d;\n", vPrefix, name, step)
 			b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
 				iPrefix, name, iPrefix, name, iPrefix, name, uStep, uStep)
-			b.printf("while (%s%s < %send0_%s) {\n", vPrefix, name, iPrefix, name)
+			b.printf("while (%s%s.ptr < %send0_%s) {\n", vPrefix, name, iPrefix, name)
 			for i := 0; i < unroll; i++ {
 				for _, o := range n.Body() {
 					if err := g.writeStatement(b, o, depth); err != nil {
 						return err
 					}
 				}
-				b.printf("%s%s += %d;\n", vPrefix, name, step)
+				b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
 			}
 			b.writes("}\n")
 		}
 
+		b.printf("%s%s.len = %d;\n", vPrefix, name, 1)
 		b.printf("uint8_t* %send1_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
 			iPrefix, name, iPrefix, name, iPrefix, name)
-		b.printf("while (%s%s < %send1_%s) {\n", vPrefix, name, iPrefix, name)
+		b.printf("while (%s%s.ptr < %send1_%s) {\n", vPrefix, name, iPrefix, name)
 		tail := n.Tail()
 		if step == 1 {
 			tail = n.Body()
@@ -270,7 +272,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				return err
 			}
 		}
-		b.printf("%s%s++;\n", vPrefix, name)
+		b.printf("%s%s.ptr++;\n", vPrefix, name)
 		b.writes("}\n")
 
 		b.writes("}\n")

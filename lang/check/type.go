@@ -206,17 +206,13 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			lTyp := n.XType()
 			rTyp := value.MType()
 			if n.IterateVariable() {
-				if lTyp.Decorator() != t.IDPtr {
-					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a pointer type",
+				if !lTyp.IsSliceType() {
+					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a slice type",
 						n.Name().Str(q.tm), lTyp.Str(q.tm))
 				}
-				if !rTyp.IsSliceType() {
-					return fmt.Errorf("check: iterate range %q, of type %q, does not have a slice type",
-						value.Str(q.tm), rTyp.Str(q.tm))
-				}
-				if !lTyp.Inner().Eq(rTyp.Inner()) {
+				if !lTyp.Eq(rTyp) {
 					return fmt.Errorf("check: cannot iterate %q of type %q over %q of type %q "+
-						"as their inner types don't match",
+						"as their types don't match",
 						n.Name().Str(q.tm), lTyp.Str(q.tm), value.Str(q.tm), rTyp.Str(q.tm))
 				}
 			} else if err := q.tcheckEq(n.Name(), nil, lTyp, value, rTyp); err != nil {

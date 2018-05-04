@@ -1663,39 +1663,41 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
     }
     {
       wuffs_base__slice_u8 i_slice_p = a_x;
-      uint8_t* v_p = i_slice_p.ptr;
+      wuffs_base__slice_u8 v_p = i_slice_p;
+      v_p.len = 1;
       uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
-      while (v_p < i_end0_p) {
-        v_s1 += ((uint32_t)(v_p[0]));
+      while (v_p.ptr < i_end0_p) {
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
-        v_s1 += ((uint32_t)(v_p[0]));
+        v_p.ptr += 1;
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p += 1;
+        v_p.ptr += 1;
       }
+      v_p.len = 1;
       uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
-      while (v_p < i_end1_p) {
-        v_s1 += ((uint32_t)(v_p[0]));
+      while (v_p.ptr < i_end1_p) {
+        v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p++;
+        v_p.ptr++;
       }
     }
     v_s1 %= 65521;
