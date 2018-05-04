@@ -376,57 +376,43 @@ func (g *gen) writeIterate(b *buffer, n *a.Iterate, depth uint32) error {
 	b.printf("wuffs_base__slice_u8 %s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 	// TODO: look at n.HasContinue() and n.HasBreak().
 
-	unroll := n.Unroll().SmallPowerOf2Value()
+	block := n.Body()
 	step := n.Step().SmallPowerOf2Value()
-
+	unroll := n.Unroll().SmallPowerOf2Value()
 	if unroll > 1 || step > 1 {
-		b.printf("%s%s.len = %d;\n", vPrefix, name, step)
-		b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-			iPrefix, name, iPrefix, name, iPrefix, name, unroll*step, unroll*step)
-		b.printf("while (%s%s.ptr < %send0_%s) {\n", vPrefix, name, iPrefix, name)
-		for i := 0; i < unroll; i++ {
-			for _, o := range n.Body() {
-				if err := g.writeStatement(b, o, depth); err != nil {
-					return err
-				}
-			}
-			b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
+		if err := g.writeIterateRound(b, name, block, 0, depth, step, unroll); err != nil {
+			return err
 		}
-		b.writes("}\n")
+	}
+	if unroll > 1 {
+		if err := g.writeIterateRound(b, name, block, 1, depth, step, 1); err != nil {
+			return err
+		}
+	}
+	if step > 1 {
+		block = n.Tail()
+		if err := g.writeIterateRound(b, name, block, 2, depth, 1, 1); err != nil {
+			return err
+		}
 	}
 
-	if unroll > 1 && step > 1 {
-		b.printf("%s%s.len = %d;\n", vPrefix, name, step)
-		b.printf("uint8_t* %send1_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-			iPrefix, name, iPrefix, name, iPrefix, name, step, step)
-		b.printf("while (%s%s.ptr < %send1_%s) {\n", vPrefix, name, iPrefix, name)
-		for _, o := range n.Body() {
+	b.writes("}\n")
+	return nil
+}
+
+func (g *gen) writeIterateRound(b *buffer, name string, block []*a.Node, round uint32, depth uint32, step int, unroll int) error {
+	b.printf("%s%s.len = %d;\n", vPrefix, name, step)
+	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
+		iPrefix, round, name, iPrefix, name, iPrefix, name, step*unroll, step*unroll)
+	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name, iPrefix, round, name)
+	for i := 0; i < unroll; i++ {
+		for _, o := range block {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
 			}
 		}
 		b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
-		b.writes("}\n")
 	}
-
-	{
-		b.printf("%s%s.len = %d;\n", vPrefix, name, 1)
-		b.printf("uint8_t* %send2_%s = %sslice_%s.ptr + %sslice_%s.len;\n",
-			iPrefix, name, iPrefix, name, iPrefix, name)
-		b.printf("while (%s%s.ptr < %send2_%s) {\n", vPrefix, name, iPrefix, name)
-		tail := n.Tail()
-		if step == 1 {
-			tail = n.Body()
-		}
-		for _, o := range tail {
-			if err := g.writeStatement(b, o, depth); err != nil {
-				return err
-			}
-		}
-		b.printf("%s%s.ptr += 1;\n", vPrefix, name)
-		b.writes("}\n")
-	}
-
 	b.writes("}\n")
 	return nil
 }
