@@ -96,6 +96,10 @@ type genHelper struct {
 }
 
 func (h *genHelper) gen(dirname string, recursive bool) error {
+	for len(dirname) > 0 && dirname[len(dirname)-1] == '/' {
+		dirname = dirname[:len(dirname)-1]
+	}
+
 	if h.seen == nil {
 		h.seen = map[string]struct{}{}
 	} else if _, ok := h.seen[dirname]; ok {
