@@ -147,7 +147,7 @@ void bench_start() {
   gettimeofday(&bench_start_tv, NULL);
 }
 
-void bench_finish(uint64_t reps, uint64_t n_bytes) {
+void bench_finish(uint64_t iters, uint64_t n_bytes) {
   struct timeval bench_finish_tv;
   gettimeofday(&bench_finish_tv, NULL);
   int64_t micros =
@@ -168,11 +168,11 @@ void bench_finish(uint64_t reps, uint64_t n_bytes) {
            name, cc, nanos / 1000000000, (nanos % 1000000000) / 1000);
   } else if (!n_bytes) {
     printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64 " ns/op\n",  //
-           name, cc, reps, nanos / reps);
+           name, cc, iters, nanos / iters);
   } else {
     printf("Benchmark%s/%s\t%8" PRIu64 "\t%8" PRIu64
-           " ns/op\t%8d.%03d MB/s\n",     //
-           name, cc, reps, nanos / reps,  //
+           " ns/op\t%8d.%03d MB/s\n",       //
+           name, cc, iters, nanos / iters,  //
            (int)(kb_per_s / 1000), (int)(kb_per_s % 1000));
   }
   // Flush stdout so that "wuffs bench | tee etc" still prints its numbers as
@@ -419,7 +419,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                      golden_test* gt,
                      uint64_t wlimit,
                      uint64_t rlimit,
-                     uint64_t reps,
+                     uint64_t iters,
                      bool bench) {
   if (!codec_func) {
     FAIL("NULL codec_func");
@@ -457,7 +457,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
   uint64_t n_bytes = 0;
   uint64_t i;
-  for (i = 0; i < reps; i++) {
+  for (i = 0; i < iters; i++) {
     got.wi = 0;
     src.ri = gt->src_offset0;
     const char* s = codec_func(&got, &src, wlimit, rlimit);
@@ -477,7 +477,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
     }
   }
   if (bench) {
-    bench_finish(reps, n_bytes);
+    bench_finish(iters, n_bytes);
     return true;
   }
 
@@ -500,8 +500,8 @@ bool do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                          golden_test* gt,
                          uint64_t wlimit,
                          uint64_t rlimit,
-                         uint64_t reps) {
-  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit, reps, true);
+                         uint64_t iters) {
+  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit, iters, true);
 }
 
 bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,

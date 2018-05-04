@@ -303,7 +303,7 @@ void test_wuffs_lzw_decode_pi() {
 
 // ---------------- LZW Benches
 
-bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
+bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters) {
   wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
@@ -325,7 +325,7 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  for (i = 0; i < reps; i++) {
+  for (i = 0; i < iters; i++) {
     dst.wi = 0;
     src.ri = 1;  // Skip the literal width.
     wuffs_gif__lzw_decoder dec;
@@ -338,7 +338,7 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t reps) {
     }
     n_bytes += dst.wi;
   }
-  bench_finish(reps, n_bytes);
+  bench_finish(iters, n_bytes);
   return true;
 }
 
@@ -751,7 +751,7 @@ void test_mimic_gif_decode_pjw_thumbnail() {
 bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
                                                     wuffs_base__io_buffer*),
                          const char* filename,
-                         uint64_t reps) {
+                         uint64_t iters) {
   wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -762,7 +762,7 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
-  for (i = 0; i < reps; i++) {
+  for (i = 0; i < iters; i++) {
     dst.wi = 0;
     src.ri = 0;
     const char* error_msg = decode_func(&dst, &src);
@@ -772,7 +772,7 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
     }
     n_bytes += dst.wi;
   }
-  bench_finish(reps, n_bytes);
+  bench_finish(iters, n_bytes);
   return true;
 }
 
