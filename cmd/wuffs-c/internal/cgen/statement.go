@@ -244,14 +244,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		unroll := n.Unroll().SmallPowerOf2Value()
 		step := n.Step().SmallPowerOf2Value()
 		if uStep := unroll * step; uStep != 1 {
-			// TODO: remove this hack.
-			hack := 1
-			if step != 1 {
-				hack = 0
-			}
-
 			b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-				iPrefix, name, iPrefix, name, iPrefix, name, uStep, uStep*hack)
+				iPrefix, name, iPrefix, name, iPrefix, name, uStep, uStep)
 			b.printf("while (%s%s < %send0_%s) {\n", vPrefix, name, iPrefix, name)
 			for i := 0; i < unroll; i++ {
 				for _, o := range n.Body() {

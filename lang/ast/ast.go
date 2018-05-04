@@ -729,6 +729,11 @@ func (n *TypeExpr) IsArrayType() bool {
 	return n.id0 == t.IDArray
 }
 
+func (n *TypeExpr) IsPtrType() bool {
+	// TODO: nptr??
+	return n.id0 == t.IDPtr
+}
+
 func (n *TypeExpr) IsSliceType() bool {
 	return n.id0 == t.IDSlice
 }
