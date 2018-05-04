@@ -246,7 +246,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   } else {
     reps++;  // +1 for the warm up run.
     procs = benches;
-    printf("# %s version %s\n#\n", cc, cc_version);
+    printf("# %s\n# %s version %s\n#\n", proc_filename, cc, cc_version);
     printf(
         "# The output format, including the \"Benchmark\" prefixes, is "
         "compatible with the\n"
@@ -274,14 +274,15 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
         tests_run++;
       }
     }
-  }
-  if (bench) {
-    printf(
-        "# %-16s%-8s(%d benchmarks run, 1+%d reps per benchmark, "
-        "iterscale=%d)\n",
-        proc_filename, cc, tests_run, reps - 1, (int)(iterscale));
-  } else {
-    printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
+    if (i != 0) {
+      continue;
+    }
+    if (bench) {
+      printf("# %d benchmarks, 1+%d reps per benchmark, iterscale=%d\n",
+             tests_run, reps - 1, (int)(iterscale));
+    } else {
+      printf("%-16s%-8sPASS (%d tests)\n", proc_filename, cc, tests_run);
+    }
   }
   return 0;
 }
