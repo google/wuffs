@@ -383,50 +383,64 @@ const (
 
 const (
 	minBuiltInIdent   = 0x100
-	minNumTypeOrIdeal = 0x100
-	minNumType        = 0x100
-	maxNumType        = 0x107
-	maxNumTypeOrIdeal = 0x108
+	minNumTypeOrIdeal = 0x10F
+	minNumType        = 0x110
+	maxNumType        = 0x117
+	maxNumTypeOrIdeal = 0x117
 	maxBuiltInIdent   = 0x3FF
 
-	IDI8  = ID(0x100)
-	IDI16 = ID(0x101)
-	IDI32 = ID(0x102)
-	IDI64 = ID(0x103)
-	IDU8  = ID(0x104)
-	IDU16 = ID(0x105)
-	IDU32 = ID(0x106)
-	IDU64 = ID(0x107)
+	// -------- 0x100 block.
+
+	IDEmptyStruct = ID(0x100)
+	IDBool        = ID(0x101)
+	IDStatus      = ID(0x102)
+	IDIOReader    = ID(0x103)
+	IDIOWriter    = ID(0x104)
+	IDCapitalT    = ID(0x105)
+	IDImageConfig = ID(0x106)
+
+	IDDiamond = ID(0x10E)
 
 	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDDoubleZ = ID(0x108)
+	IDDoubleZ = ID(0x10F)
 
-	IDDiamond = ID(0x110)
+	IDI8  = ID(0x110)
+	IDI16 = ID(0x111)
+	IDI32 = ID(0x112)
+	IDI64 = ID(0x113)
+	IDU8  = ID(0x114)
+	IDU16 = ID(0x115)
+	IDU32 = ID(0x116)
+	IDU64 = ID(0x117)
 
-	IDUnderscore = ID(0x120)
-	IDThis       = ID(0x121)
-	IDIn         = ID(0x122)
-	IDOut        = ID(0x123)
-	IDCapitalT   = ID(0x124)
-	IDBase       = ID(0x125)
+	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
-	IDMark       = ID(0x180)
-	IDReadU8     = ID(0x181)
-	IDReadU16BE  = ID(0x182)
-	IDReadU16LE  = ID(0x183)
-	IDReadU32BE  = ID(0x184)
-	IDReadU32LE  = ID(0x185)
-	IDReadU64BE  = ID(0x186)
-	IDReadU64LE  = ID(0x187)
-	IDSinceMark  = ID(0x188)
-	IDWriteU8    = ID(0x189)
-	IDWriteU16BE = ID(0x18A)
-	IDWriteU16LE = ID(0x18B)
-	IDWriteU32BE = ID(0x18C)
-	IDWriteU32LE = ID(0x18D)
-	IDWriteU64BE = ID(0x18E)
-	IDWriteU64LE = ID(0x18F)
+	IDUnreadU8  = ID(0x120)
+	IDReadU8    = ID(0x121)
+	IDReadU16BE = ID(0x122)
+	IDReadU16LE = ID(0x123)
+	IDReadU32BE = ID(0x124)
+	IDReadU32LE = ID(0x125)
+	IDReadU64BE = ID(0x126)
+	IDReadU64LE = ID(0x127)
+
+	// TODO: IDUnwriteU8?
+	IDWriteU8    = ID(0x131)
+	IDWriteU16BE = ID(0x132)
+	IDWriteU16LE = ID(0x133)
+	IDWriteU32BE = ID(0x134)
+	IDWriteU32LE = ID(0x135)
+	IDWriteU64BE = ID(0x136)
+	IDWriteU64LE = ID(0x137)
+
+	IDUnderscore = ID(0x140)
+	IDThis       = ID(0x141)
+	IDIn         = ID(0x142)
+	IDOut        = ID(0x143)
+	IDBase       = ID(0x144)
+
+	// -------- 0x200 block.
 
 	IDIsError           = ID(0x200)
 	IDIsOK              = ID(0x201)
@@ -444,15 +458,9 @@ const (
 	IDSetLimit          = ID(0x20D)
 	IDLowBits           = ID(0x20E)
 	IDHighBits          = ID(0x20F)
-	IDUnreadU8          = ID(0x210)
-	IDUnroll            = ID(0x211)
-
-	IDEmptyStruct = ID(0x308)
-	IDBool        = ID(0x309)
-	IDStatus      = ID(0x30A)
-	IDIOReader    = ID(0x30B)
-	IDIOWriter    = ID(0x30C)
-	IDImageConfig = ID(0x30D)
+	IDUnroll            = ID(0x210)
+	IDMark              = ID(0x211)
+	IDSinceMark         = ID(0x212)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -561,6 +569,32 @@ var builtInsByID = [nBuiltInIDs]string{
 	ID128:   "128",
 	ID256:   "256",
 
+	// -------- 0x100 block.
+
+	IDEmptyStruct: "empty_struct",
+	IDBool:        "bool",
+	IDStatus:      "status",
+	IDIOReader:    "io_reader",
+	IDIOWriter:    "io_writer",
+	IDCapitalT:    "T",
+	IDImageConfig: "image_config",
+
+	// IDDiamond and IDDoubleZ are never returned by the tokenizer, as the
+	// tokenizer rejects non-ASCII input.
+	//
+	// The string representations ""◊ and "ℤ" are specifically non-ASCII so
+	// that no user-defined (non built-in) identifier will conflict with them.
+
+	// IDDiamond is used by the type checker as a dummy-valued built-in ID to
+	// represent a generic type.
+	IDDiamond: "◊", // U+25C7 WHITE DIAMOND
+
+	// IDDoubleZ is used by the type checker as a dummy-valued built-in ID to
+	// represent an ideal integer type (in mathematical terms, the integer ring
+	// ℤ), as opposed to a realized integer type whose range is restricted. For
+	// example, the base.u16 type is restricted to [0x0000, 0xFFFF].
+	IDDoubleZ: "ℤ", // U+2124 DOUBLE-STRUCK CAPITAL Z
+
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 	IDI8:  "i8",
 	IDI16: "i16",
@@ -571,38 +605,15 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
-	// IDDoubleZ and IDDiamond are never returned by the tokenizer, as the
-	// tokenizer rejects non-ASCII input.
-	//
-	// The string representations "ℤ" and "◊" are specifically non-ASCII so
-	// that no user-defined (non built-in) identifier will conflict with them.
+	IDUnreadU8:  "unread_u8",
+	IDReadU8:    "read_u8",
+	IDReadU16BE: "read_u16be",
+	IDReadU16LE: "read_u16le",
+	IDReadU32BE: "read_u32be",
+	IDReadU32LE: "read_u32le",
+	IDReadU64BE: "read_u64be",
+	IDReadU64LE: "read_u64le",
 
-	// IDDoubleZ is used by the type checker as a dummy-valued built-in ID to
-	// represent an ideal integer type (in mathematical terms, the integer ring
-	// ℤ), as opposed to a realized integer type whose range is restricted. For
-	// example, the base.u16 type is restricted to [0x0000, 0xFFFF].
-	IDDoubleZ: "ℤ", // U+2124 DOUBLE-STRUCK CAPITAL Z
-
-	// IDDiamond is used by the type checker as a dummy-valued built-in ID to
-	// represent a generic type.
-	IDDiamond: "◊", // U+25C7 WHITE DIAMOND
-
-	IDUnderscore: "_",
-	IDThis:       "this",
-	IDIn:         "in",
-	IDOut:        "out",
-	IDCapitalT:   "T",
-	IDBase:       "base",
-
-	IDMark:       "mark",
-	IDReadU8:     "read_u8",
-	IDReadU16BE:  "read_u16be",
-	IDReadU16LE:  "read_u16le",
-	IDReadU32BE:  "read_u32be",
-	IDReadU32LE:  "read_u32le",
-	IDReadU64BE:  "read_u64be",
-	IDReadU64LE:  "read_u64le",
-	IDSinceMark:  "since_mark",
 	IDWriteU8:    "write_u8",
 	IDWriteU16BE: "write_u16be",
 	IDWriteU16LE: "write_u16le",
@@ -610,6 +621,14 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteU32LE: "write_u32le",
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
+
+	IDUnderscore: "_",
+	IDThis:       "this",
+	IDIn:         "in",
+	IDOut:        "out",
+	IDBase:       "base",
+
+	// -------- 0x200 block.
 
 	IDIsError:           "is_error",
 	IDIsOK:              "is_ok",
@@ -627,15 +646,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSetLimit:          "set_limit",
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
-	IDUnreadU8:          "unread_u8",
 	IDUnroll:            "unroll",
-
-	IDEmptyStruct: "empty_struct",
-	IDBool:        "bool",
-	IDStatus:      "status",
-	IDIOReader:    "io_reader",
-	IDIOWriter:    "io_writer",
-	IDImageConfig: "image_config",
+	IDMark:              "mark",
+	IDSinceMark:         "since_mark",
 }
 
 var builtInsByName = map[string]ID{}
