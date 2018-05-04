@@ -741,9 +741,9 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	}
 	p.src = p.src[1:]
 
-	if x := p.peek1(); x != t.IDStep {
+	if x := p.peek1(); x != t.IDLength {
 		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected "step", got %q at %s:%d`, got, p.filename, p.line())
+		return nil, fmt.Errorf(`parse: expected "length", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -753,10 +753,10 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	}
 	p.src = p.src[1:]
 
-	step := p.peek1()
-	if step.SmallPowerOf2Value() == 0 {
-		return nil, fmt.Errorf(`parse: expected power-of-2 step count in [1..256], got %q at %s:%d`,
-			p.tm.ByID(step), p.filename, p.line())
+	length := p.peek1()
+	if length.SmallPowerOf2Value() == 0 {
+		return nil, fmt.Errorf(`parse: expected power-of-2 length count in [1..256], got %q at %s:%d`,
+			p.tm.ByID(length), p.filename, p.line())
 	}
 	p.src = p.src[1:]
 
@@ -805,7 +805,7 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	}
 
 	tail := ([]*a.Node)(nil)
-	if step == t.ID1 {
+	if length == t.ID1 {
 		if x := p.peek1(); x == t.IDElse {
 			got := p.tm.ByID(x)
 			return nil, fmt.Errorf(`parse: expected non-"else", got %q at %s:%d`, got, p.filename, p.line())
@@ -822,7 +822,7 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 		}
 	}
 
-	return a.NewIterate(label, step, unroll, vars, asserts, body, tail).Node(), nil
+	return a.NewIterate(label, length, unroll, vars, asserts, body, tail).Node(), nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

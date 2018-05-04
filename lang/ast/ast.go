@@ -166,7 +166,7 @@ type Node struct {
 	// Func          funcName      receiverPkg   receiverName  Func
 	// IOBind        .             .             .             IOBind
 	// If            .             .             .             If
-	// Iterate       unroll        label         step          Iterate
+	// Iterate       unroll        label         length        Iterate
 	// Jump          keyword       label         .             Jump
 	// PackageID     .             .             lit(pkgID)    PackageID
 	// Ret           keyword       .             .             Ret
@@ -516,12 +516,12 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate:ID1 (step:ID2, unroll:ID0)(vars), List1 { List2 } else { List3 }":
+// "iterate:ID1 (length:ID2, unroll:ID0)(vars), List1 { List2 } else { List3 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
 //  - ID1:   <0|label>
-//  - ID2:   step
+//  - ID2:   length
 //  - List0: <Var> variables
 //  - List1: <Assert> asserts
 //  - List2: <Statement> body
@@ -533,7 +533,7 @@ func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
 func (n *Iterate) Unroll() t.ID       { return n.id0 }
 func (n *Iterate) Label() t.ID        { return n.id1 }
-func (n *Iterate) Step() t.ID         { return n.id2 }
+func (n *Iterate) Length() t.ID       { return n.id2 }
 func (n *Iterate) Variables() []*Node { return n.list0 }
 func (n *Iterate) Asserts() []*Node   { return n.list1 }
 func (n *Iterate) Body() []*Node      { return n.list2 }
@@ -542,12 +542,12 @@ func (n *Iterate) Tail() []*Node      { return n.list3 }
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, step t.ID, unroll t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
+func NewIterate(label t.ID, length t.ID, unroll t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
 		id1:   label,
-		id2:   step,
+		id2:   length,
 		list0: variables,
 		list1: asserts,
 		list2: body,

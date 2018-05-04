@@ -441,8 +441,7 @@ const (
 	IDLowBits           = ID(0xCE)
 	IDHighBits          = ID(0xCF)
 	IDUnreadU8          = ID(0xD0)
-	IDStep              = ID(0xD1)
-	IDUnroll            = ID(0xD2)
+	IDUnroll            = ID(0xD1)
 
 	IDEmptyStruct = ID(0xF8)
 	IDBool        = ID(0xF9)
@@ -625,7 +624,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
 	IDUnreadU8:          "unread_u8",
-	IDStep:              "step",
 	IDUnroll:            "unroll",
 
 	IDEmptyStruct: "empty_struct",

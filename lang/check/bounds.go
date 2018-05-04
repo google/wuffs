@@ -304,7 +304,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			q.facts = q.facts[:0]
 			for _, o := range n.Variables() {
 				v := o.Var()
-				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Step()))
+				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Length()))
 			}
 			for _, o := range n.Body() {
 				if err := q.bcheckStatement(o); err != nil {

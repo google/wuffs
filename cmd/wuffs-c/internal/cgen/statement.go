@@ -264,19 +264,19 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	// TODO: look at n.HasContinue() and n.HasBreak().
 
 	block := n.Body()
-	step := n.Step().SmallPowerOf2Value()
+	length := n.Length().SmallPowerOf2Value()
 	unroll := n.Unroll().SmallPowerOf2Value()
-	if unroll > 1 || step > 1 {
-		if err := g.writeIterateRound(b, name, block, 0, depth, step, unroll); err != nil {
+	if unroll > 1 || length > 1 {
+		if err := g.writeIterateRound(b, name, block, 0, depth, length, unroll); err != nil {
 			return err
 		}
 	}
 	if unroll > 1 {
-		if err := g.writeIterateRound(b, name, block, 1, depth, step, 1); err != nil {
+		if err := g.writeIterateRound(b, name, block, 1, depth, length, 1); err != nil {
 			return err
 		}
 	}
-	if step > 1 {
+	if length > 1 {
 		block = n.Tail()
 		if err := g.writeIterateRound(b, name, block, 2, depth, 1, 1); err != nil {
 			return err
@@ -416,10 +416,10 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeIterateRound(b *buffer, name string, block []*a.Node, round uint32, depth uint32, step int, unroll int) error {
-	b.printf("%s%s.len = %d;\n", vPrefix, name, step)
+func (g *gen) writeIterateRound(b *buffer, name string, block []*a.Node, round uint32, depth uint32, length int, unroll int) error {
+	b.printf("%s%s.len = %d;\n", vPrefix, name, length)
 	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-		iPrefix, round, name, iPrefix, name, iPrefix, name, step*unroll, step*unroll)
+		iPrefix, round, name, iPrefix, name, iPrefix, name, length*unroll, length*unroll)
 	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name, iPrefix, round, name)
 	for i := 0; i < unroll; i++ {
 		for _, o := range block {
@@ -427,7 +427,7 @@ func (g *gen) writeIterateRound(b *buffer, name string, block []*a.Node, round u
 				return err
 			}
 		}
-		b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
+		b.printf("%s%s.ptr += %d;\n", vPrefix, name, length)
 	}
 	b.writes("}\n")
 	return nil
