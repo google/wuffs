@@ -184,7 +184,7 @@ typedef void (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
   bool bench = false;
-  int proc_reps = 5;
+  int reps = 5;
 
   int i;
   for (i = 1; i < argc; i++) {
@@ -212,7 +212,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
         fprintf(stderr, "out-of-range -reps=N value\n");
         return 1;
       }
-      proc_reps = n;
+      reps = n;
 
     } else {
       fprintf(stderr, "unknown flag \"%s\"\n", arg);
@@ -222,9 +222,9 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
 
   proc* procs = tests;
   if (!bench) {
-    proc_reps = 1;
+    reps = 1;
   } else {
-    proc_reps++;  // +1 for the warm up run.
+    reps++;  // +1 for the warm up run.
     procs = benches;
     printf("# %s version %s\n#\n", cc, cc_version);
     printf(
@@ -235,7 +235,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
         "# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
   }
 
-  for (i = 0; i < proc_reps; i++) {
+  for (i = 0; i < reps; i++) {
     bench_warm_up = i == 0;
     proc* p;
     for (p = procs; *p; p++) {
@@ -257,7 +257,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   }
   if (bench) {
     printf("# %-16s%-8s(%d benchmarks run, 1+%d reps per benchmark)\n",
-           proc_filename, cc, tests_run, proc_reps - 1);
+           proc_filename, cc, tests_run, reps - 1);
   } else {
     printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
   }
