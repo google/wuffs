@@ -297,6 +297,26 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			}
 			return nil
 		}
+		// TODO: All of the (ptr base.u8).ReadUxx methods, not just U32LE.
+		if isThatMethod(g.tm, n, t.IDReadU32LE, 1) {
+			if pp == parenthesesMandatory {
+				b.writeb('(')
+			}
+			b.writes("wuffs_base__load_u32le(")
+			if err := g.writeExpr(b, n.LHS().Expr().LHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writeb('+')
+			a := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+			b.writeb(')')
+			if pp == parenthesesMandatory {
+				b.writeb(')')
+			}
+			return nil
+		}
 		if isThatMethod(g.tm, n, g.tm.ByName("update"), 1) {
 			// TODO: don't hard-code the class name or this.checksum.
 			class := "wuffs_crc32__ieee_hasher"

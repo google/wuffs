@@ -660,6 +660,18 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		}
 		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
 		return nil
+
+	} else if ptrLTyp := lhs.MType(); ptrLTyp.Decorator() == t.IDPtr && (lQID == t.QID{t.IDBase, t.IDU8}) {
+		qqid[0] = t.IDBase
+		qqid[1] = t.IDDiamond
+		if f, err := q.c.builtInPtrU8Func(qqid); err != nil {
+			return err
+		} else if f == nil {
+			return fmt.Errorf("check: no ptr base.u8 method %q", n.Ident().Str(q.tm))
+		}
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), ptrLTyp.Node(), nil, nil))
+		return nil
+
 	} else if lTyp.Decorator() != 0 {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 	}

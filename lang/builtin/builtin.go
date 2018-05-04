@@ -134,15 +134,27 @@ var Funcs = []string{
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
 
-// The "T" types here are generic placeholders for every "slice U" type. After
-// parsing these SliceFunc strings (e.g. in the lang/check package), replace
-// "T" with the "◊" diamond to denote a generic slice method, to avoid
-// ambiguity with a user-defined, non-generic "T" type.
+// The "T" types here are placeholders for "ptr base.u8" or generic "slice U"
+// types. After tokenizing (but before parsing) these XxxFunc strings (e.g. in
+// the lang/check package), replace the "T" receiver type with the "◊" diamond,
+// to avoid collision with a user-defined "T" type.
 
 const (
 	PlaceholderOldName = t.IDCapitalT
 	PlaceholderNewName = t.IDDiamond
 )
+
+var PtrU8Funcs = []string{
+	// TODO: these should really have preconditions like "this.length() >= 4".
+	// Should this be explicit in the Wuffs syntax here, or enforced as a
+	// special case in the compiler (during bounds checking)?
+	"T.read_u16be(at u32)(ret u16)",
+	"T.read_u16le(at u32)(ret u16)",
+	"T.read_u32be(at u32)(ret u32)",
+	"T.read_u32le(at u32)(ret u32)",
+	"T.read_u64be(at u32)(ret u64)",
+	"T.read_u64le(at u32)(ret u64)",
+}
 
 var SliceFuncs = []string{
 	"T.copy_from_slice(s T)(ret u64)",

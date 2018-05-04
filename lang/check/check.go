@@ -160,6 +160,7 @@ type Checker struct {
 	useBaseNames map[t.ID]struct{}
 
 	builtInFuncs      map[t.QQID]*a.Func
+	builtInPtrU8Funcs map[t.QQID]*a.Func
 	builtInSliceFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct
 }

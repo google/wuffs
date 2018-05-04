@@ -2018,7 +2018,7 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
     uint8_t* v_p = i_slice_p.ptr;
     uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 0;
     while (v_p < i_end0_p) {
-      v_s ^= 1234;
+      v_s ^= (wuffs_base__load_u32le(v_p + 0));
       v_p += 8;
     }
     uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;

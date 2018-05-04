@@ -669,6 +669,8 @@ const MaxTypeExprDepth = 63
 // type. LHS is the receiver type, which may be nil. If non-nil, it will be a
 // pointee type: "T" instead of "ptr T", "ptr ptr T", etc.
 //
+// TODO: is "pointee type" correct for the built-in ptr base.u8 methods??
+//
 // TODO: method effects: "foo" vs "foo!" vs "foo?".
 //
 // A zero ID0 means a (possibly package-qualified) type like "pkg.foo" or

@@ -28,8 +28,8 @@ pub func ieee_hasher.update(x slice base.u8)(checksum base.u32) {
 	var s base.u32 = 0xFFFFFFFF ^ this.state
 
 	iterate (step:8, unroll:1)(p ptr base.u8:in.x) {
-		// TODO.
-		s ^= 1234
+		// TODO: bounds checking for the ptr base.u8 methods.
+		s ^= p.read_u32le(at:0)
 	} else {
 		s = ieee_table[0][((s & 0xFF) as base.u8) ^ deref p] ^ (s >> 8)
 	}
