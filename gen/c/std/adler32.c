@@ -1693,11 +1693,11 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
         v_p.ptr += 1;
       }
       v_p.len = 1;
-      uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
-      while (v_p.ptr < i_end1_p) {
+      uint8_t* i_end2_p = i_slice_p.ptr + i_slice_p.len;
+      while (v_p.ptr < i_end2_p) {
         v_s1 += ((uint32_t)(v_p.ptr[0]));
         v_s2 += v_s1;
-        v_p.ptr++;
+        v_p.ptr += 1;
       }
     }
     v_s1 %= 65521;
