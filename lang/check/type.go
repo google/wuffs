@@ -467,8 +467,8 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return err
 		}
 		lTyp := lhs.MType()
-		if key := lTyp.Decorator(); key != t.IDArray && key != t.IDPtr && key != t.IDSlice {
-			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array, ptr or slice type",
+		if key := lTyp.Decorator(); key != t.IDArray && key != t.IDSlice {
+			return fmt.Errorf("check: %s is an index expression but %s has type %s, not an array or slice type",
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		}
 		rTyp := rhs.MType()
@@ -514,7 +514,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 				n.Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
 		case t.IDArray:
 			n.SetMType(a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, lTyp.Inner()))
-		// TODO: case t.IDPtr?
 		case t.IDSlice:
 			n.SetMType(lTyp)
 		}

@@ -872,9 +872,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		lengthExpr := (*a.Expr)(nil)
 		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			lengthExpr = lTyp.ArrayLength()
-		} else if lTyp.IsPtrType() {
-			// TODO: don't skip bounds checking p[i] for ptr-typed p.
-			break
 		} else {
 			lengthExpr = makeSliceLength(lhs)
 		}
@@ -894,7 +891,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, nil
 		}
 
-		// TODO: slicing "ptr T" types?
 		lengthExpr := (*a.Expr)(nil)
 		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			lengthExpr = lTyp.ArrayLength()
