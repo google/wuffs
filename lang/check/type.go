@@ -846,7 +846,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		n.SetConstValue(ncv)
 	}
 
-	if comparisonOps[0xFF&op] {
+	if (op < t.ID(len(comparisonOps))) && comparisonOps[op] {
 		n.SetMType(typeExprBool)
 	} else if !lTyp.IsIdeal() {
 		n.SetMType(lTyp.Unrefined())
@@ -1036,7 +1036,7 @@ swtch:
 	return nil
 }
 
-var comparisonOps = [256]bool{
+var comparisonOps = [...]bool{
 	t.IDXBinaryNotEq:       true,
 	t.IDXBinaryLessThan:    true,
 	t.IDXBinaryLessEq:      true,

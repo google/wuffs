@@ -42,7 +42,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 	if n.id0.IsXOp() {
 		switch {
 		case n.id0.IsXUnaryOp():
-			buf = append(buf, opStrings[0xFF&n.id0]...)
+			buf = append(buf, opString(n.id0)...)
 			buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
 
 		case n.id0.IsXBinaryOp():
@@ -50,7 +50,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				buf = append(buf, '(')
 			}
 			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
-			buf = append(buf, opStrings[0xFF&n.id0]...)
+			buf = append(buf, opString(n.id0)...)
 			if n.id0 == t.IDXBinaryAs {
 				buf = append(buf, n.rhs.TypeExpr().Str(tm)...)
 			} else {
@@ -64,7 +64,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			if parenthesize {
 				buf = append(buf, '(')
 			}
-			op := opStrings[0xFF&n.id0]
+			op := opString(n.id0)
 			for i, o := range n.list0 {
 				if i != 0 {
 					buf = append(buf, op...)
@@ -152,7 +152,16 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 	return buf
 }
 
-var opStrings = [256]string{
+func opString(x t.ID) string {
+	if x < t.ID(len(opStrings)) {
+		if s := opStrings[x]; s != "" {
+			return s
+		}
+	}
+	return " no_such_Wuffs_operator "
+}
+
+var opStrings = [...]string{
 	t.IDXUnaryPlus:  "+",
 	t.IDXUnaryMinus: "-",
 	t.IDXUnaryNot:   "not ",

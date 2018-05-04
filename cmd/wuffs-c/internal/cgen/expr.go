@@ -432,7 +432,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	op := n.Operator()
-	opName := cOpNames[0xFF&op]
+	opName := cOpName(op)
 	if opName == "" {
 		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 	}
@@ -462,7 +462,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, pp p
 		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
 
 	default:
-		opName = cOpNames[0xFF&op]
+		opName = cOpName(op)
 		if opName == "" {
 			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 		}
@@ -501,7 +501,7 @@ func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, rp replacemen
 
 func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy, pp parenthesesPolicy, depth uint32) error {
 	op := n.Operator()
-	opName := cOpNames[0xFF&op]
+	opName := cOpName(op)
 	if opName == "" {
 		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 	}
@@ -628,7 +628,18 @@ var cTypeNames = [...]string{
 	t.IDIOWriter: "wuffs_base__io_writer",
 }
 
-var cOpNames = [256]string{
+const noSuchCOperator = " no_such_C_operator "
+
+func cOpName(x t.ID) string {
+	if x < t.ID(len(cOpNames)) {
+		if s := cOpNames[x]; s != "" {
+			return s
+		}
+	}
+	return noSuchCOperator
+}
+
+var cOpNames = [...]string{
 	t.IDEq:              " = ",
 	t.IDPlusEq:          " += ",
 	t.IDMinusEq:         " -= ",
@@ -642,8 +653,8 @@ var cOpNames = [256]string{
 	t.IDPercentEq:       " %= ",
 	t.IDTildeModPlusEq:  " += ",
 	t.IDTildeModMinusEq: " -= ",
-	t.IDTildeSatPlusEq:  " no_such_C_operator ",
-	t.IDTildeSatMinusEq: " no_such_C_operator ",
+	t.IDTildeSatPlusEq:  noSuchCOperator,
+	t.IDTildeSatMinusEq: noSuchCOperator,
 
 	t.IDXUnaryPlus:  " + ",
 	t.IDXUnaryMinus: " - ",
@@ -663,8 +674,8 @@ var cOpNames = [256]string{
 	t.IDXBinaryPercent:       " % ",
 	t.IDXBinaryTildeModPlus:  " + ",
 	t.IDXBinaryTildeModMinus: " - ",
-	t.IDXBinaryTildeSatPlus:  " no_such_C_operator ",
-	t.IDXBinaryTildeSatMinus: " no_such_C_operator ",
+	t.IDXBinaryTildeSatPlus:  noSuchCOperator,
+	t.IDXBinaryTildeSatMinus: noSuchCOperator,
 	t.IDXBinaryNotEq:         " != ",
 	t.IDXBinaryLessThan:      " < ",
 	t.IDXBinaryLessEq:        " <= ",
@@ -673,7 +684,7 @@ var cOpNames = [256]string{
 	t.IDXBinaryGreaterThan:   " > ",
 	t.IDXBinaryAnd:           " && ",
 	t.IDXBinaryOr:            " || ",
-	t.IDXBinaryAs:            " no_such_C_operator ",
+	t.IDXBinaryAs:            noSuchCOperator,
 
 	t.IDXAssociativePlus: " + ",
 	t.IDXAssociativeStar: " * ",

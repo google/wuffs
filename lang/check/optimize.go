@@ -278,7 +278,7 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 	})
 }
 
-var ioMethodAdvances = [256]*big.Int{
+var ioMethodAdvances = [...]*big.Int{
 	t.IDReadU8:    one,
 	t.IDReadU16BE: two,
 	t.IDReadU16LE: two,

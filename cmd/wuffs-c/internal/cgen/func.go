@@ -402,7 +402,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	return nil
 }
 
-var numTypeBounds = [256][2]*big.Int{
+var numTypeBounds = [...][2]*big.Int{
 	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
 	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
 	t.IDI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},

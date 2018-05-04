@@ -116,7 +116,7 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 		opName, tilde = ",", true
 
 	default:
-		opName = cOpNames[0xFF&op]
+		opName = cOpName(op)
 		if opName == "" {
 			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 		}

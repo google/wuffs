@@ -30,28 +30,28 @@ type ID uint32
 func (x ID) Str(m *Map) string { return m.ByID(x) }
 
 func (x ID) AmbiguousForm() ID {
-	if x >= nBuiltInIDs {
+	if x >= ID(len(ambiguousForms)) {
 		return 0
 	}
 	return ambiguousForms[x]
 }
 
 func (x ID) UnaryForm() ID {
-	if x >= nBuiltInIDs {
+	if x >= ID(len(unaryForms)) {
 		return 0
 	}
 	return unaryForms[x]
 }
 
 func (x ID) BinaryForm() ID {
-	if x >= nBuiltInIDs {
+	if x >= ID(len(binaryForms)) {
 		return 0
 	}
 	return binaryForms[x]
 }
 
 func (x ID) AssociativeForm() ID {
-	if x >= nBuiltInIDs {
+	if x >= ID(len(associativeForms)) {
 		return 0
 	}
 	return associativeForms[x]
@@ -180,20 +180,24 @@ type Token struct {
 
 // nBuiltInIDs is the number of built-in IDs. The packing is:
 //  - Zero is invalid.
-//  - [0x01, 0x0F] are squiggly punctuation, such as "(", ")" and ";".
-//  - [0x10, 0x1F] are squiggly assignments, such as "=" and "+=".
-//  - [0x20, 0x3F] are operators, such as "+", "==" and "not".
-//  - [0x40, 0x6F] are x-ops (disambiguation forms), e.g. unary vs binary "+".
-//  - [0x70, 0x8F] are keywords, such as "if" and "return".
-//  - [0x90, 0x93] are type modifiers, such as "ptr" and "slice".
-//  - [0x94, 0x9F] are literals, such as "false" and "true".
-//  - [0xA0, 0xFF] are identifiers, such as "bool", "u32" and "read_u8".
+//  - [ 0x01,  0x0F] are squiggly punctuation, such as "(", ")" and ";".
+//  - [ 0x10,  0x1F] are squiggly assignments, such as "=" and "+=".
+//  - [ 0x20,  0x3F] are operators, such as "+", "==" and "not".
+//  - [ 0x40,  0x6F] are x-ops (disambiguation forms): unary vs binary "+".
+//  - [ 0x70,  0x8F] are keywords, such as "if" and "return".
+//  - [ 0x90,  0x93] are type modifiers, such as "ptr" and "slice".
+//  - [ 0x94,  0x9F] are literals, such as "false" and "true".
+//  - [ 0xA0,  0xFF] are reserved.
+//  - [0x100, 0x3FF] are identifiers, such as "bool", "u32" and "read_u8".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
-// "&=". Roughly speaking, their IDs range in [0x01, 0x4F], or disambiguation
-// forms range in [0xD0, 0xFF], but vice versa does not necessarily hold. For
-// example, the "and" operator is not "squiggly" but it is within [0x01, 0x4F].
-const nBuiltInIDs = ID(256)
+// "&=". Roughly speaking, their IDs range in [0x01, 0x3F], or disambiguation
+// forms range in [0x40, 0x6F], but vice versa does not necessarily hold. For
+// example, the "and" operator is not "squiggly" but it is within [0x01, 0x3F].
+const (
+	nBuiltInSymbolicIDs = ID(0x70)  // 112
+	nBuiltInIDs         = ID(0x400) // 1024
+)
 
 const (
 	IDInvalid = ID(0)
@@ -378,77 +382,77 @@ const (
 )
 
 const (
-	minBuiltInIdent   = 0xA0
-	minNumTypeOrIdeal = 0xA0
-	minNumType        = 0xA0
-	maxNumType        = 0xA7
-	maxNumTypeOrIdeal = 0xA8
-	maxBuiltInIdent   = 0xFF
+	minBuiltInIdent   = 0x100
+	minNumTypeOrIdeal = 0x100
+	minNumType        = 0x100
+	maxNumType        = 0x107
+	maxNumTypeOrIdeal = 0x108
+	maxBuiltInIdent   = 0x3FF
 
-	IDI8  = ID(0xA0)
-	IDI16 = ID(0xA1)
-	IDI32 = ID(0xA2)
-	IDI64 = ID(0xA3)
-	IDU8  = ID(0xA4)
-	IDU16 = ID(0xA5)
-	IDU32 = ID(0xA6)
-	IDU64 = ID(0xA7)
+	IDI8  = ID(0x100)
+	IDI16 = ID(0x101)
+	IDI32 = ID(0x102)
+	IDI64 = ID(0x103)
+	IDU8  = ID(0x104)
+	IDU16 = ID(0x105)
+	IDU32 = ID(0x106)
+	IDU64 = ID(0x107)
 
 	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDDoubleZ = ID(0xA8)
+	IDDoubleZ = ID(0x108)
 
-	IDDiamond = ID(0xA9)
+	IDDiamond = ID(0x110)
 
-	IDUnderscore = ID(0xAA)
-	IDThis       = ID(0xAB)
-	IDIn         = ID(0xAC)
-	IDOut        = ID(0xAD)
-	IDCapitalT   = ID(0xAE)
-	IDBase       = ID(0xAF)
+	IDUnderscore = ID(0x120)
+	IDThis       = ID(0x121)
+	IDIn         = ID(0x122)
+	IDOut        = ID(0x123)
+	IDCapitalT   = ID(0x124)
+	IDBase       = ID(0x125)
 
-	IDMark       = ID(0xB0)
-	IDReadU8     = ID(0xB1)
-	IDReadU16BE  = ID(0xB2)
-	IDReadU16LE  = ID(0xB3)
-	IDReadU32BE  = ID(0xB4)
-	IDReadU32LE  = ID(0xB5)
-	IDReadU64BE  = ID(0xB6)
-	IDReadU64LE  = ID(0xB7)
-	IDSinceMark  = ID(0xB8)
-	IDWriteU8    = ID(0xB9)
-	IDWriteU16BE = ID(0xBA)
-	IDWriteU16LE = ID(0xBB)
-	IDWriteU32BE = ID(0xBC)
-	IDWriteU32LE = ID(0xBD)
-	IDWriteU64BE = ID(0xBE)
-	IDWriteU64LE = ID(0xBF)
+	IDMark       = ID(0x180)
+	IDReadU8     = ID(0x181)
+	IDReadU16BE  = ID(0x182)
+	IDReadU16LE  = ID(0x183)
+	IDReadU32BE  = ID(0x184)
+	IDReadU32LE  = ID(0x185)
+	IDReadU64BE  = ID(0x186)
+	IDReadU64LE  = ID(0x187)
+	IDSinceMark  = ID(0x188)
+	IDWriteU8    = ID(0x189)
+	IDWriteU16BE = ID(0x18A)
+	IDWriteU16LE = ID(0x18B)
+	IDWriteU32BE = ID(0x18C)
+	IDWriteU32LE = ID(0x18D)
+	IDWriteU64BE = ID(0x18E)
+	IDWriteU64LE = ID(0x18F)
 
-	IDIsError           = ID(0xC0)
-	IDIsOK              = ID(0xC1)
-	IDIsSuspension      = ID(0xC2)
-	IDCopyFromHistory32 = ID(0xC3)
-	IDCopyFromReader32  = ID(0xC4)
-	IDCopyFromSlice     = ID(0xC5)
-	IDCopyFromSlice32   = ID(0xC6)
-	IDSkip32            = ID(0xC7)
-	IDSkip64            = ID(0xC8)
-	IDLength            = ID(0xC9)
-	IDAvailable         = ID(0xCA)
-	IDPrefix            = ID(0xCB)
-	IDSuffix            = ID(0xCC)
-	IDSetLimit          = ID(0xCD)
-	IDLowBits           = ID(0xCE)
-	IDHighBits          = ID(0xCF)
-	IDUnreadU8          = ID(0xD0)
-	IDUnroll            = ID(0xD1)
+	IDIsError           = ID(0x200)
+	IDIsOK              = ID(0x201)
+	IDIsSuspension      = ID(0x202)
+	IDCopyFromHistory32 = ID(0x203)
+	IDCopyFromReader32  = ID(0x204)
+	IDCopyFromSlice     = ID(0x205)
+	IDCopyFromSlice32   = ID(0x206)
+	IDSkip32            = ID(0x207)
+	IDSkip64            = ID(0x208)
+	IDLength            = ID(0x209)
+	IDAvailable         = ID(0x20A)
+	IDPrefix            = ID(0x20B)
+	IDSuffix            = ID(0x20C)
+	IDSetLimit          = ID(0x20D)
+	IDLowBits           = ID(0x20E)
+	IDHighBits          = ID(0x20F)
+	IDUnreadU8          = ID(0x210)
+	IDUnroll            = ID(0x211)
 
-	IDEmptyStruct = ID(0xF8)
-	IDBool        = ID(0xF9)
-	IDStatus      = ID(0xFA)
-	IDIOReader    = ID(0xFB)
-	IDIOWriter    = ID(0xFC)
-	IDImageConfig = ID(0xFD)
+	IDEmptyStruct = ID(0x308)
+	IDBool        = ID(0x309)
+	IDStatus      = ID(0x30A)
+	IDIOReader    = ID(0x30B)
+	IDIOWriter    = ID(0x30C)
+	IDImageConfig = ID(0x30D)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -645,7 +649,7 @@ func init() {
 }
 
 // squiggles are built-in IDs that aren't alpha-numeric.
-var squiggles = [nBuiltInIDs]ID{
+var squiggles = [256]ID{
 	'(': IDOpenParen,
 	')': IDCloseParen,
 	'[': IDOpenBracket,
@@ -670,7 +674,7 @@ type suffixLexer struct {
 //
 // The order of the []suffixLexer elements matters. The first match wins. Since
 // we want to lex greedily, longer suffixes should be earlier in the slice.
-var lexers = [nBuiltInIDs][]suffixLexer{
+var lexers = [256][]suffixLexer{
 	'.': {
 		{".", IDDotDot},
 		{"", IDDot},
@@ -739,7 +743,7 @@ var lexers = [nBuiltInIDs][]suffixLexer{
 	},
 }
 
-var ambiguousForms = [nBuiltInIDs]ID{
+var ambiguousForms = [nBuiltInSymbolicIDs]ID{
 	IDXUnaryPlus:  IDPlus,
 	IDXUnaryMinus: IDMinus,
 	IDXUnaryNot:   IDNot,
@@ -791,8 +795,8 @@ func init() {
 //  IDPlus:        IDXUnaryPlus,
 // and this function implicitly addes entries like:
 //  IDXUnaryPlus:  IDXUnaryPlus,
-func addXForms(table *[nBuiltInIDs]ID) {
-	implicitEntries := [nBuiltInIDs]bool{}
+func addXForms(table *[nBuiltInSymbolicIDs]ID) {
+	implicitEntries := [nBuiltInSymbolicIDs]bool{}
 	for _, y := range table {
 		if y != 0 {
 			implicitEntries[y] = true
@@ -805,7 +809,7 @@ func addXForms(table *[nBuiltInIDs]ID) {
 	}
 }
 
-var unaryForms = [nBuiltInIDs]ID{
+var unaryForms = [nBuiltInSymbolicIDs]ID{
 	IDPlus:  IDXUnaryPlus,
 	IDMinus: IDXUnaryMinus,
 	IDNot:   IDXUnaryNot,
@@ -813,7 +817,7 @@ var unaryForms = [nBuiltInIDs]ID{
 	IDDeref: IDXUnaryDeref,
 }
 
-var binaryForms = [nBuiltInIDs]ID{
+var binaryForms = [nBuiltInSymbolicIDs]ID{
 	IDPlusEq:          IDXBinaryPlus,
 	IDMinusEq:         IDXBinaryMinus,
 	IDStarEq:          IDXBinaryStar,
@@ -855,7 +859,7 @@ var binaryForms = [nBuiltInIDs]ID{
 	IDAs:          IDXBinaryAs,
 }
 
-var associativeForms = [nBuiltInIDs]ID{
+var associativeForms = [nBuiltInSymbolicIDs]ID{
 	IDPlus: IDXAssociativePlus,
 	IDStar: IDXAssociativeStar,
 	IDAmp:  IDXAssociativeAmp,
