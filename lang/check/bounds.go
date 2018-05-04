@@ -298,18 +298,37 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// TODO: this isn't right, as the body is a loop, not an
 		// execute-exactly-once block. We should have pre / inv / post
 		// conditions, a la bcheckWhile.
-		q.facts = q.facts[:0]
-		for _, o := range n.Body() {
-			if err := q.bcheckStatement(o); err != nil {
-				return err
+
+		// Check the body.
+		{
+			q.facts = q.facts[:0]
+			for _, o := range n.Variables() {
+				v := o.Var()
+				// TODO: use the XType(), not the Value().MType().
+				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.Value().MType(), n.Step()))
+			}
+			for _, o := range n.Body() {
+				if err := q.bcheckStatement(o); err != nil {
+					return err
+				}
 			}
 		}
-		q.facts = q.facts[:0]
-		for _, o := range n.Tail() {
-			if err := q.bcheckStatement(o); err != nil {
-				return err
+
+		// Check the tail.
+		{
+			q.facts = q.facts[:0]
+			for _, o := range n.Variables() {
+				v := o.Var()
+				// TODO: use the XType(), not the Value().MType().
+				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.Value().MType(), t.ID1))
+			}
+			for _, o := range n.Tail() {
+				if err := q.bcheckStatement(o); err != nil {
+					return err
+				}
 			}
 		}
+
 		q.facts = q.facts[:0]
 		return nil
 
@@ -859,7 +878,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			// TODO: don't skip bounds checking p[i] for ptr-typed p.
 			break
 		} else {
-			lengthExpr = makeSliceLengthExpr(lhs)
+			lengthExpr = makeSliceLength(lhs)
 		}
 
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, rhs); err != nil {
@@ -882,7 +901,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			lengthExpr = lTyp.ArrayLength()
 		} else {
-			lengthExpr = makeSliceLengthExpr(lhs)
+			lengthExpr = makeSliceLength(lhs)
 		}
 
 		if mhs == nil {
@@ -986,12 +1005,35 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func makeSliceLengthExpr(slice *a.Expr) *a.Expr {
+// makeSliceLength returns "x.length()".
+func makeSliceLength(slice *a.Expr) *a.Expr {
 	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
 	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().Node(), nil, nil))
 	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
+}
+
+// makeSliceLengthEqEq returns "x.length() == n".
+//
+// n must be the t.ID of a small power of 2.
+func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
+	xExpr := a.NewExpr(a.FlagsTypeChecked, 0, 0, x, nil, nil, nil, nil)
+	xExpr.SetMType(xTyp)
+
+	lhs := makeSliceLength(xExpr)
+
+	nValue := n.SmallPowerOf2Value()
+	if nValue == 0 {
+		panic("check: internal error: makeSliceLengthEqEq called but not with a small power of 2")
+	}
+	rhs := a.NewExpr(a.FlagsTypeChecked, 0, 0, n, nil, nil, nil, nil)
+	rhs.SetConstValue(big.NewInt(int64(nValue)))
+	rhs.SetMType(typeExprIdeal)
+
+	ret := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+	ret.SetMType(typeExprBool)
+	return ret
 }
 
 func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
