@@ -80,17 +80,6 @@ func (c *Checker) builtInFunc(qqid t.QQID) (*a.Func, error) {
 	return c.builtInFuncs[qqid], nil
 }
 
-func (c *Checker) builtInPtrU8Func(qqid t.QQID) (*a.Func, error) {
-	if c.builtInPtrU8Funcs == nil {
-		err := error(nil)
-		c.builtInPtrU8Funcs, err = parseBuiltInFuncs(c.tm, builtin.PtrU8Funcs, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.builtInPtrU8Funcs[qqid], nil
-}
-
 func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
 	if c.builtInSliceFuncs == nil {
 		err := error(nil)
@@ -153,15 +142,6 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDiamond
 		if f, err := c.builtInSliceFunc(qqid); err != nil {
-			return nil, err
-		} else if f != nil {
-			return f, nil
-		}
-
-	} else if lTyp.Decorator() == t.IDPtr && (lTyp.Inner().QID() == t.QID{t.IDBase, t.IDU8}) {
-		qqid[0] = t.IDBase
-		qqid[1] = t.IDDiamond
-		if f, err := c.builtInPtrU8Func(qqid); err != nil {
 			return nil, err
 		} else if f != nil {
 			return f, nil

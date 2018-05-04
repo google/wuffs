@@ -134,20 +134,15 @@ var Funcs = []string{
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
 
-// The "T" types here are placeholders for "ptr base.u8" or generic "slice U"
-// types. After tokenizing (but before parsing) these XxxFunc strings (e.g. in
-// the lang/check package), replace the "T" receiver type with the "◊" diamond,
-// to avoid collision with a user-defined "T" type.
+// The "T" types here are placeholders for generic "slice U" types. After
+// tokenizing (but before parsing) these SliceFunc strings (e.g. in the
+// lang/check package), replace the "T" receiver type with the "◊" diamond, to
+// avoid collision with a user-defined "T" type.
 
 const (
 	PlaceholderOldName = t.IDCapitalT
 	PlaceholderNewName = t.IDDiamond
 )
-
-// TODO: drop the U8.
-var PtrU8Funcs = []string{
-	// TODO: a length method.
-}
 
 var SliceFuncs = []string{
 	"T.copy_from_slice(s T)(ret u64)",
