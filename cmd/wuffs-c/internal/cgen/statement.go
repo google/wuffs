@@ -71,289 +71,176 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	switch n.Kind() {
 	case a.KAssign:
-		n := n.Assign()
-		if err := g.writeSuspendibles(b, n.LHS(), depth); err != nil {
-			return err
-		}
-		if err := g.writeSuspendibles(b, n.RHS(), depth); err != nil {
-			return err
-		}
-		opName, tilde := "", false
-
-		op := n.Operator()
-		switch op {
-		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-			uBits := uintBits(n.LHS().MType().QID())
-			if uBits == 0 {
-				return fmt.Errorf("unsupported tilde-operator type %q", n.LHS().MType().Str(g.tm))
-			}
-			uOp := "add"
-			if op != t.IDTildeSatPlusEq {
-				uOp = "sub"
-			}
-			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-			opName, tilde = ",", true
-
-		default:
-			opName = cOpNames[0xFF&op]
-			if opName == "" {
-				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
-			}
-		}
-
-		if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writes(opName)
-		if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		if tilde {
-			b.writeb(')')
-		}
-		b.writes(";\n")
-		return nil
-
+		return g.writeStatementAssign(b, n.Assign(), depth)
 	case a.KExpr:
-		n := n.Expr()
-		if err := g.writeSuspendibles(b, n, depth); err != nil {
-			return err
-		}
-		if n.CallSuspendible() {
-			return nil
-		}
-		if err := g.writeExpr(b, n, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writes(";\n")
-		return nil
-
+		return g.writeStatementExpr(b, n.Expr(), depth)
 	case a.KIOBind:
-		n := n.IOBind()
-		inFields := n.InFields()
-
-		if g.currFunk.ioBinds > maxIOBinds || len(inFields) > maxIOBindInFields {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		ioBindNum := g.currFunk.ioBinds
-		g.currFunk.ioBinds++
-
-		// TODO: do these variables need to be func-scoped (bigger scope)
-		// instead of block-scoped (smaller scope) if the coro_susp_point
-		// switch can jump past this initialization??
-		b.writes("{\n")
-		for i := 0; i < len(inFields); i++ {
-			e := inFields[i].Expr()
-			name := e.Ident().Str(g.tm)
-			for j := 0; j < 2; j++ {
-				b.printf("uint8_t* %s%d_bounds%d_%s = %s%s.private_impl.bounds[%d];\n",
-					oPrefix, ioBindNum, j, name, aPrefix, name, j)
-			}
-		}
-
-		for _, o := range n.Body() {
-			if err := g.writeStatement(b, o, depth); err != nil {
-				return err
-			}
-		}
-
-		for i := len(inFields) - 1; i >= 0; i-- {
-			e := inFields[i].Expr()
-			name := e.Ident().Str(g.tm)
-			for j := 1; j >= 0; j-- {
-				b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s;\n",
-					aPrefix, name, j, oPrefix, ioBindNum, j, name)
-			}
-		}
-		b.writes("}\n")
-		return nil
-
+		return g.writeStatementIOBind(b, n.IOBind(), depth)
 	case a.KIf:
-		// TODO: for writeSuspendibles, make sure that we get order of
-		// sub-expression evaluation correct.
-		n, nCloseCurly := n.If(), 1
-		for first := true; ; first = false {
-			if n.Condition().Suspendible() {
-				if !first {
-					b.writeb('{')
-					const maxCloseCurly = 1000
-					if nCloseCurly == maxCloseCurly {
-						return fmt.Errorf("too many nested if's")
-					}
-					nCloseCurly++
-				}
-				if err := g.writeSuspendibles(b, n.Condition(), depth); err != nil {
-					return err
-				}
-			}
-
-			b.writes("if (")
-			if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
-				return err
-			}
-			b.writes(") {\n")
-			for _, o := range n.BodyIfTrue() {
-				if err := g.writeStatement(b, o, depth); err != nil {
-					return err
-				}
-			}
-			if bif := n.BodyIfFalse(); len(bif) > 0 {
-				b.writes("} else {\n")
-				for _, o := range bif {
-					if err := g.writeStatement(b, o, depth); err != nil {
-						return err
-					}
-				}
-				break
-			}
-			n = n.ElseIf()
-			if n == nil {
-				break
-			}
-			b.writes("} else ")
-		}
-		for ; nCloseCurly > 0; nCloseCurly-- {
-			b.writes("}\n")
-		}
-		return nil
-
+		return g.writeStatementIf(b, n.If(), depth)
 	case a.KIterate:
-		return g.writeIterate(b, n.Iterate(), depth)
-
+		return g.writeStatementIterate(b, n.Iterate(), depth)
 	case a.KJump:
-		n := n.Jump()
-		jt, err := g.currFunk.jumpTarget(n.JumpTarget())
-		if err != nil {
-			return err
-		}
-		keyword := "continue"
-		if n.Keyword() == t.IDBreak {
-			keyword = "break"
-		}
-		b.printf("goto label_%d_%s;\n", jt, keyword)
-		return nil
-
+		return g.writeStatementJump(b, n.Jump(), depth)
 	case a.KRet:
-		n := n.Ret()
-		retExpr := n.Value()
-
-		if g.currFunk.suspendible {
-			b.writes("status = ")
-			retKeyword := t.IDStatus
-			if retExpr == nil {
-				b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
-			} else {
-				retKeyword = retExpr.Operator()
-				// TODO: check that retExpr has no call-suspendibles.
-				if err := g.writeExpr(
-					b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-					return err
-				}
-			}
-			b.writes(";")
-
-			if n.Keyword() == t.IDYield {
-				return g.writeCoroSuspPoint(b, true)
-			}
-
-			switch retKeyword {
-			case t.IDError:
-				b.writes("goto exit;")
-			case t.IDStatus:
-				b.writes("goto ok;")
-			default:
-				b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
-					"status = %sERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;", g.PKGPREFIX)
-			}
-			return nil
-		}
-
-		b.writes("return ")
-		if len(g.currFunk.astFunc.Out().Fields()) == 0 {
-			if retExpr != nil {
-				return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.Str(g.tm))
-			}
-		} else if retExpr == nil {
-			// TODO: should a bare "return" imply "return out"?
-			return fmt.Errorf("empty return expression incompatible with non-empty return type")
-		} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
-			return err
-		}
-		b.writeb(';')
-		return nil
-
+		return g.writeStatementRet(b, n.Ret(), depth)
 	case a.KVar:
-		n := n.Var()
-		if v := n.Value(); v != nil {
-			if err := g.writeSuspendibles(b, v, depth); err != nil {
-				return err
-			}
-		}
-		if n.XType().IsArrayType() {
-			if n.Value() != nil {
-				// TODO: something like:
-				// cv := n.XType().ArrayLength().ConstValue()
-				// // TODO: check that cv is within size_t's range.
-				// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
-				// cv, vPrefix, n.Name().Str(g.tm))
-				return fmt.Errorf("TODO: array initializers for non-zero default values")
-			}
-			// TODO: arrays of arrays.
-			name := n.Name().Str(g.tm)
-			b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
-
-		} else {
-			b.printf("%s%s = ", vPrefix, n.Name().Str(g.tm))
-			if v := n.Value(); v != nil {
-				if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
-					return err
-				}
-			} else if n.XType().IsSliceType() {
-				// TODO: don't assume that the slice is a slice of base.u8.
-				b.printf("((wuffs_base__slice_u8){})")
-			} else {
-				b.writeb('0')
-			}
-			b.writes(";\n")
-		}
-		return nil
-
+		return g.writeStatementVar(b, n.Var(), depth)
 	case a.KWhile:
-		n := n.While()
-		// TODO: consider suspendible calls.
-
-		if n.HasContinue() {
-			jt, err := g.currFunk.jumpTarget(n)
-			if err != nil {
-				return err
-			}
-			b.printf("label_%d_continue:;\n", jt)
-		}
-		b.writes("while (")
-		if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
-			return err
-		}
-		b.writes(") {\n")
-		for _, o := range n.Body() {
-			if err := g.writeStatement(b, o, depth); err != nil {
-				return err
-			}
-		}
-		b.writes("}\n")
-		if n.HasBreak() {
-			jt, err := g.currFunk.jumpTarget(n)
-			if err != nil {
-				return err
-			}
-			b.printf("label_%d_break:;\n", jt)
-		}
-		return nil
-
+		return g.writeStatementWhile(b, n.While(), depth)
 	}
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeIterate(b *buffer, n *a.Iterate, depth uint32) error {
+func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
+	if err := g.writeSuspendibles(b, n.LHS(), depth); err != nil {
+		return err
+	}
+	if err := g.writeSuspendibles(b, n.RHS(), depth); err != nil {
+		return err
+	}
+	opName, tilde := "", false
+
+	op := n.Operator()
+	switch op {
+	case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+		uBits := uintBits(n.LHS().MType().QID())
+		if uBits == 0 {
+			return fmt.Errorf("unsupported tilde-operator type %q", n.LHS().MType().Str(g.tm))
+		}
+		uOp := "add"
+		if op != t.IDTildeSatPlusEq {
+			uOp = "sub"
+		}
+		b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+		opName, tilde = ",", true
+
+	default:
+		opName = cOpNames[0xFF&op]
+		if opName == "" {
+			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+		}
+	}
+
+	if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+		return err
+	}
+	b.writes(opName)
+	if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+		return err
+	}
+	if tilde {
+		b.writeb(')')
+	}
+	b.writes(";\n")
+	return nil
+}
+
+func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
+	if err := g.writeSuspendibles(b, n, depth); err != nil {
+		return err
+	}
+	if n.CallSuspendible() {
+		return nil
+	}
+	if err := g.writeExpr(b, n, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+		return err
+	}
+	b.writes(";\n")
+	return nil
+}
+
+func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
+	inFields := n.InFields()
+
+	if g.currFunk.ioBinds > maxIOBinds || len(inFields) > maxIOBindInFields {
+		return fmt.Errorf("too many temporary variables required")
+	}
+	ioBindNum := g.currFunk.ioBinds
+	g.currFunk.ioBinds++
+
+	// TODO: do these variables need to be func-scoped (bigger scope)
+	// instead of block-scoped (smaller scope) if the coro_susp_point
+	// switch can jump past this initialization??
+	b.writes("{\n")
+	for i := 0; i < len(inFields); i++ {
+		e := inFields[i].Expr()
+		name := e.Ident().Str(g.tm)
+		for j := 0; j < 2; j++ {
+			b.printf("uint8_t* %s%d_bounds%d_%s = %s%s.private_impl.bounds[%d];\n",
+				oPrefix, ioBindNum, j, name, aPrefix, name, j)
+		}
+	}
+
+	for _, o := range n.Body() {
+		if err := g.writeStatement(b, o, depth); err != nil {
+			return err
+		}
+	}
+
+	for i := len(inFields) - 1; i >= 0; i-- {
+		e := inFields[i].Expr()
+		name := e.Ident().Str(g.tm)
+		for j := 1; j >= 0; j-- {
+			b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s;\n",
+				aPrefix, name, j, oPrefix, ioBindNum, j, name)
+		}
+	}
+	b.writes("}\n")
+	return nil
+}
+
+func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
+	// TODO: for writeSuspendibles, make sure that we get order of
+	// sub-expression evaluation correct.
+	nCloseCurly := 1
+	for first := true; ; first = false {
+		if n.Condition().Suspendible() {
+			if !first {
+				b.writeb('{')
+				const maxCloseCurly = 1000
+				if nCloseCurly == maxCloseCurly {
+					return fmt.Errorf("too many nested if's")
+				}
+				nCloseCurly++
+			}
+			if err := g.writeSuspendibles(b, n.Condition(), depth); err != nil {
+				return err
+			}
+		}
+
+		b.writes("if (")
+		if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+			return err
+		}
+		b.writes(") {\n")
+		for _, o := range n.BodyIfTrue() {
+			if err := g.writeStatement(b, o, depth); err != nil {
+				return err
+			}
+		}
+		if bif := n.BodyIfFalse(); len(bif) > 0 {
+			b.writes("} else {\n")
+			for _, o := range bif {
+				if err := g.writeStatement(b, o, depth); err != nil {
+					return err
+				}
+			}
+			break
+		}
+		n = n.ElseIf()
+		if n == nil {
+			break
+		}
+		b.writes("} else ")
+	}
+	for ; nCloseCurly > 0; nCloseCurly-- {
+		b.writes("}\n")
+	}
+	return nil
+}
+
+func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error {
 	vars := n.Variables()
 	if len(vars) == 0 {
 		return nil
@@ -397,6 +284,135 @@ func (g *gen) writeIterate(b *buffer, n *a.Iterate, depth uint32) error {
 	}
 
 	b.writes("}\n")
+	return nil
+}
+
+func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
+	jt, err := g.currFunk.jumpTarget(n.JumpTarget())
+	if err != nil {
+		return err
+	}
+	keyword := "continue"
+	if n.Keyword() == t.IDBreak {
+		keyword = "break"
+	}
+	b.printf("goto label_%d_%s;\n", jt, keyword)
+	return nil
+}
+
+func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
+	retExpr := n.Value()
+
+	if g.currFunk.suspendible {
+		b.writes("status = ")
+		retKeyword := t.IDStatus
+		if retExpr == nil {
+			b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
+		} else {
+			retKeyword = retExpr.Operator()
+			// TODO: check that retExpr has no call-suspendibles.
+			if err := g.writeExpr(
+				b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+				return err
+			}
+		}
+		b.writes(";")
+
+		if n.Keyword() == t.IDYield {
+			return g.writeCoroSuspPoint(b, true)
+		}
+
+		switch retKeyword {
+		case t.IDError:
+			b.writes("goto exit;")
+		case t.IDStatus:
+			b.writes("goto ok;")
+		default:
+			b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
+				"status = %sERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;", g.PKGPREFIX)
+		}
+		return nil
+	}
+
+	b.writes("return ")
+	if len(g.currFunk.astFunc.Out().Fields()) == 0 {
+		if retExpr != nil {
+			return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.Str(g.tm))
+		}
+	} else if retExpr == nil {
+		// TODO: should a bare "return" imply "return out"?
+		return fmt.Errorf("empty return expression incompatible with non-empty return type")
+	} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, parenthesesMandatory, depth); err != nil {
+		return err
+	}
+	b.writeb(';')
+	return nil
+}
+
+func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
+	if v := n.Value(); v != nil {
+		if err := g.writeSuspendibles(b, v, depth); err != nil {
+			return err
+		}
+	}
+	if n.XType().IsArrayType() {
+		if n.Value() != nil {
+			// TODO: something like:
+			// cv := n.XType().ArrayLength().ConstValue()
+			// // TODO: check that cv is within size_t's range.
+			// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
+			// cv, vPrefix, n.Name().Str(g.tm))
+			return fmt.Errorf("TODO: array initializers for non-zero default values")
+		}
+		// TODO: arrays of arrays.
+		name := n.Name().Str(g.tm)
+		b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
+
+	} else {
+		b.printf("%s%s = ", vPrefix, n.Name().Str(g.tm))
+		if v := n.Value(); v != nil {
+			if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
+				return err
+			}
+		} else if n.XType().IsSliceType() {
+			// TODO: don't assume that the slice is a slice of base.u8.
+			b.printf("((wuffs_base__slice_u8){})")
+		} else {
+			b.writeb('0')
+		}
+		b.writes(";\n")
+	}
+	return nil
+}
+
+func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
+	// TODO: consider suspendible calls.
+
+	if n.HasContinue() {
+		jt, err := g.currFunk.jumpTarget(n)
+		if err != nil {
+			return err
+		}
+		b.printf("label_%d_continue:;\n", jt)
+	}
+	b.writes("while (")
+	if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+		return err
+	}
+	b.writes(") {\n")
+	for _, o := range n.Body() {
+		if err := g.writeStatement(b, o, depth); err != nil {
+			return err
+		}
+	}
+	b.writes("}\n")
+	if n.HasBreak() {
+		jt, err := g.currFunk.jumpTarget(n)
+		if err != nil {
+			return err
+		}
+		b.printf("label_%d_break:;\n", jt)
+	}
 	return nil
 }
 
