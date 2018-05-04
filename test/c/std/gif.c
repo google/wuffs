@@ -303,7 +303,7 @@ void test_wuffs_lzw_decode_pi() {
 
 // ---------------- LZW Benches
 
-bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters) {
+bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
@@ -325,6 +325,7 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters) {
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
+  uint64_t iters = iters_unscaled * iterscale;
   for (i = 0; i < iters; i++) {
     dst.wi = 0;
     src.ri = 1;  // Skip the literal width.
@@ -344,12 +345,12 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters) {
 
 void bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 5000);
+  do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 50);
 }
 
 void bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 1000);
+  do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 10);
 }
 
 // ---------------- GIF Tests
@@ -751,7 +752,7 @@ void test_mimic_gif_decode_pjw_thumbnail() {
 bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
                                                     wuffs_base__io_buffer*),
                          const char* filename,
-                         uint64_t iters) {
+                         uint64_t iters_unscaled) {
   wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -762,6 +763,7 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
   bench_start();
   uint64_t n_bytes = 0;
   uint64_t i;
+  uint64_t iters = iters_unscaled * iterscale;
   for (i = 0; i < iters; i++) {
     dst.wi = 0;
     src.ri = 0;
@@ -778,22 +780,22 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
 
 void bench_wuffs_gif_decode_1k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../data/pjw-thumbnail.gif", 200000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/pjw-thumbnail.gif", 2000);
 }
 
 void bench_wuffs_gif_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../data/hat.gif", 10000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/hat.gif", 100);
 }
 
 void bench_wuffs_gif_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../data/hibiscus.gif", 1000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/hibiscus.gif", 10);
 }
 
 void bench_wuffs_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../data/harvesters.gif", 100);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/harvesters.gif", 1);
 }
 
   // ---------------- Mimic Benches
@@ -802,22 +804,22 @@ void bench_wuffs_gif_decode_1000k() {
 
 void bench_mimic_gif_decode_1k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../data/pjw-thumbnail.gif", 200000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/pjw-thumbnail.gif", 2000);
 }
 
 void bench_mimic_gif_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../data/hat.gif", 10000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/hat.gif", 100);
 }
 
 void bench_mimic_gif_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../data/hibiscus.gif", 1000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/hibiscus.gif", 10);
 }
 
 void bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../data/harvesters.gif", 100);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/harvesters.gif", 1);
 }
 
 #endif  // WUFFS_MIMIC

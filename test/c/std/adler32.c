@@ -205,12 +205,12 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
 void bench_wuffs_adler32_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      150000);
+                      1500);
 }
 
 void bench_wuffs_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 150);
 }
 
   // ---------------- Mimic Benches
@@ -220,12 +220,12 @@ void bench_wuffs_adler32_100k() {
 void bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      150000);
+                      1500);
 }
 
 void bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 15000);
+  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 150);
 }
 
 #endif  // WUFFS_MIMIC

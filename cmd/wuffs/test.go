@@ -33,6 +33,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
+	iterscaleFlag := flags.Int("iterscale", cf.RepsDefault, cf.RepsUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
 	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
@@ -56,8 +57,13 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
+	if *iterscaleFlag < cf.IterscaleMin || cf.IterscaleMax < *iterscaleFlag {
+		return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d..%d]",
+			*iterscaleFlag, cf.IterscaleMin, cf.IterscaleMax)
+	}
 	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, cf.RepsMin, cf.RepsMax)
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]",
+			*repsFlag, cf.RepsMin, cf.RepsMax)
 	}
 
 	args = flags.Args()
@@ -67,7 +73,10 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 
 	cmdArgs := []string(nil)
 	if bench {
-		cmdArgs = append(cmdArgs, "bench", fmt.Sprintf("-reps=%d", *repsFlag))
+		cmdArgs = append(cmdArgs, "bench",
+			fmt.Sprintf("-iterscale=%d", *iterscaleFlag),
+			fmt.Sprintf("-reps=%d", *repsFlag),
+		)
 	} else {
 		cmdArgs = append(cmdArgs, "test")
 	}

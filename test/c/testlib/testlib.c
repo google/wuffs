@@ -37,6 +37,8 @@ char fail_msg[65536] = {0};
 
 int tests_run = 0;
 
+uint64_t iterscale = 100;
+
 const char* proc_filename = "";
 const char* proc_funcname = "";
 const char* focus = "";
@@ -196,6 +198,24 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     } else if ((arg_len >= 7) && !strncmp(arg, "-focus=", 7)) {
       focus = arg + 7;
 
+    } else if ((arg_len >= 11) && !strncmp(arg, "-iterscale=", 11)) {
+      arg += 11;
+      if (!*arg) {
+        fprintf(stderr, "missing -iterscale=N value\n");
+        return 1;
+      }
+      char* end = NULL;
+      long int n = strtol(arg, &end, 10);
+      if (*end) {
+        fprintf(stderr, "invalid -iterscale=N value\n");
+        return 1;
+      }
+      if ((n < 0) || (1000000 < n)) {
+        fprintf(stderr, "out-of-range -iterscale=N value\n");
+        return 1;
+      }
+      iterscale = n;
+
     } else if ((arg_len >= 6) && !strncmp(arg, "-reps=", 6)) {
       arg += 6;
       if (!*arg) {
@@ -256,8 +276,10 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     }
   }
   if (bench) {
-    printf("# %-16s%-8s(%d benchmarks run, 1+%d reps per benchmark)\n",
-           proc_filename, cc, tests_run, reps - 1);
+    printf(
+        "# %-16s%-8s(%d benchmarks run, 1+%d reps per benchmark, "
+        "iterscale=%d)\n",
+        proc_filename, cc, tests_run, reps - 1, (int)(iterscale));
   } else {
     printf("%-16s%-8sPASS (%d tests run)\n", proc_filename, cc, tests_run);
   }
@@ -419,7 +441,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                      golden_test* gt,
                      uint64_t wlimit,
                      uint64_t rlimit,
-                     uint64_t iters,
+                     uint64_t iters_unscaled,
                      bool bench) {
   if (!codec_func) {
     FAIL("NULL codec_func");
@@ -457,6 +479,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
   uint64_t n_bytes = 0;
   uint64_t i;
+  uint64_t iters = iters_unscaled * iterscale;
   for (i = 0; i < iters; i++) {
     got.wi = 0;
     src.ri = gt->src_offset0;
@@ -500,8 +523,9 @@ bool do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                          golden_test* gt,
                          uint64_t wlimit,
                          uint64_t rlimit,
-                         uint64_t iters) {
-  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit, iters, true);
+                         uint64_t iters_unscaled) {
+  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit, iters_unscaled,
+                         true);
 }
 
 bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,

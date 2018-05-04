@@ -582,18 +582,18 @@ void test_mimic_deflate_decode_romeo_fixed() {
 void bench_wuffs_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_romeo_gt, 0, 0,
-                      200000);
+                      2000);
 }
 
 void bench_wuffs_deflate_decode_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_midsummer_gt, 0, 0,
-                      30000);
+                      300);
 }
 
 void bench_wuffs_deflate_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0, 30);
 }
 
   // ---------------- Mimic Benches
@@ -603,18 +603,18 @@ void bench_wuffs_deflate_decode_100k() {
 void bench_mimic_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_romeo_gt, 0, 0,
-                      200000);
+                      2000);
 }
 
 void bench_mimic_deflate_decode_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_midsummer_gt, 0, 0,
-                      30000);
+                      300);
 }
 
 void bench_mimic_deflate_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0, 30);
 }
 
 #endif  // WUFFS_MIMIC

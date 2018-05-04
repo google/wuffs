@@ -34,6 +34,7 @@ func doBenchTest(args []string, bench bool) error {
 	flags := flag.FlagSet{}
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
+	iterscaleFlag := flags.Int("iterscale", cf.RepsDefault, cf.RepsUsage)
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
 	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 
@@ -47,15 +48,21 @@ func doBenchTest(args []string, bench bool) error {
 	if !cf.IsAlphaNumericIsh(*focusFlag) {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
+	if *iterscaleFlag < cf.IterscaleMin || cf.IterscaleMax < *iterscaleFlag {
+		return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d..%d]",
+			*iterscaleFlag, cf.IterscaleMin, cf.IterscaleMax)
+	}
 	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]", *repsFlag, cf.RepsMin, cf.RepsMax)
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]",
+			*repsFlag, cf.RepsMin, cf.RepsMax)
 	}
 
 	args = flags.Args()
 
 	failed := false
 	for _, arg := range args {
-		f, err := doBenchTest1(arg, bench, *ccompilersFlag, *focusFlag, *mimicFlag, *repsFlag)
+		f, err := doBenchTest1(arg, bench,
+			*ccompilersFlag, *focusFlag, *iterscaleFlag, *mimicFlag, *repsFlag)
 		if err != nil {
 			return err
 		}
@@ -71,7 +78,9 @@ func doBenchTest(args []string, bench bool) error {
 	return nil
 }
 
-func doBenchTest1(filename string, bench bool, ccompilers string, focus string, mimic bool, reps int) (failed bool, err error) {
+func doBenchTest1(filename string, bench bool, ccompilers string, focus string,
+	iterscale int, mimic bool, reps int) (failed bool, err error) {
+
 	workDir, err := ioutil.TempDir("", "wuffs-c")
 	if err != nil {
 		return false, err
@@ -112,7 +121,10 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string, 
 
 		outArgs := []string(nil)
 		if bench {
-			outArgs = append(outArgs, "-bench", fmt.Sprintf("-reps=%d", reps))
+			outArgs = append(outArgs, "-bench",
+				fmt.Sprintf("-iterscale=%d", iterscale),
+				fmt.Sprintf("-reps=%d", reps),
+			)
 		}
 		if focus != "" {
 			outArgs = append(outArgs, fmt.Sprintf("-focus=%s", focus))

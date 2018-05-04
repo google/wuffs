@@ -205,13 +205,12 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
 void bench_wuffs_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
-                      150000);
+                      1500);
 }
 
 void bench_wuffs_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
-                      15000);
+  do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 150);
 }
 
   // ---------------- Mimic Benches
@@ -221,13 +220,12 @@ void bench_wuffs_crc32_ieee_100k() {
 void bench_mimic_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_midsummer_gt, 0, 0,
-                      150000);
+                      1500);
 }
 
 void bench_mimic_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
-                      15000);
+  do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0, 150);
 }
 
 #endif  // WUFFS_MIMIC

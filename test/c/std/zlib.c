@@ -215,12 +215,12 @@ void test_mimic_zlib_decode_pi() {
 void bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                      30000);
+                      300);
 }
 
 void bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
 }
 
   // ---------------- Mimic Benches
@@ -230,12 +230,12 @@ void bench_wuffs_zlib_decode_100k() {
 void bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
   do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                      30000);
+                      300);
 }
 
 void bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 3000);
+  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
 }
 
 #endif  // WUFFS_MIMIC
