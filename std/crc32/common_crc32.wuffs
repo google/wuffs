@@ -27,7 +27,7 @@ pub struct ieee_hasher?(
 pub func ieee_hasher.update(x slice base.u8)(checksum base.u32) {
 	var s base.u32 = 0xFFFFFFFF ^ this.state
 
-	iterate (step:8, unroll:1)(p slice base.u8:in.x) {
+	iterate (step:8, unroll:8)(p slice base.u8:in.x) {
 		// TODO: explain the slicing-by-8 algorithm.
 		s ^= ((p[0] as base.u32) << 0) |
 			((p[1] as base.u32) << 8) |

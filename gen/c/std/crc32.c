@@ -2017,8 +2017,108 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
     wuffs_base__slice_u8 i_slice_p = a_x;
     wuffs_base__slice_u8 v_p = i_slice_p;
     v_p.len = 8;
-    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+    uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 64) * 64;
     while (v_p.ptr < i_end0_p) {
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+      v_s ^=
+          ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
+           (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));
+      v_s = (wuffs_crc32__ieee_table[0][v_p.ptr[7]] ^
+             wuffs_crc32__ieee_table[1][v_p.ptr[6]] ^
+             wuffs_crc32__ieee_table[2][v_p.ptr[5]] ^
+             wuffs_crc32__ieee_table[3][v_p.ptr[4]] ^
+             wuffs_crc32__ieee_table[4][255 & (v_s >> 24)] ^
+             wuffs_crc32__ieee_table[5][255 & (v_s >> 16)] ^
+             wuffs_crc32__ieee_table[6][255 & (v_s >> 8)] ^
+             wuffs_crc32__ieee_table[7][255 & (v_s >> 0)]);
+      v_p.ptr += 8;
+    }
+    v_p.len = 8;
+    uint8_t* i_end1_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
+    while (v_p.ptr < i_end1_p) {
       v_s ^=
           ((((uint32_t)(v_p.ptr[0])) << 0) | (((uint32_t)(v_p.ptr[1])) << 8) |
            (((uint32_t)(v_p.ptr[2])) << 16) | (((uint32_t)(v_p.ptr[3])) << 24));

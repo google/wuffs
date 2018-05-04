@@ -244,10 +244,10 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		unroll := n.Unroll().SmallPowerOf2Value()
 		step := n.Step().SmallPowerOf2Value()
 
-		if uStep := unroll * step; uStep > 1 {
+		if unroll > 1 || step > 1 {
 			b.printf("%s%s.len = %d;\n", vPrefix, name, step)
 			b.printf("uint8_t* %send0_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
-				iPrefix, name, iPrefix, name, iPrefix, name, uStep, uStep)
+				iPrefix, name, iPrefix, name, iPrefix, name, unroll*step, unroll*step)
 			b.printf("while (%s%s.ptr < %send0_%s) {\n", vPrefix, name, iPrefix, name)
 			for i := 0; i < unroll; i++ {
 				for _, o := range n.Body() {
@@ -257,6 +257,20 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 				}
 				b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
 			}
+			b.writes("}\n")
+		}
+
+		if unroll > 1 && step > 1 {
+			b.printf("%s%s.len = %d;\n", vPrefix, name, step)
+			b.printf("uint8_t* %send1_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
+				iPrefix, name, iPrefix, name, iPrefix, name, step, step)
+			b.printf("while (%s%s.ptr < %send1_%s) {\n", vPrefix, name, iPrefix, name)
+			for _, o := range n.Body() {
+				if err := g.writeStatement(b, o, depth); err != nil {
+					return err
+				}
+			}
+			b.printf("%s%s.ptr += %d;\n", vPrefix, name, step)
 			b.writes("}\n")
 		}
 
