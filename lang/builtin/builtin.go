@@ -144,16 +144,9 @@ const (
 	PlaceholderNewName = t.IDDiamond
 )
 
+// TODO: drop the U8.
 var PtrU8Funcs = []string{
-	// TODO: these should really have preconditions like "this.length() >= 4".
-	// Should this be explicit in the Wuffs syntax here, or enforced as a
-	// special case in the compiler (during bounds checking)?
-	"T.read_u16be(at u32)(ret u16)",
-	"T.read_u16le(at u32)(ret u16)",
-	"T.read_u32be(at u32)(ret u32)",
-	"T.read_u32le(at u32)(ret u32)",
-	"T.read_u64be(at u32)(ret u64)",
-	"T.read_u64le(at u32)(ret u64)",
+	// TODO: a length method.
 }
 
 var SliceFuncs = []string{
