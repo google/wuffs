@@ -212,10 +212,8 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	if nMethod < t.ID(len(ioMethodAdvances)) {
-		if advance := ioMethodAdvances[nMethod]; advance != nil {
-			return q.optimizeIOMethodAdvance(n, nReceiver, advance)
-		}
+	if advance := ioMethodAdvance(nMethod); advance != nil {
+		return q.optimizeIOMethodAdvance(n, nReceiver, advance)
 	}
 
 	return nil
@@ -278,20 +276,16 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 	})
 }
 
-var ioMethodAdvances = [...]*big.Int{
-	t.IDReadU8:    one,
-	t.IDReadU16BE: two,
-	t.IDReadU16LE: two,
-	t.IDReadU32BE: four,
-	t.IDReadU32LE: four,
-	t.IDReadU64BE: eight,
-	t.IDReadU64LE: eight,
-
-	t.IDWriteU8:    one,
-	t.IDWriteU16BE: two,
-	t.IDWriteU16LE: two,
-	t.IDWriteU32BE: four,
-	t.IDWriteU32LE: four,
-	t.IDWriteU64BE: eight,
-	t.IDWriteU64LE: eight,
+func ioMethodAdvance(x t.ID) *big.Int {
+	switch x {
+	case t.IDReadU8, t.IDWriteU8:
+		return one
+	case t.IDReadU16BE, t.IDReadU16LE, t.IDWriteU16BE, t.IDWriteU16LE:
+		return two
+	case t.IDReadU32BE, t.IDReadU32LE, t.IDWriteU32BE, t.IDWriteU32LE:
+		return four
+	case t.IDReadU64BE, t.IDReadU64LE, t.IDWriteU64BE, t.IDWriteU64LE:
+		return eight
+	}
+	return nil
 }
