@@ -2032,7 +2032,7 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
     }
     uint8_t* i_end1_p = i_slice_p.ptr + i_slice_p.len;
     while (v_p < i_end1_p) {
-      v_s = (wuffs_crc32__ieee_table[0][((uint8_t)((v_s & 255))) ^ *v_p] ^
+      v_s = (wuffs_crc32__ieee_table[0][((uint8_t)((v_s & 255))) ^ v_p[0]] ^
              (v_s >> 8));
       v_p++;
     }
