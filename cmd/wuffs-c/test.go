@@ -34,7 +34,7 @@ func doBenchTest(args []string, bench bool) error {
 	flags := flag.FlagSet{}
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
-	iterscaleFlag := flags.Int("iterscale", cf.RepsDefault, cf.RepsUsage)
+	iterscaleFlag := flags.Int("iterscale", cf.IterscaleDefault, cf.IterscaleUsage)
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
 	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
 

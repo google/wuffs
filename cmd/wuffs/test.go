@@ -33,7 +33,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 	ccompilersFlag := flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
 	focusFlag := flags.String("focus", cf.FocusDefault, cf.FocusUsage)
-	iterscaleFlag := flags.Int("iterscale", cf.RepsDefault, cf.RepsUsage)
+	iterscaleFlag := flags.Int("iterscale", cf.IterscaleDefault, cf.IterscaleUsage)
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	mimicFlag := flags.Bool("mimic", cf.MimicDefault, cf.MimicUsage)
 	repsFlag := flags.Int("reps", cf.RepsDefault, cf.RepsUsage)
