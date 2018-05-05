@@ -261,6 +261,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
-  proc_filename = "std/adler32.c";
+  proc_package_name = "std/adler32";
   return test_main(argc, argv, tests, benches);
 }

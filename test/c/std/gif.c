@@ -893,6 +893,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
-  proc_filename = "std/gif.c";
+  proc_package_name = "std/gif";
   return test_main(argc, argv, tests, benches);
 }

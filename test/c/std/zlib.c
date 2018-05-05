@@ -283,6 +283,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
-  proc_filename = "std/zlib.c";
+  proc_package_name = "std/zlib";
   return test_main(argc, argv, tests, benches);
 }

@@ -273,6 +273,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
-  proc_filename = "std/gzip.c";
+  proc_package_name = "std/gzip";
   return test_main(argc, argv, tests, benches);
 }

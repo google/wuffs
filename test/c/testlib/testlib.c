@@ -39,16 +39,16 @@ int tests_run = 0;
 
 uint64_t iterscale = 100;
 
-const char* proc_filename = "";
-const char* proc_funcname = "";
+const char* proc_package_name = "unknown_package_name";
+const char* proc_func_name = "unknown_func_name";
 const char* focus = "";
 bool in_focus = false;
 
-#define CHECK_FOCUS(funcname) \
-  proc_funcname = funcname;   \
-  in_focus = check_focus();   \
-  if (!in_focus) {            \
-    return;                   \
+#define CHECK_FOCUS(func_name) \
+  proc_func_name = func_name;  \
+  in_focus = check_focus();    \
+  if (!in_focus) {             \
+    return;                    \
   }
 
 bool check_focus() {
@@ -56,7 +56,7 @@ bool check_focus() {
   if (!*p) {
     return true;
   }
-  size_t n = strlen(proc_funcname);
+  size_t n = strlen(proc_func_name);
 
   // On each iteration of the loop, set p and q so that p (inclusive) and q
   // (exclusive) bracket the interesting fragment of the comma-separated
@@ -92,22 +92,22 @@ bool check_focus() {
         p += 9;
       }
 
-      // See if proc_funcname (with or without a "test_" or "bench_" prefix)
+      // See if proc_func_name (with or without a "test_" or "bench_" prefix)
       // starts with the [p, q) string.
-      if ((n >= q - p) && !strncmp(proc_funcname, p, q - p)) {
+      if ((n >= q - p) && !strncmp(proc_func_name, p, q - p)) {
         return true;
       }
-      const char* unprefixed_proc_funcname = NULL;
+      const char* unprefixed_proc_func_name = NULL;
       size_t unprefixed_n = 0;
-      if ((n >= q - p) && !strncmp(proc_funcname, "test_", 5)) {
-        unprefixed_proc_funcname = proc_funcname + 5;
+      if ((n >= q - p) && !strncmp(proc_func_name, "test_", 5)) {
+        unprefixed_proc_func_name = proc_func_name + 5;
         unprefixed_n = n - 5;
-      } else if ((n >= q - p) && !strncmp(proc_funcname, "bench_", 6)) {
-        unprefixed_proc_funcname = proc_funcname + 6;
+      } else if ((n >= q - p) && !strncmp(proc_func_name, "bench_", 6)) {
+        unprefixed_proc_func_name = proc_func_name + 6;
         unprefixed_n = n - 6;
       }
-      if (unprefixed_proc_funcname && (unprefixed_n >= q - p) &&
-          !strncmp(unprefixed_proc_funcname, p, q - p)) {
+      if (unprefixed_proc_func_name && (unprefixed_n >= q - p) &&
+          !strncmp(unprefixed_proc_func_name, p, q - p)) {
         return true;
       }
     }
@@ -161,7 +161,7 @@ void bench_finish(uint64_t iters, uint64_t n_bytes) {
   }
   uint64_t kb_per_s = n_bytes * 1000000 / nanos;
 
-  const char* name = proc_funcname;
+  const char* name = proc_func_name;
   if ((strlen(name) >= 6) && !strncmp(name, "bench_", 6)) {
     name += 6;
   }
@@ -246,7 +246,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   } else {
     reps++;  // +1 for the warm up run.
     procs = benches;
-    printf("# %s\n# %s version %s\n#\n", proc_filename, cc, cc_version);
+    printf("# %s\n# %s version %s\n#\n", proc_package_name, cc, cc_version);
     printf(
         "# The output format, including the \"Benchmark\" prefixes, is "
         "compatible with the\n"
@@ -259,14 +259,14 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     bench_warm_up = i == 0;
     proc* p;
     for (p = procs; *p; p++) {
-      proc_funcname = "unknown_funcname";
+      proc_func_name = "unknown_func_name";
       in_focus = false;
       (*p)();
       if (!in_focus) {
         continue;
       }
       if (fail_msg[0]) {
-        printf("%-16s%-8sFAIL %s: %s\n", proc_filename, cc, proc_funcname,
+        printf("%-16s%-8sFAIL %s: %s\n", proc_package_name, cc, proc_func_name,
                fail_msg);
         return 1;
       }
@@ -281,7 +281,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
       printf("# %d benchmarks, 1+%d reps per benchmark, iterscale=%d\n",
              tests_run, reps - 1, (int)(iterscale));
     } else {
-      printf("%-16s%-8sPASS (%d tests)\n", proc_filename, cc, tests_run);
+      printf("%-16s%-8sPASS (%d tests)\n", proc_package_name, cc, tests_run);
     }
   }
   return 0;

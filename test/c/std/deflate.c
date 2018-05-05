@@ -673,6 +673,6 @@ proc benches[] = {
 };
 
 int main(int argc, char** argv) {
-  proc_filename = "std/deflate.c";
+  proc_package_name = "std/deflate";
   return test_main(argc, argv, tests, benches);
 }
