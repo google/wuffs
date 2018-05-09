@@ -734,6 +734,10 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
+	if err != nil {
+		return nil, err
+	}
 
 	if x := p.peek1(); x != t.IDOpenParen {
 		got := p.tm.ByID(x)
@@ -791,10 +795,6 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	}
 	p.src = p.src[1:]
 
-	vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
-	if err != nil {
-		return nil, err
-	}
 	asserts, err := p.parseAsserts()
 	if err != nil {
 		return nil, err
@@ -822,7 +822,7 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 		}
 	}
 
-	return a.NewIterate(label, length, unroll, vars, asserts, body, tail).Node(), nil
+	return a.NewIterate(label, vars, length, unroll, asserts, body, tail).Node(), nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

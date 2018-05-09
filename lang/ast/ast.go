@@ -516,13 +516,13 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate:ID1 (length:ID2, unroll:ID0)(vars), List1 { List2 } else { List3 }":
+// "iterate:ID1 (vars)(length:ID2, unroll:ID0), List1 { List2 } else { List3 }":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
 //  - ID1:   <0|label>
 //  - ID2:   length
-//  - List0: <Var> variables
+//  - List0: <Var> vars
 //  - List1: <Assert> asserts
 //  - List2: <Statement> body
 //  - List3: <Statement> tail
@@ -542,13 +542,13 @@ func (n *Iterate) Tail() []*Node      { return n.list3 }
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, length t.ID, unroll t.ID, variables []*Node, asserts []*Node, body []*Node, tail []*Node) *Iterate {
+func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, tail []*Node) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
 		id1:   label,
 		id2:   length,
-		list0: variables,
+		list0: vars,
 		list1: asserts,
 		list2: body,
 		list3: tail,
@@ -587,7 +587,7 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 	}
 }
 
-// If is "if MHS { List0 } else RHS" or "if MHS { List0 } else { List1 }":
+// If is "if MHS { List2 } else RHS" or "if MHS { List2 } else { List3 }":
 //  - MHS:   <Expr>
 //  - RHS:   <nil|If>
 //  - List2: <Statement> if-true body
