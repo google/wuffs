@@ -872,10 +872,10 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 
 	op := t.ID(0)
 	if inIterate {
-		op = t.IDColon
-		if x := p.peek1(); x != t.IDColon {
+		op = t.IDEqColon
+		if x := p.peek1(); x != t.IDEqColon {
 			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+			return nil, fmt.Errorf(`parse: expected "=:", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
 		value, err = p.parseExpr()

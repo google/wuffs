@@ -455,15 +455,15 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 }
 
 // Var is "var ID2 LHS" or "var ID2 LHS = RHS" or an iterate variable
-// declaration "ID1 LHS : RHS":
-//  - ID0:   <0|IDEq|IDColon>
+// declaration "ID1 LHS =: RHS":
+//  - ID0:   <0|IDEq|IDEqColon>
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Var Node
 
 func (n *Var) Node() *Node           { return (*Node)(n) }
-func (n *Var) IterateVariable() bool { return n.id0 == t.IDColon }
+func (n *Var) IterateVariable() bool { return n.id0 == t.IDEqColon }
 func (n *Var) Name() t.ID            { return n.id2 }
 func (n *Var) XType() *TypeExpr      { return n.lhs.TypeExpr() }
 func (n *Var) Value() *Expr          { return n.rhs.Expr() }

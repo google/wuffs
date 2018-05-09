@@ -238,6 +238,7 @@ const (
 	IDTildeModMinusEq = ID(0x1C)
 	IDTildeSatPlusEq  = ID(0x1D)
 	IDTildeSatMinusEq = ID(0x1E)
+	IDEqColon         = ID(0x1F)
 )
 
 const (
@@ -495,6 +496,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDTildeModMinusEq: "~mod-=",
 	IDTildeSatPlusEq:  "~sat+=",
 	IDTildeSatMinusEq: "~sat-=",
+	IDEqColon:         "=:",
 
 	IDPlus:          "+",
 	IDMinus:         "-",
@@ -730,6 +732,7 @@ var lexers = [256][]suffixLexer{
 	},
 	'=': {
 		{"=", IDEqEq},
+		{":", IDEqColon},
 		{"", IDEq},
 	},
 	'<': {
