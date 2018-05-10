@@ -54,23 +54,35 @@ typedef uint64_t wuffs_base__flicks;
 typedef struct {
 } wuffs_base__empty_struct;
 
-// wuffs_base__slice_u8 is a 1-dimensional buffer.
+// WUFFS_BASE__SLICE is a 1-dimensional buffer.
 //
 // A value with all fields NULL or zero is a valid, empty slice.
-typedef struct {
-  uint8_t* ptr;
-  size_t len;
-} wuffs_base__slice_u8;
+#define WUFFS_BASE__SLICE(T) \
+  struct {                   \
+    T* ptr;                  \
+    size_t len;              \
+  }
 
-// wuffs_base__table_u8 is a 2-dimensional buffer.
+// WUFFS_BASE__TABLE is a 2-dimensional buffer.
 //
 // A value with all fields NULL or zero is a valid, empty table.
-typedef struct {
-  uint8_t* ptr;
-  size_t width;
-  size_t height;
-  size_t stride;
-} wuffs_base__table_u8;
+#define WUFFS_BASE__TABLE(T) \
+  struct {                   \
+    T* ptr;                  \
+    size_t width;            \
+    size_t height;           \
+    size_t stride;           \
+  }
+
+typedef WUFFS_BASE__SLICE(uint8_t) wuffs_base__slice_u8;
+typedef WUFFS_BASE__SLICE(uint16_t) wuffs_base__slice_u16;
+typedef WUFFS_BASE__SLICE(uint32_t) wuffs_base__slice_u32;
+typedef WUFFS_BASE__SLICE(uint64_t) wuffs_base__slice_u64;
+
+typedef WUFFS_BASE__TABLE(uint8_t) wuffs_base__table_u8;
+typedef WUFFS_BASE__TABLE(uint16_t) wuffs_base__table_u16;
+typedef WUFFS_BASE__TABLE(uint32_t) wuffs_base__table_u32;
+typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 
 // --------
 
