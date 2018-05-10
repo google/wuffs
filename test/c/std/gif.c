@@ -367,9 +367,14 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   if (s) {
     return wuffs_gif__status__string(s);
   }
-  s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
-  if (s) {
-    return wuffs_gif__status__string(s);
+  while (true) {
+    s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
+    if (s == WUFFS_GIF__SUSPENSION_END_OF_DATA) {
+      break;
+    }
+    if (s) {
+      return wuffs_gif__status__string(s);
+    }
   }
   return NULL;
 }
@@ -555,14 +560,14 @@ void test_wuffs_gif_call_sequence() {
   }
 }
 
-void test_wuffs_gif_decode_animated() {
-  CHECK_FOCUS(__func__);
-
+bool do_test_wuffs_gif_decode_animated(const char* filename,
+                                       uint32_t want_num_loops,
+                                       uint32_t want_num_frames) {
   wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
-  if (!read_file(&src, "../../data/animated-red-blue.gif")) {
-    return;
+  if (!read_file(&src, filename)) {
+    return false;
   }
 
   wuffs_gif__decoder dec;
@@ -577,33 +582,30 @@ void test_wuffs_gif_decode_animated() {
   if (status != WUFFS_GIF__STATUS_OK) {
     FAIL("decode_config: got %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status));
-    return;
+    return false;
   }
 
-  // animated-red-blue.gif's num_loops should be 3. The value explicitly in the
-  // wire format is 0x0002, but that value means "repeat 2 times after the
-  // first play", so the total number of loops is 3.
-  if (wuffs_base__image_config__num_loops(&ic) != 3) {
-    FAIL("num_loops: got %" PRIu32 ", want 3",
-         wuffs_base__image_config__num_loops(&ic));
-    return;
+  if (wuffs_base__image_config__num_loops(&ic) != want_num_loops) {
+    FAIL("num_loops: got %" PRIu32 ", want %" PRIu32,
+         wuffs_base__image_config__num_loops(&ic), want_num_loops);
+    return false;
   }
 
-  // animated-red-blue.gif should have 4 frames.
-  int i;
-  for (i = 0; i < 4; i++) {
+  uint32_t i;
+  for (i = 0; i < want_num_frames; i++) {
     got.wi = 0;
     status = wuffs_gif__decoder__decode_frame(&dec, got_writer, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
-      FAIL("decode_frame #%d: got %" PRIi32 " (%s)", i, status,
+      FAIL("decode_frame #%" PRIu32 ": got %" PRIi32 " (%s)", i, status,
            wuffs_gif__status__string(status));
-      return;
+      return false;
     }
     // TODO: check that the frame top/left/width/height is:
     //  -  0, 0,64,48 for frame #0
     //  - 15,31,37, 9 for frame #1
     //  - 15, 0,49,40 for frame #2
     //  - 15, 0,49,40 for frame #3
+    // for "animated-red-blue.gif".
   }
 
   // There should be no more frames.
@@ -613,10 +615,33 @@ void test_wuffs_gif_decode_animated() {
     FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_END_OF_DATA,
          wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_END_OF_DATA));
-    return;
+    return false;
   }
 
   // TODO: test calling wuffs_base__image_buffer__loop.
+  return true;
+}
+
+void test_wuffs_gif_decode_animated_big() {
+  CHECK_FOCUS(__func__);
+  // TODO: uncomment.
+  // do_test_wuffs_gif_decode_animated("../../data/gifplayer-muybridge.gif", 0, 0);
+}
+
+void test_wuffs_gif_decode_animated_medium() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_gif_decode_animated("../../data/muybridge.gif", 0, 15);
+}
+
+void test_wuffs_gif_decode_animated_small() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_gif_decode_animated("../../data/animated-red-blue.gif",
+                                    // animated-red-blue.gif's num_loops should
+                                    // be 3. The value explicitly in the wire
+                                    // format is 0x0002, but that value means
+                                    // "repeat 2 times after the first play", so
+                                    // the total number of loops is 3.
+                                    3, 4);
 }
 
 void test_wuffs_gif_decode_input_is_a_gif() {
@@ -725,6 +750,12 @@ void test_mimic_gif_decode_bricks_nodither() {
   do_test_mimic_gif_decode("../../data/bricks-nodither.gif");
 }
 
+void test_mimic_gif_decode_gifplayer_muybridge() {
+  CHECK_FOCUS(__func__);
+  // TODO: uncomment.
+  // do_test_mimic_gif_decode("../../data/gifplayer-muybridge.gif");
+}
+
 void test_mimic_gif_decode_harvesters() {
   CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../data/harvesters.gif");
@@ -738,6 +769,11 @@ void test_mimic_gif_decode_hat() {
 void test_mimic_gif_decode_hibiscus() {
   CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../data/hibiscus.gif");
+}
+
+void test_mimic_gif_decode_muybridge() {
+  CHECK_FOCUS(__func__);
+  do_test_mimic_gif_decode("../../data/muybridge.gif");
 }
 
 void test_mimic_gif_decode_pjw_thumbnail() {
@@ -847,7 +883,9 @@ proc tests[] = {
     test_wuffs_lzw_decode_pi,                       //
 
     test_wuffs_gif_call_sequence,                                  //
-    test_wuffs_gif_decode_animated,                                //
+    test_wuffs_gif_decode_animated_big,                            //
+    test_wuffs_gif_decode_animated_medium,                         //
+    test_wuffs_gif_decode_animated_small,                          //
     test_wuffs_gif_decode_input_is_a_gif,                          //
     test_wuffs_gif_decode_input_is_a_gif_many_big_reads,           //
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,        //
@@ -856,13 +894,15 @@ proc tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_gif_decode_bricks_dither,    //
-    test_mimic_gif_decode_bricks_gray,      //
-    test_mimic_gif_decode_bricks_nodither,  //
-    test_mimic_gif_decode_harvesters,       //
-    test_mimic_gif_decode_hat,              //
-    test_mimic_gif_decode_hibiscus,         //
-    test_mimic_gif_decode_pjw_thumbnail,    //
+    test_mimic_gif_decode_bricks_dither,        //
+    test_mimic_gif_decode_bricks_gray,          //
+    test_mimic_gif_decode_bricks_nodither,      //
+    test_mimic_gif_decode_gifplayer_muybridge,  //
+    test_mimic_gif_decode_harvesters,           //
+    test_mimic_gif_decode_hat,                  //
+    test_mimic_gif_decode_hibiscus,             //
+    test_mimic_gif_decode_muybridge,            //
+    test_mimic_gif_decode_pjw_thumbnail,        //
 
 #endif  // WUFFS_MIMIC
 
