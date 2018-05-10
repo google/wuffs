@@ -19,6 +19,7 @@
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
 - Redesigned iterate blocks.
 - Added a `base.image_config` type.
+- Added a `reset` method.
 - Tweaked how marks and limits work.
 - Supported animated (not just single frame) GIFs.
 - Marked the `std/gif` LZW decoder as private.
@@ -42,4 +43,4 @@
 
 ---
 
-Updated on April 2018.
+Updated on May 2018.

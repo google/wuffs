@@ -128,6 +128,7 @@ var phases = [...]struct {
 	{a.KStatus, (*Checker).checkStatus},
 	{a.KConst, (*Checker).checkConst},
 	{a.KStruct, (*Checker).checkStructDecl},
+	{a.KStruct, (*Checker).checkImplicitResetMethod},
 	{a.KInvalid, (*Checker).checkStructCycles},
 	{a.KStruct, (*Checker).checkStructFields},
 	{a.KFunc, (*Checker).checkFuncSignature},
@@ -390,6 +391,14 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
 	return nil
+}
+
+func (c *Checker) checkImplicitResetMethod(node *a.Node) error {
+	n := node.Struct()
+	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
+	out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
+	f := a.NewFunc(0, n.Filename(), n.Line(), n.QID()[1], t.IDReset, in, out, nil, nil)
+	return c.checkFuncSignature(f.Node())
 }
 
 func (c *Checker) checkStructCycles(_ *a.Node) error {

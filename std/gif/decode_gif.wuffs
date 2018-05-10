@@ -301,7 +301,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 	}
 
 	if this.previous_lzw_decode_ended_abruptly {
-		// TODO: reset this.lzw.
+		this.lzw.reset()
 	}
 
 	var lw base.u8 = in.src.read_u8?()

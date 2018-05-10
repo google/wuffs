@@ -2865,6 +2865,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       }
     }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
+      wuffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw,
+                                         WUFFS_VERSION, 0);
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);

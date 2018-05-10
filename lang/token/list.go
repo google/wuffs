@@ -440,6 +440,7 @@ const (
 	IDIn         = ID(0x142)
 	IDOut        = ID(0x143)
 	IDBase       = ID(0x144)
+	IDReset      = ID(0x145)
 
 	// -------- 0x200 block.
 
@@ -629,6 +630,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIn:         "in",
 	IDOut:        "out",
 	IDBase:       "base",
+	IDReset:      "reset",
 
 	// -------- 0x200 block.
 

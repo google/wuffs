@@ -624,8 +624,8 @@ bool do_test_wuffs_gif_decode_animated(const char* filename,
 
 void test_wuffs_gif_decode_animated_big() {
   CHECK_FOCUS(__func__);
-  // TODO: uncomment.
-  // do_test_wuffs_gif_decode_animated("../../data/gifplayer-muybridge.gif", 0, 0);
+  do_test_wuffs_gif_decode_animated("../../data/gifplayer-muybridge.gif", 0,
+                                    380);
 }
 
 void test_wuffs_gif_decode_animated_medium() {
@@ -752,8 +752,7 @@ void test_mimic_gif_decode_bricks_nodither() {
 
 void test_mimic_gif_decode_gifplayer_muybridge() {
   CHECK_FOCUS(__func__);
-  // TODO: uncomment.
-  // do_test_mimic_gif_decode("../../data/gifplayer-muybridge.gif");
+  do_test_mimic_gif_decode("../../data/gifplayer-muybridge.gif");
 }
 
 void test_mimic_gif_decode_harvesters() {
