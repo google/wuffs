@@ -1123,6 +1123,7 @@ typedef struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
+    bool f_previous_lzw_decode_ended_abruptly;
     uint8_t f_background_color_index;
     uint8_t f_block_type;
     bool f_peek_block_type;
@@ -2863,6 +2864,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         v_i += 1;
       }
     }
+    if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
+    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
       if (WUFFS_BASE__UNLIKELY(b_rptr_src == b_rend_src)) {
@@ -2877,6 +2880,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     }
     wuffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
                                               ((uint32_t)(v_lw)));
+    self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
     while (true) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
@@ -2889,6 +2893,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       if (v_block_size == 0) {
         goto label_0_break;
       }
+      self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
       while (true) {
         wuffs_base__io_reader__mark(&a_src, b_rptr_src);
         {
@@ -2916,6 +2921,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           a_src.private_impl.bounds[0] = o_0_bounds0_src;
         }
         if (v_z == 0) {
+          self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
           goto label_1_break;
         }
         wuffs_base__u64__sat_sub_indirect(

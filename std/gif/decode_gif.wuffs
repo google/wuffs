@@ -28,6 +28,8 @@ pub struct decoder?(
 	//  - 1 -> 1: via decode_frame.
 	call_sequence base.u8,
 
+	previous_lzw_decode_ended_abruptly base.bool,
+
 	background_color_index base.u8,
 
 	block_type base.u8,
@@ -298,17 +300,24 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		}
 	}
 
+	if this.previous_lzw_decode_ended_abruptly {
+		// TODO: reset this.lzw.
+	}
+
 	var lw base.u8 = in.src.read_u8?()
 	if (lw < 2) or (8 < lw) {
 		return error "bad literal width"
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
+	this.previous_lzw_decode_ended_abruptly = true
 	while true {
 		var block_size base.u64 = in.src.read_u8?() as base.u64
 		if block_size == 0 {
 			break
 		}
+		this.previous_lzw_decode_ended_abruptly = true
+
 		while true {
 			// TODO: should "mark" be "set_mark" or "set_mark_here"?
 			in.src.mark()
@@ -317,6 +326,8 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
 			}
 			if z.is_ok() {
+				// TODO: check that block_size (after the ~sat-) is zero?
+				this.previous_lzw_decode_ended_abruptly = false
 				break
 			}
 			block_size ~sat-= in.src.since_mark().length()

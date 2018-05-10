@@ -1123,6 +1123,7 @@ typedef struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
+    bool f_previous_lzw_decode_ended_abruptly;
     uint8_t f_background_color_index;
     uint8_t f_block_type;
     bool f_peek_block_type;
