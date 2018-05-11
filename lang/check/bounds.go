@@ -841,7 +841,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		// and type system.
 		if methodName := lhs.Ident(); methodName == t.IDLowBits || methodName == t.IDHighBits {
 			if recv := lhs.MType().Receiver(); recv != nil && recv.IsNumType() {
-				return q.bcheckLowHighBitsCall(n, depth)
+				_, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+				if err != nil {
+					return nil, nil, err
+				}
+				return zero, bitMask(int(aMax.Int64())), nil
 			}
 		}
 
@@ -931,36 +935,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
 	return q.bcheckTypeExpr(n.MType())
-}
-
-func (q *checker) bcheckLowHighBitsCall(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	max := (*big.Int)(nil)
-	qid := n.LHS().Expr().MType().Receiver().QID()
-	switch qid[1] {
-	case t.IDU8:
-		max = eight
-	case t.IDU16:
-		max = sixteen
-	case t.IDU32:
-		max = thirtyTwo
-	case t.IDU64:
-		max = sixtyFour
-	}
-	if qid[0] != t.IDBase || max == nil {
-		return nil, nil, fmt.Errorf("check: internal error: bad low_bits / high_bits receiver")
-	}
-
-	a := n.Args()[0].Arg().Value()
-	_, aMax, err := q.bcheckExpr(a, depth)
-	if err != nil {
-		return nil, nil, err
-	}
-	if aMax.Cmp(max) > 0 {
-		return nil, nil, fmt.Errorf(
-			"check: internal error: bad low_bits / high_bits argument, despite type checking")
-	}
-
-	return zero, bitMask(int(aMax.Int64())), nil
 }
 
 func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {

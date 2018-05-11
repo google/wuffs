@@ -999,7 +999,7 @@ swtch:
 			// TODO: reject. You can only refine numeric types.
 		}
 		if qid[0] == t.IDBase {
-			if _, ok := builtInTypeMap[qid[1]]; ok {
+			if _, ok := builtInTypeMap[qid[1]]; ok || qid[1] == t.IDDiamond {
 				break swtch
 			}
 		}

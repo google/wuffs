@@ -486,6 +486,12 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	// implicit "return out"?
 
 	qqid := n.QQID()
+	if qqid[0] == t.IDBase {
+		// No need to populate c.funcs and c.localVars for built-in funcs. In
+		// any case, the remaining type checking code in this function doesn't
+		// handle the base.◊ diamond type.
+		return nil
+	}
 	if other, ok := c.funcs[qqid]; ok {
 		return &Error{
 			Err:           fmt.Errorf("check: duplicate function %s", qqid.Str(c.tm)),

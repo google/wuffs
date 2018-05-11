@@ -82,15 +82,14 @@ var Funcs = []string{
 	// TODO: some methods like "mark" and "set_limit" should probably have a
 	// trailing "!".
 
-	// TODO: refine n's type from u32 to u32[..8], u32[..16], etc.
-	"u8.high_bits(n u32)(ret u8)",
-	"u8.low_bits(n u32)(ret u8)",
-	"u16.high_bits(n u32)(ret u16)",
-	"u16.low_bits(n u32)(ret u16)",
-	"u32.high_bits(n u32)(ret u32)",
-	"u32.low_bits(n u32)(ret u32)",
-	"u64.high_bits(n u32)(ret u64)",
-	"u64.low_bits(n u32)(ret u64)",
+	"u8.high_bits(n u32[..8])(ret u8)",
+	"u8.low_bits(n u32[..8])(ret u8)",
+	"u16.high_bits(n u32[..16])(ret u16)",
+	"u16.low_bits(n u32[..16])(ret u16)",
+	"u32.high_bits(n u32[..32])(ret u32)",
+	"u32.low_bits(n u32[..32])(ret u32)",
+	"u64.high_bits(n u32[..64])(ret u64)",
+	"u64.low_bits(n u32[..64])(ret u64)",
 
 	"status.is_error()(ret bool)",
 	"status.is_ok()(ret bool)",

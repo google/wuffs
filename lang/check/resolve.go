@@ -72,7 +72,7 @@ var builtInTypeMap = typeMap{
 func (c *Checker) builtInFunc(qqid t.QQID) (*a.Func, error) {
 	if c.builtInFuncs == nil {
 		err := error(nil)
-		c.builtInFuncs, err = parseBuiltInFuncs(c.tm, builtin.Funcs, false)
+		c.builtInFuncs, err = c.parseBuiltInFuncs(builtin.Funcs, false)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func (c *Checker) builtInFunc(qqid t.QQID) (*a.Func, error) {
 func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
 	if c.builtInSliceFuncs == nil {
 		err := error(nil)
-		c.builtInSliceFuncs, err = parseBuiltInFuncs(c.tm, builtin.SliceFuncs, true)
+		c.builtInSliceFuncs, err = c.parseBuiltInFuncs(builtin.SliceFuncs, true)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
 	return c.builtInSliceFuncs[qqid], nil
 }
 
-func parseBuiltInFuncs(tm *t.Map, ss []string, placeholder bool) (map[t.QQID]*a.Func, error) {
+func (c *Checker) parseBuiltInFuncs(ss []string, placeholder bool) (map[t.QQID]*a.Func, error) {
 	m := map[t.QQID]*a.Func{}
 	buf := []byte(nil)
 	opts := parse.Options{
@@ -104,7 +104,7 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, placeholder bool) (map[t.QQID]*a.
 		buf = append(buf, "{}\n"...)
 
 		const filename = "builtin.wuffs"
-		tokens, _, err := t.Tokenize(tm, filename, buf)
+		tokens, _, err := t.Tokenize(c.tm, filename, buf)
 		if err != nil {
 			return nil, fmt.Errorf("check: could not tokenize built-in funcs: %v", err)
 		}
@@ -115,7 +115,7 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, placeholder bool) (map[t.QQID]*a.
 				}
 			}
 		}
-		file, err := parse.Parse(tm, filename, tokens, &opts)
+		file, err := parse.Parse(c.tm, filename, tokens, &opts)
 		if err != nil {
 			return nil, fmt.Errorf("check: could not parse built-in funcs: %v", err)
 		}
@@ -125,7 +125,10 @@ func parseBuiltInFuncs(tm *t.Map, ss []string, placeholder bool) (map[t.QQID]*a.
 			return nil, fmt.Errorf("check: parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
 		}
 		f := tlds[0].Func()
-		f.Node().Raw().SetPackage(tm, t.IDBase)
+		f.Node().Raw().SetPackage(c.tm, t.IDBase)
+		if err := c.checkFuncSignature(f.Node()); err != nil {
+			return nil, err
+		}
 		m[f.QQID()] = f
 	}
 	return m, nil
