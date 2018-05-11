@@ -727,7 +727,7 @@ func (p *parser) parseIf() (*a.If, error) {
 func (p *parser) parseIterateNode() (*a.Node, error) {
 	if x := p.peek1(); x != t.IDIterate {
 		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected "if", got %q at %s:%d`, got, p.filename, p.line())
+		return nil, fmt.Errorf(`parse: expected "iterate", got %q at %s:%d`, got, p.filename, p.line())
 	}
 	p.src = p.src[1:]
 	label, err := p.parseLabel()
@@ -738,7 +738,14 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	n, err := p.parseIterateBlock(label, vars)
+	if err != nil {
+		return nil, err
+	}
+	return n.Node(), nil
+}
 
+func (p *parser) parseIterateBlock(label t.ID, vars []*a.Node) (*a.Iterate, error) {
 	if x := p.peek1(); x != t.IDOpenParen {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`, got, p.filename, p.line())
@@ -804,25 +811,16 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 		return nil, err
 	}
 
-	tail := ([]*a.Node)(nil)
-	if length == t.ID1 {
-		if x := p.peek1(); x == t.IDElse {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected non-"else", got %q at %s:%d`, got, p.filename, p.line())
-		}
-	} else {
-		if x := p.peek1(); x != t.IDElse {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected "else", got %q at %s:%d`, got, p.filename, p.line())
-		}
+	elseIterate := (*a.Iterate)(nil)
+	if x := p.peek1(); x == t.IDElse {
 		p.src = p.src[1:]
-		tail, err = p.parseBlock()
+		elseIterate, err = p.parseIterateBlock(0, nil)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return a.NewIterate(label, vars, length, unroll, asserts, body, tail).Node(), nil
+	return a.NewIterate(label, vars, length, unroll, asserts, body, elseIterate), nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {

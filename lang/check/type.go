@@ -45,14 +45,13 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			}
 
 		case a.KIterate:
-			if err := q.tcheckVars(o.Iterate().Variables()); err != nil {
-				return err
-			}
-			if err := q.tcheckVars(o.Iterate().Body()); err != nil {
-				return err
-			}
-			if err := q.tcheckVars(o.Iterate().Tail()); err != nil {
-				return err
+			for o := o.Iterate(); o != nil; o = o.ElseIterate() {
+				if err := q.tcheckVars(o.Variables()); err != nil {
+					return err
+				}
+				if err := q.tcheckVars(o.Body()); err != nil {
+					return err
+				}
 			}
 
 		case a.KVar:
@@ -144,17 +143,22 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KIterate:
-		n := n.Iterate()
-		for _, o := range n.Variables() {
-			if err := q.tcheckStatement(o); err != nil {
+		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
+			for _, o := range n.Variables() {
+				if err := q.tcheckStatement(o); err != nil {
+					return err
+				}
+			}
+			// TODO: prohibit jumps (breaks, continues), rets (returns, yields) and
+			// retry-calling ? methods while inside an iterate body.
+			if err := q.tcheckLoop(n); err != nil {
 				return err
 			}
 		}
-		// TODO: prohibit jumps (breaks, continues), rets (returns, yields) and
-		// retry-calling ? methods while inside an iterate body.
-		if err := q.tcheckLoop(n); err != nil {
-			return err
+		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
+			n.Node().SetTypeChecked()
 		}
+		return nil
 
 	case a.KJump:
 		n := n.Jump()
@@ -362,13 +366,6 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 	for _, o := range n.Body() {
 		if err := q.tcheckStatement(o); err != nil {
 			return err
-		}
-	}
-	if n, ok := n.(a.TailedLoop); ok {
-		for _, o := range n.Tail() {
-			if err := q.tcheckStatement(o); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

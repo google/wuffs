@@ -248,11 +248,6 @@ type Loop interface {
 	SetHasContinue()
 }
 
-type TailedLoop interface {
-	Loop
-	Tail() []*Node
-}
-
 type Raw Node
 
 func (n *Raw) Node() *Node                    { return (*Node)(n) }
@@ -516,42 +511,42 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate:ID1 (vars)(length:ID2, unroll:ID0), List1 { List2 } else { List3 }":
+// "iterate:ID1 (vars)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
 //  - ID1:   <0|label>
 //  - ID2:   length
+//  - RHS:   <nil|Iterate>
 //  - List0: <Var> vars
 //  - List1: <Assert> asserts
 //  - List2: <Statement> body
-//  - List3: <Statement> tail
 type Iterate Node
 
-func (n *Iterate) Node() *Node        { return (*Node)(n) }
-func (n *Iterate) HasBreak() bool     { return n.flags&FlagsHasBreak != 0 }
-func (n *Iterate) HasContinue() bool  { return n.flags&FlagsHasContinue != 0 }
-func (n *Iterate) Unroll() t.ID       { return n.id0 }
-func (n *Iterate) Label() t.ID        { return n.id1 }
-func (n *Iterate) Length() t.ID       { return n.id2 }
-func (n *Iterate) Variables() []*Node { return n.list0 }
-func (n *Iterate) Asserts() []*Node   { return n.list1 }
-func (n *Iterate) Body() []*Node      { return n.list2 }
-func (n *Iterate) Tail() []*Node      { return n.list3 }
+func (n *Iterate) Node() *Node           { return (*Node)(n) }
+func (n *Iterate) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
+func (n *Iterate) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
+func (n *Iterate) Unroll() t.ID          { return n.id0 }
+func (n *Iterate) Label() t.ID           { return n.id1 }
+func (n *Iterate) Length() t.ID          { return n.id2 }
+func (n *Iterate) ElseIterate() *Iterate { return n.rhs.Iterate() }
+func (n *Iterate) Variables() []*Node    { return n.list0 }
+func (n *Iterate) Asserts() []*Node      { return n.list1 }
+func (n *Iterate) Body() []*Node         { return n.list2 }
 
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, tail []*Node) *Iterate {
+func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, elseIterate *Iterate) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
 		id1:   label,
 		id2:   length,
+		rhs:   elseIterate.Node(),
 		list0: vars,
 		list1: asserts,
 		list2: body,
-		list3: tail,
 	}
 }
 

@@ -263,23 +263,20 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	b.printf("wuffs_base__slice_u8 %s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 	// TODO: look at n.HasContinue() and n.HasBreak().
 
-	block := n.Body()
-	length := n.Length().SmallPowerOf2Value()
-	unroll := n.Unroll().SmallPowerOf2Value()
-	if unroll > 1 || length > 1 {
-		if err := g.writeIterateRound(b, name, block, 0, depth, length, unroll); err != nil {
-			return err
-		}
-	}
-	if unroll > 1 {
-		if err := g.writeIterateRound(b, name, block, 1, depth, length, 1); err != nil {
-			return err
-		}
-	}
-	if length > 1 {
-		block = n.Tail()
-		if err := g.writeIterateRound(b, name, block, 2, depth, 1, 1); err != nil {
-			return err
+	round := uint32(0)
+	for ; n != nil; n = n.ElseIterate() {
+		length := n.Length().SmallPowerOf2Value()
+		unroll := n.Unroll().SmallPowerOf2Value()
+		for {
+			if err := g.writeIterateRound(b, name, n.Body(), round, depth, length, unroll); err != nil {
+				return err
+			}
+			round++
+
+			if unroll == 1 {
+				break
+			}
+			unroll = 1
 		}
 	}
 
@@ -416,13 +413,13 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeIterateRound(b *buffer, name string, block []*a.Node, round uint32, depth uint32, length int, unroll int) error {
+func (g *gen) writeIterateRound(b *buffer, name string, body []*a.Node, round uint32, depth uint32, length int, unroll int) error {
 	b.printf("%s%s.len = %d;\n", vPrefix, name, length)
 	b.printf("uint8_t* %send%d_%s = %sslice_%s.ptr + (%sslice_%s.len / %d) * %d;\n",
 		iPrefix, round, name, iPrefix, name, iPrefix, name, length*unroll, length*unroll)
 	b.printf("while (%s%s.ptr < %send%d_%s) {\n", vPrefix, name, iPrefix, round, name)
 	for i := 0; i < unroll; i++ {
-		for _, o := range block {
+		for _, o := range body {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
 			}

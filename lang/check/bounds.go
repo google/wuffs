@@ -299,28 +299,14 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// execute-exactly-once block. We should have pre / inv / post
 		// conditions, a la bcheckWhile.
 
-		// Check the body.
-		{
+		variables := n.Variables()
+		for ; n != nil; n = n.ElseIterate() {
 			q.facts = q.facts[:0]
-			for _, o := range n.Variables() {
+			for _, o := range variables {
 				v := o.Var()
 				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Length()))
 			}
 			for _, o := range n.Body() {
-				if err := q.bcheckStatement(o); err != nil {
-					return err
-				}
-			}
-		}
-
-		// Check the tail.
-		{
-			q.facts = q.facts[:0]
-			for _, o := range n.Variables() {
-				v := o.Var()
-				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), t.ID1))
-			}
-			for _, o := range n.Tail() {
 				if err := q.bcheckStatement(o); err != nil {
 					return err
 				}
