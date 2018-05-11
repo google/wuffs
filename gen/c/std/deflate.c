@@ -1607,23 +1607,6 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   return n;
 }
 
-static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
-    wuffs_base__io_reader* o,
-    uint64_t limit) {
-  if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->ri;
-    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->wi;
-    if (!o->private_impl.bounds[0]) {
-      o->private_impl.bounds[0] = p;
-      o->private_impl.bounds[1] = q;
-    }
-    if ((o->private_impl.bounds[1] - p) > limit) {
-      o->private_impl.bounds[1] = p + limit;
-    }
-  }
-  return ((wuffs_base__empty_struct){});
-}
-
 static inline wuffs_base__empty_struct
 wuffs_base__io_reader__set_limit_internal(wuffs_base__io_reader* o,
                                           uint64_t limit,
@@ -1641,23 +1624,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
   o->private_impl.bounds[0] = mark;
-  return ((wuffs_base__empty_struct){});
-}
-
-static inline wuffs_base__empty_struct wuffs_base__io_writer__set_limit(
-    wuffs_base__io_writer* o,
-    uint64_t limit) {
-  if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->wi;
-    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->len;
-    if (!o->private_impl.bounds[0]) {
-      o->private_impl.bounds[0] = p;
-      o->private_impl.bounds[1] = q;
-    }
-    if ((o->private_impl.bounds[1] - p) > limit) {
-      o->private_impl.bounds[1] = p + limit;
-    }
-  }
   return ((wuffs_base__empty_struct){});
 }
 
