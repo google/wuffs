@@ -159,12 +159,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInSrc(g.tm, n, t.IDSetLimit, 1) {
-			b.printf("wuffs_base__io_reader__set_limit_internal(&%ssrc,", aPrefix)
+			b.printf("wuffs_base__io_reader__set_limit(&%ssrc, %srptr_src,", aPrefix, bPrefix)
 			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
 				return err
 			}
-			// TODO: fix this set_limit_internal hack.
-			b.writes(", a_src.private_impl.buf ? (b_rptr_src - a_src.private_impl.buf->ptr) : 0)")
+			b.writes(")")
 			// TODO: update the bPrefix variables?
 			return nil
 		}

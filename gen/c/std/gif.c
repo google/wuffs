@@ -1624,15 +1624,12 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   return n;
 }
 
-static inline wuffs_base__empty_struct
-wuffs_base__io_reader__set_limit_internal(wuffs_base__io_reader* o,
-                                          uint64_t limit,
-                                          size_t ri_override) {
-  if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->ptr + ri_override;
-    if ((o->private_impl.bounds[1] - p) > limit) {
-      o->private_impl.bounds[1] = p + limit;
-    }
+static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
+    wuffs_base__io_reader* o,
+    uint8_t* rptr,
+    uint64_t limit) {
+  if (o && ((o->private_impl.bounds[1] - rptr) > limit)) {
+    o->private_impl.bounds[1] = rptr + limit;
   }
   return ((wuffs_base__empty_struct){});
 }
@@ -2879,11 +2876,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         {
           uint8_t* o_0_bounds0_src = a_src.private_impl.bounds[0];
           uint8_t* o_0_bounds1_src = a_src.private_impl.bounds[1];
-          wuffs_base__io_reader__set_limit_internal(
-              &a_src, v_block_size,
-              a_src.private_impl.buf
-                  ? (b_rptr_src - a_src.private_impl.buf->ptr)
-                  : 0);
+          wuffs_base__io_reader__set_limit(&a_src, b_rptr_src, v_block_size);
           {
             if (a_src.private_impl.buf) {
               a_src.private_impl.buf->ri =
