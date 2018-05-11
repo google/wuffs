@@ -594,7 +594,7 @@ func (n *If) ElseIf() *If          { return n.rhs.If() }
 func (n *If) BodyIfTrue() []*Node  { return n.list2 }
 func (n *If) BodyIfFalse() []*Node { return n.list1 }
 
-func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node) *If {
+func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If) *If {
 	return &If{
 		kind:  KIf,
 		mhs:   condition.Node(),

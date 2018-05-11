@@ -721,7 +721,7 @@ func (p *parser) parseIf() (*a.If, error) {
 			}
 		}
 	}
-	return a.NewIf(condition, elseIf, bodyIfTrue, bodyIfFalse), nil
+	return a.NewIf(condition, bodyIfTrue, bodyIfFalse, elseIf), nil
 }
 
 func (p *parser) parseIterateNode() (*a.Node, error) {
