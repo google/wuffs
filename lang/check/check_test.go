@@ -117,22 +117,23 @@ func TestCheck(tt *testing.T) {
 		tt.Fatalf("Check: %v", err)
 	}
 
-	if len(c.funcs) != 1 {
-		tt.Fatalf("Funcs: got %d elements, want 1", len(c.funcs))
+	// There are 2 funcs: the implicit foo.reset method, and the explicit
+	// foo.bar method.
+	if len(c.funcs) != 2 {
+		tt.Fatalf("c.funcs: got %d elements, want 2", len(c.funcs))
 	}
-	fooBar := (*a.Func)(nil)
-	fooBarLocalVars := typeMap(nil)
-	for _, f := range c.funcs {
-		fooBar = f
-		break
+	qqid := t.QQID{0, tm.ByName("foo"), tm.ByName("bar")}
+	fooBar := c.funcs[qqid]
+	if fooBar == nil {
+		tt.Fatalf("c.funcs: no entry for %q", qqid.Str(tm))
 	}
-	for _, v := range c.localVars {
-		fooBarLocalVars = v
-		break
+	fooBarLocalVars := c.localVars[qqid]
+	if fooBarLocalVars == nil {
+		tt.Fatalf("c.localVars: no entry for %q", qqid.Str(tm))
 	}
 
 	if got, want := fooBar.QQID().Str(tm), "foo.bar"; got != want {
-		tt.Fatalf("Funcs[0] name: got %q, want %q", got, want)
+		tt.Fatalf("func name: got %q, want %q", got, want)
 	}
 
 	got := [][2]string(nil)
