@@ -1,5 +1,6 @@
 *.exe
 *~
+/fuzz/c/std/*.out
 /gen/lib
 /gen/wuffs
 Cargo.lock
