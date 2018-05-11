@@ -187,7 +187,6 @@ type Node struct {
 	list0 []*Node
 	list1 []*Node
 	list2 []*Node
-	list3 []*Node
 }
 
 func (n *Node) Kind() Kind        { return n.kind }
@@ -254,7 +253,7 @@ func (n *Raw) Node() *Node                    { return (*Node)(n) }
 func (n *Raw) Flags() Flags                   { return n.flags }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
 func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.rhs} }
-func (n *Raw) SubLists() [4][]*Node           { return [4][]*Node{n.list0, n.list1, n.list2, n.list3} }
+func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.list1, n.list2} }
 
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
@@ -582,26 +581,26 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 	}
 }
 
-// If is "if MHS { List2 } else RHS" or "if MHS { List2 } else { List3 }":
+// If is "if MHS { List2 } else RHS" or "if MHS { List2 } else { List1 }":
 //  - MHS:   <Expr>
 //  - RHS:   <nil|If>
+//  - List1: <Statement> if-false body
 //  - List2: <Statement> if-true body
-//  - List3: <Statement> if-false body
 type If Node
 
 func (n *If) Node() *Node          { return (*Node)(n) }
 func (n *If) Condition() *Expr     { return n.mhs.Expr() }
 func (n *If) ElseIf() *If          { return n.rhs.If() }
 func (n *If) BodyIfTrue() []*Node  { return n.list2 }
-func (n *If) BodyIfFalse() []*Node { return n.list3 }
+func (n *If) BodyIfFalse() []*Node { return n.list1 }
 
 func NewIf(condition *Expr, elseIf *If, bodyIfTrue []*Node, bodyIfFalse []*Node) *If {
 	return &If{
 		kind:  KIf,
 		mhs:   condition.Node(),
 		rhs:   elseIf.Node(),
+		list1: bodyIfFalse,
 		list2: bodyIfTrue,
-		list3: bodyIfFalse,
 	}
 }
 
