@@ -87,11 +87,11 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
-      wuffs_base__io_writer__set_limit(&dst_writer, wlimit);
+      set_writer_limit(&dst_writer, wlimit);
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
-      wuffs_base__io_reader__set_limit(&src_reader, rlimit);
+      set_reader_limit(&src_reader, rlimit);
     }
 
     wuffs_zlib__status s =
@@ -147,8 +147,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
           FAIL("end_limit=%d: not enough source data", end_limit);
           return false;
         }
-        wuffs_base__io_reader__set_limit(&src_reader,
-                                         src.wi - (uint64_t)(end_limit));
+        set_reader_limit(&src_reader, src.wi - (uint64_t)(end_limit));
         want = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
       } else {
         want = (bad_checksum && !ignore_checksum)
@@ -214,8 +213,7 @@ void test_mimic_zlib_decode_pi() {
 
 void bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                      300);
+  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0, 300);
 }
 
 void bench_wuffs_zlib_decode_100k() {
@@ -229,8 +227,7 @@ void bench_wuffs_zlib_decode_100k() {
 
 void bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0,
-                      300);
+  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0, 300);
 }
 
 void bench_mimic_zlib_decode_100k() {

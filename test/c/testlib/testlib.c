@@ -290,8 +290,7 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
 // WUFFS_BASE_HEADER_H is where wuffs_base__io_buffer is defined.
 #ifdef WUFFS_BASE_HEADER_H
 
-void wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
-                                      uint64_t limit) {
+void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->ri;
     uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->wi;
@@ -305,8 +304,7 @@ void wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
   }
 }
 
-void wuffs_base__io_writer__set_limit(wuffs_base__io_writer* o,
-                                      uint64_t limit) {
+void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->wi;
     uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->len;

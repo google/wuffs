@@ -116,11 +116,11 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
-      wuffs_base__io_writer__set_limit(&dst_writer, wlimit);
+      set_writer_limit(&dst_writer, wlimit);
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
     if (rlimit) {
-      wuffs_base__io_reader__set_limit(&src_reader, rlimit);
+      set_reader_limit(&src_reader, rlimit);
     }
 
     wuffs_deflate__status s =
@@ -273,7 +273,7 @@ bool do_test_wuffs_deflate_history(int i,
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  wuffs_base__io_writer__set_limit(&dst_writer, limit);
+  set_writer_limit(&dst_writer, limit);
 
   wuffs_deflate__status got_s =
       wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
