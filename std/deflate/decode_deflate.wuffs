@@ -123,7 +123,7 @@ pub struct decoder?(
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	while true {
-		in.dst.mark()
+		in.dst.set_mark()
 		var z base.status = try this.decode_blocks?(dst:in.dst, src:in.src)
 		if not z.is_suspension() {
 			return z

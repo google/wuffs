@@ -167,7 +167,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: update the bPrefix variables?
 			return nil
 		}
-		if isInSrc(g.tm, n, t.IDMark, 0) {
+		if isInSrc(g.tm, n, t.IDSetMark, 0) {
 			b.printf("wuffs_base__io_reader__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil
 		}
@@ -178,7 +178,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				aPrefix, bPrefix, aPrefix)
 			return nil
 		}
-		if isInDst(g.tm, n, t.IDMark, 0) {
+		if isInDst(g.tm, n, t.IDSetMark, 0) {
 			// TODO: is a private_impl.bounds[0] the right representation? What
 			// if the function is passed a (ptr io_writer) instead of a
 			// (io_writer)? Do we still want to have that mark live outside of

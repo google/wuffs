@@ -681,6 +681,9 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if s == nil {
 		s = q.c.structs[lQID]
 		if s == nil {
+			if lQID[0] == t.IDBase {
+				return fmt.Errorf("check: no built-in function %q found", qqid.Str(q.tm))
+			}
 			return fmt.Errorf("check: no struct type %q found for expression %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 		}
 	}

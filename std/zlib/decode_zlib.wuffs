@@ -52,7 +52,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	// Decode and checksum the DEFLATE-encoded payload.
 	var checksum_got base.u32
 	while true {
-		in.dst.mark()
+		in.dst.set_mark()
 		var z base.status = try this.flate.decode?(dst:in.dst, src:in.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update(x:in.dst.since_mark())

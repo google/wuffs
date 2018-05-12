@@ -319,8 +319,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		this.previous_lzw_decode_ended_abruptly = true
 
 		while true {
-			// TODO: should "mark" be "set_mark" or "set_mark_here"?
-			in.src.mark()
+			in.src.set_mark()
 			io_bind (in.src) {
 				in.src.set_limit(l:block_size)
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)

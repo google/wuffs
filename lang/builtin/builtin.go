@@ -110,7 +110,7 @@ var Funcs = []string{
 
 	"io_reader.available()(ret u64)",
 	"io_reader.set_limit(l u64)()",
-	"io_reader.mark()()",
+	"io_reader.set_mark()()",
 	"io_reader.since_mark()(ret slice u8)",
 
 	"io_reader.skip32?(n u32)()",
@@ -128,7 +128,7 @@ var Funcs = []string{
 
 	"io_writer.available()(ret u64)",
 	"io_writer.set_limit(l u64)()",
-	"io_writer.mark()()",
+	"io_writer.set_mark()()",
 	"io_writer.since_mark()(ret slice u8)",
 
 	"io_writer.copy_from_history32(distance u32, length u32)(ret u32)",

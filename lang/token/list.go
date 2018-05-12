@@ -461,7 +461,7 @@ const (
 	IDLowBits           = ID(0x20E)
 	IDHighBits          = ID(0x20F)
 	IDUnroll            = ID(0x210)
-	IDMark              = ID(0x211)
+	IDSetMark           = ID(0x211)
 	IDSinceMark         = ID(0x212)
 )
 
@@ -651,7 +651,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLowBits:           "low_bits",
 	IDHighBits:          "high_bits",
 	IDUnroll:            "unroll",
-	IDMark:              "mark",
+	IDSetMark:           "set_mark",
 	IDSinceMark:         "since_mark",
 }
 
