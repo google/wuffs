@@ -91,10 +91,15 @@ var Funcs = []string{
 	"u64.high_bits(n u32[..64])(ret u64)",
 	"u64.low_bits(n u32[..64])(ret u64)",
 
+	// ---- status
+
 	"status.is_error()(ret bool)",
 	"status.is_ok()(ret bool)",
 	"status.is_suspension()(ret bool)",
 
+	// ---- io_reader
+
+	"io_reader.unread_u8?()()",
 	"io_reader.read_u8?()(ret u8)",
 	"io_reader.read_u16be?()(ret u16)",
 	"io_reader.read_u16le?()(ret u16)",
@@ -104,13 +109,14 @@ var Funcs = []string{
 	"io_reader.read_u64le?()(ret u64)",
 
 	"io_reader.available()(ret u64)",
-	"io_reader.limit(l u64)(ret io_reader)",
 	"io_reader.set_limit(l u64)()",
 	"io_reader.mark()()",
 	"io_reader.since_mark()(ret slice u8)",
+
 	"io_reader.skip32?(n u32)()",
 	"io_reader.skip64?(n u64)()",
-	"io_reader.unread_u8?()()",
+
+	// ---- io_writer
 
 	"io_writer.write_u8?(x u8)()",
 	"io_writer.write_u16be?(x u16)()",
@@ -121,14 +127,16 @@ var Funcs = []string{
 	"io_writer.write_u64le?(x u64)()",
 
 	"io_writer.available()(ret u64)",
+	"io_writer.set_limit(l u64)()",
+	"io_writer.mark()()",
+	"io_writer.since_mark()(ret slice u8)",
+
 	"io_writer.copy_from_history32(distance u32, length u32)(ret u32)",
 	"io_writer.copy_from_reader32(r io_reader, length u32)(ret u32)",
 	"io_writer.copy_from_slice(s slice u8)(ret u64)",
 	"io_writer.copy_from_slice32(s slice u8, length u32)(ret u32)",
-	"io_writer.limit(l u64)(ret io_writer)",
-	"io_writer.set_limit(l u64)()",
-	"io_writer.mark()()",
-	"io_writer.since_mark()(ret slice u8)",
+
+	// ---- image_config
 
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 }
