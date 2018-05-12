@@ -50,6 +50,10 @@ pub struct decoder?(
 	frame_width base.u32[..65535],
 	frame_height base.u32[..65535],
 
+	// TODO: use these fields.
+	uncompressed_index base.u32[..4096],
+	uncompressed array[4096] base.u8,
+
 	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
 	//
 	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?

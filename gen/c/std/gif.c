@@ -1148,6 +1148,8 @@ typedef struct {
     uint32_t f_frame_left;
     uint32_t f_frame_width;
     uint32_t f_frame_height;
+    uint32_t f_uncompressed_index;
+    uint8_t f_uncompressed[4096];
     uint8_t f_gct[768];
     uint8_t f_lct[768];
     wuffs_gif__lzw_decoder f_lzw;
