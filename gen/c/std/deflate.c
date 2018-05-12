@@ -2183,8 +2183,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
       v_n_copied = wuffs_base__io_writer__copy_from_reader32(
           &b_wptr_dst, b_wend_dst, &b_rptr_src, b_rend_src, v_length);
       if (v_length <= v_n_copied) {
-        v_length = 0;
-        goto label_0_break;
+        status = WUFFS_DEFLATE__STATUS_OK;
+        goto ok;
       }
       v_length -= v_n_copied;
       if (((uint64_t)(b_wend_dst - b_wptr_dst)) == 0) {
@@ -2195,7 +2195,6 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
       }
     }
-  label_0_break:;
 
     goto ok;
   ok:
