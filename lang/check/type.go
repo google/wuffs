@@ -614,26 +614,6 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-// isThatMethod matches foo.methodName(etc) where etc has nArgs elements.
-func isThatMethod(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
-		return false
-	}
-	if len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != methodName {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() == t.IDDot &&
-		(n.Ident() == tm.ByName("src") || n.Ident() == tm.ByName("dst")) {
-		return false
-	}
-	return true
-}
-
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	lhs := n.LHS().Expr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {

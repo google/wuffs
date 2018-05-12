@@ -816,21 +816,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
-
-		// TODO: delete this hack that only matches "foo.set_literal_width(etc)".
-		if isThatMethod(q.tm, n, q.tm.ByName("set_literal_width"), 1) {
-			a := n.Args()[0].Arg().Value()
-			aMin, aMax, err := q.bcheckExpr(a, depth)
-			if err != nil {
-				return nil, nil, err
-			}
-			if aMin.Cmp(big.NewInt(2)) < 0 || aMax.Cmp(big.NewInt(8)) > 0 {
-				return nil, nil, fmt.Errorf("check: %q not in range [2..8]", a.Str(q.tm))
-			}
-			// TODO: should return be break?
-			return nil, nil, nil
-		}
-
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return nil, nil, err
 		}
