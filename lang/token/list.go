@@ -271,10 +271,12 @@ const (
 	IDGreaterEq   = ID(0x34)
 	IDGreaterThan = ID(0x35)
 
-	IDAnd   = ID(0x38)
-	IDOr    = ID(0x39)
-	IDNot   = ID(0x3A)
-	IDAs    = ID(0x3B)
+	IDAnd = ID(0x38)
+	IDOr  = ID(0x39)
+	IDNot = ID(0x3A)
+	IDAs  = ID(0x3B)
+
+	// TODO: are these unused? Can we drop them (and their XUnary forms)?
 	IDRef   = ID(0x3C)
 	IDDeref = ID(0x3D)
 
