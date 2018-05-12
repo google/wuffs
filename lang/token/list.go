@@ -465,6 +465,8 @@ const (
 	IDUnroll            = ID(0x210)
 	IDSetMark           = ID(0x211)
 	IDSinceMark         = ID(0x212)
+	IDMax               = ID(0x213)
+	IDMin               = ID(0x214)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -655,6 +657,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDUnroll:            "unroll",
 	IDSetMark:           "set_mark",
 	IDSinceMark:         "since_mark",
+	IDMax:               "max",
+	IDMin:               "min",
 }
 
 var builtInsByName = map[string]ID{}

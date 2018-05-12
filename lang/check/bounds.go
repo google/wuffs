@@ -820,17 +820,34 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 			return nil, nil, err
 		}
 
-		// Special case for a numeric type's low_bits and high_bits methods.
+		// Special case for a numeric type's low_bits, high_bits, etc. methods.
 		// The bound on the output is dependent on bound on the input, similar
 		// to dependent types, and isn't expressible in Wuffs' function syntax
 		// and type system.
-		if methodName := lhs.Ident(); methodName == t.IDLowBits || methodName == t.IDHighBits {
-			if recv := lhs.MType().Receiver(); recv != nil && recv.IsNumType() {
+		if recv := lhs.MType().Receiver(); recv != nil && recv.IsNumType() {
+			switch methodName := lhs.Ident(); methodName {
+			case t.IDLowBits, t.IDHighBits:
 				_, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
 				if err != nil {
 					return nil, nil, err
 				}
 				return zero, bitMask(int(aMax.Int64())), nil
+			case t.IDMin, t.IDMax:
+				// TODO: lhs has already been bcheck'ed. There should be no
+				// need to bcheck lhs.LHS().Expr() twice.
+				lMin, lMax, err := q.bcheckExpr(lhs.LHS().Expr(), depth)
+				if err != nil {
+					return nil, nil, err
+				}
+				aMin, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+				if err != nil {
+					return nil, nil, err
+				}
+				if methodName == t.IDMin {
+					return min(lMin, aMin), min(lMax, aMax), nil
+				} else {
+					return max(lMin, aMin), max(lMax, aMax), nil
+				}
 			}
 		}
 

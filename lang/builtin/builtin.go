@@ -81,12 +81,23 @@ var Types = []string{
 var Funcs = []string{
 	"u8.high_bits(n u32[..8])(ret u8)",
 	"u8.low_bits(n u32[..8])(ret u8)",
+	"u8.max(x u8)(ret u8)",
+	"u8.min(x u8)(ret u8)",
+
 	"u16.high_bits(n u32[..16])(ret u16)",
 	"u16.low_bits(n u32[..16])(ret u16)",
+	"u16.max(x u16)(ret u16)",
+	"u16.min(x u16)(ret u16)",
+
 	"u32.high_bits(n u32[..32])(ret u32)",
 	"u32.low_bits(n u32[..32])(ret u32)",
+	"u32.max(x u32)(ret u32)",
+	"u32.min(x u32)(ret u32)",
+
 	"u64.high_bits(n u32[..64])(ret u64)",
 	"u64.low_bits(n u32[..64])(ret u64)",
+	"u64.max(x u64)(ret u64)",
+	"u64.min(x u64)(ret u64)",
 
 	// ---- status
 

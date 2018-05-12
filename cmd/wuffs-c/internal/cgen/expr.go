@@ -120,6 +120,44 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(")))")
 			return nil
 		}
+		if isThatMethod(g.tm, n, t.IDMin, 1) {
+			x := n.LHS().Expr().LHS().Expr()
+			b.writes("wuffs_base__u")
+			if sz, err := g.sizeof(x.MType()); err != nil {
+				return err
+			} else {
+				b.printf("%d", 8*sz)
+			}
+			b.writes("__min(")
+			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(",")
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			return nil
+		}
+		if isThatMethod(g.tm, n, t.IDMax, 1) {
+			x := n.LHS().Expr().LHS().Expr()
+			b.writes("wuffs_base__u")
+			if sz, err := g.sizeof(x.MType()); err != nil {
+				return err
+			} else {
+				b.printf("%d", 8*sz)
+			}
+			b.writes("__max(")
+			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(",")
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				return err
+			}
+			b.writes(")")
+			return nil
+		}
 		if isThatMethod(g.tm, n, t.IDIsError, 0) || isThatMethod(g.tm, n, t.IDIsOK, 0) ||
 			isThatMethod(g.tm, n, t.IDIsSuspension, 0) {
 			if pp == parenthesesMandatory {
