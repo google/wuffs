@@ -95,7 +95,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 		in.dst.set_mark!()
 		var z base.status = try this.flate.decode?(dst:in.dst, src:in.src)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update(x:in.dst.since_mark())
+			checksum_got = this.checksum.update!(x:in.dst.since_mark())
 			decoded_length_got ~mod+= ((in.dst.since_mark().length() & 0xFFFFFFFF) as base.u32)
 		}
 		if z.is_ok() {
