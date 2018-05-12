@@ -338,7 +338,6 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		this.previous_lzw_decode_ended_abruptly = true
 
 		while true {
-			in.src.set_mark!()
 			io_bind (in.src) {
 				// TODO: enforce that calling r.set_limit has a precondition
 				// that r.is_bound(), and that you can't suspend inside an
@@ -347,14 +346,15 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				//
 				// Should calling r.set_mark also require r.is_bound()?
 				in.src.set_limit!(l:block_size)
+				in.src.set_mark!()
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
+				block_size ~sat-= in.src.since_mark().length()
 			}
 			if z.is_ok() {
-				// TODO: check that block_size (after the ~sat-) is zero?
+				// TODO: check that block_size is zero?
 				this.previous_lzw_decode_ended_abruptly = false
 				break
 			}
-			block_size ~sat-= in.src.since_mark().length()
 			if (block_size == 0) and (z == suspension "short read") {
 				break
 			}
