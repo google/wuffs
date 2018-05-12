@@ -1526,14 +1526,14 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
   return ((wuffs_base__empty_struct){});
 }
 
-static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
+static inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
-static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
+static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {
   o->private_impl.bounds[0] = mark;

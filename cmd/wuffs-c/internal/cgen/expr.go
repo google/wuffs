@@ -168,7 +168,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			return nil
 		}
 		if isInSrc(g.tm, n, t.IDSetMark, 0) {
-			b.printf("wuffs_base__io_reader__mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
+			b.printf("wuffs_base__io_reader__set_mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
 			return nil
 		}
 		if isInSrc(g.tm, n, t.IDSinceMark, 0) {
@@ -183,7 +183,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// if the function is passed a (ptr io_writer) instead of a
 			// (io_writer)? Do we still want to have that mark live outside of
 			// the function scope?
-			b.printf("wuffs_base__io_writer__mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
+			b.printf("wuffs_base__io_writer__set_mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
 			return nil
 		}
 		if isInDst(g.tm, n, t.IDSinceMark, 0) {

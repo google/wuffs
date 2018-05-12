@@ -1820,14 +1820,14 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
   return ((wuffs_base__empty_struct){});
 }
 
-static inline wuffs_base__empty_struct wuffs_base__io_reader__mark(
+static inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(
     wuffs_base__io_reader* o,
     uint8_t* mark) {
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
 
-static inline wuffs_base__empty_struct wuffs_base__io_writer__mark(
+static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {
   o->private_impl.bounds[0] = mark;
@@ -2042,7 +2042,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     }
     v_checksum_got = 0;
     while (true) {
-      wuffs_base__io_writer__mark(&a_dst, b_wptr_dst);
+      wuffs_base__io_writer__set_mark(&a_dst, b_wptr_dst);
       {
         if (a_dst.private_impl.buf) {
           a_dst.private_impl.buf->wi = b_wptr_dst - a_dst.private_impl.buf->ptr;
