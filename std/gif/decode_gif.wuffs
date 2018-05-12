@@ -300,6 +300,21 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		}
 	}
 
+	// Other GIF implementations accept GIF files that aren't completely spec
+	// compliant. For example, the test/data/gifplayer-muybridge.gif file
+	// (created by the gifsicle program) is accepted by other GIF decoders.
+	// However, in that file, frame #61's embedded LZW data is truncated,
+	// finishing with only 8 of the 9 bits required of the LZW end code. The
+	// end code itself, 0x81, is representable in only 8 bits, but the number
+	// of bits for the decoder to read has ticked over from 8 to 9 just before
+	// that end code is encountered.
+	//
+	// To accomodate such malformed GIFs, we detect when the previous frame's
+	// LZW decoding ended abruptly. The previous LZW decode 'works', in that it
+	// decodes as much pixel data as is available, but without seeing that end
+	// code (i.e. returning the "ok" status code), the LZW decoder is stuck in
+	// a coroutine-in-progress lzw_decoder.decode call, still waiting for that
+	// end code. To cancel that coroutine, we reset the LZW decoder.
 	if this.previous_lzw_decode_ended_abruptly {
 		this.lzw.reset()
 	}
