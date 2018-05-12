@@ -318,13 +318,13 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 					// TODO: copy_from_slice32 should probably update the
 					// "in.dst.available() >= 258" fact. It should certainly
 					// invalidate any fact that was "<=" instead of ">=".
-					n_copied = in.dst.copy_from_slice32(
+					n_copied = in.dst.copy_from_slice32!(
 						s:this.history[hdist & 0x7FFF:], length:hlen)
 					if hlen <= n_copied {
 						break
 					}
 					hlen -= n_copied
-					in.dst.copy_from_slice32(s:this.history[:], length:hlen)
+					in.dst.copy_from_slice32!(s:this.history[:], length:hlen)
 					break
 				}
 
@@ -348,7 +348,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			assert (length as base.u64) <= in.dst.available() via "a <= b: a <= c; c <= b"(c:258)
 
 			// Copy from in.dst.
-			in.dst.copy_from_history32(distance:(dist_minus_1 + 1), length:length)
+			in.dst.copy_from_history32!(distance:(dist_minus_1 + 1), length:length)
 			break
 		}
 	}

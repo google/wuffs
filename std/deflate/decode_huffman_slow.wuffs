@@ -206,7 +206,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader)() 
 
 				// Copy from hdist to the end of this.history.
 				while true {
-					n_copied = in.dst.copy_from_slice32(
+					n_copied = in.dst.copy_from_slice32!(
 						s:this.history[hdist & 0x7FFF:], length:hlen)
 					if hlen <= n_copied {
 						hlen = 0
@@ -226,7 +226,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader)() 
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {
 					while true {
-						n_copied = in.dst.copy_from_slice32(
+						n_copied = in.dst.copy_from_slice32!(
 							s:this.history[hdist & 0x7FFF:], length:hlen)
 						if hlen <= n_copied {
 							hlen = 0
@@ -246,7 +246,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader)() 
 			}
 
 			// Copy from in.dst.
-			n_copied = in.dst.copy_from_history32(distance:(dist_minus_1 + 1), length:length)
+			n_copied = in.dst.copy_from_history32!(distance:(dist_minus_1 + 1), length:length)
 			if length <= n_copied {
 				length = 0
 				break

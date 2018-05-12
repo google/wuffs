@@ -110,7 +110,7 @@ pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 				inv c < 256,
 			{
 				var expansion slice base.u8 = this.stack[s:]
-				var n_copied base.u64 = in.dst.copy_from_slice(s:expansion)
+				var n_copied base.u64 = in.dst.copy_from_slice!(s:expansion)
 				if n_copied == expansion.length() {
 					break
 				}

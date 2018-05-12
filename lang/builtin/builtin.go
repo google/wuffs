@@ -79,9 +79,6 @@ var Types = []string{
 }
 
 var Funcs = []string{
-	// TODO: some methods like "mark" and "set_limit" should probably have a
-	// trailing "!".
-
 	"u8.high_bits(n u32[..8])(ret u8)",
 	"u8.low_bits(n u32[..8])(ret u8)",
 	"u16.high_bits(n u32[..16])(ret u16)",
@@ -109,8 +106,8 @@ var Funcs = []string{
 	"io_reader.read_u64le?()(ret u64)",
 
 	"io_reader.available()(ret u64)",
-	"io_reader.set_limit(l u64)()",
-	"io_reader.set_mark()()",
+	"io_reader.set_limit!(l u64)()",
+	"io_reader.set_mark!()()",
 	"io_reader.since_mark()(ret slice u8)",
 
 	"io_reader.skip32?(n u32)()",
@@ -127,14 +124,14 @@ var Funcs = []string{
 	"io_writer.write_u64le?(x u64)()",
 
 	"io_writer.available()(ret u64)",
-	"io_writer.set_limit(l u64)()",
-	"io_writer.set_mark()()",
+	"io_writer.set_limit!(l u64)()",
+	"io_writer.set_mark!()()",
 	"io_writer.since_mark()(ret slice u8)",
 
-	"io_writer.copy_from_history32(distance u32, length u32)(ret u32)",
-	"io_writer.copy_from_reader32(r io_reader, length u32)(ret u32)",
-	"io_writer.copy_from_slice(s slice u8)(ret u64)",
-	"io_writer.copy_from_slice32(s slice u8, length u32)(ret u32)",
+	"io_writer.copy_from_history32!(distance u32, length u32)(ret u32)",
+	"io_writer.copy_from_reader32!(r io_reader, length u32)(ret u32)",
+	"io_writer.copy_from_slice!(s slice u8)(ret u64)",
+	"io_writer.copy_from_slice32!(s slice u8, length u32)(ret u32)",
 
 	// ---- image_config
 
