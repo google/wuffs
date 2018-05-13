@@ -1839,6 +1839,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
     v_already_full = self->private_impl.c_decode[0].v_already_full;
   } else {
+    v_written = ((wuffs_base__slice_u8){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;

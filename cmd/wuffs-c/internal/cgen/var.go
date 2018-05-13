@@ -282,8 +282,7 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
 	if typ := n.XType(); typ.HasPointers() {
-		// TODO: drop the initBoolTypedVars.
-		if suspend || initBoolTypedVars {
+		if suspend {
 			return nil
 		}
 		rhs := ""

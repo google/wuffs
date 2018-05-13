@@ -2686,6 +2686,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     v_w = ((wuffs_base__io_writer){});
     v_z = self->private_impl.c_decode_id[0].v_z;
   } else {
+    v_w = ((wuffs_base__io_writer){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -3029,6 +3030,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     v_expansion = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode[0].v_n_copied;
   } else {
+    v_expansion = ((wuffs_base__slice_u8){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
