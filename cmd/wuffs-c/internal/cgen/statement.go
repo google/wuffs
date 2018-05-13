@@ -169,12 +169,13 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		if e.Operator() != 0 {
 			prefix = aPrefix
 		}
-		name := e.Ident().Str(g.tm)
-		// TODO: stash the whole io_reader, not just its bounds.
-		for j := 0; j < 2; j++ {
-			b.printf("uint8_t* %s%d_bounds%d_%s%s = %s%s.private_impl.bounds[%d];\n",
-				oPrefix, ioBindNum, j, prefix, name, prefix, name, j)
+		cTyp := "reader"
+		if e.MType().QID()[1] == t.IDIOWriter {
+			cTyp = "writer"
 		}
+		name := e.Ident().Str(g.tm)
+		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
+			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
 	}
 
 	for _, o := range n.Body() {
@@ -190,10 +191,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			prefix = aPrefix
 		}
 		name := e.Ident().Str(g.tm)
-		for j := 1; j >= 0; j-- {
-			b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s%s;\n",
-				prefix, name, j, oPrefix, ioBindNum, j, prefix, name)
-		}
+		b.printf("%s%s = %s%d_%s%s;\n",
+			prefix, name, oPrefix, ioBindNum, prefix, name)
 	}
 	b.writes("}\n")
 	return nil
