@@ -54,6 +54,7 @@ const (
 	iPrefix = "i_" // Iterate variable.
 	oPrefix = "o_" // Temporary io_bind variable.
 	tPrefix = "t_" // Temporary local variable.
+	uPrefix = "u_" // Derived from a local variable.
 	vPrefix = "v_" // Local variable.
 )
 

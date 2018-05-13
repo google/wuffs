@@ -2660,6 +2660,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   uint8_t v_lw;
   uint64_t v_block_size;
   wuffs_base__io_writer v_w;
+  wuffs_base__io_buffer u_w;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(u_w);
   wuffs_gif__status v_z;
 
   uint8_t* b_rptr_src = NULL;

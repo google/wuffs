@@ -375,16 +375,22 @@ func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool, initB
 
 func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipIterateVariables bool) error {
 	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
-		if skipPointerTypes && n.XType().HasPointers() {
+		typ := n.XType()
+		if skipPointerTypes && typ.HasPointers() {
 			return nil
 		}
 		if skipIterateVariables && n.IterateVariable() {
 			return nil
 		}
-		if err := g.writeCTypeName(b, n.XType(), vPrefix, n.Name().Str(g.tm)); err != nil {
+		name := n.Name().Str(g.tm)
+		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
 			return err
 		}
 		b.writes(";\n")
+		if typ.IsIOType() {
+			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", uPrefix, name)
+		}
 		return nil
 	})
 }
