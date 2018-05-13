@@ -1148,7 +1148,8 @@ typedef struct {
     uint32_t f_frame_left;
     uint32_t f_frame_width;
     uint32_t f_frame_height;
-    uint32_t f_uncompressed_index;
+    uint32_t f_uncompressed_ri;
+    uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
     uint8_t f_gct[768];
     uint8_t f_lct[768];
@@ -1196,6 +1197,7 @@ typedef struct {
       uint8_t v_lw;
       uint64_t v_block_size;
       wuffs_gif__status v_z;
+      uint64_t v_n_copied;
       uint64_t scratch;
     } c_decode_id[1];
   } private_impl;

@@ -50,8 +50,8 @@ pub struct decoder?(
 	frame_width base.u32[..65535],
 	frame_height base.u32[..65535],
 
-	// TODO: use these fields.
-	uncompressed_index base.u32[..4096],
+	uncompressed_ri base.u32[..4096],
+	uncompressed_wi base.u32[..4096],
 	uncompressed array[4096] base.u8,
 
 	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
@@ -339,10 +339,10 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		}
 		this.previous_lzw_decode_ended_abruptly = true
 
-		while true {
+		while:inner true {
 			var w base.io_writer
 			io_bind (in.src, w) {
-				w.set!(s:this.uncompressed[this.uncompressed_index:])
+				w.set!(s:this.uncompressed[this.uncompressed_wi:])
 				// TODO: enforce that calling r.set_limit has a precondition
 				// that r.is_bound(), and that you can't suspend inside an
 				// io_bind? Otherwise, the cgen implementation becomes more
@@ -353,15 +353,40 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				in.src.set_mark!()
 				// TODO: in.dst should be w.
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
+				// TODO: update this.uncompressed_wi.
 				block_size ~sat-= in.src.since_mark().length()
 			}
-			if z.is_ok() {
+
+			if z.is_ok() or (z == suspension "short write") {
+				// Pass through the uncompressed bytes to in.dst.
+				//
+				// TODO: in.dst should be a ptr base.image_buffer and we should
+				// composite the pixels instead of just copying them.
+				while this.uncompressed_ri < this.uncompressed_wi {
+					var pass_through slice base.u8 = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
+					var n_copied base.u64 = in.dst.copy_from_slice!(s:pass_through)
+					if n_copied == pass_through.length() {
+						this.uncompressed_ri = 0
+						this.uncompressed_wi = 0
+						break
+					}
+					this.uncompressed_ri = (this.uncompressed_ri + ((n_copied & 4095) as base.u32)) & 4095
+					// TODO: "closed for writes" instead?
+					yield suspension "short write"
+				}
+
+				if z == suspension "short write" {
+					// TODO: don't yield, once lzw.decode writes to w instead
+					// of in.dst.
+					yield z
+					continue:inner
+				}
 				// TODO: check that block_size is zero?
 				this.previous_lzw_decode_ended_abruptly = false
-				break
+				break:inner
 			}
 			if (block_size == 0) and (z == suspension "short read") {
-				break
+				break:inner
 			}
 			yield z
 		}
