@@ -176,6 +176,17 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		name := e.Ident().Str(g.tm)
 		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
 			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
+
+		// TODO: save / restore all bPrefix vars, not just for local IO vars?
+		// How does this work if the io_bind body advances these pointers,
+		// either directly or by calling other funcs?
+		if e.Operator() == 0 {
+			// TODO: don't hard-code wptr vs rptr.
+			b.printf("uint8_t *%s%d_ioptr1_%s%s = %swptr_%s;\n",
+				oPrefix, ioBindNum, prefix, name, bPrefix, name)
+			b.printf("uint8_t *%s%d_ioptr2_%s%s = %swend_%s;\n",
+				oPrefix, ioBindNum, prefix, name, bPrefix, name)
+		}
 	}
 
 	for _, o := range n.Body() {
@@ -193,6 +204,12 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		name := e.Ident().Str(g.tm)
 		b.printf("%s%s = %s%d_%s%s;\n",
 			prefix, name, oPrefix, ioBindNum, prefix, name)
+		if e.Operator() == 0 {
+			b.printf("%swptr_%s = %s%d_ioptr1_%s%s;\n",
+				bPrefix, name, oPrefix, ioBindNum, prefix, name)
+			b.printf("%swend_%s = %s%d_ioptr2_%s%s;\n",
+				bPrefix, name, oPrefix, ioBindNum, prefix, name)
+		}
 	}
 	b.writes("}\n")
 	return nil

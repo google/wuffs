@@ -1648,6 +1648,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(
 static inline wuffs_base__empty_struct wuffs_base__io_writer__set(
     wuffs_base__io_writer* o,
     wuffs_base__io_buffer* b,
+    uint8_t** ioptr1_ptr,
+    uint8_t** ioptr2_ptr,
     wuffs_base__slice_u8 s) {
   b->ptr = s.ptr;
   b->len = s.len;
@@ -1657,6 +1659,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set(
   o->private_impl.buf = b;
   o->private_impl.bounds[0] = s.ptr;
   o->private_impl.bounds[1] = s.ptr + s.len;
+  *ioptr1_ptr = s.ptr;
+  *ioptr2_ptr = s.ptr + s.len;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -2678,7 +2682,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   uint64_t v_block_size;
   wuffs_base__io_writer v_w;
   wuffs_base__io_buffer u_w;
+  uint8_t* b_wptr_w = NULL;
+  uint8_t* b_wend_w = NULL;
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(u_w);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wptr_w);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(b_wend_w);
   wuffs_gif__status v_z;
   wuffs_base__slice_u8 v_pass_through;
   uint64_t v_n_copied;
@@ -2922,8 +2930,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         {
           wuffs_base__io_reader o_0_a_src = a_src;
           wuffs_base__io_writer o_0_v_w = v_w;
+          uint8_t* o_0_ioptr1_v_w = b_wptr_w;
+          uint8_t* o_0_ioptr2_v_w = b_wend_w;
           wuffs_base__io_writer__set(
-              &v_w, &u_w,
+              &v_w, &u_w, &b_wptr_w, &b_wend_w,
               wuffs_base__slice_u8__subslice_i(
                   ((wuffs_base__slice_u8){
                       .ptr = self->private_impl.f_uncompressed, .len = 4096}),
@@ -2951,6 +2961,9 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             }
             v_z = t_14;
           }
+          self->private_impl.f_uncompressed_wi =
+              (4096 - ((uint32_t)(wuffs_base__u64__min(
+                          (uint64_t)(b_wend_w - b_wptr_w), 4096))));
           wuffs_base__u64__sat_sub_indirect(
               &v_block_size,
               ((uint64_t)(((wuffs_base__slice_u8){
@@ -2960,6 +2973,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                            })
                               .len)));
           v_w = o_0_v_w;
+          b_wptr_w = o_0_ioptr1_v_w;
+          b_wend_w = o_0_ioptr2_v_w;
           a_src = o_0_a_src;
         }
         if ((v_z == 0) || (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {

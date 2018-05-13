@@ -389,7 +389,12 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipI
 		b.writes(";\n")
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
+			// TODO: don't hard code wptr instead of rptr.
+			b.printf("uint8_t* %swptr_%s = NULL;\n", bPrefix, name)
+			b.printf("uint8_t* %swend_%s = NULL;\n", bPrefix, name)
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", uPrefix, name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swptr_%s);\n", bPrefix, name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);\n", bPrefix, name)
 		}
 		return nil
 	})

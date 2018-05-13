@@ -323,6 +323,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				case "in.src":
 					p0 = bPrefix + "rend_src"
 					p1 = bPrefix + "rptr_src"
+				case "w":
+					p0 = bPrefix + "wend_w"
+					p1 = bPrefix + "wptr_w"
 				}
 			}
 			if p0 == "" {
@@ -381,8 +384,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			if len(n.Args()) == 1 {
 				typ = "writer"
 			}
-			// TODO: don't hard-code v_w and u_w.
-			b.printf("wuffs_base__io_%s__set(&v_w, &u_w", typ)
+			// TODO: don't hard-code v_w and u_w, and wptr vs rptr.
+			b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &b_wptr_w, &b_wend_w", typ)
 			for _, o := range n.Args() {
 				b.writeb(',')
 				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {

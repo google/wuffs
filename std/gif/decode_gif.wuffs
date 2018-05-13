@@ -353,7 +353,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				in.src.set_mark!()
 				// TODO: in.dst should be w.
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
-				// TODO: update this.uncompressed_wi.
+				this.uncompressed_wi = 4096 - (w.available().min(x:4096) as base.u32)
 				block_size ~sat-= in.src.since_mark().length()
 			}
 
