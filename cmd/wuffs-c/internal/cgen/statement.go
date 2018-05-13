@@ -172,9 +172,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		name := e.Ident().Str(g.tm)
 		// TODO: stash the whole io_reader, not just its bounds.
 		for j := 0; j < 2; j++ {
-			// TODO: insert the prefix in %d_%s.
-			b.printf("uint8_t* %s%d_bounds%d_%s = %s%s.private_impl.bounds[%d];\n",
-				oPrefix, ioBindNum, j, name, prefix, name, j)
+			b.printf("uint8_t* %s%d_bounds%d_%s%s = %s%s.private_impl.bounds[%d];\n",
+				oPrefix, ioBindNum, j, prefix, name, prefix, name, j)
 		}
 	}
 
@@ -192,8 +191,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		}
 		name := e.Ident().Str(g.tm)
 		for j := 1; j >= 0; j-- {
-			b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s;\n",
-				prefix, name, j, oPrefix, ioBindNum, j, name)
+			b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s%s;\n",
+				prefix, name, j, oPrefix, ioBindNum, j, prefix, name)
 		}
 	}
 	b.writes("}\n")

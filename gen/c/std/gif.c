@@ -2878,10 +2878,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       while (true) {
         v_w = ((wuffs_base__io_writer){});
         {
-          uint8_t* o_0_bounds0_src = a_src.private_impl.bounds[0];
-          uint8_t* o_0_bounds1_src = a_src.private_impl.bounds[1];
-          uint8_t* o_0_bounds0_w = v_w.private_impl.bounds[0];
-          uint8_t* o_0_bounds1_w = v_w.private_impl.bounds[1];
+          uint8_t* o_0_bounds0_a_src = a_src.private_impl.bounds[0];
+          uint8_t* o_0_bounds1_a_src = a_src.private_impl.bounds[1];
+          uint8_t* o_0_bounds0_v_w = v_w.private_impl.bounds[0];
+          uint8_t* o_0_bounds1_v_w = v_w.private_impl.bounds[1];
           wuffs_base__io_reader__set_limit(&a_src, b_rptr_src, v_block_size);
           wuffs_base__io_reader__set_mark(&a_src, b_rptr_src);
           {
@@ -2905,10 +2905,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                                                a_src.private_impl.bounds[0]),
                            })
                               .len)));
-          v_w.private_impl.bounds[1] = o_0_bounds1_w;
-          v_w.private_impl.bounds[0] = o_0_bounds0_w;
-          a_src.private_impl.bounds[1] = o_0_bounds1_src;
-          a_src.private_impl.bounds[0] = o_0_bounds0_src;
+          v_w.private_impl.bounds[1] = o_0_bounds1_v_w;
+          v_w.private_impl.bounds[0] = o_0_bounds0_v_w;
+          a_src.private_impl.bounds[1] = o_0_bounds1_a_src;
+          a_src.private_impl.bounds[0] = o_0_bounds0_a_src;
         }
         if (v_z == 0) {
           self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
