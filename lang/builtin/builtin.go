@@ -117,6 +117,7 @@ var Funcs = []string{
 	"io_reader.read_u64le?()(ret u64)",
 
 	"io_reader.available()(ret u64)",
+	"io_reader.set!(s slice u8, closed bool)()",
 	"io_reader.set_limit!(l u64)()",
 	"io_reader.set_mark!()()",
 	"io_reader.since_mark()(ret slice u8)",
@@ -135,6 +136,7 @@ var Funcs = []string{
 	"io_writer.write_u64le?(x u64)()",
 
 	"io_writer.available()(ret u64)",
+	"io_writer.set!(s slice u8)()",
 	"io_writer.set_limit!(l u64)()",
 	"io_writer.set_mark!()()",
 	"io_writer.since_mark()(ret slice u8)",

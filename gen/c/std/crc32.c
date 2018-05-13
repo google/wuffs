@@ -1532,6 +1532,21 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(
   return ((wuffs_base__empty_struct){});
 }
 
+static inline wuffs_base__empty_struct wuffs_base__io_writer__set(
+    wuffs_base__io_writer* o,
+    wuffs_base__io_buffer* b,
+    wuffs_base__slice_u8 s) {
+  b->ptr = s.ptr;
+  b->len = s.len;
+  b->wi = 0;
+  b->ri = 0;
+  b->closed = false;
+  o->private_impl.buf = b;
+  o->private_impl.bounds[0] = s.ptr;
+  o->private_impl.bounds[1] = s.ptr + s.len;
+  return ((wuffs_base__empty_struct){});
+}
+
 static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {

@@ -376,6 +376,22 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				"&self->private_impl.f_lzw, WUFFS_VERSION, 0)")
 			return nil
 		}
+		if isThatMethod(g.tm, n, t.IDSet, 1) || isThatMethod(g.tm, n, t.IDSet, 2) {
+			typ := "reader"
+			if len(n.Args()) == 1 {
+				typ = "writer"
+			}
+			// TODO: don't hard-code v_w and u_w.
+			b.printf("wuffs_base__io_%s__set(&v_w, &u_w", typ)
+			for _, o := range n.Args() {
+				b.writeb(',')
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+					return err
+				}
+			}
+			b.writes(")")
+			return nil
+		}
 		// TODO.
 
 	case t.IDOpenBracket:

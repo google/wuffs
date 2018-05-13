@@ -342,6 +342,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		while true {
 			var w base.io_writer
 			io_bind (in.src, w) {
+				w.set!(s:this.uncompressed[this.uncompressed_index:])
 				// TODO: enforce that calling r.set_limit has a precondition
 				// that r.is_bound(), and that you can't suspend inside an
 				// io_bind? Otherwise, the cgen implementation becomes more

@@ -1643,6 +1643,21 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(
   return ((wuffs_base__empty_struct){});
 }
 
+static inline wuffs_base__empty_struct wuffs_base__io_writer__set(
+    wuffs_base__io_writer* o,
+    wuffs_base__io_buffer* b,
+    wuffs_base__slice_u8 s) {
+  b->ptr = s.ptr;
+  b->len = s.len;
+  b->wi = 0;
+  b->ri = 0;
+  b->closed = false;
+  o->private_impl.buf = b;
+  o->private_impl.bounds[0] = s.ptr;
+  o->private_impl.bounds[1] = s.ptr + s.len;
+  return ((wuffs_base__empty_struct){});
+}
+
 static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
     wuffs_base__io_writer* o,
     uint8_t* mark) {
@@ -2883,6 +2898,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         {
           wuffs_base__io_reader o_0_a_src = a_src;
           wuffs_base__io_writer o_0_v_w = v_w;
+          wuffs_base__io_writer__set(
+              &v_w, &u_w,
+              wuffs_base__slice_u8__subslice_i(
+                  ((wuffs_base__slice_u8){
+                      .ptr = self->private_impl.f_uncompressed, .len = 4096}),
+                  self->private_impl.f_uncompressed_index));
           wuffs_base__io_reader__set_limit(&a_src, b_rptr_src, v_block_size);
           wuffs_base__io_reader__set_mark(&a_src, b_rptr_src);
           {

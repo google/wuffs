@@ -467,6 +467,7 @@ const (
 	IDSinceMark         = ID(0x212)
 	IDMax               = ID(0x213)
 	IDMin               = ID(0x214)
+	IDSet               = ID(0x215)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -659,6 +660,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSinceMark:         "since_mark",
 	IDMax:               "max",
 	IDMin:               "min",
+	IDSet:               "set",
 }
 
 var builtInsByName = map[string]ID{}
