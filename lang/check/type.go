@@ -123,15 +123,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			if err := q.tcheckExpr(o.Expr(), 0); err != nil {
 				return err
 			}
-			isIOType := false
-			if typ := o.Expr().MType(); typ.Decorator() == 0 {
-				if qid := typ.QID(); qid[0] == t.IDBase && (qid[1] == t.IDIOReader || qid[1] == t.IDIOWriter) {
-					isIOType = true
-				}
-			}
-			if !isIOType {
+			if typ := o.Expr().MType(); !typ.IsIOType() {
 				return fmt.Errorf("check: io_bind expression %q, of type %q, does not have an I/O type",
-					o.Expr().Str(q.tm), o.Expr().MType().Str(q.tm))
+					o.Expr().Str(q.tm), typ.Str(q.tm))
 			}
 		}
 		for _, o := range n.Body() {

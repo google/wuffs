@@ -495,6 +495,8 @@ func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
 // IOBind is "io_bind (in_fields) { List2 }":
 //  - List0: <Expr> in.something fields
 //  - List2: <Statement> body
+//
+// TODO: in_fields and "in.something" isn't right.
 type IOBind Node
 
 func (n *IOBind) Node() *Node       { return (*Node)(n) }
@@ -703,6 +705,10 @@ func (n *TypeExpr) IsBool() bool {
 
 func (n *TypeExpr) IsIdeal() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDDoubleZ
+}
+
+func (n *TypeExpr) IsIOType() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && (n.id2 == t.IDIOReader || n.id2 == t.IDIOWriter)
 }
 
 func (n *TypeExpr) IsNumType() bool {

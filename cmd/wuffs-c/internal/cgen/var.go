@@ -282,11 +282,13 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
 	if typ := n.XType(); typ.HasPointers() {
+		// TODO: drop the initBoolTypedVars.
 		if suspend || initBoolTypedVars {
 			return nil
 		}
 		rhs := ""
 
+		// TODO: move this initialization to writeVars?
 		switch typ.Decorator() {
 		case 0:
 			if qid := typ.QID(); qid[0] == t.IDBase {

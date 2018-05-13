@@ -845,7 +845,10 @@ func (p *parser) parseIOBindExprNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e.Operator() == t.IDDot {
+	switch e.Operator() {
+	case 0:
+		return e.Node(), nil
+	case t.IDDot:
 		if lhs := e.LHS().Expr(); lhs.Operator() == 0 && lhs.Ident() == t.IDIn {
 			return e.Node(), nil
 		}

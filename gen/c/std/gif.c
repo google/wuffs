@@ -2659,6 +2659,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   uint32_t v_i;
   uint8_t v_lw;
   uint64_t v_block_size;
+  wuffs_base__io_writer v_w;
   wuffs_gif__status v_z;
 
   uint8_t* b_rptr_src = NULL;
@@ -2682,6 +2683,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     v_i = self->private_impl.c_decode_id[0].v_i;
     v_lw = self->private_impl.c_decode_id[0].v_lw;
     v_block_size = self->private_impl.c_decode_id[0].v_block_size;
+    v_w = ((wuffs_base__io_writer){});
     v_z = self->private_impl.c_decode_id[0].v_z;
   } else {
   }
@@ -2874,9 +2876,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
       }
       self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
       while (true) {
+        v_w = ((wuffs_base__io_writer){});
         {
           uint8_t* o_0_bounds0_src = a_src.private_impl.bounds[0];
           uint8_t* o_0_bounds1_src = a_src.private_impl.bounds[1];
+          uint8_t* o_0_bounds0_w = v_w.private_impl.bounds[0];
+          uint8_t* o_0_bounds1_w = v_w.private_impl.bounds[1];
           wuffs_base__io_reader__set_limit(&a_src, b_rptr_src, v_block_size);
           wuffs_base__io_reader__set_mark(&a_src, b_rptr_src);
           {
@@ -2900,6 +2905,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                                                a_src.private_impl.bounds[0]),
                            })
                               .len)));
+          v_w.private_impl.bounds[1] = o_0_bounds1_w;
+          v_w.private_impl.bounds[0] = o_0_bounds0_w;
           a_src.private_impl.bounds[1] = o_0_bounds1_src;
           a_src.private_impl.bounds[0] = o_0_bounds0_src;
         }

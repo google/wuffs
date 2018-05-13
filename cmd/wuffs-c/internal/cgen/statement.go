@@ -165,10 +165,16 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	b.writes("{\n")
 	for i := 0; i < len(inFields); i++ {
 		e := inFields[i].Expr()
+		prefix := vPrefix
+		if e.Operator() != 0 {
+			prefix = aPrefix
+		}
 		name := e.Ident().Str(g.tm)
+		// TODO: stash the whole io_reader, not just its bounds.
 		for j := 0; j < 2; j++ {
+			// TODO: insert the prefix in %d_%s.
 			b.printf("uint8_t* %s%d_bounds%d_%s = %s%s.private_impl.bounds[%d];\n",
-				oPrefix, ioBindNum, j, name, aPrefix, name, j)
+				oPrefix, ioBindNum, j, name, prefix, name, j)
 		}
 	}
 
@@ -180,10 +186,14 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 
 	for i := len(inFields) - 1; i >= 0; i-- {
 		e := inFields[i].Expr()
+		prefix := vPrefix
+		if e.Operator() != 0 {
+			prefix = aPrefix
+		}
 		name := e.Ident().Str(g.tm)
 		for j := 1; j >= 0; j-- {
 			b.printf("%s%s.private_impl.bounds[%d] = %s%d_bounds%d_%s;\n",
-				aPrefix, name, j, oPrefix, ioBindNum, j, name)
+				prefix, name, j, oPrefix, ioBindNum, j, name)
 		}
 	}
 	b.writes("}\n")
@@ -352,10 +362,10 @@ func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
 			return err
 		}
 	}
-	if n.XType().IsArrayType() {
+	if nTyp := n.XType(); nTyp.IsArrayType() {
 		if n.Value() != nil {
 			// TODO: something like:
-			// cv := n.XType().ArrayLength().ConstValue()
+			// cv := nTyp.ArrayLength().ConstValue()
 			// // TODO: check that cv is within size_t's range.
 			// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
 			// cv, vPrefix, n.Name().Str(g.tm))
@@ -371,9 +381,15 @@ func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
 			if err := g.writeExpr(b, v, replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 				return err
 			}
-		} else if n.XType().IsSliceType() {
+		} else if nTyp.IsSliceType() {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.printf("((wuffs_base__slice_u8){})")
+		} else if nTyp.IsIOType() {
+			s := "reader"
+			if nTyp.QID()[1] == t.IDIOWriter {
+				s = "writer"
+			}
+			b.printf("((wuffs_base__io_%s){})", s)
 		} else {
 			b.writeb('0')
 		}

@@ -279,6 +279,8 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 // been read.
 //
 // See the spec section 20 "Image Descriptor" on page 11.
+//
+// TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
 pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
 	this.frame_left = in.src.read_u16le?() as base.u32
@@ -338,7 +340,8 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 		this.previous_lzw_decode_ended_abruptly = true
 
 		while true {
-			io_bind (in.src) {
+			var w base.io_writer
+			io_bind (in.src, w) {
 				// TODO: enforce that calling r.set_limit has a precondition
 				// that r.is_bound(), and that you can't suspend inside an
 				// io_bind? Otherwise, the cgen implementation becomes more
@@ -347,6 +350,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				// Should calling r.set_mark also require r.is_bound()?
 				in.src.set_limit!(l:block_size)
 				in.src.set_mark!()
+				// TODO: in.dst should be w.
 				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
 				block_size ~sat-= in.src.since_mark().length()
 			}
