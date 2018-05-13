@@ -2941,20 +2941,14 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           wuffs_base__io_reader__set_limit(&a_src, b_rptr_src, v_block_size);
           wuffs_base__io_reader__set_mark(&a_src, b_rptr_src);
           {
-            if (a_dst.private_impl.buf) {
-              a_dst.private_impl.buf->wi =
-                  b_wptr_dst - a_dst.private_impl.buf->ptr;
-            }
+            u_w.wi = b_wptr_w - u_w.ptr;
             if (a_src.private_impl.buf) {
               a_src.private_impl.buf->ri =
                   b_rptr_src - a_src.private_impl.buf->ptr;
             }
             wuffs_gif__status t_14 = wuffs_gif__lzw_decoder__decode(
-                &self->private_impl.f_lzw, a_dst, a_src);
-            if (a_dst.private_impl.buf) {
-              b_wptr_dst =
-                  a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
-            }
+                &self->private_impl.f_lzw, v_w, a_src);
+            b_wptr_w = u_w.ptr + u_w.wi;
             if (a_src.private_impl.buf) {
               b_rptr_src =
                   a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
@@ -3001,8 +2995,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           }
         label_2_break:;
           if (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE) {
-            status = v_z;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
             goto label_1_continue;
           }
           self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
@@ -3012,7 +3004,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           goto label_1_break;
         }
         status = v_z;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(17);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(16);
       }
     label_1_break:;
     }

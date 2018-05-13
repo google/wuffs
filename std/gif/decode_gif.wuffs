@@ -351,8 +351,7 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				// Should calling r.set_mark also require r.is_bound()?
 				in.src.set_limit!(l:block_size)
 				in.src.set_mark!()
-				// TODO: in.dst should be w.
-				var z base.status = try this.lzw.decode?(dst:in.dst, src:in.src)
+				var z base.status = try this.lzw.decode?(dst:w, src:in.src)
 				this.uncompressed_wi = 4096 - (w.available().min(x:4096) as base.u32)
 				block_size ~sat-= in.src.since_mark().length()
 			}
@@ -376,9 +375,6 @@ pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
 				}
 
 				if z == suspension "short write" {
-					// TODO: don't yield, once lzw.decode writes to w instead
-					// of in.dst.
-					yield z
 					continue:inner
 				}
 				// TODO: check that block_size is zero?

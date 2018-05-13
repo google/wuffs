@@ -79,11 +79,16 @@ func (g *gen) findDerivedVars() {
 	}
 }
 
-func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header bool) error {
+func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr, header bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:in.src".
 	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
+	}
+	// TODO: also remove this hack.
+	if hack == "w" {
+		b.printf("%swptr_w = %sw.ptr + %sw.wi;\n", bPrefix, uPrefix, uPrefix)
+		return nil
 	}
 
 	if g.currFunk.derivedVars == nil {
@@ -149,11 +154,16 @@ func (g *gen) writeLoadDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, header 
 	return nil
 }
 
-func (g *gen) writeSaveDerivedVar(b *buffer, name t.ID, typ *a.TypeExpr, footer bool) error {
+func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr, footer bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:in.src".
 	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
+	}
+	// TODO: also remove this hack.
+	if hack == "w" {
+		b.printf("%sw.wi = %swptr_w - %sw.ptr;\n", uPrefix, bPrefix, uPrefix)
+		return nil
 	}
 
 	if g.currFunk.derivedVars == nil {
@@ -203,10 +213,13 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" {
+		hack := ""
+		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
 			continue
+		} else if s == "w" {
+			hack = "w"
 		}
-		if err := g.writeLoadDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
+		if err := g.writeLoadDerivedVar(b, hack, o.Name(), o.Value().MType(), false); err != nil {
 			return err
 		}
 	}
@@ -223,10 +236,13 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	for _, o := range n.Args() {
 		o := o.Arg()
 		// TODO: don't hard-code these.
-		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" {
+		hack := ""
+		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
 			continue
+		} else if s == "w" {
+			hack = "w"
 		}
-		if err := g.writeSaveDerivedVar(b, o.Name(), o.Value().MType(), false); err != nil {
+		if err := g.writeSaveDerivedVar(b, hack, o.Name(), o.Value().MType(), false); err != nil {
 			return err
 		}
 	}
