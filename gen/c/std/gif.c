@@ -1109,6 +1109,7 @@ typedef struct {
       uint32_t v_end_code;
       uint32_t v_save_code;
       uint32_t v_prev_code;
+      uint32_t v_initial_width;
       uint32_t v_width;
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -3071,6 +3072,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   uint32_t v_end_code;
   uint32_t v_save_code;
   uint32_t v_prev_code;
+  uint32_t v_initial_width;
   uint32_t v_width;
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -3116,6 +3118,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     v_end_code = self->private_impl.c_decode[0].v_end_code;
     v_save_code = self->private_impl.c_decode[0].v_save_code;
     v_prev_code = self->private_impl.c_decode[0].v_prev_code;
+    v_initial_width = self->private_impl.c_decode[0].v_initial_width;
     v_width = self->private_impl.c_decode[0].v_width;
     v_bits = self->private_impl.c_decode[0].v_bits;
     v_n_bits = self->private_impl.c_decode[0].v_n_bits;
@@ -3134,7 +3137,8 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     v_end_code = (v_clear_code + 1);
     v_save_code = v_end_code;
     v_prev_code = 0;
-    v_width = (self->private_impl.f_literal_width + 1);
+    v_initial_width = (self->private_impl.f_literal_width + 1);
+    v_width = v_initial_width;
     v_bits = 0;
     v_n_bits = 0;
   label_0_continue:;
@@ -3168,7 +3172,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
       } else if (v_code == v_clear_code) {
         v_save_code = v_end_code;
         v_prev_code = 0;
-        v_width = (self->private_impl.f_literal_width + 1);
+        v_width = v_initial_width;
         goto label_0_continue;
       } else if (v_code == v_end_code) {
         status = WUFFS_GIF__STATUS_OK;
@@ -3239,6 +3243,7 @@ suspend:
   self->private_impl.c_decode[0].v_end_code = v_end_code;
   self->private_impl.c_decode[0].v_save_code = v_save_code;
   self->private_impl.c_decode[0].v_prev_code = v_prev_code;
+  self->private_impl.c_decode[0].v_initial_width = v_initial_width;
   self->private_impl.c_decode[0].v_width = v_width;
   self->private_impl.c_decode[0].v_bits = v_bits;
   self->private_impl.c_decode[0].v_n_bits = v_n_bits;
