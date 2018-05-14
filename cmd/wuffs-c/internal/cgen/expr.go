@@ -90,11 +90,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// "x.low_bits(n:etc)" in C is "((x) & ((1 << (n)) - 1))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
-			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(") & ((1 << (")
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")) - 1))")
@@ -104,7 +104,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// "x.high_bits(n:etc)" in C is "((x) >> (8*sizeof(x) - (n)))".
 			x := n.LHS().Expr().LHS().Expr()
 			b.writes("((")
-			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(") >> (")
@@ -114,7 +114,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				b.printf("%d", 8*sz)
 			}
 			b.writes(" - (")
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")))")
@@ -129,11 +129,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				b.printf("%d", 8*sz)
 			}
 			b.writes("__min(")
-			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(",")
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -148,11 +148,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				b.printf("%d", 8*sz)
 			}
 			b.writes("__max(")
-			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(",")
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -186,11 +186,11 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("wuffs_base__slice_u8_suffix(")
 			x := n.LHS().Expr().LHS().Expr()
-			if err := g.writeExpr(b, x, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, x, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writeb(',')
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -198,7 +198,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		}
 		if isInSrc(g.tm, n, t.IDSetLimit, 1) {
 			b.printf("wuffs_base__io_reader__set_limit(&%ssrc, %srptr_src,", aPrefix, bPrefix)
-			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, n.Args()[0].Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -237,7 +237,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't assume that the first argument is "in.src".
 			b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
 			a := n.Args()[1].Arg().Value()
-			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writeb(')')
@@ -253,7 +253,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				bco, bPrefix, aPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
-				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 					return err
 				}
 			}
@@ -265,7 +265,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 				"&%swptr_dst, %swend_dst", bPrefix, bPrefix)
 			for _, o := range n.Args() {
 				b.writeb(',')
-				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 					return err
 				}
 			}
@@ -275,7 +275,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isInDst(g.tm, n, t.IDCopyFromSlice, 1) {
 			b.printf("wuffs_base__io_writer__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
 			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writeb(')')
@@ -284,12 +284,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 		if isThatMethod(g.tm, n, t.IDCopyFromSlice, 1) {
 			b.writes("wuffs_base__slice_u8__copy_from_slice(")
 			receiver := n.LHS().Expr().LHS().Expr()
-			if err := g.writeExpr(b, receiver, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, receiver, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writeb(',')
 			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, a, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 			b.writes(")\n")
@@ -366,7 +366,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.printf("wuffs_base__image_config__initialize(a_dst")
 			for _, o := range n.Args() {
 				b.writeb(',')
-				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 					return err
 				}
 			}
@@ -388,7 +388,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &b_wptr_w, &b_wend_w", typ)
 			for _, o := range n.Args() {
 				b.writeb(',')
-				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesOptional, depth); err != nil {
+				if err := g.writeExpr(b, o.Arg().Value(), rp, parenthesesMandatory, depth); err != nil {
 					return err
 				}
 			}
@@ -407,7 +407,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			b.writes(".ptr")
 		}
 		b.writeb('[')
-		if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesOptional, depth); err != nil {
+		if err := g.writeExpr(b, n.RHS().Expr(), rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		b.writeb(']')
@@ -432,7 +432,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes("((wuffs_base__slice_u8){.ptr=")
 		}
-		if err := g.writeExpr(b, lhs, rp, parenthesesOptional, depth); err != nil {
+		if err := g.writeExpr(b, lhs, rp, parenthesesMandatory, depth); err != nil {
 			return err
 		}
 		if lhsIsArray {
@@ -441,13 +441,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, pp pare
 
 		if mhs != nil {
 			b.writeb(',')
-			if err := g.writeExpr(b, mhs, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, mhs, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 		}
 		if rhs != nil {
 			b.writeb(',')
-			if err := g.writeExpr(b, rhs, rp, parenthesesOptional, depth); err != nil {
+			if err := g.writeExpr(b, rhs, rp, parenthesesMandatory, depth); err != nil {
 				return err
 			}
 		}

@@ -1901,7 +1901,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
             wuffs_base__slice_u8__subslice_i(
                 ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                         .len = 32768}),
-                self->private_impl.f_history_index & 32767),
+                (self->private_impl.f_history_index & 32767)),
             v_written);
         if (v_n_copied < ((uint64_t)(v_written.len))) {
           v_written = wuffs_base__slice_u8__subslice_i(v_written, v_n_copied);
@@ -2435,7 +2435,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
     while (v_i < (v_n_lit + v_n_dist)) {
       v_table_entry = 0;
       while (true) {
-        v_table_entry = self->private_impl.f_huffs[0][v_bits & v_mask];
+        v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_mask)];
         v_table_entry_n_bits = (v_table_entry & 15);
         if (v_n_bits >= v_table_entry_n_bits) {
           v_bits >>= v_table_entry_n_bits;
@@ -2473,7 +2473,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
           status = WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION;
           goto exit;
         }
-        v_rep_symbol = self->private_impl.f_code_lengths[v_i - 1];
+        v_rep_symbol = self->private_impl.f_code_lengths[(v_i - 1)];
         v_rep_count = 3;
       } else if (v_table_entry == 17) {
         v_n_extra_bits = 3;
@@ -2732,9 +2732,8 @@ label_1_break:;
   if (v_max_cl < 9) {
     v_initial_high_bits = (((uint32_t)(1)) << v_max_cl);
   }
-  v_prev_cl = ((uint32_t)(
-      self->private_impl
-          .f_code_lengths[a_n_codes0 + ((uint32_t)(v_symbols[0]))]));
+  v_prev_cl = ((uint32_t)(self->private_impl.f_code_lengths[(
+      a_n_codes0 + ((uint32_t)(v_symbols[0])))]));
   v_prev_redirect_key = 4294967295;
   v_top = 0;
   v_next_top = 512;
@@ -2747,9 +2746,8 @@ label_1_break:;
           WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
       goto exit;
     }
-    v_cl = ((uint32_t)(
-        self->private_impl
-            .f_code_lengths[a_n_codes0 + ((uint32_t)(v_symbols[v_i]))]));
+    v_cl = ((uint32_t)(self->private_impl.f_code_lengths[(
+        a_n_codes0 + ((uint32_t)(v_symbols[v_i])))]));
     if (v_cl > v_prev_cl) {
       v_code <<= (v_cl - v_prev_cl);
       if (v_code >= 32768) {
@@ -2798,7 +2796,7 @@ label_1_break:;
         }
         v_next_top = (v_top + (((uint32_t)(1)) << v_tmp));
         v_redirect_key =
-            (((uint32_t)(wuffs_deflate__reverse8[v_redirect_key >> 1])) |
+            (((uint32_t)(wuffs_deflate__reverse8[(v_redirect_key >> 1)])) |
              ((v_redirect_key & 1) << 8));
         self->private_impl.f_huffs[a_which][v_redirect_key] =
             (268435465 | (v_top << 8) | (v_tmp << 4));
@@ -2810,7 +2808,7 @@ label_1_break:;
       goto exit;
     }
     v_counts[v_prev_cl] -= 1;
-    v_reversed_key = (((uint32_t)(wuffs_deflate__reverse8[v_key >> 1])) |
+    v_reversed_key = (((uint32_t)(wuffs_deflate__reverse8[(v_key >> 1)])) |
                       ((v_key & 1) << 8));
     v_reversed_key >>= (9 - v_cl);
     v_symbol = ((uint32_t)(v_symbols[v_i]));
@@ -2821,9 +2819,9 @@ label_1_break:;
     } else if (v_symbol >= a_base_symbol) {
       v_symbol -= a_base_symbol;
       if (a_which == 0) {
-        v_value = (wuffs_deflate__lcode_magic_numbers[v_symbol & 31] | v_cl);
+        v_value = (wuffs_deflate__lcode_magic_numbers[(v_symbol & 31)] | v_cl);
       } else {
-        v_value = (wuffs_deflate__dcode_magic_numbers[v_symbol & 31] | v_cl);
+        v_value = (wuffs_deflate__dcode_magic_numbers[(v_symbol & 31)] | v_cl);
       }
     } else {
       status =
@@ -2840,7 +2838,7 @@ label_1_break:;
         goto exit;
       }
       self->private_impl
-          .f_huffs[a_which][v_top + ((v_high_bits | v_reversed_key) & 511)] =
+          .f_huffs[a_which][(v_top + ((v_high_bits | v_reversed_key) & 511))] =
           v_value;
     }
     v_i += 1;
@@ -2939,7 +2937,7 @@ label_0_continue:;
       v_n_bits += 8;
     } else {
     }
-    v_table_entry = self->private_impl.f_huffs[0][v_bits & v_lmask];
+    v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_lmask)];
     v_table_entry_n_bits = (v_table_entry & 15);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
@@ -2971,8 +2969,8 @@ label_0_continue:;
             WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
       }
-      v_table_entry =
-          self->private_impl.f_huffs[0][v_redir_top + (v_bits & v_redir_mask)];
+      v_table_entry = self->private_impl
+                          .f_huffs[0][(v_redir_top + (v_bits & v_redir_mask))];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -3044,7 +3042,7 @@ label_0_continue:;
       v_n_bits += 8;
     } else {
     }
-    v_table_entry = self->private_impl.f_huffs[1][v_bits & v_dmask];
+    v_table_entry = self->private_impl.f_huffs[1][(v_bits & v_dmask)];
     v_table_entry_n_bits = (v_table_entry & 15);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
@@ -3069,8 +3067,8 @@ label_0_continue:;
             WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
         goto exit;
       }
-      v_table_entry =
-          self->private_impl.f_huffs[1][v_redir_top + (v_bits & v_redir_mask)];
+      v_table_entry = self->private_impl
+                          .f_huffs[1][(v_redir_top + (v_bits & v_redir_mask))];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -3147,7 +3145,7 @@ label_0_continue:;
               wuffs_base__slice_u8__subslice_i(
                   ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                           .len = 32768}),
-                  v_hdist & 32767),
+                  (v_hdist & 32767)),
               v_hlen);
           if (v_hlen <= v_n_copied) {
             goto label_1_break;
@@ -3177,7 +3175,7 @@ label_0_continue:;
       }
       wuffs_base__io_writer__copy_from_history32__bco(
           &b_wptr_dst, a_dst.private_impl.bounds[0], b_wend_dst,
-          v_dist_minus_1 + 1, v_length);
+          (v_dist_minus_1 + 1), v_length);
       goto label_2_break;
     }
   label_2_break:;
@@ -3302,7 +3300,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
   label_0_continue:;
     while (true) {
       while (true) {
-        v_table_entry = self->private_impl.f_huffs[0][v_bits & v_lmask];
+        v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_lmask)];
         v_table_entry_n_bits = (v_table_entry & 15);
         if (v_n_bits >= v_table_entry_n_bits) {
           v_bits >>= v_table_entry_n_bits;
@@ -3343,7 +3341,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
           v_table_entry =
               self->private_impl
-                  .f_huffs[0][v_redir_top + (v_bits & v_redir_mask)];
+                  .f_huffs[0][(v_redir_top + (v_bits & v_redir_mask))];
           v_table_entry_n_bits = (v_table_entry & 15);
           if (v_n_bits >= v_table_entry_n_bits) {
             v_bits >>= v_table_entry_n_bits;
@@ -3414,7 +3412,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
         v_n_bits -= v_table_entry_n_bits;
       }
       while (true) {
-        v_table_entry = self->private_impl.f_huffs[1][v_bits & v_dmask];
+        v_table_entry = self->private_impl.f_huffs[1][(v_bits & v_dmask)];
         v_table_entry_n_bits = (v_table_entry & 15);
         if (v_n_bits >= v_table_entry_n_bits) {
           v_bits >>= v_table_entry_n_bits;
@@ -3443,7 +3441,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
           }
           v_table_entry =
               self->private_impl
-                  .f_huffs[1][v_redir_top + (v_bits & v_redir_mask)];
+                  .f_huffs[1][(v_redir_top + (v_bits & v_redir_mask))];
           v_table_entry_n_bits = (v_table_entry & 15);
           if (v_n_bits >= v_table_entry_n_bits) {
             v_bits >>= v_table_entry_n_bits;
@@ -3527,7 +3525,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                 wuffs_base__slice_u8__subslice_i(
                     ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                             .len = 32768}),
-                    v_hdist & 32767),
+                    (v_hdist & 32767)),
                 v_hlen);
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
@@ -3551,7 +3549,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
                   wuffs_base__slice_u8__subslice_i(
                       ((wuffs_base__slice_u8){
                           .ptr = self->private_impl.f_history, .len = 32768}),
-                      v_hdist & 32767),
+                      (v_hdist & 32767)),
                   v_hlen);
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
@@ -3570,7 +3568,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
         }
         v_n_copied = wuffs_base__io_writer__copy_from_history32(
             &b_wptr_dst, a_dst.private_impl.bounds[0], b_wend_dst,
-            v_dist_minus_1 + 1, v_length);
+            (v_dist_minus_1 + 1), v_length);
         if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_7_break;

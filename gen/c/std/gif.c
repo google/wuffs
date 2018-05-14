@@ -2218,7 +2218,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
             goto short_read_src;
           }
           uint8_t t_1 = *b_rptr_src++;
-          self->private_impl.f_gct[(3 * v_i) + 0] = t_1;
+          self->private_impl.f_gct[((3 * v_i) + 0)] = t_1;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -2226,7 +2226,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
             goto short_read_src;
           }
           uint8_t t_2 = *b_rptr_src++;
-          self->private_impl.f_gct[(3 * v_i) + 1] = t_2;
+          self->private_impl.f_gct[((3 * v_i) + 1)] = t_2;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
@@ -2234,7 +2234,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
             goto short_read_src;
           }
           uint8_t t_3 = *b_rptr_src++;
-          self->private_impl.f_gct[(3 * v_i) + 2] = t_3;
+          self->private_impl.f_gct[((3 * v_i) + 2)] = t_3;
         }
         v_i += 1;
       }
@@ -2872,7 +2872,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             goto short_read_src;
           }
           uint8_t t_9 = *b_rptr_src++;
-          self->private_impl.f_lct[(3 * v_i) + 0] = t_9;
+          self->private_impl.f_lct[((3 * v_i) + 0)] = t_9;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
@@ -2880,7 +2880,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             goto short_read_src;
           }
           uint8_t t_10 = *b_rptr_src++;
-          self->private_impl.f_lct[(3 * v_i) + 1] = t_10;
+          self->private_impl.f_lct[((3 * v_i) + 1)] = t_10;
         }
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(12);
@@ -2888,7 +2888,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             goto short_read_src;
           }
           uint8_t t_11 = *b_rptr_src++;
-          self->private_impl.f_lct[(3 * v_i) + 2] = t_11;
+          self->private_impl.f_lct[((3 * v_i) + 2)] = t_11;
         }
         v_i += 1;
       }
@@ -2958,7 +2958,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           }
           self->private_impl.f_uncompressed_wi =
               (4096 - ((uint32_t)(wuffs_base__u64__min(
-                          (uint64_t)(b_wend_w - b_wptr_w), 4096))));
+                          ((uint64_t)(b_wend_w - b_wptr_w)), 4096))));
           wuffs_base__u64__sat_sub_indirect(
               &v_block_size,
               ((uint64_t)(((wuffs_base__slice_u8){

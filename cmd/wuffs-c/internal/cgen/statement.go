@@ -282,7 +282,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	// particular, the code gen can be subtle if the slice element type has
 	// zero size, such as the empty struct.
 	b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
-	if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+	if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 		return err
 	}
 	b.writes(";\n")
