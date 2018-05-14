@@ -91,7 +91,7 @@ func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
 	return c.builtInSliceFuncs[qqid], nil
 }
 
-func (c *Checker) parseBuiltInFuncs(ss []string, placeholder bool) (map[t.QQID]*a.Func, error) {
+func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {
 	m := map[t.QQID]*a.Func{}
 	buf := []byte(nil)
 	opts := parse.Options{
@@ -108,10 +108,10 @@ func (c *Checker) parseBuiltInFuncs(ss []string, placeholder bool) (map[t.QQID]*
 		if err != nil {
 			return nil, fmt.Errorf("check: could not tokenize built-in funcs: %v", err)
 		}
-		if placeholder {
+		if generic {
 			for i := range tokens {
-				if tokens[i].ID == builtin.PlaceholderOldName {
-					tokens[i].ID = builtin.PlaceholderNewName
+				if tokens[i].ID == builtin.GenericOldName {
+					tokens[i].ID = builtin.GenericNewName
 				}
 			}
 		}

@@ -157,8 +157,8 @@ var Funcs = []string{
 // avoid collision with a user-defined "T" type.
 
 const (
-	PlaceholderOldName = t.IDCapitalT
-	PlaceholderNewName = t.IDDiamond
+	GenericOldName = t.IDCapitalT
+	GenericNewName = t.IDDiamond
 )
 
 var SliceFuncs = []string{
