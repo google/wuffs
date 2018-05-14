@@ -189,9 +189,11 @@ type Node struct {
 	list2 []*Node
 }
 
-func (n *Node) Kind() Kind        { return n.kind }
-func (n *Node) TypeChecked() bool { return n.flags&FlagsTypeChecked != 0 }
-func (n *Node) SetTypeChecked()   { n.flags |= FlagsTypeChecked }
+func (n *Node) Kind() Kind           { return n.kind }
+func (n *Node) TypeChecked() bool    { return n.flags&FlagsTypeChecked != 0 }
+func (n *Node) SetTypeChecked()      { n.flags |= FlagsTypeChecked }
+func (n *Node) MType() *TypeExpr     { return n.mType }
+func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
 
 func (n *Node) Arg() *Arg             { return (*Arg)(n) }
 func (n *Node) Assert() *Assert       { return (*Assert)(n) }

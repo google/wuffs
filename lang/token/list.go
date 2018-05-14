@@ -402,6 +402,7 @@ const (
 	IDCapitalT    = ID(0x105)
 	IDImageConfig = ID(0x106)
 
+	IDPilcrow = ID(0x10D)
 	IDDiamond = ID(0x10E)
 
 	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
@@ -587,11 +588,16 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDCapitalT:    "T",
 	IDImageConfig: "image_config",
 
-	// IDDiamond and IDDoubleZ are never returned by the tokenizer, as the
-	// tokenizer rejects non-ASCII input.
-	//
-	// The string representations ""◊ and "ℤ" are specifically non-ASCII so
-	// that no user-defined (non built-in) identifier will conflict with them.
+	// The next few IDs are never returned by the tokenizer, as it rejects
+	// non-ASCII input. The string representations "¶", "◊" and "ℤ" are
+	// specifically non-ASCII so that no user-defined (non built-in) identifier
+	// will conflict with them.
+
+	// IDPilcrow is used by the type checker to build a placeholder MType for
+	// AST nodes that aren't expression nodes, such as struct definition nodes
+	// and statement nodes. Its presence means that the non-expression node is
+	// type checked.
+	IDPilcrow: "¶", // U+00B6 PILCROW SIGN
 
 	// IDDiamond is used by the type checker as a dummy-valued built-in ID to
 	// represent a generic type.

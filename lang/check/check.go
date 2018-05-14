@@ -112,9 +112,17 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 					return nil, err
 				}
 			}
+			f.Node().SetMType(typeExprPlaceholder)
 			f.Node().SetTypeChecked()
 		}
 	}
+
+	for _, f := range files {
+		if err := allTypeChecked(tm, f.Node()); err != nil {
+			return nil, err
+		}
+	}
+
 	return c, nil
 }
 
@@ -197,6 +205,8 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 	}
 	c.packageID = u
 	c.otherPackageID = n
+	n.Node().SetMType(typeExprPlaceholder)
+	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -286,6 +296,8 @@ func (c *Checker) checkUse(node *a.Node) error {
 		}
 	}
 	c.useBaseNames[baseName] = struct{}{}
+	node.SetMType(typeExprPlaceholder)
+	node.SetTypeChecked()
 	return nil
 }
 
@@ -302,6 +314,7 @@ func (c *Checker) checkStatus(node *a.Node) error {
 		}
 	}
 	c.statuses[qid] = n
+	n.Node().SetMType(typeExprPlaceholder)
 	n.Node().SetTypeChecked()
 	return nil
 }
@@ -353,6 +366,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
+	n.Node().SetMType(typeExprPlaceholder)
 	n.Node().SetTypeChecked()
 	return nil
 }
@@ -417,6 +431,7 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
+	n.Node().SetMType(typeExprPlaceholder)
 	n.Node().SetTypeChecked()
 	return nil
 }
@@ -456,6 +471,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 			return err
 		}
 		fieldNames[f.Name()] = true
+		f.Node().SetMType(typeExprPlaceholder)
 		f.Node().SetTypeChecked()
 	}
 
@@ -471,6 +487,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
+	n.In().Node().SetMType(typeExprPlaceholder)
 	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
@@ -479,6 +496,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
+	n.Out().Node().SetMType(typeExprPlaceholder)
 	n.Out().Node().SetTypeChecked()
 
 	// TODO: check somewhere that, if n.Out() is non-empty (or we are
@@ -504,9 +522,11 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
+	inTyp.Node().SetMType(typeExprPlaceholder)
 	inTyp.Node().SetTypeChecked()
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
+	outTyp.Node().SetMType(typeExprPlaceholder)
 	outTyp.Node().SetTypeChecked()
 	localVars := typeMap{
 		t.IDIn:  inTyp,
@@ -521,8 +541,10 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			}
 		}
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
+		sTyp.Node().SetMType(typeExprPlaceholder)
 		sTyp.Node().SetTypeChecked()
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
+		pTyp.Node().SetMType(typeExprPlaceholder)
 		pTyp.Node().SetTypeChecked()
 		localVars[t.IDThis] = pTyp
 	}
@@ -592,35 +614,34 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		}
 	}
 
+	n.Node().SetMType(typeExprPlaceholder)
 	n.Node().SetTypeChecked()
-	if err := n.Node().Walk(func(o *a.Node) error {
-		if !o.TypeChecked() {
+	return nil
+}
+
+func allTypeChecked(tm *t.Map, n *a.Node) error {
+	return n.Walk(func(o *a.Node) error {
+		typ := o.MType()
+		if !o.TypeChecked() || typ == nil {
 			switch o.Kind() {
 			case a.KExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Expr().Str(q.tm))
+					o.Kind(), o.Expr().Str(tm))
 			case a.KTypeExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.TypeExpr().Str(q.tm))
+					o.Kind(), o.TypeExpr().Str(tm))
 			}
 			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
 		if o.Kind() == a.KExpr {
 			o := o.Expr()
-			if typ := o.MType(); typ == nil {
-				return fmt.Errorf("check: internal error: expression %q has no (implicit) type",
-					o.Str(q.tm))
-			} else if typ.IsIdeal() && o.ConstValue() == nil {
+			if typ.IsIdeal() && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", o.Str(q.tm))
+					"but no const value", o.Str(tm))
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
 func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {

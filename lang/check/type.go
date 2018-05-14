@@ -113,6 +113,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		}
 		for n := n.If(); n != nil; n = n.ElseIf() {
+			n.Node().SetMType(typeExprPlaceholder)
 			n.Node().SetTypeChecked()
 		}
 		return nil
@@ -150,6 +151,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		}
 		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
+			n.Node().SetMType(typeExprPlaceholder)
 			n.Node().SetTypeChecked()
 		}
 		return nil
@@ -239,6 +241,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for tcheckStatement", n.Kind())
 	}
 
+	n.SetMType(typeExprPlaceholder)
 	n.SetTypeChecked()
 	return nil
 }
@@ -256,6 +259,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 		if err := q.tcheckExpr(o.Arg().Value(), 0); err != nil {
 			return err
 		}
+		o.SetMType(typeExprPlaceholder)
 		o.SetTypeChecked()
 	}
 	// TODO: check that there are no side effects.
@@ -328,6 +332,7 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr,
 
 	if inField == nil {
 		// TODO: panic.
+		n.Node().SetMType(typeExprPlaceholder)
 		n.Node().SetTypeChecked()
 		return nil
 	}
@@ -342,6 +347,7 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr,
 	if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, n.Value(), n.Value().MType()); err != nil {
 		return err
 	}
+	n.Node().SetMType(typeExprPlaceholder)
 	n.Node().SetTypeChecked()
 	return nil
 }
@@ -351,6 +357,7 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 		if err := q.tcheckAssert(o.Assert()); err != nil {
 			return err
 		}
+		o.SetMType(typeExprPlaceholder)
 		o.SetTypeChecked()
 	}
 	q.jumpTargets = append(q.jumpTargets, n)
@@ -1006,6 +1013,7 @@ swtch:
 	default:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
+	typ.Node().SetMType(typeExprPlaceholder)
 	typ.Node().SetTypeChecked()
 	return nil
 }
