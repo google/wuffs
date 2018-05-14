@@ -234,11 +234,12 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 			}
 		}
 
-		b.writes("if (")
-		if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+		condition := buffer(nil)
+		if err := g.writeExpr(&condition, n.Condition(), replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 			return err
 		}
-		b.writes(") {\n")
+		// Calling trimParens avoids clang's -Wparentheses-equality warning.
+		b.printf("if (%s) {\n", trimParens(condition))
 		for _, o := range n.BodyIfTrue() {
 			if err := g.writeStatement(b, o, depth); err != nil {
 				return err
@@ -423,11 +424,12 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		}
 		b.printf("label_%d_continue:;\n", jt)
 	}
-	b.writes("while (")
-	if err := g.writeExpr(b, n.Condition(), replaceCallSuspendibles, parenthesesOptional, 0); err != nil {
+	condition := buffer(nil)
+	if err := g.writeExpr(&condition, n.Condition(), replaceCallSuspendibles, parenthesesMandatory, 0); err != nil {
 		return err
 	}
-	b.writes(") {\n")
+	// Calling trimParens avoids clang's -Wparentheses-equality warning.
+	b.printf("while (%s) {\n", trimParens(condition))
 	for _, o := range n.Body() {
 		if err := g.writeStatement(b, o, depth); err != nil {
 			return err
@@ -902,6 +904,13 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 
 	b.writes("}}\n")
 	return nil
+}
+
+func trimParens(b []byte) []byte {
+	if len(b) > 1 && b[0] == '(' && b[len(b)-1] == ')' {
+		return b[1 : len(b)-1]
+	}
+	return b
 }
 
 func isInSrc(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
