@@ -373,23 +373,13 @@ func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 
 	switch op := n.Operator(); {
 	case op.IsXUnaryOp():
-		if err := q.tcheckExprUnaryOp(n, depth); err != nil {
-			return err
-		}
+		return q.tcheckExprUnaryOp(n, depth)
 	case op.IsXBinaryOp():
-		if err := q.tcheckExprBinaryOp(n, depth); err != nil {
-			return err
-		}
+		return q.tcheckExprBinaryOp(n, depth)
 	case op.IsXAssociativeOp():
-		if err := q.tcheckExprAssociativeOp(n, depth); err != nil {
-			return err
-		}
-	default:
-		if err := q.tcheckExprOther(n, depth); err != nil {
-			return err
-		}
+		return q.tcheckExprAssociativeOp(n, depth)
 	}
-	return nil
+	return q.tcheckExprOther(n, depth)
 }
 
 func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
