@@ -127,8 +127,6 @@ const (
 	replaceCallSuspendibles = replacementPolicy(true)
 )
 
-const parenthesesMandatory = true
-
 type visibility uint32
 
 const (

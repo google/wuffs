@@ -160,9 +160,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		}
 		if isThatMethod(g.tm, n, t.IDIsError, 0) || isThatMethod(g.tm, n, t.IDIsOK, 0) ||
 			isThatMethod(g.tm, n, t.IDIsSuspension, 0) {
-			if parenthesesMandatory {
-				b.writeb('(')
-			}
+			b.writeb('(')
 			x := n.LHS().Expr().LHS().Expr()
 			if err := g.writeExpr(b, x, rp, depth); err != nil {
 				return err
@@ -177,9 +175,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			default:
 				return fmt.Errorf("unrecognized token (0x%X) for writeExprOther's IsXxx", key)
 			}
-			if parenthesesMandatory {
-				b.writeb(')')
-			}
+			b.writeb(')')
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.IDSuffix, 1) {
@@ -296,23 +292,14 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.IDLength, 0) {
-			if parenthesesMandatory {
-				b.writeb('(')
-			}
-			b.writes("(uint64_t)(")
+			b.writes("((uint64_t)(")
 			if err := g.writeExpr(b, n.LHS().Expr().LHS().Expr(), rp, depth); err != nil {
 				return err
 			}
-			b.writes(".len)")
-			if parenthesesMandatory {
-				b.writeb(')')
-			}
+			b.writes(".len))")
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.IDAvailable, 0) {
-			if parenthesesMandatory {
-				b.writeb('(')
-			}
 			p0, p1 := "", ""
 			if o := n.LHS().Expr().LHS().Expr(); o != nil {
 				// TODO: don't hard-code these.
@@ -331,10 +318,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			if p0 == "" {
 				return fmt.Errorf(`TODO: cgen a "foo.available" expression`)
 			}
-			b.printf("(uint64_t)(%s - %s)", p0, p1)
-			if parenthesesMandatory {
-				b.writeb(')')
-			}
+			b.printf("((uint64_t)(%s - %s))", p0, p1)
 			return nil
 		}
 		if isThatMethod(g.tm, n, g.tm.ByName("update"), 1) {
@@ -504,7 +488,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
-	opName, tilde := "", false
+	opName := ""
 
 	op := n.Operator()
 	switch op {
@@ -518,7 +502,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 			uOp = "sub"
 		}
 		b.printf("wuffs_base__u%d__sat_%s", uBits, uOp)
-		opName, tilde = ",", true
+		opName = ","
 
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
@@ -530,9 +514,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 		}
 	}
 
-	if parenthesesMandatory || tilde {
-		b.writeb('(')
-	}
+	b.writeb('(')
 	if err := g.writeExpr(b, n.LHS().Expr(), rp, depth); err != nil {
 		return err
 	}
@@ -540,9 +522,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 	if err := g.writeExpr(b, n.RHS().Expr(), rp, depth); err != nil {
 		return err
 	}
-	if parenthesesMandatory || tilde {
-		b.writeb(')')
-	}
+	b.writeb(')')
 	return nil
 }
 
@@ -568,9 +548,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 	}
 
-	if parenthesesMandatory {
-		b.writeb('(')
-	}
+	b.writeb('(')
 	for i, o := range n.Args() {
 		if i != 0 {
 			b.writes(opName)
@@ -579,9 +557,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 			return err
 		}
 	}
-	if parenthesesMandatory {
-		b.writeb(')')
-	}
+	b.writeb(')')
 	return nil
 }
 
