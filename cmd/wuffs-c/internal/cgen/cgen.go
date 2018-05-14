@@ -127,17 +127,7 @@ const (
 	replaceCallSuspendibles = replacementPolicy(true)
 )
 
-// parenthesesPolicy controls whether to print the outer parentheses in an
-// expression like "(x + y)". An "if" or "while" will print their own
-// parentheses for "if (expr)" because they need to be able to say "if (x)".
-// But a double-parenthesized expression like "if ((x == y))" is a clang
-// warning (-Wparentheses-equality) and we like to compile with -Wall -Werror.
-type parenthesesPolicy bool
-
-const (
-	parenthesesMandatory = parenthesesPolicy(false)
-	parenthesesOptional  = parenthesesPolicy(true)
-)
+const parenthesesMandatory = true
 
 type visibility uint32
 
