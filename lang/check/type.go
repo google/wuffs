@@ -114,7 +114,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		for n := n.If(); n != nil; n = n.ElseIf() {
 			n.Node().SetMType(typeExprPlaceholder)
-			n.Node().SetTypeChecked()
 		}
 		return nil
 
@@ -152,7 +151,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
 			n.Node().SetMType(typeExprPlaceholder)
-			n.Node().SetTypeChecked()
 		}
 		return nil
 
@@ -196,7 +194,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KVar:
 		n := n.Var()
-		if !n.XType().Node().TypeChecked() {
+		if n.XType().Node().MType() == nil {
 			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().Str(q.tm))
 		}
 		if value := n.Value(); value != nil {
@@ -242,7 +240,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	}
 
 	n.SetMType(typeExprPlaceholder)
-	n.SetTypeChecked()
 	return nil
 }
 
@@ -260,7 +257,6 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 			return err
 		}
 		o.SetMType(typeExprPlaceholder)
-		o.SetTypeChecked()
 	}
 	// TODO: check that there are no side effects.
 	return nil
@@ -333,7 +329,6 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr,
 	if inField == nil {
 		// TODO: panic.
 		n.Node().SetMType(typeExprPlaceholder)
-		n.Node().SetTypeChecked()
 		return nil
 	}
 
@@ -348,7 +343,6 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr,
 		return err
 	}
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -358,7 +352,6 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 			return err
 		}
 		o.SetMType(typeExprPlaceholder)
-		o.SetTypeChecked()
 	}
 	q.jumpTargets = append(q.jumpTargets, n)
 	defer func() {
@@ -396,7 +389,6 @@ func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 			return err
 		}
 	}
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -1014,7 +1006,6 @@ swtch:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
 	typ.Node().SetMType(typeExprPlaceholder)
-	typ.Node().SetTypeChecked()
 	return nil
 }
 

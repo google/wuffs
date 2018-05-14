@@ -48,7 +48,7 @@ var (
 
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
-	zeroExpr = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.ID0, nil, nil, nil, nil)
+	zeroExpr = a.NewExpr(0, 0, 0, t.ID0, nil, nil, nil, nil)
 )
 
 func init() {
@@ -404,7 +404,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 
 		if lhs.Pure() && rhs.Pure() && lhs.MType().IsNumType() {
-			o := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+			o := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
 			o.SetMType(lhs.MType())
 			q.facts.appendFact(o)
 		}
@@ -423,13 +423,13 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			}
 			switch op {
 			case t.IDPlusEq, t.IDMinusEq:
-				oRHS := a.NewExpr(a.FlagsTypeChecked, op.BinaryForm(), 0, 0, xRHS.Node(), nil, rhs.Node(), nil)
+				oRHS := a.NewExpr(0, op.BinaryForm(), 0, 0, xRHS.Node(), nil, rhs.Node(), nil)
 				oRHS.SetMType(xRHS.MType())
 				oRHS, err := simplify(q.tm, oRHS)
 				if err != nil {
 					return nil, err
 				}
-				o := a.NewExpr(a.FlagsTypeChecked, xOp, 0, 0, xLHS.Node(), nil, oRHS.Node(), nil)
+				o := a.NewExpr(0, xOp, 0, 0, xLHS.Node(), nil, oRHS.Node(), nil)
 				o.SetMType(x.MType())
 				return o, nil
 			}
@@ -737,7 +737,7 @@ func (q *checker) bcheckVar(n *a.Var, iterateVariable bool) error {
 		return nil
 	}
 
-	lhs := a.NewExpr(a.FlagsTypeChecked, 0, 0, n.Name(), nil, nil, nil, nil)
+	lhs := a.NewExpr(0, 0, 0, n.Name(), nil, nil, nil, nil)
 	lhs.SetMType(n.XType())
 	rhs := n.Value()
 	if rhs == nil {
@@ -963,9 +963,9 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 
 // makeSliceLength returns "x.length()".
 func makeSliceLength(slice *a.Expr) *a.Expr {
-	x := a.NewExpr(a.FlagsTypeChecked, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
+	x := a.NewExpr(0, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
 	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().Node(), nil, nil))
-	x = a.NewExpr(a.FlagsTypeChecked, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
+	x = a.NewExpr(0, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
 }
@@ -974,7 +974,7 @@ func makeSliceLength(slice *a.Expr) *a.Expr {
 //
 // n must be the t.ID of a small power of 2.
 func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
-	xExpr := a.NewExpr(a.FlagsTypeChecked, 0, 0, x, nil, nil, nil, nil)
+	xExpr := a.NewExpr(0, 0, 0, x, nil, nil, nil, nil)
 	xExpr.SetMType(xTyp)
 
 	lhs := makeSliceLength(xExpr)
@@ -983,11 +983,11 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	if nValue == 0 {
 		panic("check: internal error: makeSliceLengthEqEq called but not with a small power of 2")
 	}
-	rhs := a.NewExpr(a.FlagsTypeChecked, 0, 0, n, nil, nil, nil, nil)
+	rhs := a.NewExpr(0, 0, 0, n, nil, nil, nil, nil)
 	rhs.SetConstValue(big.NewInt(int64(nValue)))
 	rhs.SetMType(typeExprIdeal)
 
-	ret := a.NewExpr(a.FlagsTypeChecked, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
 	ret.SetMType(typeExprBool)
 	return ret
 }

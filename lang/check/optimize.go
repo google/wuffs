@@ -263,7 +263,7 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 		if err != nil {
 			return nil, err
 		}
-		o := a.NewExpr(a.FlagsTypeChecked, 0, 0, id, nil, nil, nil, nil)
+		o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
 		o.SetConstValue(rcv)
 		o.SetMType(typeExprIdeal)
 

@@ -181,7 +181,7 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			o := a.NewExpr(a.FlagsTypeChecked, 0, 0, id, nil, nil, nil, nil)
+			o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
 			o.SetConstValue(ncv)
 			o.SetMType(typeExprIdeal)
 			return o, nil
@@ -217,7 +217,7 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			return nil, err
 		}
 		if l != lhs || r != rhs {
-			o := a.NewExpr(a.FlagsTypeChecked, op, 0, 0, l.Node(), nil, r.Node(), nil)
+			o := a.NewExpr(0, op, 0, 0, l.Node(), nil, r.Node(), nil)
 			o.SetConstValue(n.ConstValue())
 			o.SetMType(n.MType())
 			return o, nil
@@ -350,7 +350,7 @@ func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error
 			"check: internal error: proveReasonRequirement token (0x%02X) is not an XBinaryOp", op)
 	}
 	if err := q.proveBinaryOp(op, lhs, rhs); err != nil {
-		n := a.NewExpr(a.FlagsTypeChecked, op, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+		n := a.NewExpr(0, op, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
 		return fmt.Errorf("cannot prove %q: %v", n.Str(q.tm), err)
 	}
 	return nil

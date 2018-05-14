@@ -113,7 +113,6 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 				}
 			}
 			f.Node().SetMType(typeExprPlaceholder)
-			f.Node().SetTypeChecked()
 		}
 	}
 
@@ -206,7 +205,6 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 	c.packageID = u
 	c.otherPackageID = n
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -297,7 +295,6 @@ func (c *Checker) checkUse(node *a.Node) error {
 	}
 	c.useBaseNames[baseName] = struct{}{}
 	node.SetMType(typeExprPlaceholder)
-	node.SetTypeChecked()
 	return nil
 }
 
@@ -315,7 +312,6 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	}
 	c.statuses[qid] = n
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -367,7 +363,6 @@ func (c *Checker) checkConst(node *a.Node) error {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -432,7 +427,6 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 		}
 	}
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
@@ -472,7 +466,6 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 		}
 		fieldNames[f.Name()] = true
 		f.Node().SetMType(typeExprPlaceholder)
-		f.Node().SetTypeChecked()
 	}
 
 	return nil
@@ -488,7 +481,6 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 	n.In().Node().SetMType(typeExprPlaceholder)
-	n.In().Node().SetTypeChecked()
 	if err := c.checkFields(n.Out().Fields(), false); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
@@ -497,7 +489,6 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 	n.Out().Node().SetMType(typeExprPlaceholder)
-	n.Out().Node().SetTypeChecked()
 
 	// TODO: check somewhere that, if n.Out() is non-empty (or we are
 	// suspendible), that we end with a return statement? Or is that an
@@ -523,11 +514,9 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
 	inTyp.Node().SetMType(typeExprPlaceholder)
-	inTyp.Node().SetTypeChecked()
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
 	outTyp.Node().SetMType(typeExprPlaceholder)
-	outTyp.Node().SetTypeChecked()
 	localVars := typeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
@@ -542,10 +531,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
 		sTyp.Node().SetMType(typeExprPlaceholder)
-		sTyp.Node().SetTypeChecked()
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
 		pTyp.Node().SetMType(typeExprPlaceholder)
-		pTyp.Node().SetTypeChecked()
 		localVars[t.IDThis] = pTyp
 	}
 	c.funcs[qqid] = n
@@ -615,14 +602,13 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 	}
 
 	n.Node().SetMType(typeExprPlaceholder)
-	n.Node().SetTypeChecked()
 	return nil
 }
 
 func allTypeChecked(tm *t.Map, n *a.Node) error {
 	return n.Walk(func(o *a.Node) error {
 		typ := o.MType()
-		if !o.TypeChecked() || typ == nil {
+		if typ == nil {
 			switch o.Kind() {
 			case a.KExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",

@@ -95,7 +95,7 @@ const (
 	FlagsCallImpure      = Flags(0x00000004)
 	FlagsCallSuspendible = Flags(0x00000008)
 	FlagsPublic          = Flags(0x00000010)
-	FlagsTypeChecked     = Flags(0x00000020)
+	flagsUnused          = Flags(0x00000020)
 	FlagsHasBreak        = Flags(0x00000040)
 	FlagsHasContinue     = Flags(0x00000080)
 	FlagsGlobalIdent     = Flags(0x00000100)
@@ -190,8 +190,6 @@ type Node struct {
 }
 
 func (n *Node) Kind() Kind           { return n.kind }
-func (n *Node) TypeChecked() bool    { return n.flags&FlagsTypeChecked != 0 }
-func (n *Node) SetTypeChecked()      { n.flags |= FlagsTypeChecked }
 func (n *Node) MType() *TypeExpr     { return n.mType }
 func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
 

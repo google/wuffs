@@ -27,9 +27,9 @@ import (
 )
 
 var (
-	exprIn   = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.IDIn, nil, nil, nil, nil)
-	exprOut  = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.IDOut, nil, nil, nil, nil)
-	exprThis = a.NewExpr(a.FlagsTypeChecked, 0, 0, t.IDThis, nil, nil, nil, nil)
+	exprIn   = a.NewExpr(0, 0, 0, t.IDIn, nil, nil, nil, nil)
+	exprOut  = a.NewExpr(0, 0, 0, t.IDOut, nil, nil, nil, nil)
+	exprThis = a.NewExpr(0, 0, 0, t.IDThis, nil, nil, nil, nil)
 )
 
 // typeExprFoo is an *ast.Node MType (implicit type).
