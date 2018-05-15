@@ -321,30 +321,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			b.printf("((uint64_t)(%s - %s))", p0, p1)
 			return nil
 		}
-		if isThatMethod(g.tm, n, g.tm.ByName("update"), 1) {
-			// TODO: don't hard-code the class name or this.checksum.
-			class := "wuffs_crc32__ieee_hasher"
-			if g.pkgName == "zlib" {
-				class = "wuffs_adler32__hasher"
-			}
-			b.printf("%s__update(&self->private_impl.f_checksum, ", class)
-			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, rp, depth); err != nil {
-				return err
-			}
-			b.writes(")\n")
-			return nil
-		}
-		if isThatMethod(g.tm, n, g.tm.ByName("set_literal_width"), 1) {
-			// TODO: don't hard-code lzw.
-			b.printf("%slzw_decoder__set_literal_width(&self->private_impl.f_lzw, ", g.pkgPrefix)
-			a := n.Args()[0].Arg().Value()
-			if err := g.writeExpr(b, a, rp, depth); err != nil {
-				return err
-			}
-			b.writes(")\n")
-			return nil
-		}
 		if isThatMethod(g.tm, n, g.tm.ByName("initialize"), 5) {
 			// TODO: don't hard-code a_dst.
 			b.printf("wuffs_base__image_config__initialize(a_dst")
@@ -355,12 +331,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 				}
 			}
 			b.printf(")")
-			return nil
-		}
-		if isThatMethod(g.tm, n, t.IDReset, 0) {
-			// TODO: don't hard-code f_lzw.
-			b.writes("wuffs_gif__lzw_decoder__initialize(" +
-				"&self->private_impl.f_lzw, WUFFS_VERSION, 0)")
 			return nil
 		}
 		if isThatMethod(g.tm, n, t.IDSet, 1) || isThatMethod(g.tm, n, t.IDSet, 2) {
@@ -379,7 +349,27 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			b.writes(")")
 			return nil
 		}
-		// TODO.
+		if isThatMethod(g.tm, n, t.IDReset, 0) {
+			// TODO: don't hard-code f_lzw.
+			b.writes("wuffs_gif__lzw_decoder__initialize(" +
+				"&self->private_impl.f_lzw, WUFFS_VERSION, 0)")
+			return nil
+		}
+		method := n.LHS().Expr()
+		receiver := method.LHS().Expr()
+		qid := receiver.MType().QID()
+		b.printf("%s%s__%s(&", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
+		if err := g.writeExpr(b, receiver, rp, depth); err != nil {
+			return err
+		}
+		for _, o := range n.Args() {
+			b.writeb(',')
+			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
+				return err
+			}
+		}
+		b.writeb(')')
+		return nil
 
 	case t.IDOpenBracket:
 		// n is an index.
@@ -609,29 +599,8 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		}
 	}
 	if fallback {
-		prefix := g.pkgPrefix
 		qid := innermost.QID()
-		if qid == (t.QID{t.IDBase, t.IDStatus}) {
-			// No-op: special case "base.status" as being inside this package.
-			//
-			// TODO: change "base.status" in Wuffs code to just "status"? Or
-			// change the C code's "wuffs_foo__status" to "wuffs_base__status"?
-		} else if qid[0] != 0 {
-			otherPkg := g.tm.ByID(qid[0])
-			// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
-			// `use "std/deflate"`, and use the latter "deflate".
-			//
-			// This is pretty academic at the moment, since they're the same
-			// "deflate", but in the future, we might be able to rename used
-			// packages, e.g. `use "foo/bar" as "baz"`, so "baz.qux" would map
-			// to generating "wuffs_bar__qux".
-			//
-			// TODO: sanitize or validate otherPkg, e.g. that it's ASCII only?
-			//
-			// See gen.writeInitializerImpl for a similar use of otherPkg.
-			prefix = "wuffs_" + otherPkg + "__"
-		}
-		b.printf("%s%s", prefix, qid[1].Str(g.tm))
+		b.printf("%s%s", g.packagePrefix(qid), qid[1].Str(g.tm))
 	}
 
 	for i := 0; i < numPointers; i++ {
@@ -650,6 +619,30 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 	}
 
 	return nil
+}
+
+func (g *gen) packagePrefix(qid t.QID) string {
+	if qid == (t.QID{t.IDBase, t.IDStatus}) {
+		// No-op: special case "base.status" as being inside this package.
+		//
+		// TODO: change "base.status" in Wuffs code to just "status"? Or
+		// change the C code's "wuffs_foo__status" to "wuffs_base__status"?
+	} else if qid[0] != 0 {
+		otherPkg := g.tm.ByID(qid[0])
+		// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
+		// `use "std/deflate"`, and use the latter "deflate".
+		//
+		// This is pretty academic at the moment, since they're the same
+		// "deflate", but in the future, we might be able to rename used
+		// packages, e.g. `use "foo/bar" as "baz"`, so "baz.qux" would map
+		// to generating "wuffs_bar__qux".
+		//
+		// TODO: sanitize or validate otherPkg, e.g. that it's ASCII only?
+		//
+		// See gen.writeInitializerImpl for a similar use of otherPkg.
+		return "wuffs_" + otherPkg + "__"
+	}
+	return g.pkgPrefix
 }
 
 var cTypeNames = [...]string{

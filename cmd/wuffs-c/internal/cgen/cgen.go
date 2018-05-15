@@ -725,7 +725,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			// Base types don't need further initialization.
 			continue
 		} else if qid[0] != 0 {
-			// See gen.writeCTypeName for a related TODO with otherPkg.
+			// See gen.packagePrefix for a related TODO with otherPkg.
 			otherPkg := g.tm.ByID(qid[0])
 			prefix = "wuffs_" + otherPkg + "__"
 		} else if g.structMap[qid] == nil {
