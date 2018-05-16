@@ -104,15 +104,8 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 			typ = "writer"
 		}
 		// TODO: don't hard-code v_w and u_w, and wptr vs rptr.
-		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &b_wptr_w, &b_wend_w", typ)
-		for _, o := range args {
-			b.writeb(',')
-			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
-				return err
-			}
-		}
-		b.writes(")")
-		return nil
+		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &b_wptr_w, &b_wend_w,", typ)
+		return g.writeArgs(b, args, rp, depth)
 
 	}
 	return errNoSuchBuiltin
@@ -123,12 +116,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	switch method {
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, %srptr_src,", aPrefix, bPrefix)
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
-			return err
-		}
-		b.writes(")")
 		// TODO: update the bPrefix variables?
-		return nil
+		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:
 		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
@@ -167,37 +156,20 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCopyFromReader32:
-		b.printf("wuffs_base__io_writer__copy_from_reader32(&%swptr_dst, %swend_dst",
+		b.printf("wuffs_base__io_writer__copy_from_reader32(&%swptr_dst, %swend_dst,",
 			bPrefix, bPrefix)
 		// TODO: don't assume that the first argument is "in.src".
-		b.printf(", &%srptr_src, %srend_src,", bPrefix, bPrefix)
-		a := args[1].Arg().Value()
-		if err := g.writeExpr(b, a, rp, depth); err != nil {
-			return err
-		}
-		b.writeb(')')
-		return nil
+		b.printf("&%srptr_src, %srend_src,", bPrefix, bPrefix)
+		return g.writeArgs(b, args[1:], rp, depth)
 
 	case t.IDCopyFromSlice:
 		b.printf("wuffs_base__io_writer__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
-		a := args[0].Arg().Value()
-		if err := g.writeExpr(b, a, rp, depth); err != nil {
-			return err
-		}
-		b.writeb(')')
-		return nil
+		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDCopyFromSlice32:
 		b.printf("wuffs_base__io_writer__copy_from_slice32("+
-			"&%swptr_dst, %swend_dst", bPrefix, bPrefix)
-		for _, o := range args {
-			b.writeb(',')
-			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
-				return err
-			}
-		}
-		b.writeb(')')
-		return nil
+			"&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
+		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:
 		// TODO: is a private_impl.bounds[0] the right representation? What
@@ -300,11 +272,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 			return err
 		}
 		b.writeb(',')
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
-			return err
-		}
-		b.writes(")\n")
-		return nil
+		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDLength:
 		b.writes("((uint64_t)(")
@@ -321,11 +289,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 			return err
 		}
 		b.writeb(',')
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
-			return err
-		}
-		b.writes(")")
-		return nil
+		return g.writeArgs(b, args, rp, depth)
 	}
 	return errNoSuchBuiltin
 }
@@ -346,5 +310,18 @@ func (g *gen) writeBuiltinStatus(b *buffer, recv *a.Expr, method t.ID, args []*a
 		return fmt.Errorf("cgen: internal error for writeBuiltinStatus")
 	}
 	b.writeb(')')
+	return nil
+}
+
+func (g *gen) writeArgs(b *buffer, args []*a.Node, rp replacementPolicy, depth uint32) error {
+	for i, o := range args {
+		if i > 0 {
+			b.writeb(',')
+		}
+		if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
+			return err
+		}
+	}
+	b.writes(")")
 	return nil
 }
