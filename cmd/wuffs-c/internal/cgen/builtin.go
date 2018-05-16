@@ -119,7 +119,7 @@ func (g *gen) writeBuiltin(b *buffer, n *a.Expr, rp replacementPolicy, depth uin
 	}
 	if isThatMethod(g.tm, n, t.IDSuffix, 1) {
 		// TODO: don't assume that the slice is a slice of base.u8.
-		b.writes("wuffs_base__slice_u8_suffix(")
+		b.writes("wuffs_base__slice_u8__suffix(")
 		x := n.LHS().Expr().LHS().Expr()
 		if err := g.writeExpr(b, x, rp, depth); err != nil {
 			return err

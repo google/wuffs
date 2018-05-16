@@ -1386,7 +1386,7 @@ static inline wuffs_base__slice_u8 wuffs_base__slice_u8__prefix(
 }
 
 // wuffs_base__slice_u8__suffix returns up to the last up_to bytes of s.
-static inline wuffs_base__slice_u8 wuffs_base__slice_u8_suffix(
+static inline wuffs_base__slice_u8 wuffs_base__slice_u8__suffix(
     wuffs_base__slice_u8 s,
     uint64_t up_to) {
   if ((uint64_t)(s.len) > up_to) {
@@ -1890,7 +1890,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
           .len = (size_t)(b_wptr_dst - a_dst.private_impl.bounds[0]),
       });
       if (((uint64_t)(v_written.len)) >= 32768) {
-        v_written = wuffs_base__slice_u8_suffix(v_written, 32768);
+        v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
         wuffs_base__slice_u8__copy_from_slice(
             ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                     .len = 32768}),
