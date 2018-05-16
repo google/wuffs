@@ -586,6 +586,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 		b.printf(" = *%srptr_src++;\n", bPrefix)
+		return nil
 
 	} else if isInSrc(g.tm, n, t.IDUnreadU8, 0) {
 		b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
@@ -593,6 +594,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("goto exit;")
 		b.writes("}\n")
 		b.printf("%srptr_src--;\n", bPrefix)
+		return nil
 
 	} else if isInSrc(g.tm, n, t.IDReadU16BE, 0) {
 		return g.writeReadUXX(b, n, "src", 16, "be")
@@ -631,6 +633,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("goto short_read_src; }\n")
 		g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
+		return nil
 
 	} else if isInDst(g.tm, n, t.IDWriteU8, 1) {
 		if !n.ProvenNotToSuspend() {
@@ -646,56 +649,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 		b.writes(";\n")
-
-	} else if isThisMethod(g.tm, n, "decode_header", 1) {
-		b.printf("status = %s%s__decode_header(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		// TODO: should we goto exit/suspend depending on if status < or > 0?
-		// Ditto below.
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_lsd", 1) {
-		b.printf("status = %s%s__decode_lsd(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_extension", 1) {
-		b.printf("status = %s%s__decode_extension(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_ae", 1) {
-		b.printf("status = %s%s__decode_ae(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_id", 2) {
-		b.printf("status = %s%s__decode_id(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "skip_blocks", 1) {
-		b.printf("status = %s%s__skip_blocks(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
+		return nil
 
 	} else if isThisMethod(g.tm, n, "decode_blocks", 2) {
 		// TODO: don't hard code being inside a try call.
@@ -712,63 +666,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 			return err
 		}
 		// TODO: check if tPrefix_temp is an error, and return?
-
-	} else if isThisMethod(g.tm, n, "decode_uncompressed", 2) {
-		b.printf("status = %s%s__decode_uncompressed(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_huffman_fast", 2) {
-		b.printf("status = %s%s__decode_huffman_fast(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "decode_huffman_slow", 2) {
-		b.printf("status = %s%s__decode_huffman_slow(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "init_fixed_huffman", 0) {
-		b.printf("status = %s%s__init_fixed_huffman(self);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm))
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "init_dynamic_huffman", 1) {
-		b.printf("status = %s%s__init_dynamic_huffman(self, %ssrc);\n",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
-
-	} else if isThisMethod(g.tm, n, "init_huff", 4) {
-		b.printf("status = %s%s__init_huff(self,",
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm))
-		for i, o := range n.Args() {
-			if i != 0 {
-				b.writes(",")
-			}
-			if err := g.writeExpr(b, o.Arg().Value(), replaceNothing, depth); err != nil {
-				return err
-			}
-		}
-		b.writes(");\n")
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		b.writes("if (status) { goto suspend; }\n")
+		return nil
 
 	} else if isThatMethod(g.tm, n, g.tm.ByName("decode"), 2) ||
 		isThatMethod(g.tm, n, g.tm.ByName("decode"), 3) {
@@ -794,6 +692,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 				return err
 			}
 			// TODO: check if tPrefix_temp is an error, and return?
+			return nil
 
 		case "gif":
 			// TODO: don't hard code being inside a try call.
@@ -811,17 +710,23 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 				return err
 			}
 			// TODO: check if tPrefix_temp is an error, and return?
+			return nil
 
 		default:
 			return fmt.Errorf("cannot convert Wuffs call %q to C", n.Str(g.tm))
 		}
 
-	} else {
-		// TODO: fix this.
-		//
-		// This might involve calling g.writeExpr with replaceNothing??
-		return fmt.Errorf("cannot convert Wuffs call %q to C", n.Str(g.tm))
 	}
+
+	b.writes("status = ")
+	if err := g.writeExprUserDefinedCall(b, n, replaceNothing, depth); err != nil {
+		return err
+	}
+	b.writes(";\n")
+	if err := g.writeLoadExprDerivedVars(b, n); err != nil {
+		return err
+	}
+	b.writes("if (status) { goto suspend; }\n")
 	return nil
 }
 

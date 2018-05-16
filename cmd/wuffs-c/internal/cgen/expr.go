@@ -85,7 +85,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 
 	case t.IDOpenParen:
 		// n is a function call.
-		if err := g.writeBuiltin(b, n, rp, depth); err != errNoSuchBuiltin {
+		if err := g.writeBuiltinCall(b, n, rp, depth); err != errNoSuchBuiltin {
 			return err
 		}
 		if isThatMethod(g.tm, n, t.IDReset, 0) {
@@ -94,21 +94,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 				"&self->private_impl.f_lzw, WUFFS_VERSION, 0)")
 			return nil
 		}
-		method := n.LHS().Expr()
-		receiver := method.LHS().Expr()
-		qid := receiver.MType().QID()
-		b.printf("%s%s__%s(&", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
-		if err := g.writeExpr(b, receiver, rp, depth); err != nil {
-			return err
-		}
-		for _, o := range n.Args() {
-			b.writeb(',')
-			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
-				return err
-			}
-		}
-		b.writeb(')')
-		return nil
+		return g.writeExprUserDefinedCall(b, n, rp, depth)
 
 	case t.IDOpenBracket:
 		// n is an index.
@@ -288,6 +274,28 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 	}
 	b.writeb(')')
 	return nil
+}
+
+func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
+	method := n.LHS().Expr()
+	recv := method.LHS().Expr()
+	recvTyp, addr := recv.MType(), "&"
+	if recvTyp.Decorator() == t.IDPtr {
+		recvTyp, addr = recvTyp.Inner(), ""
+	}
+	if recvTyp.Decorator() != 0 {
+		return fmt.Errorf("cannot generate user-defined method call %q for receiver type %q",
+			n.Str(g.tm), recv.MType().Str(g.tm))
+	}
+	qid := recvTyp.QID()
+	b.printf("%s%s__%s(%s", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm), addr)
+	if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		return err
+	}
+	if len(n.Args()) > 0 {
+		b.writeb(',')
+	}
+	return g.writeArgs(b, n.Args(), rp, depth)
 }
 
 func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, varName string) error {

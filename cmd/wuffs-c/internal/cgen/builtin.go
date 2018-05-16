@@ -24,7 +24,7 @@ import (
 
 var errNoSuchBuiltin = errors.New("cgen: internal error: no such built-in")
 
-func (g *gen) writeBuiltin(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
