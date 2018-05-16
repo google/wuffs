@@ -83,14 +83,14 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		// TODO: don't hard-code these.
 		switch recv.Str(g.tm) {
 		case "in.dst":
-			p0 = bPrefix + "wend_dst"
-			p1 = bPrefix + "wptr_dst"
+			p0 = "iobounds1_dst"
+			p1 = "ioptr_dst"
 		case "in.src":
-			p0 = bPrefix + "rend_src"
-			p1 = bPrefix + "rptr_src"
+			p0 = "iobounds1_src"
+			p1 = "ioptr_src"
 		case "w":
-			p0 = bPrefix + "wend_w"
-			p1 = bPrefix + "wptr_w"
+			p0 = "iobounds1_w"
+			p1 = "ioptr_w"
 		}
 		if p0 == "" {
 			return fmt.Errorf(`TODO: cgen a "foo.available" expression`)
@@ -103,8 +103,8 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		if len(args) == 1 {
 			typ = "writer"
 		}
-		// TODO: don't hard-code v_w and u_w, and wptr vs rptr.
-		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &b_wptr_w, &b_wend_w,", typ)
+		// TODO: don't hard-code v_w and u_w.
+		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &ioptr_w, &iobounds1_w,", typ)
 		return g.writeArgs(b, args, rp, depth)
 
 	}
@@ -115,19 +115,19 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
 	case t.IDSetLimit:
-		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, %srptr_src,", aPrefix, bPrefix)
-		// TODO: update the bPrefix variables?
+		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, ioptr_src,", aPrefix)
+		// TODO: update the ioptr variables?
 		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:
-		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, %srptr_src)", aPrefix, bPrefix)
+		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, ioptr_src)", aPrefix)
 		return nil
 
 	case t.IDSinceMark:
 		b.printf("((wuffs_base__slice_u8){ "+
 			".ptr = %ssrc.private_impl.bounds[0], "+
-			".len = (size_t)(%srptr_src - %ssrc.private_impl.bounds[0]), })",
-			aPrefix, bPrefix, aPrefix)
+			".len = (size_t)(ioptr_src - %ssrc.private_impl.bounds[0]), })",
+			aPrefix, aPrefix)
 		return nil
 	}
 
@@ -144,8 +144,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			bco = "__bco"
 		}
 		b.printf("wuffs_base__io_writer__copy_from_history32%s("+
-			"&%swptr_dst, %sdst.private_impl.bounds[0] , %swend_dst",
-			bco, bPrefix, aPrefix, bPrefix)
+			"&ioptr_dst, %sdst.private_impl.bounds[0], iobounds1_dst",
+			bco, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
 			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
@@ -156,19 +156,17 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCopyFromReader32:
-		b.printf("wuffs_base__io_writer__copy_from_reader32(&%swptr_dst, %swend_dst,",
-			bPrefix, bPrefix)
+		b.printf("wuffs_base__io_writer__copy_from_reader32(&ioptr_dst, iobounds1_dst,")
 		// TODO: don't assume that the first argument is "in.src".
-		b.printf("&%srptr_src, %srend_src,", bPrefix, bPrefix)
+		b.printf("&ioptr_src, iobounds1_src,")
 		return g.writeArgs(b, args[1:], rp, depth)
 
 	case t.IDCopyFromSlice:
-		b.printf("wuffs_base__io_writer__copy_from_slice(&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
+		b.printf("wuffs_base__io_writer__copy_from_slice(&ioptr_dst, iobounds1_dst,")
 		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDCopyFromSlice32:
-		b.printf("wuffs_base__io_writer__copy_from_slice32("+
-			"&%swptr_dst, %swend_dst,", bPrefix, bPrefix)
+		b.printf("wuffs_base__io_writer__copy_from_slice32(&ioptr_dst, iobounds1_dst,")
 		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:
@@ -176,14 +174,14 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		// if the function is passed a (ptr io_writer) instead of a
 		// (io_writer)? Do we still want to have that mark live outside of
 		// the function scope?
-		b.printf("wuffs_base__io_writer__set_mark(&%sdst, %swptr_dst)", aPrefix, bPrefix)
+		b.printf("wuffs_base__io_writer__set_mark(&%sdst, ioptr_dst)", aPrefix)
 		return nil
 
 	case t.IDSinceMark:
 		b.printf("((wuffs_base__slice_u8){ "+
 			".ptr = %sdst.private_impl.bounds[0], "+
-			".len = (size_t)(%swptr_dst - %sdst.private_impl.bounds[0]), })",
-			aPrefix, bPrefix, aPrefix)
+			".len = (size_t)(ioptr_dst - %sdst.private_impl.bounds[0]), })",
+			aPrefix, aPrefix)
 		return nil
 	}
 
@@ -341,11 +339,11 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 	if recvTyp.QID()[1] == t.IDIOReader {
 		switch method.Ident() {
 		case t.IDUnreadU8:
-			b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
-				bPrefix, bPrefix, g.PKGPREFIX)
+			b.printf("if (ioptr_src == iobounds0orig_src) { status = %sERROR_INVALID_I_O_OPERATION;",
+				g.PKGPREFIX)
 			b.writes("goto exit;")
 			b.writes("}\n")
-			b.printf("%srptr_src--;\n", bPrefix)
+			b.printf("ioptr_src--;\n")
 			return nil
 
 		case t.IDReadU8:
@@ -356,8 +354,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			g.currFunk.tempW++
 
 			if !n.ProvenNotToSuspend() {
-				b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }",
-					bPrefix, bPrefix)
+				b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) { goto short_read_src; }")
 				g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 			}
 
@@ -366,7 +363,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 				return err
 			}
-			b.printf(" = *%srptr_src++;\n", bPrefix)
+			b.printf(" = *ioptr_src++;\n")
 			return nil
 
 		case t.IDReadU16BE:
@@ -396,13 +393,13 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 				return err
 			}
 
-			b.printf("if (%s > %srend_src - %srptr_src) {\n", scratchName, bPrefix, bPrefix)
-			b.printf("%s -= %srend_src - %srptr_src;\n", scratchName, bPrefix, bPrefix)
-			b.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
+			b.printf("if (%s > iobounds1_src - ioptr_src) {\n", scratchName)
+			b.printf("%s -= iobounds1_src - ioptr_src;\n", scratchName)
+			b.printf("ioptr_src = iobounds1_src;\n")
 
 			b.writes("goto short_read_src; }\n")
 			g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
-			b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
+			b.printf("ioptr_src += %s;\n", scratchName)
 			return nil
 		}
 
@@ -410,13 +407,13 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 		switch method.Ident() {
 		case t.IDWriteU8:
 			if !n.ProvenNotToSuspend() {
-				b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
-					bPrefix, bPrefix, g.PKGPREFIX)
+				b.printf("if (ioptr_dst == iobounds1_dst) { status = %sSUSPENSION_SHORT_WRITE;",
+					g.PKGPREFIX)
 				b.writes("goto suspend;")
 				b.writes("}\n")
 			}
 
-			b.printf("*%swptr_dst++ = ", bPrefix)
+			b.printf("*ioptr_dst++ = ")
 			x := n.Args()[0].Arg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
 				return err

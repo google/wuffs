@@ -177,15 +177,16 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
 			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
 
-		// TODO: save / restore all bPrefix vars, not just for local IO vars?
-		// How does this work if the io_bind body advances these pointers,
-		// either directly or by calling other funcs?
+		// TODO: save / restore all ioptr vars, not just for local IO vars? How
+		// does this work if the io_bind body advances these pointers, either
+		// directly or by calling other funcs?
+		//
+		// TODO: rename ioptr1 to ioptr, etc.
 		if e.Operator() == 0 {
-			// TODO: don't hard-code wptr vs rptr.
-			b.printf("uint8_t *%s%d_ioptr1_%s%s = %swptr_%s;\n",
-				oPrefix, ioBindNum, prefix, name, bPrefix, name)
-			b.printf("uint8_t *%s%d_ioptr2_%s%s = %swend_%s;\n",
-				oPrefix, ioBindNum, prefix, name, bPrefix, name)
+			b.printf("uint8_t *%s%d_ioptr1_%s%s = ioptr_%s;\n",
+				oPrefix, ioBindNum, prefix, name, name)
+			b.printf("uint8_t *%s%d_ioptr2_%s%s = iobounds1_%s;\n",
+				oPrefix, ioBindNum, prefix, name, name)
 		}
 	}
 
@@ -205,10 +206,10 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("%s%s = %s%d_%s%s;\n",
 			prefix, name, oPrefix, ioBindNum, prefix, name)
 		if e.Operator() == 0 {
-			b.printf("%swptr_%s = %s%d_ioptr1_%s%s;\n",
-				bPrefix, name, oPrefix, ioBindNum, prefix, name)
-			b.printf("%swend_%s = %s%d_ioptr2_%s%s;\n",
-				bPrefix, name, oPrefix, ioBindNum, prefix, name)
+			b.printf("ioptr_%s = %s%d_ioptr1_%s%s;\n",
+				name, oPrefix, ioBindNum, prefix, name)
+			b.printf("iobounds1_%s = %s%d_ioptr2_%s%s;\n",
+				name, oPrefix, ioBindNum, prefix, name)
 		}
 	}
 	b.writes("}\n")
@@ -624,9 +625,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
 		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
-	b.printf("if (WUFFS_BASE__LIKELY(%srend_src - %srptr_src >= %d)) {", bPrefix, bPrefix, size/8)
-	b.printf("%s%d = wuffs_base__load_u%d%s(%srptr_src);\n", tPrefix, temp1, size, endianness, bPrefix)
-	b.printf("%srptr_src += %d;\n", bPrefix, size/8)
+	b.printf("if (WUFFS_BASE__LIKELY(iobounds1_src - ioptr_src >= %d)) {", size/8)
+	b.printf("%s%d = wuffs_base__load_u%d%s(ioptr_src);\n", tPrefix, temp1, size, endianness)
+	b.printf("ioptr_src += %d;\n", size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
 	if err := g.writeCoroSuspPoint(b, false); err != nil {
@@ -634,8 +635,8 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	}
 	b.printf("while (true) {")
 
-	b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_%s == %srend_%s)) { goto short_read_%s; }",
-		bPrefix, name, bPrefix, name, name)
+	b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_%s == iobounds1_%s)) { goto short_read_%s; }",
+		name, name, name)
 	g.currFunk.shortReads = append(g.currFunk.shortReads, name)
 
 	b.printf("uint32_t %s%d = %s", tPrefix, temp0, scratchName)
@@ -644,14 +645,14 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		b.printf("& 0xFF;")
 		b.printf("%s >>= 8;", scratchName)
 		b.printf("%s <<= 8;", scratchName)
-		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << (56 - %s%d);",
-			scratchName, bPrefix, name, tPrefix, temp0)
+		b.printf("%s |= ((uint64_t)(*ioptr_%s++)) << (56 - %s%d);",
+			scratchName, name, tPrefix, temp0)
 	case "le":
 		b.printf(">> 56;")
 		b.printf("%s <<= 8;", scratchName)
 		b.printf("%s >>= 8;", scratchName)
-		b.printf("%s |= ((uint64_t)(*%srptr_%s++)) << %s%d;",
-			scratchName, bPrefix, name, tPrefix, temp0)
+		b.printf("%s |= ((uint64_t)(*ioptr_%s++)) << %s%d;",
+			scratchName, name, tPrefix, temp0)
 	}
 
 	b.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)

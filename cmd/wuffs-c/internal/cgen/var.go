@@ -87,7 +87,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%swptr_w = %sw.ptr + %sw.wi;\n", bPrefix, uPrefix, uPrefix)
+		b.printf("ioptr_w = %sw.ptr + %sw.wi;\n", uPrefix, uPrefix)
 		return nil
 	}
 
@@ -101,52 +101,52 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	switch typ.QID() {
 	case t.QID{t.IDBase, t.IDIOReader}:
 		if header {
-			b.printf("uint8_t* %srptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %srstart_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %srend_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
+			b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
+			b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
 		}
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("%srptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->ri;",
-			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->ri;",
+			nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
 			b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[0] = %srptr_%s;", aPrefix, nameStr, bPrefix, nameStr)
+			b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
 			b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi;",
 				aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 			b.printf("}\n")
 
-			b.printf("%srstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
-			b.printf("%srend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
+			b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
+			b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
 		}
 
 		b.printf("}\n")
 
 	case t.QID{t.IDBase, t.IDIOWriter}:
 		if header {
-			b.printf("uint8_t* %swptr_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %swstart_%s = NULL;", bPrefix, nameStr)
-			b.printf("uint8_t* %swend_%s = NULL;", bPrefix, nameStr)
+			b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
+			b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
+			b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
 		}
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("%swptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi;",
-			bPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
+		b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi;",
+			nameStr, aPrefix, nameStr, aPrefix, nameStr)
 
 		if header {
 			b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[0] = %swptr_%s;", aPrefix, nameStr, bPrefix, nameStr)
+			b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
 			b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->len;",
 				aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
 			b.printf("}\n")
 
 			b.printf("if (%s%s.private_impl.buf->closed) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[1] = %swptr_%s;", aPrefix, nameStr, bPrefix, nameStr)
+			b.printf("%s%s.private_impl.bounds[1] = ioptr_%s;", aPrefix, nameStr, nameStr)
 			b.printf("}\n")
 
-			b.printf("%swstart_%s = %s%s.private_impl.bounds[0];", bPrefix, nameStr, aPrefix, nameStr)
-			b.printf("%swend_%s = %s%s.private_impl.bounds[1];", bPrefix, nameStr, aPrefix, nameStr)
+			b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
+			b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
 		}
 
 		b.printf("}\n")
@@ -162,7 +162,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%sw.wi = %swptr_w - %sw.ptr;\n", uPrefix, bPrefix, uPrefix)
+		b.printf("%sw.wi = ioptr_w - %sw.ptr;\n", uPrefix, uPrefix)
 		return nil
 	}
 
@@ -177,12 +177,12 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	case t.QID{t.IDBase, t.IDIOReader}:
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("%s%s.private_impl.buf->ri = %srptr_%s - %s%s.private_impl.buf->ptr;",
-			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
+		b.printf("%s%s.private_impl.buf->ri = ioptr_%s - %s%s.private_impl.buf->ptr;",
+			aPrefix, nameStr, nameStr, aPrefix, nameStr)
 
 		if footer {
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srstart_%s);", bPrefix, nameStr)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%srend_%s);", bPrefix, nameStr)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
 		}
 
 		b.printf("}\n")
@@ -190,12 +190,12 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	case t.QID{t.IDBase, t.IDIOWriter}:
 		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-		b.printf("%s%s.private_impl.buf->wi = %swptr_%s - %s%s.private_impl.buf->ptr;",
-			aPrefix, nameStr, bPrefix, nameStr, aPrefix, nameStr)
+		b.printf("%s%s.private_impl.buf->wi = ioptr_%s - %s%s.private_impl.buf->ptr;",
+			aPrefix, nameStr, nameStr, aPrefix, nameStr)
 
 		if footer {
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swstart_%s);", bPrefix, nameStr)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);", bPrefix, nameStr)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
 		}
 
 		b.printf("}\n")
@@ -405,12 +405,12 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipI
 		b.writes(";\n")
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
-			// TODO: don't hard code wptr instead of rptr.
-			b.printf("uint8_t* %swptr_%s = NULL;\n", bPrefix, name)
-			b.printf("uint8_t* %swend_%s = NULL;\n", bPrefix, name)
+			// TODO: iobounds0_%s or iobounds0orig_%s variables?
+			b.printf("uint8_t* ioptr_%s = NULL;\n", name)
+			b.printf("uint8_t* iobounds1_%s = NULL;\n", name)
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", uPrefix, name)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swptr_%s);\n", bPrefix, name)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%swend_%s);\n", bPrefix, name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(ioptr_%s);\n", name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);\n", name)
 		}
 		return nil
 	})
