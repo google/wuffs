@@ -564,92 +564,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 
-	// TODO: delete these hacks that only matches "in.src.read_u8?()" etc.
-	//
-	// TODO: check io_reader.buf and io_writer.buf is non-NULL.
-	if isInSrc(g.tm, n, t.IDReadU8, 0) {
-		if g.currFunk.tempW > maxTemp {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		temp := g.currFunk.tempW
-		g.currFunk.tempW++
-
-		if !n.ProvenNotToSuspend() {
-			b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }",
-				bPrefix, bPrefix)
-			g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
-		}
-
-		// TODO: watch for passing an array type to writeCTypeName? In C, an
-		// array type can decay into a pointer.
-		if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
-			return err
-		}
-		b.printf(" = *%srptr_src++;\n", bPrefix)
-		return nil
-
-	} else if isInSrc(g.tm, n, t.IDUnreadU8, 0) {
-		b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
-			bPrefix, bPrefix, g.PKGPREFIX)
-		b.writes("goto exit;")
-		b.writes("}\n")
-		b.printf("%srptr_src--;\n", bPrefix)
-		return nil
-
-	} else if isInSrc(g.tm, n, t.IDReadU16BE, 0) {
-		return g.writeReadUXX(b, n, "src", 16, "be")
-
-	} else if isInSrc(g.tm, n, t.IDReadU16LE, 0) {
-		return g.writeReadUXX(b, n, "src", 16, "le")
-
-	} else if isInSrc(g.tm, n, t.IDReadU32BE, 0) {
-		return g.writeReadUXX(b, n, "src", 32, "be")
-
-	} else if isInSrc(g.tm, n, t.IDReadU32LE, 0) {
-		return g.writeReadUXX(b, n, "src", 32, "le")
-
-	} else if isInSrc(g.tm, n, t.IDSkip32, 1) {
-		g.currFunk.usesScratch = true
-		// TODO: don't hard-code [0], and allow recursive coroutines.
-		scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
-			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
-
-		b.printf("%s = ", scratchName)
-		x := n.Args()[0].Arg().Value()
-		if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
-			return err
-		}
-		b.writes(";\n")
-
-		// TODO: the CSP prior to this is probably unnecessary.
-		if err := g.writeCoroSuspPoint(b, false); err != nil {
-			return err
-		}
-
-		b.printf("if (%s > %srend_src - %srptr_src) {\n", scratchName, bPrefix, bPrefix)
-		b.printf("%s -= %srend_src - %srptr_src;\n", scratchName, bPrefix, bPrefix)
-		b.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
-
-		b.writes("goto short_read_src; }\n")
-		g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
-		b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
-		return nil
-
-	} else if isInDst(g.tm, n, t.IDWriteU8, 1) {
-		if !n.ProvenNotToSuspend() {
-			b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
-				bPrefix, bPrefix, g.PKGPREFIX)
-			b.writes("goto suspend;")
-			b.writes("}\n")
-		}
-
-		b.printf("*%swptr_dst++ = ", bPrefix)
-		x := n.Args()[0].Arg().Value()
-		if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
-			return err
-		}
-		b.writes(";\n")
-		return nil
+	if err := g.writeBuiltinCallSuspendibles(b, n, depth); err != errNoSuchBuiltin {
+		return err
 	}
 
 	if n.Operator() == t.IDTry {
@@ -668,6 +584,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 	b.writes(";\n")
+
 	if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 		return err
 	}
@@ -764,46 +681,4 @@ func trimParens(b []byte) []byte {
 		return b[1 : len(b)-1]
 	}
 	return b
-}
-
-func isInSrc(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	callSuspendible := methodName != t.IDSinceMark &&
-		methodName != t.IDSetMark &&
-		methodName != t.IDSetLimit
-	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != methodName {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("src") {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident() == t.IDIn
-}
-
-func isInDst(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	callSuspendible := methodName != t.IDCopyFromReader32 &&
-		methodName != t.IDCopyFromHistory32 &&
-		methodName != t.IDCopyFromSlice32 &&
-		methodName != t.IDCopyFromSlice &&
-		methodName != t.IDSinceMark &&
-		methodName != t.IDSetMark
-	// TODO: check that n.Args() is "(x:bar)".
-	if n.Operator() != t.IDOpenParen || n.CallSuspendible() != callSuspendible || len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != methodName {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != tm.ByName("dst") {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident() == t.IDIn
 }

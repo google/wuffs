@@ -325,3 +325,105 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, rp replacementPolicy, depth u
 	b.writes(")")
 	return nil
 }
+
+func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
+	// TODO: also handle (or reject??) t.IDTry.
+	if n.Operator() != t.IDOpenParen {
+		return errNoSuchBuiltin
+	}
+	method := n.LHS().Expr()
+	recv := method.LHS().Expr()
+	recvTyp := recv.MType()
+	if !recvTyp.IsIOType() {
+		return errNoSuchBuiltin
+	}
+
+	if recvTyp.QID()[1] == t.IDIOReader {
+		switch method.Ident() {
+		case t.IDUnreadU8:
+			b.printf("if (%srptr_src == %srstart_src) { status = %sERROR_INVALID_I_O_OPERATION;",
+				bPrefix, bPrefix, g.PKGPREFIX)
+			b.writes("goto exit;")
+			b.writes("}\n")
+			b.printf("%srptr_src--;\n", bPrefix)
+			return nil
+
+		case t.IDReadU8:
+			if g.currFunk.tempW > maxTemp {
+				return fmt.Errorf("too many temporary variables required")
+			}
+			temp := g.currFunk.tempW
+			g.currFunk.tempW++
+
+			if !n.ProvenNotToSuspend() {
+				b.printf("if (WUFFS_BASE__UNLIKELY(%srptr_src == %srend_src)) { goto short_read_src; }",
+					bPrefix, bPrefix)
+				g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
+			}
+
+			// TODO: watch for passing an array type to writeCTypeName? In C, an
+			// array type can decay into a pointer.
+			if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
+				return err
+			}
+			b.printf(" = *%srptr_src++;\n", bPrefix)
+			return nil
+
+		case t.IDReadU16BE:
+			return g.writeReadUXX(b, n, "src", 16, "be")
+		case t.IDReadU16LE:
+			return g.writeReadUXX(b, n, "src", 16, "le")
+		case t.IDReadU32BE:
+			return g.writeReadUXX(b, n, "src", 32, "be")
+		case t.IDReadU32LE:
+			return g.writeReadUXX(b, n, "src", 32, "le")
+
+		case t.IDSkip32:
+			g.currFunk.usesScratch = true
+			// TODO: don't hard-code [0], and allow recursive coroutines.
+			scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+				cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+
+			b.printf("%s = ", scratchName)
+			x := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
+				return err
+			}
+			b.writes(";\n")
+
+			// TODO: the CSP prior to this is probably unnecessary.
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+
+			b.printf("if (%s > %srend_src - %srptr_src) {\n", scratchName, bPrefix, bPrefix)
+			b.printf("%s -= %srend_src - %srptr_src;\n", scratchName, bPrefix, bPrefix)
+			b.printf("%srptr_src = %srend_src;\n", bPrefix, bPrefix)
+
+			b.writes("goto short_read_src; }\n")
+			g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
+			b.printf("%srptr_src += %s;\n", bPrefix, scratchName)
+			return nil
+		}
+
+	} else {
+		switch method.Ident() {
+		case t.IDWriteU8:
+			if !n.ProvenNotToSuspend() {
+				b.printf("if (%swptr_dst == %swend_dst) { status = %sSUSPENSION_SHORT_WRITE;",
+					bPrefix, bPrefix, g.PKGPREFIX)
+				b.writes("goto suspend;")
+				b.writes("}\n")
+			}
+
+			b.printf("*%swptr_dst++ = ", bPrefix)
+			x := n.Args()[0].Arg().Value()
+			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
+				return err
+			}
+			b.writes(";\n")
+			return nil
+		}
+	}
+	return errNoSuchBuiltin
+}
