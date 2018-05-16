@@ -88,7 +88,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		if err := g.writeBuiltinCall(b, n, rp, depth); err != errNoSuchBuiltin {
 			return err
 		}
-		if isThatMethod(g.tm, n, t.IDReset, 0) {
+		if n.LHS().Expr().Ident() == t.IDReset {
 			// TODO: don't hard-code f_lzw.
 			b.writes("wuffs_gif__lzw_decoder__initialize(" +
 				"&self->private_impl.f_lzw, WUFFS_VERSION, 0)")

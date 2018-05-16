@@ -650,75 +650,20 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		}
 		b.writes(";\n")
 		return nil
+	}
 
-	} else if isThisMethod(g.tm, n, "decode_blocks", 2) {
-		// TODO: don't hard code being inside a try call.
+	if n.Operator() == t.IDTry {
 		if g.currFunk.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
 		}
 		temp := g.currFunk.tempW
 		g.currFunk.tempW++
 
-		b.printf("%sstatus %s%d = %s%s__decode_blocks(self, %sdst, %ssrc);\n",
-			g.pkgPrefix, tPrefix, temp,
-			g.pkgPrefix, g.currFunk.astFunc.Receiver().Str(g.tm), aPrefix, aPrefix)
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-		// TODO: check if tPrefix_temp is an error, and return?
-		return nil
-
-	} else if isThatMethod(g.tm, n, g.tm.ByName("decode"), 2) ||
-		isThatMethod(g.tm, n, g.tm.ByName("decode"), 3) {
-
-		switch g.pkgName {
-		case "gzip", "zlib":
-			// TODO: don't hard code being inside a try call.
-			if g.currFunk.tempW > maxTemp {
-				return fmt.Errorf("too many temporary variables required")
-			}
-			temp := g.currFunk.tempW
-			g.currFunk.tempW++
-
-			// TODO: don't hard-code the receiver being from the "deflate"
-			// package.
-			//
-			// TODO: don't hard-code a_dst or a_src.
-			b.printf("%sstatus %s%d = wuffs_deflate__decoder__decode("+
-				"&self->private_impl.f_flate, %sdst, %ssrc);\n",
-				g.pkgPrefix, tPrefix, temp,
-				aPrefix, aPrefix)
-			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-				return err
-			}
-			// TODO: check if tPrefix_temp is an error, and return?
-			return nil
-
-		case "gif":
-			// TODO: don't hard code being inside a try call.
-			if g.currFunk.tempW > maxTemp {
-				return fmt.Errorf("too many temporary variables required")
-			}
-			temp := g.currFunk.tempW
-			g.currFunk.tempW++
-
-			// TODO: don't hard-code v_w or a_src.
-			b.printf("%sstatus %s%d = %slzw_decoder__decode(&self->private_impl.f_lzw, %sw, %ssrc);\n",
-				g.pkgPrefix, tPrefix, temp,
-				g.pkgPrefix, vPrefix, aPrefix)
-			if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-				return err
-			}
-			// TODO: check if tPrefix_temp is an error, and return?
-			return nil
-
-		default:
-			return fmt.Errorf("cannot convert Wuffs call %q to C", n.Str(g.tm))
-		}
-
+		b.printf("%sstatus %s%d = ", g.pkgPrefix, tPrefix, temp)
+	} else {
+		b.writes("status = ")
 	}
 
-	b.writes("status = ")
 	if err := g.writeExprUserDefinedCall(b, n, replaceNothing, depth); err != nil {
 		return err
 	}
@@ -726,7 +671,10 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	if err := g.writeLoadExprDerivedVars(b, n); err != nil {
 		return err
 	}
-	b.writes("if (status) { goto suspend; }\n")
+
+	if n.Operator() != t.IDTry {
+		b.writes("if (status) { goto suspend; }\n")
+	}
 	return nil
 }
 
@@ -858,32 +806,4 @@ func isInDst(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
 	}
 	n = n.LHS().Expr()
 	return n.Operator() == 0 && n.Ident() == t.IDIn
-}
-
-func isThisMethod(tm *t.Map, n *a.Expr, methodName string, nArgs int) bool {
-	// TODO: check that n.Args() is "(src:in.src)".
-	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
-		return false
-	}
-	if len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	if n.Operator() != t.IDDot || n.Ident() != tm.ByName(methodName) {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == 0 && n.Ident() == t.IDThis
-}
-
-// isThatMethod is like isThisMethod but for foo.bar(etc), not this.bar(etc).
-func isThatMethod(tm *t.Map, n *a.Expr, methodName t.ID, nArgs int) bool {
-	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
-		return false
-	}
-	if len(n.Args()) != nArgs {
-		return false
-	}
-	n = n.LHS().Expr()
-	return n.Operator() == t.IDDot && n.Ident() == methodName
 }
