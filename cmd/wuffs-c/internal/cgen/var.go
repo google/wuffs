@@ -91,6 +91,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 		return nil
 	}
 
+	if !typ.IsIOType() {
+		return nil
+	}
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -98,59 +101,40 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 		return nil
 	}
 	nameStr := name.Str(g.tm)
-	switch typ.QID() {
-	case t.QID{t.IDBase, t.IDIOReader}:
-		if header {
-			b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
-			b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
-			b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
-		}
-		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
+	i0, i1 := "ri", "wi"
+	if typ.QID()[1] == t.IDIOWriter {
+		i0, i1 = "wi", "len"
+	}
 
-		b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->ri;",
-			nameStr, aPrefix, nameStr, aPrefix, nameStr)
+	if header {
+		b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
+		b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
+		b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
+	}
 
-		if header {
-			b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
-			b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi;",
-				aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-			b.printf("}\n")
+	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
 
-			b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
-			b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
-		}
+	b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->%s;",
+		nameStr, aPrefix, nameStr, aPrefix, nameStr, i0)
 
+	if header {
+		b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
+		b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
+		b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->%s;",
+			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr, i1)
 		b.printf("}\n")
 
-	case t.QID{t.IDBase, t.IDIOWriter}:
-		if header {
-			b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
-			b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
-			b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
-		}
-		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
-
-		b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->wi;",
-			nameStr, aPrefix, nameStr, aPrefix, nameStr)
-
-		if header {
-			b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
-			b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->len;",
-				aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr)
-			b.printf("}\n")
-
+		if typ.QID()[1] == t.IDIOWriter {
 			b.printf("if (%s%s.private_impl.buf->closed) {", aPrefix, nameStr)
 			b.printf("%s%s.private_impl.bounds[1] = ioptr_%s;", aPrefix, nameStr, nameStr)
 			b.printf("}\n")
-
-			b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
-			b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
 		}
 
-		b.printf("}\n")
+		b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
+		b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
 	}
+
+	b.printf("}\n")
 	return nil
 }
 
@@ -166,6 +150,9 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 		return nil
 	}
 
+	if !typ.IsIOType() {
+		return nil
+	}
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
@@ -173,33 +160,23 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 		return nil
 	}
 	nameStr := name.Str(g.tm)
-	switch typ.QID() {
-	case t.QID{t.IDBase, t.IDIOReader}:
-		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
-
-		b.printf("%s%s.private_impl.buf->ri = ioptr_%s - %s%s.private_impl.buf->ptr;",
-			aPrefix, nameStr, nameStr, aPrefix, nameStr)
-
-		if footer {
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
-		}
-
-		b.printf("}\n")
-
-	case t.QID{t.IDBase, t.IDIOWriter}:
-		b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
-
-		b.printf("%s%s.private_impl.buf->wi = ioptr_%s - %s%s.private_impl.buf->ptr;",
-			aPrefix, nameStr, nameStr, aPrefix, nameStr)
-
-		if footer {
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
-		}
-
-		b.printf("}\n")
+	i0 := "ri"
+	if typ.QID()[1] == t.IDIOWriter {
+		i0 = "wi"
 	}
+
+	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
+
+	b.printf("%s%s.private_impl.buf->%s = ioptr_%s - %s%s.private_impl.buf->ptr;",
+		aPrefix, nameStr, i0, nameStr, aPrefix, nameStr)
+
+	if footer {
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
+	}
+
+	b.printf("}\n")
+
 	return nil
 }
 
