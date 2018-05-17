@@ -962,7 +962,7 @@ typedef struct {
   } private_impl;
 } wuffs_base__image_buffer;
 
-static inline void wuffs_base__image_buffer__initialize(
+static inline void wuffs_base__image_buffer__set_from_pixbuf(
     wuffs_base__image_buffer* f,
     wuffs_base__image_config config,
     wuffs_base__pixel_buffer pixbuf) {
@@ -972,6 +972,29 @@ static inline void wuffs_base__image_buffer__initialize(
   *f = ((wuffs_base__image_buffer){});
   f->private_impl.config = config;
   f->private_impl.pixbuf = pixbuf;
+}
+
+// TODO: Should this function return bool? An error type?
+static inline void wuffs_base__image_buffer__set_from_slice(
+    wuffs_base__image_buffer* f,
+    wuffs_base__image_config config,
+    wuffs_base__slice_u8 pixbuf_memory) {
+  if (!f) {
+    return;
+  }
+  *f = ((wuffs_base__image_buffer){});
+  f->private_impl.config = config;
+  // TODO: don't assume 1 byte per pixel. Don't assume packed.
+  uint64_t wh = ((uint64_t)config.private_impl.width) *
+                ((uint64_t)config.private_impl.height);
+  if (wh > pixbuf_memory.len) {
+    return;
+  }
+  wuffs_base__table_u8* tab = &f->private_impl.pixbuf.planes[0];
+  tab->ptr = pixbuf_memory.ptr;
+  tab->width = config.private_impl.width;
+  tab->height = config.private_impl.height;
+  tab->stride = config.private_impl.width;
 }
 
 static inline void wuffs_base__image_buffer__update(
