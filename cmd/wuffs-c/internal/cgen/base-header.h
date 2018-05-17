@@ -588,11 +588,33 @@ typedef struct {
   } private_impl;
 } wuffs_base__io_writer;
 
+static inline wuffs_base__slice_u8 wuffs_base__io_buffer__readable(
+    wuffs_base__io_buffer* buf) {
+  if (buf) {
+    return ((wuffs_base__slice_u8){
+        .ptr = buf->ptr + buf->ri,
+        .len = buf->wi - buf->ri,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
 static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
   ret.private_impl.buf = buf;
   return ret;
+}
+
+static inline wuffs_base__slice_u8 wuffs_base__io_buffer__writable(
+    wuffs_base__io_buffer* buf) {
+  if (buf) {
+    return ((wuffs_base__slice_u8){
+        .ptr = buf->ptr + buf->wi,
+        .len = buf->len - buf->wi,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
 }
 
 static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
