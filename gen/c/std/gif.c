@@ -2935,8 +2935,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
         {
           wuffs_base__io_reader o_0_a_src = a_src;
           wuffs_base__io_writer o_0_v_w = v_w;
-          uint8_t* o_0_ioptr1_v_w = ioptr_w;
-          uint8_t* o_0_ioptr2_v_w = iobounds1_w;
+          uint8_t* o_0_ioptr_v_w = ioptr_w;
+          uint8_t* o_0_iobounds1_v_w = iobounds1_w;
           wuffs_base__io_writer__set(
               &v_w, &u_w, &ioptr_w, &iobounds1_w,
               wuffs_base__slice_u8__subslice_i(
@@ -2972,8 +2972,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
                            })
                               .len)));
           v_w = o_0_v_w;
-          ioptr_w = o_0_ioptr1_v_w;
-          iobounds1_w = o_0_ioptr2_v_w;
+          ioptr_w = o_0_ioptr_v_w;
+          iobounds1_w = o_0_iobounds1_v_w;
           a_src = o_0_a_src;
         }
         if ((v_z == 0) || (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {

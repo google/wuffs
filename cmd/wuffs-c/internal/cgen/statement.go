@@ -180,12 +180,10 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		// TODO: save / restore all ioptr vars, not just for local IO vars? How
 		// does this work if the io_bind body advances these pointers, either
 		// directly or by calling other funcs?
-		//
-		// TODO: rename ioptr1 to ioptr, etc.
 		if e.Operator() == 0 {
-			b.printf("uint8_t *%s%d_ioptr1_%s%s = ioptr_%s;\n",
+			b.printf("uint8_t *%s%d_ioptr_%s%s = ioptr_%s;\n",
 				oPrefix, ioBindNum, prefix, name, name)
-			b.printf("uint8_t *%s%d_ioptr2_%s%s = iobounds1_%s;\n",
+			b.printf("uint8_t *%s%d_iobounds1_%s%s = iobounds1_%s;\n",
 				oPrefix, ioBindNum, prefix, name, name)
 		}
 	}
@@ -206,9 +204,9 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("%s%s = %s%d_%s%s;\n",
 			prefix, name, oPrefix, ioBindNum, prefix, name)
 		if e.Operator() == 0 {
-			b.printf("ioptr_%s = %s%d_ioptr1_%s%s;\n",
+			b.printf("ioptr_%s = %s%d_ioptr_%s%s;\n",
 				name, oPrefix, ioBindNum, prefix, name)
-			b.printf("iobounds1_%s = %s%d_ioptr2_%s%s;\n",
+			b.printf("iobounds1_%s = %s%d_iobounds1_%s%s;\n",
 				name, oPrefix, ioBindNum, prefix, name)
 		}
 	}
