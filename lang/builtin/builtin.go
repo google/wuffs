@@ -72,10 +72,12 @@ var Types = []string{
 
 	"empty_struct",
 	"bool",
-	"status",
+
+	"image_buffer",
+	"image_config",
 	"io_reader",
 	"io_writer",
-	"image_config",
+	"status",
 }
 
 var Funcs = []string{
@@ -99,11 +101,11 @@ var Funcs = []string{
 	"u64.max(x u64)(ret u64)",
 	"u64.min(x u64)(ret u64)",
 
-	// ---- status
+	// ---- image_buffer
 
-	"status.is_error()(ret bool)",
-	"status.is_ok()(ret bool)",
-	"status.is_suspension()(ret bool)",
+	// ---- image_config
+
+	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
 
 	// ---- io_reader
 
@@ -146,9 +148,11 @@ var Funcs = []string{
 	"io_writer.copy_from_slice!(s slice u8)(ret u64)",
 	"io_writer.copy_from_slice32!(s slice u8, length u32)(ret u32)",
 
-	// ---- image_config
+	// ---- status
 
-	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
+	"status.is_error()(ret bool)",
+	"status.is_ok()(ret bool)",
+	"status.is_suspension()(ret bool)",
 }
 
 // The "T" types here are placeholders for generic "slice U" types. After

@@ -400,7 +400,8 @@ const (
 	IDIOReader    = ID(0x103)
 	IDIOWriter    = ID(0x104)
 	IDCapitalT    = ID(0x105)
-	IDImageConfig = ID(0x106)
+	IDImageBuffer = ID(0x106)
+	IDImageConfig = ID(0x107)
 
 	IDPilcrow = ID(0x10D)
 	IDDiamond = ID(0x10E)
@@ -586,6 +587,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIOReader:    "io_reader",
 	IDIOWriter:    "io_writer",
 	IDCapitalT:    "T",
+	IDImageBuffer: "image_buffer",
 	IDImageConfig: "image_config",
 
 	// The next few IDs are never returned by the tokenizer, as it rejects

@@ -87,7 +87,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       // and will not e.g. write past the buffer bounds. But the Wuffs GIF API
       // should somehow pass a subset of pixbuf to decode_frame.
       dst.wi = 0;
-      s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
+      s = wuffs_gif__decoder__decode_frame(&dec, &ib, dst_writer, src_reader);
       if (s) {
         if ((s == WUFFS_GIF__SUSPENSION_END_OF_DATA) && seen_ok) {
           s = WUFFS_GIF__STATUS_OK;

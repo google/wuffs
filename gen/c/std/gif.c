@@ -1266,9 +1266,11 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src);
 
-wuffs_gif__status wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
-                                                   wuffs_base__io_writer a_dst,
-                                                   wuffs_base__io_reader a_src);
+wuffs_gif__status wuffs_gif__decoder__decode_frame(
+    wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib,
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1806,6 +1808,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
 
 static wuffs_gif__status wuffs_gif__decoder__decode_id(
     wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
@@ -1993,6 +1996,7 @@ short_read_src:
 
 wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
   if (!self) {
@@ -2003,6 +2007,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
+  }
+  if (!a_ib) {
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
+    return WUFFS_GIF__ERROR_BAD_ARGUMENT;
   }
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
@@ -2064,7 +2072,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
         if (a_src.private_impl.buf) {
           a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
         }
-        status = wuffs_gif__decoder__decode_id(self, a_dst, a_src);
+        status = wuffs_gif__decoder__decode_id(self, a_ib, a_dst, a_src);
         if (a_src.private_impl.buf) {
           ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
         }
@@ -2720,6 +2728,7 @@ short_read_src:
 
 static wuffs_gif__status wuffs_gif__decoder__decode_id(
     wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;

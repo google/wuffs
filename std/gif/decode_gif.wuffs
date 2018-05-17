@@ -89,7 +89,7 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	this.call_sequence = 1
 }
 
-pub func decoder.decode_frame?(dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
 	if this.call_sequence < 1 {
 		return error "invalid call sequence"
 	}
@@ -108,7 +108,7 @@ pub func decoder.decode_frame?(dst base.io_writer, src base.io_reader)() {
 			// the API? Should the 0x3B Trailer byte result in a "no more
 			// frames" suspension instead of ok? Do we need additional
 			// destination arguments for timing and palette?
-			this.decode_id?(dst:in.dst, src:in.src)
+			this.decode_id?(ib:in.ib, dst:in.dst, src:in.src)
 			return
 		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
 			break
@@ -281,7 +281,7 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 // See the spec section 20 "Image Descriptor" on page 11.
 //
 // TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
-pri func decoder.decode_id?(dst base.io_writer, src base.io_reader)() {
+pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
 	this.frame_left = in.src.read_u16le?() as base.u32
 	this.frame_top = in.src.read_u16le?() as base.u32
