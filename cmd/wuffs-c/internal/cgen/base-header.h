@@ -812,20 +812,20 @@ typedef struct {
 // details. Use methods such as wuffs_base__pixel_subsampling__bias_x instead.
 typedef uint32_t wuffs_base__pixel_subsampling;
 
-#define WUFFS_BASE__PIXEL_SUBSAMPLING__NONE ((wuffs_base__pixel_subsampling)0);
+#define WUFFS_BASE__PIXEL_SUBSAMPLING__NONE ((wuffs_base__pixel_subsampling)0)
 
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__444 \
-  ((wuffs_base__pixel_subsampling)0x000000);
+  ((wuffs_base__pixel_subsampling)0x000000)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__440 \
-  ((wuffs_base__pixel_subsampling)0x010100);
+  ((wuffs_base__pixel_subsampling)0x010100)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__422 \
-  ((wuffs_base__pixel_subsampling)0x101000);
+  ((wuffs_base__pixel_subsampling)0x101000)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__420 \
-  ((wuffs_base__pixel_subsampling)0x111100);
+  ((wuffs_base__pixel_subsampling)0x111100)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__411 \
-  ((wuffs_base__pixel_subsampling)0x202000);
+  ((wuffs_base__pixel_subsampling)0x202000)
 #define WUFFS_BASE__PIXEL_SUBSAMPLING__410 \
-  ((wuffs_base__pixel_subsampling)0x212100);
+  ((wuffs_base__pixel_subsampling)0x212100)
 
 static inline uint32_t wuffs_base__pixel_subsampling__bias_x(
     wuffs_base__pixel_subsampling s,
