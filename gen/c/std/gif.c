@@ -1571,70 +1571,70 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32__bco(
 }
 
 static inline uint32_t wuffs_base__io_writer__copy_from_reader32(
-    uint8_t** ptr_wptr,
-    uint8_t* wend,
-    uint8_t** ptr_rptr,
-    uint8_t* rend,
+    uint8_t** ptr_ioptr_w,
+    uint8_t* iobounds1_w,
+    uint8_t** ptr_ioptr_r,
+    uint8_t* iobounds1_r,
     uint32_t length) {
-  uint8_t* wptr = *ptr_wptr;
+  uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = length;
-  if (n > wend - wptr) {
-    n = wend - wptr;
+  if (n > iobounds1_w - ioptr_w) {
+    n = iobounds1_w - ioptr_w;
   }
-  uint8_t* rptr = *ptr_rptr;
-  if (n > rend - rptr) {
-    n = rend - rptr;
+  uint8_t* ioptr_r = *ptr_ioptr_r;
+  if (n > iobounds1_r - ioptr_r) {
+    n = iobounds1_r - ioptr_r;
   }
   if (n > 0) {
-    memmove(wptr, rptr, n);
-    *ptr_wptr += n;
-    *ptr_rptr += n;
+    memmove(ioptr_w, ioptr_r, n);
+    *ptr_ioptr_w += n;
+    *ptr_ioptr_r += n;
   }
   return n;
 }
 
 static inline uint64_t wuffs_base__io_writer__copy_from_slice(
-    uint8_t** ptr_wptr,
-    uint8_t* wend,
+    uint8_t** ptr_ioptr_w,
+    uint8_t* iobounds1_w,
     wuffs_base__slice_u8 src) {
-  uint8_t* wptr = *ptr_wptr;
+  uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = src.len;
-  if (n > wend - wptr) {
-    n = wend - wptr;
+  if (n > iobounds1_w - ioptr_w) {
+    n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
-    memmove(wptr, src.ptr, n);
-    *ptr_wptr += n;
+    memmove(ioptr_w, src.ptr, n);
+    *ptr_ioptr_w += n;
   }
   return n;
 }
 
 static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
-    uint8_t** ptr_wptr,
-    uint8_t* wend,
+    uint8_t** ptr_ioptr_w,
+    uint8_t* iobounds1_w,
     wuffs_base__slice_u8 src,
     uint32_t length) {
-  uint8_t* wptr = *ptr_wptr;
+  uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = src.len;
   if (n > length) {
     n = length;
   }
-  if (n > wend - wptr) {
-    n = wend - wptr;
+  if (n > iobounds1_w - ioptr_w) {
+    n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
-    memmove(wptr, src.ptr, n);
-    *ptr_wptr += n;
+    memmove(ioptr_w, src.ptr, n);
+    *ptr_ioptr_w += n;
   }
   return n;
 }
 
 static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
     wuffs_base__io_reader* o,
-    uint8_t* rptr,
+    uint8_t* ioptr_r,
     uint64_t limit) {
-  if (o && ((o->private_impl.bounds[1] - rptr) > limit)) {
-    o->private_impl.bounds[1] = rptr + limit;
+  if (o && ((o->private_impl.bounds[1] - ioptr_r) > limit)) {
+    o->private_impl.bounds[1] = ioptr_r + limit;
   }
   return ((wuffs_base__empty_struct){});
 }
