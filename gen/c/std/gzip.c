@@ -1008,13 +1008,13 @@ static inline void wuffs_base__image_buffer__set_from_slice(
     return;
   }
   *f = ((wuffs_base__image_buffer){});
-  f->private_impl.config = config;
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)config.private_impl.width) *
                 ((uint64_t)config.private_impl.height);
   if (wh > pixbuf_memory.len) {
     return;
   }
+  f->private_impl.config = config;
   wuffs_base__table_u8* tab = &f->private_impl.pixbuf.planes[0];
   tab->ptr = pixbuf_memory.ptr;
   tab->width = config.private_impl.width;
