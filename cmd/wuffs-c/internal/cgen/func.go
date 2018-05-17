@@ -300,7 +300,7 @@ func (g *gen) writeFuncImplFooter(b *buffer) error {
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.Field()
-			if err := g.writeSaveDerivedVar(b, "", o.Name(), o.XType(), true); err != nil {
+			if err := g.writeSaveDerivedVar(b, "", o.Name(), o.XType()); err != nil {
 				return err
 			}
 		}

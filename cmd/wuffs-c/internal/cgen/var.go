@@ -110,6 +110,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 		b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
 		b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
 		b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
 	}
 
 	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
@@ -138,7 +140,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	return nil
 }
 
-func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr, footer bool) error {
+func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:in.src".
 	if name.Str(g.tm) == "dummy" {
@@ -166,17 +168,9 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	}
 
 	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
-
 	b.printf("%s%s.private_impl.buf->%s = ioptr_%s - %s%s.private_impl.buf->ptr;",
 		aPrefix, nameStr, i0, nameStr, aPrefix, nameStr)
-
-	if footer {
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
-	}
-
 	b.printf("}\n")
-
 	return nil
 }
 
@@ -219,7 +213,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 		} else if s == "w" {
 			hack = "w"
 		}
-		if err := g.writeSaveDerivedVar(b, hack, o.Name(), o.Value().MType(), false); err != nil {
+		if err := g.writeSaveDerivedVar(b, hack, o.Name(), o.Value().MType()); err != nil {
 			return err
 		}
 	}

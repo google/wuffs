@@ -1837,6 +1837,8 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
   uint8_t* iobounds1_dst = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   if (a_dst.private_impl.buf) {
     ioptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     if (!a_dst.private_impl.bounds[0]) {
@@ -1942,8 +1944,6 @@ suspend:
 exit:
   if (a_dst.private_impl.buf) {
     a_dst.private_impl.buf->wi = ioptr_dst - a_dst.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   }
 
   self->private_impl.status = status;
@@ -1964,6 +1964,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
   uint8_t* ioptr_src = NULL;
   uint8_t* iobounds0orig_src = NULL;
   uint8_t* iobounds1_src = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   if (a_src.private_impl.buf) {
     ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     if (!a_src.private_impl.bounds[0]) {
@@ -2090,8 +2092,6 @@ suspend:
 exit:
   if (a_src.private_impl.buf) {
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   }
 
   return status;
@@ -2119,6 +2119,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
   uint8_t* iobounds1_dst = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   if (a_dst.private_impl.buf) {
     ioptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     if (!a_dst.private_impl.bounds[0]) {
@@ -2135,6 +2137,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
   uint8_t* ioptr_src = NULL;
   uint8_t* iobounds0orig_src = NULL;
   uint8_t* iobounds1_src = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   if (a_src.private_impl.buf) {
     ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     if (!a_src.private_impl.bounds[0]) {
@@ -2232,13 +2236,9 @@ suspend:
 exit:
   if (a_dst.private_impl.buf) {
     a_dst.private_impl.buf->wi = ioptr_dst - a_dst.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   }
   if (a_src.private_impl.buf) {
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   }
 
   return status;
@@ -2340,6 +2340,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
   uint8_t* ioptr_src = NULL;
   uint8_t* iobounds0orig_src = NULL;
   uint8_t* iobounds1_src = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   if (a_src.private_impl.buf) {
     ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     if (!a_src.private_impl.bounds[0]) {
@@ -2562,8 +2564,6 @@ suspend:
 exit:
   if (a_src.private_impl.buf) {
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   }
 
   return status;
@@ -2883,6 +2883,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
   uint8_t* iobounds1_dst = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   if (a_dst.private_impl.buf) {
     ioptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     if (!a_dst.private_impl.bounds[0]) {
@@ -2899,6 +2901,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
   uint8_t* ioptr_src = NULL;
   uint8_t* iobounds0orig_src = NULL;
   uint8_t* iobounds1_src = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   if (a_src.private_impl.buf) {
     ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     if (!a_src.private_impl.bounds[0]) {
@@ -3200,13 +3204,9 @@ label_0_break:;
 exit:
   if (a_dst.private_impl.buf) {
     a_dst.private_impl.buf->wi = ioptr_dst - a_dst.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   }
   if (a_src.private_impl.buf) {
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   }
 
   return status;
@@ -3237,6 +3237,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
   uint8_t* iobounds1_dst = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   if (a_dst.private_impl.buf) {
     ioptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
     if (!a_dst.private_impl.bounds[0]) {
@@ -3253,6 +3255,8 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
   uint8_t* ioptr_src = NULL;
   uint8_t* iobounds0orig_src = NULL;
   uint8_t* iobounds1_src = NULL;
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
+  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   if (a_src.private_impl.buf) {
     ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
     if (!a_src.private_impl.bounds[0]) {
@@ -3616,13 +3620,9 @@ suspend:
 exit:
   if (a_dst.private_impl.buf) {
     a_dst.private_impl.buf->wi = ioptr_dst - a_dst.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_dst);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_dst);
   }
   if (a_src.private_impl.buf) {
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_src);
-    WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_src);
   }
 
   return status;
