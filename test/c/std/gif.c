@@ -359,6 +359,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = {{0}};
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
@@ -367,6 +368,9 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   if (s) {
     return wuffs_gif__status__string(s);
   }
+  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
+  wuffs_base__image_buffer__set_from_slice(
+      &ib, ic, wuffs_base__io_buffer__writable(dst));
   while (true) {
     s = wuffs_gif__decoder__decode_frame(&dec, dst_writer, src_reader);
     if (s == WUFFS_GIF__SUSPENSION_END_OF_DATA) {
@@ -394,6 +398,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
+  wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   {
     wuffs_base__image_config ic = {{0}};
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -428,6 +433,9 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_base__image_config__num_loops(&ic));
       return false;
     }
+    // TODO: check wuffs_base__image_buffer__set_from_slice errors?
+    wuffs_base__image_buffer__set_from_slice(
+        &ib, ic, wuffs_base__io_buffer__writable(&got));
   }
 
   int num_iters = 0;
@@ -573,6 +581,7 @@ bool do_test_wuffs_gif_decode_animated(const char* filename,
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
+  wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = {{0}};
   wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -590,6 +599,9 @@ bool do_test_wuffs_gif_decode_animated(const char* filename,
          wuffs_base__image_config__num_loops(&ic), want_num_loops);
     return false;
   }
+  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
+  wuffs_base__image_buffer__set_from_slice(
+      &ib, ic, wuffs_base__io_buffer__writable(&got));
 
   uint32_t i;
   for (i = 0; i < want_num_frames; i++) {

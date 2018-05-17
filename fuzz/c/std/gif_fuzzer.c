@@ -49,6 +49,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     wuffs_gif__decoder dec;
     wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
+    wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
     wuffs_base__image_config ic = {{0}};
     s = wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
     if (s) {
@@ -71,6 +72,9 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       ret = "out of memory";
       goto exit;
     }
+    // TODO: check wuffs_base__image_buffer__set_from_slice errors?
+    wuffs_base__image_buffer__set_from_slice(
+        &ib, ic, ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
 
     wuffs_base__io_buffer dst = {.ptr = (uint8_t*)(pixbuf), .len = pixbuf_size};
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);

@@ -74,6 +74,7 @@ const char* play() {
       .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true};
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
+  wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = {{0}};
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -103,6 +104,9 @@ const char* play() {
       return "could not allocate print buffer";
     }
   }
+  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
+  wuffs_base__image_buffer__set_from_slice(
+      &ib, ic, ((wuffs_base__slice_u8){.ptr = dst_buffer, .len = dst_len}));
 
   if (!seen_num_loops) {
     seen_num_loops = true;
