@@ -985,34 +985,34 @@ typedef struct {
 } wuffs_base__image_buffer;
 
 static inline void wuffs_base__image_buffer__set_from_pixbuf(
-    wuffs_base__image_buffer* f,
+    wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__pixel_buffer pixbuf) {
-  if (!f) {
+  if (!b) {
     return;
   }
-  *f = ((wuffs_base__image_buffer){});
-  f->private_impl.config = config;
-  f->private_impl.pixbuf = pixbuf;
+  *b = ((wuffs_base__image_buffer){});
+  b->private_impl.config = config;
+  b->private_impl.pixbuf = pixbuf;
 }
 
 // TODO: Should this function return bool? An error type?
 static inline void wuffs_base__image_buffer__set_from_slice(
-    wuffs_base__image_buffer* f,
+    wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__slice_u8 pixbuf_memory) {
-  if (!f) {
+  if (!b) {
     return;
   }
-  *f = ((wuffs_base__image_buffer){});
+  *b = ((wuffs_base__image_buffer){});
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)config.private_impl.width) *
                 ((uint64_t)config.private_impl.height);
   if (wh > pixbuf_memory.len) {
     return;
   }
-  f->private_impl.config = config;
-  wuffs_base__table_u8* tab = &f->private_impl.pixbuf.planes[0];
+  b->private_impl.config = config;
+  wuffs_base__table_u8* tab = &b->private_impl.pixbuf.planes[0];
   tab->ptr = pixbuf_memory.ptr;
   tab->width = config.private_impl.width;
   tab->height = config.private_impl.height;
@@ -1020,36 +1020,36 @@ static inline void wuffs_base__image_buffer__set_from_slice(
 }
 
 static inline void wuffs_base__image_buffer__update(
-    wuffs_base__image_buffer* f,
+    wuffs_base__image_buffer* b,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
     uint8_t* palette_ptr,
     size_t palette_len) {
-  if (!f) {
+  if (!b) {
     return;
   }
-  f->private_impl.dirty_rect = dirty_rect;
-  f->private_impl.duration = duration;
+  b->private_impl.dirty_rect = dirty_rect;
+  b->private_impl.duration = duration;
   if (palette_ptr) {
-    memmove(f->private_impl.palette, palette_ptr,
+    memmove(b->private_impl.palette, palette_ptr,
             palette_len <= 1024 ? palette_len : 1024);
   }
 }
 
 // wuffs_base__image_buffer__loop returns whether the image decoder should loop
 // back to the beginning of the animation, assuming that we've reached the end
-// of the encoded stream. If so, it increments f's count of the animation loops
+// of the encoded stream. If so, it increments b's count of the animation loops
 // played so far.
-static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* f) {
-  if (!f) {
+static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
+  if (!b) {
     return false;
   }
-  uint32_t n = f->private_impl.config.private_impl.num_loops;
+  uint32_t n = b->private_impl.config.private_impl.num_loops;
   if (n == 0) {
     return true;
   }
-  if (f->private_impl.loop_count < n - 1) {
-    f->private_impl.loop_count++;
+  if (b->private_impl.loop_count < n - 1) {
+    b->private_impl.loop_count++;
     return true;
   }
   return false;
@@ -1058,22 +1058,22 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* f) {
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
 // this frame's pixels differs from the previous frame.
 static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
-    wuffs_base__image_buffer* f) {
-  return f ? f->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){0});
+    wuffs_base__image_buffer* b) {
+  return b ? b->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){0});
 }
 
 // wuffs_base__image_buffer__duration returns the amount of time to display
 // this frame. Zero means to display forever - a still (non-animated) image.
 static inline wuffs_base__flicks wuffs_base__image_buffer__duration(
-    wuffs_base__image_buffer* f) {
-  return f ? f->private_impl.duration : 0;
+    wuffs_base__image_buffer* b) {
+  return b ? b->private_impl.duration : 0;
 }
 
 // wuffs_base__image_buffer__palette returns the palette that the pixel data
-// can index. The backing array is inside f and has length 1024.
+// can index. The backing array is inside b and has length 1024.
 static inline uint8_t* wuffs_base__image_buffer__palette(
-    wuffs_base__image_buffer* f) {
-  return f ? f->private_impl.palette : NULL;
+    wuffs_base__image_buffer* b) {
+  return b ? b->private_impl.palette : NULL;
 }
 
 #endif  // WUFFS_BASE_HEADER_H
