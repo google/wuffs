@@ -872,6 +872,7 @@ typedef struct {
   } private_impl;
 } wuffs_base__image_config;
 
+// TODO: Should this function return bool? An error type?
 static inline void wuffs_base__image_config__initialize(
     wuffs_base__image_config* c,
     wuffs_base__pixel_format pixfmt,
@@ -882,13 +883,19 @@ static inline void wuffs_base__image_config__initialize(
   if (!c) {
     return;
   }
-  // TODO: move the check from wuffs_base__image_config__is_valid here. Should
-  // this function return bool? An error type?
-  c->private_impl.pixfmt = pixfmt;
-  c->private_impl.pixsub = pixsub;
-  c->private_impl.width = width;
-  c->private_impl.height = height;
-  c->private_impl.num_loops = num_loops;
+  if (pixfmt) {
+    uint64_t wh = ((uint64_t)width) * ((uint64_t)height);
+    // TODO: handle things other than 1 byte per pixel.
+    if (wh <= ((uint64_t)SIZE_MAX)) {
+      c->private_impl.pixfmt = pixfmt;
+      c->private_impl.pixsub = pixsub;
+      c->private_impl.width = width;
+      c->private_impl.height = height;
+      c->private_impl.num_loops = num_loops;
+      return;
+    }
+  }
+  *c = ((wuffs_base__image_config){});
 }
 
 static inline void wuffs_base__image_config__invalidate(
@@ -900,15 +907,7 @@ static inline void wuffs_base__image_config__invalidate(
 
 static inline bool wuffs_base__image_config__is_valid(
     wuffs_base__image_config* c) {
-  if (!c || !c->private_impl.pixfmt) {
-    return false;
-  }
-  uint64_t wh =
-      ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-  // TODO: handle things other than 1 byte per pixel.
-  //
-  // TODO: move the check to wuffs_base__image_config__initialize.
-  return wh <= ((uint64_t)SIZE_MAX);
+  return c && c->private_impl.pixfmt;
 }
 
 static inline wuffs_base__pixel_format wuffs_base__image_config__pixel_format(
@@ -918,22 +917,22 @@ static inline wuffs_base__pixel_format wuffs_base__image_config__pixel_format(
 
 static inline wuffs_base__pixel_subsampling
 wuffs_base__image_config__pixel_subsampling(wuffs_base__image_config* c) {
-  return wuffs_base__image_config__is_valid(c) ? c->private_impl.pixsub : 0;
+  return c ? c->private_impl.pixsub : 0;
 }
 
 static inline uint32_t wuffs_base__image_config__width(
     wuffs_base__image_config* c) {
-  return wuffs_base__image_config__is_valid(c) ? c->private_impl.width : 0;
+  return c ? c->private_impl.width : 0;
 }
 
 static inline uint32_t wuffs_base__image_config__height(
     wuffs_base__image_config* c) {
-  return wuffs_base__image_config__is_valid(c) ? c->private_impl.height : 0;
+  return c ? c->private_impl.height : 0;
 }
 
 static inline uint32_t wuffs_base__image_config__num_loops(
     wuffs_base__image_config* c) {
-  return wuffs_base__image_config__is_valid(c) ? c->private_impl.num_loops : 0;
+  return c ? c->private_impl.num_loops : 0;
 }
 
 // TODO: this is the right API for planar (not packed) pixbufs? Should it allow
@@ -941,7 +940,7 @@ static inline uint32_t wuffs_base__image_config__num_loops(
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline size_t wuffs_base__image_config__pixbuf_size(
     wuffs_base__image_config* c) {
-  if (wuffs_base__image_config__is_valid(c)) {
+  if (c) {
     uint64_t wh =
         ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
     // TODO: handle things other than 1 byte per pixel.
