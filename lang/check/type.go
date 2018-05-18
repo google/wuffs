@@ -326,12 +326,6 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType1 *a.TypeExpr
 		return err
 	}
 
-	if inField == nil {
-		// TODO: panic.
-		n.Node().SetMType(typeExprPlaceholder)
-		return nil
-	}
-
 	if n.Name() != inField.Name() {
 		return fmt.Errorf("check: argument name: got %q, want %q", n.Name().Str(q.tm), inField.Name().Str(q.tm))
 	}
