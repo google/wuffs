@@ -499,7 +499,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	if qqid[0] == t.IDBase {
 		// No need to populate c.funcs and c.localVars for built-in funcs. In
 		// any case, the remaining type checking code in this function doesn't
-		// handle the base.◊ diamond type.
+		// handle the base.† dagger type.
 		return nil
 	}
 	if other, ok := c.funcs[qqid]; ok {

@@ -157,25 +157,27 @@ var Funcs = []string{
 	"status.is_suspension()(ret bool)",
 }
 
-// The "T" types here are placeholders for generic "slice U" or "table U"
-// types. After tokenizing (but before parsing) these XxxFunc strings (e.g. in
-// the lang/check package), replace the "T" receiver type with the "◊" diamond,
-// to avoid collision with a user-defined "T" type.
+// The "T1" and "T2" types here are placeholders for generic "slice T" or
+// "table T" types. After tokenizing (but before parsing) these XxxFunc strings
+// (e.g. in the lang/check package), replace "T1" and "T2" with "†" or "‡"
+// daggers, to avoid collision with a user-defined "T1" or "T2" type.
 
 const (
-	GenericOldName = t.IDCapitalT
-	GenericNewName = t.IDDiamond
+	GenericOldName1 = t.IDT1
+	GenericOldName2 = t.IDT2
+	GenericNewName1 = t.IDDagger1
+	GenericNewName2 = t.IDDagger2
 )
 
 var SliceFuncs = []string{
-	"T.copy_from_slice(s T)(ret u64)",
-	"T.length()(ret u64)",
-	"T.prefix(up_to u64)(ret T)",
-	"T.suffix(up_to u64)(ret T)",
+	"T1.copy_from_slice(s T1)(ret u64)",
+	"T1.length()(ret u64)",
+	"T1.prefix(up_to u64)(ret T1)",
+	"T1.suffix(up_to u64)(ret T1)",
 }
 
 var TableFuncs = []string{
-	"T.height()(ret u64)",
-	"T.stride()(ret u64)",
-	"T.width()(ret u64)",
+	"T2.height()(ret u64)",
+	"T2.stride()(ret u64)",
+	"T2.width()(ret u64)",
 }

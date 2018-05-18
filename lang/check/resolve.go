@@ -34,7 +34,8 @@ var (
 
 // typeExprFoo is an *ast.Node MType (implicit type).
 var (
-	typeExprGeneric     = a.NewTypeExpr(0, t.IDBase, t.IDDiamond, nil, nil, nil)
+	typeExprGeneric1    = a.NewTypeExpr(0, t.IDBase, t.IDDagger1, nil, nil, nil)
+	typeExprGeneric2    = a.NewTypeExpr(0, t.IDBase, t.IDDagger2, nil, nil, nil)
 	typeExprIdeal       = a.NewTypeExpr(0, t.IDBase, t.IDDoubleZ, nil, nil, nil)
 	typeExprList        = a.NewTypeExpr(0, t.IDBase, t.IDDollar, nil, nil, nil)
 	typeExprPlaceholder = a.NewTypeExpr(0, t.IDBase, t.IDPilcrow, nil, nil, nil)
@@ -128,8 +129,10 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		}
 		if generic {
 			for i := range tokens {
-				if tokens[i].ID == builtin.GenericOldName {
-					tokens[i].ID = builtin.GenericNewName
+				if tokens[i].ID == builtin.GenericOldName1 {
+					tokens[i].ID = builtin.GenericNewName1
+				} else if tokens[i].ID == builtin.GenericOldName2 {
+					tokens[i].ID = builtin.GenericNewName2
 				}
 			}
 		}
@@ -161,7 +164,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	qqid := t.QQID{lQID[0], lQID[1], typ.FuncName()}
 	if lTyp.IsSliceType() {
 		qqid[0] = t.IDBase
-		qqid[1] = t.IDDiamond
+		qqid[1] = t.IDDagger1
 		if f, err := c.builtInSliceFunc(qqid); err != nil {
 			return nil, err
 		} else if f != nil {
@@ -170,7 +173,7 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase
-		qqid[1] = t.IDDiamond
+		qqid[1] = t.IDDagger2
 		if f, err := c.builtInTableFunc(qqid); err != nil {
 			return nil, err
 		} else if f != nil {

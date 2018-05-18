@@ -321,7 +321,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	)
 }
 
-func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr, depth uint32) error {
+func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType1 *a.TypeExpr, genericType2 *a.TypeExpr, depth uint32) error {
 	if err := q.tcheckExpr(n.Value(), depth); err != nil {
 		return err
 	}
@@ -336,8 +336,10 @@ func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType *a.TypeExpr,
 		return fmt.Errorf("check: argument name: got %q, want %q", n.Name().Str(q.tm), inField.Name().Str(q.tm))
 	}
 	inFieldTyp := inField.XType()
-	if genericType != nil && inFieldTyp.Eq(typeExprGeneric) {
-		inFieldTyp = genericType
+	if genericType1 != nil && inFieldTyp.Eq(typeExprGeneric1) {
+		inFieldTyp = genericType1
+	} else if genericType2 != nil && inFieldTyp.Eq(typeExprGeneric2) {
+		inFieldTyp = genericType2
 	}
 	if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, n.Value(), n.Value().MType()); err != nil {
 		return err
@@ -551,9 +553,14 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			n.Str(q.tm), ne, f.QQID().Str(q.tm), fe)
 	}
 
-	genericType := (*a.TypeExpr)(nil)
-	if f.Receiver() == (t.QID{t.IDBase, t.IDDiamond}) {
-		genericType = lhs.MType().Receiver()
+	genericType1 := (*a.TypeExpr)(nil)
+	genericType2 := (*a.TypeExpr)(nil)
+	switch f.Receiver() {
+	case t.QID{t.IDBase, t.IDDagger1}:
+		genericType1 = lhs.MType().Receiver()
+	case t.QID{t.IDBase, t.IDDagger2}:
+		genericType1 = lhs.MType().Receiver() // TODO: convert table T to slice T.
+		genericType2 = lhs.MType().Receiver()
 	}
 
 	// Check that the func's in type matches the arguments.
@@ -565,7 +572,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	for i, o := range n.Args() {
 		// TODO: inline tcheckArg here, after removing the special-cased hacks
 		// in tcheckExprOther.
-		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), genericType, depth); err != nil {
+		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), genericType1, genericType2, depth); err != nil {
 			return err
 		}
 	}
@@ -587,8 +594,10 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprEmptyStruct)
 		case 1:
 			oTyp := outFields[0].Field().XType()
-			if genericType != nil && oTyp.Eq(typeExprGeneric) {
-				n.SetMType(genericType)
+			if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
+				n.SetMType(genericType1)
+			} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
+				n.SetMType(genericType2)
 			} else {
 				n.SetMType(oTyp)
 			}
@@ -608,7 +617,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 
 	if lTyp.IsSliceType() {
 		qqid[0] = t.IDBase
-		qqid[1] = t.IDDiamond
+		qqid[1] = t.IDDagger1
 		if f, err := q.c.builtInSliceFunc(qqid); err != nil {
 			return err
 		} else if f == nil {
@@ -619,7 +628,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase
-		qqid[1] = t.IDDiamond
+		qqid[1] = t.IDDagger2
 		if f, err := q.c.builtInTableFunc(qqid); err != nil {
 			return err
 		} else if f == nil {
@@ -976,7 +985,7 @@ swtch:
 			// TODO: reject. You can only refine numeric types.
 		}
 		if qid[0] == t.IDBase {
-			if _, ok := builtInTypeMap[qid[1]]; ok || qid[1] == t.IDDiamond {
+			if _, ok := builtInTypeMap[qid[1]]; ok || qid[1] == t.IDDagger1 || qid[1] == t.IDDagger2 {
 				break swtch
 			}
 		}
