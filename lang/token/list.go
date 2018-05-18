@@ -387,10 +387,10 @@ const (
 
 const (
 	minBuiltInIdent   = 0x100
-	minNumTypeOrIdeal = 0x10F
-	minNumType        = 0x110
-	maxNumType        = 0x117
-	maxNumTypeOrIdeal = 0x117
+	minNumTypeOrIdeal = 0x11F
+	minNumType        = 0x120
+	maxNumType        = 0x127
+	maxNumTypeOrIdeal = 0x127
 	maxBuiltInIdent   = 0x3FF
 
 	// -------- 0x100 block.
@@ -398,61 +398,61 @@ const (
 	IDEmptyStruct = ID(0x100)
 	IDBool        = ID(0x101)
 
-	IDRectIEU32 = ID(0x102)
-	IDRectIIU32 = ID(0x103)
+	IDRectIEU32 = ID(0x108)
+	IDRectIIU32 = ID(0x109)
 
-	IDImageBuffer = ID(0x104)
-	IDImageConfig = ID(0x105)
-	IDIOReader    = ID(0x106)
-	IDIOWriter    = ID(0x107)
-	IDStatus      = ID(0x108)
+	IDImageBuffer = ID(0x110)
+	IDImageConfig = ID(0x111)
+	IDIOReader    = ID(0x112)
+	IDIOWriter    = ID(0x113)
+	IDStatus      = ID(0x114)
 
-	IDT1      = ID(0x10A)
-	IDT2      = ID(0x10B)
-	IDDagger1 = ID(0x10C)
-	IDDagger2 = ID(0x10D)
+	IDT1      = ID(0x11A)
+	IDT2      = ID(0x11B)
+	IDDagger1 = ID(0x11C)
+	IDDagger2 = ID(0x11D)
 
-	IDPilcrow = ID(0x10E)
+	IDPilcrow = ID(0x11E)
 
 	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDDoubleZ = ID(0x10F)
+	IDDoubleZ = ID(0x11F)
 
-	IDI8  = ID(0x110)
-	IDI16 = ID(0x111)
-	IDI32 = ID(0x112)
-	IDI64 = ID(0x113)
-	IDU8  = ID(0x114)
-	IDU16 = ID(0x115)
-	IDU32 = ID(0x116)
-	IDU64 = ID(0x117)
+	IDI8  = ID(0x120)
+	IDI16 = ID(0x121)
+	IDI32 = ID(0x122)
+	IDI64 = ID(0x123)
+	IDU8  = ID(0x124)
+	IDU16 = ID(0x125)
+	IDU32 = ID(0x126)
+	IDU64 = ID(0x127)
 
 	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
-	IDUnreadU8  = ID(0x120)
-	IDReadU8    = ID(0x121)
-	IDReadU16BE = ID(0x122)
-	IDReadU16LE = ID(0x123)
-	IDReadU32BE = ID(0x124)
-	IDReadU32LE = ID(0x125)
-	IDReadU64BE = ID(0x126)
-	IDReadU64LE = ID(0x127)
+	IDUnreadU8  = ID(0x140)
+	IDReadU8    = ID(0x141)
+	IDReadU16BE = ID(0x142)
+	IDReadU16LE = ID(0x143)
+	IDReadU32BE = ID(0x144)
+	IDReadU32LE = ID(0x145)
+	IDReadU64BE = ID(0x146)
+	IDReadU64LE = ID(0x147)
 
 	// TODO: IDUnwriteU8?
-	IDWriteU8    = ID(0x131)
-	IDWriteU16BE = ID(0x132)
-	IDWriteU16LE = ID(0x133)
-	IDWriteU32BE = ID(0x134)
-	IDWriteU32LE = ID(0x135)
-	IDWriteU64BE = ID(0x136)
-	IDWriteU64LE = ID(0x137)
+	IDWriteU8    = ID(0x161)
+	IDWriteU16BE = ID(0x162)
+	IDWriteU16LE = ID(0x163)
+	IDWriteU32BE = ID(0x164)
+	IDWriteU32LE = ID(0x165)
+	IDWriteU64BE = ID(0x166)
+	IDWriteU64LE = ID(0x167)
 
-	IDUnderscore = ID(0x140)
-	IDThis       = ID(0x141)
-	IDIn         = ID(0x142)
-	IDOut        = ID(0x143)
-	IDBase       = ID(0x144)
-	IDReset      = ID(0x145)
+	IDUnderscore = ID(0x180)
+	IDThis       = ID(0x181)
+	IDIn         = ID(0x182)
+	IDOut        = ID(0x183)
+	IDBase       = ID(0x184)
+	IDReset      = ID(0x185)
 
 	// -------- 0x200 block.
 
