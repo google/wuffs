@@ -471,6 +471,9 @@ const (
 	IDMax               = ID(0x213)
 	IDMin               = ID(0x214)
 	IDSet               = ID(0x215)
+	IDHeight            = ID(0x216)
+	IDStride            = ID(0x217)
+	IDWidth             = ID(0x218)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -671,6 +674,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDMax:               "max",
 	IDMin:               "min",
 	IDSet:               "set",
+	IDHeight:            "height",
+	IDStride:            "stride",
+	IDWidth:             "width",
 }
 
 var builtInsByName = map[string]ID{}

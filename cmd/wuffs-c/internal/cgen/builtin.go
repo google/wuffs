@@ -52,6 +52,8 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 		return nil
 	case t.IDSlice:
 		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), rp, depth)
+	case t.IDTable:
+		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), rp, depth)
 	default:
 		return errNoSuchBuiltin
 	}
@@ -309,6 +311,30 @@ func (g *gen) writeBuiltinStatus(b *buffer, recv *a.Expr, method t.ID, args []*a
 	}
 	b.writeb(')')
 	return nil
+}
+
+func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+	field := ""
+
+	switch method {
+	case t.IDHeight:
+		field = "height"
+	case t.IDStride:
+		field = "stride"
+	case t.IDWidth:
+		field = "width"
+	}
+
+	if field != "" {
+		b.writes("((uint64_t)(")
+		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+			return err
+		}
+		b.printf(".%s))", field)
+		return nil
+	}
+
+	return errNoSuchBuiltin
 }
 
 func (g *gen) writeArgs(b *buffer, args []*a.Node, rp replacementPolicy, depth uint32) error {

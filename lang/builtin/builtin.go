@@ -103,6 +103,8 @@ var Funcs = []string{
 
 	// ---- image_buffer
 
+	"image_buffer.plane(p u32[..3])(ret table u8)",
+
 	// ---- image_config
 
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
@@ -155,10 +157,10 @@ var Funcs = []string{
 	"status.is_suspension()(ret bool)",
 }
 
-// The "T" types here are placeholders for generic "slice U" types. After
-// tokenizing (but before parsing) these SliceFunc strings (e.g. in the
-// lang/check package), replace the "T" receiver type with the "◊" diamond, to
-// avoid collision with a user-defined "T" type.
+// The "T" types here are placeholders for generic "slice U" or "table U"
+// types. After tokenizing (but before parsing) these XxxFunc strings (e.g. in
+// the lang/check package), replace the "T" receiver type with the "◊" diamond,
+// to avoid collision with a user-defined "T" type.
 
 const (
 	GenericOldName = t.IDCapitalT
@@ -170,4 +172,10 @@ var SliceFuncs = []string{
 	"T.length()(ret u64)",
 	"T.prefix(up_to u64)(ret T)",
 	"T.suffix(up_to u64)(ret T)",
+}
+
+var TableFuncs = []string{
+	"T.height()(ret u64)",
+	"T.stride()(ret u64)",
+	"T.width()(ret u64)",
 }

@@ -169,6 +169,7 @@ type Checker struct {
 
 	builtInFuncs      map[t.QQID]*a.Func
 	builtInSliceFuncs map[t.QQID]*a.Func
+	builtInTableFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct
 }
 

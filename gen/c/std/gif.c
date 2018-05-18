@@ -1079,6 +1079,14 @@ static inline uint8_t* wuffs_base__image_buffer__palette(
   return b ? b->private_impl.palette : NULL;
 }
 
+static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
+    wuffs_base__image_buffer* b,
+    uint32_t p) {
+  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
+             ? b->private_impl.pixbuf.planes[p]
+             : ((wuffs_base__table_u8){});
+}
+
 #endif  // WUFFS_BASE_HEADER_H
 
   // ---------------- Use Declarations
@@ -2748,6 +2756,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   wuffs_gif__status v_z;
   wuffs_base__slice_u8 v_pass_through;
   uint64_t v_n_copied;
+  wuffs_base__table_u8 v_tab;
 
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
@@ -2794,9 +2803,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     v_z = self->private_impl.c_decode_id[0].v_z;
     v_pass_through = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode_id[0].v_n_copied;
+    v_tab = ((wuffs_base__table_u8){});
   } else {
     v_w = ((wuffs_base__io_writer){});
     v_pass_through = ((wuffs_base__slice_u8){});
+    v_tab = ((wuffs_base__table_u8){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -3056,6 +3067,9 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(15);
           }
         label_2_break:;
+          v_tab = wuffs_base__image_buffer__plane(a_ib, 0);
+          if (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride))) {
+          }
           if (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE) {
             goto label_1_continue;
           }

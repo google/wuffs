@@ -98,6 +98,17 @@ func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
 	return c.builtInSliceFuncs[qqid], nil
 }
 
+func (c *Checker) builtInTableFunc(qqid t.QQID) (*a.Func, error) {
+	if c.builtInTableFuncs == nil {
+		err := error(nil)
+		c.builtInTableFuncs, err = c.parseBuiltInFuncs(builtin.TableFuncs, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c.builtInTableFuncs[qqid], nil
+}
+
 func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {
 	m := map[t.QQID]*a.Func{}
 	buf := []byte(nil)
@@ -152,6 +163,15 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDiamond
 		if f, err := c.builtInSliceFunc(qqid); err != nil {
+			return nil, err
+		} else if f != nil {
+			return f, nil
+		}
+
+	} else if lTyp.IsTableType() {
+		qqid[0] = t.IDBase
+		qqid[1] = t.IDDiamond
+		if f, err := c.builtInTableFunc(qqid); err != nil {
 			return nil, err
 		} else if f != nil {
 			return f, nil

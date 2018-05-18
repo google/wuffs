@@ -373,6 +373,13 @@ pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src ba
 					// TODO: "closed for writes" instead?
 					yield suspension "short write"
 				}
+				// TODO: don't assume a packed pixel format.
+				var tab table base.u8 = in.ib.plane(p:0)
+				if tab.width() == tab.stride() {
+					// TODO.
+				} else {
+					// TODO.
+				}
 
 				if z == suspension "short write" {
 					continue:inner

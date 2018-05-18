@@ -1079,6 +1079,14 @@ static inline uint8_t* wuffs_base__image_buffer__palette(
   return b ? b->private_impl.palette : NULL;
 }
 
+static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
+    wuffs_base__image_buffer* b,
+    uint32_t p) {
+  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
+             ? b->private_impl.pixbuf.planes[p]
+             : ((wuffs_base__table_u8){});
+}
+
 #endif  // WUFFS_BASE_HEADER_H
 
   // ---------------- Use Declarations
