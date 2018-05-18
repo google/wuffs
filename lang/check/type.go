@@ -321,27 +321,6 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	)
 }
 
-func (q *checker) tcheckArg(n *a.Arg, inField *a.Field, genericType1 *a.TypeExpr, genericType2 *a.TypeExpr, depth uint32) error {
-	if err := q.tcheckExpr(n.Value(), depth); err != nil {
-		return err
-	}
-
-	if n.Name() != inField.Name() {
-		return fmt.Errorf("check: argument name: got %q, want %q", n.Name().Str(q.tm), inField.Name().Str(q.tm))
-	}
-	inFieldTyp := inField.XType()
-	if genericType1 != nil && inFieldTyp.Eq(typeExprGeneric1) {
-		inFieldTyp = genericType1
-	} else if genericType2 != nil && inFieldTyp.Eq(typeExprGeneric2) {
-		inFieldTyp = genericType2
-	}
-	if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, n.Value(), n.Value().MType()); err != nil {
-		return err
-	}
-	n.Node().SetMType(typeExprPlaceholder)
-	return nil
-}
-
 func (q *checker) tcheckLoop(n a.Loop) error {
 	for _, o := range n.Asserts() {
 		if err := q.tcheckAssert(o.Assert()); err != nil {
@@ -564,11 +543,26 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
-		// TODO: inline tcheckArg here, after removing the special-cased hacks
-		// in tcheckExprOther.
-		if err := q.tcheckArg(o.Arg(), inFields[i].Field(), genericType1, genericType2, depth); err != nil {
+		o := o.Arg()
+		if err := q.tcheckExpr(o.Value(), depth); err != nil {
 			return err
 		}
+
+		inField := inFields[i].Field()
+		if o.Name() != inField.Name() {
+			return fmt.Errorf("check: argument name: got %q, want %q", o.Name().Str(q.tm), inField.Name().Str(q.tm))
+		}
+
+		inFieldTyp := inField.XType()
+		if genericType1 != nil && inFieldTyp.Eq(typeExprGeneric1) {
+			inFieldTyp = genericType1
+		} else if genericType2 != nil && inFieldTyp.Eq(typeExprGeneric2) {
+			inFieldTyp = genericType2
+		}
+		if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, o.Value(), o.Value().MType()); err != nil {
+			return err
+		}
+		o.Node().SetMType(typeExprPlaceholder)
 	}
 
 	// TODO: distinguish t.IDOpenParen vs t.IDTry in a more principled way?
