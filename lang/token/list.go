@@ -427,6 +427,12 @@ const (
 	IDU32 = ID(0x126)
 	IDU64 = ID(0x127)
 
+	IDUnderscore = ID(0x130)
+	IDThis       = ID(0x131)
+	IDIn         = ID(0x132)
+	IDOut        = ID(0x133)
+	IDBase       = ID(0x134)
+
 	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
 	IDUnreadU8  = ID(0x140)
@@ -447,48 +453,47 @@ const (
 	IDWriteU64BE = ID(0x166)
 	IDWriteU64LE = ID(0x167)
 
-	IDUnderscore = ID(0x180)
-	IDThis       = ID(0x181)
-	IDIn         = ID(0x182)
-	IDOut        = ID(0x183)
-	IDBase       = ID(0x184)
-	IDReset      = ID(0x185)
+	IDSetLimit  = ID(0x180)
+	IDSetMark   = ID(0x181)
+	IDSinceMark = ID(0x182)
+	IDSkip32    = ID(0x183)
+	IDSkip64    = ID(0x184)
+
+	IDCopyFromHistory32 = ID(0x190)
+	IDCopyFromReader32  = ID(0x191)
+	IDCopyFromSlice     = ID(0x192)
+	IDCopyFromSlice32   = ID(0x193)
 
 	// -------- 0x200 block.
 
-	IDIsError           = ID(0x200)
-	IDIsOK              = ID(0x201)
-	IDIsSuspension      = ID(0x202)
-	IDCopyFromHistory32 = ID(0x203)
-	IDCopyFromReader32  = ID(0x204)
-	IDCopyFromSlice     = ID(0x205)
-	IDCopyFromSlice32   = ID(0x206)
-	IDSkip32            = ID(0x207)
-	IDSkip64            = ID(0x208)
-	IDLength            = ID(0x209)
-	IDAvailable         = ID(0x20A)
-	IDPrefix            = ID(0x20B)
-	IDSuffix            = ID(0x20C)
-	IDSetLimit          = ID(0x20D)
-	IDLowBits           = ID(0x20E)
-	IDHighBits          = ID(0x20F)
-	IDUnroll            = ID(0x210)
-	IDSetMark           = ID(0x211)
-	IDSinceMark         = ID(0x212)
-	IDMax               = ID(0x213)
-	IDMin               = ID(0x214)
-	IDSet               = ID(0x215)
-	IDHeight            = ID(0x216)
-	IDStride            = ID(0x217)
-	IDWidth             = ID(0x218)
-	IDLinearize         = ID(0x219)
+	IDReset  = ID(0x200)
+	IDSet    = ID(0x201)
+	IDUnroll = ID(0x202)
 
-	IDSetMaxExclusiveX = ID(0x240)
-	IDSetMaxExclusiveY = ID(0x241)
-	IDSetMaxInclusiveX = ID(0x242)
-	IDSetMaxInclusiveY = ID(0x243)
-	IDSetMinInclusiveX = ID(0x244)
-	IDSetMinInclusiveY = ID(0x245)
+	IDSetMaxExclusiveX = ID(0x210)
+	IDSetMaxExclusiveY = ID(0x211)
+	IDSetMaxInclusiveX = ID(0x212)
+	IDSetMaxInclusiveY = ID(0x213)
+	IDSetMinInclusiveX = ID(0x214)
+	IDSetMinInclusiveY = ID(0x215)
+
+	IDHighBits = ID(0x220)
+	IDLowBits  = ID(0x221)
+	IDMax      = ID(0x222)
+	IDMin      = ID(0x223)
+
+	IDIsError      = ID(0x230)
+	IDIsOK         = ID(0x231)
+	IDIsSuspension = ID(0x232)
+
+	IDAvailable = ID(0x240)
+	IDHeight    = ID(0x241)
+	IDLength    = ID(0x242)
+	IDLinearize = ID(0x243)
+	IDPrefix    = ID(0x244)
+	IDStride    = ID(0x245)
+	IDSuffix    = ID(0x246)
+	IDWidth     = ID(0x247)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -647,6 +652,12 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
+	IDUnderscore: "_",
+	IDThis:       "this",
+	IDIn:         "in",
+	IDOut:        "out",
+	IDBase:       "base",
+
 	IDUnreadU8:  "unread_u8",
 	IDReadU8:    "read_u8",
 	IDReadU16BE: "read_u16be",
@@ -664,41 +675,22 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
 
-	IDUnderscore: "_",
-	IDThis:       "this",
-	IDIn:         "in",
-	IDOut:        "out",
-	IDBase:       "base",
-	IDReset:      "reset",
+	IDSetLimit:  "set_limit",
+	IDSetMark:   "set_mark",
+	IDSinceMark: "since_mark",
+	IDSkip32:    "skip32",
+	IDSkip64:    "skip64",
 
-	// -------- 0x200 block.
-
-	IDIsError:           "is_error",
-	IDIsOK:              "is_ok",
-	IDIsSuspension:      "is_suspension",
 	IDCopyFromHistory32: "copy_from_history32",
 	IDCopyFromReader32:  "copy_from_reader32",
 	IDCopyFromSlice:     "copy_from_slice",
 	IDCopyFromSlice32:   "copy_from_slice32",
-	IDSkip32:            "skip32",
-	IDSkip64:            "skip64",
-	IDLength:            "length",
-	IDAvailable:         "available",
-	IDPrefix:            "prefix",
-	IDSuffix:            "suffix",
-	IDSetLimit:          "set_limit",
-	IDLowBits:           "low_bits",
-	IDHighBits:          "high_bits",
-	IDUnroll:            "unroll",
-	IDSetMark:           "set_mark",
-	IDSinceMark:         "since_mark",
-	IDMax:               "max",
-	IDMin:               "min",
-	IDSet:               "set",
-	IDHeight:            "height",
-	IDStride:            "stride",
-	IDWidth:             "width",
-	IDLinearize:         "linearize",
+
+	// -------- 0x200 block.
+
+	IDReset:  "reset",
+	IDSet:    "set",
+	IDUnroll: "unroll",
 
 	IDSetMaxExclusiveX: "set_max_exclusive_x",
 	IDSetMaxExclusiveY: "set_max_exclusive_y",
@@ -706,6 +698,24 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSetMaxInclusiveY: "set_max_inclusive_y",
 	IDSetMinInclusiveX: "set_min_inclusive_x",
 	IDSetMinInclusiveY: "set_min_inclusive_y",
+
+	IDHighBits: "high_bits",
+	IDLowBits:  "low_bits",
+	IDMax:      "max",
+	IDMin:      "min",
+
+	IDIsError:      "is_error",
+	IDIsOK:         "is_ok",
+	IDIsSuspension: "is_suspension",
+
+	IDAvailable: "available",
+	IDHeight:    "height",
+	IDLength:    "length",
+	IDLinearize: "linearize",
+	IDPrefix:    "prefix",
+	IDStride:    "stride",
+	IDSuffix:    "suffix",
+	IDWidth:     "width",
 }
 
 var builtInsByName = map[string]ID{}
