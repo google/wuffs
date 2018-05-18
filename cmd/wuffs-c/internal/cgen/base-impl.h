@@ -243,6 +243,66 @@ static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
   *x = wuffs_base__u64__sat_sub(*x, y);
 }
 
+// ---------------- Ranges and Rects
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_min_inclusive_x(wuffs_base__rect_ii_u32* r,
+                                             uint32_t x) {
+  r->min_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_min_inclusive_y(wuffs_base__rect_ii_u32* r,
+                                             uint32_t y) {
+  r->min_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_max_inclusive_x(wuffs_base__rect_ii_u32* r,
+                                             uint32_t x) {
+  r->max_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_max_inclusive_y(wuffs_base__rect_ii_u32* r,
+                                             uint32_t y) {
+  r->max_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+// --------
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_min_inclusive_x(wuffs_base__rect_ie_u32* r,
+                                             uint32_t x) {
+  r->min_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_min_inclusive_y(wuffs_base__rect_ie_u32* r,
+                                             uint32_t y) {
+  r->min_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_max_exclusive_x(wuffs_base__rect_ie_u32* r,
+                                             uint32_t x) {
+  r->max_exclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_max_exclusive_y(wuffs_base__rect_ie_u32* r,
+                                             uint32_t y) {
+  r->max_exclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
 // ---------------- I/O
 
 static inline bool wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {

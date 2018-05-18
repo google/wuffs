@@ -46,10 +46,6 @@ pub struct decoder?(
 	num_loops base.u32 = 1,
 
 	frame_rect base.rect_ie_u32,
-	frame_top base.u32[..65535],
-	frame_left base.u32[..65535],
-	frame_width base.u32[..65535],
-	frame_height base.u32[..65535],
 
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
@@ -284,10 +280,14 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 // TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
 pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
-	this.frame_left = in.src.read_u16le?() as base.u32
-	this.frame_top = in.src.read_u16le?() as base.u32
-	this.frame_width = in.src.read_u16le?() as base.u32
-	this.frame_height = in.src.read_u16le?() as base.u32
+	var frame_x base.u32 = in.src.read_u16le?() as base.u32
+	var frame_y base.u32 = in.src.read_u16le?() as base.u32
+	this.frame_rect.set_min_inclusive_x!(x:frame_x)
+	this.frame_rect.set_min_inclusive_y!(y:frame_y)
+	frame_x ~mod+= in.src.read_u16le?() as base.u32
+	frame_y ~mod+= in.src.read_u16le?() as base.u32
+	this.frame_rect.set_max_exclusive_x!(x:frame_x)
+	this.frame_rect.set_max_exclusive_y!(y:frame_y)
 
 	// TODO: use this.interlace.
 	var flags base.u8 = in.src.read_u8?()

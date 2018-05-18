@@ -1198,10 +1198,6 @@ typedef struct {
     bool f_seen_num_loops;
     uint32_t f_num_loops;
     wuffs_base__rect_ie_u32 f_frame_rect;
-    uint32_t f_frame_top;
-    uint32_t f_frame_left;
-    uint32_t f_frame_width;
-    uint32_t f_frame_height;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -1245,6 +1241,8 @@ typedef struct {
     } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_frame_x;
+      uint32_t v_frame_y;
       uint8_t v_flags;
       uint32_t v_lct_size;
       uint32_t v_i;

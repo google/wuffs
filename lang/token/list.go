@@ -482,6 +482,13 @@ const (
 	IDStride            = ID(0x217)
 	IDWidth             = ID(0x218)
 	IDLinearize         = ID(0x219)
+
+	IDSetMaxExclusiveX = ID(0x240)
+	IDSetMaxExclusiveY = ID(0x241)
+	IDSetMaxInclusiveX = ID(0x242)
+	IDSetMaxInclusiveY = ID(0x243)
+	IDSetMinInclusiveX = ID(0x244)
+	IDSetMinInclusiveY = ID(0x245)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -692,6 +699,13 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDStride:            "stride",
 	IDWidth:             "width",
 	IDLinearize:         "linearize",
+
+	IDSetMaxExclusiveX: "set_max_exclusive_x",
+	IDSetMaxExclusiveY: "set_max_exclusive_y",
+	IDSetMaxInclusiveX: "set_max_inclusive_x",
+	IDSetMaxInclusiveY: "set_max_inclusive_y",
+	IDSetMinInclusiveX: "set_min_inclusive_x",
+	IDSetMinInclusiveY: "set_min_inclusive_y",
 }
 
 var builtInsByName = map[string]ID{}

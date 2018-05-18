@@ -1198,10 +1198,6 @@ typedef struct {
     bool f_seen_num_loops;
     uint32_t f_num_loops;
     wuffs_base__rect_ie_u32 f_frame_rect;
-    uint32_t f_frame_top;
-    uint32_t f_frame_left;
-    uint32_t f_frame_width;
-    uint32_t f_frame_height;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -1245,6 +1241,8 @@ typedef struct {
     } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_frame_x;
+      uint32_t v_frame_y;
       uint8_t v_flags;
       uint32_t v_lct_size;
       uint32_t v_i;
@@ -1533,6 +1531,66 @@ static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
 
 static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
   *x = wuffs_base__u64__sat_sub(*x, y);
+}
+
+// ---------------- Ranges and Rects
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_min_inclusive_x(wuffs_base__rect_ii_u32* r,
+                                             uint32_t x) {
+  r->min_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_min_inclusive_y(wuffs_base__rect_ii_u32* r,
+                                             uint32_t y) {
+  r->min_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_max_inclusive_x(wuffs_base__rect_ii_u32* r,
+                                             uint32_t x) {
+  r->max_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ii_u32__set_max_inclusive_y(wuffs_base__rect_ii_u32* r,
+                                             uint32_t y) {
+  r->max_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+// --------
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_min_inclusive_x(wuffs_base__rect_ie_u32* r,
+                                             uint32_t x) {
+  r->min_inclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_min_inclusive_y(wuffs_base__rect_ie_u32* r,
+                                             uint32_t y) {
+  r->min_inclusive_y = y;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_max_exclusive_x(wuffs_base__rect_ie_u32* r,
+                                             uint32_t x) {
+  r->max_exclusive_x = x;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct
+wuffs_base__rect_ie_u32__set_max_exclusive_y(wuffs_base__rect_ie_u32* r,
+                                             uint32_t y) {
+  r->max_exclusive_y = y;
+  return ((wuffs_base__empty_struct){});
 }
 
 // ---------------- I/O
@@ -2755,6 +2813,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
     wuffs_base__io_reader a_src) {
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
+  uint32_t v_frame_x;
+  uint32_t v_frame_y;
   uint8_t v_flags;
   uint32_t v_lct_size;
   uint32_t v_i;
@@ -2809,6 +2869,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
 
   uint32_t coro_susp_point = self->private_impl.c_decode_id[0].coro_susp_point;
   if (coro_susp_point) {
+    v_frame_x = self->private_impl.c_decode_id[0].v_frame_x;
+    v_frame_y = self->private_impl.c_decode_id[0].v_frame_y;
     v_flags = self->private_impl.c_decode_id[0].v_flags;
     v_lct_size = self->private_impl.c_decode_id[0].v_lct_size;
     v_i = self->private_impl.c_decode_id[0].v_i;
@@ -2855,7 +2917,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           self->private_impl.c_decode_id[0].scratch |= ((uint64_t)(t_0)) << 56;
         }
       }
-      self->private_impl.f_frame_left = ((uint32_t)(t_1));
+      v_frame_x = ((uint32_t)(t_1));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -2883,8 +2945,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           self->private_impl.c_decode_id[0].scratch |= ((uint64_t)(t_2)) << 56;
         }
       }
-      self->private_impl.f_frame_top = ((uint32_t)(t_3));
+      v_frame_y = ((uint32_t)(t_3));
     }
+    wuffs_base__rect_ie_u32__set_min_inclusive_x(
+        &self->private_impl.f_frame_rect, v_frame_x);
+    wuffs_base__rect_ie_u32__set_min_inclusive_y(
+        &self->private_impl.f_frame_rect, v_frame_y);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint16_t t_5;
@@ -2911,7 +2977,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           self->private_impl.c_decode_id[0].scratch |= ((uint64_t)(t_4)) << 56;
         }
       }
-      self->private_impl.f_frame_width = ((uint32_t)(t_5));
+      v_frame_x += ((uint32_t)(t_5));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -2939,8 +3005,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
           self->private_impl.c_decode_id[0].scratch |= ((uint64_t)(t_6)) << 56;
         }
       }
-      self->private_impl.f_frame_height = ((uint32_t)(t_7));
+      v_frame_y += ((uint32_t)(t_7));
     }
+    wuffs_base__rect_ie_u32__set_max_exclusive_x(
+        &self->private_impl.f_frame_rect, v_frame_x);
+    wuffs_base__rect_ie_u32__set_max_exclusive_y(
+        &self->private_impl.f_frame_rect, v_frame_y);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
       if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
@@ -3115,6 +3185,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id(
   goto suspend;
 suspend:
   self->private_impl.c_decode_id[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_id[0].v_frame_x = v_frame_x;
+  self->private_impl.c_decode_id[0].v_frame_y = v_frame_y;
   self->private_impl.c_decode_id[0].v_flags = v_flags;
   self->private_impl.c_decode_id[0].v_lct_size = v_lct_size;
   self->private_impl.c_decode_id[0].v_i = v_i;

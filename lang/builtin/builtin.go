@@ -104,6 +104,20 @@ var Funcs = []string{
 	"u64.max(x u64)(ret u64)",
 	"u64.min(x u64)(ret u64)",
 
+	// ---- rect_ie_u32
+
+	"rect_ie_u32.set_min_inclusive_x!(x u32)()",
+	"rect_ie_u32.set_min_inclusive_y!(y u32)()",
+	"rect_ie_u32.set_max_exclusive_x!(x u32)()",
+	"rect_ie_u32.set_max_exclusive_y!(y u32)()",
+
+	// ---- rect_ii_u32
+
+	"rect_ii_u32.set_min_inclusive_x!(x u32)()",
+	"rect_ii_u32.set_min_inclusive_y!(y u32)()",
+	"rect_ii_u32.set_max_inclusive_x!(x u32)()",
+	"rect_ii_u32.set_max_inclusive_y!(y u32)()",
+
 	// ---- image_buffer
 
 	"image_buffer.plane(p u32[..3])(ret table u8)",
