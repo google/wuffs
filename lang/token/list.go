@@ -398,11 +398,14 @@ const (
 	IDEmptyStruct = ID(0x100)
 	IDBool        = ID(0x101)
 
-	IDImageBuffer = ID(0x102)
-	IDImageConfig = ID(0x103)
-	IDIOReader    = ID(0x104)
-	IDIOWriter    = ID(0x105)
-	IDStatus      = ID(0x106)
+	IDRectIEU32 = ID(0x102)
+	IDRectIIU32 = ID(0x103)
+
+	IDImageBuffer = ID(0x104)
+	IDImageConfig = ID(0x105)
+	IDIOReader    = ID(0x106)
+	IDIOWriter    = ID(0x107)
+	IDStatus      = ID(0x108)
 
 	IDT1      = ID(0x10A)
 	IDT2      = ID(0x10B)
@@ -593,6 +596,9 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDEmptyStruct: "empty_struct",
 	IDBool:        "bool",
+
+	IDRectIEU32: "rect_ie_u32",
+	IDRectIIU32: "rect_ii_u32",
 
 	IDImageBuffer: "image_buffer",
 	IDImageConfig: "image_config",

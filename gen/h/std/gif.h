@@ -1197,6 +1197,7 @@ typedef struct {
     bool f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
+    wuffs_base__rect_ie_u32 f_frame_rect;
     uint32_t f_frame_top;
     uint32_t f_frame_left;
     uint32_t f_frame_width;

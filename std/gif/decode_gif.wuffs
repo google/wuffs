@@ -45,6 +45,7 @@ pub struct decoder?(
 	seen_num_loops base.bool,
 	num_loops base.u32 = 1,
 
+	frame_rect base.rect_ie_u32,
 	frame_top base.u32[..65535],
 	frame_left base.u32[..65535],
 	frame_width base.u32[..65535],

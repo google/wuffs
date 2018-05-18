@@ -48,6 +48,9 @@ var (
 	typeExprEmptyStruct = a.NewTypeExpr(0, t.IDBase, t.IDEmptyStruct, nil, nil, nil)
 	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
 
+	typeExprRectIEU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
+	typeExprRectIIU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
+
 	typeExprImageBuffer = a.NewTypeExpr(0, t.IDBase, t.IDImageBuffer, nil, nil, nil)
 	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
 	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
@@ -69,6 +72,9 @@ var builtInTypeMap = typeMap{
 
 	t.IDEmptyStruct: typeExprEmptyStruct,
 	t.IDBool:        typeExprBool,
+
+	t.IDRectIEU32: typeExprRectIEU32,
+	t.IDRectIIU32: typeExprRectIIU32,
 
 	t.IDImageBuffer: typeExprImageBuffer,
 	t.IDImageConfig: typeExprImageConfig,

@@ -73,6 +73,9 @@ var Types = []string{
 	"empty_struct",
 	"bool",
 
+	"rect_ie_u32",
+	"rect_ii_u32",
+
 	"image_buffer",
 	"image_config",
 	"io_reader",
