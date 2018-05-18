@@ -314,6 +314,17 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 		}
 		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
 	}
+	if n.IsTableType() {
+		o := n.Inner()
+		if o.Decorator() == 0 && o.QID() == (t.QID{t.IDBase, t.IDU8}) && !o.IsRefined() {
+			b.writes("wuffs_base__table_u8")
+			b.writeb(' ')
+			b.writes(varNamePrefix)
+			b.writes(varName)
+			return nil
+		}
+		return fmt.Errorf("cannot convert Wuffs type %q to C", n.Str(g.tm))
+	}
 
 	// maxNumPointers is an arbitrary implementation restriction.
 	const maxNumPointers = 16

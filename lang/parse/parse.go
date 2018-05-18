@@ -405,6 +405,10 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	case t.IDSlice:
 		decorator = t.IDSlice
 		p.src = p.src[1:]
+
+	case t.IDTable:
+		decorator = t.IDTable
+		p.src = p.src[1:]
 	}
 
 	if decorator != 0 {

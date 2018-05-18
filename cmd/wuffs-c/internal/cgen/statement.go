@@ -399,6 +399,9 @@ func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
 		} else if nTyp.IsSliceType() {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.printf("((wuffs_base__slice_u8){})")
+		} else if nTyp.IsTableType() {
+			// TODO: don't assume that the table is a table of base.u8.
+			b.printf("((wuffs_base__table_u8){})")
 		} else if nTyp.IsIOType() {
 			s := "reader"
 			if nTyp.QID()[1] == t.IDIOWriter {

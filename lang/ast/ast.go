@@ -647,8 +647,8 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "base.u32", "base.u32[..8]", "foo",
-// "pkg.bar", "ptr T", "array[8] T" or "slice T":
-//  - ID0:   <0|IDPtr|IDArray|IDSlice|IDFunc>
+// "pkg.bar", "ptr T", "array[8] T", "slice T" or "table T":
+//  - ID0:   <0|IDArray|IDFunc|IDPtr|IDSlice|IDTable>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
@@ -660,6 +660,8 @@ const MaxTypeExprDepth = 63
 // An IDArray ID0 means "array[LHS] RHS". RHS is the inner type.
 //
 // An IDSlice ID0 means "slice RHS". RHS is the inner type.
+//
+// An IDTable ID0 means "table RHS". RHS is the inner type.
 //
 // An IDFunc ID0 means "func ID2" or "func (LHS).ID2", a function or method
 // type. LHS is the receiver type, which may be nil. If non-nil, it will be a
@@ -673,7 +675,7 @@ const MaxTypeExprDepth = 63
 // Numeric types can be refined as "foo[LHS..MHS]". LHS and MHS are Expr's,
 // possibly nil. For example, the LHS for "base.u32[..4095]" is nil.
 //
-// TODO: struct types, list types, nptr vs ptr, table types.
+// TODO: struct types, list types, nptr vs ptr.
 type TypeExpr Node
 
 func (n *TypeExpr) Node() *Node         { return (*Node)(n) }
@@ -731,6 +733,10 @@ func (n *TypeExpr) IsSliceType() bool {
 	return n.id0 == t.IDSlice
 }
 
+func (n *TypeExpr) IsTableType() bool {
+	return n.id0 == t.IDTable
+}
+
 func (n *TypeExpr) IsUnsignedInteger() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase &&
 		(n.id2 == t.IDU8 || n.id2 == t.IDU16 || n.id2 == t.IDU32 || n.id2 == t.IDU64)
@@ -746,7 +752,7 @@ func (n *TypeExpr) HasPointers() bool {
 					return true
 				}
 			}
-		case t.IDPtr, t.IDNptr, t.IDSlice:
+		case t.IDPtr, t.IDNptr, t.IDSlice, t.IDTable:
 			return true
 		}
 	}

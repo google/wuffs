@@ -285,6 +285,9 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 		case t.IDSlice:
 			// TODO: don't assume that the slice is a slice of base.u8.
 			rhs = "wuffs_base__slice_u8"
+		case t.IDTable:
+			// TODO: don't assume that the table is a table of base.u8.
+			rhs = "wuffs_base__table_u8"
 		}
 		if rhs != "" {
 			b.printf("%s = ((%s){});\n", local, rhs)

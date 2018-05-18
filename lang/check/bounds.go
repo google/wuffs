@@ -463,7 +463,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	case t.IDArray:
 		// TODO: handle.
 		return nil
-		// TODO: t.IDSlice?
+		// TODO: t.IDSlice, t.IDTable?
 	}
 
 	_, _, err := q.bcheckExpr(lhs, 0)
@@ -1218,7 +1218,7 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 
 	switch typ.Decorator() {
 	// TODO: case t.IDFunc.
-	case t.IDPtr, t.IDArray, t.IDSlice:
+	case t.IDPtr, t.IDArray, t.IDSlice, t.IDTable:
 		return nil, nil, nil
 	}
 

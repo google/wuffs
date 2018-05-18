@@ -185,9 +185,9 @@ type Token struct {
 //  - [ 0x20,  0x3F] are operators, such as "+", "==" and "not".
 //  - [ 0x40,  0x6F] are x-ops (disambiguation forms): unary vs binary "+".
 //  - [ 0x70,  0x8F] are keywords, such as "if" and "return".
-//  - [ 0x90,  0x93] are type modifiers, such as "ptr" and "slice".
-//  - [ 0x94,  0x9F] are literals, such as "false" and "true".
-//  - [ 0xA0,  0xFF] are reserved.
+//  - [ 0x90,  0x9F] are type modifiers, such as "ptr" and "slice".
+//  - [ 0xA0,  0xAF] are literals, such as "false" and "true".
+//  - [ 0xB0,  0xFF] are reserved.
 //  - [0x100, 0x3FF] are identifiers, such as "bool", "u32" and "read_u8".
 //
 // "Squiggly" means a sequence of non-alpha-numeric characters, such as "+" and
@@ -356,32 +356,33 @@ const (
 
 const (
 	minTypeModifier = 0x90
-	maxTypeModifier = 0x93
+	maxTypeModifier = 0x9F
 
 	IDArray = ID(0x90)
 	IDNptr  = ID(0x91)
 	IDPtr   = ID(0x92)
 	IDSlice = ID(0x93)
+	IDTable = ID(0x94)
 )
 
 const (
-	minBuiltInLiteral    = 0x94
-	minBuiltInNumLiteral = 0x96
-	maxBuiltInNumLiteral = 0x9F
-	maxBuiltInLiteral    = 0x9F
+	minBuiltInLiteral    = 0xA0
+	minBuiltInNumLiteral = 0xA2
+	maxBuiltInNumLiteral = 0xAF
+	maxBuiltInLiteral    = 0xAF
 
-	IDFalse = ID(0x94)
-	IDTrue  = ID(0x95)
-	ID0     = ID(0x96)
-	ID1     = ID(0x97)
-	ID2     = ID(0x98)
-	ID4     = ID(0x99)
-	ID8     = ID(0x9A)
-	ID16    = ID(0x9B)
-	ID32    = ID(0x9C)
-	ID64    = ID(0x9D)
-	ID128   = ID(0x9E)
-	ID256   = ID(0x9F)
+	IDFalse = ID(0xA0)
+	IDTrue  = ID(0xA1)
+	ID0     = ID(0xA2)
+	ID1     = ID(0xA3)
+	ID2     = ID(0xA4)
+	ID4     = ID(0xA5)
+	ID8     = ID(0xA6)
+	ID16    = ID(0xA7)
+	ID32    = ID(0xA8)
+	ID64    = ID(0xA9)
+	ID128   = ID(0xAA)
+	ID256   = ID(0xAB)
 )
 
 const (
@@ -565,6 +566,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDNptr:  "nptr",
 	IDPtr:   "ptr",
 	IDSlice: "slice",
+	IDTable: "table",
 
 	IDFalse: "false",
 	IDTrue:  "true",

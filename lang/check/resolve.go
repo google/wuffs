@@ -54,6 +54,7 @@ var (
 	typeExprStatus      = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
+	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
 )
 
 // typeMap maps from variable names (as token IDs) to types.
