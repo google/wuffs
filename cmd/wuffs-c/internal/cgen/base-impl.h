@@ -90,7 +90,7 @@
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-// ---------------- Fundamentals
+// ---------------- Numeric Types
 
 static inline uint16_t wuffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
@@ -125,6 +125,40 @@ static inline uint64_t wuffs_base__load_u64le(uint8_t* p) {
 }
 
 // --------
+
+static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_sub(*x, y);
+}
+
+// ---------------- Slices and Tables
 
 static inline wuffs_base__slice_u8 wuffs_base__slice_u8__subslice_i(
     wuffs_base__slice_u8 s,
@@ -207,40 +241,6 @@ static inline wuffs_base__slice_u8 wuffs_base__table_u8__linearize(
     });
   }
   return ((wuffs_base__slice_u8){});
-}
-
-// --------
-
-static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
-  *x = wuffs_base__u8__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
-  *x = wuffs_base__u8__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
-  *x = wuffs_base__u16__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
-  *x = wuffs_base__u16__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
-  *x = wuffs_base__u32__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
-  *x = wuffs_base__u32__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
-  *x = wuffs_base__u64__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
-  *x = wuffs_base__u64__sat_sub(*x, y);
 }
 
 // ---------------- Ranges and Rects

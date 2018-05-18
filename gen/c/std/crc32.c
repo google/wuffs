@@ -42,7 +42,13 @@
 // TODO: don't hard code this in base-header.h.
 #define WUFFS_VERSION ((uint32_t)0x00001)
 
-// ---------------- Fundamentals
+// wuffs_base__empty_struct is used when a Wuffs function returns an empty
+// struct. In C, if a function f returns void, you can't say "x = f()", but in
+// Wuffs, if a function g returns empty, you can say "y = g()".
+typedef struct {
+} wuffs_base__empty_struct;
+
+// ---------------- Numeric Types
 
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
@@ -50,42 +56,6 @@ typedef uint64_t wuffs_base__flicks;
 
 #define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
 #define WUFFS_BASE__FLICKS_PER_MILLISECOND ((uint64_t)705600)
-
-// wuffs_base__empty_struct is used when a Wuffs function returns an empty
-// struct. In C, if a function f returns void, you can't say "x = f()", but in
-// Wuffs, if a function g returns empty, you can say "y = g()".
-typedef struct {
-} wuffs_base__empty_struct;
-
-// WUFFS_BASE__SLICE is a 1-dimensional buffer.
-//
-// A value with all fields NULL or zero is a valid, empty slice.
-#define WUFFS_BASE__SLICE(T) \
-  struct {                   \
-    T* ptr;                  \
-    size_t len;              \
-  }
-
-// WUFFS_BASE__TABLE is a 2-dimensional buffer.
-//
-// A value with all fields NULL or zero is a valid, empty table.
-#define WUFFS_BASE__TABLE(T) \
-  struct {                   \
-    T* ptr;                  \
-    size_t width;            \
-    size_t height;           \
-    size_t stride;           \
-  }
-
-typedef WUFFS_BASE__SLICE(uint8_t) wuffs_base__slice_u8;
-typedef WUFFS_BASE__SLICE(uint16_t) wuffs_base__slice_u16;
-typedef WUFFS_BASE__SLICE(uint32_t) wuffs_base__slice_u32;
-typedef WUFFS_BASE__SLICE(uint64_t) wuffs_base__slice_u64;
-
-typedef WUFFS_BASE__TABLE(uint8_t) wuffs_base__table_u8;
-typedef WUFFS_BASE__TABLE(uint16_t) wuffs_base__table_u16;
-typedef WUFFS_BASE__TABLE(uint32_t) wuffs_base__table_u32;
-typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 
 // --------
 
@@ -210,6 +180,38 @@ static inline uint64_t wuffs_base__u64__byte_swapped(uint64_t x) {
   return (x >> 32) | (x << 32);
 #endif
 }
+
+// ---------------- Slices and Tables
+
+// WUFFS_BASE__SLICE is a 1-dimensional buffer.
+//
+// A value with all fields NULL or zero is a valid, empty slice.
+#define WUFFS_BASE__SLICE(T) \
+  struct {                   \
+    T* ptr;                  \
+    size_t len;              \
+  }
+
+// WUFFS_BASE__TABLE is a 2-dimensional buffer.
+//
+// A value with all fields NULL or zero is a valid, empty table.
+#define WUFFS_BASE__TABLE(T) \
+  struct {                   \
+    T* ptr;                  \
+    size_t width;            \
+    size_t height;           \
+    size_t stride;           \
+  }
+
+typedef WUFFS_BASE__SLICE(uint8_t) wuffs_base__slice_u8;
+typedef WUFFS_BASE__SLICE(uint16_t) wuffs_base__slice_u16;
+typedef WUFFS_BASE__SLICE(uint32_t) wuffs_base__slice_u32;
+typedef WUFFS_BASE__SLICE(uint64_t) wuffs_base__slice_u64;
+
+typedef WUFFS_BASE__TABLE(uint8_t) wuffs_base__table_u8;
+typedef WUFFS_BASE__TABLE(uint16_t) wuffs_base__table_u16;
+typedef WUFFS_BASE__TABLE(uint32_t) wuffs_base__table_u32;
+typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 
 // ---------------- Ranges and Rects
 
@@ -1265,7 +1267,7 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
 
-// ---------------- Fundamentals
+// ---------------- Numeric Types
 
 static inline uint16_t wuffs_base__load_u16be(uint8_t* p) {
   return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
@@ -1300,6 +1302,40 @@ static inline uint64_t wuffs_base__load_u64le(uint8_t* p) {
 }
 
 // --------
+
+static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
+  *x = wuffs_base__u8__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
+  *x = wuffs_base__u16__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
+  *x = wuffs_base__u32__sat_sub(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_add(*x, y);
+}
+
+static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
+  *x = wuffs_base__u64__sat_sub(*x, y);
+}
+
+// ---------------- Slices and Tables
 
 static inline wuffs_base__slice_u8 wuffs_base__slice_u8__subslice_i(
     wuffs_base__slice_u8 s,
@@ -1382,40 +1418,6 @@ static inline wuffs_base__slice_u8 wuffs_base__table_u8__linearize(
     });
   }
   return ((wuffs_base__slice_u8){});
-}
-
-// --------
-
-static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
-  *x = wuffs_base__u8__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u8__sat_sub_indirect(uint8_t* x, uint8_t y) {
-  *x = wuffs_base__u8__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u16__sat_add_indirect(uint16_t* x, uint16_t y) {
-  *x = wuffs_base__u16__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u16__sat_sub_indirect(uint16_t* x, uint16_t y) {
-  *x = wuffs_base__u16__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u32__sat_add_indirect(uint32_t* x, uint32_t y) {
-  *x = wuffs_base__u32__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u32__sat_sub_indirect(uint32_t* x, uint32_t y) {
-  *x = wuffs_base__u32__sat_sub(*x, y);
-}
-
-static inline void wuffs_base__u64__sat_add_indirect(uint64_t* x, uint64_t y) {
-  *x = wuffs_base__u64__sat_add(*x, y);
-}
-
-static inline void wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
-  *x = wuffs_base__u64__sat_sub(*x, y);
 }
 
 // ---------------- Ranges and Rects
