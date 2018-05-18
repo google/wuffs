@@ -180,4 +180,6 @@ var TableFuncs = []string{
 	"T2.height()(ret u64)",
 	"T2.stride()(ret u64)",
 	"T2.width()(ret u64)",
+
+	"T2.linearize()(ret T1)",
 }

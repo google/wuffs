@@ -1668,6 +1668,19 @@ static inline uint64_t wuffs_base__slice_u8__copy_from_slice(
 
 // --------
 
+static inline wuffs_base__slice_u8 wuffs_base__table_u8__linearize(
+    wuffs_base__table_u8 t) {
+  if (t.width == t.stride) {
+    return ((wuffs_base__slice_u8){
+        .ptr = t.ptr,
+        .len = t.width * t.height,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
+// --------
+
 static inline void wuffs_base__u8__sat_add_indirect(uint8_t* x, uint8_t y) {
   *x = wuffs_base__u8__sat_add(*x, y);
 }

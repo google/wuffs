@@ -478,6 +478,7 @@ const (
 	IDHeight            = ID(0x216)
 	IDStride            = ID(0x217)
 	IDWidth             = ID(0x218)
+	IDLinearize         = ID(0x219)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -684,6 +685,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDHeight:            "height",
 	IDStride:            "stride",
 	IDWidth:             "width",
+	IDLinearize:         "linearize",
 }
 
 var builtInsByName = map[string]ID{}

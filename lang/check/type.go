@@ -532,8 +532,11 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	case t.QID{t.IDBase, t.IDDagger1}:
 		genericType1 = lhs.MType().Receiver()
 	case t.QID{t.IDBase, t.IDDagger2}:
-		genericType1 = lhs.MType().Receiver() // TODO: convert table T to slice T.
 		genericType2 = lhs.MType().Receiver()
+		if genericType2.Decorator() != t.IDTable {
+			return fmt.Errorf("check: internal error: %q is not a generic table", genericType2.Str(q.tm))
+		}
+		genericType1 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, genericType2.Inner())
 	}
 
 	// Check that the func's in type matches the arguments.

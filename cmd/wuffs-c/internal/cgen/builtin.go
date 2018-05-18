@@ -323,6 +323,15 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		field = "stride"
 	case t.IDWidth:
 		field = "width"
+
+	case t.IDLinearize:
+		// TODO: don't assume that the table is a table of base.u8.
+		b.writes("wuffs_base__table_u8__linearize(")
+		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+			return err
+		}
+		b.writeb(')')
+		return nil
 	}
 
 	if field != "" {

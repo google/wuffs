@@ -376,7 +376,10 @@ pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src ba
 				// TODO: don't assume a packed pixel format.
 				var tab table base.u8 = in.ib.plane(p:0)
 				if tab.width() == tab.stride() {
-					// TODO.
+					var pixel_data slice base.u8 = tab.linearize()
+					if pixel_data.length() == 0 {
+						// TODO.
+					}
 				} else {
 					// TODO.
 				}
