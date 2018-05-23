@@ -117,10 +117,6 @@ pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
 			this.decode_extension?(src:in.src)
 		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
-			// TODO: animated GIFs can have multiple Image Descriptors. What's
-			// the API? Should the 0x3B Trailer byte result in a "no more
-			// frames" suspension instead of ok? Do we need additional
-			// destination arguments for timing and palette?
 			this.decode_id_part0?(src:in.src)
 			break
 		} else if block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
