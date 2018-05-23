@@ -1258,6 +1258,7 @@ typedef struct {
       uint8_t v_lw;
       uint64_t v_block_size;
       wuffs_gif__status v_z;
+      bool v_write_to_ib_instead_of_w;
       uint64_t v_n_copied;
     } c_decode_id_part1[1];
   } private_impl;

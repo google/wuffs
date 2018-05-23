@@ -385,27 +385,35 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 				//
 				// TODO: in.dst should be a ptr base.image_buffer and we should
 				// composite the pixels instead of just copying them.
-				while this.uncompressed_ri < this.uncompressed_wi {
-					var pass_through slice base.u8 = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
-					var n_copied base.u64 = in.dst.copy_from_slice!(s:pass_through)
-					if n_copied == pass_through.length() {
-						this.uncompressed_ri = 0
-						this.uncompressed_wi = 0
-						break
+				//
+				// TODO: delete the write_to_ib_instead_of_w hack. It should
+				// always be true.
+				var write_to_ib_instead_of_w base.bool = false
+				if not write_to_ib_instead_of_w {
+					while this.uncompressed_ri < this.uncompressed_wi {
+						var pass_through slice base.u8 = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
+						var n_copied base.u64 = in.dst.copy_from_slice!(s:pass_through)
+						if n_copied == pass_through.length() {
+							this.uncompressed_ri = 0
+							this.uncompressed_wi = 0
+							break
+						}
+						this.uncompressed_ri = (this.uncompressed_ri + ((n_copied & 4095) as base.u32)) & 4095
+						// TODO: "closed for writes" instead?
+						yield suspension "short write"
 					}
-					this.uncompressed_ri = (this.uncompressed_ri + ((n_copied & 4095) as base.u32)) & 4095
-					// TODO: "closed for writes" instead?
-					yield suspension "short write"
-				}
-				// TODO: don't assume a packed pixel format.
-				var tab table base.u8 = in.ib.plane(p:0)
-				if tab.width() == tab.stride() {
-					var pixel_data slice base.u8 = tab.linearize()
-					if pixel_data.length() == 0 {
+
+				} else {
+					// TODO: don't assume a packed pixel format.
+					var tab table base.u8 = in.ib.plane(p:0)
+					if tab.width() == tab.stride() {
+						var pixel_data slice base.u8 = tab.linearize()
+						if pixel_data.length() == 0 {
+							// TODO.
+						}
+					} else {
 						// TODO.
 					}
-				} else {
-					// TODO.
 				}
 
 				if z == suspension "short write" {
