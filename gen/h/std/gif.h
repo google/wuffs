@@ -1215,6 +1215,9 @@ typedef struct {
     } c_decode_frame[1];
     struct {
       uint32_t coro_susp_point;
+    } c_decode_up_to_id_part1[1];
+    struct {
+      uint32_t coro_susp_point;
       uint8_t v_c[6];
       uint32_t v_i;
     } c_decode_header[1];
@@ -1245,6 +1248,10 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_frame_x;
       uint32_t v_frame_y;
+      uint64_t scratch;
+    } c_decode_id_part0[1];
+    struct {
+      uint32_t coro_susp_point;
       uint8_t v_flags;
       uint32_t v_lct_size;
       uint32_t v_i;
@@ -1252,8 +1259,7 @@ typedef struct {
       uint64_t v_block_size;
       wuffs_gif__status v_z;
       uint64_t v_n_copied;
-      uint64_t scratch;
-    } c_decode_id[1];
+    } c_decode_id_part1[1];
   } private_impl;
 } wuffs_gif__decoder;
 
@@ -1279,6 +1285,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
     wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src);
+
+wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
+    wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus

@@ -90,7 +90,11 @@ pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src
 	if this.call_sequence < 1 {
 		return error "invalid call sequence"
 	}
+	this.decode_up_to_id_part1?(src:in.src)
+	this.decode_id_part1?(ib:in.ib, dst:in.dst, src:in.src)
+}
 
+pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
 	while true {
 		if this.peek_block_type {
 			this.peek_block_type = false
@@ -105,7 +109,7 @@ pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src
 			// the API? Should the 0x3B Trailer byte result in a "no more
 			// frames" suspension instead of ok? Do we need additional
 			// destination arguments for timing and palette?
-			this.decode_id?(ib:in.ib, dst:in.dst, src:in.src)
+			this.decode_id_part0?(src:in.src)
 			return
 		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
 			break
@@ -272,13 +276,15 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 	this.skip_blocks?(src:in.src)
 }
 
-// decode_id reads an Image Descriptor. The Image Separator byte has already
-// been read.
+// decode_id_partX reads an Image Descriptor. The Image Separator byte has
+// already been read.
 //
 // See the spec section 20 "Image Descriptor" on page 11.
 //
-// TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
-pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
+// The code is split into two parts because determining the overall image's
+// width and height also requires decoding the first frame's bounds (but
+// doesn't require decoding the first frame's pixels).
+pri func decoder.decode_id_part0?(src base.io_reader)() {
 	// TODO: check that the frame rect is inside the image rect??
 	var frame_x base.u32 = in.src.read_u16le?() as base.u32
 	var frame_y base.u32 = in.src.read_u16le?() as base.u32
@@ -288,7 +294,10 @@ pri func decoder.decode_id?(ib ptr base.image_buffer, dst base.io_writer, src ba
 	frame_y ~mod+= in.src.read_u16le?() as base.u32
 	this.frame_rect.set_max_exclusive_x!(x:frame_x)
 	this.frame_rect.set_max_exclusive_y!(y:frame_y)
+}
 
+// TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
+pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
 	// TODO: use this.interlace.
 	var flags base.u8 = in.src.read_u8?()
 	this.interlace = (flags & 0x40) != 0
