@@ -658,6 +658,41 @@ void test_wuffs_gif_decode_animated_small() {
                                     3, 4);
 }
 
+void test_wuffs_gif_decode_frame_out_of_bounds() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  if (!read_file(&src, "../../data/artificial/gif-frame-out-of-bounds.gif")) {
+    return;
+  }
+
+  wuffs_gif__decoder dec;
+  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_base__image_config ic = {{0}};
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+  wuffs_gif__status s =
+      wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
+  if (s) {
+    FAIL("decode_config: %s", wuffs_gif__status__string(s));
+    return;
+  }
+
+  // The nominal width and height for the overall image is 2×2, but its first
+  // frame extends those bounds to 4×2. See
+  // test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
+  // more discussion.
+
+  if (wuffs_base__image_config__width(&ic) != 4) {
+    FAIL("width: got %" PRIu32 ", want 4",
+         wuffs_base__image_config__width(&ic));
+    return;
+  }
+  if (wuffs_base__image_config__height(&ic) != 2) {
+    FAIL("height: got %" PRIu32 ", want 2",
+         wuffs_base__image_config__height(&ic));
+    return;
+  }
+}
+
 void test_wuffs_gif_decode_input_is_a_gif() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
@@ -899,6 +934,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_big,                            //
     test_wuffs_gif_decode_animated_medium,                         //
     test_wuffs_gif_decode_animated_small,                          //
+    test_wuffs_gif_decode_frame_out_of_bounds,                     //
     test_wuffs_gif_decode_input_is_a_gif,                          //
     test_wuffs_gif_decode_input_is_a_gif_many_big_reads,           //
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,        //

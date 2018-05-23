@@ -1190,10 +1190,9 @@ typedef struct {
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
+    bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
     uint8_t f_background_color_index;
-    uint8_t f_block_type;
-    bool f_peek_block_type;
     bool f_have_gct;
     bool f_have_lct;
     bool f_interlace;
@@ -1215,6 +1214,7 @@ typedef struct {
     } c_decode_frame[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_block_type;
     } c_decode_up_to_id_part1[1];
     struct {
       uint32_t coro_susp_point;

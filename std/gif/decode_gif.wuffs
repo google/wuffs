@@ -20,20 +20,25 @@ pub error "bad header"
 pub error "bad literal width"
 
 pub struct decoder?(
-	width base.u32[..65535],
-	height base.u32[..65535],
+	width base.u32,
+	height base.u32,
 
+	// Call sequence states:
+	//  - 0: initial state.
+	//  - 1: image config decoded, including the first frame's bounds, but not
+	//       the first frame's pixels.
+	//  - 2: frame decoded.
+	//
 	// Call sequence state transitions:
 	//  - 0 -> 1: via decode_config.
-	//  - 1 -> 1: via decode_frame.
+	//  - 1 -> 2: via decode_frame.
+	//  - 2 -> 2: via decode_frame.
 	call_sequence base.u8,
 
+	end_of_data base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
 
 	background_color_index base.u8,
-
-	block_type base.u8,
-	peek_block_type base.bool,
 
 	have_gct base.bool,
 	have_lct base.bool,
@@ -67,15 +72,9 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	}
 	this.decode_header?(src:in.src)
 	this.decode_lsd?(src:in.src)
+	this.decode_up_to_id_part1?(src:in.src)
 
-	while true {
-		this.peek_block_type = true
-		this.block_type = in.src.read_u8?()
-		if this.seen_num_loops or (this.block_type != 0x21) {  // The spec calls 0x21 the "Extension Introducer".
-			break
-		}
-		this.decode_extension?(src:in.src)
-	}
+	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
 	// TODO: rename initialize to set?
 	//
@@ -83,43 +82,53 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
 	in.dst.initialize!(pixfmt:0x22088888, pixsub:0,
 		width:this.width, height:this.height, num_loops:this.num_loops)
+
 	this.call_sequence = 1
 }
 
 pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
-	if this.call_sequence < 1 {
+	if this.call_sequence == 0 {
 		return error "invalid call sequence"
 	}
-	this.decode_up_to_id_part1?(src:in.src)
+
+	if not this.end_of_data {
+		if this.call_sequence == 1 {
+			// TODO: memset dst's pixel_buffer (and palette) to zero?
+			this.call_sequence = 2
+		} else {
+			this.decode_up_to_id_part1?(src:in.src)
+		}
+	}
+
+	// This is a new "if", not an "else", because calling
+	// this.decode_up_to_id_part1 can modify this.end_of_data.
+	if this.end_of_data {
+		while true {
+			yield suspension "end of data"
+		}
+	}
+
 	this.decode_id_part1?(ib:in.ib, dst:in.dst, src:in.src)
 }
 
 pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
 	while true {
-		if this.peek_block_type {
-			this.peek_block_type = false
-		} else {
-			this.block_type = in.src.read_u8?()
-		}
-
-		if this.block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
+		var block_type base.u8 = in.src.read_u8?()
+		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
 			this.decode_extension?(src:in.src)
-		} else if this.block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
+		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
 			// TODO: animated GIFs can have multiple Image Descriptors. What's
 			// the API? Should the 0x3B Trailer byte result in a "no more
 			// frames" suspension instead of ok? Do we need additional
 			// destination arguments for timing and palette?
 			this.decode_id_part0?(src:in.src)
-			return
-		} else if this.block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
+			break
+		} else if block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
+			this.end_of_data = true
 			break
 		} else {
 			return error "bad block"
 		}
-	}
-
-	while true {
-		yield suspension "end of data"
 	}
 }
 
@@ -285,7 +294,6 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 // width and height also requires decoding the first frame's bounds (but
 // doesn't require decoding the first frame's pixels).
 pri func decoder.decode_id_part0?(src base.io_reader)() {
-	// TODO: check that the frame rect is inside the image rect??
 	var frame_x base.u32 = in.src.read_u16le?() as base.u32
 	var frame_y base.u32 = in.src.read_u16le?() as base.u32
 	this.frame_rect.set_min_inclusive_x!(x:frame_x)
@@ -294,6 +302,16 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	frame_y ~mod+= in.src.read_u16le?() as base.u32
 	this.frame_rect.set_max_exclusive_x!(x:frame_x)
 	this.frame_rect.set_max_exclusive_y!(y:frame_y)
+
+	// Set the image's overall width and height to be the maximum of the
+	// nominal image width and height (given in the Logical Screen Descriptor)
+	// and the bottom right extent of the first frame. See
+	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
+	// more discussion.
+	if this.call_sequence == 0 {
+		this.width = this.width.max(x:frame_x)
+		this.height = this.height.max(x:frame_y)
+	}
 }
 
 // TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
