@@ -121,6 +121,7 @@ var Funcs = []string{
 	// ---- image_buffer
 
 	"image_buffer.plane(p u32[..3])(ret table u8)",
+	"image_buffer.update!(dirty_palette bool, dirty_rect rect_ie_u32, duration u64, palette slice u8)()",
 
 	// ---- image_config
 

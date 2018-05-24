@@ -569,9 +569,11 @@ void test_wuffs_gif_call_sequence() {
   }
 }
 
-bool do_test_wuffs_gif_decode_animated(const char* filename,
-                                       uint32_t want_num_loops,
-                                       uint32_t want_num_frames) {
+bool do_test_wuffs_gif_decode_animated(
+    const char* filename,
+    uint32_t want_num_loops,
+    uint32_t want_num_frames,
+    wuffs_base__rect_ie_u32* want_dirty_rects) {
   wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
@@ -614,12 +616,20 @@ bool do_test_wuffs_gif_decode_animated(const char* filename,
            wuffs_gif__status__string(status));
       return false;
     }
-    // TODO: check that the frame top/left/width/height is:
-    //  -  0, 0,64,48 for frame #0
-    //  - 15,31,37, 9 for frame #1
-    //  - 15, 0,49,40 for frame #2
-    //  - 15, 0,49,40 for frame #3
-    // for "animated-red-blue.gif".
+
+    if (want_dirty_rects) {
+      wuffs_base__rect_ie_u32 got = wuffs_base__image_buffer__dirty_rect(&ib);
+      wuffs_base__rect_ie_u32 want = want_dirty_rects[i];
+      if (!wuffs_base__rect_ie_u32__equals(got, want)) {
+        FAIL("decode_frame #%" PRIu32 ": dirty_rect: got (%" PRIu32 ", %" PRIu32
+             ")-(%" PRIu32 ", %" PRIu32 "), want (%" PRIu32 ", %" PRIu32
+             ")-(%" PRIu32 ", %" PRIu32 ")",
+             i, got.min_inclusive_x, got.min_inclusive_y, got.max_exclusive_x,
+             got.max_exclusive_y, want.min_inclusive_x, want.min_inclusive_y,
+             want.max_exclusive_x, want.max_exclusive_y);
+        return false;
+      }
+    }
   }
 
   // There should be no more frames.
@@ -639,23 +649,29 @@ bool do_test_wuffs_gif_decode_animated(const char* filename,
 void test_wuffs_gif_decode_animated_big() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode_animated("../../data/gifplayer-muybridge.gif", 0,
-                                    380);
+                                    380, NULL);
 }
 
 void test_wuffs_gif_decode_animated_medium() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode_animated("../../data/muybridge.gif", 0, 15);
+  do_test_wuffs_gif_decode_animated("../../data/muybridge.gif", 0, 15, NULL);
 }
 
 void test_wuffs_gif_decode_animated_small() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_gif_decode_animated("../../data/animated-red-blue.gif",
-                                    // animated-red-blue.gif's num_loops should
-                                    // be 3. The value explicitly in the wire
-                                    // format is 0x0002, but that value means
-                                    // "repeat 2 times after the first play", so
-                                    // the total number of loops is 3.
-                                    3, 4);
+  // animated-red-blue.gif's num_loops should be 3. The value explicitly in the
+  // wire format is 0x0002, but that value means "repeat 2 times after the
+  // first play", so the total number of loops is 3.
+  const uint32_t want_num_loops = 3;
+  wuffs_base__rect_ie_u32 want_rects[4] = {
+      make_rect_ie_u32(0, 0, 64, 48),
+      make_rect_ie_u32(15, 31, 52, 40),
+      make_rect_ie_u32(15, 0, 64, 40),
+      make_rect_ie_u32(15, 0, 64, 40),
+  };
+  do_test_wuffs_gif_decode_animated(
+      "../../data/animated-red-blue.gif", want_num_loops,
+      WUFFS_TESTLIB_ARRAY_SIZE(want_rects), want_rects);
 }
 
 void test_wuffs_gif_decode_frame_out_of_bounds() {

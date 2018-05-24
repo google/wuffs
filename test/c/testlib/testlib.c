@@ -287,8 +287,20 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   return 0;
 }
 
-// WUFFS_BASE_HEADER_H is where wuffs_base__io_buffer is defined.
+// WUFFS_BASE_HEADER_H is where wuffs_base__foo_bar are defined.
 #ifdef WUFFS_BASE_HEADER_H
+
+wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
+                                         uint32_t y0,
+                                         uint32_t x1,
+                                         uint32_t y1) {
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_inclusive_x = x0;
+  ret.min_inclusive_y = y0;
+  ret.max_exclusive_x = x1;
+  ret.max_exclusive_y = y1;
+  return ret;
+}
 
 void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
   if (o && o->private_impl.buf) {

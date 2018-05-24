@@ -256,6 +256,15 @@ static inline bool wuffs_base__range_ii_u32__is_empty(
   return r.min_inclusive > r.max_inclusive;
 }
 
+static inline bool wuffs_base__range_ii_u32__equals(
+    wuffs_base__range_ii_u32 r,
+    wuffs_base__range_ii_u32 s) {
+  return (r.min_inclusive == s.min_inclusive &&
+          r.max_inclusive == s.max_inclusive) ||
+         (wuffs_base__range_ii_u32__is_empty(r) &&
+          wuffs_base__range_ii_u32__is_empty(s));
+}
+
 static inline bool wuffs_base__range_ii_u32__contains(
     wuffs_base__range_ii_u32 r,
     uint32_t x) {
@@ -294,6 +303,15 @@ typedef struct {
 static inline bool wuffs_base__range_ie_u32__is_empty(
     wuffs_base__range_ie_u32 r) {
   return r.min_inclusive >= r.max_exclusive;
+}
+
+static inline bool wuffs_base__range_ie_u32__equals(
+    wuffs_base__range_ie_u32 r,
+    wuffs_base__range_ie_u32 s) {
+  return (r.min_inclusive == s.min_inclusive &&
+          r.max_exclusive == s.max_exclusive) ||
+         (wuffs_base__range_ie_u32__is_empty(r) &&
+          wuffs_base__range_ie_u32__is_empty(s));
 }
 
 static inline bool wuffs_base__range_ie_u32__contains(
@@ -341,6 +359,15 @@ static inline bool wuffs_base__range_ii_u64__is_empty(
   return r.min_inclusive > r.max_inclusive;
 }
 
+static inline bool wuffs_base__range_ii_u64__equals(
+    wuffs_base__range_ii_u64 r,
+    wuffs_base__range_ii_u64 s) {
+  return (r.min_inclusive == s.min_inclusive &&
+          r.max_inclusive == s.max_inclusive) ||
+         (wuffs_base__range_ii_u64__is_empty(r) &&
+          wuffs_base__range_ii_u64__is_empty(s));
+}
+
 static inline bool wuffs_base__range_ii_u64__contains(
     wuffs_base__range_ii_u64 r,
     uint64_t x) {
@@ -379,6 +406,15 @@ typedef struct {
 static inline bool wuffs_base__range_ie_u64__is_empty(
     wuffs_base__range_ie_u64 r) {
   return r.min_inclusive >= r.max_exclusive;
+}
+
+static inline bool wuffs_base__range_ie_u64__equals(
+    wuffs_base__range_ie_u64 r,
+    wuffs_base__range_ie_u64 s) {
+  return (r.min_inclusive == s.min_inclusive &&
+          r.max_exclusive == s.max_exclusive) ||
+         (wuffs_base__range_ie_u64__is_empty(r) &&
+          wuffs_base__range_ie_u64__is_empty(s));
 }
 
 static inline bool wuffs_base__range_ie_u64__contains(
@@ -436,6 +472,16 @@ static inline bool wuffs_base__rect_ii_u32__is_empty(
     wuffs_base__rect_ii_u32 r) {
   return (r.min_inclusive_x > r.max_inclusive_x) ||
          (r.min_inclusive_y > r.max_inclusive_y);
+}
+
+static inline bool wuffs_base__rect_ii_u32__equals(wuffs_base__rect_ii_u32 r,
+                                                   wuffs_base__rect_ii_u32 s) {
+  return (r.min_inclusive_x == s.min_inclusive_x &&
+          r.min_inclusive_y == s.min_inclusive_y &&
+          r.max_inclusive_x == s.max_inclusive_x &&
+          r.max_inclusive_y == s.max_inclusive_y) ||
+         (wuffs_base__rect_ii_u32__is_empty(r) &&
+          wuffs_base__rect_ii_u32__is_empty(s));
 }
 
 static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32 r,
@@ -502,6 +548,16 @@ static inline bool wuffs_base__rect_ie_u32__is_empty(
     wuffs_base__rect_ie_u32 r) {
   return (r.min_inclusive_x >= r.max_exclusive_x) ||
          (r.min_inclusive_y >= r.max_exclusive_y);
+}
+
+static inline bool wuffs_base__rect_ie_u32__equals(wuffs_base__rect_ie_u32 r,
+                                                   wuffs_base__rect_ie_u32 s) {
+  return (r.min_inclusive_x == s.min_inclusive_x &&
+          r.min_inclusive_y == s.min_inclusive_y &&
+          r.max_exclusive_x == s.max_exclusive_x &&
+          r.max_exclusive_y == s.max_exclusive_y) ||
+         (wuffs_base__rect_ie_u32__is_empty(r) &&
+          wuffs_base__rect_ie_u32__is_empty(s));
 }
 
 static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32 r,
@@ -1030,17 +1086,16 @@ static inline void wuffs_base__image_buffer__update(
     bool dirty_palette,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
-    uint8_t* palette_ptr,
-    size_t palette_len) {
+    wuffs_base__slice_u8 palette) {
   if (!b) {
     return;
   }
   b->private_impl.dirty_palette = dirty_palette;
   b->private_impl.dirty_rect = dirty_rect;
   b->private_impl.duration = duration;
-  if (palette_ptr) {
-    memmove(b->private_impl.palette, palette_ptr,
-            palette_len <= 1024 ? palette_len : 1024);
+  if (palette.ptr) {
+    memmove(b->private_impl.palette, palette.ptr,
+            palette.len <= 1024 ? palette.len : 1024);
   }
 }
 
@@ -1270,6 +1325,7 @@ typedef struct {
       wuffs_gif__status v_z;
       bool v_write_to_ib_instead_of_w;
       uint64_t v_n_copied;
+      uint32_t v_p;
     } c_decode_id_part1[1];
   } private_impl;
 } wuffs_gif__decoder;
@@ -3055,6 +3111,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   uint64_t v_n_copied;
   wuffs_base__table_u8 v_tab;
   wuffs_base__slice_u8 v_pixel_data;
+  uint32_t v_p;
 
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
@@ -3107,6 +3164,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     v_n_copied = self->private_impl.c_decode_id_part1[0].v_n_copied;
     v_tab = ((wuffs_base__table_u8){});
     v_pixel_data = ((wuffs_base__slice_u8){});
+    v_p = self->private_impl.c_decode_id_part1[0].v_p;
   } else {
     v_w = ((wuffs_base__io_writer){});
     v_write_to_ib_instead_of_w = false;
@@ -3286,6 +3344,14 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     label_1_break:;
     }
   label_0_break:;
+    v_p = 0;
+    if (self->private_impl.f_have_lct) {
+      v_p = 1;
+    }
+    wuffs_base__image_buffer__update(
+        a_ib, true, self->private_impl.f_frame_rect, 0,
+        ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[v_p],
+                                .len = 1024}));
 
     goto ok;
   ok:
@@ -3306,6 +3372,7 @@ suspend:
   self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w =
       v_write_to_ib_instead_of_w;
   self->private_impl.c_decode_id_part1[0].v_n_copied = v_n_copied;
+  self->private_impl.c_decode_id_part1[0].v_p = v_p;
 
   goto exit;
 exit:

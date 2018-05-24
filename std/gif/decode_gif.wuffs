@@ -430,4 +430,13 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 			yield z
 		}
 	}
+
+	// TODO: have a builtin btoi or "b as base.u32"?
+	// TODO: p's type should be base.u32[..1]
+	var p base.u32 = 0
+	if this.have_lct {
+		p = 1
+	}
+	// TODO: dirty_palette isn't always true; duration isn't always 0.
+	in.ib.update!(dirty_palette:true, dirty_rect:this.frame_rect, duration:0, palette:this.palettes[p][:])
 }
