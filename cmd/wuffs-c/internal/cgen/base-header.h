@@ -980,6 +980,7 @@ typedef struct {
     uint32_t loop_count;  // 0-based count of the current loop.
     wuffs_base__pixel_buffer pixbuf;
     // TODO: color spaces.
+    bool dirty_palette;
     wuffs_base__rect_ie_u32 dirty_rect;
     wuffs_base__flicks duration;
     uint8_t palette[1024];
@@ -1023,6 +1024,7 @@ static inline void wuffs_base__image_buffer__set_from_slice(
 
 static inline void wuffs_base__image_buffer__update(
     wuffs_base__image_buffer* b,
+    bool dirty_palette,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
     uint8_t* palette_ptr,
@@ -1030,6 +1032,7 @@ static inline void wuffs_base__image_buffer__update(
   if (!b) {
     return;
   }
+  b->private_impl.dirty_palette = dirty_palette;
   b->private_impl.dirty_rect = dirty_rect;
   b->private_impl.duration = duration;
   if (palette_ptr) {
@@ -1055,6 +1058,14 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
     return true;
   }
   return false;
+}
+
+// wuffs_base__image_buffer__dirty_palette returns whether this frame's palette
+// differs from the previous frame. It is conservative and may return false
+// positives (but never false negatives).
+static inline bool wuffs_base__image_buffer__dirty_palette(
+    wuffs_base__image_buffer* b) {
+  return b && b->private_impl.dirty_palette;
 }
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
