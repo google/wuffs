@@ -1201,10 +1201,11 @@ typedef int32_t wuffs_gif__status;
 
 #define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320                     // 0xBE161800
 #define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319           // 0xBE161801
-#define WUFFS_GIF__ERROR_BAD_HEADER -1105848318                    // 0xBE161802
-#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848317             // 0xBE161803
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848316      // 0xBE161804
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848315  // 0xBE161805
+#define WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL -1105848318           // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_HEADER -1105848317                    // 0xBE161803
+#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848316             // 0xBE161804
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xBE161805
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xBE161806
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1271,6 +1272,11 @@ typedef struct {
     bool f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
+    bool f_seen_graphic_control;
+    bool f_gc_has_transparent_index;
+    uint8_t f_gc_transparent_index;
+    uint8_t f_gc_disposal;
+    uint64_t f_gc_duration;
     wuffs_base__rect_ie_u32 f_frame_rect;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
@@ -1317,6 +1323,11 @@ typedef struct {
       bool v_not_netscape;
       uint64_t scratch;
     } c_decode_ae[1];
+    struct {
+      uint32_t coro_susp_point;
+      uint8_t v_flags;
+      uint64_t scratch;
+    } c_decode_gc[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_frame_x;

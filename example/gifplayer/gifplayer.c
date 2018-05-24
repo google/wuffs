@@ -21,6 +21,8 @@ $cc gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
 for a C compiler $cc, such as clang or gcc.
 */
 
+#include <stdio.h>
+
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -147,11 +149,12 @@ const char* play() {
       memset(palette_as_ascii_art, '-', 256);
     }
 
-    // TODO: don't hard code the 100ms sleep time. Wuffs needs an API to
-    // provide the frame delay, and this program should also track that across
-    // the last frame of one play through and the first frame of the next. The
-    // usleep arg should also take into account the decoding time.
-    usleep(100000);
+    // TODO: sleep for something less than duration_micros, taking into account
+    // the decoding time.
+    uint64_t duration_micros =
+        (1000 * wuffs_base__image_buffer__duration(&ib)) /
+        WUFFS_BASE__FLICKS_PER_MILLISECOND;
+    usleep(duration_micros);
 
     uint8_t* d = dst_buffer;
     uint8_t* p = print_buffer;

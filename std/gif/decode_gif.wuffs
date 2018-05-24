@@ -16,6 +16,7 @@ packageid "gif "
 
 pub error "bad block"
 pub error "bad extension label"
+pub error "bad graphic control"
 pub error "bad header"
 pub error "bad literal width"
 
@@ -47,6 +48,12 @@ pub struct decoder?(
 	// animation loops is 1.
 	seen_num_loops base.bool,
 	num_loops base.u32 = 1,
+
+	seen_graphic_control base.bool,
+	gc_has_transparent_index base.bool,
+	gc_transparent_index base.u8,
+	gc_disposal base.u8,
+	gc_duration base.u64,
 
 	frame_rect base.rect_ie_u32,
 
@@ -182,7 +189,8 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 pri func decoder.decode_extension?(src base.io_reader)() {
 	var label base.u8 = in.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
-		// TODO.
+		this.decode_gc?(src:in.src)
+		return
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
 		this.decode_ae?(src:in.src)
 		return
@@ -276,6 +284,28 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 		break
 	}
 	this.skip_blocks?(src:in.src)
+}
+
+// decode_gc reads a Graphic Control.
+pri func decoder.decode_gc?(src base.io_reader)() {
+	if this.seen_graphic_control {
+		return error "bad graphic control"
+	}
+	if in.src.read_u8?() != 4 {
+		return error "bad graphic control"
+	}
+
+	var flags base.u8 = in.src.read_u8?()
+	this.gc_has_transparent_index = (flags & 0x01) != 0
+	this.gc_disposal = (flags >> 2) & 0x07
+	// There are 7056000 flicks per centisecond.
+	this.gc_duration = (in.src.read_u16le?() as base.u64) * 7056000
+	this.gc_transparent_index = in.src.read_u8?()
+
+	if in.src.read_u8?() != 0 {
+		return error "bad graphic control"
+	}
+	this.seen_graphic_control = true
 }
 
 // decode_id_partX reads an Image Descriptor. The Image Separator byte has
@@ -439,8 +469,15 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 		// Both this frame and the previous one used the global palette. No
 		// palette update is necessary.
 	}
-	// TODO: duration isn't always 0.
-	in.ib.update!(dirty_rect:this.frame_rect, duration:0, palette:palette)
+	in.ib.update!(dirty_rect:this.frame_rect, duration:this.gc_duration, palette:palette)
 
 	this.previous_use_global_palette = not use_local_palette
+
+	// The Image Descriptor is mandatory, but the Graphic Control extension is
+	// optional. Reset the GC related fields for the next decode_frame call.
+	this.seen_graphic_control = false
+	this.gc_has_transparent_index = false
+	this.gc_transparent_index = 0
+	this.gc_disposal = 0
+	this.gc_duration = 0
 }
