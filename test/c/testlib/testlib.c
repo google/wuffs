@@ -20,7 +20,7 @@
 #include <sys/time.h>
 
 #define BUFFER_SIZE (64 * 1024 * 1024)
-#define PALETTE_BUFFER_SIZE (4 * 245)
+#define PALETTE_BUFFER_SIZE (4 * 256)
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 

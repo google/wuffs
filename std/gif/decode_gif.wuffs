@@ -56,11 +56,8 @@ pub struct decoder?(
 	uncompressed_wi base.u32[..4096],
 	uncompressed array[4096] base.u8,
 
-	// gct and lct are the Global / Local Color Tables: 256 (R, G, B) entries.
-	//
-	// TODO: 4 byte per pixel RGBA or BGRA instead of 3 bpp RGB?
-	gct array[3 * 256] base.u8,
-	lct array[3 * 256] base.u8,
+	// palettes[0] and palettes[1] are the Global and Local Color Table.
+	palettes array[2] array[4 * 256] base.u8,
 
 	lzw lzw_decoder,
 )
@@ -162,13 +159,15 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 	// Read the optional Global Color Table.
 	this.have_gct = (c[4] & 0x80) != 0
 	if this.have_gct {
-		var gct_size base.u32[..256] = (1 as base.u32) << (1 + (c[4] & 0x07))
+		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (c[4] & 0x07))
 		i = 0
-		while i < gct_size {
-			assert i < 256 via "a < b: a < c; c <= b"(c:gct_size)
-			this.gct[(3 * i) + 0] = in.src.read_u8?()
-			this.gct[(3 * i) + 1] = in.src.read_u8?()
-			this.gct[(3 * i) + 2] = in.src.read_u8?()
+		while i < num_palette_entries {
+			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
+			// Convert from RGB to BGRA.
+			this.palettes[0][(4 * i) + 2] = in.src.read_u8?()
+			this.palettes[0][(4 * i) + 1] = in.src.read_u8?()
+			this.palettes[0][(4 * i) + 0] = in.src.read_u8?()
+			this.palettes[0][(4 * i) + 3] = 0xFF
 			i += 1
 		}
 	}
@@ -319,13 +318,15 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 	// Read the optional Local Color Table.
 	this.have_lct = (flags & 0x80) != 0
 	if this.have_lct {
-		var lct_size base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
+		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
 		var i base.u32
-		while i < lct_size {
-			assert i < 256 via "a < b: a < c; c <= b"(c:lct_size)
-			this.lct[(3 * i) + 0] = in.src.read_u8?()
-			this.lct[(3 * i) + 1] = in.src.read_u8?()
-			this.lct[(3 * i) + 2] = in.src.read_u8?()
+		while i < num_palette_entries {
+			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
+			// Convert from RGB to BGRA.
+			this.palettes[1][(4 * i) + 2] = in.src.read_u8?()
+			this.palettes[1][(4 * i) + 1] = in.src.read_u8?()
+			this.palettes[1][(4 * i) + 0] = in.src.read_u8?()
+			this.palettes[1][(4 * i) + 3] = 0xFF
 			i += 1
 		}
 	}

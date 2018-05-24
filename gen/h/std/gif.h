@@ -1213,8 +1213,7 @@ typedef struct {
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
-    uint8_t f_gct[768];
-    uint8_t f_lct[768];
+    uint8_t f_palettes[2][1024];
     wuffs_gif__lzw_decoder f_lzw;
 
     struct {
@@ -1236,7 +1235,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint8_t v_c[7];
       uint32_t v_i;
-      uint32_t v_gct_size;
+      uint32_t v_num_palette_entries;
     } c_decode_lsd[1];
     struct {
       uint32_t coro_susp_point;
@@ -1264,7 +1263,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint8_t v_flags;
-      uint32_t v_lct_size;
+      uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint8_t v_lw;
       uint64_t v_block_size;

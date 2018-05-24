@@ -17,8 +17,9 @@
 package main
 
 // extract-palette-indexes.go extracts the 1-byte-per-pixel indexes and, for
-// paletted images, the 3-byte-per-entry RGB palette of a paletted or gray GIF
-// and PNG image. It checks that the GIF and PNG encode equivalent images.
+// paletted images, the 4-byte-per-entry BGRA (premultiplied alpha) palette of
+// a paletted or gray GIF and PNG image. It checks that the GIF and PNG encode
+// equivalent images.
 //
 // Usage: go run extract-palette-indexes.go foo.gif foo.png
 
@@ -94,13 +95,14 @@ func decode(filename string) (palette []byte, indexes []byte, err error) {
 	case *image.Gray:
 		return nil, m.Pix, nil
 	case *image.Paletted:
-		palette = make([]byte, 3*256)
+		palette = make([]byte, 4*256)
 		allGray := true
 		for i, c := range m.Palette {
-			r, g, b, _ := c.RGBA()
-			palette[3*i+0] = uint8(r >> 8)
-			palette[3*i+1] = uint8(g >> 8)
-			palette[3*i+2] = uint8(b >> 8)
+			r, g, b, a := c.RGBA()
+			palette[4*i+0] = uint8(b >> 8)
+			palette[4*i+1] = uint8(g >> 8)
+			palette[4*i+2] = uint8(r >> 8)
+			palette[4*i+3] = uint8(a >> 8)
 			if allGray {
 				y := uint32(i)
 				allGray = r>>8 == y && g>>8 == y && b>>8 == y
