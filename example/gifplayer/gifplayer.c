@@ -127,6 +127,26 @@ const char* play() {
       return wuffs_gif__status__string(s);
     }
 
+    // Calculate a grayscale value and therefore an ASCII art character for
+    // each (red, green, blue) palette entry.
+    wuffs_base__slice_u8 palette = wuffs_base__image_buffer__palette(&ib);
+    char palette_as_ascii_art[256];
+    if (palette.ptr) {
+      uint32_t i;
+      for (i = 0; i < 256; i++) {
+        // Convert to grayscale via the formula
+        //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
+        // translated into fixed point arithmetic.
+        uint32_t b = palette.ptr[4 * i + 0];
+        uint32_t g = palette.ptr[4 * i + 1];
+        uint32_t r = palette.ptr[4 * i + 2];
+        uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
+        palette_as_ascii_art[i] = "-+X@"[(y & 0xFF) >> 6];
+      }
+    } else {
+      memset(palette_as_ascii_art, '-', 256);
+    }
+
     // TODO: don't hard code the 100ms sleep time. Wuffs needs an API to
     // provide the frame delay, and this program should also track that across
     // the last frame of one play through and the first frame of the next. The
@@ -140,10 +160,7 @@ const char* play() {
     for (y = 0; y < height; y++) {
       uint32_t x;
       for (x = 0; x < width; x++) {
-        uint8_t palette_index = *d++;
-        // TODO: translate the palette_index into an (R, G, B) triple, and then
-        // to a uint8_t grayscale value.
-        *p++ = "-+X@"[palette_index >> 6];
+        *p++ = palette_as_ascii_art[*d++];
       }
       *p++ = '\n';
     }

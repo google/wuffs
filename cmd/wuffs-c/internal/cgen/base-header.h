@@ -1145,9 +1145,11 @@ static inline wuffs_base__flicks wuffs_base__image_buffer__duration(
 
 // wuffs_base__image_buffer__palette returns the palette that the pixel data
 // can index. The backing array is inside b and has length 1024.
-static inline uint8_t* wuffs_base__image_buffer__palette(
+static inline wuffs_base__slice_u8 wuffs_base__image_buffer__palette(
     wuffs_base__image_buffer* b) {
-  return b ? b->private_impl.palette : NULL;
+  return b ? ((wuffs_base__slice_u8){.ptr = b->private_impl.palette,
+                                     .len = 1024})
+           : ((wuffs_base__slice_u8){});
 }
 
 static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(

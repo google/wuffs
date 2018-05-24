@@ -495,12 +495,12 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
   }
 
-  // TODO: provide a public API for getting the palette.
-  wuffs_base__io_buffer pal_got = {.ptr = dec.private_impl.f_palettes[0],
-                                   .len = 4 * 256};
+  wuffs_base__slice_u8 pal_got_slice = wuffs_base__image_buffer__palette(&ib);
+  wuffs_base__io_buffer pal_got = {.ptr = pal_got_slice.ptr,
+                                   .len = pal_got_slice.len,
+                                   .wi = pal_got_slice.len};
   wuffs_base__io_buffer pal_want = {.ptr = global_palette_buffer,
                                     .len = 4 * 256};
-  pal_got.wi = 4 * 256;
   if (!read_file(&pal_want, palette_filename)) {
     return false;
   }
