@@ -1258,9 +1258,8 @@ typedef struct {
     uint8_t f_call_sequence;
     bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
+    bool f_previous_use_global_palette;
     uint8_t f_background_color_index;
-    bool f_have_gct;
-    bool f_have_lct;
     bool f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
@@ -1290,6 +1289,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint8_t v_c[7];
       uint32_t v_i;
+      uint8_t v_flags;
       uint32_t v_num_palette_entries;
     } c_decode_lsd[1];
     struct {
@@ -1318,6 +1318,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint8_t v_flags;
+      bool v_use_local_palette;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint8_t v_lw;

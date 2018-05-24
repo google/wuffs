@@ -37,11 +37,9 @@ pub struct decoder?(
 
 	end_of_data base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
+	previous_use_global_palette base.bool,
 
 	background_color_index base.u8,
-
-	have_gct base.bool,
-	have_lct base.bool,
 
 	interlace base.bool,
 
@@ -154,12 +152,12 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 	// TODO: use read_u16le.
 	this.width = (c[0] as base.u32) | ((c[1] as base.u32) << 8)
 	this.height = (c[2] as base.u32) | ((c[3] as base.u32) << 8)
+	var flags base.u8 = c[4]
 	this.background_color_index = c[5]
 
 	// Read the optional Global Color Table.
-	this.have_gct = (c[4] & 0x80) != 0
-	if this.have_gct {
-		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (c[4] & 0x07))
+	if (flags & 0x80) != 0 {
+		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
 		i = 0
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
@@ -316,8 +314,8 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 	this.interlace = (flags & 0x40) != 0
 
 	// Read the optional Local Color Table.
-	this.have_lct = (flags & 0x80) != 0
-	if this.have_lct {
+	var use_local_palette base.bool = (flags & 0x80) != 0
+	if use_local_palette {
 		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
 		var i base.u32
 		while i < num_palette_entries {
@@ -433,9 +431,12 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 
 	// TODO: have a builtin btoi or "b as base.u32"?
 	var p base.u32[..1] = 0
-	if this.have_lct {
+	if use_local_palette {
 		p = 1
 	}
-	// TODO: dirty_palette isn't always true; duration isn't always 0.
-	in.ib.update!(dirty_palette:true, dirty_rect:this.frame_rect, duration:0, palette:this.palettes[p][:])
+	// TODO: duration isn't always 0.
+	in.ib.update!(dirty_palette:use_local_palette or not this.previous_use_global_palette,
+		dirty_rect:this.frame_rect, duration:0, palette:this.palettes[p][:])
+
+	this.previous_use_global_palette = not use_local_palette
 }
