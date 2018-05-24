@@ -202,7 +202,9 @@ const char* play() {
       return wuffs_gif__status__string(s);
     }
 
-    update_palette_as_ascii_art(wuffs_base__image_buffer__palette(&ib));
+    if (wuffs_base__image_buffer__palette_changed(&ib)) {
+      update_palette_as_ascii_art(wuffs_base__image_buffer__palette(&ib));
+    }
 
 #ifdef _POSIX_TIMERS
     if (started) {
