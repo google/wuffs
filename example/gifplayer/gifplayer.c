@@ -114,7 +114,7 @@ void update_palette_as_ascii_art(wuffs_base__slice_u8 palette) {
     uint32_t g = palette.ptr[4 * i + 1];
     uint32_t r = palette.ptr[4 * i + 2];
     uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
-    palette_as_ascii_art[i] = "-+X@"[(y & 0xFF) >> 6];
+    palette_as_ascii_art[i] = "-:=+IOX@"[(y & 0xFF) >> 5];
   }
 }
 
