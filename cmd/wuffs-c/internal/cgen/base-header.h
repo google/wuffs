@@ -1088,7 +1088,14 @@ static inline void wuffs_base__image_buffer__update(
     return;
   }
   b->private_impl.dirty_palette = dirty_palette;
+
+  // Clip the dirty_rect to the image bounds.
+  dirty_rect.max_exclusive_x = wuffs_base__u32__min(
+      dirty_rect.max_exclusive_x, b->private_impl.config.private_impl.width);
+  dirty_rect.max_exclusive_y = wuffs_base__u32__min(
+      dirty_rect.max_exclusive_y, b->private_impl.config.private_impl.width);
   b->private_impl.dirty_rect = dirty_rect;
+
   b->private_impl.duration = duration;
   if (palette.ptr) {
     memmove(b->private_impl.palette, palette.ptr,
