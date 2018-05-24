@@ -91,7 +91,56 @@ const char* read_stdin() {
   return "input is too large";
 }
 
+char palette_as_ascii_art[256];
+
+void reset_palette_as_ascii_art() {
+  memset(palette_as_ascii_art, '-', 256);
+}
+
+// update_palette_as_ascii_art calculates a grayscale value and therefore an
+// ASCII art character for each (red, green, blue) palette entry.
+void update_palette_as_ascii_art(wuffs_base__slice_u8 palette) {
+  if (!palette.ptr || (palette.len != 256 * 4)) {
+    reset_palette_as_ascii_art();
+    return;
+  }
+
+  uint32_t i;
+  for (i = 0; i < 256; i++) {
+    // Convert to grayscale via the formula
+    //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
+    // translated into fixed point arithmetic.
+    uint32_t b = palette.ptr[4 * i + 0];
+    uint32_t g = palette.ptr[4 * i + 1];
+    uint32_t r = palette.ptr[4 * i + 2];
+    uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
+    palette_as_ascii_art[i] = "-+X@"[(y & 0xFF) >> 6];
+  }
+}
+
+void show_ascii_art(wuffs_base__image_buffer* ib,
+                    wuffs_base__image_config* ic) {
+  uint32_t width = wuffs_base__image_config__width(ic);
+  uint32_t height = wuffs_base__image_config__height(ic);
+
+  uint8_t* d = dst_buffer;
+  uint8_t* p = print_buffer;
+  *p++ = '\n';
+  uint32_t y;
+  for (y = 0; y < height; y++) {
+    uint32_t x;
+    for (x = 0; x < width; x++) {
+      *p++ = palette_as_ascii_art[*d++];
+    }
+    *p++ = '\n';
+  }
+  const int stdout_fd = 1;
+  write(stdout_fd, print_buffer, print_len);
+}
+
 const char* play() {
+  reset_palette_as_ascii_art();
+
   wuffs_gif__decoder dec;
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
@@ -153,25 +202,7 @@ const char* play() {
       return wuffs_gif__status__string(s);
     }
 
-    // Calculate a grayscale value and therefore an ASCII art character for
-    // each (red, green, blue) palette entry.
-    wuffs_base__slice_u8 palette = wuffs_base__image_buffer__palette(&ib);
-    char palette_as_ascii_art[256];
-    if (palette.ptr) {
-      uint32_t i;
-      for (i = 0; i < 256; i++) {
-        // Convert to grayscale via the formula
-        //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
-        // translated into fixed point arithmetic.
-        uint32_t b = palette.ptr[4 * i + 0];
-        uint32_t g = palette.ptr[4 * i + 1];
-        uint32_t r = palette.ptr[4 * i + 2];
-        uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
-        palette_as_ascii_art[i] = "-+X@"[(y & 0xFF) >> 6];
-      }
-    } else {
-      memset(palette_as_ascii_art, '-', 256);
-    }
+    update_palette_as_ascii_art(wuffs_base__image_buffer__palette(&ib));
 
 #ifdef _POSIX_TIMERS
     if (started) {
@@ -196,19 +227,7 @@ const char* play() {
         (1000 * wuffs_base__image_buffer__duration(&ib)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
 
-    uint8_t* d = dst_buffer;
-    uint8_t* p = print_buffer;
-    *p++ = '\n';
-    uint32_t y;
-    for (y = 0; y < height; y++) {
-      uint32_t x;
-      for (x = 0; x < width; x++) {
-        *p++ = palette_as_ascii_art[*d++];
-      }
-      *p++ = '\n';
-    }
-    const int stdout_fd = 1;
-    write(stdout_fd, print_buffer, print_len);
+    show_ascii_art(&ib, &ic);
 
     // TODO: should a zero duration mean to show this frame forever?
   }
