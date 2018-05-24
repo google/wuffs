@@ -877,8 +877,22 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.IDColon:
 		lhs := n.LHS().Expr()
+		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
+			return nil, nil, err
+		}
 		mhs := n.MHS().Expr()
+		if mhs != nil {
+			if _, _, err := q.bcheckExpr(mhs, depth); err != nil {
+				return nil, nil, err
+			}
+		}
 		rhs := n.RHS().Expr()
+		if rhs != nil {
+			if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
+				return nil, nil, err
+			}
+		}
+
 		if mhs == nil && rhs == nil {
 			return nil, nil, nil
 		}

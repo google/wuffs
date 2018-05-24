@@ -432,8 +432,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 	}
 
 	// TODO: have a builtin btoi or "b as base.u32"?
-	// TODO: p's type should be base.u32[..1]
-	var p base.u32 = 0
+	var p base.u32[..1] = 0
 	if this.have_lct {
 		p = 1
 	}
