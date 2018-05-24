@@ -1039,9 +1039,9 @@ typedef struct {
     uint32_t loop_count;  // 0-based count of the current loop.
     wuffs_base__pixel_buffer pixbuf;
     // TODO: color spaces.
-    bool dirty_palette;
     wuffs_base__rect_ie_u32 dirty_rect;
     wuffs_base__flicks duration;
+    bool palette_changed;
     uint8_t palette[1024];
   } private_impl;
 } wuffs_base__image_buffer;
@@ -1081,16 +1081,15 @@ static inline void wuffs_base__image_buffer__set_from_slice(
   tab->stride = config.private_impl.width;
 }
 
+// The palette argument is ignored unless its length is exactly 1024.
 static inline void wuffs_base__image_buffer__update(
     wuffs_base__image_buffer* b,
-    bool dirty_palette,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
     wuffs_base__slice_u8 palette) {
   if (!b) {
     return;
   }
-  b->private_impl.dirty_palette = dirty_palette;
 
   // Clip the dirty_rect to the image bounds.
   dirty_rect.max_exclusive_x = wuffs_base__u32__min(
@@ -1100,9 +1099,9 @@ static inline void wuffs_base__image_buffer__update(
   b->private_impl.dirty_rect = dirty_rect;
 
   b->private_impl.duration = duration;
-  if (palette.ptr) {
-    memmove(b->private_impl.palette, palette.ptr,
-            palette.len <= 1024 ? palette.len : 1024);
+  b->private_impl.palette_changed = palette.ptr && (palette.len == 1024);
+  if (b->private_impl.palette_changed) {
+    memmove(b->private_impl.palette, palette.ptr, 1024);
   }
 }
 
@@ -1125,12 +1124,12 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
   return false;
 }
 
-// wuffs_base__image_buffer__dirty_palette returns whether this frame's palette
-// differs from the previous frame. It is conservative and may return false
-// positives (but never false negatives).
-static inline bool wuffs_base__image_buffer__dirty_palette(
+// wuffs_base__image_buffer__palette_changed returns whether this frame's
+// palette differs from the previous frame. It is conservative and may return
+// false positives (but never false negatives).
+static inline bool wuffs_base__image_buffer__palette_changed(
     wuffs_base__image_buffer* b) {
-  return b && b->private_impl.dirty_palette;
+  return b && b->private_impl.palette_changed;
 }
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
@@ -1333,7 +1332,6 @@ typedef struct {
       wuffs_gif__status v_z;
       bool v_write_to_ib_instead_of_w;
       uint64_t v_n_copied;
-      uint32_t v_p;
     } c_decode_id_part1[1];
   } private_impl;
 } wuffs_gif__decoder;
@@ -3123,7 +3121,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   uint64_t v_n_copied;
   wuffs_base__table_u8 v_tab;
   wuffs_base__slice_u8 v_pixel_data;
-  uint32_t v_p;
+  wuffs_base__slice_u8 v_palette;
 
   uint8_t* ioptr_dst = NULL;
   uint8_t* iobounds0orig_dst = NULL;
@@ -3178,7 +3176,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     v_n_copied = self->private_impl.c_decode_id_part1[0].v_n_copied;
     v_tab = ((wuffs_base__table_u8){});
     v_pixel_data = ((wuffs_base__slice_u8){});
-    v_p = self->private_impl.c_decode_id_part1[0].v_p;
+    v_palette = ((wuffs_base__slice_u8){});
   } else {
     v_use_local_palette = false;
     v_w = ((wuffs_base__io_writer){});
@@ -3186,6 +3184,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     v_pass_through = ((wuffs_base__slice_u8){});
     v_tab = ((wuffs_base__table_u8){});
     v_pixel_data = ((wuffs_base__slice_u8){});
+    v_palette = ((wuffs_base__slice_u8){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -3359,17 +3358,16 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     label_1_break:;
     }
   label_0_break:;
-    v_p = 0;
+    v_palette = ((wuffs_base__slice_u8){});
     if (v_use_local_palette) {
-      v_p = 1;
+      v_palette = ((wuffs_base__slice_u8){
+          .ptr = self->private_impl.f_palettes[1], .len = 1024});
+    } else if (!self->private_impl.f_previous_use_global_palette) {
+      v_palette = ((wuffs_base__slice_u8){
+          .ptr = self->private_impl.f_palettes[0], .len = 1024});
     }
-    wuffs_base__image_buffer__update(
-        a_ib,
-        (v_use_local_palette ||
-         !self->private_impl.f_previous_use_global_palette),
-        self->private_impl.f_frame_rect, 0,
-        ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[v_p],
-                                .len = 1024}));
+    wuffs_base__image_buffer__update(a_ib, self->private_impl.f_frame_rect, 0,
+                                     v_palette);
     self->private_impl.f_previous_use_global_palette = !v_use_local_palette;
 
     goto ok;
@@ -3393,7 +3391,6 @@ suspend:
   self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w =
       v_write_to_ib_instead_of_w;
   self->private_impl.c_decode_id_part1[0].v_n_copied = v_n_copied;
-  self->private_impl.c_decode_id_part1[0].v_p = v_p;
 
   goto exit;
 exit:

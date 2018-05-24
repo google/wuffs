@@ -429,14 +429,18 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 		}
 	}
 
-	// TODO: have a builtin btoi or "b as base.u32"?
-	var p base.u32[..1] = 0
+	var palette slice base.u8
 	if use_local_palette {
-		p = 1
+		palette = this.palettes[1][:]
+	} else if not this.previous_use_global_palette {
+		// This frame uses the global palette but the previous one didn't.
+		palette = this.palettes[0][:]
+	} else {
+		// Both this frame and the previous one used the global palette. No
+		// palette update is necessary.
 	}
 	// TODO: duration isn't always 0.
-	in.ib.update!(dirty_palette:use_local_palette or not this.previous_use_global_palette,
-		dirty_rect:this.frame_rect, duration:0, palette:this.palettes[p][:])
+	in.ib.update!(dirty_rect:this.frame_rect, duration:0, palette:palette)
 
 	this.previous_use_global_palette = not use_local_palette
 }

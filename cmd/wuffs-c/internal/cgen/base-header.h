@@ -1036,9 +1036,9 @@ typedef struct {
     uint32_t loop_count;  // 0-based count of the current loop.
     wuffs_base__pixel_buffer pixbuf;
     // TODO: color spaces.
-    bool dirty_palette;
     wuffs_base__rect_ie_u32 dirty_rect;
     wuffs_base__flicks duration;
+    bool palette_changed;
     uint8_t palette[1024];
   } private_impl;
 } wuffs_base__image_buffer;
@@ -1078,16 +1078,15 @@ static inline void wuffs_base__image_buffer__set_from_slice(
   tab->stride = config.private_impl.width;
 }
 
+// The palette argument is ignored unless its length is exactly 1024.
 static inline void wuffs_base__image_buffer__update(
     wuffs_base__image_buffer* b,
-    bool dirty_palette,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
     wuffs_base__slice_u8 palette) {
   if (!b) {
     return;
   }
-  b->private_impl.dirty_palette = dirty_palette;
 
   // Clip the dirty_rect to the image bounds.
   dirty_rect.max_exclusive_x = wuffs_base__u32__min(
@@ -1097,9 +1096,9 @@ static inline void wuffs_base__image_buffer__update(
   b->private_impl.dirty_rect = dirty_rect;
 
   b->private_impl.duration = duration;
-  if (palette.ptr) {
-    memmove(b->private_impl.palette, palette.ptr,
-            palette.len <= 1024 ? palette.len : 1024);
+  b->private_impl.palette_changed = palette.ptr && (palette.len == 1024);
+  if (b->private_impl.palette_changed) {
+    memmove(b->private_impl.palette, palette.ptr, 1024);
   }
 }
 
@@ -1122,12 +1121,12 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
   return false;
 }
 
-// wuffs_base__image_buffer__dirty_palette returns whether this frame's palette
-// differs from the previous frame. It is conservative and may return false
-// positives (but never false negatives).
-static inline bool wuffs_base__image_buffer__dirty_palette(
+// wuffs_base__image_buffer__palette_changed returns whether this frame's
+// palette differs from the previous frame. It is conservative and may return
+// false positives (but never false negatives).
+static inline bool wuffs_base__image_buffer__palette_changed(
     wuffs_base__image_buffer* b) {
-  return b && b->private_impl.dirty_palette;
+  return b && b->private_impl.palette_changed;
 }
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
