@@ -21,11 +21,32 @@ $cc gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
 for a C compiler $cc, such as clang or gcc.
 */
 
-#include <stdio.h>
-
 #include <errno.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifndef _POSIX_TIMERS
+#error "TODO: timers on non-POSIX systems"
+#else
+#include <time.h>
+
+bool started = false;
+struct timespec start_time;
+
+uint64_t micros_since_start(struct timespec* now) {
+  if (!started) {
+    return 0;
+  }
+  int64_t nanos = (int64_t)(now->tv_sec - start_time.tv_sec) * 1000000000 +
+                  (int64_t)(now->tv_nsec - start_time.tv_nsec);
+  if (nanos < 0) {
+    return 0;
+  }
+  return nanos / 1000;
+}
+#endif
 
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
@@ -50,6 +71,8 @@ size_t print_len = 0;
 
 bool seen_num_loops = false;
 uint32_t num_loops_remaining = 0;
+
+wuffs_base__flicks cumulative_delay_micros = 0;
 
 const char* read_stdin() {
   while (src_len < SRC_BUFFER_SIZE) {
@@ -116,7 +139,8 @@ const char* play() {
     num_loops_remaining = dec.private_impl.f_num_loops;
   }
 
-  while (true) {
+  bool first_frame = true;
+  for (;; first_frame = false) {
     wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = dst_len};
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
     // TODO: provide API and support for when the frame rect is different from
@@ -149,12 +173,28 @@ const char* play() {
       memset(palette_as_ascii_art, '-', 256);
     }
 
-    // TODO: sleep for something less than duration_micros, taking into account
-    // the decoding time.
-    uint64_t duration_micros =
+#ifdef _POSIX_TIMERS
+    if (started) {
+      struct timespec now;
+      if (clock_gettime(CLOCK_MONOTONIC, &now)) {
+        return strerror(errno);
+      }
+      uint64_t elapsed_micros = micros_since_start(&now);
+      if (cumulative_delay_micros > elapsed_micros) {
+        usleep(cumulative_delay_micros - elapsed_micros);
+      }
+
+    } else {
+      if (clock_gettime(CLOCK_MONOTONIC, &start_time)) {
+        return strerror(errno);
+      }
+      started = true;
+    }
+#endif
+
+    cumulative_delay_micros +=
         (1000 * wuffs_base__image_buffer__duration(&ib)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
-    usleep(duration_micros);
 
     uint8_t* d = dst_buffer;
     uint8_t* p = print_buffer;
@@ -169,6 +209,8 @@ const char* play() {
     }
     const int stdout_fd = 1;
     write(stdout_fd, print_buffer, print_len);
+
+    // TODO: should a zero duration mean to show this frame forever?
   }
   return NULL;
 }
