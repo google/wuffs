@@ -118,8 +118,8 @@ void update_palette_as_ascii_art(wuffs_base__slice_u8 palette) {
   }
 }
 
-void show_ascii_art(wuffs_base__image_buffer* ib,
-                    wuffs_base__image_config* ic) {
+void show_ascii_art(wuffs_base__image_buffer* ib) {
+  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
   uint32_t width = wuffs_base__image_config__width(ic);
   uint32_t height = wuffs_base__image_config__height(ic);
 
@@ -229,7 +229,7 @@ const char* play() {
         (1000 * wuffs_base__image_buffer__duration(&ib)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
 
-    show_ascii_art(&ib, &ic);
+    show_ascii_art(&ib);
 
     // TODO: should a zero duration mean to show this frame forever?
   }

@@ -1124,6 +1124,11 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
   return false;
 }
 
+static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
+    wuffs_base__image_buffer* b) {
+  return b ? &b->private_impl.config : NULL;
+}
+
 // wuffs_base__image_buffer__palette_changed returns whether this frame's
 // palette differs from the previous frame. It is conservative and may return
 // false positives (but never false negatives).
