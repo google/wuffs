@@ -175,6 +175,14 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 			this.palettes[0][(4 * i) + 3] = 0xFF
 			i += 1
 		}
+		// Set the remaining palette entries to transparent black.
+		while i < 256 {
+			this.palettes[0][(4 * i) + 0] = 0x00
+			this.palettes[0][(4 * i) + 1] = 0x00
+			this.palettes[0][(4 * i) + 2] = 0x00
+			this.palettes[0][(4 * i) + 3] = 0x00
+			i += 1
+		}
 	}
 }
 
@@ -355,6 +363,14 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 			this.palettes[1][(4 * i) + 1] = in.src.read_u8?()
 			this.palettes[1][(4 * i) + 0] = in.src.read_u8?()
 			this.palettes[1][(4 * i) + 3] = 0xFF
+			i += 1
+		}
+		// Set the remaining palette entries to transparent black.
+		while i < 256 {
+			this.palettes[1][(4 * i) + 0] = 0x00
+			this.palettes[1][(4 * i) + 1] = 0x00
+			this.palettes[1][(4 * i) + 2] = 0x00
+			this.palettes[1][(4 * i) + 3] = 0x00
 			i += 1
 		}
 	}

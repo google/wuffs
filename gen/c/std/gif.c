@@ -2490,6 +2490,13 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
         self->private_impl.f_palettes[0][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
+      while (v_i < 256) {
+        self->private_impl.f_palettes[0][((4 * v_i) + 0)] = 0;
+        self->private_impl.f_palettes[0][((4 * v_i) + 1)] = 0;
+        self->private_impl.f_palettes[0][((4 * v_i) + 2)] = 0;
+        self->private_impl.f_palettes[0][((4 * v_i) + 3)] = 0;
+        v_i += 1;
+      }
     }
 
     goto ok;
@@ -3393,6 +3400,13 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
           self->private_impl.f_palettes[1][((4 * v_i) + 0)] = t_3;
         }
         self->private_impl.f_palettes[1][((4 * v_i) + 3)] = 255;
+        v_i += 1;
+      }
+      while (v_i < 256) {
+        self->private_impl.f_palettes[1][((4 * v_i) + 0)] = 0;
+        self->private_impl.f_palettes[1][((4 * v_i) + 1)] = 0;
+        self->private_impl.f_palettes[1][((4 * v_i) + 2)] = 0;
+        self->private_impl.f_palettes[1][((4 * v_i) + 3)] = 0;
         v_i += 1;
       }
     }
