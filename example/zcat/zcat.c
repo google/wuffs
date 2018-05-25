@@ -51,6 +51,9 @@ for a C compiler $cc, such as clang or gcc.
 char dst_buffer[DST_BUFFER_SIZE];
 char src_buffer[SRC_BUFFER_SIZE];
 
+// ignore_return_value suppresses errors from -Wall -Werror.
+static void ignore_return_value(int ignored) {}
+
 static const char* decode() {
   wuffs_gzip__decoder dec;
   wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
@@ -80,7 +83,7 @@ static const char* decode() {
       if (dst.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
-        write(stdout_fd, dst_buffer, dst.wi);
+        ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
       }
 
       if (s == WUFFS_GZIP__STATUS_OK) {
@@ -98,8 +101,8 @@ static const char* decode() {
 
 int fail(const char* msg) {
   const int stderr_fd = 2;
-  write(stderr_fd, msg, strnlen(msg, 4095));
-  write(stderr_fd, "\n", 1);
+  ignore_return_value(write(stderr_fd, msg, strnlen(msg, 4095)));
+  ignore_return_value(write(stderr_fd, "\n", 1));
   return 1;
 }
 

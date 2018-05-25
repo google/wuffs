@@ -79,6 +79,9 @@ uint32_t num_loops_remaining = 0;
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
+// ignore_return_value suppresses errors from -Wall -Werror.
+static void ignore_return_value(int ignored) {}
+
 const char* read_stdin() {
   while (src_len < SRC_BUFFER_SIZE) {
     const int stdin_fd = 0;
@@ -184,7 +187,7 @@ void print_ascii_art(wuffs_base__image_buffer* ib) {
     }
     *p++ = '\n';
   }
-  write(stdout_fd, print_buffer, p - print_buffer);
+  ignore_return_value(write(stdout_fd, print_buffer, p - print_buffer));
 }
 
 void print_color_art(wuffs_base__image_buffer* ib) {
@@ -212,7 +215,7 @@ void print_color_art(wuffs_base__image_buffer* ib) {
   }
   p = append_pascal_string(p, reset_color_pascal_string);
 
-  write(stdout_fd, print_buffer, p - print_buffer);
+  ignore_return_value(write(stdout_fd, print_buffer, p - print_buffer));
 }
 
 // ----
@@ -330,8 +333,8 @@ const char* play() {
 
 int fail(const char* msg) {
   const int stderr_fd = 2;
-  write(stderr_fd, msg, strnlen(msg, 4095));
-  write(stderr_fd, "\n", 1);
+  ignore_return_value(write(stderr_fd, msg, strnlen(msg, 4095)));
+  ignore_return_value(write(stderr_fd, "\n", 1));
   return 1;
 }
 
