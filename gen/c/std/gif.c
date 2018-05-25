@@ -2004,6 +2004,10 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
+static void wuffs_gif__decoder__copy_to_image_buffer(
+    wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib);
+
 static void wuffs_gif__lzw_decoder__set_literal_width(
     wuffs_gif__lzw_decoder* self,
     uint32_t a_lw);
@@ -3286,8 +3290,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   bool v_write_to_ib_instead_of_w;
   wuffs_base__slice_u8 v_pass_through;
   uint64_t v_n_copied;
-  wuffs_base__table_u8 v_tab;
-  wuffs_base__slice_u8 v_pixel_data;
   wuffs_base__slice_u8 v_palette;
 
   uint8_t* ioptr_dst = NULL;
@@ -3341,16 +3343,12 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
         self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w;
     v_pass_through = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode_id_part1[0].v_n_copied;
-    v_tab = ((wuffs_base__table_u8){});
-    v_pixel_data = ((wuffs_base__slice_u8){});
     v_palette = ((wuffs_base__slice_u8){});
   } else {
     v_use_local_palette = false;
     v_w = ((wuffs_base__io_writer){});
     v_write_to_ib_instead_of_w = false;
     v_pass_through = ((wuffs_base__slice_u8){});
-    v_tab = ((wuffs_base__table_u8){});
-    v_pixel_data = ((wuffs_base__slice_u8){});
     v_palette = ((wuffs_base__slice_u8){});
   }
   switch (coro_susp_point) {
@@ -3503,12 +3501,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
             }
           label_2_break:;
           } else {
-            v_tab = wuffs_base__image_buffer__plane(a_ib, 0);
-            if (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride))) {
-              v_pixel_data = wuffs_base__table_u8__linearize(v_tab);
-              if (((uint64_t)(v_pixel_data.len)) == 0) {
-              }
-            }
+            wuffs_gif__decoder__copy_to_image_buffer(self, a_ib);
           }
           if (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE) {
             goto label_1_continue;
@@ -3583,6 +3576,22 @@ short_read_src:
   }
   status = WUFFS_GIF__SUSPENSION_SHORT_READ;
   goto suspend;
+}
+
+// -------- func decoder.copy_to_image_buffer
+
+static void wuffs_gif__decoder__copy_to_image_buffer(
+    wuffs_gif__decoder* self,
+    wuffs_base__image_buffer* a_ib) {
+  wuffs_base__table_u8 v_tab;
+  wuffs_base__slice_u8 v_pixel_data;
+
+  v_tab = wuffs_base__image_buffer__plane(a_ib, 0);
+  if (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride))) {
+    v_pixel_data = wuffs_base__table_u8__linearize(v_tab);
+    if (((uint64_t)(v_pixel_data.len)) == 0) {
+    }
+  }
 }
 
 // -------- func lzw_decoder.set_literal_width
