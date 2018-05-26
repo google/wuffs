@@ -1499,6 +1499,18 @@ static inline wuffs_base__slice_u8 wuffs_base__table_u8__linearize(
   return ((wuffs_base__slice_u8){});
 }
 
+static inline wuffs_base__slice_u8 wuffs_base__table_u8__row(
+    wuffs_base__table_u8 t,
+    uint32_t y) {
+  if (y < t.height) {
+    return ((wuffs_base__slice_u8){
+        .ptr = t.ptr + (t.stride * y),
+        .len = t.width,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
 // ---------------- Ranges and Rects
 
 static inline wuffs_base__empty_struct
