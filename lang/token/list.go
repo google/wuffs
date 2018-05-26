@@ -491,9 +491,10 @@ const (
 	IDLength    = ID(0x242)
 	IDLinearize = ID(0x243)
 	IDPrefix    = ID(0x244)
-	IDStride    = ID(0x245)
-	IDSuffix    = ID(0x246)
-	IDWidth     = ID(0x247)
+	IDRow       = ID(0x245)
+	IDStride    = ID(0x246)
+	IDSuffix    = ID(0x247)
+	IDWidth     = ID(0x248)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -713,6 +714,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDLength:    "length",
 	IDLinearize: "linearize",
 	IDPrefix:    "prefix",
+	IDRow:       "row",
 	IDStride:    "stride",
 	IDSuffix:    "suffix",
 	IDWidth:     "width",

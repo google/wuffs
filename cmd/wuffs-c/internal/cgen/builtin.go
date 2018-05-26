@@ -332,6 +332,15 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		}
 		b.writeb(')')
 		return nil
+
+	case t.IDRow:
+		// TODO: don't assume that the table is a table of base.u8.
+		b.writes("wuffs_base__table_u8__row(")
+		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+			return err
+		}
+		b.writeb(',')
+		return g.writeArgs(b, args, rp, depth)
 	}
 
 	if field != "" {

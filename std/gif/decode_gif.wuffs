@@ -57,6 +57,10 @@ pub struct decoder?(
 
 	frame_rect base.rect_ie_u32,
 
+	// The dst_etc fields are the output cursor during copy_to_image_buffer.
+	dst_x base.u32,
+	dst_y base.u32,
+
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
 	uncompressed array[4096] base.u8,
@@ -329,6 +333,9 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	var frame_y base.u32 = in.src.read_u16le?() as base.u32
 	this.frame_rect.set_min_inclusive_x!(x:frame_x)
 	this.frame_rect.set_min_inclusive_y!(y:frame_y)
+	this.dst_x = frame_x
+	this.dst_y = frame_y
+
 	frame_x ~mod+= in.src.read_u16le?() as base.u32
 	frame_y ~mod+= in.src.read_u16le?() as base.u32
 	this.frame_rect.set_max_exclusive_x!(x:frame_x)
@@ -491,13 +498,15 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 
 pri func decoder.copy_to_image_buffer(ib ptr base.image_buffer)() {
 	// TODO: don't assume a packed pixel format.
+	var dst slice base.u8
 	var tab table base.u8 = in.ib.plane(p:0)
 	if tab.width() == tab.stride() {
-		var pixel_data slice base.u8 = tab.linearize()
-		if pixel_data.length() == 0 {
+		dst = tab.linearize()
+		if dst.length() == 0 {
 			// TODO.
 		}
 	} else {
+		dst = tab.row(y:this.dst_y)
 		// TODO.
 	}
 }

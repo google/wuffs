@@ -1283,6 +1283,8 @@ typedef struct {
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
     wuffs_base__rect_ie_u32 f_frame_rect;
+    uint32_t f_dst_x;
+    uint32_t f_dst_y;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];

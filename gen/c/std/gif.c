@@ -1283,6 +1283,8 @@ typedef struct {
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
     wuffs_base__rect_ie_u32 f_frame_rect;
+    uint32_t f_dst_x;
+    uint32_t f_dst_y;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -3185,6 +3187,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
         &self->private_impl.f_frame_rect, v_frame_x);
     wuffs_base__rect_ie_u32__set_min_inclusive_y(
         &self->private_impl.f_frame_rect, v_frame_y);
+    self->private_impl.f_dst_x = v_frame_x;
+    self->private_impl.f_dst_y = v_frame_y;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint16_t t_5;
@@ -3609,14 +3613,17 @@ short_read_src:
 static void wuffs_gif__decoder__copy_to_image_buffer(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib) {
+  wuffs_base__slice_u8 v_dst;
   wuffs_base__table_u8 v_tab;
-  wuffs_base__slice_u8 v_pixel_data;
 
+  v_dst = ((wuffs_base__slice_u8){});
   v_tab = wuffs_base__image_buffer__plane(a_ib, 0);
   if (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride))) {
-    v_pixel_data = wuffs_base__table_u8__linearize(v_tab);
-    if (((uint64_t)(v_pixel_data.len)) == 0) {
+    v_dst = wuffs_base__table_u8__linearize(v_tab);
+    if (((uint64_t)(v_dst.len)) == 0) {
     }
+  } else {
+    v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
   }
 }
 
