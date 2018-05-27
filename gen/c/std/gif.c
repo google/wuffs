@@ -3628,9 +3628,13 @@ static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
     v_dst = wuffs_base__table_u8__linearize(v_tab);
     if (((uint64_t)(v_dst.len)) == 0) {
     }
-  } else {
-    v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+    status = WUFFS_GIF__STATUS_OK;
+    goto ok;
   }
+  v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+
+  goto ok;
+ok:
   goto exit;
 exit:
   return status;

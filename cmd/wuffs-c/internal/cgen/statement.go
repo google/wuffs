@@ -348,8 +348,10 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		case t.IDError:
 			b.writes("goto exit;")
 		case t.IDStatus:
+			g.currFunk.hasGotoOK = true
 			b.writes("goto ok;")
 		default:
+			g.currFunk.hasGotoOK = true
 			b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
 				"status = %sERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;", g.PKGPREFIX)
 		}

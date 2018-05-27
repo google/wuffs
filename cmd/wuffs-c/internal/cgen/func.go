@@ -40,6 +40,7 @@ type funk struct {
 	public        bool
 	suspendible   bool
 	usesScratch   bool
+	hasGotoOK     bool
 	shortReads    []string
 }
 
@@ -133,6 +134,8 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	b.writex(k.bBody)
 	if k.suspendible && k.coroSuspPoint > 0 {
 		b.writex(k.bBodySuspend)
+	} else if k.hasGotoOK {
+		b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
 	}
 	b.writex(k.bFooter)
 	b.writes("}\n\n")
@@ -274,14 +277,12 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
-		b.writes("\ngoto ok;\n") // Avoid the "unused label" warning.
-		b.writes("ok:\n")
+		b.writes("\ngoto ok;ok:") // The goto avoids the "unused label" warning.
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = 0;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.writes("goto exit; }\n\n") // Close the coroutine switch.
 
-		b.writes("goto suspend;\n") // Avoid the "unused label" warning.
-		b.writes("suspend:\n")
+		b.writes("goto suspend;suspend:") // The goto avoids the "unused label" warning.
 
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
@@ -295,8 +296,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 
 func (g *gen) writeFuncImplFooter(b *buffer) error {
 	if g.currFunk.suspendible {
-		b.writes("goto exit;\n") // Avoid the "unused label" warning.
-		b.writes("exit:")
+		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.Field()
