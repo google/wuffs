@@ -1204,13 +1204,17 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320                     // 0xBE161800
-#define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319           // 0xBE161801
-#define WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL -1105848318           // 0xBE161802
-#define WUFFS_GIF__ERROR_BAD_HEADER -1105848317                    // 0xBE161803
-#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848316             // 0xBE161804
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xBE161805
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xBE161806
+#define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320              // 0xBE161800
+#define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319    // 0xBE161801
+#define WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL -1105848318    // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_HEADER -1105848317             // 0xBE161803
+#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848316      // 0xBE161804
+#define WUFFS_GIF__ERROR_NOT_ENOUGH_PIXEL_DATA -1105848315  // 0xBE161805
+#define WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA -1105848314    // 0xBE161806
+#define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
+  -1105848313                                                      // 0xBE161807
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848312      // 0xBE161808
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848311  // 0xBE161809
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1285,6 +1289,9 @@ typedef struct {
     wuffs_base__rect_ie_u32 f_frame_rect;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
+    uint32_t f_dst_x0;
+    uint32_t f_dst_x1;
+    uint32_t f_dst_y1;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];

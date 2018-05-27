@@ -1204,13 +1204,17 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
 #define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
 
-#define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320                     // 0xBE161800
-#define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319           // 0xBE161801
-#define WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL -1105848318           // 0xBE161802
-#define WUFFS_GIF__ERROR_BAD_HEADER -1105848317                    // 0xBE161803
-#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848316             // 0xBE161804
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848315      // 0xBE161805
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848314  // 0xBE161806
+#define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320              // 0xBE161800
+#define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319    // 0xBE161801
+#define WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL -1105848318    // 0xBE161802
+#define WUFFS_GIF__ERROR_BAD_HEADER -1105848317             // 0xBE161803
+#define WUFFS_GIF__ERROR_BAD_LITERAL_WIDTH -1105848316      // 0xBE161804
+#define WUFFS_GIF__ERROR_NOT_ENOUGH_PIXEL_DATA -1105848315  // 0xBE161805
+#define WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA -1105848314    // 0xBE161806
+#define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
+  -1105848313                                                      // 0xBE161807
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848312      // 0xBE161808
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848311  // 0xBE161809
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1285,6 +1289,9 @@ typedef struct {
     wuffs_base__rect_ie_u32 f_frame_rect;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
+    uint32_t f_dst_x0;
+    uint32_t f_dst_x1;
+    uint32_t f_dst_y1;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -1939,12 +1946,15 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
   return s < 0;
 }
 
-const char* wuffs_gif__status__strings[7] = {
+const char* wuffs_gif__status__strings[10] = {
     "gif: bad block",
     "gif: bad extension label",
     "gif: bad graphic control",
     "gif: bad header",
     "gif: bad literal width",
+    "gif: not enough pixel data",
+    "gif: too much pixel data",
+    "gif: internal error: inconsistent ri/wi",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -1959,7 +1969,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings;
-      n = 7;
+      n = 10;
       break;
   }
   uint32_t i = s & 0xFF;
@@ -3189,6 +3199,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
         &self->private_impl.f_frame_rect, v_frame_y);
     self->private_impl.f_dst_x = v_frame_x;
     self->private_impl.f_dst_y = v_frame_y;
+    self->private_impl.f_dst_x0 = v_frame_x;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint16_t t_5;
@@ -3251,6 +3262,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
         &self->private_impl.f_frame_rect, v_frame_x);
     wuffs_base__rect_ie_u32__set_max_exclusive_y(
         &self->private_impl.f_frame_rect, v_frame_y);
+    self->private_impl.f_dst_x1 = v_frame_x;
+    self->private_impl.f_dst_y1 = v_frame_y;
     if (self->private_impl.f_call_sequence == 0) {
       self->private_impl.f_width =
           wuffs_base__u32__max(self->private_impl.f_width, v_frame_x);
@@ -3620,18 +3633,81 @@ static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
   wuffs_base__slice_u8 v_dst;
+  wuffs_base__slice_u8 v_src;
   wuffs_base__table_u8 v_tab;
+  uint32_t v_n;
+  uint32_t v_new_ri;
 
   v_dst = ((wuffs_base__slice_u8){});
+  v_src = ((wuffs_base__slice_u8){});
   v_tab = wuffs_base__image_buffer__plane(a_ib, 0);
-  if (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride))) {
+  if (!self->private_impl.f_interlace &&
+      (((uint64_t)(v_tab.width)) == ((uint64_t)(v_tab.stride)))) {
     v_dst = wuffs_base__table_u8__linearize(v_tab);
     if (((uint64_t)(v_dst.len)) == 0) {
     }
     status = WUFFS_GIF__STATUS_OK;
     goto ok;
   }
-  v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+  v_n = 0;
+  v_new_ri = 0;
+label_0_continue:;
+  while (self->private_impl.f_uncompressed_wi >
+         self->private_impl.f_uncompressed_ri) {
+    v_src = wuffs_base__slice_u8__subslice_ij(
+        ((wuffs_base__slice_u8){.ptr = self->private_impl.f_uncompressed,
+                                .len = 4096}),
+        self->private_impl.f_uncompressed_ri,
+        self->private_impl.f_uncompressed_wi);
+    if (self->private_impl.f_dst_y >= self->private_impl.f_dst_y1) {
+      status = WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA;
+      goto exit;
+    }
+    if (self->private_impl.f_interlace) {
+    } else {
+      v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+    }
+    if (((uint64_t)(self->private_impl.f_dst_x)) < ((uint64_t)(v_dst.len))) {
+      v_dst = wuffs_base__slice_u8__subslice_i(
+          v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
+      v_n = ((uint32_t)(
+          (wuffs_base__slice_u8__copy_from_slice(v_dst, v_src) & 4294967295)));
+      v_new_ri =
+          wuffs_base__u32__sat_add(v_n, self->private_impl.f_uncompressed_ri);
+      self->private_impl.f_uncompressed_ri =
+          wuffs_base__u32__min(v_new_ri, 4096);
+      wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_n);
+    }
+    if (self->private_impl.f_dst_x1 <= self->private_impl.f_dst_x) {
+      self->private_impl.f_dst_x = self->private_impl.f_dst_x0;
+      self->private_impl.f_dst_y += 1;
+      goto label_0_continue;
+    }
+    if (self->private_impl.f_uncompressed_wi <=
+        self->private_impl.f_uncompressed_ri) {
+      status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI;
+      goto exit;
+    }
+    v_n = (self->private_impl.f_dst_x1 - self->private_impl.f_dst_x);
+    v_n = wuffs_base__u32__min(v_n, (self->private_impl.f_uncompressed_wi -
+                                     self->private_impl.f_uncompressed_ri));
+    v_new_ri =
+        wuffs_base__u32__sat_add(v_n, self->private_impl.f_uncompressed_ri);
+    self->private_impl.f_uncompressed_ri = wuffs_base__u32__min(v_new_ri, 4096);
+    wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_n);
+    if (self->private_impl.f_dst_x1 <= self->private_impl.f_dst_x) {
+      self->private_impl.f_dst_x = self->private_impl.f_dst_x0;
+      self->private_impl.f_dst_y += 1;
+      goto label_0_continue;
+    }
+    if (self->private_impl.f_uncompressed_ri !=
+        self->private_impl.f_uncompressed_wi) {
+      status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI;
+      goto exit;
+    }
+    goto label_0_break;
+  }
+label_0_break:;
 
   goto ok;
 ok:

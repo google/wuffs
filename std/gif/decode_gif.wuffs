@@ -19,6 +19,10 @@ pub error "bad extension label"
 pub error "bad graphic control"
 pub error "bad header"
 pub error "bad literal width"
+pub error "not enough pixel data"
+pub error "too much pixel data"
+
+pri error "internal error: inconsistent ri/wi"
 
 pub struct decoder?(
 	width base.u32,
@@ -60,6 +64,10 @@ pub struct decoder?(
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
 	dst_x base.u32,
 	dst_y base.u32,
+	// TODO: these are just frame_rect fields.
+	dst_x0 base.u32,
+	dst_x1 base.u32,
+	dst_y1 base.u32,
 
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
@@ -335,11 +343,14 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	this.frame_rect.set_min_inclusive_y!(y:frame_y)
 	this.dst_x = frame_x
 	this.dst_y = frame_y
+	this.dst_x0 = frame_x
 
 	frame_x ~mod+= in.src.read_u16le?() as base.u32
 	frame_y ~mod+= in.src.read_u16le?() as base.u32
 	this.frame_rect.set_max_exclusive_x!(x:frame_x)
 	this.frame_rect.set_max_exclusive_y!(y:frame_y)
+	this.dst_x1 = frame_x
+	this.dst_y1 = frame_y
 
 	// Set the image's overall width and height to be the maximum of the
 	// nominal image width and height (given in the Logical Screen Descriptor)
@@ -473,6 +484,8 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 		}
 	}
 
+	// TODO: check for "not enough pixel data".
+
 	var palette slice base.u8
 	if use_local_palette {
 		palette = this.palettes[1][:]
@@ -499,8 +512,10 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
+	var src slice base.u8
+
 	var tab table base.u8 = in.ib.plane(p:0)
-	if tab.width() == tab.stride() {
+	if (not this.interlace) and (tab.width() == tab.stride()) {
 		dst = tab.linearize()
 		if dst.length() == 0 {
 			// TODO.
@@ -508,5 +523,67 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		return
 	}
 
-	dst = tab.row(y:this.dst_y)
+	var n base.u32
+	// TODO: we shouldn't need this temporary variable.
+	var new_ri base.u32
+	while this.uncompressed_wi > this.uncompressed_ri {
+		assert this.uncompressed_ri < this.uncompressed_wi via "a < b: b > a"()
+		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
+
+		if this.dst_y >= this.dst_y1 {
+			return error "too much pixel data"
+		}
+		assert this.dst_y < 0xFFFFFFFF via "a < b: a < c; c <= b"(c:this.dst_y1)
+
+		// First, copy from src to that part of this.frame_rect that is inside
+		// in.ib's bounds.
+
+		if this.interlace {
+			// TODO.
+		} else {
+			dst = tab.row(y:this.dst_y)
+		}
+
+		if (this.dst_x as base.u64) < dst.length() {
+			// TODO: drop the "as base.u64" on the next line?
+			dst = dst[this.dst_x as base.u64:]
+			n = (dst.copy_from_slice(s:src) & 0xFFFFFFFF) as base.u32
+
+			new_ri = n ~sat+ this.uncompressed_ri
+			this.uncompressed_ri = new_ri.min(x:4096)
+			this.dst_x ~sat+= n
+		}
+
+		if this.dst_x1 <= this.dst_x {
+			this.dst_x = this.dst_x0
+			this.dst_y += 1
+			continue
+		}
+
+		// Second, skip over src for that part of this.frame_rect that is
+		// outside in.ib's bounds. This second step should be infrequent.
+
+		if this.uncompressed_wi <= this.uncompressed_ri {
+			return error "internal error: inconsistent ri/wi"
+		}
+
+		// Set n to the number of pixels (i.e. the number of bytes) to skip.
+		n = this.dst_x1 - this.dst_x
+		n = n.min(x:this.uncompressed_wi - this.uncompressed_ri)
+
+		new_ri = n ~sat+ this.uncompressed_ri
+		this.uncompressed_ri = new_ri.min(x:4096)
+		this.dst_x ~sat+= n
+
+		if this.dst_x1 <= this.dst_x {
+			this.dst_x = this.dst_x0
+			this.dst_y += 1
+			continue
+		}
+
+		if this.uncompressed_ri != this.uncompressed_wi {
+			return error "internal error: inconsistent ri/wi"
+		}
+		break
+	}
 }
