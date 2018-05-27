@@ -1084,8 +1084,18 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		}
 		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
 
-	case t.IDXBinarySlash:
-		// TODO.
+	case t.IDXBinarySlash, t.IDXBinaryPercent:
+		// Prohibit division by zero.
+		if lMin.Sign() < 0 {
+			return nil, nil, fmt.Errorf("check: divide/modulus op argument %q is possibly negative", lhs.Str(q.tm))
+		}
+		if rMin.Sign() <= 0 {
+			return nil, nil, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
+		}
+		if op == t.IDXBinarySlash {
+			return big.NewInt(0).Mul(lMin, rMax), big.NewInt(0).Mul(lMax, rMin), nil
+		}
+		return zero, big.NewInt(0).Sub(rMax, one), nil
 
 	case t.IDXBinaryShiftL:
 		if lMin.Sign() < 0 {
@@ -1140,15 +1150,6 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
 		// conservative, but works fine in practice.
 		return zero, bitMask(z.BitLen()), nil
-
-	case t.IDXBinaryPercent:
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly negative", lhs.Str(q.tm))
-		}
-		if rMin.Sign() <= 0 {
-			return nil, nil, fmt.Errorf("check: modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
-		}
-		return zero, big.NewInt(0).Sub(rMax, one), nil
 
 	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lhs.MType()

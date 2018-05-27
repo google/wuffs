@@ -513,19 +513,56 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var src slice base.u8
+	var n base.u32
+	// TODO: we shouldn't need this temporary variable.
+	var new_ri base.u32
 
 	var tab table base.u8 = in.ib.plane(p:0)
-	if (not this.interlace) and (tab.width() == tab.stride()) {
+
+	// As an optimization, linearize tab's rows into one big slice, in order to
+	// make fewer copy_from_slice calls.
+	//
+	// TODO: measure this optimization and delete it if it doesn't help.
+	if (not this.interlace) and (tab.width() == tab.stride()) and (this.dst_x0 == 0) and
+		((this.dst_x1 as base.u64) == tab.width()) and
+		((this.dst_y1 as base.u64) <= tab.height()) {
+
+		if this.uncompressed_ri > this.uncompressed_wi {
+			return error "internal error: inconsistent ri/wi"
+		}
+		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
+
+		if this.dst_y >= this.dst_y1 {
+			return error "too much pixel data"
+		}
+
+		var i base.u64
 		dst = tab.linearize()
-		if dst.length() == 0 {
-			// TODO.
+
+		i = ((this.dst_y1 as base.u64) * (this.dst_x1 as base.u64))
+		if i < dst.length() {
+			dst = dst[:i]
+		}
+
+		i = ((this.dst_y as base.u64) * (this.dst_x1 as base.u64)) + (this.dst_x as base.u64)
+		if i < dst.length() {
+			dst = dst[i:]
+			n = (dst.copy_from_slice(s:src) & 0xFFFFFFFF) as base.u32
+
+			new_ri = this.uncompressed_ri ~sat+ n
+			this.uncompressed_ri = new_ri.min(x:4096)
+
+			i ~sat+= n as base.u64
+
+			if tab.width() <= 0 {
+				return error "too much pixel data"
+			}
+			this.dst_x = ((i % tab.width()) & 0xFFFFFFFF) as base.u32
+			this.dst_y = ((i / tab.width()) & 0xFFFFFFFF) as base.u32
 		}
 		return
 	}
 
-	var n base.u32
-	// TODO: we shouldn't need this temporary variable.
-	var new_ri base.u32
 	while this.uncompressed_wi > this.uncompressed_ri {
 		assert this.uncompressed_ri < this.uncompressed_wi via "a < b: b > a"()
 		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
@@ -549,7 +586,7 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 			dst = dst[this.dst_x as base.u64:]
 			n = (dst.copy_from_slice(s:src) & 0xFFFFFFFF) as base.u32
 
-			new_ri = n ~sat+ this.uncompressed_ri
+			new_ri = this.uncompressed_ri ~sat+ n
 			this.uncompressed_ri = new_ri.min(x:4096)
 			this.dst_x ~sat+= n
 		}
@@ -571,7 +608,7 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		n = this.dst_x1 - this.dst_x
 		n = n.min(x:this.uncompressed_wi - this.uncompressed_ri)
 
-		new_ri = n ~sat+ this.uncompressed_ri
+		new_ri = this.uncompressed_ri ~sat+ n
 		this.uncompressed_ri = new_ri.min(x:4096)
 		this.dst_x ~sat+= n
 
