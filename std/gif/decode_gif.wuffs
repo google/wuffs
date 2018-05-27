@@ -333,9 +333,9 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 //
 // See the spec section 20 "Image Descriptor" on page 11.
 //
-// The code is split into two parts because determining the overall image's
-// width and height also requires decoding the first frame's bounds (but
-// doesn't require decoding the first frame's pixels).
+// The code is split into two parts (part0 and part1) because determining the
+// overall image's width and height also requires decoding the first frame's
+// bounds (but doesn't require decoding the first frame's pixels).
 pri func decoder.decode_id_part0?(src base.io_reader)() {
 	var frame_x base.u32 = in.src.read_u16le?() as base.u32
 	var frame_y base.u32 = in.src.read_u16le?() as base.u32
