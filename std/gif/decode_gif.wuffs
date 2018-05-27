@@ -456,7 +456,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 					}
 
 				} else {
-					this.copy_to_image_buffer(ib:in.ib)
+					this.copy_to_image_buffer?(ib:in.ib)
 				}
 
 				if z == suspension "short write" {
@@ -496,7 +496,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 	this.gc_duration = 0
 }
 
-pri func decoder.copy_to_image_buffer(ib ptr base.image_buffer)() {
+pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var tab table base.u8 = in.ib.plane(p:0)
