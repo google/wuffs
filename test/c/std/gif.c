@@ -355,9 +355,6 @@ void bench_wuffs_lzw_decode_100k() {
 
 // ---------------- GIF Tests
 
-// TODO: delete this.
-const bool write_to_ib_instead_of_w = true;
-
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
@@ -386,11 +383,9 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     if (s) {
       return wuffs_gif__status__string(s);
     }
-    if (write_to_ib_instead_of_w) {
-      const char* msg = copy_to_io_buffer_from_image_buffer(dst, &ib);
-      if (msg) {
-        return msg;
-      }
+    const char* msg = copy_to_io_buffer_from_image_buffer(dst, &ib);
+    if (msg) {
+      return msg;
     }
   }
   return NULL;
@@ -472,12 +467,10 @@ bool do_test_wuffs_gif_decode(const char* filename,
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
     if (status == WUFFS_GIF__STATUS_OK) {
-      if (write_to_ib_instead_of_w) {
-        const char* msg = copy_to_io_buffer_from_image_buffer(&got, &ib);
-        if (msg) {
-          FAIL("%s", msg);
-          return false;
-        }
+      const char* msg = copy_to_io_buffer_from_image_buffer(&got, &ib);
+      if (msg) {
+        FAIL("%s", msg);
+        return false;
       }
       break;
     }
