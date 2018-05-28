@@ -489,12 +489,11 @@ const (
 	IDAvailable = ID(0x240)
 	IDHeight    = ID(0x241)
 	IDLength    = ID(0x242)
-	IDLinearize = ID(0x243)
-	IDPrefix    = ID(0x244)
-	IDRow       = ID(0x245)
-	IDStride    = ID(0x246)
-	IDSuffix    = ID(0x247)
-	IDWidth     = ID(0x248)
+	IDPrefix    = ID(0x243)
+	IDRow       = ID(0x244)
+	IDStride    = ID(0x245)
+	IDSuffix    = ID(0x246)
+	IDWidth     = ID(0x247)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -712,7 +711,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDAvailable: "available",
 	IDHeight:    "height",
 	IDLength:    "length",
-	IDLinearize: "linearize",
 	IDPrefix:    "prefix",
 	IDRow:       "row",
 	IDStride:    "stride",

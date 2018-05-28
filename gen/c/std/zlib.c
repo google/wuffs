@@ -1761,17 +1761,6 @@ static inline uint64_t wuffs_base__slice_u8__copy_from_slice(
 
 // --------
 
-static inline wuffs_base__slice_u8 wuffs_base__table_u8__linearize(
-    wuffs_base__table_u8 t) {
-  if (t.width == t.stride) {
-    return ((wuffs_base__slice_u8){
-        .ptr = t.ptr,
-        .len = t.width * t.height,
-    });
-  }
-  return ((wuffs_base__slice_u8){});
-}
-
 static inline wuffs_base__slice_u8 wuffs_base__table_u8__row(
     wuffs_base__table_u8 t,
     uint32_t y) {
