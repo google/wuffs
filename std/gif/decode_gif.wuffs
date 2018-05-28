@@ -422,7 +422,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 
 	// TODO: delete the write_to_ib_instead_of_w hack. It should always be
 	// true.
-	var write_to_ib_instead_of_w base.bool = false
+	var write_to_ib_instead_of_w base.bool = true
 
 	this.previous_lzw_decode_ended_abruptly = true
 	while true {

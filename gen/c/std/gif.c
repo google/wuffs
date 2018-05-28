@@ -3437,7 +3437,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     }
     wuffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
                                               ((uint32_t)(v_lw)));
-    v_write_to_ib_instead_of_w = false;
+    v_write_to_ib_instead_of_w = true;
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
     while (true) {
       {

@@ -356,7 +356,7 @@ void bench_wuffs_lzw_decode_100k() {
 // ---------------- GIF Tests
 
 // TODO: delete this.
-const bool write_to_ib_instead_of_w = false;
+const bool write_to_ib_instead_of_w = true;
 
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__io_buffer* src) {
