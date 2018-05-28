@@ -393,7 +393,6 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
 bool do_test_wuffs_gif_decode(const char* filename,
                               const char* palette_filename,
                               const char* indexes_filename,
-                              uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
@@ -452,10 +451,6 @@ bool do_test_wuffs_gif_decode(const char* filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    if (wlimit) {
-      // TODO: wlimit is unused.
-      // set_writer_limit(&got_writer, wlimit);
-    }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
       set_reader_limit(&src_reader, rlimit);
@@ -490,7 +485,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
   }
 
-  if (wlimit || rlimit) {
+  if (rlimit) {
     if (num_iters <= 1) {
       FAIL("num_iters: got %d, want > 1", num_iters);
       return false;
@@ -716,32 +711,32 @@ void test_wuffs_gif_decode_input_is_a_gif() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
                            "../../data/bricks-dither.palette",
-                           "../../data/bricks-dither.indexes", 0, 0);
+                           "../../data/bricks-dither.indexes", 0);
 }
 
 void test_wuffs_gif_decode_input_is_a_gif_many_big_reads() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
                            "../../data/bricks-dither.palette",
-                           "../../data/bricks-dither.indexes", 0, 4096);
+                           "../../data/bricks-dither.indexes", 4096);
 }
 
 void test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
                            "../../data/bricks-dither.palette",
-                           "../../data/bricks-dither.indexes", 0, 787);
+                           "../../data/bricks-dither.indexes", 787);
   // The magic 787 tickles being in the middle of a decode_extension skip32
   // call.
   //
   // TODO: has 787 changed since we decode the image_config separately?
 }
 
-void test_wuffs_gif_decode_input_is_a_gif_many_small_writes_reads() {
+void test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
   CHECK_FOCUS(__func__);
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
                            "../../data/bricks-dither.palette",
-                           "../../data/bricks-dither.indexes", 11, 13);
+                           "../../data/bricks-dither.indexes", 13);
 }
 
 void test_wuffs_gif_decode_input_is_a_png() {
@@ -964,16 +959,16 @@ proc tests[] = {
     test_wuffs_lzw_decode_bricks_nodither,          //
     test_wuffs_lzw_decode_pi,                       //
 
-    test_wuffs_gif_call_sequence,                                  //
-    test_wuffs_gif_decode_animated_big,                            //
-    test_wuffs_gif_decode_animated_medium,                         //
-    test_wuffs_gif_decode_animated_small,                          //
-    test_wuffs_gif_decode_frame_out_of_bounds,                     //
-    test_wuffs_gif_decode_input_is_a_gif,                          //
-    test_wuffs_gif_decode_input_is_a_gif_many_big_reads,           //
-    test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,        //
-    test_wuffs_gif_decode_input_is_a_gif_many_small_writes_reads,  //
-    test_wuffs_gif_decode_input_is_a_png,                          //
+    test_wuffs_gif_call_sequence,                            //
+    test_wuffs_gif_decode_animated_big,                      //
+    test_wuffs_gif_decode_animated_medium,                   //
+    test_wuffs_gif_decode_animated_small,                    //
+    test_wuffs_gif_decode_frame_out_of_bounds,               //
+    test_wuffs_gif_decode_input_is_a_gif,                    //
+    test_wuffs_gif_decode_input_is_a_gif_many_big_reads,     //
+    test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
+    test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
+    test_wuffs_gif_decode_input_is_a_png,                    //
 
 #ifdef WUFFS_MIMIC
 
