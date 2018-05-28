@@ -24,6 +24,8 @@ pub error "too much pixel data"
 
 pri error "internal error: inconsistent ri/wi"
 
+pub error "TODO: unsupported interlacing"
+
 pub struct decoder?(
 	width base.u32,
 	height base.u32,
@@ -418,6 +420,10 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
+	// TODO: delete the write_to_ib_instead_of_w hack. It should always be
+	// true.
+	var write_to_ib_instead_of_w base.bool = false
+
 	this.previous_lzw_decode_ended_abruptly = true
 	while true {
 		var block_size base.u64 = in.src.read_u8?() as base.u64
@@ -448,10 +454,6 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 				//
 				// TODO: in.dst should be a ptr base.image_buffer and we should
 				// composite the pixels instead of just copying them.
-				//
-				// TODO: delete the write_to_ib_instead_of_w hack. It should
-				// always be true.
-				var write_to_ib_instead_of_w base.bool = false
 				if not write_to_ib_instead_of_w {
 					while this.uncompressed_ri < this.uncompressed_wi {
 						var pass_through slice base.u8 = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
@@ -482,6 +484,10 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, 
 			}
 			yield z
 		}
+	}
+
+	if (this.uncompressed_ri != this.uncompressed_wi) and write_to_ib_instead_of_w {
+		this.copy_to_image_buffer?(ib:in.ib)
 	}
 
 	// TODO: check for "not enough pixel data".
@@ -560,6 +566,13 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 			this.dst_x = ((i % tab.width()) & 0xFFFFFFFF) as base.u32
 			this.dst_y = ((i / tab.width()) & 0xFFFFFFFF) as base.u32
 		}
+
+		if this.uncompressed_ri == this.uncompressed_wi {
+			this.uncompressed_ri = 0
+			this.uncompressed_wi = 0
+		} else if this.uncompressed_ri > this.uncompressed_wi {
+			return error "internal error: inconsistent ri/wi"
+		}
 		return
 	}
 
@@ -576,14 +589,19 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		// in.ib's bounds.
 
 		if this.interlace {
-			// TODO.
+			return error "TODO: unsupported interlacing"
 		} else {
 			dst = tab.row(y:this.dst_y)
 		}
 
 		if (this.dst_x as base.u64) < dst.length() {
-			// TODO: drop the "as base.u64" on the next line?
-			dst = dst[this.dst_x as base.u64:]
+			if ((this.dst_x as base.u64) <= (this.dst_x1 as base.u64)) and
+				((this.dst_x1 as base.u64) <= dst.length()) {
+				// TODO: drop the "as base.u64"s on the next line?
+				dst = dst[this.dst_x as base.u64:this.dst_x1 as base.u64]
+			} else {
+				dst = dst[this.dst_x as base.u64:]
+			}
 			n = (dst.copy_from_slice(s:src) & 0xFFFFFFFF) as base.u32
 
 			new_ri = this.uncompressed_ri ~sat+ n
@@ -597,12 +615,14 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 			continue
 		}
 
-		// Second, skip over src for that part of this.frame_rect that is
-		// outside in.ib's bounds. This second step should be infrequent.
-
-		if this.uncompressed_wi <= this.uncompressed_ri {
+		if this.uncompressed_wi == this.uncompressed_ri {
+			break
+		} else if this.uncompressed_wi < this.uncompressed_ri {
 			return error "internal error: inconsistent ri/wi"
 		}
+
+		// Second, skip over src for that part of this.frame_rect that is
+		// outside in.ib's bounds. This second step should be infrequent.
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
 		n = this.dst_x1 - this.dst_x
@@ -623,4 +643,6 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		}
 		break
 	}
+	this.uncompressed_ri = 0
+	this.uncompressed_wi = 0
 }

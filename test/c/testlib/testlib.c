@@ -27,6 +27,7 @@
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
+uint8_t global_pixel_buffer[BUFFER_SIZE];
 uint8_t global_palette_buffer[PALETTE_BUFFER_SIZE];
 
 char fail_msg[65536] = {0};
@@ -330,6 +331,31 @@ void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
   }
 }
 
+const char* copy_to_io_buffer_from_image_buffer(wuffs_base__io_buffer* dst,
+                                                wuffs_base__image_buffer* src) {
+  // TODO: don't assume 1 plane or WUFFS_BASE__PIXEL_SUBSAMPLING__NONE.
+  uint32_t p;
+  for (p = 0; p < 1; p++) {
+    wuffs_base__table_u8 tab = wuffs_base__image_buffer__plane(src, p);
+    wuffs_base__rect_ie_u32 r = wuffs_base__image_buffer__dirty_rect(src);
+    uint32_t y;
+    for (y = r.min_inclusive_y; y < r.max_exclusive_y; y++) {
+      wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
+      if ((r.min_inclusive_x >= r.max_exclusive_x) ||
+          (r.max_exclusive_x > row.len)) {
+        break;
+      }
+      uint32_t n = r.max_exclusive_x - r.min_inclusive_x;
+      if (n > (dst->len - dst->wi)) {
+        return "copy_to_io_buffer_from_image_buffer: dst buffer is too small";
+      }
+      memmove(dst->ptr + dst->wi, row.ptr + r.min_inclusive_x, n);
+      dst->wi += n;
+    }
+  }
+  return NULL;
+}
+
 bool read_file(wuffs_base__io_buffer* dst, const char* path) {
   if (!dst || !path) {
     FAIL("read_file: NULL argument");
@@ -444,7 +470,8 @@ bool io_buffers_equal(const char* prefix,
   }
   char* msg = fail_msg;
   size_t i;
-  for (i = 0; (i < got->wi) && (i < want->wi); i++) {
+  size_t n = got->wi < want->wi ? got->wi : want->wi;
+  for (i = 0; i < n; i++) {
     if (got->ptr[i] != want->ptr[i]) {
       break;
     }
@@ -453,7 +480,7 @@ bool io_buffers_equal(const char* prefix,
     INCR_FAIL(msg, "%sio_buffers_equal: wi: got %zu, want %zu.\n", prefix,
               got->wi, want->wi);
   } else if (i < got->wi) {
-    INCR_FAIL(msg, "%sio_buffers_equal:\n", prefix);
+    INCR_FAIL(msg, "%sio_buffers_equal: wi=%zu:\n", prefix, n);
   } else {
     return true;
   }

@@ -355,6 +355,9 @@ void bench_wuffs_lzw_decode_100k() {
 
 // ---------------- GIF Tests
 
+// TODO: delete this.
+const bool write_to_ib_instead_of_w = false;
+
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
@@ -370,7 +373,11 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   }
   // TODO: check wuffs_base__image_buffer__set_from_slice errors?
   wuffs_base__image_buffer__set_from_slice(
-      &ib, ic, wuffs_base__io_buffer__writable(dst));
+      &ib, ic,
+      ((wuffs_base__slice_u8){
+          .ptr = global_pixel_buffer,
+          .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
+      }));
   while (true) {
     s = wuffs_gif__decoder__decode_frame(&dec, &ib, dst_writer, src_reader);
     if (s == WUFFS_GIF__SUSPENSION_END_OF_DATA) {
@@ -378,6 +385,12 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     }
     if (s) {
       return wuffs_gif__status__string(s);
+    }
+    if (write_to_ib_instead_of_w) {
+      const char* msg = copy_to_io_buffer_from_image_buffer(dst, &ib);
+      if (msg) {
+        return msg;
+      }
     }
   }
   return NULL;
@@ -435,7 +448,11 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
     // TODO: check wuffs_base__image_buffer__set_from_slice errors?
     wuffs_base__image_buffer__set_from_slice(
-        &ib, ic, wuffs_base__io_buffer__writable(&got));
+        &ib, ic,
+        ((wuffs_base__slice_u8){
+            .ptr = global_pixel_buffer,
+            .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
+        }));
   }
 
   int num_iters = 0;
@@ -455,6 +472,13 @@ bool do_test_wuffs_gif_decode(const char* filename,
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
     if (status == WUFFS_GIF__STATUS_OK) {
+      if (write_to_ib_instead_of_w) {
+        const char* msg = copy_to_io_buffer_from_image_buffer(&got, &ib);
+        if (msg) {
+          FAIL("%s", msg);
+          return false;
+        }
+      }
       break;
     }
     if ((status != WUFFS_GIF__SUSPENSION_SHORT_READ) &&
@@ -604,7 +628,11 @@ bool do_test_wuffs_gif_decode_animated(
   }
   // TODO: check wuffs_base__image_buffer__set_from_slice errors?
   wuffs_base__image_buffer__set_from_slice(
-      &ib, ic, wuffs_base__io_buffer__writable(&got));
+      &ib, ic,
+      ((wuffs_base__slice_u8){
+          .ptr = global_pixel_buffer,
+          .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
+      }));
 
   uint32_t i;
   for (i = 0; i < want_num_frames; i++) {
@@ -800,6 +828,11 @@ bool do_test_mimic_gif_decode(const char* filename) {
   return true;
 }
 
+void test_mimic_gif_decode_animated_small() {
+  CHECK_FOCUS(__func__);
+  do_test_mimic_gif_decode("../../data/animated-red-blue.gif");
+}
+
 void test_mimic_gif_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../data/bricks-dither.gif");
@@ -969,6 +1002,7 @@ proc tests[] = {
 
 #ifdef WUFFS_MIMIC
 
+    test_mimic_gif_decode_animated_small,       //
     test_mimic_gif_decode_bricks_dither,        //
     test_mimic_gif_decode_bricks_gray,          //
     test_mimic_gif_decode_bricks_nodither,      //

@@ -1213,8 +1213,9 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA -1105848314    // 0xBE161806
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
   -1105848313                                                      // 0xBE161807
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848312      // 0xBE161808
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848311  // 0xBE161809
+#define WUFFS_GIF__ERROR_TODO_UNSUPPORTED_INTERLACING -1105848312  // 0xBE161808
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848311      // 0xBE161809
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848310  // 0xBE16180A
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1355,9 +1356,9 @@ typedef struct {
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint8_t v_lw;
+      bool v_write_to_ib_instead_of_w;
       uint64_t v_block_size;
       wuffs_gif__status v_z;
-      bool v_write_to_ib_instead_of_w;
       uint64_t v_n_copied;
     } c_decode_id_part1[1];
   } private_impl;
@@ -1946,7 +1947,7 @@ bool wuffs_gif__status__is_error(wuffs_gif__status s) {
   return s < 0;
 }
 
-const char* wuffs_gif__status__strings[10] = {
+const char* wuffs_gif__status__strings[11] = {
     "gif: bad block",
     "gif: bad extension label",
     "gif: bad graphic control",
@@ -1955,6 +1956,7 @@ const char* wuffs_gif__status__strings[10] = {
     "gif: not enough pixel data",
     "gif: too much pixel data",
     "gif: internal error: inconsistent ri/wi",
+    "gif: TODO: unsupported interlacing",
     "gif: LZW code is out of range",
     "gif: LZW prefix chain is cyclical",
 };
@@ -1969,7 +1971,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings;
-      n = 10;
+      n = 11;
       break;
   }
   uint32_t i = s & 0xFF;
@@ -3314,6 +3316,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   uint32_t v_num_palette_entries;
   uint32_t v_i;
   uint8_t v_lw;
+  bool v_write_to_ib_instead_of_w;
   uint64_t v_block_size;
   wuffs_base__io_writer v_w;
   wuffs_base__io_buffer u_w;
@@ -3323,7 +3326,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(ioptr_w);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_w);
   wuffs_gif__status v_z;
-  bool v_write_to_ib_instead_of_w;
   wuffs_base__slice_u8 v_pass_through;
   uint64_t v_n_copied;
   wuffs_base__slice_u8 v_palette;
@@ -3372,18 +3374,18 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
         self->private_impl.c_decode_id_part1[0].v_num_palette_entries;
     v_i = self->private_impl.c_decode_id_part1[0].v_i;
     v_lw = self->private_impl.c_decode_id_part1[0].v_lw;
+    v_write_to_ib_instead_of_w =
+        self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w;
     v_block_size = self->private_impl.c_decode_id_part1[0].v_block_size;
     v_w = ((wuffs_base__io_writer){});
     v_z = self->private_impl.c_decode_id_part1[0].v_z;
-    v_write_to_ib_instead_of_w =
-        self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w;
     v_pass_through = ((wuffs_base__slice_u8){});
     v_n_copied = self->private_impl.c_decode_id_part1[0].v_n_copied;
     v_palette = ((wuffs_base__slice_u8){});
   } else {
     v_use_local_palette = false;
-    v_w = ((wuffs_base__io_writer){});
     v_write_to_ib_instead_of_w = false;
+    v_w = ((wuffs_base__io_writer){});
     v_pass_through = ((wuffs_base__slice_u8){});
     v_palette = ((wuffs_base__slice_u8){});
   }
@@ -3457,6 +3459,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     }
     wuffs_gif__lzw_decoder__set_literal_width(&self->private_impl.f_lzw,
                                               ((uint32_t)(v_lw)));
+    v_write_to_ib_instead_of_w = false;
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
     while (true) {
       {
@@ -3519,7 +3522,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
           a_src = o_0_a_src;
         }
         if ((v_z == 0) || (v_z == WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {
-          v_write_to_ib_instead_of_w = false;
           if (!v_write_to_ib_instead_of_w) {
             while (self->private_impl.f_uncompressed_ri <
                    self->private_impl.f_uncompressed_wi) {
@@ -3565,6 +3567,15 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     label_1_break:;
     }
   label_0_break:;
+    if ((self->private_impl.f_uncompressed_ri !=
+         self->private_impl.f_uncompressed_wi) &&
+        v_write_to_ib_instead_of_w) {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
+      status = wuffs_gif__decoder__copy_to_image_buffer(self, a_ib);
+      if (status) {
+        goto suspend;
+      }
+    }
     v_palette = ((wuffs_base__slice_u8){});
     if (v_use_local_palette) {
       v_palette = ((wuffs_base__slice_u8){
@@ -3599,10 +3610,10 @@ suspend:
       v_num_palette_entries;
   self->private_impl.c_decode_id_part1[0].v_i = v_i;
   self->private_impl.c_decode_id_part1[0].v_lw = v_lw;
-  self->private_impl.c_decode_id_part1[0].v_block_size = v_block_size;
-  self->private_impl.c_decode_id_part1[0].v_z = v_z;
   self->private_impl.c_decode_id_part1[0].v_write_to_ib_instead_of_w =
       v_write_to_ib_instead_of_w;
+  self->private_impl.c_decode_id_part1[0].v_block_size = v_block_size;
+  self->private_impl.c_decode_id_part1[0].v_z = v_z;
   self->private_impl.c_decode_id_part1[0].v_n_copied = v_n_copied;
 
   goto exit;
@@ -3693,6 +3704,15 @@ static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
       self->private_impl.f_dst_y =
           ((uint32_t)(((v_i / ((uint64_t)(v_tab.width))) & 4294967295)));
     }
+    if (self->private_impl.f_uncompressed_ri ==
+        self->private_impl.f_uncompressed_wi) {
+      self->private_impl.f_uncompressed_ri = 0;
+      self->private_impl.f_uncompressed_wi = 0;
+    } else if (self->private_impl.f_uncompressed_ri >
+               self->private_impl.f_uncompressed_wi) {
+      status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI;
+      goto exit;
+    }
     status = WUFFS_GIF__STATUS_OK;
     goto ok;
   }
@@ -3709,12 +3729,23 @@ label_0_continue:;
       goto exit;
     }
     if (self->private_impl.f_interlace) {
+      status = WUFFS_GIF__ERROR_TODO_UNSUPPORTED_INTERLACING;
+      goto exit;
     } else {
       v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     }
     if (((uint64_t)(self->private_impl.f_dst_x)) < ((uint64_t)(v_dst.len))) {
-      v_dst = wuffs_base__slice_u8__subslice_i(
-          v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
+      if ((((uint64_t)(self->private_impl.f_dst_x)) <=
+           ((uint64_t)(self->private_impl.f_dst_x1))) &&
+          (((uint64_t)(self->private_impl.f_dst_x1)) <=
+           ((uint64_t)(v_dst.len)))) {
+        v_dst = wuffs_base__slice_u8__subslice_ij(
+            v_dst, ((uint64_t)(self->private_impl.f_dst_x)),
+            ((uint64_t)(self->private_impl.f_dst_x1)));
+      } else {
+        v_dst = wuffs_base__slice_u8__subslice_i(
+            v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
+      }
       v_n = ((uint32_t)(
           (wuffs_base__slice_u8__copy_from_slice(v_dst, v_src) & 4294967295)));
       v_new_ri =
@@ -3728,8 +3759,11 @@ label_0_continue:;
       self->private_impl.f_dst_y += 1;
       goto label_0_continue;
     }
-    if (self->private_impl.f_uncompressed_wi <=
+    if (self->private_impl.f_uncompressed_wi ==
         self->private_impl.f_uncompressed_ri) {
+      goto label_0_break;
+    } else if (self->private_impl.f_uncompressed_wi <
+               self->private_impl.f_uncompressed_ri) {
       status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI;
       goto exit;
     }
@@ -3753,6 +3787,8 @@ label_0_continue:;
     goto label_0_break;
   }
 label_0_break:;
+  self->private_impl.f_uncompressed_ri = 0;
+  self->private_impl.f_uncompressed_wi = 0;
 
   goto ok;
 ok:

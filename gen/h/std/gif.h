@@ -1213,8 +1213,9 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA -1105848314    // 0xBE161806
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
   -1105848313                                                      // 0xBE161807
-#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848312      // 0xBE161808
-#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848311  // 0xBE161809
+#define WUFFS_GIF__ERROR_TODO_UNSUPPORTED_INTERLACING -1105848312  // 0xBE161808
+#define WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE -1105848311      // 0xBE161809
+#define WUFFS_GIF__ERROR_LZW_PREFIX_CHAIN_IS_CYCLICAL -1105848310  // 0xBE16180A
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1355,9 +1356,9 @@ typedef struct {
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint8_t v_lw;
+      bool v_write_to_ib_instead_of_w;
       uint64_t v_block_size;
       wuffs_gif__status v_z;
-      bool v_write_to_ib_instead_of_w;
       uint64_t v_n_copied;
     } c_decode_id_part1[1];
   } private_impl;
