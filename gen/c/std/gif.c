@@ -1361,7 +1361,6 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
 wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
-    wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
 wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
@@ -1992,7 +1991,6 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
 static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
-    wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
 static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
@@ -2122,7 +2120,6 @@ exit:
 wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
-    wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_GIF__ERROR_BAD_RECEIVER;
@@ -2169,7 +2166,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
       }
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    status = wuffs_gif__decoder__decode_id_part1(self, a_ib, a_dst, a_src);
+    status = wuffs_gif__decoder__decode_id_part1(self, a_ib, a_src);
     if (status) {
       goto suspend;
     }
@@ -3272,7 +3269,6 @@ short_read_src:
 static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
-    wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 

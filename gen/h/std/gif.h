@@ -1361,7 +1361,6 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
 wuffs_gif__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib,
-    wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
 wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(

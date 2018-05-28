@@ -102,7 +102,7 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	this.call_sequence = 1
 }
 
-pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode_frame?(ib ptr base.image_buffer, src base.io_reader)() {
 	if this.call_sequence == 0 {
 		return error "invalid call sequence"
 	}
@@ -124,7 +124,7 @@ pub func decoder.decode_frame?(ib ptr base.image_buffer, dst base.io_writer, src
 		}
 	}
 
-	this.decode_id_part1?(ib:in.ib, dst:in.dst, src:in.src)
+	this.decode_id_part1?(ib:in.ib, src:in.src)
 }
 
 pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
@@ -365,8 +365,7 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	}
 }
 
-// TODO: dst should be a ptr base.image_buffer, not a base.io_writer.
-pri func decoder.decode_id_part1?(ib ptr base.image_buffer, dst base.io_writer, src base.io_reader)() {
+pri func decoder.decode_id_part1?(ib ptr base.image_buffer, src base.io_reader)() {
 	// TODO: use this.interlace.
 	var flags base.u8 = in.src.read_u8?()
 	this.interlace = (flags & 0x40) != 0

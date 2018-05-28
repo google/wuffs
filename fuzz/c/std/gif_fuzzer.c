@@ -76,18 +76,9 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     wuffs_base__image_buffer__set_from_slice(
         &ib, ic, ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
 
-    wuffs_base__io_buffer dst = {.ptr = (uint8_t*)(pixbuf), .len = pixbuf_size};
-    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
-
     bool seen_ok = false;
     while (true) {
-      // TODO: handle the frame rect being larger than the image rect. The
-      // GIF89a spec doesn't disallow this and the Wuffs code tolerates it, in
-      // that it returns a "short write" (because the dst buffer is too small)
-      // and will not e.g. write past the buffer bounds. But the Wuffs GIF API
-      // should somehow pass a subset of pixbuf to decode_frame.
-      dst.wi = 0;
-      s = wuffs_gif__decoder__decode_frame(&dec, &ib, dst_writer, src_reader);
+      s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
       if (s) {
         if ((s == WUFFS_GIF__SUSPENSION_END_OF_DATA) && seen_ok) {
           s = WUFFS_GIF__STATUS_OK;

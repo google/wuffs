@@ -361,7 +361,6 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -376,7 +375,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
           .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
       }));
   while (true) {
-    s = wuffs_gif__decoder__decode_frame(&dec, &ib, dst_writer, src_reader);
+    s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
     if (s == WUFFS_GIF__SUSPENSION_END_OF_DATA) {
       break;
     }
@@ -453,19 +452,19 @@ bool do_test_wuffs_gif_decode(const char* filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     if (wlimit) {
-      set_writer_limit(&got_writer, wlimit);
+      // TODO: wlimit is unused.
+      // set_writer_limit(&got_writer, wlimit);
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     if (rlimit) {
       set_reader_limit(&src_reader, rlimit);
     }
-    size_t old_wi = got.wi;
     size_t old_ri = src.ri;
 
     wuffs_gif__status status =
-        wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
+        wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
+
     if (status == WUFFS_GIF__STATUS_OK) {
       const char* msg = copy_to_io_buffer_from_image_buffer(&got, &ib);
       if (msg) {
@@ -474,27 +473,18 @@ bool do_test_wuffs_gif_decode(const char* filename,
       }
       break;
     }
-    if ((status != WUFFS_GIF__SUSPENSION_SHORT_READ) &&
-        (status != WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {
-      FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32
-           " (%s) or %" PRIi32 " (%s)",
-           status, wuffs_gif__status__string(status),
-           WUFFS_GIF__SUSPENSION_SHORT_READ,
-           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_READ),
-           WUFFS_GIF__SUSPENSION_SHORT_WRITE,
-           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_WRITE));
+    if (status != WUFFS_GIF__SUSPENSION_SHORT_READ) {
+      FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
+           wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_SHORT_READ,
+           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_READ));
       return false;
     }
 
-    if (got.wi < old_wi) {
-      FAIL("write index got.wi went backwards");
-      return false;
-    }
     if (src.ri < old_ri) {
       FAIL("read index src.ri went backwards");
       return false;
     }
-    if ((got.wi == old_wi) && (src.ri == old_ri)) {
+    if (src.ri == old_ri) {
       FAIL("no progress was made");
       return false;
     }
@@ -539,10 +529,9 @@ bool do_test_wuffs_gif_decode(const char* filename,
       FAIL("decode_frame returned \"ok\" but src was exhausted");
       return false;
     }
-    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     wuffs_gif__status status =
-        wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
+        wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
     if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
       FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
            wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_END_OF_DATA,
@@ -561,7 +550,6 @@ bool do_test_wuffs_gif_decode(const char* filename,
 void test_wuffs_gif_call_sequence() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, "../../data/bricks-dither.gif")) {
@@ -572,11 +560,10 @@ void test_wuffs_gif_call_sequence() {
   wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
-      wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
+      wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
   if (status != WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE) {
     FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status),
@@ -591,7 +578,6 @@ bool do_test_wuffs_gif_decode_animated(
     uint32_t want_num_loops,
     uint32_t want_num_frames,
     wuffs_base__rect_ie_u32* want_dirty_rects) {
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
   wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
 
   if (!read_file(&src, filename)) {
@@ -603,7 +589,6 @@ bool do_test_wuffs_gif_decode_animated(
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
@@ -629,9 +614,7 @@ bool do_test_wuffs_gif_decode_animated(
 
   uint32_t i;
   for (i = 0; i < want_num_frames; i++) {
-    got.wi = 0;
-    status =
-        wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
+    status = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
       FAIL("decode_frame #%" PRIu32 ": got %" PRIi32 " (%s)", i, status,
            wuffs_gif__status__string(status));
@@ -654,8 +637,7 @@ bool do_test_wuffs_gif_decode_animated(
   }
 
   // There should be no more frames.
-  got.wi = 0;
-  status = wuffs_gif__decoder__decode_frame(&dec, &ib, got_writer, src_reader);
+  status = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
   if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
     FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status), WUFFS_GIF__SUSPENSION_END_OF_DATA,
