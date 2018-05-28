@@ -46,6 +46,11 @@ Comfort Tiffany, held by the Metropolitan Museum of Art.
 `http://www.metmuseum.org/art/collection/search/13503` lists that image as in
 the public domain.
 
+hippopotamus.\* are various encodings of a cropping of a photo of "Hippopotamus
+(William)", held by the Metropolitan Museum of Art.
+`http://www.metmuseum.org/art/collection/search/544227` lists that image as in
+the public domain.
+
 `http://www.metmuseum.org/about-the-met/policies-and-documents/image-resources`
 says that "You are welcome to use images of artworks in The Met collection that
 the Museum believes to be in the public domain, or those to which the Museum
