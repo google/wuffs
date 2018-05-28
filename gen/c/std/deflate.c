@@ -1095,7 +1095,7 @@ static inline void wuffs_base__image_buffer__update(
   dirty_rect.max_exclusive_x = wuffs_base__u32__min(
       dirty_rect.max_exclusive_x, b->private_impl.config.private_impl.width);
   dirty_rect.max_exclusive_y = wuffs_base__u32__min(
-      dirty_rect.max_exclusive_y, b->private_impl.config.private_impl.width);
+      dirty_rect.max_exclusive_y, b->private_impl.config.private_impl.height);
   b->private_impl.dirty_rect = dirty_rect;
 
   b->private_impl.duration = duration;
