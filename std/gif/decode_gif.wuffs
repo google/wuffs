@@ -53,7 +53,7 @@ pub struct decoder?(
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
 	seen_num_loops base.bool,
-	num_loops base.u32 = 1,
+	num_loops base.u32,
 
 	seen_graphic_control base.bool,
 	gc_has_transparent_index base.bool,
@@ -92,12 +92,17 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
+	var num_loops base.u32 = 1
+	if this.seen_num_loops {
+		num_loops = this.num_loops
+	}
+
 	// TODO: rename initialize to set?
 	//
 	// TODO: a Wuffs (not just C) name for the
 	// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
 	in.dst.initialize!(pixfmt:0x22088888, pixsub:0,
-		width:this.width, height:this.height, num_loops:this.num_loops)
+		width:this.width, height:this.height, num_loops:num_loops)
 
 	this.call_sequence = 1
 }

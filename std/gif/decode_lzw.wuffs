@@ -18,7 +18,7 @@ pub error "LZW code is out of range"
 pub error "LZW prefix chain is cyclical"
 
 pri struct lzw_decoder?(
-	literal_width base.u32[2..8] = 8,
+	literal_width base.u32[..8],
 	stack array[4096] base.u8,
 	suffixes array[4096] base.u8,
 	prefixes array[4096] base.u16[..4095],
@@ -30,7 +30,11 @@ pri func lzw_decoder.set_literal_width!(lw base.u32[2..8] = 8)() {
 
 pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	// These variables don't change over the lifetime of this func.
-	var clear_code base.u32[4..256] = (1 as base.u32) << this.literal_width
+	var literal_width base.u32[2..8] = 8
+	if this.literal_width >= 2 {
+		literal_width = this.literal_width
+	}
+	var clear_code base.u32[4..256] = (1 as base.u32) << literal_width
 	var end_code base.u32[5..257] = clear_code + 1
 
 	// These variables do change.
@@ -40,8 +44,7 @@ pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	// `max`. 4096 means do not save.
 	var save_code base.u32[..4096] = end_code
 	var prev_code base.u32[..4095]
-	var initial_width base.u32[..12] = this.literal_width + 1
-	var width base.u32[..12] = initial_width
+	var width base.u32[..12] = literal_width + 1
 
 	// These variables yield src's bits in Least Significant Bits order.
 	var bits base.u32
@@ -74,7 +77,7 @@ pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 		} else if code == clear_code {
 			save_code = end_code
 			prev_code = 0
-			width = initial_width
+			width = literal_width + 1
 			continue
 
 		} else if code == end_code {

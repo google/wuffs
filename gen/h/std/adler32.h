@@ -1204,6 +1204,7 @@ typedef struct {
     uint32_t magic;
 
     uint32_t f_state;
+    bool f_started;
 
   } private_impl;
 } wuffs_adler32__hasher;

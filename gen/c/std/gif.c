@@ -1222,11 +1222,11 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_literal_width;
       uint32_t v_clear_code;
       uint32_t v_end_code;
       uint32_t v_save_code;
       uint32_t v_prev_code;
-      uint32_t v_initial_width;
       uint32_t v_width;
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -1279,6 +1279,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_num_loops;
     } c_decode_config[1];
     struct {
       uint32_t coro_susp_point;
@@ -2022,7 +2023,6 @@ void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
-  self->private_impl.f_literal_width = 8;
 }
 
 void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
@@ -2039,7 +2039,6 @@ void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
-  self->private_impl.f_num_loops = 1;
   wuffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw, WUFFS_VERSION,
                                      WUFFS_BASE__ALREADY_ZEROED);
 }
@@ -2067,9 +2066,12 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   }
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
+  uint32_t v_num_loops;
+
   uint32_t coro_susp_point =
       self->private_impl.c_decode_config[0].coro_susp_point;
   if (coro_susp_point) {
+    v_num_loops = self->private_impl.c_decode_config[0].v_num_loops;
   } else {
   }
   switch (coro_susp_point) {
@@ -2094,9 +2096,13 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     if (status) {
       goto suspend;
     }
+    v_num_loops = 1;
+    if (self->private_impl.f_seen_num_loops) {
+      v_num_loops = self->private_impl.f_num_loops;
+    }
     wuffs_base__image_config__initialize(
         a_dst, 570984584, 0, self->private_impl.f_width,
-        self->private_impl.f_height, self->private_impl.f_num_loops);
+        self->private_impl.f_height, v_num_loops);
     self->private_impl.f_call_sequence = 1;
 
     goto ok;
@@ -2108,6 +2114,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
   goto suspend;
 suspend:
   self->private_impl.c_decode_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_config[0].v_num_loops = v_num_loops;
 
   goto exit;
 exit:
@@ -3649,11 +3656,11 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
     wuffs_base__io_reader a_src) {
   wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
 
+  uint32_t v_literal_width;
   uint32_t v_clear_code;
   uint32_t v_end_code;
   uint32_t v_save_code;
   uint32_t v_prev_code;
-  uint32_t v_initial_width;
   uint32_t v_width;
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -3699,11 +3706,11 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
+    v_literal_width = self->private_impl.c_decode[0].v_literal_width;
     v_clear_code = self->private_impl.c_decode[0].v_clear_code;
     v_end_code = self->private_impl.c_decode[0].v_end_code;
     v_save_code = self->private_impl.c_decode[0].v_save_code;
     v_prev_code = self->private_impl.c_decode[0].v_prev_code;
-    v_initial_width = self->private_impl.c_decode[0].v_initial_width;
     v_width = self->private_impl.c_decode[0].v_width;
     v_bits = self->private_impl.c_decode[0].v_bits;
     v_n_bits = self->private_impl.c_decode[0].v_n_bits;
@@ -3718,12 +3725,15 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    v_clear_code = (((uint32_t)(1)) << self->private_impl.f_literal_width);
+    v_literal_width = 8;
+    if (self->private_impl.f_literal_width >= 2) {
+      v_literal_width = self->private_impl.f_literal_width;
+    }
+    v_clear_code = (((uint32_t)(1)) << v_literal_width);
     v_end_code = (v_clear_code + 1);
     v_save_code = v_end_code;
     v_prev_code = 0;
-    v_initial_width = (self->private_impl.f_literal_width + 1);
-    v_width = v_initial_width;
+    v_width = (v_literal_width + 1);
     v_bits = 0;
     v_n_bits = 0;
   label_0_continue:;
@@ -3757,7 +3767,7 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
       } else if (v_code == v_clear_code) {
         v_save_code = v_end_code;
         v_prev_code = 0;
-        v_width = v_initial_width;
+        v_width = (v_literal_width + 1);
         goto label_0_continue;
       } else if (v_code == v_end_code) {
         status = WUFFS_GIF__STATUS_OK;
@@ -3824,11 +3834,11 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode[0].v_literal_width = v_literal_width;
   self->private_impl.c_decode[0].v_clear_code = v_clear_code;
   self->private_impl.c_decode[0].v_end_code = v_end_code;
   self->private_impl.c_decode[0].v_save_code = v_save_code;
   self->private_impl.c_decode[0].v_prev_code = v_prev_code;
-  self->private_impl.c_decode[0].v_initial_width = v_initial_width;
   self->private_impl.c_decode[0].v_width = v_width;
   self->private_impl.c_decode[0].v_bits = v_bits;
   self->private_impl.c_decode[0].v_n_bits = v_n_bits;

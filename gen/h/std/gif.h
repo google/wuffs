@@ -1222,11 +1222,11 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_literal_width;
       uint32_t v_clear_code;
       uint32_t v_end_code;
       uint32_t v_save_code;
       uint32_t v_prev_code;
-      uint32_t v_initial_width;
       uint32_t v_width;
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -1279,6 +1279,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
+      uint32_t v_num_loops;
     } c_decode_config[1];
     struct {
       uint32_t coro_susp_point;

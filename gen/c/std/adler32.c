@@ -1204,6 +1204,7 @@ typedef struct {
     uint32_t magic;
 
     uint32_t f_state;
+    bool f_started;
 
   } private_impl;
 } wuffs_adler32__hasher;
@@ -1809,7 +1810,6 @@ void wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
     memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
-  self->private_impl.f_state = 1;
 }
 
 // ---------------- Function Implementations
@@ -1832,6 +1832,10 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
   uint32_t v_s2;
   wuffs_base__slice_u8 v_remaining;
 
+  if (!self->private_impl.f_started) {
+    self->private_impl.f_started = true;
+    self->private_impl.f_state = 1;
+  }
   v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
   v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
   while (((uint64_t)(a_x.len)) > 0) {

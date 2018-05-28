@@ -90,11 +90,6 @@ void test_basic_wuffs_version_good() {
     FAIL("magic: got %u, want %u", dec.private_impl.magic, WUFFS_BASE__MAGIC);
     return;
   }
-  if (dec.private_impl.f_lzw.private_impl.f_literal_width != 8) {
-    FAIL("f_literal_width: got %u, want %u",
-         dec.private_impl.f_lzw.private_impl.f_literal_width, 8);
-    return;
-  }
 }
 
 void test_basic_status_is_error() {
