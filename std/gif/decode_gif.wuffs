@@ -102,7 +102,7 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	this.call_sequence = 1
 }
 
-pub func decoder.decode_frame?(ib ptr base.image_buffer, src base.io_reader)() {
+pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader)() {
 	if this.call_sequence == 0 {
 		return error "invalid call sequence"
 	}
@@ -124,7 +124,7 @@ pub func decoder.decode_frame?(ib ptr base.image_buffer, src base.io_reader)() {
 		}
 	}
 
-	this.decode_id_part1?(ib:in.ib, src:in.src)
+	this.decode_id_part1?(dst:in.dst, src:in.src)
 }
 
 pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
@@ -365,7 +365,7 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	}
 }
 
-pri func decoder.decode_id_part1?(ib ptr base.image_buffer, src base.io_reader)() {
+pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)() {
 	// TODO: use this.interlace.
 	var flags base.u8 = in.src.read_u8?()
 	this.interlace = (flags & 0x40) != 0
@@ -445,7 +445,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, src base.io_reader)(
 			}
 
 			if z.is_ok() or (z == suspension "short write") {
-				this.copy_to_image_buffer?(ib:in.ib)
+				this.copy_to_image_buffer?(ib:in.dst)
 
 				if z == suspension "short write" {
 					continue:inner
@@ -462,7 +462,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, src base.io_reader)(
 	}
 
 	if this.uncompressed_ri != this.uncompressed_wi {
-		this.copy_to_image_buffer?(ib:in.ib)
+		this.copy_to_image_buffer?(ib:in.dst)
 	}
 
 	// TODO: check for "not enough pixel data".
@@ -477,7 +477,7 @@ pri func decoder.decode_id_part1?(ib ptr base.image_buffer, src base.io_reader)(
 		// Both this frame and the previous one used the global palette. No
 		// palette update is necessary.
 	}
-	in.ib.update!(dirty_rect:this.frame_rect, duration:this.gc_duration, palette:palette)
+	in.dst.update!(dirty_rect:this.frame_rect, duration:this.gc_duration, palette:palette)
 
 	this.previous_use_global_palette = not use_local_palette
 
