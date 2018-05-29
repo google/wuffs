@@ -50,8 +50,8 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 void test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
-  wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_reader src = {{0}};
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
   wuffs_gif__status status = wuffs_gif__decoder__decode_config(NULL, &ic, src);
   if (status != WUFFS_GIF__ERROR_BAD_RECEIVER) {
     FAIL("decode_config: got %d, want %d", status,
@@ -61,9 +61,9 @@ void test_basic_bad_receiver() {
 
 void test_basic_initializer_not_called() {
   CHECK_FOCUS(__func__);
-  wuffs_gif__decoder dec = {{0}};
-  wuffs_base__image_config ic = {{0}};
-  wuffs_base__io_reader src = {{0}};
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
   wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
   if (status != WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED) {
     FAIL("decode_config: got %d, want %d", status,
@@ -73,8 +73,9 @@ void test_basic_initializer_not_called() {
 
 void test_basic_wuffs_version_bad() {
   CHECK_FOCUS(__func__);
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, 0, 0);  // 0 is not WUFFS_VERSION.
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, 0,
+                                          0);  // 0 is not WUFFS_VERSION.
   if (dec.private_impl.status != WUFFS_GIF__ERROR_BAD_WUFFS_VERSION) {
     FAIL("decode_config: got %d, want %d", dec.private_impl.status,
          WUFFS_GIF__ERROR_BAD_WUFFS_VERSION);
@@ -84,8 +85,8 @@ void test_basic_wuffs_version_bad() {
 
 void test_basic_wuffs_version_good() {
   CHECK_FOCUS(__func__);
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
   if (dec.private_impl.magic != WUFFS_BASE__MAGIC) {
     FAIL("magic: got %u, want %u", dec.private_impl.magic, WUFFS_BASE__MAGIC);
     return;
@@ -150,8 +151,8 @@ void test_basic_status_strings() {
 
 void test_basic_sub_struct_initializer() {
   CHECK_FOCUS(__func__);
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
   if (dec.private_impl.magic != WUFFS_BASE__MAGIC) {
     FAIL("outer magic: got %u, want %u", dec.private_impl.magic,
          WUFFS_BASE__MAGIC);
@@ -172,9 +173,12 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
                               uint64_t want_size,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer want =
+      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, src_filename)) {
     return false;
@@ -199,8 +203,8 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     return false;
   }
 
-  wuffs_gif__lzw_decoder dec;
-  wuffs_gif__lzw_decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__lzw_decoder dec = ((wuffs_gif__lzw_decoder){});
+  wuffs_gif__lzw_decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
   wuffs_gif__lzw_decoder__set_literal_width(&dec, literal_width);
   int num_iters = 0;
   while (true) {
@@ -299,8 +303,10 @@ void test_wuffs_lzw_decode_pi() {
 // ---------------- LZW Benches
 
 bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
-  wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer dst =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
@@ -324,8 +330,9 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   for (i = 0; i < iters; i++) {
     dst.wi = 0;
     src.ri = 1;  // Skip the literal width.
-    wuffs_gif__lzw_decoder dec;
-    wuffs_gif__lzw_decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_gif__lzw_decoder dec = ((wuffs_gif__lzw_decoder){});
+    wuffs_gif__lzw_decoder__check_wuffs_version(&dec, WUFFS_VERSION,
+                                                sizeof dec);
     wuffs_gif__status s =
         wuffs_gif__lzw_decoder__decode(&dec, dst_writer, src_reader);
     if (s) {
@@ -352,10 +359,10 @@ void bench_wuffs_lzw_decode_100k() {
 
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__io_buffer* src) {
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-  wuffs_base__image_config ic = {{0}};
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -389,19 +396,21 @@ bool do_test_wuffs_gif_decode(const char* filename,
                               const char* palette_filename,
                               const char* indexes_filename,
                               uint64_t rlimit) {
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, filename)) {
     return false;
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   {
-    wuffs_base__image_config ic = {{0}};
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     wuffs_gif__status status =
         wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -540,14 +549,15 @@ bool do_test_wuffs_gif_decode(const char* filename,
 void test_wuffs_gif_call_sequence() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, "../../data/bricks-dither.gif")) {
     return;
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -574,11 +584,11 @@ bool do_test_wuffs_gif_decode_animated(
     return false;
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-  wuffs_base__image_config ic = {{0}};
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
@@ -669,14 +679,15 @@ void test_wuffs_gif_decode_animated_small() {
 
 void test_wuffs_gif_decode_frame_out_of_bounds() {
   CHECK_FOCUS(__func__);
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
   if (!read_file(&src, "../../data/artificial/gif-frame-out-of-bounds.gif")) {
     return;
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_base__image_config ic = {{0}};
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
@@ -737,15 +748,16 @@ void test_wuffs_gif_decode_input_is_a_gif_many_small_reads() {
 void test_wuffs_gif_decode_input_is_a_png() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, "../../data/bricks-dither.png")) {
     return;
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
-  wuffs_base__image_config ic = {{0}};
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_gif__status status =
@@ -763,13 +775,15 @@ void test_wuffs_gif_decode_input_is_a_png() {
 #ifdef WUFFS_MIMIC
 
 bool do_test_mimic_gif_decode(const char* filename) {
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
   if (!read_file(&src, filename)) {
     return false;
   }
 
   src.ri = 0;
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
   const char* got_msg = wuffs_gif_decode(&got, &src);
   if (got_msg) {
     FAIL("%s", got_msg);
@@ -777,7 +791,8 @@ bool do_test_mimic_gif_decode(const char* filename) {
   }
 
   src.ri = 0;
-  wuffs_base__io_buffer want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer want =
+      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
   const char* want_msg = mimic_gif_decode(&want, &src);
   if (want_msg) {
     FAIL("%s", want_msg);
@@ -851,8 +866,10 @@ bool do_bench_gif_decode(const char* (*decode_func)(wuffs_base__io_buffer*,
                                                     wuffs_base__io_buffer*),
                          const char* filename,
                          uint64_t iters_unscaled) {
-  wuffs_base__io_buffer dst = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer dst =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, filename)) {
     return false;

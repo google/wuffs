@@ -1343,14 +1343,14 @@ typedef struct {
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gif__decoder__initialize is an initializer function.
+// wuffs_gif__decoder__check_wuffs_version is an initializer function.
 //
 // It should be called before any other wuffs_gif__decoder__* function.
 //
-// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
-                                    uint32_t wuffs_version,
-                                    uint32_t for_internal_use_only);
+// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
+                                             uint32_t wuffs_version,
+                                             size_t sizeof_star_self);
 
 // ---------------- Public Function Prototypes
 
@@ -1401,13 +1401,6 @@ wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
 //
 // Its (non-zero) value is arbitrary, based on md5sum("wuffs").
 #define WUFFS_BASE__MAGIC ((uint32_t)0x3CCB6C71)
-
-// WUFFS_BASE__ALREADY_ZEROED is passed from a container struct's initializer
-// to a containee struct's initializer when the container has already zeroed
-// the containee's memory.
-//
-// Its (non-zero) value is arbitrary, based on md5sum("zeroed").
-#define WUFFS_BASE__ALREADY_ZEROED ((uint32_t)0x68602EF1)
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
@@ -1955,9 +1948,15 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 
 // ---------------- Private Initializer Prototypes
 
-void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
-                                        uint32_t wuffs_version,
-                                        uint32_t for_internal_use_only);
+void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
+                                                 uint32_t wuffs_version,
+                                                 size_t sizeof_star_self);
+
+static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder* self) {
+  memset(self, 0, sizeof *self);
+  wuffs_gif__lzw_decoder__check_wuffs_version(self, WUFFS_VERSION,
+                                              sizeof *self);
+}
 
 // ---------------- Private Function Prototypes
 
@@ -2009,38 +2008,33 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
 
 // ---------------- Initializer Implementations
 
-void wuffs_gif__lzw_decoder__initialize(wuffs_gif__lzw_decoder* self,
-                                        uint32_t wuffs_version,
-                                        uint32_t for_internal_use_only) {
+void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
+                                                 uint32_t wuffs_version,
+                                                 size_t sizeof_star_self) {
   if (!self) {
     return;
   }
-  if (wuffs_version != WUFFS_VERSION) {
+  if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
-  }
-  if (for_internal_use_only != WUFFS_BASE__ALREADY_ZEROED) {
-    memset(self, 0, sizeof(*self));
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
 }
 
-void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
-                                    uint32_t wuffs_version,
-                                    uint32_t for_internal_use_only) {
+void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
+                                             uint32_t wuffs_version,
+                                             size_t sizeof_star_self) {
   if (!self) {
     return;
   }
-  if (wuffs_version != WUFFS_VERSION) {
+  if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
   }
-  if (for_internal_use_only != WUFFS_BASE__ALREADY_ZEROED) {
-    memset(self, 0, sizeof(*self));
-  }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
-  wuffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw, WUFFS_VERSION,
-                                     WUFFS_BASE__ALREADY_ZEROED);
+  wuffs_gif__lzw_decoder__check_wuffs_version(&self->private_impl.f_lzw,
+                                              WUFFS_VERSION,
+                                              sizeof(self->private_impl.f_lzw));
 }
 
 // ---------------- Function Implementations
@@ -3383,8 +3377,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
       }
     }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
-      wuffs_gif__lzw_decoder__initialize(&self->private_impl.f_lzw,
-                                         WUFFS_VERSION, 0);
+      wuffs_gif__lzw_decoder__reset(&self->private_impl.f_lzw);
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);

@@ -354,6 +354,14 @@ func (g *gen) genImpl(b *buffer) error {
 		}
 	}
 
+	// TODO: don't hard-code wuffs_gif__lzw_decoder__reset.
+	if g.pkgName == "gif" {
+		b.writes("static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder *self) {")
+		b.writes("memset(self, 0, sizeof *self);")
+		b.writes("wuffs_gif__lzw_decoder__check_wuffs_version(self, WUFFS_VERSION, sizeof *self);")
+		b.writes("}\n\n")
+	}
+
 	b.writes("// ---------------- Private Function Prototypes\n\n")
 	if err := g.forEachFunc(b, priOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
@@ -659,15 +667,14 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
 	if public {
-		b.printf("// %s%s__initialize is an initializer function.\n", g.pkgPrefix, structName)
+		b.printf("// %s%s__check_wuffs_version is an initializer function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
 		b.printf("// It should be called before any other %s%s__* function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
-		b.printf("// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.\n")
+		b.printf("// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.\n")
 	}
-	b.printf("void %s%s__initialize(%s%s *self", g.pkgPrefix, structName, g.pkgPrefix, structName)
-	b.printf(", uint32_t wuffs_version, uint32_t for_internal_use_only")
-	b.printf(")")
+	b.printf("void %s%s__check_wuffs_version(%s%s *self, uint32_t wuffs_version, size_t sizeof_star_self)",
+		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
 
@@ -692,13 +699,11 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.printf("{\n")
 	b.printf("if (!self) { return; }\n")
 
-	b.printf("if (wuffs_version != WUFFS_VERSION) {\n")
+	b.printf("if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {\n")
 	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
 	b.printf("return;\n")
 	b.printf("}\n")
 
-	b.writes("if (for_internal_use_only != WUFFS_BASE__ALREADY_ZEROED) {" +
-		"memset(self, 0, sizeof(*self)); }\n")
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 
 	// Call any ctors on sub-structs.
@@ -723,8 +728,8 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			continue
 		}
 
-		b.printf("%s%s__initialize(&self->private_impl.%s%s, WUFFS_VERSION, WUFFS_BASE__ALREADY_ZEROED);\n",
-			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm))
+		b.printf("%s%s__check_wuffs_version(&self->private_impl.%s%s, WUFFS_VERSION, sizeof(self->private_impl.%s%s));\n",
+			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 	}
 
 	b.writes("}\n\n")

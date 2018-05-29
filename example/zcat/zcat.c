@@ -55,8 +55,8 @@ char src_buffer[SRC_BUFFER_SIZE];
 static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
-  wuffs_gzip__decoder dec;
-  wuffs_gzip__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
+  wuffs_gzip__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   while (true) {
     const int stdin_fd = 0;
@@ -68,14 +68,17 @@ static const char* decode() {
       continue;
     }
 
-    wuffs_base__io_buffer src = {.ptr = src_buffer,
-                                 .len = SRC_BUFFER_SIZE,
-                                 .wi = n_src,
-                                 .closed = n_src == 0};
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .ptr = src_buffer,
+        .len = SRC_BUFFER_SIZE,
+        .wi = n_src,
+        .closed = n_src == 0,
+    });
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
     while (true) {
-      wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = DST_BUFFER_SIZE};
+      wuffs_base__io_buffer dst =
+          ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
       wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
       wuffs_gzip__status s =
           wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);

@@ -227,15 +227,15 @@ const char* play() {
     reset_palette_as_ascii_art();
   }
 
-  wuffs_gif__decoder dec;
-  wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
-  wuffs_base__io_buffer src = {
-      .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true};
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-  wuffs_base__image_config ic = {{0}};
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_gif__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {

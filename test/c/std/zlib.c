@@ -81,8 +81,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  wuffs_zlib__decoder dec;
-  wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
+  wuffs_zlib__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
@@ -109,8 +109,10 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
 }
 
 bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
 
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
     return false;
@@ -126,8 +128,8 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
 
   int end_limit;
   for (end_limit = 0; end_limit < 10; end_limit++) {
-    wuffs_zlib__decoder dec;
-    wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
+    wuffs_zlib__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.wi = 0;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);

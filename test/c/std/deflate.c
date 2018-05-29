@@ -111,8 +111,8 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
-  wuffs_deflate__decoder dec;
-  wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+  wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
@@ -192,9 +192,12 @@ void test_wuffs_deflate_decode_romeo_fixed() {
 void test_wuffs_deflate_decode_split_src() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer want =
+      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
 
   golden_test* gt = &deflate_256_bytes_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -204,7 +207,6 @@ void test_wuffs_deflate_decode_split_src() {
     return;
   }
 
-  wuffs_deflate__decoder dec;
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
@@ -217,7 +219,9 @@ void test_wuffs_deflate_decode_split_src() {
     }
     got.wi = 0;
 
-    wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
+                                                sizeof dec);
 
     src.closed = false;
     src.ri = gt->src_offset0;
@@ -267,7 +271,6 @@ bool do_test_wuffs_deflate_history(int i,
   got->ri = 0;
   got->wi = 0;
 
-  wuffs_deflate__decoder__initialize(dec, WUFFS_VERSION, 0);
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
 
@@ -290,9 +293,12 @@ bool do_test_wuffs_deflate_history(int i,
 void test_wuffs_deflate_history_full() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer want =
+      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
 
   golden_test* gt = &deflate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -305,7 +311,10 @@ void test_wuffs_deflate_history_full() {
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
-    wuffs_deflate__decoder dec;
+    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
+                                                sizeof dec);
+
     if (!do_test_wuffs_deflate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
             i >= 0 ? WUFFS_DEFLATE__STATUS_OK
@@ -323,20 +332,20 @@ void test_wuffs_deflate_history_full() {
       continue;
     }
 
-    wuffs_base__io_buffer history_got = {
+    wuffs_base__io_buffer history_got = ((wuffs_base__io_buffer){
         .ptr = dec.private_impl.f_history,
         .len = full_history_size,
         .wi = full_history_size,
-    };
+    });
     if (want.wi < full_history_size - i) {
       FAIL("i=%d: want file is too short", i);
       return;
     }
-    wuffs_base__io_buffer history_want = {
+    wuffs_base__io_buffer history_want = ((wuffs_base__io_buffer){
         .ptr = global_want_buffer + want.wi - (full_history_size - i),
         .len = full_history_size,
         .wi = full_history_size,
-    };
+    });
     if (!io_buffers_equal("", &history_got, &history_want)) {
       return;
     }
@@ -346,8 +355,10 @@ void test_wuffs_deflate_history_full() {
 void test_wuffs_deflate_history_partial() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
 
   golden_test* gt = &deflate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -367,7 +378,10 @@ void test_wuffs_deflate_history_partial() {
     const char* fragment = "3.14";
     const uint32_t fragment_length = 4;
 
-    wuffs_deflate__decoder dec;
+    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
+                                                sizeof dec);
+
     if (!do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
                                        starting_history_index, fragment_length,
                                        WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE)) {
@@ -448,12 +462,8 @@ void test_wuffs_deflate_table_redirect() {
   // 1st is the key in the first level table (9 bits).
   // 2nd is the key in the second level table (variable bits).
 
-  wuffs_deflate__decoder dec;
-  wuffs_deflate__decoder__initialize(&dec, WUFFS_VERSION, 0);
-
-  // The initializer should zero out dec's fields, but to be paranoid, we zero
-  // it out explicitly.
-  memset(&dec.private_impl.f_huffs[0], 0, sizeof(dec.private_impl.f_huffs[0]));
+  wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+  wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
   int i;
   int n = 0;

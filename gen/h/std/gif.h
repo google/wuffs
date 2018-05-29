@@ -1343,14 +1343,14 @@ typedef struct {
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gif__decoder__initialize is an initializer function.
+// wuffs_gif__decoder__check_wuffs_version is an initializer function.
 //
 // It should be called before any other wuffs_gif__decoder__* function.
 //
-// Pass WUFFS_VERSION and 0 for wuffs_version and for_internal_use_only.
-void wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
-                                    uint32_t wuffs_version,
-                                    uint32_t for_internal_use_only);
+// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
+                                             uint32_t wuffs_version,
+                                             size_t sizeof_star_self);
 
 // ---------------- Public Function Prototypes
 

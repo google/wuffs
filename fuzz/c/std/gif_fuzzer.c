@@ -45,12 +45,12 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
   {
-    wuffs_gif__status s;
-    wuffs_gif__decoder dec;
-    wuffs_gif__decoder__initialize(&dec, WUFFS_VERSION, 0);
+    wuffs_gif__status s = 0;
+    wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+    wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
 
     wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-    wuffs_base__image_config ic = {{0}};
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
     s = wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
     if (s) {
       ret = wuffs_gif__status__string(s);

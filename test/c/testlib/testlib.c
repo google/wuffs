@@ -520,9 +520,12 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
     return false;
   }
 
-  wuffs_base__io_buffer src = {.ptr = global_src_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer got = {.ptr = global_got_buffer, .len = BUFFER_SIZE};
-  wuffs_base__io_buffer want = {.ptr = global_want_buffer, .len = BUFFER_SIZE};
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got =
+      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer want =
+      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
 
   if (!gt->src_filename) {
     src.closed = true;
