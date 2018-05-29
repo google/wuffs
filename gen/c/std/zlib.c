@@ -1177,20 +1177,24 @@ typedef int32_t wuffs_adler32__status;
 
 #define wuffs_adler32__packageid 681002  // 0x000A642A
 
-#define WUFFS_ADLER32__STATUS_OK 0                               // 0x00000000
-#define WUFFS_ADLER32__ERROR_BAD_WUFFS_VERSION -2147483647       // 0x80000001
-#define WUFFS_ADLER32__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define WUFFS_ADLER32__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define WUFFS_ADLER32__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define WUFFS_ADLER32__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
-#define WUFFS_ADLER32__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
-#define WUFFS_ADLER32__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
-#define WUFFS_ADLER32__SUSPENSION_SHORT_READ 8                   // 0x00000008
-#define WUFFS_ADLER32__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
+#define WUFFS_ADLER32__STATUS_OK 0                            // 0x00000000
+#define WUFFS_ADLER32__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
+#define WUFFS_ADLER32__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
+#define WUFFS_ADLER32__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
+#define WUFFS_ADLER32__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_ADLER32__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
+  -2147483643  // 0x80000005
+#define WUFFS_ADLER32__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
+  -2147483642                                                   // 0x80000006
+#define WUFFS_ADLER32__ERROR_INVALID_I_O_OPERATION -2147483641  // 0x80000007
+#define WUFFS_ADLER32__ERROR_CLOSED_FOR_WRITES -2147483640      // 0x80000008
+#define WUFFS_ADLER32__ERROR_UNEXPECTED_EOF -2147483639         // 0x80000009
+#define WUFFS_ADLER32__SUSPENSION_SHORT_READ 10                 // 0x0000000A
+#define WUFFS_ADLER32__SUSPENSION_SHORT_WRITE 11                // 0x0000000B
 #define WUFFS_ADLER32__ERROR_CANNOT_RETURN_A_SUSPENSION \
-  -2147483638                                                   // 0x8000000A
-#define WUFFS_ADLER32__ERROR_INVALID_CALL_SEQUENCE -2147483637  // 0x8000000B
-#define WUFFS_ADLER32__SUSPENSION_END_OF_DATA 12                // 0x0000000C
+  -2147483636                                                   // 0x8000000C
+#define WUFFS_ADLER32__ERROR_INVALID_CALL_SEQUENCE -2147483635  // 0x8000000D
+#define WUFFS_ADLER32__SUSPENSION_END_OF_DATA 14                // 0x0000000E
 
 bool wuffs_adler32__status__is_error(wuffs_adler32__status s);
 
@@ -1269,20 +1273,24 @@ typedef int32_t wuffs_deflate__status;
 
 #define wuffs_deflate__packageid 848533  // 0x000CF295
 
-#define WUFFS_DEFLATE__STATUS_OK 0                               // 0x00000000
-#define WUFFS_DEFLATE__ERROR_BAD_WUFFS_VERSION -2147483647       // 0x80000001
-#define WUFFS_DEFLATE__ERROR_BAD_RECEIVER -2147483646            // 0x80000002
-#define WUFFS_DEFLATE__ERROR_BAD_ARGUMENT -2147483645            // 0x80000003
-#define WUFFS_DEFLATE__ERROR_INITIALIZER_NOT_CALLED -2147483644  // 0x80000004
-#define WUFFS_DEFLATE__ERROR_INVALID_I_O_OPERATION -2147483643   // 0x80000005
-#define WUFFS_DEFLATE__ERROR_CLOSED_FOR_WRITES -2147483642       // 0x80000006
-#define WUFFS_DEFLATE__ERROR_UNEXPECTED_EOF -2147483641          // 0x80000007
-#define WUFFS_DEFLATE__SUSPENSION_SHORT_READ 8                   // 0x00000008
-#define WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE 9                  // 0x00000009
+#define WUFFS_DEFLATE__STATUS_OK 0                            // 0x00000000
+#define WUFFS_DEFLATE__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
+#define WUFFS_DEFLATE__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
+#define WUFFS_DEFLATE__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
+#define WUFFS_DEFLATE__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_DEFLATE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
+  -2147483643  // 0x80000005
+#define WUFFS_DEFLATE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
+  -2147483642                                                   // 0x80000006
+#define WUFFS_DEFLATE__ERROR_INVALID_I_O_OPERATION -2147483641  // 0x80000007
+#define WUFFS_DEFLATE__ERROR_CLOSED_FOR_WRITES -2147483640      // 0x80000008
+#define WUFFS_DEFLATE__ERROR_UNEXPECTED_EOF -2147483639         // 0x80000009
+#define WUFFS_DEFLATE__SUSPENSION_SHORT_READ 10                 // 0x0000000A
+#define WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE 11                // 0x0000000B
 #define WUFFS_DEFLATE__ERROR_CANNOT_RETURN_A_SUSPENSION \
-  -2147483638                                                   // 0x8000000A
-#define WUFFS_DEFLATE__ERROR_INVALID_CALL_SEQUENCE -2147483637  // 0x8000000B
-#define WUFFS_DEFLATE__SUSPENSION_END_OF_DATA 12                // 0x0000000C
+  -2147483636                                                   // 0x8000000C
+#define WUFFS_DEFLATE__ERROR_INVALID_CALL_SEQUENCE -2147483635  // 0x8000000D
+#define WUFFS_DEFLATE__SUSPENSION_END_OF_DATA 14                // 0x0000000E
 
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
   -1278585856  // 0xB3CA5400
@@ -1442,19 +1450,23 @@ typedef int32_t wuffs_zlib__status;
 
 #define wuffs_zlib__packageid 2064249  // 0x001F7F79
 
-#define WUFFS_ZLIB__STATUS_OK 0                                   // 0x00000000
-#define WUFFS_ZLIB__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
-#define WUFFS_ZLIB__ERROR_BAD_RECEIVER -2147483646                // 0x80000002
-#define WUFFS_ZLIB__ERROR_BAD_ARGUMENT -2147483645                // 0x80000003
-#define WUFFS_ZLIB__ERROR_INITIALIZER_NOT_CALLED -2147483644      // 0x80000004
-#define WUFFS_ZLIB__ERROR_INVALID_I_O_OPERATION -2147483643       // 0x80000005
-#define WUFFS_ZLIB__ERROR_CLOSED_FOR_WRITES -2147483642           // 0x80000006
-#define WUFFS_ZLIB__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
-#define WUFFS_ZLIB__SUSPENSION_SHORT_READ 8                       // 0x00000008
-#define WUFFS_ZLIB__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
-#define WUFFS_ZLIB__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
-#define WUFFS_ZLIB__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
-#define WUFFS_ZLIB__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
+#define WUFFS_ZLIB__STATUS_OK 0                            // 0x00000000
+#define WUFFS_ZLIB__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
+#define WUFFS_ZLIB__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
+#define WUFFS_ZLIB__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
+#define WUFFS_ZLIB__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_ZLIB__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
+  -2147483643  // 0x80000005
+#define WUFFS_ZLIB__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
+  -2147483642                                                     // 0x80000006
+#define WUFFS_ZLIB__ERROR_INVALID_I_O_OPERATION -2147483641       // 0x80000007
+#define WUFFS_ZLIB__ERROR_CLOSED_FOR_WRITES -2147483640           // 0x80000008
+#define WUFFS_ZLIB__ERROR_UNEXPECTED_EOF -2147483639              // 0x80000009
+#define WUFFS_ZLIB__SUSPENSION_SHORT_READ 10                      // 0x0000000A
+#define WUFFS_ZLIB__SUSPENSION_SHORT_WRITE 11                     // 0x0000000B
+#define WUFFS_ZLIB__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483636  // 0x8000000C
+#define WUFFS_ZLIB__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
+#define WUFFS_ZLIB__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
 #define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672           // 0xFDFDE400
 #define WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_METHOD -33692671  // 0xFDFDE401
@@ -2032,12 +2044,14 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   return ((wuffs_base__empty_struct){});
 }
 
-static const char* wuffs_base__status__strings[13] = {
+static const char* wuffs_base__status__strings[15] = {
     "ok",
     "bad wuffs version",
+    "bad sizeof receiver",
     "bad receiver",
     "bad argument",
-    "initializer not called",
+    "check_wuffs_version not called",
+    "check_wuffs_version called twice",
     "invalid I/O operation",
     "closed for writes",
     "unexpected EOF",
@@ -2070,7 +2084,7 @@ const char* wuffs_zlib__status__string(wuffs_zlib__status s) {
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_base__status__strings;
-      n = 13;
+      n = 15;
       break;
     case wuffs_zlib__packageid:
       a = wuffs_zlib__status__strings;
@@ -2099,8 +2113,17 @@ void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
   if (!self) {
     return;
   }
-  if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {
+  if (wuffs_version != WUFFS_VERSION) {
     self->private_impl.status = WUFFS_ZLIB__ERROR_BAD_WUFFS_VERSION;
+    return;
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    self->private_impl.status = WUFFS_ZLIB__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (self->private_impl.magic != 0) {
+    self->private_impl.status =
+        WUFFS_ZLIB__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
     return;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -2122,7 +2145,8 @@ void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
     return;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_ZLIB__ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status =
+        WUFFS_ZLIB__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return;
@@ -2140,7 +2164,8 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     return WUFFS_ZLIB__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_ZLIB__ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status =
+        WUFFS_ZLIB__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;

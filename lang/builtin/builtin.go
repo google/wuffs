@@ -39,9 +39,11 @@ var StatusList = [...]Status{
 	// TODO: sort these somehow, when the list has stabilized?
 	{0, "ok"},
 	{t.IDError, "bad wuffs version"},
+	{t.IDError, "bad sizeof receiver"},
 	{t.IDError, "bad receiver"},
 	{t.IDError, "bad argument"},
-	{t.IDError, "initializer not called"},
+	{t.IDError, "check_wuffs_version not called"},
+	{t.IDError, "check_wuffs_version called twice"},
 	{t.IDError, "invalid I/O operation"},
 	{t.IDError, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
 	{t.IDError, "unexpected EOF"},    // Used if reading when closed == true.

@@ -192,7 +192,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		b.writes("}")
 
 		b.printf("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {"+
-			"self->private_impl.status = %sERROR_INITIALIZER_NOT_CALLED; }", g.PKGPREFIX)
+			"self->private_impl.status = %sERROR_CHECK_WUFFS_VERSION_NOT_CALLED; }", g.PKGPREFIX)
 
 		b.writes("if (self->private_impl.status < 0) {")
 		if g.currFunk.suspendible {

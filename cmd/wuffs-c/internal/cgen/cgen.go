@@ -699,8 +699,16 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.printf("{\n")
 	b.printf("if (!self) { return; }\n")
 
-	b.printf("if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {\n")
+	b.printf("if (wuffs_version != WUFFS_VERSION) {\n")
 	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
+	b.printf("return;\n")
+	b.printf("}\n")
+	b.printf("if (sizeof(*self) != sizeof_star_self) {\n")
+	b.printf("self->private_impl.status = %sERROR_BAD_SIZEOF_RECEIVER;\n", g.PKGPREFIX)
+	b.printf("return;\n")
+	b.printf("}\n")
+	b.printf("if (self->private_impl.magic != 0) {\n")
+	b.printf("self->private_impl.status = %sERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n", g.PKGPREFIX)
 	b.printf("return;\n")
 	b.printf("}\n")
 

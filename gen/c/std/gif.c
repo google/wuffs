@@ -1168,19 +1168,23 @@ typedef int32_t wuffs_gif__status;
 
 #define wuffs_gif__packageid 1017222  // 0x000F8586
 
-#define WUFFS_GIF__STATUS_OK 0                                   // 0x00000000
-#define WUFFS_GIF__ERROR_BAD_WUFFS_VERSION -2147483647           // 0x80000001
-#define WUFFS_GIF__ERROR_BAD_RECEIVER -2147483646                // 0x80000002
-#define WUFFS_GIF__ERROR_BAD_ARGUMENT -2147483645                // 0x80000003
-#define WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED -2147483644      // 0x80000004
-#define WUFFS_GIF__ERROR_INVALID_I_O_OPERATION -2147483643       // 0x80000005
-#define WUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483642           // 0x80000006
-#define WUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483641              // 0x80000007
-#define WUFFS_GIF__SUSPENSION_SHORT_READ 8                       // 0x00000008
-#define WUFFS_GIF__SUSPENSION_SHORT_WRITE 9                      // 0x00000009
-#define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483638  // 0x8000000A
-#define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483637       // 0x8000000B
-#define WUFFS_GIF__SUSPENSION_END_OF_DATA 12                     // 0x0000000C
+#define WUFFS_GIF__STATUS_OK 0                            // 0x00000000
+#define WUFFS_GIF__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
+#define WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
+#define WUFFS_GIF__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
+#define WUFFS_GIF__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
+  -2147483643  // 0x80000005
+#define WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
+  -2147483642                                                    // 0x80000006
+#define WUFFS_GIF__ERROR_INVALID_I_O_OPERATION -2147483641       // 0x80000007
+#define WUFFS_GIF__ERROR_CLOSED_FOR_WRITES -2147483640           // 0x80000008
+#define WUFFS_GIF__ERROR_UNEXPECTED_EOF -2147483639              // 0x80000009
+#define WUFFS_GIF__SUSPENSION_SHORT_READ 10                      // 0x0000000A
+#define WUFFS_GIF__SUSPENSION_SHORT_WRITE 11                     // 0x0000000B
+#define WUFFS_GIF__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483636  // 0x8000000C
+#define WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
+#define WUFFS_GIF__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
 #define WUFFS_GIF__ERROR_BAD_BLOCK -1105848320              // 0xBE161800
 #define WUFFS_GIF__ERROR_BAD_EXTENSION_LABEL -1105848319    // 0xBE161801
@@ -1881,12 +1885,14 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   return ((wuffs_base__empty_struct){});
 }
 
-static const char* wuffs_base__status__strings[13] = {
+static const char* wuffs_base__status__strings[15] = {
     "ok",
     "bad wuffs version",
+    "bad sizeof receiver",
     "bad receiver",
     "bad argument",
-    "initializer not called",
+    "check_wuffs_version not called",
+    "check_wuffs_version called twice",
     "invalid I/O operation",
     "closed for writes",
     "unexpected EOF",
@@ -1925,7 +1931,7 @@ const char* wuffs_gif__status__string(wuffs_gif__status s) {
   switch ((s >> 10) & 0x1FFFFF) {
     case 0:
       a = wuffs_base__status__strings;
-      n = 13;
+      n = 15;
       break;
     case wuffs_gif__packageid:
       a = wuffs_gif__status__strings;
@@ -2014,8 +2020,17 @@ void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
   if (!self) {
     return;
   }
-  if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {
+  if (wuffs_version != WUFFS_VERSION) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
+    return;
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (self->private_impl.magic != 0) {
+    self->private_impl.status =
+        WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
     return;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -2027,8 +2042,17 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
   if (!self) {
     return;
   }
-  if ((wuffs_version != WUFFS_VERSION) || (sizeof(*self) != sizeof_star_self)) {
+  if (wuffs_version != WUFFS_VERSION) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
+    return;
+  }
+  if (sizeof(*self) != sizeof_star_self) {
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (self->private_impl.magic != 0) {
+    self->private_impl.status =
+        WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
     return;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -2049,7 +2073,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     return WUFFS_GIF__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
@@ -2126,7 +2150,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
     return WUFFS_GIF__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
@@ -2197,7 +2221,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
     return WUFFS_GIF__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED;
+    self->private_impl.status = WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;

@@ -59,23 +59,21 @@ void test_basic_bad_receiver() {
   }
 }
 
-void test_basic_initializer_not_called() {
+void test_basic_bad_sizeof_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
-  wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
-  if (status != WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED) {
-    FAIL("decode_config: got %d, want %d", status,
-         WUFFS_GIF__ERROR_INITIALIZER_NOT_CALLED);
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, 0);
+  if (dec.private_impl.status != WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER) {
+    FAIL("decode_config: got %d, want %d", dec.private_impl.status,
+         WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER);
+    return;
   }
 }
 
-void test_basic_wuffs_version_bad() {
+void test_basic_bad_wuffs_version() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-  wuffs_gif__decoder__check_wuffs_version(&dec, 0,
-                                          0);  // 0 is not WUFFS_VERSION.
+  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION ^ 0x12345678, 0);
   if (dec.private_impl.status != WUFFS_GIF__ERROR_BAD_WUFFS_VERSION) {
     FAIL("decode_config: got %d, want %d", dec.private_impl.status,
          WUFFS_GIF__ERROR_BAD_WUFFS_VERSION);
@@ -83,13 +81,15 @@ void test_basic_wuffs_version_bad() {
   }
 }
 
-void test_basic_wuffs_version_good() {
+void test_basic_check_wuffs_version_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
-  if (dec.private_impl.magic != WUFFS_BASE__MAGIC) {
-    FAIL("magic: got %u, want %u", dec.private_impl.magic, WUFFS_BASE__MAGIC);
-    return;
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
+  wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
+  if (status != WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED) {
+    FAIL("decode_config: got %d, want %d", status,
+         WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED);
   }
 }
 
@@ -957,13 +957,13 @@ proc tests[] = {
     // These basic tests are really testing the Wuffs compiler. They aren't
     // specific to the std/gif code, but putting them here is as good as any
     // other place.
-    test_basic_bad_receiver,            //
-    test_basic_initializer_not_called,  //
-    test_basic_wuffs_version_bad,       //
-    test_basic_wuffs_version_good,      //
-    test_basic_status_is_error,         //
-    test_basic_status_strings,          //
-    test_basic_sub_struct_initializer,  //
+    test_basic_bad_receiver,                    //
+    test_basic_bad_sizeof_receiver,             //
+    test_basic_bad_wuffs_version,               //
+    test_basic_check_wuffs_version_not_called,  //
+    test_basic_status_is_error,                 //
+    test_basic_status_strings,                  //
+    test_basic_sub_struct_initializer,          //
 
     test_wuffs_lzw_decode_many_big_reads,           //
     test_wuffs_lzw_decode_many_small_writes_reads,  //
