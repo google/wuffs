@@ -47,7 +47,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   {
     wuffs_gif__status s = 0;
     wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-    wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+    wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
     wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
     wuffs_base__image_config ic = ((wuffs_base__image_config){});

@@ -1226,11 +1226,11 @@ typedef struct {
 //
 // It should be called before any other wuffs_crc32__ieee_hasher__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_crc32__ieee_hasher__check_wuffs_version(
     wuffs_crc32__ieee_hasher* self,
-    uint32_t wuffs_version,
-    size_t sizeof_star_self);
+    size_t sizeof_star_self,
+    uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1411,10 +1411,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_deflate__decoder__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                                 uint32_t wuffs_version,
-                                                 size_t sizeof_star_self);
+                                                 size_t sizeof_star_self,
+                                                 uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1517,10 +1517,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_gzip__decoder__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                              uint32_t wuffs_version,
-                                              size_t sizeof_star_self);
+                                              size_t sizeof_star_self,
+                                              uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -2107,17 +2107,17 @@ const char* wuffs_gzip__status__string(wuffs_gzip__status s) {
 // ---------------- Initializer Implementations
 
 void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                              uint32_t wuffs_version,
-                                              size_t sizeof_star_self) {
+                                              size_t sizeof_star_self,
+                                              uint32_t wuffs_version) {
   if (!self) {
-    return;
-  }
-  if (wuffs_version != WUFFS_VERSION) {
-    self->private_impl.status = WUFFS_GZIP__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (sizeof(*self) != sizeof_star_self) {
     self->private_impl.status = WUFFS_GZIP__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (wuffs_version != WUFFS_VERSION) {
+    self->private_impl.status = WUFFS_GZIP__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (self->private_impl.magic != 0) {
@@ -2127,11 +2127,11 @@ void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   wuffs_deflate__decoder__check_wuffs_version(
-      &self->private_impl.f_flate, WUFFS_VERSION,
-      sizeof(self->private_impl.f_flate));
+      &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
+      WUFFS_VERSION);
   wuffs_crc32__ieee_hasher__check_wuffs_version(
-      &self->private_impl.f_checksum, WUFFS_VERSION,
-      sizeof(self->private_impl.f_checksum));
+      &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
+      WUFFS_VERSION);
 }
 
 // ---------------- Function Implementations

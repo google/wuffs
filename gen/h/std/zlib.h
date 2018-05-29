@@ -1228,10 +1228,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_adler32__hasher__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
-                                                uint32_t wuffs_version,
-                                                size_t sizeof_star_self);
+                                                size_t sizeof_star_self,
+                                                uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1412,10 +1412,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_deflate__decoder__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                                 uint32_t wuffs_version,
-                                                 size_t sizeof_star_self);
+                                                 size_t sizeof_star_self,
+                                                 uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1517,10 +1517,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_zlib__decoder__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
-                                              uint32_t wuffs_version,
-                                              size_t sizeof_star_self);
+                                              size_t sizeof_star_self,
+                                              uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 

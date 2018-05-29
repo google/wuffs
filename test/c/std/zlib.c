@@ -82,7 +82,7 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  wuffs_zlib__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
@@ -129,7 +129,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
   int end_limit;
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-    wuffs_zlib__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+    wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.wi = 0;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);

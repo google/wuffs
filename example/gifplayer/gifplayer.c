@@ -228,7 +228,7 @@ const char* play() {
   }
 
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-  wuffs_gif__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true});

@@ -1351,10 +1351,10 @@ typedef struct {
 //
 // It should be called before any other wuffs_gif__decoder__* function.
 //
-// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                             uint32_t wuffs_version,
-                                             size_t sizeof_star_self);
+                                             size_t sizeof_star_self,
+                                             uint32_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1955,13 +1955,13 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 // ---------------- Private Initializer Prototypes
 
 void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
-                                                 uint32_t wuffs_version,
-                                                 size_t sizeof_star_self);
+                                                 size_t sizeof_star_self,
+                                                 uint32_t wuffs_version);
 
 static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder* self) {
   memset(self, 0, sizeof *self);
-  wuffs_gif__lzw_decoder__check_wuffs_version(self, WUFFS_VERSION,
-                                              sizeof *self);
+  wuffs_gif__lzw_decoder__check_wuffs_version(self, sizeof *self,
+                                              WUFFS_VERSION);
 }
 
 // ---------------- Private Function Prototypes
@@ -2015,17 +2015,17 @@ static wuffs_gif__status wuffs_gif__lzw_decoder__decode(
 // ---------------- Initializer Implementations
 
 void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
-                                                 uint32_t wuffs_version,
-                                                 size_t sizeof_star_self) {
+                                                 size_t sizeof_star_self,
+                                                 uint32_t wuffs_version) {
   if (!self) {
-    return;
-  }
-  if (wuffs_version != WUFFS_VERSION) {
-    self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (sizeof(*self) != sizeof_star_self) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (wuffs_version != WUFFS_VERSION) {
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (self->private_impl.magic != 0) {
@@ -2037,17 +2037,17 @@ void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
 }
 
 void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                             uint32_t wuffs_version,
-                                             size_t sizeof_star_self) {
+                                             size_t sizeof_star_self,
+                                             uint32_t wuffs_version) {
   if (!self) {
-    return;
-  }
-  if (wuffs_version != WUFFS_VERSION) {
-    self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (sizeof(*self) != sizeof_star_self) {
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_SIZEOF_RECEIVER;
+    return;
+  }
+  if (wuffs_version != WUFFS_VERSION) {
+    self->private_impl.status = WUFFS_GIF__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (self->private_impl.magic != 0) {
@@ -2057,8 +2057,8 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   wuffs_gif__lzw_decoder__check_wuffs_version(&self->private_impl.f_lzw,
-                                              WUFFS_VERSION,
-                                              sizeof(self->private_impl.f_lzw));
+                                              sizeof(self->private_impl.f_lzw),
+                                              WUFFS_VERSION);
 }
 
 // ---------------- Function Implementations

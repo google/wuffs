@@ -44,7 +44,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
   wuffs_zlib__status s = 0;
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  wuffs_zlib__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   // Ignore the checksum for 99.99%-ish of all input. When fuzzers generate
   // random input, the checkum is very unlikely to match. Still, it's useful to

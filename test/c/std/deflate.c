@@ -112,7 +112,7 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
     if (wlimit) {
@@ -220,8 +220,8 @@ void test_wuffs_deflate_decode_split_src() {
     got.wi = 0;
 
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
-                                                sizeof dec);
+    wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                WUFFS_VERSION);
 
     src.closed = false;
     src.ri = gt->src_offset0;
@@ -312,8 +312,8 @@ void test_wuffs_deflate_history_full() {
   int i;
   for (i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
-                                                sizeof dec);
+    wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                WUFFS_VERSION);
 
     if (!do_test_wuffs_deflate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
@@ -379,8 +379,8 @@ void test_wuffs_deflate_history_partial() {
     const uint32_t fragment_length = 4;
 
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION,
-                                                sizeof dec);
+    wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                WUFFS_VERSION);
 
     if (!do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
                                        starting_history_index, fragment_length,
@@ -463,7 +463,7 @@ void test_wuffs_deflate_table_redirect() {
   // 2nd is the key in the second level table (variable bits).
 
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  wuffs_deflate__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   int i;
   int n = 0;

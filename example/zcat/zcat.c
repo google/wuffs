@@ -56,7 +56,7 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
-  wuffs_gzip__decoder__check_wuffs_version(&dec, WUFFS_VERSION, sizeof dec);
+  wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   while (true) {
     const int stdin_fd = 0;

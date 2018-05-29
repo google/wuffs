@@ -358,7 +358,7 @@ func (g *gen) genImpl(b *buffer) error {
 	if g.pkgName == "gif" {
 		b.writes("static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder *self) {")
 		b.writes("memset(self, 0, sizeof *self);")
-		b.writes("wuffs_gif__lzw_decoder__check_wuffs_version(self, WUFFS_VERSION, sizeof *self);")
+		b.writes("wuffs_gif__lzw_decoder__check_wuffs_version(self, sizeof *self, WUFFS_VERSION);")
 		b.writes("}\n\n")
 	}
 
@@ -671,9 +671,9 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 		b.printf("//\n")
 		b.printf("// It should be called before any other %s%s__* function.\n", g.pkgPrefix, structName)
 		b.printf("//\n")
-		b.printf("// Pass WUFFS_VERSION and sizeof(*self) for wuffs_version and sizeof_star_self.\n")
+		b.printf("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
 	}
-	b.printf("void %s%s__check_wuffs_version(%s%s *self, uint32_t wuffs_version, size_t sizeof_star_self)",
+	b.printf("void %s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint32_t wuffs_version)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -699,12 +699,12 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.printf("{\n")
 	b.printf("if (!self) { return; }\n")
 
-	b.printf("if (wuffs_version != WUFFS_VERSION) {\n")
-	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
-	b.printf("return;\n")
-	b.printf("}\n")
 	b.printf("if (sizeof(*self) != sizeof_star_self) {\n")
 	b.printf("self->private_impl.status = %sERROR_BAD_SIZEOF_RECEIVER;\n", g.PKGPREFIX)
+	b.printf("return;\n")
+	b.printf("}\n")
+	b.printf("if (wuffs_version != WUFFS_VERSION) {\n")
+	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
 	b.printf("return;\n")
 	b.printf("}\n")
 	b.printf("if (self->private_impl.magic != 0) {\n")
@@ -736,7 +736,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			continue
 		}
 
-		b.printf("%s%s__check_wuffs_version(&self->private_impl.%s%s, WUFFS_VERSION, sizeof(self->private_impl.%s%s));\n",
+		b.printf("%s%s__check_wuffs_version(&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 	}
 
