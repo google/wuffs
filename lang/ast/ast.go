@@ -472,23 +472,20 @@ func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 	}
 }
 
-// Field is a "name type = default_value" struct field:
+// Field is a "name type" struct field:
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
-//  - RHS:   <nil|Expr>
 type Field Node
 
 func (n *Field) Node() *Node         { return (*Node)(n) }
 func (n *Field) Name() t.ID          { return n.id2 }
 func (n *Field) XType() *TypeExpr    { return n.lhs.TypeExpr() }
-func (n *Field) DefaultValue() *Expr { return n.rhs.Expr() }
 
-func NewField(name t.ID, xType *TypeExpr, defaultValue *Expr) *Field {
+func NewField(name t.ID, xType *TypeExpr) *Field {
 	return &Field{
 		kind: KField,
 		id2:  name,
 		lhs:  xType.Node(),
-		rhs:  defaultValue.Node(),
 	}
 }
 

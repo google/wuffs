@@ -420,7 +420,7 @@ func (c *Checker) checkStructCycles(_ *a.Node) error {
 
 func (c *Checker) checkStructFields(node *a.Node) error {
 	n := node.Struct()
-	if err := c.checkFields(n.Fields(), true); err != nil {
+	if err := c.checkFields(n.Fields(), true, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in struct %s", err, n.QID().Str(c.tm)),
 			Filename: n.Filename(),
@@ -431,7 +431,7 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 	return nil
 }
 
-func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
+func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZeroValue bool) error {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -453,18 +453,19 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
 				f.XType().Str(c.tm), f.Name().Str(c.tm))
 		}
-		if dv := f.DefaultValue(); dv != nil {
-			if f.XType().Decorator() != 0 {
-				return fmt.Errorf("check: cannot set default value for type %q for field %q",
-					f.XType().Str(c.tm), f.Name().Str(c.tm))
-			}
-			if err := q.tcheckExpr(dv, 0); err != nil {
+
+		if checkDefaultZeroValue {
+			innTyp := f.XType().Innermost()
+			fMin, fMax, err := typeBounds(c.tm, innTyp)
+			if err != nil {
 				return err
 			}
+			if (fMin != nil && zero.Cmp(fMin) < 0) || (fMax != nil && zero.Cmp(fMax) > 0) {
+				return fmt.Errorf("check: default zero value is not within bounds [%v..%v] for field %q",
+					fMin, fMax, f.Name().Str(c.tm))
+			}
 		}
-		if err := bcheckField(c.tm, f); err != nil {
-			return err
-		}
+
 		fieldNames[f.Name()] = true
 		f.Node().SetMType(typeExprPlaceholder)
 	}
@@ -474,7 +475,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool) error {
 
 func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.Func()
-	if err := c.checkFields(n.In().Fields(), false); err != nil {
+	if err := c.checkFields(n.In().Fields(), false, false); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in in-params for func %s", err, n.QQID().Str(c.tm)),
 			Filename: n.Filename(),
@@ -482,7 +483,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 	n.In().Node().SetMType(typeExprPlaceholder)
-	if err := c.checkFields(n.Out().Fields(), false); err != nil {
+	if err := c.checkFields(n.Out().Fields(), false, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
 			Filename: n.Filename(),

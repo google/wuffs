@@ -701,14 +701,6 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		"memset(self, 0, sizeof(*self)); }\n")
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 
-	for _, f := range n.Fields() {
-		f := f.Field()
-		if dv := f.DefaultValue(); dv != nil {
-			// TODO: set default values for array types.
-			b.printf("self->private_impl.%s%s = %d;\n", fPrefix, f.Name().Str(g.tm), dv.ConstValue())
-		}
-	}
-
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {
 		f := f.Field()

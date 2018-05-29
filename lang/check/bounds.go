@@ -196,30 +196,6 @@ func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	return b[0], b[1], nil
 }
 
-func bcheckField(tm *t.Map, n *a.Field) error {
-	innTyp := n.XType().Innermost()
-	nMin, nMax, err := typeBounds(tm, innTyp)
-	if err != nil {
-		return err
-	}
-	if nMin == nil {
-		if n.DefaultValue() != nil {
-			return fmt.Errorf("check: explicit default value %v for field %q of non-numeric innermost type %q",
-				n.DefaultValue().ConstValue(), n.Name().Str(tm), innTyp.Str(tm))
-		}
-		return nil
-	}
-	dv := zero
-	if o := n.DefaultValue(); o != nil {
-		dv = o.ConstValue()
-	}
-	if dv.Cmp(nMin) < 0 || dv.Cmp(nMax) > 0 {
-		return fmt.Errorf("check: default value %v is not within bounds [%v..%v] for field %q",
-			dv, nMin, nMax, n.Name().Str(tm))
-	}
-	return nil
-}
-
 func (q *checker) bcheckBlock(block []*a.Node) error {
 loop:
 	for _, o := range block {
