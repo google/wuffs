@@ -272,7 +272,8 @@ const char* play() {
   if (!seen_num_loops) {
     seen_num_loops = true;
     // TODO: provide API for getting num_loops.
-    num_loops_remaining = dec.private_impl.f_num_loops;
+    num_loops_remaining =
+        dec.private_impl.f_seen_num_loops ? dec.private_impl.f_num_loops : 1;
   }
 
   bool first_frame = true;
