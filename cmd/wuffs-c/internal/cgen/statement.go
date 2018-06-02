@@ -600,7 +600,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endianness string) error {
-	if size != 16 && size != 32 {
+	if (size&7 != 0) || (size < 16) || (size > 64) {
 		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
 	}
 	if endianness != "be" && endianness != "le" {

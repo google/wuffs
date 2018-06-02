@@ -439,19 +439,35 @@ const (
 	IDReadU8    = ID(0x141)
 	IDReadU16BE = ID(0x142)
 	IDReadU16LE = ID(0x143)
-	IDReadU32BE = ID(0x144)
-	IDReadU32LE = ID(0x145)
-	IDReadU64BE = ID(0x146)
-	IDReadU64LE = ID(0x147)
+	IDReadU24BE = ID(0x144)
+	IDReadU24LE = ID(0x145)
+	IDReadU32BE = ID(0x146)
+	IDReadU32LE = ID(0x147)
+	IDReadU40BE = ID(0x148)
+	IDReadU40LE = ID(0x149)
+	IDReadU48BE = ID(0x14A)
+	IDReadU48LE = ID(0x14B)
+	IDReadU56BE = ID(0x14C)
+	IDReadU56LE = ID(0x14D)
+	IDReadU64BE = ID(0x14E)
+	IDReadU64LE = ID(0x14F)
 
 	// TODO: IDUnwriteU8?
 	IDWriteU8    = ID(0x161)
 	IDWriteU16BE = ID(0x162)
 	IDWriteU16LE = ID(0x163)
-	IDWriteU32BE = ID(0x164)
-	IDWriteU32LE = ID(0x165)
-	IDWriteU64BE = ID(0x166)
-	IDWriteU64LE = ID(0x167)
+	IDWriteU24BE = ID(0x164)
+	IDWriteU24LE = ID(0x165)
+	IDWriteU32BE = ID(0x166)
+	IDWriteU32LE = ID(0x167)
+	IDWriteU40BE = ID(0x168)
+	IDWriteU40LE = ID(0x169)
+	IDWriteU48BE = ID(0x16A)
+	IDWriteU48LE = ID(0x16B)
+	IDWriteU56BE = ID(0x16C)
+	IDWriteU56LE = ID(0x16D)
+	IDWriteU64BE = ID(0x16E)
+	IDWriteU64LE = ID(0x16F)
 
 	IDSetLimit  = ID(0x180)
 	IDSetMark   = ID(0x181)
@@ -662,16 +678,32 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDReadU8:    "read_u8",
 	IDReadU16BE: "read_u16be",
 	IDReadU16LE: "read_u16le",
+	IDReadU24BE: "read_u24be",
+	IDReadU24LE: "read_u24le",
 	IDReadU32BE: "read_u32be",
 	IDReadU32LE: "read_u32le",
+	IDReadU40BE: "read_u40be",
+	IDReadU40LE: "read_u40le",
+	IDReadU48BE: "read_u48be",
+	IDReadU48LE: "read_u48le",
+	IDReadU56BE: "read_u56be",
+	IDReadU56LE: "read_u56le",
 	IDReadU64BE: "read_u64be",
 	IDReadU64LE: "read_u64le",
 
 	IDWriteU8:    "write_u8",
 	IDWriteU16BE: "write_u16be",
 	IDWriteU16LE: "write_u16le",
+	IDWriteU24BE: "write_u24be",
+	IDWriteU24LE: "write_u24le",
 	IDWriteU32BE: "write_u32be",
 	IDWriteU32LE: "write_u32le",
+	IDWriteU40BE: "write_u40be",
+	IDWriteU40LE: "write_u40le",
+	IDWriteU48BE: "write_u48be",
+	IDWriteU48LE: "write_u48le",
+	IDWriteU56BE: "write_u56be",
+	IDWriteU56LE: "write_u56le",
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
 

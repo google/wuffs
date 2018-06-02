@@ -187,11 +187,13 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 		i = 0
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
-			// Convert from RGB to BGRA.
-			this.palettes[0][(4 * i) + 2] = in.src.read_u8?()
-			this.palettes[0][(4 * i) + 1] = in.src.read_u8?()
-			this.palettes[0][(4 * i) + 0] = in.src.read_u8?()
-			this.palettes[0][(4 * i) + 3] = 0xFF
+			// Convert from RGB (in memory order) to ARGB (in native u32 order)
+			// to BGRA (in memory order).
+			var argb base.u32 = in.src.read_u24be?() | 0xFF000000
+			this.palettes[0][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
+			this.palettes[0][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
+			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
+			this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
 		}
 		// Set the remaining palette entries to transparent black.
@@ -382,11 +384,13 @@ pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)
 		var i base.u32
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
-			// Convert from RGB to BGRA.
-			this.palettes[1][(4 * i) + 2] = in.src.read_u8?()
-			this.palettes[1][(4 * i) + 1] = in.src.read_u8?()
-			this.palettes[1][(4 * i) + 0] = in.src.read_u8?()
-			this.palettes[1][(4 * i) + 3] = 0xFF
+			// Convert from RGB (in memory order) to ARGB (in native u32 order)
+			// to BGRA (in memory order).
+			var argb base.u32 = in.src.read_u24be?() | 0xFF000000
+			this.palettes[1][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
+			this.palettes[1][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
+			this.palettes[1][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
+			this.palettes[1][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
 		}
 		// Set the remaining palette entries to transparent black.

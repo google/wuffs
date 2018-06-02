@@ -1303,6 +1303,8 @@ typedef struct {
       uint32_t v_i;
       uint8_t v_flags;
       uint32_t v_num_palette_entries;
+      uint32_t v_argb;
+      uint64_t scratch;
     } c_decode_lsd[1];
     struct {
       uint32_t coro_susp_point;
@@ -1338,9 +1340,11 @@ typedef struct {
       bool v_use_local_palette;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
+      uint32_t v_argb;
       uint8_t v_lw;
       uint64_t v_block_size;
       wuffs_gif__status v_z;
+      uint64_t scratch;
     } c_decode_id_part1[1];
   } private_impl;
 } wuffs_gif__decoder;

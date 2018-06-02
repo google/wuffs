@@ -282,8 +282,16 @@ func ioMethodAdvance(x t.ID) *big.Int {
 		return one
 	case t.IDReadU16BE, t.IDReadU16LE, t.IDWriteU16BE, t.IDWriteU16LE:
 		return two
+	case t.IDReadU24BE, t.IDReadU24LE, t.IDWriteU24BE, t.IDWriteU24LE:
+		return three
 	case t.IDReadU32BE, t.IDReadU32LE, t.IDWriteU32BE, t.IDWriteU32LE:
 		return four
+	case t.IDReadU40BE, t.IDReadU40LE, t.IDWriteU40BE, t.IDWriteU40LE:
+		return five
+	case t.IDReadU48BE, t.IDReadU48LE, t.IDWriteU48BE, t.IDWriteU48LE:
+		return six
+	case t.IDReadU56BE, t.IDReadU56LE, t.IDWriteU56BE, t.IDWriteU56LE:
+		return seven
 	case t.IDReadU64BE, t.IDReadU64LE, t.IDWriteU64BE, t.IDWriteU64LE:
 		return eight
 	}

@@ -405,10 +405,30 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			return g.writeReadUXX(b, n, "src", 16, "be")
 		case t.IDReadU16LE:
 			return g.writeReadUXX(b, n, "src", 16, "le")
+		case t.IDReadU24BE:
+			return g.writeReadUXX(b, n, "src", 24, "be")
+		case t.IDReadU24LE:
+			return g.writeReadUXX(b, n, "src", 24, "le")
 		case t.IDReadU32BE:
 			return g.writeReadUXX(b, n, "src", 32, "be")
 		case t.IDReadU32LE:
 			return g.writeReadUXX(b, n, "src", 32, "le")
+		case t.IDReadU40BE:
+			return g.writeReadUXX(b, n, "src", 40, "be")
+		case t.IDReadU40LE:
+			return g.writeReadUXX(b, n, "src", 40, "le")
+		case t.IDReadU48BE:
+			return g.writeReadUXX(b, n, "src", 48, "be")
+		case t.IDReadU48LE:
+			return g.writeReadUXX(b, n, "src", 48, "le")
+		case t.IDReadU56BE:
+			return g.writeReadUXX(b, n, "src", 56, "be")
+		case t.IDReadU56LE:
+			return g.writeReadUXX(b, n, "src", 56, "le")
+		case t.IDReadU64BE:
+			return g.writeReadUXX(b, n, "src", 64, "be")
+		case t.IDReadU64LE:
+			return g.writeReadUXX(b, n, "src", 64, "le")
 
 		case t.IDSkip32:
 			g.currFunk.usesScratch = true
