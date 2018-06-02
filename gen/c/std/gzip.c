@@ -1556,6 +1556,10 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
+  return ((wuffs_base__empty_struct){});
+}
+
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.

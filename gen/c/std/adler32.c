@@ -1254,6 +1254,10 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
+  return ((wuffs_base__empty_struct){});
+}
+
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.

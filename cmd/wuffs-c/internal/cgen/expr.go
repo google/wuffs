@@ -88,6 +88,43 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		if err := g.writeBuiltinCall(b, n, rp, depth); err != errNoSuchBuiltin {
 			return err
 		}
+
+		if n.LHS().Expr().Ident() == t.IDReset {
+			method := n.LHS().Expr()
+			recv := method.LHS().Expr()
+			recvTyp, addr := recv.MType(), "&"
+			if recvTyp.Decorator() == t.IDPtr {
+				recvTyp, addr = recvTyp.Inner(), ""
+			}
+			if recvTyp.Decorator() != 0 {
+				return fmt.Errorf("cannot generate reset method call %q for receiver type %q",
+					n.Str(g.tm), recv.MType().Str(g.tm))
+			}
+			qid := recvTyp.QID()
+
+			// Generate a three part expression using the comma operator:
+			// "(memset call, check_wuffs_version call, return_empty_struct
+			// call)". The final part is a function call (to a static inline
+			// function) instead of a struct literal, to avoid a "expression
+			// result unused" compiler error.
+
+			b.printf("(memset(%s", addr)
+			// TODO: ensure that the recv expression is idempotent.
+			if err := g.writeExpr(b, recv, rp, depth); err != nil {
+				return err
+			}
+			b.printf(", 0, sizeof ((%s%s){})),", g.packagePrefix(qid), qid[1].Str(g.tm))
+
+			b.printf("%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
+			if err := g.writeExpr(b, recv, rp, depth); err != nil {
+				return err
+			}
+			b.printf(", sizeof ((%s%s){}), WUFFS_VERSION)", g.packagePrefix(qid), qid[1].Str(g.tm))
+
+			b.writes(", wuffs_base__return_empty_struct())")
+			return nil
+		}
+
 		return g.writeExprUserDefinedCall(b, n, rp, depth)
 
 	case t.IDOpenBracket:

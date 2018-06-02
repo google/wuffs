@@ -1397,6 +1397,10 @@ wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
+  return ((wuffs_base__empty_struct){});
+}
+
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -1957,12 +1961,6 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 void wuffs_gif__lzw_decoder__check_wuffs_version(wuffs_gif__lzw_decoder* self,
                                                  size_t sizeof_star_self,
                                                  uint32_t wuffs_version);
-
-static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder* self) {
-  memset(self, 0, sizeof *self);
-  wuffs_gif__lzw_decoder__check_wuffs_version(self, sizeof *self,
-                                              WUFFS_VERSION);
-}
 
 // ---------------- Private Function Prototypes
 
@@ -3401,7 +3399,11 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
       }
     }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
-      wuffs_gif__lzw_decoder__reset(&self->private_impl.f_lzw);
+      (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_gif__lzw_decoder){})),
+       wuffs_gif__lzw_decoder__check_wuffs_version(
+           &self->private_impl.f_lzw, sizeof((wuffs_gif__lzw_decoder){}),
+           WUFFS_VERSION),
+       wuffs_base__return_empty_struct());
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);

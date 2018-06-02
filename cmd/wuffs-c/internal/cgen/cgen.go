@@ -354,14 +354,6 @@ func (g *gen) genImpl(b *buffer) error {
 		}
 	}
 
-	// TODO: don't hard-code wuffs_gif__lzw_decoder__reset.
-	if g.pkgName == "gif" {
-		b.writes("static inline void wuffs_gif__lzw_decoder__reset(wuffs_gif__lzw_decoder *self) {")
-		b.writes("memset(self, 0, sizeof *self);")
-		b.writes("wuffs_gif__lzw_decoder__check_wuffs_version(self, sizeof *self, WUFFS_VERSION);")
-		b.writes("}\n\n")
-	}
-
 	b.writes("// ---------------- Private Function Prototypes\n\n")
 	if err := g.forEachFunc(b, priOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
