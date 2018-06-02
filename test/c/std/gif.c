@@ -160,6 +160,19 @@ void test_basic_status_strings() {
   }
 }
 
+void test_basic_status_used_package() {
+  CHECK_FOCUS(__func__);
+  // The function call here is from "std/gif" but the argument is from
+  // "std/lzw". The former package depends on the latter.
+  const char* s0 =
+      wuffs_gif__status__string(WUFFS_LZW__ERROR_CODE_IS_OUT_OF_RANGE);
+  const char* t0 = "lzw: code is out of range";
+  if (strcmp(s0, t0)) {
+    FAIL("got \"%s\", want \"%s\"", s0, t0);
+    return;
+  }
+}
+
 void test_basic_sub_struct_initializer() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
@@ -784,6 +797,7 @@ proc tests[] = {
     test_basic_check_wuffs_version_not_called,  //
     test_basic_status_is_error,                 //
     test_basic_status_strings,                  //
+    test_basic_status_used_package,             //
     test_basic_sub_struct_initializer,          //
 
     test_wuffs_gif_call_sequence,                            //
