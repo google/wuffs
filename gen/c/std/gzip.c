@@ -1467,10 +1467,10 @@ typedef int32_t wuffs_gzip__status;
 #define WUFFS_GZIP__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
 #define WUFFS_GZIP__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
-#define WUFFS_GZIP__ERROR_BAD_HEADER -1080566784                  // 0xBF97DC00
-#define WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH -1080566783           // 0xBF97DC01
-#define WUFFS_GZIP__ERROR_INVALID_COMPRESSION_METHOD -1080566782  // 0xBF97DC02
-#define WUFFS_GZIP__ERROR_INVALID_ENCODING_FLAGS -1080566781      // 0xBF97DC03
+#define WUFFS_GZIP__ERROR_BAD_CHECKSUM -1080566784            // 0xBF97DC00
+#define WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD -1080566783  // 0xBF97DC01
+#define WUFFS_GZIP__ERROR_BAD_ENCODING_FLAGS -1080566782      // 0xBF97DC02
+#define WUFFS_GZIP__ERROR_BAD_HEADER -1080566781              // 0xBF97DC03
 
 bool wuffs_gzip__status__is_error(wuffs_gzip__status s);
 
@@ -2123,10 +2123,10 @@ bool wuffs_gzip__status__is_error(wuffs_gzip__status s) {
 }
 
 const char* wuffs_gzip__status__strings[4] = {
+    "gzip: bad checksum",
+    "gzip: bad compression method",
+    "gzip: bad encoding flags",
     "gzip: bad header",
-    "gzip: checksum mismatch",
-    "gzip: invalid compression method",
-    "gzip: invalid encoding flags",
 };
 
 const char* wuffs_gzip__status__string(wuffs_gzip__status s) {
@@ -2306,7 +2306,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     }
     uint8_t t_2 = *ioptr_src++;
     if (t_2 != 8) {
-      status = WUFFS_GZIP__ERROR_INVALID_COMPRESSION_METHOD;
+      status = WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD;
       goto exit;
     }
     {
@@ -2410,7 +2410,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       ioptr_src += self->private_impl.c_decode[0].scratch;
     }
     if ((v_flags & 224) != 0) {
-      status = WUFFS_GZIP__ERROR_INVALID_ENCODING_FLAGS;
+      status = WUFFS_GZIP__ERROR_BAD_ENCODING_FLAGS;
       goto exit;
     }
     v_checksum_got = 0;
@@ -2516,7 +2516,7 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     if (!self->private_impl.f_ignore_checksum &&
         ((v_checksum_got != v_checksum_want) ||
          (v_decoded_length_got != v_decoded_length_want))) {
-      status = WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH;
+      status = WUFFS_GZIP__ERROR_BAD_CHECKSUM;
       goto exit;
     }
 

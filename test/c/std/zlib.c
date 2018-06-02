@@ -153,7 +153,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
         want = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
       } else {
         want = (bad_checksum && !ignore_checksum)
-                   ? WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH
+                   ? WUFFS_ZLIB__ERROR_BAD_CHECKSUM
                    : WUFFS_ZLIB__STATUS_OK;
       }
 

@@ -1468,11 +1468,10 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
 #define WUFFS_ZLIB__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
-#define WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH -33692672           // 0xFDFDE400
-#define WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_METHOD -33692671  // 0xFDFDE401
-#define WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_WINDOW_SIZE \
-  -33692670                                               // 0xFDFDE402
-#define WUFFS_ZLIB__ERROR_INVALID_PARITY_CHECK -33692669  // 0xFDFDE403
+#define WUFFS_ZLIB__ERROR_BAD_CHECKSUM -33692672                 // 0xFDFDE400
+#define WUFFS_ZLIB__ERROR_BAD_COMPRESSION_METHOD -33692671       // 0xFDFDE401
+#define WUFFS_ZLIB__ERROR_BAD_COMPRESSION_WINDOW_SIZE -33692670  // 0xFDFDE402
+#define WUFFS_ZLIB__ERROR_BAD_PARITY_CHECK -33692669             // 0xFDFDE403
 #define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_PRESET_DICTIONARY \
   -33692668  // 0xFDFDE404
 
@@ -2123,10 +2122,10 @@ bool wuffs_zlib__status__is_error(wuffs_zlib__status s) {
 }
 
 const char* wuffs_zlib__status__strings[5] = {
-    "zlib: checksum mismatch",
-    "zlib: invalid compression method",
-    "zlib: invalid compression window size",
-    "zlib: invalid parity check",
+    "zlib: bad checksum",
+    "zlib: bad compression method",
+    "zlib: bad compression window size",
+    "zlib: bad parity check",
     "zlib: TODO: unsupported preset dictionary",
 };
 
@@ -2303,11 +2302,11 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       v_x = t_1;
     }
     if (((v_x >> 8) & 15) != 8) {
-      status = WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_METHOD;
+      status = WUFFS_ZLIB__ERROR_BAD_COMPRESSION_METHOD;
       goto exit;
     }
     if ((v_x >> 12) > 7) {
-      status = WUFFS_ZLIB__ERROR_INVALID_COMPRESSION_WINDOW_SIZE;
+      status = WUFFS_ZLIB__ERROR_BAD_COMPRESSION_WINDOW_SIZE;
       goto exit;
     }
     if ((v_x & 32) != 0) {
@@ -2315,7 +2314,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       goto exit;
     }
     if ((v_x % 31) != 0) {
-      status = WUFFS_ZLIB__ERROR_INVALID_PARITY_CHECK;
+      status = WUFFS_ZLIB__ERROR_BAD_PARITY_CHECK;
       goto exit;
     }
     v_checksum_got = 0;
@@ -2383,7 +2382,7 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     }
     if (!self->private_impl.f_ignore_checksum &&
         (v_checksum_got != v_checksum_want)) {
-      status = WUFFS_ZLIB__ERROR_CHECKSUM_MISMATCH;
+      status = WUFFS_ZLIB__ERROR_BAD_CHECKSUM;
       goto exit;
     }
 

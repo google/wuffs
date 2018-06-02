@@ -17,10 +17,10 @@ packageid "gzip"
 use "std/crc32"
 use "std/deflate"
 
+pub error "bad checksum"
+pub error "bad compression method"
+pub error "bad encoding flags"
 pub error "bad header"
-pub error "checksum mismatch"
-pub error "invalid compression method"
-pub error "invalid encoding flags"
 
 pub struct decoder?(
 	flate deflate.decoder,
@@ -41,7 +41,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 		return error "bad header"
 	}
 	if in.src.read_u8?() != 0x08 {
-		return error "invalid compression method"
+		return error "bad compression method"
 	}
 	var flags base.u8 = in.src.read_u8?()
 	// TODO: API for returning the header's MTIME field.
@@ -85,7 +85,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 
 	// Reserved flags bits must be zero.
 	if (flags & 0xE0) != 0 {
-		return error "invalid encoding flags"
+		return error "bad encoding flags"
 	}
 
 	// Decode and checksum the DEFLATE-encoded payload.
@@ -107,6 +107,6 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	var decoded_length_want base.u32 = in.src.read_u32le?()
 	if (not this.ignore_checksum) and
 		((checksum_got != checksum_want) or (decoded_length_got != decoded_length_want)) {
-		return error "checksum mismatch"
+		return error "bad checksum"
 	}
 }

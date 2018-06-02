@@ -139,7 +139,7 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
         want = WUFFS_GZIP__SUSPENSION_SHORT_READ;
       } else {
         want = (bad_checksum && !ignore_checksum)
-                   ? WUFFS_GZIP__ERROR_CHECKSUM_MISMATCH
+                   ? WUFFS_GZIP__ERROR_BAD_CHECKSUM
                    : WUFFS_GZIP__STATUS_OK;
       }
 
