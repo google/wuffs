@@ -16,8 +16,8 @@ packageid "lzw "
 
 // TODO: some mechanism for fixing the error code's value, such as a trailing
 // "= 100", to maintain API stability.
-pub error "code is out of range"
-pub error "prefix chain is cyclical"
+pub error "bad code"
+pub error "cyclical prefix chain"
 
 pub struct decoder?(
 	literal_width base.u32[..8],
@@ -103,7 +103,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			{
 				this.stack[s] = this.suffixes[c]
 				if s == 0 {
-					return error "prefix chain is cyclical"
+					return error "cyclical prefix chain"
 				}
 				s -= 1
 				c = this.prefixes[c] as base.u32
@@ -134,7 +134,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			}
 
 		} else {
-			return error "code is out of range"
+			return error "bad code"
 		}
 
 		if save_code <= 4095 {

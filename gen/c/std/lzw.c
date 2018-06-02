@@ -1186,8 +1186,8 @@ typedef int32_t wuffs_lzw__status;
 #define WUFFS_LZW__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
 #define WUFFS_LZW__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
-#define WUFFS_LZW__ERROR_CODE_IS_OUT_OF_RANGE -799105024      // 0xD05EA000
-#define WUFFS_LZW__ERROR_PREFIX_CHAIN_IS_CYCLICAL -799105023  // 0xD05EA001
+#define WUFFS_LZW__ERROR_BAD_CODE -799105024               // 0xD05EA000
+#define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -799105023  // 0xD05EA001
 
 bool wuffs_lzw__status__is_error(wuffs_lzw__status s);
 
@@ -1844,8 +1844,8 @@ bool wuffs_lzw__status__is_error(wuffs_lzw__status s) {
 }
 
 const char* wuffs_lzw__status__strings[2] = {
-    "lzw: code is out of range",
-    "lzw: prefix chain is cyclical",
+    "lzw: bad code",
+    "lzw: cyclical prefix chain",
 };
 
 const char* wuffs_lzw__status__string(wuffs_lzw__status s) {
@@ -2058,7 +2058,7 @@ wuffs_lzw__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         while (v_c >= v_clear_code) {
           self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
           if (v_s == 0) {
-            status = WUFFS_LZW__ERROR_PREFIX_CHAIN_IS_CYCLICAL;
+            status = WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN;
             goto exit;
           }
           v_s -= 1;
@@ -2089,7 +2089,7 @@ wuffs_lzw__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
               ((uint16_t)(v_prev_code));
         }
       } else {
-        status = WUFFS_LZW__ERROR_CODE_IS_OUT_OF_RANGE;
+        status = WUFFS_LZW__ERROR_BAD_CODE;
         goto exit;
       }
       if (v_save_code <= 4095) {

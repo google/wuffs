@@ -164,9 +164,8 @@ void test_basic_status_used_package() {
   CHECK_FOCUS(__func__);
   // The function call here is from "std/gif" but the argument is from
   // "std/lzw". The former package depends on the latter.
-  const char* s0 =
-      wuffs_gif__status__string(WUFFS_LZW__ERROR_CODE_IS_OUT_OF_RANGE);
-  const char* t0 = "lzw: code is out of range";
+  const char* s0 = wuffs_gif__status__string(WUFFS_LZW__ERROR_BAD_CODE);
+  const char* t0 = "lzw: bad code";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;

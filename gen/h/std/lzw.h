@@ -1186,8 +1186,8 @@ typedef int32_t wuffs_lzw__status;
 #define WUFFS_LZW__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
 #define WUFFS_LZW__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
 
-#define WUFFS_LZW__ERROR_CODE_IS_OUT_OF_RANGE -799105024      // 0xD05EA000
-#define WUFFS_LZW__ERROR_PREFIX_CHAIN_IS_CYCLICAL -799105023  // 0xD05EA001
+#define WUFFS_LZW__ERROR_BAD_CODE -799105024               // 0xD05EA000
+#define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -799105023  // 0xD05EA001
 
 bool wuffs_lzw__status__is_error(wuffs_lzw__status s);
 
