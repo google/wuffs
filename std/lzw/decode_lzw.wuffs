@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+packageid "lzw "
+
 // TODO: some mechanism for fixing the error code's value, such as a trailing
 // "= 100", to maintain API stability.
-pub error "LZW code is out of range"
-pub error "LZW prefix chain is cyclical"
+pub error "code is out of range"
+pub error "prefix chain is cyclical"
 
-pri struct lzw_decoder?(
+pub struct decoder?(
 	literal_width base.u32[..8],
 	stack array[4096] base.u8,
 	suffixes array[4096] base.u8,
 	prefixes array[4096] base.u16[..4095],
 )
 
-pri func lzw_decoder.set_literal_width!(lw base.u32[2..8])() {
-	this.literal_width = in.lw
+// TODO: u32 should be u32[2..8].
+pub func decoder.set_literal_width!(lw base.u32)() {
+	if in.lw <= 8 {
+		this.literal_width = in.lw
+	}
 }
 
-pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	// These variables don't change over the lifetime of this func.
 	var literal_width base.u32[2..8] = 8
 	if this.literal_width >= 2 {
@@ -98,7 +103,7 @@ pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			{
 				this.stack[s] = this.suffixes[c]
 				if s == 0 {
-					return error "LZW prefix chain is cyclical"
+					return error "prefix chain is cyclical"
 				}
 				s -= 1
 				c = this.prefixes[c] as base.u32
@@ -129,7 +134,7 @@ pri func lzw_decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			}
 
 		} else {
-			return error "LZW code is out of range"
+			return error "code is out of range"
 		}
 
 		if save_code <= 4095 {

@@ -36,6 +36,7 @@ It should print "PASS", amongst other information, and exit(0).
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../../gen/c/std/gif.c"
+#include "../../../gen/c/std/lzw.c"
 #include "../fuzzlib/fuzzlib.c"
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {

@@ -41,6 +41,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../../gen/c/std/gif.c"
+#include "../../../gen/c/std/lzw.c"
 #include "../testlib/testlib.c"
 #ifdef WUFFS_MIMIC
 #include "../mimiclib/gif.c"
@@ -118,8 +119,8 @@ void test_basic_status_is_error() {
     FAIL("is_error(SHORT_WRITE) returned true");
     return;
   }
-  if (!wuffs_gif__status__is_error(WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE)) {
-    FAIL("is_error(LZW_CODE_IS_OUT_OF_RANGE) returned false");
+  if (!wuffs_gif__status__is_error(WUFFS_GIF__ERROR_BAD_HEADER)) {
+    FAIL("is_error(BAD_HEADER) returned false");
     return;
   }
 }
@@ -145,9 +146,8 @@ void test_basic_status_strings() {
     FAIL("got \"%s\", want \"%s\"", s2, t2);
     return;
   }
-  const char* s3 =
-      wuffs_gif__status__string(WUFFS_GIF__ERROR_LZW_CODE_IS_OUT_OF_RANGE);
-  const char* t3 = "gif: LZW code is out of range";
+  const char* s3 = wuffs_gif__status__string(WUFFS_GIF__ERROR_BAD_HEADER);
+  const char* t3 = "gif: bad header";
   if (strcmp(s3, t3)) {
     FAIL("got \"%s\", want \"%s\"", s3, t3);
     return;
@@ -174,196 +174,6 @@ void test_basic_sub_struct_initializer() {
          dec.private_impl.f_lzw.private_impl.magic, WUFFS_BASE__MAGIC);
     return;
   }
-}
-
-// ---------------- LZW Tests
-
-bool do_test_wuffs_lzw_decode(const char* src_filename,
-                              uint64_t src_size,
-                              const char* want_filename,
-                              uint64_t want_size,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer want =
-      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-
-  if (!read_file(&src, src_filename)) {
-    return false;
-  }
-  if (src.wi != src_size) {
-    FAIL("src size: got %d, want %d", (int)(src.wi), (int)(src_size));
-    return false;
-  }
-  // The first byte in that file, the LZW literal width, should be 0x08.
-  uint8_t literal_width = src.ptr[0];
-  if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
-    return false;
-  }
-  src.ri++;
-
-  if (!read_file(&want, want_filename)) {
-    return false;
-  }
-  if (want.wi != want_size) {
-    FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
-    return false;
-  }
-
-  wuffs_gif__lzw_decoder dec = ((wuffs_gif__lzw_decoder){});
-  wuffs_gif__lzw_decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  wuffs_gif__lzw_decoder__set_literal_width(&dec, literal_width);
-  int num_iters = 0;
-  while (true) {
-    num_iters++;
-    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
-    if (wlimit) {
-      set_writer_limit(&got_writer, wlimit);
-    }
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit) {
-      set_reader_limit(&src_reader, rlimit);
-    }
-    size_t old_wi = got.wi;
-    size_t old_ri = src.ri;
-
-    wuffs_gif__status status =
-        wuffs_gif__lzw_decoder__decode(&dec, got_writer, src_reader);
-    if (status == WUFFS_GIF__STATUS_OK) {
-      if (src.ri != src.wi) {
-        FAIL("decode returned \"ok\" but src was not exhausted");
-        return false;
-      }
-      break;
-    }
-    if ((status != WUFFS_GIF__SUSPENSION_SHORT_READ) &&
-        (status != WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {
-      FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s) or %" PRIi32
-           " (%s)",
-           status, wuffs_gif__status__string(status),
-           WUFFS_GIF__SUSPENSION_SHORT_READ,
-           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_READ),
-           WUFFS_GIF__SUSPENSION_SHORT_WRITE,
-           wuffs_gif__status__string(WUFFS_GIF__SUSPENSION_SHORT_WRITE));
-      return false;
-    }
-
-    if (got.wi < old_wi) {
-      FAIL("write index got.wi went backwards");
-      return false;
-    }
-    if (src.ri < old_ri) {
-      FAIL("read index src.ri went backwards");
-      return false;
-    }
-    if ((got.wi == old_wi) && (src.ri == old_ri)) {
-      FAIL("no progress was made");
-      return false;
-    }
-  }
-
-  if (wlimit || rlimit) {
-    if (num_iters <= 1) {
-      FAIL("num_iters: got %d, want > 1", num_iters);
-      return false;
-    }
-  } else {
-    if (num_iters != 1) {
-      FAIL("num_iters: got %d, want 1", num_iters);
-      return false;
-    }
-  }
-
-  return io_buffers_equal("", &got, &want);
-}
-
-void test_wuffs_lzw_decode_many_big_reads() {
-  CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
-                           "../../data/bricks-gray.indexes", 19200, 0, 4096);
-}
-
-void test_wuffs_lzw_decode_many_small_writes_reads() {
-  CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
-                           "../../data/bricks-gray.indexes", 19200, 41, 43);
-}
-
-void test_wuffs_lzw_decode_bricks_dither() {
-  CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-dither.indexes.giflzw", 14923,
-                           "../../data/bricks-dither.indexes", 19200, 0, 0);
-}
-
-void test_wuffs_lzw_decode_bricks_nodither() {
-  CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-nodither.indexes.giflzw", 13382,
-                           "../../data/bricks-nodither.indexes", 19200, 0, 0);
-}
-
-void test_wuffs_lzw_decode_pi() {
-  CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/pi.txt.giflzw", 50550,
-                           "../../data/pi.txt", 100003, 0, 0);
-}
-
-// ---------------- LZW Benches
-
-bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
-  wuffs_base__io_buffer dst =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-
-  if (!read_file(&src, filename)) {
-    return false;
-  }
-  if (src.wi <= 0) {
-    FAIL("src size: got %d, want > 0", (int)(src.wi));
-    return false;
-  }
-  uint8_t literal_width = src.ptr[0];
-  if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
-    return false;
-  }
-
-  bench_start();
-  uint64_t n_bytes = 0;
-  uint64_t i;
-  uint64_t iters = iters_unscaled * iterscale;
-  for (i = 0; i < iters; i++) {
-    dst.wi = 0;
-    src.ri = 1;  // Skip the literal width.
-    wuffs_gif__lzw_decoder dec = ((wuffs_gif__lzw_decoder){});
-    wuffs_gif__lzw_decoder__check_wuffs_version(&dec, sizeof dec,
-                                                WUFFS_VERSION);
-    wuffs_gif__status s =
-        wuffs_gif__lzw_decoder__decode(&dec, dst_writer, src_reader);
-    if (s) {
-      FAIL("decode: %" PRIi32 " (%s)", s, wuffs_gif__status__string(s));
-      return false;
-    }
-    n_bytes += dst.wi;
-  }
-  bench_finish(iters, n_bytes);
-  return true;
-}
-
-void bench_wuffs_lzw_decode_20k() {
-  CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 50);
-}
-
-void bench_wuffs_lzw_decode_100k() {
-  CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 10);
 }
 
 // ---------------- GIF Tests
@@ -976,12 +786,6 @@ proc tests[] = {
     test_basic_status_strings,                  //
     test_basic_sub_struct_initializer,          //
 
-    test_wuffs_lzw_decode_many_big_reads,           //
-    test_wuffs_lzw_decode_many_small_writes_reads,  //
-    test_wuffs_lzw_decode_bricks_dither,            //
-    test_wuffs_lzw_decode_bricks_nodither,          //
-    test_wuffs_lzw_decode_pi,                       //
-
     test_wuffs_gif_call_sequence,                            //
     test_wuffs_gif_decode_animated_big,                      //
     test_wuffs_gif_decode_animated_medium,                   //
@@ -1013,9 +817,6 @@ proc tests[] = {
 
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
-
-    bench_wuffs_lzw_decode_20k,   //
-    bench_wuffs_lzw_decode_100k,  //
 
     bench_wuffs_gif_decode_1k_bw,     //
     bench_wuffs_gif_decode_1k_color,  //

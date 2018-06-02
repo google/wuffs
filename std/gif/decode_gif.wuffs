@@ -14,6 +14,8 @@
 
 packageid "gif "
 
+use "std/lzw"
+
 pub error "bad block"
 pub error "bad extension label"
 pub error "bad graphic control"
@@ -78,7 +80,7 @@ pub struct decoder?(
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
 
-	lzw lzw_decoder,
+	lzw lzw.decoder,
 )
 
 // TODO: should dst be an nptr instead of a ptr?

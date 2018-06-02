@@ -57,6 +57,7 @@ uint64_t micros_since_start(struct timespec* now) {
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../gen/c/std/gif.c"
+#include "../../gen/c/std/lzw.c"
 
 // Limit the input GIF image to (64 MiB - 1 byte) compressed and 4096 × 4096
 // pixels uncompressed. This is a limitation of this example program (which

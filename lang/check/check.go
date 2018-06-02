@@ -264,6 +264,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 			} else {
 				c.consts[qid] = n
 			}
+
 		case a.KFunc:
 			n := n.Func()
 			qqid := n.QQID()
@@ -272,6 +273,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 			} else {
 				c.funcs[qqid] = n
 			}
+
 		case a.KStatus:
 			n := n.Status()
 			qid := n.QID()
@@ -280,6 +282,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 			} else {
 				c.statuses[qid] = n
 			}
+
 		case a.KStruct:
 			n := n.Struct()
 			qid := n.QID()
@@ -287,6 +290,17 @@ func (c *Checker) checkUse(node *a.Node) error {
 				duplicate = qid.Str(c.tm)
 			} else {
 				c.structs[qid] = n
+			}
+
+			// Add an implicit reset method.
+			in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
+			out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
+			f := a.NewFunc(0, n.Filename(), n.Line(), n.QID()[1], t.IDReset, in, out, nil, nil)
+			qqid := t.QQID{qid[0], qid[1], t.IDReset}
+			if _, ok := c.funcs[qqid]; ok {
+				duplicate = qqid.Str(c.tm)
+			} else {
+				c.funcs[qqid] = f
 			}
 		}
 
