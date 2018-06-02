@@ -172,7 +172,7 @@ void update_palette_as_color_art(wuffs_base__slice_u8 palette) {
   }
 }
 
-void print_ascii_art(wuffs_base__image_buffer* ib) {
+size_t print_ascii_art(wuffs_base__image_buffer* ib) {
   wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
   uint32_t width = wuffs_base__image_config__width(ic);
   uint32_t height = wuffs_base__image_config__height(ic);
@@ -188,10 +188,10 @@ void print_ascii_art(wuffs_base__image_buffer* ib) {
     }
     *p++ = '\n';
   }
-  ignore_return_value(write(stdout_fd, print_buffer, p - print_buffer));
+  return p - print_buffer;
 }
 
-void print_color_art(wuffs_base__image_buffer* ib) {
+size_t print_color_art(wuffs_base__image_buffer* ib) {
   wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
   uint32_t width = wuffs_base__image_config__width(ic);
   uint32_t height = wuffs_base__image_config__height(ic);
@@ -215,8 +215,7 @@ void print_color_art(wuffs_base__image_buffer* ib) {
     *p++ = '\n';
   }
   p = append_pascal_string(p, reset_color_pascal_string);
-
-  ignore_return_value(write(stdout_fd, print_buffer, p - print_buffer));
+  return p - print_buffer;
 }
 
 // ----
@@ -295,6 +294,8 @@ const char* play() {
       }
     }
 
+    size_t n = color_flag ? print_color_art(&ib) : print_ascii_art(&ib);
+
 #ifdef _POSIX_TIMERS
     if (started) {
       struct timespec now;
@@ -314,15 +315,11 @@ const char* play() {
     }
 #endif
 
+    ignore_return_value(write(stdout_fd, print_buffer, n));
+
     cumulative_delay_micros +=
         (1000 * wuffs_base__image_buffer__duration(&ib)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
-
-    if (color_flag) {
-      print_color_art(&ib);
-    } else {
-      print_ascii_art(&ib);
-    }
 
     // TODO: should a zero duration mean to show this frame forever?
   }
