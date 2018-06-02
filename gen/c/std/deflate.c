@@ -2423,19 +2423,18 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_0 =
-              self->private_impl.c_decode_uncompressed[0].scratch >> 56;
-          self->private_impl.c_decode_uncompressed[0].scratch <<= 8;
-          self->private_impl.c_decode_uncompressed[0].scratch >>= 8;
-          self->private_impl.c_decode_uncompressed[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_0;
+          uint64_t* scratch =
+              &self->private_impl.c_decode_uncompressed[0].scratch;
+          uint32_t t_0 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_0;
           if (t_0 == 24) {
-            t_1 = self->private_impl.c_decode_uncompressed[0].scratch;
+            t_1 = *scratch;
             break;
           }
           t_0 += 8;
-          self->private_impl.c_decode_uncompressed[0].scratch |=
-              ((uint64_t)(t_0)) << 56;
+          *scratch |= ((uint64_t)(t_0)) << 56;
         }
       }
       v_length = t_1;

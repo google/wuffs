@@ -2341,17 +2341,17 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
             if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
               goto short_read_src;
             }
-            uint32_t t_4 = self->private_impl.c_decode[0].scratch >> 56;
-            self->private_impl.c_decode[0].scratch <<= 8;
-            self->private_impl.c_decode[0].scratch >>= 8;
-            self->private_impl.c_decode[0].scratch |= ((uint64_t)(*ioptr_src++))
-                                                      << t_4;
+            uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+            uint32_t t_4 = *scratch >> 56;
+            *scratch <<= 8;
+            *scratch >>= 8;
+            *scratch |= ((uint64_t)(*ioptr_src++)) << t_4;
             if (t_4 == 8) {
-              t_5 = self->private_impl.c_decode[0].scratch;
+              t_5 = *scratch;
               break;
             }
             t_4 += 8;
-            self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_4)) << 56;
+            *scratch |= ((uint64_t)(t_4)) << 56;
           }
         }
         v_xlen = t_5;
@@ -2470,17 +2470,17 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_9 = self->private_impl.c_decode[0].scratch >> 56;
-          self->private_impl.c_decode[0].scratch <<= 8;
-          self->private_impl.c_decode[0].scratch >>= 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*ioptr_src++))
-                                                    << t_9;
+          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint32_t t_9 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_9;
           if (t_9 == 24) {
-            t_10 = self->private_impl.c_decode[0].scratch;
+            t_10 = *scratch;
             break;
           }
           t_9 += 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_9)) << 56;
+          *scratch |= ((uint64_t)(t_9)) << 56;
         }
       }
       v_checksum_want = t_10;
@@ -2498,17 +2498,17 @@ wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_11 = self->private_impl.c_decode[0].scratch >> 56;
-          self->private_impl.c_decode[0].scratch <<= 8;
-          self->private_impl.c_decode[0].scratch >>= 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*ioptr_src++))
-                                                    << t_11;
+          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint32_t t_11 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_11;
           if (t_11 == 24) {
-            t_12 = self->private_impl.c_decode[0].scratch;
+            t_12 = *scratch;
             break;
           }
           t_11 += 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_11)) << 56;
+          *scratch |= ((uint64_t)(t_11)) << 56;
         }
       }
       v_decoded_length_want = t_12;

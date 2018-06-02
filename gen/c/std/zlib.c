@@ -2287,17 +2287,17 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_0 = self->private_impl.c_decode[0].scratch & 0xFF;
-          self->private_impl.c_decode[0].scratch >>= 8;
-          self->private_impl.c_decode[0].scratch <<= 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*ioptr_src++))
-                                                    << (56 - t_0);
+          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint32_t t_0 = *scratch & 0xFF;
+          *scratch >>= 8;
+          *scratch <<= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << (56 - t_0);
           if (t_0 == 8) {
-            t_1 = self->private_impl.c_decode[0].scratch >> (64 - 16);
+            t_1 = *scratch >> (64 - 16);
             break;
           }
           t_0 += 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_0));
+          *scratch |= ((uint64_t)(t_0));
         }
       }
       v_x = t_1;
@@ -2366,17 +2366,17 @@ wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_3 = self->private_impl.c_decode[0].scratch & 0xFF;
-          self->private_impl.c_decode[0].scratch >>= 8;
-          self->private_impl.c_decode[0].scratch <<= 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(*ioptr_src++))
-                                                    << (56 - t_3);
+          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint32_t t_3 = *scratch & 0xFF;
+          *scratch >>= 8;
+          *scratch <<= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << (56 - t_3);
           if (t_3 == 24) {
-            t_4 = self->private_impl.c_decode[0].scratch >> (64 - 32);
+            t_4 = *scratch >> (64 - 32);
             break;
           }
           t_3 += 8;
-          self->private_impl.c_decode[0].scratch |= ((uint64_t)(t_3));
+          *scratch |= ((uint64_t)(t_3));
         }
       }
       v_checksum_want = t_4;

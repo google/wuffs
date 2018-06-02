@@ -2541,17 +2541,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
               if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
                 goto short_read_src;
               }
-              uint32_t t_1 = self->private_impl.c_decode_lsd[0].scratch & 0xFF;
-              self->private_impl.c_decode_lsd[0].scratch >>= 8;
-              self->private_impl.c_decode_lsd[0].scratch <<= 8;
-              self->private_impl.c_decode_lsd[0].scratch |=
-                  ((uint64_t)(*ioptr_src++)) << (56 - t_1);
+              uint64_t* scratch = &self->private_impl.c_decode_lsd[0].scratch;
+              uint32_t t_1 = *scratch & 0xFF;
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*ioptr_src++)) << (56 - t_1);
               if (t_1 == 16) {
-                t_2 = self->private_impl.c_decode_lsd[0].scratch >> (64 - 24);
+                t_2 = *scratch >> (64 - 24);
                 break;
               }
               t_1 += 8;
-              self->private_impl.c_decode_lsd[0].scratch |= ((uint64_t)(t_1));
+              *scratch |= ((uint64_t)(t_1));
             }
           }
           v_argb = (t_2 | 4278190080);
@@ -2954,18 +2954,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_ae(
             if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
               goto short_read_src;
             }
-            uint32_t t_4 = self->private_impl.c_decode_ae[0].scratch >> 56;
-            self->private_impl.c_decode_ae[0].scratch <<= 8;
-            self->private_impl.c_decode_ae[0].scratch >>= 8;
-            self->private_impl.c_decode_ae[0].scratch |=
-                ((uint64_t)(*ioptr_src++)) << t_4;
+            uint64_t* scratch = &self->private_impl.c_decode_ae[0].scratch;
+            uint32_t t_4 = *scratch >> 56;
+            *scratch <<= 8;
+            *scratch >>= 8;
+            *scratch |= ((uint64_t)(*ioptr_src++)) << t_4;
             if (t_4 == 8) {
-              t_5 = self->private_impl.c_decode_ae[0].scratch;
+              t_5 = *scratch;
               break;
             }
             t_4 += 8;
-            self->private_impl.c_decode_ae[0].scratch |= ((uint64_t)(t_4))
-                                                         << 56;
+            *scratch |= ((uint64_t)(t_4)) << 56;
           }
         }
         self->private_impl.f_num_loops = ((uint32_t)(t_5));
@@ -3090,17 +3089,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_gc(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_2 = self->private_impl.c_decode_gc[0].scratch >> 56;
-          self->private_impl.c_decode_gc[0].scratch <<= 8;
-          self->private_impl.c_decode_gc[0].scratch >>= 8;
-          self->private_impl.c_decode_gc[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_2;
+          uint64_t* scratch = &self->private_impl.c_decode_gc[0].scratch;
+          uint32_t t_2 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_2;
           if (t_2 == 8) {
-            t_3 = self->private_impl.c_decode_gc[0].scratch;
+            t_3 = *scratch;
             break;
           }
           t_2 += 8;
-          self->private_impl.c_decode_gc[0].scratch |= ((uint64_t)(t_2)) << 56;
+          *scratch |= ((uint64_t)(t_2)) << 56;
         }
       }
       self->private_impl.f_gc_duration = (((uint64_t)(t_3)) * 7056000);
@@ -3201,18 +3200,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_0 = self->private_impl.c_decode_id_part0[0].scratch >> 56;
-          self->private_impl.c_decode_id_part0[0].scratch <<= 8;
-          self->private_impl.c_decode_id_part0[0].scratch >>= 8;
-          self->private_impl.c_decode_id_part0[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_0;
+          uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
+          uint32_t t_0 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_0;
           if (t_0 == 8) {
-            t_1 = self->private_impl.c_decode_id_part0[0].scratch;
+            t_1 = *scratch;
             break;
           }
           t_0 += 8;
-          self->private_impl.c_decode_id_part0[0].scratch |= ((uint64_t)(t_0))
-                                                             << 56;
+          *scratch |= ((uint64_t)(t_0)) << 56;
         }
       }
       v_frame_x = ((uint32_t)(t_1));
@@ -3230,18 +3228,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_2 = self->private_impl.c_decode_id_part0[0].scratch >> 56;
-          self->private_impl.c_decode_id_part0[0].scratch <<= 8;
-          self->private_impl.c_decode_id_part0[0].scratch >>= 8;
-          self->private_impl.c_decode_id_part0[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_2;
+          uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
+          uint32_t t_2 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_2;
           if (t_2 == 8) {
-            t_3 = self->private_impl.c_decode_id_part0[0].scratch;
+            t_3 = *scratch;
             break;
           }
           t_2 += 8;
-          self->private_impl.c_decode_id_part0[0].scratch |= ((uint64_t)(t_2))
-                                                             << 56;
+          *scratch |= ((uint64_t)(t_2)) << 56;
         }
       }
       v_frame_y = ((uint32_t)(t_3));
@@ -3266,18 +3263,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_4 = self->private_impl.c_decode_id_part0[0].scratch >> 56;
-          self->private_impl.c_decode_id_part0[0].scratch <<= 8;
-          self->private_impl.c_decode_id_part0[0].scratch >>= 8;
-          self->private_impl.c_decode_id_part0[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_4;
+          uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
+          uint32_t t_4 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_4;
           if (t_4 == 8) {
-            t_5 = self->private_impl.c_decode_id_part0[0].scratch;
+            t_5 = *scratch;
             break;
           }
           t_4 += 8;
-          self->private_impl.c_decode_id_part0[0].scratch |= ((uint64_t)(t_4))
-                                                             << 56;
+          *scratch |= ((uint64_t)(t_4)) << 56;
         }
       }
       v_frame_x += ((uint32_t)(t_5));
@@ -3295,18 +3291,17 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
           if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
             goto short_read_src;
           }
-          uint32_t t_6 = self->private_impl.c_decode_id_part0[0].scratch >> 56;
-          self->private_impl.c_decode_id_part0[0].scratch <<= 8;
-          self->private_impl.c_decode_id_part0[0].scratch >>= 8;
-          self->private_impl.c_decode_id_part0[0].scratch |=
-              ((uint64_t)(*ioptr_src++)) << t_6;
+          uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
+          uint32_t t_6 = *scratch >> 56;
+          *scratch <<= 8;
+          *scratch >>= 8;
+          *scratch |= ((uint64_t)(*ioptr_src++)) << t_6;
           if (t_6 == 8) {
-            t_7 = self->private_impl.c_decode_id_part0[0].scratch;
+            t_7 = *scratch;
             break;
           }
           t_6 += 8;
-          self->private_impl.c_decode_id_part0[0].scratch |= ((uint64_t)(t_6))
-                                                             << 56;
+          *scratch |= ((uint64_t)(t_6)) << 56;
         }
       }
       v_frame_y += ((uint32_t)(t_7));
@@ -3444,20 +3439,18 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
               if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
                 goto short_read_src;
               }
-              uint32_t t_1 =
-                  self->private_impl.c_decode_id_part1[0].scratch & 0xFF;
-              self->private_impl.c_decode_id_part1[0].scratch >>= 8;
-              self->private_impl.c_decode_id_part1[0].scratch <<= 8;
-              self->private_impl.c_decode_id_part1[0].scratch |=
-                  ((uint64_t)(*ioptr_src++)) << (56 - t_1);
+              uint64_t* scratch =
+                  &self->private_impl.c_decode_id_part1[0].scratch;
+              uint32_t t_1 = *scratch & 0xFF;
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*ioptr_src++)) << (56 - t_1);
               if (t_1 == 16) {
-                t_2 = self->private_impl.c_decode_id_part1[0].scratch >>
-                      (64 - 24);
+                t_2 = *scratch >> (64 - 24);
                 break;
               }
               t_1 += 8;
-              self->private_impl.c_decode_id_part1[0].scratch |=
-                  ((uint64_t)(t_1));
+              *scratch |= ((uint64_t)(t_1));
             }
           }
           v_argb = (t_2 | 4278190080);

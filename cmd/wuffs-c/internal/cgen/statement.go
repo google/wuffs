@@ -642,28 +642,25 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 		name, name, name)
 	g.currFunk.shortReads = append(g.currFunk.shortReads, name)
 
-	b.printf("uint32_t %s%d = %s", tPrefix, temp0, scratchName)
+	b.printf("uint64_t *scratch = &%s;", scratchName)
+	b.printf("uint32_t %s%d = *scratch", tPrefix, temp0)
 	switch endianness {
 	case "be":
-		b.printf("& 0xFF;")
-		b.printf("%s >>= 8;", scratchName)
-		b.printf("%s <<= 8;", scratchName)
-		b.printf("%s |= ((uint64_t)(*ioptr_%s++)) << (56 - %s%d);",
-			scratchName, name, tPrefix, temp0)
+		b.writes("& 0xFF; *scratch >>= 8; *scratch <<= 8;")
+		b.printf("*scratch |= ((uint64_t)(*ioptr_%s++)) << (56 - %s%d);",
+			name, tPrefix, temp0)
 	case "le":
-		b.printf(">> 56;")
-		b.printf("%s <<= 8;", scratchName)
-		b.printf("%s >>= 8;", scratchName)
-		b.printf("%s |= ((uint64_t)(*ioptr_%s++)) << %s%d;",
-			scratchName, name, tPrefix, temp0)
+		b.writes(">> 56; *scratch <<= 8; *scratch >>= 8;")
+		b.printf("*scratch |= ((uint64_t)(*ioptr_%s++)) << %s%d;",
+			name, tPrefix, temp0)
 	}
 
 	b.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
 	switch endianness {
 	case "be":
-		b.printf("%s%d = %s >> (64 - %d);", tPrefix, temp1, scratchName, size)
+		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp1, size)
 	case "le":
-		b.printf("%s%d = %s;", tPrefix, temp1, scratchName)
+		b.printf("%s%d = *scratch;", tPrefix, temp1)
 	}
 	b.printf("break;")
 	b.printf("}")
@@ -671,9 +668,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	b.printf("%s%d += 8;", tPrefix, temp0)
 	switch endianness {
 	case "be":
-		b.printf("%s |= ((uint64_t)(%s%d));", scratchName, tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(%s%d));", tPrefix, temp0)
 	case "le":
-		b.printf("%s |= ((uint64_t)(%s%d)) << 56;", scratchName, tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
 	}
 
 	b.writes("}}\n")
