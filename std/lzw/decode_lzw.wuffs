@@ -26,11 +26,8 @@ pub struct decoder?(
 	prefixes array[4096] base.u16[..4095],
 )
 
-// TODO: u32 should be u32[2..8].
-pub func decoder.set_literal_width!(lw base.u32)() {
-	if in.lw <= 8 {
-		this.literal_width = in.lw
-	}
+pub func decoder.set_literal_width!(lw base.u32[2..8])() {
+	this.literal_width = in.lw
 }
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {

@@ -1910,10 +1910,12 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
   if (self->private_impl.status < 0) {
     return;
   }
-
-  if (a_lw <= 8) {
-    self->private_impl.f_literal_width = a_lw;
+  if (a_lw < 2 || a_lw > 8) {
+    self->private_impl.status = WUFFS_LZW__ERROR_BAD_ARGUMENT;
+    return;
   }
+
+  self->private_impl.f_literal_width = a_lw;
 }
 
 // -------- func decoder.decode

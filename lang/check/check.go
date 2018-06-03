@@ -116,12 +116,6 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		}
 	}
 
-	for _, f := range files {
-		if err := allTypeChecked(tm, f.Node()); err != nil {
-			return nil, err
-		}
-	}
-
 	return c, nil
 }
 
@@ -135,13 +129,13 @@ var phases = [...]struct {
 	{a.KStatus, (*Checker).checkStatus},
 	{a.KConst, (*Checker).checkConst},
 	{a.KStruct, (*Checker).checkStructDecl},
-	{a.KStruct, (*Checker).checkImplicitResetMethod},
 	{a.KInvalid, (*Checker).checkStructCycles},
 	{a.KStruct, (*Checker).checkStructFields},
 	{a.KFunc, (*Checker).checkFuncSignature},
 	{a.KFunc, (*Checker).checkFuncContract},
 	{a.KFunc, (*Checker).checkFuncBody},
 	{a.KStruct, (*Checker).checkFieldMethodCollisions},
+	{a.KInvalid, (*Checker).checkAllTypeChecked},
 	// TODO: check consts, funcs, structs and uses for name collisions.
 }
 
@@ -167,6 +161,7 @@ type Checker struct {
 	// "foo/bar"` lines. The keys are `bar`, not `"foo/bar"`.
 	useBaseNames map[t.ID]struct{}
 
+	// TODO: is builtInFuncs necessary? Are they are subset of funcs?
 	builtInFuncs      map[t.QQID]*a.Func
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
@@ -254,58 +249,21 @@ func (c *Checker) checkUse(node *a.Node) error {
 			return err
 		}
 
-		duplicate := ""
 		switch n.Kind() {
 		case a.KConst:
-			n := n.Const()
-			qid := n.QID()
-			if _, ok := c.consts[qid]; ok {
-				duplicate = qid.Str(c.tm)
-			} else {
-				c.consts[qid] = n
-			}
-
+			return fmt.Errorf("TODO: type-check a used-package const")
 		case a.KFunc:
-			n := n.Func()
-			qqid := n.QQID()
-			if _, ok := c.funcs[qqid]; ok {
-				duplicate = qqid.Str(c.tm)
-			} else {
-				c.funcs[qqid] = n
+			if err := c.checkFuncSignature(n); err != nil {
+				return err
 			}
-
 		case a.KStatus:
-			n := n.Status()
-			qid := n.QID()
-			if _, ok := c.statuses[qid]; ok {
-				duplicate = qid.Str(c.tm)
-			} else {
-				c.statuses[qid] = n
+			if err := c.checkStatus(n); err != nil {
+				return err
 			}
-
 		case a.KStruct:
-			n := n.Struct()
-			qid := n.QID()
-			if _, ok := c.structs[qid]; ok {
-				duplicate = qid.Str(c.tm)
-			} else {
-				c.structs[qid] = n
+			if err := c.checkStructDecl(n); err != nil {
+				return err
 			}
-
-			// Add an implicit reset method.
-			in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
-			out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
-			f := a.NewFunc(0, n.Filename(), n.Line(), n.QID()[1], t.IDReset, in, out, nil, nil)
-			qqid := t.QQID{qid[0], qid[1], t.IDReset}
-			if _, ok := c.funcs[qqid]; ok {
-				duplicate = qqid.Str(c.tm)
-			} else {
-				c.funcs[qqid] = f
-			}
-		}
-
-		if duplicate != "" {
-			return fmt.Errorf("check: duplicate name %s", duplicate)
 		}
 	}
 	c.useBaseNames[baseName] = struct{}{}
@@ -414,14 +372,15 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	}
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
-	return nil
-}
+	n.Node().SetMType(typeExprPlaceholder)
 
-func (c *Checker) checkImplicitResetMethod(node *a.Node) error {
-	n := node.Struct()
+	// A struct declaration implies a reset method.
 	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
 	out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
-	f := a.NewFunc(0, n.Filename(), n.Line(), n.QID()[1], t.IDReset, in, out, nil, nil)
+	f := a.NewFunc(0, n.Filename(), n.Line(), qid[1], t.IDReset, in, out, nil, nil)
+	if qid[0] != 0 {
+		f.Node().Raw().SetPackage(c.tm, qid[0])
+	}
 	return c.checkFuncSignature(f.Node())
 }
 
@@ -441,7 +400,6 @@ func (c *Checker) checkStructFields(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
-	n.Node().SetMType(typeExprPlaceholder)
 	return nil
 }
 
@@ -505,18 +463,13 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 	n.Out().Node().SetMType(typeExprPlaceholder)
+	n.Node().SetMType(typeExprPlaceholder)
 
 	// TODO: check somewhere that, if n.Out() is non-empty (or we are
 	// suspendible), that we end with a return statement? Or is that an
 	// implicit "return out"?
 
 	qqid := n.QQID()
-	if qqid[0] == t.IDBase {
-		// No need to populate c.funcs and c.localVars for built-in funcs. In
-		// any case, the remaining type checking code in this function doesn't
-		// handle the base.† dagger type.
-		return nil
-	}
 	if other, ok := c.funcs[qqid]; ok {
 		return &Error{
 			Err:           fmt.Errorf("check: duplicate function %s", qqid.Str(c.tm)),
@@ -525,6 +478,14 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			OtherFilename: other.Filename(),
 			OtherLine:     other.Line(),
 		}
+	}
+	c.funcs[qqid] = n
+
+	if qqid[0] != 0 {
+		// No need to populate c.localVars for built-in or used-package funcs.
+		// In any case, the remaining type checking code in this function
+		// doesn't handle the base.† dagger type.
+		return nil
 	}
 
 	iQID := n.In().QID()
@@ -551,7 +512,6 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		pTyp.Node().SetMType(typeExprPlaceholder)
 		localVars[t.IDThis] = pTyp
 	}
-	c.funcs[qqid] = n
 	c.localVars[qqid] = localVars
 	return nil
 }
@@ -575,6 +535,10 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 
 func (c *Checker) checkFuncBody(node *a.Node) error {
 	n := node.Func()
+	if len(n.Body()) == 0 {
+		return nil
+	}
+
 	q := &checker{
 		c:         c,
 		tm:        c.tm,
@@ -596,7 +560,6 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 
 	// TODO: check that variables are never used before they're initialized.
 
-	// Assign ConstValue's (if applicable) and MType's to each Expr.
 	for _, o := range n.Body() {
 		if err := q.tcheckStatement(o); err != nil {
 			return &Error{
@@ -617,33 +580,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		}
 	}
 
-	n.Node().SetMType(typeExprPlaceholder)
 	return nil
-}
-
-func allTypeChecked(tm *t.Map, n *a.Node) error {
-	return n.Walk(func(o *a.Node) error {
-		typ := o.MType()
-		if typ == nil {
-			switch o.Kind() {
-			case a.KExpr:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Expr().Str(tm))
-			case a.KTypeExpr:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.TypeExpr().Str(tm))
-			}
-			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
-		}
-		if o.Kind() == a.KExpr {
-			o := o.Expr()
-			if typ.IsIdeal() && o.ConstValue() == nil {
-				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
-					"but no const value", o.Str(tm))
-			}
-		}
-		return nil
-	})
 }
 
 func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
@@ -657,6 +594,67 @@ func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
 		}
 	}
 	return nil
+}
+
+func (c *Checker) checkAllTypeChecked(node *a.Node) error {
+	for _, v := range c.consts {
+		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+			return err
+		}
+	}
+	for _, v := range c.funcs {
+		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+			return err
+		}
+	}
+	for _, v := range c.statuses {
+		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+			return err
+		}
+	}
+	for _, v := range c.structs {
+		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func allTypeChecked(tm *t.Map, n *a.Node) error {
+	return n.Walk(func(o *a.Node) error {
+		typ := o.MType()
+		if typ == nil {
+			switch o.Kind() {
+			case a.KConst:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Const().QID().Str(tm))
+			case a.KExpr:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Expr().Str(tm))
+			case a.KFunc:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Func().QQID().Str(tm))
+			case a.KTypeExpr:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.TypeExpr().Str(tm))
+			case a.KStatus:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Status().QID().Str(tm))
+			case a.KStruct:
+				return fmt.Errorf("check: internal error: unchecked %s node %q",
+					o.Kind(), o.Struct().QID().Str(tm))
+			}
+			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
+		}
+		if o.Kind() == a.KExpr {
+			o := o.Expr()
+			if typ.IsIdeal() && o.ConstValue() == nil {
+				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
+					"but no const value", o.Str(tm))
+			}
+		}
+		return nil
+	})
 }
 
 type checker struct {
