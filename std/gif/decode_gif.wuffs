@@ -61,7 +61,8 @@ pub struct decoder?(
 	gc_has_transparent_index base.bool,
 	gc_transparent_index base.u8,
 	gc_disposal base.u8,
-	gc_duration base.u64,
+	// There are 7056000 flicks per centisecond.
+	gc_duration base.u64[..0xFFFF * 7056000],
 
 	frame_rect base.rect_ie_u32,
 

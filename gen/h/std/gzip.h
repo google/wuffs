@@ -52,7 +52,7 @@ typedef struct {
 
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
-typedef uint64_t wuffs_base__flicks;
+typedef int64_t wuffs_base__flicks;
 
 #define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
 #define WUFFS_BASE__FLICKS_PER_MILLISECOND ((uint64_t)705600)
