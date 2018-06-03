@@ -329,7 +329,25 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 
 	var flags base.u8 = in.src.read_u8?()
 	this.gc_has_transparent_index = (flags & 0x01) != 0
-	this.gc_disposal = (flags >> 2) & 0x07
+
+	// Convert the disposal method from GIF's wire format to Wuffs constants.
+	//
+	// The GIF spec discusses the 3-bit flag value being 0, 1, 2 or 3. Values
+	// in the range [4..7] are "to be defined". In practice, some encoders also
+	// use 4 for "restore previous". See
+	// https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/image-decoders/gif/gif_image_reader.cc?rcl=5161173c43324da2b13e1aa45bbe69901daa1279&l=625
+	//
+	// TODO: named constants instead of assigning 1 for
+	// WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND, etc.
+	flags = (flags >> 2) & 0x07
+	if flags == 2 {
+		this.gc_disposal = 1  // 1 is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND
+	} else if (flags == 3) or (flags == 4) {
+		this.gc_disposal = 2  // 2 is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS
+	} else {
+		this.gc_disposal = 0
+	}
+
 	// There are 7056000 flicks per centisecond.
 	this.gc_duration = (in.src.read_u16le?() as base.u64) * 7056000
 	this.gc_transparent_index = in.src.read_u8?()
@@ -490,7 +508,7 @@ pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)
 		// palette update is necessary.
 	}
 	in.dst.update!(dirty_rect:this.frame_rect, duration:this.gc_duration,
-		blend:true, disposal:0, palette:palette)
+		blend:true, disposal:this.gc_disposal, palette:palette)
 
 	this.previous_use_global_palette = not use_local_palette
 

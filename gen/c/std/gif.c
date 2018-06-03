@@ -3164,7 +3164,14 @@ static wuffs_gif__status wuffs_gif__decoder__decode_gc(
       v_flags = t_1;
     }
     self->private_impl.f_gc_has_transparent_index = ((v_flags & 1) != 0);
-    self->private_impl.f_gc_disposal = ((v_flags >> 2) & 7);
+    v_flags = ((v_flags >> 2) & 7);
+    if (v_flags == 2) {
+      self->private_impl.f_gc_disposal = 1;
+    } else if ((v_flags == 3) || (v_flags == 4)) {
+      self->private_impl.f_gc_disposal = 2;
+    } else {
+      self->private_impl.f_gc_disposal = 0;
+    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       uint16_t t_3;
@@ -3682,7 +3689,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
           .ptr = self->private_impl.f_palettes[0], .len = 1024});
     }
     wuffs_base__image_buffer__update(a_dst, self->private_impl.f_frame_rect,
-                                     self->private_impl.f_gc_duration, true, 0,
+                                     self->private_impl.f_gc_duration, true,
+                                     self->private_impl.f_gc_disposal,
                                      v_palette);
     self->private_impl.f_previous_use_global_palette = !v_use_local_palette;
     self->private_impl.f_seen_graphic_control = false;
