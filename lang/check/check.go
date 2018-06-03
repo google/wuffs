@@ -23,6 +23,7 @@ import (
 	"path"
 
 	"github.com/google/wuffs/lang/base38"
+	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/parse"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -96,6 +97,19 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		useBaseNames: map[t.ID]struct{}{},
 	}
 
+	_, err := c.parseBuiltInFuncs(builtin.Funcs, false)
+	if err != nil {
+		return nil, err
+	}
+	c.builtInSliceFuncs, err = c.parseBuiltInFuncs(builtin.SliceFuncs, true)
+	if err != nil {
+		return nil, err
+	}
+	c.builtInTableFuncs, err = c.parseBuiltInFuncs(builtin.TableFuncs, true)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, phase := range phases {
 		for _, f := range files {
 			if phase.kind == a.KInvalid {
@@ -161,8 +175,6 @@ type Checker struct {
 	// "foo/bar"` lines. The keys are `bar`, not `"foo/bar"`.
 	useBaseNames map[t.ID]struct{}
 
-	// TODO: is builtInFuncs necessary? Are they are subset of funcs?
-	builtInFuncs      map[t.QQID]*a.Func
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct

@@ -609,9 +609,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	if lTyp.IsSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
-		if f, err := q.c.builtInSliceFunc(qqid); err != nil {
-			return err
-		} else if f == nil {
+		if q.c.builtInSliceFuncs[qqid] == nil {
 			return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
 		}
 		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
@@ -620,9 +618,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
-		if f, err := q.c.builtInTableFunc(qqid); err != nil {
-			return err
-		} else if f == nil {
+		if q.c.builtInTableFuncs[qqid] == nil {
 			return fmt.Errorf("check: no table method %q", n.Ident().Str(q.tm))
 		}
 		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
@@ -632,13 +628,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		return fmt.Errorf("check: invalid type %q for dot-expression LHS %q", lTyp.Str(q.tm), lhs.Str(q.tm))
 	}
 
-	f, err := q.c.builtInFunc(qqid)
-	if err != nil {
-		return err
-	} else if f == nil {
-		f = q.c.funcs[qqid]
-	}
-	if f != nil {
+	if f := q.c.funcs[qqid]; f != nil {
 		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
 		return nil
 	}

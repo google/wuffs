@@ -83,41 +83,12 @@ var builtInTypeMap = typeMap{
 	t.IDStatus:      typeExprStatus,
 }
 
-func (c *Checker) builtInFunc(qqid t.QQID) (*a.Func, error) {
-	if c.builtInFuncs == nil {
-		err := error(nil)
-		c.builtInFuncs, err = c.parseBuiltInFuncs(builtin.Funcs, false)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.builtInFuncs[qqid], nil
-}
-
-func (c *Checker) builtInSliceFunc(qqid t.QQID) (*a.Func, error) {
-	if c.builtInSliceFuncs == nil {
-		err := error(nil)
-		c.builtInSliceFuncs, err = c.parseBuiltInFuncs(builtin.SliceFuncs, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.builtInSliceFuncs[qqid], nil
-}
-
-func (c *Checker) builtInTableFunc(qqid t.QQID) (*a.Func, error) {
-	if c.builtInTableFuncs == nil {
-		err := error(nil)
-		c.builtInTableFuncs, err = c.parseBuiltInFuncs(builtin.TableFuncs, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.builtInTableFuncs[qqid], nil
-}
-
 func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {
-	m := map[t.QQID]*a.Func{}
+	m := map[t.QQID]*a.Func(nil)
+	if generic {
+		m = map[t.QQID]*a.Func{}
+	}
+
 	buf := []byte(nil)
 	opts := parse.Options{
 		AllowBuiltIns: true,
@@ -156,7 +127,10 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		if err := c.checkFuncSignature(f.Node()); err != nil {
 			return nil, err
 		}
-		m[f.QQID()] = f
+
+		if m != nil {
+			m[f.QQID()] = f
+		}
 	}
 	return m, nil
 }
@@ -168,33 +142,23 @@ func (c *Checker) resolveFunc(typ *a.TypeExpr) (*a.Func, error) {
 	lTyp := typ.Receiver()
 	lQID := lTyp.QID()
 	qqid := t.QQID{lQID[0], lQID[1], typ.FuncName()}
+
 	if lTyp.IsSliceType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger1
-		if f, err := c.builtInSliceFunc(qqid); err != nil {
-			return nil, err
-		} else if f != nil {
+		if f := c.builtInSliceFuncs[qqid]; f != nil {
 			return f, nil
 		}
 
 	} else if lTyp.IsTableType() {
 		qqid[0] = t.IDBase
 		qqid[1] = t.IDDagger2
-		if f, err := c.builtInTableFunc(qqid); err != nil {
-			return nil, err
-		} else if f != nil {
+		if f := c.builtInTableFuncs[qqid]; f != nil {
 			return f, nil
 		}
 
-	} else {
-		if f, err := c.builtInFunc(qqid); err != nil {
-			return nil, err
-		} else if f != nil {
-			return f, nil
-		}
-		if f := c.funcs[qqid]; f != nil {
-			return f, nil
-		}
+	} else if f := c.funcs[qqid]; f != nil {
+		return f, nil
 	}
 	return nil, fmt.Errorf("check: resolveFunc cannot look up %q", typ.Str(c.tm))
 }
