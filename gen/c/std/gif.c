@@ -1009,6 +1009,24 @@ static inline size_t wuffs_base__image_config__pixbuf_size(
 
 // --------
 
+// wuffs_base__animation_disposal encodes, for an animated image, how to
+// dispose of a frame after displaying it:
+//  - None means to draw the next frame on top of this one.
+//  - Restore Background means to clear the frame's dirty rectangle to "the
+//    background color" (in practice, this means transparent black) before
+//    drawing the next frame.
+//  - Restore Previous means to undo the current frame, so that the next frame
+//    is drawn on top of the previous one.
+typedef uint8_t wuffs_base__animation_disposal;
+
+#define WUFFS_BASE__ANIMATION_DISPOSAL__NONE ((wuffs_base__animation_disposal)0)
+#define WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND \
+  ((wuffs_base__animation_disposal)1)
+#define WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS \
+  ((wuffs_base__animation_disposal)2)
+
+// --------
+
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
@@ -1019,6 +1037,8 @@ typedef struct {
     // TODO: color spaces.
     wuffs_base__rect_ie_u32 dirty_rect;
     wuffs_base__flicks duration;
+    bool blend;
+    wuffs_base__animation_disposal disposal;
     bool palette_changed;
     uint8_t palette[1024];
   } private_impl;
@@ -1064,6 +1084,8 @@ static inline void wuffs_base__image_buffer__update(
     wuffs_base__image_buffer* b,
     wuffs_base__rect_ie_u32 dirty_rect,
     wuffs_base__flicks duration,
+    bool blend,
+    wuffs_base__animation_disposal disposal,
     wuffs_base__slice_u8 palette) {
   if (!b) {
     return;
@@ -1077,6 +1099,8 @@ static inline void wuffs_base__image_buffer__update(
   b->private_impl.dirty_rect = dirty_rect;
 
   b->private_impl.duration = duration;
+  b->private_impl.blend = blend;
+  b->private_impl.disposal = disposal;
   b->private_impl.palette_changed = palette.ptr && (palette.len == 1024);
   if (b->private_impl.palette_changed) {
     memmove(b->private_impl.palette, palette.ptr, 1024);
@@ -1102,17 +1126,10 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
   return false;
 }
 
+// wuffs_base__image_config returns the overall configuration for this frame.
 static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
     wuffs_base__image_buffer* b) {
   return b ? &b->private_impl.config : NULL;
-}
-
-// wuffs_base__image_buffer__palette_changed returns whether this frame's
-// palette differs from the previous frame. It is conservative and may return
-// false positives (but never false negatives).
-static inline bool wuffs_base__image_buffer__palette_changed(
-    wuffs_base__image_buffer* b) {
-  return b && b->private_impl.palette_changed;
 }
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
@@ -1127,6 +1144,31 @@ static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
 static inline wuffs_base__flicks wuffs_base__image_buffer__duration(
     wuffs_base__image_buffer* b) {
   return b ? b->private_impl.duration : 0;
+}
+
+// wuffs_base__image_buffer__blend returns, for a transparent image, whether to
+// blend this frame with the existing canvas.
+//
+// In Porter-Duff compositing operator terminology, false means "src" and true
+// means "src over dst".
+static inline bool wuffs_base__image_buffer__blend(
+    wuffs_base__image_buffer* b) {
+  return b && b->private_impl.blend;
+}
+
+// wuffs_base__image_buffer__disposal returns, for an animated image, how to
+// dispose of this frame after displaying it.
+static inline wuffs_base__animation_disposal wuffs_base__image_buffer__disposal(
+    wuffs_base__image_buffer* b) {
+  return b ? b->private_impl.disposal : 0;
+}
+
+// wuffs_base__image_buffer__palette_changed returns whether this frame's
+// palette differs from the previous frame. It is conservative and may return
+// false positives (but never false negatives).
+static inline bool wuffs_base__image_buffer__palette_changed(
+    wuffs_base__image_buffer* b) {
+  return b && b->private_impl.palette_changed;
 }
 
 // wuffs_base__image_buffer__palette returns the palette that the pixel data
@@ -3640,7 +3682,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
           .ptr = self->private_impl.f_palettes[0], .len = 1024});
     }
     wuffs_base__image_buffer__update(a_dst, self->private_impl.f_frame_rect,
-                                     self->private_impl.f_gc_duration,
+                                     self->private_impl.f_gc_duration, true, 0,
                                      v_palette);
     self->private_impl.f_previous_use_global_palette = !v_use_local_palette;
     self->private_impl.f_seen_graphic_control = false;

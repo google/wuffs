@@ -488,7 +488,8 @@ pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)
 		// Both this frame and the previous one used the global palette. No
 		// palette update is necessary.
 	}
-	in.dst.update!(dirty_rect:this.frame_rect, duration:this.gc_duration, palette:palette)
+	in.dst.update!(dirty_rect:this.frame_rect, duration:this.gc_duration,
+		blend:true, disposal:0, palette:palette)
 
 	this.previous_use_global_palette = not use_local_palette
 
