@@ -117,11 +117,18 @@ func TestCheck(tt *testing.T) {
 		tt.Fatalf("Check: %v", err)
 	}
 
-	// There are 2 funcs: the implicit foo.reset method, and the explicit
-	// foo.bar method.
-	if len(c.funcs) != 2 {
+	// There are 2 funcs in this package: the implicit foo.reset method, and
+	// the explicit foo.bar method.
+	nFuncs := 0
+	for qqid := range c.funcs {
+		if qqid[0] == 0 {
+			nFuncs++
+		}
+	}
+	if nFuncs != 2 {
 		tt.Fatalf("c.funcs: got %d elements, want 2", len(c.funcs))
 	}
+
 	qqid := t.QQID{0, tm.ByName("foo"), tm.ByName("bar")}
 	fooBar := c.funcs[qqid]
 	if fooBar == nil {
@@ -219,14 +226,22 @@ func TestConstValues(tt *testing.T) {
 			continue
 		}
 
-		if len(c.funcs) != 1 {
+		// There is 1 func in this package: foo.
+		nFuncs := 0
+		for qqid := range c.funcs {
+			if qqid[0] == 0 {
+				nFuncs++
+			}
+		}
+		if nFuncs != 1 {
 			tt.Errorf("%q: Funcs: got %d elements, want 1", s, len(c.funcs))
 			continue
 		}
-		foo := (*a.Func)(nil)
-		for _, f := range c.funcs {
-			foo = f
-			break
+
+		foo := c.funcs[t.QQID{0, 0, tm.ByName("foo")}]
+		if foo == nil {
+			tt.Errorf("%q: cannot look up func foo", s)
+			continue
 		}
 		body := foo.Body()
 		if len(body) != 1 {
