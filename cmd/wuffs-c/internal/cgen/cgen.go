@@ -665,7 +665,7 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 		b.printf("//\n")
 		b.printf("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
 	}
-	b.printf("void %s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint32_t wuffs_version)",
+	b.printf("void %s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -695,7 +695,8 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.printf("self->private_impl.status = %sERROR_BAD_SIZEOF_RECEIVER;\n", g.PKGPREFIX)
 	b.printf("return;\n")
 	b.printf("}\n")
-	b.printf("if (wuffs_version != WUFFS_VERSION) {\n")
+	b.printf("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
+		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
 	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
 	b.printf("return;\n")
 	b.printf("}\n")

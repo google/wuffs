@@ -31,16 +31,23 @@
 #error "Wuffs requires a word size of either 32 or 64 bits"
 #endif
 
-// WUFFS_VERSION is the major.minor version number as a uint32_t. The major
-// number is the high 16 bits. The minor number is the low 16 bits.
+// WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
+// as a uint64_t. The major number is the high 32 bits. The minor number is the
+// middle 16 bits. The patch number is the low 16 bits. The version extension
+// (such as "", "beta" or "rc.1") is part of the string representation (such as
+// "1.2.3-beta") but not the uint64_t representation.
 //
-// The intention is to bump the version number at least on every API / ABI
-// backwards incompatible change.
+// All three of major, minor and patch being zero means that this is a
+// work-in-progress version, not a release version, and has no backwards or
+// forwards compatibility guarantees.
 //
-// For now, the API and ABI are simply unstable and can change at any time.
-//
-// TODO: don't hard code this in base-header.h.
-#define WUFFS_VERSION ((uint32_t)0x00001)
+// !! Some code generation programs can override WUFFS_VERSION.
+#define WUFFS_VERSION ((uint64_t)0)
+#define WUFFS_VERSION_MAJOR ((uint64_t)0)
+#define WUFFS_VERSION_MINOR ((uint64_t)0)
+#define WUFFS_VERSION_PATCH ((uint64_t)0)
+#define WUFFS_VERSION_EXTENSION ""
+#define WUFFS_VERSION_STRING "0.0.0"
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
@@ -1275,7 +1282,7 @@ typedef struct {
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
 void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
                                                 size_t sizeof_star_self,
-                                                uint32_t wuffs_version);
+                                                uint64_t wuffs_version);
 
 // ---------------- Public Function Prototypes
 
@@ -1902,7 +1909,7 @@ const char* wuffs_adler32__status__string(wuffs_adler32__status s) {
 
 void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
                                                 size_t sizeof_star_self,
-                                                uint32_t wuffs_version) {
+                                                uint64_t wuffs_version) {
   if (!self) {
     return;
   }
@@ -1910,7 +1917,8 @@ void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
     self->private_impl.status = WUFFS_ADLER32__ERROR_BAD_SIZEOF_RECEIVER;
     return;
   }
-  if (wuffs_version != WUFFS_VERSION) {
+  if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
+      (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     self->private_impl.status = WUFFS_ADLER32__ERROR_BAD_WUFFS_VERSION;
     return;
   }

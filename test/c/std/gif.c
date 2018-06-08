@@ -79,7 +79,7 @@ void test_basic_bad_wuffs_version() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec,
-                                          WUFFS_VERSION ^ 0x12345678);
+                                          WUFFS_VERSION ^ 0x123456789ABC);
   if (dec.private_impl.status != WUFFS_GIF__ERROR_BAD_WUFFS_VERSION) {
     FAIL("decode_config: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
          dec.private_impl.status,
