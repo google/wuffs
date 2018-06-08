@@ -978,6 +978,17 @@ wuffs_base__image_config__pixel_subsampling(wuffs_base__image_config* c) {
   return c ? c->private_impl.pixsub : 0;
 }
 
+static inline wuffs_base__rect_ie_u32 wuffs_base__image_config__bounds(
+    wuffs_base__image_config* c) {
+  return c ? ((wuffs_base__rect_ie_u32){
+                 .min_inclusive_x = 0,
+                 .min_inclusive_y = 0,
+                 .max_exclusive_x = c->private_impl.width,
+                 .max_exclusive_y = c->private_impl.height,
+             })
+           : ((wuffs_base__rect_ie_u32){});
+}
+
 static inline uint32_t wuffs_base__image_config__width(
     wuffs_base__image_config* c) {
   return c ? c->private_impl.width : 0;
