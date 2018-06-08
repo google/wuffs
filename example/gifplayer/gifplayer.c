@@ -70,8 +70,9 @@ uint64_t micros_since_start(struct timespec* now) {
 
 uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
-uint8_t* dst_buffer = NULL;
-size_t dst_len = 0;
+wuffs_base__color_u32argb* dst_buffer = NULL;
+uint8_t* image_buffer = NULL;
+size_t image_len = 0;
 uint8_t* print_buffer = NULL;
 size_t print_len = 0;
 
@@ -102,73 +103,43 @@ const char* read_stdin() {
 
 // ----
 
-// BYTES_PER_COLOR_PIXEL is long enough to contain "?\x1B[38;2;255;255;255mABC"
-// plus a few bytes of slack. The first byte is the overall length - a Pascal
-// style string. After that is a true color terminal escape code. ABC is three
-// bytes for the UTF-8 representation "\xE2\x96\x88" of "█", U+2588 FULL BLOCK.
+// BYTES_PER_COLOR_PIXEL is long enough to contain "\x1B[38;2;255;255;255mABC"
+// plus a trailing NUL byte and a few bytes of slack. It starts with a true
+// color terminal escape code. ABC is three bytes for the UTF-8 representation
+// "\xE2\x96\x88" of "█", U+2588 FULL BLOCK.
 #define BYTES_PER_COLOR_PIXEL 32
 
-const char* full_block_pascal_string = "\x03\xE2\x96\x88";
-const char* reset_color_pascal_string = "\x04\x1B[0m";
-
-uint8_t* append_pascal_string(uint8_t* dst, const char* s) {
-  uint8_t len = *s++;
-  while (len--) {
-    *dst++ = *s++;
-  }
-  return dst;
-}
+const char* reset_color = "\x1B[0m";
 
 bool color_flag = false;
 const int stdout_fd = 1;
 
-char palette_as_ascii_art[256];
-char palette_as_color_art[256][BYTES_PER_COLOR_PIXEL];  // Pascal style strings.
-
-void reset_palette_as_ascii_art() {
-  memset(palette_as_ascii_art, '-', 256);
+static inline uint32_t load_u32le(uint8_t* p) {
+  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
+         ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-void reset_palette_as_color_art() {
-  memset(palette_as_color_art, 0, 256 * BYTES_PER_COLOR_PIXEL);
-}
+void compose(wuffs_base__image_buffer* ib) {
+  uint8_t* palette = wuffs_base__image_buffer__palette(ib).ptr;
 
-// update_palette_as_ascii_art calculates a grayscale value and therefore an
-// ASCII art character for each (red, green, blue) palette entry.
-void update_palette_as_ascii_art(wuffs_base__slice_u8 palette) {
-  if (!palette.ptr || (palette.len != 256 * 4)) {
-    reset_palette_as_ascii_art();
-    return;
-  }
+  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
+  size_t width = wuffs_base__image_config__width(ic);
 
-  uint32_t i;
-  for (i = 0; i < 256; i++) {
-    // Convert to grayscale via the formula
-    //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
-    // translated into fixed point arithmetic.
-    uint32_t b = palette.ptr[4 * i + 0];
-    uint32_t g = palette.ptr[4 * i + 1];
-    uint32_t r = palette.ptr[4 * i + 2];
-    uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
-    palette_as_ascii_art[i] = "-:=+IOX@"[(y & 0xFF) >> 5];
-  }
-}
-
-// update_palette_as_color_art calculates a terminal escape code for each (red,
-// green, blue) palette entry.
-void update_palette_as_color_art(wuffs_base__slice_u8 palette) {
-  if (!palette.ptr || (palette.len != 256 * 4)) {
-    reset_palette_as_color_art();
-    return;
-  }
-
-  uint32_t i;
-  for (i = 0; i < 256; i++) {
-    int b = palette.ptr[4 * i + 0];
-    int g = palette.ptr[4 * i + 1];
-    int r = palette.ptr[4 * i + 2];
-    palette_as_color_art[i][0] =
-        sprintf(palette_as_color_art[i] + 1, "\x1B[38;2;%d;%d;%dm", r, g, b);
+  wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
+  size_t y;
+  for (y = bounds.min_inclusive_y; y < bounds.max_exclusive_y; y++) {
+    size_t x;
+    wuffs_base__color_u32argb* d =
+        dst_buffer + (y * width) + bounds.min_inclusive_x;
+    uint8_t* s = image_buffer + (y * width) + bounds.min_inclusive_x;
+    for (x = bounds.min_inclusive_x; x < bounds.max_exclusive_x; x++) {
+      uint32_t index = *s++;
+      wuffs_base__color_u32argb c = load_u32le(palette + 4 * index);
+      if (c) {
+        *d = c;
+      }
+      d++;
+    }
   }
 }
 
@@ -177,14 +148,22 @@ size_t print_ascii_art(wuffs_base__image_buffer* ib) {
   uint32_t width = wuffs_base__image_config__width(ic);
   uint32_t height = wuffs_base__image_config__height(ic);
 
-  uint8_t* d = dst_buffer;
+  wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
   *p++ = '\n';
   uint32_t y;
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      *p++ = palette_as_ascii_art[*d++];
+      wuffs_base__color_u32argb c = *d++;
+      // Convert to grayscale via the formula
+      //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
+      // translated into fixed point arithmetic.
+      uint32_t b = 0xFF & (c >> 0);
+      uint32_t g = 0xFF & (c >> 8);
+      uint32_t r = 0xFF & (c >> 16);
+      uint32_t y = ((19595 * r) + (38470 * g) + (7471 * b) + (1 << 15)) >> 16;
+      *p++ = "-:=+IOX@"[(y & 0xFF) >> 5];
     }
     *p++ = '\n';
   }
@@ -196,37 +175,31 @@ size_t print_color_art(wuffs_base__image_buffer* ib) {
   uint32_t width = wuffs_base__image_config__width(ic);
   uint32_t height = wuffs_base__image_config__height(ic);
 
-  int32_t previous_palette_index = -1;
-  uint8_t* d = dst_buffer;
+  wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
   *p++ = '\n';
-  p = append_pascal_string(p, reset_color_pascal_string);
+  p += sprintf(p, "%s", reset_color);
   uint32_t y;
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      uint8_t palette_index = *d++;
-      if (palette_index != previous_palette_index) {
-        p = append_pascal_string(p, palette_as_color_art[palette_index]);
-        previous_palette_index = palette_index;
-      }
-      p = append_pascal_string(p, full_block_pascal_string);
+      wuffs_base__color_u32argb c = *d++;
+      int b = 0xFF & (c >> 0);
+      int g = 0xFF & (c >> 8);
+      int r = 0xFF & (c >> 16);
+      // "\xE2\x96\x88" is U+2588 FULL BLOCK. Before that is a true color
+      // terminal escape code.
+      p += sprintf(p, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88", r, g, b);
     }
     *p++ = '\n';
   }
-  p = append_pascal_string(p, reset_color_pascal_string);
+  p += sprintf(p, "%s", reset_color);
   return p - print_buffer;
 }
 
 // ----
 
 const char* play() {
-  if (color_flag) {
-    reset_palette_as_color_art();
-  } else {
-    reset_palette_as_ascii_art();
-  }
-
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
@@ -249,11 +222,21 @@ const char* play() {
   if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
     return "image dimensions are too large";
   }
-  if (!dst_buffer) {
-    dst_len = wuffs_base__image_config__pixbuf_size(&ic);
-    dst_buffer = malloc(dst_len);
+  if (!image_buffer) {
+    image_len = wuffs_base__image_config__pixbuf_size(&ic);
+    if (image_len > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
+      return "could not allocate dst buffer";
+    }
+    dst_buffer = (wuffs_base__color_u32argb*)malloc(
+        image_len * sizeof(wuffs_base__color_u32argb));
     if (!dst_buffer) {
       return "could not allocate dst buffer";
+    }
+    image_buffer = malloc(image_len);
+    if (!image_buffer) {
+      free(dst_buffer);
+      dst_buffer = NULL;
+      return "could not allocate image buffer";
     }
     uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
     uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
@@ -267,7 +250,7 @@ const char* play() {
   }
   // TODO: check wuffs_base__image_buffer__set_from_slice errors?
   wuffs_base__image_buffer__set_from_slice(
-      &ib, ic, ((wuffs_base__slice_u8){.ptr = dst_buffer, .len = dst_len}));
+      &ib, ic, ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
 
   if (!seen_num_loops) {
     seen_num_loops = true;
@@ -276,8 +259,7 @@ const char* play() {
         dec.private_impl.f_seen_num_loops ? dec.private_impl.f_num_loops : 1;
   }
 
-  bool first_frame = true;
-  for (;; first_frame = false) {
+  while (1) {
     s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
     if (s) {
       if (s == WUFFS_GIF__SUSPENSION_END_OF_DATA) {
@@ -286,13 +268,7 @@ const char* play() {
       return wuffs_gif__status__string(s);
     }
 
-    if (wuffs_base__image_buffer__palette_changed(&ib)) {
-      if (color_flag) {
-        update_palette_as_color_art(wuffs_base__image_buffer__palette(&ib));
-      } else {
-        update_palette_as_ascii_art(wuffs_base__image_buffer__palette(&ib));
-      }
-    }
+    compose(&ib);
 
     size_t n = color_flag ? print_color_art(&ib) : print_ascii_art(&ib);
 

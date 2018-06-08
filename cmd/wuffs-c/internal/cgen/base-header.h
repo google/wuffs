@@ -669,6 +669,13 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
 
 // ---------------- Images
 
+// wuffs_base__color_u32argb is an 8 bit per channel Alpha, Red, Green, Blue
+// color, as a uint32_t value. It is in word order, not byte order: its value
+// is always 0xAARRGGBB, regardless of endianness. It uses premultiplied alpha.
+typedef uint32_t wuffs_base__color_u32argb;
+
+// --------
+
 // wuffs_base__pixel_format encodes the format of the bytes that constitute an
 // image frame's pixel data. Its bits:
 //  - bit        31  is reserved.
@@ -712,11 +719,12 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
 //  - 5 means CMY       or CMYK (Cyan, Magenta, Yellow, Black).
 //  - all other values are reserved.
 //
-// In Wuffs, channels are given in memory order, regardless of endianness,
-// since the C type for the pixel data is an array of bytes, not an array of
-// uint32_t. For example, packed BGRA with 8 bits per channel means that the
-// bytes in memory are always Blue, Green, Red then Alpha. On big-endian
-// systems, that is the uint32_t 0xBBGGRRAA. On little-endian, 0xAARRGGBB.
+// In Wuffs, channels are given in memory order (also known as byte order),
+// regardless of endianness, since the C type for the pixel data is an array of
+// bytes, not an array of uint32_t. For example, packed BGRA with 8 bits per
+// channel means that the bytes in memory are always Blue, Green, Red then
+// Alpha. On big-endian systems, that is the uint32_t 0xBBGGRRAA. On
+// little-endian, 0xAARRGGBB.
 //
 // When the color field (3 bits) encodes multiple options, the transparency
 // field (2 bits) distinguishes them:
