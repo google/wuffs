@@ -26,7 +26,21 @@ pub error "too much pixel data"
 
 pri error "internal error: inconsistent ri/wi"
 
-pub error "TODO: unsupported interlacing"
+// See the spec appendix E "Interlaced Images" on page 29. The first element
+// represents either that the frame was non-interlaced, or that all interlace
+// stages are complete. Otherwise, the four interlace stages are elements 4, 3,
+// 2 and 1 in descending order. For example, the start and delta for the first
+// interlace stage is 0 and 8, for the second interlace stage is 4 and 8, etc.
+// For interlaced frames, the decoder.interlace field starts at 4 and is
+// decremented towards 0.
+//
+// interlace_start[0] is a special case. For non-interlaced frames, that
+// element is never accessed. For interlaced frames, that element is only
+// accessed after all interlace stages are complete. Being the maximum base.u32
+// value means that, after all interlace stages are complete, dst_y will be set
+// to that maximum value (and therefore outside the frame rect).
+pri const interlace_start array[5] base.u32 = $(0xFFFFFFFF, 1, 2, 4, 0)
+pri const interlace_delta array[5] base.u8 = $(1, 2, 4, 8, 8)
 
 pub struct decoder?(
 	width base.u32,
@@ -50,7 +64,8 @@ pub struct decoder?(
 
 	background_color_index base.u8,
 
-	interlace base.bool,
+	// interlace indexes the interlace_start and interlace_delta arrays.
+	interlace base.u8[..4],
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
@@ -71,6 +86,7 @@ pub struct decoder?(
 	dst_y base.u32,
 	// TODO: these are just frame_rect fields.
 	dst_x0 base.u32,
+	dst_y0 base.u32,
 	dst_x1 base.u32,
 	dst_y1 base.u32,
 
@@ -374,6 +390,7 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	this.dst_x = frame_x
 	this.dst_y = frame_y
 	this.dst_x0 = frame_x
+	this.dst_y0 = frame_y
 
 	frame_x ~mod+= in.src.read_u16le?() as base.u32
 	frame_y ~mod+= in.src.read_u16le?() as base.u32
@@ -394,9 +411,12 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 }
 
 pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)() {
-	// TODO: use this.interlace.
 	var flags base.u8 = in.src.read_u8?()
-	this.interlace = (flags & 0x40) != 0
+	if (flags & 0x40) != 0 {
+		this.interlace = 4
+	} else {
+		this.interlace = 0
+	}
 
 	// Read the optional Local Color Table.
 	var use_local_palette base.bool = (flags & 0x80) != 0
@@ -550,17 +570,11 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		if this.dst_y >= this.dst_y1 {
 			return error "too much pixel data"
 		}
-		assert this.dst_y < 0xFFFFFFFF via "a < b: a < c; c <= b"(c:this.dst_y1)
 
 		// First, copy from src to that part of this.frame_rect that is inside
 		// in.ib's bounds.
 
-		if this.interlace {
-			return error "TODO: unsupported interlacing"
-		} else {
-			dst = tab.row(y:this.dst_y)
-		}
-
+		dst = tab.row(y:this.dst_y)
 		if (this.dst_x as base.u64) < dst.length() {
 			if ((this.dst_x as base.u64) <= (this.dst_x1 as base.u64)) and
 				((this.dst_x1 as base.u64) <= dst.length()) {
@@ -578,7 +592,11 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 
 		if this.dst_x1 <= this.dst_x {
 			this.dst_x = this.dst_x0
-			this.dst_y += 1
+			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
+			while (this.interlace > 0) and (this.dst_y >= this.dst_y1) {
+				this.interlace -= 1
+				this.dst_y = this.dst_y0 ~sat+ interlace_start[this.interlace]
+			}
 			continue
 		}
 
@@ -601,7 +619,11 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 
 		if this.dst_x1 <= this.dst_x {
 			this.dst_x = this.dst_x0
-			this.dst_y += 1
+			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
+			while (this.interlace > 0) and (this.dst_y >= this.dst_y1) {
+				this.interlace -= 1
+				this.dst_y = this.dst_y0 ~sat+ interlace_start[this.interlace]
+			}
 			continue
 		}
 

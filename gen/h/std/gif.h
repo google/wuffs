@@ -1355,8 +1355,7 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_NOT_ENOUGH_PIXEL_DATA -1105848315  // 0xBE161805
 #define WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA -1105848314    // 0xBE161806
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
-  -1105848313                                                      // 0xBE161807
-#define WUFFS_GIF__ERROR_TODO_UNSUPPORTED_INTERLACING -1105848312  // 0xBE161808
+  -1105848313  // 0xBE161807
 
 bool wuffs_gif__status__is_error(wuffs_gif__status s);
 
@@ -1385,7 +1384,7 @@ typedef struct {
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_previous_use_global_palette;
     uint8_t f_background_color_index;
-    bool f_interlace;
+    uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
     bool f_seen_graphic_control;
@@ -1397,6 +1396,7 @@ typedef struct {
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     uint32_t f_dst_x0;
+    uint32_t f_dst_y0;
     uint32_t f_dst_x1;
     uint32_t f_dst_y1;
     uint32_t f_uncompressed_ri;

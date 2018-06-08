@@ -681,6 +681,16 @@ void test_mimic_gif_decode_hibiscus() {
   do_test_mimic_gif_decode("../../data/hibiscus.gif");
 }
 
+void test_mimic_gif_decode_hippopotamus_interlaced() {
+  CHECK_FOCUS(__func__);
+  do_test_mimic_gif_decode("../../data/hippopotamus.interlaced.gif");
+}
+
+void test_mimic_gif_decode_hippopotamus_regular() {
+  CHECK_FOCUS(__func__);
+  do_test_mimic_gif_decode("../../data/hippopotamus.regular.gif");
+}
+
 void test_mimic_gif_decode_muybridge() {
   CHECK_FOCUS(__func__);
   do_test_mimic_gif_decode("../../data/muybridge.gif");
@@ -812,16 +822,18 @@ proc tests[] = {
 
 #ifdef WUFFS_MIMIC
 
-    test_mimic_gif_decode_animated_small,       //
-    test_mimic_gif_decode_bricks_dither,        //
-    test_mimic_gif_decode_bricks_gray,          //
-    test_mimic_gif_decode_bricks_nodither,      //
-    test_mimic_gif_decode_gifplayer_muybridge,  //
-    test_mimic_gif_decode_harvesters,           //
-    test_mimic_gif_decode_hat,                  //
-    test_mimic_gif_decode_hibiscus,             //
-    test_mimic_gif_decode_muybridge,            //
-    test_mimic_gif_decode_pjw_thumbnail,        //
+    test_mimic_gif_decode_animated_small,           //
+    test_mimic_gif_decode_bricks_dither,            //
+    test_mimic_gif_decode_bricks_gray,              //
+    test_mimic_gif_decode_bricks_nodither,          //
+    test_mimic_gif_decode_gifplayer_muybridge,      //
+    test_mimic_gif_decode_harvesters,               //
+    test_mimic_gif_decode_hat,                      //
+    test_mimic_gif_decode_hibiscus,                 //
+    test_mimic_gif_decode_hippopotamus_interlaced,  //
+    test_mimic_gif_decode_hippopotamus_regular,     //
+    test_mimic_gif_decode_muybridge,                //
+    test_mimic_gif_decode_pjw_thumbnail,            //
 
 #endif  // WUFFS_MIMIC
 
