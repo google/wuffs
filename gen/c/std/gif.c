@@ -3569,6 +3569,27 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
         v_i += 1;
       }
     }
+    if (self->private_impl.f_gc_has_transparent_index) {
+      if (!v_use_local_palette) {
+        wuffs_base__slice_u8__copy_from_slice(
+            ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[1],
+                                    .len = 1024}),
+            ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[0],
+                                    .len = 1024}));
+      }
+      self->private_impl.f_palettes[1][(
+          (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 0)] =
+          0;
+      self->private_impl.f_palettes[1][(
+          (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 1)] =
+          0;
+      self->private_impl.f_palettes[1][(
+          (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 2)] =
+          0;
+      self->private_impl.f_palettes[1][(
+          (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 3)] =
+          0;
+    }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
        wuffs_lzw__decoder__check_wuffs_version(&self->private_impl.f_lzw,
@@ -3681,7 +3702,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
       }
     }
     v_palette = ((wuffs_base__slice_u8){});
-    if (v_use_local_palette) {
+    if (v_use_local_palette || self->private_impl.f_gc_has_transparent_index) {
       v_palette = ((wuffs_base__slice_u8){
           .ptr = self->private_impl.f_palettes[1], .len = 1024});
     } else if (!self->private_impl.f_previous_use_global_palette) {
@@ -3692,7 +3713,8 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
                                      self->private_impl.f_gc_duration, true,
                                      self->private_impl.f_gc_disposal,
                                      v_palette);
-    self->private_impl.f_previous_use_global_palette = !v_use_local_palette;
+    self->private_impl.f_previous_use_global_palette =
+        !(v_use_local_palette || self->private_impl.f_gc_has_transparent_index);
     self->private_impl.f_seen_graphic_control = false;
     self->private_impl.f_gc_has_transparent_index = false;
     self->private_impl.f_gc_transparent_index = 0;
