@@ -71,8 +71,8 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 }
 
 // optimizeCopyFromHistory32 checks if the code generator can call the Bounds
-// Check Optimized version of CopyFromHistory32. As per cgen/base-impl.h, the
-// conditions are:
+// Check Optimized version of CopyFromHistory32. As per cgen's base-private.h,
+// the conditions are:
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)

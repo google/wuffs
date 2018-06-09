@@ -288,8 +288,8 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   return 0;
 }
 
-// WUFFS_BASE_HEADER_H is where wuffs_base__foo_bar are defined.
-#ifdef WUFFS_BASE_HEADER_H
+// WUFFS_BASE_PUBLIC_H is where wuffs_base__foo_bar are defined.
+#ifdef WUFFS_BASE_PUBLIC_H
 
 wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
                                          uint32_t y0,
@@ -609,4 +609,4 @@ bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   return proc_io_buffers(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
-#endif  // WUFFS_BASE_HEADER_H
+#endif  // WUFFS_BASE_PUBLIC_H

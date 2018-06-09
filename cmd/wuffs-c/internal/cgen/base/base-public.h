@@ -1,7 +1,7 @@
 // After editing this file, run "go generate" in the parent directory.
 
-#ifndef WUFFS_BASE_HEADER_H
-#define WUFFS_BASE_HEADER_H
+#ifndef WUFFS_BASE_PUBLIC_H
+#define WUFFS_BASE_PUBLIC_H
 
 // Copyright 2017 The Wuffs Authors.
 //
@@ -1211,4 +1211,4 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
              : ((wuffs_base__table_u8){});
 }
 
-#endif  // WUFFS_BASE_HEADER_H
+#endif  // WUFFS_BASE_PUBLIC_H

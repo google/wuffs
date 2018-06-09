@@ -351,7 +351,7 @@ func (g *gen) genHeader(b *buffer) error {
 }
 
 func (g *gen) genImpl(b *buffer) error {
-	b.writes("#ifndef WUFFS_BASE_IMPL_H\n#define WUFFS_BASE_IMPL_H\n\n")
+	b.writes("#ifndef WUFFS_BASE_PRIVATE_H\n#define WUFFS_BASE_PRIVATE_H\n\n")
 	b.writes(basePrivateH)
 	b.writes("\n")
 	b.printf("static const char* wuffs_base__status__strings[%d] = {\n", len(builtin.StatusList))
@@ -359,7 +359,7 @@ func (g *gen) genImpl(b *buffer) error {
 		b.printf("%q,", z.Message)
 	}
 	b.writes("};\n\n")
-	b.writes("#endif  // WUFFS_BASE_IMPL_H\n\n")
+	b.writes("#endif  // WUFFS_BASE_PRIVATE_H\n\n")
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
@@ -651,8 +651,8 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 }
 
 var (
-	wuffsBaseHeaderHStart = []byte("#ifndef WUFFS_BASE_HEADER_H\n")
-	wuffsBaseHeaderHEnd   = []byte("#endif  // WUFFS_BASE_HEADER_H\n")
+	wuffsBasePublicHStart = []byte("#ifndef WUFFS_BASE_PUBLIC_H\n")
+	wuffsBasePublicHEnd   = []byte("#endif  // WUFFS_BASE_PUBLIC_H\n")
 )
 
 func (g *gen) writeUse(b *buffer, n *a.Use) error {
@@ -686,17 +686,17 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 	b.printf("// ---------------- BEGIN USE %q\n\n", useDirname)
 
 	// Inline the previously generated .h file, stripping out the redundant
-	// copy of the WUFFS_BASE_HEADER_H code.
-	if i := bytes.Index(hdr, wuffsBaseHeaderHStart); i < 0 {
+	// copy of the WUFFS_BASE_PUBLIC_H code.
+	if i := bytes.Index(hdr, wuffsBasePublicHStart); i < 0 {
 		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
 	} else {
 		b.Write(hdr[:i])
-		hdr = hdr[i+len(wuffsBaseHeaderHStart):]
+		hdr = hdr[i+len(wuffsBasePublicHStart):]
 	}
-	if i := bytes.Index(hdr, wuffsBaseHeaderHEnd); i < 0 {
+	if i := bytes.Index(hdr, wuffsBasePublicHEnd); i < 0 {
 		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
 	} else {
-		b.Write(hdr[i+len(wuffsBaseHeaderHEnd):])
+		b.Write(hdr[i+len(wuffsBasePublicHEnd):])
 	}
 
 	b.writeb('\n')

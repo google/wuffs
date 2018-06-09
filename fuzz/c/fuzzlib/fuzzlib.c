@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef WUFFS_BASE_HEADER_H
+#ifndef WUFFS_BASE_PUBLIC_H
 #error "Wuffs' .c or .h files need to be included before this file"
 #endif
 
