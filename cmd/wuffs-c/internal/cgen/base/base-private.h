@@ -1,4 +1,4 @@
-// After editing this file, run "go generate" in this directory.
+// After editing this file, run "go generate" in the parent directory.
 
 // Copyright 2017 The Wuffs Authors.
 //

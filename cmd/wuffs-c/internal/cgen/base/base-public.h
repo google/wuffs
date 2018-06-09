@@ -1,4 +1,4 @@
-// After editing this file, run "go generate" in this directory.
+// After editing this file, run "go generate" in the parent directory.
 
 #ifndef WUFFS_BASE_HEADER_H
 #define WUFFS_BASE_HEADER_H

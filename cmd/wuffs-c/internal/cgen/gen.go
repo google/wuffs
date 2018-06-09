@@ -79,8 +79,8 @@ func genBase(out *bytes.Buffer) error {
 	files := []struct {
 		filename, varname string
 	}{
-		{"base-header.h", "baseHeader"},
-		{"base-impl.h", "baseImpl"},
+		{"base/base-public.h", "basePublicH"},
+		{"base/base-private.h", "basePrivateH"},
 	}
 
 	for _, f := range files {
