@@ -1551,10 +1551,6 @@ wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
-  return ((wuffs_base__empty_struct){});
-}
-
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -1605,17 +1601,8 @@ static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
 #define WUFFS_BASE__UNLIKELY(expr) (expr)
 #endif
 
-// Uncomment this #include for printf-debugging.
-// #include <stdio.h>
-
 // The helpers below are functions, instead of macros, because their arguments
 // can be an expression that we shouldn't evaluate more than once.
-//
-// They are in base-impl.h and hence copy/pasted into every generated C file,
-// instead of being in some "base.c" file, since a design goal is that users of
-// the generated C code can often just #include a single .c file, such as
-// "gif.c", without having to additionally include or otherwise build and link
-// a "base.c" file.
 //
 // They are static, so that linking multiple wuffs .o files won't complain about
 // duplicate function definitions.
@@ -1623,6 +1610,10 @@ static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
 // They are explicitly marked inline, even if modern compilers don't use the
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
+
+static inline wuffs_base__empty_struct wuffs_base__return_empty_struct() {
+  return ((wuffs_base__empty_struct){});
+}
 
 // ---------------- Numeric Types
 
