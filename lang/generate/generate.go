@@ -39,31 +39,40 @@ func Do(flags *flag.FlagSet, args []string, g Generator) error {
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	pkgName := checkPackageName(*packageName)
-	if pkgName == "" {
-		return fmt.Errorf("prohibited package name %q", *packageName)
+	out := []byte(nil)
+
+	if *packageName == "base" && len(flags.Args()) == 0 {
+		var err error
+		out, err = g("base", nil, nil, nil)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		pkgName := checkPackageName(*packageName)
+		if pkgName == "" {
+			return fmt.Errorf("prohibited package name %q", *packageName)
+		}
+
+		tm := &t.Map{}
+		files, err := parseFiles(tm, flags.Args())
+		if err != nil {
+			return err
+		}
+
+		c, err := check.Check(tm, files, resolveUse)
+		if err != nil {
+			return err
+		}
+
+		out, err = g(pkgName, tm, c, files)
+		if err != nil {
+			return err
+		}
 	}
 
-	tm := &t.Map{}
-	files, err := parseFiles(tm, flags.Args())
-	if err != nil {
-		return err
-	}
-
-	c, err := check.Check(tm, files, resolveUse)
-	if err != nil {
-		return err
-	}
-
-	out, err := g(pkgName, tm, c, files)
-	if err != nil {
-		return err
-	}
-
-	if _, err := os.Stdout.Write(out); err != nil {
-		return err
-	}
-	return nil
+	_, err := os.Stdout.Write(out)
+	return err
 }
 
 func checkPackageName(s string) string {

@@ -81,6 +81,7 @@ func genBase(out *bytes.Buffer) error {
 	}{
 		{"base/base-public.h", "basePublicH"},
 		{"base/base-private.h", "basePrivateH"},
+		{"base/base-impl.c", "baseImplC"},
 	}
 
 	for _, f := range files {

@@ -120,6 +120,10 @@ const basePrivateH = "" +
 	"_impl.bounds[1] = ioptr_r + limit;\n  }\n  return ((wuffs_base__empty_struct){});\n}\n\nstatic inline wuffs_base__empty_struct wuffs_base__io_reader__set_mark(\n    wuffs_base__io_reader* o,\n    uint8_t* mark) {\n  o->private_impl.bounds[0] = mark;\n  return ((wuffs_base__empty_struct){});\n}\n\nstatic inline wuffs_base__empty_struct wuffs_base__io_writer__set(\n    wuffs_base__io_writer* o,\n    wuffs_base__io_buffer* b,\n    uint8_t** ioptr1_ptr,\n    uint8_t** ioptr2_ptr,\n    wuffs_base__slice_u8 s) {\n  b->ptr = s.ptr;\n  b->len = s.len;\n  b->wi = 0;\n  b->ri = 0;\n  b->closed = false;\n  o->private_impl.buf = b;\n  o->private_impl.bounds[0] = s.ptr;\n  o->private_impl.bounds[1] = s.ptr + s.len;\n  *ioptr1_ptr = s.ptr;\n  *ioptr2_ptr = s.ptr + s.len;\n  return ((wuffs_base__empty_struct){});\n}\n\nstatic inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(\n    wuffs_base__io_writer* o,\n    uint8_t* mark) {\n  o->private_impl.bounds[0] = mark;\n  return ((wuffs_base__empty_struct){});\n}\n" +
 	""
 
+const baseImplC = "" +
+	"// Copyright 2018 The Wuffs Authors.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//    https://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\n// !! base-public.h goes here.\n\n// !! wuffs_base__status__string data goes here.\n\nconst char* wuffs_base__status__string(int32_t s) {\n  return \"unknown status\";\n}\n" +
+	""
+
 type template_args_short_read struct {
 	PKGPREFIX string
 	name      string

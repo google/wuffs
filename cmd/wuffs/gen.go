@@ -107,6 +107,14 @@ func (h *genHelper) gen(dirname string, recursive bool) error {
 	}
 	h.seen[dirname] = struct{}{}
 
+	if dirname == "base" {
+		if err := h.genDir(dirname, nil); err != nil {
+			return err
+		}
+		h.affected = append(h.affected, dirname)
+		return nil
+	}
+
 	if !cf.IsValidUsePath(dirname) {
 		return fmt.Errorf("invalid package path %q", dirname)
 	}
@@ -175,7 +183,7 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 		}
 
 		// Special-case the "c" generator to also write a .h file.
-		if lang != "c" {
+		if lang != "c" || packageName == "base" {
 			continue
 		}
 		if i := bytes.Index(out, cHeaderEndsHere); i < 0 {
@@ -187,7 +195,7 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 			return err
 		}
 	}
-	if len(h.langs) > 0 {
+	if len(h.langs) > 0 && packageName != "base" {
 		if err := h.genWuffs(dirname, qualifiedFilenames); err != nil {
 			return err
 		}
@@ -214,7 +222,7 @@ func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 			}
 		}
 	}
-	return nil
+	return h.gen("base", false)
 }
 
 func (h *genHelper) genFile(dirname string, lang string, out []byte) error {
