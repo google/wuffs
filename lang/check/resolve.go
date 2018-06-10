@@ -49,8 +49,12 @@ var (
 	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
 	typeExprUtility     = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 
-	typeExprRectIEU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
-	typeExprRectIIU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
+	typeExprRangeIEU32 = a.NewTypeExpr(0, t.IDBase, t.IDRangeIEU32, nil, nil, nil)
+	typeExprRangeIIU32 = a.NewTypeExpr(0, t.IDBase, t.IDRangeIIU32, nil, nil, nil)
+	typeExprRangeIEU64 = a.NewTypeExpr(0, t.IDBase, t.IDRangeIEU64, nil, nil, nil)
+	typeExprRangeIIU64 = a.NewTypeExpr(0, t.IDBase, t.IDRangeIIU64, nil, nil, nil)
+	typeExprRectIEU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
+	typeExprRectIIU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
 
 	typeExprImageBuffer = a.NewTypeExpr(0, t.IDBase, t.IDImageBuffer, nil, nil, nil)
 	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
@@ -75,8 +79,12 @@ var builtInTypeMap = typeMap{
 	t.IDBool:        typeExprBool,
 	t.IDUtility:     typeExprUtility,
 
-	t.IDRectIEU32: typeExprRectIEU32,
-	t.IDRectIIU32: typeExprRectIIU32,
+	t.IDRangeIEU32: typeExprRangeIEU32,
+	t.IDRangeIIU32: typeExprRangeIIU32,
+	t.IDRangeIEU64: typeExprRangeIEU64,
+	t.IDRangeIIU64: typeExprRangeIIU64,
+	t.IDRectIEU32:  typeExprRectIEU32,
+	t.IDRectIIU32:  typeExprRectIIU32,
 
 	t.IDImageBuffer: typeExprImageBuffer,
 	t.IDImageConfig: typeExprImageConfig,

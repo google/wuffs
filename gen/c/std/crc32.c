@@ -1607,6 +1607,76 @@ static inline wuffs_base__slice_u8 wuffs_base__table_u8__row(
   return ((wuffs_base__slice_u8){});
 }
 
+// ---------------- Utility
+
+static inline wuffs_base__range_ii_u32 wuffs_base__utility__make_range_ii_u32(
+    wuffs_base__utility* ignored,
+    uint32_t min_inclusive,
+    uint32_t max_inclusive) {
+  return ((wuffs_base__range_ii_u32){
+      .min_inclusive = min_inclusive,
+      .max_inclusive = max_inclusive,
+  });
+}
+
+static inline wuffs_base__range_ie_u32 wuffs_base__utility__make_range_ie_u32(
+    wuffs_base__utility* ignored,
+    uint32_t min_inclusive,
+    uint32_t max_exclusive) {
+  return ((wuffs_base__range_ie_u32){
+      .min_inclusive = min_inclusive,
+      .max_exclusive = max_exclusive,
+  });
+}
+
+static inline wuffs_base__range_ii_u64 wuffs_base__utility__make_range_ii_u64(
+    wuffs_base__utility* ignored,
+    uint64_t min_inclusive,
+    uint64_t max_inclusive) {
+  return ((wuffs_base__range_ii_u64){
+      .min_inclusive = min_inclusive,
+      .max_inclusive = max_inclusive,
+  });
+}
+
+static inline wuffs_base__range_ie_u64 wuffs_base__utility__make_range_ie_u64(
+    wuffs_base__utility* ignored,
+    uint64_t min_inclusive,
+    uint64_t max_exclusive) {
+  return ((wuffs_base__range_ie_u64){
+      .min_inclusive = min_inclusive,
+      .max_exclusive = max_exclusive,
+  });
+}
+
+static inline wuffs_base__rect_ii_u32 wuffs_base__utility__make_rect_ii_u32(
+    wuffs_base__utility* ignored,
+    uint32_t min_inclusive_x,
+    uint32_t min_inclusive_y,
+    uint32_t max_inclusive_x,
+    uint32_t max_inclusive_y) {
+  return ((wuffs_base__rect_ii_u32){
+      .min_inclusive_x = min_inclusive_x,
+      .min_inclusive_y = min_inclusive_y,
+      .max_inclusive_x = max_inclusive_x,
+      .max_inclusive_y = max_inclusive_y,
+  });
+}
+
+static inline wuffs_base__rect_ie_u32 wuffs_base__utility__make_rect_ie_u32(
+    wuffs_base__utility* ignored,
+    uint32_t min_inclusive_x,
+    uint32_t min_inclusive_y,
+    uint32_t max_exclusive_x,
+    uint32_t max_exclusive_y) {
+  return ((wuffs_base__rect_ie_u32){
+      .min_inclusive_x = min_inclusive_x,
+      .min_inclusive_y = min_inclusive_y,
+      .max_exclusive_x = max_exclusive_x,
+      .max_exclusive_y = max_exclusive_y,
+  });
+}
+
 // ---------------- Ranges and Rects
 
 static inline wuffs_base__empty_struct

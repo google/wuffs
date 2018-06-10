@@ -399,8 +399,12 @@ const (
 	IDBool        = ID(0x101)
 	IDUtility     = ID(0x102)
 
-	IDRectIEU32 = ID(0x108)
-	IDRectIIU32 = ID(0x109)
+	IDRangeIEU32 = ID(0x108)
+	IDRangeIIU32 = ID(0x109)
+	IDRangeIEU64 = ID(0x10A)
+	IDRangeIIU64 = ID(0x10B)
+	IDRectIEU32  = ID(0x10C)
+	IDRectIIU32  = ID(0x10D)
 
 	IDImageBuffer = ID(0x110)
 	IDImageConfig = ID(0x111)
@@ -627,8 +631,12 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDBool:        "bool",
 	IDUtility:     "utility",
 
-	IDRectIEU32: "rect_ie_u32",
-	IDRectIIU32: "rect_ii_u32",
+	IDRangeIEU32: "range_ie_u32",
+	IDRangeIIU32: "range_ii_u32",
+	IDRangeIEU64: "range_ie_u64",
+	IDRangeIIU64: "range_ii_u64",
+	IDRectIEU32:  "rect_ie_u32",
+	IDRectIIU32:  "rect_ii_u32",
 
 	IDImageBuffer: "image_buffer",
 	IDImageConfig: "image_config",

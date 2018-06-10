@@ -1408,7 +1408,6 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
-    wuffs_base__rect_ie_u32 f_frame_rect;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     uint32_t f_dst_x0;
@@ -1471,8 +1470,6 @@ typedef struct {
     } c_decode_gc[1];
     struct {
       uint32_t coro_susp_point;
-      uint32_t v_frame_x;
-      uint32_t v_frame_y;
       uint64_t scratch;
     } c_decode_id_part0[1];
     struct {

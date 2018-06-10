@@ -81,6 +81,10 @@ var Types = []string{
 	"bool",
 	"utility",
 
+	"range_ii_u32",
+	"range_ie_u32",
+	"range_ii_u64",
+	"range_ie_u64",
 	"rect_ie_u32",
 	"rect_ii_u32",
 
@@ -111,6 +115,17 @@ var Funcs = []string{
 	"u64.low_bits(n u32[..64])(ret u64)",
 	"u64.max(x u64)(ret u64)",
 	"u64.min(x u64)(ret u64)",
+
+	// ---- utility
+
+	"utility.make_range_ii_u32(min_inclusive u32, max_inclusive u32)(ret range_ii_u32)",
+	"utility.make_range_ie_u32(min_inclusive u32, max_exclusive u32)(ret range_ie_u32)",
+	"utility.make_range_ii_u64(min_inclusive u64, max_inclusive u64)(ret range_ii_u64)",
+	"utility.make_range_ie_u64(min_inclusive u64, max_exclusive u64)(ret range_ie_u64)",
+	"utility.make_rect_ii_u32(min_inclusive_x u32, min_inclusive_y u32," +
+		"max_inclusive_x u32, max_inclusive_y u32)(ret rect_ii_u32)",
+	"utility.make_rect_ie_u32(min_inclusive_x u32, min_inclusive_y u32," +
+		"max_exclusive_x u32, max_exclusive_y u32)(ret rect_ie_u32)",
 
 	// ---- rect_ie_u32
 
