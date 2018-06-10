@@ -491,12 +491,7 @@ const (
 	IDSet    = ID(0x201)
 	IDUnroll = ID(0x202)
 
-	IDSetMaxExclusiveX = ID(0x210)
-	IDSetMaxExclusiveY = ID(0x211)
-	IDSetMaxInclusiveX = ID(0x212)
-	IDSetMaxInclusiveY = ID(0x213)
-	IDSetMinInclusiveX = ID(0x214)
-	IDSetMinInclusiveY = ID(0x215)
+	// TODO: range/rect methods like intersection and contains?
 
 	IDHighBits = ID(0x220)
 	IDLowBits  = ID(0x221)
@@ -733,13 +728,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDReset:  "reset",
 	IDSet:    "set",
 	IDUnroll: "unroll",
-
-	IDSetMaxExclusiveX: "set_max_exclusive_x",
-	IDSetMaxExclusiveY: "set_max_exclusive_y",
-	IDSetMaxInclusiveX: "set_max_inclusive_x",
-	IDSetMaxInclusiveY: "set_max_inclusive_y",
-	IDSetMinInclusiveX: "set_min_inclusive_x",
-	IDSetMinInclusiveY: "set_min_inclusive_y",
 
 	IDHighBits: "high_bits",
 	IDLowBits:  "low_bits",

@@ -127,20 +127,6 @@ var Funcs = []string{
 	"utility.make_rect_ie_u32(min_inclusive_x u32, min_inclusive_y u32," +
 		"max_exclusive_x u32, max_exclusive_y u32)(ret rect_ie_u32)",
 
-	// ---- rect_ie_u32
-
-	"rect_ie_u32.set_min_inclusive_x!(x u32)()",
-	"rect_ie_u32.set_min_inclusive_y!(y u32)()",
-	"rect_ie_u32.set_max_exclusive_x!(x u32)()",
-	"rect_ie_u32.set_max_exclusive_y!(y u32)()",
-
-	// ---- rect_ii_u32
-
-	"rect_ii_u32.set_min_inclusive_x!(x u32)()",
-	"rect_ii_u32.set_min_inclusive_y!(y u32)()",
-	"rect_ii_u32.set_max_inclusive_x!(x u32)()",
-	"rect_ii_u32.set_max_inclusive_y!(y u32)()",
-
 	// ---- image_buffer
 
 	"image_buffer.plane(p u32[..3])(ret table u8)",
