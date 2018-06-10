@@ -47,6 +47,7 @@ var (
 
 	typeExprEmptyStruct = a.NewTypeExpr(0, t.IDBase, t.IDEmptyStruct, nil, nil, nil)
 	typeExprBool        = a.NewTypeExpr(0, t.IDBase, t.IDBool, nil, nil, nil)
+	typeExprUtility     = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 
 	typeExprRectIEU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
 	typeExprRectIIU32 = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
@@ -72,6 +73,7 @@ var builtInTypeMap = typeMap{
 
 	t.IDEmptyStruct: typeExprEmptyStruct,
 	t.IDBool:        typeExprBool,
+	t.IDUtility:     typeExprUtility,
 
 	t.IDRectIEU32: typeExprRectIEU32,
 	t.IDRectIIU32: typeExprRectIIU32,

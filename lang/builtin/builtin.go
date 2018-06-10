@@ -79,6 +79,7 @@ var Types = []string{
 
 	"empty_struct",
 	"bool",
+	"utility",
 
 	"rect_ie_u32",
 	"rect_ii_u32",

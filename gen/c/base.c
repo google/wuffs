@@ -66,6 +66,11 @@
 typedef struct {
 } wuffs_base__empty_struct;
 
+// wuffs_base__utility is a placeholder receiver type. It enables what Java
+// calls static methods, as opposed to regular methods.
+typedef struct {
+} wuffs_base__utility;
+
 // --------
 
 // A status code is either zero (OK), positive (a recoverable suspension or

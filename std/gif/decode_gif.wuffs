@@ -97,6 +97,7 @@ pub struct decoder?(
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
 
+	util base.utility,
 	lzw lzw.decoder,
 )
 

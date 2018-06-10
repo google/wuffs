@@ -397,6 +397,7 @@ const (
 
 	IDEmptyStruct = ID(0x100)
 	IDBool        = ID(0x101)
+	IDUtility     = ID(0x102)
 
 	IDRectIEU32 = ID(0x108)
 	IDRectIIU32 = ID(0x109)
@@ -624,6 +625,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDEmptyStruct: "empty_struct",
 	IDBool:        "bool",
+	IDUtility:     "utility",
 
 	IDRectIEU32: "rect_ie_u32",
 	IDRectIIU32: "rect_ii_u32",
