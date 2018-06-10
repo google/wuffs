@@ -579,7 +579,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		temp := g.currFunk.tempW
 		g.currFunk.tempW++
 
-		b.printf("%sstatus %s%d = ", g.pkgPrefix, tPrefix, temp)
+		b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
 	} else {
 		b.writes("status = ")
 	}

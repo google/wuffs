@@ -1278,8 +1278,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_lzw__status;
-
 #define wuffs_lzw__packageid 1316776  // 0x001417A8
 
 #define WUFFS_LZW__STATUS_OK 0                          // 0x00000000
@@ -1303,9 +1301,7 @@ typedef int32_t wuffs_lzw__status;
 #define WUFFS_LZW__ERROR_BAD_CODE -15460440               // 0xFF1417A8
 #define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -32237656  // 0xFE1417A8
 
-bool wuffs_lzw__status__is_error(wuffs_lzw__status s);
-
-const char* wuffs_lzw__status__string(wuffs_lzw__status s);
+const char* wuffs_lzw__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1320,7 +1316,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_lzw__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -1362,9 +1358,9 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
                                            uint32_t a_lw);
 
-wuffs_lzw__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                                             wuffs_base__io_writer a_dst,
-                                             wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                                              wuffs_base__io_writer a_dst,
+                                              wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1379,8 +1375,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_gif__status;
 
 #define wuffs_gif__packageid 1017222  // 0x000F8586
 
@@ -1412,9 +1406,7 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
   -1072724602  // 0xC00F8586
 
-bool wuffs_gif__status__is_error(wuffs_gif__status s);
-
-const char* wuffs_gif__status__string(wuffs_gif__status s);
+const char* wuffs_gif__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1429,7 +1421,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_gif__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_width;
@@ -1522,7 +1514,7 @@ typedef struct {
       uint32_t v_argb;
       uint8_t v_lw;
       uint64_t v_block_size;
-      wuffs_gif__status v_z;
+      wuffs_base__status v_z;
       uint64_t scratch;
     } c_decode_id_part1[1];
   } private_impl;
@@ -1541,17 +1533,17 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_gif__status wuffs_gif__decoder__decode_config(
+wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src);
 
-wuffs_gif__status wuffs_gif__decoder__decode_frame(
+wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
     wuffs_base__io_reader a_src);
 
-wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
+wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 

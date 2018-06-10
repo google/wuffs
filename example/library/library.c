@@ -61,7 +61,7 @@ static const char* decode() {
 
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
   wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  wuffs_deflate__status s =
+  wuffs_base__status s =
       wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
   if (s) {
     return wuffs_deflate__status__string(s);

@@ -1269,8 +1269,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_adler32__status;
-
 #define wuffs_adler32__packageid 681002  // 0x000A642A
 
 #define WUFFS_ADLER32__STATUS_OK 0                          // 0x00000000
@@ -1292,9 +1290,7 @@ typedef int32_t wuffs_adler32__status;
 #define WUFFS_ADLER32__ERROR_INVALID_CALL_SEQUENCE -301989888  // 0xEE000000
 #define WUFFS_ADLER32__SUSPENSION_END_OF_DATA 16777216         // 0x01000000
 
-bool wuffs_adler32__status__is_error(wuffs_adler32__status s);
-
-const char* wuffs_adler32__status__string(wuffs_adler32__status s);
+const char* wuffs_adler32__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1309,7 +1305,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_adler32__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;
@@ -1894,10 +1890,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 // ---------------- Status Codes Implementations
 
-bool wuffs_adler32__status__is_error(wuffs_adler32__status s) {
-  return s < 0;
-}
-
 static const char wuffs_adler32__status__string_data[] = {
     0x00,
 };
@@ -1934,7 +1926,7 @@ static const uint16_t wuffs_adler32__status__string_offsets[] = {
     0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-const char* wuffs_adler32__status__string(wuffs_adler32__status s) {
+const char* wuffs_adler32__status__string(wuffs_base__status s) {
   uint16_t o;
   switch (s & 0x1FFFFF) {
     case 0:

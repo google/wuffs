@@ -99,7 +99,7 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_wi = got.wi;
     size_t old_ri = src.ri;
 
-    wuffs_lzw__status status =
+    wuffs_base__status status =
         wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
     if (status == WUFFS_LZW__STATUS_OK) {
       if (src.ri != src.wi) {
@@ -211,7 +211,7 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
     src.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
     wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-    wuffs_lzw__status s =
+    wuffs_base__status s =
         wuffs_lzw__decoder__decode(&dec, dst_writer, src_reader);
     if (s) {
       FAIL("decode: %" PRIi32 " (%s)", s, wuffs_lzw__status__string(s));

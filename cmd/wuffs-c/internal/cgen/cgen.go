@@ -325,7 +325,6 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes\n\n")
 
-	b.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)
 
@@ -350,8 +349,7 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	b.writes("\n")
 
-	b.printf("bool %sstatus__is_error(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
-	b.printf("const char* %sstatus__string(%sstatus s);\n\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("const char* %sstatus__string(wuffs_base__status s);\n\n", g.pkgPrefix)
 
 	b.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(b, pubOnly, (*gen).writeConst); err != nil {
@@ -389,7 +387,6 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writeb('\n')
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
-	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
 	{
 		messages := [256]string{}
@@ -401,7 +398,7 @@ func (g *gen) genImpl(b *buffer) error {
 		}
 	}
 
-	b.printf("const char* %sstatus__string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
+	b.printf("const char* %sstatus__string(wuffs_base__status s) {\n", g.pkgPrefix)
 	b.printf("uint16_t o;")
 	b.printf("switch (s & 0x%X) {\n", (1<<base38.MaxBits)-1)
 	b.printf("case 0: return wuffs_base__status__string(s);\n")
@@ -641,7 +638,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
 	b.writes("struct {\n")
 	if n.Suspendible() {
-		b.printf("%sstatus status;\n", g.pkgPrefix)
+		b.printf("wuffs_base__status status;\n")
 		b.writes("uint32_t magic;\n")
 		b.writes("\n")
 	}

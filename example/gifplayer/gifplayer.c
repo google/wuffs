@@ -210,7 +210,7 @@ const char* play() {
 
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_gif__status s =
+  wuffs_base__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);

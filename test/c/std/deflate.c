@@ -124,7 +124,7 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    wuffs_deflate__status s =
+    wuffs_base__status s =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     if (s == WUFFS_DEFLATE__STATUS_OK) {
@@ -227,13 +227,13 @@ void test_wuffs_deflate_decode_split_src() {
     src.closed = false;
     src.ri = gt->src_offset0;
     src.wi = split;
-    wuffs_deflate__status s0 =
+    wuffs_base__status s0 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     src.closed = true;
     src.ri = split;
     src.wi = gt->src_offset1;
-    wuffs_deflate__status s1 =
+    wuffs_base__status s1 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
     if (s0 != WUFFS_DEFLATE__SUSPENSION_SHORT_READ) {
@@ -266,7 +266,7 @@ bool do_test_wuffs_deflate_history(int i,
                                    wuffs_deflate__decoder* dec,
                                    uint32_t starting_history_index,
                                    uint64_t limit,
-                                   wuffs_deflate__status want_s) {
+                                   wuffs_base__status want_s) {
   src->ri = gt->src_offset0;
   src->wi = gt->src_offset1;
   got->ri = 0;
@@ -279,7 +279,7 @@ bool do_test_wuffs_deflate_history(int i,
 
   set_writer_limit(&dst_writer, limit);
 
-  wuffs_deflate__status got_s =
+  wuffs_base__status got_s =
       wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
   if (got_s != want_s) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
@@ -483,8 +483,7 @@ void test_wuffs_deflate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
   dec.private_impl.f_code_lengths[n++] = 13;
 
-  wuffs_deflate__status s =
-      wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
+  wuffs_base__status s = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
   if (s) {
     FAIL("%s", wuffs_deflate__status__string(s));
     return;

@@ -43,7 +43,7 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
-  wuffs_zlib__status s = 0;
+  wuffs_base__status s = 0;
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
   wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 

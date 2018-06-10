@@ -1278,8 +1278,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_adler32__status;
-
 #define wuffs_adler32__packageid 681002  // 0x000A642A
 
 #define WUFFS_ADLER32__STATUS_OK 0                          // 0x00000000
@@ -1301,9 +1299,7 @@ typedef int32_t wuffs_adler32__status;
 #define WUFFS_ADLER32__ERROR_INVALID_CALL_SEQUENCE -301989888  // 0xEE000000
 #define WUFFS_ADLER32__SUSPENSION_END_OF_DATA 16777216         // 0x01000000
 
-bool wuffs_adler32__status__is_error(wuffs_adler32__status s);
-
-const char* wuffs_adler32__status__string(wuffs_adler32__status s);
+const char* wuffs_adler32__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1318,7 +1314,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_adler32__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;
@@ -1365,8 +1361,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_deflate__status;
 
 #define wuffs_deflate__packageid 848533  // 0x000CF295
 
@@ -1418,9 +1412,7 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
   -1123224939  // 0xBD0CF295
 
-bool wuffs_deflate__status__is_error(wuffs_deflate__status s);
-
-const char* wuffs_deflate__status__string(wuffs_deflate__status s);
+const char* wuffs_deflate__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1435,7 +1427,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_deflate__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_bits;
@@ -1449,7 +1441,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      wuffs_deflate__status v_z;
+      wuffs_base__status v_z;
       uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
@@ -1515,10 +1507,9 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_deflate__status wuffs_deflate__decoder__decode(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                                                  wuffs_base__io_writer a_dst,
+                                                  wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1533,8 +1524,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_zlib__status;
 
 #define wuffs_zlib__packageid 2064249  // 0x001F7F79
 
@@ -1563,9 +1552,7 @@ typedef int32_t wuffs_zlib__status;
 #define WUFFS_ZLIB__ERROR_TODO_UNSUPPORTED_PRESET_DICTIONARY \
   -1071677575  // 0xC01F7F79
 
-bool wuffs_zlib__status__is_error(wuffs_zlib__status s);
-
-const char* wuffs_zlib__status__string(wuffs_zlib__status s);
+const char* wuffs_zlib__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1580,7 +1567,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_zlib__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
@@ -1591,7 +1578,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint16_t v_x;
       uint32_t v_checksum_got;
-      wuffs_zlib__status v_z;
+      wuffs_base__status v_z;
       uint32_t v_checksum_want;
       uint64_t scratch;
     } c_decode[1];
@@ -1614,7 +1601,7 @@ void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
 void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
                                               bool a_ic);
 
-wuffs_zlib__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__io_writer a_dst,
                                                wuffs_base__io_reader a_src);
 

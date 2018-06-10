@@ -1278,8 +1278,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_lzw__status;
-
 #define wuffs_lzw__packageid 1316776  // 0x001417A8
 
 #define WUFFS_LZW__STATUS_OK 0                          // 0x00000000
@@ -1303,9 +1301,7 @@ typedef int32_t wuffs_lzw__status;
 #define WUFFS_LZW__ERROR_BAD_CODE -15460440               // 0xFF1417A8
 #define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -32237656  // 0xFE1417A8
 
-bool wuffs_lzw__status__is_error(wuffs_lzw__status s);
-
-const char* wuffs_lzw__status__string(wuffs_lzw__status s);
+const char* wuffs_lzw__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1320,7 +1316,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_lzw__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -1362,9 +1358,9 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
                                            uint32_t a_lw);
 
-wuffs_lzw__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                                             wuffs_base__io_writer a_dst,
-                                             wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                                              wuffs_base__io_writer a_dst,
+                                              wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1379,8 +1375,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_gif__status;
 
 #define wuffs_gif__packageid 1017222  // 0x000F8586
 
@@ -1412,9 +1406,7 @@ typedef int32_t wuffs_gif__status;
 #define WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI \
   -1072724602  // 0xC00F8586
 
-bool wuffs_gif__status__is_error(wuffs_gif__status s);
-
-const char* wuffs_gif__status__string(wuffs_gif__status s);
+const char* wuffs_gif__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1429,7 +1421,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_gif__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_width;
@@ -1522,7 +1514,7 @@ typedef struct {
       uint32_t v_argb;
       uint8_t v_lw;
       uint64_t v_block_size;
-      wuffs_gif__status v_z;
+      wuffs_base__status v_z;
       uint64_t scratch;
     } c_decode_id_part1[1];
   } private_impl;
@@ -1541,17 +1533,17 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_gif__status wuffs_gif__decoder__decode_config(
+wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src);
 
-wuffs_gif__status wuffs_gif__decoder__decode_frame(
+wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
     wuffs_base__io_reader a_src);
 
-wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
+wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
@@ -2115,10 +2107,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 // ---------------- Status Codes Implementations
 
-bool wuffs_gif__status__is_error(wuffs_gif__status s) {
-  return s < 0;
-}
-
 static const char wuffs_gif__status__string_data[] = {
     0x00, 0x67, 0x69, 0x66, 0x3A, 0x20, 0x69, 0x6E, 0x74, 0x65, 0x72, 0x6E,
     0x61, 0x6C, 0x20, 0x65, 0x72, 0x72, 0x6F, 0x72, 0x3A, 0x20, 0x69, 0x6E,
@@ -2171,7 +2159,7 @@ static const uint16_t wuffs_gif__status__string_offsets[] = {
     0x0074, 0x0084, 0x009D, 0x00B6,
 };
 
-const char* wuffs_gif__status__string(wuffs_gif__status s) {
+const char* wuffs_gif__status__string(wuffs_base__status s) {
   uint16_t o;
   switch (s & 0x1FFFFF) {
     case 0:
@@ -2210,40 +2198,40 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 
 // ---------------- Private Function Prototypes
 
-static wuffs_gif__status wuffs_gif__decoder__decode_header(
+static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
+static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_extension(
+static wuffs_base__status wuffs_gif__decoder__decode_extension(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
+static wuffs_base__status wuffs_gif__decoder__skip_blocks(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_ae(
+static wuffs_base__status wuffs_gif__decoder__decode_ae(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_gc(
+static wuffs_base__status wuffs_gif__decoder__decode_gc(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
+static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
+static wuffs_base__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
     wuffs_base__io_reader a_src);
 
-static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
+static wuffs_base__status wuffs_gif__decoder__copy_to_image_buffer(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib);
 
@@ -2279,7 +2267,7 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // -------- func decoder.decode_config
 
-wuffs_gif__status wuffs_gif__decoder__decode_config(
+wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src) {
@@ -2296,7 +2284,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_config(
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
     return WUFFS_GIF__ERROR_BAD_ARGUMENT;
   }
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_num_loops;
 
@@ -2356,7 +2344,7 @@ exit:
 
 // -------- func decoder.decode_frame
 
-wuffs_gif__status wuffs_gif__decoder__decode_frame(
+wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
     wuffs_base__io_reader a_src) {
@@ -2373,7 +2361,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_frame(
     self->private_impl.status = WUFFS_GIF__ERROR_BAD_ARGUMENT;
     return WUFFS_GIF__ERROR_BAD_ARGUMENT;
   }
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t coro_susp_point =
       self->private_impl.c_decode_frame[0].coro_susp_point;
@@ -2428,7 +2416,7 @@ exit:
 
 // -------- func decoder.decode_up_to_id_part1
 
-wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
+wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
   if (!self) {
@@ -2440,7 +2428,7 @@ wuffs_gif__status wuffs_gif__decoder__decode_up_to_id_part1(
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_block_type;
 
@@ -2545,10 +2533,10 @@ short_read_src:
 
 // -------- func decoder.decode_header
 
-static wuffs_gif__status wuffs_gif__decoder__decode_header(
+static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_c[6];
   uint32_t v_i;
@@ -2629,10 +2617,10 @@ short_read_src:
 
 // -------- func decoder.decode_lsd
 
-static wuffs_gif__status wuffs_gif__decoder__decode_lsd(
+static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_c[7];
   uint32_t v_i;
@@ -2774,10 +2762,10 @@ short_read_src:
 
 // -------- func decoder.decode_extension
 
-static wuffs_gif__status wuffs_gif__decoder__decode_extension(
+static wuffs_base__status wuffs_gif__decoder__decode_extension(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_label;
 
@@ -2885,10 +2873,10 @@ short_read_src:
 
 // -------- func decoder.skip_blocks
 
-static wuffs_gif__status wuffs_gif__decoder__skip_blocks(
+static wuffs_base__status wuffs_gif__decoder__skip_blocks(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_block_size;
 
@@ -2973,10 +2961,10 @@ short_read_src:
 
 // -------- func decoder.decode_ae
 
-static wuffs_gif__status wuffs_gif__decoder__decode_ae(
+static wuffs_base__status wuffs_gif__decoder__decode_ae(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_c;
   uint8_t v_block_size;
@@ -3186,10 +3174,10 @@ short_read_src:
 
 // -------- func decoder.decode_gc
 
-static wuffs_gif__status wuffs_gif__decoder__decode_gc(
+static wuffs_base__status wuffs_gif__decoder__decode_gc(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_flags;
 
@@ -3324,10 +3312,10 @@ short_read_src:
 
 // -------- func decoder.decode_id_part0
 
-static wuffs_gif__status wuffs_gif__decoder__decode_id_part0(
+static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_frame_x;
   uint32_t v_frame_y;
@@ -3522,11 +3510,11 @@ short_read_src:
 
 // -------- func decoder.decode_id_part1
 
-static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
+static wuffs_base__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
     wuffs_base__io_reader a_src) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_flags;
   bool v_use_local_palette;
@@ -3542,7 +3530,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(u_w);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(ioptr_w);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_w);
-  wuffs_gif__status v_z;
+  wuffs_base__status v_z;
   wuffs_base__slice_u8 v_palette;
 
   uint8_t* ioptr_src = NULL;
@@ -3727,7 +3715,7 @@ static wuffs_gif__status wuffs_gif__decoder__decode_id_part1(
               a_src.private_impl.buf->ri =
                   ioptr_src - a_src.private_impl.buf->ptr;
             }
-            wuffs_gif__status t_5 = wuffs_lzw__decoder__decode(
+            wuffs_base__status t_5 = wuffs_lzw__decoder__decode(
                 &self->private_impl.f_lzw, v_w, a_src);
             ioptr_w = u_w.ptr + u_w.wi;
             if (a_src.private_impl.buf) {
@@ -3840,10 +3828,10 @@ short_read_src:
 
 // -------- func decoder.copy_to_image_buffer
 
-static wuffs_gif__status wuffs_gif__decoder__copy_to_image_buffer(
+static wuffs_base__status wuffs_gif__decoder__copy_to_image_buffer(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_ib) {
-  wuffs_gif__status status = WUFFS_GIF__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   wuffs_base__slice_u8 v_dst;
   wuffs_base__slice_u8 v_src;

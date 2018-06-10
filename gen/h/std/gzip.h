@@ -1278,8 +1278,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_crc32__status;
-
 #define wuffs_crc32__packageid 810620  // 0x000C5E7C
 
 #define WUFFS_CRC32__STATUS_OK 0                          // 0x00000000
@@ -1300,9 +1298,7 @@ typedef int32_t wuffs_crc32__status;
 #define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
 #define WUFFS_CRC32__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
 
-bool wuffs_crc32__status__is_error(wuffs_crc32__status s);
-
-const char* wuffs_crc32__status__string(wuffs_crc32__status s);
+const char* wuffs_crc32__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1317,7 +1313,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_crc32__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;
@@ -1364,8 +1360,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_deflate__status;
 
 #define wuffs_deflate__packageid 848533  // 0x000CF295
 
@@ -1417,9 +1411,7 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
   -1123224939  // 0xBD0CF295
 
-bool wuffs_deflate__status__is_error(wuffs_deflate__status s);
-
-const char* wuffs_deflate__status__string(wuffs_deflate__status s);
+const char* wuffs_deflate__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1434,7 +1426,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_deflate__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_bits;
@@ -1448,7 +1440,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      wuffs_deflate__status v_z;
+      wuffs_base__status v_z;
       uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
@@ -1514,10 +1506,9 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_deflate__status wuffs_deflate__decoder__decode(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                                                  wuffs_base__io_writer a_dst,
+                                                  wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1532,8 +1523,6 @@ extern "C" {
 #endif
 
 // ---------------- Status Codes
-
-typedef int32_t wuffs_gzip__status;
 
 #define wuffs_gzip__packageid 1041911  // 0x000FE5F7
 
@@ -1560,9 +1549,7 @@ typedef int32_t wuffs_gzip__status;
 #define WUFFS_GZIP__ERROR_BAD_ENCODING_FLAGS -49289737      // 0xFD0FE5F7
 #define WUFFS_GZIP__ERROR_BAD_HEADER -66066953              // 0xFC0FE5F7
 
-bool wuffs_gzip__status__is_error(wuffs_gzip__status s);
-
-const char* wuffs_gzip__status__string(wuffs_gzip__status s);
+const char* wuffs_gzip__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1577,7 +1564,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_gzip__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
@@ -1591,7 +1578,7 @@ typedef struct {
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       uint32_t v_decoded_length_got;
-      wuffs_gzip__status v_z;
+      wuffs_base__status v_z;
       uint32_t v_checksum_want;
       uint32_t v_decoded_length_want;
       uint64_t scratch;
@@ -1615,7 +1602,7 @@ void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
 void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
                                               bool a_ic);
 
-wuffs_gzip__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
+wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                                                wuffs_base__io_writer a_dst,
                                                wuffs_base__io_reader a_src);
 

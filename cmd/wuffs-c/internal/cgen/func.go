@@ -76,7 +76,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 
 	// TODO: write n's return values.
 	if n.Suspendible() {
-		b.printf("%sstatus ", g.pkgPrefix)
+		b.writes("wuffs_base__status ")
 	} else if outFields := n.Out().Fields(); len(outFields) == 0 {
 		b.writes("void ")
 	} else if len(outFields) == 1 {
@@ -217,7 +217,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 	}
 
 	if g.currFunk.suspendible {
-		b.printf("%sstatus status = %sSTATUS_OK;\n", g.pkgPrefix, g.PKGPREFIX)
+		b.printf("wuffs_base__status status = WUFFS_BASE__STATUS_OK;\n")
 	}
 	b.writes("\n")
 

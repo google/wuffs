@@ -1269,8 +1269,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_lzw__status;
-
 #define wuffs_lzw__packageid 1316776  // 0x001417A8
 
 #define WUFFS_LZW__STATUS_OK 0                          // 0x00000000
@@ -1294,9 +1292,7 @@ typedef int32_t wuffs_lzw__status;
 #define WUFFS_LZW__ERROR_BAD_CODE -15460440               // 0xFF1417A8
 #define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -32237656  // 0xFE1417A8
 
-bool wuffs_lzw__status__is_error(wuffs_lzw__status s);
-
-const char* wuffs_lzw__status__string(wuffs_lzw__status s);
+const char* wuffs_lzw__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1311,7 +1307,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_lzw__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -1353,9 +1349,9 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
                                            uint32_t a_lw);
 
-wuffs_lzw__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                                             wuffs_base__io_writer a_dst,
-                                             wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                                              wuffs_base__io_writer a_dst,
+                                              wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"

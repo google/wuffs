@@ -1269,8 +1269,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_deflate__status;
-
 #define wuffs_deflate__packageid 848533  // 0x000CF295
 
 #define WUFFS_DEFLATE__STATUS_OK 0                          // 0x00000000
@@ -1321,9 +1319,7 @@ typedef int32_t wuffs_deflate__status;
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
   -1123224939  // 0xBD0CF295
 
-bool wuffs_deflate__status__is_error(wuffs_deflate__status s);
-
-const char* wuffs_deflate__status__string(wuffs_deflate__status s);
+const char* wuffs_deflate__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1338,7 +1334,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_deflate__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_bits;
@@ -1352,7 +1348,7 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      wuffs_deflate__status v_z;
+      wuffs_base__status v_z;
       uint64_t v_n_copied;
       uint32_t v_already_full;
     } c_decode[1];
@@ -1418,10 +1414,9 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_deflate__status wuffs_deflate__decoder__decode(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src);
+wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                                                  wuffs_base__io_writer a_dst,
+                                                  wuffs_base__io_reader a_src);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1983,10 +1978,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 // ---------------- Status Codes Implementations
 
-bool wuffs_deflate__status__is_error(wuffs_deflate__status s) {
-  return s < 0;
-}
-
 static const char wuffs_deflate__status__string_data[] = {
     0x00, 0x64, 0x65, 0x66, 0x6C, 0x61, 0x74, 0x65, 0x3A, 0x20, 0x69, 0x6E,
     0x74, 0x65, 0x72, 0x6E, 0x61, 0x6C, 0x20, 0x65, 0x72, 0x72, 0x6F, 0x72,
@@ -2078,7 +2069,7 @@ static const uint16_t wuffs_deflate__status__string_offsets[] = {
     0x01EF, 0x021B, 0x0242, 0x026F,
 };
 
-const char* wuffs_deflate__status__string(wuffs_deflate__status s) {
+const char* wuffs_deflate__status__string(wuffs_base__status s) {
   uint16_t o;
   switch (s & 0x1FFFFF) {
     case 0:
@@ -2140,36 +2131,36 @@ static const uint32_t wuffs_deflate__dcode_magic_numbers[32] = {
 
 // ---------------- Private Function Prototypes
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
+static wuffs_base__status wuffs_deflate__decoder__decode_blocks(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
+static wuffs_base__status wuffs_deflate__decoder__decode_uncompressed(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
+static wuffs_base__status wuffs_deflate__decoder__init_fixed_huffman(
     wuffs_deflate__decoder* self);
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
+static wuffs_base__status wuffs_deflate__decoder__init_dynamic_huffman(
     wuffs_deflate__decoder* self,
     wuffs_base__io_reader a_src);
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_huff(
+static wuffs_base__status wuffs_deflate__decoder__init_huff(
     wuffs_deflate__decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
     uint32_t a_n_codes1,
     uint32_t a_base_symbol);
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
@@ -2203,10 +2194,9 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // -------- func decoder.decode
 
-wuffs_deflate__status wuffs_deflate__decoder__decode(
-    wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src) {
+wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                                                  wuffs_base__io_writer a_dst,
+                                                  wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_DEFLATE__ERROR_BAD_RECEIVER;
   }
@@ -2217,9 +2207,9 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
-  wuffs_deflate__status v_z;
+  wuffs_base__status v_z;
   wuffs_base__slice_u8 v_written;
   uint64_t v_n_copied;
   uint32_t v_already_full;
@@ -2261,7 +2251,7 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
         if (a_dst.private_impl.buf) {
           a_dst.private_impl.buf->wi = ioptr_dst - a_dst.private_impl.buf->ptr;
         }
-        wuffs_deflate__status t_0 =
+        wuffs_base__status t_0 =
             wuffs_deflate__decoder__decode_blocks(self, a_dst, a_src);
         if (a_dst.private_impl.buf) {
           ioptr_dst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
@@ -2342,11 +2332,11 @@ exit:
 
 // -------- func decoder.decode_blocks
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
+static wuffs_base__status wuffs_deflate__decoder__decode_blocks(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_final;
   uint32_t v_type;
@@ -2497,11 +2487,11 @@ short_read_src:
 
 // -------- func decoder.decode_uncompressed
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_uncompressed(
+static wuffs_base__status wuffs_deflate__decoder__decode_uncompressed(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_length;
   uint32_t v_n_copied;
@@ -2643,9 +2633,9 @@ short_read_src:
 
 // -------- func decoder.init_fixed_huffman
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_fixed_huffman(
+static wuffs_base__status wuffs_deflate__decoder__init_fixed_huffman(
     wuffs_deflate__decoder* self) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_i;
 
@@ -2708,10 +2698,10 @@ exit:
 
 // -------- func decoder.init_dynamic_huffman
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_dynamic_huffman(
+static wuffs_base__status wuffs_deflate__decoder__init_dynamic_huffman(
     wuffs_deflate__decoder* self,
     wuffs_base__io_reader a_src) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -2968,13 +2958,13 @@ short_read_src:
 
 // -------- func decoder.init_huff
 
-static wuffs_deflate__status wuffs_deflate__decoder__init_huff(
+static wuffs_base__status wuffs_deflate__decoder__init_huff(
     wuffs_deflate__decoder* self,
     uint32_t a_which,
     uint32_t a_n_codes0,
     uint32_t a_n_codes1,
     uint32_t a_base_symbol) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint16_t v_counts[16];
   uint32_t v_i;
@@ -3249,11 +3239,11 @@ exit:
 
 // -------- func decoder.decode_huffman_fast
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -3603,11 +3593,11 @@ exit:
 
 // -------- func decoder.decode_huffman_slow
 
-static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_slow(
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_bits;
   uint32_t v_n_bits;

@@ -81,7 +81,7 @@ static const char* decode() {
       wuffs_base__io_buffer dst =
           ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
       wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
-      wuffs_gzip__status s =
+      wuffs_base__status s =
           wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
 
       if (dst.wi) {

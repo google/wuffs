@@ -411,12 +411,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 }
 
 func (g *gen) packagePrefix(qid t.QID) string {
-	if qid == (t.QID{t.IDBase, t.IDStatus}) {
-		// No-op: special case "base.status" as being inside this package.
-		//
-		// TODO: change "base.status" in Wuffs code to just "status"? Or
-		// change the C code's "wuffs_foo__status" to "wuffs_base__status"?
-	} else if qid[0] != 0 {
+	if qid[0] != 0 {
 		otherPkg := g.tm.ByID(qid[0])
 		// TODO: map the "deflate" in "deflate.decoder" to the "deflate" in
 		// `use "std/deflate"`, and use the latter "deflate".

@@ -1269,8 +1269,6 @@ extern "C" {
 
 // ---------------- Status Codes
 
-typedef int32_t wuffs_crc32__status;
-
 #define wuffs_crc32__packageid 810620  // 0x000C5E7C
 
 #define WUFFS_CRC32__STATUS_OK 0                          // 0x00000000
@@ -1291,9 +1289,7 @@ typedef int32_t wuffs_crc32__status;
 #define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
 #define WUFFS_CRC32__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
 
-bool wuffs_crc32__status__is_error(wuffs_crc32__status s);
-
-const char* wuffs_crc32__status__string(wuffs_crc32__status s);
+const char* wuffs_crc32__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
 
@@ -1308,7 +1304,7 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_crc32__status status;
+    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;

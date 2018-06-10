@@ -54,7 +54,7 @@ void test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src = ((wuffs_base__io_reader){});
-  wuffs_gif__status status = wuffs_gif__decoder__decode_config(NULL, &ic, src);
+  wuffs_base__status status = wuffs_gif__decoder__decode_config(NULL, &ic, src);
   if (status != WUFFS_GIF__ERROR_BAD_RECEIVER) {
     FAIL("decode_config: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status), WUFFS_GIF__ERROR_BAD_RECEIVER,
@@ -96,7 +96,7 @@ void test_basic_check_wuffs_version_not_called() {
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src = ((wuffs_base__io_reader){});
-  wuffs_gif__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
+  wuffs_base__status status = wuffs_gif__decoder__decode_config(&dec, &ic, src);
   if (status != WUFFS_GIF__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED) {
     FAIL("decode_config: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
          wuffs_gif__status__string(status),
@@ -108,19 +108,19 @@ void test_basic_check_wuffs_version_not_called() {
 
 void test_basic_status_is_error() {
   CHECK_FOCUS(__func__);
-  if (wuffs_gif__status__is_error(WUFFS_GIF__STATUS_OK)) {
+  if (wuffs_base__status__is_error(WUFFS_GIF__STATUS_OK)) {
     FAIL("is_error(OK) returned true");
     return;
   }
-  if (!wuffs_gif__status__is_error(WUFFS_GIF__ERROR_BAD_WUFFS_VERSION)) {
+  if (!wuffs_base__status__is_error(WUFFS_GIF__ERROR_BAD_WUFFS_VERSION)) {
     FAIL("is_error(BAD_WUFFS_VERSION) returned false");
     return;
   }
-  if (wuffs_gif__status__is_error(WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {
+  if (wuffs_base__status__is_error(WUFFS_GIF__SUSPENSION_SHORT_WRITE)) {
     FAIL("is_error(SHORT_WRITE) returned true");
     return;
   }
-  if (!wuffs_gif__status__is_error(WUFFS_GIF__ERROR_BAD_HEADER)) {
+  if (!wuffs_base__status__is_error(WUFFS_GIF__ERROR_BAD_HEADER)) {
     FAIL("is_error(BAD_HEADER) returned false");
     return;
   }
@@ -198,7 +198,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
-  wuffs_gif__status s =
+  wuffs_base__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     return wuffs_gif__status__string(s);
@@ -246,7 +246,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
   {
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    wuffs_gif__status status =
+    wuffs_base__status status =
         wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
     if (status != WUFFS_GIF__STATUS_OK) {
       FAIL("decode_config: got %" PRIi32 " (%s)", status,
@@ -295,7 +295,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
     size_t old_ri = src.ri;
 
-    wuffs_gif__status status =
+    wuffs_base__status status =
         wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
 
     if (status == WUFFS_GIF__STATUS_OK) {
@@ -363,7 +363,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
       return false;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    wuffs_gif__status status =
+    wuffs_base__status status =
         wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
     if (status != WUFFS_GIF__SUSPENSION_END_OF_DATA) {
       FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
@@ -396,7 +396,7 @@ void test_wuffs_gif_call_sequence() {
   wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_gif__status status =
+  wuffs_base__status status =
       wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
   if (status != WUFFS_GIF__ERROR_INVALID_CALL_SEQUENCE) {
     FAIL("decode_frame: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,
@@ -425,7 +425,7 @@ bool do_test_wuffs_gif_decode_animated(
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_gif__status status =
+  wuffs_base__status status =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (status != WUFFS_GIF__STATUS_OK) {
     FAIL("decode_config: got %" PRIi32 " (%s)", status,
@@ -523,7 +523,7 @@ void test_wuffs_gif_decode_frame_out_of_bounds() {
   wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-  wuffs_gif__status s =
+  wuffs_base__status s =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (s) {
     FAIL("decode_config: %s", wuffs_gif__status__string(s));
@@ -594,7 +594,7 @@ void test_wuffs_gif_decode_input_is_a_png() {
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_gif__status status =
+  wuffs_base__status status =
       wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
   if (status != WUFFS_GIF__ERROR_BAD_HEADER) {
     FAIL("decode_config: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", status,

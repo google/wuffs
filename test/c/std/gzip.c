@@ -80,7 +80,7 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    wuffs_gzip__status s =
+    wuffs_base__status s =
         wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
 
     if (s == WUFFS_GZIP__STATUS_OK) {
@@ -127,7 +127,7 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
     int i;
     for (i = 0; i < 2; i++) {
       wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-      wuffs_gzip__status want = 0;
+      wuffs_base__status want = 0;
       if (i == 0) {
         if (end_limit == 0) {
           continue;
@@ -144,7 +144,7 @@ bool do_test_wuffs_gzip_checksum(bool ignore_checksum, uint32_t bad_checksum) {
                    : WUFFS_GZIP__STATUS_OK;
       }
 
-      wuffs_gzip__status status =
+      wuffs_base__status status =
           wuffs_gzip__decoder__decode(&dec, got_writer, src_reader);
       if (status != want) {
         FAIL("end_limit=%d: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
