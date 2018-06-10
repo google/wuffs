@@ -83,8 +83,11 @@ func Do(args []string) error {
 			if err := expandBangBangInsert(&buf, baseImplC, map[string]func(*buffer) error{
 				"// !! INSERT base-public.h.\n": insertBasePublicH,
 				"// !! INSERT wuffs_base__status__string data.\n": func(b *buffer) error {
-					// TODO.
-					return nil
+					messages := [256]string{}
+					for _, z := range builtin.StatusList {
+						messages[uint8(z.Value)] = z.Message
+					}
+					return genStatusStringData(b, "wuffs_base__", &messages)
 				},
 			}); err != nil {
 				return nil, err
@@ -231,6 +234,36 @@ func insertBasePublicH(buf *buffer) error {
 		return err
 	}
 	buf.writeb('\n')
+	return nil
+}
+
+func genStatusStringData(b *buffer, pkgPrefix string, ss *[256]string) error {
+	data := []byte{0x00}
+	offsets := [256]uint16{}
+	for i, s := range ss {
+		if s == "" {
+			continue
+		}
+		if len(data) > 0xFFFF {
+			return errors.New("status string messages are too long")
+		}
+		offsets[i] = uint16(len(data))
+		data = append(data, s...)
+		data = append(data, 0x00)
+	}
+
+	b.printf("static const char %sstatus__string_data[] = {\n", pkgPrefix)
+	for _, x := range data {
+		b.printf("0x%02X,", x)
+	}
+	b.writes("};\n\n")
+
+	b.printf("static const uint16_t %sstatus__string_offsets[] = {\n", pkgPrefix)
+	for _, x := range offsets {
+		b.printf("0x%04X,", x)
+	}
+	b.writes("};\n\n")
+
 	return nil
 }
 
