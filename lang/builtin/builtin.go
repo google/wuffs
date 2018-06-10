@@ -21,6 +21,7 @@ import (
 
 type Status struct {
 	Keyword t.ID
+	Value   int8
 	Message string
 }
 
@@ -37,21 +38,21 @@ func (z Status) String() string {
 
 var StatusList = [...]Status{
 	// TODO: sort these somehow, when the list has stabilized?
-	{0, "ok"},
-	{t.IDError, "bad wuffs version"},
-	{t.IDError, "bad sizeof receiver"},
-	{t.IDError, "bad receiver"},
-	{t.IDError, "bad argument"},
-	{t.IDError, "check_wuffs_version not called"},
-	{t.IDError, "check_wuffs_version called twice"},
-	{t.IDError, "invalid I/O operation"},
-	{t.IDError, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
-	{t.IDError, "unexpected EOF"},    // Used if reading when closed == true.
-	{t.IDSuspension, "short read"},   // Used if reading when closed == false.
-	{t.IDSuspension, "short write"},
-	{t.IDError, "cannot return a suspension"},
-	{t.IDError, "invalid call sequence"},
-	{t.IDSuspension, "end of data"},
+	{0, 0x00, "ok"},
+	{t.IDError, -0x01, "bad wuffs version"},
+	{t.IDError, -0x02, "bad sizeof receiver"},
+	{t.IDError, -0x03, "bad receiver"},
+	{t.IDError, -0x04, "bad argument"},
+	{t.IDError, -0x10, "check_wuffs_version not called"},
+	{t.IDError, -0x11, "check_wuffs_version called twice"},
+	{t.IDError, -0x30, "invalid I/O operation"},
+	{t.IDError, -0x40, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
+	{t.IDError, -0x31, "unexpected EOF"},    // Used if reading when closed == true.
+	{t.IDSuspension, +0x02, "short read"},   // Used if reading when closed == false.
+	{t.IDSuspension, +0x03, "short write"},
+	{t.IDError, -0x20, "cannot return a suspension"},
+	{t.IDError, -0x12, "invalid call sequence"},
+	{t.IDSuspension, +0x01, "end of data"},
 }
 
 var StatusMap = map[string]Status{}
