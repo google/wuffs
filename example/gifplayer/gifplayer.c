@@ -261,7 +261,8 @@ const char* play() {
   }
 
   while (1) {
-    s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
+    s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader,
+                                         ((wuffs_base__slice_u8){}));
     if (s) {
       if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;

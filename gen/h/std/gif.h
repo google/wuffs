@@ -1511,7 +1511,8 @@ wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
 wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
-    wuffs_base__io_reader a_src);
+    wuffs_base__io_reader a_src,
+    wuffs_base__slice_u8 a_work_buffer);
 
 wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
