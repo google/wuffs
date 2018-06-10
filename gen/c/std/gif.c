@@ -1505,6 +1505,9 @@ wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src);
 
+wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
+    wuffs_gif__decoder* self);
+
 wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
     wuffs_base__image_buffer* a_dst,
@@ -2318,6 +2321,25 @@ suspend:
 exit:
   self->private_impl.status = status;
   return status;
+}
+
+// -------- func decoder.work_buffer_size
+
+wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
+    wuffs_gif__decoder* self) {
+  if (!self) {
+    return ((wuffs_base__range_ii_u64){});
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return ((wuffs_base__range_ii_u64){});
+  }
+
+  return wuffs_base__utility__make_range_ii_u64(&self->private_impl.f_util, 0,
+                                                0);
 }
 
 // -------- func decoder.decode_frame

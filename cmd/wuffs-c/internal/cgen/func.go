@@ -173,39 +173,49 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	return nil
 }
 
+func (g *gen) writeOutFieldsZeroValue(b *buffer, outFields []*a.Node) error {
+	switch len(outFields) {
+	case 0:
+		// No-op.
+	case 1:
+		if typ := outFields[0].Field().XType(); typ.IsNumType() {
+			b.writes("0")
+		} else {
+			b.writes("((")
+			if err := g.writeCTypeName(b, typ, "", ""); err != nil {
+				return err
+			}
+			b.writes("){})")
+		}
+	default:
+		return fmt.Errorf("TODO: handle structured return types")
+	}
+	return nil
+}
+
 func (g *gen) writeFuncImplHeader(b *buffer) error {
 	// Check the previous status and the "self" arg.
 	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
 		outFields := g.currFunk.astFunc.Out().Fields()
 
-		b.writes("if (!self) {")
+		b.writes("if (!self) { return ")
 		if g.currFunk.suspendible {
-			b.writes("return WUFFS_BASE__ERROR_BAD_RECEIVER;")
-		} else if len(outFields) == 0 {
-			b.writes("return;")
-		} else if len(outFields) == 1 {
-			// TODO: don't assume that the return type is an integer.
-			b.writes("return 0;")
-		} else {
-			return fmt.Errorf("TODO: handle structured return types")
+			b.writes("WUFFS_BASE__ERROR_BAD_RECEIVER")
+		} else if err := g.writeOutFieldsZeroValue(b, outFields); err != nil {
+			return err
 		}
-		b.writes("}")
+		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {" +
 			"self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED; }")
 
-		b.writes("if (self->private_impl.status < 0) {")
+		b.writes("if (self->private_impl.status < 0) { return ")
 		if g.currFunk.suspendible {
-			b.writes("return self->private_impl.status;")
-		} else if len(outFields) == 0 {
-			b.writes("return;")
-		} else if len(outFields) == 1 {
-			// TODO: don't assume that the return type is an integer.
-			b.writes("return 0;")
-		} else {
-			return fmt.Errorf("TODO: handle structured return types")
+			b.writes("self->private_impl.status")
+		} else if err := g.writeOutFieldsZeroValue(b, outFields); err != nil {
+			return err
 		}
-		b.writes("}\n")
+		b.writes(";}\n")
 	}
 
 	// For public functions, check (at runtime) the other args for bounds and

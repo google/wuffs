@@ -125,6 +125,10 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	this.call_sequence = 1
 }
 
+pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
+	return this.util.make_range_ii_u64(min_inclusive:0, max_inclusive:0)
+}
+
 pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader)() {
 	if this.call_sequence == 0 {
 		return error "invalid call sequence"
