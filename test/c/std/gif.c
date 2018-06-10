@@ -466,9 +466,9 @@ bool do_test_wuffs_gif_decode_animated(
         FAIL("decode_frame #%" PRIu32 ": dirty_rect: got (%" PRIu32 ", %" PRIu32
              ")-(%" PRIu32 ", %" PRIu32 "), want (%" PRIu32 ", %" PRIu32
              ")-(%" PRIu32 ", %" PRIu32 ")",
-             i, got.min_inclusive_x, got.min_inclusive_y, got.max_exclusive_x,
-             got.max_exclusive_y, want.min_inclusive_x, want.min_inclusive_y,
-             want.max_exclusive_x, want.max_exclusive_y);
+             i, got.min_incl_x, got.min_incl_y, got.max_excl_x, got.max_excl_y,
+             want.min_incl_x, want.min_incl_y, want.max_excl_x,
+             want.max_excl_y);
         return false;
       }
     }

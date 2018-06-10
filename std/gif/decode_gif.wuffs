@@ -126,7 +126,7 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 }
 
 pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
-	return this.util.make_range_ii_u64(min_inclusive:0, max_inclusive:0)
+	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
 pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader, work_buffer slice base.u8)() {
@@ -534,10 +534,10 @@ pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)
 		// palette update is necessary.
 	}
 	in.dst.update!(dirty_rect:this.util.make_rect_ie_u32(
-		min_inclusive_x:this.frame_rect_x0,
-		min_inclusive_y:this.frame_rect_y0,
-		max_exclusive_x:this.frame_rect_x1,
-		max_exclusive_y:this.frame_rect_y1),
+		min_incl_x:this.frame_rect_x0,
+		min_incl_y:this.frame_rect_y0,
+		max_excl_x:this.frame_rect_x1,
+		max_excl_y:this.frame_rect_y1),
 		duration:this.gc_duration, blend:true, disposal:this.gc_disposal, palette:palette)
 
 	this.previous_use_global_palette = not (use_local_palette or this.gc_has_transparent_index)

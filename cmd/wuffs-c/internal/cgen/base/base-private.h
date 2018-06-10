@@ -287,69 +287,69 @@ static inline wuffs_base__slice_u8 wuffs_base__table_u8__row(
 
 static inline wuffs_base__range_ii_u32 wuffs_base__utility__make_range_ii_u32(
     wuffs_base__utility* ignored,
-    uint32_t min_inclusive,
-    uint32_t max_inclusive) {
+    uint32_t min_incl,
+    uint32_t max_incl) {
   return ((wuffs_base__range_ii_u32){
-      .min_inclusive = min_inclusive,
-      .max_inclusive = max_inclusive,
+      .min_incl = min_incl,
+      .max_incl = max_incl,
   });
 }
 
 static inline wuffs_base__range_ie_u32 wuffs_base__utility__make_range_ie_u32(
     wuffs_base__utility* ignored,
-    uint32_t min_inclusive,
-    uint32_t max_exclusive) {
+    uint32_t min_incl,
+    uint32_t max_excl) {
   return ((wuffs_base__range_ie_u32){
-      .min_inclusive = min_inclusive,
-      .max_exclusive = max_exclusive,
+      .min_incl = min_incl,
+      .max_excl = max_excl,
   });
 }
 
 static inline wuffs_base__range_ii_u64 wuffs_base__utility__make_range_ii_u64(
     wuffs_base__utility* ignored,
-    uint64_t min_inclusive,
-    uint64_t max_inclusive) {
+    uint64_t min_incl,
+    uint64_t max_incl) {
   return ((wuffs_base__range_ii_u64){
-      .min_inclusive = min_inclusive,
-      .max_inclusive = max_inclusive,
+      .min_incl = min_incl,
+      .max_incl = max_incl,
   });
 }
 
 static inline wuffs_base__range_ie_u64 wuffs_base__utility__make_range_ie_u64(
     wuffs_base__utility* ignored,
-    uint64_t min_inclusive,
-    uint64_t max_exclusive) {
+    uint64_t min_incl,
+    uint64_t max_excl) {
   return ((wuffs_base__range_ie_u64){
-      .min_inclusive = min_inclusive,
-      .max_exclusive = max_exclusive,
+      .min_incl = min_incl,
+      .max_excl = max_excl,
   });
 }
 
 static inline wuffs_base__rect_ii_u32 wuffs_base__utility__make_rect_ii_u32(
     wuffs_base__utility* ignored,
-    uint32_t min_inclusive_x,
-    uint32_t min_inclusive_y,
-    uint32_t max_inclusive_x,
-    uint32_t max_inclusive_y) {
+    uint32_t min_incl_x,
+    uint32_t min_incl_y,
+    uint32_t max_incl_x,
+    uint32_t max_incl_y) {
   return ((wuffs_base__rect_ii_u32){
-      .min_inclusive_x = min_inclusive_x,
-      .min_inclusive_y = min_inclusive_y,
-      .max_inclusive_x = max_inclusive_x,
-      .max_inclusive_y = max_inclusive_y,
+      .min_incl_x = min_incl_x,
+      .min_incl_y = min_incl_y,
+      .max_incl_x = max_incl_x,
+      .max_incl_y = max_incl_y,
   });
 }
 
 static inline wuffs_base__rect_ie_u32 wuffs_base__utility__make_rect_ie_u32(
     wuffs_base__utility* ignored,
-    uint32_t min_inclusive_x,
-    uint32_t min_inclusive_y,
-    uint32_t max_exclusive_x,
-    uint32_t max_exclusive_y) {
+    uint32_t min_incl_x,
+    uint32_t min_incl_y,
+    uint32_t max_excl_x,
+    uint32_t max_excl_y) {
   return ((wuffs_base__rect_ie_u32){
-      .min_inclusive_x = min_inclusive_x,
-      .min_inclusive_y = min_inclusive_y,
-      .max_exclusive_x = max_exclusive_x,
-      .max_exclusive_y = max_exclusive_y,
+      .min_incl_x = min_incl_x,
+      .min_incl_y = min_incl_y,
+      .max_excl_x = max_excl_x,
+      .max_excl_y = max_excl_y,
   });
 }
 

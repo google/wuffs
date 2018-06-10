@@ -118,14 +118,12 @@ var Funcs = []string{
 
 	// ---- utility
 
-	"utility.make_range_ii_u32(min_inclusive u32, max_inclusive u32)(ret range_ii_u32)",
-	"utility.make_range_ie_u32(min_inclusive u32, max_exclusive u32)(ret range_ie_u32)",
-	"utility.make_range_ii_u64(min_inclusive u64, max_inclusive u64)(ret range_ii_u64)",
-	"utility.make_range_ie_u64(min_inclusive u64, max_exclusive u64)(ret range_ie_u64)",
-	"utility.make_rect_ii_u32(min_inclusive_x u32, min_inclusive_y u32," +
-		"max_inclusive_x u32, max_inclusive_y u32)(ret rect_ii_u32)",
-	"utility.make_rect_ie_u32(min_inclusive_x u32, min_inclusive_y u32," +
-		"max_exclusive_x u32, max_exclusive_y u32)(ret rect_ie_u32)",
+	"utility.make_range_ii_u32(min_incl u32, max_incl u32)(ret range_ii_u32)",
+	"utility.make_range_ie_u32(min_incl u32, max_excl u32)(ret range_ie_u32)",
+	"utility.make_range_ii_u64(min_incl u64, max_incl u64)(ret range_ii_u64)",
+	"utility.make_range_ie_u64(min_incl u64, max_excl u64)(ret range_ie_u64)",
+	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32)(ret rect_ii_u32)",
+	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32)(ret rect_ie_u32)",
 
 	// ---- image_buffer
 

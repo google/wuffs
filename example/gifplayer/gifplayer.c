@@ -128,12 +128,11 @@ void compose(wuffs_base__image_buffer* ib) {
 
   wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
   size_t y;
-  for (y = bounds.min_inclusive_y; y < bounds.max_exclusive_y; y++) {
+  for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32argb* d =
-        dst_buffer + (y * width) + bounds.min_inclusive_x;
-    uint8_t* s = image_buffer + (y * width) + bounds.min_inclusive_x;
-    for (x = bounds.min_inclusive_x; x < bounds.max_exclusive_x; x++) {
+    wuffs_base__color_u32argb* d = dst_buffer + (y * width) + bounds.min_incl_x;
+    uint8_t* s = image_buffer + (y * width) + bounds.min_incl_x;
+    for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       uint32_t index = *s++;
       wuffs_base__color_u32argb c = load_u32le(palette + 4 * index);
       if (c) {

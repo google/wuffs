@@ -296,10 +296,10 @@ wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
                                          uint32_t x1,
                                          uint32_t y1) {
   wuffs_base__rect_ie_u32 ret;
-  ret.min_inclusive_x = x0;
-  ret.min_inclusive_y = y0;
-  ret.max_exclusive_x = x1;
-  ret.max_exclusive_y = y1;
+  ret.min_incl_x = x0;
+  ret.min_incl_y = y0;
+  ret.max_excl_x = x1;
+  ret.max_excl_y = y1;
   return ret;
 }
 
@@ -339,17 +339,16 @@ const char* copy_to_io_buffer_from_image_buffer(wuffs_base__io_buffer* dst,
     wuffs_base__table_u8 tab = wuffs_base__image_buffer__plane(src, p);
     wuffs_base__rect_ie_u32 r = wuffs_base__image_buffer__dirty_rect(src);
     uint32_t y;
-    for (y = r.min_inclusive_y; y < r.max_exclusive_y; y++) {
+    for (y = r.min_incl_y; y < r.max_excl_y; y++) {
       wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
-      if ((r.min_inclusive_x >= r.max_exclusive_x) ||
-          (r.max_exclusive_x > row.len)) {
+      if ((r.min_incl_x >= r.max_excl_x) || (r.max_excl_x > row.len)) {
         break;
       }
-      uint32_t n = r.max_exclusive_x - r.min_inclusive_x;
+      uint32_t n = r.max_excl_x - r.min_incl_x;
       if (n > (dst->len - dst->wi)) {
         return "copy_to_io_buffer_from_image_buffer: dst buffer is too small";
       }
-      memmove(dst->ptr + dst->wi, row.ptr + r.min_inclusive_x, n);
+      memmove(dst->ptr + dst->wi, row.ptr + r.min_incl_x, n);
       dst->wi += n;
     }
   }
