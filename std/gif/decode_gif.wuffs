@@ -79,6 +79,8 @@ pub struct decoder?(
 	// There are 7056000 flicks per centisecond.
 	gc_duration base.u64[..0xFFFF * 7056000],
 
+	frame_count_value base.u64,
+
 	frame_rect_x0 base.u32,
 	frame_rect_y0 base.u32,
 	frame_rect_x1 base.u32,
@@ -125,6 +127,10 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 	this.call_sequence = 1
 }
 
+pub func decoder.frame_count()(ret base.u64) {
+	return this.frame_count_value
+}
+
 pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
 	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
@@ -152,6 +158,7 @@ pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader, wo
 	}
 
 	this.decode_id_part1?(dst:in.dst, src:in.src)
+	this.frame_count_value ~sat+= 1
 }
 
 pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {

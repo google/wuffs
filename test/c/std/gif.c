@@ -484,6 +484,13 @@ bool do_test_wuffs_gif_decode_animated(
     return false;
   }
 
+  uint64_t got_num_frames = wuffs_gif__decoder__frame_count(&dec);
+  if (got_num_frames != want_num_frames) {
+    FAIL("frame_count: got %" PRIu64 ", want %" PRIu32, got_num_frames,
+         want_num_frames);
+    return false;
+  }
+
   // TODO: test calling wuffs_base__image_buffer__loop.
   return true;
 }

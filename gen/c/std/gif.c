@@ -1382,6 +1382,7 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
+    uint64_t f_frame_count_value;
     uint32_t f_frame_rect_x0;
     uint32_t f_frame_rect_y0;
     uint32_t f_frame_rect_x1;
@@ -1478,6 +1479,8 @@ wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
     wuffs_base__image_config* a_dst,
     wuffs_base__io_reader a_src);
+
+uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
 
 wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
     wuffs_gif__decoder* self);
@@ -2298,6 +2301,23 @@ exit:
   return status;
 }
 
+// -------- func decoder.frame_count
+
+uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return 0;
+  }
+
+  return self->private_impl.f_frame_count_value;
+}
+
 // -------- func decoder.work_buffer_size
 
 wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
@@ -2374,6 +2394,8 @@ wuffs_base__status wuffs_gif__decoder__decode_frame(
     if (status) {
       goto suspend;
     }
+    wuffs_base__u64__sat_add_indirect(&self->private_impl.f_frame_count_value,
+                                      1);
 
     goto ok;
   ok:
