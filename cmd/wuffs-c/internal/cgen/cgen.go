@@ -385,9 +385,8 @@ func (g *gen) genHeader(b *buffer) error {
 }
 
 func (g *gen) genImpl(b *buffer) error {
-	b.writes("#ifndef WUFFS_BASE_PRIVATE_H\n#define WUFFS_BASE_PRIVATE_H\n\n")
 	b.writes(basePrivateH)
-	b.writes("#endif  // WUFFS_BASE_PRIVATE_H\n\n")
+	b.writeb('\n')
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)

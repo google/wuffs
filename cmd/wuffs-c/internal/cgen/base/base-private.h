@@ -1,5 +1,8 @@
 // After editing this file, run "go generate" in the parent directory.
 
+#ifndef WUFFS_BASE_PRIVATE_H
+#define WUFFS_BASE_PRIVATE_H
+
 // Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -544,3 +547,5 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
+
+#endif  // WUFFS_BASE_PRIVATE_H

@@ -1978,6 +1978,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
+
 #endif  // WUFFS_BASE_PRIVATE_H
 
 // ---------------- Status Codes Implementations
