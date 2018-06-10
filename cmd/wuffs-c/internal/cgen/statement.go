@@ -329,7 +329,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		b.writes("status = ")
 		retKeyword := t.IDStatus
 		if retExpr == nil {
-			b.printf("%s%s", g.PKGPREFIX, "STATUS_OK")
+			b.writes("WUFFS_BASE__STATUS_OK")
 		} else {
 			retKeyword = retExpr.Operator()
 			// TODO: check that retExpr has no call-suspendibles.
@@ -352,8 +352,8 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			b.writes("goto ok;")
 		default:
 			g.currFunk.hasGotoOK = true
-			b.printf("if (status == 0) { goto ok; } else if (status > 0) { "+
-				"status = %sERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;", g.PKGPREFIX)
+			b.writes("if (status == 0) { goto ok; } else if (status > 0) { " +
+				"status = WUFFS_BASE__ERROR_CANNOT_RETURN_A_SUSPENSION; } goto exit;")
 		}
 		return nil
 	}

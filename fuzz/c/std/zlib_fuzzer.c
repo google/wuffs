@@ -60,7 +60,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   while (true) {
     dst.wi = 0;
     s = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
-    if (s != WUFFS_ZLIB__SUSPENSION_SHORT_WRITE) {
+    if (s != WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
       ret = wuffs_zlib__status__string(s);
       break;
     }

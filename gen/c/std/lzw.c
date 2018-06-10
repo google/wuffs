@@ -1271,24 +1271,6 @@ extern "C" {
 
 #define wuffs_lzw__packageid 1316776  // 0x001417A8
 
-#define WUFFS_LZW__STATUS_OK 0                          // 0x00000000
-#define WUFFS_LZW__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
-#define WUFFS_LZW__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
-#define WUFFS_LZW__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
-#define WUFFS_LZW__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
-#define WUFFS_LZW__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -268435456  // 0xF0000000
-#define WUFFS_LZW__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -285212672                                                    // 0xEF000000
-#define WUFFS_LZW__ERROR_INVALID_I_O_OPERATION -805306368       // 0xD0000000
-#define WUFFS_LZW__ERROR_CLOSED_FOR_WRITES -1073741824          // 0xC0000000
-#define WUFFS_LZW__ERROR_UNEXPECTED_EOF -822083584              // 0xCF000000
-#define WUFFS_LZW__SUSPENSION_SHORT_READ 33554432               // 0x02000000
-#define WUFFS_LZW__SUSPENSION_SHORT_WRITE 50331648              // 0x03000000
-#define WUFFS_LZW__ERROR_CANNOT_RETURN_A_SUSPENSION -536870912  // 0xE0000000
-#define WUFFS_LZW__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
-#define WUFFS_LZW__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
-
 #define WUFFS_LZW__ERROR_BAD_CODE -15460440               // 0xFF1417A8
 #define WUFFS_LZW__ERROR_CYCLICAL_PREFIX_CHAIN -32237656  // 0xFE1417A8
 
@@ -1982,17 +1964,17 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
     return;
   }
   if (sizeof(*self) != sizeof_star_self) {
-    self->private_impl.status = WUFFS_LZW__ERROR_BAD_SIZEOF_RECEIVER;
+    self->private_impl.status = WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;
     return;
   }
   if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
-    self->private_impl.status = WUFFS_LZW__ERROR_BAD_WUFFS_VERSION;
+    self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (self->private_impl.magic != 0) {
     self->private_impl.status =
-        WUFFS_LZW__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
     return;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -2008,13 +1990,14 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
     return;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_LZW__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return;
   }
   if (a_lw < 2 || a_lw > 8) {
-    self->private_impl.status = WUFFS_LZW__ERROR_BAD_ARGUMENT;
+    self->private_impl.status = WUFFS_BASE__ERROR_BAD_ARGUMENT;
     return;
   }
 
@@ -2027,10 +2010,11 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                                               wuffs_base__io_writer a_dst,
                                               wuffs_base__io_reader a_src) {
   if (!self) {
-    return WUFFS_LZW__ERROR_BAD_RECEIVER;
+    return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = WUFFS_LZW__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
@@ -2136,7 +2120,7 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
       if (v_code < v_clear_code) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         if (ioptr_dst == iobounds1_dst) {
-          status = WUFFS_LZW__SUSPENSION_SHORT_WRITE;
+          status = WUFFS_BASE__SUSPENSION_SHORT_WRITE;
           goto suspend;
         }
         *ioptr_dst++ = ((uint8_t)(v_code));
@@ -2151,7 +2135,7 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         v_width = (v_literal_width + 1);
         goto label_0_continue;
       } else if (v_code == v_end_code) {
-        status = WUFFS_LZW__STATUS_OK;
+        status = WUFFS_BASE__STATUS_OK;
         goto ok;
       } else if (v_code <= v_save_code) {
         v_s = 4095;
@@ -2184,7 +2168,7 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
             goto label_1_break;
           }
           v_s = ((v_s + ((uint32_t)((v_n_copied & 4095)))) & 4095);
-          status = WUFFS_LZW__SUSPENSION_SHORT_WRITE;
+          status = WUFFS_BASE__SUSPENSION_SHORT_WRITE;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
       label_1_break:;
@@ -2242,9 +2226,9 @@ exit:
 
 short_read_src:
   if (wuffs_base__io_reader__is_eof(a_src)) {
-    status = WUFFS_LZW__ERROR_UNEXPECTED_EOF;
+    status = WUFFS_BASE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = WUFFS_LZW__SUSPENSION_SHORT_READ;
+  status = WUFFS_BASE__SUSPENSION_SHORT_READ;
   goto suspend;
 }

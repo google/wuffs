@@ -82,8 +82,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     while (true) {
       s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader);
       if (s) {
-        if ((s == WUFFS_GIF__SUSPENSION_END_OF_DATA) && seen_ok) {
-          s = WUFFS_GIF__STATUS_OK;
+        if ((s == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
+          s = WUFFS_BASE__STATUS_OK;
         }
         ret = wuffs_gif__status__string(s);
         goto exit;

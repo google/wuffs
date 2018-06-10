@@ -214,7 +214,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			if z.Message == "" {
 				return fmt.Errorf("no status code for %q", msg)
 			}
-			status.name = strings.ToUpper(g.cName(z.String()))
+			status.name = strings.ToUpper(cName(z.String(), "WUFFS_BASE__"))
 		}
 		b.writes(status.name)
 		return nil

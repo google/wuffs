@@ -96,7 +96,6 @@ func Do(args []string) error {
 
 		} else {
 			g := &gen{
-				PKGPREFIX: "WUFFS_" + strings.ToUpper(pkgName) + "__",
 				pkgPrefix: "wuffs_" + pkgName + "__",
 				pkgName:   pkgName,
 				tm:        tm,
@@ -246,7 +245,6 @@ func genStatusStringData(b *buffer, pkgPrefix string, ss *[256]string) error {
 }
 
 type gen struct {
-	PKGPREFIX string // e.g. "WUFFS_JPEG__"
 	pkgPrefix string // e.g. "wuffs_jpeg__"
 	pkgName   string // e.g. "jpeg"
 
@@ -327,21 +325,6 @@ func (g *gen) genHeader(b *buffer) error {
 
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)
-
-	for _, z := range builtin.StatusList {
-		name := z.Message
-		if z.Keyword == t.IDError {
-			name = "error " + name
-		} else if z.Keyword == t.IDSuspension {
-			name = "suspension " + name
-		} else {
-			name = "status " + name
-		}
-		code := int32(z.Value) << 24
-		b.printf("#define %s %d // 0x%08X\n",
-			strings.ToUpper(cName(name, g.PKGPREFIX)), code, uint32(code))
-	}
-	b.writes("\n")
 
 	for _, s := range g.statusList {
 		code := (int32(s.value) << 24) | int32(pkgID)
@@ -624,7 +607,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// For API/ABI compatibility, the very first field in the struct's
 	// private_impl must be the status code. This lets the initializer callee
-	// set "self->private_impl.status = WUFFS_ETC__ERROR_BAD_WUFFS_VERSION;"
+	// set "self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
 	structName := n.QID().Str(g.tm)
@@ -773,22 +756,22 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	if err := g.writeInitializerSignature(b, n, false); err != nil {
 		return err
 	}
-	b.printf("{\n")
-	b.printf("if (!self) { return; }\n")
+	b.writes("{\n")
+	b.writes("if (!self) { return; }\n")
 
-	b.printf("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.printf("self->private_impl.status = %sERROR_BAD_SIZEOF_RECEIVER;\n", g.PKGPREFIX)
-	b.printf("return;\n")
-	b.printf("}\n")
-	b.printf("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
+	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
+	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;\n")
+	b.writes("return;\n")
+	b.writes("}\n")
+	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.printf("self->private_impl.status = %sERROR_BAD_WUFFS_VERSION;\n", g.PKGPREFIX)
-	b.printf("return;\n")
-	b.printf("}\n")
-	b.printf("if (self->private_impl.magic != 0) {\n")
-	b.printf("self->private_impl.status = %sERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n", g.PKGPREFIX)
-	b.printf("return;\n")
-	b.printf("}\n")
+	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;\n")
+	b.writes("return;\n")
+	b.writes("}\n")
+	b.writes("if (self->private_impl.magic != 0) {\n")
+	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n")
+	b.writes("return;\n")
+	b.writes("}\n")
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 

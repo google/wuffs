@@ -127,16 +127,13 @@ const baseImplC = "" +
 	""
 
 type template_args_short_read struct {
-	PKGPREFIX string
-	name      string
+	name string
 }
 
 func template_short_read(b *buffer, args template_args_short_read) error {
-	b.printf("short_read_%s:\nif (wuffs_base__io_reader__is_eof(a_%s)) {\nstatus = %sERROR_UNEXPECTED_EOF;\ngoto exit;\n}\nstatus = %sSUSPENSION_SHORT_READ;\ngoto suspend;\n",
+	b.printf("short_read_%s:\nif (wuffs_base__io_reader__is_eof(a_%s)) {\nstatus = WUFFS_BASE__ERROR_UNEXPECTED_EOF;\ngoto exit;\n}\nstatus = WUFFS_BASE__SUSPENSION_SHORT_READ;\ngoto suspend;\n",
 		args.name,
 		args.name,
-		args.PKGPREFIX,
-		args.PKGPREFIX,
 	)
 	return nil
 }

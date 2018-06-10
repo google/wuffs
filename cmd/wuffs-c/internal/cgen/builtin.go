@@ -374,11 +374,8 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 	if recvTyp.QID()[1] == t.IDIOReader {
 		switch method.Ident() {
 		case t.IDUnreadU8:
-			b.printf("if (ioptr_src == iobounds0orig_src) { status = %sERROR_INVALID_I_O_OPERATION;",
-				g.PKGPREFIX)
-			b.writes("goto exit;")
-			b.writes("}\n")
-			b.printf("ioptr_src--;\n")
+			b.writes("if (ioptr_src == iobounds0orig_src) {" +
+				"status = WUFFS_BASE__ERROR_INVALID_I_O_OPERATION; goto exit; } ioptr_src--;\n")
 			return nil
 
 		case t.IDReadU8:
@@ -462,10 +459,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 		switch method.Ident() {
 		case t.IDWriteU8:
 			if !n.ProvenNotToSuspend() {
-				b.printf("if (ioptr_dst == iobounds1_dst) { status = %sSUSPENSION_SHORT_WRITE;",
-					g.PKGPREFIX)
-				b.writes("goto suspend;")
-				b.writes("}\n")
+				b.writes("if (ioptr_dst == iobounds1_dst) { status = WUFFS_BASE__SUSPENSION_SHORT_WRITE; goto suspend; }\n")
 			}
 
 			b.printf("*ioptr_dst++ = ")

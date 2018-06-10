@@ -21,12 +21,12 @@
 // This file has a .h extension, not a .c extension, so that Go tools such as
 // "go generate" don't try to build it as part of the Go package, via cgo.
 
-template short_read(string qPKGPREFIXq, string qnameq) {
+template short_read(string qnameq) {
 short_read_qnameq:
   if (wuffs_base__io_reader__is_eof(a_qnameq)) {
-    status = qPKGPREFIXqERROR_UNEXPECTED_EOF;
+    status = WUFFS_BASE__ERROR_UNEXPECTED_EOF;
     goto exit;
   }
-  status = qPKGPREFIXqSUSPENSION_SHORT_READ;
+  status = WUFFS_BASE__SUSPENSION_SHORT_READ;
   goto suspend;
 }

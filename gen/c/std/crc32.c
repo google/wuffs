@@ -1271,24 +1271,6 @@ extern "C" {
 
 #define wuffs_crc32__packageid 810620  // 0x000C5E7C
 
-#define WUFFS_CRC32__STATUS_OK 0                          // 0x00000000
-#define WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
-#define WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
-#define WUFFS_CRC32__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
-#define WUFFS_CRC32__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
-#define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -268435456  // 0xF0000000
-#define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -285212672                                                      // 0xEF000000
-#define WUFFS_CRC32__ERROR_INVALID_I_O_OPERATION -805306368       // 0xD0000000
-#define WUFFS_CRC32__ERROR_CLOSED_FOR_WRITES -1073741824          // 0xC0000000
-#define WUFFS_CRC32__ERROR_UNEXPECTED_EOF -822083584              // 0xCF000000
-#define WUFFS_CRC32__SUSPENSION_SHORT_READ 33554432               // 0x02000000
-#define WUFFS_CRC32__SUSPENSION_SHORT_WRITE 50331648              // 0x03000000
-#define WUFFS_CRC32__ERROR_CANNOT_RETURN_A_SUSPENSION -536870912  // 0xE0000000
-#define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
-#define WUFFS_CRC32__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
-
 const char* wuffs_crc32__status__string(wuffs_base__status s);
 
 // ---------------- Public Consts
@@ -2319,17 +2301,17 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
     return;
   }
   if (sizeof(*self) != sizeof_star_self) {
-    self->private_impl.status = WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER;
+    self->private_impl.status = WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;
     return;
   }
   if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) ||
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
-    self->private_impl.status = WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION;
+    self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;
     return;
   }
   if (self->private_impl.magic != 0) {
     self->private_impl.status =
-        WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;
     return;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -2346,7 +2328,7 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     self->private_impl.status =
-        WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
   }
   if (self->private_impl.status < 0) {
     return 0;

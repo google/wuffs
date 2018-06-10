@@ -83,11 +83,11 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
     wuffs_base__status s =
         wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (s == WUFFS_ZLIB__STATUS_OK) {
+    if (s == WUFFS_BASE__STATUS_OK) {
       return NULL;
     }
-    if ((wlimit && (s == WUFFS_ZLIB__SUSPENSION_SHORT_WRITE)) ||
-        (rlimit && (s == WUFFS_ZLIB__SUSPENSION_SHORT_READ))) {
+    if ((wlimit && (s == WUFFS_BASE__SUSPENSION_SHORT_WRITE)) ||
+        (rlimit && (s == WUFFS_BASE__SUSPENSION_SHORT_READ))) {
       continue;
     }
     return wuffs_zlib__status__string(s);
@@ -136,11 +136,11 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
           return false;
         }
         set_reader_limit(&src_reader, src.wi - (uint64_t)(end_limit));
-        want = WUFFS_ZLIB__SUSPENSION_SHORT_READ;
+        want = WUFFS_BASE__SUSPENSION_SHORT_READ;
       } else {
         want = (bad_checksum && !ignore_checksum)
                    ? WUFFS_ZLIB__ERROR_BAD_CHECKSUM
-                   : WUFFS_ZLIB__STATUS_OK;
+                   : WUFFS_BASE__STATUS_OK;
       }
 
       wuffs_base__status status =

@@ -127,11 +127,11 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
     wuffs_base__status s =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (s == WUFFS_DEFLATE__STATUS_OK) {
+    if (s == WUFFS_BASE__STATUS_OK) {
       return NULL;
     }
-    if ((wlimit && (s == WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE)) ||
-        (rlimit && (s == WUFFS_DEFLATE__SUSPENSION_SHORT_READ))) {
+    if ((wlimit && (s == WUFFS_BASE__SUSPENSION_SHORT_WRITE)) ||
+        (rlimit && (s == WUFFS_BASE__SUSPENSION_SHORT_READ))) {
       continue;
     }
     return wuffs_deflate__status__string(s);
@@ -236,18 +236,17 @@ void test_wuffs_deflate_decode_split_src() {
     wuffs_base__status s1 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (s0 != WUFFS_DEFLATE__SUSPENSION_SHORT_READ) {
+    if (s0 != WUFFS_BASE__SUSPENSION_SHORT_READ) {
       FAIL("i=%d: s0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s0,
-           wuffs_deflate__status__string(s0),
-           WUFFS_DEFLATE__SUSPENSION_SHORT_READ,
-           wuffs_deflate__status__string(WUFFS_DEFLATE__SUSPENSION_SHORT_READ));
+           wuffs_deflate__status__string(s0), WUFFS_BASE__SUSPENSION_SHORT_READ,
+           wuffs_deflate__status__string(WUFFS_BASE__SUSPENSION_SHORT_READ));
       return;
     }
 
-    if (s1 != WUFFS_DEFLATE__STATUS_OK) {
+    if (s1 != WUFFS_BASE__STATUS_OK) {
       FAIL("i=%d: s1: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, s1,
-           wuffs_deflate__status__string(s1), WUFFS_DEFLATE__STATUS_OK,
-           wuffs_deflate__status__string(WUFFS_DEFLATE__STATUS_OK));
+           wuffs_deflate__status__string(s1), WUFFS_BASE__STATUS_OK,
+           wuffs_deflate__status__string(WUFFS_BASE__STATUS_OK));
       return;
     }
 
@@ -318,8 +317,8 @@ void test_wuffs_deflate_history_full() {
 
     if (!do_test_wuffs_deflate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
-            i >= 0 ? WUFFS_DEFLATE__STATUS_OK
-                   : WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE)) {
+            i >= 0 ? WUFFS_BASE__STATUS_OK
+                   : WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
       return;
     }
 
@@ -385,7 +384,7 @@ void test_wuffs_deflate_history_partial() {
 
     if (!do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
                                        starting_history_index, fragment_length,
-                                       WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE)) {
+                                       WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
       return;
     }
 

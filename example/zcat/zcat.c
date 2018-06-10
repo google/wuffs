@@ -90,13 +90,13 @@ static const char* decode() {
         ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
       }
 
-      if (s == WUFFS_GZIP__STATUS_OK) {
+      if (s == WUFFS_BASE__STATUS_OK) {
         return NULL;
       }
-      if (s == WUFFS_GZIP__SUSPENSION_SHORT_READ) {
+      if (s == WUFFS_BASE__SUSPENSION_SHORT_READ) {
         break;
       }
-      if (s != WUFFS_GZIP__SUSPENSION_SHORT_WRITE) {
+      if (s != WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
         return wuffs_gzip__status__string(s);
       }
     }

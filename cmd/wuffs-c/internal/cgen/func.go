@@ -180,19 +180,19 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 
 		b.writes("if (!self) {")
 		if g.currFunk.suspendible {
-			b.printf("return %sERROR_BAD_RECEIVER;", g.PKGPREFIX)
+			b.writes("return WUFFS_BASE__ERROR_BAD_RECEIVER;")
 		} else if len(outFields) == 0 {
-			b.printf("return;")
+			b.writes("return;")
 		} else if len(outFields) == 1 {
 			// TODO: don't assume that the return type is an integer.
-			b.printf("return 0;")
+			b.writes("return 0;")
 		} else {
 			return fmt.Errorf("TODO: handle structured return types")
 		}
 		b.writes("}")
 
-		b.printf("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {"+
-			"self->private_impl.status = %sERROR_CHECK_WUFFS_VERSION_NOT_CALLED; }", g.PKGPREFIX)
+		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {" +
+			"self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED; }")
 
 		b.writes("if (self->private_impl.status < 0) {")
 		if g.currFunk.suspendible {
@@ -318,8 +318,7 @@ func (g *gen) writeFuncImplFooter(b *buffer) error {
 			}
 			shortReadsSeen[sr] = struct{}{}
 			if err := template_short_read(b, template_args_short_read{
-				PKGPREFIX: g.PKGPREFIX,
-				name:      sr,
+				name: sr,
 			}); err != nil {
 				return err
 			}
@@ -389,12 +388,12 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	b.writes(") {")
 	if g.currFunk.suspendible {
 		if g.currFunk.public {
-			b.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT;\n", g.PKGPREFIX)
+			b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_ARGUMENT;\n")
 		}
-		b.printf("return %sERROR_BAD_ARGUMENT;\n\n", g.PKGPREFIX)
+		b.writes("return WUFFS_BASE__ERROR_BAD_ARGUMENT;\n\n")
 	} else if !n.Receiver().IsZero() {
 		// TODO: unused code path??
-		b.printf("self->private_impl.status = %sERROR_BAD_ARGUMENT; return;", g.PKGPREFIX)
+		b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_ARGUMENT; return;")
 	} else {
 		b.printf("return;")
 	}

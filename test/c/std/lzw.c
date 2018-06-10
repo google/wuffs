@@ -101,22 +101,22 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
 
     wuffs_base__status status =
         wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
-    if (status == WUFFS_LZW__STATUS_OK) {
+    if (status == WUFFS_BASE__STATUS_OK) {
       if (src.ri != src.wi) {
         FAIL("decode returned \"ok\" but src was not exhausted");
         return false;
       }
       break;
     }
-    if ((status != WUFFS_LZW__SUSPENSION_SHORT_READ) &&
-        (status != WUFFS_LZW__SUSPENSION_SHORT_WRITE)) {
+    if ((status != WUFFS_BASE__SUSPENSION_SHORT_READ) &&
+        (status != WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
       FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s) or %" PRIi32
            " (%s)",
            status, wuffs_lzw__status__string(status),
-           WUFFS_LZW__SUSPENSION_SHORT_READ,
-           wuffs_lzw__status__string(WUFFS_LZW__SUSPENSION_SHORT_READ),
-           WUFFS_LZW__SUSPENSION_SHORT_WRITE,
-           wuffs_lzw__status__string(WUFFS_LZW__SUSPENSION_SHORT_WRITE));
+           WUFFS_BASE__SUSPENSION_SHORT_READ,
+           wuffs_lzw__status__string(WUFFS_BASE__SUSPENSION_SHORT_READ),
+           WUFFS_BASE__SUSPENSION_SHORT_WRITE,
+           wuffs_lzw__status__string(WUFFS_BASE__SUSPENSION_SHORT_WRITE));
       return false;
     }
 
