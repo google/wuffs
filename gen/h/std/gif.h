@@ -1408,12 +1408,12 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
+    uint32_t f_frame_rect_x0;
+    uint32_t f_frame_rect_y0;
+    uint32_t f_frame_rect_x1;
+    uint32_t f_frame_rect_y1;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
-    uint32_t f_dst_x0;
-    uint32_t f_dst_y0;
-    uint32_t f_dst_x1;
-    uint32_t f_dst_y1;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];

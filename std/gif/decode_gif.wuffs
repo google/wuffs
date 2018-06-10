@@ -79,13 +79,14 @@ pub struct decoder?(
 	// There are 7056000 flicks per centisecond.
 	gc_duration base.u64[..0xFFFF * 7056000],
 
+	frame_rect_x0 base.u32,
+	frame_rect_y0 base.u32,
+	frame_rect_x1 base.u32,
+	frame_rect_y1 base.u32,
+
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
 	dst_x base.u32,
 	dst_y base.u32,
-	dst_x0 base.u32,
-	dst_y0 base.u32,
-	dst_x1 base.u32,
-	dst_y1 base.u32,
 
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
@@ -381,12 +382,12 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 // overall image's width and height also requires decoding the first frame's
 // bounds (but doesn't require decoding the first frame's pixels).
 pri func decoder.decode_id_part0?(src base.io_reader)() {
-	this.dst_x0 = in.src.read_u16le?() as base.u32
-	this.dst_y0 = in.src.read_u16le?() as base.u32
-	this.dst_x1 = this.dst_x0 ~mod+ (in.src.read_u16le?() as base.u32)
-	this.dst_y1 = this.dst_y0 ~mod+ (in.src.read_u16le?() as base.u32)
-	this.dst_x = this.dst_x0
-	this.dst_y = this.dst_y0
+	this.frame_rect_x0 = in.src.read_u16le?() as base.u32
+	this.frame_rect_y0 = in.src.read_u16le?() as base.u32
+	this.frame_rect_x1 = this.frame_rect_x0 ~mod+ (in.src.read_u16le?() as base.u32)
+	this.frame_rect_y1 = this.frame_rect_y0 ~mod+ (in.src.read_u16le?() as base.u32)
+	this.dst_x = this.frame_rect_x0
+	this.dst_y = this.frame_rect_y0
 
 	// Set the image's overall width and height to be the maximum of the
 	// nominal image width and height (given in the Logical Screen Descriptor)
@@ -394,8 +395,8 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
 	// more discussion.
 	if this.call_sequence == 0 {
-		this.width = this.width.max(x:this.dst_x1)
-		this.height = this.height.max(x:this.dst_y1)
+		this.width = this.width.max(x:this.frame_rect_x1)
+		this.height = this.height.max(x:this.frame_rect_y1)
 	}
 }
 
@@ -529,10 +530,10 @@ pri func decoder.decode_id_part1?(dst ptr base.image_buffer, src base.io_reader)
 		// palette update is necessary.
 	}
 	in.dst.update!(dirty_rect:this.util.make_rect_ie_u32(
-		min_inclusive_x:this.dst_x0,
-		min_inclusive_y:this.dst_y0,
-		max_exclusive_x:this.dst_x1,
-		max_exclusive_y:this.dst_y1),
+		min_inclusive_x:this.frame_rect_x0,
+		min_inclusive_y:this.frame_rect_y0,
+		max_exclusive_x:this.frame_rect_x1,
+		max_exclusive_y:this.frame_rect_y1),
 		duration:this.gc_duration, blend:true, disposal:this.gc_disposal, palette:palette)
 
 	this.previous_use_global_palette = not (use_local_palette or this.gc_has_transparent_index)
@@ -560,7 +561,7 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		assert this.uncompressed_ri < this.uncompressed_wi via "a < b: b > a"()
 		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
 
-		if this.dst_y >= this.dst_y1 {
+		if this.dst_y >= this.frame_rect_y1 {
 			return error "too much pixel data"
 		}
 
@@ -569,10 +570,10 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 
 		dst = tab.row(y:this.dst_y)
 		if (this.dst_x as base.u64) < dst.length() {
-			if ((this.dst_x as base.u64) <= (this.dst_x1 as base.u64)) and
-				((this.dst_x1 as base.u64) <= dst.length()) {
+			if ((this.dst_x as base.u64) <= (this.frame_rect_x1 as base.u64)) and
+				((this.frame_rect_x1 as base.u64) <= dst.length()) {
 				// TODO: drop the "as base.u64"s on the next line?
-				dst = dst[this.dst_x as base.u64:this.dst_x1 as base.u64]
+				dst = dst[this.dst_x as base.u64:this.frame_rect_x1 as base.u64]
 			} else {
 				dst = dst[this.dst_x as base.u64:]
 			}
@@ -583,12 +584,12 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 			this.dst_x ~sat+= n
 		}
 
-		if this.dst_x1 <= this.dst_x {
-			this.dst_x = this.dst_x0
+		if this.frame_rect_x1 <= this.dst_x {
+			this.dst_x = this.frame_rect_x0
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
-			while (this.interlace > 0) and (this.dst_y >= this.dst_y1) {
+			while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
 				this.interlace -= 1
-				this.dst_y = this.dst_y0 ~sat+ interlace_start[this.interlace]
+				this.dst_y = this.frame_rect_y0 ~sat+ interlace_start[this.interlace]
 			}
 			continue
 		}
@@ -603,19 +604,19 @@ pri func decoder.copy_to_image_buffer?(ib ptr base.image_buffer)() {
 		// outside in.ib's bounds. This second step should be infrequent.
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
-		n = this.dst_x1 - this.dst_x
+		n = this.frame_rect_x1 - this.dst_x
 		n = n.min(x:this.uncompressed_wi - this.uncompressed_ri)
 
 		new_ri = this.uncompressed_ri ~sat+ n
 		this.uncompressed_ri = new_ri.min(x:4096)
 		this.dst_x ~sat+= n
 
-		if this.dst_x1 <= this.dst_x {
-			this.dst_x = this.dst_x0
+		if this.frame_rect_x1 <= this.dst_x {
+			this.dst_x = this.frame_rect_x0
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
-			while (this.interlace > 0) and (this.dst_y >= this.dst_y1) {
+			while (this.interlace > 0) and (this.dst_y >= this.frame_rect_y1) {
 				this.interlace -= 1
-				this.dst_y = this.dst_y0 ~sat+ interlace_start[this.interlace]
+				this.dst_y = this.frame_rect_y0 ~sat+ interlace_start[this.interlace]
 			}
 			continue
 		}

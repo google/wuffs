@@ -1408,12 +1408,12 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
+    uint32_t f_frame_rect_x0;
+    uint32_t f_frame_rect_y0;
+    uint32_t f_frame_rect_x1;
+    uint32_t f_frame_rect_y1;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
-    uint32_t f_dst_x0;
-    uint32_t f_dst_y0;
-    uint32_t f_dst_x1;
-    uint32_t f_dst_y1;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -3347,7 +3347,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
           *scratch |= ((uint64_t)(t_0)) << 56;
         }
       }
-      self->private_impl.f_dst_x0 = ((uint32_t)(t_1));
+      self->private_impl.f_frame_rect_x0 = ((uint32_t)(t_1));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -3375,7 +3375,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
           *scratch |= ((uint64_t)(t_2)) << 56;
         }
       }
-      self->private_impl.f_dst_y0 = ((uint32_t)(t_3));
+      self->private_impl.f_frame_rect_y0 = ((uint32_t)(t_3));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
@@ -3403,8 +3403,8 @@ static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
           *scratch |= ((uint64_t)(t_4)) << 56;
         }
       }
-      self->private_impl.f_dst_x1 =
-          (self->private_impl.f_dst_x0 + ((uint32_t)(t_5)));
+      self->private_impl.f_frame_rect_x1 =
+          (self->private_impl.f_frame_rect_x0 + ((uint32_t)(t_5)));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -3432,16 +3432,16 @@ static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
           *scratch |= ((uint64_t)(t_6)) << 56;
         }
       }
-      self->private_impl.f_dst_y1 =
-          (self->private_impl.f_dst_y0 + ((uint32_t)(t_7)));
+      self->private_impl.f_frame_rect_y1 =
+          (self->private_impl.f_frame_rect_y0 + ((uint32_t)(t_7)));
     }
-    self->private_impl.f_dst_x = self->private_impl.f_dst_x0;
-    self->private_impl.f_dst_y = self->private_impl.f_dst_y0;
+    self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
+    self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
     if (self->private_impl.f_call_sequence == 0) {
       self->private_impl.f_width = wuffs_base__u32__max(
-          self->private_impl.f_width, self->private_impl.f_dst_x1);
+          self->private_impl.f_width, self->private_impl.f_frame_rect_x1);
       self->private_impl.f_height = wuffs_base__u32__max(
-          self->private_impl.f_height, self->private_impl.f_dst_y1);
+          self->private_impl.f_height, self->private_impl.f_frame_rect_y1);
     }
 
     goto ok;
@@ -3743,9 +3743,10 @@ static wuffs_base__status wuffs_gif__decoder__decode_id_part1(
     wuffs_base__image_buffer__update(
         a_dst,
         wuffs_base__utility__make_rect_ie_u32(
-            &self->private_impl.f_util, self->private_impl.f_dst_x0,
-            self->private_impl.f_dst_y0, self->private_impl.f_dst_x1,
-            self->private_impl.f_dst_y1),
+            &self->private_impl.f_util, self->private_impl.f_frame_rect_x0,
+            self->private_impl.f_frame_rect_y0,
+            self->private_impl.f_frame_rect_x1,
+            self->private_impl.f_frame_rect_y1),
         self->private_impl.f_gc_duration, true,
         self->private_impl.f_gc_disposal, v_palette);
     self->private_impl.f_previous_use_global_palette =
@@ -3819,19 +3820,19 @@ label_0_continue:;
                                 .len = 4096}),
         self->private_impl.f_uncompressed_ri,
         self->private_impl.f_uncompressed_wi);
-    if (self->private_impl.f_dst_y >= self->private_impl.f_dst_y1) {
+    if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
       status = WUFFS_GIF__ERROR_TOO_MUCH_PIXEL_DATA;
       goto exit;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     if (((uint64_t)(self->private_impl.f_dst_x)) < ((uint64_t)(v_dst.len))) {
       if ((((uint64_t)(self->private_impl.f_dst_x)) <=
-           ((uint64_t)(self->private_impl.f_dst_x1))) &&
-          (((uint64_t)(self->private_impl.f_dst_x1)) <=
+           ((uint64_t)(self->private_impl.f_frame_rect_x1))) &&
+          (((uint64_t)(self->private_impl.f_frame_rect_x1)) <=
            ((uint64_t)(v_dst.len)))) {
         v_dst = wuffs_base__slice_u8__subslice_ij(
             v_dst, ((uint64_t)(self->private_impl.f_dst_x)),
-            ((uint64_t)(self->private_impl.f_dst_x1)));
+            ((uint64_t)(self->private_impl.f_frame_rect_x1)));
       } else {
         v_dst = wuffs_base__slice_u8__subslice_i(
             v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
@@ -3844,17 +3845,18 @@ label_0_continue:;
           wuffs_base__u32__min(v_new_ri, 4096);
       wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_n);
     }
-    if (self->private_impl.f_dst_x1 <= self->private_impl.f_dst_x) {
-      self->private_impl.f_dst_x = self->private_impl.f_dst_x0;
+    if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
+      self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
           ((uint32_t)(
               wuffs_gif__interlace_delta[self->private_impl.f_interlace])));
-      while ((self->private_impl.f_interlace > 0) &&
-             (self->private_impl.f_dst_y >= self->private_impl.f_dst_y1)) {
+      while (
+          (self->private_impl.f_interlace > 0) &&
+          (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1)) {
         self->private_impl.f_interlace -= 1;
         self->private_impl.f_dst_y = wuffs_base__u32__sat_add(
-            self->private_impl.f_dst_y0,
+            self->private_impl.f_frame_rect_y0,
             wuffs_gif__interlace_start[self->private_impl.f_interlace]);
       }
       goto label_0_continue;
@@ -3867,24 +3869,25 @@ label_0_continue:;
       status = WUFFS_GIF__ERROR_INTERNAL_ERROR_INCONSISTENT_RI_WI;
       goto exit;
     }
-    v_n = (self->private_impl.f_dst_x1 - self->private_impl.f_dst_x);
+    v_n = (self->private_impl.f_frame_rect_x1 - self->private_impl.f_dst_x);
     v_n = wuffs_base__u32__min(v_n, (self->private_impl.f_uncompressed_wi -
                                      self->private_impl.f_uncompressed_ri));
     v_new_ri =
         wuffs_base__u32__sat_add(self->private_impl.f_uncompressed_ri, v_n);
     self->private_impl.f_uncompressed_ri = wuffs_base__u32__min(v_new_ri, 4096);
     wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_n);
-    if (self->private_impl.f_dst_x1 <= self->private_impl.f_dst_x) {
-      self->private_impl.f_dst_x = self->private_impl.f_dst_x0;
+    if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
+      self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
           ((uint32_t)(
               wuffs_gif__interlace_delta[self->private_impl.f_interlace])));
-      while ((self->private_impl.f_interlace > 0) &&
-             (self->private_impl.f_dst_y >= self->private_impl.f_dst_y1)) {
+      while (
+          (self->private_impl.f_interlace > 0) &&
+          (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1)) {
         self->private_impl.f_interlace -= 1;
         self->private_impl.f_dst_y = wuffs_base__u32__sat_add(
-            self->private_impl.f_dst_y0,
+            self->private_impl.f_frame_rect_y0,
             wuffs_gif__interlace_start[self->private_impl.f_interlace]);
       }
       goto label_0_continue;
