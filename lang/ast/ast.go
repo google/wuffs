@@ -477,9 +477,9 @@ func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 //  - LHS:   <TypeExpr>
 type Field Node
 
-func (n *Field) Node() *Node         { return (*Node)(n) }
-func (n *Field) Name() t.ID          { return n.id2 }
-func (n *Field) XType() *TypeExpr    { return n.lhs.TypeExpr() }
+func (n *Field) Node() *Node      { return (*Node)(n) }
+func (n *Field) Name() t.ID       { return n.id2 }
+func (n *Field) XType() *TypeExpr { return n.lhs.TypeExpr() }
 
 func NewField(name t.ID, xType *TypeExpr) *Field {
 	return &Field{
@@ -837,7 +837,7 @@ func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcN
 	}
 }
 
-// Status is "error ID2" or "suspension ID2":
+// Status is "error (RHS) ID2" or "suspension (RHS) ID2":
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   <IDError|IDSuspension>
 //  - ID1:   <0|pkg> (set by calling SetPackage)
@@ -850,8 +850,9 @@ func (n *Status) Filename() string { return n.filename }
 func (n *Status) Line() uint32     { return n.line }
 func (n *Status) Keyword() t.ID    { return n.id0 }
 func (n *Status) QID() t.QID       { return t.QID{n.id1, n.id2} }
+func (n *Status) Value() *Expr     { return n.rhs.Expr() }
 
-func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message t.ID) *Status {
+func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, value *Expr, message t.ID) *Status {
 	return &Status{
 		kind:     KStatus,
 		flags:    flags,
@@ -859,6 +860,7 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, message 
 		line:     line,
 		id0:      keyword,
 		id2:      message,
+		rhs:      value.Node(),
 	}
 }
 

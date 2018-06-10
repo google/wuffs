@@ -14,10 +14,8 @@
 
 packageid "lzw "
 
-// TODO: some mechanism for fixing the error code's value, such as a trailing
-// "= 100", to maintain API stability.
-pub error "bad code"
-pub error "cyclical prefix chain"
+pub error (0x01) "bad code"
+pub error (0x02) "cyclical prefix chain"
 
 pub struct decoder?(
 	literal_width base.u32[..8],

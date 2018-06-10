@@ -16,15 +16,15 @@ packageid "gif "
 
 use "std/lzw"
 
-pub error "bad block"
-pub error "bad extension label"
-pub error "bad graphic control"
-pub error "bad header"
-pub error "bad literal width"
-pub error "not enough pixel data"
-pub error "too much pixel data"
+pub error (0x01) "bad block"
+pub error (0x02) "bad extension label"
+pub error (0x03) "bad graphic control"
+pub error (0x04) "bad header"
+pub error (0x05) "bad literal width"
+pub error (0x06) "not enough pixel data"
+pub error (0x07) "too much pixel data"
 
-pri error "internal error: inconsistent ri/wi"
+pri error (0x40) "internal error: inconsistent ri/wi"
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
