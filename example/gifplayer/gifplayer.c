@@ -56,6 +56,7 @@ uint64_t micros_since_start(struct timespec* now) {
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
+#include "../../gen/c/base.c"
 #include "../../gen/c/std/gif.c"
 #include "../../gen/c/std/lzw.c"
 

@@ -69,7 +69,14 @@ typedef struct {
 // --------
 
 // A status code is either zero (OK), positive (a recoverable suspension or
-// pause in processing) or negative (a non-recoverable error).
+// pause in processing) or negative (a non-recoverable error). Its bits:
+//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
+//  - bits 30 .. 24 are a package-namespaced numeric code
+//  - bits 23 .. 21 are reserved.
+//  - bits 20 ..  0 are the packageid (a namespace) as a base38 value.
+//
+// Do not manipulate these bits directly; they are private implementation
+// details. Use methods such as wuffs_base__status__is_error instead.
 typedef int32_t wuffs_base__status;
 
 #define WUFFS_BASE__STATUS_OK 0                          // 0x00000000

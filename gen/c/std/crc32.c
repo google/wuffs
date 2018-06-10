@@ -58,7 +58,14 @@ typedef struct {
 // --------
 
 // A status code is either zero (OK), positive (a recoverable suspension or
-// pause in processing) or negative (a non-recoverable error).
+// pause in processing) or negative (a non-recoverable error). Its bits:
+//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
+//  - bits 30 .. 24 are a package-namespaced numeric code
+//  - bits 23 .. 21 are reserved.
+//  - bits 20 ..  0 are the packageid (a namespace) as a base38 value.
+//
+// Do not manipulate these bits directly; they are private implementation
+// details. Use methods such as wuffs_base__status__is_error instead.
 typedef int32_t wuffs_base__status;
 
 #define WUFFS_BASE__STATUS_OK 0                          // 0x00000000
@@ -1262,35 +1269,27 @@ extern "C" {
 
 // ---------------- Status Codes
 
-// Status codes are int32_t values. Its bits:
-//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
-//  - bits 30 .. 10 are the packageid: a namespace.
-//  - bits  9 ..  8 are reserved.
-//  - bits  7 ..  0 are a package-namespaced numeric code.
-//
-// Do not manipulate these bits directly; they are private implementation
-// details. Use methods such as wuffs_crc32__status__is_error instead.
 typedef int32_t wuffs_crc32__status;
 
 #define wuffs_crc32__packageid 810620  // 0x000C5E7C
 
-#define WUFFS_CRC32__STATUS_OK 0                            // 0x00000000
-#define WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
-#define WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
-#define WUFFS_CRC32__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
-#define WUFFS_CRC32__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_CRC32__STATUS_OK 0                          // 0x00000000
+#define WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
+#define WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
+#define WUFFS_CRC32__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
+#define WUFFS_CRC32__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
 #define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -2147483643  // 0x80000005
+  -268435456  // 0xF0000000
 #define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -2147483642                                                      // 0x80000006
-#define WUFFS_CRC32__ERROR_INVALID_I_O_OPERATION -2147483641       // 0x80000007
-#define WUFFS_CRC32__ERROR_CLOSED_FOR_WRITES -2147483640           // 0x80000008
-#define WUFFS_CRC32__ERROR_UNEXPECTED_EOF -2147483639              // 0x80000009
-#define WUFFS_CRC32__SUSPENSION_SHORT_READ 10                      // 0x0000000A
-#define WUFFS_CRC32__SUSPENSION_SHORT_WRITE 11                     // 0x0000000B
-#define WUFFS_CRC32__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483636  // 0x8000000C
-#define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
-#define WUFFS_CRC32__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
+  -285212672                                                      // 0xEF000000
+#define WUFFS_CRC32__ERROR_INVALID_I_O_OPERATION -805306368       // 0xD0000000
+#define WUFFS_CRC32__ERROR_CLOSED_FOR_WRITES -1073741824          // 0xC0000000
+#define WUFFS_CRC32__ERROR_UNEXPECTED_EOF -822083584              // 0xCF000000
+#define WUFFS_CRC32__SUSPENSION_SHORT_READ 33554432               // 0x02000000
+#define WUFFS_CRC32__SUSPENSION_SHORT_WRITE 50331648              // 0x03000000
+#define WUFFS_CRC32__ERROR_CANNOT_RETURN_A_SUSPENSION -536870912  // 0xE0000000
+#define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
+#define WUFFS_CRC32__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
 
 bool wuffs_crc32__status__is_error(wuffs_crc32__status s);
 
@@ -1889,25 +1888,6 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
-
-static const char* wuffs_base__status__strings[15] = {
-    "ok",
-    "bad wuffs version",
-    "bad sizeof receiver",
-    "bad receiver",
-    "bad argument",
-    "check_wuffs_version not called",
-    "check_wuffs_version called twice",
-    "invalid I/O operation",
-    "closed for writes",
-    "unexpected EOF",
-    "short read",
-    "short write",
-    "cannot return a suspension",
-    "invalid call sequence",
-    "end of data",
-};
-
 #endif  // WUFFS_BASE_PRIVATE_H
 
 // ---------------- Status Codes Implementations
@@ -1916,23 +1896,55 @@ bool wuffs_crc32__status__is_error(wuffs_crc32__status s) {
   return s < 0;
 }
 
-const char* wuffs_crc32__status__strings[0] = {};
+static const char wuffs_crc32__status__string_data[] = {
+    0x00,
+};
+
+static const uint16_t wuffs_crc32__status__string_offsets[] = {
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000,
+};
 
 const char* wuffs_crc32__status__string(wuffs_crc32__status s) {
-  const char** a = NULL;
-  uint32_t n = 0;
-  switch ((s >> 10) & 0x1FFFFF) {
+  uint16_t o;
+  switch (s & 0x1FFFFF) {
     case 0:
-      a = wuffs_base__status__strings;
-      n = 15;
-      break;
+      return wuffs_base__status__string(s);
     case wuffs_crc32__packageid:
-      a = wuffs_crc32__status__strings;
-      n = 0;
+      o = wuffs_crc32__status__string_offsets[(uint8_t)(s >> 24)];
+      if (o) {
+        return wuffs_crc32__status__string_data + o;
+      }
       break;
   }
-  uint32_t i = s & 0xFF;
-  return i < n ? a[i] : "unknown status";
+  return "unknown status";
 }
 
 // ---------------- Private Consts

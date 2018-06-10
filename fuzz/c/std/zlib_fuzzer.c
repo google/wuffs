@@ -35,6 +35,7 @@ It should print "PASS", amongst other information, and exit(0).
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
+#include "../../../gen/c/base.c"
 #include "../../../gen/c/std/adler32.c"
 #include "../../../gen/c/std/deflate.c"
 #include "../../../gen/c/std/zlib.c"

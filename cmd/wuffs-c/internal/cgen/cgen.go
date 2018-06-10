@@ -122,29 +122,6 @@ func Do(args []string) error {
 	})
 }
 
-const (
-	maxNamespacedStatusCode  = 255
-	statusCodeNamespaceMask  = 1<<base38.MaxBits - 1
-	statusCodeNamespaceShift = 10
-	statusCodeCodeBits       = 8
-	statusCodeDescription    = "" +
-		"// Status codes are int32_t values. Its bits:\n" +
-		"//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.\n" +
-		"//  - bits 30 .. 10 are the packageid: a namespace.\n" +
-		"//  - bits  9 ..  8 are reserved.\n" +
-		"//  - bits  7 ..  0 are a package-namespaced numeric code.\n"
-)
-
-func init() {
-	// The +1 is for the error bit (the sign bit).
-	if statusCodeNamespaceShift+base38.MaxBits+1 != 32 {
-		panic("inconsistent status code namespace shift")
-	}
-	if len(builtin.StatusList) > maxNamespacedStatusCode {
-		panic("too many built-in statuses")
-	}
-}
-
 type replacementPolicy bool
 
 const (
@@ -168,6 +145,7 @@ const (
 
 type status struct {
 	name    string
+	value   int8
 	msg     string
 	keyword t.ID
 }
@@ -225,7 +203,7 @@ func insertBasePublicH(buf *buffer) error {
 			for _, z := range builtin.StatusList {
 				code := int32(z.Value) << 24
 				b.printf("#define %s %d // 0x%08X\n",
-					strings.ToUpper(cName(z.String(), "wuffs_base__")), code, uint32(code))
+					strings.ToUpper(cName(z.String(), "WUFFS_BASE__")), code, uint32(code))
 			}
 			b.writes("\n")
 			return nil
@@ -346,34 +324,29 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
 
 	b.writes("// ---------------- Status Codes\n\n")
-	b.writes(statusCodeDescription)
-	b.printf("//\n// Do not manipulate these bits directly; they are private implementation\n"+
-		"// details. Use methods such as %sstatus__is_error instead.\n", g.pkgPrefix)
 
 	b.printf("typedef int32_t %sstatus;\n\n", g.pkgPrefix)
 	pkgID := g.checker.PackageID()
 	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)
 
-	for i, z := range builtin.StatusList {
-		code := uint32(0)
+	for _, z := range builtin.StatusList {
+		name := z.Message
 		if z.Keyword == t.IDError {
-			code |= 1 << 31
+			name = "error " + name
+		} else if z.Keyword == t.IDSuspension {
+			name = "suspension " + name
+		} else {
+			name = "status " + name
 		}
-		code |= uint32(i)
-		b.printf("#define %s %d // 0x%08X\n", strings.ToUpper(g.cName(z.String())), int32(code), code)
+		code := int32(z.Value) << 24
+		b.printf("#define %s %d // 0x%08X\n",
+			strings.ToUpper(cName(name, g.PKGPREFIX)), code, uint32(code))
 	}
 	b.writes("\n")
 
-	if len(g.statusList) > maxNamespacedStatusCode {
-		return fmt.Errorf("too many status codes")
-	}
-	for i, s := range g.statusList {
-		code := pkgID << statusCodeNamespaceShift
-		if s.keyword == t.IDError {
-			code |= 1 << 31
-		}
-		code |= uint32(i)
-		b.printf("#define %s %d // 0x%08X\n", s.name, int32(code), code)
+	for _, s := range g.statusList {
+		code := (int32(s.value) << 24) | int32(pkgID)
+		b.printf("#define %s %d // 0x%08X\n", s.name, code, uint32(code))
 	}
 	b.writes("\n")
 
@@ -414,30 +387,28 @@ func (g *gen) genHeader(b *buffer) error {
 func (g *gen) genImpl(b *buffer) error {
 	b.writes("#ifndef WUFFS_BASE_PRIVATE_H\n#define WUFFS_BASE_PRIVATE_H\n\n")
 	b.writes(basePrivateH)
-	b.writes("\n")
-	b.printf("static const char* wuffs_base__status__strings[%d] = {\n", len(builtin.StatusList))
-	for _, z := range builtin.StatusList {
-		b.printf("%q,", z.Message)
-	}
-	b.writes("};\n\n")
 	b.writes("#endif  // WUFFS_BASE_PRIVATE_H\n\n")
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 	b.printf("bool %sstatus__is_error(%sstatus s) { return s < 0; }\n\n", g.pkgPrefix, g.pkgPrefix)
 
-	b.printf("const char* %sstatus__strings[%d] = {\n", g.pkgPrefix, len(g.statusList))
-	for _, s := range g.statusList {
-		b.printf("%q,", g.pkgName+": "+s.msg)
+	{
+		messages := [256]string{}
+		for _, s := range g.statusList {
+			messages[uint8(s.value)] = g.pkgName + ": " + s.msg
+		}
+		if err := genStatusStringData(b, g.pkgPrefix, &messages); err != nil {
+			return err
+		}
 	}
-	b.writes("};\n\n")
 
 	b.printf("const char* %sstatus__string(%sstatus s) {\n", g.pkgPrefix, g.pkgPrefix)
-	b.printf("const char** a = NULL;\n")
-	b.printf("uint32_t n = 0;\n")
-	b.printf("switch ((s >> %d) & 0x%X) {\n", statusCodeNamespaceShift, statusCodeNamespaceMask)
-	b.printf("case 0: a = wuffs_base__status__strings; n = %d; break;\n", len(builtin.StatusList))
-	b.printf("case %spackageid: a = %sstatus__strings; n = %d; break;\n",
-		g.pkgPrefix, g.pkgPrefix, len(g.statusList))
+	b.printf("uint16_t o;")
+	b.printf("switch (s & 0x%X) {\n", (1<<base38.MaxBits)-1)
+	b.printf("case 0: return wuffs_base__status__string(s);\n")
+	b.printf("case %spackageid:\n", g.pkgPrefix)
+	b.printf("o = %sstatus__string_offsets[(uint8_t)(s >> 24)];\n", g.pkgPrefix)
+	b.printf("if (o) { return %sstatus__string_data + o; } break;\n", g.pkgPrefix)
 	for _, u := range g.usesList {
 		// TODO: is path.Base always correct? Should we check
 		// validName(packageName)?
@@ -445,8 +416,8 @@ func (g *gen) genImpl(b *buffer) error {
 		b.printf("case wuffs_%s__packageid: return wuffs_%s__status__string(s);\n", useePkgName, useePkgName)
 	}
 	b.printf("}\n")
-	b.printf("uint32_t i = s & 0x%X;\n", 1<<statusCodeCodeBits-1)
-	b.printf("return i < n ? a[i] : \"unknown status\";\n")
+	b.printf("return \"unknown status\";\n")
+
 	b.writes("}\n\n")
 
 	b.writes("// ---------------- Private Consts\n\n")
@@ -605,8 +576,13 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 	if n.Keyword() == t.IDError {
 		prefix = "ERROR_"
 	}
+	value := int8(n.Value().ConstValue().Int64())
+	if n.Keyword() == t.IDError {
+		value = -value
+	}
 	s := status{
 		name:    strings.ToUpper(g.cName(prefix + msg)),
+		value:   value,
 		msg:     msg,
 		keyword: n.Keyword(),
 	}

@@ -58,7 +58,14 @@ typedef struct {
 // --------
 
 // A status code is either zero (OK), positive (a recoverable suspension or
-// pause in processing) or negative (a non-recoverable error).
+// pause in processing) or negative (a non-recoverable error). Its bits:
+//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
+//  - bits 30 .. 24 are a package-namespaced numeric code
+//  - bits 23 .. 21 are reserved.
+//  - bits 20 ..  0 are the packageid (a namespace) as a base38 value.
+//
+// Do not manipulate these bits directly; they are private implementation
+// details. Use methods such as wuffs_base__status__is_error instead.
 typedef int32_t wuffs_base__status;
 
 #define WUFFS_BASE__STATUS_OK 0                          // 0x00000000
@@ -1271,35 +1278,27 @@ extern "C" {
 
 // ---------------- Status Codes
 
-// Status codes are int32_t values. Its bits:
-//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
-//  - bits 30 .. 10 are the packageid: a namespace.
-//  - bits  9 ..  8 are reserved.
-//  - bits  7 ..  0 are a package-namespaced numeric code.
-//
-// Do not manipulate these bits directly; they are private implementation
-// details. Use methods such as wuffs_crc32__status__is_error instead.
 typedef int32_t wuffs_crc32__status;
 
 #define wuffs_crc32__packageid 810620  // 0x000C5E7C
 
-#define WUFFS_CRC32__STATUS_OK 0                            // 0x00000000
-#define WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
-#define WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
-#define WUFFS_CRC32__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
-#define WUFFS_CRC32__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_CRC32__STATUS_OK 0                          // 0x00000000
+#define WUFFS_CRC32__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
+#define WUFFS_CRC32__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
+#define WUFFS_CRC32__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
+#define WUFFS_CRC32__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
 #define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -2147483643  // 0x80000005
+  -268435456  // 0xF0000000
 #define WUFFS_CRC32__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -2147483642                                                      // 0x80000006
-#define WUFFS_CRC32__ERROR_INVALID_I_O_OPERATION -2147483641       // 0x80000007
-#define WUFFS_CRC32__ERROR_CLOSED_FOR_WRITES -2147483640           // 0x80000008
-#define WUFFS_CRC32__ERROR_UNEXPECTED_EOF -2147483639              // 0x80000009
-#define WUFFS_CRC32__SUSPENSION_SHORT_READ 10                      // 0x0000000A
-#define WUFFS_CRC32__SUSPENSION_SHORT_WRITE 11                     // 0x0000000B
-#define WUFFS_CRC32__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483636  // 0x8000000C
-#define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
-#define WUFFS_CRC32__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
+  -285212672                                                      // 0xEF000000
+#define WUFFS_CRC32__ERROR_INVALID_I_O_OPERATION -805306368       // 0xD0000000
+#define WUFFS_CRC32__ERROR_CLOSED_FOR_WRITES -1073741824          // 0xC0000000
+#define WUFFS_CRC32__ERROR_UNEXPECTED_EOF -822083584              // 0xCF000000
+#define WUFFS_CRC32__SUSPENSION_SHORT_READ 33554432               // 0x02000000
+#define WUFFS_CRC32__SUSPENSION_SHORT_WRITE 50331648              // 0x03000000
+#define WUFFS_CRC32__ERROR_CANNOT_RETURN_A_SUSPENSION -536870912  // 0xE0000000
+#define WUFFS_CRC32__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
+#define WUFFS_CRC32__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
 
 bool wuffs_crc32__status__is_error(wuffs_crc32__status s);
 
@@ -1366,66 +1365,57 @@ extern "C" {
 
 // ---------------- Status Codes
 
-// Status codes are int32_t values. Its bits:
-//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
-//  - bits 30 .. 10 are the packageid: a namespace.
-//  - bits  9 ..  8 are reserved.
-//  - bits  7 ..  0 are a package-namespaced numeric code.
-//
-// Do not manipulate these bits directly; they are private implementation
-// details. Use methods such as wuffs_deflate__status__is_error instead.
 typedef int32_t wuffs_deflate__status;
 
 #define wuffs_deflate__packageid 848533  // 0x000CF295
 
-#define WUFFS_DEFLATE__STATUS_OK 0                            // 0x00000000
-#define WUFFS_DEFLATE__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
-#define WUFFS_DEFLATE__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
-#define WUFFS_DEFLATE__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
-#define WUFFS_DEFLATE__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_DEFLATE__STATUS_OK 0                          // 0x00000000
+#define WUFFS_DEFLATE__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
+#define WUFFS_DEFLATE__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
+#define WUFFS_DEFLATE__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
+#define WUFFS_DEFLATE__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
 #define WUFFS_DEFLATE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -2147483643  // 0x80000005
+  -268435456  // 0xF0000000
 #define WUFFS_DEFLATE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -2147483642                                                   // 0x80000006
-#define WUFFS_DEFLATE__ERROR_INVALID_I_O_OPERATION -2147483641  // 0x80000007
-#define WUFFS_DEFLATE__ERROR_CLOSED_FOR_WRITES -2147483640      // 0x80000008
-#define WUFFS_DEFLATE__ERROR_UNEXPECTED_EOF -2147483639         // 0x80000009
-#define WUFFS_DEFLATE__SUSPENSION_SHORT_READ 10                 // 0x0000000A
-#define WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE 11                // 0x0000000B
+  -285212672                                                   // 0xEF000000
+#define WUFFS_DEFLATE__ERROR_INVALID_I_O_OPERATION -805306368  // 0xD0000000
+#define WUFFS_DEFLATE__ERROR_CLOSED_FOR_WRITES -1073741824     // 0xC0000000
+#define WUFFS_DEFLATE__ERROR_UNEXPECTED_EOF -822083584         // 0xCF000000
+#define WUFFS_DEFLATE__SUSPENSION_SHORT_READ 33554432          // 0x02000000
+#define WUFFS_DEFLATE__SUSPENSION_SHORT_WRITE 50331648         // 0x03000000
 #define WUFFS_DEFLATE__ERROR_CANNOT_RETURN_A_SUSPENSION \
-  -2147483636                                                   // 0x8000000C
-#define WUFFS_DEFLATE__ERROR_INVALID_CALL_SEQUENCE -2147483635  // 0x8000000D
-#define WUFFS_DEFLATE__SUSPENSION_END_OF_DATA 14                // 0x0000000E
+  -536870912                                                   // 0xE0000000
+#define WUFFS_DEFLATE__ERROR_INVALID_CALL_SEQUENCE -301989888  // 0xEE000000
+#define WUFFS_DEFLATE__SUSPENSION_END_OF_DATA 16777216         // 0x01000000
 
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_OVER_SUBSCRIBED \
-  -1278585856  // 0xB3CA5400
+  -15928683  // 0xFF0CF295
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_UNDER_SUBSCRIBED \
-  -1278585855  // 0xB3CA5401
+  -32705899  // 0xFE0CF295
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_COUNT \
-  -1278585854  // 0xB3CA5402
+  -49483115  // 0xFD0CF295
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE_LENGTH_REPETITION \
-  -1278585853                                              // 0xB3CA5403
-#define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE -1278585852  // 0xB3CA5404
+  -66260331                                              // 0xFC0CF295
+#define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_CODE -83037547  // 0xFB0CF295
 #define WUFFS_DEFLATE__ERROR_BAD_HUFFMAN_MINIMUM_CODE_LENGTH \
-  -1278585851                                                     // 0xB3CA5405
-#define WUFFS_DEFLATE__ERROR_BAD_BLOCK -1278585850                // 0xB3CA5406
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -1278585849             // 0xB3CA5407
-#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -1278585848  // 0xB3CA5408
+  -99814763                                                      // 0xFA0CF295
+#define WUFFS_DEFLATE__ERROR_BAD_BLOCK -116591979                // 0xF90CF295
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE -133369195             // 0xF80CF295
+#define WUFFS_DEFLATE__ERROR_BAD_DISTANCE_CODE_COUNT -150146411  // 0xF70CF295
 #define WUFFS_DEFLATE__ERROR_BAD_LITERAL_LENGTH_CODE_COUNT \
-  -1278585847  // 0xB3CA5409
+  -166923627  // 0xF60CF295
 #define WUFFS_DEFLATE__ERROR_INCONSISTENT_STORED_BLOCK_LENGTH \
-  -1278585846  // 0xB3CA540A
-#define WUFFS_DEFLATE__ERROR_MISSING_END_OF_BLOCK_CODE \
-  -1278585845                                              // 0xB3CA540B
-#define WUFFS_DEFLATE__ERROR_NO_HUFFMAN_CODES -1278585844  // 0xB3CA540C
+  -183700843                                                       // 0xF50CF295
+#define WUFFS_DEFLATE__ERROR_MISSING_END_OF_BLOCK_CODE -200478059  // 0xF40CF295
+#define WUFFS_DEFLATE__ERROR_NO_HUFFMAN_CODES -217255275           // 0xF30CF295
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE \
-  -1278585843  // 0xB3CA540D
+  -1072893291  // 0xC00CF295
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_END_OF_BLOCK \
-  -1278585842  // 0xB3CA540E
+  -1089670507  // 0xBF0CF295
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_DISTANCE \
-  -1278585841  // 0xB3CA540F
+  -1106447723  // 0xBE0CF295
 #define WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_N_BITS \
-  -1278585840  // 0xB3CA5410
+  -1123224939  // 0xBD0CF295
 
 bool wuffs_deflate__status__is_error(wuffs_deflate__status s);
 
@@ -1543,40 +1533,32 @@ extern "C" {
 
 // ---------------- Status Codes
 
-// Status codes are int32_t values. Its bits:
-//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
-//  - bits 30 .. 10 are the packageid: a namespace.
-//  - bits  9 ..  8 are reserved.
-//  - bits  7 ..  0 are a package-namespaced numeric code.
-//
-// Do not manipulate these bits directly; they are private implementation
-// details. Use methods such as wuffs_gzip__status__is_error instead.
 typedef int32_t wuffs_gzip__status;
 
 #define wuffs_gzip__packageid 1041911  // 0x000FE5F7
 
-#define WUFFS_GZIP__STATUS_OK 0                            // 0x00000000
-#define WUFFS_GZIP__ERROR_BAD_WUFFS_VERSION -2147483647    // 0x80000001
-#define WUFFS_GZIP__ERROR_BAD_SIZEOF_RECEIVER -2147483646  // 0x80000002
-#define WUFFS_GZIP__ERROR_BAD_RECEIVER -2147483645         // 0x80000003
-#define WUFFS_GZIP__ERROR_BAD_ARGUMENT -2147483644         // 0x80000004
+#define WUFFS_GZIP__STATUS_OK 0                          // 0x00000000
+#define WUFFS_GZIP__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
+#define WUFFS_GZIP__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
+#define WUFFS_GZIP__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
+#define WUFFS_GZIP__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
 #define WUFFS_GZIP__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
-  -2147483643  // 0x80000005
+  -268435456  // 0xF0000000
 #define WUFFS_GZIP__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
-  -2147483642                                                     // 0x80000006
-#define WUFFS_GZIP__ERROR_INVALID_I_O_OPERATION -2147483641       // 0x80000007
-#define WUFFS_GZIP__ERROR_CLOSED_FOR_WRITES -2147483640           // 0x80000008
-#define WUFFS_GZIP__ERROR_UNEXPECTED_EOF -2147483639              // 0x80000009
-#define WUFFS_GZIP__SUSPENSION_SHORT_READ 10                      // 0x0000000A
-#define WUFFS_GZIP__SUSPENSION_SHORT_WRITE 11                     // 0x0000000B
-#define WUFFS_GZIP__ERROR_CANNOT_RETURN_A_SUSPENSION -2147483636  // 0x8000000C
-#define WUFFS_GZIP__ERROR_INVALID_CALL_SEQUENCE -2147483635       // 0x8000000D
-#define WUFFS_GZIP__SUSPENSION_END_OF_DATA 14                     // 0x0000000E
+  -285212672                                                     // 0xEF000000
+#define WUFFS_GZIP__ERROR_INVALID_I_O_OPERATION -805306368       // 0xD0000000
+#define WUFFS_GZIP__ERROR_CLOSED_FOR_WRITES -1073741824          // 0xC0000000
+#define WUFFS_GZIP__ERROR_UNEXPECTED_EOF -822083584              // 0xCF000000
+#define WUFFS_GZIP__SUSPENSION_SHORT_READ 33554432               // 0x02000000
+#define WUFFS_GZIP__SUSPENSION_SHORT_WRITE 50331648              // 0x03000000
+#define WUFFS_GZIP__ERROR_CANNOT_RETURN_A_SUSPENSION -536870912  // 0xE0000000
+#define WUFFS_GZIP__ERROR_INVALID_CALL_SEQUENCE -301989888       // 0xEE000000
+#define WUFFS_GZIP__SUSPENSION_END_OF_DATA 16777216              // 0x01000000
 
-#define WUFFS_GZIP__ERROR_BAD_CHECKSUM -1080566784            // 0xBF97DC00
-#define WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD -1080566783  // 0xBF97DC01
-#define WUFFS_GZIP__ERROR_BAD_ENCODING_FLAGS -1080566782      // 0xBF97DC02
-#define WUFFS_GZIP__ERROR_BAD_HEADER -1080566781              // 0xBF97DC03
+#define WUFFS_GZIP__ERROR_BAD_CHECKSUM -15735305            // 0xFF0FE5F7
+#define WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD -32512521  // 0xFE0FE5F7
+#define WUFFS_GZIP__ERROR_BAD_ENCODING_FLAGS -49289737      // 0xFD0FE5F7
+#define WUFFS_GZIP__ERROR_BAD_HEADER -66066953              // 0xFC0FE5F7
 
 bool wuffs_gzip__status__is_error(wuffs_gzip__status s);
 
