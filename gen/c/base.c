@@ -66,7 +66,27 @@
 typedef struct {
 } wuffs_base__empty_struct;
 
-// ---------------- Numeric Types
+// --------
+
+// A status code is either zero (OK), positive (a recoverable suspension or
+// pause in processing) or negative (a non-recoverable error).
+typedef int32_t wuffs_base__status;
+
+static inline bool wuffs_base__status__is_error(wuffs_base__status s) {
+  return s < 0;
+}
+
+static inline bool wuffs_base__status__is_ok(wuffs_base__status s) {
+  return s == 0;
+}
+
+static inline bool wuffs_base__status__is_suspension(wuffs_base__status s) {
+  return s > 0;
+}
+
+const char* wuffs_base__status__string(wuffs_base__status s);
+
+// --------
 
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
@@ -75,7 +95,7 @@ typedef int64_t wuffs_base__flicks;
 #define WUFFS_BASE__FLICKS_PER_SECOND ((uint64_t)705600000)
 #define WUFFS_BASE__FLICKS_PER_MILLISECOND ((uint64_t)705600)
 
-// --------
+// ---------------- Numeric Types
 
 static inline uint8_t wuffs_base__u8__min(uint8_t x, uint8_t y) {
   return x < y ? x : y;
@@ -1227,6 +1247,6 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
 
 #endif  // WUFFS_BASE_PUBLIC_H
 
-const char* wuffs_base__status__string(int32_t s) {
+const char* wuffs_base__status__string(wuffs_base__status s) {
   return "unknown status";
 }

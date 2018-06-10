@@ -18,6 +18,6 @@
 
 // !! wuffs_base__status__string data goes here.
 
-const char* wuffs_base__status__string(int32_t s) {
+const char* wuffs_base__status__string(wuffs_base__status s) {
   return "unknown status";
 }
