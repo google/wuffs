@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// !! base-public.h goes here.
+// !! INSERT base-public.h.
 
-// !! wuffs_base__status__string data goes here.
+// !! INSERT wuffs_base__status__string data.
 
 const char* wuffs_base__status__string(wuffs_base__status s) {
   return "unknown status";

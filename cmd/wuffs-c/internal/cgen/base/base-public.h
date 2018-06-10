@@ -58,6 +58,8 @@ typedef struct {
 // pause in processing) or negative (a non-recoverable error).
 typedef int32_t wuffs_base__status;
 
+// !! INSERT wuffs_base__status names.
+
 static inline bool wuffs_base__status__is_error(wuffs_base__status s) {
   return s < 0;
 }
