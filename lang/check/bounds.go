@@ -1078,7 +1078,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		}
 		return zero, big.NewInt(0).Sub(rMax, one), nil
 
-	case t.IDXBinaryShiftL:
+	case t.IDXBinaryShiftL, t.IDXBinaryTildeModShiftL:
 		if lMin.Sign() < 0 {
 			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
@@ -1088,7 +1088,15 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 		if rMax.Cmp(ffff) > 0 {
 			return nil, nil, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
 		}
-		return big.NewInt(0).Lsh(lMin, uint(rMin.Uint64())), big.NewInt(0).Lsh(lMax, uint(rMax.Uint64())), nil
+		nMin := big.NewInt(0).Lsh(lMin, uint(rMin.Uint64()))
+		nMax := big.NewInt(0).Lsh(lMax, uint(rMax.Uint64()))
+		if op == t.IDXBinaryTildeModShiftL {
+			if qid := lhs.MType().QID(); qid[0] == t.IDBase {
+				b := numTypeBounds[qid[1]]
+				nMax = min(nMax, b[1])
+			}
+		}
+		return nMin, nMax, nil
 
 	case t.IDXBinaryShiftR:
 		if lMin.Sign() < 0 {

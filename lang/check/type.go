@@ -298,7 +298,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	}
 
 	switch n.Operator() {
-	case t.IDShiftLEq, t.IDShiftREq:
+	case t.IDShiftLEq, t.IDShiftREq, t.IDTildeModShiftLEq:
 		if !rTyp.IsNumTypeOrIdeal() {
 			return fmt.Errorf("check: assignment %q: shift %q, of type %q, does not have numeric type",
 				n.Operator().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
@@ -768,7 +768,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 				lTyp.Str(q.tm), rTyp.Str(q.tm),
 			)
 		}
-	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR, t.IDXBinaryTildeModShiftL:
 		if lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q; "+
 				"cannot shift an ideal number by a non-ideal number",
@@ -859,9 +859,6 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 			return nil, fmt.Errorf("check: division by zero in const expression %q", n.Str(tm))
 		}
 		return big.NewInt(0).Mod(l, r), nil
-	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus,
-		t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
-		return nil, fmt.Errorf("check: cannot apply tilde-operators to ideal numbers")
 	case t.IDXBinaryNotEq:
 		return btoi(l.Cmp(r) != 0), nil
 	case t.IDXBinaryLessThan:
@@ -878,6 +875,10 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 		return btoi((l.Sign() != 0) && (r.Sign() != 0)), nil
 	case t.IDXBinaryOr:
 		return btoi((l.Sign() != 0) || (r.Sign() != 0)), nil
+	case t.IDXBinaryTildeModShiftL,
+		t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus,
+		t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
+		return nil, fmt.Errorf("check: cannot apply tilde-operators to ideal numbers")
 	}
 	return nil, fmt.Errorf("check: unrecognized token (0x%02X) for evalConstValueBinaryOp", n.Operator())
 }
