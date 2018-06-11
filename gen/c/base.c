@@ -978,6 +978,7 @@ typedef struct {
     uint32_t width;
     uint32_t height;
     uint32_t num_loops;
+    bool first_frame_is_opaque;
   } private_impl;
 } wuffs_base__image_config;
 
@@ -988,7 +989,8 @@ static inline void wuffs_base__image_config__initialize(
     wuffs_base__pixel_subsampling pixsub,
     uint32_t width,
     uint32_t height,
-    uint32_t num_loops) {
+    uint32_t num_loops,
+    bool first_frame_is_opaque) {
   if (!c) {
     return;
   }
@@ -1001,6 +1003,7 @@ static inline void wuffs_base__image_config__initialize(
       c->private_impl.width = width;
       c->private_impl.height = height;
       c->private_impl.num_loops = num_loops;
+      c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
       return;
     }
   }
@@ -1053,6 +1056,11 @@ static inline uint32_t wuffs_base__image_config__height(
 static inline uint32_t wuffs_base__image_config__num_loops(
     wuffs_base__image_config* c) {
   return c ? c->private_impl.num_loops : 0;
+}
+
+static inline uint32_t wuffs_base__image_config__first_frame_is_opaque(
+    wuffs_base__image_config* c) {
+  return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
 // TODO: this is the right API for planar (not packed) pixbufs? Should it allow

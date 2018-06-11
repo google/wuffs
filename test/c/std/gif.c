@@ -266,7 +266,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
       return false;
     }
 
-    // bricks-dither.gif is a 160 × 120 still (not animated) GIF.
+    // bricks-dither.gif is a 160 × 120, opaque, still (not animated) GIF.
     if (wuffs_base__image_config__width(&ic) != 160) {
       FAIL("width: got %" PRIu32 ", want 160",
            wuffs_base__image_config__width(&ic));
@@ -280,6 +280,10 @@ bool do_test_wuffs_gif_decode(const char* filename,
     if (wuffs_base__image_config__num_loops(&ic) != 1) {
       FAIL("num_loops: got %" PRIu32 ", want 1",
            wuffs_base__image_config__num_loops(&ic));
+      return false;
+    }
+    if (!wuffs_base__image_config__first_frame_is_opaque(&ic)) {
+      FAIL("first_frame_is_opaque: got false, want true");
       return false;
     }
     status = wuffs_base__image_buffer__set_from_slice(

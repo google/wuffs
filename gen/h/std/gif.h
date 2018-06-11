@@ -967,6 +967,7 @@ typedef struct {
     uint32_t width;
     uint32_t height;
     uint32_t num_loops;
+    bool first_frame_is_opaque;
   } private_impl;
 } wuffs_base__image_config;
 
@@ -977,7 +978,8 @@ static inline void wuffs_base__image_config__initialize(
     wuffs_base__pixel_subsampling pixsub,
     uint32_t width,
     uint32_t height,
-    uint32_t num_loops) {
+    uint32_t num_loops,
+    bool first_frame_is_opaque) {
   if (!c) {
     return;
   }
@@ -990,6 +992,7 @@ static inline void wuffs_base__image_config__initialize(
       c->private_impl.width = width;
       c->private_impl.height = height;
       c->private_impl.num_loops = num_loops;
+      c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
       return;
     }
   }
@@ -1042,6 +1045,11 @@ static inline uint32_t wuffs_base__image_config__height(
 static inline uint32_t wuffs_base__image_config__num_loops(
     wuffs_base__image_config* c) {
   return c ? c->private_impl.num_loops : 0;
+}
+
+static inline uint32_t wuffs_base__image_config__first_frame_is_opaque(
+    wuffs_base__image_config* c) {
+  return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
 // TODO: this is the right API for planar (not packed) pixbufs? Should it allow
@@ -1376,6 +1384,9 @@ typedef struct {
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_previous_use_global_palette;
     uint8_t f_background_color_index;
+    bool f_has_full_global_palette;
+    bool f_has_full_palette;
+    bool f_use_local_palette;
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
@@ -1401,6 +1412,7 @@ typedef struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_num_loops;
+      bool v_ffio;
     } c_decode_config[1];
     struct {
       uint32_t coro_susp_point;
@@ -1447,19 +1459,17 @@ typedef struct {
     } c_decode_gc[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_flags;
+      uint32_t v_num_palette_entries;
+      uint32_t v_i;
+      uint32_t v_argb;
       uint64_t scratch;
     } c_decode_id_part0[1];
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_flags;
-      bool v_use_local_palette;
-      uint32_t v_num_palette_entries;
-      uint32_t v_i;
-      uint32_t v_argb;
       uint8_t v_lw;
       uint64_t v_block_size;
       wuffs_base__status v_z;
-      uint64_t scratch;
     } c_decode_id_part1[1];
   } private_impl;
 } wuffs_gif__decoder;

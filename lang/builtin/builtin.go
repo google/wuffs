@@ -135,7 +135,8 @@ var Funcs = []string{
 
 	// ---- image_config
 
-	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, num_loops u32)()",
+	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
+		"num_loops u32, first_frame_is_opaque bool)()",
 
 	// ---- io_reader
 
