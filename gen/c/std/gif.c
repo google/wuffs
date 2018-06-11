@@ -2063,6 +2063,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 #endif  // WUFFS_BASE_PRIVATE_H
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)
+
 // ---------------- Status Codes Implementations
 
 static const char wuffs_gif__status__string_data[] = {
@@ -3926,3 +3928,5 @@ label_0_break:;
 exit:
   return status;
 }
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)

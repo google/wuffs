@@ -369,6 +369,10 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writes(basePrivateH)
 	b.writeb('\n')
 
+	module := "!defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__" +
+		strings.ToUpper(g.pkgName) + ")"
+	b.printf("#if %s\n\n", module)
+
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 
 	{
@@ -430,6 +434,7 @@ func (g *gen) genImpl(b *buffer) error {
 		return err
 	}
 
+	b.printf("#endif  // %s\n\n", module)
 	return nil
 }
 

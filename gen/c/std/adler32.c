@@ -1858,6 +1858,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 #endif  // WUFFS_BASE_PRIVATE_H
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__ADLER32)
+
 // ---------------- Status Codes Implementations
 
 static const char wuffs_adler32__status__string_data[] = {
@@ -2021,3 +2023,6 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
   self->private_impl.f_state = (((v_s2 & 65535) << 16) | (v_s1 & 65535));
   return self->private_impl.f_state;
 }
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__ADLER32)

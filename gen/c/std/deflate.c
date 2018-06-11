@@ -1946,6 +1946,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 #endif  // WUFFS_BASE_PRIVATE_H
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__DEFLATE)
+
 // ---------------- Status Codes Implementations
 
 static const char wuffs_deflate__status__string_data[] = {
@@ -3984,3 +3986,6 @@ short_read_src:
   status = WUFFS_BASE__SUSPENSION_SHORT_READ;
   goto suspend;
 }
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__DEFLATE)

@@ -1858,6 +1858,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 #endif  // WUFFS_BASE_PRIVATE_H
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
+
 // ---------------- Status Codes Implementations
 
 static const char wuffs_crc32__status__string_data[] = {
@@ -2457,3 +2459,6 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
   self->private_impl.f_state = (4294967295 ^ v_s);
   return self->private_impl.f_state;
 }
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__CRC32)
