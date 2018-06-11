@@ -74,9 +74,12 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       ret = "out of memory";
       goto exit;
     }
-    // TODO: check wuffs_base__image_buffer__set_from_slice errors?
-    wuffs_base__image_buffer__set_from_slice(
+    s = wuffs_base__image_buffer__set_from_slice(
         &ib, ic, ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
+    if (s) {
+      ret = wuffs_gif__status__string(s);
+      goto exit;
+    }
 
     bool seen_ok = false;
     while (true) {

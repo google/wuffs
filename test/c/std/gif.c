@@ -204,13 +204,16 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   if (s) {
     return wuffs_gif__status__string(s);
   }
-  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
-  wuffs_base__image_buffer__set_from_slice(
+  s = wuffs_base__image_buffer__set_from_slice(
       &ib, ic,
       ((wuffs_base__slice_u8){
           .ptr = global_pixel_buffer,
           .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
       }));
+  if (s) {
+    return wuffs_gif__status__string(s);
+  }
+
   while (true) {
     s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader,
                                          ((wuffs_base__slice_u8){}));
@@ -279,13 +282,16 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_base__image_config__num_loops(&ic));
       return false;
     }
-    // TODO: check wuffs_base__image_buffer__set_from_slice errors?
-    wuffs_base__image_buffer__set_from_slice(
+    status = wuffs_base__image_buffer__set_from_slice(
         &ib, ic,
         ((wuffs_base__slice_u8){
             .ptr = global_pixel_buffer,
             .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
         }));
+    if (status) {
+      FAIL("set_from_slice: %s", wuffs_gif__status__string(status));
+      return false;
+    }
   }
 
   int num_iters = 0;
@@ -441,13 +447,16 @@ bool do_test_wuffs_gif_decode_animated(
          wuffs_base__image_config__num_loops(&ic), want_num_loops);
     return false;
   }
-  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
-  wuffs_base__image_buffer__set_from_slice(
+  status = wuffs_base__image_buffer__set_from_slice(
       &ib, ic,
       ((wuffs_base__slice_u8){
           .ptr = global_pixel_buffer,
           .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
       }));
+  if (status) {
+    FAIL("set_from_slice: %s", wuffs_gif__status__string(status));
+    return false;
+  }
 
   uint32_t i;
   for (i = 0; i < want_num_frames; i++) {

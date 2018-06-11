@@ -73,11 +73,12 @@ typedef struct {
 // details. Use methods such as wuffs_base__status__is_error instead.
 typedef int32_t wuffs_base__status;
 
-#define WUFFS_BASE__STATUS_OK 0                          // 0x00000000
-#define WUFFS_BASE__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
-#define WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
-#define WUFFS_BASE__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
-#define WUFFS_BASE__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
+#define WUFFS_BASE__STATUS_OK 0                                    // 0x00000000
+#define WUFFS_BASE__ERROR_BAD_WUFFS_VERSION -16777216              // 0xFF000000
+#define WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER -33554432            // 0xFE000000
+#define WUFFS_BASE__ERROR_BAD_RECEIVER -50331648                   // 0xFD000000
+#define WUFFS_BASE__ERROR_BAD_ARGUMENT -67108864                   // 0xFC000000
+#define WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT -67108864  // 0xFC000000
 #define WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
   -268435456  // 0xF0000000
 #define WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
@@ -1094,32 +1095,32 @@ typedef struct {
   } private_impl;
 } wuffs_base__image_buffer;
 
-static inline void wuffs_base__image_buffer__set_from_pixbuf(
+static inline wuffs_base__status wuffs_base__image_buffer__set_from_pixbuf(
     wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__pixel_buffer pixbuf) {
   if (!b) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
   *b = ((wuffs_base__image_buffer){});
   b->private_impl.config = config;
   b->private_impl.pixbuf = pixbuf;
+  return WUFFS_BASE__STATUS_OK;
 }
 
-// TODO: Should this function return bool? An error type?
-static inline void wuffs_base__image_buffer__set_from_slice(
+static inline wuffs_base__status wuffs_base__image_buffer__set_from_slice(
     wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
   *b = ((wuffs_base__image_buffer){});
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)config.private_impl.width) *
                 ((uint64_t)config.private_impl.height);
   if (wh > pixbuf_memory.len) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT;
   }
   b->private_impl.config = config;
   wuffs_base__table_u8* tab = &b->private_impl.pixbuf.planes[0];
@@ -1127,6 +1128,7 @@ static inline void wuffs_base__image_buffer__set_from_slice(
   tab->width = config.private_impl.width;
   tab->height = config.private_impl.height;
   tab->stride = config.private_impl.width;
+  return WUFFS_BASE__STATUS_OK;
 }
 
 // The palette argument is ignored unless its length is exactly 1024.

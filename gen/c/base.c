@@ -84,11 +84,12 @@ typedef struct {
 // details. Use methods such as wuffs_base__status__is_error instead.
 typedef int32_t wuffs_base__status;
 
-#define WUFFS_BASE__STATUS_OK 0                          // 0x00000000
-#define WUFFS_BASE__ERROR_BAD_WUFFS_VERSION -16777216    // 0xFF000000
-#define WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER -33554432  // 0xFE000000
-#define WUFFS_BASE__ERROR_BAD_RECEIVER -50331648         // 0xFD000000
-#define WUFFS_BASE__ERROR_BAD_ARGUMENT -67108864         // 0xFC000000
+#define WUFFS_BASE__STATUS_OK 0                                    // 0x00000000
+#define WUFFS_BASE__ERROR_BAD_WUFFS_VERSION -16777216              // 0xFF000000
+#define WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER -33554432            // 0xFE000000
+#define WUFFS_BASE__ERROR_BAD_RECEIVER -50331648                   // 0xFD000000
+#define WUFFS_BASE__ERROR_BAD_ARGUMENT -67108864                   // 0xFC000000
+#define WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT -67108864  // 0xFC000000
 #define WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED \
   -268435456  // 0xF0000000
 #define WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE \
@@ -1105,32 +1106,32 @@ typedef struct {
   } private_impl;
 } wuffs_base__image_buffer;
 
-static inline void wuffs_base__image_buffer__set_from_pixbuf(
+static inline wuffs_base__status wuffs_base__image_buffer__set_from_pixbuf(
     wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__pixel_buffer pixbuf) {
   if (!b) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
   *b = ((wuffs_base__image_buffer){});
   b->private_impl.config = config;
   b->private_impl.pixbuf = pixbuf;
+  return WUFFS_BASE__STATUS_OK;
 }
 
-// TODO: Should this function return bool? An error type?
-static inline void wuffs_base__image_buffer__set_from_slice(
+static inline wuffs_base__status wuffs_base__image_buffer__set_from_slice(
     wuffs_base__image_buffer* b,
     wuffs_base__image_config config,
     wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
   *b = ((wuffs_base__image_buffer){});
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)config.private_impl.width) *
                 ((uint64_t)config.private_impl.height);
   if (wh > pixbuf_memory.len) {
-    return;
+    return WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT;
   }
   b->private_impl.config = config;
   wuffs_base__table_u8* tab = &b->private_impl.pixbuf.planes[0];
@@ -1138,6 +1139,7 @@ static inline void wuffs_base__image_buffer__set_from_slice(
   tab->width = config.private_impl.width;
   tab->height = config.private_impl.height;
   tab->stride = config.private_impl.width;
+  return WUFFS_BASE__STATUS_OK;
 }
 
 // The palette argument is ignored unless its length is exactly 1024.
@@ -1270,11 +1272,13 @@ static const char wuffs_base__status__string_data[] = {
     0x6B, 0x5F, 0x77, 0x75, 0x66, 0x66, 0x73, 0x5F, 0x76, 0x65, 0x72, 0x73,
     0x69, 0x6F, 0x6E, 0x20, 0x6E, 0x6F, 0x74, 0x20, 0x63, 0x61, 0x6C, 0x6C,
     0x65, 0x64, 0x00, 0x62, 0x61, 0x64, 0x20, 0x61, 0x72, 0x67, 0x75, 0x6D,
-    0x65, 0x6E, 0x74, 0x00, 0x62, 0x61, 0x64, 0x20, 0x72, 0x65, 0x63, 0x65,
-    0x69, 0x76, 0x65, 0x72, 0x00, 0x62, 0x61, 0x64, 0x20, 0x73, 0x69, 0x7A,
-    0x65, 0x6F, 0x66, 0x20, 0x72, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x72,
-    0x00, 0x62, 0x61, 0x64, 0x20, 0x77, 0x75, 0x66, 0x66, 0x73, 0x20, 0x76,
-    0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x00,
+    0x65, 0x6E, 0x74, 0x20, 0x28, 0x6C, 0x65, 0x6E, 0x67, 0x74, 0x68, 0x20,
+    0x74, 0x6F, 0x6F, 0x20, 0x73, 0x68, 0x6F, 0x72, 0x74, 0x29, 0x00, 0x62,
+    0x61, 0x64, 0x20, 0x72, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x00,
+    0x62, 0x61, 0x64, 0x20, 0x73, 0x69, 0x7A, 0x65, 0x6F, 0x66, 0x20, 0x72,
+    0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x00, 0x62, 0x61, 0x64, 0x20,
+    0x77, 0x75, 0x66, 0x66, 0x73, 0x20, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6F,
+    0x6E, 0x00,
 };
 
 static const uint16_t wuffs_base__status__string_offsets[] = {
@@ -1306,7 +1310,7 @@ static const uint16_t wuffs_base__status__string_offsets[] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0079, 0x008F, 0x00B0, 0x0000, 0x0000,
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    0x00CF, 0x00DC, 0x00E9, 0x00FD,
+    0x00CF, 0x00EF, 0x00FC, 0x0110,
 };
 
 const char* wuffs_base__status__string(wuffs_base__status s) {

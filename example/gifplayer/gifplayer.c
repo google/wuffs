@@ -248,9 +248,11 @@ const char* play() {
       return "could not allocate print buffer";
     }
   }
-  // TODO: check wuffs_base__image_buffer__set_from_slice errors?
-  wuffs_base__image_buffer__set_from_slice(
+  s = wuffs_base__image_buffer__set_from_slice(
       &ib, ic, ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
+  if (s) {
+    return wuffs_gif__status__string(s);
+  }
 
   if (!seen_num_loops) {
     seen_num_loops = true;
