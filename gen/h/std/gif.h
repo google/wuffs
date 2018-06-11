@@ -1383,7 +1383,6 @@ typedef struct {
     bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_previous_use_global_palette;
-    uint8_t f_background_color_index;
     bool f_has_full_global_palette;
     bool f_has_full_palette;
     bool f_use_local_palette;
@@ -1428,10 +1427,9 @@ typedef struct {
     } c_decode_header[1];
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_c[7];
-      uint32_t v_i;
       uint8_t v_flags;
       uint32_t v_num_palette_entries;
+      uint32_t v_i;
       uint32_t v_argb;
       uint64_t scratch;
     } c_decode_lsd[1];

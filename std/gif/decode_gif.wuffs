@@ -62,8 +62,6 @@ pub struct decoder?(
 	previous_lzw_decode_ended_abruptly base.bool,
 	previous_use_global_palette base.bool,
 
-	background_color_index base.u8,
-
 	has_full_global_palette base.bool,
 	has_full_palette base.bool,
 	use_local_palette base.bool,
@@ -209,22 +207,16 @@ pri func decoder.decode_header?(src base.io_reader)() {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd?(src base.io_reader)() {
-	var c array[7] base.u8
-	var i base.u32
-	while i < 7 {
-		c[i] = in.src.read_u8?()
-		i += 1
-	}
-	// TODO: use read_u16le.
-	this.width = (c[0] as base.u32) | ((c[1] as base.u32) << 8)
-	this.height = (c[2] as base.u32) | ((c[3] as base.u32) << 8)
-	var flags base.u8 = c[4]
-	this.background_color_index = c[5]
+	this.width = in.src.read_u16le?() as base.u32
+	this.height = in.src.read_u16le?() as base.u32
+	var flags base.u8 = in.src.read_u8?()
+	// Ignore the Background Color Index and Pixel Aspect Ratio bytes.
+	in.src.skip32?(n:2)
 
 	// Read the optional Global Color Table.
 	if (flags & 0x80) != 0 {
 		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
-		i = 0
+		var i base.u32 = 0
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
