@@ -91,7 +91,8 @@ func checkPackageName(s string) string {
 	s = strings.ToLower(s)
 	// Blacklist certain package names.
 	switch s {
-	case "base", "base_private_header", "base_public_header", "config", "version":
+	case "base", "base_private", "base_private_header", "base_public", "base_public_header",
+		"config", "include_guard", "version":
 		return ""
 	}
 	return s

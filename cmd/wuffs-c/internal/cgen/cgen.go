@@ -307,7 +307,7 @@ func (g *gen) generate() ([]byte, error) {
 }
 
 func (g *gen) genHeader(b *buffer) error {
-	includeGuard := "WUFFS_" + strings.ToUpper(g.pkgName) + "_H"
+	includeGuard := "WUFFS_INCLUDE_GUARD__" + strings.ToUpper(g.pkgName)
 	b.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
 
 	if err := insertBasePublicH(b); err != nil {
@@ -676,8 +676,8 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 }
 
 var (
-	wuffsBasePublicHStart = []byte("#ifndef WUFFS_BASE_PUBLIC_H\n")
-	wuffsBasePublicHEnd   = []byte("#endif  // WUFFS_BASE_PUBLIC_H\n")
+	wigbpStart = []byte("#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
+	wigbpEnd   = []byte("#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
 )
 
 func (g *gen) writeUse(b *buffer, n *a.Use) error {
@@ -711,17 +711,17 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 	b.printf("// ---------------- BEGIN USE %q\n\n", useDirname)
 
 	// Inline the previously generated .h file, stripping out the redundant
-	// copy of the WUFFS_BASE_PUBLIC_H code.
-	if i := bytes.Index(hdr, wuffsBasePublicHStart); i < 0 {
+	// copy of the WUFFS_INCLUDE_GUARD__BASE_PUBLIC code.
+	if i := bytes.Index(hdr, wigbpStart); i < 0 {
 		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
 	} else {
 		b.Write(hdr[:i])
-		hdr = hdr[i+len(wuffsBasePublicHStart):]
+		hdr = hdr[i+len(wigbpStart):]
 	}
-	if i := bytes.Index(hdr, wuffsBasePublicHEnd); i < 0 {
+	if i := bytes.Index(hdr, wigbpEnd); i < 0 {
 		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
 	} else {
-		b.Write(hdr[i+len(wuffsBasePublicHEnd):])
+		b.Write(hdr[i+len(wigbpEnd):])
 	}
 
 	b.writeb('\n')

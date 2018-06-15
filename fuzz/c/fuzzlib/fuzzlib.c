@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef WUFFS_BASE_PUBLIC_H
+#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC
 #error "Wuffs' .c or .h files need to be included before this file"
 #endif
 
