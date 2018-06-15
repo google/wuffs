@@ -1552,7 +1552,7 @@ wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 
 #endif  // WUFFS_INCLUDE_GUARD__ZLIB
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

@@ -1269,7 +1269,7 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

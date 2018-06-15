@@ -305,7 +305,7 @@ func (g *gen) generate() ([]byte, error) {
 	if err := g.genHeader(b); err != nil {
 		return nil, err
 	}
-	b.writes("// C HEADER ENDS HERE.\n\n")
+	b.writes("// !! C HEADER ENDS HERE.\n\n")
 	if err := g.genImpl(b); err != nil {
 		return nil, err
 	}

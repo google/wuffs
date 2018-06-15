@@ -1314,7 +1314,7 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 #endif  // WUFFS_INCLUDE_GUARD__ADLER32
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

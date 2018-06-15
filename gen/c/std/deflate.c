@@ -1402,7 +1402,7 @@ wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
 
 #endif  // WUFFS_INCLUDE_GUARD__DEFLATE
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

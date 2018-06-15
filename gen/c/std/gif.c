@@ -1519,7 +1519,7 @@ wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
 
 #endif  // WUFFS_INCLUDE_GUARD__GIF
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

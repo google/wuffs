@@ -16,7 +16,7 @@
 
 // !! INSERT base-public.h.
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 // !! INSERT base-private.h.
 

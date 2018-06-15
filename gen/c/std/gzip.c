@@ -1554,7 +1554,7 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
 #endif  // WUFFS_INCLUDE_GUARD__GZIP
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

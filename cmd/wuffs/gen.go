@@ -203,7 +203,7 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 	return nil
 }
 
-var cHeaderEndsHere = []byte("\n// C HEADER ENDS HERE.\n\n")
+var cHeaderEndsHere = []byte("\n// !! C HEADER ENDS HERE.\n\n")
 
 func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 	files, err := generate.ParseFiles(&h.tm, qualifiedFilenames, nil)

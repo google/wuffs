@@ -1314,7 +1314,7 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 
 #endif  // WUFFS_INCLUDE_GUARD__CRC32
 
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE

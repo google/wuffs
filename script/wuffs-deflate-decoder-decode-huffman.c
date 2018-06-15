@@ -28,7 +28,7 @@
 // Having said that, to generate the benchmark numbers with this hand-written C
 // implementation, edit gen/c/std/deflate.c and find the line that says
 //
-// C HEADER ENDS HERE.
+// !! C HEADER ENDS HERE.
 //
 // After that, add this line:
 //
