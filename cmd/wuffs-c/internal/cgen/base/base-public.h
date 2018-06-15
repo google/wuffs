@@ -21,6 +21,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
@@ -1227,5 +1231,9 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
              ? b->private_impl.pixbuf.planes[p]
              : ((wuffs_base__table_u8){});
 }
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC

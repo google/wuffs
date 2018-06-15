@@ -35,6 +35,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
@@ -1259,26 +1263,34 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
              : ((wuffs_base__table_u8){});
 }
 
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC
 
-  // C HEADER ENDS HERE.
+// C HEADER ENDS HERE.
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 
-  // Copyright 2017 The Wuffs Authors.
-  //
-  // Licensed under the Apache License, Version 2.0 (the "License");
-  // you may not use this file except in compliance with the License.
-  // You may obtain a copy of the License at
-  //
-  //    https://www.apache.org/licenses/LICENSE-2.0
-  //
-  // Unless required by applicable law or agreed to in writing, software
-  // distributed under the License is distributed on an "AS IS" BASIS,
-  // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  // See the License for the specific language governing permissions and
-  // limitations under the License.
+// Copyright 2017 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
@@ -1820,6 +1832,10 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
   o->private_impl.bounds[0] = mark;
   return ((wuffs_base__empty_struct){});
 }
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 
