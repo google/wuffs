@@ -769,7 +769,8 @@ void bench_wuffs_gif_decode_1k_bw() {
 
 void bench_wuffs_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(wuffs_gif_decode, "../../data/hippopotamus.gif", 1000);
+  do_bench_gif_decode(wuffs_gif_decode, "../../data/hippopotamus.regular.gif",
+                      1000);
 }
 
 void bench_wuffs_gif_decode_10k() {
@@ -798,7 +799,8 @@ void bench_mimic_gif_decode_1k_bw() {
 
 void bench_mimic_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
-  do_bench_gif_decode(mimic_gif_decode, "../../data/hippopotamus.gif", 1000);
+  do_bench_gif_decode(mimic_gif_decode, "../../data/hippopotamus.regular.gif",
+                      1000);
 }
 
 void bench_mimic_gif_decode_10k() {
