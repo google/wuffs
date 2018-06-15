@@ -1839,6 +1839,8 @@ static inline wuffs_base__empty_struct wuffs_base__io_writer__set_mark(
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 
+#if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+
 static const char wuffs_base__status__string_data[] = {
     0x00, 0x6F, 0x6B, 0x00, 0x65, 0x6E, 0x64, 0x20, 0x6F, 0x66, 0x20, 0x64,
     0x61, 0x74, 0x61, 0x00, 0x73, 0x68, 0x6F, 0x72, 0x74, 0x20, 0x72, 0x65,
@@ -1903,3 +1905,6 @@ const char* wuffs_base__status__string(wuffs_base__status s) {
   uint16_t o = wuffs_base__status__string_offsets[(uint8_t)(s >> 24)];
   return o ? wuffs_base__status__string_data + o : "unknown status";
 }
+
+#endif  // !defined(WUFFS_CONFIG__MODULES) ||
+        // defined(WUFFS_CONFIG__MODULE__BASE)
