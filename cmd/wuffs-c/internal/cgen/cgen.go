@@ -81,7 +81,8 @@ func Do(args []string) error {
 			}
 			buf := make(buffer, 0, 128*1024)
 			if err := expandBangBangInsert(&buf, baseImplC, map[string]func(*buffer) error{
-				"// !! INSERT base-public.h.\n": insertBasePublicH,
+				"// !! INSERT base-private.h.\n": insertBasePrivateH,
+				"// !! INSERT base-public.h.\n":  insertBasePublicH,
 				"// !! INSERT wuffs_base__status__string data.\n": func(b *buffer) error {
 					messages := [256]string{}
 					for _, z := range builtin.StatusList {
@@ -192,6 +193,11 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 		}
 		s = remaining
 	}
+	return nil
+}
+
+func insertBasePrivateH(buf *buffer) error {
+	buf.writes(basePrivateH)
 	return nil
 }
 

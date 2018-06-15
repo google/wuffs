@@ -16,6 +16,10 @@
 
 // !! INSERT base-public.h.
 
+// C HEADER ENDS HERE.
+
+// !! INSERT base-private.h.
+
 // !! INSERT wuffs_base__status__string data.
 
 const char* wuffs_base__status__string(wuffs_base__status s) {
