@@ -25,13 +25,32 @@ for a C compiler $cc, such as clang or gcc.
 #include <errno.h>
 #include <unistd.h>
 
+// Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
+// the release/c/wuffs-etc/etc.c code whitelist which parts of Wuffs to build.
+// That C file contains the entire Wuffs standard library, implementing a
+// variety of codecs and file formats. Without this macro definition, an
+// optimizing compiler or linker may very well discard Wuffs code for unused
+// codecs, but listing the Wuffs modules we use makes that process explicit.
+// Preprocessing means that such code simply isn't compiled.
+#define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
+#define WUFFS_CONFIG__MODULE__GZIP
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../gen/c/base.c"
-#include "../../gen/c/std/crc32.c"
-#include "../../gen/c/std/deflate.c"
-#include "../../gen/c/std/gzip.c"
+#include "../../release/c/wuffs-v0.2/wuffs-v0.2.c"
+//
+// To build this program against the development (instead of the release)
+// editions, comment out the #include line above and uncomment the #include
+// lines below.
+//
+// #include "../../gen/c/base.c"
+// #include "../../gen/c/std/crc32.c"
+// #include "../../gen/c/std/deflate.c"
+// #include "../../gen/c/std/gzip.c"
 
 #ifdef __linux__
 #include <linux/prctl.h>
