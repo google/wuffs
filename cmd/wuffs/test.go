@@ -139,11 +139,12 @@ type testHelper struct {
 }
 
 func (h *testHelper) benchTest(dirname string, recursive bool) (failed bool, err error) {
-	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
+	qualFilenames, dirnames, err := listDir(
+		filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname)), ".wuffs", recursive)
 	if err != nil {
 		return false, err
 	}
-	if len(filenames) > 0 {
+	if len(qualFilenames) > 0 {
 		f, err := h.benchTestDir(dirname)
 		if err != nil {
 			return false, err

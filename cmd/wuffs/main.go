@@ -16,8 +16,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -33,6 +35,7 @@ var commands = []struct {
 	{"bench", doBench},
 	{"gen", doGen},
 	{"genlib", doGenlib},
+	{"genrelease", doGenrelease},
 	{"test", doTest},
 }
 
@@ -48,6 +51,7 @@ The commands are:
 	bench   benchmark packages
 	gen     generate code for packages and dependencies
 	genlib  generate software libraries
+	genrelease  generate a stand-alone release
 	test    test packages
 `)
 }
@@ -79,8 +83,41 @@ func main1() error {
 	return nil
 }
 
-func listDir(wuffsRoot string, dirname string, returnSubdirs bool) (filenames []string, dirnames []string, err error) {
-	f, err := os.Open(filepath.Join(wuffsRoot, filepath.FromSlash(dirname)))
+func findFiles(qualDirname string, suffix string) (filenames []string, err error) {
+	filenames, err = findFiles1(nil, qualDirname, suffix)
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(filenames)
+	return filenames, nil
+}
+
+func findFiles1(dstQF []string, qualDirname string, suffix string) (qualFilenames []string, err error) {
+	dstQF, relDirnames, err := appendDir(dstQF, qualDirname, suffix, true)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range relDirnames {
+		dstQF, err = findFiles1(dstQF, filepath.Join(qualDirname, d), suffix)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return dstQF, nil
+}
+
+func listDir(qualDirname string, suffix string, returnSubdirs bool) (qualFilenames []string, relDirnames []string, err error) {
+	qualFilenames, relDirnames, err = appendDir(nil, qualDirname, suffix, returnSubdirs)
+	if err != nil {
+		return nil, nil, err
+	}
+	sort.Strings(qualFilenames)
+	sort.Strings(relDirnames)
+	return qualFilenames, relDirnames, nil
+}
+
+func appendDir(dstQF []string, qualDirname string, suffix string, returnSubdirs bool) (qualFilenames []string, relDirnames []string, err error) {
+	f, err := os.Open(qualDirname)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,16 +131,29 @@ func listDir(wuffsRoot string, dirname string, returnSubdirs bool) (filenames []
 		name := o.Name()
 		if o.IsDir() {
 			if returnSubdirs {
-				dirnames = append(dirnames, name)
+				relDirnames = append(relDirnames, name)
 			}
-		} else if strings.HasSuffix(name, ".wuffs") {
-			filenames = append(filenames, name)
+		} else if strings.HasSuffix(name, suffix) {
+			dstQF = append(dstQF, filepath.Join(qualDirname, name))
 		}
 	}
 
-	sort.Strings(filenames)
-	sort.Strings(dirnames)
-	return filenames, dirnames, nil
+	return dstQF, relDirnames, nil
+}
+
+func writeFile(filename string, contents []byte) error {
+	if existing, err := ioutil.ReadFile(filename); err == nil && bytes.Equal(existing, contents) {
+		fmt.Println("gen unchanged: ", filename)
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+		return err
+	}
+	fmt.Println("gen wrote:     ", filename)
+	return nil
 }
 
 const (

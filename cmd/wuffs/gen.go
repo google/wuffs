@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -119,12 +118,13 @@ func (h *genHelper) gen(dirname string, recursive bool) error {
 		return fmt.Errorf("invalid package path %q", dirname)
 	}
 
-	filenames, dirnames, err := listDir(h.wuffsRoot, dirname, recursive)
+	qualFilenames, dirnames, err := listDir(
+		filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname)), ".wuffs", recursive)
 	if err != nil {
 		return err
 	}
-	if len(filenames) > 0 {
-		if err := h.genDir(dirname, filenames); err != nil {
+	if len(qualFilenames) > 0 {
+		if err := h.genDir(dirname, qualFilenames); err != nil {
 			return err
 		}
 		h.affected = append(h.affected, dirname)
@@ -139,7 +139,7 @@ func (h *genHelper) gen(dirname string, recursive bool) error {
 	return nil
 }
 
-func (h *genHelper) genDir(dirname string, filenames []string) error {
+func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 	// TODO: skip the generation if the output file already exists and its
 	// mtime is newer than all inputs and the wuffs-gen-foo command.
 
@@ -147,12 +147,9 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 	if !validName(packageName) {
 		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
-	qualifiedFilenames := make([]string, len(filenames))
-	for i, filename := range filenames {
-		qualifiedFilenames[i] = filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname), filename)
-	}
+
 	if !h.skipgendeps {
-		if err := h.genDirDependencies(qualifiedFilenames); err != nil {
+		if err := h.genDirDependencies(qualFilenames); err != nil {
 			return err
 		}
 	}
@@ -163,7 +160,7 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 		if lang == "c" {
 			cmdArgs = append(cmdArgs, fmt.Sprintf("-cformatter=%s", h.cformatter))
 		}
-		cmdArgs = append(cmdArgs, qualifiedFilenames...)
+		cmdArgs = append(cmdArgs, qualFilenames...)
 		stdout := &bytes.Buffer{}
 
 		cmd := exec.Command(command, cmdArgs...)
@@ -196,7 +193,7 @@ func (h *genHelper) genDir(dirname string, filenames []string) error {
 		}
 	}
 	if len(h.langs) > 0 && packageName != "base" {
-		if err := h.genWuffs(dirname, qualifiedFilenames); err != nil {
+		if err := h.genWuffs(dirname, qualFilenames); err != nil {
 			return err
 		}
 	}
@@ -226,19 +223,10 @@ func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 }
 
 func (h *genHelper) genFile(dirname string, lang string, out []byte) error {
-	outFilename := filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang)
-	if existing, err := ioutil.ReadFile(outFilename); err == nil && bytes.Equal(existing, out) {
-		fmt.Println("gen unchanged: ", outFilename)
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(outFilename), 0755); err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(outFilename, out, 0644); err != nil {
-		return err
-	}
-	fmt.Println("gen wrote:     ", outFilename)
-	return nil
+	return writeFile(
+		filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang),
+		out,
+	)
 }
 
 func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error {

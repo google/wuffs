@@ -41,6 +41,8 @@ func main1() error {
 		return cgen.Do(args)
 	case "genlib":
 		return doGenlib(args)
+	case "genrelease":
+		return doGenrelease(args)
 	case "test":
 		return doTest(args)
 	}

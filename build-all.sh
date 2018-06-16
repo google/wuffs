@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script is a simple sanity check that the tests pass and the example and
-# fuzz programs compile.
+# This script, build-all.sh, is a simple sanity check that the tests pass and
+# the example and fuzz programs compile. Despite the "all" in the script name,
+# it does not build the release editions, as building a release is a separate
+# process from e.g. checking that all tests pass before pushing commits.
 #
 # If you're just looking to get started with Wuffs, running this script isn't
 # necessary (as Wuffs doesn't have the "configure; make; make install" dance or
