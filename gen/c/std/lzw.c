@@ -1200,7 +1200,7 @@ static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
 // this frame's pixels differs from the previous frame.
 static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
     wuffs_base__image_buffer* b) {
-  return b ? b->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){0});
+  return b ? b->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){});
 }
 
 // wuffs_base__image_buffer__duration returns the amount of time to display
