@@ -56,14 +56,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-16 UTC,
-// based on revision dccf0c60d780eadceb531ec55cf23e80600a3747.
+// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-17 UTC,
+// based on revision 43a534934833ce5a13010b0ccc0d9cd9f56f321b.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.1"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.1"
+#define WUFFS_VERSION_EXTENSION "alpha.2"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.2"
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
@@ -1212,7 +1212,7 @@ static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
 // this frame's pixels differs from the previous frame.
 static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
     wuffs_base__image_buffer* b) {
-  return b ? b->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){0});
+  return b ? b->private_impl.dirty_rect : ((wuffs_base__rect_ie_u32){});
 }
 
 // wuffs_base__image_buffer__duration returns the amount of time to display
