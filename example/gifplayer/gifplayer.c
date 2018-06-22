@@ -125,8 +125,7 @@ static inline uint32_t load_u32le(uint8_t* p) {
 }
 
 void restore_background(wuffs_base__image_buffer* ib) {
-  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
-  size_t width = wuffs_base__image_config__width(ic);
+  size_t width = wuffs_base__image_buffer__width(ib);
 
   wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
   size_t y;
@@ -141,9 +140,7 @@ void restore_background(wuffs_base__image_buffer* ib) {
 
 void compose(wuffs_base__image_buffer* ib) {
   uint8_t* palette = wuffs_base__image_buffer__palette(ib).ptr;
-
-  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
-  size_t width = wuffs_base__image_config__width(ic);
+  size_t width = wuffs_base__image_buffer__width(ib);
 
   wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
   size_t y;
@@ -163,9 +160,8 @@ void compose(wuffs_base__image_buffer* ib) {
 }
 
 size_t print_ascii_art(wuffs_base__image_buffer* ib) {
-  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
-  uint32_t width = wuffs_base__image_config__width(ic);
-  uint32_t height = wuffs_base__image_config__height(ic);
+  uint32_t width = wuffs_base__image_buffer__width(ib);
+  uint32_t height = wuffs_base__image_buffer__height(ib);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
@@ -190,9 +186,8 @@ size_t print_ascii_art(wuffs_base__image_buffer* ib) {
 }
 
 size_t print_color_art(wuffs_base__image_buffer* ib) {
-  wuffs_base__image_config* ic = wuffs_base__image_buffer__image_config(ib);
-  uint32_t width = wuffs_base__image_config__width(ic);
-  uint32_t height = wuffs_base__image_config__height(ic);
+  uint32_t width = wuffs_base__image_buffer__width(ib);
+  uint32_t height = wuffs_base__image_buffer__height(ib);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;

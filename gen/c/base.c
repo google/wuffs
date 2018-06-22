@@ -1243,6 +1243,22 @@ static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
   return b ? &b->private_impl.config : NULL;
 }
 
+static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__bounds(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__bounds(&b->private_impl.config)
+           : ((wuffs_base__rect_ie_u32){});
+}
+
+static inline uint32_t wuffs_base__image_buffer__width(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__width(&b->private_impl.config) : 0;
+}
+
+static inline uint32_t wuffs_base__image_buffer__height(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__height(&b->private_impl.config) : 0;
+}
+
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
 // this frame's pixels differs from the previous frame.
 static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__dirty_rect(
