@@ -707,6 +707,20 @@ typedef struct {
   } private_impl;
 } wuffs_base__io_writer;
 
+// wuffs_base__io_buffer__compact moves any written but unread bytes to the
+// start of the buffer.
+static inline void wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
+  if (!buf || (buf->ri == 0)) {
+    return;
+  }
+  size_t n = buf->wi - buf->ri;
+  if (n != 0) {
+    memmove(buf->ptr, buf->ptr + buf->ri, n);
+  }
+  buf->wi = n;
+  buf->ri = 0;
+}
+
 static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});

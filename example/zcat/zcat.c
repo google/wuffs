@@ -78,30 +78,30 @@ static const char* decode() {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
   wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = src_buffer, .len = SRC_BUFFER_SIZE});
+
   while (true) {
     const int stdin_fd = 0;
-    ssize_t n_src = read(stdin_fd, src_buffer, SRC_BUFFER_SIZE);
-    if (n_src < 0) {
+    ssize_t n = read(stdin_fd, src.ptr + src.wi, src.len - src.wi);
+    if (n < 0) {
       if (errno != EINTR) {
         return strerror(errno);
       }
       continue;
     }
-
-    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-        .ptr = src_buffer,
-        .len = SRC_BUFFER_SIZE,
-        .wi = n_src,
-        .closed = n_src == 0,
-    });
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    src.wi += n;
+    if (n == 0) {
+      src.closed = true;
+    }
 
     while (true) {
       wuffs_base__io_buffer dst =
           ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
-      wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
+
       wuffs_base__status s =
-          wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
+          wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
+                                      wuffs_base__io_buffer__reader(&src));
 
       if (dst.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
@@ -115,9 +115,15 @@ static const char* decode() {
       if (s == WUFFS_BASE__SUSPENSION_SHORT_READ) {
         break;
       }
-      if (s != WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
-        return wuffs_gzip__status__string(s);
+      if (s == WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
+        continue;
       }
+      return wuffs_gzip__status__string(s);
+    }
+
+    wuffs_base__io_buffer__compact(&src);
+    if (src.wi == src.len) {
+      return "internal error: no I/O progress possible";
     }
   }
 }
