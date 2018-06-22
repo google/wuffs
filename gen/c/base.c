@@ -42,8 +42,10 @@ extern "C" {
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
+#ifdef __WORDSIZE
 #if (__WORDSIZE != 32) && (__WORDSIZE != 64)
 #error "Wuffs requires a word size of either 32 or 64 bits"
+#endif
 #endif
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
