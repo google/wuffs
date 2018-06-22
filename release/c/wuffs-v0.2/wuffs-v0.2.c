@@ -42,8 +42,10 @@ extern "C" {
 // Wuffs assumes that:
 //  - converting a uint32_t to a size_t will never overflow.
 //  - converting a size_t to a uint64_t will never overflow.
+#ifdef __WORDSIZE
 #if (__WORDSIZE != 32) && (__WORDSIZE != 64)
 #error "Wuffs requires a word size of either 32 or 64 bits"
+#endif
 #endif
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
@@ -56,24 +58,44 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-17 UTC,
-// based on revision 43a534934833ce5a13010b0ccc0d9cd9f56f321b.
+// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-22 UTC,
+// based on revision 0a1ce533fda421304fe97b19dbae4b26e6ebc8f1.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.2"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.2"
+#define WUFFS_VERSION_EXTENSION "alpha.3"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.3"
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
 typedef struct {
+  // private_impl is a placeholder field. It isn't explicitly used, except that
+  // without it, the sizeof a struct with no fields can differ across C/C++
+  // compilers, and it is undefined behavior in C99. For example, gcc says that
+  // the sizeof an empty struct is 0, and g++ says that it is 1. This leads to
+  // ABI incompatibility if a Wuffs .c file is processed by one compiler and
+  // its .h file with another compiler.
+  //
+  // Instead, we explicitly insert an otherwise unused field, so that the
+  // sizeof this struct is always 1.
+  uint8_t private_impl;
 } wuffs_base__empty_struct;
 
 // wuffs_base__utility is a placeholder receiver type. It enables what Java
 // calls static methods, as opposed to regular methods.
 typedef struct {
+  // private_impl is a placeholder field. It isn't explicitly used, except that
+  // without it, the sizeof a struct with no fields can differ across C/C++
+  // compilers, and it is undefined behavior in C99. For example, gcc says that
+  // the sizeof an empty struct is 0, and g++ says that it is 1. This leads to
+  // ABI incompatibility if a Wuffs .c file is processed by one compiler and
+  // its .h file with another compiler.
+  //
+  // Instead, we explicitly insert an otherwise unused field, so that the
+  // sizeof this struct is always 1.
+  uint8_t private_impl;
 } wuffs_base__utility;
 
 // --------
@@ -697,6 +719,20 @@ typedef struct {
   } private_impl;
 } wuffs_base__io_writer;
 
+// wuffs_base__io_buffer__compact moves any written but unread bytes to the
+// start of the buffer.
+static inline void wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
+  if (!buf || (buf->ri == 0)) {
+    return;
+  }
+  size_t n = buf->wi - buf->ri;
+  if (n != 0) {
+    memmove(buf->ptr, buf->ptr + buf->ri, n);
+  }
+  buf->wi = n;
+  buf->ri = 0;
+}
+
 static inline wuffs_base__io_reader wuffs_base__io_buffer__reader(
     wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret = ((wuffs_base__io_reader){});
@@ -1206,6 +1242,22 @@ static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
 static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
     wuffs_base__image_buffer* b) {
   return b ? &b->private_impl.config : NULL;
+}
+
+static inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer__bounds(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__bounds(&b->private_impl.config)
+           : ((wuffs_base__rect_ie_u32){});
+}
+
+static inline uint32_t wuffs_base__image_buffer__width(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__width(&b->private_impl.config) : 0;
+}
+
+static inline uint32_t wuffs_base__image_buffer__height(
+    wuffs_base__image_buffer* b) {
+  return b ? wuffs_base__image_config__height(&b->private_impl.config) : 0;
 }
 
 // wuffs_base__image_buffer__dirty_rect returns an upper bound for what part of
@@ -1951,6 +2003,8 @@ wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 #endif
 
 #endif  // WUFFS_INCLUDE_GUARD
+
+// !! C HEADER ENDS HERE.
 
 // Copyright 2017 The Wuffs Authors.
 //
