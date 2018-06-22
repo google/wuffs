@@ -67,6 +67,8 @@ func doGenrelease(args []string) error {
 
 		if i := bytes.Index(s, grCHeader); i >= 0 {
 			s = s[:i]
+		} else {
+			return fmt.Errorf("could not find %q", grCHeader)
 		}
 
 		if err := h.gen(unformatted, s); err != nil {
@@ -75,6 +77,8 @@ func doGenrelease(args []string) error {
 	}
 
 	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
+	unformatted.Write(grCHeader)
+	unformatted.WriteString("\n")
 
 	// Then, cat all of the implementations together, filtering out duplicate
 	// WUFFS_INCLUDE_GUARD__BASE_PRIVATE sections.

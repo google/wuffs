@@ -183,10 +183,11 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 		if lang != "c" || packageName == "base" {
 			continue
 		}
-		if i := bytes.Index(out, cHeaderEndsHere); i < 0 {
-			return fmt.Errorf("%s: output did not contain %q", command, cHeaderEndsHere)
-		} else {
+
+		if i := bytes.Index(out, cHeaderEndsHere); i >= 0 {
 			out = out[:i]
+		} else {
+			return fmt.Errorf("%s: output did not contain %q", command, cHeaderEndsHere)
 		}
 		if err := h.genFile(dirname, "h", out); err != nil {
 			return err

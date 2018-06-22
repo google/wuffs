@@ -57,23 +57,36 @@ func doGenrelease(wuffsRoot string, args []string) error {
 
 	revision := findRevision(wuffsRoot)
 	for _, lang := range langs {
-		if err := doGenrelease1(wuffsRoot, revision, v, lang, lang); err != nil {
+		filename, contents, err := doGenrelease1(wuffsRoot, revision, v, lang)
+		if err != nil {
+			return err
+		}
+		if err := writeFile(filename, contents); err != nil {
 			return err
 		}
 
-		if lang == "c" {
-			if err := doGenrelease1(wuffsRoot, revision, v, "c", "h"); err != nil {
-				return err
-			}
+		// Special-case the "c" generator to also write a .h file.
+		if lang != "c" {
+			continue
+		}
+
+		filename = filename[:len(filename)-1] + "h"
+		if i := bytes.Index(contents, cHeaderEndsHere); i >= 0 {
+			contents = contents[:i]
+		} else {
+			return fmt.Errorf("wuffs-c output did not contain %q", cHeaderEndsHere)
+		}
+		if err := writeFile(filename, contents); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func doGenrelease1(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) error {
-	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", suffix), "."+suffix)
+func doGenrelease1(wuffsRoot string, revision string, v cf.Version, lang string) (filename string, contents []byte, err error) {
+	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+lang)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
 	command := "wuffs-" + lang
@@ -88,16 +101,13 @@ func doGenrelease1(wuffsRoot string, revision string, v cf.Version, lang string,
 	if err := cmd.Run(); err == nil {
 		// No-op.
 	} else if _, ok := err.(*exec.ExitError); ok {
-		return fmt.Errorf("%s: failed", command)
+		return "", nil, fmt.Errorf("%s: failed", command)
 	} else {
-		return err
+		return "", nil, err
 	}
 
 	wv := fmt.Sprintf("wuffs-v%d.%d", v.Major, v.Minor)
-	return writeFile(
-		filepath.Join(wuffsRoot, "release", lang, wv, wv+"."+suffix),
-		stdout.Bytes(),
-	)
+	return filepath.Join(wuffsRoot, "release", lang, wv, wv+"."+lang), stdout.Bytes(), nil
 }
 
 func findRevision(wuffsRoot string) string {
