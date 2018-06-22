@@ -56,11 +56,31 @@ extern "C" {
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
 typedef struct {
+  // private_impl is a placeholder field. It isn't explicitly used, except that
+  // without it, the sizeof a struct with no fields can differ across C/C++
+  // compilers, and it is undefined behavior in C99. For example, gcc says that
+  // the sizeof an empty struct is 0, and g++ says that it is 1. This leads to
+  // ABI incompatibility if a Wuffs .c file is processed by one compiler and
+  // its .h file with another compiler.
+  //
+  // Instead, we explicitly insert an otherwise unused field, so that the
+  // sizeof this struct is always 1.
+  uint8_t private_impl;
 } wuffs_base__empty_struct;
 
 // wuffs_base__utility is a placeholder receiver type. It enables what Java
 // calls static methods, as opposed to regular methods.
 typedef struct {
+  // private_impl is a placeholder field. It isn't explicitly used, except that
+  // without it, the sizeof a struct with no fields can differ across C/C++
+  // compilers, and it is undefined behavior in C99. For example, gcc says that
+  // the sizeof an empty struct is 0, and g++ says that it is 1. This leads to
+  // ABI incompatibility if a Wuffs .c file is processed by one compiler and
+  // its .h file with another compiler.
+  //
+  // Instead, we explicitly insert an otherwise unused field, so that the
+  // sizeof this struct is always 1.
+  uint8_t private_impl;
 } wuffs_base__utility;
 
 // --------
