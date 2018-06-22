@@ -36,7 +36,7 @@ possible, it is unlikely that a Wuffs compiler would be worth writing in Wuffs.
 
 ## What Does Wuffs Code Look Like?
 
-The [`std/gif/decode_lzw.wuffs`](./std/gif/decode_lzw.wuffs) file is a good
+The [`std/lzw/decode_lzw.wuffs`](./std/lzw/decode_lzw.wuffs) file is a good
 example. See the "Poking Around" section below for more guidance.
 
 
@@ -47,10 +47,10 @@ error. `wuffs gen` fails to generate the C code, i.e. fails to compile
 (transpile) the Wuffs code to C code:
 
 ```diff
-diff --git a/std/gif/decode_lzw.wuffs b/std/gif/decode_lzw.wuffs
+diff --git a/std/lzw/decode_lzw.wuffs b/std/lzw/decode_lzw.wuffs
 index f878c5e..f10dcee 100644
---- a/std/gif/decode_lzw.wuffs
-+++ b/std/gif/decode_lzw.wuffs
+--- a/std/lzw/decode_lzw.wuffs
++++ b/std/lzw/decode_lzw.wuffs
 @@ -98,7 +98,7 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
                         in.dst.write?(x:s)
 
@@ -64,7 +64,7 @@ index f878c5e..f10dcee 100644
 ```
 $ wuffs gen std/gif
 check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
-/home/n/go/src/github.com/google/wuffs/std/gif/decode_lzw.wuffs:101. Facts:
+/home/n/go/src/github.com/google/wuffs/std/lzw/decode_lzw.wuffs:101. Facts:
     n_bits < 8
     c < 256
     this.stack[s] == (c as u8)
@@ -75,10 +75,10 @@ In comparison, this two-line edit will compile (but the "does it decode GIF
 correctly" tests then fail):
 
 ```diff
-diff --git a/std/gif/decode_lzw.wuffs b/std/gif/decode_lzw.wuffs
+diff --git a/std/lzw/decode_lzw.wuffs b/std/lzw/decode_lzw.wuffs
 index f878c5e..b43443d 100644
---- a/std/gif/decode_lzw.wuffs
-+++ b/std/gif/decode_lzw.wuffs
+--- a/std/lzw/decode_lzw.wuffs
++++ b/std/lzw/decode_lzw.wuffs
 @@ -97,8 +97,8 @@ pub func lzw_decoder.decode?(dst ptr buf1, src ptr buf1, src_final bool)() {
                         // type checking, bounds checking and code generation for it).
                         in.dst.write?(x:s)
@@ -233,7 +233,7 @@ some output containing the word "PASS" multiple times.
 
 ## Poking Around
 
-Feel free to edit the `std/gif/decode_lzw.wuffs` file, which implements the GIF
+Feel free to edit the `std/lzw/decode_lzw.wuffs` file, which implements the GIF
 LZW decoder. After editing, run `wuffs gen std/gif` or `wuffs test std/gif` to
 re-generate the C edition of the Wuffs standard library's GIF codec, and
 optionally run its tests.
@@ -354,4 +354,4 @@ owned by Google.
 
 ---
 
-Updated on November 2017.
+Updated on June 2018.
