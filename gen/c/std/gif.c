@@ -2303,7 +2303,7 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.decode_config
+// -------- func gif.decoder.decode_config
 
 wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
@@ -2392,7 +2392,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.frame_count
+// -------- func gif.decoder.frame_count
 
 uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
   if (!self) {
@@ -2409,7 +2409,7 @@ uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
   return self->private_impl.f_frame_count_value;
 }
 
-// -------- func decoder.work_buffer_size
+// -------- func gif.decoder.work_buffer_size
 
 wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
     wuffs_gif__decoder* self) {
@@ -2428,7 +2428,7 @@ wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
                                                 0);
 }
 
-// -------- func decoder.decode_frame
+// -------- func gif.decoder.decode_frame
 
 wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
@@ -2504,7 +2504,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_up_to_id_part1
+// -------- func gif.decoder.decode_up_to_id_part1
 
 wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
@@ -2622,7 +2622,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_header
+// -------- func gif.decoder.decode_header
 
 static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
@@ -2706,7 +2706,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_lsd
+// -------- func gif.decoder.decode_lsd
 
 static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     wuffs_gif__decoder* self,
@@ -2904,7 +2904,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_extension
+// -------- func gif.decoder.decode_extension
 
 static wuffs_base__status wuffs_gif__decoder__decode_extension(
     wuffs_gif__decoder* self,
@@ -3015,7 +3015,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.skip_blocks
+// -------- func gif.decoder.skip_blocks
 
 static wuffs_base__status wuffs_gif__decoder__skip_blocks(
     wuffs_gif__decoder* self,
@@ -3103,7 +3103,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_ae
+// -------- func gif.decoder.decode_ae
 
 static wuffs_base__status wuffs_gif__decoder__decode_ae(
     wuffs_gif__decoder* self,
@@ -3316,7 +3316,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_gc
+// -------- func gif.decoder.decode_gc
 
 static wuffs_base__status wuffs_gif__decoder__decode_gc(
     wuffs_gif__decoder* self,
@@ -3454,7 +3454,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_id_part0
+// -------- func gif.decoder.decode_id_part0
 
 static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
     wuffs_gif__decoder* self,
@@ -3718,7 +3718,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_id_part1
+// -------- func gif.decoder.decode_id_part1
 
 static wuffs_base__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
@@ -3958,7 +3958,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.copy_to_image_buffer
+// -------- func gif.decoder.copy_to_image_buffer
 
 static wuffs_base__status wuffs_gif__decoder__copy_to_image_buffer(
     wuffs_gif__decoder* self,

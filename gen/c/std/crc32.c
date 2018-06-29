@@ -2388,7 +2388,7 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
 
 // ---------------- Function Implementations
 
-// -------- func ieee_hasher.update
+// -------- func crc32.ieee_hasher.update
 
 uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
                                           wuffs_base__slice_u8 a_x) {

@@ -2051,7 +2051,7 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.set_literal_width
+// -------- func lzw.decoder.set_literal_width
 
 void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
                                            uint32_t a_lw) {
@@ -2073,7 +2073,7 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
   self->private_impl.f_literal_width = a_lw;
 }
 
-// -------- func decoder.decode
+// -------- func lzw.decoder.decode
 
 wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                                               wuffs_base__io_writer a_dst,

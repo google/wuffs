@@ -2242,7 +2242,7 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.decode
+// -------- func deflate.decoder.decode
 
 wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
                                                   wuffs_base__io_writer a_dst,
@@ -2380,7 +2380,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_blocks
+// -------- func deflate.decoder.decode_blocks
 
 static wuffs_base__status wuffs_deflate__decoder__decode_blocks(
     wuffs_deflate__decoder* self,
@@ -2535,7 +2535,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_uncompressed
+// -------- func deflate.decoder.decode_uncompressed
 
 static wuffs_base__status wuffs_deflate__decoder__decode_uncompressed(
     wuffs_deflate__decoder* self,
@@ -2681,7 +2681,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.init_fixed_huffman
+// -------- func deflate.decoder.init_fixed_huffman
 
 static wuffs_base__status wuffs_deflate__decoder__init_fixed_huffman(
     wuffs_deflate__decoder* self) {
@@ -2746,7 +2746,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.init_dynamic_huffman
+// -------- func deflate.decoder.init_dynamic_huffman
 
 static wuffs_base__status wuffs_deflate__decoder__init_dynamic_huffman(
     wuffs_deflate__decoder* self,
@@ -3006,7 +3006,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.init_huff
+// -------- func deflate.decoder.init_huff
 
 static wuffs_base__status wuffs_deflate__decoder__init_huff(
     wuffs_deflate__decoder* self,
@@ -3287,7 +3287,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_huffman_fast
+// -------- func deflate.decoder.decode_huffman_fast
 
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
@@ -3641,7 +3641,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_huffman_slow
+// -------- func deflate.decoder.decode_huffman_slow
 
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,

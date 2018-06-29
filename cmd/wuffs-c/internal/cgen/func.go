@@ -122,7 +122,7 @@ func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
 func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QQID()]
 
-	b.printf("// -------- func %s\n\n", n.QQID().Str(g.tm))
+	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
 	if err := g.writeFuncSignature(b, n); err != nil {
 		return err
 	}
