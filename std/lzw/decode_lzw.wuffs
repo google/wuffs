@@ -72,13 +72,17 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			if save_code <= 4095 {
 				this.suffixes[save_code] = code as base.u8
 				this.prefixes[save_code] = prev_code as base.u16
+				save_code += 1
+				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
+					width += 1
+				}
 			}
+			prev_code = code
 
 		} else if code == clear_code {
 			save_code = end_code
 			prev_code = 0
 			width = literal_width + 1
-			continue
 
 		} else if code == end_code {
 			return
@@ -126,18 +130,15 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			if save_code <= 4095 {
 				this.suffixes[save_code] = c as base.u8
 				this.prefixes[save_code] = prev_code as base.u16
+				save_code += 1
+				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
+					width += 1
+				}
 			}
+			prev_code = code
 
 		} else {
 			return error "bad code"
 		}
-
-		if save_code <= 4095 {
-			save_code += 1
-			if (save_code == ((1 as base.u32) << width)) and (width < 12) {
-				width += 1
-			}
-		}
-		prev_code = code
 	}
 }
