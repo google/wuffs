@@ -46,9 +46,9 @@ wuffs bench -skipgen -mimic -reps=1 -iterscale=1
 for f in example/*; do
   echo Building $f
   if [ "$f" = "example/library" ]; then
-    gcc -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
+    gcc -Wall -Werror -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
   elif [ -e $f/*.c ]; then
-    gcc $f/*.c -o $f/a.out
+    gcc -Wall -Werror $f/*.c -o $f/a.out
   fi
 done
 

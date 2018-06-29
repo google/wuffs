@@ -68,8 +68,8 @@ for a C compiler $cc, such as clang or gcc.
 #define SRC_BUFFER_SIZE (16 * 1024)
 #endif
 
-char dst_buffer[DST_BUFFER_SIZE];
-char src_buffer[SRC_BUFFER_SIZE];
+uint8_t dst_buffer[DST_BUFFER_SIZE];
+uint8_t src_buffer[SRC_BUFFER_SIZE];
 
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}

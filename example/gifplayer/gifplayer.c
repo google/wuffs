@@ -192,7 +192,7 @@ size_t print_color_art(wuffs_base__image_buffer* ib) {
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
   *p++ = '\n';
-  p += sprintf(p, "%s", reset_color);
+  p += sprintf((char*)p, "%s", reset_color);
   uint32_t y;
   for (y = 0; y < height; y++) {
     uint32_t x;
@@ -203,11 +203,11 @@ size_t print_color_art(wuffs_base__image_buffer* ib) {
       int r = 0xFF & (c >> 16);
       // "\xE2\x96\x88" is U+2588 FULL BLOCK. Before that is a true color
       // terminal escape code.
-      p += sprintf(p, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88", r, g, b);
+      p += sprintf((char*)p, "\x1B[38;2;%d;%d;%dm\xE2\x96\x88", r, g, b);
     }
     *p++ = '\n';
   }
-  p += sprintf(p, "%s", reset_color);
+  p += sprintf((char*)p, "%s", reset_color);
   return p - print_buffer;
 }
 
