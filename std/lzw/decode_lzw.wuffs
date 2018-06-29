@@ -79,13 +79,13 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 			}
 			prev_code = code
 
-		} else if code == clear_code {
+		} else if code <= end_code {
+			if code == end_code {
+				return
+			}
 			save_code = end_code
 			prev_code = 0
 			width = literal_width + 1
-
-		} else if code == end_code {
-			return
 
 		} else if code <= save_code {
 			var s base.u32[..4095] = 4095

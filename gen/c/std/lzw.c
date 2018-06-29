@@ -2202,13 +2202,14 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           }
         }
         v_prev_code = v_code;
-      } else if (v_code == v_clear_code) {
+      } else if (v_code <= v_end_code) {
+        if (v_code == v_end_code) {
+          status = WUFFS_BASE__STATUS_OK;
+          goto ok;
+        }
         v_save_code = v_end_code;
         v_prev_code = 0;
         v_width = (v_literal_width + 1);
-      } else if (v_code == v_end_code) {
-        status = WUFFS_BASE__STATUS_OK;
-        goto ok;
       } else if (v_code <= v_save_code) {
         v_s = 4095;
         v_c = v_code;
