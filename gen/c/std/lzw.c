@@ -2200,8 +2200,8 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
             v_width += 1;
           }
+          v_prev_code = v_code;
         }
-        v_prev_code = v_code;
       } else if (v_code <= v_end_code) {
         if (v_code == v_end_code) {
           status = WUFFS_BASE__STATUS_OK;
@@ -2253,8 +2253,8 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
             v_width += 1;
           }
+          v_prev_code = v_code;
         }
-        v_prev_code = v_code;
       } else {
         status = WUFFS_LZW__ERROR_BAD_CODE;
         goto exit;

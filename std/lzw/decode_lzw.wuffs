@@ -76,8 +76,8 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1
 				}
+				prev_code = code
 			}
-			prev_code = code
 
 		} else if code <= end_code {
 			if code == end_code {
@@ -134,8 +134,8 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1
 				}
+				prev_code = code
 			}
-			prev_code = code
 
 		} else {
 			return error "bad code"
