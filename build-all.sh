@@ -50,7 +50,8 @@ for f in example/*; do
     g++ -Wall -Werror $f/*.cc -o $f/a.out
   elif [ "$f" = "example/library" ]; then
     # example/library is unusual in that it uses separately compiled libraries
-    # instead of directly #include'ing Wuffs' .c files.
+    # (built by "wuffs genlib" above) instead of directly #include'ing Wuffs'
+    # .c files.
     gcc -Wall -Werror -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
   elif [ -e $f/*.c ]; then
     gcc -Wall -Werror $f/*.c -o $f/a.out
@@ -65,9 +66,9 @@ done
 # If you wanted to build a release edition now, do something like:
 # wuffs genrelease -version=0.0.0-manualtest
 
-# Even if we don't build the release editions, check that they compile with
-# -Wall -Werror.
+# Even if we don't build the release editions, check that they compile without
+# any warnings.
 for f in release/c/wuffs-*/*.c; do
   gcc -c -Wall -Werror -std=c99   $f -o /dev/null
-  g++ -c               -std=c++11 $f -o /dev/null
+  g++ -c -Wall -Werror -std=c++11 $f -o /dev/null
 done

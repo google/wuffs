@@ -2529,7 +2529,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
     self->private_impl.c_decode[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+    if (self->private_impl.c_decode[0].scratch >
+        ((uint64_t)(iobounds1_src - ioptr_src))) {
       self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
       ioptr_src = iobounds1_src;
       goto short_read_src;
@@ -2567,7 +2568,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
       self->private_impl.c_decode[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
-      if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+      if (self->private_impl.c_decode[0].scratch >
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
         goto short_read_src;
@@ -2610,7 +2612,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
       self->private_impl.c_decode[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
-      if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+      if (self->private_impl.c_decode[0].scratch >
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
         goto short_read_src;

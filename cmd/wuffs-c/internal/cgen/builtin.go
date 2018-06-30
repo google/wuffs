@@ -445,7 +445,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 				return err
 			}
 
-			b.printf("if (%s > iobounds1_src - ioptr_src) {\n", scratchName)
+			b.printf("if (%s > ((uint64_t)(iobounds1_src - ioptr_src))) {\n", scratchName)
 			b.printf("%s -= iobounds1_src - ioptr_src;\n", scratchName)
 			b.printf("ioptr_src = iobounds1_src;\n")
 

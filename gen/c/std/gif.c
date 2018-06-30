@@ -2906,7 +2906,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     self->private_impl.c_decode_lsd[0].scratch = 2;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
     if (self->private_impl.c_decode_lsd[0].scratch >
-        iobounds1_src - ioptr_src) {
+        ((uint64_t)(iobounds1_src - ioptr_src))) {
       self->private_impl.c_decode_lsd[0].scratch -= iobounds1_src - ioptr_src;
       ioptr_src = iobounds1_src;
       goto short_read_src;
@@ -3158,7 +3158,7 @@ static wuffs_base__status wuffs_gif__decoder__skip_blocks(
       self->private_impl.c_skip_blocks[0].scratch = ((uint32_t)(v_block_size));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       if (self->private_impl.c_skip_blocks[0].scratch >
-          iobounds1_src - ioptr_src) {
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_skip_blocks[0].scratch -=
             iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
@@ -3255,7 +3255,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
@@ -3298,7 +3298,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
@@ -3320,7 +3320,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = 2;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
