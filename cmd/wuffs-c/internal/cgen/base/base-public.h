@@ -1212,25 +1212,6 @@ static inline void wuffs_base__image_buffer__update(
   }
 }
 
-// wuffs_base__image_buffer__loop returns whether the image decoder should loop
-// back to the beginning of the animation, assuming that we've reached the end
-// of the encoded stream. If so, it increments b's count of the animation loops
-// played so far.
-static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
-  if (!b) {
-    return false;
-  }
-  uint32_t n = b->private_impl.config.private_impl.num_loops;
-  if (n == 0) {
-    return true;
-  }
-  if (b->private_impl.loop_count < n - 1) {
-    b->private_impl.loop_count++;
-    return true;
-  }
-  return false;
-}
-
 // wuffs_base__image_config returns the overall configuration for this frame.
 static inline wuffs_base__image_config* wuffs_base__image_buffer__image_config(
     wuffs_base__image_buffer* b) {
