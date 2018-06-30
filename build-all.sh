@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ----------------
+
 # This script, build-all.sh, is a simple sanity check that the tests pass and
-# the example and fuzz programs compile. Despite the "all" in the script name,
-# it does not build the release editions, as building a release is a separate
-# process from e.g. checking that all tests pass before pushing commits.
+# the example programs, fuzz programs and release editions compile.
 #
 # If you're just looking to get started with Wuffs, running this script isn't
 # necessary (as Wuffs doesn't have the "configure; make; make install" dance or
@@ -40,11 +40,12 @@
 go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
 wuffs genlib
-wuffs test  -skipgen -mimic
-wuffs bench -skipgen -mimic -reps=1 -iterscale=1
+wuffs test       -skipgen -mimic
+wuffs bench      -skipgen -mimic -reps=1 -iterscale=1
+wuffs genrelease -skipgen -version=0.0.0
 
 for f in example/*; do
-  echo Building $f
+  echo "Building $f"
   if [ "$f" = "example/crc32" ]; then
     # example/crc32 is unusual in that it's C++, not C.
     g++ -Wall -Werror $f/*.cc -o $f/a.out
@@ -59,18 +60,13 @@ for f in example/*; do
 done
 
 for f in fuzz/c/std/*_fuzzer.c; do
-  echo Building $f
+  echo "Building $f"
   gcc -DWUFFS_CONFIG__FUZZLIB_MAIN $f -o ${f%.c}.out
 done
 
-# If you wanted to build a release edition now, do something like:
-# wuffs genrelease -version=0.0.0-manualtest
-
-# Even if we don't build the release editions, check that they compile without
-# any warnings.
 for f in release/c/wuffs-*/*.c; do
-  echo "Building $f (as C)"
+  echo "Checking $f compiles cleanly (as C)"
   gcc -c -Wall -Werror -std=c99   $f -o /dev/null
-  echo "Building $f (as C++)"
+  echo "Checking $f compiles cleanly (as C++)"
   g++ -c -Wall -Werror -std=c++11 $f -o /dev/null
 done
