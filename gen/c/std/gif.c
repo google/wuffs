@@ -1568,6 +1568,7 @@ typedef struct {
     } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_c;
       uint8_t v_flags;
       uint64_t scratch;
     } c_decode_gc[1];
@@ -3414,6 +3415,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
     wuffs_base__io_reader a_src) {
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
+  uint8_t v_c;
   uint8_t v_flags;
 
   uint8_t* ioptr_src = NULL;
@@ -3434,6 +3436,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
 
   uint32_t coro_susp_point = self->private_impl.c_decode_gc[0].coro_susp_point;
   if (coro_susp_point) {
+    v_c = self->private_impl.c_decode_gc[0].v_c;
     v_flags = self->private_impl.c_decode_gc[0].v_flags;
   } else {
   }
@@ -3444,12 +3447,15 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *ioptr_src++;
+      v_c = t_0;
     }
-    uint8_t t_0 = *ioptr_src++;
-    if (t_0 != 4) {
+    if (v_c != 4) {
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
@@ -3506,12 +3512,15 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
       uint8_t t_4 = *ioptr_src++;
       self->private_impl.f_gc_transparent_index = t_4;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_5 = *ioptr_src++;
+      v_c = t_5;
     }
-    uint8_t t_5 = *ioptr_src++;
-    if (t_5 != 0) {
+    if (v_c != 0) {
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
@@ -3526,6 +3535,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
   goto suspend;
 suspend:
   self->private_impl.c_decode_gc[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_gc[0].v_c = v_c;
   self->private_impl.c_decode_gc[0].v_flags = v_flags;
 
   goto exit;

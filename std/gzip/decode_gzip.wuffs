@@ -34,19 +34,21 @@ pub func decoder.set_ignore_checksum!(ic base.bool)() {
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	// Read the header.
-	if in.src.read_u8?() != 0x1F {
+	var c base.u8 = in.src.read_u8?()
+	if c != 0x1F {
 		return error "bad header"
 	}
-	if in.src.read_u8?() != 0x8B {
+	c = in.src.read_u8?()
+	if c != 0x8B {
 		return error "bad header"
 	}
-	if in.src.read_u8?() != 0x08 {
+	c = in.src.read_u8?()
+	if c != 0x08 {
 		return error "bad compression method"
 	}
 	var flags base.u8 = in.src.read_u8?()
 	// TODO: API for returning the header's MTIME field.
 	in.src.skip32?(n:6)
-	var c base.u8
 
 	// Handle FEXTRA.
 	if (flags & 0x04) != 0 {

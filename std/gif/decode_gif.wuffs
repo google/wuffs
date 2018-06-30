@@ -353,7 +353,8 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 	if this.seen_graphic_control {
 		return error "bad graphic control"
 	}
-	if in.src.read_u8?() != 4 {
+	var c base.u8 = in.src.read_u8?()
+	if c != 4 {
 		return error "bad graphic control"
 	}
 
@@ -382,7 +383,8 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 	this.gc_duration = (in.src.read_u16le?() as base.u64) * 7056000
 	this.gc_transparent_index = in.src.read_u8?()
 
-	if in.src.read_u8?() != 0 {
+	c = in.src.read_u8?()
+	if c != 0 {
 		return error "bad graphic control"
 	}
 	this.seen_graphic_control = true

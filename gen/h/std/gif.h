@@ -1568,6 +1568,7 @@ typedef struct {
     } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_c;
       uint8_t v_flags;
       uint64_t scratch;
     } c_decode_gc[1];

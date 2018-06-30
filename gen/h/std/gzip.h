@@ -1643,8 +1643,8 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_flags;
       uint8_t v_c;
+      uint8_t v_flags;
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       uint32_t v_decoded_length_got;

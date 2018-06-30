@@ -61,3 +61,13 @@ for f in fuzz/c/std/*_fuzzer.c; do
   echo Building $f
   gcc -DWUFFS_CONFIG__FUZZLIB_MAIN $f -o ${f%.c}.out
 done
+
+# If you wanted to build a release edition now, do something like:
+# wuffs genrelease -version=0.0.0-manualtest
+
+# Even if we don't build the release editions, check that they compile with
+# -Wall -Werror.
+for f in release/c/wuffs-*/*.c; do
+  gcc -c -Wall -Werror -std=c99   $f -o /dev/null
+  g++ -c               -std=c++11 $f -o /dev/null
+done

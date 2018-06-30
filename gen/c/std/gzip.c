@@ -1643,8 +1643,8 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_flags;
       uint8_t v_c;
+      uint8_t v_flags;
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       uint32_t v_decoded_length_got;
@@ -2423,8 +2423,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   }
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
-  uint8_t v_flags;
   uint8_t v_c;
+  uint8_t v_flags;
   uint16_t v_xlen;
   uint32_t v_checksum_got;
   uint32_t v_decoded_length_got;
@@ -2468,8 +2468,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
-    v_flags = self->private_impl.c_decode[0].v_flags;
     v_c = self->private_impl.c_decode[0].v_c;
+    v_flags = self->private_impl.c_decode[0].v_flags;
     v_xlen = self->private_impl.c_decode[0].v_xlen;
     v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_decoded_length_got = self->private_impl.c_decode[0].v_decoded_length_got;
@@ -2482,30 +2482,39 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *ioptr_src++;
+      v_c = t_0;
     }
-    uint8_t t_0 = *ioptr_src++;
-    if (t_0 != 31) {
+    if (v_c != 31) {
       status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_1 = *ioptr_src++;
+      v_c = t_1;
     }
-    uint8_t t_1 = *ioptr_src++;
-    if (t_1 != 139) {
+    if (v_c != 139) {
       status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_2 = *ioptr_src++;
+      v_c = t_2;
     }
-    uint8_t t_2 = *ioptr_src++;
-    if (t_2 != 8) {
+    if (v_c != 8) {
       status = WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD;
       goto exit;
     }
@@ -2526,7 +2535,6 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       goto short_read_src;
     }
     ioptr_src += self->private_impl.c_decode[0].scratch;
-    v_c = 0;
     if ((v_flags & 4) != 0) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -2729,8 +2737,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_flags = v_flags;
   self->private_impl.c_decode[0].v_c = v_c;
+  self->private_impl.c_decode[0].v_flags = v_flags;
   self->private_impl.c_decode[0].v_xlen = v_xlen;
   self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_decoded_length_got = v_decoded_length_got;
