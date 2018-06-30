@@ -45,7 +45,12 @@ wuffs bench -skipgen -mimic -reps=1 -iterscale=1
 
 for f in example/*; do
   echo Building $f
-  if [ "$f" = "example/library" ]; then
+  if [ "$f" = "example/crc32" ]; then
+    # example/crc32 is unusual in that it's C++, not C.
+    g++ $f/*.cc -o $f/a.out
+  elif [ "$f" = "example/library" ]; then
+    # example/library is unusual in that it uses separately compiled libraries
+    # instead of directly #include'ing Wuffs' .c files.
     gcc -Wall -Werror -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
   elif [ -e $f/*.c ]; then
     gcc -Wall -Werror $f/*.c -o $f/a.out
