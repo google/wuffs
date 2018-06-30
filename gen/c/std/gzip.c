@@ -2076,11 +2076,11 @@ static inline uint32_t wuffs_base__io_writer__copy_from_reader32(
     uint32_t length) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = length;
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   uint8_t* ioptr_r = *ptr_ioptr_r;
-  if (n > iobounds1_r - ioptr_r) {
+  if (n > ((size_t)(iobounds1_r - ioptr_r))) {
     n = iobounds1_r - ioptr_r;
   }
   if (n > 0) {
@@ -2097,7 +2097,7 @@ static inline uint64_t wuffs_base__io_writer__copy_from_slice(
     wuffs_base__slice_u8 src) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = src.len;
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
@@ -2117,7 +2117,7 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   if (n > length) {
     n = length;
   }
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
@@ -2131,7 +2131,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
     wuffs_base__io_reader* o,
     uint8_t* ioptr_r,
     uint64_t limit) {
-  if (o && ((o->private_impl.bounds[1] - ioptr_r) > limit)) {
+  if (o && (((size_t)(o->private_impl.bounds[1] - ioptr_r)) > limit)) {
     o->private_impl.bounds[1] = ioptr_r + limit;
   }
   return ((wuffs_base__empty_struct){});

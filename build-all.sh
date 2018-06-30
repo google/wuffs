@@ -47,7 +47,7 @@ for f in example/*; do
   echo Building $f
   if [ "$f" = "example/crc32" ]; then
     # example/crc32 is unusual in that it's C++, not C.
-    g++ $f/*.cc -o $f/a.out
+    g++ -Wall -Werror $f/*.cc -o $f/a.out
   elif [ "$f" = "example/library" ]; then
     # example/library is unusual in that it uses separately compiled libraries
     # instead of directly #include'ing Wuffs' .c files.
