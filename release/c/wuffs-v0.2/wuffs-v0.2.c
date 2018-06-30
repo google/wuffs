@@ -58,14 +58,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-22 UTC,
-// based on revision 0a1ce533fda421304fe97b19dbae4b26e6ebc8f1.
+// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-30 UTC,
+// based on revision 7f65cd04d061369bbab8b9eca552571e34622f43.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.3"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.3"
+#define WUFFS_VERSION_EXTENSION "alpha.4"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.4"
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
@@ -683,23 +683,13 @@ static inline uint32_t wuffs_base__rect_ie_u32__height(
 
 // ---------------- I/O
 
-// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
-// additional indexes into that buffer, plus an opened / closed flag.
-//
-// A value with all fields NULL or zero is a valid, empty buffer.
-typedef struct {
-  uint8_t* ptr;  // Pointer.
-  size_t len;    // Length.
-  size_t wi;     // Write index. Invariant: wi <= len.
-  size_t ri;     // Read  index. Invariant: ri <= wi.
-  bool closed;   // No further writes are expected.
-} wuffs_base__io_buffer;
+struct wuffs_base__io_buffer__struct;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__io_buffer* buf;
+    struct wuffs_base__io_buffer__struct* buf;
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
@@ -711,13 +701,32 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__io_buffer* buf;
+    struct wuffs_base__io_buffer__struct* buf;
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
     uint8_t* bounds[2];
   } private_impl;
 } wuffs_base__io_writer;
+
+// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
+// additional indexes into that buffer, plus an opened / closed flag.
+//
+// A value with all fields NULL or zero is a valid, empty buffer.
+typedef struct wuffs_base__io_buffer__struct {
+  uint8_t* ptr;  // Pointer.
+  size_t len;    // Length.
+  size_t wi;     // Write index. Invariant: wi <= len.
+  size_t ri;     // Read  index. Invariant: ri <= wi.
+  bool closed;   // No further writes are expected.
+
+#ifdef __cplusplus
+  inline void compact();
+  inline wuffs_base__io_reader reader();
+  inline wuffs_base__io_writer writer();
+#endif  // __cplusplus
+
+} wuffs_base__io_buffer;
 
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
 // start of the buffer.
@@ -746,6 +755,22 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
   ret.private_impl.buf = buf;
   return ret;
 }
+
+#ifdef __cplusplus
+
+inline void wuffs_base__io_buffer__struct::compact() {
+  wuffs_base__io_buffer__compact(this);
+}
+
+inline wuffs_base__io_reader wuffs_base__io_buffer__struct::reader() {
+  return wuffs_base__io_buffer__reader(this);
+}
+
+inline wuffs_base__io_writer wuffs_base__io_buffer__struct::writer() {
+  return wuffs_base__io_buffer__writer(this);
+}
+
+#endif  // __cplusplus
 
 // ---------------- Images
 
@@ -1354,6 +1379,13 @@ typedef struct {
     bool f_started;
 
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline uint32_t update(wuffs_base__slice_u8 a_x);
+#endif  // __cplusplus
+
 } wuffs_adler32__hasher;
 
 // ---------------- Public Initializer Prototypes
@@ -1371,6 +1403,22 @@ void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
 
 uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
                                        wuffs_base__slice_u8 a_x);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_adler32__hasher::check_wuffs_version(size_t sizeof_star_self,
+                                                       uint64_t wuffs_version) {
+  wuffs_adler32__hasher__check_wuffs_version(this, sizeof_star_self,
+                                             wuffs_version);
+}
+
+inline uint32_t wuffs_adler32__hasher::update(wuffs_base__slice_u8 a_x) {
+  return wuffs_adler32__hasher__update(this, a_x);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1409,6 +1457,13 @@ typedef struct {
     uint32_t f_state;
 
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline uint32_t update(wuffs_base__slice_u8 a_x);
+#endif  // __cplusplus
+
 } wuffs_crc32__ieee_hasher;
 
 // ---------------- Public Initializer Prototypes
@@ -1427,6 +1482,23 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
 
 uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
                                           wuffs_base__slice_u8 a_x);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_crc32__ieee_hasher::check_wuffs_version(
+    size_t sizeof_star_self,
+    uint64_t wuffs_version) {
+  wuffs_crc32__ieee_hasher__check_wuffs_version(this, sizeof_star_self,
+                                                wuffs_version);
+}
+
+inline uint32_t wuffs_crc32__ieee_hasher::update(wuffs_base__slice_u8 a_x) {
+  return wuffs_crc32__ieee_hasher__update(this, a_x);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1553,6 +1625,14 @@ typedef struct {
       uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
+                                   wuffs_base__io_reader a_src);
+#endif  // __cplusplus
+
 } wuffs_deflate__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1571,6 +1651,25 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
                                                   wuffs_base__io_writer a_dst,
                                                   wuffs_base__io_reader a_src);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_deflate__decoder::check_wuffs_version(
+    size_t sizeof_star_self,
+    uint64_t wuffs_version) {
+  wuffs_deflate__decoder__check_wuffs_version(this, sizeof_star_self,
+                                              wuffs_version);
+}
+
+inline wuffs_base__status wuffs_deflate__decoder::decode(
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_deflate__decoder__decode(this, a_dst, a_src);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1636,6 +1735,15 @@ typedef struct {
       uint64_t v_n_copied;
     } c_decode[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline void set_literal_width(uint32_t a_lw);
+  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
+                                   wuffs_base__io_reader a_src);
+#endif  // __cplusplus
+
 } wuffs_lzw__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1657,6 +1765,28 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
 wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                                               wuffs_base__io_writer a_dst,
                                               wuffs_base__io_reader a_src);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_lzw__decoder::check_wuffs_version(size_t sizeof_star_self,
+                                                    uint64_t wuffs_version) {
+  wuffs_lzw__decoder__check_wuffs_version(this, sizeof_star_self,
+                                          wuffs_version);
+}
+
+inline void wuffs_lzw__decoder::set_literal_width(uint32_t a_lw) {
+  return wuffs_lzw__decoder__set_literal_width(this, a_lw);
+}
+
+inline wuffs_base__status wuffs_lzw__decoder::decode(
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_lzw__decoder__decode(this, a_dst, a_src);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1775,6 +1905,7 @@ typedef struct {
     } c_decode_ae[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_c;
       uint8_t v_flags;
       uint64_t scratch;
     } c_decode_gc[1];
@@ -1793,6 +1924,19 @@ typedef struct {
       wuffs_base__status v_z;
     } c_decode_id_part1[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline wuffs_base__status decode_config(wuffs_base__image_config* a_dst,
+                                          wuffs_base__io_reader a_src);
+  inline uint64_t frame_count();
+  inline wuffs_base__range_ii_u64 work_buffer_size();
+  inline wuffs_base__status decode_frame(wuffs_base__image_buffer* a_dst,
+                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__slice_u8 a_work_buffer);
+#endif  // __cplusplus
+
 } wuffs_gif__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1824,9 +1968,38 @@ wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_base__io_reader a_src,
     wuffs_base__slice_u8 a_work_buffer);
 
-wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
-    wuffs_gif__decoder* self,
-    wuffs_base__io_reader a_src);
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_gif__decoder::check_wuffs_version(size_t sizeof_star_self,
+                                                    uint64_t wuffs_version) {
+  wuffs_gif__decoder__check_wuffs_version(this, sizeof_star_self,
+                                          wuffs_version);
+}
+
+inline wuffs_base__status wuffs_gif__decoder::decode_config(
+    wuffs_base__image_config* a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_gif__decoder__decode_config(this, a_dst, a_src);
+}
+
+inline uint64_t wuffs_gif__decoder::frame_count() {
+  return wuffs_gif__decoder__frame_count(this);
+}
+
+inline wuffs_base__range_ii_u64 wuffs_gif__decoder::work_buffer_size() {
+  return wuffs_gif__decoder__work_buffer_size(this);
+}
+
+inline wuffs_base__status wuffs_gif__decoder::decode_frame(
+    wuffs_base__image_buffer* a_dst,
+    wuffs_base__io_reader a_src,
+    wuffs_base__slice_u8 a_work_buffer) {
+  return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_work_buffer);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1881,8 +2054,8 @@ typedef struct {
 
     struct {
       uint32_t coro_susp_point;
-      uint8_t v_flags;
       uint8_t v_c;
+      uint8_t v_flags;
       uint16_t v_xlen;
       uint32_t v_checksum_got;
       uint32_t v_decoded_length_got;
@@ -1892,6 +2065,15 @@ typedef struct {
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline void set_ignore_checksum(bool a_ic);
+  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
+                                   wuffs_base__io_reader a_src);
+#endif  // __cplusplus
+
 } wuffs_gzip__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1913,6 +2095,28 @@ void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
 wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                                                wuffs_base__io_writer a_dst,
                                                wuffs_base__io_reader a_src);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_gzip__decoder::check_wuffs_version(size_t sizeof_star_self,
+                                                     uint64_t wuffs_version) {
+  wuffs_gzip__decoder__check_wuffs_version(this, sizeof_star_self,
+                                           wuffs_version);
+}
+
+inline void wuffs_gzip__decoder::set_ignore_checksum(bool a_ic) {
+  return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
+}
+
+inline wuffs_base__status wuffs_gzip__decoder::decode(
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_gzip__decoder__decode(this, a_dst, a_src);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -1976,6 +2180,15 @@ typedef struct {
       uint64_t scratch;
     } c_decode[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline void set_ignore_checksum(bool a_ic);
+  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
+                                   wuffs_base__io_reader a_src);
+#endif  // __cplusplus
+
 } wuffs_zlib__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1997,6 +2210,28 @@ void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
 wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__io_writer a_dst,
                                                wuffs_base__io_reader a_src);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_zlib__decoder::check_wuffs_version(size_t sizeof_star_self,
+                                                     uint64_t wuffs_version) {
+  wuffs_zlib__decoder__check_wuffs_version(this, sizeof_star_self,
+                                           wuffs_version);
+}
+
+inline void wuffs_zlib__decoder::set_ignore_checksum(bool a_ic) {
+  return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
+}
+
+inline wuffs_base__status wuffs_zlib__decoder::decode(
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_zlib__decoder__decode(this, a_dst, a_src);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2471,11 +2706,11 @@ static inline uint32_t wuffs_base__io_writer__copy_from_reader32(
     uint32_t length) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = length;
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   uint8_t* ioptr_r = *ptr_ioptr_r;
-  if (n > iobounds1_r - ioptr_r) {
+  if (n > ((size_t)(iobounds1_r - ioptr_r))) {
     n = iobounds1_r - ioptr_r;
   }
   if (n > 0) {
@@ -2492,7 +2727,7 @@ static inline uint64_t wuffs_base__io_writer__copy_from_slice(
     wuffs_base__slice_u8 src) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = src.len;
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
@@ -2512,7 +2747,7 @@ static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
   if (n > length) {
     n = length;
   }
-  if (n > iobounds1_w - ioptr_w) {
+  if (n > ((size_t)(iobounds1_w - ioptr_w))) {
     n = iobounds1_w - ioptr_w;
   }
   if (n > 0) {
@@ -2526,7 +2761,7 @@ static inline wuffs_base__empty_struct wuffs_base__io_reader__set_limit(
     wuffs_base__io_reader* o,
     uint8_t* ioptr_r,
     uint64_t limit) {
-  if (o && ((o->private_impl.bounds[1] - ioptr_r) > limit)) {
+  if (o && (((size_t)(o->private_impl.bounds[1] - ioptr_r)) > limit)) {
     o->private_impl.bounds[1] = ioptr_r + limit;
   }
   return ((wuffs_base__empty_struct){});
@@ -2727,7 +2962,7 @@ void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
 
 // ---------------- Function Implementations
 
-// -------- func hasher.update
+// -------- func adler32.hasher.update
 
 uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
                                        wuffs_base__slice_u8 a_x) {
@@ -3260,7 +3495,7 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
 
 // ---------------- Function Implementations
 
-// -------- func ieee_hasher.update
+// -------- func crc32.ieee_hasher.update
 
 uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
                                           wuffs_base__slice_u8 a_x) {
@@ -3631,7 +3866,7 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.decode
+// -------- func deflate.decoder.decode
 
 wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
                                                   wuffs_base__io_writer a_dst,
@@ -3769,7 +4004,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_blocks
+// -------- func deflate.decoder.decode_blocks
 
 static wuffs_base__status wuffs_deflate__decoder__decode_blocks(
     wuffs_deflate__decoder* self,
@@ -3924,7 +4159,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_uncompressed
+// -------- func deflate.decoder.decode_uncompressed
 
 static wuffs_base__status wuffs_deflate__decoder__decode_uncompressed(
     wuffs_deflate__decoder* self,
@@ -4070,7 +4305,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.init_fixed_huffman
+// -------- func deflate.decoder.init_fixed_huffman
 
 static wuffs_base__status wuffs_deflate__decoder__init_fixed_huffman(
     wuffs_deflate__decoder* self) {
@@ -4135,7 +4370,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.init_dynamic_huffman
+// -------- func deflate.decoder.init_dynamic_huffman
 
 static wuffs_base__status wuffs_deflate__decoder__init_dynamic_huffman(
     wuffs_deflate__decoder* self,
@@ -4395,7 +4630,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.init_huff
+// -------- func deflate.decoder.init_huff
 
 static wuffs_base__status wuffs_deflate__decoder__init_huff(
     wuffs_deflate__decoder* self,
@@ -4676,7 +4911,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_huffman_fast
+// -------- func deflate.decoder.decode_huffman_fast
 
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
@@ -5030,7 +5265,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_huffman_slow
+// -------- func deflate.decoder.decode_huffman_slow
 
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
     wuffs_deflate__decoder* self,
@@ -5552,6 +5787,10 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 
 // ---------------- Private Function Prototypes
 
+static wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
+    wuffs_gif__decoder* self,
+    wuffs_base__io_reader a_src);
+
 static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
@@ -5619,7 +5858,7 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.decode_config
+// -------- func gif.decoder.decode_config
 
 wuffs_base__status wuffs_gif__decoder__decode_config(
     wuffs_gif__decoder* self,
@@ -5708,7 +5947,7 @@ exit:
   return status;
 }
 
-// -------- func decoder.frame_count
+// -------- func gif.decoder.frame_count
 
 uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
   if (!self) {
@@ -5725,7 +5964,7 @@ uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
   return self->private_impl.f_frame_count_value;
 }
 
-// -------- func decoder.work_buffer_size
+// -------- func gif.decoder.work_buffer_size
 
 wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
     wuffs_gif__decoder* self) {
@@ -5744,7 +5983,7 @@ wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
                                                 0);
 }
 
-// -------- func decoder.decode_frame
+// -------- func gif.decoder.decode_frame
 
 wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_gif__decoder* self,
@@ -5820,21 +6059,11 @@ exit:
   return status;
 }
 
-// -------- func decoder.decode_up_to_id_part1
+// -------- func gif.decoder.decode_up_to_id_part1
 
-wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
+static wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  if (!self) {
-    return WUFFS_BASE__ERROR_BAD_RECEIVER;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status =
-        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return self->private_impl.status;
-  }
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_block_type;
@@ -5926,7 +6155,6 @@ exit:
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
@@ -5938,7 +6166,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_header
+// -------- func gif.decoder.decode_header
 
 static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
@@ -6022,7 +6250,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_lsd
+// -------- func gif.decoder.decode_lsd
 
 static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     wuffs_gif__decoder* self,
@@ -6130,7 +6358,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_lsd(
     self->private_impl.c_decode_lsd[0].scratch = 2;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
     if (self->private_impl.c_decode_lsd[0].scratch >
-        iobounds1_src - ioptr_src) {
+        ((uint64_t)(iobounds1_src - ioptr_src))) {
       self->private_impl.c_decode_lsd[0].scratch -= iobounds1_src - ioptr_src;
       ioptr_src = iobounds1_src;
       goto short_read_src;
@@ -6220,7 +6448,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_extension
+// -------- func gif.decoder.decode_extension
 
 static wuffs_base__status wuffs_gif__decoder__decode_extension(
     wuffs_gif__decoder* self,
@@ -6331,7 +6559,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.skip_blocks
+// -------- func gif.decoder.skip_blocks
 
 static wuffs_base__status wuffs_gif__decoder__skip_blocks(
     wuffs_gif__decoder* self,
@@ -6382,7 +6610,7 @@ static wuffs_base__status wuffs_gif__decoder__skip_blocks(
       self->private_impl.c_skip_blocks[0].scratch = ((uint32_t)(v_block_size));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       if (self->private_impl.c_skip_blocks[0].scratch >
-          iobounds1_src - ioptr_src) {
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_skip_blocks[0].scratch -=
             iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
@@ -6419,7 +6647,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_ae
+// -------- func gif.decoder.decode_ae
 
 static wuffs_base__status wuffs_gif__decoder__decode_ae(
     wuffs_gif__decoder* self,
@@ -6479,7 +6707,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
@@ -6522,7 +6750,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
@@ -6544,7 +6772,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_ae(
         self->private_impl.c_decode_ae[0].scratch = 2;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
         if (self->private_impl.c_decode_ae[0].scratch >
-            iobounds1_src - ioptr_src) {
+            ((uint64_t)(iobounds1_src - ioptr_src))) {
           self->private_impl.c_decode_ae[0].scratch -=
               iobounds1_src - ioptr_src;
           ioptr_src = iobounds1_src;
@@ -6632,13 +6860,14 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_gc
+// -------- func gif.decoder.decode_gc
 
 static wuffs_base__status wuffs_gif__decoder__decode_gc(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
+  uint8_t v_c;
   uint8_t v_flags;
 
   uint8_t* ioptr_src = NULL;
@@ -6659,6 +6888,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
 
   uint32_t coro_susp_point = self->private_impl.c_decode_gc[0].coro_susp_point;
   if (coro_susp_point) {
+    v_c = self->private_impl.c_decode_gc[0].v_c;
     v_flags = self->private_impl.c_decode_gc[0].v_flags;
   } else {
   }
@@ -6669,12 +6899,15 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *ioptr_src++;
+      v_c = t_0;
     }
-    uint8_t t_0 = *ioptr_src++;
-    if (t_0 != 4) {
+    if (v_c != 4) {
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
@@ -6731,12 +6964,15 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
       uint8_t t_4 = *ioptr_src++;
       self->private_impl.f_gc_transparent_index = t_4;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_5 = *ioptr_src++;
+      v_c = t_5;
     }
-    uint8_t t_5 = *ioptr_src++;
-    if (t_5 != 0) {
+    if (v_c != 0) {
       status = WUFFS_GIF__ERROR_BAD_GRAPHIC_CONTROL;
       goto exit;
     }
@@ -6751,6 +6987,7 @@ static wuffs_base__status wuffs_gif__decoder__decode_gc(
   goto suspend;
 suspend:
   self->private_impl.c_decode_gc[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_gc[0].v_c = v_c;
   self->private_impl.c_decode_gc[0].v_flags = v_flags;
 
   goto exit;
@@ -6770,7 +7007,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_id_part0
+// -------- func gif.decoder.decode_id_part0
 
 static wuffs_base__status wuffs_gif__decoder__decode_id_part0(
     wuffs_gif__decoder* self,
@@ -7034,7 +7271,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.decode_id_part1
+// -------- func gif.decoder.decode_id_part1
 
 static wuffs_base__status wuffs_gif__decoder__decode_id_part1(
     wuffs_gif__decoder* self,
@@ -7274,7 +7511,7 @@ short_read_src:
   goto suspend;
 }
 
-// -------- func decoder.copy_to_image_buffer
+// -------- func gif.decoder.copy_to_image_buffer
 
 static wuffs_base__status wuffs_gif__decoder__copy_to_image_buffer(
     wuffs_gif__decoder* self,
@@ -7494,7 +7731,7 @@ void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.set_ignore_checksum
+// -------- func gzip.decoder.set_ignore_checksum
 
 void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
                                               bool a_ic) {
@@ -7512,7 +7749,7 @@ void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
   self->private_impl.f_ignore_checksum = a_ic;
 }
 
-// -------- func decoder.decode
+// -------- func gzip.decoder.decode
 
 wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                                                wuffs_base__io_writer a_dst,
@@ -7529,8 +7766,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   }
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
-  uint8_t v_flags;
   uint8_t v_c;
+  uint8_t v_flags;
   uint16_t v_xlen;
   uint32_t v_checksum_got;
   uint32_t v_decoded_length_got;
@@ -7574,8 +7811,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
   if (coro_susp_point) {
-    v_flags = self->private_impl.c_decode[0].v_flags;
     v_c = self->private_impl.c_decode[0].v_c;
+    v_flags = self->private_impl.c_decode[0].v_flags;
     v_xlen = self->private_impl.c_decode[0].v_xlen;
     v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
     v_decoded_length_got = self->private_impl.c_decode[0].v_decoded_length_got;
@@ -7588,30 +7825,39 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_0 = *ioptr_src++;
+      v_c = t_0;
     }
-    uint8_t t_0 = *ioptr_src++;
-    if (t_0 != 31) {
+    if (v_c != 31) {
       status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_1 = *ioptr_src++;
+      v_c = t_1;
     }
-    uint8_t t_1 = *ioptr_src++;
-    if (t_1 != 139) {
+    if (v_c != 139) {
       status = WUFFS_GZIP__ERROR_BAD_HEADER;
       goto exit;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
-      goto short_read_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) {
+        goto short_read_src;
+      }
+      uint8_t t_2 = *ioptr_src++;
+      v_c = t_2;
     }
-    uint8_t t_2 = *ioptr_src++;
-    if (t_2 != 8) {
+    if (v_c != 8) {
       status = WUFFS_GZIP__ERROR_BAD_COMPRESSION_METHOD;
       goto exit;
     }
@@ -7626,13 +7872,13 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
     self->private_impl.c_decode[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+    if (self->private_impl.c_decode[0].scratch >
+        ((uint64_t)(iobounds1_src - ioptr_src))) {
       self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
       ioptr_src = iobounds1_src;
       goto short_read_src;
     }
     ioptr_src += self->private_impl.c_decode[0].scratch;
-    v_c = 0;
     if ((v_flags & 4) != 0) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -7665,7 +7911,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
       self->private_impl.c_decode[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
-      if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+      if (self->private_impl.c_decode[0].scratch >
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
         goto short_read_src;
@@ -7708,7 +7955,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
       self->private_impl.c_decode[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
-      if (self->private_impl.c_decode[0].scratch > iobounds1_src - ioptr_src) {
+      if (self->private_impl.c_decode[0].scratch >
+          ((uint64_t)(iobounds1_src - ioptr_src))) {
         self->private_impl.c_decode[0].scratch -= iobounds1_src - ioptr_src;
         ioptr_src = iobounds1_src;
         goto short_read_src;
@@ -7835,8 +8083,8 @@ wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_flags = v_flags;
   self->private_impl.c_decode[0].v_c = v_c;
+  self->private_impl.c_decode[0].v_flags = v_flags;
   self->private_impl.c_decode[0].v_xlen = v_xlen;
   self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode[0].v_decoded_length_got = v_decoded_length_got;
@@ -7959,7 +8207,7 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.set_literal_width
+// -------- func lzw.decoder.set_literal_width
 
 void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
                                            uint32_t a_lw) {
@@ -7981,7 +8229,7 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
   self->private_impl.f_literal_width = a_lw;
 }
 
-// -------- func decoder.decode
+// -------- func lzw.decoder.decode
 
 wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                                               wuffs_base__io_writer a_dst,
@@ -8078,7 +8326,6 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_width = (v_literal_width + 1);
     v_bits = 0;
     v_n_bits = 0;
-  label_0_continue:;
     while (true) {
       while (v_n_bits < v_width) {
         {
@@ -8105,15 +8352,20 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_code));
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
+          v_save_code += 1;
+          if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
+            v_width += 1;
+          }
+          v_prev_code = v_code;
         }
-      } else if (v_code == v_clear_code) {
+      } else if (v_code <= v_end_code) {
+        if (v_code == v_end_code) {
+          status = WUFFS_BASE__STATUS_OK;
+          goto ok;
+        }
         v_save_code = v_end_code;
         v_prev_code = 0;
         v_width = (v_literal_width + 1);
-        goto label_0_continue;
-      } else if (v_code == v_end_code) {
-        status = WUFFS_BASE__STATUS_OK;
-        goto ok;
       } else if (v_code <= v_save_code) {
         v_s = 4095;
         v_c = v_code;
@@ -8142,29 +8394,27 @@ wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           v_n_copied = wuffs_base__io_writer__copy_from_slice(
               &ioptr_dst, iobounds1_dst, v_expansion);
           if (v_n_copied == ((uint64_t)(v_expansion.len))) {
-            goto label_1_break;
+            goto label_0_break;
           }
           v_s = ((v_s + ((uint32_t)((v_n_copied & 4095)))) & 4095);
           status = WUFFS_BASE__SUSPENSION_SHORT_WRITE;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
         }
-      label_1_break:;
+      label_0_break:;
         if (v_save_code <= 4095) {
           self->private_impl.f_suffixes[v_save_code] = ((uint8_t)(v_c));
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
+          v_save_code += 1;
+          if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
+            v_width += 1;
+          }
+          v_prev_code = v_code;
         }
       } else {
         status = WUFFS_LZW__ERROR_BAD_CODE;
         goto exit;
       }
-      if (v_save_code <= 4095) {
-        v_save_code += 1;
-        if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
-          v_width += 1;
-        }
-      }
-      v_prev_code = v_code;
     }
 
     goto ok;
@@ -8322,7 +8572,7 @@ void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func decoder.set_ignore_checksum
+// -------- func zlib.decoder.set_ignore_checksum
 
 void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
                                               bool a_ic) {
@@ -8340,7 +8590,7 @@ void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
   self->private_impl.f_ignore_checksum = a_ic;
 }
 
-// -------- func decoder.decode
+// -------- func zlib.decoder.decode
 
 wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                                                wuffs_base__io_writer a_dst,
