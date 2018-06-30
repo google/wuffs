@@ -31,6 +31,7 @@
 - Disallowed `__double_underscore` prefixed names.
 - Added a stand-alone lang/interval package.
 - Added fuzz tests.
+- Added some C++ convenience methods.
 - Added some Go and Rust benchmarks.
 - Sped up the `mimic_deflate_xxx` benchmarks.
 
