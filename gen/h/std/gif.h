@@ -1597,7 +1597,6 @@ typedef struct {
   inline wuffs_base__status decode_frame(wuffs_base__image_buffer* a_dst,
                                          wuffs_base__io_reader a_src,
                                          wuffs_base__slice_u8 a_work_buffer);
-  inline wuffs_base__status decode_up_to_id_part1(wuffs_base__io_reader a_src);
 #endif  // __cplusplus
 
 } wuffs_gif__decoder;
@@ -1631,10 +1630,6 @@ wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_base__io_reader a_src,
     wuffs_base__slice_u8 a_work_buffer);
 
-wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
-    wuffs_gif__decoder* self,
-    wuffs_base__io_reader a_src);
-
 // ---------------- C++ Convenience Methods
 
 #ifdef __cplusplus
@@ -1664,11 +1659,6 @@ inline wuffs_base__status wuffs_gif__decoder::decode_frame(
     wuffs_base__io_reader a_src,
     wuffs_base__slice_u8 a_work_buffer) {
   return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_work_buffer);
-}
-
-inline wuffs_base__status wuffs_gif__decoder::decode_up_to_id_part1(
-    wuffs_base__io_reader a_src) {
-  return wuffs_gif__decoder__decode_up_to_id_part1(this, a_src);
 }
 
 #endif  // __cplusplus

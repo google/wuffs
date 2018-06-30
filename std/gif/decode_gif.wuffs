@@ -170,7 +170,7 @@ pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader, wo
 	this.frame_count_value ~sat+= 1
 }
 
-pub func decoder.decode_up_to_id_part1?(src base.io_reader)() {
+pri func decoder.decode_up_to_id_part1?(src base.io_reader)() {
 	while true {
 		var block_type base.u8 = in.src.read_u8?()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".

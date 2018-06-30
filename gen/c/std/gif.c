@@ -1597,7 +1597,6 @@ typedef struct {
   inline wuffs_base__status decode_frame(wuffs_base__image_buffer* a_dst,
                                          wuffs_base__io_reader a_src,
                                          wuffs_base__slice_u8 a_work_buffer);
-  inline wuffs_base__status decode_up_to_id_part1(wuffs_base__io_reader a_src);
 #endif  // __cplusplus
 
 } wuffs_gif__decoder;
@@ -1631,10 +1630,6 @@ wuffs_base__status wuffs_gif__decoder__decode_frame(
     wuffs_base__io_reader a_src,
     wuffs_base__slice_u8 a_work_buffer);
 
-wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
-    wuffs_gif__decoder* self,
-    wuffs_base__io_reader a_src);
-
 // ---------------- C++ Convenience Methods
 
 #ifdef __cplusplus
@@ -1664,11 +1659,6 @@ inline wuffs_base__status wuffs_gif__decoder::decode_frame(
     wuffs_base__io_reader a_src,
     wuffs_base__slice_u8 a_work_buffer) {
   return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_work_buffer);
-}
-
-inline wuffs_base__status wuffs_gif__decoder::decode_up_to_id_part1(
-    wuffs_base__io_reader a_src) {
-  return wuffs_gif__decoder__decode_up_to_id_part1(this, a_src);
 }
 
 #endif  // __cplusplus
@@ -2344,6 +2334,10 @@ static const uint8_t wuffs_gif__netscape2dot0[11] = {
 
 // ---------------- Private Function Prototypes
 
+static wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
+    wuffs_gif__decoder* self,
+    wuffs_base__io_reader a_src);
+
 static wuffs_base__status wuffs_gif__decoder__decode_header(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src);
@@ -2614,19 +2608,9 @@ exit:
 
 // -------- func gif.decoder.decode_up_to_id_part1
 
-wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
+static wuffs_base__status wuffs_gif__decoder__decode_up_to_id_part1(
     wuffs_gif__decoder* self,
     wuffs_base__io_reader a_src) {
-  if (!self) {
-    return WUFFS_BASE__ERROR_BAD_RECEIVER;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status =
-        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
-  }
-  if (self->private_impl.status < 0) {
-    return self->private_impl.status;
-  }
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint8_t v_block_type;
@@ -2718,7 +2702,6 @@ exit:
     a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
   return status;
 
 short_read_src:
