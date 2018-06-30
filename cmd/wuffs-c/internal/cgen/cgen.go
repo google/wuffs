@@ -366,6 +366,11 @@ func (g *gen) genHeader(b *buffer) error {
 		return err
 	}
 
+	b.writes("// ---------------- C++ Convenience Methods \n\n")
+	if err := g.writeCppImpls(b); err != nil {
+		return err
+	}
+
 	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	b.printf("#endif  // %s\n\n", includeGuard)
 	return nil
@@ -676,8 +681,95 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 			}
 		}
 	}
+	b.writes("} private_impl;\n\n")
 
-	b.printf("} private_impl;\n } %s%s;\n\n", g.pkgPrefix, structName)
+	if n.Node().Raw().Flags()&a.FlagsPublic != 0 {
+		if err := g.writeCppPrototypes(b, n); err != nil {
+			return err
+		}
+	}
+
+	b.printf("} %s%s;\n\n", g.pkgPrefix, structName)
+	return nil
+}
+
+func (g *gen) writeCppPrototypes(b *buffer, n *a.Struct) error {
+	b.writes("#ifdef __cplusplus\n")
+	b.writes("inline void check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);\n")
+
+	structID := n.QID()[1]
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if (tld.Kind() != a.KFunc) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+				continue
+			}
+			f := tld.Func()
+			qqid := f.QQID()
+			if qqid[1] != structID {
+				continue
+			}
+
+			if err := g.writeFuncSignature(b, f, cppInsideStruct); err != nil {
+				return err
+			}
+			b.writes(";\n")
+		}
+	}
+
+	b.writes("#endif  // __cplusplus\n\n")
+	return nil
+}
+
+func (g *gen) writeCppImpls(b *buffer) error {
+	b.writes("\n#ifdef __cplusplus\n\n")
+
+	publicStructs := map[t.ID]bool{}
+
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if (tld.Kind() != a.KStruct) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+				continue
+			}
+			n := tld.Struct()
+
+			structID := n.QID()[1]
+			structName := structID.Str(g.tm)
+			b.printf("inline void %s%s::check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n",
+				g.pkgPrefix, structName)
+			b.printf("%s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n",
+				g.pkgPrefix, structName)
+			b.printf("}\n\n")
+
+			publicStructs[structID] = true
+		}
+	}
+
+	for _, file := range g.files {
+		for _, tld := range file.TopLevelDecls() {
+			if (tld.Kind() != a.KFunc) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+				continue
+			}
+			n := tld.Func()
+			if !publicStructs[n.QQID()[1]] {
+				continue
+			}
+
+			if err := g.writeFuncSignature(b, n, cppOutsideStruct); err != nil {
+				return err
+			}
+			b.writes("{ return ")
+			b.writes(g.funcCName(n))
+			b.writes("(this")
+			for _, o := range n.In().Fields() {
+				b.writeb(',')
+				b.writes(aPrefix)
+				b.writes(o.Field().Name().Str(g.tm))
+			}
+			b.writes(");}\n\n")
+		}
+	}
+
+	b.writes("#endif  // __cplusplus\n\n")
 	return nil
 }
 

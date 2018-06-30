@@ -44,7 +44,7 @@ uint8_t src_buffer[SRC_BUFFER_SIZE];
 
 int main(int argc, char** argv) {
   wuffs_crc32__ieee_hasher h = ((wuffs_crc32__ieee_hasher){});
-  wuffs_crc32__ieee_hasher__check_wuffs_version(&h, sizeof h, WUFFS_VERSION);
+  h.check_wuffs_version(sizeof h, WUFFS_VERSION);
 
   while (true) {
     const int stdin_fd = 0;
@@ -57,11 +57,10 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    uint32_t checksum =
-        wuffs_crc32__ieee_hasher__update(&h, ((wuffs_base__slice_u8){
-                                                 .ptr = src_buffer,
-                                                 .len = static_cast<size_t>(n),
-                                             }));
+    uint32_t checksum = h.update((wuffs_base__slice_u8){
+        .ptr = src_buffer,
+        .len = static_cast<size_t>(n),
+    });
 
     if (n == 0) {
       printf("%08" PRIx32 "\n", checksum);

@@ -69,8 +69,17 @@ func (g *gen) funcCName(n *a.Func) string {
 	return g.pkgPrefix + n.FuncName().Str(g.tm)
 }
 
-func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
-	if !n.Public() {
+// C++ related function signature constants.
+const (
+	cppNone          = 0 // Not C++, just plain C.
+	cppInsideStruct  = 1
+	cppOutsideStruct = 2
+)
+
+func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
+	if cpp != cppNone {
+		b.writes("inline ")
+	} else if !n.Public() {
 		b.writes("static ")
 	}
 
@@ -88,14 +97,27 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 		return fmt.Errorf("TODO: multiple return values")
 	}
 
-	b.writes(g.funcCName(n))
-	b.writeb('(')
-
-	comma := false
-	if r := n.Receiver(); !r.IsZero() {
-		b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
-		comma = true
+	switch cpp {
+	case cppNone:
+		b.writes(g.funcCName(n))
+	case cppInsideStruct:
+		b.writes(n.FuncName().Str(g.tm))
+	case cppOutsideStruct:
+		b.writes(g.pkgPrefix)
+		b.writes(n.Receiver().Str(g.tm))
+		b.writes("::")
+		b.writes(n.FuncName().Str(g.tm))
 	}
+
+	b.writeb('(')
+	comma := false
+	if cpp == cppNone {
+		if r := n.Receiver(); !r.IsZero() {
+			b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
+			comma = true
+		}
+	}
+
 	for _, o := range n.In().Fields() {
 		if comma {
 			b.writeb(',')
@@ -112,7 +134,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func) error {
 }
 
 func (g *gen) writeFuncPrototype(b *buffer, n *a.Func) error {
-	if err := g.writeFuncSignature(b, n); err != nil {
+	if err := g.writeFuncSignature(b, n, cppNone); err != nil {
 		return err
 	}
 	b.writes(";\n\n")
@@ -123,7 +145,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	k := g.funks[n.QQID()]
 
 	b.printf("// -------- func %s.%s\n\n", g.pkgName, n.QQID().Str(g.tm))
-	if err := g.writeFuncSignature(b, n); err != nil {
+	if err := g.writeFuncSignature(b, n, cppNone); err != nil {
 		return err
 	}
 	b.writes("{\n")

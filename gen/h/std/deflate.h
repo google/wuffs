@@ -671,23 +671,13 @@ static inline uint32_t wuffs_base__rect_ie_u32__height(
 
 // ---------------- I/O
 
-// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
-// additional indexes into that buffer, plus an opened / closed flag.
-//
-// A value with all fields NULL or zero is a valid, empty buffer.
-typedef struct {
-  uint8_t* ptr;  // Pointer.
-  size_t len;    // Length.
-  size_t wi;     // Write index. Invariant: wi <= len.
-  size_t ri;     // Read  index. Invariant: ri <= wi.
-  bool closed;   // No further writes are expected.
-} wuffs_base__io_buffer;
+struct wuffs_base__io_buffer__struct;
 
 typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__io_buffer* buf;
+    struct wuffs_base__io_buffer__struct* buf;
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
@@ -699,13 +689,32 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__io_buffer* buf;
+    struct wuffs_base__io_buffer__struct* buf;
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
     uint8_t* bounds[2];
   } private_impl;
 } wuffs_base__io_writer;
+
+// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
+// additional indexes into that buffer, plus an opened / closed flag.
+//
+// A value with all fields NULL or zero is a valid, empty buffer.
+typedef struct wuffs_base__io_buffer__struct {
+  uint8_t* ptr;  // Pointer.
+  size_t len;    // Length.
+  size_t wi;     // Write index. Invariant: wi <= len.
+  size_t ri;     // Read  index. Invariant: ri <= wi.
+  bool closed;   // No further writes are expected.
+
+#ifdef __cplusplus
+  inline void compact();
+  inline wuffs_base__io_reader reader();
+  inline wuffs_base__io_writer writer();
+#endif  // __cplusplus
+
+} wuffs_base__io_buffer;
 
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
 // start of the buffer.
@@ -734,6 +743,22 @@ static inline wuffs_base__io_writer wuffs_base__io_buffer__writer(
   ret.private_impl.buf = buf;
   return ret;
 }
+
+#ifdef __cplusplus
+
+inline void wuffs_base__io_buffer__struct::compact() {
+  wuffs_base__io_buffer__compact(this);
+}
+
+inline wuffs_base__io_reader wuffs_base__io_buffer__struct::reader() {
+  return wuffs_base__io_buffer__reader(this);
+}
+
+inline wuffs_base__io_writer wuffs_base__io_buffer__struct::writer() {
+  return wuffs_base__io_buffer__writer(this);
+}
+
+#endif  // __cplusplus
 
 // ---------------- Images
 
@@ -1429,6 +1454,14 @@ typedef struct {
       uint32_t v_hdist;
     } c_decode_huffman_slow[1];
   } private_impl;
+
+#ifdef __cplusplus
+  inline void check_wuffs_version(size_t sizeof_star_self,
+                                  uint64_t wuffs_version);
+  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
+                                   wuffs_base__io_reader a_src);
+#endif  // __cplusplus
+
 } wuffs_deflate__decoder;
 
 // ---------------- Public Initializer Prototypes
@@ -1447,6 +1480,25 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
                                                   wuffs_base__io_writer a_dst,
                                                   wuffs_base__io_reader a_src);
+
+// ---------------- C++ Convenience Methods
+
+#ifdef __cplusplus
+
+inline void wuffs_deflate__decoder::check_wuffs_version(
+    size_t sizeof_star_self,
+    uint64_t wuffs_version) {
+  wuffs_deflate__decoder__check_wuffs_version(this, sizeof_star_self,
+                                              wuffs_version);
+}
+
+inline wuffs_base__status wuffs_deflate__decoder::decode(
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return wuffs_deflate__decoder__decode(this, a_dst, a_src);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
