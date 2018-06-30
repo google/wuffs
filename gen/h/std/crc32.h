@@ -338,9 +338,9 @@ typedef struct wuffs_base__range_ii_u32__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__range_ii_u32__struct s);
   inline bool contains(uint32_t x);
-  inline wuffs_base__range_ii_u32__struct intersection(
+  inline wuffs_base__range_ii_u32__struct intersect(
       wuffs_base__range_ii_u32__struct s);
-  inline wuffs_base__range_ii_u32__struct unionz(
+  inline wuffs_base__range_ii_u32__struct unite(
       wuffs_base__range_ii_u32__struct s);
 #endif  // __cplusplus
 
@@ -365,7 +365,7 @@ static inline bool wuffs_base__range_ii_u32__contains(
   return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersection(
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersect(
     wuffs_base__range_ii_u32* r,
     wuffs_base__range_ii_u32 s) {
   wuffs_base__range_ii_u32 t;
@@ -374,7 +374,7 @@ static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersection(
   return t;
 }
 
-static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__union(
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__unite(
     wuffs_base__range_ii_u32* r,
     wuffs_base__range_ii_u32 s) {
   if (wuffs_base__range_ii_u32__is_empty(r)) {
@@ -403,14 +403,14 @@ inline bool wuffs_base__range_ii_u32::contains(uint32_t x) {
   return wuffs_base__range_ii_u32__contains(this, x);
 }
 
-inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::intersection(
+inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::intersect(
     wuffs_base__range_ii_u32 s) {
-  return wuffs_base__range_ii_u32__intersection(this, s);
+  return wuffs_base__range_ii_u32__intersect(this, s);
 }
 
-inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::unionz(
+inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::unite(
     wuffs_base__range_ii_u32 s) {
-  return wuffs_base__range_ii_u32__union(this, s);
+  return wuffs_base__range_ii_u32__unite(this, s);
 }
 
 #endif  // __cplusplus
@@ -425,9 +425,9 @@ typedef struct wuffs_base__range_ie_u32__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__range_ie_u32__struct s);
   inline bool contains(uint32_t x);
-  inline wuffs_base__range_ie_u32__struct intersection(
+  inline wuffs_base__range_ie_u32__struct intersect(
       wuffs_base__range_ie_u32__struct s);
-  inline wuffs_base__range_ie_u32__struct unionz(
+  inline wuffs_base__range_ie_u32__struct unite(
       wuffs_base__range_ie_u32__struct s);
   inline uint32_t length();
 #endif  // __cplusplus
@@ -453,7 +453,7 @@ static inline bool wuffs_base__range_ie_u32__contains(
   return (r->min_incl <= x) && (x < r->max_excl);
 }
 
-static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersection(
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersect(
     wuffs_base__range_ie_u32* r,
     wuffs_base__range_ie_u32 s) {
   wuffs_base__range_ie_u32 t;
@@ -462,7 +462,7 @@ static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersection(
   return t;
 }
 
-static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__union(
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__unite(
     wuffs_base__range_ie_u32* r,
     wuffs_base__range_ie_u32 s) {
   if (wuffs_base__range_ie_u32__is_empty(r)) {
@@ -496,14 +496,14 @@ inline bool wuffs_base__range_ie_u32::contains(uint32_t x) {
   return wuffs_base__range_ie_u32__contains(this, x);
 }
 
-inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::intersection(
+inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::intersect(
     wuffs_base__range_ie_u32 s) {
-  return wuffs_base__range_ie_u32__intersection(this, s);
+  return wuffs_base__range_ie_u32__intersect(this, s);
 }
 
-inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::unionz(
+inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::unite(
     wuffs_base__range_ie_u32 s) {
-  return wuffs_base__range_ie_u32__union(this, s);
+  return wuffs_base__range_ie_u32__unite(this, s);
 }
 
 inline uint32_t wuffs_base__range_ie_u32::length() {
@@ -522,9 +522,9 @@ typedef struct wuffs_base__range_ii_u64__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__range_ii_u64__struct s);
   inline bool contains(uint64_t x);
-  inline wuffs_base__range_ii_u64__struct intersection(
+  inline wuffs_base__range_ii_u64__struct intersect(
       wuffs_base__range_ii_u64__struct s);
-  inline wuffs_base__range_ii_u64__struct unionz(
+  inline wuffs_base__range_ii_u64__struct unite(
       wuffs_base__range_ii_u64__struct s);
 #endif  // __cplusplus
 
@@ -549,7 +549,7 @@ static inline bool wuffs_base__range_ii_u64__contains(
   return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersection(
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersect(
     wuffs_base__range_ii_u64* r,
     wuffs_base__range_ii_u64 s) {
   wuffs_base__range_ii_u64 t;
@@ -558,7 +558,7 @@ static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersection(
   return t;
 }
 
-static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__union(
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__unite(
     wuffs_base__range_ii_u64* r,
     wuffs_base__range_ii_u64 s) {
   if (wuffs_base__range_ii_u64__is_empty(r)) {
@@ -587,14 +587,14 @@ inline bool wuffs_base__range_ii_u64::contains(uint64_t x) {
   return wuffs_base__range_ii_u64__contains(this, x);
 }
 
-inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::intersection(
+inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::intersect(
     wuffs_base__range_ii_u64 s) {
-  return wuffs_base__range_ii_u64__intersection(this, s);
+  return wuffs_base__range_ii_u64__intersect(this, s);
 }
 
-inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::unionz(
+inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::unite(
     wuffs_base__range_ii_u64 s) {
-  return wuffs_base__range_ii_u64__union(this, s);
+  return wuffs_base__range_ii_u64__unite(this, s);
 }
 
 #endif  // __cplusplus
@@ -609,9 +609,9 @@ typedef struct wuffs_base__range_ie_u64__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__range_ie_u64__struct s);
   inline bool contains(uint64_t x);
-  inline wuffs_base__range_ie_u64__struct intersection(
+  inline wuffs_base__range_ie_u64__struct intersect(
       wuffs_base__range_ie_u64__struct s);
-  inline wuffs_base__range_ie_u64__struct unionz(
+  inline wuffs_base__range_ie_u64__struct unite(
       wuffs_base__range_ie_u64__struct s);
   inline uint64_t length();
 #endif  // __cplusplus
@@ -637,7 +637,7 @@ static inline bool wuffs_base__range_ie_u64__contains(
   return (r->min_incl <= x) && (x < r->max_excl);
 }
 
-static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersection(
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersect(
     wuffs_base__range_ie_u64* r,
     wuffs_base__range_ie_u64 s) {
   wuffs_base__range_ie_u64 t;
@@ -646,7 +646,7 @@ static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersection(
   return t;
 }
 
-static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__union(
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__unite(
     wuffs_base__range_ie_u64* r,
     wuffs_base__range_ie_u64 s) {
   if (wuffs_base__range_ie_u64__is_empty(r)) {
@@ -680,14 +680,14 @@ inline bool wuffs_base__range_ie_u64::contains(uint64_t x) {
   return wuffs_base__range_ie_u64__contains(this, x);
 }
 
-inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::intersection(
+inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::intersect(
     wuffs_base__range_ie_u64 s) {
-  return wuffs_base__range_ie_u64__intersection(this, s);
+  return wuffs_base__range_ie_u64__intersect(this, s);
 }
 
-inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::unionz(
+inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::unite(
     wuffs_base__range_ie_u64 s) {
-  return wuffs_base__range_ie_u64__union(this, s);
+  return wuffs_base__range_ie_u64__unite(this, s);
 }
 
 inline uint64_t wuffs_base__range_ie_u64::length() {
@@ -717,9 +717,9 @@ typedef struct wuffs_base__rect_ii_u32__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__rect_ii_u32__struct s);
   inline bool contains(uint32_t x, uint32_t y);
-  inline wuffs_base__rect_ii_u32__struct intersection(
+  inline wuffs_base__rect_ii_u32__struct intersect(
       wuffs_base__rect_ii_u32__struct s);
-  inline wuffs_base__rect_ii_u32__struct unionz(
+  inline wuffs_base__rect_ii_u32__struct unite(
       wuffs_base__rect_ii_u32__struct s);
 #endif  // __cplusplus
 
@@ -745,7 +745,7 @@ static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32* r,
          (y <= r->max_incl_y);
 }
 
-static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersection(
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersect(
     wuffs_base__rect_ii_u32* r,
     wuffs_base__rect_ii_u32 s) {
   wuffs_base__rect_ii_u32 t;
@@ -756,7 +756,7 @@ static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersection(
   return t;
 }
 
-static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__union(
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__unite(
     wuffs_base__rect_ii_u32* r,
     wuffs_base__rect_ii_u32 s) {
   if (wuffs_base__rect_ii_u32__is_empty(r)) {
@@ -787,14 +787,14 @@ inline bool wuffs_base__rect_ii_u32::contains(uint32_t x, uint32_t y) {
   return wuffs_base__rect_ii_u32__contains(this, x, y);
 }
 
-inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::intersection(
+inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::intersect(
     wuffs_base__rect_ii_u32 s) {
-  return wuffs_base__rect_ii_u32__intersection(this, s);
+  return wuffs_base__rect_ii_u32__intersect(this, s);
 }
 
-inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::unionz(
+inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::unite(
     wuffs_base__rect_ii_u32 s) {
-  return wuffs_base__rect_ii_u32__union(this, s);
+  return wuffs_base__rect_ii_u32__unite(this, s);
 }
 
 #endif  // __cplusplus
@@ -821,9 +821,9 @@ typedef struct wuffs_base__rect_ie_u32__struct {
   inline bool is_empty();
   inline bool equals(wuffs_base__rect_ie_u32__struct s);
   inline bool contains(uint32_t x, uint32_t y);
-  inline wuffs_base__rect_ie_u32__struct intersection(
+  inline wuffs_base__rect_ie_u32__struct intersect(
       wuffs_base__rect_ie_u32__struct s);
-  inline wuffs_base__rect_ie_u32__struct unionz(
+  inline wuffs_base__rect_ie_u32__struct unite(
       wuffs_base__rect_ie_u32__struct s);
   inline uint32_t width();
   inline uint32_t height();
@@ -851,7 +851,7 @@ static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32* r,
          (y < r->max_excl_y);
 }
 
-static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersection(
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersect(
     wuffs_base__rect_ie_u32* r,
     wuffs_base__rect_ie_u32 s) {
   wuffs_base__rect_ie_u32 t;
@@ -862,7 +862,7 @@ static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersection(
   return t;
 }
 
-static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__union(
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__unite(
     wuffs_base__rect_ie_u32* r,
     wuffs_base__rect_ie_u32 s) {
   if (wuffs_base__rect_ie_u32__is_empty(r)) {
@@ -903,14 +903,14 @@ inline bool wuffs_base__rect_ie_u32::contains(uint32_t x, uint32_t y) {
   return wuffs_base__rect_ie_u32__contains(this, x, y);
 }
 
-inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::intersection(
+inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::intersect(
     wuffs_base__rect_ie_u32 s) {
-  return wuffs_base__rect_ie_u32__intersection(this, s);
+  return wuffs_base__rect_ie_u32__intersect(this, s);
 }
 
-inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::unionz(
+inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::unite(
     wuffs_base__rect_ie_u32 s) {
-  return wuffs_base__rect_ie_u32__union(this, s);
+  return wuffs_base__rect_ie_u32__unite(this, s);
 }
 
 inline uint32_t wuffs_base__rect_ie_u32::width() {
