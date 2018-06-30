@@ -475,7 +475,7 @@ bool do_test_wuffs_gif_decode_animated(
     if (want_dirty_rects) {
       wuffs_base__rect_ie_u32 got = wuffs_base__image_buffer__dirty_rect(&ib);
       wuffs_base__rect_ie_u32 want = want_dirty_rects[i];
-      if (!wuffs_base__rect_ie_u32__equals(got, want)) {
+      if (!wuffs_base__rect_ie_u32__equals(&got, want)) {
         FAIL("decode_frame #%" PRIu32 ": dirty_rect: got (%" PRIu32 ", %" PRIu32
              ")-(%" PRIu32 ", %" PRIu32 "), want (%" PRIu32 ", %" PRIu32
              ")-(%" PRIu32 ", %" PRIu32 ")",
