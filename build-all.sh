@@ -69,6 +69,8 @@ done
 # Even if we don't build the release editions, check that they compile without
 # any warnings.
 for f in release/c/wuffs-*/*.c; do
+  echo "Building $f (as C)"
   gcc -c -Wall -Werror -std=c99   $f -o /dev/null
+  echo "Building $f (as C++)"
   g++ -c -Wall -Werror -std=c++11 $f -o /dev/null
 done
