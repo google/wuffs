@@ -17,17 +17,17 @@ library exercises the software libraries built by `wuffs genlib`.
 
 To exercise the static library:
 
-$cc -static -I../../.. library.c ../../gen/lib/c/$cc-static/libwuffs.a
+$CC -static -I../../.. library.c ../../gen/lib/c/$CC-static/libwuffs.a
 ./a.out
 rm -f a.out
 
 To exercise the dynamic library:
 
-$cc -I../../.. library.c -L../../gen/lib/c/$cc-dynamic -lwuffs
-LD_LIBRARY_PATH=../../gen/lib/c/$cc-dynamic ./a.out
+$CC -I../../.. library.c -L../../gen/lib/c/$CC-dynamic -lwuffs
+LD_LIBRARY_PATH=../../gen/lib/c/$CC-dynamic ./a.out
 rm -f a.out
 
-for a C compiler $cc, such as clang or gcc.
+for a C compiler $CC, such as clang or gcc.
 */
 
 #include <unistd.h>

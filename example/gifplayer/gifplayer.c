@@ -16,9 +16,9 @@
 gifplayer prints an ASCII representation of the GIF image read from stdin. To
 play Eadweard Muybridge's iconic galloping horse animation, run:
 
-$cc gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
+$CC gifplayer.c && ./a.out < ../../test/data/muybridge.gif; rm -f a.out
 
-for a C compiler $cc, such as clang or gcc.
+for a C compiler $CC, such as clang or gcc.
 
 Add the -color flag to a.out to get 24 bit color ("true color") terminal output
 (in the UTF-8 format) instead of plain ASCII output. Not all terminal emulators

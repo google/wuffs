@@ -20,8 +20,8 @@ giflib for GIF, libpng for PNG, etc.
 
 To manually run this test:
 
-for cc in clang gcc; do
-  $cc -std=c99 -Wall -Werror zlib.c && ./a.out
+for CC in clang gcc; do
+  $CC -std=c99 -Wall -Werror zlib.c && ./a.out
   rm -f a.out
 done
 

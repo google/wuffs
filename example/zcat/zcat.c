@@ -17,9 +17,9 @@ zcat decodes gzip'ed data to stdout. It is similar to the standard /bin/zcat
 program, except that this example program only reads from stdin. On Linux, it
 also self-imposes a SECCOMP_MODE_STRICT sandbox. To run:
 
-$cc zcat.c && ./a.out < ../../test/data/romeo.txt.gz; rm -f a.out
+$CC zcat.c && ./a.out < ../../test/data/romeo.txt.gz; rm -f a.out
 
-for a C compiler $cc, such as clang or gcc.
+for a C compiler $CC, such as clang or gcc.
 */
 
 #include <errno.h>

@@ -20,9 +20,9 @@ program only reads from stdin.
 This example program differs from the other example Wuffs programs in that it
 is written in C++, not C.
 
-$cxx crc32.cc && ./a.out < ../../README.md; rm -f a.out
+$CXX crc32.cc && ./a.out < ../../README.md; rm -f a.out
 
-for a C++ compiler $cxx, such as clang++ or g++.
+for a C++ compiler $CXX, such as clang++ or g++.
 */
 
 #include <errno.h>
