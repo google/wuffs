@@ -37,7 +37,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include "../../gen/c/std/crc32.c"
 
 #ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (16 * 1024)
+#define SRC_BUFFER_SIZE (32 * 1024)
 #endif
 
 uint8_t src_buffer[SRC_BUFFER_SIZE];
