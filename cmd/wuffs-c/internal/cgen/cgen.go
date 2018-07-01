@@ -800,7 +800,7 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 		}
 	}
 
-	hdrFilename := filepath.Join(g.wuffsRoot, "gen", "h", filepath.FromSlash(useDirname)+".h")
+	hdrFilename := filepath.Join(g.wuffsRoot, "gen", "c", filepath.FromSlash(useDirname)+".h")
 	hdr, err := ioutil.ReadFile(hdrFilename)
 	if err != nil {
 		return err

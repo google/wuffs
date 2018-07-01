@@ -175,7 +175,7 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 			return err
 		}
 		out := stdout.Bytes()
-		if err := h.genFile(dirname, lang, out); err != nil {
+		if err := h.genFile(dirname, lang, lang, out); err != nil {
 			return err
 		}
 
@@ -189,7 +189,7 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 		} else {
 			return fmt.Errorf("%s: output did not contain %q", command, cHeaderEndsHere)
 		}
-		if err := h.genFile(dirname, "h", out); err != nil {
+		if err := h.genFile(dirname, "c", "h", out); err != nil {
 			return err
 		}
 	}
@@ -223,9 +223,9 @@ func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 	return h.gen("base", false)
 }
 
-func (h *genHelper) genFile(dirname string, lang string, out []byte) error {
+func (h *genHelper) genFile(dirname string, lang string, suffix string, out []byte) error {
 	return writeFile(
-		filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+lang),
+		filepath.Join(h.wuffsRoot, "gen", lang, filepath.FromSlash(dirname)+"."+suffix),
 		out,
 	)
 }
@@ -320,7 +320,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 			}
 		}
 	}
-	return h.genFile(dirname, "wuffs", out.Bytes())
+	return h.genFile(dirname, "wuffs", "wuffs", out.Bytes())
 }
 
 func (h *genHelper) genlibAffected() error {
