@@ -32,7 +32,7 @@ for a C compiler $CC, such as clang or gcc.
 
 #include <unistd.h>
 
-#include "wuffs/gen/h/std/deflate.h"
+#include "wuffs/gen/c/std/deflate.h"
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 
