@@ -89,9 +89,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			return err
 		}
 
-		if n.LHS().Expr().Ident() == t.IDReset {
-			method := n.LHS().Expr()
-			recv := method.LHS().Expr()
+		if n.LHS().AsExpr().Ident() == t.IDReset {
+			method := n.LHS().AsExpr()
+			recv := method.LHS().AsExpr()
 			recvTyp, addr := recv.MType(), "&"
 			if recvTyp.Decorator() == t.IDPtr {
 				recvTyp, addr = recvTyp.Inner(), ""
@@ -129,15 +129,15 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 
 	case t.IDOpenBracket:
 		// n is an index.
-		if err := g.writeExpr(b, n.LHS().Expr(), rp, depth); err != nil {
+		if err := g.writeExpr(b, n.LHS().AsExpr(), rp, depth); err != nil {
 			return err
 		}
-		if lTyp := n.LHS().Expr().MType(); lTyp.IsSliceType() {
+		if lTyp := n.LHS().AsExpr().MType(); lTyp.IsSliceType() {
 			// TODO: don't assume that the slice is a slice of base.u8.
 			b.writes(".ptr")
 		}
 		b.writeb('[')
-		if err := g.writeExpr(b, n.RHS().Expr(), rp, depth); err != nil {
+		if err := g.writeExpr(b, n.RHS().AsExpr(), rp, depth); err != nil {
 			return err
 		}
 		b.writeb(']')
@@ -145,9 +145,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 
 	case t.IDColon:
 		// n is a slice.
-		lhs := n.LHS().Expr()
-		mhs := n.MHS().Expr()
-		rhs := n.RHS().Expr()
+		lhs := n.LHS().AsExpr()
+		mhs := n.MHS().AsExpr()
+		rhs := n.RHS().AsExpr()
 		switch {
 		case mhs != nil && rhs == nil:
 			b.writes("wuffs_base__slice_u8__subslice_i(")
@@ -187,7 +187,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		return nil
 
 	case t.IDDot:
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if lhs.Ident() == t.IDIn {
 			b.writes(aPrefix)
 			b.writes(n.Ident().Str(g.tm))
@@ -230,7 +230,7 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth
 	}
 
 	b.writes(opName)
-	return g.writeExpr(b, n.RHS().Expr(), rp, depth)
+	return g.writeExpr(b, n.RHS().AsExpr(), rp, depth)
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
@@ -251,7 +251,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 		opName = ","
 
 	case t.IDXBinaryAs:
-		return g.writeExprAs(b, n.LHS().Expr(), n.RHS().TypeExpr(), rp, depth)
+		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), rp, depth)
 
 	default:
 		opName = cOpName(op)
@@ -261,11 +261,11 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 	}
 
 	b.writeb('(')
-	if err := g.writeExpr(b, n.LHS().Expr(), rp, depth); err != nil {
+	if err := g.writeExpr(b, n.LHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
 	b.writes(opName)
-	if err := g.writeExpr(b, n.RHS().Expr(), rp, depth); err != nil {
+	if err := g.writeExpr(b, n.RHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
 	b.writeb(')')
@@ -299,7 +299,7 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 		if i != 0 {
 			b.writes(opName)
 		}
-		if err := g.writeExpr(b, o.Expr(), rp, depth); err != nil {
+		if err := g.writeExpr(b, o.AsExpr(), rp, depth); err != nil {
 			return err
 		}
 	}
@@ -308,8 +308,8 @@ func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, rp replacementPolicy,
 }
 
 func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
-	method := n.LHS().Expr()
-	recv := method.LHS().Expr()
+	method := n.LHS().AsExpr()
+	recv := method.LHS().AsExpr()
 	recvTyp, addr := recv.MType(), "&"
 	if recvTyp.Decorator() == t.IDPtr {
 		recvTyp, addr = recvTyp.Inner(), ""

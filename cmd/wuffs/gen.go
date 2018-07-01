@@ -213,7 +213,7 @@ func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 			if n.Kind() != a.KUse {
 				continue
 			}
-			useDirname := h.tm.ByID(n.Use().Path())
+			useDirname := h.tm.ByID(n.AsUse().Path())
 			useDirname, _ = t.Unescape(useDirname)
 			if err := h.gen(useDirname, false); err != nil {
 				return err
@@ -241,7 +241,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 	for _, f := range files {
 		for _, n := range f.TopLevelDecls() {
 			if n.Kind() == a.KPackageID {
-				pkgIDNode = n.PackageID()
+				pkgIDNode = n.AsPackageID()
 			}
 		}
 	}
@@ -261,14 +261,14 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 		for _, n := range f.TopLevelDecls() {
 			switch n.Kind() {
 			case a.KConst:
-				n := n.Const()
+				n := n.AsConst()
 				if !n.Public() {
 					continue
 				}
 				return fmt.Errorf("TODO: genWuffs for consts")
 
 			case a.KFunc:
-				n := n.Func()
+				n := n.AsFunc()
 				if !n.Public() {
 					continue
 				}
@@ -288,7 +288,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 						fmt.Fprintf(out, ")(")
 					}
 					for j, field := range param.Fields() {
-						field := field.Field()
+						field := field.AsField()
 						if j > 0 {
 							fmt.Fprintf(out, ", ")
 						}
@@ -300,7 +300,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				fmt.Fprintf(out, ") { }\n")
 
 			case a.KStatus:
-				n := n.Status()
+				n := n.AsStatus()
 				if !n.Public() {
 					continue
 				}
@@ -308,7 +308,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 					n.Keyword().Str(&h.tm), n.Value().Str(&h.tm), n.QID().Str(&h.tm))
 
 			case a.KStruct:
-				n := n.Struct()
+				n := n.AsStruct()
 				if !n.Public() {
 					continue
 				}

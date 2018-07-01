@@ -43,18 +43,18 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		switch {
 		case n.id0.IsXUnaryOp():
 			buf = append(buf, opString(n.id0)...)
-			buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.rhs.AsExpr().appendStr(buf, tm, true, depth)
 
 		case n.id0.IsXBinaryOp():
 			if parenthesize {
 				buf = append(buf, '(')
 			}
-			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, opString(n.id0)...)
 			if n.id0 == t.IDXBinaryAs {
-				buf = append(buf, n.rhs.TypeExpr().Str(tm)...)
+				buf = append(buf, n.rhs.AsTypeExpr().Str(tm)...)
 			} else {
-				buf = n.rhs.Expr().appendStr(buf, tm, true, depth)
+				buf = n.rhs.AsExpr().appendStr(buf, tm, true, depth)
 			}
 			if parenthesize {
 				buf = append(buf, ')')
@@ -69,7 +69,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				if i != 0 {
 					buf = append(buf, op...)
 				}
-				buf = o.Expr().appendStr(buf, tm, true, depth)
+				buf = o.AsExpr().appendStr(buf, tm, true, depth)
 			}
 			if parenthesize {
 				buf = append(buf, ')')
@@ -101,7 +101,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			fallthrough
 
 		case t.IDOpenParen:
-			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			if n.flags&FlagsSuspendible != 0 {
 				buf = append(buf, '?')
 			} else if n.flags&FlagsImpure != 0 {
@@ -112,28 +112,28 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				if i != 0 {
 					buf = append(buf, ", "...)
 				}
-				buf = append(buf, tm.ByID(o.Arg().Name())...)
+				buf = append(buf, tm.ByID(o.AsArg().Name())...)
 				buf = append(buf, ':')
-				buf = o.Arg().Value().appendStr(buf, tm, false, depth)
+				buf = o.AsArg().Value().appendStr(buf, tm, false, depth)
 			}
 			buf = append(buf, ')')
 
 		case t.IDOpenBracket:
-			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '[')
-			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
+			buf = n.rhs.AsExpr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ']')
 
 		case t.IDColon:
-			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '[')
-			buf = n.mhs.Expr().appendStr(buf, tm, false, depth)
+			buf = n.mhs.AsExpr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ':')
-			buf = n.rhs.Expr().appendStr(buf, tm, false, depth)
+			buf = n.rhs.AsExpr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ']')
 
 		case t.IDDot:
-			buf = n.lhs.Expr().appendStr(buf, tm, true, depth)
+			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '.')
 			buf = append(buf, tm.ByID(n.id2)...)
 
@@ -143,7 +143,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 				if i != 0 {
 					buf = append(buf, ", "...)
 				}
-				buf = o.Expr().appendStr(buf, tm, false, depth)
+				buf = o.AsExpr().appendStr(buf, tm, false, depth)
 			}
 			buf = append(buf, ')')
 		}

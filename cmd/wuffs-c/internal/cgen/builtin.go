@@ -28,8 +28,8 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
-	method := n.LHS().Expr()
-	recv := method.LHS().Expr()
+	method := n.LHS().AsExpr()
+	recv := method.LHS().AsExpr()
 	recvTyp := recv.MType()
 
 	switch recvTyp.Decorator() {
@@ -44,7 +44,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 		b.printf("wuffs_base__image_config__initialize(a_dst")
 		for _, o := range n.Args() {
 			b.writeb(',')
-			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
 				return err
 			}
 		}
@@ -142,7 +142,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		// call (to a static inline function) instead of a struct literal, to
 		// avoid a "expression result unused" compiler error.
 		b.writes("(ioptr_src += ")
-		if err := g.writeExpr(b, args[1].Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[1].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(", wuffs_base__return_empty_struct())")
@@ -175,7 +175,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			bco, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
-			if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
 				return err
 			}
 		}
@@ -224,7 +224,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			return err
 		}
 		b.writes(") & ((1 << (")
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(")) - 1))")
@@ -243,7 +243,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes(" - (")
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(")))")
@@ -261,7 +261,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			return err
 		}
 		b.writes(",")
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -279,7 +279,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			return err
 		}
 		b.writes(",")
-		if err := g.writeExpr(b, args[0].Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -376,7 +376,7 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, rp replacementPolicy, depth u
 		if i > 0 {
 			b.writeb(',')
 		}
-		if err := g.writeExpr(b, o.Arg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 	}
@@ -389,8 +389,8 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
-	method := n.LHS().Expr()
-	recv := method.LHS().Expr()
+	method := n.LHS().AsExpr()
+	recv := method.LHS().AsExpr()
 	recvTyp := recv.MType()
 	if !recvTyp.IsIOType() {
 		return errNoSuchBuiltin
@@ -459,7 +459,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 				cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
-			x := n.Args()[0].Arg().Value()
+			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
 				return err
 			}
@@ -488,7 +488,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			}
 
 			b.printf("*ioptr_dst++ = ")
-			x := n.Args()[0].Arg().Value()
+			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
 				return err
 			}

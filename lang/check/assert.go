@@ -46,11 +46,11 @@ func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
 	}
 
 	if reverseOp != 0 {
-		if thisHS.Eq(n.LHS().Expr()) {
-			return op, n.RHS().Expr()
+		if thisHS.Eq(n.LHS().AsExpr()) {
+			return op, n.RHS().AsExpr()
 		}
-		if thisHS.Eq(n.RHS().Expr()) {
-			return reverseOp, n.LHS().Expr()
+		if thisHS.Eq(n.RHS().AsExpr()) {
+			return reverseOp, n.LHS().AsExpr()
 		}
 	}
 	return 0, nil
@@ -74,12 +74,12 @@ func (z *facts) appendFact(fact *a.Expr) {
 			}
 		}
 	case t.IDXBinaryAnd:
-		z.appendFact(fact.LHS().Expr())
-		z.appendFact(fact.RHS().Expr())
+		z.appendFact(fact.LHS().AsExpr())
+		z.appendFact(fact.RHS().AsExpr())
 		return
 	case t.IDXAssociativeAnd:
 		for _, a := range fact.Args() {
-			z.appendFact(a.Expr())
+			z.appendFact(a.AsExpr())
 		}
 		return
 	}
@@ -217,7 +217,7 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			return nil, err
 		}
 		if l != lhs || r != rhs {
-			o := a.NewExpr(0, op, 0, 0, l.Node(), nil, r.Node(), nil)
+			o := a.NewExpr(0, op, 0, 0, l.AsNode(), nil, r.AsNode(), nil)
 			o.SetConstValue(n.ConstValue())
 			o.SetMType(n.MType())
 			return o, nil
@@ -229,8 +229,8 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 func argValue(tm *t.Map, args []*a.Node, name string) *a.Expr {
 	if x := tm.ByName(name); x != 0 {
 		for _, a := range args {
-			if a.Arg().Name() == x {
-				return a.Arg().Value()
+			if a.AsArg().Name() == x {
+				return a.AsArg().Value()
 			}
 		}
 	}
@@ -246,7 +246,7 @@ func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
 	if op == t.IDAs {
 		return 0, nil, nil
 	}
-	return op, n.LHS().Expr(), n.RHS().Expr()
+	return op, n.LHS().AsExpr(), n.RHS().AsExpr()
 }
 
 func proveBinaryOpConstValues(op t.ID, lMin *big.Int, lMax *big.Int, rMin *big.Int, rMax *big.Int) (ok bool) {
@@ -290,16 +290,16 @@ func (q *checker) proveBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	}
 
 	for _, x := range q.facts {
-		if !x.LHS().Expr().Eq(lhs) {
+		if !x.LHS().AsExpr().Eq(lhs) {
 			continue
 		}
 		factOp := x.Operator()
-		if opImpliesOp(factOp, op) && x.RHS().Expr().Eq(rhs) {
+		if opImpliesOp(factOp, op) && x.RHS().AsExpr().Eq(rhs) {
 			return nil
 		}
 
 		if factOp == t.IDXBinaryEqEq && rcv != nil {
-			if factCV := x.RHS().Expr().ConstValue(); factCV != nil {
+			if factCV := x.RHS().AsExpr().ConstValue(); factCV != nil {
 				switch op {
 				case t.IDXBinaryNotEq:
 					return errFailedOrNil(factCV.Cmp(rcv) != 0)
@@ -350,7 +350,7 @@ func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error
 			"check: internal error: proveReasonRequirement token (0x%02X) is not an XBinaryOp", op)
 	}
 	if err := q.proveBinaryOp(op, lhs, rhs); err != nil {
-		n := a.NewExpr(0, op, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+		n := a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 		return fmt.Errorf("cannot prove %q: %v", n.Str(q.tm), err)
 	}
 	return nil

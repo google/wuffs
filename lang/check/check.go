@@ -126,7 +126,7 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 					return nil, err
 				}
 			}
-			f.Node().SetMType(typeExprPlaceholder)
+			f.AsNode().SetMType(typeExprPlaceholder)
 		}
 	}
 
@@ -185,7 +185,7 @@ type Checker struct {
 func (c *Checker) PackageID() uint32 { return c.packageID }
 
 func (c *Checker) checkPackageID(node *a.Node) error {
-	n := node.PackageID()
+	n := node.AsPackageID()
 	if c.otherPackageID != nil {
 		return &Error{
 			Err:           fmt.Errorf("check: multiple packageid declarations"),
@@ -214,7 +214,7 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 	}
 	c.packageID = u
 	c.otherPackageID = n
-	n.Node().SetMType(typeExprPlaceholder)
+	n.AsNode().SetMType(typeExprPlaceholder)
 	return nil
 }
 
@@ -226,7 +226,7 @@ func (c *Checker) checkPackageIDExists(node *a.Node) error {
 }
 
 func (c *Checker) checkUse(node *a.Node) error {
-	usePath := node.Use().Path()
+	usePath := node.AsUse().Path()
 	filename, ok := t.Unescape(usePath.Str(c.tm))
 	if !ok {
 		return fmt.Errorf("check: cannot resolve `use %s`", usePath.Str(c.tm))
@@ -259,7 +259,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 	}
 
 	for _, n := range f.TopLevelDecls() {
-		if err := n.Raw().SetPackage(c.tm, baseName); err != nil {
+		if err := n.AsRaw().SetPackage(c.tm, baseName); err != nil {
 			return err
 		}
 
@@ -286,7 +286,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 }
 
 func (c *Checker) checkStatus(node *a.Node) error {
-	n := node.Status()
+	n := node.AsStatus()
 	qid := n.QID()
 	if other, ok := c.statuses[qid]; ok {
 		return &Error{
@@ -322,12 +322,12 @@ func (c *Checker) checkStatus(node *a.Node) error {
 		c.statusByValue[x] = n.QID()[1]
 	}
 
-	n.Node().SetMType(typeExprPlaceholder)
+	n.AsNode().SetMType(typeExprPlaceholder)
 	return nil
 }
 
 func (c *Checker) checkConst(node *a.Node) error {
-	n := node.Const()
+	n := node.AsConst()
 	qid := n.QID()
 	if other, ok := c.consts[qid]; ok {
 		return &Error{
@@ -373,7 +373,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
-	n.Node().SetMType(typeExprPlaceholder)
+	n.AsNode().SetMType(typeExprPlaceholder)
 	return nil
 }
 
@@ -384,7 +384,7 @@ func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLi
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {
-			if err := c.checkConstElement(o.Expr(), nMin, nMax, nLists); err != nil {
+			if err := c.checkConstElement(o.AsExpr(), nMin, nMax, nLists); err != nil {
 				return err
 			}
 		}
@@ -397,7 +397,7 @@ func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLi
 }
 
 func (c *Checker) checkStructDecl(node *a.Node) error {
-	n := node.Struct()
+	n := node.AsStruct()
 	qid := n.QID()
 	if other, ok := c.structs[qid]; ok {
 		return &Error{
@@ -410,16 +410,16 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	}
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
-	n.Node().SetMType(typeExprPlaceholder)
+	n.AsNode().SetMType(typeExprPlaceholder)
 
 	// A struct declaration implies a reset method.
 	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
 	out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
 	f := a.NewFunc(0, n.Filename(), n.Line(), qid[1], t.IDReset, in, out, nil, nil)
 	if qid[0] != 0 {
-		f.Node().Raw().SetPackage(c.tm, qid[0])
+		f.AsNode().AsRaw().SetPackage(c.tm, qid[0])
 	}
-	return c.checkFuncSignature(f.Node())
+	return c.checkFuncSignature(f.AsNode())
 }
 
 func (c *Checker) checkStructCycles(_ *a.Node) error {
@@ -430,7 +430,7 @@ func (c *Checker) checkStructCycles(_ *a.Node) error {
 }
 
 func (c *Checker) checkStructFields(node *a.Node) error {
-	n := node.Struct()
+	n := node.AsStruct()
 	if err := c.checkFields(n.Fields(), true, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in struct %s", err, n.QID().Str(c.tm)),
@@ -452,7 +452,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 	}
 	fieldNames := map[t.ID]bool{}
 	for _, n := range fields {
-		f := n.Field()
+		f := n.AsField()
 		if _, ok := fieldNames[f.Name()]; ok {
 			return fmt.Errorf("check: duplicate field %q", f.Name().Str(c.tm))
 		}
@@ -477,14 +477,14 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 		}
 
 		fieldNames[f.Name()] = true
-		f.Node().SetMType(typeExprPlaceholder)
+		f.AsNode().SetMType(typeExprPlaceholder)
 	}
 
 	return nil
 }
 
 func (c *Checker) checkFuncSignature(node *a.Node) error {
-	n := node.Func()
+	n := node.AsFunc()
 	if err := c.checkFields(n.In().Fields(), false, false); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in in-params for func %s", err, n.QQID().Str(c.tm)),
@@ -492,7 +492,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
-	n.In().Node().SetMType(typeExprPlaceholder)
+	n.In().AsNode().SetMType(typeExprPlaceholder)
 	if err := c.checkFields(n.Out().Fields(), false, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
@@ -500,8 +500,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
-	n.Out().Node().SetMType(typeExprPlaceholder)
-	n.Node().SetMType(typeExprPlaceholder)
+	n.Out().AsNode().SetMType(typeExprPlaceholder)
+	n.AsNode().SetMType(typeExprPlaceholder)
 
 	// TODO: check somewhere that, if n.Out() is non-empty (or we are
 	// suspendible), that we end with a return statement? Or is that an
@@ -528,10 +528,10 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
-	inTyp.Node().SetMType(typeExprPlaceholder)
+	inTyp.AsNode().SetMType(typeExprPlaceholder)
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
-	outTyp.Node().SetMType(typeExprPlaceholder)
+	outTyp.AsNode().SetMType(typeExprPlaceholder)
 	localVars := typeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
@@ -545,9 +545,9 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			}
 		}
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
-		sTyp.Node().SetMType(typeExprPlaceholder)
+		sTyp.AsNode().SetMType(typeExprPlaceholder)
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
-		pTyp.Node().SetMType(typeExprPlaceholder)
+		pTyp.AsNode().SetMType(typeExprPlaceholder)
 		localVars[t.IDThis] = pTyp
 	}
 	c.localVars[qqid] = localVars
@@ -555,7 +555,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 }
 
 func (c *Checker) checkFuncContract(node *a.Node) error {
-	n := node.Func()
+	n := node.AsFunc()
 	if len(n.Asserts()) == 0 {
 		return nil
 	}
@@ -564,7 +564,7 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 		tm: c.tm,
 	}
 	for _, o := range n.Asserts() {
-		if err := q.tcheckAssert(o.Assert()); err != nil {
+		if err := q.tcheckAssert(o.AsAssert()); err != nil {
 			return err
 		}
 	}
@@ -572,7 +572,7 @@ func (c *Checker) checkFuncContract(node *a.Node) error {
 }
 
 func (c *Checker) checkFuncBody(node *a.Node) error {
-	n := node.Func()
+	n := node.AsFunc()
 	if len(n.Body()) == 0 {
 		return nil
 	}
@@ -622,10 +622,10 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 }
 
 func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
-	n := node.Struct()
+	n := node.AsStruct()
 	for _, o := range n.Fields() {
 		nQID := n.QID()
-		qqid := t.QQID{nQID[0], nQID[1], o.Field().Name()}
+		qqid := t.QQID{nQID[0], nQID[1], o.AsField().Name()}
 		if _, ok := c.funcs[qqid]; ok {
 			return fmt.Errorf("check: struct %q has both a field and method named %q",
 				nQID.Str(c.tm), qqid[2].Str(c.tm))
@@ -636,22 +636,22 @@ func (c *Checker) checkFieldMethodCollisions(node *a.Node) error {
 
 func (c *Checker) checkAllTypeChecked(node *a.Node) error {
 	for _, v := range c.consts {
-		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+		if err := allTypeChecked(c.tm, v.AsNode()); err != nil {
 			return err
 		}
 	}
 	for _, v := range c.funcs {
-		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+		if err := allTypeChecked(c.tm, v.AsNode()); err != nil {
 			return err
 		}
 	}
 	for _, v := range c.statuses {
-		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+		if err := allTypeChecked(c.tm, v.AsNode()); err != nil {
 			return err
 		}
 	}
 	for _, v := range c.structs {
-		if err := allTypeChecked(c.tm, v.Node()); err != nil {
+		if err := allTypeChecked(c.tm, v.AsNode()); err != nil {
 			return err
 		}
 	}
@@ -665,27 +665,27 @@ func allTypeChecked(tm *t.Map, n *a.Node) error {
 			switch o.Kind() {
 			case a.KConst:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Const().QID().Str(tm))
+					o.Kind(), o.AsConst().QID().Str(tm))
 			case a.KExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Expr().Str(tm))
+					o.Kind(), o.AsExpr().Str(tm))
 			case a.KFunc:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Func().QQID().Str(tm))
+					o.Kind(), o.AsFunc().QQID().Str(tm))
 			case a.KTypeExpr:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.TypeExpr().Str(tm))
+					o.Kind(), o.AsTypeExpr().Str(tm))
 			case a.KStatus:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Status().QID().Str(tm))
+					o.Kind(), o.AsStatus().QID().Str(tm))
 			case a.KStruct:
 				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.Struct().QID().Str(tm))
+					o.Kind(), o.AsStruct().QID().Str(tm))
 			}
 			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
 		}
 		if o.Kind() == a.KExpr {
-			o := o.Expr()
+			o := o.AsExpr()
 			if typ.IsIdeal() && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
 					"but no const value", o.Str(tm))

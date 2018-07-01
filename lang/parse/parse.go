@@ -124,9 +124,9 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if u, ok := base38.Encode(s); !ok || u == 0 {
 				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, s)
 			}
-			return a.NewPackageID(p.filename, line, path).Node(), nil
+			return a.NewPackageID(p.filename, line, path).AsNode(), nil
 		} else {
-			return a.NewUse(p.filename, line, path).Node(), nil
+			return a.NewUse(p.filename, line, path).AsNode(), nil
 		}
 
 	case t.IDPub:
@@ -161,7 +161,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewConst(flags, p.filename, line, id, typ, value).Node(), nil
+			return a.NewConst(flags, p.filename, line, id, typ, value).AsNode(), nil
 
 		case t.IDFunc:
 			p.src = p.src[1:]
@@ -224,7 +224,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			p.src = p.src[1:]
 			in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
 			out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
-			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).Node(), nil
+			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
 
 		case t.IDError, t.IDSuspension:
 			keyword := p.src[0].ID
@@ -256,7 +256,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewStatus(flags, p.filename, line, keyword, value, message).Node(), nil
+			return a.NewStatus(flags, p.filename, line, keyword, value, message).AsNode(), nil
 
 		case t.IDStruct:
 			p.src = p.src[1:]
@@ -286,7 +286,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewStruct(flags, p.filename, line, name, fields).Node(), nil
+			return a.NewStruct(flags, p.filename, line, name, fields).AsNode(), nil
 		}
 	}
 	return nil, fmt.Errorf(`parse: unrecognized top level declaration at %s:%d`, p.filename, line)
@@ -373,7 +373,7 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewField(name, typ).Node(), nil
+	return a.NewField(name, typ).AsNode(), nil
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
@@ -424,7 +424,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(decorator, 0, 0, arrayLength.Node(), nil, rhs), nil
+		return a.NewTypeExpr(decorator, 0, 0, arrayLength.AsNode(), nil, rhs), nil
 	}
 
 	pkg, name, err := p.parseQualifiedIdent()
@@ -440,7 +440,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 		}
 	}
 
-	return a.NewTypeExpr(0, pkg, name, lhs.Node(), mhs, nil), nil
+	return a.NewTypeExpr(0, pkg, name, lhs.AsNode(), mhs, nil), nil
 }
 
 // parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A double dot replaces
@@ -527,7 +527,7 @@ func (p *parser) parseBlock() ([]*a.Node, error) {
 func (p *parser) assertsSorted(asserts []*a.Node) error {
 	seenInv, seenPost := false, false
 	for _, a := range asserts {
-		switch a.Assert().Keyword() {
+		switch a.AsAssert().Keyword() {
 		case t.IDAssert:
 			return fmt.Errorf(`parse: assertion chain cannot contain "assert", `+
 				`only "pre", "inv" and "post" at %s:%d`, p.filename, p.line())
@@ -574,7 +574,7 @@ func (p *parser) parseAssertNode() (*a.Node, error) {
 				return nil, err
 			}
 		}
-		return a.NewAssert(x, condition, reason, args).Node(), nil
+		return a.NewAssert(x, condition, reason, args).AsNode(), nil
 	}
 	return nil, fmt.Errorf(`parse: expected "assert", "pre" or "post" at %s:%d`, p.filename, p.line())
 }
@@ -586,10 +586,10 @@ func (p *parser) parseStatement() (*a.Node, error) {
 	}
 	n, err := p.parseStatement1()
 	if n != nil {
-		n.Raw().SetFilenameLine(p.filename, line)
+		n.AsRaw().SetFilenameLine(p.filename, line)
 		if n.Kind() == a.KIterate {
-			for _, o := range n.Iterate().Variables() {
-				o.Raw().SetFilenameLine(p.filename, line)
+			for _, o := range n.AsIterate().Variables() {
+				o.AsRaw().SetFilenameLine(p.filename, line)
 			}
 		}
 	}
@@ -615,7 +615,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewJump(x, label).Node(), nil
+		return a.NewJump(x, label).AsNode(), nil
 
 	case t.IDIOBind:
 		p.src = p.src[1:]
@@ -627,11 +627,11 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewIOBind(in_fields, body).Node(), nil
+		return a.NewIOBind(in_fields, body).AsNode(), nil
 
 	case t.IDIf:
 		o, err := p.parseIf()
-		return o.Node(), err
+		return o.AsNode(), err
 
 	case t.IDIterate:
 		return p.parseIterateNode()
@@ -645,7 +645,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 				return nil, err
 			}
 		}
-		return a.NewRet(x, value).Node(), nil
+		return a.NewRet(x, value).AsNode(), nil
 
 	case t.IDVar:
 		p.src = p.src[1:]
@@ -669,7 +669,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewWhile(label, condition, asserts, body).Node(), nil
+		return a.NewWhile(label, condition, asserts, body).AsNode(), nil
 	}
 
 	lhs, err := p.parseExpr()
@@ -683,10 +683,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return a.NewAssign(op, lhs, rhs).Node(), nil
+		return a.NewAssign(op, lhs, rhs).AsNode(), nil
 	}
 
-	return lhs.Node(), nil
+	return lhs.AsNode(), nil
 }
 
 func (p *parser) parseAsserts() ([]*a.Node, error) {
@@ -754,7 +754,7 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return n.Node(), nil
+	return n.AsNode(), nil
 }
 
 func (p *parser) parseIterateBlock(label t.ID, vars []*a.Node) (*a.Iterate, error) {
@@ -849,7 +849,7 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewArg(name, value).Node(), nil
+	return a.NewArg(name, value).AsNode(), nil
 }
 
 func (p *parser) parseIOBindExprNode() (*a.Node, error) {
@@ -859,10 +859,10 @@ func (p *parser) parseIOBindExprNode() (*a.Node, error) {
 	}
 	switch e.Operator() {
 	case 0:
-		return e.Node(), nil
+		return e.AsNode(), nil
 	case t.IDDot:
-		if lhs := e.LHS().Expr(); lhs.Operator() == 0 && lhs.Ident() == t.IDIn {
-			return e.Node(), nil
+		if lhs := e.LHS().AsExpr(); lhs.Operator() == 0 && lhs.Ident() == t.IDIn {
+			return e.AsNode(), nil
 		}
 	}
 	return nil, fmt.Errorf(`parse: expected "in.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
@@ -912,7 +912,7 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 		}
 	}
 
-	return a.NewVar(op, id, typ, value).Node(), nil
+	return a.NewVar(op, id, typ, value).AsNode(), nil
 }
 
 func (p *parser) parsePossibleDollarExprNode() (*a.Node, error) {
@@ -920,7 +920,7 @@ func (p *parser) parsePossibleDollarExprNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return n.Node(), err
+	return n.AsNode(), err
 }
 
 func (p *parser) parsePossibleDollarExpr() (*a.Expr, error) {
@@ -949,7 +949,7 @@ func (p *parser) parseTryExpr() (*a.Expr, error) {
 		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
 			call.Str(p.tm), p.filename, p.line())
 	}
-	return a.NewExpr(call.Node().Raw().Flags(), t.IDTry, 0, call.Ident(),
+	return a.NewExpr(call.AsNode().AsRaw().Flags(), t.IDTry, 0, call.Ident(),
 		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
 }
 
@@ -958,7 +958,7 @@ func (p *parser) parseExprNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return n.Node(), err
+	return n.AsNode(), err
 }
 
 func (p *parser) parseExpr() (*a.Expr, error) {
@@ -974,13 +974,13 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			rhs = o.Node()
+			rhs = o.AsNode()
 		} else {
 			o, err := p.parseOperand()
 			if err != nil {
 				return nil, err
 			}
-			rhs = o.Node()
+			rhs = o.AsNode()
 		}
 
 		if !x.IsAssociativeOp() || x != p.peek1() {
@@ -988,17 +988,17 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 			if op == 0 {
 				return nil, fmt.Errorf(`parse: internal error: no binary form for token 0x%02X`, x)
 			}
-			return a.NewExpr(0, op, 0, 0, lhs.Node(), nil, rhs, nil), nil
+			return a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs, nil), nil
 		}
 
-		args := []*a.Node{lhs.Node(), rhs}
+		args := []*a.Node{lhs.AsNode(), rhs}
 		for p.peek1() == x {
 			p.src = p.src[1:]
 			arg, err := p.parseOperand()
 			if err != nil {
 				return nil, err
 			}
-			args = append(args, arg.Node())
+			args = append(args, arg.AsNode())
 		}
 		op := x.AssociativeForm()
 		if op == 0 {
@@ -1021,7 +1021,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		if op == 0 {
 			return nil, fmt.Errorf(`parse: internal error: no unary form for token 0x%02X`, x)
 		}
-		return a.NewExpr(0, op, 0, 0, nil, nil, rhs.Node(), nil), nil
+		return a.NewExpr(0, op, 0, 0, nil, nil, rhs.AsNode(), nil), nil
 
 	case x.IsLiteral(p.tm):
 		p.src = p.src[1:]
@@ -1082,14 +1082,14 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.Node(), nil, nil, args)
+			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.AsNode(), nil, nil, args)
 
 		case t.IDOpenBracket:
 			id0, mhs, rhs, err := p.parseBracket(t.IDColon)
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(0, id0, 0, 0, lhs.Node(), mhs.Node(), rhs.Node(), nil)
+			lhs = a.NewExpr(0, id0, 0, 0, lhs.AsNode(), mhs.AsNode(), rhs.AsNode(), nil)
 
 		case t.IDDot:
 			p.src = p.src[1:]
@@ -1097,7 +1097,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.Node(), nil, nil, nil)
+			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.AsNode(), nil, nil, nil)
 		}
 	}
 }

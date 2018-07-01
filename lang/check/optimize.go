@@ -38,11 +38,11 @@ func splitReceiverMethodArgs(n *a.Expr) (receiver *a.Expr, method t.ID, args []*
 		return nil, 0, nil
 	}
 	args = n.Args()
-	n = n.LHS().Expr()
+	n = n.LHS().AsExpr()
 	if n.Operator() != t.IDDot {
 		return nil, 0, nil
 	}
-	return n.LHS().Expr(), n.Ident(), args
+	return n.LHS().AsExpr(), n.Ident(), args
 }
 
 // TODO: should optimizeNonSuspendible be optimizeExpr and check both
@@ -82,8 +82,8 @@ func (q *checker) optimizeCopyFromHistory32(n *a.Expr) error {
 	if len(args) != 2 {
 		return nil
 	}
-	d := args[0].Arg().Value()
-	l := args[1].Arg().Value()
+	d := args[0].AsArg().Value()
+	l := args[1].AsArg().Value()
 
 	// Check "distance > 0".
 check0:
@@ -92,10 +92,10 @@ check0:
 			if x.Operator() != t.IDXBinaryGreaterThan {
 				continue
 			}
-			if lhs := x.LHS().Expr(); !lhs.Eq(d) {
+			if lhs := x.LHS().AsExpr(); !lhs.Eq(d) {
 				continue
 			}
-			if rcv := x.RHS().Expr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
+			if rcv := x.RHS().AsExpr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
 				continue
 			}
 			break check0
@@ -112,17 +112,17 @@ check1:
 			}
 
 			// Check that the LHS is "d as base.u64".
-			lhs := x.LHS().Expr()
+			lhs := x.LHS().AsExpr()
 			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
-			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
+			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
 			if !llhs.Eq(d) || !lrhs.Eq(typeExprU64) {
 				continue
 			}
 
 			// Check that the RHS is "nReceiver.since_mark().length()".
-			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
 			if method != t.IDLength || len(yArgs) != 0 {
 				continue
 			}
@@ -148,17 +148,17 @@ check2:
 			}
 
 			// Check that the LHS is "l as base.u64".
-			lhs := x.LHS().Expr()
+			lhs := x.LHS().AsExpr()
 			if lhs.Operator() != t.IDXBinaryAs {
 				continue
 			}
-			llhs, lrhs := lhs.LHS().Expr(), lhs.RHS().TypeExpr()
+			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
 			if !llhs.Eq(l) || !lrhs.Eq(typeExprU64) {
 				continue
 			}
 
 			// Check that the RHS is "nReceiver.available()".
-			y, method, yArgs := splitReceiverMethodArgs(x.RHS().Expr())
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
 			if method != t.IDAvailable || len(yArgs) != 0 {
 				continue
 			}
@@ -182,16 +182,16 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 	depth++
 
 	if !n.CallSuspendible() {
-		for _, o := range n.Node().Raw().SubNodes() {
+		for _, o := range n.AsNode().AsRaw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.optimizeSuspendible(o.Expr(), depth); err != nil {
+				if err := q.optimizeSuspendible(o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := q.optimizeSuspendible(o.Expr(), depth); err != nil {
+				if err := q.optimizeSuspendible(o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}
@@ -237,21 +237,21 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 			return x, nil
 		}
 
-		rcv := x.RHS().Expr().ConstValue()
+		rcv := x.RHS().AsExpr().ConstValue()
 		if rcv == nil {
 			return x, nil
 		}
 
 		// Check that lhs is "receiver.available()".
-		lhs := x.LHS().Expr()
+		lhs := x.LHS().AsExpr()
 		if lhs.Operator() != t.IDOpenParen || len(lhs.Args()) != 0 {
 			return x, nil
 		}
-		lhs = lhs.LHS().Expr()
+		lhs = lhs.LHS().AsExpr()
 		if lhs.Operator() != t.IDDot || lhs.Ident() != t.IDAvailable {
 			return x, nil
 		}
-		lhs = lhs.LHS().Expr()
+		lhs = lhs.LHS().AsExpr()
 		if !lhs.Eq(receiver) {
 			return x, nil
 		}
@@ -290,7 +290,8 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 		o.SetConstValue(newRCV)
 		o.SetMType(typeExprIdeal)
 
-		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.Node(), nil), nil
+		return a.NewExpr(x.AsNode().AsRaw().Flags(),
+			t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.AsNode(), nil), nil
 	})
 	return retOK, retErr
 }

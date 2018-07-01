@@ -26,11 +26,11 @@ import (
 
 func (q *checker) tcheckVars(block []*a.Node) error {
 	for _, o := range block {
-		q.errFilename, q.errLine = o.Raw().FilenameLine()
+		q.errFilename, q.errLine = o.AsRaw().FilenameLine()
 
 		switch o.Kind() {
 		case a.KIf:
-			for o := o.If(); o != nil; o = o.ElseIf() {
+			for o := o.AsIf(); o != nil; o = o.ElseIf() {
 				if err := q.tcheckVars(o.BodyIfTrue()); err != nil {
 					return err
 				}
@@ -40,12 +40,12 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			}
 
 		case a.KIOBind:
-			if err := q.tcheckVars(o.IOBind().Body()); err != nil {
+			if err := q.tcheckVars(o.AsIOBind().Body()); err != nil {
 				return err
 			}
 
 		case a.KIterate:
-			for o := o.Iterate(); o != nil; o = o.ElseIterate() {
+			for o := o.AsIterate(); o != nil; o = o.ElseIterate() {
 				if err := q.tcheckVars(o.Variables()); err != nil {
 					return err
 				}
@@ -55,7 +55,7 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			}
 
 		case a.KVar:
-			o := o.Var()
+			o := o.AsVar()
 			name := o.Name()
 			if _, ok := q.localVars[name]; ok {
 				return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
@@ -66,7 +66,7 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 			q.localVars[name] = o.XType()
 
 		case a.KWhile:
-			if err := q.tcheckVars(o.While().Body()); err != nil {
+			if err := q.tcheckVars(o.AsWhile().Body()); err != nil {
 				return err
 			}
 		}
@@ -75,24 +75,24 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 }
 
 func (q *checker) tcheckStatement(n *a.Node) error {
-	q.errFilename, q.errLine = n.Raw().FilenameLine()
+	q.errFilename, q.errLine = n.AsRaw().FilenameLine()
 
 	switch n.Kind() {
 	case a.KAssert:
-		if err := q.tcheckAssert(n.Assert()); err != nil {
+		if err := q.tcheckAssert(n.AsAssert()); err != nil {
 			return err
 		}
 
 	case a.KAssign:
-		if err := q.tcheckAssign(n.Assign()); err != nil {
+		if err := q.tcheckAssign(n.AsAssign()); err != nil {
 			return err
 		}
 
 	case a.KExpr:
-		return q.tcheckExpr(n.Expr(), 0)
+		return q.tcheckExpr(n.AsExpr(), 0)
 
 	case a.KIf:
-		for n := n.If(); n != nil; n = n.ElseIf() {
+		for n := n.AsIf(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
 			if err := q.tcheckExpr(cond, 0); err != nil {
 				return err
@@ -112,20 +112,20 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				}
 			}
 		}
-		for n := n.If(); n != nil; n = n.ElseIf() {
-			n.Node().SetMType(typeExprPlaceholder)
+		for n := n.AsIf(); n != nil; n = n.ElseIf() {
+			n.AsNode().SetMType(typeExprPlaceholder)
 		}
 		return nil
 
 	case a.KIOBind:
-		n := n.IOBind()
+		n := n.AsIOBind()
 		for _, o := range n.InFields() {
-			if err := q.tcheckExpr(o.Expr(), 0); err != nil {
+			if err := q.tcheckExpr(o.AsExpr(), 0); err != nil {
 				return err
 			}
-			if typ := o.Expr().MType(); !typ.IsIOType() {
+			if typ := o.AsExpr().MType(); !typ.IsIOType() {
 				return fmt.Errorf("check: io_bind expression %q, of type %q, does not have an I/O type",
-					o.Expr().Str(q.tm), typ.Str(q.tm))
+					o.AsExpr().Str(q.tm), typ.Str(q.tm))
 			}
 		}
 		for _, o := range n.Body() {
@@ -137,7 +137,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KIterate:
-		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
+		for n := n.AsIterate(); n != nil; n = n.ElseIterate() {
 			for _, o := range n.Variables() {
 				if err := q.tcheckStatement(o); err != nil {
 					return err
@@ -149,13 +149,13 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				return err
 			}
 		}
-		for n := n.Iterate(); n != nil; n = n.ElseIterate() {
-			n.Node().SetMType(typeExprPlaceholder)
+		for n := n.AsIterate(); n != nil; n = n.ElseIterate() {
+			n.AsNode().SetMType(typeExprPlaceholder)
 		}
 		return nil
 
 	case a.KJump:
-		n := n.Jump()
+		n := n.AsJump()
 		jumpTarget := (a.Loop)(nil)
 		if id := n.Label(); id != 0 {
 			for i := len(q.jumpTargets) - 1; i >= 0; i-- {
@@ -183,7 +183,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		n.SetJumpTarget(jumpTarget)
 
 	case a.KRet:
-		n := n.Ret()
+		n := n.AsRet()
 		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
@@ -193,8 +193,8 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KVar:
-		n := n.Var()
-		if n.XType().Node().MType() == nil {
+		n := n.AsVar()
+		if n.XType().AsNode().MType() == nil {
 			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().Str(q.tm))
 		}
 		if value := n.Value(); value != nil {
@@ -222,7 +222,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		}
 
 	case a.KWhile:
-		n := n.While()
+		n := n.AsWhile()
 		cond := n.Condition()
 		if err := q.tcheckExpr(cond, 0); err != nil {
 			return err
@@ -253,7 +253,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 			cond.Str(q.tm), cond.MType().Str(q.tm))
 	}
 	for _, o := range n.Args() {
-		if err := q.tcheckExpr(o.Arg().Value(), 0); err != nil {
+		if err := q.tcheckExpr(o.AsArg().Value(), 0); err != nil {
 			return err
 		}
 		o.SetMType(typeExprPlaceholder)
@@ -323,7 +323,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 
 func (q *checker) tcheckLoop(n a.Loop) error {
 	for _, o := range n.Asserts() {
-		if err := q.tcheckAssert(o.Assert()); err != nil {
+		if err := q.tcheckAssert(o.AsAssert()); err != nil {
 			return err
 		}
 		o.SetMType(typeExprPlaceholder)
@@ -413,11 +413,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.IDOpenBracket:
 		// n is an index.
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if err := q.tcheckExpr(lhs, depth); err != nil {
 			return err
 		}
-		rhs := n.RHS().Expr()
+		rhs := n.RHS().AsExpr()
 		if err := q.tcheckExpr(rhs, depth); err != nil {
 			return err
 		}
@@ -438,7 +438,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		// n is a slice.
 		// TODO: require that the i and j in a[i:j] are *unsigned* (or
 		// non-negative constants)?
-		if mhs := n.MHS().Expr(); mhs != nil {
+		if mhs := n.MHS().AsExpr(); mhs != nil {
 			if err := q.tcheckExpr(mhs, depth); err != nil {
 				return err
 			}
@@ -448,7 +448,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					n.Str(q.tm), mhs.Str(q.tm), mTyp.Str(q.tm))
 			}
 		}
-		if rhs := n.RHS().Expr(); rhs != nil {
+		if rhs := n.RHS().AsExpr(); rhs != nil {
 			if err := q.tcheckExpr(rhs, depth); err != nil {
 				return err
 			}
@@ -458,7 +458,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 					n.Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 			}
 		}
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if err := q.tcheckExpr(lhs, depth); err != nil {
 			return err
 		}
@@ -499,7 +499,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.IDDollar:
 		for _, o := range n.Args() {
-			o := o.Expr()
+			o := o.AsExpr()
 			if err := q.tcheckExpr(o, depth); err != nil {
 				return err
 			}
@@ -513,7 +513,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
-	lhs := n.LHS().Expr()
+	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
@@ -546,12 +546,12 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
-		o := o.Arg()
+		o := o.AsArg()
 		if err := q.tcheckExpr(o.Value(), depth); err != nil {
 			return err
 		}
 
-		inField := inFields[i].Field()
+		inField := inFields[i].AsField()
 		if o.Name() != inField.Name() {
 			return fmt.Errorf("check: argument name: got %q, want %q", o.Name().Str(q.tm), inField.Name().Str(q.tm))
 		}
@@ -565,7 +565,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, o.Value(), o.Value().MType()); err != nil {
 			return err
 		}
-		o.Node().SetMType(typeExprPlaceholder)
+		o.AsNode().SetMType(typeExprPlaceholder)
 	}
 
 	// TODO: distinguish t.IDOpenParen vs t.IDTry in a more principled way?
@@ -584,7 +584,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		case 0:
 			n.SetMType(typeExprEmptyStruct)
 		case 1:
-			oTyp := outFields[0].Field().XType()
+			oTyp := outFields[0].AsField().XType()
 			if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
 				n.SetMType(genericType1)
 			} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
@@ -598,7 +598,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
-	lhs := n.LHS().Expr()
+	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
@@ -612,7 +612,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		if q.c.builtInSliceFuncs[qqid] == nil {
 			return fmt.Errorf("check: no slice method %q", n.Ident().Str(q.tm))
 		}
-		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
 		return nil
 
 	} else if lTyp.IsTableType() {
@@ -621,7 +621,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 		if q.c.builtInTableFuncs[qqid] == nil {
 			return fmt.Errorf("check: no table method %q", n.Ident().Str(q.tm))
 		}
-		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
 		return nil
 
 	} else if lTyp.Decorator() != 0 {
@@ -629,7 +629,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	if f := q.c.funcs[qqid]; f != nil {
-		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.Node(), nil, nil))
+		n.SetMType(a.NewTypeExpr(t.IDFunc, 0, n.Ident(), lTyp.AsNode(), nil, nil))
 		return nil
 	}
 
@@ -653,7 +653,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	for _, field := range s.Fields() {
-		f := field.Field()
+		f := field.AsField()
 		if f.Name() == n.Ident() {
 			n.SetMType(f.XType())
 			return nil
@@ -665,7 +665,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
-	rhs := n.RHS().Expr()
+	rhs := n.RHS().AsExpr()
 	if err := q.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
@@ -712,14 +712,14 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
-	lhs := n.LHS().Expr()
+	lhs := n.LHS().AsExpr()
 	if err := q.tcheckExpr(lhs, depth); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()
 	op := n.Operator()
 	if op == t.IDXBinaryAs {
-		rhs := n.RHS().TypeExpr()
+		rhs := n.RHS().AsTypeExpr()
 		if err := q.tcheckTypeExpr(rhs, 0); err != nil {
 			return err
 		}
@@ -730,7 +730,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		return fmt.Errorf("check: cannot convert expression %q, of type %q, as type %q",
 			lhs.Str(q.tm), lTyp.Str(q.tm), rhs.Str(q.tm))
 	}
-	rhs := n.RHS().Expr()
+	rhs := n.RHS().AsExpr()
 	if err := q.tcheckExpr(rhs, depth); err != nil {
 		return err
 	}
@@ -839,13 +839,13 @@ func evalConstValueBinaryOp(tm *t.Map, n *a.Expr, l *big.Int, r *big.Int) (*big.
 	case t.IDXBinaryShiftL:
 		if r.Sign() < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().Str(tm), n.Str(tm))
+				n.RHS().AsExpr().Str(tm), n.Str(tm))
 		}
 		return big.NewInt(0).Lsh(l, uint(r.Uint64())), nil
 	case t.IDXBinaryShiftR:
 		if r.Sign() < 0 || r.Cmp(ffff) > 0 {
 			return nil, fmt.Errorf("check: shift %q out of range in const expression %q",
-				n.RHS().Expr().Str(tm), n.Str(tm))
+				n.RHS().AsExpr().Str(tm), n.Str(tm))
 		}
 		return big.NewInt(0).Rsh(l, uint(r.Uint64())), nil
 	case t.IDXBinaryAmp:
@@ -890,7 +890,7 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 
 		expr, typ := (*a.Expr)(nil), (*a.TypeExpr)(nil)
 		for _, o := range n.Args() {
-			o := o.Expr()
+			o := o.AsExpr()
 			if err := q.tcheckExpr(o, depth); err != nil {
 				return err
 			}
@@ -922,7 +922,7 @@ func (q *checker) tcheckExprAssociativeOp(n *a.Expr, depth uint32) error {
 
 	case t.IDXAssociativeAnd, t.IDXAssociativeOr:
 		for _, o := range n.Args() {
-			o := o.Expr()
+			o := o.AsExpr()
 			if err := q.tcheckExpr(o, depth); err != nil {
 				return err
 			}
@@ -997,7 +997,7 @@ swtch:
 	default:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
-	typ.Node().SetMType(typeExprPlaceholder)
+	typ.AsNode().SetMType(typeExprPlaceholder)
 	return nil
 }
 

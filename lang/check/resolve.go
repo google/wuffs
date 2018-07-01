@@ -132,9 +132,9 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		if len(tlds) != 1 || tlds[0].Kind() != a.KFunc {
 			return nil, fmt.Errorf("check: parsing %q: got %d top level decls, want %d", s, len(tlds), 1)
 		}
-		f := tlds[0].Func()
-		f.Node().Raw().SetPackage(c.tm, t.IDBase)
-		if err := c.checkFuncSignature(f.Node()); err != nil {
+		f := tlds[0].AsFunc()
+		f.AsNode().AsRaw().SetPackage(c.tm, t.IDBase)
+		if err := c.checkFuncSignature(f.AsNode()); err != nil {
 			return nil, err
 		}
 

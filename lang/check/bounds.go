@@ -121,7 +121,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	if cv := n.ConstValue(); cv != nil {
 		return nil, fmt.Errorf("check: invert(%q) called on constant expression", n.Str(tm))
 	}
-	op, lhs, rhs, args := n.Operator(), n.LHS().Expr(), n.RHS().Expr(), []*a.Node(nil)
+	op, lhs, rhs, args := n.Operator(), n.LHS().AsExpr(), n.RHS().AsExpr(), []*a.Node(nil)
 	switch op {
 	case t.IDXUnaryNot:
 		return rhs, nil
@@ -155,11 +155,11 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	case t.IDXAssociativeAnd, t.IDXAssociativeOr:
 		args = make([]*a.Node, 0, len(n.Args()))
 		for _, a := range n.Args() {
-			v, err := invert(tm, a.Expr())
+			v, err := invert(tm, a.AsExpr())
 			if err != nil {
 				return nil, err
 			}
-			args = append(args, v.Node())
+			args = append(args, v.AsNode())
 		}
 		if op == t.IDXAssociativeAnd {
 			op = t.IDXAssociativeOr
@@ -169,7 +169,7 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	default:
 		op, lhs, rhs = t.IDXUnaryNot, nil, n
 	}
-	o := a.NewExpr(n.Node().Raw().Flags(), op, 0, 0, lhs.Node(), nil, rhs.Node(), args)
+	o := a.NewExpr(n.AsNode().AsRaw().Flags(), op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), args)
 	o.SetMType(n.MType())
 	return o, nil
 }
@@ -211,7 +211,7 @@ loop:
 		case a.KJump:
 			break loop
 		case a.KRet:
-			if o.Ret().Keyword() == t.IDReturn {
+			if o.AsRet().Keyword() == t.IDReturn {
 				break loop
 			}
 			// o is a yield statement.
@@ -232,7 +232,7 @@ loop:
 }
 
 func (q *checker) bcheckStatement(n *a.Node) error {
-	q.errFilename, q.errLine = n.Raw().FilenameLine()
+	q.errFilename, q.errLine = n.AsRaw().FilenameLine()
 
 	// TODO: be principled about checking for provenNotToSuspend. Should we
 	// call optimizeSuspendible only for assignments, for var statements too,
@@ -240,14 +240,14 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	switch n.Kind() {
 	case a.KAssert:
-		return q.bcheckAssert(n.Assert())
+		return q.bcheckAssert(n.AsAssert())
 
 	case a.KAssign:
-		n := n.Assign()
+		n := n.AsAssign()
 		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
 
 	case a.KExpr:
-		n := n.Expr()
+		n := n.AsExpr()
 		if _, _, err := q.bcheckExpr(n, 0); err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return nil
 
 	case a.KIOBind:
-		n := n.IOBind()
+		n := n.AsIOBind()
 		if err := q.bcheckBlock(n.Body()); err != nil {
 			return err
 		}
@@ -267,12 +267,12 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return nil
 
 	case a.KIf:
-		return q.bcheckIf(n.If())
+		return q.bcheckIf(n.AsIf())
 
 	case a.KIterate:
-		n := n.Iterate()
+		n := n.AsIterate()
 		for _, o := range n.Variables() {
-			if err := q.bcheckVar(o.Var(), true); err != nil {
+			if err := q.bcheckVar(o.AsVar(), true); err != nil {
 				return err
 			}
 		}
@@ -284,7 +284,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		for ; n != nil; n = n.ElseIterate() {
 			q.facts = q.facts[:0]
 			for _, o := range variables {
-				v := o.Var()
+				v := o.AsVar()
 				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Length()))
 			}
 			for _, o := range n.Body() {
@@ -298,16 +298,16 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return nil
 
 	case a.KJump:
-		n := n.Jump()
+		n := n.AsJump()
 		skip := t.IDPost
 		if n.Keyword() == t.IDBreak {
 			skip = t.IDPre
 		}
 		for _, o := range n.JumpTarget().Asserts() {
-			if o.Assert().Keyword() == skip {
+			if o.AsAssert().Keyword() == skip {
 				continue
 			}
-			if err := q.bcheckAssert(o.Assert()); err != nil {
+			if err := q.bcheckAssert(o.AsAssert()); err != nil {
 				return err
 			}
 		}
@@ -318,10 +318,10 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// TODO.
 
 	case a.KVar:
-		return q.bcheckVar(n.Var(), false)
+		return q.bcheckVar(n.AsVar(), false)
 
 	case a.KWhile:
-		return q.bcheckWhile(n.While())
+		return q.bcheckWhile(n.AsWhile())
 
 	default:
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for bcheckStatement", n.Kind())
@@ -351,7 +351,8 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 			err = fmt.Errorf("no such reason %s", reasonID.Str(q.tm))
 		}
 	} else if condition.Operator().IsBinaryOp() && condition.Operator() != t.IDAs {
-		err = q.proveBinaryOp(condition.Operator(), condition.LHS().Expr(), condition.RHS().Expr())
+		err = q.proveBinaryOp(condition.Operator(),
+			condition.LHS().AsExpr(), condition.RHS().AsExpr())
 	}
 
 	if err != nil {
@@ -385,7 +386,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}
 
 		if lhs.Pure() && rhs.Pure() && lhs.MType().IsNumType() {
-			o := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+			o := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 			o.SetMType(lhs.MType())
 			q.facts.appendFact(o)
 		}
@@ -404,13 +405,13 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			}
 			switch op {
 			case t.IDPlusEq, t.IDMinusEq:
-				oRHS := a.NewExpr(0, op.BinaryForm(), 0, 0, xRHS.Node(), nil, rhs.Node(), nil)
+				oRHS := a.NewExpr(0, op.BinaryForm(), 0, 0, xRHS.AsNode(), nil, rhs.AsNode(), nil)
 				oRHS.SetMType(xRHS.MType())
 				oRHS, err := simplify(q.tm, oRHS)
 				if err != nil {
 					return nil, err
 				}
-				o := a.NewExpr(0, xOp, 0, 0, xLHS.Node(), nil, oRHS.Node(), nil)
+				o := a.NewExpr(0, xOp, 0, 0, xLHS.AsNode(), nil, oRHS.AsNode(), nil)
 				o.SetMType(x.MType())
 				return o, nil
 			}
@@ -506,7 +507,7 @@ func terminates(body []*a.Node) bool {
 		n := body[len(body)-1]
 		switch n.Kind() {
 		case a.KIf:
-			n := n.If()
+			n := n.AsIf()
 			for {
 				if !terminates(n.BodyIfTrue()) {
 					return false
@@ -523,7 +524,7 @@ func terminates(body []*a.Node) bool {
 		case a.KJump:
 			return true
 		case a.KRet:
-			return n.Ret().Keyword() == t.IDReturn
+			return n.AsRet().Keyword() == t.IDReturn
 		}
 		return false
 	}
@@ -614,10 +615,10 @@ func (q *checker) bcheckIf(n *a.If) error {
 func (q *checker) bcheckWhile(n *a.While) error {
 	// Check the pre and inv conditions on entry.
 	for _, o := range n.Asserts() {
-		if o.Assert().Keyword() == t.IDPost {
+		if o.AsAssert().Keyword() == t.IDPost {
 			continue
 		}
-		if err := q.bcheckAssert(o.Assert()); err != nil {
+		if err := q.bcheckAssert(o.AsAssert()); err != nil {
 			return err
 		}
 	}
@@ -643,10 +644,10 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	} else {
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword() == t.IDPost {
+			if o.AsAssert().Keyword() == t.IDPost {
 				continue
 			}
-			q.facts.appendFact(o.Assert().Condition())
+			q.facts.appendFact(o.AsAssert().Condition())
 		}
 		if inverse, err := invert(q.tm, n.Condition()); err != nil {
 			return err
@@ -654,8 +655,8 @@ func (q *checker) bcheckWhile(n *a.While) error {
 			q.facts.appendFact(inverse)
 		}
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword() == t.IDPost {
-				if err := q.bcheckAssert(o.Assert()); err != nil {
+			if o.AsAssert().Keyword() == t.IDPost {
+				if err := q.bcheckAssert(o.AsAssert()); err != nil {
 					return err
 				}
 			}
@@ -669,10 +670,10 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// Assume the pre and inv conditions...
 		q.facts = q.facts[:0]
 		for _, o := range n.Asserts() {
-			if o.Assert().Keyword() == t.IDPost {
+			if o.AsAssert().Keyword() == t.IDPost {
 				continue
 			}
-			q.facts.appendFact(o.Assert().Condition())
+			q.facts.appendFact(o.AsAssert().Condition())
 		}
 		// ...and the while condition, unless it is the redundant "true".
 		if cv == nil {
@@ -686,10 +687,10 @@ func (q *checker) bcheckWhile(n *a.While) error {
 		// body.
 		if !terminates(n.Body()) {
 			for _, o := range n.Asserts() {
-				if o.Assert().Keyword() == t.IDPost {
+				if o.AsAssert().Keyword() == t.IDPost {
 					continue
 				}
-				if err := q.bcheckAssert(o.Assert()); err != nil {
+				if err := q.bcheckAssert(o.AsAssert()); err != nil {
 					return err
 				}
 			}
@@ -699,10 +700,10 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	// Assume the inv and post conditions.
 	q.facts = q.facts[:0]
 	for _, o := range n.Asserts() {
-		if o.Assert().Keyword() == t.IDPre {
+		if o.AsAssert().Keyword() == t.IDPre {
 			continue
 		}
-		q.facts.appendFact(o.Assert().Condition())
+		q.facts.appendFact(o.AsAssert().Condition())
 	}
 	return nil
 }
@@ -767,9 +768,9 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 		return q.bcheckExprUnaryOp(n, depth)
 	case op.IsXBinaryOp():
 		if op == t.IDXBinaryAs {
-			return q.bcheckExpr(n.LHS().Expr(), depth)
+			return q.bcheckExpr(n.LHS().AsExpr(), depth)
 		}
-		return q.bcheckExprBinaryOp(op, n.LHS().Expr(), n.RHS().Expr(), depth)
+		return q.bcheckExprBinaryOp(op, n.LHS().AsExpr(), n.RHS().AsExpr(), depth)
 	case op.IsXAssociativeOp():
 		return q.bcheckExprAssociativeOp(n, depth)
 	}
@@ -793,7 +794,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.IDOpenParen, t.IDTry:
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
@@ -807,11 +808,11 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.IDOpenBracket:
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
-		rhs := n.RHS().Expr()
+		rhs := n.RHS().AsExpr()
 		if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
 			return nil, nil, err
 		}
@@ -831,17 +832,17 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 	case t.IDColon:
-		lhs := n.LHS().Expr()
+		lhs := n.LHS().AsExpr()
 		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return nil, nil, err
 		}
-		mhs := n.MHS().Expr()
+		mhs := n.MHS().AsExpr()
 		if mhs != nil {
 			if _, _, err := q.bcheckExpr(mhs, depth); err != nil {
 				return nil, nil, err
 			}
 		}
-		rhs := n.RHS().Expr()
+		rhs := n.RHS().AsExpr()
 		if rhs != nil {
 			if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
 				return nil, nil, err
@@ -883,19 +884,19 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 	case t.IDDot:
 		// TODO: delete this hack that only matches "in".
-		if n.LHS().Expr().Ident() == t.IDIn {
+		if n.LHS().AsExpr().Ident() == t.IDIn {
 			for _, o := range q.astFunc.In().Fields() {
-				o := o.Field()
+				o := o.AsField()
 				if o.Name() == n.Ident() {
 					return q.bcheckTypeExpr(o.XType())
 				}
 			}
-			lTyp := n.LHS().Expr().MType()
+			lTyp := n.LHS().AsExpr().MType()
 			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
-		if _, _, err := q.bcheckExpr(n.LHS().Expr(), depth); err != nil {
+		if _, _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
 			return nil, nil, err
 		}
 
@@ -912,7 +913,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	// TODO: handle func pre/post conditions.
 	//
 	// TODO: bcheck the receiver, e.g. ptr vs nptr.
-	lhs := n.LHS().Expr()
+	lhs := n.LHS().AsExpr()
 	f, err := q.c.resolveFunc(lhs.MType())
 	if err != nil {
 		return err
@@ -923,7 +924,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
-		if err := q.bcheckAssignment2(nil, inFields[i].Field().XType(), t.IDEq, o.Arg().Value()); err != nil {
+		if err := q.bcheckAssignment2(nil, inFields[i].AsField().XType(), t.IDEq, o.AsArg().Value()); err != nil {
 			return err
 		}
 	}
@@ -931,8 +932,8 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	lhs := n.LHS().Expr()
-	recv := lhs.LHS().Expr()
+	lhs := n.LHS().AsExpr()
+	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
 	if recvTyp := recv.MType(); recvTyp == nil {
@@ -944,7 +945,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 		// isn't expressible in Wuffs' function syntax and type system.
 		switch method {
 		case t.IDLowBits, t.IDHighBits:
-			_, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+			_, aMax, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -953,11 +954,11 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 		case t.IDMin, t.IDMax:
 			// TODO: lhs has already been bcheck'ed. There should be no
 			// need to bcheck lhs.LHS().Expr() twice.
-			lMin, lMax, err := q.bcheckExpr(lhs.LHS().Expr(), depth)
+			lMin, lMax, err := q.bcheckExpr(lhs.LHS().AsExpr(), depth)
 			if err != nil {
 				return nil, nil, err
 			}
-			aMin, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+			aMin, aMax, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -976,8 +977,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 			if len(args) != 2 {
 				return nil, nil, fmt.Errorf("check: internal error: bad skip32_fast arguments")
 			}
-			actual := args[0].Arg().Value()
-			worstCase := args[1].Arg().Value()
+			actual := args[0].AsArg().Value()
+			worstCase := args[1].AsArg().Value()
 			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
 				return nil, nil, fmt.Errorf("check: could not prove skip32_fast precondition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
@@ -1028,9 +1029,9 @@ var ioMethodAdvances = [...]*big.Int{
 
 // makeSliceLength returns "x.length()".
 func makeSliceLength(slice *a.Expr) *a.Expr {
-	x := a.NewExpr(0, t.IDDot, 0, t.IDLength, slice.Node(), nil, nil, nil)
-	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().Node(), nil, nil))
-	x = a.NewExpr(0, t.IDOpenParen, 0, 0, x.Node(), nil, nil, nil)
+	x := a.NewExpr(0, t.IDDot, 0, t.IDLength, slice.AsNode(), nil, nil, nil)
+	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().AsNode(), nil, nil))
+	x = a.NewExpr(0, t.IDOpenParen, 0, 0, x.AsNode(), nil, nil, nil)
 	x.SetMType(typeExprU64)
 	return x
 }
@@ -1052,13 +1053,13 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	rhs.SetConstValue(big.NewInt(int64(nValue)))
 	rhs.SetMType(typeExprIdeal)
 
-	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.Node(), nil, rhs.Node(), nil)
+	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
 	ret.SetMType(typeExprBool)
 	return ret
 }
 
 func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	rMin, rMax, err := q.bcheckExpr(n.RHS().Expr(), depth)
+	rMin, rMax, err := q.bcheckExpr(n.RHS().AsExpr(), depth)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1267,7 +1268,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 	if len(args) < 1 {
 		return nil, nil, fmt.Errorf("check: associative op has no arguments")
 	}
-	lMin, lMax, err := q.bcheckExpr(args[0].Expr(), depth)
+	lMin, lMax, err := q.bcheckExpr(args[0].AsExpr(), depth)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1275,8 +1276,9 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 		if i == 0 {
 			continue
 		}
-		lhs := a.NewExpr(n.Node().Raw().Flags(), n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
-		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.Expr(), depth)
+		lhs := a.NewExpr(n.AsNode().AsRaw().Flags(),
+			n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
+		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.AsExpr(), depth)
 		if err != nil {
 			return nil, nil, err
 		}

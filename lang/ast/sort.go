@@ -53,7 +53,7 @@ func tssVisit(dst []*Struct, n *Struct, byQID map[t.QID]*Struct, marks map[*Stru
 	marks[n] = temporary
 
 	for _, f := range n.Fields() {
-		x := f.Field().XType().Innermost()
+		x := f.AsField().XType().Innermost()
 		if o := byQID[x.QID()]; o != nil {
 			var ok bool
 			dst, ok = tssVisit(dst, o, byQID, marks)

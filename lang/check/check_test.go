@@ -253,7 +253,7 @@ func TestConstValues(tt *testing.T) {
 			continue
 		}
 
-		got := body[0].Var().Value().ConstValue()
+		got := body[0].AsVar().Value().ConstValue()
 		want := big.NewInt(wantInt64)
 		if got == nil || want == nil || got.Cmp(want) != 0 {
 			tt.Errorf("%q: got %v, want %v", s, got, want)

@@ -43,10 +43,10 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	mightIntroduceTemporaries := false
 	switch n.Kind() {
 	case a.KAssign:
-		n := n.Assign()
+		n := n.AsAssign()
 		mightIntroduceTemporaries = n.LHS().Suspendible() || n.RHS().Suspendible()
 	case a.KVar:
-		v := n.Var().Value()
+		v := n.AsVar().Value()
 		mightIntroduceTemporaries = v != nil && v.Suspendible()
 	}
 	if mightIntroduceTemporaries {
@@ -59,7 +59,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	}
 
 	if genFilenameLineComments {
-		filename, line := n.Raw().FilenameLine()
+		filename, line := n.AsRaw().FilenameLine()
 		if i := strings.LastIndexByte(filename, '/'); i >= 0 {
 			filename = filename[i+1:]
 		}
@@ -71,23 +71,23 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	switch n.Kind() {
 	case a.KAssign:
-		return g.writeStatementAssign(b, n.Assign(), depth)
+		return g.writeStatementAssign(b, n.AsAssign(), depth)
 	case a.KExpr:
-		return g.writeStatementExpr(b, n.Expr(), depth)
+		return g.writeStatementExpr(b, n.AsExpr(), depth)
 	case a.KIOBind:
-		return g.writeStatementIOBind(b, n.IOBind(), depth)
+		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
-		return g.writeStatementIf(b, n.If(), depth)
+		return g.writeStatementIf(b, n.AsIf(), depth)
 	case a.KIterate:
-		return g.writeStatementIterate(b, n.Iterate(), depth)
+		return g.writeStatementIterate(b, n.AsIterate(), depth)
 	case a.KJump:
-		return g.writeStatementJump(b, n.Jump(), depth)
+		return g.writeStatementJump(b, n.AsJump(), depth)
 	case a.KRet:
-		return g.writeStatementRet(b, n.Ret(), depth)
+		return g.writeStatementRet(b, n.AsRet(), depth)
 	case a.KVar:
-		return g.writeStatementVar(b, n.Var(), depth)
+		return g.writeStatementVar(b, n.AsVar(), depth)
 	case a.KWhile:
-		return g.writeStatementWhile(b, n.While(), depth)
+		return g.writeStatementWhile(b, n.AsWhile(), depth)
 	}
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
@@ -164,7 +164,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	// switch can jump past this initialization??
 	b.writes("{\n")
 	for i := 0; i < len(inFields); i++ {
-		e := inFields[i].Expr()
+		e := inFields[i].AsExpr()
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix
@@ -195,7 +195,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	}
 
 	for i := len(inFields) - 1; i >= 0; i-- {
-		e := inFields[i].Expr()
+		e := inFields[i].AsExpr()
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix
@@ -273,7 +273,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	if len(vars) != 1 {
 		return fmt.Errorf("TODO: iterate over more than one variable")
 	}
-	v := vars[0].Var()
+	v := vars[0].AsVar()
 	name := v.Name().Str(g.tm)
 	b.writes("{\n")
 
@@ -515,16 +515,16 @@ func (g *gen) mightActuallySuspend(n *a.Expr, depth uint32) error {
 	// The evaluation order for suspendible calls (which can have side effects)
 	// is important here: LHS, MHS, RHS, Args and finally the node itself.
 	if !n.CallSuspendible() {
-		for _, o := range n.Node().Raw().SubNodes() {
+		for _, o := range n.AsNode().AsRaw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.mightActuallySuspend(o.Expr(), depth); err != nil {
+				if err := g.mightActuallySuspend(o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.mightActuallySuspend(o.Expr(), depth); err != nil {
+				if err := g.mightActuallySuspend(o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}
@@ -547,16 +547,16 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	// The evaluation order for suspendible calls (which can have side effects)
 	// is important here: LHS, MHS, RHS, Args and finally the node itself.
 	if !n.CallSuspendible() {
-		for _, o := range n.Node().Raw().SubNodes() {
+		for _, o := range n.AsNode().AsRaw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.Expr(), depth); err != nil {
+				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.Expr(), depth); err != nil {
+				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth); err != nil {
 					return err
 				}
 			}

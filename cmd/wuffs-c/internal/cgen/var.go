@@ -31,19 +31,19 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 			if p.Kind() != a.KExpr {
 				return nil
 			}
-			q := p.Expr()
+			q := p.AsExpr()
 			if q.Operator() != t.IDOpenParen {
 				return nil
 			}
-			q = q.LHS().Expr()
+			q = q.LHS().AsExpr()
 			if q.Operator() != t.IDDot {
 				return nil
 			}
-			q = q.LHS().Expr()
+			q = q.LHS().AsExpr()
 			if q.Operator() != t.IDDot || q.Ident() != name {
 				return nil
 			}
-			q = q.LHS().Expr()
+			q = q.LHS().AsExpr()
 			if q.Operator() != 0 || q.Ident() != t.IDIn {
 				return nil
 			}
@@ -58,7 +58,7 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 
 func (g *gen) findDerivedVars() {
 	for _, o := range g.currFunk.astFunc.In().Fields() {
-		o := o.Field()
+		o := o.AsField()
 		oTyp := o.XType()
 		if oTyp.Decorator() != 0 {
 			continue
@@ -182,7 +182,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 		return nil
 	}
 	for _, o := range n.Args() {
-		o := o.Arg()
+		o := o.AsArg()
 		// TODO: don't hard-code these.
 		hack := ""
 		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
@@ -205,7 +205,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 		return nil
 	}
 	for _, o := range n.Args() {
-		o := o.Arg()
+		o := o.AsArg()
 		// TODO: don't hard-code these.
 		hack := ""
 		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
@@ -229,7 +229,7 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 	for _, o := range block {
 		switch o.Kind() {
 		case a.KIf:
-			for o := o.If(); o != nil; o = o.ElseIf() {
+			for o := o.AsIf(); o != nil; o = o.ElseIf() {
 				if err := g.visitVars(b, o.BodyIfTrue(), depth, f); err != nil {
 					return err
 				}
@@ -239,25 +239,25 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 			}
 
 		case a.KIOBind:
-			if err := g.visitVars(b, o.IOBind().Body(), depth, f); err != nil {
+			if err := g.visitVars(b, o.AsIOBind().Body(), depth, f); err != nil {
 				return err
 			}
 
 		case a.KIterate:
-			if err := g.visitVars(b, o.Iterate().Variables(), depth, f); err != nil {
+			if err := g.visitVars(b, o.AsIterate().Variables(), depth, f); err != nil {
 				return err
 			}
-			if err := g.visitVars(b, o.Iterate().Body(), depth, f); err != nil {
+			if err := g.visitVars(b, o.AsIterate().Body(), depth, f); err != nil {
 				return err
 			}
 
 		case a.KVar:
-			if err := f(g, b, o.Var()); err != nil {
+			if err := f(g, b, o.AsVar()); err != nil {
 				return err
 			}
 
 		case a.KWhile:
-			if err := g.visitVars(b, o.While().Body(), depth, f); err != nil {
+			if err := g.visitVars(b, o.AsWhile().Body(), depth, f); err != nil {
 				return err
 			}
 		}

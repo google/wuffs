@@ -193,39 +193,39 @@ func (n *Node) Kind() Kind           { return n.kind }
 func (n *Node) MType() *TypeExpr     { return n.mType }
 func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
 
-func (n *Node) Arg() *Arg             { return (*Arg)(n) }
-func (n *Node) Assert() *Assert       { return (*Assert)(n) }
-func (n *Node) Assign() *Assign       { return (*Assign)(n) }
-func (n *Node) Const() *Const         { return (*Const)(n) }
-func (n *Node) Expr() *Expr           { return (*Expr)(n) }
-func (n *Node) Field() *Field         { return (*Field)(n) }
-func (n *Node) File() *File           { return (*File)(n) }
-func (n *Node) Func() *Func           { return (*Func)(n) }
-func (n *Node) IOBind() *IOBind       { return (*IOBind)(n) }
-func (n *Node) If() *If               { return (*If)(n) }
-func (n *Node) Iterate() *Iterate     { return (*Iterate)(n) }
-func (n *Node) Jump() *Jump           { return (*Jump)(n) }
-func (n *Node) PackageID() *PackageID { return (*PackageID)(n) }
-func (n *Node) Raw() *Raw             { return (*Raw)(n) }
-func (n *Node) Ret() *Ret             { return (*Ret)(n) }
-func (n *Node) Status() *Status       { return (*Status)(n) }
-func (n *Node) Struct() *Struct       { return (*Struct)(n) }
-func (n *Node) TypeExpr() *TypeExpr   { return (*TypeExpr)(n) }
-func (n *Node) Use() *Use             { return (*Use)(n) }
-func (n *Node) Var() *Var             { return (*Var)(n) }
-func (n *Node) While() *While         { return (*While)(n) }
+func (n *Node) AsArg() *Arg             { return (*Arg)(n) }
+func (n *Node) AsAssert() *Assert       { return (*Assert)(n) }
+func (n *Node) AsAssign() *Assign       { return (*Assign)(n) }
+func (n *Node) AsConst() *Const         { return (*Const)(n) }
+func (n *Node) AsExpr() *Expr           { return (*Expr)(n) }
+func (n *Node) AsField() *Field         { return (*Field)(n) }
+func (n *Node) AsFile() *File           { return (*File)(n) }
+func (n *Node) AsFunc() *Func           { return (*Func)(n) }
+func (n *Node) AsIOBind() *IOBind       { return (*IOBind)(n) }
+func (n *Node) AsIf() *If               { return (*If)(n) }
+func (n *Node) AsIterate() *Iterate     { return (*Iterate)(n) }
+func (n *Node) AsJump() *Jump           { return (*Jump)(n) }
+func (n *Node) AsPackageID() *PackageID { return (*PackageID)(n) }
+func (n *Node) AsRaw() *Raw             { return (*Raw)(n) }
+func (n *Node) AsRet() *Ret             { return (*Ret)(n) }
+func (n *Node) AsStatus() *Status       { return (*Status)(n) }
+func (n *Node) AsStruct() *Struct       { return (*Struct)(n) }
+func (n *Node) AsTypeExpr() *TypeExpr   { return (*TypeExpr)(n) }
+func (n *Node) AsUse() *Use             { return (*Use)(n) }
+func (n *Node) AsVar() *Var             { return (*Var)(n) }
+func (n *Node) AsWhile() *While         { return (*While)(n) }
 
 func (n *Node) Walk(f func(*Node) error) error {
 	if n != nil {
 		if err := f(n); err != nil {
 			return err
 		}
-		for _, o := range n.Raw().SubNodes() {
+		for _, o := range n.AsRaw().SubNodes() {
 			if err := o.Walk(f); err != nil {
 				return err
 			}
 		}
-		for _, l := range n.Raw().SubLists() {
+		for _, l := range n.AsRaw().SubLists() {
 			for _, o := range l {
 				if err := o.Walk(f); err != nil {
 					return err
@@ -237,7 +237,7 @@ func (n *Node) Walk(f func(*Node) error) error {
 }
 
 type Loop interface {
-	Node() *Node
+	AsNode() *Node
 	HasBreak() bool
 	HasContinue() bool
 	Label() t.ID
@@ -249,7 +249,7 @@ type Loop interface {
 
 type Raw Node
 
-func (n *Raw) Node() *Node                    { return (*Node)(n) }
+func (n *Raw) AsNode() *Node                  { return (*Node)(n) }
 func (n *Raw) Flags() Flags                   { return n.flags }
 func (n *Raw) FilenameLine() (string, uint32) { return n.filename, n.line }
 func (n *Raw) SubNodes() [3]*Node             { return [3]*Node{n.lhs, n.mhs, n.rhs} }
@@ -258,7 +258,7 @@ func (n *Raw) SubLists() [3][]*Node           { return [3][]*Node{n.list0, n.lis
 func (n *Raw) SetFilenameLine(f string, l uint32) { n.filename, n.line = f, l }
 
 func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
-	return n.Node().Walk(func(o *Node) error {
+	return n.AsNode().Walk(func(o *Node) error {
 		switch o.Kind() {
 		default:
 			return nil
@@ -335,7 +335,7 @@ const MaxExprDepth = 255
 // keyword, ID1 is the package and ID2 is the message.
 type Expr Node
 
-func (n *Expr) Node() *Node                { return (*Node)(n) }
+func (n *Expr) AsNode() *Node              { return (*Node)(n) }
 func (n *Expr) Effect() Effect             { return Effect(n.flags & flagEffect) }
 func (n *Expr) Pure() bool                 { return n.flags&FlagsImpure == 0 }
 func (n *Expr) Impure() bool               { return n.flags&FlagsImpure != 0 }
@@ -395,10 +395,10 @@ func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, 
 //  - List0: <Arg> reason arguments
 type Assert Node
 
-func (n *Assert) Node() *Node      { return (*Node)(n) }
+func (n *Assert) AsNode() *Node    { return (*Node)(n) }
 func (n *Assert) Keyword() t.ID    { return n.id0 }
 func (n *Assert) Reason() t.ID     { return n.id2 }
-func (n *Assert) Condition() *Expr { return n.rhs.Expr() }
+func (n *Assert) Condition() *Expr { return n.rhs.AsExpr() }
 func (n *Assert) Args() []*Node    { return n.list0 }
 
 func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert {
@@ -406,7 +406,7 @@ func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert
 		kind:  KAssert,
 		id0:   keyword,
 		id2:   reason,
-		rhs:   condition.Node(),
+		rhs:   condition.AsNode(),
 		list0: args,
 	}
 }
@@ -416,15 +416,15 @@ func NewAssert(keyword t.ID, condition *Expr, reason t.ID, args []*Node) *Assert
 //  - RHS:   <Expr> value
 type Arg Node
 
-func (n *Arg) Node() *Node  { return (*Node)(n) }
-func (n *Arg) Name() t.ID   { return n.id2 }
-func (n *Arg) Value() *Expr { return n.rhs.Expr() }
+func (n *Arg) AsNode() *Node { return (*Node)(n) }
+func (n *Arg) Name() t.ID    { return n.id2 }
+func (n *Arg) Value() *Expr  { return n.rhs.AsExpr() }
 
 func NewArg(name t.ID, value *Expr) *Arg {
 	return &Arg{
 		kind: KArg,
 		id2:  name,
-		rhs:  value.Node(),
+		rhs:  value.AsNode(),
 	}
 }
 
@@ -434,17 +434,17 @@ func NewArg(name t.ID, value *Expr) *Arg {
 //  - RHS:   <Expr>
 type Assign Node
 
-func (n *Assign) Node() *Node    { return (*Node)(n) }
+func (n *Assign) AsNode() *Node  { return (*Node)(n) }
 func (n *Assign) Operator() t.ID { return n.id0 }
-func (n *Assign) LHS() *Expr     { return n.lhs.Expr() }
-func (n *Assign) RHS() *Expr     { return n.rhs.Expr() }
+func (n *Assign) LHS() *Expr     { return n.lhs.AsExpr() }
+func (n *Assign) RHS() *Expr     { return n.rhs.AsExpr() }
 
 func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	return &Assign{
 		kind: KAssign,
 		id0:  operator,
-		lhs:  lhs.Node(),
-		rhs:  rhs.Node(),
+		lhs:  lhs.AsNode(),
+		rhs:  rhs.AsNode(),
 	}
 }
 
@@ -456,19 +456,19 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 //  - RHS:   <nil|Expr>
 type Var Node
 
-func (n *Var) Node() *Node           { return (*Node)(n) }
+func (n *Var) AsNode() *Node         { return (*Node)(n) }
 func (n *Var) IterateVariable() bool { return n.id0 == t.IDEqColon }
 func (n *Var) Name() t.ID            { return n.id2 }
-func (n *Var) XType() *TypeExpr      { return n.lhs.TypeExpr() }
-func (n *Var) Value() *Expr          { return n.rhs.Expr() }
+func (n *Var) XType() *TypeExpr      { return n.lhs.AsTypeExpr() }
+func (n *Var) Value() *Expr          { return n.rhs.AsExpr() }
 
 func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 	return &Var{
 		kind: KVar,
 		id0:  op,
 		id2:  name,
-		lhs:  xType.Node(),
-		rhs:  value.Node(),
+		lhs:  xType.AsNode(),
+		rhs:  value.AsNode(),
 	}
 }
 
@@ -477,15 +477,15 @@ func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 //  - LHS:   <TypeExpr>
 type Field Node
 
-func (n *Field) Node() *Node      { return (*Node)(n) }
+func (n *Field) AsNode() *Node    { return (*Node)(n) }
 func (n *Field) Name() t.ID       { return n.id2 }
-func (n *Field) XType() *TypeExpr { return n.lhs.TypeExpr() }
+func (n *Field) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
 
 func NewField(name t.ID, xType *TypeExpr) *Field {
 	return &Field{
 		kind: KField,
 		id2:  name,
-		lhs:  xType.Node(),
+		lhs:  xType.AsNode(),
 	}
 }
 
@@ -496,7 +496,7 @@ func NewField(name t.ID, xType *TypeExpr) *Field {
 // TODO: in_fields and "in.something" isn't right.
 type IOBind Node
 
-func (n *IOBind) Node() *Node       { return (*Node)(n) }
+func (n *IOBind) AsNode() *Node     { return (*Node)(n) }
 func (n *IOBind) InFields() []*Node { return n.list0 }
 func (n *IOBind) Body() []*Node     { return n.list2 }
 
@@ -521,13 +521,13 @@ func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
 //  - List2: <Statement> body
 type Iterate Node
 
-func (n *Iterate) Node() *Node           { return (*Node)(n) }
+func (n *Iterate) AsNode() *Node         { return (*Node)(n) }
 func (n *Iterate) HasBreak() bool        { return n.flags&FlagsHasBreak != 0 }
 func (n *Iterate) HasContinue() bool     { return n.flags&FlagsHasContinue != 0 }
 func (n *Iterate) Unroll() t.ID          { return n.id0 }
 func (n *Iterate) Label() t.ID           { return n.id1 }
 func (n *Iterate) Length() t.ID          { return n.id2 }
-func (n *Iterate) ElseIterate() *Iterate { return n.rhs.Iterate() }
+func (n *Iterate) ElseIterate() *Iterate { return n.rhs.AsIterate() }
 func (n *Iterate) Variables() []*Node    { return n.list0 }
 func (n *Iterate) Asserts() []*Node      { return n.list1 }
 func (n *Iterate) Body() []*Node         { return n.list2 }
@@ -541,7 +541,7 @@ func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*N
 		id0:   unroll,
 		id1:   label,
 		id2:   length,
-		rhs:   elseIterate.Node(),
+		rhs:   elseIterate.AsNode(),
 		list0: vars,
 		list1: asserts,
 		list2: body,
@@ -559,11 +559,11 @@ func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*N
 // TODO: should we be able to unroll while loops too?
 type While Node
 
-func (n *While) Node() *Node       { return (*Node)(n) }
+func (n *While) AsNode() *Node     { return (*Node)(n) }
 func (n *While) HasBreak() bool    { return n.flags&FlagsHasBreak != 0 }
 func (n *While) HasContinue() bool { return n.flags&FlagsHasContinue != 0 }
 func (n *While) Label() t.ID       { return n.id1 }
-func (n *While) Condition() *Expr  { return n.mhs.Expr() }
+func (n *While) Condition() *Expr  { return n.mhs.AsExpr() }
 func (n *While) Asserts() []*Node  { return n.list1 }
 func (n *While) Body() []*Node     { return n.list2 }
 
@@ -574,7 +574,7 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 	return &While{
 		kind:  KWhile,
 		id1:   label,
-		mhs:   condition.Node(),
+		mhs:   condition.AsNode(),
 		list1: asserts,
 		list2: body,
 	}
@@ -587,17 +587,17 @@ func NewWhile(label t.ID, condition *Expr, asserts []*Node, body []*Node) *While
 //  - List2: <Statement> if-true body
 type If Node
 
-func (n *If) Node() *Node          { return (*Node)(n) }
-func (n *If) Condition() *Expr     { return n.mhs.Expr() }
-func (n *If) ElseIf() *If          { return n.rhs.If() }
+func (n *If) AsNode() *Node        { return (*Node)(n) }
+func (n *If) Condition() *Expr     { return n.mhs.AsExpr() }
+func (n *If) ElseIf() *If          { return n.rhs.AsIf() }
 func (n *If) BodyIfTrue() []*Node  { return n.list2 }
 func (n *If) BodyIfFalse() []*Node { return n.list1 }
 
 func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If) *If {
 	return &If{
 		kind:  KIf,
-		mhs:   condition.Node(),
-		rhs:   elseIf.Node(),
+		mhs:   condition.AsNode(),
+		rhs:   elseIf.AsNode(),
 		list1: bodyIfFalse,
 		list2: bodyIfTrue,
 	}
@@ -608,15 +608,15 @@ func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If)
 //  - LHS:   <nil|Expr>
 type Ret Node
 
-func (n *Ret) Node() *Node   { return (*Node)(n) }
+func (n *Ret) AsNode() *Node { return (*Node)(n) }
 func (n *Ret) Keyword() t.ID { return n.id0 }
-func (n *Ret) Value() *Expr  { return n.lhs.Expr() }
+func (n *Ret) Value() *Expr  { return n.lhs.AsExpr() }
 
 func NewRet(keyword t.ID, value *Expr) *Ret {
 	return &Ret{
 		kind: KRet,
 		id0:  keyword,
-		lhs:  value.Node(),
+		lhs:  value.AsNode(),
 	}
 }
 
@@ -625,7 +625,7 @@ func NewRet(keyword t.ID, value *Expr) *Ret {
 //  - ID1:   <0|label>
 type Jump Node
 
-func (n *Jump) Node() *Node      { return (*Node)(n) }
+func (n *Jump) AsNode() *Node    { return (*Node)(n) }
 func (n *Jump) JumpTarget() Loop { return n.jumpTarget }
 func (n *Jump) Keyword() t.ID    { return n.id0 }
 func (n *Jump) Label() t.ID      { return n.id1 }
@@ -675,16 +675,16 @@ const MaxTypeExprDepth = 63
 // TODO: struct types, list types, nptr vs ptr.
 type TypeExpr Node
 
-func (n *TypeExpr) Node() *Node         { return (*Node)(n) }
+func (n *TypeExpr) AsNode() *Node       { return (*Node)(n) }
 func (n *TypeExpr) Decorator() t.ID     { return n.id0 }
 func (n *TypeExpr) QID() t.QID          { return t.QID{n.id1, n.id2} }
 func (n *TypeExpr) FuncName() t.ID      { return n.id2 }
-func (n *TypeExpr) ArrayLength() *Expr  { return n.lhs.Expr() }
-func (n *TypeExpr) Receiver() *TypeExpr { return n.lhs.TypeExpr() }
-func (n *TypeExpr) Bounds() [2]*Expr    { return [2]*Expr{n.lhs.Expr(), n.mhs.Expr()} }
-func (n *TypeExpr) Min() *Expr          { return n.lhs.Expr() }
-func (n *TypeExpr) Max() *Expr          { return n.mhs.Expr() }
-func (n *TypeExpr) Inner() *TypeExpr    { return n.rhs.TypeExpr() }
+func (n *TypeExpr) ArrayLength() *Expr  { return n.lhs.AsExpr() }
+func (n *TypeExpr) Receiver() *TypeExpr { return n.lhs.AsTypeExpr() }
+func (n *TypeExpr) Bounds() [2]*Expr    { return [2]*Expr{n.lhs.AsExpr(), n.mhs.AsExpr()} }
+func (n *TypeExpr) Min() *Expr          { return n.lhs.AsExpr() }
+func (n *TypeExpr) Max() *Expr          { return n.mhs.AsExpr() }
+func (n *TypeExpr) Inner() *TypeExpr    { return n.rhs.AsTypeExpr() }
 
 func (n *TypeExpr) Innermost() *TypeExpr {
 	for ; n != nil && n.Inner() != nil; n = n.Inner() {
@@ -773,8 +773,8 @@ func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Ex
 		id1:  pkg,
 		id2:  name,
 		lhs:  alenRecvMin,
-		mhs:  max.Node(),
-		rhs:  inner.Node(),
+		mhs:  max.AsNode(),
+		rhs:  inner.AsNode(),
 	}
 }
 
@@ -806,7 +806,7 @@ const MaxBodyDepth = 255
 //  - While
 type Func Node
 
-func (n *Func) Node() *Node       { return (*Node)(n) }
+func (n *Func) AsNode() *Node     { return (*Node)(n) }
 func (n *Func) Effect() Effect    { return Effect(n.flags & flagEffect) }
 func (n *Func) Pure() bool        { return n.flags&FlagsImpure == 0 }
 func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
@@ -817,8 +817,8 @@ func (n *Func) Line() uint32      { return n.line }
 func (n *Func) QQID() t.QQID      { return t.QQID{n.id1, n.id2, n.id0} }
 func (n *Func) Receiver() t.QID   { return t.QID{n.id1, n.id2} }
 func (n *Func) FuncName() t.ID    { return n.id0 }
-func (n *Func) In() *Struct       { return n.lhs.Struct() }
-func (n *Func) Out() *Struct      { return n.rhs.Struct() }
+func (n *Func) In() *Struct       { return n.lhs.AsStruct() }
+func (n *Func) Out() *Struct      { return n.rhs.AsStruct() }
 func (n *Func) Asserts() []*Node  { return n.list1 }
 func (n *Func) Body() []*Node     { return n.list2 }
 
@@ -830,8 +830,8 @@ func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcN
 		line:     line,
 		id0:      funcName,
 		id2:      receiverName,
-		lhs:      in.Node(),
-		rhs:      out.Node(),
+		lhs:      in.AsNode(),
+		rhs:      out.AsNode(),
 		list1:    asserts,
 		list2:    body,
 	}
@@ -844,13 +844,13 @@ func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcN
 //  - ID2:   message
 type Status Node
 
-func (n *Status) Node() *Node      { return (*Node)(n) }
+func (n *Status) AsNode() *Node    { return (*Node)(n) }
 func (n *Status) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Status) Filename() string { return n.filename }
 func (n *Status) Line() uint32     { return n.line }
 func (n *Status) Keyword() t.ID    { return n.id0 }
 func (n *Status) QID() t.QID       { return t.QID{n.id1, n.id2} }
-func (n *Status) Value() *Expr     { return n.rhs.Expr() }
+func (n *Status) Value() *Expr     { return n.rhs.AsExpr() }
 
 func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, value *Expr, message t.ID) *Status {
 	return &Status{
@@ -860,7 +860,7 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, value *E
 		line:     line,
 		id0:      keyword,
 		id2:      message,
-		rhs:      value.Node(),
+		rhs:      value.AsNode(),
 	}
 }
 
@@ -872,13 +872,13 @@ func NewStatus(flags Flags, filename string, line uint32, keyword t.ID, value *E
 //  - RHS:   <Expr>
 type Const Node
 
-func (n *Const) Node() *Node      { return (*Node)(n) }
+func (n *Const) AsNode() *Node    { return (*Node)(n) }
 func (n *Const) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Const) Filename() string { return n.filename }
 func (n *Const) Line() uint32     { return n.line }
 func (n *Const) QID() t.QID       { return t.QID{n.id1, n.id2} }
-func (n *Const) XType() *TypeExpr { return n.lhs.TypeExpr() }
-func (n *Const) Value() *Expr     { return n.rhs.Expr() }
+func (n *Const) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
+func (n *Const) Value() *Expr     { return n.rhs.AsExpr() }
 
 func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeExpr, value *Expr) *Const {
 	return &Const{
@@ -887,8 +887,8 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 		filename: filename,
 		line:     line,
 		id2:      name,
-		lhs:      xType.Node(),
-		rhs:      value.Node(),
+		lhs:      xType.AsNode(),
+		rhs:      value.AsNode(),
 	}
 }
 
@@ -900,7 +900,7 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 //  - List0: <Field> fields
 type Struct Node
 
-func (n *Struct) Node() *Node       { return (*Node)(n) }
+func (n *Struct) AsNode() *Node     { return (*Node)(n) }
 func (n *Struct) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
 func (n *Struct) Public() bool      { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string  { return n.filename }
@@ -923,7 +923,7 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 //  - ID2:   <string literal> package ID
 type PackageID Node
 
-func (n *PackageID) Node() *Node      { return (*Node)(n) }
+func (n *PackageID) AsNode() *Node    { return (*Node)(n) }
 func (n *PackageID) Filename() string { return n.filename }
 func (n *PackageID) Line() uint32     { return n.line }
 func (n *PackageID) ID() t.ID         { return n.id2 }
@@ -941,7 +941,7 @@ func NewPackageID(filename string, line uint32, id t.ID) *PackageID {
 //  - ID2:   <string literal> package path
 type Use Node
 
-func (n *Use) Node() *Node      { return (*Node)(n) }
+func (n *Use) AsNode() *Node    { return (*Node)(n) }
 func (n *Use) Filename() string { return n.filename }
 func (n *Use) Line() uint32     { return n.line }
 func (n *Use) Path() t.ID       { return n.id2 }
@@ -959,7 +959,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 //  - List0: <Const|Func|PackageID|Status|Struct|Use> top-level declarations
 type File Node
 
-func (n *File) Node() *Node            { return (*Node)(n) }
+func (n *File) AsNode() *Node          { return (*Node)(n) }
 func (n *File) Filename() string       { return n.filename }
 func (n *File) TopLevelDecls() []*Node { return n.list0 }
 

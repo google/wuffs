@@ -90,7 +90,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 		b.writes("void ")
 	} else if len(outFields) == 1 {
 		// TODO: does this generate the right C if the XType is an array?
-		if err := g.writeCTypeName(b, outFields[0].Field().XType(), "", ""); err != nil {
+		if err := g.writeCTypeName(b, outFields[0].AsField().XType(), "", ""); err != nil {
 			return err
 		}
 	} else {
@@ -123,7 +123,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 			b.writeb(',')
 		}
 		comma = true
-		o := o.Field()
+		o := o.AsField()
 		if err := g.writeCTypeName(b, o.XType(), aPrefix, o.Name().Str(g.tm)); err != nil {
 			return err
 		}
@@ -200,7 +200,7 @@ func (g *gen) writeOutFieldsZeroValue(b *buffer, outFields []*a.Node) error {
 	case 0:
 		// No-op.
 	case 1:
-		if typ := outFields[0].Field().XType(); typ.IsNumType() {
+		if typ := outFields[0].AsField().XType(); typ.IsNumType() {
 			b.writes("0")
 		} else {
 			b.writes("((")
@@ -262,7 +262,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 	if g.currFunk.suspendible {
 		g.findDerivedVars()
 		for _, o := range g.currFunk.astFunc.In().Fields() {
-			o := o.Field()
+			o := o.AsField()
 			if err := g.writeLoadDerivedVar(b, "", o.Name(), o.XType(), true); err != nil {
 				return err
 			}
@@ -331,7 +331,7 @@ func (g *gen) writeFuncImplFooter(b *buffer) error {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
-			o := o.Field()
+			o := o.AsField()
 			if err := g.writeSaveDerivedVar(b, "", o.Name(), o.XType()); err != nil {
 				return err
 			}
@@ -363,7 +363,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	checks := []string(nil)
 
 	for _, o := range n.In().Fields() {
-		o := o.Field()
+		o := o.AsField()
 		oTyp := o.XType()
 		if oTyp.Decorator() != t.IDPtr && !oTyp.IsRefined() {
 			// TODO: Also check elements, for array-typed arguments.

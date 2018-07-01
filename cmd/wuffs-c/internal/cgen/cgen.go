@@ -283,7 +283,7 @@ func (g *gen) generate() ([]byte, error) {
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() == a.KStruct {
-				unsortedStructs = append(unsortedStructs, tld.Struct())
+				unsortedStructs = append(unsortedStructs, tld.AsStruct())
 			}
 		}
 	}
@@ -453,11 +453,11 @@ func (g *gen) forEachConst(b *buffer, v visibility, f func(*gen, *buffer, *a.Con
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KConst ||
-				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
+				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
 				continue
 			}
-			if err := f(g, b, tld.Const()); err != nil {
+			if err := f(g, b, tld.AsConst()); err != nil {
 				return err
 			}
 		}
@@ -469,11 +469,11 @@ func (g *gen) forEachFunc(b *buffer, v visibility, f func(*gen, *buffer, *a.Func
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KFunc ||
-				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
+				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
 				continue
 			}
-			if err := f(g, b, tld.Func()); err != nil {
+			if err := f(g, b, tld.AsFunc()); err != nil {
 				return err
 			}
 		}
@@ -485,11 +485,11 @@ func (g *gen) forEachStatus(b *buffer, v visibility, f func(*gen, *buffer, *a.St
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
 			if tld.Kind() != a.KStatus ||
-				(v == pubOnly && tld.Raw().Flags()&a.FlagsPublic == 0) ||
-				(v == priOnly && tld.Raw().Flags()&a.FlagsPublic != 0) {
+				(v == pubOnly && tld.AsRaw().Flags()&a.FlagsPublic == 0) ||
+				(v == priOnly && tld.AsRaw().Flags()&a.FlagsPublic != 0) {
 				continue
 			}
-			if err := f(g, b, tld.Status()); err != nil {
+			if err := f(g, b, tld.AsStatus()); err != nil {
 				return err
 			}
 		}
@@ -503,7 +503,7 @@ func (g *gen) forEachUse(b *buffer, f func(*gen, *buffer, *a.Use) error) error {
 			if tld.Kind() != a.KUse {
 				continue
 			}
-			if err := f(g, b, tld.Use()); err != nil {
+			if err := f(g, b, tld.AsUse()); err != nil {
 				return err
 			}
 		}
@@ -606,7 +606,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 	if n.Operator() == t.IDDollar {
 		b.writeb('{')
 		for _, o := range n.Args() {
-			if err := g.writeConstList(b, o.Expr()); err != nil {
+			if err := g.writeConstList(b, o.AsExpr()); err != nil {
 				return err
 			}
 			b.writeb(',')
@@ -643,7 +643,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	}
 
 	for _, o := range n.Fields() {
-		o := o.Field()
+		o := o.AsField()
 		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
 			return err
 		}
@@ -657,7 +657,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				if tld.Kind() != a.KFunc {
 					continue
 				}
-				o := tld.Func()
+				o := tld.AsFunc()
 				if o.Receiver() != n.QID() || !o.Suspendible() {
 					continue
 				}
@@ -683,7 +683,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	}
 	b.writes("} private_impl;\n\n")
 
-	if n.Node().Raw().Flags()&a.FlagsPublic != 0 {
+	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
 		if err := g.writeCppPrototypes(b, n); err != nil {
 			return err
 		}
@@ -700,10 +700,10 @@ func (g *gen) writeCppPrototypes(b *buffer, n *a.Struct) error {
 	structID := n.QID()[1]
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KFunc) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+			if (tld.Kind() != a.KFunc) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
 				continue
 			}
-			f := tld.Func()
+			f := tld.AsFunc()
 			qqid := f.QQID()
 			if qqid[1] != structID {
 				continue
@@ -727,10 +727,10 @@ func (g *gen) writeCppImpls(b *buffer) error {
 
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KStruct) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+			if (tld.Kind() != a.KStruct) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
 				continue
 			}
-			n := tld.Struct()
+			n := tld.AsStruct()
 
 			structID := n.QID()[1]
 			structName := structID.Str(g.tm)
@@ -746,10 +746,10 @@ func (g *gen) writeCppImpls(b *buffer) error {
 
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KFunc) || (tld.Raw().Flags()&a.FlagsPublic == 0) {
+			if (tld.Kind() != a.KFunc) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
 				continue
 			}
-			n := tld.Func()
+			n := tld.AsFunc()
 			if !publicStructs[n.QQID()[1]] {
 				continue
 			}
@@ -763,7 +763,7 @@ func (g *gen) writeCppImpls(b *buffer) error {
 			for _, o := range n.In().Fields() {
 				b.writeb(',')
 				b.writes(aPrefix)
-				b.writes(o.Field().Name().Str(g.tm))
+				b.writes(o.AsField().Name().Str(g.tm))
 			}
 			b.writes(");}\n\n")
 		}
@@ -880,7 +880,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {
-		f := f.Field()
+		f := f.AsField()
 		x := f.XType()
 		if x != x.Innermost() {
 			// TODO: arrays of sub-structs.

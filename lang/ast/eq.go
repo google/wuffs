@@ -39,18 +39,18 @@ func (n *Expr) Eq(o *Expr) bool {
 		n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
 		return false
 	}
-	if !n.lhs.Expr().Eq(o.lhs.Expr()) {
+	if !n.lhs.AsExpr().Eq(o.lhs.AsExpr()) {
 		return false
 	}
-	if !n.mhs.Expr().Eq(o.mhs.Expr()) {
+	if !n.mhs.AsExpr().Eq(o.mhs.AsExpr()) {
 		return false
 	}
 
 	if n.id0 == t.IDXBinaryAs {
-		if !n.rhs.TypeExpr().Eq(o.rhs.TypeExpr()) {
+		if !n.rhs.AsTypeExpr().Eq(o.rhs.AsTypeExpr()) {
 			return false
 		}
-	} else if !n.rhs.Expr().Eq(o.rhs.Expr()) {
+	} else if !n.rhs.AsExpr().Eq(o.rhs.AsExpr()) {
 		return false
 	}
 
@@ -58,7 +58,7 @@ func (n *Expr) Eq(o *Expr) bool {
 		return false
 	}
 	for i, x := range n.list0 {
-		if !x.Expr().Eq(o.list0[i].Expr()) {
+		if !x.AsExpr().Eq(o.list0[i].AsExpr()) {
 			return false
 		}
 	}
@@ -70,13 +70,13 @@ func (n *Expr) Mentions(o *Expr) bool {
 		return false
 	}
 	if n.Eq(o) ||
-		n.lhs.Expr().Mentions(o) ||
-		n.mhs.Expr().Mentions(o) ||
-		(n.id0 != t.IDXBinaryAs && n.rhs.Expr().Mentions(o)) {
+		n.lhs.AsExpr().Mentions(o) ||
+		n.mhs.AsExpr().Mentions(o) ||
+		(n.id0 != t.IDXBinaryAs && n.rhs.AsExpr().Mentions(o)) {
 		return true
 	}
 	for _, x := range n.list0 {
-		if x.Expr().Mentions(o) {
+		if x.AsExpr().Mentions(o) {
 			return true
 		}
 	}
@@ -106,14 +106,14 @@ func (n *TypeExpr) eq(o *TypeExpr, ignoreRefinements bool) bool {
 			return false
 		}
 		if n.IsArrayType() || !ignoreRefinements {
-			if !n.lhs.Expr().Eq(o.lhs.Expr()) || !n.mhs.Expr().Eq(o.mhs.Expr()) {
+			if !n.lhs.AsExpr().Eq(o.lhs.AsExpr()) || !n.mhs.AsExpr().Eq(o.mhs.AsExpr()) {
 				return false
 			}
 		}
 		if n.rhs == nil && o.rhs == nil {
 			return true
 		}
-		n = n.rhs.TypeExpr()
-		o = o.rhs.TypeExpr()
+		n = n.rhs.AsTypeExpr()
+		o = o.rhs.AsTypeExpr()
 	}
 }
