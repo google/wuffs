@@ -58,14 +58,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-06-30 UTC,
-// based on revision 7f65cd04d061369bbab8b9eca552571e34622f43.
+// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-07-01 UTC,
+// based on revision 2599476d2c932e24ded5d732e3073017ecd00bb3.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.4"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.4"
+#define WUFFS_VERSION_EXTENSION "alpha.5"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.5"
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
@@ -342,205 +342,371 @@ typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 // in which case the range is empty. There are multiple representations of an
 // empty range.
 
-typedef struct {
+typedef struct wuffs_base__range_ii_u32__struct {
   uint32_t min_incl;
   uint32_t max_incl;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__range_ii_u32__struct s);
+  inline bool contains(uint32_t x);
+  inline wuffs_base__range_ii_u32__struct intersect(
+      wuffs_base__range_ii_u32__struct s);
+  inline wuffs_base__range_ii_u32__struct unite(
+      wuffs_base__range_ii_u32__struct s);
+#endif  // __cplusplus
+
 } wuffs_base__range_ii_u32;
 
 static inline bool wuffs_base__range_ii_u32__is_empty(
-    wuffs_base__range_ii_u32 r) {
-  return r.min_incl > r.max_incl;
+    wuffs_base__range_ii_u32* r) {
+  return r->min_incl > r->max_incl;
 }
 
 static inline bool wuffs_base__range_ii_u32__equals(
-    wuffs_base__range_ii_u32 r,
+    wuffs_base__range_ii_u32* r,
     wuffs_base__range_ii_u32 s) {
-  return (r.min_incl == s.min_incl && r.max_incl == s.max_incl) ||
+  return (r->min_incl == s.min_incl && r->max_incl == s.max_incl) ||
          (wuffs_base__range_ii_u32__is_empty(r) &&
-          wuffs_base__range_ii_u32__is_empty(s));
+          wuffs_base__range_ii_u32__is_empty(&s));
 }
 
 static inline bool wuffs_base__range_ii_u32__contains(
-    wuffs_base__range_ii_u32 r,
+    wuffs_base__range_ii_u32* r,
     uint32_t x) {
-  return (r.min_incl <= x) && (x <= r.max_incl);
+  return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersection(
-    wuffs_base__range_ii_u32 r,
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__intersect(
+    wuffs_base__range_ii_u32* r,
     wuffs_base__range_ii_u32 s) {
-  r.min_incl = wuffs_base__u32__max(r.min_incl, s.min_incl);
-  r.max_incl = wuffs_base__u32__min(r.max_incl, s.max_incl);
-  return r;
+  wuffs_base__range_ii_u32 t;
+  t.min_incl = wuffs_base__u32__max(r->min_incl, s.min_incl);
+  t.max_incl = wuffs_base__u32__min(r->max_incl, s.max_incl);
+  return t;
 }
 
-static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__union(
-    wuffs_base__range_ii_u32 r,
+static inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32__unite(
+    wuffs_base__range_ii_u32* r,
     wuffs_base__range_ii_u32 s) {
   if (wuffs_base__range_ii_u32__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__range_ii_u32__is_empty(s)) {
-    return r;
+  if (wuffs_base__range_ii_u32__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl = wuffs_base__u32__min(r.min_incl, s.min_incl);
-  r.max_incl = wuffs_base__u32__max(r.max_incl, s.max_incl);
-  return r;
+  wuffs_base__range_ii_u32 t;
+  t.min_incl = wuffs_base__u32__min(r->min_incl, s.min_incl);
+  t.max_incl = wuffs_base__u32__max(r->max_incl, s.max_incl);
+  return t;
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__range_ii_u32::is_empty() {
+  return wuffs_base__range_ii_u32__is_empty(this);
+}
+
+inline bool wuffs_base__range_ii_u32::equals(wuffs_base__range_ii_u32 s) {
+  return wuffs_base__range_ii_u32__equals(this, s);
+}
+
+inline bool wuffs_base__range_ii_u32::contains(uint32_t x) {
+  return wuffs_base__range_ii_u32__contains(this, x);
+}
+
+inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::intersect(
+    wuffs_base__range_ii_u32 s) {
+  return wuffs_base__range_ii_u32__intersect(this, s);
+}
+
+inline wuffs_base__range_ii_u32 wuffs_base__range_ii_u32::unite(
+    wuffs_base__range_ii_u32 s) {
+  return wuffs_base__range_ii_u32__unite(this, s);
+}
+
+#endif  // __cplusplus
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__range_ie_u32__struct {
   uint32_t min_incl;
   uint32_t max_excl;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__range_ie_u32__struct s);
+  inline bool contains(uint32_t x);
+  inline wuffs_base__range_ie_u32__struct intersect(
+      wuffs_base__range_ie_u32__struct s);
+  inline wuffs_base__range_ie_u32__struct unite(
+      wuffs_base__range_ie_u32__struct s);
+  inline uint32_t length();
+#endif  // __cplusplus
+
 } wuffs_base__range_ie_u32;
 
 static inline bool wuffs_base__range_ie_u32__is_empty(
-    wuffs_base__range_ie_u32 r) {
-  return r.min_incl >= r.max_excl;
+    wuffs_base__range_ie_u32* r) {
+  return r->min_incl >= r->max_excl;
 }
 
 static inline bool wuffs_base__range_ie_u32__equals(
-    wuffs_base__range_ie_u32 r,
+    wuffs_base__range_ie_u32* r,
     wuffs_base__range_ie_u32 s) {
-  return (r.min_incl == s.min_incl && r.max_excl == s.max_excl) ||
+  return (r->min_incl == s.min_incl && r->max_excl == s.max_excl) ||
          (wuffs_base__range_ie_u32__is_empty(r) &&
-          wuffs_base__range_ie_u32__is_empty(s));
+          wuffs_base__range_ie_u32__is_empty(&s));
 }
 
 static inline bool wuffs_base__range_ie_u32__contains(
-    wuffs_base__range_ie_u32 r,
+    wuffs_base__range_ie_u32* r,
     uint32_t x) {
-  return (r.min_incl <= x) && (x < r.max_excl);
+  return (r->min_incl <= x) && (x < r->max_excl);
 }
 
-static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersection(
-    wuffs_base__range_ie_u32 r,
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__intersect(
+    wuffs_base__range_ie_u32* r,
     wuffs_base__range_ie_u32 s) {
-  r.min_incl = wuffs_base__u32__max(r.min_incl, s.min_incl);
-  r.max_excl = wuffs_base__u32__min(r.max_excl, s.max_excl);
-  return r;
+  wuffs_base__range_ie_u32 t;
+  t.min_incl = wuffs_base__u32__max(r->min_incl, s.min_incl);
+  t.max_excl = wuffs_base__u32__min(r->max_excl, s.max_excl);
+  return t;
 }
 
-static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__union(
-    wuffs_base__range_ie_u32 r,
+static inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32__unite(
+    wuffs_base__range_ie_u32* r,
     wuffs_base__range_ie_u32 s) {
   if (wuffs_base__range_ie_u32__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__range_ie_u32__is_empty(s)) {
-    return r;
+  if (wuffs_base__range_ie_u32__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl = wuffs_base__u32__min(r.min_incl, s.min_incl);
-  r.max_excl = wuffs_base__u32__max(r.max_excl, s.max_excl);
-  return r;
+  wuffs_base__range_ie_u32 t;
+  t.min_incl = wuffs_base__u32__min(r->min_incl, s.min_incl);
+  t.max_excl = wuffs_base__u32__max(r->max_excl, s.max_excl);
+  return t;
 }
 
 static inline uint32_t wuffs_base__range_ie_u32__length(
-    wuffs_base__range_ie_u32 r) {
-  return wuffs_base__u32__sat_sub(r.max_excl, r.min_incl);
+    wuffs_base__range_ie_u32* r) {
+  return wuffs_base__u32__sat_sub(r->max_excl, r->min_incl);
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__range_ie_u32::is_empty() {
+  return wuffs_base__range_ie_u32__is_empty(this);
+}
+
+inline bool wuffs_base__range_ie_u32::equals(wuffs_base__range_ie_u32 s) {
+  return wuffs_base__range_ie_u32__equals(this, s);
+}
+
+inline bool wuffs_base__range_ie_u32::contains(uint32_t x) {
+  return wuffs_base__range_ie_u32__contains(this, x);
+}
+
+inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::intersect(
+    wuffs_base__range_ie_u32 s) {
+  return wuffs_base__range_ie_u32__intersect(this, s);
+}
+
+inline wuffs_base__range_ie_u32 wuffs_base__range_ie_u32::unite(
+    wuffs_base__range_ie_u32 s) {
+  return wuffs_base__range_ie_u32__unite(this, s);
+}
+
+inline uint32_t wuffs_base__range_ie_u32::length() {
+  return wuffs_base__range_ie_u32__length(this);
+}
+
+#endif  // __cplusplus
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__range_ii_u64__struct {
   uint64_t min_incl;
   uint64_t max_incl;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__range_ii_u64__struct s);
+  inline bool contains(uint64_t x);
+  inline wuffs_base__range_ii_u64__struct intersect(
+      wuffs_base__range_ii_u64__struct s);
+  inline wuffs_base__range_ii_u64__struct unite(
+      wuffs_base__range_ii_u64__struct s);
+#endif  // __cplusplus
+
 } wuffs_base__range_ii_u64;
 
 static inline bool wuffs_base__range_ii_u64__is_empty(
-    wuffs_base__range_ii_u64 r) {
-  return r.min_incl > r.max_incl;
+    wuffs_base__range_ii_u64* r) {
+  return r->min_incl > r->max_incl;
 }
 
 static inline bool wuffs_base__range_ii_u64__equals(
-    wuffs_base__range_ii_u64 r,
+    wuffs_base__range_ii_u64* r,
     wuffs_base__range_ii_u64 s) {
-  return (r.min_incl == s.min_incl && r.max_incl == s.max_incl) ||
+  return (r->min_incl == s.min_incl && r->max_incl == s.max_incl) ||
          (wuffs_base__range_ii_u64__is_empty(r) &&
-          wuffs_base__range_ii_u64__is_empty(s));
+          wuffs_base__range_ii_u64__is_empty(&s));
 }
 
 static inline bool wuffs_base__range_ii_u64__contains(
-    wuffs_base__range_ii_u64 r,
+    wuffs_base__range_ii_u64* r,
     uint64_t x) {
-  return (r.min_incl <= x) && (x <= r.max_incl);
+  return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersection(
-    wuffs_base__range_ii_u64 r,
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__intersect(
+    wuffs_base__range_ii_u64* r,
     wuffs_base__range_ii_u64 s) {
-  r.min_incl = wuffs_base__u64__max(r.min_incl, s.min_incl);
-  r.max_incl = wuffs_base__u64__min(r.max_incl, s.max_incl);
-  return r;
+  wuffs_base__range_ii_u64 t;
+  t.min_incl = wuffs_base__u64__max(r->min_incl, s.min_incl);
+  t.max_incl = wuffs_base__u64__min(r->max_incl, s.max_incl);
+  return t;
 }
 
-static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__union(
-    wuffs_base__range_ii_u64 r,
+static inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64__unite(
+    wuffs_base__range_ii_u64* r,
     wuffs_base__range_ii_u64 s) {
   if (wuffs_base__range_ii_u64__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__range_ii_u64__is_empty(s)) {
-    return r;
+  if (wuffs_base__range_ii_u64__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl = wuffs_base__u64__min(r.min_incl, s.min_incl);
-  r.max_incl = wuffs_base__u64__max(r.max_incl, s.max_incl);
-  return r;
+  wuffs_base__range_ii_u64 t;
+  t.min_incl = wuffs_base__u64__min(r->min_incl, s.min_incl);
+  t.max_incl = wuffs_base__u64__max(r->max_incl, s.max_incl);
+  return t;
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__range_ii_u64::is_empty() {
+  return wuffs_base__range_ii_u64__is_empty(this);
+}
+
+inline bool wuffs_base__range_ii_u64::equals(wuffs_base__range_ii_u64 s) {
+  return wuffs_base__range_ii_u64__equals(this, s);
+}
+
+inline bool wuffs_base__range_ii_u64::contains(uint64_t x) {
+  return wuffs_base__range_ii_u64__contains(this, x);
+}
+
+inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::intersect(
+    wuffs_base__range_ii_u64 s) {
+  return wuffs_base__range_ii_u64__intersect(this, s);
+}
+
+inline wuffs_base__range_ii_u64 wuffs_base__range_ii_u64::unite(
+    wuffs_base__range_ii_u64 s) {
+  return wuffs_base__range_ii_u64__unite(this, s);
+}
+
+#endif  // __cplusplus
 
 // --------
 
-typedef struct {
+typedef struct wuffs_base__range_ie_u64__struct {
   uint64_t min_incl;
   uint64_t max_excl;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__range_ie_u64__struct s);
+  inline bool contains(uint64_t x);
+  inline wuffs_base__range_ie_u64__struct intersect(
+      wuffs_base__range_ie_u64__struct s);
+  inline wuffs_base__range_ie_u64__struct unite(
+      wuffs_base__range_ie_u64__struct s);
+  inline uint64_t length();
+#endif  // __cplusplus
+
 } wuffs_base__range_ie_u64;
 
 static inline bool wuffs_base__range_ie_u64__is_empty(
-    wuffs_base__range_ie_u64 r) {
-  return r.min_incl >= r.max_excl;
+    wuffs_base__range_ie_u64* r) {
+  return r->min_incl >= r->max_excl;
 }
 
 static inline bool wuffs_base__range_ie_u64__equals(
-    wuffs_base__range_ie_u64 r,
+    wuffs_base__range_ie_u64* r,
     wuffs_base__range_ie_u64 s) {
-  return (r.min_incl == s.min_incl && r.max_excl == s.max_excl) ||
+  return (r->min_incl == s.min_incl && r->max_excl == s.max_excl) ||
          (wuffs_base__range_ie_u64__is_empty(r) &&
-          wuffs_base__range_ie_u64__is_empty(s));
+          wuffs_base__range_ie_u64__is_empty(&s));
 }
 
 static inline bool wuffs_base__range_ie_u64__contains(
-    wuffs_base__range_ie_u64 r,
+    wuffs_base__range_ie_u64* r,
     uint64_t x) {
-  return (r.min_incl <= x) && (x < r.max_excl);
+  return (r->min_incl <= x) && (x < r->max_excl);
 }
 
-static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersection(
-    wuffs_base__range_ie_u64 r,
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__intersect(
+    wuffs_base__range_ie_u64* r,
     wuffs_base__range_ie_u64 s) {
-  r.min_incl = wuffs_base__u64__max(r.min_incl, s.min_incl);
-  r.max_excl = wuffs_base__u64__min(r.max_excl, s.max_excl);
-  return r;
+  wuffs_base__range_ie_u64 t;
+  t.min_incl = wuffs_base__u64__max(r->min_incl, s.min_incl);
+  t.max_excl = wuffs_base__u64__min(r->max_excl, s.max_excl);
+  return t;
 }
 
-static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__union(
-    wuffs_base__range_ie_u64 r,
+static inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64__unite(
+    wuffs_base__range_ie_u64* r,
     wuffs_base__range_ie_u64 s) {
   if (wuffs_base__range_ie_u64__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__range_ie_u64__is_empty(s)) {
-    return r;
+  if (wuffs_base__range_ie_u64__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl = wuffs_base__u64__min(r.min_incl, s.min_incl);
-  r.max_excl = wuffs_base__u64__max(r.max_excl, s.max_excl);
-  return r;
+  wuffs_base__range_ie_u64 t;
+  t.min_incl = wuffs_base__u64__min(r->min_incl, s.min_incl);
+  t.max_excl = wuffs_base__u64__max(r->max_excl, s.max_excl);
+  return t;
 }
 
 static inline uint64_t wuffs_base__range_ie_u64__length(
-    wuffs_base__range_ie_u64 r) {
-  return wuffs_base__u64__sat_sub(r.max_excl, r.min_incl);
+    wuffs_base__range_ie_u64* r) {
+  return wuffs_base__u64__sat_sub(r->max_excl, r->min_incl);
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__range_ie_u64::is_empty() {
+  return wuffs_base__range_ie_u64__is_empty(this);
+}
+
+inline bool wuffs_base__range_ie_u64::equals(wuffs_base__range_ie_u64 s) {
+  return wuffs_base__range_ie_u64__equals(this, s);
+}
+
+inline bool wuffs_base__range_ie_u64::contains(uint64_t x) {
+  return wuffs_base__range_ie_u64__contains(this, x);
+}
+
+inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::intersect(
+    wuffs_base__range_ie_u64 s) {
+  return wuffs_base__range_ie_u64__intersect(this, s);
+}
+
+inline wuffs_base__range_ie_u64 wuffs_base__range_ie_u64::unite(
+    wuffs_base__range_ie_u64 s) {
+  return wuffs_base__range_ie_u64__unite(this, s);
+}
+
+inline uint64_t wuffs_base__range_ie_u64::length() {
+  return wuffs_base__range_ie_u64__length(this);
+}
+
+#endif  // __cplusplus
 
 // --------
 
@@ -553,58 +719,97 @@ static inline uint64_t wuffs_base__range_ie_u64__length(
 // multiple representations of an empty rectangle.
 //
 // The X and Y axes increase right and down.
-typedef struct {
+typedef struct wuffs_base__rect_ii_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
   uint32_t max_incl_x;
   uint32_t max_incl_y;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__rect_ii_u32__struct s);
+  inline bool contains(uint32_t x, uint32_t y);
+  inline wuffs_base__rect_ii_u32__struct intersect(
+      wuffs_base__rect_ii_u32__struct s);
+  inline wuffs_base__rect_ii_u32__struct unite(
+      wuffs_base__rect_ii_u32__struct s);
+#endif  // __cplusplus
+
 } wuffs_base__rect_ii_u32;
 
 static inline bool wuffs_base__rect_ii_u32__is_empty(
-    wuffs_base__rect_ii_u32 r) {
-  return (r.min_incl_x > r.max_incl_x) || (r.min_incl_y > r.max_incl_y);
+    wuffs_base__rect_ii_u32* r) {
+  return (r->min_incl_x > r->max_incl_x) || (r->min_incl_y > r->max_incl_y);
 }
 
-static inline bool wuffs_base__rect_ii_u32__equals(wuffs_base__rect_ii_u32 r,
+static inline bool wuffs_base__rect_ii_u32__equals(wuffs_base__rect_ii_u32* r,
                                                    wuffs_base__rect_ii_u32 s) {
-  return (r.min_incl_x == s.min_incl_x && r.min_incl_y == s.min_incl_y &&
-          r.max_incl_x == s.max_incl_x && r.max_incl_y == s.max_incl_y) ||
+  return (r->min_incl_x == s.min_incl_x && r->min_incl_y == s.min_incl_y &&
+          r->max_incl_x == s.max_incl_x && r->max_incl_y == s.max_incl_y) ||
          (wuffs_base__rect_ii_u32__is_empty(r) &&
-          wuffs_base__rect_ii_u32__is_empty(s));
+          wuffs_base__rect_ii_u32__is_empty(&s));
 }
 
-static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32 r,
+static inline bool wuffs_base__rect_ii_u32__contains(wuffs_base__rect_ii_u32* r,
                                                      uint32_t x,
                                                      uint32_t y) {
-  return (r.min_incl_x <= x) && (x <= r.max_incl_x) && (r.min_incl_y <= y) &&
-         (y <= r.max_incl_y);
+  return (r->min_incl_x <= x) && (x <= r->max_incl_x) && (r->min_incl_y <= y) &&
+         (y <= r->max_incl_y);
 }
 
-static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersection(
-    wuffs_base__rect_ii_u32 r,
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__intersect(
+    wuffs_base__rect_ii_u32* r,
     wuffs_base__rect_ii_u32 s) {
-  r.min_incl_x = wuffs_base__u32__max(r.min_incl_x, s.min_incl_x);
-  r.min_incl_y = wuffs_base__u32__max(r.min_incl_y, s.min_incl_y);
-  r.max_incl_x = wuffs_base__u32__min(r.max_incl_x, s.max_incl_x);
-  r.max_incl_y = wuffs_base__u32__min(r.max_incl_y, s.max_incl_y);
-  return r;
+  wuffs_base__rect_ii_u32 t;
+  t.min_incl_x = wuffs_base__u32__max(r->min_incl_x, s.min_incl_x);
+  t.min_incl_y = wuffs_base__u32__max(r->min_incl_y, s.min_incl_y);
+  t.max_incl_x = wuffs_base__u32__min(r->max_incl_x, s.max_incl_x);
+  t.max_incl_y = wuffs_base__u32__min(r->max_incl_y, s.max_incl_y);
+  return t;
 }
 
-static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__union(
-    wuffs_base__rect_ii_u32 r,
+static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__unite(
+    wuffs_base__rect_ii_u32* r,
     wuffs_base__rect_ii_u32 s) {
   if (wuffs_base__rect_ii_u32__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__rect_ii_u32__is_empty(s)) {
-    return r;
+  if (wuffs_base__rect_ii_u32__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl_x = wuffs_base__u32__min(r.min_incl_x, s.min_incl_x);
-  r.min_incl_y = wuffs_base__u32__min(r.min_incl_y, s.min_incl_y);
-  r.max_incl_x = wuffs_base__u32__max(r.max_incl_x, s.max_incl_x);
-  r.max_incl_y = wuffs_base__u32__max(r.max_incl_y, s.max_incl_y);
-  return r;
+  wuffs_base__rect_ii_u32 t;
+  t.min_incl_x = wuffs_base__u32__min(r->min_incl_x, s.min_incl_x);
+  t.min_incl_y = wuffs_base__u32__min(r->min_incl_y, s.min_incl_y);
+  t.max_incl_x = wuffs_base__u32__max(r->max_incl_x, s.max_incl_x);
+  t.max_incl_y = wuffs_base__u32__max(r->max_incl_y, s.max_incl_y);
+  return t;
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__rect_ii_u32::is_empty() {
+  return wuffs_base__rect_ii_u32__is_empty(this);
+}
+
+inline bool wuffs_base__rect_ii_u32::equals(wuffs_base__rect_ii_u32 s) {
+  return wuffs_base__rect_ii_u32__equals(this, s);
+}
+
+inline bool wuffs_base__rect_ii_u32::contains(uint32_t x, uint32_t y) {
+  return wuffs_base__rect_ii_u32__contains(this, x, y);
+}
+
+inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::intersect(
+    wuffs_base__rect_ii_u32 s) {
+  return wuffs_base__rect_ii_u32__intersect(this, s);
+}
+
+inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32::unite(
+    wuffs_base__rect_ii_u32 s) {
+  return wuffs_base__rect_ii_u32__unite(this, s);
+}
+
+#endif  // __cplusplus
 
 // --------
 
@@ -618,68 +823,117 @@ static inline wuffs_base__rect_ii_u32 wuffs_base__rect_ii_u32__union(
 // fields zero.
 //
 // The X and Y axes increase right and down.
-typedef struct {
+typedef struct wuffs_base__rect_ie_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
   uint32_t max_excl_x;
   uint32_t max_excl_y;
+
+#ifdef __cplusplus
+  inline bool is_empty();
+  inline bool equals(wuffs_base__rect_ie_u32__struct s);
+  inline bool contains(uint32_t x, uint32_t y);
+  inline wuffs_base__rect_ie_u32__struct intersect(
+      wuffs_base__rect_ie_u32__struct s);
+  inline wuffs_base__rect_ie_u32__struct unite(
+      wuffs_base__rect_ie_u32__struct s);
+  inline uint32_t width();
+  inline uint32_t height();
+#endif  // __cplusplus
+
 } wuffs_base__rect_ie_u32;
 
 static inline bool wuffs_base__rect_ie_u32__is_empty(
-    wuffs_base__rect_ie_u32 r) {
-  return (r.min_incl_x >= r.max_excl_x) || (r.min_incl_y >= r.max_excl_y);
+    wuffs_base__rect_ie_u32* r) {
+  return (r->min_incl_x >= r->max_excl_x) || (r->min_incl_y >= r->max_excl_y);
 }
 
-static inline bool wuffs_base__rect_ie_u32__equals(wuffs_base__rect_ie_u32 r,
+static inline bool wuffs_base__rect_ie_u32__equals(wuffs_base__rect_ie_u32* r,
                                                    wuffs_base__rect_ie_u32 s) {
-  return (r.min_incl_x == s.min_incl_x && r.min_incl_y == s.min_incl_y &&
-          r.max_excl_x == s.max_excl_x && r.max_excl_y == s.max_excl_y) ||
+  return (r->min_incl_x == s.min_incl_x && r->min_incl_y == s.min_incl_y &&
+          r->max_excl_x == s.max_excl_x && r->max_excl_y == s.max_excl_y) ||
          (wuffs_base__rect_ie_u32__is_empty(r) &&
-          wuffs_base__rect_ie_u32__is_empty(s));
+          wuffs_base__rect_ie_u32__is_empty(&s));
 }
 
-static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32 r,
+static inline bool wuffs_base__rect_ie_u32__contains(wuffs_base__rect_ie_u32* r,
                                                      uint32_t x,
                                                      uint32_t y) {
-  return (r.min_incl_x <= x) && (x < r.max_excl_x) && (r.min_incl_y <= y) &&
-         (y < r.max_excl_y);
+  return (r->min_incl_x <= x) && (x < r->max_excl_x) && (r->min_incl_y <= y) &&
+         (y < r->max_excl_y);
 }
 
-static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersection(
-    wuffs_base__rect_ie_u32 r,
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__intersect(
+    wuffs_base__rect_ie_u32* r,
     wuffs_base__rect_ie_u32 s) {
-  r.min_incl_x = wuffs_base__u32__max(r.min_incl_x, s.min_incl_x);
-  r.min_incl_y = wuffs_base__u32__max(r.min_incl_y, s.min_incl_y);
-  r.max_excl_x = wuffs_base__u32__min(r.max_excl_x, s.max_excl_x);
-  r.max_excl_y = wuffs_base__u32__min(r.max_excl_y, s.max_excl_y);
-  return r;
+  wuffs_base__rect_ie_u32 t;
+  t.min_incl_x = wuffs_base__u32__max(r->min_incl_x, s.min_incl_x);
+  t.min_incl_y = wuffs_base__u32__max(r->min_incl_y, s.min_incl_y);
+  t.max_excl_x = wuffs_base__u32__min(r->max_excl_x, s.max_excl_x);
+  t.max_excl_y = wuffs_base__u32__min(r->max_excl_y, s.max_excl_y);
+  return t;
 }
 
-static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__union(
-    wuffs_base__rect_ie_u32 r,
+static inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32__unite(
+    wuffs_base__rect_ie_u32* r,
     wuffs_base__rect_ie_u32 s) {
   if (wuffs_base__rect_ie_u32__is_empty(r)) {
     return s;
   }
-  if (wuffs_base__rect_ie_u32__is_empty(s)) {
-    return r;
+  if (wuffs_base__rect_ie_u32__is_empty(&s)) {
+    return *r;
   }
-  r.min_incl_x = wuffs_base__u32__min(r.min_incl_x, s.min_incl_x);
-  r.min_incl_y = wuffs_base__u32__min(r.min_incl_y, s.min_incl_y);
-  r.max_excl_x = wuffs_base__u32__max(r.max_excl_x, s.max_excl_x);
-  r.max_excl_y = wuffs_base__u32__max(r.max_excl_y, s.max_excl_y);
-  return r;
+  wuffs_base__rect_ie_u32 t;
+  t.min_incl_x = wuffs_base__u32__min(r->min_incl_x, s.min_incl_x);
+  t.min_incl_y = wuffs_base__u32__min(r->min_incl_y, s.min_incl_y);
+  t.max_excl_x = wuffs_base__u32__max(r->max_excl_x, s.max_excl_x);
+  t.max_excl_y = wuffs_base__u32__max(r->max_excl_y, s.max_excl_y);
+  return t;
 }
 
 static inline uint32_t wuffs_base__rect_ie_u32__width(
-    wuffs_base__rect_ie_u32 r) {
-  return wuffs_base__u32__sat_sub(r.max_excl_x, r.min_incl_x);
+    wuffs_base__rect_ie_u32* r) {
+  return wuffs_base__u32__sat_sub(r->max_excl_x, r->min_incl_x);
 }
 
 static inline uint32_t wuffs_base__rect_ie_u32__height(
-    wuffs_base__rect_ie_u32 r) {
-  return wuffs_base__u32__sat_sub(r.max_excl_y, r.min_incl_y);
+    wuffs_base__rect_ie_u32* r) {
+  return wuffs_base__u32__sat_sub(r->max_excl_y, r->min_incl_y);
 }
+
+#ifdef __cplusplus
+
+inline bool wuffs_base__rect_ie_u32::is_empty() {
+  return wuffs_base__rect_ie_u32__is_empty(this);
+}
+
+inline bool wuffs_base__rect_ie_u32::equals(wuffs_base__rect_ie_u32 s) {
+  return wuffs_base__rect_ie_u32__equals(this, s);
+}
+
+inline bool wuffs_base__rect_ie_u32::contains(uint32_t x, uint32_t y) {
+  return wuffs_base__rect_ie_u32__contains(this, x, y);
+}
+
+inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::intersect(
+    wuffs_base__rect_ie_u32 s) {
+  return wuffs_base__rect_ie_u32__intersect(this, s);
+}
+
+inline wuffs_base__rect_ie_u32 wuffs_base__rect_ie_u32::unite(
+    wuffs_base__rect_ie_u32 s) {
+  return wuffs_base__rect_ie_u32__unite(this, s);
+}
+
+inline uint32_t wuffs_base__rect_ie_u32::width() {
+  return wuffs_base__rect_ie_u32__width(this);
+}
+
+inline uint32_t wuffs_base__rect_ie_u32::height() {
+  return wuffs_base__rect_ie_u32__height(this);
+}
+
+#endif  // __cplusplus
 
 // ---------------- I/O
 
@@ -1046,6 +1300,26 @@ typedef struct {
     uint32_t num_loops;
     bool first_frame_is_opaque;
   } private_impl;
+
+#ifdef __cplusplus
+  inline void initialize(wuffs_base__pixel_format pixfmt,
+                         wuffs_base__pixel_subsampling pixsub,
+                         uint32_t width,
+                         uint32_t height,
+                         uint32_t num_loops,
+                         bool first_frame_is_opaque);
+  inline void invalidate();
+  inline bool is_valid();
+  inline wuffs_base__pixel_format pixel_format();
+  inline wuffs_base__pixel_subsampling pixel_subsampling();
+  inline wuffs_base__rect_ie_u32 bounds();
+  inline uint32_t width();
+  inline uint32_t height();
+  inline uint32_t num_loops();
+  inline uint32_t first_frame_is_opaque();
+  inline size_t pixbuf_size();
+#endif  // __cplusplus
+
 } wuffs_base__image_config;
 
 // TODO: Should this function return bool? An error type?
@@ -1143,6 +1417,62 @@ static inline size_t wuffs_base__image_config__pixbuf_size(
   return 0;
 }
 
+#ifdef __cplusplus
+
+inline void wuffs_base__image_config::initialize(
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint32_t num_loops,
+    bool first_frame_is_opaque) {
+  wuffs_base__image_config__initialize(this, pixfmt, pixsub, width, height,
+                                       num_loops, first_frame_is_opaque);
+}
+
+inline void wuffs_base__image_config::invalidate() {
+  wuffs_base__image_config__invalidate(this);
+}
+
+inline bool wuffs_base__image_config::is_valid() {
+  return wuffs_base__image_config__is_valid(this);
+}
+
+inline wuffs_base__pixel_format wuffs_base__image_config::pixel_format() {
+  return wuffs_base__image_config__pixel_format(this);
+}
+
+inline wuffs_base__pixel_subsampling
+wuffs_base__image_config::pixel_subsampling() {
+  return wuffs_base__image_config__pixel_subsampling(this);
+}
+
+inline wuffs_base__rect_ie_u32 wuffs_base__image_config::bounds() {
+  return wuffs_base__image_config__bounds(this);
+}
+
+inline uint32_t wuffs_base__image_config::width() {
+  return wuffs_base__image_config__width(this);
+}
+
+inline uint32_t wuffs_base__image_config::height() {
+  return wuffs_base__image_config__height(this);
+}
+
+inline uint32_t wuffs_base__image_config::num_loops() {
+  return wuffs_base__image_config__num_loops(this);
+}
+
+inline uint32_t wuffs_base__image_config::first_frame_is_opaque() {
+  return wuffs_base__image_config__first_frame_is_opaque(this);
+}
+
+inline size_t wuffs_base__image_config::pixbuf_size() {
+  return wuffs_base__image_config__pixbuf_size(this);
+}
+
+#endif  // __cplusplus
+
 // --------
 
 // wuffs_base__animation_disposal encodes, for an animated image, how to
@@ -1178,6 +1508,30 @@ typedef struct {
     bool palette_changed;
     uint8_t palette[1024];
   } private_impl;
+
+#ifdef __cplusplus
+  inline wuffs_base__status set_from_pixbuf(wuffs_base__image_config config,
+                                            wuffs_base__pixel_buffer pixbuf);
+  inline wuffs_base__status set_from_slice(wuffs_base__image_config config,
+                                           wuffs_base__slice_u8 pixbuf_memory);
+  inline void update(wuffs_base__rect_ie_u32 dirty_rect,
+                     wuffs_base__flicks duration,
+                     bool blend,
+                     wuffs_base__animation_disposal disposal,
+                     wuffs_base__slice_u8 palette);
+  inline wuffs_base__image_config* image_config();
+  inline wuffs_base__rect_ie_u32 bounds();
+  inline uint32_t width();
+  inline uint32_t height();
+  inline wuffs_base__rect_ie_u32 dirty_rect();
+  inline wuffs_base__flicks duration();
+  inline bool blend();
+  inline wuffs_base__animation_disposal disposal();
+  inline bool palette_changed();
+  inline wuffs_base__slice_u8 palette();
+  inline wuffs_base__table_u8 plane(uint32_t p);
+#endif  // __cplusplus
+
 } wuffs_base__image_buffer;
 
 static inline wuffs_base__status wuffs_base__image_buffer__set_from_pixbuf(
@@ -1242,25 +1596,6 @@ static inline void wuffs_base__image_buffer__update(
   if (b->private_impl.palette_changed) {
     memmove(b->private_impl.palette, palette.ptr, 1024);
   }
-}
-
-// wuffs_base__image_buffer__loop returns whether the image decoder should loop
-// back to the beginning of the animation, assuming that we've reached the end
-// of the encoded stream. If so, it increments b's count of the animation loops
-// played so far.
-static inline bool wuffs_base__image_buffer__loop(wuffs_base__image_buffer* b) {
-  if (!b) {
-    return false;
-  }
-  uint32_t n = b->private_impl.config.private_impl.num_loops;
-  if (n == 0) {
-    return true;
-  }
-  if (b->private_impl.loop_count < n - 1) {
-    b->private_impl.loop_count++;
-    return true;
-  }
-  return false;
 }
 
 // wuffs_base__image_config returns the overall configuration for this frame.
@@ -1340,6 +1675,76 @@ static inline wuffs_base__table_u8 wuffs_base__image_buffer__plane(
              ? b->private_impl.pixbuf.planes[p]
              : ((wuffs_base__table_u8){});
 }
+
+#ifdef __cplusplus
+
+inline wuffs_base__status wuffs_base__image_buffer::set_from_pixbuf(
+    wuffs_base__image_config config,
+    wuffs_base__pixel_buffer pixbuf) {
+  return wuffs_base__image_buffer__set_from_pixbuf(this, config, pixbuf);
+}
+
+inline wuffs_base__status wuffs_base__image_buffer::set_from_slice(
+    wuffs_base__image_config config,
+    wuffs_base__slice_u8 pixbuf_memory) {
+  return wuffs_base__image_buffer__set_from_slice(this, config, pixbuf_memory);
+}
+
+inline void wuffs_base__image_buffer::update(
+    wuffs_base__rect_ie_u32 dirty_rect,
+    wuffs_base__flicks duration,
+    bool blend,
+    wuffs_base__animation_disposal disposal,
+    wuffs_base__slice_u8 palette) {
+  wuffs_base__image_buffer__update(this, dirty_rect, duration, blend, disposal,
+                                   palette);
+}
+
+inline wuffs_base__image_config* wuffs_base__image_buffer::image_config() {
+  return wuffs_base__image_buffer__image_config(this);
+}
+
+inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer::bounds() {
+  return wuffs_base__image_buffer__bounds(this);
+}
+
+inline uint32_t wuffs_base__image_buffer::width() {
+  return wuffs_base__image_buffer__width(this);
+}
+
+inline uint32_t wuffs_base__image_buffer::height() {
+  return wuffs_base__image_buffer__height(this);
+}
+
+inline wuffs_base__rect_ie_u32 wuffs_base__image_buffer::dirty_rect() {
+  return wuffs_base__image_buffer__dirty_rect(this);
+}
+
+inline wuffs_base__flicks wuffs_base__image_buffer::duration() {
+  return wuffs_base__image_buffer__duration(this);
+}
+
+inline bool wuffs_base__image_buffer::blend() {
+  return wuffs_base__image_buffer__blend(this);
+}
+
+inline wuffs_base__animation_disposal wuffs_base__image_buffer::disposal() {
+  return wuffs_base__image_buffer__disposal(this);
+}
+
+inline bool wuffs_base__image_buffer::palette_changed() {
+  return wuffs_base__image_buffer__palette_changed(this);
+}
+
+inline wuffs_base__slice_u8 wuffs_base__image_buffer::palette() {
+  return wuffs_base__image_buffer__palette(this);
+}
+
+inline wuffs_base__table_u8 wuffs_base__image_buffer::plane(uint32_t p) {
+  return wuffs_base__image_buffer__plane(this, p);
+}
+
+#endif  // __cplusplus
 
 #ifdef __cplusplus
 }  // extern "C"
