@@ -800,36 +800,10 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return nil, nil, err
 		}
-
-		// Special case for a numeric type's low_bits, high_bits, etc. methods.
-		// The bound on the output is dependent on bound on the input, similar
-		// to dependent types, and isn't expressible in Wuffs' function syntax
-		// and type system.
-		if recv := lhs.MType().Receiver(); recv != nil && recv.IsNumType() {
-			switch methodName := lhs.Ident(); methodName {
-			case t.IDLowBits, t.IDHighBits:
-				_, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				return zero, bitMask(int(aMax.Int64())), nil
-			case t.IDMin, t.IDMax:
-				// TODO: lhs has already been bcheck'ed. There should be no
-				// need to bcheck lhs.LHS().Expr() twice.
-				lMin, lMax, err := q.bcheckExpr(lhs.LHS().Expr(), depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				aMin, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
-				if err != nil {
-					return nil, nil, err
-				}
-				if methodName == t.IDMin {
-					return min(lMin, aMin), min(lMax, aMax), nil
-				} else {
-					return max(lMin, aMin), max(lMax, aMax), nil
-				}
-			}
+		if nMin, nMax, err := q.bcheckExprCallSpecialCases(n, depth); err != nil {
+			return nil, nil, err
+		} else if nMin != nil || nMax != nil {
+			return nMin, nMax, nil
 		}
 
 	case t.IDOpenBracket:
@@ -954,6 +928,80 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 		}
 	}
 	return nil
+}
+
+func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+	lhs := n.LHS().Expr()
+	recv := lhs.LHS().Expr()
+	method := lhs.Ident()
+
+	if recvTyp := recv.MType(); recvTyp == nil {
+		return nil, nil, nil
+
+	} else if recvTyp.IsNumType() {
+		// For a numeric type's low_bits, etc. methods. The bound on the output
+		// is dependent on bound on the input, similar to dependent types, and
+		// isn't expressible in Wuffs' function syntax and type system.
+		switch method {
+		case t.IDLowBits, t.IDHighBits:
+			_, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+			if err != nil {
+				return nil, nil, err
+			}
+			return zero, bitMask(int(aMax.Int64())), nil
+
+		case t.IDMin, t.IDMax:
+			// TODO: lhs has already been bcheck'ed. There should be no
+			// need to bcheck lhs.LHS().Expr() twice.
+			lMin, lMax, err := q.bcheckExpr(lhs.LHS().Expr(), depth)
+			if err != nil {
+				return nil, nil, err
+			}
+			aMin, aMax, err := q.bcheckExpr(n.Args()[0].Arg().Value(), depth)
+			if err != nil {
+				return nil, nil, err
+			}
+			if method == t.IDMin {
+				return min(lMin, aMin), min(lMax, aMax), nil
+			} else {
+				return max(lMin, aMin), max(lMax, aMax), nil
+			}
+		}
+
+	} else if recvTyp.IsIOType() {
+		if method >= t.IDPeekU8 {
+			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {
+				if advance := ioMethodAdvances[m]; advance != nil {
+					if ok, err := q.optimizeIOMethodAdvance(recv, advance, false); err != nil {
+						return nil, nil, err
+					} else if !ok {
+						return nil, nil, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
+							method.Str(q.tm), recv.Str(q.tm), advance)
+					}
+				}
+			}
+		}
+	}
+
+	return nil, nil, nil
+}
+
+var ioMethodAdvances = [...]*big.Int{
+	t.IDPeekU8 - t.IDPeekU8:    one,
+	t.IDPeekU16BE - t.IDPeekU8: two,
+	t.IDPeekU16LE - t.IDPeekU8: two,
+	t.IDPeekU24BE - t.IDPeekU8: three,
+	t.IDPeekU24LE - t.IDPeekU8: three,
+	t.IDPeekU32BE - t.IDPeekU8: four,
+	t.IDPeekU32LE - t.IDPeekU8: four,
+	t.IDPeekU40BE - t.IDPeekU8: five,
+	t.IDPeekU40LE - t.IDPeekU8: five,
+	t.IDPeekU48BE - t.IDPeekU8: six,
+	t.IDPeekU48LE - t.IDPeekU8: six,
+	t.IDPeekU56BE - t.IDPeekU8: seven,
+	t.IDPeekU56LE - t.IDPeekU8: seven,
+	t.IDPeekU64BE - t.IDPeekU8: eight,
+	t.IDPeekU64LE - t.IDPeekU8: eight,
 }
 
 // makeSliceLength returns "x.length()".

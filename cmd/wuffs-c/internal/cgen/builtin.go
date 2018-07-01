@@ -131,6 +131,19 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			".len = (size_t)(ioptr_src - %ssrc.private_impl.bounds[0]), })",
 			aPrefix, aPrefix)
 		return nil
+
+	case t.IDPeekU8:
+		b.writes("(*ioptr_src)")
+		return nil
+	}
+
+	if method >= t.IDPeekU8 {
+		if m := method - t.IDPeekU8; m < t.ID(len(peekMethods)) {
+			if p := peekMethods[m]; p.n != 0 {
+				b.printf("wuffs_base__load_u%d%ce(ioptr_src)", p.n, p.endianness)
+				return nil
+			}
+		}
 	}
 
 	return g.writeBuiltinIO(b, recv, method, args, rp, depth)
@@ -472,4 +485,25 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 		}
 	}
 	return errNoSuchBuiltin
+}
+
+var peekMethods = [...]struct {
+	n          uint8
+	endianness uint8
+}{
+	// t.IDPeekU8 is a special case, neither big nor little endian.
+	t.IDPeekU16BE - t.IDPeekU8: {16, 'b'},
+	t.IDPeekU16LE - t.IDPeekU8: {16, 'l'},
+	t.IDPeekU24BE - t.IDPeekU8: {24, 'b'},
+	t.IDPeekU24LE - t.IDPeekU8: {24, 'l'},
+	t.IDPeekU32BE - t.IDPeekU8: {32, 'b'},
+	t.IDPeekU32LE - t.IDPeekU8: {32, 'l'},
+	t.IDPeekU40BE - t.IDPeekU8: {40, 'b'},
+	t.IDPeekU40LE - t.IDPeekU8: {40, 'l'},
+	t.IDPeekU48BE - t.IDPeekU8: {48, 'b'},
+	t.IDPeekU48LE - t.IDPeekU8: {48, 'l'},
+	t.IDPeekU56BE - t.IDPeekU8: {56, 'b'},
+	t.IDPeekU56LE - t.IDPeekU8: {56, 'l'},
+	t.IDPeekU64BE - t.IDPeekU8: {64, 'b'},
+	t.IDPeekU64LE - t.IDPeekU8: {64, 'l'},
 }

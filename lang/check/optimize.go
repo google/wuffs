@@ -213,14 +213,21 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 	}
 
 	if advance := ioMethodAdvance(nMethod); advance != nil {
-		return q.optimizeIOMethodAdvance(n, nReceiver, advance)
+		if ok, err := q.optimizeIOMethodAdvance(nReceiver, advance, true); err != nil {
+			return err
+		} else if ok {
+			n.SetProvenNotToSuspend()
+		}
 	}
 
 	return nil
 }
 
-func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *big.Int) error {
-	return q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, update bool) (retOK bool, retErr error) {
+	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
+		// TODO: update (discard?) any facts that merely mention
+		// receiver.available(), even if they aren't an exact match.
+
 		op := x.Operator()
 		if op != t.IDXBinaryGreaterEq && op != t.IDXBinaryGreaterThan {
 			return x, nil
@@ -247,33 +254,36 @@ func (q *checker) optimizeIOMethodAdvance(n *a.Expr, receiver *a.Expr, advance *
 
 		// Check if the bytes available is >= the bytes needed. If so, update
 		// rcv to be the bytes remaining. If not, discard the fact x.
-		//
-		// TODO: mark the call as proven not to suspend.
 		if op == t.IDXBinaryGreaterThan {
 			op = t.IDXBinaryGreaterEq
 			rcv = big.NewInt(0).Add(rcv, one)
 		}
 		if rcv.Cmp(advance) < 0 {
+			if !update {
+				return x, nil
+			}
 			return nil, nil
 		}
-		rcv = big.NewInt(0).Sub(rcv, advance)
 
-		// Create a new a.Expr to hold the adjusted RHS constant value rcv.
-		id, err := q.tm.Insert(rcv.String())
+		retOK = true
+
+		if !update {
+			return x, nil
+		}
+
+		// Create a new a.Expr to hold the adjusted RHS constant value, newRCV.
+		newRCV := big.NewInt(0).Sub(rcv, advance)
+		id, err := q.tm.Insert(newRCV.String())
 		if err != nil {
 			return nil, err
 		}
 		o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
-		o.SetConstValue(rcv)
+		o.SetConstValue(newRCV)
 		o.SetMType(typeExprIdeal)
-
-		if !n.CallSuspendible() {
-			return nil, fmt.Errorf("check: internal error: inconsistent suspendible-ness for %q", n.Str(q.tm))
-		}
-		n.SetProvenNotToSuspend()
 
 		return a.NewExpr(x.Node().Raw().Flags(), t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.Node(), nil), nil
 	})
+	return retOK, retErr
 }
 
 func ioMethodAdvance(x t.ID) *big.Int {

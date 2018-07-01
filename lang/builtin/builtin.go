@@ -157,6 +157,24 @@ var Funcs = []string{
 	"io_reader.read_u64be?()(ret u64)",
 	"io_reader.read_u64le?()(ret u64)",
 
+	// TODO: these methods should have an explicit precondition on "available()
+	// >= N". For now, that's implicitly checked (i.e. hard coded).
+	"io_reader.peek_u8()(ret u8)",
+	"io_reader.peek_u16be()(ret u16)",
+	"io_reader.peek_u16le()(ret u16)",
+	"io_reader.peek_u24be()(ret u32[..0xFFFFFF])",
+	"io_reader.peek_u24le()(ret u32[..0xFFFFFF])",
+	"io_reader.peek_u32be()(ret u32)",
+	"io_reader.peek_u32le()(ret u32)",
+	"io_reader.peek_u40be()(ret u64[..0xFFFFFFFFFF])",
+	"io_reader.peek_u40le()(ret u64[..0xFFFFFFFFFF])",
+	"io_reader.peek_u48be()(ret u64[..0xFFFFFFFFFFFF])",
+	"io_reader.peek_u48le()(ret u64[..0xFFFFFFFFFFFF])",
+	"io_reader.peek_u56be()(ret u64[..0xFFFFFFFFFFFFFF])",
+	"io_reader.peek_u56le()(ret u64[..0xFFFFFFFFFFFFFF])",
+	"io_reader.peek_u64be()(ret u64)",
+	"io_reader.peek_u64le()(ret u64)",
+
 	"io_reader.available()(ret u64)",
 	"io_reader.set!(s slice u8, closed bool)()",
 	"io_reader.set_limit!(l u64)()",

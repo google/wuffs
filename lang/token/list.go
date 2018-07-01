@@ -461,6 +461,22 @@ const (
 	IDReadU64BE = ID(0x14E)
 	IDReadU64LE = ID(0x14F)
 
+	IDPeekU8    = ID(0x151)
+	IDPeekU16BE = ID(0x152)
+	IDPeekU16LE = ID(0x153)
+	IDPeekU24BE = ID(0x154)
+	IDPeekU24LE = ID(0x155)
+	IDPeekU32BE = ID(0x156)
+	IDPeekU32LE = ID(0x157)
+	IDPeekU40BE = ID(0x158)
+	IDPeekU40LE = ID(0x159)
+	IDPeekU48BE = ID(0x15A)
+	IDPeekU48LE = ID(0x15B)
+	IDPeekU56BE = ID(0x15C)
+	IDPeekU56LE = ID(0x15D)
+	IDPeekU64BE = ID(0x15E)
+	IDPeekU64LE = ID(0x15F)
+
 	// TODO: IDUnwriteU8?
 	IDWriteU8    = ID(0x161)
 	IDWriteU16BE = ID(0x162)
@@ -702,6 +718,22 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDReadU56LE: "read_u56le",
 	IDReadU64BE: "read_u64be",
 	IDReadU64LE: "read_u64le",
+
+	IDPeekU8:    "peek_u8",
+	IDPeekU16BE: "peek_u16be",
+	IDPeekU16LE: "peek_u16le",
+	IDPeekU24BE: "peek_u24be",
+	IDPeekU24LE: "peek_u24le",
+	IDPeekU32BE: "peek_u32be",
+	IDPeekU32LE: "peek_u32le",
+	IDPeekU40BE: "peek_u40be",
+	IDPeekU40LE: "peek_u40le",
+	IDPeekU48BE: "peek_u48be",
+	IDPeekU48LE: "peek_u48le",
+	IDPeekU56BE: "peek_u56be",
+	IDPeekU56LE: "peek_u56le",
+	IDPeekU64BE: "peek_u64be",
+	IDPeekU64LE: "peek_u64le",
 
 	IDWriteU8:    "write_u8",
 	IDWriteU16BE: "write_u16be",
