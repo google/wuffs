@@ -969,16 +969,38 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 		}
 
 	} else if recvTyp.IsIOType() {
-		if method >= t.IDPeekU8 {
+		advance, update := (*big.Int)(nil), false
+
+		if method == t.IDSkip32Fast {
+			args := n.Args()
+			if len(args) != 2 {
+				return nil, nil, fmt.Errorf("check: internal error: bad skip32_fast arguments")
+			}
+			actual := args[0].Arg().Value()
+			worstCase := args[1].Arg().Value()
+			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
+				return nil, nil, fmt.Errorf("check: could not prove skip32_fast precondition: %s <= %s",
+					actual.Str(q.tm), worstCase.Str(q.tm))
+			} else if err != nil {
+				return nil, nil, err
+			}
+			advance, update = worstCase.ConstValue(), true
+			if advance == nil {
+				return nil, nil, fmt.Errorf("check: skip32_fast worst_case is not a constant value")
+			}
+
+		} else if method >= t.IDPeekU8 {
 			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {
-				if advance := ioMethodAdvances[m]; advance != nil {
-					if ok, err := q.optimizeIOMethodAdvance(recv, advance, false); err != nil {
-						return nil, nil, err
-					} else if !ok {
-						return nil, nil, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
-							method.Str(q.tm), recv.Str(q.tm), advance)
-					}
-				}
+				advance, update = ioMethodAdvances[m], false
+			}
+		}
+
+		if advance != nil {
+			if ok, err := q.optimizeIOMethodAdvance(recv, advance, update); err != nil {
+				return nil, nil, err
+			} else if !ok {
+				return nil, nil, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
+					method.Str(q.tm), recv.Str(q.tm), advance)
 			}
 		}
 	}

@@ -224,6 +224,10 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 }
 
 func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, update bool) (retOK bool, retErr error) {
+	// TODO: do two passes? The first one to non-destructively check retOK. The
+	// second one to drop facts if indeed retOK? Otherwise, an advance
+	// precondition failure will lose some of the facts in its error message.
+
 	retErr = q.facts.update(func(x *a.Expr) (*a.Expr, error) {
 		// TODO: update (discard?) any facts that merely mention
 		// receiver.available(), even if they aren't an exact match.
@@ -269,6 +273,11 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 
 		if !update {
 			return x, nil
+		}
+
+		if rcv.Cmp(advance) == 0 {
+			// TODO: delete the (adjusted) fact, as newRCV will be zero, and
+			// "foo.advance() >= 0" is redundant.
 		}
 
 		// Create a new a.Expr to hold the adjusted RHS constant value, newRCV.

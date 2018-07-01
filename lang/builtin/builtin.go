@@ -157,8 +157,8 @@ var Funcs = []string{
 	"io_reader.read_u64be?()(ret u64)",
 	"io_reader.read_u64le?()(ret u64)",
 
-	// TODO: these methods should have an explicit precondition on "available()
-	// >= N". For now, that's implicitly checked (i.e. hard coded).
+	// TODO: these should have an explicit precondition "available() >= N". For
+	// now, that's implicitly checked (i.e. hard coded).
 	"io_reader.peek_u8()(ret u8)",
 	"io_reader.peek_u16be()(ret u16)",
 	"io_reader.peek_u16le()(ret u16)",
@@ -183,6 +183,12 @@ var Funcs = []string{
 
 	"io_reader.skip32?(n u32)()",
 	"io_reader.skip64?(n u64)()",
+
+	// TODO: this should have explicit preconditions "actual <= worst_case" and
+	// "worst_case <= available()". As an implementation restriction, we also
+	// require that worst_case has a constant value. For now, that's all
+	// implicitly checked (i.e. hard coded).
+	"io_reader.skip32_fast!(actual u32, worst_case u32)()",
 
 	// ---- io_writer
 

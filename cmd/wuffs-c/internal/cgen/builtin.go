@@ -116,6 +116,10 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
+	case t.IDPeekU8:
+		b.writes("(*ioptr_src)")
+		return nil
+
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, ioptr_src,", aPrefix)
 		// TODO: update the ioptr variables?
@@ -132,8 +136,16 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			aPrefix, aPrefix)
 		return nil
 
-	case t.IDPeekU8:
-		b.writes("(*ioptr_src)")
+	case t.IDSkip32Fast:
+		// Generate a two part expression using the comma operator: "(pointer
+		// increment, return_empty_struct call)". The final part is a function
+		// call (to a static inline function) instead of a struct literal, to
+		// avoid a "expression result unused" compiler error.
+		b.writes("(ioptr_src += ")
+		if err := g.writeExpr(b, args[1].Arg().Value(), rp, depth); err != nil {
+			return err
+		}
+		b.writes(", wuffs_base__return_empty_struct())")
 		return nil
 	}
 
