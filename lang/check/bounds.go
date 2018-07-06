@@ -22,7 +22,7 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-var numTypeBounds = [...][2]*big.Int{
+var numTypeBounds = [...]a.Bounds{
 	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
 	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
 	t.IDI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
@@ -174,31 +174,31 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	return o, nil
 }
 
-func typeBounds(tm *t.Map, typ *a.TypeExpr) (*big.Int, *big.Int, error) {
-	b := [2]*big.Int{}
+func typeBounds(tm *t.Map, typ *a.TypeExpr) (a.Bounds, error) {
+	b := a.Bounds{}
 	if typ.Decorator() == 0 {
 		if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
 			b = numTypeBounds[qid[1]]
 		}
 	}
 	if b[0] == nil || b[1] == nil {
-		return nil, nil, nil
+		return a.Bounds{}, nil
 	}
 	if o := typ.Min(); o != nil {
 		cv := o.ConstValue()
 		if cv.Cmp(b[0]) < 0 {
-			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+			return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
 		}
 		b[0] = cv
 	}
 	if o := typ.Max(); o != nil {
 		cv := o.ConstValue()
 		if cv.Cmp(b[1]) > 0 {
-			return nil, nil, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+			return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
 		}
 		b[1] = cv
 	}
-	return b[0], b[1], nil
+	return b, nil
 }
 
 func (q *checker) bcheckBlock(block []*a.Node) error {
@@ -248,7 +248,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KExpr:
 		n := n.AsExpr()
-		if _, _, err := q.bcheckExpr(n, 0); err != nil {
+		if _, err := q.bcheckExpr(n, 0); err != nil {
 			return err
 		}
 		if n.Suspendible() {
@@ -448,8 +448,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		// TODO: t.IDSlice, t.IDTable?
 	}
 
-	_, _, err := q.bcheckExpr(lhs, 0)
-	if err != nil {
+	if _, err := q.bcheckExpr(lhs, 0); err != nil {
 		return err
 	}
 	return q.bcheckAssignment2(lhs, lhs.MType(), op, rhs)
@@ -460,37 +459,36 @@ func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
-	lMin, lMax, err := q.bcheckTypeExpr(lTyp)
+	lb, err := q.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
 
-	rMin, rMax := (*big.Int)(nil), (*big.Int)(nil)
+	rb := a.Bounds{}
 	if op == t.IDEq {
 		if cv := rhs.ConstValue(); cv != nil {
-			if (lMin != nil && cv.Cmp(lMin) < 0) || (lMax != nil && cv.Cmp(lMax) > 0) {
-				return fmt.Errorf("check: constant %v is not within bounds [%v..%v]", cv, lMin, lMax)
+			if (lb[0] != nil && cv.Cmp(lb[0]) < 0) || (lb[1] != nil && cv.Cmp(lb[1]) > 0) {
+				return fmt.Errorf("check: constant %v is not within bounds %v", cv, lb)
 			}
 			return nil
 		}
-		rMin, rMax, err = q.bcheckExpr(rhs, 0)
+		rb, err = q.bcheckExpr(rhs, 0)
 	} else {
-		rMin, rMax, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)
+		rb, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)
 	}
 	if err != nil {
 		return err
 	}
 
-	if (rMin != nil && lMin != nil && rMin.Cmp(lMin) < 0) ||
-		(rMax != nil && lMax != nil && rMax.Cmp(lMax) > 0) {
+	if (rb[0] != nil && lb[0] != nil && rb[0].Cmp(lb[0]) < 0) ||
+		(rb[1] != nil && lb[1] != nil && rb[1].Cmp(lb[1]) > 0) {
 
 		if op == t.IDEq {
-			return fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-				rhs.Str(q.tm), rMin, rMax, lMin, lMax)
+			return fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
+				rhs.Str(q.tm), rb, lb)
 		} else {
-			return fmt.Errorf("check: assignment %q bounds [%v..%v] is not within bounds [%v..%v]",
-				lhs.Str(q.tm)+" "+op.Str(q.tm)+" "+rhs.Str(q.tm),
-				rMin, rMax, lMin, lMax)
+			return fmt.Errorf("check: assignment %q bounds %v is not within bounds %v",
+				lhs.Str(q.tm)+" "+op.Str(q.tm)+" "+rhs.Str(q.tm), rb, lb)
 		}
 	}
 	return nil
@@ -570,7 +568,7 @@ func (q *checker) bcheckIf(n *a.If) error {
 		// Check the if condition.
 		//
 		// TODO: check that n.Condition() has no side effects.
-		if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
+		if _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 			return err
 		}
 
@@ -626,7 +624,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	// Check the while condition.
 	//
 	// TODO: check that n.Condition() has no side effects.
-	if _, _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
+	if _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 		return err
 	}
 
@@ -710,7 +708,7 @@ func (q *checker) bcheckWhile(n *a.While) error {
 
 func (q *checker) bcheckVar(n *a.Var, iterateVariable bool) error {
 	if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
-		if _, _, err := typeBounds(q.tm, innTyp); err != nil {
+		if _, err := typeBounds(q.tm, innTyp); err != nil {
 			return err
 		}
 	}
@@ -731,37 +729,40 @@ func (q *checker) bcheckVar(n *a.Var, iterateVariable bool) error {
 	return q.bcheckAssignment(lhs, t.IDEq, rhs)
 }
 
-func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if depth > a.MaxExprDepth {
-		return nil, nil, fmt.Errorf("check: expression recursion depth too large")
+		return a.Bounds{}, fmt.Errorf("check: expression recursion depth too large")
 	}
 	depth++
 
-	nMin, nMax, err := q.bcheckExpr1(n, depth)
+	// TODO: check that n.MBounds() is {nil, nil}? Likewise for tcheck?
+
+	nb, err := q.bcheckExpr1(n, depth)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
-	nMin, nMax, err = q.facts.refine(n, nMin, nMax, q.tm)
+	nb, err = q.facts.refine(n, nb, q.tm)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
-	tMin, tMax, err := q.bcheckTypeExpr(n.MType())
+	tb, err := q.bcheckTypeExpr(n.MType())
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
-	if (nMin != nil && tMin != nil && nMin.Cmp(tMin) < 0) || (nMax != nil && tMax != nil && nMax.Cmp(tMax) > 0) {
-		return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] is not within bounds [%v..%v]",
-			n.Str(q.tm), nMin, nMax, tMin, tMax)
+	if (nb[0] != nil && tb[0] != nil && nb[0].Cmp(tb[0]) < 0) || (nb[1] != nil && tb[1] != nil && nb[1].Cmp(tb[1]) > 0) {
+		return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
+			n.Str(q.tm), nb, tb)
 	}
 	if err := q.optimizeNonSuspendible(n); err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
-	return nMin, nMax, nil
+	// TODO: call n.SetMBounds.
+	return nb, nil
 }
 
-func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if cv := n.ConstValue(); cv != nil {
-		return cv, cv, nil
+		return a.Bounds{cv, cv}, nil
 	}
 	switch op := n.Operator(); {
 	case op.IsXUnaryOp():
@@ -778,7 +779,7 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (*big.Int, *big.Int, erro
 	return q.bcheckExprOther(n, depth)
 }
 
-func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 	switch n.Operator() {
 	case 0:
 		// Look for named consts.
@@ -789,32 +790,32 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		qid := t.QID{0, n.Ident()}
 		if c, ok := q.c.consts[qid]; ok {
 			if cv := c.Value().ConstValue(); cv != nil {
-				return cv, cv, nil
+				return a.Bounds{cv, cv}, nil
 			}
 		}
 
 	case t.IDOpenParen, t.IDTry:
 		lhs := n.LHS().AsExpr()
-		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return nil, nil, err
+		if _, err := q.bcheckExpr(lhs, depth); err != nil {
+			return a.Bounds{}, err
 		}
 		if err := q.bcheckExprCall(n, depth); err != nil {
-			return nil, nil, err
+			return a.Bounds{}, err
 		}
-		if nMin, nMax, err := q.bcheckExprCallSpecialCases(n, depth); err != nil {
-			return nil, nil, err
-		} else if nMin != nil || nMax != nil {
-			return nMin, nMax, nil
+		if nb, err := q.bcheckExprCallSpecialCases(n, depth); err != nil {
+			return a.Bounds{}, err
+		} else if nb[0] != nil || nb[1] != nil {
+			return nb, nil
 		}
 
 	case t.IDOpenBracket:
 		lhs := n.LHS().AsExpr()
-		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return nil, nil, err
+		if _, err := q.bcheckExpr(lhs, depth); err != nil {
+			return a.Bounds{}, err
 		}
 		rhs := n.RHS().AsExpr()
-		if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
-			return nil, nil, err
+		if _, err := q.bcheckExpr(rhs, depth); err != nil {
+			return a.Bounds{}, err
 		}
 
 		lengthExpr := (*a.Expr)(nil)
@@ -825,32 +826,32 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 		}
 
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, rhs); err != nil {
-			return nil, nil, err
+			return a.Bounds{}, err
 		}
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, rhs, lengthExpr); err != nil {
-			return nil, nil, err
+			return a.Bounds{}, err
 		}
 
 	case t.IDColon:
 		lhs := n.LHS().AsExpr()
-		if _, _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return nil, nil, err
+		if _, err := q.bcheckExpr(lhs, depth); err != nil {
+			return a.Bounds{}, err
 		}
 		mhs := n.MHS().AsExpr()
 		if mhs != nil {
-			if _, _, err := q.bcheckExpr(mhs, depth); err != nil {
-				return nil, nil, err
+			if _, err := q.bcheckExpr(mhs, depth); err != nil {
+				return a.Bounds{}, err
 			}
 		}
 		rhs := n.RHS().AsExpr()
 		if rhs != nil {
-			if _, _, err := q.bcheckExpr(rhs, depth); err != nil {
-				return nil, nil, err
+			if _, err := q.bcheckExpr(rhs, depth); err != nil {
+				return a.Bounds{}, err
 			}
 		}
 
 		if mhs == nil && rhs == nil {
-			return nil, nil, nil
+			return a.Bounds{}, nil
 		}
 
 		lengthExpr := (*a.Expr)(nil)
@@ -869,18 +870,18 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 
 		if mhs != zeroExpr {
 			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, mhs); err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
 		}
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, mhs, rhs); err != nil {
-			return nil, nil, err
+			return a.Bounds{}, err
 		}
 		if rhs != lengthExpr {
 			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, rhs, lengthExpr); err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
 		}
-		return nil, nil, nil
+		return a.Bounds{}, nil
 
 	case t.IDDot:
 		// TODO: delete this hack that only matches "in".
@@ -892,19 +893,19 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (*big.Int, *big.Int, 
 				}
 			}
 			lTyp := n.LHS().AsExpr().MType()
-			return nil, nil, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
+			return a.Bounds{}, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
-		if _, _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
-			return nil, nil, err
+		if _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
+			return a.Bounds{}, err
 		}
 
 	case t.IDError, t.IDStatus, t.IDSuspension:
 		// No-op.
 
 	default:
-		return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
+		return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
 	return q.bcheckTypeExpr(n.MType())
 }
@@ -931,13 +932,13 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
-func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds, error) {
 	lhs := n.LHS().AsExpr()
 	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
 	if recvTyp := recv.MType(); recvTyp == nil {
-		return nil, nil, nil
+		return a.Bounds{}, nil
 
 	} else if recvTyp.IsNumType() {
 		// For a numeric type's low_bits, etc. methods. The bound on the output
@@ -945,27 +946,36 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 		// isn't expressible in Wuffs' function syntax and type system.
 		switch method {
 		case t.IDLowBits, t.IDHighBits:
-			_, aMax, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
+			ab, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
-			return zero, bitMask(int(aMax.Int64())), nil
+			return a.Bounds{
+				zero,
+				bitMask(int(ab[1].Int64())),
+			}, nil
 
 		case t.IDMin, t.IDMax:
 			// TODO: lhs has already been bcheck'ed. There should be no
 			// need to bcheck lhs.LHS().Expr() twice.
-			lMin, lMax, err := q.bcheckExpr(lhs.LHS().AsExpr(), depth)
+			lb, err := q.bcheckExpr(lhs.LHS().AsExpr(), depth)
 			if err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
-			aMin, aMax, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
+			ab, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
 			if method == t.IDMin {
-				return min(lMin, aMin), min(lMax, aMax), nil
+				return a.Bounds{
+					min(lb[0], ab[0]),
+					min(lb[1], ab[1]),
+				}, nil
 			} else {
-				return max(lMin, aMin), max(lMax, aMax), nil
+				return a.Bounds{
+					max(lb[0], ab[0]),
+					max(lb[1], ab[1]),
+				}, nil
 			}
 		}
 
@@ -975,19 +985,19 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 		if method == t.IDSkip32Fast {
 			args := n.Args()
 			if len(args) != 2 {
-				return nil, nil, fmt.Errorf("check: internal error: bad skip32_fast arguments")
+				return a.Bounds{}, fmt.Errorf("check: internal error: bad skip32_fast arguments")
 			}
 			actual := args[0].AsArg().Value()
 			worstCase := args[1].AsArg().Value()
 			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
-				return nil, nil, fmt.Errorf("check: could not prove skip32_fast precondition: %s <= %s",
+				return a.Bounds{}, fmt.Errorf("check: could not prove skip32_fast precondition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
 			} else if err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
 			advance, update = worstCase.ConstValue(), true
 			if advance == nil {
-				return nil, nil, fmt.Errorf("check: skip32_fast worst_case is not a constant value")
+				return a.Bounds{}, fmt.Errorf("check: skip32_fast worst_case is not a constant value")
 			}
 
 		} else if method >= t.IDPeekU8 {
@@ -998,15 +1008,15 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (*big.Int,
 
 		if advance != nil {
 			if ok, err := q.optimizeIOMethodAdvance(recv, advance, update); err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			} else if !ok {
-				return nil, nil, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
+				return a.Bounds{}, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
 					method.Str(q.tm), recv.Str(q.tm), advance)
 			}
 		}
 	}
 
-	return nil, nil, nil
+	return a.Bounds{}, nil
 }
 
 var ioMethodAdvances = [...]*big.Int{
@@ -1058,33 +1068,36 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	return ret
 }
 
-func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	rMin, rMax, err := q.bcheckExpr(n.RHS().AsExpr(), depth)
+func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (a.Bounds, error) {
+	rb, err := q.bcheckExpr(n.RHS().AsExpr(), depth)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
 
 	switch n.Operator() {
 	case t.IDXUnaryPlus:
-		return rMin, rMax, nil
+		return rb, nil
 	case t.IDXUnaryMinus:
-		return neg(rMax), neg(rMin), nil
+		return a.Bounds{neg(rb[1]), neg(rb[0])}, nil
 	case t.IDXUnaryNot:
-		return zero, one, nil
+		return a.Bounds{zero, one}, nil
 	case t.IDXUnaryRef, t.IDXUnaryDeref:
 		return q.bcheckTypeExpr(n.MType())
 	}
 
-	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
+	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
 }
 
-func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, rMin *big.Int, rMax *big.Int) (*big.Int, *big.Int, error) {
-	return big.NewInt(0).Add(lMin, rMin), big.NewInt(0).Add(lMax, rMax), nil
+func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lb a.Bounds, rhs *a.Expr, rb a.Bounds) (a.Bounds, error) {
+	return a.Bounds{
+		big.NewInt(0).Add(lb[0], rb[0]),
+		big.NewInt(0).Add(lb[1], rb[1]),
+	}, nil
 }
 
-func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, rMin *big.Int, rMax *big.Int) (*big.Int, *big.Int, error) {
-	nMin := big.NewInt(0).Sub(lMin, rMax)
-	nMax := big.NewInt(0).Sub(lMax, rMin)
+func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb a.Bounds, rhs *a.Expr, rb a.Bounds) (a.Bounds, error) {
+	nMin := big.NewInt(0).Sub(lb[0], rb[1])
+	nMax := big.NewInt(0).Sub(lb[1], rb[0])
 	for _, x := range q.facts {
 		xOp, xLHS, xRHS := parseBinaryOp(x)
 		if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
@@ -1101,115 +1114,130 @@ func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lMin *big.Int, lMax *big.I
 			nMin = max(nMin, one)
 		}
 	}
-	return nMin, nMax, nil
+	return a.Bounds{nMin, nMax}, nil
 }
 
-func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	lMin, lMax, err := q.bcheckExpr(lhs, depth)
+func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (a.Bounds, error) {
+	lb, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
-	return q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, rhs, depth)
+	return q.bcheckExprBinaryOp1(op, lhs, lb, rhs, depth)
 }
 
-func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax *big.Int, rhs *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
-	rMin, rMax, err := q.bcheckExpr(rhs, depth)
+func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.Expr, depth uint32) (a.Bounds, error) {
+	rb, err := q.bcheckExpr(rhs, depth)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
 
 	switch op {
 	case t.IDXBinaryPlus:
-		return q.bcheckExprXBinaryPlus(lhs, lMin, lMax, rhs, rMin, rMax)
+		return q.bcheckExprXBinaryPlus(lhs, lb, rhs, rb)
 
 	case t.IDXBinaryMinus:
-		return q.bcheckExprXBinaryMinus(lhs, lMin, lMax, rhs, rMin, rMax)
+		return q.bcheckExprXBinaryMinus(lhs, lb, rhs, rb)
 
 	case t.IDXBinaryStar:
 		// TODO: handle multiplication by negative numbers. Note that this
 		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
+		if lb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
+		if rb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		return big.NewInt(0).Mul(lMin, rMin), big.NewInt(0).Mul(lMax, rMax), nil
+		return a.Bounds{
+			big.NewInt(0).Mul(lb[0], rb[0]),
+			big.NewInt(0).Mul(lb[1], rb[1]),
+		}, nil
 
 	case t.IDXBinarySlash, t.IDXBinaryPercent:
 		// Prohibit division by zero.
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: divide/modulus op argument %q is possibly negative", lhs.Str(q.tm))
+		if lb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Sign() <= 0 {
-			return nil, nil, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
+		if rb[0].Sign() <= 0 {
+			return a.Bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		if op == t.IDXBinarySlash {
-			return big.NewInt(0).Mul(lMin, rMax), big.NewInt(0).Mul(lMax, rMin), nil
+			return a.Bounds{
+				big.NewInt(0).Mul(lb[0], rb[1]),
+				big.NewInt(0).Mul(lb[1], rb[0]),
+			}, nil
 		}
-		return zero, big.NewInt(0).Sub(rMax, one), nil
+		return a.Bounds{
+			zero,
+			big.NewInt(0).Sub(rb[1], one),
+		}, nil
 
 	case t.IDXBinaryShiftL, t.IDXBinaryTildeModShiftL:
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
+		if lb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
+		if rb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rMax.Cmp(ffff) > 0 {
-			return nil, nil, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
+		if rb[1].Cmp(ffff) > 0 {
+			return a.Bounds{}, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
 		}
-		nMin := big.NewInt(0).Lsh(lMin, uint(rMin.Uint64()))
-		nMax := big.NewInt(0).Lsh(lMax, uint(rMax.Uint64()))
+		nMin := big.NewInt(0).Lsh(lb[0], uint(rb[0].Uint64()))
+		nMax := big.NewInt(0).Lsh(lb[1], uint(rb[1].Uint64()))
 		if op == t.IDXBinaryTildeModShiftL {
 			if qid := lhs.MType().QID(); qid[0] == t.IDBase {
 				b := numTypeBounds[qid[1]]
 				nMax = min(nMax, b[1])
 			}
 		}
-		return nMin, nMax, nil
+		return a.Bounds{nMin, nMax}, nil
 
 	case t.IDXBinaryShiftR:
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
+		if lb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if rMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
+		if rb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rMin.Cmp(maxIntBits) >= 0 {
-			return zero, zero, nil
+		if rb[0].Cmp(maxIntBits) >= 0 {
+			return a.Bounds{zero, zero}, nil
 		}
-		nMax := big.NewInt(0).Rsh(lMax, uint(rMin.Uint64()))
-		if rMax.Cmp(maxIntBits) >= 0 {
-			return zero, nMax, nil
+		nMax := big.NewInt(0).Rsh(lb[1], uint(rb[0].Uint64()))
+		if rb[1].Cmp(maxIntBits) >= 0 {
+			return a.Bounds{zero, nMax}, nil
 		}
-		return big.NewInt(0).Rsh(lMin, uint(rMax.Uint64())), nMax, nil
+		return a.Bounds{
+			big.NewInt(0).Rsh(lb[0], uint(rb[1].Uint64())),
+			nMax,
+		}, nil
 
 	case t.IDXBinaryAmp, t.IDXBinaryPipe, t.IDXBinaryHat:
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
-		if lMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
+		if lb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if lMax.Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
+		if lb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
+			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
 		}
-		if rMin.Sign() < 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
+		if rb[0].Sign() < 0 {
+			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rMax.Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return nil, nil, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
+		if rb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
+			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
 		}
 		z := (*big.Int)(nil)
 		switch op {
 		case t.IDXBinaryAmp:
-			z = min(lMax, rMax)
+			z = min(lb[1], rb[1])
 		case t.IDXBinaryPipe, t.IDXBinaryHat:
-			z = max(lMax, rMax)
+			z = max(lb[1], rb[1])
 		}
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
 		// conservative, but works fine in practice.
-		return zero, bitMask(z.BitLen()), nil
+		return a.Bounds{
+			zero,
+			bitMask(z.BitLen()),
+		}, nil
 
 	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lhs.MType()
@@ -1217,8 +1245,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 			typ = rhs.MType()
 		}
 		if qid := typ.QID(); qid[0] == t.IDBase {
-			b := numTypeBounds[qid[1]]
-			return b[0], b[1], nil
+			return numTypeBounds[qid[1]], nil
 		}
 
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
@@ -1233,44 +1260,44 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lMin *big.Int, lMax 
 			if op != t.IDXBinaryTildeSatPlus {
 				nFunc = (*checker).bcheckExprXBinaryMinus
 			}
-			nMin, nMax, err := nFunc(q, lhs, lMin, lMax, rhs, rMin, rMax)
+			nb, err := nFunc(q, lhs, lb, rhs, rb)
 			if err != nil {
-				return nil, nil, err
+				return a.Bounds{}, err
 			}
 
 			if op == t.IDXBinaryTildeSatPlus {
-				nMin = min(nMin, b[1])
-				nMax = min(nMax, b[1])
+				nb[0] = min(nb[0], b[1])
+				nb[1] = min(nb[1], b[1])
 			} else {
-				nMin = max(nMin, b[0])
-				nMax = max(nMax, b[0])
+				nb[0] = max(nb[0], b[0])
+				nb[1] = max(nb[1], b[0])
 			}
-			return nMin, nMax, nil
+			return nb, nil
 		}
 
 	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,
 		t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan, t.IDXBinaryAnd, t.IDXBinaryOr:
-		return zero, one, nil
+		return a.Bounds{zero, one}, nil
 
 	case t.IDXBinaryAs:
 		// Unreachable, as this is checked by the caller.
 	}
-	return nil, nil, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
+	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
 }
 
-func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, error) {
 	op := n.Operator().AmbiguousForm().BinaryForm()
 	if op == 0 {
-		return nil, nil, fmt.Errorf(
+		return a.Bounds{}, fmt.Errorf(
 			"check: unrecognized token (0x%X) for bcheckExprAssociativeOp", n.Operator())
 	}
 	args := n.Args()
 	if len(args) < 1 {
-		return nil, nil, fmt.Errorf("check: associative op has no arguments")
+		return a.Bounds{}, fmt.Errorf("check: associative op has no arguments")
 	}
-	lMin, lMax, err := q.bcheckExpr(args[0].AsExpr(), depth)
+	lb, err := q.bcheckExpr(args[0].AsExpr(), depth)
 	if err != nil {
-		return nil, nil, err
+		return a.Bounds{}, err
 	}
 	for i, o := range args {
 		if i == 0 {
@@ -1278,24 +1305,24 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (*big.Int, *b
 		}
 		lhs := a.NewExpr(n.AsNode().AsRaw().Flags(),
 			n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
-		lMin, lMax, err = q.bcheckExprBinaryOp1(op, lhs, lMin, lMax, o.AsExpr(), depth)
+		lb, err = q.bcheckExprBinaryOp1(op, lhs, lb, o.AsExpr(), depth)
 		if err != nil {
-			return nil, nil, err
+			return a.Bounds{}, err
 		}
 	}
-	return lMin, lMax, nil
+	return lb, nil
 }
 
-func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
+func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (a.Bounds, error) {
 	if typ.IsIdeal() {
 		// TODO: can an ideal type be refined??
-		return nil, nil, nil
+		return a.Bounds{}, nil
 	}
 
 	switch typ.Decorator() {
 	// TODO: case t.IDFunc.
 	case t.IDPtr, t.IDArray, t.IDSlice, t.IDTable:
-		return nil, nil, nil
+		return a.Bounds{}, nil
 	}
 
 	// TODO: is the special cases for io_reader and io_writer superfluous with
@@ -1303,34 +1330,34 @@ func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (*big.Int, *big.Int, error) {
 	if qid := typ.QID(); qid[0] == t.IDBase {
 		switch qid[1] {
 		case t.IDIOReader, t.IDIOWriter:
-			return nil, nil, nil
+			return a.Bounds{}, nil
 		}
 	}
 
-	b := [2]*big.Int{}
+	b := a.Bounds{}
 	if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
 		b = numTypeBounds[qid[1]]
 	}
 	// TODO: should || be && instead (see also func typeBounds)? Is this if
 	// code superfluous?
 	if b[0] == nil || b[1] == nil {
-		return nil, nil, nil
+		return a.Bounds{}, nil
 	}
 	if typ.IsRefined() {
 		if x := typ.Min(); x != nil {
 			if cv := x.ConstValue(); cv == nil {
-				return nil, nil, fmt.Errorf("check: internal error: refinement has no const-value")
+				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if b[0].Cmp(cv) < 0 {
 				b[0] = cv
 			}
 		}
 		if x := typ.Max(); x != nil {
 			if cv := x.ConstValue(); cv == nil {
-				return nil, nil, fmt.Errorf("check: internal error: refinement has no const-value")
+				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if b[1].Cmp(cv) > 0 {
 				b[1] = cv
 			}
 		}
 	}
-	return b[0], b[1], nil
+	return b, nil
 }

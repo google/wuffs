@@ -19,7 +19,6 @@ package check
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"path"
 
 	"github.com/google/wuffs/lang/base38"
@@ -363,35 +362,35 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if typ.Decorator() != 0 {
 		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
-	nMin, nMax, err := q.bcheckTypeExpr(typ)
+	nb, err := q.bcheckTypeExpr(typ)
 	if err != nil {
 		return err
 	}
-	if nMin == nil || nMax == nil {
+	if nb[0] == nil || nb[1] == nil {
 		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
-	if err := c.checkConstElement(n.Value(), nMin, nMax, nLists); err != nil {
+	if err := c.checkConstElement(n.Value(), nb, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
 	n.AsNode().SetMType(typeExprPlaceholder)
 	return nil
 }
 
-func (c *Checker) checkConstElement(n *a.Expr, nMin *big.Int, nMax *big.Int, nLists int) error {
+func (c *Checker) checkConstElement(n *a.Expr, nb a.Bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
 		if n.Operator() != t.IDDollar {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {
-			if err := c.checkConstElement(o.AsExpr(), nMin, nMax, nLists); err != nil {
+			if err := c.checkConstElement(o.AsExpr(), nb, nLists); err != nil {
 				return err
 			}
 		}
 		return nil
 	}
-	if cv := n.ConstValue(); cv == nil || cv.Cmp(nMin) < 0 || cv.Cmp(nMax) > 0 {
-		return fmt.Errorf("invalid const value %q not within [%v..%v]", n.Str(c.tm), nMin, nMax)
+	if cv := n.ConstValue(); cv == nil || cv.Cmp(nb[0]) < 0 || cv.Cmp(nb[1]) > 0 {
+		return fmt.Errorf("invalid const value %q not within %v", n.Str(c.tm), nb)
 	}
 	return nil
 }
@@ -466,13 +465,13 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 
 		if checkDefaultZeroValue {
 			innTyp := f.XType().Innermost()
-			fMin, fMax, err := typeBounds(c.tm, innTyp)
+			fb, err := typeBounds(c.tm, innTyp)
 			if err != nil {
 				return err
 			}
-			if (fMin != nil && zero.Cmp(fMin) < 0) || (fMax != nil && zero.Cmp(fMax) > 0) {
-				return fmt.Errorf("check: default zero value is not within bounds [%v..%v] for field %q",
-					fMin, fMax, f.Name().Str(c.tm))
+			if (fb[0] != nil && zero.Cmp(fb[0]) < 0) || (fb[1] != nil && zero.Cmp(fb[1]) > 0) {
+				return fmt.Errorf("check: default zero value is not within bounds %v for field %q",
+					fb, f.Name().Str(c.tm))
 			}
 		}
 

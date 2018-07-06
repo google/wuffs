@@ -29,6 +29,8 @@ type Kind uint32
 // XType is the explicit type, directly from the source code.
 //
 // MType is the implicit type, deduced for expressions during type checking.
+//
+// MBounds are the implicit bounds, deduced during bounds checking.
 
 const (
 	KInvalid = Kind(iota)
@@ -141,11 +143,18 @@ func (e Effect) String() string {
 	return "INVALID_EFFECT"
 }
 
+type Bounds [2]*big.Int
+
+func (b Bounds) String() string {
+	return fmt.Sprintf("[%v..%v]", b[0], b[1])
+}
+
 type Node struct {
 	kind  Kind
 	flags Flags
 
 	constValue *big.Int
+	mBounds    Bounds
 	mType      *TypeExpr
 	jumpTarget Loop
 
@@ -190,7 +199,9 @@ type Node struct {
 }
 
 func (n *Node) Kind() Kind           { return n.kind }
+func (n *Node) MBounds() Bounds      { return n.mBounds }
 func (n *Node) MType() *TypeExpr     { return n.mType }
+func (n *Node) SetMBounds(x Bounds)  { n.mBounds = x }
 func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
 
 func (n *Node) AsArg() *Arg             { return (*Arg)(n) }
@@ -346,6 +357,7 @@ func (n *Expr) GlobalIdent() bool          { return n.flags&FlagsGlobalIdent != 
 func (n *Expr) ProvenNotToSuspend() bool   { return n.flags&FlagsProvenNotToSuspend != 0 }
 func (n *Expr) BoundsCheckOptimized() bool { return n.flags&FlagsBoundsCheckOptimized != 0 }
 func (n *Expr) ConstValue() *big.Int       { return n.constValue }
+func (n *Expr) MBounds() Bounds            { return n.mBounds }
 func (n *Expr) MType() *TypeExpr           { return n.mType }
 func (n *Expr) Operator() t.ID             { return n.id0 }
 func (n *Expr) StatusQID() t.QID           { return t.QID{n.id1, n.id2} }
@@ -358,6 +370,7 @@ func (n *Expr) Args() []*Node              { return n.list0 }
 func (n *Expr) SetBoundsCheckOptimized() { n.flags |= FlagsBoundsCheckOptimized }
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
+func (n *Expr) SetMBounds(x Bounds)      { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 func (n *Expr) SetProvenNotToSuspend()   { n.flags |= FlagsProvenNotToSuspend }
 

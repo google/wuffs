@@ -17,7 +17,6 @@ package check
 import (
 	"errors"
 	"fmt"
-	"math/big"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -108,9 +107,9 @@ func (z *facts) update(f func(*a.Expr) (*a.Expr, error)) error {
 	return nil
 }
 
-func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.Int, *big.Int, error) {
-	if nMin == nil || nMax == nil {
-		return nMin, nMax, nil
+func (z facts) refine(n *a.Expr, nb a.Bounds, tm *t.Map) (a.Bounds, error) {
+	if nb[0] == nil || nb[1] == nil {
+		return nb, nil
 	}
 
 	for _, x := range z {
@@ -123,48 +122,48 @@ func (z facts) refine(n *a.Expr, nMin *big.Int, nMax *big.Int, tm *t.Map) (*big.
 			continue
 		}
 
-		originalNMin, originalNMax, changed := nMin, nMax, false
+		originalNB, changed := nb, false
 		switch op {
 		case t.IDXBinaryNotEq:
-			if nMin.Cmp(cv) == 0 {
-				nMin = add1(nMin)
+			if nb[0].Cmp(cv) == 0 {
+				nb[0] = add1(nb[0])
 				changed = true
-			} else if nMax.Cmp(cv) == 0 {
-				nMax = sub1(nMax)
+			} else if nb[1].Cmp(cv) == 0 {
+				nb[1] = sub1(nb[1])
 				changed = true
 			}
 		case t.IDXBinaryLessThan:
-			if nMax.Cmp(cv) >= 0 {
-				nMax = sub1(cv)
+			if nb[1].Cmp(cv) >= 0 {
+				nb[1] = sub1(cv)
 				changed = true
 			}
 		case t.IDXBinaryLessEq:
-			if nMax.Cmp(cv) > 0 {
-				nMax = cv
+			if nb[1].Cmp(cv) > 0 {
+				nb[1] = cv
 				changed = true
 			}
 		case t.IDXBinaryEqEq:
-			nMin, nMax = cv, cv
+			nb[0], nb[1] = cv, cv
 			changed = true
 		case t.IDXBinaryGreaterEq:
-			if nMin.Cmp(cv) < 0 {
-				nMin = cv
+			if nb[0].Cmp(cv) < 0 {
+				nb[0] = cv
 				changed = true
 			}
 		case t.IDXBinaryGreaterThan:
-			if nMin.Cmp(cv) <= 0 {
-				nMin = add1(cv)
+			if nb[0].Cmp(cv) <= 0 {
+				nb[0] = add1(cv)
 				changed = true
 			}
 		}
 
-		if changed && nMin.Cmp(nMax) > 0 {
-			return nil, nil, fmt.Errorf("check: expression %q bounds [%v..%v] inconsistent with fact %q",
-				n.Str(tm), originalNMin, originalNMax, x.Str(tm))
+		if changed && nb[0].Cmp(nb[1]) > 0 {
+			return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v inconsistent with fact %q",
+				n.Str(tm), originalNB, x.Str(tm))
 		}
 	}
 
-	return nMin, nMax, nil
+	return nb, nil
 }
 
 // simplify returns a simplified form of n. For example, (x - x) becomes 0.
@@ -249,20 +248,20 @@ func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
 	return op, n.LHS().AsExpr(), n.RHS().AsExpr()
 }
 
-func proveBinaryOpConstValues(op t.ID, lMin *big.Int, lMax *big.Int, rMin *big.Int, rMax *big.Int) (ok bool) {
+func proveBinaryOpConstValues(op t.ID, lb a.Bounds, rb a.Bounds) (ok bool) {
 	switch op {
 	case t.IDXBinaryNotEq:
-		return lMax.Cmp(rMin) < 0 || lMin.Cmp(rMax) > 0
+		return lb[1].Cmp(rb[0]) < 0 || lb[0].Cmp(rb[1]) > 0
 	case t.IDXBinaryLessThan:
-		return lMax.Cmp(rMin) < 0
+		return lb[1].Cmp(rb[0]) < 0
 	case t.IDXBinaryLessEq:
-		return lMax.Cmp(rMin) <= 0
+		return lb[1].Cmp(rb[0]) <= 0
 	case t.IDXBinaryEqEq:
-		return lMin.Cmp(rMax) == 0 && lMax.Cmp(rMin) == 0
+		return lb[0].Cmp(rb[1]) == 0 && lb[1].Cmp(rb[0]) == 0
 	case t.IDXBinaryGreaterEq:
-		return lMin.Cmp(rMax) >= 0
+		return lb[0].Cmp(rb[1]) >= 0
 	case t.IDXBinaryGreaterThan:
-		return lMin.Cmp(rMax) > 0
+		return lb[0].Cmp(rb[1]) > 0
 	}
 	return false
 }
@@ -270,21 +269,21 @@ func proveBinaryOpConstValues(op t.ID, lMin *big.Int, lMax *big.Int, rMin *big.I
 func (q *checker) proveBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	lcv := lhs.ConstValue()
 	if lcv != nil {
-		rMin, rMax, err := q.bcheckExpr(rhs, 0)
+		rb, err := q.bcheckExpr(rhs, 0)
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, lcv, lcv, rMin, rMax) {
+		if proveBinaryOpConstValues(op, a.Bounds{lcv, lcv}, rb) {
 			return nil
 		}
 	}
 	rcv := rhs.ConstValue()
 	if rcv != nil {
-		lMin, lMax, err := q.bcheckExpr(lhs, 0)
+		lb, err := q.bcheckExpr(lhs, 0)
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, lMin, lMax, rcv, rcv) {
+		if proveBinaryOpConstValues(op, lb, a.Bounds{rcv, rcv}) {
 			return nil
 		}
 	}
