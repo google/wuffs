@@ -51,6 +51,9 @@ var (
 	oneTwentyEight = big.NewInt(+128)
 	ffff           = big.NewInt(0xFFFF)
 
+	minIdeal = big.NewInt(0).Lsh(minusOne, 1000)
+	maxIdeal = big.NewInt(0).Lsh(one, 1000)
+
 	maxIntBits = big.NewInt(t.MaxIntBits)
 
 	zeroExpr = a.NewExpr(0, 0, 0, t.ID0, nil, nil, nil, nil)
@@ -1315,8 +1318,7 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, er
 
 func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (a.Bounds, error) {
 	if typ.IsIdeal() {
-		// TODO: can an ideal type be refined??
-		return a.Bounds{}, nil
+		return a.Bounds{minIdeal, maxIdeal}, nil
 	}
 
 	switch typ.Decorator() {
