@@ -469,12 +469,6 @@ func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 
 	rb := a.Bounds{}
 	if op == t.IDEq {
-		if cv := rhs.ConstValue(); cv != nil {
-			if (lb[0] != nil && cv.Cmp(lb[0]) < 0) || (lb[1] != nil && cv.Cmp(lb[1]) > 0) {
-				return fmt.Errorf("check: constant %v is not within bounds %v", cv, lb)
-			}
-			return nil
-		}
 		rb, err = q.bcheckExpr(rhs, 0)
 	} else {
 		rb, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)
