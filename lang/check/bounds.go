@@ -351,7 +351,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	if _, err := q.bcheckExpr(lhs, 0); err != nil {
 		return err
 	}
-	if err := q.bcheckAssignment2(lhs, lhs.MType(), op, rhs); err != nil {
+	if err := q.bcheckAssignment1(lhs, lhs.MType(), op, rhs); err != nil {
 		return err
 	}
 	// TODO: check lhs and rhs are pure expressions.
@@ -418,7 +418,7 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	return nil
 }
 
-func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
 	if lhs == nil && op != t.IDEq {
 		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
@@ -885,7 +885,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
-		if err := q.bcheckAssignment2(nil, inFields[i].AsField().XType(), t.IDEq, o.AsArg().Value()); err != nil {
+		if err := q.bcheckAssignment1(nil, inFields[i].AsField().XType(), t.IDEq, o.AsArg().Value()); err != nil {
 			return err
 		}
 	}
