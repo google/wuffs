@@ -218,11 +218,15 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	switch n.Kind() {
 	case a.KAssert:
-		return q.bcheckAssert(n.AsAssert())
+		if err := q.bcheckAssert(n.AsAssert()); err != nil {
+			return err
+		}
 
 	case a.KAssign:
 		n := n.AsAssign()
-		return q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS())
+		if err := q.bcheckAssignment(n.LHS(), n.Operator(), n.RHS()); err != nil {
+			return err
+		}
 
 	case a.KExpr:
 		n := n.AsExpr()
@@ -234,7 +238,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 				return err
 			}
 		}
-		return nil
 
 	case a.KIOBind:
 		n := n.AsIOBind()
@@ -242,10 +245,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 		// TODO: invalidate any facts regarding the io_bind expressions.
-		return nil
 
 	case a.KIf:
-		return q.bcheckIf(n.AsIf())
+		if err := q.bcheckIf(n.AsIf()); err != nil {
+			return err
+		}
 
 	case a.KIterate:
 		n := n.AsIterate()
@@ -273,7 +277,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		}
 
 		q.facts = q.facts[:0]
-		return nil
 
 	case a.KJump:
 		n := n.AsJump()
@@ -290,21 +293,27 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			}
 		}
 		q.facts = q.facts[:0]
-		return nil
 
 	case a.KRet:
 		// TODO.
 
 	case a.KVar:
-		return q.bcheckVar(n.AsVar(), false)
+		if err := q.bcheckVar(n.AsVar(), false); err != nil {
+			return err
+		}
 
 	case a.KWhile:
-		return q.bcheckWhile(n.AsWhile())
+		if err := q.bcheckWhile(n.AsWhile()); err != nil {
+			return err
+		}
 
 	default:
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for bcheckStatement", n.Kind())
 	}
 
+	if b := n.MBounds(); b[0] == nil {
+		n.SetMBounds(a.Bounds{zero, zero})
+	}
 	return nil
 }
 
