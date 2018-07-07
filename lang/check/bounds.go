@@ -269,10 +269,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 				v := o.AsVar()
 				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Length()))
 			}
-			for _, o := range n.Body() {
-				if err := q.bcheckStatement(o); err != nil {
-					return err
-				}
+			if err := q.bcheckBlock(n.Body()); err != nil {
+				return err
 			}
 		}
 
