@@ -657,33 +657,42 @@ func (c *Checker) checkAllTypeChecked(node *a.Node) error {
 	return nil
 }
 
+func nodeDebugString(tm *t.Map, n *a.Node) string {
+	switch n.Kind() {
+	case a.KConst:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsConst().QID().Str(tm))
+	case a.KExpr:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsExpr().Str(tm))
+	case a.KFunc:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsFunc().QQID().Str(tm))
+	case a.KTypeExpr:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsTypeExpr().Str(tm))
+	case a.KStatus:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsStatus().QID().Str(tm))
+	case a.KStruct:
+		return fmt.Sprintf("%s node %q", n.Kind(), n.AsStruct().QID().Str(tm))
+	}
+	return fmt.Sprintf("%s node", n.Kind())
+}
+
 func allTypeChecked(tm *t.Map, n *a.Node) error {
 	return n.Walk(func(o *a.Node) error {
 		typ := o.MType()
 		if typ == nil {
-			switch o.Kind() {
-			case a.KConst:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsConst().QID().Str(tm))
-			case a.KExpr:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsExpr().Str(tm))
-			case a.KFunc:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsFunc().QQID().Str(tm))
-			case a.KTypeExpr:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsTypeExpr().Str(tm))
-			case a.KStatus:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsStatus().QID().Str(tm))
-			case a.KStruct:
-				return fmt.Errorf("check: internal error: unchecked %s node %q",
-					o.Kind(), o.AsStruct().QID().Str(tm))
-			}
-			return fmt.Errorf("check: internal error: unchecked %s node", o.Kind())
+			return fmt.Errorf("check: internal error: unchecked %s", nodeDebugString(tm, o))
 		}
-		if o.Kind() == a.KExpr {
+
+		switch o.Kind() {
+		default:
+			if typ != typeExprPlaceholder {
+				return fmt.Errorf("check: internal error: %s does not have placeholder type", nodeDebugString(tm, o))
+			}
+
+		case a.KExpr:
+			if typ == typeExprPlaceholder {
+				return fmt.Errorf("check: internal error: %s has placeholder type", nodeDebugString(tm, o))
+			}
+
 			o := o.AsExpr()
 			if typ.IsIdeal() && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+
