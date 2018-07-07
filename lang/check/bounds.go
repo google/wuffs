@@ -348,7 +348,10 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 }
 
 func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	if err := q.bcheckAssignment1(lhs, op, rhs); err != nil {
+	if _, err := q.bcheckExpr(lhs, 0); err != nil {
+		return err
+	}
+	if err := q.bcheckAssignment2(lhs, lhs.MType(), op, rhs); err != nil {
 		return err
 	}
 	// TODO: check lhs and rhs are pure expressions.
@@ -413,13 +416,6 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	}
 
 	return nil
-}
-
-func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	if _, err := q.bcheckExpr(lhs, 0); err != nil {
-		return err
-	}
-	return q.bcheckAssignment2(lhs, lhs.MType(), op, rhs)
 }
 
 func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
