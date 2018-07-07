@@ -15,6 +15,7 @@
 package check
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -175,33 +176,6 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 	o := a.NewExpr(n.AsNode().AsRaw().Flags(), op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), args)
 	o.SetMType(n.MType())
 	return o, nil
-}
-
-func typeBounds(tm *t.Map, typ *a.TypeExpr) (a.Bounds, error) {
-	b := a.Bounds{}
-	if typ.Decorator() == 0 {
-		if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
-			b = numTypeBounds[qid[1]]
-		}
-	}
-	if b[0] == nil || b[1] == nil {
-		return a.Bounds{}, nil
-	}
-	if o := typ.Min(); o != nil {
-		cv := o.ConstValue()
-		if cv.Cmp(b[0]) < 0 {
-			return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
-		}
-		b[0] = cv
-	}
-	if o := typ.Max(); o != nil {
-		cv := o.ConstValue()
-		if cv.Cmp(b[1]) > 0 {
-			return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
-		}
-		b[1] = cv
-	}
-	return b, nil
 }
 
 func (q *checker) bcheckBlock(block []*a.Node) error {
@@ -462,7 +436,7 @@ func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
-	lb, err := q.bcheckTypeExpr(lTyp)
+	lb, err := typeBounds(q.tm, lTyp)
 	if err != nil {
 		return err
 	}
@@ -477,9 +451,7 @@ func (q *checker) bcheckAssignment2(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return err
 	}
 
-	if (rb[0] != nil && lb[0] != nil && rb[0].Cmp(lb[0]) < 0) ||
-		(rb[1] != nil && lb[1] != nil && rb[1].Cmp(lb[1]) > 0) {
-
+	if (rb[0].Cmp(lb[0]) < 0) || (rb[1].Cmp(lb[1]) > 0) {
 		if op == t.IDEq {
 			return fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 				rhs.Str(q.tm), rb, lb)
@@ -742,11 +714,12 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if err != nil {
 		return a.Bounds{}, err
 	}
-	tb, err := q.bcheckTypeExpr(n.MType())
+	tb, err := typeBounds(q.tm, n.MType())
 	if err != nil {
 		return a.Bounds{}, err
 	}
-	if (nb[0] != nil && tb[0] != nil && nb[0].Cmp(tb[0]) < 0) || (nb[1] != nil && tb[1] != nil && nb[1].Cmp(tb[1]) > 0) {
+
+	if (nb[0].Cmp(tb[0]) < 0) || (nb[1].Cmp(tb[1]) > 0) {
 		return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 			n.Str(q.tm), nb, tb)
 	}
@@ -799,10 +772,10 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 		if err := q.bcheckExprCall(n, depth); err != nil {
 			return a.Bounds{}, err
 		}
-		if nb, err := q.bcheckExprCallSpecialCases(n, depth); err != nil {
-			return a.Bounds{}, err
-		} else if nb[0] != nil || nb[1] != nil {
+		if nb, err := q.bcheckExprCallSpecialCases(n, depth); err == nil {
 			return nb, nil
+		} else if err != errNotASpecialCase {
+			return a.Bounds{}, err
 		}
 
 	case t.IDOpenBracket:
@@ -848,7 +821,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 		}
 
 		if mhs == nil && rhs == nil {
-			return a.Bounds{}, nil
+			return a.Bounds{zero, zero}, nil
 		}
 
 		lengthExpr := (*a.Expr)(nil)
@@ -878,7 +851,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				return a.Bounds{}, err
 			}
 		}
-		return a.Bounds{}, nil
+		return a.Bounds{zero, zero}, nil
 
 	case t.IDDot:
 		// TODO: delete this hack that only matches "in".
@@ -886,7 +859,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 			for _, o := range q.astFunc.In().Fields() {
 				o := o.AsField()
 				if o.Name() == n.Ident() {
-					return q.bcheckTypeExpr(o.XType())
+					return typeBounds(q.tm, o.XType())
 				}
 			}
 			lTyp := n.LHS().AsExpr().MType()
@@ -904,7 +877,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 	default:
 		return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
-	return q.bcheckTypeExpr(n.MType())
+	return typeBounds(q.tm, n.MType())
 }
 
 func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
@@ -929,13 +902,15 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	return nil
 }
 
+var errNotASpecialCase = errors.New("not a special case")
+
 func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds, error) {
 	lhs := n.LHS().AsExpr()
 	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
 	if recvTyp := recv.MType(); recvTyp == nil {
-		return a.Bounds{}, nil
+		return a.Bounds{}, errNotASpecialCase
 
 	} else if recvTyp.IsNumType() {
 		// For a numeric type's low_bits, etc. methods. The bound on the output
@@ -1013,7 +988,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 		}
 	}
 
-	return a.Bounds{}, nil
+	return a.Bounds{}, errNotASpecialCase
 }
 
 var ioMethodAdvances = [...]*big.Int{
@@ -1079,7 +1054,7 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (a.Bounds, error) {
 	case t.IDXUnaryNot:
 		return a.Bounds{zero, one}, nil
 	case t.IDXUnaryRef, t.IDXUnaryDeref:
-		return q.bcheckTypeExpr(n.MType())
+		return typeBounds(q.tm, n.MType())
 	}
 
 	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
@@ -1310,50 +1285,53 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, er
 	return lb, nil
 }
 
-func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (a.Bounds, error) {
+func typeBounds(tm *t.Map, typ *a.TypeExpr) (a.Bounds, error) {
 	if typ.IsIdeal() {
 		return a.Bounds{minIdeal, maxIdeal}, nil
 	}
 
 	switch typ.Decorator() {
-	// TODO: case t.IDFunc.
-	case t.IDPtr, t.IDArray, t.IDSlice, t.IDTable:
-		return a.Bounds{}, nil
+	case t.IDArray, t.IDSlice, t.IDTable:
+		return a.Bounds{zero, zero}, nil
+	case t.IDNptr:
+		return a.Bounds{zero, one}, nil
+	case t.IDPtr, t.IDFunc:
+		return a.Bounds{one, one}, nil
 	}
 
-	// TODO: is the special cases for io_reader and io_writer superfluous with
-	// the general purpose code for built-ins below?
+	b := a.Bounds{zero, zero}
+
 	if qid := typ.QID(); qid[0] == t.IDBase {
-		switch qid[1] {
-		case t.IDIOReader, t.IDIOWriter:
-			return a.Bounds{}, nil
+		if qid[1] == t.IDDagger1 || qid[1] == t.IDDagger2 {
+			return a.Bounds{zero, zero}, nil
+		} else if qid[1] < t.ID(len(numTypeBounds)) {
+			if x := numTypeBounds[qid[1]]; x[0] != nil {
+				b = x
+			}
 		}
 	}
 
-	b := a.Bounds{}
-	if qid := typ.QID(); qid[0] == t.IDBase && qid[1] < t.ID(len(numTypeBounds)) {
-		b = numTypeBounds[qid[1]]
-	}
-	// TODO: should || be && instead (see also func typeBounds)? Is this if
-	// code superfluous?
-	if b[0] == nil || b[1] == nil {
-		return a.Bounds{}, nil
-	}
 	if typ.IsRefined() {
 		if x := typ.Min(); x != nil {
 			if cv := x.ConstValue(); cv == nil {
 				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
-			} else if b[0].Cmp(cv) < 0 {
+			} else if cv.Cmp(b[0]) < 0 {
+				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+			} else {
 				b[0] = cv
 			}
 		}
+
 		if x := typ.Max(); x != nil {
 			if cv := x.ConstValue(); cv == nil {
 				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
-			} else if b[1].Cmp(cv) > 0 {
+			} else if cv.Cmp(b[1]) > 0 {
+				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+			} else {
 				b[1] = cv
 			}
 		}
 	}
+
 	return b, nil
 }

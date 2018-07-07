@@ -362,7 +362,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if typ.Decorator() != 0 {
 		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
-	nb, err := q.bcheckTypeExpr(typ)
+	nb, err := typeBounds(q.tm, typ)
 	if err != nil {
 		return err
 	}
