@@ -113,7 +113,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		}
 		for n := n.AsIf(); n != nil; n = n.ElseIf() {
-			n.AsNode().SetMType(typeExprPlaceholder)
+			setPlaceholderMBoundsMType(n.AsNode())
 		}
 		return nil
 
@@ -150,7 +150,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 		}
 		for n := n.AsIterate(); n != nil; n = n.ElseIterate() {
-			n.AsNode().SetMType(typeExprPlaceholder)
+			setPlaceholderMBoundsMType(n.AsNode())
 		}
 		return nil
 
@@ -239,7 +239,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for tcheckStatement", n.Kind())
 	}
 
-	n.SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n)
 	return nil
 }
 
@@ -256,7 +256,7 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 		if err := q.tcheckExpr(o.AsArg().Value(), 0); err != nil {
 			return err
 		}
-		o.SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(o)
 	}
 	// TODO: check that there are no side effects.
 	return nil
@@ -326,7 +326,7 @@ func (q *checker) tcheckLoop(n a.Loop) error {
 		if err := q.tcheckAssert(o.AsAssert()); err != nil {
 			return err
 		}
-		o.SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(o)
 	}
 	q.jumpTargets = append(q.jumpTargets, n)
 	defer func() {
@@ -569,7 +569,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		if err := q.tcheckEq(inField.Name(), nil, inFieldTyp, o.Value(), o.Value().MType()); err != nil {
 			return err
 		}
-		o.AsNode().SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(o.AsNode())
 	}
 
 	// TODO: distinguish t.IDOpenParen vs t.IDTry in a more principled way?
@@ -1001,7 +1001,7 @@ swtch:
 	default:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
-	typ.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(typ.AsNode())
 	return nil
 }
 

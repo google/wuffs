@@ -125,7 +125,7 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 					return nil, err
 				}
 			}
-			f.AsNode().SetMType(typeExprPlaceholder)
+			setPlaceholderMBoundsMType(f.AsNode())
 		}
 	}
 
@@ -213,7 +213,7 @@ func (c *Checker) checkPackageID(node *a.Node) error {
 	}
 	c.packageID = u
 	c.otherPackageID = n
-	n.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.AsNode())
 	return nil
 }
 
@@ -280,7 +280,7 @@ func (c *Checker) checkUse(node *a.Node) error {
 		}
 	}
 	c.useBaseNames[baseName] = struct{}{}
-	node.SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(node)
 	return nil
 }
 
@@ -321,7 +321,7 @@ func (c *Checker) checkStatus(node *a.Node) error {
 		c.statusByValue[x] = n.QID()[1]
 	}
 
-	n.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.AsNode())
 	return nil
 }
 
@@ -372,7 +372,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if err := c.checkConstElement(n.Value(), nb, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
-	n.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.AsNode())
 	return nil
 }
 
@@ -409,7 +409,7 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	}
 	c.structs[qid] = n
 	c.unsortedStructs = append(c.unsortedStructs, n)
-	n.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.AsNode())
 
 	// A struct declaration implies a reset method.
 	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
@@ -476,7 +476,7 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 		}
 
 		fieldNames[f.Name()] = true
-		f.AsNode().SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(f.AsNode())
 	}
 
 	return nil
@@ -491,7 +491,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
-	n.In().AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.In().AsNode())
 	if err := c.checkFields(n.Out().Fields(), false, true); err != nil {
 		return &Error{
 			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
@@ -499,8 +499,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			Line:     n.Line(),
 		}
 	}
-	n.Out().AsNode().SetMType(typeExprPlaceholder)
-	n.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(n.Out().AsNode())
+	setPlaceholderMBoundsMType(n.AsNode())
 
 	// TODO: check somewhere that, if n.Out() is non-empty (or we are
 	// suspendible), that we end with a return statement? Or is that an
@@ -527,10 +527,10 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
-	inTyp.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(inTyp.AsNode())
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
-	outTyp.AsNode().SetMType(typeExprPlaceholder)
+	setPlaceholderMBoundsMType(outTyp.AsNode())
 	localVars := typeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
@@ -544,9 +544,9 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 			}
 		}
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
-		sTyp.AsNode().SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(sTyp.AsNode())
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
-		pTyp.AsNode().SetMType(typeExprPlaceholder)
+		setPlaceholderMBoundsMType(pTyp.AsNode())
 		localVars[t.IDThis] = pTyp
 	}
 	c.localVars[qqid] = localVars

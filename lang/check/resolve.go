@@ -66,6 +66,11 @@ var (
 	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
 )
 
+func setPlaceholderMBoundsMType(n *a.Node) {
+	n.SetMBounds(a.Bounds{zero, zero})
+	n.SetMType(typeExprPlaceholder)
+}
+
 // typeMap maps from variable names (as token IDs) to types.
 type typeMap map[t.ID]*a.TypeExpr
 
