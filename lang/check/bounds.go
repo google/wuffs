@@ -62,6 +62,7 @@ var (
 
 func init() {
 	zeroExpr.SetConstValue(zero)
+	zeroExpr.SetMBounds(a.Bounds{zero, zero})
 	zeroExpr.SetMType(typeExprIdeal)
 }
 
@@ -704,7 +705,9 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	}
 	depth++
 
-	// TODO: check that n.MBounds() is {nil, nil}? Likewise for tcheck?
+	if b := n.MBounds(); b[0] != nil {
+		return b, nil
+	}
 
 	nb, err := q.bcheckExpr1(n, depth)
 	if err != nil {
@@ -726,7 +729,8 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if err := q.optimizeNonSuspendible(n); err != nil {
 		return a.Bounds{}, err
 	}
-	// TODO: call n.SetMBounds.
+
+	n.SetMBounds(nb)
 	return nb, nil
 }
 

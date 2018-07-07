@@ -346,6 +346,10 @@ func (q *checker) tcheckExpr(n *a.Expr, depth uint32) error {
 	}
 	depth++
 
+	if n.MType() != nil {
+		return nil
+	}
+
 	switch op := n.Operator(); {
 	case op.IsXUnaryOp():
 		return q.tcheckExprUnaryOp(n, depth)
