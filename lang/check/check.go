@@ -682,17 +682,21 @@ func allTypeChecked(tm *t.Map, n *a.Node) error {
 			return fmt.Errorf("check: internal error: unchecked %s", nodeDebugString(tm, o))
 		}
 
+		typOK := false
 		switch o.Kind() {
-		default:
-			if typ != typeExprPlaceholder {
-				return fmt.Errorf("check: internal error: %s does not have placeholder type", nodeDebugString(tm, o))
-			}
-
 		case a.KExpr:
-			if typ == typeExprPlaceholder {
-				return fmt.Errorf("check: internal error: %s has placeholder type", nodeDebugString(tm, o))
-			}
+			typOK = typ != typeExprPlaceholder && typ != typeExprTypeExpr
+		case a.KTypeExpr:
+			typOK = typ == typeExprTypeExpr
+		default:
+			typOK = typ == typeExprPlaceholder
+		}
+		if !typOK {
+			return fmt.Errorf("check: internal error: %s has incorrect type, %s",
+				nodeDebugString(tm, o), typ.Str(tm))
+		}
 
+		if o.Kind() == a.KExpr {
 			o := o.AsExpr()
 			if typ.IsIdeal() && o.ConstValue() == nil {
 				return fmt.Errorf("check: internal error: expression %q has ideal number type "+

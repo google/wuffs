@@ -716,7 +716,7 @@ func (n *TypeExpr) IsBool() bool {
 }
 
 func (n *TypeExpr) IsIdeal() bool {
-	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDDoubleZ
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDQIdeal
 }
 
 func (n *TypeExpr) IsIOType() bool {

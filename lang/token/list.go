@@ -416,16 +416,17 @@ const (
 	IDIOWriter    = ID(0x113)
 	IDStatus      = ID(0x114)
 
-	IDT1      = ID(0x11A)
-	IDT2      = ID(0x11B)
-	IDDagger1 = ID(0x11C)
-	IDDagger2 = ID(0x11D)
+	IDT1      = ID(0x118)
+	IDT2      = ID(0x119)
+	IDDagger1 = ID(0x11A)
+	IDDagger2 = ID(0x11B)
 
-	IDPilcrow = ID(0x11E)
+	IDQPlaceholder = ID(0x11D)
+	IDQTypeExpr  = ID(0x11E)
 
-	// It is important that IDDoubleZ is right next to the IDI8..IDU64 block.
+	// It is important that IDQIdeal is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDDoubleZ = ID(0x11F)
+	IDQIdeal = ID(0x11F)
 
 	IDI8  = ID(0x120)
 	IDI16 = ID(0x121)
@@ -675,17 +676,21 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDDagger1: "†", // U+2020 DAGGER
 	IDDagger2: "‡", // U+2021 DOUBLE DAGGER
 
-	// IDPilcrow is used by the type checker to build a placeholder MType for
-	// AST nodes that aren't expression nodes, such as struct definition nodes
-	// and statement nodes. Its presence means that the non-expression node is
-	// type checked.
-	IDPilcrow: "¶", // U+00B6 PILCROW SIGN
+	// IDQPlaceholder is used by the type checker to build an artificial MType
+	// for AST nodes that aren't expression nodes or type expression nodes,
+	// such as struct definition nodes and statement nodes. Its presence means
+	// that the node is type checked.
+	IDQPlaceholder: "«Placeholder»",
 
-	// IDDoubleZ is used by the type checker as a dummy-valued built-in ID to
-	// represent an ideal integer type (in mathematical terms, the integer ring
-	// ℤ), as opposed to a realized integer type whose range is restricted. For
-	// example, the base.u16 type is restricted to [0x0000, 0xFFFF].
-	IDDoubleZ: "ℤ", // U+2124 DOUBLE-STRUCK CAPITAL Z
+	// IDQTypeExpr is used by the type checker to build an artificial MType for
+	// type expression AST nodes.
+	IDQTypeExpr: "«TypeExpr»",
+
+	// IDQIdeal is used by the type checker to build an artificial MType for
+	// ideal integers (in mathematical terms, the integer ring ℤ), as opposed
+	// to a realized integer type whose range is restricted. For example, the
+	// base.u16 type is restricted to [0x0000, 0xFFFF].
+	IDQIdeal: "«Ideal»",
 
 	// Change MaxIntBits if a future update adds an i128 or u128 type.
 	IDI8:  "i8",

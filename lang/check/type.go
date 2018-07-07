@@ -1001,7 +1001,7 @@ swtch:
 	default:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
-	setPlaceholderMBoundsMType(typ.AsNode())
+	typ.AsNode().SetMType(typeExprTypeExpr)
 	return nil
 }
 
