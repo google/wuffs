@@ -416,16 +416,6 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 }
 
 func (q *checker) bcheckAssignment1(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	switch lhs.MType().Decorator() {
-	case t.IDPtr:
-		// TODO: handle.
-		return nil
-	case t.IDArray:
-		// TODO: handle.
-		return nil
-		// TODO: t.IDSlice, t.IDTable?
-	}
-
 	if _, err := q.bcheckExpr(lhs, 0); err != nil {
 		return err
 	}
