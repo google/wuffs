@@ -427,10 +427,8 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			if !n.ProvenNotToSuspend() {
-				b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) { goto short_read_src; }")
-				g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
-			}
+			b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_src == iobounds1_src)) { goto short_read_src; }")
+			g.currFunk.shortReads = append(g.currFunk.shortReads, "src")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
 			// array type can decay into a pointer.
@@ -500,11 +498,9 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 	} else {
 		switch method.Ident() {
 		case t.IDWriteU8:
-			if !n.ProvenNotToSuspend() {
-				b.writes("if (ioptr_dst == iobounds1_dst) { status = WUFFS_BASE__SUSPENSION_SHORT_WRITE; goto suspend; }\n")
-			}
-
-			b.printf("*ioptr_dst++ = ")
+			b.writes("if (ioptr_dst == iobounds1_dst) {\n" +
+				"status = WUFFS_BASE__SUSPENSION_SHORT_WRITE; goto suspend; }\n" +
+				"*ioptr_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
 				return err

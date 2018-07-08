@@ -212,15 +212,6 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 		return nil
 	}
 
-	if advance := ioMethodAdvance(nMethod); advance != nil {
-		if ok, err := q.optimizeIOMethodAdvance(nReceiver, advance, true); err != nil {
-			return err
-		} else if ok {
-			// TODO: no longer used; delete.
-			n.SetProvenNotToSuspend()
-		}
-	}
-
 	return nil
 }
 
@@ -295,26 +286,4 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 			t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.AsNode(), nil), nil
 	})
 	return retOK, retErr
-}
-
-func ioMethodAdvance(x t.ID) *big.Int {
-	switch x {
-	case t.IDReadU8, t.IDWriteU8:
-		return one
-	case t.IDReadU16BE, t.IDReadU16LE, t.IDWriteU16BE, t.IDWriteU16LE:
-		return two
-	case t.IDReadU24BE, t.IDReadU24LE, t.IDWriteU24BE, t.IDWriteU24LE:
-		return three
-	case t.IDReadU32BE, t.IDReadU32LE, t.IDWriteU32BE, t.IDWriteU32LE:
-		return four
-	case t.IDReadU40BE, t.IDReadU40LE, t.IDWriteU40BE, t.IDWriteU40LE:
-		return five
-	case t.IDReadU48BE, t.IDReadU48LE, t.IDWriteU48BE, t.IDWriteU48LE:
-		return six
-	case t.IDReadU56BE, t.IDReadU56LE, t.IDWriteU56BE, t.IDWriteU56LE:
-		return seven
-	case t.IDReadU64BE, t.IDReadU64LE, t.IDWriteU64BE, t.IDWriteU64LE:
-		return eight
-	}
-	return nil
 }
