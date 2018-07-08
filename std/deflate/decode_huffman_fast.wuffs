@@ -368,21 +368,22 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 	// Ensure n_bits < 8 by rewindng in.src, if we loaded too many of its bytes
 	// into the bits variable.
 	//
-	// Note that we can unconditionally call unread_u8 (without resulting in an
+	// Note that we can unconditionally call undo_read (without resulting in an
 	// "invalid I/O operation" error code) only because this whole function can
 	// never suspend, as all of its I/O operations were checked beforehand for
 	// sufficient buffer space. Otherwise, resuming from the suspension could
 	// mean that the (possibly different) in.src is no longer rewindable, even
 	// if conceptually, this function was responsible for reading the bytes we
 	// want to rewind.
-	//
-	// TODO: have the compiler enforce (via some explicit syntax) that this
-	// function is ProvenNotToSuspend?
 	while n_bits >= 8,
 		post n_bits < 8,
 	{
 		n_bits -= 8
-		in.src.unread_u8?()
+		if in.src.can_undo_byte() {
+			in.src.undo_byte!()
+		} else {
+			return error "internal error: inconsistent I/O"
+		}
 	}
 
 	this.bits = bits & (((1 as base.u32) << n_bits) - 1)

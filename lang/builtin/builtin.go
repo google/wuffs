@@ -51,7 +51,8 @@ var StatusList = [...]Status{
 
 	{t.IDError, -0x20, "cannot return a suspension"},
 
-	{t.IDError, -0x30, "invalid I/O operation"},
+	{t.IDError, -0x30, "invalid I/O operation"}, // TODO: no longer used; delete.
+
 	{t.IDError, -0x31, "unexpected EOF"},    // Used if reading when closed == true.
 	{t.IDError, -0x32, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
 
@@ -140,7 +141,9 @@ var Funcs = []string{
 
 	// ---- io_reader
 
-	"io_reader.unread_u8?()()",
+	"io_reader.can_undo_byte()(ret bool)",
+	"io_reader.undo_byte!()()",
+
 	"io_reader.read_u8?()(ret u8)",
 	"io_reader.read_u16be?()(ret u16)",
 	"io_reader.read_u16le?()(ret u16)",

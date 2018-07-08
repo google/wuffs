@@ -18,6 +18,7 @@
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
+- Renamed `unread_u8?` to `undo_byte!`; added `can_undo_byte`.
 - Redesigned iterate blocks.
 - Added a `base.image_config` type.
 - Added a `reset` method.

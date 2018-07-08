@@ -116,6 +116,14 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
+	case t.IDUndoByte:
+		b.writes("(ioptr_src--, wuffs_base__return_empty_struct())")
+		return nil
+
+	case t.IDCanUndoByte:
+		b.writes("(ioptr_src > iobounds0orig_src)")
+		return nil
+
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, ioptr_src,", aPrefix)
 		// TODO: update the ioptr variables?
@@ -415,11 +423,6 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 
 	if recvTyp.QID()[1] == t.IDIOReader {
 		switch method.Ident() {
-		case t.IDUnreadU8:
-			b.writes("if (ioptr_src == iobounds0orig_src) {" +
-				"status = WUFFS_BASE__ERROR_INVALID_I_O_OPERATION; goto exit; } ioptr_src--;\n")
-			return nil
-
 		case t.IDReadU8:
 			if g.currFunk.tempW > maxTemp {
 				return fmt.Errorf("too many temporary variables required")

@@ -444,7 +444,7 @@ const (
 
 	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
-	IDUnreadU8  = ID(0x140)
+	IDUndoByte  = ID(0x140)
 	IDReadU8    = ID(0x141)
 	IDReadU16BE = ID(0x142)
 	IDReadU16LE = ID(0x143)
@@ -510,11 +510,12 @@ const (
 	IDWriteFastU64BE = ID(0x17E)
 	IDWriteFastU64LE = ID(0x17F)
 
-	IDSetLimit  = ID(0x180)
-	IDSetMark   = ID(0x181)
-	IDSinceMark = ID(0x182)
-	IDSkip      = ID(0x183)
-	IDSkipFast  = ID(0x184)
+	IDCanUndoByte = ID(0x180)
+	IDSetLimit    = ID(0x181)
+	IDSetMark     = ID(0x182)
+	IDSinceMark   = ID(0x183)
+	IDSkip        = ID(0x184)
+	IDSkipFast    = ID(0x185)
 
 	IDCopyFromSlice    = ID(0x190)
 	IDCopyNFromHistory = ID(0x191)
@@ -721,7 +722,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDOut:  "out",
 	IDBase: "base",
 
-	IDUnreadU8:  "unread_u8",
+	IDUndoByte:  "undo_byte",
 	IDReadU8:    "read_u8",
 	IDReadU16BE: "read_u16be",
 	IDReadU16LE: "read_u16le",
@@ -786,11 +787,12 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteFastU64BE: "write_fast_u64be",
 	IDWriteFastU64LE: "write_fast_u64le",
 
-	IDSetLimit:  "set_limit",
-	IDSetMark:   "set_mark",
-	IDSinceMark: "since_mark",
-	IDSkip:      "skip",
-	IDSkipFast:  "skip_fast",
+	IDCanUndoByte: "can_undo_byte",
+	IDSetLimit:    "set_limit",
+	IDSetMark:     "set_mark",
+	IDSinceMark:   "since_mark",
+	IDSkip:        "skip",
+	IDSkipFast:    "skip_fast",
 
 	IDCopyFromSlice:    "copy_from_slice",
 	IDCopyNFromHistory: "copy_n_from_history",

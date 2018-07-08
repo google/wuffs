@@ -30,8 +30,9 @@ pub error (0x0D) "no Huffman codes"
 
 pri error (0x40) "internal error: inconsistent Huffman decoder state"
 pri error (0x41) "internal error: inconsistent Huffman end_of_block"
-pri error (0x42) "internal error: inconsistent distance"
-pri error (0x43) "internal error: inconsistent n_bits"
+pub error (0x42) "internal error: inconsistent I/O"
+pri error (0x43) "internal error: inconsistent distance"
+pri error (0x44) "internal error: inconsistent n_bits"
 
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //

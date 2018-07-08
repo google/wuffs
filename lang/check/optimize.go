@@ -24,7 +24,6 @@ package check
 // code but never actually suspend.
 
 import (
-	"fmt"
 	"math/big"
 
 	a "github.com/google/wuffs/lang/ast"
@@ -172,46 +171,6 @@ check2:
 	}
 
 	n.SetBoundsCheckOptimized()
-	return nil
-}
-
-func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
-	if depth > a.MaxExprDepth {
-		return fmt.Errorf("check: expression recursion depth too large")
-	}
-	depth++
-
-	if !n.CallSuspendible() {
-		for _, o := range n.AsNode().AsRaw().SubNodes() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := q.optimizeSuspendible(o.AsExpr(), depth); err != nil {
-					return err
-				}
-			}
-		}
-		for _, o := range n.Args() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := q.optimizeSuspendible(o.AsExpr(), depth); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-
-	nReceiver, nMethod, _ := splitReceiverMethodArgs(n)
-	if nReceiver == nil {
-		return nil
-	}
-
-	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
-
-	if nMethod == t.IDUnreadU8 {
-		// unread_u8 can never suspend, only succeed or fail.
-		n.SetProvenNotToSuspend()
-		return nil
-	}
-
 	return nil
 }
 

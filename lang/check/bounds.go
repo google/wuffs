@@ -214,10 +214,6 @@ loop:
 func (q *checker) bcheckStatement(n *a.Node) error {
 	q.errFilename, q.errLine = n.AsRaw().FilenameLine()
 
-	// TODO: be principled about checking for provenNotToSuspend. Should we
-	// call optimizeSuspendible only for assignments, for var statements too,
-	// or for all statements generally?
-
 	switch n.Kind() {
 	case a.KAssert:
 		if err := q.bcheckAssert(n.AsAssert()); err != nil {
@@ -234,11 +230,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		n := n.AsExpr()
 		if _, err := q.bcheckExpr(n, 0); err != nil {
 			return err
-		}
-		if n.Suspendible() {
-			if err := q.optimizeSuspendible(n, 0); err != nil {
-				return err
-			}
 		}
 
 	case a.KIOBind:
@@ -423,19 +414,6 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			}
 			return nil, nil
 		}); err != nil {
-			return err
-		}
-	}
-
-	// TODO: be principled about checking for provenNotToSuspend, and for
-	// updating facts like "in.src.available() >= 6" after "in.src.read_u8?()".
-	// In general, we need to invalidate any "foo.bar()" facts after a call to
-	// an impure function like "foo.meth0!()" or "foo.meth1?()".
-	//
-	// What's here is somewhat ad hoc. Perhaps we need a call keyword and an
-	// explicit "foo = call bar?()" syntax.
-	if rhs.Suspendible() {
-		if err := q.optimizeSuspendible(rhs, 0); err != nil {
 			return err
 		}
 	}
@@ -985,7 +963,12 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 	} else if recvTyp.IsIOType() {
 		advance, update := (*big.Int)(nil), false
 
-		if method == t.IDSkipFast {
+		if method == t.IDUndoByte {
+			if err := q.canUndoByte(recv); err != nil {
+				return a.Bounds{}, err
+			}
+
+		} else if method == t.IDSkipFast {
 			args := n.Args()
 			if len(args) != 2 {
 				return a.Bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")
@@ -1017,10 +1000,34 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 				return a.Bounds{}, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
 					method.Str(q.tm), recv.Str(q.tm), advance)
 			}
+			// TODO: drop other recv-related facts?
 		}
 	}
 
 	return a.Bounds{}, errNotASpecialCase
+}
+
+func (q *checker) canUndoByte(recv *a.Expr) error {
+	for _, x := range q.facts {
+		if x.Operator() != t.IDOpenParen || len(x.Args()) != 0 {
+			continue
+		}
+		x = x.LHS().AsExpr()
+		if x.Operator() != t.IDDot || x.Ident() != t.IDCanUndoByte {
+			continue
+		}
+		x = x.LHS().AsExpr()
+		if !x.Eq(recv) {
+			continue
+		}
+		return q.facts.update(func(o *a.Expr) (*a.Expr, error) {
+			if o.Mentions(recv) {
+				return nil, nil
+			}
+			return o, nil
+		})
+	}
+	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
 }
 
 var ioMethodAdvances = [...]struct {
