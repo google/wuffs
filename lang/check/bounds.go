@@ -180,6 +180,8 @@ func invert(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 }
 
 func (q *checker) bcheckBlock(block []*a.Node) error {
+	// TODO: after a "break loop", do we need to set placeholder MBounds so
+	// that everything (including unreachable code) is bounds checked?
 loop:
 	for _, o := range block {
 		if err := q.bcheckStatement(o); err != nil {
@@ -241,6 +243,11 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KIOBind:
 		n := n.AsIOBind()
+		for _, o := range n.InFields() {
+			if _, err := q.bcheckExpr(o.AsExpr(), 0); err != nil {
+				return err
+			}
+		}
 		if err := q.bcheckBlock(n.Body()); err != nil {
 			return err
 		}
@@ -254,7 +261,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	case a.KIterate:
 		n := n.AsIterate()
 		for _, o := range n.Variables() {
-			if err := q.bcheckVar(o.AsVar(), true); err != nil {
+			if err := q.bcheckVar(o.AsVar()); err != nil {
 				return err
 			}
 		}
@@ -293,10 +300,16 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		q.facts = q.facts[:0]
 
 	case a.KRet:
-		// TODO.
+		// TODO: compare the value to the out type?
+		n := n.AsRet()
+		if v := n.Value(); v != nil {
+			if _, err := q.bcheckExpr(v, 0); err != nil {
+				return err
+			}
+		}
 
 	case a.KVar:
-		if err := q.bcheckVar(n.AsVar(), false); err != nil {
+		if err := q.bcheckVar(n.AsVar()); err != nil {
 			return err
 		}
 
@@ -308,16 +321,21 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	default:
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for bcheckStatement", n.Kind())
 	}
-
-	if b := n.MBounds(); b[0] == nil {
-		n.SetMBounds(a.Bounds{zero, zero})
-	}
 	return nil
 }
 
 func (q *checker) bcheckAssert(n *a.Assert) error {
 	// TODO: check, here or elsewhere, that the condition is pure.
 	condition := n.Condition()
+	if _, err := q.bcheckExpr(condition, 0); err != nil {
+		return err
+	}
+	for _, o := range n.Args() {
+		if _, err := q.bcheckExpr(o.AsArg().Value(), 0); err != nil {
+			return err
+		}
+	}
+
 	for _, x := range q.facts {
 		if x.Eq(condition) {
 			return nil
@@ -430,7 +448,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
-	lb, err := typeBounds(q.tm, lTyp)
+	lb, err := q.bcheckTypeExpr(lTyp)
 	if err != nil {
 		return err
 	}
@@ -669,15 +687,9 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	return nil
 }
 
-func (q *checker) bcheckVar(n *a.Var, iterateVariable bool) error {
-	if innTyp := n.XType().Innermost(); innTyp.IsRefined() {
-		if _, err := typeBounds(q.tm, innTyp); err != nil {
-			return err
-		}
-	}
-	if iterateVariable {
-		// TODO.
-		return nil
+func (q *checker) bcheckVar(n *a.Var) error {
+	if _, err := q.bcheckTypeExpr(n.XType()); err != nil {
+		return err
 	}
 
 	lhs := a.NewExpr(0, 0, 0, n.Name(), nil, nil, nil, nil)
@@ -701,6 +713,9 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if b := n.MBounds(); b[0] != nil {
 		return b, nil
 	}
+	if n.ConstValue() != nil {
+		return bcheckExprConstValue(n), nil
+	}
 
 	nb, err := q.bcheckExpr1(n, depth)
 	if err != nil {
@@ -710,7 +725,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	if err != nil {
 		return a.Bounds{}, err
 	}
-	tb, err := typeBounds(q.tm, n.MType())
+	tb, err := q.bcheckTypeExpr(n.MType())
 	if err != nil {
 		return a.Bounds{}, err
 	}
@@ -727,10 +742,23 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	return nb, nil
 }
 
-func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (a.Bounds, error) {
-	if cv := n.ConstValue(); cv != nil {
-		return a.Bounds{cv, cv}, nil
+func bcheckExprConstValue(n *a.Expr) a.Bounds {
+	if o := n.LHS(); o != nil {
+		bcheckExprConstValue(o.AsExpr())
 	}
+	if o := n.MHS(); o != nil {
+		bcheckExprConstValue(o.AsExpr())
+	}
+	if o := n.RHS(); o != nil && n.Operator() != t.IDXBinaryAs {
+		bcheckExprConstValue(o.AsExpr())
+	}
+	cv := n.ConstValue()
+	b := a.Bounds{cv, cv}
+	n.SetMBounds(b)
+	return b
+}
+
+func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (a.Bounds, error) {
 	switch op := n.Operator(); {
 	case op.IsXUnaryOp():
 		return q.bcheckExprUnaryOp(n, depth)
@@ -848,15 +876,18 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				return a.Bounds{}, err
 			}
 		}
-		return a.Bounds{zero, zero}, nil
 
 	case t.IDDot:
+		if _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
+			return a.Bounds{}, err
+		}
+
 		// TODO: delete this hack that only matches "in".
 		if n.LHS().AsExpr().Ident() == t.IDIn {
 			for _, o := range q.astFunc.In().Fields() {
 				o := o.AsField()
 				if o.Name() == n.Ident() {
-					return typeBounds(q.tm, o.XType())
+					return q.bcheckTypeExpr(o.XType())
 				}
 			}
 			lTyp := n.LHS().AsExpr().MType()
@@ -864,17 +895,20 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
-		if _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
-			return a.Bounds{}, err
-		}
-
 	case t.IDError, t.IDStatus, t.IDSuspension:
 		// No-op.
+
+	case t.IDDollar:
+		for _, o := range n.Args() {
+			if _, err := q.bcheckExpr(o.AsExpr(), depth); err != nil {
+				return a.Bounds{}, err
+			}
+		}
 
 	default:
 		return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
-	return typeBounds(q.tm, n.MType())
+	return q.bcheckTypeExpr(n.MType())
 }
 
 func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
@@ -1051,7 +1085,7 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (a.Bounds, error) {
 	case t.IDXUnaryNot:
 		return a.Bounds{zero, one}, nil
 	case t.IDXUnaryRef, t.IDXUnaryDeref:
-		return typeBounds(q.tm, n.MType())
+		return q.bcheckTypeExpr(n.MType())
 	}
 
 	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
@@ -1282,18 +1316,50 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, er
 	return lb, nil
 }
 
-func typeBounds(tm *t.Map, typ *a.TypeExpr) (a.Bounds, error) {
+func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (a.Bounds, error) {
+	if b := typ.AsNode().MBounds(); b[0] != nil {
+		return b, nil
+	}
+	b, err := q.bcheckTypeExpr1(typ)
+	if err != nil {
+		return a.Bounds{}, err
+	}
+	typ.AsNode().SetMBounds(b)
+	return b, nil
+}
+
+func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (a.Bounds, error) {
 	if typ.IsIdeal() {
 		return a.Bounds{minIdeal, maxIdeal}, nil
 	}
 
+	if innTyp := typ.Inner(); innTyp != nil {
+		if _, err := q.bcheckTypeExpr(innTyp); err != nil {
+			return a.Bounds{}, err
+		}
+	}
+
 	switch typ.Decorator() {
-	case t.IDArray, t.IDSlice, t.IDTable:
+	case 0:
+		// No-op.
+	case t.IDArray:
+		if _, err := q.bcheckExpr(typ.ArrayLength(), 0); err != nil {
+			return a.Bounds{}, err
+		}
 		return a.Bounds{zero, zero}, nil
+	case t.IDFunc:
+		if _, err := q.bcheckTypeExpr(typ.Receiver()); err != nil {
+			return a.Bounds{}, err
+		}
+		return a.Bounds{one, one}, nil
 	case t.IDNptr:
 		return a.Bounds{zero, one}, nil
-	case t.IDPtr, t.IDFunc:
+	case t.IDPtr:
 		return a.Bounds{one, one}, nil
+	case t.IDSlice, t.IDTable:
+		return a.Bounds{zero, zero}, nil
+	default:
+		return a.Bounds{}, fmt.Errorf("check: internal error: unrecognized decorator")
 	}
 
 	b := a.Bounds{zero, zero}
@@ -1310,20 +1376,26 @@ func typeBounds(tm *t.Map, typ *a.TypeExpr) (a.Bounds, error) {
 
 	if typ.IsRefined() {
 		if x := typ.Min(); x != nil {
+			if _, err := q.bcheckExpr(x, 0); err != nil {
+				return a.Bounds{}, err
+			}
 			if cv := x.ConstValue(); cv == nil {
 				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if cv.Cmp(b[0]) < 0 {
-				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
 			} else {
 				b[0] = cv
 			}
 		}
 
 		if x := typ.Max(); x != nil {
+			if _, err := q.bcheckExpr(x, 0); err != nil {
+				return a.Bounds{}, err
+			}
 			if cv := x.ConstValue(); cv == nil {
 				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if cv.Cmp(b[1]) > 0 {
-				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(tm))
+				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
 			} else {
 				b[1] = cv
 			}

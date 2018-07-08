@@ -773,10 +773,11 @@ func (n *TypeExpr) Unrefined() *TypeExpr {
 	if !n.IsRefined() {
 		return n
 	}
-	o := *n
-	o.lhs = nil
-	o.mhs = nil
-	return &o
+	return &TypeExpr{
+		kind: KTypeExpr,
+		id1:  n.id1,
+		id2:  n.id2,
+	}
 }
 
 func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Expr, inner *TypeExpr) *TypeExpr {

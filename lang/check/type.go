@@ -393,6 +393,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			// structs from used packages.
 			return fmt.Errorf("check: unrecognized identifier %q", id1.Str(q.tm))
 		}
+
 		switch id1 {
 		case t.IDFalse:
 			n.SetConstValue(zero)
@@ -403,12 +404,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetConstValue(one)
 			n.SetMType(typeExprBool)
 			return nil
-
-		case t.IDUnderscore:
-			// TODO.
-
-		case t.IDThis:
-			// TODO.
 		}
 
 	case t.IDOpenParen, t.IDTry:

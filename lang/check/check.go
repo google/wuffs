@@ -305,6 +305,10 @@ func (c *Checker) checkStatus(node *a.Node) error {
 	if err := q.tcheckExpr(n.Value(), 0); err != nil {
 		return fmt.Errorf("%v in status %s", err, qid.Str(c.tm))
 	}
+	if _, err := q.bcheckExpr(n.Value(), 0); err != nil {
+		return fmt.Errorf("%v in status %s", err, qid.Str(c.tm))
+	}
+
 	if cv := n.Value().ConstValue(); cv == nil {
 		return fmt.Errorf("status %s value is not a constant expression", qid.Str(c.tm))
 	} else if cv.Cmp(zero) <= 0 || oneTwentyEight.Cmp(cv) <= 0 {
@@ -343,15 +347,22 @@ func (c *Checker) checkConst(node *a.Node) error {
 		c:  c,
 		tm: c.tm,
 	}
-	if err := q.tcheckTypeExpr(n.XType(), 0); err != nil {
+	typ := n.XType()
+	if err := q.tcheckTypeExpr(typ, 0); err != nil {
 		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
 	}
+	if _, err := q.bcheckTypeExpr(typ); err != nil {
+		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
+	}
+
 	if err := q.tcheckExpr(n.Value(), 0); err != nil {
+		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
+	}
+	if _, err := q.bcheckExpr(n.Value(), 0); err != nil {
 		return fmt.Errorf("%v in const %s", err, qid.Str(c.tm))
 	}
 
 	nLists := 0
-	typ := n.XType()
 	for typ.IsArrayType() {
 		if nLists == a.MaxTypeExprDepth {
 			return fmt.Errorf("check: type expression recursion depth too large")
@@ -362,13 +373,8 @@ func (c *Checker) checkConst(node *a.Node) error {
 	if typ.Decorator() != 0 {
 		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
 	}
-	nb, err := typeBounds(q.tm, typ)
-	if err != nil {
-		return err
-	}
-	if nb[0] == nil || nb[1] == nil {
-		return fmt.Errorf("check: invalid const type %q for %s", n.XType().Str(c.tm), qid.Str(c.tm))
-	}
+
+	nb := typ.Innermost().AsNode().MBounds()
 	if err := c.checkConstElement(n.Value(), nb, nLists); err != nil {
 		return fmt.Errorf("check: %v for %s", err, qid.Str(c.tm))
 	}
@@ -458,18 +464,17 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
 			return fmt.Errorf("%v in field %q", err, f.Name().Str(c.tm))
 		}
+		if _, err := q.bcheckTypeExpr(f.XType()); err != nil {
+			return fmt.Errorf("%v in field %q", err, f.Name().Str(c.tm))
+		}
 		if banPtrTypes && f.XType().HasPointers() {
 			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
 				f.XType().Str(c.tm), f.Name().Str(c.tm))
 		}
 
 		if checkDefaultZeroValue {
-			innTyp := f.XType().Innermost()
-			fb, err := typeBounds(c.tm, innTyp)
-			if err != nil {
-				return err
-			}
-			if (fb[0] != nil && zero.Cmp(fb[0]) < 0) || (fb[1] != nil && zero.Cmp(fb[1]) > 0) {
+			fb := f.XType().Innermost().AsNode().MBounds()
+			if (zero.Cmp(fb[0]) < 0) || (zero.Cmp(fb[1]) > 0) {
 				return fmt.Errorf("check: default zero value is not within bounds %v for field %q",
 					fb, f.Name().Str(c.tm))
 			}
@@ -527,10 +532,14 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
-	setPlaceholderMBoundsMType(inTyp.AsNode())
+	inTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
+	inTyp.AsNode().SetMType(typeExprTypeExpr)
+
 	oQID := n.Out().QID()
 	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
-	setPlaceholderMBoundsMType(outTyp.AsNode())
+	outTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
+	outTyp.AsNode().SetMType(typeExprTypeExpr)
+
 	localVars := typeMap{
 		t.IDIn:  inTyp,
 		t.IDOut: outTyp,
@@ -543,10 +552,15 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 				Line:     n.Line(),
 			}
 		}
+
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
-		setPlaceholderMBoundsMType(sTyp.AsNode())
+		sTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
+		sTyp.AsNode().SetMType(typeExprTypeExpr)
+
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
-		setPlaceholderMBoundsMType(pTyp.AsNode())
+		pTyp.AsNode().SetMBounds(a.Bounds{one, one})
+		pTyp.AsNode().SetMType(typeExprTypeExpr)
+
 		localVars[t.IDThis] = pTyp
 	}
 	c.localVars[qqid] = localVars
@@ -677,8 +691,9 @@ func nodeDebugString(tm *t.Map, n *a.Node) string {
 
 func allTypeChecked(tm *t.Map, n *a.Node) error {
 	return n.Walk(func(o *a.Node) error {
+		b := o.MBounds()
 		typ := o.MType()
-		if typ == nil {
+		if b[0] == nil || b[1] == nil || typ == nil {
 			return fmt.Errorf("check: internal error: unchecked %s", nodeDebugString(tm, o))
 		}
 
