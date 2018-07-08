@@ -422,7 +422,7 @@ const (
 	IDDagger2 = ID(0x11B)
 
 	IDQPlaceholder = ID(0x11D)
-	IDQTypeExpr  = ID(0x11E)
+	IDQTypeExpr    = ID(0x11E)
 
 	// It is important that IDQIdeal is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
@@ -437,11 +437,10 @@ const (
 	IDU32 = ID(0x126)
 	IDU64 = ID(0x127)
 
-	IDUnderscore = ID(0x130)
-	IDThis       = ID(0x131)
-	IDIn         = ID(0x132)
-	IDOut        = ID(0x133)
-	IDBase       = ID(0x134)
+	IDThis = ID(0x130)
+	IDIn   = ID(0x131)
+	IDOut  = ID(0x132)
+	IDBase = ID(0x133)
 
 	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
@@ -702,11 +701,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
-	IDUnderscore: "_",
-	IDThis:       "this",
-	IDIn:         "in",
-	IDOut:        "out",
-	IDBase:       "base",
+	IDThis: "this",
+	IDIn:   "in",
+	IDOut:  "out",
+	IDBase: "base",
 
 	IDUnreadU8:  "unread_u8",
 	IDReadU8:    "read_u8",
