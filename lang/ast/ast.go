@@ -111,24 +111,6 @@ const (
 	flagsThatMatterForEq = Flags(0x0000FFFF)
 )
 
-// These flags are set by the bounds checker to generate optimized code.
-const (
-	// FlagsProvenNotToSuspend notes that a method such as read_u8 or
-	// write_u16le is proven not to suspend. For example, if it's guaranteed
-	// that there enough buffer space for an I/O method to succeed.
-	//
-	// Some methods, such as unread_u8, are called with the question mark, as
-	// "r.unread_u8?()", so nominally can suspend, but their semantics also
-	// guarantee to either succeed or fail, never suspend and retry later.
-	FlagsProvenNotToSuspend = Flags(0x00010000)
-	// FlagsBoundsCheckOptimized similarly means that some code gen's run time
-	// bounds checks or null pointer checks can be skipped, although such
-	// methods are not called with the question mark. Specifically, those
-	// methods are:
-	//  - since_mark
-	FlagsBoundsCheckOptimized = Flags(0x00020000)
-)
-
 type Effect uint32
 
 func (e Effect) String() string {
@@ -346,33 +328,29 @@ const MaxExprDepth = 255
 // keyword, ID1 is the package and ID2 is the message.
 type Expr Node
 
-func (n *Expr) AsNode() *Node              { return (*Node)(n) }
-func (n *Expr) Effect() Effect             { return Effect(n.flags & flagEffect) }
-func (n *Expr) Pure() bool                 { return n.flags&FlagsImpure == 0 }
-func (n *Expr) Impure() bool               { return n.flags&FlagsImpure != 0 }
-func (n *Expr) Suspendible() bool          { return n.flags&FlagsSuspendible != 0 }
-func (n *Expr) CallImpure() bool           { return n.flags&FlagsCallImpure != 0 }
-func (n *Expr) CallSuspendible() bool      { return n.flags&FlagsCallSuspendible != 0 }
-func (n *Expr) GlobalIdent() bool          { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) ProvenNotToSuspend() bool   { return n.flags&FlagsProvenNotToSuspend != 0 }
-func (n *Expr) BoundsCheckOptimized() bool { return n.flags&FlagsBoundsCheckOptimized != 0 }
-func (n *Expr) ConstValue() *big.Int       { return n.constValue }
-func (n *Expr) MBounds() Bounds            { return n.mBounds }
-func (n *Expr) MType() *TypeExpr           { return n.mType }
-func (n *Expr) Operator() t.ID             { return n.id0 }
-func (n *Expr) StatusQID() t.QID           { return t.QID{n.id1, n.id2} }
-func (n *Expr) Ident() t.ID                { return n.id2 }
-func (n *Expr) LHS() *Node                 { return n.lhs }
-func (n *Expr) MHS() *Node                 { return n.mhs }
-func (n *Expr) RHS() *Node                 { return n.rhs }
-func (n *Expr) Args() []*Node              { return n.list0 }
+func (n *Expr) AsNode() *Node         { return (*Node)(n) }
+func (n *Expr) Effect() Effect        { return Effect(n.flags & flagEffect) }
+func (n *Expr) Pure() bool            { return n.flags&FlagsImpure == 0 }
+func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
+func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
+func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
+func (n *Expr) CallSuspendible() bool { return n.flags&FlagsCallSuspendible != 0 }
+func (n *Expr) GlobalIdent() bool     { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) ConstValue() *big.Int  { return n.constValue }
+func (n *Expr) MBounds() Bounds       { return n.mBounds }
+func (n *Expr) MType() *TypeExpr      { return n.mType }
+func (n *Expr) Operator() t.ID        { return n.id0 }
+func (n *Expr) StatusQID() t.QID      { return t.QID{n.id1, n.id2} }
+func (n *Expr) Ident() t.ID           { return n.id2 }
+func (n *Expr) LHS() *Node            { return n.lhs }
+func (n *Expr) MHS() *Node            { return n.mhs }
+func (n *Expr) RHS() *Node            { return n.rhs }
+func (n *Expr) Args() []*Node         { return n.list0 }
 
-func (n *Expr) SetBoundsCheckOptimized() { n.flags |= FlagsBoundsCheckOptimized }
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
 func (n *Expr) SetMBounds(x Bounds)      { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
-func (n *Expr) SetProvenNotToSuspend()   { n.flags |= FlagsProvenNotToSuspend }
 
 func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {

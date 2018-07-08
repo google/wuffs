@@ -15,7 +15,6 @@
 package cgen
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -486,56 +485,12 @@ func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	if !n.Suspendible() {
 		return nil
 	}
-	err := g.mightActuallySuspend(n, depth)
-	if err != nil && err != errMightActuallySuspend {
-		return err
-	}
-	mightActuallySuspend := err != nil
-	if mightActuallySuspend && n.Operator() != t.IDTry {
+	if n.Operator() != t.IDTry {
 		if err := g.writeCoroSuspPoint(b, false); err != nil {
 			return err
 		}
 	}
 	return g.writeCallSuspendibles(b, n, depth)
-}
-
-// errMightActuallySuspend is the absence of ProvenNotToSuspend.
-//
-// TODO: find better, less clumsy names for this concept.
-var errMightActuallySuspend = errors.New("internal: might actually suspend")
-
-// TODO: this would be simpler with a call keyword and an explicit "foo = call
-// bar?()" syntax.
-func (g *gen) mightActuallySuspend(n *a.Expr, depth uint32) error {
-	if depth > a.MaxExprDepth {
-		return fmt.Errorf("expression recursion depth too large")
-	}
-	depth++
-
-	// The evaluation order for suspendible calls (which can have side effects)
-	// is important here: LHS, MHS, RHS, Args and finally the node itself.
-	if !n.CallSuspendible() {
-		for _, o := range n.AsNode().AsRaw().SubNodes() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := g.mightActuallySuspend(o.AsExpr(), depth); err != nil {
-					return err
-				}
-			}
-		}
-		for _, o := range n.Args() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := g.mightActuallySuspend(o.AsExpr(), depth); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-
-	if n.ProvenNotToSuspend() {
-		return nil
-	}
-	return errMightActuallySuspend
 }
 
 func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
@@ -606,8 +561,6 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	if endianness != "be" && endianness != "le" {
 		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
 	}
-
-	// TODO: look at n.ProvenNotToSuspend().
 
 	if g.currFunk.tempW > maxTemp-1 {
 		return fmt.Errorf("too many temporary variables required")
