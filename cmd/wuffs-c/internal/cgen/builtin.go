@@ -161,12 +161,12 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32, bcoHack bool) error {
 	// TODO: don't hard-code the recv being a_dst.
 	switch method {
-	case t.IDCopyFromHistory32:
+	case t.IDCopyNFromHistory:
 		bco := ""
 		if bcoHack {
 			bco = "__bco"
 		}
-		b.printf("wuffs_base__io_writer__copy_from_history32%s("+
+		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
 			"&ioptr_dst, %sdst.private_impl.bounds[0], iobounds1_dst",
 			bco, aPrefix)
 		for _, o := range args {
@@ -178,18 +178,21 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writeb(')')
 		return nil
 
-	case t.IDCopyFromReader32:
-		b.printf("wuffs_base__io_writer__copy_from_reader32(&ioptr_dst, iobounds1_dst,")
-		// TODO: don't assume that the first argument is "in.src".
-		b.printf("&ioptr_src, iobounds1_src,")
-		return g.writeArgs(b, args[1:], rp, depth)
+	case t.IDCopyNFromReader:
+		b.printf("wuffs_base__io_writer__copy_n_from_reader(&ioptr_dst, iobounds1_dst,")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+			return err
+		}
+		// TODO: don't assume that the last argument is "in.src".
+		b.printf(", &ioptr_src, iobounds1_src)")
+		return nil
 
 	case t.IDCopyFromSlice:
 		b.printf("wuffs_base__io_writer__copy_from_slice(&ioptr_dst, iobounds1_dst,")
 		return g.writeArgs(b, args, rp, depth)
 
-	case t.IDCopyFromSlice32:
-		b.printf("wuffs_base__io_writer__copy_from_slice32(&ioptr_dst, iobounds1_dst,")
+	case t.IDCopyNFromSlice:
+		b.printf("wuffs_base__io_writer__copy_n_from_slice(&ioptr_dst, iobounds1_dst,")
 		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:

@@ -239,10 +239,10 @@ var Funcs = []string{
 	"io_writer.set_mark!()()",
 	"io_writer.since_mark()(ret slice u8)",
 
-	"io_writer.copy_from_history32!(distance u32, length u32)(ret u32)",
-	"io_writer.copy_from_reader32!(r io_reader, length u32)(ret u32)",
 	"io_writer.copy_from_slice!(s slice u8)(ret u64)",
-	"io_writer.copy_from_slice32!(s slice u8, length u32)(ret u32)",
+	"io_writer.copy_n_from_history!(n u32, distance u32)(ret u32)",
+	"io_writer.copy_n_from_reader!(n u32, r io_reader)(ret u32)",
+	"io_writer.copy_n_from_slice!(n u32, s slice u8)(ret u32)",
 
 	// ---- status
 

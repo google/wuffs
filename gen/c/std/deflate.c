@@ -2426,12 +2426,12 @@ static inline bool wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
                 (o.private_impl.bounds[1] == NULL));
 }
 
-static inline uint32_t wuffs_base__io_writer__copy_from_history32(
+static inline uint32_t wuffs_base__io_writer__copy_n_from_history(
     uint8_t** ptr_ptr,
     uint8_t* start,
     uint8_t* end,
-    uint32_t distance,
-    uint32_t length) {
+    uint32_t length,
+    uint32_t distance) {
   if (!distance) {
     return 0;
   }
@@ -2449,12 +2449,12 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32(
   // TODO: unrolling by 3 seems best for the std/deflate benchmarks, but that
   // is mostly because 3 is the minimum length for the deflate format. This
   // function implementation shouldn't overfit to that one format. Perhaps the
-  // copy_from_history32 Wuffs method should also take an unroll hint argument,
+  // copy_n_from_history Wuffs method should also take an unroll hint argument,
   // and the cgen can look if that argument is the constant expression '3'.
   //
-  // See also wuffs_base__io_writer__copy_from_history32__bco below.
+  // See also wuffs_base__io_writer__copy_n_from_history__bco below.
   //
-  // Alternatively, or additionally, have a sloppy_copy_from_history32 method
+  // Alternatively, or additionally, have a sloppy_copy_n_from_history method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
   for (; n >= 3; n -= 3) {
     *ptr++ = *start++;
@@ -2468,18 +2468,18 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32(
   return length;
 }
 
-// wuffs_base__io_writer__copy_from_history32__bco is a Bounds Check Optimized
-// version of the wuffs_base__io_writer__copy_from_history32 function above.
+// wuffs_base__io_writer__copy_n_from_history__bco is a Bounds Check Optimized
+// version of the wuffs_base__io_writer__copy_n_from_history function above.
 // The caller needs to prove that:
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
-static inline uint32_t wuffs_base__io_writer__copy_from_history32__bco(
+static inline uint32_t wuffs_base__io_writer__copy_n_from_history__bco(
     uint8_t** ptr_ptr,
     uint8_t* start,
     uint8_t* end,
-    uint32_t distance,
-    uint32_t length) {
+    uint32_t length,
+    uint32_t distance) {
   uint8_t* ptr = *ptr_ptr;
   start = ptr - distance;
   uint32_t n = length;
@@ -2495,12 +2495,12 @@ static inline uint32_t wuffs_base__io_writer__copy_from_history32__bco(
   return length;
 }
 
-static inline uint32_t wuffs_base__io_writer__copy_from_reader32(
+static inline uint32_t wuffs_base__io_writer__copy_n_from_reader(
     uint8_t** ptr_ioptr_w,
     uint8_t* iobounds1_w,
+    uint32_t length,
     uint8_t** ptr_ioptr_r,
-    uint8_t* iobounds1_r,
-    uint32_t length) {
+    uint8_t* iobounds1_r) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = length;
   if (n > ((size_t)(iobounds1_w - ioptr_w))) {
@@ -2534,11 +2534,11 @@ static inline uint64_t wuffs_base__io_writer__copy_from_slice(
   return n;
 }
 
-static inline uint32_t wuffs_base__io_writer__copy_from_slice32(
+static inline uint32_t wuffs_base__io_writer__copy_n_from_slice(
     uint8_t** ptr_ioptr_w,
     uint8_t* iobounds1_w,
-    wuffs_base__slice_u8 src,
-    uint32_t length) {
+    uint32_t length,
+    wuffs_base__slice_u8 src) {
   uint8_t* ioptr_w = *ptr_ioptr_w;
   size_t n = src.len;
   if (n > length) {
@@ -3212,8 +3212,8 @@ static wuffs_base__status wuffs_deflate__decoder__decode_uncompressed(
     }
     v_length = ((v_length) & ((1 << (16)) - 1));
     while (true) {
-      v_n_copied = wuffs_base__io_writer__copy_from_reader32(
-          &ioptr_dst, iobounds1_dst, &ioptr_src, iobounds1_src, v_length);
+      v_n_copied = wuffs_base__io_writer__copy_n_from_reader(
+          &ioptr_dst, iobounds1_dst, v_length, &ioptr_src, iobounds1_src);
       if (v_length <= v_n_copied) {
         status = WUFFS_BASE__STATUS_OK;
         goto ok;
@@ -4152,22 +4152,20 @@ label_0_continue:;
         }
         v_hdist = (self->private_impl.f_history_index - v_hdist);
         while (true) {
-          v_n_copied = wuffs_base__io_writer__copy_from_slice32(
-              &ioptr_dst, iobounds1_dst,
+          v_n_copied = wuffs_base__io_writer__copy_n_from_slice(
+              &ioptr_dst, iobounds1_dst, v_hlen,
               wuffs_base__slice_u8__subslice_i(
                   ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                           .len = 32768}),
-                  (v_hdist & 32767)),
-              v_hlen);
+                  (v_hdist & 32767)));
           if (v_hlen <= v_n_copied) {
             goto label_1_break;
           }
           v_hlen -= v_n_copied;
-          wuffs_base__io_writer__copy_from_slice32(
-              &ioptr_dst, iobounds1_dst,
+          wuffs_base__io_writer__copy_n_from_slice(
+              &ioptr_dst, iobounds1_dst, v_hlen,
               ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                      .len = 32768}),
-              v_hlen);
+                                      .len = 32768}));
           goto label_1_break;
         }
       label_1_break:;
@@ -4185,9 +4183,9 @@ label_0_continue:;
           goto exit;
         }
       }
-      wuffs_base__io_writer__copy_from_history32__bco(
-          &ioptr_dst, a_dst.private_impl.bounds[0], iobounds1_dst,
-          (v_dist_minus_1 + 1), v_length);
+      wuffs_base__io_writer__copy_n_from_history__bco(
+          &ioptr_dst, a_dst.private_impl.bounds[0], iobounds1_dst, v_length,
+          (v_dist_minus_1 + 1));
       goto label_2_break;
     }
   label_2_break:;
@@ -4532,13 +4530,12 @@ static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
           }
           v_hdist = (self->private_impl.f_history_index - v_hdist);
           while (true) {
-            v_n_copied = wuffs_base__io_writer__copy_from_slice32(
-                &ioptr_dst, iobounds1_dst,
+            v_n_copied = wuffs_base__io_writer__copy_n_from_slice(
+                &ioptr_dst, iobounds1_dst, v_hlen,
                 wuffs_base__slice_u8__subslice_i(
                     ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
                                             .len = 32768}),
-                    (v_hdist & 32767)),
-                v_hlen);
+                    (v_hdist & 32767)));
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
               goto label_5_break;
@@ -4556,13 +4553,12 @@ static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
         label_5_break:;
           if (v_hlen > 0) {
             while (true) {
-              v_n_copied = wuffs_base__io_writer__copy_from_slice32(
-                  &ioptr_dst, iobounds1_dst,
+              v_n_copied = wuffs_base__io_writer__copy_n_from_slice(
+                  &ioptr_dst, iobounds1_dst, v_hlen,
                   wuffs_base__slice_u8__subslice_i(
                       ((wuffs_base__slice_u8){
                           .ptr = self->private_impl.f_history, .len = 32768}),
-                      (v_hdist & 32767)),
-                  v_hlen);
+                      (v_hdist & 32767)));
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
                 goto label_6_break;
@@ -4578,9 +4574,9 @@ static wuffs_base__status wuffs_deflate__decoder__decode_huffman_slow(
             goto label_0_continue;
           }
         }
-        v_n_copied = wuffs_base__io_writer__copy_from_history32(
-            &ioptr_dst, a_dst.private_impl.bounds[0], iobounds1_dst,
-            (v_dist_minus_1 + 1), v_length);
+        v_n_copied = wuffs_base__io_writer__copy_n_from_history(
+            &ioptr_dst, a_dst.private_impl.bounds[0], iobounds1_dst, v_length,
+            (v_dist_minus_1 + 1));
         if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_7_break;

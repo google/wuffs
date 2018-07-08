@@ -63,27 +63,27 @@ func (q *checker) optimizeNonSuspendible(n *a.Expr) error {
 	// TODO: check that nReceiver's type is actually a io_reader or io_writer.
 
 	switch nMethod {
-	case t.IDCopyFromHistory32:
-		return q.optimizeCopyFromHistory32(n)
+	case t.IDCopyNFromHistory:
+		return q.optimizeCopyNFromHistory(n)
 	}
 
 	return nil
 }
 
-// optimizeCopyFromHistory32 checks if the code generator can call the Bounds
-// Check Optimized version of CopyFromHistory32. As per cgen's base-private.h,
+// optimizeCopyNFromHistory checks if the code generator can call the Bounds
+// Check Optimized version of CopyFromHistory. As per cgen's base-private.h,
 // the conditions are:
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
-func (q *checker) optimizeCopyFromHistory32(n *a.Expr) error {
+func (q *checker) optimizeCopyNFromHistory(n *a.Expr) error {
 	// The arguments are (distance, length).
 	nReceiver, _, args := splitReceiverMethodArgs(n)
 	if len(args) != 2 {
 		return nil
 	}
-	d := args[0].AsArg().Value()
-	l := args[1].AsArg().Value()
+	l := args[0].AsArg().Value()
+	d := args[1].AsArg().Value()
 
 	// Check "distance > 0".
 check0:
