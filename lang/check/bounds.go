@@ -712,9 +712,6 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 		return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 			n.Str(q.tm), nb, tb)
 	}
-	if err := q.optimizeNonSuspendible(n); err != nil {
-		return a.Bounds{}, err
-	}
 
 	n.SetMBounds(nb)
 	return nb, nil
@@ -968,6 +965,11 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 				return a.Bounds{}, err
 			}
 
+		} else if method == t.IDCopyNFromHistoryFast {
+			if err := q.canCopyNFromHistoryFast(recv, n.Args()); err != nil {
+				return a.Bounds{}, err
+			}
+
 		} else if method == t.IDSkipFast {
 			args := n.Args()
 			if len(args) != 2 {
@@ -1028,6 +1030,107 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 		})
 	}
 	return fmt.Errorf("check: could not prove %s.can_undo_byte()", recv.Str(q.tm))
+}
+
+func (q *checker) canCopyNFromHistoryFast(recv *a.Expr, args []*a.Node) error {
+	// As per cgen's base-private.h, there are three pre-conditions:
+	//  - n <= this.available()
+	//  - distance > 0
+	//  - distance <= this.since_mark().length()
+
+	if len(args) != 2 {
+		return fmt.Errorf("check: internal error: inconsistent copy_n_from_history_fast arguments")
+	}
+	n := args[0].AsArg().Value()
+	distance := args[1].AsArg().Value()
+
+	// Check "n <= this.available()".
+check0:
+	for {
+		for _, x := range q.facts {
+			if x.Operator() != t.IDXBinaryLessEq {
+				continue
+			}
+
+			// Check that the LHS is "n as base.u64".
+			lhs := x.LHS().AsExpr()
+			if lhs.Operator() != t.IDXBinaryAs {
+				continue
+			}
+			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
+			if !llhs.Eq(n) || !lrhs.Eq(typeExprU64) {
+				continue
+			}
+
+			// Check that the RHS is "recv.available()".
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
+			if method != t.IDAvailable || len(yArgs) != 0 {
+				continue
+			}
+			if !y.Eq(recv) {
+				continue
+			}
+
+			break check0
+		}
+		return fmt.Errorf("check: could not prove n <= %s.available()", recv.Str(q.tm))
+	}
+
+	// Check "distance > 0".
+check1:
+	for {
+		for _, x := range q.facts {
+			if x.Operator() != t.IDXBinaryGreaterThan {
+				continue
+			}
+			if lhs := x.LHS().AsExpr(); !lhs.Eq(distance) {
+				continue
+			}
+			if rcv := x.RHS().AsExpr().ConstValue(); rcv == nil || rcv.Sign() != 0 {
+				continue
+			}
+			break check1
+		}
+		return fmt.Errorf("check: could not prove distance > 0")
+	}
+
+	// Check "distance <= this.since_mark().length()".
+check2:
+	for {
+		for _, x := range q.facts {
+			if x.Operator() != t.IDXBinaryLessEq {
+				continue
+			}
+
+			// Check that the LHS is "distance as base.u64".
+			lhs := x.LHS().AsExpr()
+			if lhs.Operator() != t.IDXBinaryAs {
+				continue
+			}
+			llhs, lrhs := lhs.LHS().AsExpr(), lhs.RHS().AsTypeExpr()
+			if !llhs.Eq(distance) || !lrhs.Eq(typeExprU64) {
+				continue
+			}
+
+			// Check that the RHS is "recv.since_mark().length()".
+			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
+			if method != t.IDLength || len(yArgs) != 0 {
+				continue
+			}
+			z, method, zArgs := splitReceiverMethodArgs(y)
+			if method != t.IDSinceMark || len(zArgs) != 0 {
+				continue
+			}
+			if !z.Eq(recv) {
+				continue
+			}
+
+			break check2
+		}
+		return fmt.Errorf("check: could not prove distance <= %s.since_mark().length()", recv.Str(q.tm))
+	}
+
+	return nil
 }
 
 var ioMethodAdvances = [...]struct {

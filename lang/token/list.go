@@ -517,10 +517,11 @@ const (
 	IDSkip        = ID(0x184)
 	IDSkipFast    = ID(0x185)
 
-	IDCopyFromSlice    = ID(0x190)
-	IDCopyNFromHistory = ID(0x191)
-	IDCopyNFromReader  = ID(0x192)
-	IDCopyNFromSlice   = ID(0x193)
+	IDCopyFromSlice        = ID(0x190)
+	IDCopyNFromHistory     = ID(0x191)
+	IDCopyNFromHistoryFast = ID(0x192)
+	IDCopyNFromReader      = ID(0x193)
+	IDCopyNFromSlice       = ID(0x194)
 
 	// -------- 0x200 block.
 
@@ -794,10 +795,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSkip:        "skip",
 	IDSkipFast:    "skip_fast",
 
-	IDCopyFromSlice:    "copy_from_slice",
-	IDCopyNFromHistory: "copy_n_from_history",
-	IDCopyNFromReader:  "copy_n_from_reader",
-	IDCopyNFromSlice:   "copy_n_from_slice",
+	IDCopyFromSlice:        "copy_from_slice",
+	IDCopyNFromHistory:     "copy_n_from_history",
+	IDCopyNFromHistoryFast: "copy_n_from_history_fast",
+	IDCopyNFromReader:      "copy_n_from_reader",
+	IDCopyNFromSlice:       "copy_n_from_slice",
 
 	// -------- 0x200 block.
 

@@ -70,7 +70,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 		case t.IDIOReader:
 			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), rp, depth)
 		case t.IDIOWriter:
-			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), rp, depth, n.BoundsCheckOptimized())
+			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), rp, depth)
 		case t.IDStatus:
 			return g.writeBuiltinStatus(b, recv, method.Ident(), n.Args(), rp, depth)
 		}
@@ -165,18 +165,17 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	return g.writeBuiltinIO(b, recv, method, args, rp, depth)
 }
 
-// TODO: remove bcoHack.
-func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32, bcoHack bool) error {
+func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	// TODO: don't hard-code the recv being a_dst.
 	switch method {
-	case t.IDCopyNFromHistory:
-		bco := ""
-		if bcoHack {
-			bco = "_fast"
+	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
+		suffix := ""
+		if method == t.IDCopyNFromHistoryFast {
+			suffix = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
 			"&ioptr_dst, %sdst.private_impl.bounds[0], iobounds1_dst",
-			bco, aPrefix)
+			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
 			if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {

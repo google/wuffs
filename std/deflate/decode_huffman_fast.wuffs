@@ -360,7 +360,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			assert (length as base.u64) <= in.dst.available() via "a <= b: a <= c; c <= b"(c:258)
 
 			// Copy from in.dst.
-			in.dst.copy_n_from_history!(n:length, distance:(dist_minus_1 + 1))
+			in.dst.copy_n_from_history_fast!(n:length, distance:(dist_minus_1 + 1))
 			break
 		}
 	}

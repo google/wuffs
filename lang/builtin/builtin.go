@@ -244,6 +244,13 @@ var Funcs = []string{
 	"io_writer.copy_n_from_reader!(n u32, r io_reader)(ret u32)",
 	"io_writer.copy_n_from_slice!(n u32, s slice u8)(ret u32)",
 
+	// TODO: this should have explicit pre-conditions:
+	//  - n <= this.available()
+	//  - distance > 0
+	//  - distance <= this.since_mark().length()
+	// For now, that's all implicitly checked (i.e. hard coded).
+	"io_writer.copy_n_from_history_fast!(n u32, distance u32)(ret u32)",
+
 	// ---- status
 
 	"status.is_error()(ret bool)",
