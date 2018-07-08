@@ -211,7 +211,7 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 	this.height = in.src.read_u16le?() as base.u32
 	var flags base.u8 = in.src.read_u8?()
 	// Ignore the Background Color Index and Pixel Aspect Ratio bytes.
-	in.src.skip32?(n:2)
+	in.src.skip?(n:2)
 
 	// Read the optional Global Color Table.
 	if (flags & 0x80) != 0 {
@@ -268,7 +268,7 @@ pri func decoder.skip_blocks?(src base.io_reader)() {
 		if block_size == 0 {
 			return
 		}
-		in.src.skip32?(n:block_size as base.u32)
+		in.src.skip?(n:block_size as base.u32)
 	}
 }
 
@@ -298,7 +298,7 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 		//  - http://www.vurdalakov.net/misc/gif/animexts-looping-application-extension
 		//  - http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
 		if block_size != 11 {
-			in.src.skip32?(n:block_size as base.u32)
+			in.src.skip?(n:block_size as base.u32)
 			break
 		}
 		var not_animexts base.bool
@@ -318,12 +318,12 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 		// count.
 		block_size = in.src.read_u8?()
 		if block_size != 3 {
-			in.src.skip32?(n:block_size as base.u32)
+			in.src.skip?(n:block_size as base.u32)
 			break
 		}
 		c = in.src.read_u8?()
 		if c != 0x01 {
-			in.src.skip32?(n:2)
+			in.src.skip?(n:2)
 			break
 		}
 		this.num_loops = in.src.read_u16le?() as base.u32

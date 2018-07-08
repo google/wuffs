@@ -132,7 +132,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 			aPrefix, aPrefix)
 		return nil
 
-	case t.IDSkip32Fast:
+	case t.IDSkipFast:
 		// Generate a two part expression using the comma operator: "(pointer
 		// increment, return_empty_struct call)". The final part is a function
 		// call (to a static inline function) instead of a struct literal, to
@@ -469,7 +469,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 		case t.IDReadU64LE:
 			return g.writeReadUXX(b, n, "src", 64, "le")
 
-		case t.IDSkip32:
+		case t.IDSkip:
 			g.currFunk.usesScratch = true
 			// TODO: don't hard-code [0], and allow recursive coroutines.
 			scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",

@@ -48,12 +48,12 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	}
 	var flags base.u8 = in.src.read_u8?()
 	// TODO: API for returning the header's MTIME field.
-	in.src.skip32?(n:6)
+	in.src.skip?(n:6)
 
 	// Handle FEXTRA.
 	if (flags & 0x04) != 0 {
 		var xlen base.u16 = in.src.read_u16le?()
-		in.src.skip32?(n:xlen as base.u32)
+		in.src.skip?(n:xlen as base.u32)
 	}
 
 	// Handle FNAME.
@@ -82,7 +82,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 
 	// Handle FHCRC.
 	if (flags & 0x02) != 0 {
-		in.src.skip32?(n:2)
+		in.src.skip?(n:2)
 	}
 
 	// Reserved flags bits must be zero.

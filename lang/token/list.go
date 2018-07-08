@@ -510,12 +510,11 @@ const (
 	IDWriteFastU64BE = ID(0x17E)
 	IDWriteFastU64LE = ID(0x17F)
 
-	IDSetLimit   = ID(0x180)
-	IDSetMark    = ID(0x181)
-	IDSinceMark  = ID(0x182)
-	IDSkip32     = ID(0x183)
-	IDSkip32Fast = ID(0x184)
-	IDSkip64     = ID(0x185)
+	IDSetLimit  = ID(0x180)
+	IDSetMark   = ID(0x181)
+	IDSinceMark = ID(0x182)
+	IDSkip      = ID(0x183)
+	IDSkipFast  = ID(0x184)
 
 	IDCopyFromSlice    = ID(0x190)
 	IDCopyNFromHistory = ID(0x191)
@@ -787,12 +786,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteFastU64BE: "write_fast_u64be",
 	IDWriteFastU64LE: "write_fast_u64le",
 
-	IDSetLimit:   "set_limit",
-	IDSetMark:    "set_mark",
-	IDSinceMark:  "since_mark",
-	IDSkip32:     "skip32",
-	IDSkip32Fast: "skip32_fast",
-	IDSkip64:     "skip64",
+	IDSetLimit:  "set_limit",
+	IDSetMark:   "set_mark",
+	IDSinceMark: "since_mark",
+	IDSkip:      "skip",
+	IDSkipFast:  "skip_fast",
 
 	IDCopyFromSlice:    "copy_from_slice",
 	IDCopyNFromHistory: "copy_n_from_history",

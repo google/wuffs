@@ -21,7 +21,7 @@
 - Redesigned iterate blocks.
 - Added a `base.image_config` type.
 - Added a `reset` method.
-- Added `peek_uxx` and `skip32_fast` methods.
+- Added `peek_uxx`, `skip_fast` and `write_fast_uxx` methods.
 - Tweaked how marks and limits work.
 - Supported animated (not just single frame) GIFs.
 - Marked the `std/gif` LZW decoder as private.

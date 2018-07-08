@@ -985,22 +985,22 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 	} else if recvTyp.IsIOType() {
 		advance, update := (*big.Int)(nil), false
 
-		if method == t.IDSkip32Fast {
+		if method == t.IDSkipFast {
 			args := n.Args()
 			if len(args) != 2 {
-				return a.Bounds{}, fmt.Errorf("check: internal error: bad skip32_fast arguments")
+				return a.Bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")
 			}
 			actual := args[0].AsArg().Value()
 			worstCase := args[1].AsArg().Value()
 			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
-				return a.Bounds{}, fmt.Errorf("check: could not prove skip32_fast precondition: %s <= %s",
+				return a.Bounds{}, fmt.Errorf("check: could not prove skip_fast precondition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
 			} else if err != nil {
 				return a.Bounds{}, err
 			}
 			advance, update = worstCase.ConstValue(), true
 			if advance == nil {
-				return a.Bounds{}, fmt.Errorf("check: skip32_fast worst_case is not a constant value")
+				return a.Bounds{}, fmt.Errorf("check: skip_fast worst_case is not a constant value")
 			}
 
 		} else if method >= t.IDPeekU8 {

@@ -591,7 +591,7 @@ void test_wuffs_gif_decode_input_is_a_gif_many_medium_reads() {
   do_test_wuffs_gif_decode("../../data/bricks-dither.gif",
                            "../../data/bricks-dither.palette",
                            "../../data/bricks-dither.indexes", 787);
-  // The magic 787 tickles being in the middle of a decode_extension skip32
+  // The magic 787 tickles being in the middle of a decode_extension skip
   // call.
   //
   // TODO: has 787 changed since we decode the image_config separately?
