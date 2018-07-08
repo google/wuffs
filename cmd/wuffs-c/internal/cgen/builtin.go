@@ -116,10 +116,6 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
-	case t.IDPeekU8:
-		b.writes("(*ioptr_src)")
-		return nil
-
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, ioptr_src,", aPrefix)
 		// TODO: update the ioptr variables?
@@ -149,8 +145,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 	}
 
-	if method >= t.IDPeekU8 {
-		if m := method - t.IDPeekU8; m < t.ID(len(peekMethods)) {
+	if method >= peekMethodsBase {
+		if m := method - peekMethodsBase; m < t.ID(len(peekMethods)) {
 			if p := peekMethods[m]; p.n != 0 {
 				b.printf("wuffs_base__load_u%d%ce(ioptr_src)", p.n, p.endianness)
 				return nil
@@ -210,6 +206,24 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			".len = (size_t)(ioptr_dst - %sdst.private_impl.bounds[0]), })",
 			aPrefix, aPrefix)
 		return nil
+	}
+
+	if method >= writeFastMethodsBase {
+		if m := method - writeFastMethodsBase; m < t.ID(len(writeFastMethods)) {
+			if p := writeFastMethods[m]; p.n != 0 {
+				// Generate a three part expression using the comma operator:
+				// "(store, pointer increment, return_empty_struct call)". The
+				// final part is a function call (to a static inline function)
+				// instead of a struct literal, to avoid a "expression result
+				// unused" compiler error.
+				b.printf("(wuffs_base__store_u%d%ce(ioptr_dst,", p.n, p.endianness)
+				if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+					return err
+				}
+				b.printf("), ioptr_dst += %d, wuffs_base__return_empty_struct())", p.n/8)
+				return nil
+			}
+		}
 	}
 
 	return g.writeBuiltinIO(b, recv, method, args, rp, depth)
@@ -499,23 +513,48 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 	return errNoSuchBuiltin
 }
 
+const peekMethodsBase = t.IDPeekU8
+
 var peekMethods = [...]struct {
 	n          uint8
 	endianness uint8
 }{
-	// t.IDPeekU8 is a special case, neither big nor little endian.
-	t.IDPeekU16BE - t.IDPeekU8: {16, 'b'},
-	t.IDPeekU16LE - t.IDPeekU8: {16, 'l'},
-	t.IDPeekU24BE - t.IDPeekU8: {24, 'b'},
-	t.IDPeekU24LE - t.IDPeekU8: {24, 'l'},
-	t.IDPeekU32BE - t.IDPeekU8: {32, 'b'},
-	t.IDPeekU32LE - t.IDPeekU8: {32, 'l'},
-	t.IDPeekU40BE - t.IDPeekU8: {40, 'b'},
-	t.IDPeekU40LE - t.IDPeekU8: {40, 'l'},
-	t.IDPeekU48BE - t.IDPeekU8: {48, 'b'},
-	t.IDPeekU48LE - t.IDPeekU8: {48, 'l'},
-	t.IDPeekU56BE - t.IDPeekU8: {56, 'b'},
-	t.IDPeekU56LE - t.IDPeekU8: {56, 'l'},
-	t.IDPeekU64BE - t.IDPeekU8: {64, 'b'},
-	t.IDPeekU64LE - t.IDPeekU8: {64, 'l'},
+	t.IDPeekU8 - peekMethodsBase:    {8, 'b'},
+	t.IDPeekU16BE - peekMethodsBase: {16, 'b'},
+	t.IDPeekU16LE - peekMethodsBase: {16, 'l'},
+	t.IDPeekU24BE - peekMethodsBase: {24, 'b'},
+	t.IDPeekU24LE - peekMethodsBase: {24, 'l'},
+	t.IDPeekU32BE - peekMethodsBase: {32, 'b'},
+	t.IDPeekU32LE - peekMethodsBase: {32, 'l'},
+	t.IDPeekU40BE - peekMethodsBase: {40, 'b'},
+	t.IDPeekU40LE - peekMethodsBase: {40, 'l'},
+	t.IDPeekU48BE - peekMethodsBase: {48, 'b'},
+	t.IDPeekU48LE - peekMethodsBase: {48, 'l'},
+	t.IDPeekU56BE - peekMethodsBase: {56, 'b'},
+	t.IDPeekU56LE - peekMethodsBase: {56, 'l'},
+	t.IDPeekU64BE - peekMethodsBase: {64, 'b'},
+	t.IDPeekU64LE - peekMethodsBase: {64, 'l'},
+}
+
+const writeFastMethodsBase = t.IDWriteFastU8
+
+var writeFastMethods = [...]struct {
+	n          uint8
+	endianness uint8
+}{
+	t.IDWriteFastU8 - writeFastMethodsBase:    {8, 'b'},
+	t.IDWriteFastU16BE - writeFastMethodsBase: {16, 'b'},
+	t.IDWriteFastU16LE - writeFastMethodsBase: {16, 'l'},
+	t.IDWriteFastU24BE - writeFastMethodsBase: {24, 'b'},
+	t.IDWriteFastU24LE - writeFastMethodsBase: {24, 'l'},
+	t.IDWriteFastU32BE - writeFastMethodsBase: {32, 'b'},
+	t.IDWriteFastU32LE - writeFastMethodsBase: {32, 'l'},
+	t.IDWriteFastU40BE - writeFastMethodsBase: {40, 'b'},
+	t.IDWriteFastU40LE - writeFastMethodsBase: {40, 'l'},
+	t.IDWriteFastU48BE - writeFastMethodsBase: {48, 'b'},
+	t.IDWriteFastU48LE - writeFastMethodsBase: {48, 'l'},
+	t.IDWriteFastU56BE - writeFastMethodsBase: {56, 'b'},
+	t.IDWriteFastU56LE - writeFastMethodsBase: {56, 'l'},
+	t.IDWriteFastU64BE - writeFastMethodsBase: {64, 'b'},
+	t.IDWriteFastU64LE - writeFastMethodsBase: {64, 'l'},
 }

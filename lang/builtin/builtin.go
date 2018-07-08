@@ -159,6 +159,10 @@ var Funcs = []string{
 
 	// TODO: these should have an explicit precondition "available() >= N". For
 	// now, that's implicitly checked (i.e. hard coded).
+	//
+	// The io_reader has peek_etc methods and skip_fast32, not read_etc_fast,
+	// because we sometimes advance the pointer by less than what's read. See
+	// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
 	"io_reader.peek_u8()(ret u8)",
 	"io_reader.peek_u16be()(ret u16)",
 	"io_reader.peek_u16le()(ret u16)",
@@ -207,6 +211,27 @@ var Funcs = []string{
 	"io_writer.write_u56le?(x u64[..0xFFFFFFFFFFFFFF])()",
 	"io_writer.write_u64be?(x u64)()",
 	"io_writer.write_u64le?(x u64)()",
+
+	// TODO: these should have an explicit precondition "available() >= N". For
+	// now, that's implicitly checked (i.e. hard coded).
+	//
+	// The io_writer has write_fast_etc methods, not poke_etc and skip_fast32,
+	// because skip32_fast could leave uninitialized bytes in the io_buffer.
+	"io_writer.write_fast_u8!(x u8)()",
+	"io_writer.write_fast_u16be!(x u16)()",
+	"io_writer.write_fast_u16le!(x u16)()",
+	"io_writer.write_fast_u24be!(x u32[..0xFFFFFF])()",
+	"io_writer.write_fast_u24le!(x u32[..0xFFFFFF])()",
+	"io_writer.write_fast_u32be!(x u32)()",
+	"io_writer.write_fast_u32le!(x u32)()",
+	"io_writer.write_fast_u40be!(x u64[..0xFFFFFFFFFF])()",
+	"io_writer.write_fast_u40le!(x u64[..0xFFFFFFFFFF])()",
+	"io_writer.write_fast_u48be!(x u64[..0xFFFFFFFFFFFF])()",
+	"io_writer.write_fast_u48le!(x u64[..0xFFFFFFFFFFFF])()",
+	"io_writer.write_fast_u56be!(x u64[..0xFFFFFFFFFFFFFF])()",
+	"io_writer.write_fast_u56le!(x u64[..0xFFFFFFFFFFFFFF])()",
+	"io_writer.write_fast_u64be!(x u64)()",
+	"io_writer.write_fast_u64le!(x u64)()",
 
 	"io_writer.available()(ret u64)",
 	"io_writer.set!(s slice u8)()",

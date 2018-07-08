@@ -494,6 +494,22 @@ const (
 	IDWriteU64BE = ID(0x16E)
 	IDWriteU64LE = ID(0x16F)
 
+	IDWriteFastU8    = ID(0x171)
+	IDWriteFastU16BE = ID(0x172)
+	IDWriteFastU16LE = ID(0x173)
+	IDWriteFastU24BE = ID(0x174)
+	IDWriteFastU24LE = ID(0x175)
+	IDWriteFastU32BE = ID(0x176)
+	IDWriteFastU32LE = ID(0x177)
+	IDWriteFastU40BE = ID(0x178)
+	IDWriteFastU40LE = ID(0x179)
+	IDWriteFastU48BE = ID(0x17A)
+	IDWriteFastU48LE = ID(0x17B)
+	IDWriteFastU56BE = ID(0x17C)
+	IDWriteFastU56LE = ID(0x17D)
+	IDWriteFastU64BE = ID(0x17E)
+	IDWriteFastU64LE = ID(0x17F)
+
 	IDSetLimit   = ID(0x180)
 	IDSetMark    = ID(0x181)
 	IDSinceMark  = ID(0x182)
@@ -754,6 +770,22 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteU56LE: "write_u56le",
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
+
+	IDWriteFastU8:    "write_fast_u8",
+	IDWriteFastU16BE: "write_fast_u16be",
+	IDWriteFastU16LE: "write_fast_u16le",
+	IDWriteFastU24BE: "write_fast_u24be",
+	IDWriteFastU24LE: "write_fast_u24le",
+	IDWriteFastU32BE: "write_fast_u32be",
+	IDWriteFastU32LE: "write_fast_u32le",
+	IDWriteFastU40BE: "write_fast_u40be",
+	IDWriteFastU40LE: "write_fast_u40le",
+	IDWriteFastU48BE: "write_fast_u48be",
+	IDWriteFastU48LE: "write_fast_u48le",
+	IDWriteFastU56BE: "write_fast_u56be",
+	IDWriteFastU56LE: "write_fast_u56le",
+	IDWriteFastU64BE: "write_fast_u64be",
+	IDWriteFastU64LE: "write_fast_u64le",
 
 	IDSetLimit:   "set_limit",
 	IDSetMark:    "set_mark",

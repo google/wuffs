@@ -1005,7 +1005,8 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 
 		} else if method >= t.IDPeekU8 {
 			if m := method - t.IDPeekU8; m < t.ID(len(ioMethodAdvances)) {
-				advance, update = ioMethodAdvances[m], false
+				au := ioMethodAdvances[m]
+				advance, update = au.advance, au.update
 			}
 		}
 
@@ -1022,22 +1023,41 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 	return a.Bounds{}, errNotASpecialCase
 }
 
-var ioMethodAdvances = [...]*big.Int{
-	t.IDPeekU8 - t.IDPeekU8:    one,
-	t.IDPeekU16BE - t.IDPeekU8: two,
-	t.IDPeekU16LE - t.IDPeekU8: two,
-	t.IDPeekU24BE - t.IDPeekU8: three,
-	t.IDPeekU24LE - t.IDPeekU8: three,
-	t.IDPeekU32BE - t.IDPeekU8: four,
-	t.IDPeekU32LE - t.IDPeekU8: four,
-	t.IDPeekU40BE - t.IDPeekU8: five,
-	t.IDPeekU40LE - t.IDPeekU8: five,
-	t.IDPeekU48BE - t.IDPeekU8: six,
-	t.IDPeekU48LE - t.IDPeekU8: six,
-	t.IDPeekU56BE - t.IDPeekU8: seven,
-	t.IDPeekU56LE - t.IDPeekU8: seven,
-	t.IDPeekU64BE - t.IDPeekU8: eight,
-	t.IDPeekU64LE - t.IDPeekU8: eight,
+var ioMethodAdvances = [...]struct {
+	advance *big.Int
+	update  bool
+}{
+	t.IDPeekU8 - t.IDPeekU8:    {one, false},
+	t.IDPeekU16BE - t.IDPeekU8: {two, false},
+	t.IDPeekU16LE - t.IDPeekU8: {two, false},
+	t.IDPeekU24BE - t.IDPeekU8: {three, false},
+	t.IDPeekU24LE - t.IDPeekU8: {three, false},
+	t.IDPeekU32BE - t.IDPeekU8: {four, false},
+	t.IDPeekU32LE - t.IDPeekU8: {four, false},
+	t.IDPeekU40BE - t.IDPeekU8: {five, false},
+	t.IDPeekU40LE - t.IDPeekU8: {five, false},
+	t.IDPeekU48BE - t.IDPeekU8: {six, false},
+	t.IDPeekU48LE - t.IDPeekU8: {six, false},
+	t.IDPeekU56BE - t.IDPeekU8: {seven, false},
+	t.IDPeekU56LE - t.IDPeekU8: {seven, false},
+	t.IDPeekU64BE - t.IDPeekU8: {eight, false},
+	t.IDPeekU64LE - t.IDPeekU8: {eight, false},
+
+	t.IDWriteFastU8 - t.IDPeekU8:    {one, true},
+	t.IDWriteFastU16BE - t.IDPeekU8: {two, true},
+	t.IDWriteFastU16LE - t.IDPeekU8: {two, true},
+	t.IDWriteFastU24BE - t.IDPeekU8: {three, true},
+	t.IDWriteFastU24LE - t.IDPeekU8: {three, true},
+	t.IDWriteFastU32BE - t.IDPeekU8: {four, true},
+	t.IDWriteFastU32LE - t.IDPeekU8: {four, true},
+	t.IDWriteFastU40BE - t.IDPeekU8: {five, true},
+	t.IDWriteFastU40LE - t.IDPeekU8: {five, true},
+	t.IDWriteFastU48BE - t.IDPeekU8: {six, true},
+	t.IDWriteFastU48LE - t.IDPeekU8: {six, true},
+	t.IDWriteFastU56BE - t.IDPeekU8: {seven, true},
+	t.IDWriteFastU56LE - t.IDPeekU8: {seven, true},
+	t.IDWriteFastU64BE - t.IDPeekU8: {eight, true},
+	t.IDWriteFastU64LE - t.IDPeekU8: {eight, true},
 }
 
 // makeSliceLength returns "x.length()".
