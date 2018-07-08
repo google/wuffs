@@ -2453,7 +2453,7 @@ static inline uint32_t wuffs_base__io_writer__copy_n_from_history(
   // copy_n_from_history Wuffs method should also take an unroll hint argument,
   // and the cgen can look if that argument is the constant expression '3'.
   //
-  // See also wuffs_base__io_writer__copy_n_from_history__bco below.
+  // See also wuffs_base__io_writer__copy_n_from_history_fast below.
   //
   // Alternatively, or additionally, have a sloppy_copy_n_from_history method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
@@ -2469,13 +2469,13 @@ static inline uint32_t wuffs_base__io_writer__copy_n_from_history(
   return length;
 }
 
-// wuffs_base__io_writer__copy_n_from_history__bco is a Bounds Check Optimized
-// version of the wuffs_base__io_writer__copy_n_from_history function above.
-// The caller needs to prove that:
+// wuffs_base__io_writer__copy_n_from_history_fast is like the
+// wuffs_base__io_writer__copy_n_from_history function above, but has stronger
+// pre-conditions. The caller needs to prove that:
 //  - distance >  0
 //  - distance <= (*ptr_ptr - start)
 //  - length   <= (end      - *ptr_ptr)
-static inline uint32_t wuffs_base__io_writer__copy_n_from_history__bco(
+static inline uint32_t wuffs_base__io_writer__copy_n_from_history_fast(
     uint8_t** ptr_ptr,
     uint8_t* start,
     uint8_t* end,
@@ -4168,7 +4168,7 @@ label_0_continue:;
           goto exit;
         }
       }
-      wuffs_base__io_writer__copy_n_from_history__bco(
+      wuffs_base__io_writer__copy_n_from_history_fast(
           &ioptr_dst, a_dst.private_impl.bounds[0], iobounds1_dst, v_length,
           (v_dist_minus_1 + 1));
       goto label_2_break;

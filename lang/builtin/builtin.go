@@ -158,8 +158,8 @@ var Funcs = []string{
 	"io_reader.read_u64be?()(ret u64)",
 	"io_reader.read_u64le?()(ret u64)",
 
-	// TODO: these should have an explicit precondition "available() >= N". For
-	// now, that's implicitly checked (i.e. hard coded).
+	// TODO: these should have an explicit pre-condition "available() >= N".
+	// For now, that's implicitly checked (i.e. hard coded).
 	//
 	// The io_reader has peek_etc methods and skip_fast, not read_etc_fast,
 	// because we sometimes advance the pointer by less than what's read. See
@@ -188,9 +188,9 @@ var Funcs = []string{
 
 	"io_reader.skip?(n u32)()",
 
-	// TODO: this should have explicit preconditions "actual <= worst_case" and
-	// "worst_case <= available()". As an implementation restriction, we also
-	// require that worst_case has a constant value. For now, that's all
+	// TODO: this should have explicit pre-conditions "actual <= worst_case"
+	// and "worst_case <= available()". As an implementation restriction, we
+	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
 	"io_reader.skip_fast!(actual u32, worst_case u32)()",
 
@@ -212,8 +212,8 @@ var Funcs = []string{
 	"io_writer.write_u64be?(x u64)()",
 	"io_writer.write_u64le?(x u64)()",
 
-	// TODO: these should have an explicit precondition "available() >= N". For
-	// now, that's implicitly checked (i.e. hard coded).
+	// TODO: these should have an explicit pre-condition "available() >= N".
+	// For now, that's implicitly checked (i.e. hard coded).
 	//
 	// The io_writer has write_fast_etc methods, not poke_etc and skip_fast,
 	// because skip_fast could leave uninitialized bytes in the io_buffer.

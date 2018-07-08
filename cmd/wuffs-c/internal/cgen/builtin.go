@@ -172,7 +172,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	case t.IDCopyNFromHistory:
 		bco := ""
 		if bcoHack {
-			bco = "__bco"
+			bco = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
 			"&ioptr_dst, %sdst.private_impl.bounds[0], iobounds1_dst",

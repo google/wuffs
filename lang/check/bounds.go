@@ -976,7 +976,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 			actual := args[0].AsArg().Value()
 			worstCase := args[1].AsArg().Value()
 			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
-				return a.Bounds{}, fmt.Errorf("check: could not prove skip_fast precondition: %s <= %s",
+				return a.Bounds{}, fmt.Errorf("check: could not prove skip_fast pre-condition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
 			} else if err != nil {
 				return a.Bounds{}, err
@@ -997,7 +997,7 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 			if ok, err := q.optimizeIOMethodAdvance(recv, advance, update); err != nil {
 				return a.Bounds{}, err
 			} else if !ok {
-				return a.Bounds{}, fmt.Errorf("check: could not prove %s precondition: %s.available() >= %v",
+				return a.Bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %v",
 					method.Str(q.tm), recv.Str(q.tm), advance)
 			}
 			// TODO: drop other recv-related facts?
