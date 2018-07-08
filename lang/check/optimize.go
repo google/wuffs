@@ -216,6 +216,7 @@ func (q *checker) optimizeSuspendible(n *a.Expr, depth uint32) error {
 		if ok, err := q.optimizeIOMethodAdvance(nReceiver, advance, true); err != nil {
 			return err
 		} else if ok {
+			// TODO: no longer used; delete.
 			n.SetProvenNotToSuspend()
 		}
 	}

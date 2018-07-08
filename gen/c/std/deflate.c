@@ -3937,15 +3937,11 @@ label_0_continue:;
   while ((((uint64_t)(iobounds1_dst - ioptr_dst)) >= 258) &&
          (((uint64_t)(iobounds1_src - ioptr_src)) >= 12)) {
     if (v_n_bits < 15) {
-      {
-        uint8_t t_0 = *ioptr_src++;
-        v_bits |= (((uint32_t)(t_0)) << v_n_bits);
-      }
+      v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+      (ioptr_src += 1, wuffs_base__return_empty_struct());
       v_n_bits += 8;
-      {
-        uint8_t t_1 = *ioptr_src++;
-        v_bits |= (((uint32_t)(t_1)) << v_n_bits);
-      }
+      v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+      (ioptr_src += 1, wuffs_base__return_empty_struct());
       v_n_bits += 8;
     } else {
     }
@@ -3954,7 +3950,9 @@ label_0_continue:;
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
     if ((v_table_entry >> 31) != 0) {
-      *ioptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
+      (wuffs_base__store_u8be(ioptr_dst,
+                              ((uint8_t)(((v_table_entry >> 8) & 255)))),
+       ioptr_dst += 1, wuffs_base__return_empty_struct());
       goto label_0_continue;
     } else if ((v_table_entry >> 30) != 0) {
     } else if ((v_table_entry >> 29) != 0) {
@@ -3962,15 +3960,11 @@ label_0_continue:;
       goto label_0_break;
     } else if ((v_table_entry >> 28) != 0) {
       if (v_n_bits < 15) {
-        {
-          uint8_t t_2 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_2)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
-        {
-          uint8_t t_3 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_3)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
       } else {
       }
@@ -3987,7 +3981,9 @@ label_0_continue:;
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
       if ((v_table_entry >> 31) != 0) {
-        *ioptr_dst++ = ((uint8_t)(((v_table_entry >> 8) & 255)));
+        (wuffs_base__store_u8be(ioptr_dst,
+                                ((uint8_t)(((v_table_entry >> 8) & 255)))),
+         ioptr_dst += 1, wuffs_base__return_empty_struct());
         goto label_0_continue;
       } else if ((v_table_entry >> 30) != 0) {
       } else if ((v_table_entry >> 29) != 0) {
@@ -4017,15 +4013,11 @@ label_0_continue:;
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
     if (v_table_entry_n_bits > 0) {
       if (v_n_bits < 15) {
-        {
-          uint8_t t_4 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_4)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
-        {
-          uint8_t t_5 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_5)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
       } else {
       }
@@ -4042,15 +4034,11 @@ label_0_continue:;
       goto exit;
     }
     if (v_n_bits < 15) {
-      {
-        uint8_t t_6 = *ioptr_src++;
-        v_bits |= (((uint32_t)(t_6)) << v_n_bits);
-      }
+      v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+      (ioptr_src += 1, wuffs_base__return_empty_struct());
       v_n_bits += 8;
-      {
-        uint8_t t_7 = *ioptr_src++;
-        v_bits |= (((uint32_t)(t_7)) << v_n_bits);
-      }
+      v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+      (ioptr_src += 1, wuffs_base__return_empty_struct());
       v_n_bits += 8;
     } else {
     }
@@ -4060,15 +4048,11 @@ label_0_continue:;
     v_n_bits -= v_table_entry_n_bits;
     if ((v_table_entry >> 28) == 1) {
       if (v_n_bits < 15) {
-        {
-          uint8_t t_8 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_8)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
-        {
-          uint8_t t_9 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_9)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
       } else {
       }
@@ -4099,15 +4083,11 @@ label_0_continue:;
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
     if (v_table_entry_n_bits > 0) {
       if (v_n_bits < 15) {
-        {
-          uint8_t t_10 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_10)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
-        {
-          uint8_t t_11 = *ioptr_src++;
-          v_bits |= (((uint32_t)(t_11)) << v_n_bits);
-        }
+        v_bits |= (((uint32_t)(wuffs_base__load_u8be(ioptr_src))) << v_n_bits);
+        (ioptr_src += 1, wuffs_base__return_empty_struct());
         v_n_bits += 8;
       }
       v_dist_minus_1 =

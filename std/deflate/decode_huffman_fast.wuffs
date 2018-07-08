@@ -63,9 +63,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (in.src.peek_u8() as base.u32) << n_bits
+			in.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (in.src.peek_u8() as base.u32) << n_bits
+			in.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -85,7 +87,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 
 		if (table_entry >> 31) != 0 {
 			// Literal.
-			in.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
+			in.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
 			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
@@ -100,9 +102,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -124,7 +128,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 
 			if (table_entry >> 31) != 0 {
 				// Literal.
-				in.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
+				in.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
 				continue:loop
 			} else if (table_entry >> 30) != 0 {
 				// No-op; code continues past the if-else chain.
@@ -156,9 +160,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -182,9 +188,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (in.src.peek_u8() as base.u32) << n_bits
+			in.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (in.src.peek_u8() as base.u32) << n_bits
+			in.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -205,9 +213,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -250,9 +260,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() 
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.read_u8?() as base.u32) << n_bits
+				bits |= (in.src.peek_u8() as base.u32) << n_bits
+				in.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			}
