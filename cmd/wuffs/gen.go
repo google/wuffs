@@ -178,7 +178,7 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 
 		suffix := lang
 		if suffix == "c" {
-			// TODO: suffix = "h"
+			suffix = "h"
 		}
 
 		if err := h.genFile(dirname, lang, suffix, out); err != nil {

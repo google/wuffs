@@ -805,7 +805,7 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 		}
 	}
 
-	useeFilename := filepath.Join(g.wuffsRoot, "gen", "c", filepath.FromSlash(useDirname)+".c")
+	useeFilename := filepath.Join(g.wuffsRoot, "gen", "c", filepath.FromSlash(useDirname)+".h")
 	usee, err := ioutil.ReadFile(useeFilename)
 	if err != nil {
 		return err
