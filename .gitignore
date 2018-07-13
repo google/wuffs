@@ -1,8 +1,6 @@
 *.exe
+*.out
 *~
-/fuzz/c/std/*.out
-/gen/lib
-/gen/wuffs
+/gen
 Cargo.lock
-a.out
 target
