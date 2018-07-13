@@ -65,12 +65,11 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs genrelease" on 2018-07-11 UTC,
-// based on revision 85c4de47b990def743d8e94883733914b40ee523.
-#define WUFFS_VERSION ((uint64_t)0x0000000000000000)
-#define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
-#define WUFFS_VERSION_MINOR ((uint64_t)0x0000)
-#define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
+// !! Some code generation programs can override WUFFS_VERSION.
+#define WUFFS_VERSION ((uint64_t)0)
+#define WUFFS_VERSION_MAJOR ((uint64_t)0)
+#define WUFFS_VERSION_MINOR ((uint64_t)0)
+#define WUFFS_VERSION_PATCH ((uint64_t)0)
 #define WUFFS_VERSION_EXTENSION ""
 #define WUFFS_VERSION_STRING "0.0.0"
 

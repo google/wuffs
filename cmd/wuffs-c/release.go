@@ -204,6 +204,9 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, s []byte) error {
 		if s[0] == '/' {
 			switch {
 			case bytes.Equal(s, grVOverride):
+				if (h.version == cf.Version{}) {
+					break
+				}
 				var err error
 				remaining, err = h.genWuffsVersion(w, remaining)
 				if err != nil {
