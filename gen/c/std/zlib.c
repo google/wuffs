@@ -2116,7 +2116,7 @@ inline wuffs_base__status wuffs_zlib__decoder::decode(
 
 #endif  // WUFFS_INCLUDE_GUARD__ZLIB
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
@@ -3153,3 +3153,5 @@ short_read_src:
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__ZLIB)
+
+#endif  // WUFFS_IMPLEMENTATION

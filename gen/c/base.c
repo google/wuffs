@@ -1750,7 +1750,7 @@ inline wuffs_base__table_u8 wuffs_base__image_buffer::plane(uint32_t p) {
 
 #endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
@@ -2509,3 +2509,5 @@ const char* wuffs_base__status__string(wuffs_base__status s) {
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
+
+#endif  // WUFFS_IMPLEMENTATION

@@ -64,9 +64,9 @@ for f in fuzz/c/std/*_fuzzer.c; do
   gcc -DWUFFS_CONFIG__FUZZLIB_MAIN $f -o ${f%.c}.out
 done
 
-for f in release/c/wuffs-*/*.c; do
+for f in release/c/*.h; do
   echo "Checking $f compiles cleanly (as C)"
-  gcc -c -Wall -Werror -std=c99   $f -o /dev/null
+  gcc -c -Wall -Werror -std=c99   -DWUFFS_IMPLEMENTATION $f -o /dev/null
   echo "Checking $f compiles cleanly (as C++)"
-  g++ -c -Wall -Werror -std=c++11 $f -o /dev/null
+  g++ -c -Wall -Werror -std=c++11 -DWUFFS_IMPLEMENTATION $f -o /dev/null
 done

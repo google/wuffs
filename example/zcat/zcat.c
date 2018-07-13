@@ -25,13 +25,21 @@ for a C compiler $CC, such as clang or gcc.
 #include <errno.h>
 #include <unistd.h>
 
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
-// the release/c/wuffs-etc/etc.c code whitelist which parts of Wuffs to build.
-// That C file contains the entire Wuffs standard library, implementing a
-// variety of codecs and file formats. Without this macro definition, an
-// optimizing compiler or linker may very well discard Wuffs code for unused
-// codecs, but listing the Wuffs modules we use makes that process explicit.
-// Preprocessing means that such code simply isn't compiled.
+// release/c/etc.h whitelist which parts of Wuffs to build. That file contains
+// the entire Wuffs standard library, implementing a variety of codecs and file
+// formats. Without this macro definition, an optimizing compiler or linker may
+// very well discard Wuffs code for unused codecs, but listing the Wuffs
+// modules we use makes that process explicit. Preprocessing means that such
+// code simply isn't compiled.
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__BASE
 #define WUFFS_CONFIG__MODULE__CRC32
@@ -41,16 +49,7 @@ for a C compiler $CC, such as clang or gcc.
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../release/c/wuffs-v0.2/wuffs-v0.2.c"
-//
-// To build this program against the development (instead of the release)
-// editions, comment out the #include line above and uncomment the #include
-// lines below.
-//
-// #include "../../gen/c/base.c"
-// #include "../../gen/c/std/crc32.c"
-// #include "../../gen/c/std/deflate.c"
-// #include "../../gen/c/std/gzip.c"
+#include "../../release/c/unsupported-snapshot.h"
 
 #ifdef __linux__
 #include <linux/prctl.h>

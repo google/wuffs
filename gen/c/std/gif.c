@@ -2074,7 +2074,7 @@ inline wuffs_base__status wuffs_gif__decoder::decode_frame(
 
 #endif  // WUFFS_INCLUDE_GUARD__GIF
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
@@ -4699,3 +4699,5 @@ exit:
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)
+
+#endif  // WUFFS_IMPLEMENTATION

@@ -30,11 +30,18 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include <stdio.h>
 #include <unistd.h>
 
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C++ file.
-#include "../../gen/c/base.c"
-#include "../../gen/c/std/crc32.c"
+#include "../../release/c/unsupported-snapshot.h"
 
 #ifndef SRC_BUFFER_SIZE
 #define SRC_BUFFER_SIZE (32 * 1024)

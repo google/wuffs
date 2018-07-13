@@ -53,12 +53,18 @@ uint64_t micros_since_start(struct timespec* now) {
 }
 #endif
 
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../gen/c/base.c"
-#include "../../gen/c/std/gif.c"
-#include "../../gen/c/std/lzw.c"
+#include "../../release/c/unsupported-snapshot.h"
 
 // Limit the input GIF image to (64 MiB - 1 byte) compressed and 4096 × 4096
 // pixels uncompressed. This is a limitation of this example program (which

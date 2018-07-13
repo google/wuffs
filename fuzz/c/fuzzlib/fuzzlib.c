@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC
-#error "Wuffs' .c or .h files need to be included before this file"
+#ifndef WUFFS_INCLUDE_GUARD
+#error "Wuffs' .h files need to be included before this file"
 #endif
 
 volatile int* intentional_segfault_ptr = NULL;

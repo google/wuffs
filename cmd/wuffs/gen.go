@@ -175,21 +175,13 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 			return err
 		}
 		out := stdout.Bytes()
-		if err := h.genFile(dirname, lang, lang, out); err != nil {
-			return err
+
+		suffix := lang
+		if suffix == "c" {
+			// TODO: suffix = "h"
 		}
 
-		// Special-case the "c" generator to also write a .h file.
-		if lang != "c" || packageName == "base" {
-			continue
-		}
-
-		if i := bytes.Index(out, cHeaderEndsHere); i >= 0 {
-			out = out[:i]
-		} else {
-			return fmt.Errorf("%s: output did not contain %q", command, cHeaderEndsHere)
-		}
-		if err := h.genFile(dirname, "c", "h", out); err != nil {
+		if err := h.genFile(dirname, lang, suffix, out); err != nil {
 			return err
 		}
 	}
@@ -200,8 +192,6 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 	}
 	return nil
 }
-
-var cHeaderEndsHere = []byte("\n// !! C HEADER ENDS HERE.\n\n")
 
 func (h *genHelper) genDirDependencies(qualifiedFilenames []string) error {
 	files, err := generate.ParseFiles(&h.tm, qualifiedFilenames, nil)

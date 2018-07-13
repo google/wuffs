@@ -58,12 +58,18 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../gen/c/std/adler32.c"
-#include "../gen/c/std/deflate.c"
-#include "../gen/c/std/zlib.c"
+#include "../release/c/unsupported-snapshot.h"
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
@@ -210,8 +216,8 @@ const char* process_png_chunks(uint8_t* p, size_t n) {
 }
 
 const char* decode_once(bool frag_dst, bool frag_idat) {
-  wuffs_zlib__decoder dec;
-  wuffs_zlib__decoder__initialize(&dec, WUFFS_VERSION, 0);
+  wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
+  wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
   wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = bytes_per_frame};
   wuffs_base__io_buffer idat = {.ptr = idat_buffer,
@@ -233,19 +239,19 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
   }
 
   while (true) {
-    wuffs_zlib__status s =
+    wuffs_base__status s =
         wuffs_zlib__decoder__decode(&dec, dst_writer, idat_reader);
 
-    if (s == WUFFS_ZLIB__STATUS_OK) {
+    if (s == WUFFS_BASE__STATUS_OK) {
       break;
     }
-    if ((s == WUFFS_ZLIB__SUSPENSION_SHORT_WRITE) && frag_dst &&
+    if ((s == WUFFS_BASE__SUSPENSION_SHORT_WRITE) && frag_dst &&
         (i < height - 1)) {
       i++;
       dst.len = bytes_per_row * (i + 1);
       continue;
     }
-    if ((s == WUFFS_ZLIB__SUSPENSION_SHORT_READ) && frag_idat &&
+    if ((s == WUFFS_BASE__SUSPENSION_SHORT_READ) && frag_idat &&
         (j < num_idat_chunks - 1)) {
       j++;
       idat.wi = idat_splits[j + 1];

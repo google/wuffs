@@ -32,13 +32,18 @@ It should print "PASS", amongst other information, and exit(0).
 
 #pragma clang diagnostic pop
 
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+#define WUFFS_IMPLEMENTATION
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../../gen/c/base.c"
-#include "../../../gen/c/std/adler32.c"
-#include "../../../gen/c/std/deflate.c"
-#include "../../../gen/c/std/zlib.c"
+#include "../../../release/c/unsupported-snapshot.h"
 #include "../fuzzlib/fuzzlib.c"
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {

@@ -288,8 +288,8 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
   return 0;
 }
 
-// WUFFS_INCLUDE_GUARD__BASE_PUBLIC is where wuffs_base__foo_bar are defined.
-#ifdef WUFFS_INCLUDE_GUARD__BASE_PUBLIC
+// WUFFS_INCLUDE_GUARD is where wuffs_base__foo_bar are defined.
+#ifdef WUFFS_INCLUDE_GUARD
 
 wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
                                          uint32_t y0,
@@ -608,4 +608,4 @@ bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   return proc_io_buffers(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
-#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC
+#endif  // WUFFS_INCLUDE_GUARD

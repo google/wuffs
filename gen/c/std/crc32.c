@@ -1819,7 +1819,7 @@ inline uint32_t wuffs_crc32__ieee_hasher::update(wuffs_base__slice_u8 a_x) {
 
 #endif  // WUFFS_INCLUDE_GUARD__CRC32
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
@@ -3115,3 +3115,5 @@ uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__CRC32)
+
+#endif  // WUFFS_IMPLEMENTATION

@@ -305,10 +305,12 @@ func (g *gen) generate() ([]byte, error) {
 	if err := g.genHeader(b); err != nil {
 		return nil, err
 	}
-	b.writes("// !! C HEADER ENDS HERE.\n\n")
+	b.writex(wiStart)
+	b.writeb('\n')
 	if err := g.genImpl(b); err != nil {
 		return nil, err
 	}
+	b.writex(wiEnd)
 	return *b, nil
 }
 
@@ -774,8 +776,11 @@ func (g *gen) writeCppImpls(b *buffer) error {
 }
 
 var (
-	wigbpStart = []byte("#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
-	wigbpEnd   = []byte("#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
+	wiStart = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n")
+	wiEnd   = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n")
+
+	wigbpStart = []byte("\n#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
+	wigbpEnd   = []byte("\n#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
 )
 
 func (g *gen) writeUse(b *buffer, n *a.Use) error {
@@ -800,30 +805,34 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 		}
 	}
 
-	hdrFilename := filepath.Join(g.wuffsRoot, "gen", "c", filepath.FromSlash(useDirname)+".h")
-	hdr, err := ioutil.ReadFile(hdrFilename)
+	useeFilename := filepath.Join(g.wuffsRoot, "gen", "c", filepath.FromSlash(useDirname)+".c")
+	usee, err := ioutil.ReadFile(useeFilename)
 	if err != nil {
 		return err
+	}
+	if i := bytes.Index(usee, wiStart); i < 0 {
+		return fmt.Errorf("use %q: previously generated code %q could not be inlined", useDirname, useeFilename)
+	} else {
+		usee = usee[:i]
 	}
 
 	b.printf("// ---------------- BEGIN USE %q\n\n", useDirname)
 
 	// Inline the previously generated .h file, stripping out the redundant
 	// copy of the WUFFS_INCLUDE_GUARD__BASE_PUBLIC code.
-	if i := bytes.Index(hdr, wigbpStart); i < 0 {
-		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
+	if i := bytes.Index(usee, wigbpStart); i < 0 {
+		return fmt.Errorf("use %q: previously generated code %q could not be inlined", useDirname, useeFilename)
 	} else {
-		b.Write(hdr[:i])
-		hdr = hdr[i+len(wigbpStart):]
+		b.Write(usee[:i])
+		usee = usee[i+len(wigbpStart):]
 	}
-	if i := bytes.Index(hdr, wigbpEnd); i < 0 {
-		return fmt.Errorf("use %q: previously generated header %q could not be inlined", useDirname, hdrFilename)
+	if i := bytes.Index(usee, wigbpEnd); i < 0 {
+		return fmt.Errorf("use %q: previously generated code %q could not be inlined", useDirname, useeFilename)
 	} else {
-		b.Write(hdr[i+len(wigbpEnd):])
+		b.Write(usee[i+len(wigbpEnd):])
 	}
 
-	b.writeb('\n')
-	b.printf("// ---------------- END   USE %q\n\n", useDirname)
+	b.printf("\n\n// ---------------- END   USE %q\n\n", useDirname)
 	return nil
 }
 

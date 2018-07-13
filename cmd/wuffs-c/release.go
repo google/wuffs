@@ -56,6 +56,7 @@ func doGenrelease(args []string) error {
 	unformatted := bytes.NewBuffer(nil)
 	unformatted.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
 	unformatted.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
+	unformatted.WriteString(grSingleFileGuidance)
 
 	// First, cat all of the headers together, filtering out duplicate
 	// WUFFS_INCLUDE_GUARD__FOO sections and overriding WUFFS_VERSION.
@@ -65,10 +66,10 @@ func doGenrelease(args []string) error {
 			return err
 		}
 
-		if i := bytes.Index(s, grCHeader); i >= 0 {
+		if i := bytes.Index(s, grImplStartsHere); i >= 0 {
 			s = s[:i]
 		} else {
-			return fmt.Errorf("could not find %q", grCHeader)
+			return fmt.Errorf("could not find %q", grImplStartsHere)
 		}
 
 		if err := h.gen(unformatted, s); err != nil {
@@ -76,8 +77,7 @@ func doGenrelease(args []string) error {
 		}
 	}
 
-	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
-	unformatted.Write(grCHeader)
+	unformatted.Write(grImplStartsHere)
 	unformatted.WriteString("\n")
 
 	// Then, cat all of the implementations together, filtering out duplicate
@@ -88,8 +88,14 @@ func doGenrelease(args []string) error {
 			return err
 		}
 
-		if i := bytes.Index(s, grCHeader); i >= 0 {
-			s = s[i+len(grCHeader):]
+		if i := bytes.Index(s, grImplStartsHere); i >= 0 {
+			s = s[i+len(grImplStartsHere):]
+		} else {
+			continue
+		}
+
+		if i := bytes.Index(s, grImplEndsHere); i >= 0 {
+			s = s[:i]
 		} else {
 			continue
 		}
@@ -99,6 +105,10 @@ func doGenrelease(args []string) error {
 		}
 	}
 
+	unformatted.WriteString("\n")
+	unformatted.Write(grImplEndsHere)
+	unformatted.WriteString("\n\n#endif  // WUFFS_INCLUDE_GUARD\n\n")
+
 	cmd := exec.Command(*cformatterFlag, "-style=Chromium")
 	cmd.Stdin = unformatted
 	cmd.Stdout = os.Stdout
@@ -107,15 +117,26 @@ func doGenrelease(args []string) error {
 }
 
 var (
-	grCHeader   = []byte("// !! C HEADER ENDS HERE.\n")
-	grNN        = []byte("\n\n")
-	grVOverride = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
-	grVString   = []byte(`#define WUFFS_VERSION_STRING "0.0.0"`)
+	grImplStartsHere = []byte("#ifdef WUFFS_IMPLEMENTATION\n")
+	grImplEndsHere   = []byte("#endif  // WUFFS_IMPLEMENTATION\n")
+	grNN             = []byte("\n\n")
+	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
+	grVString        = []byte(`#define WUFFS_VERSION_STRING "0.0.0"`)
 
-	grDefine = []byte("#define WUFFS_INCLUDE_GUARD__")
-	grEndif  = []byte("#endif  // WUFFS_INCLUDE_GUARD__")
-	grIfndef = []byte("#ifndef WUFFS_INCLUDE_GUARD__")
+	grWigDefine = []byte("#define WUFFS_INCLUDE_GUARD__")
+	grWigEndif  = []byte("#endif  // WUFFS_INCLUDE_GUARD__")
+	grWigIfndef = []byte("#ifndef WUFFS_INCLUDE_GUARD__")
 )
+
+const grSingleFileGuidance = `
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// To use that single file as a "foo.c"-like implementation, instead of a
+// "foo.h"-like header, #define WUFFS_IMPLEMENTATION before #include'ing or
+// compiling it.
+
+`
 
 type genReleaseHelper struct {
 	seen     map[string]bool
@@ -137,8 +158,8 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, s []byte) error {
 
 		if s[0] == '#' {
 			switch {
-			case bytes.HasPrefix(s, grIfndef):
-				pkg := string(s[len(grIfndef):])
+			case bytes.HasPrefix(s, grWigIfndef):
+				pkg := string(s[len(grWigIfndef):])
 				for _, p := range stack {
 					if p == pkg {
 						return fmt.Errorf("unexpected %q", s)
@@ -152,15 +173,15 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, s []byte) error {
 				stack = append(stack, pkg)
 				continue
 
-			case bytes.HasPrefix(s, grDefine):
-				pkg := string(s[len(grDefine):])
+			case bytes.HasPrefix(s, grWigDefine):
+				pkg := string(s[len(grWigDefine):])
 				if (len(stack) == 0) || (stack[len(stack)-1] != pkg) {
 					return fmt.Errorf("unexpected %q", s)
 				}
 				continue
 
-			case bytes.HasPrefix(s, grEndif):
-				pkg := string(s[len(grEndif):])
+			case bytes.HasPrefix(s, grWigEndif):
+				pkg := string(s[len(grWigEndif):])
 				if (len(stack) == 0) || (stack[len(stack)-1] != pkg) {
 					return fmt.Errorf("unexpected %q", s)
 				}
@@ -196,7 +217,7 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, s []byte) error {
 	}
 
 	if len(stack) != 0 {
-		return fmt.Errorf("unmatched %q", string(grIfndef)+stack[len(stack)-1])
+		return fmt.Errorf("unmatched %q", string(grWigIfndef)+stack[len(stack)-1])
 	}
 	return nil
 }

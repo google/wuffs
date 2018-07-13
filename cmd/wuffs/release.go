@@ -64,21 +64,6 @@ func doGenrelease(wuffsRoot string, args []string) error {
 		if err := writeFile(filename, contents); err != nil {
 			return err
 		}
-
-		// Special-case the "c" generator to also write a .h file.
-		if lang != "c" {
-			continue
-		}
-
-		filename = filename[:len(filename)-1] + "h"
-		if i := bytes.Index(contents, cHeaderEndsHere); i >= 0 {
-			contents = contents[:i]
-		} else {
-			return fmt.Errorf("wuffs-c output did not contain %q", cHeaderEndsHere)
-		}
-		if err := writeFile(filename, contents); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -106,8 +91,15 @@ func doGenrelease1(wuffsRoot string, revision string, v cf.Version, lang string)
 		return "", nil, err
 	}
 
-	wv := fmt.Sprintf("wuffs-v%d.%d", v.Major, v.Minor)
-	return filepath.Join(wuffsRoot, "release", lang, wv, wv+"."+lang), stdout.Bytes(), nil
+	base := "unsupported-snapshot"
+	if v.Major != 0 || v.Minor != 0 {
+		base = fmt.Sprintf("wuffs-v%d.%d", v.Major, v.Minor)
+	}
+	ext := lang
+	if ext == "c" {
+		ext = "h"
+	}
+	return filepath.Join(wuffsRoot, "release", lang, base+"."+ext), stdout.Bytes(), nil
 }
 
 func findRevision(wuffsRoot string) string {

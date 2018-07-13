@@ -1818,7 +1818,7 @@ inline uint32_t wuffs_adler32__hasher::update(wuffs_base__slice_u8 a_x) {
 
 #endif  // WUFFS_INCLUDE_GUARD__ADLER32
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 #ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
 #define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
@@ -2678,3 +2678,5 @@ uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__ADLER32)
+
+#endif  // WUFFS_IMPLEMENTATION

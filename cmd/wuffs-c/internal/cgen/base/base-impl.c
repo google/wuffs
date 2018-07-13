@@ -16,7 +16,7 @@
 
 // !! INSERT base-public.h.
 
-// !! C HEADER ENDS HERE.
+#ifdef WUFFS_IMPLEMENTATION
 
 // !! INSERT base-private.h.
 
@@ -31,3 +31,5 @@ const char* wuffs_base__status__string(wuffs_base__status s) {
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
+
+#endif  // WUFFS_IMPLEMENTATION

@@ -6,9 +6,3 @@
 Cargo.lock
 a.out
 target
-
-# Any "version 0.0.patch" release is only for development.
-#
-# Such files are created by the build-all.sh script, although that is not the
-# only way to create them.
-release/c/wuffs-v0.0
