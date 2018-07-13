@@ -54,7 +54,10 @@ func doGenrelease(wuffsRoot string, args []string) error {
 			return err
 		}
 	}
+	return doGenrelease1(wuffsRoot, langs, v)
+}
 
+func doGenrelease1(wuffsRoot string, langs []string, v cf.Version) error {
 	revision := findRevision(wuffsRoot)
 	for _, lang := range langs {
 		suffix := lang
@@ -62,7 +65,7 @@ func doGenrelease(wuffsRoot string, args []string) error {
 			suffix = "h"
 		}
 
-		filename, contents, err := doGenrelease1(wuffsRoot, revision, v, lang, suffix)
+		filename, contents, err := doGenrelease2(wuffsRoot, revision, v, lang, suffix)
 		if err != nil {
 			return err
 		}
@@ -73,7 +76,7 @@ func doGenrelease(wuffsRoot string, args []string) error {
 	return nil
 }
 
-func doGenrelease1(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) (filename string, contents []byte, err error) {
+func doGenrelease2(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) (filename string, contents []byte, err error) {
 	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+suffix)
 	if err != nil {
 		return "", nil, err

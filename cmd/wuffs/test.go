@@ -94,24 +94,40 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 		ccompilers: *ccompilersFlag,
 	}
 
+	// Ensure that we are testing the latest version of the generated code.
+	if !*skipgenFlag {
+		gh := genHelper{
+			wuffsRoot:   wuffsRoot,
+			langs:       langs,
+			cformatter:  *cformatterFlag,
+			skipgendeps: *skipgendepsFlag,
+		}
+		for _, arg := range args {
+			recursive := strings.HasSuffix(arg, "/...")
+			if recursive {
+				arg = arg[:len(arg)-4]
+			}
+			if arg == "" {
+				continue
+			}
+
+			if err := gh.gen(arg, recursive); err != nil {
+				return err
+			}
+		}
+		if err := doGenrelease1(wuffsRoot, langs, cf.Version{}); err != nil {
+			return err
+		}
+	}
+
 	failed := false
 	for _, arg := range args {
 		recursive := strings.HasSuffix(arg, "/...")
 		if recursive {
 			arg = arg[:len(arg)-4]
 		}
-
-		// Ensure that we are testing the latest version of the generated code.
-		if !*skipgenFlag {
-			gh := genHelper{
-				wuffsRoot:   wuffsRoot,
-				langs:       langs,
-				cformatter:  *cformatterFlag,
-				skipgendeps: *skipgendepsFlag,
-			}
-			if err := gh.gen(arg, recursive); err != nil {
-				return err
-			}
+		if arg == "" {
+			continue
 		}
 
 		// Proceed with benching / testing the generated code.

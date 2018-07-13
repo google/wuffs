@@ -72,6 +72,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 		if arg == "" {
 			continue
 		}
+
 		if err := h.gen(arg, recursive); err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	if genlib {
 		return h.genlibAffected()
 	}
-	return nil
+	return doGenrelease1(wuffsRoot, langs, cf.Version{})
 }
 
 type genHelper struct {
