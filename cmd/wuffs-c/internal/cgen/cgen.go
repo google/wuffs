@@ -738,7 +738,10 @@ func (g *gen) writeCppImpls(b *buffer) error {
 
 			structID := n.QID()[1]
 			structName := structID.Str(g.tm)
-			b.printf("inline void %s%s::check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n",
+			// The empty // comment makes clang-format place the function name
+			// at the start of a line.
+			b.writes("inline void //\n")
+			b.printf("%s%s::check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n",
 				g.pkgPrefix, structName)
 			b.printf("%s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n",
 				g.pkgPrefix, structName)

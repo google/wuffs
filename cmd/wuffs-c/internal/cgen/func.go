@@ -99,6 +99,12 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 		return fmt.Errorf("TODO: multiple return values")
 	}
 
+	if cpp != cppInsideStruct {
+		// The empty // comment makes clang-format place the function name at
+		// the start of a line.
+		b.writes("//\n")
+	}
+
 	switch cpp {
 	case cppNone:
 		b.writes(g.funcCName(n))
