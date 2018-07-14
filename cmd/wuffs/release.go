@@ -49,6 +49,7 @@ func doGenrelease(wuffsRoot string, args []string) error {
 			wuffsRoot:  wuffsRoot,
 			langs:      langs,
 			cformatter: cf.CformatterDefault,
+			skipgen:    *skipgenFlag,
 		}
 		if err := gh.gen("std", true); err != nil {
 			return err

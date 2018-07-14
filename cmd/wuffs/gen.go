@@ -42,6 +42,11 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
 
+	skipgenFlag := (*bool)(nil)
+	if genlib {
+		skipgenFlag = flags.Bool("skipgen", skipgenDefault, skipgenUsage)
+	}
+
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -61,6 +66,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 		wuffsRoot:   wuffsRoot,
 		langs:       langs,
 		cformatter:  *cformatterFlag,
+		skipgen:     genlib && *skipgenFlag,
 		skipgendeps: *skipgendepsFlag,
 	}
 
@@ -88,6 +94,7 @@ type genHelper struct {
 	wuffsRoot   string
 	langs       []string
 	cformatter  string
+	skipgen     bool
 	skipgendeps bool
 
 	affected []string
@@ -149,6 +156,9 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 		return fmt.Errorf(`invalid package %q, not in [a-z0-9]+`, packageName)
 	}
 
+	if h.skipgen {
+		return nil
+	}
 	if !h.skipgendeps {
 		if err := h.genDirDependencies(qualFilenames); err != nil {
 			return err

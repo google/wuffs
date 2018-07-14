@@ -39,10 +39,10 @@
 
 go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
-wuffs genlib
-wuffs test       -skipgen -mimic
-wuffs bench      -skipgen -mimic -reps=1 -iterscale=1
-wuffs genrelease -skipgen -version=0.0.0
+wuffs gen
+wuffs genlib -skipgen
+wuffs test   -skipgen -mimic
+wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
 
 for f in example/*; do
   echo "Building $f"

@@ -100,6 +100,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 			wuffsRoot:   wuffsRoot,
 			langs:       langs,
 			cformatter:  *cformatterFlag,
+			skipgen:     *skipgenFlag,
 			skipgendeps: *skipgendepsFlag,
 		}
 		for _, arg := range args {
