@@ -46,6 +46,10 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	if genlib {
 		skipgenFlag = flags.Bool("skipgen", skipgenDefault, skipgenUsage)
 	}
+	versionFlag := (*string)(nil)
+	if !genlib {
+		versionFlag = flags.String("version", cf.VersionDefault, cf.VersionUsage)
+	}
 
 	if err := flags.Parse(args); err != nil {
 		return err
@@ -56,6 +60,14 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	langs, err := parseLangs(*langsFlag)
 	if err != nil {
 		return err
+	}
+	v := cf.Version{}
+	if !genlib {
+		ok := false
+		v, ok = cf.ParseVersion(*versionFlag)
+		if !ok {
+			return fmt.Errorf("bad -version flag value %q", *versionFlag)
+		}
 	}
 	args = flags.Args()
 	if len(args) == 0 {
@@ -87,7 +99,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	if genlib {
 		return h.genlibAffected()
 	}
-	return doGenrelease1(wuffsRoot, langs, cf.Version{})
+	return genrelease(wuffsRoot, langs, v)
 }
 
 type genHelper struct {

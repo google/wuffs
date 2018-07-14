@@ -35,7 +35,6 @@ var commands = []struct {
 	{"bench", doBench},
 	{"gen", doGen},
 	{"genlib", doGenlib},
-	{"genrelease", doGenrelease},
 	{"test", doTest},
 }
 
@@ -51,7 +50,6 @@ The commands are:
 	bench   benchmark packages
 	gen     generate code for packages and dependencies
 	genlib  generate software libraries
-	genrelease  generate a stand-alone release
 	test    test packages
 `)
 }

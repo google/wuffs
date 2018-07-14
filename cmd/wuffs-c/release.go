@@ -230,7 +230,7 @@ func (h *genReleaseHelper) genWuffsVersion(w *bytes.Buffer, s []byte) (remaining
 		return nil, fmt.Errorf("%q did not end with %q", cut, grVString)
 	}
 
-	fmt.Fprintf(w, "// WUFFS_VERSION was overridden by \"wuffs genrelease\" on %v UTC",
+	fmt.Fprintf(w, "// WUFFS_VERSION was overridden by \"wuffs gen -version\" on %v UTC",
 		time.Now().UTC().Format("2006-01-02"))
 	if h.revision != "" {
 		fmt.Fprintf(w, ",\n// based on revision %s", h.revision)

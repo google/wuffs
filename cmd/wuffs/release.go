@@ -16,7 +16,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -26,39 +25,7 @@ import (
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
-func doGenrelease(wuffsRoot string, args []string) error {
-	flags := flag.NewFlagSet("genrelease", flag.ExitOnError)
-	langsFlag := flags.String("langs", langsDefault, langsUsage)
-	skipgenFlag := flags.Bool("skipgen", skipgenDefault, skipgenUsage)
-	versionFlag := flags.String("version", cf.VersionDefault, cf.VersionUsage)
-
-	if err := flags.Parse(args); err != nil {
-		return err
-	}
-	langs, err := parseLangs(*langsFlag)
-	if err != nil {
-		return err
-	}
-	v, ok := cf.ParseVersion(*versionFlag)
-	if !ok {
-		return fmt.Errorf("bad -version flag value %q", *versionFlag)
-	}
-
-	if !*skipgenFlag {
-		gh := genHelper{
-			wuffsRoot:  wuffsRoot,
-			langs:      langs,
-			cformatter: cf.CformatterDefault,
-			skipgen:    *skipgenFlag,
-		}
-		if err := gh.gen("std", true); err != nil {
-			return err
-		}
-	}
-	return doGenrelease1(wuffsRoot, langs, v)
-}
-
-func doGenrelease1(wuffsRoot string, langs []string, v cf.Version) error {
+func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	revision := findRevision(wuffsRoot)
 	for _, lang := range langs {
 		suffix := lang
@@ -66,7 +33,7 @@ func doGenrelease1(wuffsRoot string, langs []string, v cf.Version) error {
 			suffix = "h"
 		}
 
-		filename, contents, err := doGenrelease2(wuffsRoot, revision, v, lang, suffix)
+		filename, contents, err := genreleaseLang(wuffsRoot, revision, v, lang, suffix)
 		if err != nil {
 			return err
 		}
@@ -77,7 +44,7 @@ func doGenrelease1(wuffsRoot string, langs []string, v cf.Version) error {
 	return nil
 }
 
-func doGenrelease2(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) (filename string, contents []byte, err error) {
+func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) (filename string, contents []byte, err error) {
 	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+suffix)
 	if err != nil {
 		return "", nil, err
