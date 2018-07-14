@@ -60,16 +60,26 @@ func doGenrelease(args []string) error {
 
 	// First, cat all of the headers together, filtering out duplicate
 	// WUFFS_INCLUDE_GUARD__FOO sections and overriding WUFFS_VERSION.
+	implementations := [][]byte(nil)
 	for _, filename := range args {
 		s, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return err
 		}
 
+		trimmed := []byte(nil)
 		if i := bytes.Index(s, grImplStartsHere); i >= 0 {
-			s = s[:i]
-		} else {
-			return fmt.Errorf("could not find %q", grImplStartsHere)
+			remaining := s[i+len(grImplStartsHere):]
+			if j := bytes.Index(remaining, grImplEndsHere); j >= 0 {
+				implementations = append(implementations, remaining[:j])
+				trimmed = append(trimmed, s[:i]...)
+				trimmed = append(trimmed, '\n')
+				trimmed = append(trimmed, remaining[j+len(grImplEndsHere):]...)
+				s = trimmed
+			}
+		}
+		if len(trimmed) == 0 {
+			return fmt.Errorf("could not find %q or %q", grImplStartsHere, grImplEndsHere)
 		}
 
 		if err := h.gen(unformatted, s); err != nil {
@@ -82,26 +92,9 @@ func doGenrelease(args []string) error {
 
 	// Then, cat all of the implementations together, filtering out duplicate
 	// WUFFS_INCLUDE_GUARD__BASE_PRIVATE sections.
-	for _, filename := range args {
-		s, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
-
-		if i := bytes.Index(s, grImplStartsHere); i >= 0 {
-			s = s[i+len(grImplStartsHere):]
-		} else {
-			continue
-		}
-
-		if i := bytes.Index(s, grImplEndsHere); i >= 0 {
-			s = s[:i]
-		} else {
-			continue
-		}
-
+	for i, s := range implementations {
 		if err := h.gen(unformatted, s); err != nil {
-			return fmt.Errorf("%v in %s", err, filename)
+			return fmt.Errorf("%v in %s", err, args[i])
 		}
 	}
 

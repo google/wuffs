@@ -302,22 +302,23 @@ func (g *gen) generate() ([]byte, error) {
 		return nil, err
 	}
 
+	includeGuard := "WUFFS_INCLUDE_GUARD__" + strings.ToUpper(g.pkgName)
+	b.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
+
 	if err := g.genHeader(b); err != nil {
 		return nil, err
 	}
 	b.writex(wiStart)
-	b.writeb('\n')
 	if err := g.genImpl(b); err != nil {
 		return nil, err
 	}
 	b.writex(wiEnd)
+
+	b.printf("#endif  // %s\n\n", includeGuard)
 	return *b, nil
 }
 
 func (g *gen) genHeader(b *buffer) error {
-	includeGuard := "WUFFS_INCLUDE_GUARD__" + strings.ToUpper(g.pkgName)
-	b.printf("#ifndef %s\n#define %s\n\n", includeGuard, includeGuard)
-
 	if err := insertBasePublicH(b); err != nil {
 		return err
 	}
@@ -374,7 +375,6 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 
 	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
-	b.printf("#endif  // %s\n\n", includeGuard)
 	return nil
 }
 
@@ -781,8 +781,8 @@ func (g *gen) writeCppImpls(b *buffer) error {
 }
 
 var (
-	wiStart = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n")
-	wiEnd   = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n")
+	wiStart = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiEnd   = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 
 	wigbpStart = []byte("\n#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
 	wigbpEnd   = []byte("\n#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
@@ -815,10 +815,18 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 	if err != nil {
 		return err
 	}
-	if i := bytes.Index(usee, wiStart); i < 0 {
+	trimmed := []byte(nil)
+	if i := bytes.Index(usee, wiStart); i >= 0 {
+		remaining := usee[i+len(wiStart):]
+		if j := bytes.Index(remaining, wiEnd); j >= 0 {
+			trimmed = append(trimmed, usee[:i]...)
+			trimmed = append(trimmed, '\n')
+			trimmed = append(trimmed, remaining[j+len(wiEnd):]...)
+			usee = trimmed
+		}
+	}
+	if len(trimmed) == 0 {
 		return fmt.Errorf("use %q: previously generated code %q could not be inlined", useDirname, useeFilename)
-	} else {
-		usee = usee[:i]
 	}
 
 	b.printf("// ---------------- BEGIN USE %q\n\n", useDirname)
