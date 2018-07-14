@@ -34,6 +34,8 @@
 - Disallowed `__double_underscore` prefixed names.
 - Added a stand-alone lang/interval package.
 - Added fuzz tests.
+- Added `WUFFS_CONFIG__MODULES`.
+- Added `WUFFS_CONFIG__STATIC_FUNCTIONS`.
 - Added some C++ convenience methods.
 - Added some Go and Rust benchmarks.
 - Sped up the `mimic_deflate_xxx` benchmarks.

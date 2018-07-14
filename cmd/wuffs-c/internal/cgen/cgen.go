@@ -589,7 +589,9 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 }
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
-	if !n.Public() {
+	if n.Public() {
+		b.writes("WUFFS_BASE__MAYBE_STATIC ")
+	} else {
 		b.writes("static ")
 	}
 	b.writes("const ")

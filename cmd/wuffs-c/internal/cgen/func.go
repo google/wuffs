@@ -79,7 +79,9 @@ const (
 func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	if cpp != cppNone {
 		b.writes("inline ")
-	} else if !n.Public() {
+	} else if n.Public() {
+		b.writes("WUFFS_BASE__MAYBE_STATIC ")
+	} else {
 		b.writes("static ")
 	}
 

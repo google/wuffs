@@ -73,6 +73,16 @@ extern "C" {
 #define WUFFS_VERSION_EXTENSION ""
 #define WUFFS_VERSION_STRING "0.0.0"
 
+// Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
+// static storage. The motivation is discussed in the "ALLOW STATIC
+// IMPLEMENTATION" section of
+// https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
+#ifdef WUFFS_CONFIG__STATIC_FUNCTIONS
+#define WUFFS_BASE__MAYBE_STATIC static
+#else
+#define WUFFS_BASE__MAYBE_STATIC
+#endif
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
@@ -1811,8 +1821,9 @@ void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
 
 // ---------------- Public Function Prototypes
 
-uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
-                                       wuffs_base__slice_u8 a_x);
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
+                              wuffs_base__slice_u8 a_x);
 
 // ---------------- C++ Convenience Methods
 
@@ -1890,8 +1901,9 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
 
 // ---------------- Public Function Prototypes
 
-uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
-                                          wuffs_base__slice_u8 a_x);
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
+                                 wuffs_base__slice_u8 a_x);
 
 // ---------------- C++ Convenience Methods
 
@@ -2060,9 +2072,10 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                                                  wuffs_base__io_writer a_dst,
-                                                  wuffs_base__io_reader a_src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                               wuffs_base__io_writer a_dst,
+                               wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -2171,12 +2184,14 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
-                                           uint32_t a_lw);
+WUFFS_BASE__MAYBE_STATIC void wuffs_lzw__decoder__set_literal_width(
+    wuffs_lzw__decoder* self,
+    uint32_t a_lw);
 
-wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                                              wuffs_base__io_writer a_dst,
-                                              wuffs_base__io_reader a_src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                           wuffs_base__io_writer a_dst,
+                           wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -2364,21 +2379,22 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-wuffs_base__status wuffs_gif__decoder__decode_config(
-    wuffs_gif__decoder* self,
-    wuffs_base__image_config* a_dst,
-    wuffs_base__io_reader a_src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
+                                  wuffs_base__image_config* a_dst,
+                                  wuffs_base__io_reader a_src);
 
-uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
 
-wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
-    wuffs_gif__decoder* self);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self);
 
-wuffs_base__status wuffs_gif__decoder__decode_frame(
-    wuffs_gif__decoder* self,
-    wuffs_base__image_buffer* a_dst,
-    wuffs_base__io_reader a_src,
-    wuffs_base__slice_u8 a_work_buffer);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
+                                 wuffs_base__image_buffer* a_dst,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer);
 
 // ---------------- C++ Convenience Methods
 
@@ -2501,12 +2517,14 @@ void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
-                                              bool a_ic);
+WUFFS_BASE__MAYBE_STATIC void wuffs_gzip__decoder__set_ignore_checksum(
+    wuffs_gzip__decoder* self,
+    bool a_ic);
 
-wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                                               wuffs_base__io_writer a_dst,
-                                               wuffs_base__io_reader a_src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -2616,12 +2634,14 @@ void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
 
 // ---------------- Public Function Prototypes
 
-void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
-                                              bool a_ic);
+WUFFS_BASE__MAYBE_STATIC void wuffs_zlib__decoder__set_ignore_checksum(
+    wuffs_zlib__decoder* self,
+    bool a_ic);
 
-wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                                               wuffs_base__io_writer a_dst,
-                                               wuffs_base__io_reader a_src);
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -3494,8 +3514,9 @@ void wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
 
 // -------- func adler32.hasher.update
 
-uint32_t wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
-                                       wuffs_base__slice_u8 a_x) {
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
+                              wuffs_base__slice_u8 a_x) {
   if (!self) {
     return 0;
   }
@@ -4027,8 +4048,9 @@ void wuffs_crc32__ieee_hasher__check_wuffs_version(
 
 // -------- func crc32.ieee_hasher.update
 
-uint32_t wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
-                                          wuffs_base__slice_u8 a_x) {
+WUFFS_BASE__MAYBE_STATIC uint32_t
+wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
+                                 wuffs_base__slice_u8 a_x) {
   if (!self) {
     return 0;
   }
@@ -4402,9 +4424,10 @@ void wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
 
 // -------- func deflate.decoder.decode
 
-wuffs_base__status wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                                                  wuffs_base__io_writer a_dst,
-                                                  wuffs_base__io_reader a_src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                               wuffs_base__io_writer a_dst,
+                               wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -6371,10 +6394,10 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // -------- func gif.decoder.decode_config
 
-wuffs_base__status wuffs_gif__decoder__decode_config(
-    wuffs_gif__decoder* self,
-    wuffs_base__image_config* a_dst,
-    wuffs_base__io_reader a_src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
+                                  wuffs_base__image_config* a_dst,
+                                  wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -6460,7 +6483,8 @@ exit:
 
 // -------- func gif.decoder.frame_count
 
-uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
+WUFFS_BASE__MAYBE_STATIC uint64_t
+wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -6477,8 +6501,8 @@ uint64_t wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
 
 // -------- func gif.decoder.work_buffer_size
 
-wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
-    wuffs_gif__decoder* self) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64
+wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){});
   }
@@ -6496,11 +6520,11 @@ wuffs_base__range_ii_u64 wuffs_gif__decoder__work_buffer_size(
 
 // -------- func gif.decoder.decode_frame
 
-wuffs_base__status wuffs_gif__decoder__decode_frame(
-    wuffs_gif__decoder* self,
-    wuffs_base__image_buffer* a_dst,
-    wuffs_base__io_reader a_src,
-    wuffs_base__slice_u8 a_work_buffer) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
+                                 wuffs_base__image_buffer* a_dst,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -8244,8 +8268,9 @@ void wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
 
 // -------- func gzip.decoder.set_ignore_checksum
 
-void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
-                                              bool a_ic) {
+WUFFS_BASE__MAYBE_STATIC void wuffs_gzip__decoder__set_ignore_checksum(
+    wuffs_gzip__decoder* self,
+    bool a_ic) {
   if (!self) {
     return;
   }
@@ -8262,9 +8287,10 @@ void wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self,
 
 // -------- func gzip.decoder.decode
 
-wuffs_base__status wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                                               wuffs_base__io_writer a_dst,
-                                               wuffs_base__io_reader a_src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -8720,8 +8746,9 @@ void wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
 
 // -------- func lzw.decoder.set_literal_width
 
-void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
-                                           uint32_t a_lw) {
+WUFFS_BASE__MAYBE_STATIC void wuffs_lzw__decoder__set_literal_width(
+    wuffs_lzw__decoder* self,
+    uint32_t a_lw) {
   if (!self) {
     return;
   }
@@ -8742,9 +8769,10 @@ void wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self,
 
 // -------- func lzw.decoder.decode
 
-wuffs_base__status wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                                              wuffs_base__io_writer a_dst,
-                                              wuffs_base__io_reader a_src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                           wuffs_base__io_writer a_dst,
+                           wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -9085,8 +9113,9 @@ void wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
 
 // -------- func zlib.decoder.set_ignore_checksum
 
-void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
-                                              bool a_ic) {
+WUFFS_BASE__MAYBE_STATIC void wuffs_zlib__decoder__set_ignore_checksum(
+    wuffs_zlib__decoder* self,
+    bool a_ic) {
   if (!self) {
     return;
   }
@@ -9103,9 +9132,10 @@ void wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self,
 
 // -------- func zlib.decoder.decode
 
-wuffs_base__status wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                                               wuffs_base__io_writer a_dst,
-                                               wuffs_base__io_reader a_src) {
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status
+wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }

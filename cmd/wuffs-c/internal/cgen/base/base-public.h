@@ -52,6 +52,16 @@ extern "C" {
 #define WUFFS_VERSION_EXTENSION ""
 #define WUFFS_VERSION_STRING "0.0.0"
 
+// Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
+// static storage. The motivation is discussed in the "ALLOW STATIC
+// IMPLEMENTATION" section of
+// https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
+#ifdef WUFFS_CONFIG__STATIC_FUNCTIONS
+#define WUFFS_BASE__MAYBE_STATIC static
+#else
+#define WUFFS_BASE__MAYBE_STATIC
+#endif
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".

@@ -38,6 +38,12 @@ for a C++ compiler $CXX, such as clang++ or g++.
 // compiling it.
 #define WUFFS_IMPLEMENTATION
 
+// Defining the WUFFS_CONFIG__STATIC_FUNCTIONS macro is optional, but it
+// demonstrates making all of Wuffs' functions have static storage. The
+// motivation is discussed in the "ALLOW STATIC IMPLEMENTATION" section of
+// https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
+#define WUFFS_CONFIG__STATIC_FUNCTIONS
+
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C++ file.
