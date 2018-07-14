@@ -1513,7 +1513,6 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__image_config config;
-    uint32_t loop_count;  // 0-based count of the current loop.
     wuffs_base__pixel_buffer pixbuf;
     // TODO: color spaces.
     wuffs_base__rect_ie_u32 dirty_rect;
