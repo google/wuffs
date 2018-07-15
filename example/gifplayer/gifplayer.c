@@ -87,8 +87,10 @@ size_t image_len = 0;
 uint8_t* print_buffer = NULL;
 size_t print_len = 0;
 
-bool seen_num_loops = false;
+bool first_play = true;
 uint32_t num_loops_remaining = 0;
+wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
+wuffs_base__image_config ic = ((wuffs_base__image_config){});
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
@@ -276,38 +278,34 @@ const char* play() {
       .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true});
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__status s =
-      wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
-  if (s) {
-    return wuffs_gif__status__string(s);
-  }
-  if (!wuffs_base__image_config__is_valid(&ic)) {
-    return "invalid image configuration";
-  }
-  uint32_t width = wuffs_base__image_config__width(&ic);
-  uint32_t height = wuffs_base__image_config__height(&ic);
-  if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
-    return "image dimensions are too large";
-  }
-  if (!image_buffer) {
+  if (first_play) {
+    first_play = false;
+    wuffs_base__status s =
+        wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
+    if (s) {
+      return wuffs_gif__status__string(s);
+    }
+    if (!wuffs_base__image_config__is_valid(&ic)) {
+      return "invalid image configuration";
+    }
+    uint32_t width = wuffs_base__image_config__width(&ic);
+    uint32_t height = wuffs_base__image_config__height(&ic);
+    if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
+      return "image dimensions are too large";
+    }
     const char* msg = allocate(&ic);
     if (msg) {
       return msg;
     }
-  }
-  memset(image_buffer, 0, image_len);
-  s = wuffs_base__image_buffer__set_from_slice(
-      &ib, ic, ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
-  if (s) {
-    return wuffs_gif__status__string(s);
-  }
-
-  if (!seen_num_loops) {
-    seen_num_loops = true;
-    num_loops_remaining = wuffs_base__image_config__num_loops(&ic);
+    s = wuffs_base__image_buffer__set_from_slice(
+        &ib, ic,
+        ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
+    if (s) {
+      return wuffs_gif__status__string(s);
+    }
+    memset(image_buffer, 0, image_len);
     memset(dst_buffer, 0, dst_len);
+    num_loops_remaining = wuffs_base__image_config__num_loops(&ic);
   }
 
   while (1) {
@@ -315,8 +313,8 @@ const char* play() {
     // upcoming frame is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS.
     memcpy(prev_dst_buffer, dst_buffer, dst_len);
 
-    s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader,
-                                         ((wuffs_base__slice_u8){}));
+    wuffs_base__status s = wuffs_gif__decoder__decode_frame(
+        &dec, &ib, src_reader, ((wuffs_base__slice_u8){}));
     if (s) {
       if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;

@@ -263,7 +263,9 @@ func (q *checker) tcheckAssert(n *a.Assert) error {
 }
 
 func (q *checker) tcheckEq(lID t.ID, lhs *a.Expr, lTyp *a.TypeExpr, rhs *a.Expr, rTyp *a.TypeExpr) error {
-	if (rTyp.IsIdeal() && lTyp.IsNumType()) || lTyp.EqIgnoringRefinements(rTyp) {
+	if (rTyp.IsIdeal() && lTyp.IsNumType()) ||
+		(rTyp.EqIgnoringRefinements(lTyp)) ||
+		(rTyp.IsNullptr() && lTyp.Decorator() == t.IDNptr) {
 		return nil
 	}
 	lStr := "???"

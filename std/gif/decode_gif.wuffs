@@ -148,7 +148,7 @@ pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
 
 pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader, work_buffer slice base.u8)() {
 	if this.call_sequence == 0 {
-		return error "invalid call sequence"
+		this.decode_config?(dst:nullptr, src:in.src)
 	}
 
 	if not this.end_of_data {

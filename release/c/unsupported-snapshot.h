@@ -6663,14 +6663,17 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_call_sequence == 0) {
-      status = WUFFS_BASE__ERROR_INVALID_CALL_SEQUENCE;
-      goto exit;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+      status = wuffs_gif__decoder__decode_config(self, NULL, a_src);
+      if (status) {
+        goto suspend;
+      }
     }
     if (!self->private_impl.f_end_of_data) {
       if (self->private_impl.f_call_sequence == 1) {
         self->private_impl.f_call_sequence = 2;
       } else {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
         if (status) {
           goto suspend;
@@ -6680,10 +6683,10 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     if (self->private_impl.f_end_of_data) {
       while (true) {
         status = WUFFS_BASE__SUSPENSION_END_OF_DATA;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
       }
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
     status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src);
     if (status) {
       goto suspend;
