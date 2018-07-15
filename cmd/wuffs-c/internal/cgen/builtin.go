@@ -35,7 +35,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 	switch recvTyp.Decorator() {
 	case 0:
 		// No-op.
-	case t.IDPtr:
+	case t.IDNptr, t.IDPtr:
 		// TODO: don't hard-code initialize.
 		if method.Ident() != g.tm.ByName("initialize") {
 			return errNoSuchBuiltin

@@ -1009,8 +1009,7 @@ swtch:
 		}
 		fallthrough
 
-	// TODO: also check t.IDNptr? Where else should we look for nptr?
-	case t.IDPtr, t.IDSlice, t.IDTable:
+	case t.IDNptr, t.IDPtr, t.IDSlice, t.IDTable:
 		if err := q.tcheckTypeExpr(typ.Inner(), depth); err != nil {
 			return err
 		}

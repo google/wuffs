@@ -27,12 +27,12 @@ import (
 )
 
 var (
-	exprIn   = a.NewExpr(0, 0, 0, t.IDIn, nil, nil, nil, nil)
-	exprOut  = a.NewExpr(0, 0, 0, t.IDOut, nil, nil, nil, nil)
-	exprThis = a.NewExpr(0, 0, 0, t.IDThis, nil, nil, nil, nil)
+	exprIn      = a.NewExpr(0, 0, 0, t.IDIn, nil, nil, nil, nil)
+	exprOut     = a.NewExpr(0, 0, 0, t.IDOut, nil, nil, nil, nil)
+	exprThis    = a.NewExpr(0, 0, 0, t.IDThis, nil, nil, nil, nil)
+	exprNullptr = a.NewExpr(0, 0, 0, t.IDNullptr, nil, nil, nil, nil)
 )
 
-// typeExprFoo is an *ast.Node MType (implicit type).
 var (
 	typeExprGeneric1    = a.NewTypeExpr(0, t.IDBase, t.IDDagger1, nil, nil, nil)
 	typeExprGeneric2    = a.NewTypeExpr(0, t.IDBase, t.IDDagger2, nil, nil, nil)

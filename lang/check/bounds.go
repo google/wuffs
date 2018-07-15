@@ -888,8 +888,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 
 func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 	// TODO: handle func pre/post conditions.
-	//
-	// TODO: bcheck the receiver, e.g. ptr vs nptr.
 	lhs := n.LHS().AsExpr()
 	f, err := q.c.resolveFunc(lhs.MType())
 	if err != nil {
@@ -905,7 +903,24 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 			return err
 		}
 	}
-	return nil
+
+	recv := lhs.LHS().AsExpr()
+	if recv.MType().Decorator() != t.IDNptr {
+		return nil
+	}
+	// Check that q.facts contain "recv != nullptr".
+	for _, x := range q.facts {
+		if x.Operator() != t.IDXBinaryNotEq {
+			continue
+		}
+		xLHS := x.LHS().AsExpr()
+		xRHS := x.RHS().AsExpr()
+		if (xLHS.Eq(exprNullptr) && xRHS.Eq(recv)) ||
+			(xRHS.Eq(exprNullptr) && xLHS.Eq(recv)) {
+			return nil
+		}
+	}
+	return fmt.Errorf("check: cannot prove %q", recv.Str(q.tm)+" != nullptr")
 }
 
 var errNotASpecialCase = errors.New("not a special case")

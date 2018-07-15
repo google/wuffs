@@ -636,14 +636,14 @@ const MaxTypeExprDepth = 63
 
 // TypeExpr is a type expression, such as "base.u32", "base.u32[..8]", "foo",
 // "pkg.bar", "ptr T", "array[8] T", "slice T" or "table T":
-//  - ID0:   <0|IDArray|IDFunc|IDPtr|IDSlice|IDTable>
+//  - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDSlice|IDTable>
 //  - ID1:   <0|pkg>
 //  - ID2:   <0|type name>
 //  - LHS:   <nil|Expr>
 //  - MHS:   <nil|Expr>
 //  - RHS:   <nil|TypeExpr>
 //
-// An IDPtr ID0 means "ptr RHS". RHS is the inner type.
+// An IDNptr or IDPtr ID0 means "nptr RHS" or "ptr RHS". RHS is the inner type.
 //
 // An IDArray ID0 means "array[LHS] RHS". RHS is the inner type.
 //
@@ -684,7 +684,7 @@ func (n *TypeExpr) Innermost() *TypeExpr {
 }
 
 func (n *TypeExpr) Pointee() *TypeExpr {
-	for ; n != nil && n.id0 == t.IDPtr; n = n.Inner() {
+	for ; n != nil && (n.id0 == t.IDNptr || n.id0 == t.IDPtr); n = n.Inner() {
 	}
 	return n
 }
@@ -748,7 +748,7 @@ func (n *TypeExpr) HasPointers() bool {
 					return true
 				}
 			}
-		case t.IDPtr, t.IDNptr, t.IDSlice, t.IDTable:
+		case t.IDNptr, t.IDPtr, t.IDSlice, t.IDTable:
 			return true
 		}
 	}

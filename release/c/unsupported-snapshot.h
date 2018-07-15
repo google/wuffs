@@ -6523,10 +6523,6 @@ wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
   if (self->private_impl.status < 0) {
     return self->private_impl.status;
   }
-  if (!a_dst) {
-    self->private_impl.status = WUFFS_BASE__ERROR_BAD_ARGUMENT;
-    return WUFFS_BASE__ERROR_BAD_ARGUMENT;
-  }
   wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   uint32_t v_num_loops;

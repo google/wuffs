@@ -95,7 +95,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			method := n.LHS().AsExpr()
 			recv := method.LHS().AsExpr()
 			recvTyp, addr := recv.MType(), "&"
-			if recvTyp.Decorator() == t.IDPtr {
+			if p := recvTyp.Decorator(); p == t.IDNptr || p == t.IDPtr {
 				recvTyp, addr = recvTyp.Inner(), ""
 			}
 			if recvTyp.Decorator() != 0 {
@@ -199,7 +199,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		if err := g.writeExpr(b, lhs, rp, depth); err != nil {
 			return err
 		}
-		if key := lhs.MType().Decorator(); key == t.IDPtr || key == t.IDNptr {
+		if p := lhs.MType().Decorator(); p == t.IDNptr || p == t.IDPtr {
 			b.writes("->")
 		} else {
 			b.writes(".")
@@ -313,7 +313,7 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, rp replacementPolic
 	method := n.LHS().AsExpr()
 	recv := method.LHS().AsExpr()
 	recvTyp, addr := recv.MType(), "&"
-	if recvTyp.Decorator() == t.IDPtr {
+	if p := recvTyp.Decorator(); p == t.IDNptr || p == t.IDPtr {
 		recvTyp, addr = recvTyp.Inner(), ""
 	}
 	if recvTyp.Decorator() != 0 {
@@ -368,8 +368,7 @@ func (g *gen) writeCTypeName(b *buffer, n *a.TypeExpr, varNamePrefix string, var
 
 	numPointers, innermost := 0, x
 	for ; innermost != nil && innermost.Inner() != nil; innermost = innermost.Inner() {
-		// TODO: "nptr T", not just "ptr T".
-		if p := innermost.Decorator(); p == t.IDPtr {
+		if p := innermost.Decorator(); p == t.IDNptr || p == t.IDPtr {
 			if numPointers == maxNumPointers {
 				return fmt.Errorf("cannot convert Wuffs type %q to C: too many ptr's", n.Str(g.tm))
 			}

@@ -377,13 +377,13 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
-	if p.peek1() == t.IDPtr {
+	if x := p.peek1(); x == t.IDNptr || x == t.IDPtr {
 		p.src = p.src[1:]
 		rhs, err := p.parseTypeExpr()
 		if err != nil {
 			return nil, err
 		}
-		return a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, rhs), nil
+		return a.NewTypeExpr(x, 0, 0, nil, nil, rhs), nil
 	}
 
 	decorator, arrayLength := t.ID(0), (*a.Expr)(nil)

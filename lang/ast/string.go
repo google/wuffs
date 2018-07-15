@@ -223,6 +223,9 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	switch n.Decorator() {
 	case 0:
 		buf = append(buf, n.QID().Str(tm)...)
+	case t.IDNptr:
+		buf = append(buf, "nptr "...)
+		return n.Inner().appendStr(buf, tm, depth)
 	case t.IDPtr:
 		buf = append(buf, "ptr "...)
 		return n.Inner().appendStr(buf, tm, depth)

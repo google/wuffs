@@ -104,7 +104,7 @@ pub struct decoder?(
 )
 
 // TODO: should dst be an nptr instead of a ptr?
-pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)() {
+pub func decoder.decode_config?(dst nptr base.image_config, src base.io_reader)() {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
