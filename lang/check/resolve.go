@@ -38,6 +38,7 @@ var (
 	typeExprGeneric2    = a.NewTypeExpr(0, t.IDBase, t.IDDagger2, nil, nil, nil)
 	typeExprIdeal       = a.NewTypeExpr(0, t.IDBase, t.IDQIdeal, nil, nil, nil)
 	typeExprList        = a.NewTypeExpr(0, t.IDBase, t.IDDollar, nil, nil, nil)
+	typeExprNullptr     = a.NewTypeExpr(0, t.IDBase, t.IDQNullptr, nil, nil, nil)
 	typeExprPlaceholder = a.NewTypeExpr(0, t.IDBase, t.IDQPlaceholder, nil, nil, nil)
 	typeExprTypeExpr    = a.NewTypeExpr(0, t.IDBase, t.IDQTypeExpr, nil, nil, nil)
 

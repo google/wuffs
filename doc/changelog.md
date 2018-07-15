@@ -6,6 +6,7 @@
 - Renamed Puffs to Wuffs.
 - Ship as a "single file C library"
 - Added a `skipgendeps` flag.
+- Added a `nullptr` literal.
 - Added an `io_bind` keyword.
 - Added a `use` keyword.
 - Added a `yield` keyword.

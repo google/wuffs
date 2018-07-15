@@ -126,12 +126,14 @@ pub func decoder.decode_config?(dst ptr base.image_config, src base.io_reader)()
 		(this.frame_rect_y1 == this.height) and
 		(this.has_full_palette)
 
-	// TODO: rename initialize to set?
-	//
-	// TODO: a Wuffs (not just C) name for the
-	// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
-	in.dst.initialize!(pixfmt:0x22088888, pixsub:0,
-		width:this.width, height:this.height, num_loops:num_loops, first_frame_is_opaque:ffio)
+	if in.dst != nullptr {
+		// TODO: rename initialize to set?
+		//
+		// TODO: a Wuffs (not just C) name for the
+		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
+		in.dst.initialize!(pixfmt:0x22088888, pixsub:0,
+			width:this.width, height:this.height, num_loops:num_loops, first_frame_is_opaque:ffio)
+	}
 
 	this.call_sequence = 1
 }

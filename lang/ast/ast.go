@@ -701,6 +701,10 @@ func (n *TypeExpr) IsIOType() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && (n.id2 == t.IDIOReader || n.id2 == t.IDIOWriter)
 }
 
+func (n *TypeExpr) IsNullptr() bool {
+	return n.id0 == 0 && n.id1 == t.IDBase && n.id2 == t.IDQNullptr
+}
+
 func (n *TypeExpr) IsNumType() bool {
 	return n.id0 == 0 && n.id1 == t.IDBase && n.id2.IsNumType()
 }
@@ -715,6 +719,10 @@ func (n *TypeExpr) IsRefined() bool {
 
 func (n *TypeExpr) IsArrayType() bool {
 	return n.id0 == t.IDArray
+}
+
+func (n *TypeExpr) IsPointerType() bool {
+	return n.id0 == t.IDNptr || n.id0 == t.IDPtr
 }
 
 func (n *TypeExpr) IsSliceType() bool {

@@ -404,6 +404,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetConstValue(one)
 			n.SetMType(typeExprBool)
 			return nil
+
+		case t.IDNullptr:
+			n.SetConstValue(zero)
+			n.SetMType(typeExprNullptr)
+			return nil
 		}
 
 	case t.IDOpenParen, t.IDTry:
@@ -735,6 +740,7 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	}
 	rTyp := rhs.MType()
 
+	pointerComparison := false
 	switch op {
 	case t.IDXBinaryAnd, t.IDXBinaryOr:
 		if !lTyp.IsBool() {
@@ -745,24 +751,37 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
 				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
-	case t.IDXBinaryNotEq, t.IDXBinaryEqEq:
-		if lTyp.Eq(typeExprStatus) && rTyp.Eq(typeExprStatus) {
-			break
-		}
-		fallthrough
 	default:
+		bad := (*a.Expr)(nil)
 		if !lTyp.IsNumTypeOrIdeal() {
-			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
+			bad = lhs
+		} else if !rTyp.IsNumTypeOrIdeal() {
+			bad = rhs
 		}
-		if !rTyp.IsNumTypeOrIdeal() {
+		if op == t.IDXBinaryNotEq || op == t.IDXBinaryEqEq {
+			if lTyp.Eq(typeExprStatus) && rTyp.Eq(typeExprStatus) {
+				break
+			}
+			lNullptr := lTyp.Eq(typeExprNullptr)
+			rNullptr := rTyp.Eq(typeExprNullptr)
+			if (lNullptr && rNullptr) ||
+				(lNullptr && rTyp.IsPointerType()) ||
+				(rNullptr && lTyp.IsPointerType()) {
+				pointerComparison = true
+				break
+			}
+		}
+		if bad != nil {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
+				op.AmbiguousForm().Str(q.tm), bad.Str(q.tm), bad.MType().Str(q.tm))
 		}
 	}
 
 	switch op {
 	default:
+		if pointerComparison {
+			break
+		}
 		if !lTyp.EqIgnoringRefinements(rTyp) && !lTyp.IsIdeal() && !rTyp.IsIdeal() {
 			return fmt.Errorf("check: binary %q: %q and %q, of types %q and %q, do not have compatible types",
 				op.AmbiguousForm().Str(q.tm),

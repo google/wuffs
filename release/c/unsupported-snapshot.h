@@ -6573,9 +6573,11 @@ wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
          (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
          (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height) &&
          self->private_impl.f_has_full_palette);
-    wuffs_base__image_config__initialize(
-        a_dst, 570984584, 0, self->private_impl.f_width,
-        self->private_impl.f_height, v_num_loops, v_ffio);
+    if (a_dst != NULL) {
+      wuffs_base__image_config__initialize(
+          a_dst, 570984584, 0, self->private_impl.f_width,
+          self->private_impl.f_height, v_num_loops, v_ffio);
+    }
     self->private_impl.f_call_sequence = 1;
 
     goto ok;

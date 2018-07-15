@@ -371,22 +371,24 @@ const (
 
 const (
 	minBuiltInLiteral    = 0xB0
-	minBuiltInNumLiteral = 0xB2
+	minBuiltInNumLiteral = 0xB3
 	maxBuiltInNumLiteral = 0xBF
 	maxBuiltInLiteral    = 0xBF
 
-	IDFalse = ID(0xB0)
-	IDTrue  = ID(0xB1)
-	ID0     = ID(0xB2)
-	ID1     = ID(0xB3)
-	ID2     = ID(0xB4)
-	ID4     = ID(0xB5)
-	ID8     = ID(0xB6)
-	ID16    = ID(0xB7)
-	ID32    = ID(0xB8)
-	ID64    = ID(0xB9)
-	ID128   = ID(0xBA)
-	ID256   = ID(0xBB)
+	IDFalse   = ID(0xB0)
+	IDTrue    = ID(0xB1)
+	IDNullptr = ID(0xB2)
+
+	ID0   = ID(0xB3)
+	ID1   = ID(0xB4)
+	ID2   = ID(0xB5)
+	ID4   = ID(0xB6)
+	ID8   = ID(0xB7)
+	ID16  = ID(0xB8)
+	ID32  = ID(0xB9)
+	ID64  = ID(0xBA)
+	ID128 = ID(0xBB)
+	ID256 = ID(0xBC)
 )
 
 const (
@@ -421,6 +423,7 @@ const (
 	IDDagger1 = ID(0x11A)
 	IDDagger2 = ID(0x11B)
 
+	IDQNullptr     = ID(0x11C)
 	IDQPlaceholder = ID(0x11D)
 	IDQTypeExpr    = ID(0x11E)
 
@@ -648,18 +651,20 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSlice: "slice",
 	IDTable: "table",
 
-	IDFalse: "false",
-	IDTrue:  "true",
-	ID0:     "0",
-	ID1:     "1",
-	ID2:     "2",
-	ID4:     "4",
-	ID8:     "8",
-	ID16:    "16",
-	ID32:    "32",
-	ID64:    "64",
-	ID128:   "128",
-	ID256:   "256",
+	IDFalse:   "false",
+	IDTrue:    "true",
+	IDNullptr: "nullptr",
+
+	ID0:   "0",
+	ID1:   "1",
+	ID2:   "2",
+	ID4:   "4",
+	ID8:   "8",
+	ID16:  "16",
+	ID32:  "32",
+	ID64:  "64",
+	ID128: "128",
+	ID256: "256",
 
 	// -------- 0x100 block.
 
@@ -691,6 +696,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDT2:      "T2",
 	IDDagger1: "†", // U+2020 DAGGER
 	IDDagger2: "‡", // U+2021 DOUBLE DAGGER
+
+	// IDQNullptr is used by the type checker to build an artificial MType for
+	// the nullptr literal.
+	IDQNullptr: "«Nullptr»",
 
 	// IDQPlaceholder is used by the type checker to build an artificial MType
 	// for AST nodes that aren't expression nodes or type expression nodes,
