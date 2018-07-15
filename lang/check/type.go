@@ -736,17 +736,6 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 	rTyp := rhs.MType()
 
 	switch op {
-	default:
-		if !lTyp.IsNumTypeOrIdeal() {
-			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
-		}
-		if !rTyp.IsNumTypeOrIdeal() {
-			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
-				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
-		}
-	case t.IDXBinaryNotEq, t.IDXBinaryEqEq:
-		// No-op.
 	case t.IDXBinaryAnd, t.IDXBinaryOr:
 		if !lTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
@@ -754,6 +743,20 @@ func (q *checker) tcheckExprBinaryOp(n *a.Expr, depth uint32) error {
 		}
 		if !rTyp.IsBool() {
 			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a boolean type",
+				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
+		}
+	case t.IDXBinaryNotEq, t.IDXBinaryEqEq:
+		if lTyp.Eq(typeExprStatus) && rTyp.Eq(typeExprStatus) {
+			break
+		}
+		fallthrough
+	default:
+		if !lTyp.IsNumTypeOrIdeal() {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
+				op.AmbiguousForm().Str(q.tm), lhs.Str(q.tm), lTyp.Str(q.tm))
+		}
+		if !rTyp.IsNumTypeOrIdeal() {
+			return fmt.Errorf("check: binary %q: %q, of type %q, does not have a numeric type",
 				op.AmbiguousForm().Str(q.tm), rhs.Str(q.tm), rTyp.Str(q.tm))
 		}
 	}
