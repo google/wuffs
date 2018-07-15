@@ -59,7 +59,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
     wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
-    s = wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
+    s = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (s) {
       ret = wuffs_gif__status__string(s);
       goto exit;

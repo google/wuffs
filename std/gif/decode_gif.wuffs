@@ -53,7 +53,7 @@ pub struct decoder?(
 	//  - 2: frame decoded.
 	//
 	// Call sequence state transitions:
-	//  - 0 -> 1: via decode_config.
+	//  - 0 -> 1: via decode_image_config.
 	//  - 1 -> 2: via decode_frame.
 	//  - 2 -> 2: via decode_frame.
 	call_sequence base.u8,
@@ -103,7 +103,7 @@ pub struct decoder?(
 	lzw lzw.decoder,
 )
 
-pub func decoder.decode_config?(dst nptr base.image_config, src base.io_reader)() {
+pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader)() {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
@@ -147,7 +147,7 @@ pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
 
 pub func decoder.decode_frame?(dst ptr base.image_buffer, src base.io_reader, work_buffer slice base.u8)() {
 	if this.call_sequence == 0 {
-		this.decode_config?(dst:nullptr, src:in.src)
+		this.decode_image_config?(dst:nullptr, src:in.src)
 	}
 
 	if not this.end_of_data {

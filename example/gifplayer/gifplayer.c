@@ -281,7 +281,7 @@ const char* play() {
   if (first_play) {
     first_play = false;
     wuffs_base__status s =
-        wuffs_gif__decoder__decode_config(&dec, &ic, src_reader);
+        wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (s) {
       return wuffs_gif__status__string(s);
     }

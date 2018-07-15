@@ -2365,7 +2365,7 @@ typedef struct {
       uint32_t coro_susp_point;
       uint32_t v_num_loops;
       bool v_ffio;
-    } c_decode_config[1];
+    } c_decode_image_config[1];
     struct {
       uint32_t coro_susp_point;
     } c_decode_frame[1];
@@ -2428,8 +2428,8 @@ typedef struct {
 #ifdef __cplusplus
   inline void check_wuffs_version(size_t sizeof_star_self,
                                   uint64_t wuffs_version);
-  inline wuffs_base__status decode_config(wuffs_base__image_config* a_dst,
-                                          wuffs_base__io_reader a_src);
+  inline wuffs_base__status decode_image_config(wuffs_base__image_config* a_dst,
+                                                wuffs_base__io_reader a_src);
   inline uint64_t frame_count();
   inline wuffs_base__range_ii_u64 work_buffer_size();
   inline wuffs_base__status decode_frame(wuffs_base__image_buffer* a_dst,
@@ -2453,9 +2453,9 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
-                                  wuffs_base__image_config* a_dst,
-                                  wuffs_base__io_reader a_src);
+wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
+                                        wuffs_base__image_config* a_dst,
+                                        wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
@@ -2481,9 +2481,9 @@ wuffs_gif__decoder::check_wuffs_version(size_t sizeof_star_self,
 }
 
 inline wuffs_base__status  //
-wuffs_gif__decoder::decode_config(wuffs_base__image_config* a_dst,
-                                  wuffs_base__io_reader a_src) {
-  return wuffs_gif__decoder__decode_config(this, a_dst, a_src);
+wuffs_gif__decoder::decode_image_config(wuffs_base__image_config* a_dst,
+                                        wuffs_base__io_reader a_src) {
+  return wuffs_gif__decoder__decode_image_config(this, a_dst, a_src);
 }
 
 inline uint64_t  //
@@ -6507,12 +6507,12 @@ void wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
 
 // ---------------- Function Implementations
 
-// -------- func gif.decoder.decode_config
+// -------- func gif.decoder.decode_image_config
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
-                                  wuffs_base__image_config* a_dst,
-                                  wuffs_base__io_reader a_src) {
+wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
+                                        wuffs_base__image_config* a_dst,
+                                        wuffs_base__io_reader a_src) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -6529,10 +6529,10 @@ wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
   bool v_ffio;
 
   uint32_t coro_susp_point =
-      self->private_impl.c_decode_config[0].coro_susp_point;
+      self->private_impl.c_decode_image_config[0].coro_susp_point;
   if (coro_susp_point) {
-    v_num_loops = self->private_impl.c_decode_config[0].v_num_loops;
-    v_ffio = self->private_impl.c_decode_config[0].v_ffio;
+    v_num_loops = self->private_impl.c_decode_image_config[0].v_num_loops;
+    v_ffio = self->private_impl.c_decode_image_config[0].v_ffio;
   } else {
     v_ffio = false;
   }
@@ -6578,15 +6578,15 @@ wuffs_gif__decoder__decode_config(wuffs_gif__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode_config[0].coro_susp_point = 0;
+    self->private_impl.c_decode_image_config[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode_config[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_config[0].v_num_loops = v_num_loops;
-  self->private_impl.c_decode_config[0].v_ffio = v_ffio;
+  self->private_impl.c_decode_image_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_image_config[0].v_num_loops = v_num_loops;
+  self->private_impl.c_decode_image_config[0].v_ffio = v_ffio;
 
   goto exit;
 exit:
@@ -6664,7 +6664,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 
     if (self->private_impl.f_call_sequence == 0) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      status = wuffs_gif__decoder__decode_config(self, NULL, a_src);
+      status = wuffs_gif__decoder__decode_image_config(self, NULL, a_src);
       if (status) {
         goto suspend;
       }
