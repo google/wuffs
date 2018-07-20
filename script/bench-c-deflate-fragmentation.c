@@ -69,7 +69,7 @@
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../release/c/unsupported-snapshot.h"
+#include "../release/c/wuffs-unsupported-snapshot.h"
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)

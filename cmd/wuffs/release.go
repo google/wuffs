@@ -67,7 +67,7 @@ func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string
 		return "", nil, err
 	}
 
-	base := "unsupported-snapshot"
+	base := "wuffs-unsupported-snapshot"
 	if v.Major != 0 || v.Minor != 0 {
 		base = fmt.Sprintf("wuffs-v%d.%d", v.Major, v.Minor)
 	}

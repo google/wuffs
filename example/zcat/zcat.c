@@ -49,7 +49,7 @@ for a C compiler $CC, such as clang or gcc.
 // If building this program in an environment that doesn't easily accomodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../release/c/unsupported-snapshot.h"
+#include "../../release/c/wuffs-unsupported-snapshot.h"
 
 #ifdef __linux__
 #include <linux/prctl.h>

@@ -32,7 +32,7 @@ for a C compiler $CC, such as clang or gcc.
 
 #include <unistd.h>
 
-#include "wuffs/release/c/unsupported-snapshot.h"
+#include "wuffs/release/c/wuffs-unsupported-snapshot.h"
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 
