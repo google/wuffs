@@ -40,6 +40,15 @@
 go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
 wuffs gen
+
+echo "Checking snapshot compiles cleanly (as C)"
+gcc -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c99 \
+    release/c/wuffs-unsupported-snapshot.h -o /dev/null
+
+echo "Checking snapshot compiles cleanly (as C++)"
+g++ -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c++11 \
+    release/c/wuffs-unsupported-snapshot.h -o /dev/null
+
 wuffs genlib -skipgen
 wuffs test   -skipgen -mimic
 wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
@@ -62,11 +71,4 @@ done
 for f in fuzz/c/std/*_fuzzer.c; do
   echo "Building $f"
   gcc -DWUFFS_CONFIG__FUZZLIB_MAIN $f -o ${f%.c}.out
-done
-
-for f in release/c/*.h; do
-  echo "Checking $f compiles cleanly (as C)"
-  gcc -c -Wall -Werror -std=c99   -DWUFFS_IMPLEMENTATION $f -o /dev/null
-  echo "Checking $f compiles cleanly (as C++)"
-  g++ -c -Wall -Werror -std=c++11 -DWUFFS_IMPLEMENTATION $f -o /dev/null
 done
