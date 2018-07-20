@@ -89,8 +89,7 @@ size_t print_len = 0;
 
 bool first_play = true;
 uint32_t num_loops_remaining = 0;
-wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
-wuffs_base__image_config ic = ((wuffs_base__image_config){});
+wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
@@ -132,10 +131,9 @@ static inline uint32_t load_u32le(uint8_t* p) {
          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
 }
 
-void restore_background(wuffs_base__image_buffer* ib) {
-  size_t width = wuffs_base__image_buffer__width(ib);
-
-  wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
+void restore_background(wuffs_base__pixel_buffer* pb,
+                        wuffs_base__rect_ie_u32 bounds) {
+  size_t width = wuffs_base__pixel_buffer__width(pb);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
@@ -146,11 +144,12 @@ void restore_background(wuffs_base__image_buffer* ib) {
   }
 }
 
-void compose(wuffs_base__image_buffer* ib) {
-  uint8_t* palette = wuffs_base__image_buffer__palette(ib).ptr;
-  size_t width = wuffs_base__image_buffer__width(ib);
-
-  wuffs_base__rect_ie_u32 bounds = wuffs_base__image_buffer__dirty_rect(ib);
+void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
+  wuffs_base__slice_u8 palette = wuffs_base__pixel_buffer__palette(pb);
+  if (palette.len != 1024) {
+    return;
+  }
+  size_t width = wuffs_base__pixel_buffer__width(pb);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
@@ -158,7 +157,7 @@ void compose(wuffs_base__image_buffer* ib) {
     uint8_t* s = image_buffer + (y * width) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       uint32_t index = *s++;
-      wuffs_base__color_u32argb c = load_u32le(palette + 4 * index);
+      wuffs_base__color_u32argb c = load_u32le(palette.ptr + 4 * index);
       if (c) {
         *d = c;
       }
@@ -167,9 +166,9 @@ void compose(wuffs_base__image_buffer* ib) {
   }
 }
 
-size_t print_ascii_art(wuffs_base__image_buffer* ib) {
-  uint32_t width = wuffs_base__image_buffer__width(ib);
-  uint32_t height = wuffs_base__image_buffer__height(ib);
+size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
+  uint32_t width = wuffs_base__pixel_buffer__width(pb);
+  uint32_t height = wuffs_base__pixel_buffer__height(pb);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
@@ -193,9 +192,9 @@ size_t print_ascii_art(wuffs_base__image_buffer* ib) {
   return p - print_buffer;
 }
 
-size_t print_color_art(wuffs_base__image_buffer* ib) {
-  uint32_t width = wuffs_base__image_buffer__width(ib);
-  uint32_t height = wuffs_base__image_buffer__height(ib);
+size_t print_color_art(wuffs_base__pixel_buffer* pb) {
+  uint32_t width = wuffs_base__pixel_buffer__width(pb);
+  uint32_t height = wuffs_base__pixel_buffer__height(pb);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
@@ -221,8 +220,8 @@ size_t print_color_art(wuffs_base__image_buffer* ib) {
 
 // ----
 
-const char* allocate(wuffs_base__image_config* ic) {
-  image_len = wuffs_base__image_config__pixbuf_size(ic);
+const char* allocate(wuffs_base__pixel_config* pc) {
+  image_len = wuffs_base__pixel_config__pixbuf_size(pc);
   if (image_len > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
     return "could not allocate dst buffer";
   }
@@ -249,8 +248,8 @@ const char* allocate(wuffs_base__image_config* ic) {
     return "could not allocate image buffer";
   }
 
-  uint32_t width = wuffs_base__image_config__width(ic);
-  uint32_t height = wuffs_base__image_config__height(ic);
+  uint32_t width = wuffs_base__pixel_config__width(pc);
+  uint32_t height = wuffs_base__pixel_config__height(pc);
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
   uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
   if (plen <= ((uint64_t)SIZE_MAX) / bytes_per_print_pixel) {
@@ -280,6 +279,7 @@ const char* play() {
 
   if (first_play) {
     first_play = false;
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__status s =
         wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (s) {
@@ -293,12 +293,12 @@ const char* play() {
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
-    const char* msg = allocate(&ic);
+    const char* msg = allocate(wuffs_base__image_config__pixel_config(&ic));
     if (msg) {
       return msg;
     }
-    s = wuffs_base__image_buffer__set_from_slice(
-        &ib, ic,
+    s = wuffs_base__pixel_buffer__set_from_slice(
+        &pb, wuffs_base__image_config__pixel_config(&ic),
         ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
     if (s) {
       return wuffs_gif__status__string(s);
@@ -313,8 +313,9 @@ const char* play() {
     // upcoming frame is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS.
     memcpy(prev_dst_buffer, dst_buffer, dst_len);
 
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     wuffs_base__status s = wuffs_gif__decoder__decode_frame(
-        &dec, &ib, src_reader, ((wuffs_base__slice_u8){}));
+        &dec, &fc, &pb, src_reader, ((wuffs_base__slice_u8){}));
     if (s) {
       if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;
@@ -322,13 +323,13 @@ const char* play() {
       return wuffs_gif__status__string(s);
     }
 
-    compose(&ib);
+    compose(&pb, wuffs_base__frame_config__bounds(&fc));
 
-    size_t n = color_flag ? print_color_art(&ib) : print_ascii_art(&ib);
+    size_t n = color_flag ? print_color_art(&pb) : print_ascii_art(&pb);
 
-    switch (wuffs_base__image_buffer__disposal(&ib)) {
+    switch (wuffs_base__frame_config__disposal(&fc)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
-        restore_background(&ib);
+        restore_background(&pb, wuffs_base__frame_config__bounds(&fc));
         break;
       }
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
@@ -361,7 +362,7 @@ const char* play() {
     ignore_return_value(write(stdout_fd, print_buffer, n));
 
     cumulative_delay_micros +=
-        (1000 * wuffs_base__image_buffer__duration(&ib)) /
+        (1000 * wuffs_base__frame_config__duration(&fc)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
 
     // TODO: should a zero duration mean to show this frame forever?

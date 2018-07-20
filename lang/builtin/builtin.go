@@ -88,11 +88,14 @@ var Types = []string{
 	"rect_ie_u32",
 	"rect_ii_u32",
 
-	"image_buffer",
-	"image_config",
 	"io_reader",
 	"io_writer",
 	"status",
+
+	"frame_config",
+	"image_config",
+	"pixel_buffer",
+	"pixel_config",
 }
 
 var Funcs = []string{
@@ -124,18 +127,6 @@ var Funcs = []string{
 	"utility.make_range_ie_u64(min_incl u64, max_excl u64)(ret range_ie_u64)",
 	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32)(ret rect_ii_u32)",
 	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32)(ret rect_ie_u32)",
-
-	// ---- image_buffer
-
-	"image_buffer.plane(p u32[..3])(ret table u8)",
-	// Duration's upper bound is the maximum possible i64 value.
-	"image_buffer.update!(dirty_rect rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
-		"blend bool, disposal u8, palette slice u8)()",
-
-	// ---- image_config
-
-	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
-		"num_loops u32, first_frame_is_opaque bool)()",
 
 	// ---- io_reader
 
@@ -256,6 +247,22 @@ var Funcs = []string{
 	"status.is_error()(ret bool)",
 	"status.is_ok()(ret bool)",
 	"status.is_suspension()(ret bool)",
+
+	// ---- frame_config
+
+	// Duration's upper bound is the maximum possible i64 value.
+	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
+		"blend bool, disposal u8, palette_changed bool)()",
+
+	// ---- image_config
+
+	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
+		"num_loops u32, first_frame_is_opaque bool)()",
+
+	// ---- pixel_buffer
+
+	"pixel_buffer.plane(p u32[..3])(ret table u8)",
+	"pixel_buffer.set_palette!(palette slice u8)()",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

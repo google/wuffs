@@ -412,11 +412,14 @@ const (
 	IDRectIEU32  = ID(0x10C)
 	IDRectIIU32  = ID(0x10D)
 
-	IDImageBuffer = ID(0x110)
-	IDImageConfig = ID(0x111)
-	IDIOReader    = ID(0x112)
-	IDIOWriter    = ID(0x113)
-	IDStatus      = ID(0x114)
+	IDIOReader = ID(0x110)
+	IDIOWriter = ID(0x111)
+	IDStatus   = ID(0x112)
+
+	IDFrameConfig = ID(0x114)
+	IDImageConfig = ID(0x115)
+	IDPixelBuffer = ID(0x116)
+	IDPixelConfig = ID(0x117)
 
 	IDT1      = ID(0x118)
 	IDT2      = ID(0x119)
@@ -679,11 +682,14 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDRectIEU32:  "rect_ie_u32",
 	IDRectIIU32:  "rect_ii_u32",
 
-	IDImageBuffer: "image_buffer",
+	IDIOReader: "io_reader",
+	IDIOWriter: "io_writer",
+	IDStatus:   "status",
+
+	IDFrameConfig: "frame_config",
 	IDImageConfig: "image_config",
-	IDIOReader:    "io_reader",
-	IDIOWriter:    "io_writer",
-	IDStatus:      "status",
+	IDPixelBuffer: "pixel_buffer",
+	IDPixelConfig: "pixel_config",
 
 	// Some of the next few IDs are never returned by the tokenizer, as it
 	// rejects non-ASCII input. The string representations "¶", "ℤ" etc. are

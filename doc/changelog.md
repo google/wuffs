@@ -22,11 +22,11 @@
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
 - Renamed `unread_u8?` to `undo_byte!`; added `can_undo_byte`.
 - Redesigned iterate blocks.
-- Added a `base.image_config` type.
+- Added `{frame,image,pixel}_config` and `pixel_buffer` types.
 - Added a `reset` method.
 - Added `peek_uxx`, `skip_fast` and `write_fast_uxx` methods.
 - Tweaked how marks and limits work.
-- Supported animated (not just single frame) GIFs.
+- Supported animated (not just single frame) and interlaced GIFs.
 - Marked the `std/gif` LZW decoder as private.
 - Marked some internal status codes as private.
 - Changed the string messages for built-in status codes.

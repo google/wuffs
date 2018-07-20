@@ -331,13 +331,14 @@ void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
   }
 }
 
-const char* copy_to_io_buffer_from_image_buffer(wuffs_base__io_buffer* dst,
-                                                wuffs_base__image_buffer* src) {
+// TODO: we shouldn't need to pass the rect. Instead, pass a subset pixbuf.
+const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
+                                                wuffs_base__pixel_buffer* src,
+                                                wuffs_base__rect_ie_u32 r) {
   // TODO: don't assume 1 plane or WUFFS_BASE__PIXEL_SUBSAMPLING__NONE.
   uint32_t p;
   for (p = 0; p < 1; p++) {
-    wuffs_base__table_u8 tab = wuffs_base__image_buffer__plane(src, p);
-    wuffs_base__rect_ie_u32 r = wuffs_base__image_buffer__dirty_rect(src);
+    wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(src, p);
     uint32_t y;
     for (y = r.min_incl_y; y < r.max_excl_y; y++) {
       wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
@@ -346,7 +347,7 @@ const char* copy_to_io_buffer_from_image_buffer(wuffs_base__io_buffer* dst,
       }
       uint32_t n = r.max_excl_x - r.min_incl_x;
       if (n > (dst->len - dst->wi)) {
-        return "copy_to_io_buffer_from_image_buffer: dst buffer is too small";
+        return "copy_to_io_buffer_from_pixel_buffer: dst buffer is too small";
       }
       memmove(dst->ptr + dst->wi, row.ptr + r.min_incl_x, n);
       dst->wi += n;

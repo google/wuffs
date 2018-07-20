@@ -58,11 +58,14 @@ var (
 	typeExprRectIEU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIEU32, nil, nil, nil)
 	typeExprRectIIU32  = a.NewTypeExpr(0, t.IDBase, t.IDRectIIU32, nil, nil, nil)
 
-	typeExprImageBuffer = a.NewTypeExpr(0, t.IDBase, t.IDImageBuffer, nil, nil, nil)
+	typeExprIOReader = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
+	typeExprIOWriter = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
+	typeExprStatus   = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
+
+	typeExprFrameConfig = a.NewTypeExpr(0, t.IDBase, t.IDFrameConfig, nil, nil, nil)
 	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
-	typeExprIOReader    = a.NewTypeExpr(0, t.IDBase, t.IDIOReader, nil, nil, nil)
-	typeExprIOWriter    = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
-	typeExprStatus      = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
+	typeExprPixelBuffer = a.NewTypeExpr(0, t.IDBase, t.IDPixelBuffer, nil, nil, nil)
+	typeExprPixelConfig = a.NewTypeExpr(0, t.IDBase, t.IDPixelConfig, nil, nil, nil)
 
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
 	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
@@ -93,11 +96,14 @@ var builtInTypeMap = typeMap{
 	t.IDRectIEU32:  typeExprRectIEU32,
 	t.IDRectIIU32:  typeExprRectIIU32,
 
-	t.IDImageBuffer: typeExprImageBuffer,
+	t.IDIOReader: typeExprIOReader,
+	t.IDIOWriter: typeExprIOWriter,
+	t.IDStatus:   typeExprStatus,
+
+	t.IDFrameConfig: typeExprFrameConfig,
 	t.IDImageConfig: typeExprImageConfig,
-	t.IDIOReader:    typeExprIOReader,
-	t.IDIOWriter:    typeExprIOWriter,
-	t.IDStatus:      typeExprStatus,
+	t.IDPixelBuffer: typeExprPixelBuffer,
+	t.IDPixelConfig: typeExprPixelConfig,
 }
 
 func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {

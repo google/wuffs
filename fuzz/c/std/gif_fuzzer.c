@@ -57,7 +57,6 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
     wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
 
-    wuffs_base__image_buffer ib = ((wuffs_base__image_buffer){});
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     s = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (s) {
@@ -69,7 +68,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    size_t pixbuf_size = wuffs_base__image_config__pixbuf_size(&ic);
+    size_t pixbuf_size = wuffs_base__pixel_config__pixbuf_size(
+        wuffs_base__image_config__pixel_config(&ic));
     // Don't try to allocate more than 64 MiB.
     if (pixbuf_size > 64 * 1024 * 1024) {
       ret = "image too large";
@@ -80,8 +80,10 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       ret = "out of memory";
       goto exit;
     }
-    s = wuffs_base__image_buffer__set_from_slice(
-        &ib, ic, ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
+    wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+    s = wuffs_base__pixel_buffer__set_from_slice(
+        &pb, wuffs_base__image_config__pixel_config(&ic),
+        ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
     if (s) {
       ret = wuffs_gif__status__string(s);
       goto exit;
@@ -89,7 +91,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
     bool seen_ok = false;
     while (true) {
-      s = wuffs_gif__decoder__decode_frame(&dec, &ib, src_reader,
+      wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+      s = wuffs_gif__decoder__decode_frame(&dec, &fc, &pb, src_reader,
                                            ((wuffs_base__slice_u8){}));
       if (s) {
         if ((s == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
