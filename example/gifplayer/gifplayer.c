@@ -309,13 +309,25 @@ const char* play() {
   }
 
   while (1) {
-    // TODO: add Wuffs API so that we only make the copy if needed: if the
-    // upcoming frame is WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS.
-    memcpy(prev_dst_buffer, dst_buffer, dst_len);
-
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-    wuffs_base__status s = wuffs_gif__decoder__decode_frame(
-        &dec, &fc, &pb, src_reader, ((wuffs_base__slice_u8){}));
+    wuffs_base__status s =
+        wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+    if (s) {
+      if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
+        break;
+      }
+      return wuffs_gif__status__string(s);
+    }
+
+    switch (wuffs_base__frame_config__disposal(&fc)) {
+      case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
+        memcpy(prev_dst_buffer, dst_buffer, dst_len);
+        break;
+      }
+    }
+
+    s = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
+                                         ((wuffs_base__slice_u8){}), 0, 0);
     if (s) {
       if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;

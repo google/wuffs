@@ -50,12 +50,28 @@ pub struct decoder?(
 	//  - 0: initial state.
 	//  - 1: image config decoded, including the first frame's bounds, but not
 	//       the first frame's pixels.
-	//  - 2: frame decoded.
+	//  - 2: frame config decoded.
+	//  - 3: frame decoded.
 	//
-	// Call sequence state transitions:
-	//  - 0 -> 1: via decode_image_config.
-	//  - 1 -> 2: via decode_frame.
-	//  - 2 -> 2: via decode_frame.
+	// State transitions:
+	//
+	//  - 0 -> 1: via IC
+	//  - 0 -> 2: via FC with implicit IC
+	//  - 0 -> 3: via F  with implicit IC and FC
+	//
+	//  - 1 -> 2: via FC
+	//  - 1 -> 3: via F  with implicit FC
+	//
+	//  - 2 -> 2: via FC with implicit F
+	//  - 2 -> 3: via F
+	//
+	//  - 3 -> 2: via FC
+	//  - 3 -> 3: via F  with implicit FC
+	//
+	// Where:
+	//  - F  is decode_frame,        implicit means skip_frame
+	//  - FC is decode_frame_config, implicit means nullptr in.dst
+	//  - IC is decode_image_config, implicit means nullptr in.dst
 	call_sequence base.u8,
 
 	end_of_data base.bool,
@@ -65,6 +81,8 @@ pub struct decoder?(
 	has_full_global_palette base.bool,
 	has_full_palette base.bool,
 	use_local_palette base.bool,
+
+	which_palette base.u8[..2],
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
 	interlace base.u8[..4],
@@ -145,31 +163,87 @@ pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
 	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
-// TODO: take pixbuf_origin_x and pixbuf_origin_y args.
-pub func decoder.decode_frame?(dst0 ptr base.frame_config, dst1 ptr base.pixel_buffer, src base.io_reader, work_buffer slice base.u8)() {
-	if this.call_sequence == 0 {
-		this.decode_image_config?(dst:nullptr, src:in.src)
-	}
-
+pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader)() {
 	if not this.end_of_data {
-		if this.call_sequence == 1 {
-			// TODO: memset dst's pixel_buffer (and palette) to zero?
-			this.call_sequence = 2
+		if this.call_sequence == 0 {
+			this.decode_image_config?(dst:nullptr, src:in.src)
+		} else if this.call_sequence == 1 {
+			// No-op.
+		} else if this.call_sequence == 2 {
+			this.skip_frame?(src:in.src)
 		} else {
 			this.decode_up_to_id_part1?(src:in.src)
 		}
 	}
 
-	// This is a new "if", not an "else", because calling
-	// this.decode_up_to_id_part1 can modify this.end_of_data.
+	// This is a new "if", not an "else", because the calls above can modify
+	// this.end_of_data.
 	if this.end_of_data {
 		while true {
 			yield suspension "end of data"
 		}
 	}
 
-	this.decode_id_part1?(dst0:in.dst0, dst1:in.dst1, src:in.src)
+	if this.use_local_palette or this.gc_has_transparent_index {
+		this.which_palette = 1
+	} else if not this.previous_use_global_palette {
+		// This frame uses the global palette but the previous one didn't.
+		this.which_palette = 0
+	} else {
+		// Both this frame and the previous one used the global palette. No
+		// palette update is necessary.
+		this.which_palette = 2
+	}
+	this.previous_use_global_palette =
+		not (this.use_local_palette or this.gc_has_transparent_index)
+
+	if in.dst != nullptr {
+		in.dst.update!(bounds:this.util.make_rect_ie_u32(
+			min_incl_x:this.frame_rect_x0,
+			min_incl_y:this.frame_rect_y0,
+			max_excl_x:this.frame_rect_x1,
+			max_excl_y:this.frame_rect_y1),
+			duration:this.gc_duration, blend:true, disposal:this.gc_disposal,
+			palette_changed:this.which_palette != 2)
+	}
+
+	this.call_sequence = 2
+}
+
+pri func decoder.skip_frame?(src base.io_reader)() {
+	var lw base.u8 = in.src.read_u8?()
+	this.skip_blocks?(src:in.src)
+
+	// The Image Descriptor is mandatory, but the Graphic Control extension is
+	// optional. Reset the GC related fields for the next decode_frame call.
+	this.seen_graphic_control = false
+	this.gc_has_transparent_index = false
+	this.gc_transparent_index = 0
+	this.gc_disposal = 0
+	this.gc_duration = 0
+
 	this.frame_count_value ~sat+= 1
+	this.call_sequence = 3
+}
+
+// TODO: honor pixbuf_origin_x and pixbuf_origin_y args.
+pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, work_buffer slice base.u8, pixbuf_origin_x base.u32, pixbuf_origin_y base.u32)() {
+	if this.call_sequence != 2 {
+		this.decode_frame_config?(dst:nullptr, src:in.src)
+	}
+
+	this.decode_id_part1?(dst:in.dst, src:in.src)
+
+	// The Image Descriptor is mandatory, but the Graphic Control extension is
+	// optional. Reset the GC related fields for the next decode_frame call.
+	this.seen_graphic_control = false
+	this.gc_has_transparent_index = false
+	this.gc_transparent_index = 0
+	this.gc_disposal = 0
+	this.gc_duration = 0
+
+	this.frame_count_value ~sat+= 1
+	this.call_sequence = 3
 }
 
 pri func decoder.decode_up_to_id_part1?(src base.io_reader)() {
@@ -455,7 +529,7 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	}
 }
 
-pri func decoder.decode_id_part1?(dst0 ptr base.frame_config, dst1 ptr base.pixel_buffer, src base.io_reader)() {
+pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)() {
 	if this.gc_has_transparent_index {
 		if not this.use_local_palette {
 			this.palettes[1][:].copy_from_slice(s:this.palettes[0][:])
@@ -467,6 +541,7 @@ pri func decoder.decode_id_part1?(dst0 ptr base.frame_config, dst1 ptr base.pixe
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 2] = 0x00
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
+	in.dst.set_palette!(palette:this.palettes[this.which_palette & 1][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file
@@ -519,7 +594,7 @@ pri func decoder.decode_id_part1?(dst0 ptr base.frame_config, dst1 ptr base.pixe
 			}
 
 			if z.is_ok() or (z == suspension "short write") {
-				this.copy_to_image_buffer?(pb:in.dst1)
+				this.copy_to_image_buffer?(pb:in.dst)
 
 				if z == suspension "short write" {
 					continue:inner
@@ -536,41 +611,10 @@ pri func decoder.decode_id_part1?(dst0 ptr base.frame_config, dst1 ptr base.pixe
 	}
 
 	if this.uncompressed_ri != this.uncompressed_wi {
-		this.copy_to_image_buffer?(pb:in.dst1)
+		this.copy_to_image_buffer?(pb:in.dst)
 	}
 
 	// TODO: check for "not enough pixel data".
-
-	var palette slice base.u8
-	if this.use_local_palette or this.gc_has_transparent_index {
-		palette = this.palettes[1][:]
-	} else if not this.previous_use_global_palette {
-		// This frame uses the global palette but the previous one didn't.
-		palette = this.palettes[0][:]
-	} else {
-		// Both this frame and the previous one used the global palette. No
-		// palette update is necessary.
-	}
-	in.dst0.update!(bounds:this.util.make_rect_ie_u32(
-		min_incl_x:this.frame_rect_x0,
-		min_incl_y:this.frame_rect_y0,
-		max_excl_x:this.frame_rect_x1,
-		max_excl_y:this.frame_rect_y1),
-		duration:this.gc_duration, blend:true, disposal:this.gc_disposal,
-		palette_changed:palette.length() != 0)
-	if palette.length() != 0 {
-		in.dst1.set_palette!(palette:palette)
-	}
-
-	this.previous_use_global_palette = not (this.use_local_palette or this.gc_has_transparent_index)
-
-	// The Image Descriptor is mandatory, but the Graphic Control extension is
-	// optional. Reset the GC related fields for the next decode_frame call.
-	this.seen_graphic_control = false
-	this.gc_has_transparent_index = false
-	this.gc_transparent_index = 0
-	this.gc_disposal = 0
-	this.gc_duration = 0
 }
 
 pri func decoder.copy_to_image_buffer?(pb ptr base.pixel_buffer)() {
