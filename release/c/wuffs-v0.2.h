@@ -65,14 +65,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-07-21 UTC,
-// based on revision 9514b12c7f0a36a4bbab178d0d5fcb1b87a34011.
+// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-07-22 UTC,
+// based on revision 951d79fa0084eab72ad0462421353d82225df330.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.8"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.8"
+#define WUFFS_VERSION_EXTENSION "alpha.9"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.9"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -2537,7 +2537,8 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
-    uint64_t f_frame_count_value;
+    uint64_t f_num_decoded_frame_configs_value;
+    uint64_t f_num_decoded_frames_value;
     uint32_t f_frame_rect_x0;
     uint32_t f_frame_rect_y0;
     uint32_t f_frame_rect_x1;
@@ -2627,15 +2628,16 @@ typedef struct {
                                   uint64_t wuffs_version);
   inline wuffs_base__status decode_image_config(wuffs_base__image_config* a_dst,
                                                 wuffs_base__io_reader a_src);
-  inline uint64_t frame_count();
+  inline uint64_t num_decoded_frame_configs();
+  inline uint64_t num_decoded_frames();
   inline wuffs_base__range_ii_u64 work_buffer_size();
   inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
                                                 wuffs_base__io_reader a_src);
   inline wuffs_base__status decode_frame(wuffs_base__pixel_buffer* a_dst,
-                                         wuffs_base__io_reader a_src,
-                                         wuffs_base__slice_u8 a_work_buffer,
                                          uint32_t a_pixbuf_origin_x,
-                                         uint32_t a_pixbuf_origin_y);
+                                         uint32_t a_pixbuf_origin_y,
+                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__slice_u8 a_work_buffer);
 #endif  // __cplusplus
 
 } wuffs_gif__decoder;
@@ -2659,7 +2661,10 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
+wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self);
@@ -2672,10 +2677,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y);
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer);
 
 // ---------------- C++ Convenience Methods
 
@@ -2695,8 +2700,13 @@ wuffs_gif__decoder::decode_image_config(wuffs_base__image_config* a_dst,
 }
 
 inline uint64_t  //
-wuffs_gif__decoder::frame_count() {
-  return wuffs_gif__decoder__frame_count(this);
+wuffs_gif__decoder::num_decoded_frame_configs() {
+  return wuffs_gif__decoder__num_decoded_frame_configs(this);
+}
+
+inline uint64_t  //
+wuffs_gif__decoder::num_decoded_frames() {
+  return wuffs_gif__decoder__num_decoded_frames(this);
 }
 
 inline wuffs_base__range_ii_u64  //
@@ -2712,12 +2722,12 @@ wuffs_gif__decoder::decode_frame_config(wuffs_base__frame_config* a_dst,
 
 inline wuffs_base__status  //
 wuffs_gif__decoder::decode_frame(wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y) {
-  return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_work_buffer,
-                                          a_pixbuf_origin_x, a_pixbuf_origin_y);
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer) {
+  return wuffs_gif__decoder__decode_frame(
+      this, a_dst, a_pixbuf_origin_x, a_pixbuf_origin_y, a_src, a_work_buffer);
 }
 
 #endif  // __cplusplus
@@ -6815,10 +6825,10 @@ exit:
   return status;
 }
 
-// -------- func gif.decoder.frame_count
+// -------- func gif.decoder.num_decoded_frame_configs
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -6830,7 +6840,25 @@ wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
     return 0;
   }
 
-  return self->private_impl.f_frame_count_value;
+  return self->private_impl.f_num_decoded_frame_configs_value;
+}
+
+// -------- func gif.decoder.num_decoded_frames
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return 0;
+  }
+
+  return self->private_impl.f_num_decoded_frames_value;
 }
 
 // -------- func gif.decoder.work_buffer_size
@@ -6885,14 +6913,14 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-      } else if (self->private_impl.f_call_sequence == 1) {
-      } else if (self->private_impl.f_call_sequence == 2) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        status = wuffs_gif__decoder__skip_frame(self, a_src);
-        if (status) {
-          goto suspend;
+      } else if (self->private_impl.f_call_sequence != 1) {
+        if (self->private_impl.f_call_sequence == 2) {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          status = wuffs_gif__decoder__skip_frame(self, a_src);
+          if (status) {
+            goto suspend;
+          }
         }
-      } else {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
         if (status) {
@@ -6929,6 +6957,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
           self->private_impl.f_gc_disposal,
           (self->private_impl.f_which_palette != 2));
     }
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frame_configs_value, 1);
     self->private_impl.f_call_sequence = 2;
 
     goto ok;
@@ -7004,8 +7034,8 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
     self->private_impl.f_gc_transparent_index = 0;
     self->private_impl.f_gc_disposal = 0;
     self->private_impl.f_gc_duration = 0;
-    wuffs_base__u64__sat_add_indirect(&self->private_impl.f_frame_count_value,
-                                      1);
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frames_value, 1);
     self->private_impl.f_call_sequence = 3;
 
     goto ok;
@@ -7041,10 +7071,10 @@ short_read_src:
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y) {
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }
@@ -7086,8 +7116,8 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     self->private_impl.f_gc_transparent_index = 0;
     self->private_impl.f_gc_disposal = 0;
     self->private_impl.f_gc_duration = 0;
-    wuffs_base__u64__sat_add_indirect(&self->private_impl.f_frame_count_value,
-                                      1);
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frames_value, 1);
     self->private_impl.f_call_sequence = 3;
 
     goto ok;
