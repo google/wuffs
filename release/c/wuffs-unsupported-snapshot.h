@@ -2536,7 +2536,8 @@ typedef struct {
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
     uint64_t f_gc_duration;
-    uint64_t f_frame_count_value;
+    uint64_t f_num_decoded_frame_configs_value;
+    uint64_t f_num_decoded_frames_value;
     uint32_t f_frame_rect_x0;
     uint32_t f_frame_rect_y0;
     uint32_t f_frame_rect_x1;
@@ -2626,7 +2627,8 @@ typedef struct {
                                   uint64_t wuffs_version);
   inline wuffs_base__status decode_image_config(wuffs_base__image_config* a_dst,
                                                 wuffs_base__io_reader a_src);
-  inline uint64_t frame_count();
+  inline uint64_t num_decoded_frame_configs();
+  inline uint64_t num_decoded_frames();
   inline wuffs_base__range_ii_u64 work_buffer_size();
   inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
                                                 wuffs_base__io_reader a_src);
@@ -2658,7 +2660,10 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self);
+wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self);
@@ -2694,8 +2699,13 @@ wuffs_gif__decoder::decode_image_config(wuffs_base__image_config* a_dst,
 }
 
 inline uint64_t  //
-wuffs_gif__decoder::frame_count() {
-  return wuffs_gif__decoder__frame_count(this);
+wuffs_gif__decoder::num_decoded_frame_configs() {
+  return wuffs_gif__decoder__num_decoded_frame_configs(this);
+}
+
+inline uint64_t  //
+wuffs_gif__decoder::num_decoded_frames() {
+  return wuffs_gif__decoder__num_decoded_frames(this);
 }
 
 inline wuffs_base__range_ii_u64  //
@@ -6814,10 +6824,10 @@ exit:
   return status;
 }
 
-// -------- func gif.decoder.frame_count
+// -------- func gif.decoder.num_decoded_frame_configs
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -6829,7 +6839,25 @@ wuffs_gif__decoder__frame_count(wuffs_gif__decoder* self) {
     return 0;
   }
 
-  return self->private_impl.f_frame_count_value;
+  return self->private_impl.f_num_decoded_frame_configs_value;
+}
+
+// -------- func gif.decoder.num_decoded_frames
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    self->private_impl.status =
+        WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED;
+  }
+  if (self->private_impl.status < 0) {
+    return 0;
+  }
+
+  return self->private_impl.f_num_decoded_frames_value;
 }
 
 // -------- func gif.decoder.work_buffer_size
@@ -6884,14 +6912,14 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-      } else if (self->private_impl.f_call_sequence == 1) {
-      } else if (self->private_impl.f_call_sequence == 2) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        status = wuffs_gif__decoder__skip_frame(self, a_src);
-        if (status) {
-          goto suspend;
+      } else if (self->private_impl.f_call_sequence != 1) {
+        if (self->private_impl.f_call_sequence == 2) {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          status = wuffs_gif__decoder__skip_frame(self, a_src);
+          if (status) {
+            goto suspend;
+          }
         }
-      } else {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
         if (status) {
@@ -6928,6 +6956,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
           self->private_impl.f_gc_disposal,
           (self->private_impl.f_which_palette != 2));
     }
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frame_configs_value, 1);
     self->private_impl.f_call_sequence = 2;
 
     goto ok;
@@ -7003,8 +7033,8 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
     self->private_impl.f_gc_transparent_index = 0;
     self->private_impl.f_gc_disposal = 0;
     self->private_impl.f_gc_duration = 0;
-    wuffs_base__u64__sat_add_indirect(&self->private_impl.f_frame_count_value,
-                                      1);
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frames_value, 1);
     self->private_impl.f_call_sequence = 3;
 
     goto ok;
@@ -7085,8 +7115,8 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     self->private_impl.f_gc_transparent_index = 0;
     self->private_impl.f_gc_disposal = 0;
     self->private_impl.f_gc_duration = 0;
-    wuffs_base__u64__sat_add_indirect(&self->private_impl.f_frame_count_value,
-                                      1);
+    wuffs_base__u64__sat_add_indirect(
+        &self->private_impl.f_num_decoded_frames_value, 1);
     self->private_impl.f_call_sequence = 3;
 
     goto ok;

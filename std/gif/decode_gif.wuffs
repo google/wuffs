@@ -99,7 +99,8 @@ pub struct decoder?(
 	// There are 7056000 flicks per centisecond.
 	gc_duration base.u64[..0xFFFF * 7056000],
 
-	frame_count_value base.u64,
+	num_decoded_frame_configs_value base.u64,
+	num_decoded_frames_value base.u64,
 
 	frame_rect_x0 base.u32,
 	frame_rect_y0 base.u32,
@@ -155,8 +156,12 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	this.call_sequence = 1
 }
 
-pub func decoder.frame_count()(ret base.u64) {
-	return this.frame_count_value
+pub func decoder.num_decoded_frame_configs()(ret base.u64) {
+	return this.num_decoded_frame_configs_value
+}
+
+pub func decoder.num_decoded_frames()(ret base.u64) {
+	return this.num_decoded_frames_value
 }
 
 pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
@@ -167,11 +172,10 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
 			this.decode_image_config?(dst:nullptr, src:in.src)
-		} else if this.call_sequence == 1 {
-			// No-op.
-		} else if this.call_sequence == 2 {
-			this.skip_frame?(src:in.src)
-		} else {
+		} else if this.call_sequence != 1 {
+			if this.call_sequence == 2 {
+				this.skip_frame?(src:in.src)
+			}
 			this.decode_up_to_id_part1?(src:in.src)
 		}
 	}
@@ -207,6 +211,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 			palette_changed:this.which_palette != 2)
 	}
 
+	this.num_decoded_frame_configs_value ~sat+= 1
 	this.call_sequence = 2
 }
 
@@ -222,7 +227,7 @@ pri func decoder.skip_frame?(src base.io_reader)() {
 	this.gc_disposal = 0
 	this.gc_duration = 0
 
-	this.frame_count_value ~sat+= 1
+	this.num_decoded_frames_value ~sat+= 1
 	this.call_sequence = 3
 }
 
@@ -242,7 +247,7 @@ pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, wo
 	this.gc_disposal = 0
 	this.gc_duration = 0
 
-	this.frame_count_value ~sat+= 1
+	this.num_decoded_frames_value ~sat+= 1
 	this.call_sequence = 3
 }
 
