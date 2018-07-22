@@ -2633,10 +2633,10 @@ typedef struct {
   inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
                                                 wuffs_base__io_reader a_src);
   inline wuffs_base__status decode_frame(wuffs_base__pixel_buffer* a_dst,
-                                         wuffs_base__io_reader a_src,
-                                         wuffs_base__slice_u8 a_work_buffer,
                                          uint32_t a_pixbuf_origin_x,
-                                         uint32_t a_pixbuf_origin_y);
+                                         uint32_t a_pixbuf_origin_y,
+                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__slice_u8 a_work_buffer);
 #endif  // __cplusplus
 
 } wuffs_gif__decoder;
@@ -2676,10 +2676,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y);
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer);
 
 // ---------------- C++ Convenience Methods
 
@@ -2721,12 +2721,12 @@ wuffs_gif__decoder::decode_frame_config(wuffs_base__frame_config* a_dst,
 
 inline wuffs_base__status  //
 wuffs_gif__decoder::decode_frame(wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y) {
-  return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_work_buffer,
-                                          a_pixbuf_origin_x, a_pixbuf_origin_y);
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer) {
+  return wuffs_gif__decoder__decode_frame(
+      this, a_dst, a_pixbuf_origin_x, a_pixbuf_origin_y, a_src, a_work_buffer);
 }
 
 #endif  // __cplusplus
@@ -7070,10 +7070,10 @@ short_read_src:
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_work_buffer,
                                  uint32_t a_pixbuf_origin_x,
-                                 uint32_t a_pixbuf_origin_y) {
+                                 uint32_t a_pixbuf_origin_y,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_work_buffer) {
   if (!self) {
     return WUFFS_BASE__ERROR_BAD_RECEIVER;
   }

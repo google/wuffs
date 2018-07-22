@@ -326,8 +326,8 @@ const char* play() {
       }
     }
 
-    s = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
-                                         ((wuffs_base__slice_u8){}), 0, 0);
+    s = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
+                                         ((wuffs_base__slice_u8){}));
     if (s) {
       if (s == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;
