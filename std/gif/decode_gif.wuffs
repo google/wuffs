@@ -557,7 +557,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	// of bits for the decoder to read has ticked over from 8 to 9 just before
 	// that end code is encountered.
 	//
-	// To accomodate such malformed GIFs, we detect when the previous frame's
+	// To accommodate such malformed GIFs, we detect when the previous frame's
 	// LZW decoding ended abruptly. The previous LZW decode 'works', in that it
 	// decodes as much pixel data as is available, but without seeing that end
 	// code (i.e. returning the "ok" status code), the LZW decoder is stuck in

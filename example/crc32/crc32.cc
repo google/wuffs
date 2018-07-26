@@ -44,7 +44,7 @@ for a C++ compiler $CXX, such as clang++ or g++.
 // https://raw.githubusercontent.com/nothings/stb/master/docs/stb_howto.txt
 #define WUFFS_CONFIG__STATIC_FUNCTIONS
 
-// If building this program in an environment that doesn't easily accomodate
+// If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C++ file.
 #include "../../release/c/wuffs-unsupported-snapshot.h"
