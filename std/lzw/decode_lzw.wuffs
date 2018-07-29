@@ -25,7 +25,7 @@ pub struct decoder?(
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
-	this.literal_width = in.lw
+	this.literal_width = args.lw
 }
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
@@ -59,7 +59,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 			post n_bits >= width,
 		{
 			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8?() as base.u32) << n_bits
 			n_bits += 8
 		}
 		var code base.u32[..4095] = bits.low_bits(n:width)
@@ -68,7 +68,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 
 		if code < clear_code {
 			assert code < 256 via "a < b: a < c; c <= b"(c:clear_code)
-			in.dst.write_u8?(x:code as base.u8)
+			args.dst.write_u8?(x:code as base.u8)
 			if save_code <= 4095 {
 				this.suffixes[save_code] = code as base.u8
 				this.prefixes[save_code] = prev_code as base.u16
@@ -118,7 +118,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 				inv c < 256,
 			{
 				var expansion slice base.u8 = this.stack[s:]
-				var n_copied base.u64 = in.dst.copy_from_slice!(s:expansion)
+				var n_copied base.u64 = args.dst.copy_from_slice!(s:expansion)
 				if n_copied == expansion.length() {
 					break
 				}

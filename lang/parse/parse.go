@@ -194,13 +194,13 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				flags |= a.FlagsImpure | a.FlagsSuspendible
 				p.src = p.src[1:]
 			}
-			inFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
+			argFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 			if err != nil {
 				return nil, err
 			}
-			outTyp := (*a.TypeExpr)(nil)
+			out := (*a.TypeExpr)(nil)
 			if p.peek1() != t.IDOpenCurly {
-				outTyp, err = p.parseTypeExpr()
+				out, err = p.parseTypeExpr()
 				if err != nil {
 					return nil, err
 				}
@@ -225,8 +225,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
-			return a.NewFunc(flags, p.filename, line, id0, id1, in, outTyp, asserts, body).AsNode(), nil
+			in := a.NewStruct(0, p.filename, line, t.IDArgs, argFields)
+			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
 
 		case t.IDError, t.IDSuspension:
 			keyword := p.src[0].ID
@@ -863,11 +863,11 @@ func (p *parser) parseIOBindExprNode() (*a.Node, error) {
 	case 0:
 		return e.AsNode(), nil
 	case t.IDDot:
-		if lhs := e.LHS().AsExpr(); lhs.Operator() == 0 && lhs.Ident() == t.IDIn {
+		if lhs := e.LHS().AsExpr(); lhs.Operator() == 0 && lhs.Ident() == t.IDArgs {
 			return e.AsNode(), nil
 		}
 	}
-	return nil, fmt.Errorf(`parse: expected "in.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
+	return nil, fmt.Errorf(`parse: expected "args.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
 }
 
 func (p *parser) parseIterateVarNode() (*a.Node, error) {

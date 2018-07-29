@@ -44,7 +44,7 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 				return nil
 			}
 			q = q.LHS().AsExpr()
-			if q.Operator() != 0 || q.Ident() != t.IDIn {
+			if q.Operator() != 0 || q.Ident() != t.IDArgs {
 				return nil
 			}
 			return errNeedDerivedVar
@@ -81,7 +81,7 @@ func (g *gen) findDerivedVars() {
 
 func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr, header bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
-	// dummy:in.src".
+	// dummy:args.src".
 	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
 	}
@@ -142,7 +142,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 
 func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
-	// dummy:in.src".
+	// dummy:args.src".
 	if name.Str(g.tm) == "dummy" {
 		name = g.tm.ByName("src")
 	}
@@ -185,7 +185,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 		o := o.AsArg()
 		// TODO: don't hard-code these.
 		hack := ""
-		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
+		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
 			continue
 		} else if s == "w" {
 			hack = "w"
@@ -208,7 +208,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 		o := o.AsArg()
 		// TODO: don't hard-code these.
 		hack := ""
-		if s := o.Value().Str(g.tm); s != "in.dst" && s != "in.src" && s != "w" {
+		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
 			continue
 		} else if s == "w" {
 			hack = "w"

@@ -190,7 +190,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 
 	case t.IDDot:
 		lhs := n.LHS().AsExpr()
-		if lhs.Ident() == t.IDIn {
+		if lhs.Ident() == t.IDArgs {
 			b.writes(aPrefix)
 			b.writes(n.Ident().Str(g.tm))
 			return nil

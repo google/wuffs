@@ -113,7 +113,8 @@ pub struct decoder?(
 
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
-	// code_lengths[in.n_codes0 + i] holds the number of bits in the i'th code.
+	// code_lengths[args.n_codes0 + i] holds the number of bits in the i'th
+	// code.
 	code_lengths array[320] base.u8[..15],
 
 	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
@@ -124,15 +125,15 @@ pub struct decoder?(
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	while true {
-		in.dst.set_mark!()
-		var z base.status = try this.decode_blocks?(dst:in.dst, src:in.src)
+		args.dst.set_mark!()
+		var z base.status = try this.decode_blocks?(dst:args.dst, src:args.src)
 		if not z.is_suspension() {
 			return z
 		}
 		// TODO: should "since_mark" be "since_mark!", as the return value lets
-		// you modify the state of in.dst, so future mutations (via the slice)
-		// can change the veracity of any in.dst assertions?
-		var written slice base.u8 = in.dst.since_mark()
+		// you modify the state of args.dst, so future mutations (via the
+		// slice) can change the veracity of any args.dst assertions?
+		var written slice base.u8 = args.dst.since_mark()
 		// Append written, the decoded output, to the history ringbuffer.
 		if written.length() >= 0x8000 {
 			// If written is longer than the ringbuffer, we can ignore the
@@ -180,7 +181,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
-			this.bits |= (in.src.read_u8?() as base.u32) << this.n_bits
+			this.bits |= (args.src.read_u8?() as base.u32) << this.n_bits
 			this.n_bits += 8
 		}
 		final = this.bits & 0x01
@@ -189,22 +190,22 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 		this.n_bits -= 3
 
 		if type == 0 {
-			this.decode_uncompressed?(dst:in.dst, src:in.src)
+			this.decode_uncompressed?(dst:args.dst, src:args.src)
 			continue
 		} else if type == 1 {
 			this.init_fixed_huffman?()
 		} else if type == 2 {
-			this.init_dynamic_huffman?(src:in.src)
+			this.init_dynamic_huffman?(src:args.src)
 		} else {
 			return error "bad block"
 		}
 
 		this.end_of_block = false
-		this.decode_huffman_fast?(dst:in.dst, src:in.src)
+		this.decode_huffman_fast?(dst:args.dst, src:args.src)
 		if this.end_of_block {
 			continue
 		}
-		this.decode_huffman_slow?(dst:in.dst, src:in.src)
+		this.decode_huffman_slow?(dst:args.dst, src:args.src)
 		if this.end_of_block {
 			continue
 		}
@@ -224,18 +225,18 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	this.n_bits = 0
 	this.bits = 0
 
-	var length base.u32 = in.src.read_u32le?()
+	var length base.u32 = args.src.read_u32le?()
 	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {
 		return error "inconsistent stored block length"
 	}
 	length = length.low_bits(n:16)
 	while true {
-		var n_copied base.u32 = in.dst.copy_n_from_reader!(n:length, r:in.src)
+		var n_copied base.u32 = args.dst.copy_n_from_reader!(n:length, r:args.src)
 		if length <= n_copied {
 			return
 		}
 		length -= n_copied
-		if in.dst.available() == 0 {
+		if args.dst.available() == 0 {
 			// TODO: "closed for writes" instead?
 			yield suspension "short write"
 		} else {
@@ -278,7 +279,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	while n_bits < 14,
 		post n_bits >= 14,
 	{
-		bits |= (in.src.read_u8?() as base.u32) << n_bits
+		bits |= (args.src.read_u8?() as base.u32) << n_bits
 		n_bits += 8
 	}
 	var n_lit base.u32[257..288] = bits.low_bits(n:5) + 257
@@ -302,7 +303,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 			inv i < n_clen,
 			post n_bits >= 3,
 		{
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8?() as base.u32) << n_bits
 			n_bits += 8
 		}
 		assert i < 19 via "a < b: a < c; c <= b"(c:n_clen)
@@ -336,7 +337,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8?() as base.u32) << n_bits
 			n_bits += 8
 		}
 		// For H-CL, there should be no redirections and all symbols should be
@@ -384,7 +385,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 			post n_bits >= n_extra_bits,
 		{
 			assert n_bits < 7 via "a < b: a < c; c <= b"(c:n_extra_bits)
-			bits |= (in.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8?() as base.u32) << n_bits
 			n_bits += 8
 		}
 		rep_count += bits.low_bits(n:n_extra_bits)
@@ -457,9 +458,9 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	//  - counts[5] = 2
 	//  - all other counts elements are 0.
 	var counts array[16] base.u16[..320]
-	var i base.u32 = in.n_codes0
-	while i < in.n_codes1 {
-		assert i < 320 via "a < b: a < c; c <= b"(c:in.n_codes1)
+	var i base.u32 = args.n_codes0
+	while i < args.n_codes1 {
+		assert i < 320 via "a < b: a < c; c <= b"(c:args.n_codes1)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
 		if counts[this.code_lengths[i]] >= 320 {
@@ -468,7 +469,7 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		counts[this.code_lengths[i]] += 1
 		i += 1
 	}
-	if ((counts[0] as base.u32) + in.n_codes0) == in.n_codes1 {
+	if ((counts[0] as base.u32) + args.n_codes0) == args.n_codes1 {
 		return error "no Huffman codes"
 	}
 
@@ -542,20 +543,20 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	//  - offsets[4] =  8, formerly 7
 	//  - offsets[5] = 10, formerly 8
 	var symbols array[320] base.u16[..319]
-	i = in.n_codes0
-	while i < in.n_codes1,
+	i = args.n_codes0
+	while i < args.n_codes1,
 		inv n_symbols <= 288,
 	{
-		assert i < 320 via "a < b: a < c; c <= b"(c:in.n_codes1)
+		assert i < 320 via "a < b: a < c; c <= b"(c:args.n_codes1)
 		// TODO: this if check should be unnecessary.
-		if i < in.n_codes0 {
+		if i < args.n_codes0 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
 		if this.code_lengths[i] != 0 {
 			if offsets[this.code_lengths[i]] >= 320 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
-			symbols[offsets[this.code_lengths[i]]] = (i - in.n_codes0) as base.u16
+			symbols[offsets[this.code_lengths[i]]] = (i - args.n_codes0) as base.u16
 			offsets[this.code_lengths[i]] += 1
 		}
 		i += 1
@@ -592,12 +593,12 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		max_cl -= 1
 	}
 	if max_cl <= 9 {
-		this.n_huffs_bits[in.which] = max_cl
+		this.n_huffs_bits[args.which] = max_cl
 	} else {
-		this.n_huffs_bits[in.which] = 9
+		this.n_huffs_bits[args.which] = 9
 	}
 
-	// Calculate this.huffs[in.which].
+	// Calculate this.huffs[args.which].
 	//
 	// For the clcode example in this package's README.md:
 	//  - this.huffs[0][0b..000] = 0x80000003 (literal, symbols[0]=0x00, code_length=3)
@@ -614,7 +615,7 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	if (n_symbols != (offsets[max_cl] as base.u32)) or (n_symbols != (offsets[15] as base.u32)) {
 		return error "internal error: inconsistent Huffman decoder state"
 	}
-	if (in.n_codes0 + (symbols[0] as base.u32)) >= 320 {
+	if (args.n_codes0 + (symbols[0] as base.u32)) >= 320 {
 		return error "internal error: inconsistent Huffman decoder state"
 	}
 
@@ -622,7 +623,7 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	if max_cl < 9 {
 		initial_high_bits = (1 as base.u32) << max_cl
 	}
-	var prev_cl base.u32[..15] = this.code_lengths[in.n_codes0 + (symbols[0] as base.u32)] as base.u32
+	var prev_cl base.u32[..15] = this.code_lengths[args.n_codes0 + (symbols[0] as base.u32)] as base.u32
 	var prev_redirect_key base.u32 = 0xFFFFFFFF
 	var top base.u32[..1234]
 	var next_top base.u32[..1234] = 512
@@ -634,10 +635,10 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		pre i < 288,
 		inv n_symbols <= 288,
 	{
-		if (in.n_codes0 + (symbols[i] as base.u32)) >= 320 {
+		if (args.n_codes0 + (symbols[i] as base.u32)) >= 320 {
 			return error "internal error: inconsistent Huffman decoder state"
 		}
-		var cl base.u32[..15] = this.code_lengths[in.n_codes0 + (symbols[i] as base.u32)] as base.u32
+		var cl base.u32[..15] = this.code_lengths[args.n_codes0 + (symbols[i] as base.u32)] as base.u32
 		if cl > prev_cl {
 			code <<= cl - prev_cl
 			if code >= (1 << 15) {
@@ -694,7 +695,7 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 				next_top = top + ((1 as base.u32) << tmp)
 
 				redirect_key = (reverse8[redirect_key >> 1] as base.u32) | ((redirect_key & 1) << 8)
-				this.huffs[in.which][redirect_key] = 0x10000009 | (top << 8) | (tmp << 4)
+				this.huffs[args.which][redirect_key] = 0x10000009 | (top << 8) | (tmp << 4)
 			}
 		}
 		if (key >= (1 << 9)) or (counts[prev_cl] <= 0) {
@@ -709,13 +710,13 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		if symbol == 256 {
 			// End-of-block.
 			value = 0x20000000 | cl
-		} else if (symbol < 256) and (in.which == 0) {
+		} else if (symbol < 256) and (args.which == 0) {
 			// Literal.
 			value = 0x80000000 | (symbol << 8) | cl
-		} else if symbol >= in.base_symbol {
+		} else if symbol >= args.base_symbol {
 			// Base number + extra bits.
-			symbol -= in.base_symbol
-			if in.which == 0 {
+			symbol -= args.base_symbol
+			if args.which == 0 {
 				value = lcode_magic_numbers[symbol & 31] | cl
 			} else {
 				value = dcode_magic_numbers[symbol & 31] | cl
@@ -738,7 +739,7 @@ pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			if (top + ((high_bits | reversed_key) & 511)) >= 1234 {
 				return error "internal error: inconsistent Huffman decoder state"
 			}
-			this.huffs[in.which][top + ((high_bits | reversed_key) & 511)] = value
+			this.huffs[args.which][top + ((high_bits | reversed_key) & 511)] = value
 		}
 
 		i += 1

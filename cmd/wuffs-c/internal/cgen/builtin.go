@@ -84,10 +84,10 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		p0, p1 := "", ""
 		// TODO: don't hard-code these.
 		switch recv.Str(g.tm) {
-		case "in.dst":
+		case "args.dst":
 			p0 = "iobounds1_dst"
 			p1 = "ioptr_dst"
-		case "in.src":
+		case "args.src":
 			p0 = "iobounds1_src"
 			p1 = "ioptr_src"
 		case "w":
@@ -190,7 +190,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
-		// TODO: don't assume that the last argument is "in.src".
+		// TODO: don't assume that the last argument is "args.src".
 		b.printf(", &ioptr_src, iobounds1_src)")
 		return nil
 

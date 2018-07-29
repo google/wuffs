@@ -443,9 +443,9 @@ const (
 	IDU32 = ID(0x126)
 	IDU64 = ID(0x127)
 
-	IDThis = ID(0x130)
-	IDIn   = ID(0x131)
-	IDBase = ID(0x132)
+	IDArgs = ID(0x130)
+	IDBase = ID(0x131)
+	IDThis = ID(0x132)
 
 	// TODO Read/Write 24 bits? It might be useful for RGB triples.
 
@@ -732,9 +732,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
-	IDThis: "this",
-	IDIn:   "in",
+	IDArgs: "args",
 	IDBase: "base",
+	IDThis: "this",
 
 	IDUndoByte:  "undo_byte",
 	IDReadU8:    "read_u8",

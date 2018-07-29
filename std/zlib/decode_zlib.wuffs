@@ -31,11 +31,11 @@ pub struct decoder?(
 )
 
 pub func decoder.set_ignore_checksum!(ic base.bool) {
-	this.ignore_checksum = in.ic
+	this.ignore_checksum = args.ic
 }
 
 pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
-	var x base.u16 = in.src.read_u16be?()
+	var x base.u16 = args.src.read_u16be?()
 	if ((x >> 8) & 0x0F) != 0x08 {
 		return error "bad compression method"
 	}
@@ -52,17 +52,17 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	// Decode and checksum the DEFLATE-encoded payload.
 	var checksum_got base.u32
 	while true {
-		in.dst.set_mark!()
-		var z base.status = try this.flate.decode?(dst:in.dst, src:in.src)
+		args.dst.set_mark!()
+		var z base.status = try this.flate.decode?(dst:args.dst, src:args.src)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x:in.dst.since_mark())
+			checksum_got = this.checksum.update!(x:args.dst.since_mark())
 		}
 		if z.is_ok() {
 			break
 		}
 		yield z
 	}
-	var checksum_want base.u32 = in.src.read_u32be?()
+	var checksum_want base.u32 = args.src.read_u32be?()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
 		return error "bad checksum"
 	}

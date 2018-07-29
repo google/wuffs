@@ -11,6 +11,7 @@
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Changed func out-type from struct to bare type.
+- Renamed the implicit `in` variable to `args`.
 - Added `std/adler32`, `std/crc32` and `std/gzip`.
 - Spun `std/lzw` out of `std/gif`.
 - Spun `std/zlib` out of `std/flate`.

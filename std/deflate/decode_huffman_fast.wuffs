@@ -45,13 +45,13 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 	// For reading, strictly speaking, we only need 6 bytes (48 bits) of
 	// available input, because the H-L length/literal code is up to 15 bits
 	// plus up to 5 extra bits, the H-D distance code is up to 15 bits plus up
-	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However, in.src.available()
-	// assertions are made in terms of bytes, not bits.
+	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However,
+	// args.src.available() assertions are made in terms of bytes, not bits.
 	//
 	// In theory, we could write assertions that mixed bytes and bits, such as:
 	//
-	// assert ((in.src.available() >= 6) and (n_bits >=  5)) or
-	//        ((in.src.available() >= 4) and (n_bits >= 21))
+	// assert ((args.src.available() >= 6) and (n_bits >=  5)) or
+	//        ((args.src.available() >= 4) and (n_bits >= 21))
 	//
 	// but that looks clumsy and makes the proofs more complicated. Instead, we
 	// are conservative and work in terms of bytes only. In bytes, each code
@@ -59,24 +59,24 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 	// for each. There are also up to 13 extra bits, or 2 bytes. Thus, each
 	// code requires up to 2 + 2 + 2 == 6 bytes, and there are two codes (one
 	// from H-L and one from H-D). Therefore, we check for at least 12 bytes.
-	while:loop(in.dst.available() >= 258) and (in.src.available() >= 12) {
+	while:loop(args.dst.available() >= 258) and (args.src.available() >= 12) {
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= (in.src.peek_u8() as base.u32) << n_bits
-			in.src.skip_fast!(actual:1, worst_case:1)
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
-			bits |= (in.src.peek_u8() as base.u32) << n_bits
-			in.src.skip_fast!(actual:1, worst_case:1)
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
-			assert in.src.available() >= 10
+			assert args.src.available() >= 10
 		}
 		// These assertions are redundant, but are listed explicitly for
 		// clarity. They must hold regardless of which branch was taken for the
 		// if statement above.
-		assert in.src.available() >= 10
+		assert args.src.available() >= 10
 		assert n_bits >= 15
 
 		// Decode an lcode symbol from H-L.
@@ -87,11 +87,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 
 		if (table_entry >> 31) != 0 {
 			// Literal.
-			in.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
+			args.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
 			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
-			assert in.src.available() >= 8
+			assert args.src.available() >= 8
 		} else if (table_entry >> 29) != 0 {
 			// End of block.
 			this.end_of_block = true
@@ -102,18 +102,18 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert in.src.available() >= 8
+				assert args.src.available() >= 8
 			}
 			// Once again, redundant but explicit assertions.
-			assert in.src.available() >= 8
+			assert args.src.available() >= 8
 			assert n_bits >= 15
 
 			var redir_top base.u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
@@ -128,7 +128,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 
 			if (table_entry >> 31) != 0 {
 				// Literal.
-				in.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
+				args.dst.write_fast_u8!(x:((table_entry >> 8) & 0xFF) as base.u8)
 				continue:loop
 			} else if (table_entry >> 30) != 0 {
 				// No-op; code continues past the if-else chain.
@@ -145,7 +145,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			}
 
 			// Once again, redundant but explicit assertions.
-			assert in.src.available() >= 8
+			assert args.src.available() >= 8
 
 		} else if (table_entry >> 27) != 0 {
 			return error "bad Huffman code"
@@ -160,18 +160,18 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert in.src.available() >= 6
+				assert args.src.available() >= 6
 			}
 			// Once again, redundant but explicit assertions.
-			assert in.src.available() >= 6
+			assert args.src.available() >= 6
 			assert n_bits >= 15
 
 			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
@@ -179,7 +179,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			n_bits -= table_entry_n_bits
 
 		} else {
-			assert in.src.available() >= 6
+			assert args.src.available() >= 6
 		}
 		if length > 258 {
 			return error "internal error: inconsistent Huffman decoder state"
@@ -188,18 +188,18 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 		// Ensure that we have at least 15 bits of input.
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
-			bits |= (in.src.peek_u8() as base.u32) << n_bits
-			in.src.skip_fast!(actual:1, worst_case:1)
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
-			bits |= (in.src.peek_u8() as base.u32) << n_bits
-			in.src.skip_fast!(actual:1, worst_case:1)
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
-			assert in.src.available() >= 4
+			assert args.src.available() >= 4
 		}
 		// Once again, redundant but explicit assertions.
-		assert in.src.available() >= 4
+		assert args.src.available() >= 4
 		assert n_bits >= 15
 
 		// Decode a dcode symbol from H-D.
@@ -213,18 +213,18 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
-				assert in.src.available() >= 2
+				assert args.src.available() >= 2
 			}
 			// Once again, redundant but explicit assertions.
-			assert in.src.available() >= 2
+			assert args.src.available() >= 2
 			assert n_bits >= 15
 
 			redir_top = (table_entry >> 8) & 0xFFFF
@@ -237,7 +237,7 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		} else {
-			assert in.src.available() >= 2
+			assert args.src.available() >= 2
 		}
 
 		// For H-D, all symbols should be base_number + extra_bits.
@@ -260,11 +260,11 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 			// Ensure that we have at least 15 bits of input.
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
-				bits |= (in.src.peek_u8() as base.u32) << n_bits
-				in.src.skip_fast!(actual:1, worst_case:1)
+				bits |= (args.src.peek_u8() as base.u32) << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
 				n_bits += 8
 				assert n_bits >= 15
 			}
@@ -282,16 +282,16 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 		// decode_huffman_slow.
 		while true,
 			pre length <= 258,
-			pre in.dst.available() >= 258,
+			pre args.dst.available() >= 258,
 		{
 			// Copy from this.history.
-			if ((dist_minus_1 + 1) as base.u64) > in.dst.since_mark().length() {
+			if ((dist_minus_1 + 1) as base.u64) > args.dst.since_mark().length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
-				// remaining length-distance pair to copy from in.dst.
+				// remaining length-distance pair to copy from args.dst.
 				var hlen base.u32[..0x7FFF]
 				var hdist base.u32 =
-					(((dist_minus_1 + 1) as base.u64) - in.dst.since_mark().length()) as base.u32
+					(((dist_minus_1 + 1) as base.u64) - args.dst.since_mark().length()) as base.u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)
@@ -318,69 +318,69 @@ pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 				//
 				// This copying is simpler than the decode_huffman_slow version
 				// because it cannot yield. We have already checked that
-				// in.dst.available() is large enough.
+				// args.dst.available() is large enough.
 				//
 				// The "while true { etc; break }" is a redundant version of
 				// "etc", but its presence minimizes the diff between
 				// decode_huffman_fast and decode_huffman_slow.
 				while true,
 					inv length <= 258,
-					inv in.dst.available() >= 258,
+					inv args.dst.available() >= 258,
 				{
 					// TODO: copy_from_slice32 should probably update the
-					// "in.dst.available() >= 258" fact. It should certainly
+					// "args.dst.available() >= 258" fact. It should certainly
 					// invalidate any fact that was "<=" instead of ">=".
-					n_copied = in.dst.copy_n_from_slice!(
+					n_copied = args.dst.copy_n_from_slice!(
 						n:hlen, s:this.history[hdist & 0x7FFF:])
 					if hlen <= n_copied {
 						break
 					}
 					hlen -= n_copied
-					in.dst.copy_n_from_slice!(n:hlen, s:this.history[:])
+					args.dst.copy_n_from_slice!(n:hlen, s:this.history[:])
 					break
 				}
 
 				if length == 0 {
-					// No need to copy from in.dst.
+					// No need to copy from args.dst.
 					continue:loop
 				}
 
-				if ((dist_minus_1 + 1) as base.u64) > in.dst.since_mark().length() {
+				if ((dist_minus_1 + 1) as base.u64) > args.dst.since_mark().length() {
 					return error "internal error: inconsistent distance"
 				}
 			}
 			// Once again, redundant but explicit assertions.
 			assert length <= 258
-			assert ((dist_minus_1 + 1) as base.u64) <= in.dst.since_mark().length()
-			assert in.dst.available() >= 258
+			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.since_mark().length()
+			assert args.dst.available() >= 258
 
 			// We can therefore prove:
 			assert (dist_minus_1 + 1) > 0
 			assert (length as base.u64) <= 258
-			assert (length as base.u64) <= in.dst.available() via "a <= b: a <= c; c <= b"(c:258)
+			assert (length as base.u64) <= args.dst.available() via "a <= b: a <= c; c <= b"(c:258)
 
-			// Copy from in.dst.
-			in.dst.copy_n_from_history_fast!(n:length, distance:(dist_minus_1 + 1))
+			// Copy from args.dst.
+			args.dst.copy_n_from_history_fast!(n:length, distance:(dist_minus_1 + 1))
 			break
 		}
 	}
 
-	// Ensure n_bits < 8 by rewindng in.src, if we loaded too many of its bytes
-	// into the bits variable.
+	// Ensure n_bits < 8 by rewindng args.src, if we loaded too many of its
+	// bytes into the bits variable.
 	//
 	// Note that we can unconditionally call undo_read (without resulting in an
 	// "invalid I/O operation" error code) only because this whole function can
 	// never suspend, as all of its I/O operations were checked beforehand for
 	// sufficient buffer space. Otherwise, resuming from the suspension could
-	// mean that the (possibly different) in.src is no longer rewindable, even
-	// if conceptually, this function was responsible for reading the bytes we
-	// want to rewind.
+	// mean that the (possibly different) args.src is no longer rewindable,
+	// even if conceptually, this function was responsible for reading the
+	// bytes we want to rewind.
 	while n_bits >= 8,
 		post n_bits < 8,
 	{
 		n_bits -= 8
-		if in.src.can_undo_byte() {
-			in.src.undo_byte!()
+		if args.src.can_undo_byte() {
+			args.src.undo_byte!()
 		} else {
 			return error "internal error: inconsistent I/O"
 		}

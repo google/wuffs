@@ -27,9 +27,9 @@ import (
 )
 
 var (
-	exprIn      = a.NewExpr(0, 0, 0, t.IDIn, nil, nil, nil, nil)
-	exprThis    = a.NewExpr(0, 0, 0, t.IDThis, nil, nil, nil, nil)
+	exprArgs    = a.NewExpr(0, 0, 0, t.IDArgs, nil, nil, nil, nil)
 	exprNullptr = a.NewExpr(0, 0, 0, t.IDNullptr, nil, nil, nil, nil)
+	exprThis    = a.NewExpr(0, 0, 0, t.IDThis, nil, nil, nil, nil)
 )
 
 var (

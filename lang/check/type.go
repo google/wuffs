@@ -632,7 +632,7 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	s := (*a.Struct)(nil)
-	if q.astFunc != nil && lQID[0] == 0 && lQID[1] == t.IDIn {
+	if q.astFunc != nil && lQID[0] == 0 && lQID[1] == t.IDArgs {
 		s = q.astFunc.In()
 	}
 	if s == nil {

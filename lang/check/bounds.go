@@ -196,9 +196,9 @@ loop:
 			}
 			// o is a yield statement.
 			//
-			// Drop any facts involving in or this.
+			// Drop any facts involving args or this.
 			if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-				if x.Mentions(exprIn) || x.Mentions(exprThis) {
+				if x.Mentions(exprArgs) || x.Mentions(exprThis) {
 					return nil, nil
 				}
 				return x, nil
@@ -857,8 +857,8 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 			return a.Bounds{}, err
 		}
 
-		// TODO: delete this hack that only matches "in".
-		if n.LHS().AsExpr().Ident() == t.IDIn {
+		// TODO: delete this hack that only matches "args".
+		if n.LHS().AsExpr().Ident() == t.IDArgs {
 			for _, o := range q.astFunc.In().Fields() {
 				o := o.AsField()
 				if o.Name() == n.Ident() {

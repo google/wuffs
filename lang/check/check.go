@@ -418,7 +418,7 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 	setPlaceholderMBoundsMType(n.AsNode())
 
 	// A struct declaration implies a reset method.
-	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
+	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDArgs, nil)
 	f := a.NewFunc(0, n.Filename(), n.Line(), qid[1], t.IDReset, in, nil, nil, nil)
 	if qid[0] != 0 {
 		f.AsNode().AsRaw().SetPackage(c.tm, qid[0])
@@ -548,7 +548,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	inTyp.AsNode().SetMType(typeExprTypeExpr)
 
 	localVars := typeMap{
-		t.IDIn: inTyp,
+		t.IDArgs: inTyp,
 	}
 	if qqid[1] != 0 {
 		if _, ok := c.structs[t.QID{qqid[0], qqid[1]}]; !ok {
