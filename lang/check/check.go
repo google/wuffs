@@ -547,16 +547,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	inTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
 	inTyp.AsNode().SetMType(typeExprTypeExpr)
 
-	outTyp := n.Out()
-	if outTyp == nil {
-		outTyp = typeExprEmptyStruct
-	}
-
 	localVars := typeMap{
 		t.IDIn: inTyp,
-		// TODO: drop the implicit "out" variable (and exprOut in this
-		// package)?
-		t.IDOut: outTyp,
 	}
 	if qqid[1] != 0 {
 		if _, ok := c.structs[t.QID{qqid[0], qqid[1]}]; !ok {

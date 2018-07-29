@@ -196,9 +196,9 @@ loop:
 			}
 			// o is a yield statement.
 			//
-			// Drop any facts involving in, out or this.
+			// Drop any facts involving in or this.
 			if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
-				if x.Mentions(exprIn) || x.Mentions(exprOut) || x.Mentions(exprThis) {
+				if x.Mentions(exprIn) || x.Mentions(exprThis) {
 					return nil, nil
 				}
 				return x, nil
