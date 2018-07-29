@@ -525,8 +525,6 @@ func (q *checker) bcheckIf(n *a.If) error {
 	for n != nil {
 		snap := snapshot(q.facts)
 		// Check the if condition.
-		//
-		// TODO: check that n.Condition() has no side effects.
 		if _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 			return err
 		}
@@ -581,8 +579,6 @@ func (q *checker) bcheckWhile(n *a.While) error {
 	}
 
 	// Check the while condition.
-	//
-	// TODO: check that n.Condition() has no side effects.
 	if _, err := q.bcheckExpr(n.Condition(), 0); err != nil {
 		return err
 	}

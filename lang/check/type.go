@@ -94,6 +94,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KIf:
 		for n := n.AsIf(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
+			if cond.Effect() != 0 {
+				return fmt.Errorf("check: internal error: if-condition is not effect-free")
+			}
 			if err := q.tcheckExpr(cond, 0); err != nil {
 				return err
 			}
@@ -224,6 +227,9 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 	case a.KWhile:
 		n := n.AsWhile()
 		cond := n.Condition()
+		if cond.Effect() != 0 {
+			return fmt.Errorf("check: internal error: while-condition is not effect-free")
+		}
 		if err := q.tcheckExpr(cond, 0); err != nil {
 			return err
 		}

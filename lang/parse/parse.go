@@ -656,6 +656,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if condition.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: while-condition %q is not effect-free at %s:%d`,
+				condition.Str(p.tm), p.filename, p.line())
+		}
 		asserts, err := p.parseAsserts()
 		if err != nil {
 			return nil, err
@@ -708,6 +712,10 @@ func (p *parser) parseIf() (*a.If, error) {
 	condition, err := p.parseExpr()
 	if err != nil {
 		return nil, err
+	}
+	if condition.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: if-condition %q is not effect-free at %s:%d`,
+			condition.Str(p.tm), p.filename, p.line())
 	}
 	bodyIfTrue, err := p.parseBlock()
 	if err != nil {

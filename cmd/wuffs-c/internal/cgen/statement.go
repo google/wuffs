@@ -214,25 +214,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 }
 
 func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
-	// TODO: for writeSuspendibles, make sure that we get order of
-	// sub-expression evaluation correct.
-	nCloseCurly := 1
-	for first := true; ; first = false {
-		// TODO: restrict the if condition to effect-free expressions?
-		if n.Condition().Effect().Coroutine() {
-			if !first {
-				b.writeb('{')
-				const maxCloseCurly = 1000
-				if nCloseCurly == maxCloseCurly {
-					return fmt.Errorf("too many nested if's")
-				}
-				nCloseCurly++
-			}
-			if err := g.writeSuspendibles(b, n.Condition(), depth); err != nil {
-				return err
-			}
-		}
-
+	for {
 		condition := buffer(nil)
 		if err := g.writeExpr(&condition, n.Condition(), replaceCallSuspendibles, 0); err != nil {
 			return err
@@ -259,9 +241,7 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 		}
 		b.writes("} else ")
 	}
-	for ; nCloseCurly > 0; nCloseCurly-- {
-		b.writes("}\n")
-	}
+	b.writes("}\n")
 	return nil
 }
 
@@ -419,8 +399,6 @@ func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
 }
 
 func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
-	// TODO: consider suspendible calls.
-
 	if n.HasContinue() {
 		jt, err := g.currFunk.jumpTarget(n)
 		if err != nil {
