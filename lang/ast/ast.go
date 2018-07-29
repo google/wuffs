@@ -818,11 +818,11 @@ func (n *Func) QQID() t.QQID      { return t.QQID{n.id1, n.id2, n.id0} }
 func (n *Func) Receiver() t.QID   { return t.QID{n.id1, n.id2} }
 func (n *Func) FuncName() t.ID    { return n.id0 }
 func (n *Func) In() *Struct       { return n.lhs.AsStruct() }
-func (n *Func) Out() *Struct      { return n.rhs.AsStruct() }
+func (n *Func) Out() *TypeExpr    { return n.rhs.AsTypeExpr() }
 func (n *Func) Asserts() []*Node  { return n.list1 }
 func (n *Func) Body() []*Node     { return n.list2 }
 
-func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *Struct, asserts []*Node, body []*Node) *Func {
+func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *TypeExpr, asserts []*Node, body []*Node) *Func {
 	return &Func{
 		kind:     KFunc,
 		flags:    flags,

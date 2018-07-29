@@ -122,7 +122,7 @@ pub struct decoder?(
 	lzw lzw.decoder,
 )
 
-pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader)() {
+pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
 	if this.call_sequence >= 1 {
 		return error "invalid call sequence"
 	}
@@ -156,19 +156,19 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	this.call_sequence = 1
 }
 
-pub func decoder.num_decoded_frame_configs()(ret base.u64) {
+pub func decoder.num_decoded_frame_configs() base.u64 {
 	return this.num_decoded_frame_configs_value
 }
 
-pub func decoder.num_decoded_frames()(ret base.u64) {
+pub func decoder.num_decoded_frames() base.u64 {
 	return this.num_decoded_frames_value
 }
 
-pub func decoder.work_buffer_size()(ret base.range_ii_u64) {
+pub func decoder.work_buffer_size() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
-pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader)() {
+pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader) {
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
 			this.decode_image_config?(dst:nullptr, src:in.src)
@@ -215,7 +215,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	this.call_sequence = 2
 }
 
-pri func decoder.skip_frame?(src base.io_reader)() {
+pri func decoder.skip_frame?(src base.io_reader) {
 	var lw base.u8 = in.src.read_u8?()
 	this.skip_blocks?(src:in.src)
 
@@ -232,7 +232,7 @@ pri func decoder.skip_frame?(src base.io_reader)() {
 }
 
 // TODO: honor pixbuf_origin_x and pixbuf_origin_y args.
-pub func decoder.decode_frame?(dst ptr base.pixel_buffer, pixbuf_origin_x base.u32, pixbuf_origin_y base.u32, src base.io_reader, work_buffer slice base.u8)() {
+pub func decoder.decode_frame?(dst ptr base.pixel_buffer, pixbuf_origin_x base.u32, pixbuf_origin_y base.u32, src base.io_reader, work_buffer slice base.u8) {
 	if this.call_sequence != 2 {
 		this.decode_frame_config?(dst:nullptr, src:in.src)
 	}
@@ -251,7 +251,7 @@ pub func decoder.decode_frame?(dst ptr base.pixel_buffer, pixbuf_origin_x base.u
 	this.call_sequence = 3
 }
 
-pri func decoder.decode_up_to_id_part1?(src base.io_reader)() {
+pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	while true {
 		var block_type base.u8 = in.src.read_u8?()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
@@ -271,7 +271,7 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader)() {
 // decode_header reads either "GIF87a" or "GIF89a".
 //
 // See the spec section 17 "Header" on page 7.
-pri func decoder.decode_header?(src base.io_reader)() {
+pri func decoder.decode_header?(src base.io_reader) {
 	var c array[6] base.u8
 	var i base.u32
 	while i < 6 {
@@ -287,7 +287,7 @@ pri func decoder.decode_header?(src base.io_reader)() {
 // decode_lsd reads the Logical Screen Descriptor.
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
-pri func decoder.decode_lsd?(src base.io_reader)() {
+pri func decoder.decode_lsd?(src base.io_reader) {
 	this.width = in.src.read_u16le?() as base.u32
 	this.height = in.src.read_u16le?() as base.u32
 	var flags base.u8 = in.src.read_u8?()
@@ -329,7 +329,7 @@ pri func decoder.decode_lsd?(src base.io_reader)() {
 //  - section 24 "Comment Extension" on page 17.
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
-pri func decoder.decode_extension?(src base.io_reader)() {
+pri func decoder.decode_extension?(src base.io_reader) {
 	var label base.u8 = in.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		this.decode_gc?(src:in.src)
@@ -343,7 +343,7 @@ pri func decoder.decode_extension?(src base.io_reader)() {
 	this.skip_blocks?(src:in.src)
 }
 
-pri func decoder.skip_blocks?(src base.io_reader)() {
+pri func decoder.skip_blocks?(src base.io_reader) {
 	while true {
 		var block_size base.u8 = in.src.read_u8?()
 		if block_size == 0 {
@@ -364,7 +364,7 @@ pri const netscape2dot0 array[11] base.u8 = $(
 )
 
 // decode_ae reads an Application Extension.
-pri func decoder.decode_ae?(src base.io_reader)() {
+pri func decoder.decode_ae?(src base.io_reader) {
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
 	while true {
@@ -430,7 +430,7 @@ pri func decoder.decode_ae?(src base.io_reader)() {
 }
 
 // decode_gc reads a Graphic Control.
-pri func decoder.decode_gc?(src base.io_reader)() {
+pri func decoder.decode_gc?(src base.io_reader) {
 	if this.seen_graphic_control {
 		return error "bad graphic control"
 	}
@@ -479,7 +479,7 @@ pri func decoder.decode_gc?(src base.io_reader)() {
 // The code is split into two parts (part0 and part1) because determining the
 // overall image's width and height also requires decoding the first frame's
 // bounds (but doesn't require decoding the first frame's pixels).
-pri func decoder.decode_id_part0?(src base.io_reader)() {
+pri func decoder.decode_id_part0?(src base.io_reader) {
 	this.frame_rect_x0 = in.src.read_u16le?() as base.u32
 	this.frame_rect_y0 = in.src.read_u16le?() as base.u32
 	this.frame_rect_x1 = this.frame_rect_x0 ~mod+ (in.src.read_u16le?() as base.u32)
@@ -534,7 +534,7 @@ pri func decoder.decode_id_part0?(src base.io_reader)() {
 	}
 }
 
-pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)() {
+pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader) {
 	if this.gc_has_transparent_index {
 		if not this.use_local_palette {
 			this.palettes[1][:].copy_from_slice(s:this.palettes[0][:])
@@ -622,7 +622,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	// TODO: check for "not enough pixel data".
 }
 
-pri func decoder.copy_to_image_buffer?(pb ptr base.pixel_buffer)() {
+pri func decoder.copy_to_image_buffer?(pb ptr base.pixel_buffer) {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var src slice base.u8

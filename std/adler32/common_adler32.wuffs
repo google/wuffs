@@ -20,7 +20,7 @@ pub struct hasher?(
 	started base.bool,
 )
 
-pub func hasher.update!(x slice base.u8)(checksum base.u32) {
+pub func hasher.update!(x slice base.u8) base.u32 {
 	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
 	// RFC 1950.
 

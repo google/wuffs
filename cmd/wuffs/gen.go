@@ -296,21 +296,20 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				}
 				// TODO: look at n.Asserts().
 				fmt.Fprintf(out, "pub func %s.%s%s(", n.Receiver().Str(&h.tm), n.FuncName().Str(&h.tm), effect)
-				for i, param := range [2]*a.Struct{n.In(), n.Out()} {
+				for i, field := range n.In().Fields() {
+					field := field.AsField()
 					if i > 0 {
-						fmt.Fprintf(out, ")(")
+						fmt.Fprintf(out, ", ")
 					}
-					for j, field := range param.Fields() {
-						field := field.AsField()
-						if j > 0 {
-							fmt.Fprintf(out, ", ")
-						}
-						// TODO: what happens if the XType is from another
-						// package?
-						fmt.Fprintf(out, "%s %s", field.Name().Str(&h.tm), field.XType().Str(&h.tm))
-					}
+					// TODO: what happens if the XType is from another package?
+					// Similarly for the out-param.
+					fmt.Fprintf(out, "%s %s", field.Name().Str(&h.tm), field.XType().Str(&h.tm))
 				}
-				fmt.Fprintf(out, ") { }\n")
+				fmt.Fprintf(out, ") ")
+				if o := n.Out(); o != nil {
+					fmt.Fprintf(out, "%s", o.Str(&h.tm))
+				}
+				fmt.Fprintf(out, " { }\n")
 
 			case a.KStatus:
 				n := n.AsStatus()

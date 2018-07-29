@@ -30,11 +30,11 @@ pub struct decoder?(
 	ignore_checksum base.bool,
 )
 
-pub func decoder.set_ignore_checksum!(ic base.bool)() {
+pub func decoder.set_ignore_checksum!(ic base.bool) {
 	this.ignore_checksum = in.ic
 }
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	var x base.u16 = in.src.read_u16be?()
 	if ((x >> 8) & 0x0F) != 0x08 {
 		return error "bad compression method"

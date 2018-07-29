@@ -581,23 +581,15 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if n.Operator() == t.IDTry {
 		n.SetMType(typeExprStatus)
 	} else {
-		outFields := f.Out().Fields()
-		switch len(outFields) {
-		default:
-			// TODO: figure out how to translate f.Out(), which is an
-			// *ast.Struct, to an *ast.TypeExpr we can pass to n.SetMType.
-			return fmt.Errorf("TODO: translate an *ast.Struct to an *ast.TypeExpr")
-		case 0:
+		oTyp := f.Out()
+		if oTyp == nil {
 			n.SetMType(typeExprEmptyStruct)
-		case 1:
-			oTyp := outFields[0].AsField().XType()
-			if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
-				n.SetMType(genericType1)
-			} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
-				n.SetMType(genericType2)
-			} else {
-				n.SetMType(oTyp)
-			}
+		} else if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
+			n.SetMType(genericType1)
+		} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
+			n.SetMType(genericType2)
+		} else {
+			n.SetMType(oTyp)
 		}
 	}
 	return nil
@@ -640,13 +632,8 @@ func (q *checker) tcheckDot(n *a.Expr, depth uint32) error {
 	}
 
 	s := (*a.Struct)(nil)
-	if q.astFunc != nil && lQID[0] == 0 {
-		switch lQID[1] {
-		case t.IDIn:
-			s = q.astFunc.In()
-		case t.IDOut:
-			s = q.astFunc.Out()
-		}
+	if q.astFunc != nil && lQID[0] == 0 && lQID[1] == t.IDIn {
+		s = q.astFunc.In()
 	}
 	if s == nil {
 		s = q.c.structs[lQID]

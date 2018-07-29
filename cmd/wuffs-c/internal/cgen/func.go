@@ -88,15 +88,12 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	// TODO: write n's return values.
 	if n.Suspendible() {
 		b.writes("wuffs_base__status ")
-	} else if outFields := n.Out().Fields(); len(outFields) == 0 {
+	} else if out := n.Out(); out == nil {
+		// TODO: wuffs_base__empty_struct.
 		b.writes("void ")
-	} else if len(outFields) == 1 {
-		// TODO: does this generate the right C if the XType is an array?
-		if err := g.writeCTypeName(b, outFields[0].AsField().XType(), "", ""); err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("TODO: multiple return values")
+		// TODO: does writeCTypeName generate the right C if out is an array?
+	} else if err := g.writeCTypeName(b, out, "", ""); err != nil {
+		return err
 	}
 
 	if cpp != cppInsideStruct {
@@ -203,22 +200,19 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	return nil
 }
 
-func (g *gen) writeOutFieldsZeroValue(b *buffer, outFields []*a.Node) error {
-	switch len(outFields) {
-	case 0:
-		// No-op.
-	case 1:
-		if typ := outFields[0].AsField().XType(); typ.IsNumType() {
-			b.writes("0")
-		} else {
-			b.writes("((")
-			if err := g.writeCTypeName(b, typ, "", ""); err != nil {
-				return err
-			}
-			b.writes("){})")
+func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
+	if typ == nil {
+		// No-op. It's "return;" and not "return foo;".
+		//
+		// TODO: "return ((wuffs_base__empty_struct){})".
+	} else if typ.IsNumType() {
+		b.writes("0")
+	} else {
+		b.writes("((")
+		if err := g.writeCTypeName(b, typ, "", ""); err != nil {
+			return err
 		}
-	default:
-		return fmt.Errorf("TODO: handle structured return types")
+		b.writes("){})")
 	}
 	return nil
 }
@@ -226,12 +220,12 @@ func (g *gen) writeOutFieldsZeroValue(b *buffer, outFields []*a.Node) error {
 func (g *gen) writeFuncImplHeader(b *buffer) error {
 	// Check the previous status and the "self" arg.
 	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
-		outFields := g.currFunk.astFunc.Out().Fields()
+		out := g.currFunk.astFunc.Out()
 
 		b.writes("if (!self) { return ")
 		if g.currFunk.suspendible {
 			b.writes("WUFFS_BASE__ERROR_BAD_RECEIVER")
-		} else if err := g.writeOutFieldsZeroValue(b, outFields); err != nil {
+		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
 		b.writes(";}")
@@ -242,7 +236,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		b.writes("if (self->private_impl.status < 0) { return ")
 		if g.currFunk.suspendible {
 			b.writes("self->private_impl.status")
-		} else if err := g.writeOutFieldsZeroValue(b, outFields); err != nil {
+		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
 		b.writes(";}\n")

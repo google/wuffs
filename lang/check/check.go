@@ -419,8 +419,7 @@ func (c *Checker) checkStructDecl(node *a.Node) error {
 
 	// A struct declaration implies a reset method.
 	in := a.NewStruct(0, n.Filename(), n.Line(), t.IDIn, nil)
-	out := a.NewStruct(0, n.Filename(), n.Line(), t.IDOut, nil)
-	f := a.NewFunc(0, n.Filename(), n.Line(), qid[1], t.IDReset, in, out, nil, nil)
+	f := a.NewFunc(0, n.Filename(), n.Line(), qid[1], t.IDReset, in, nil, nil, nil)
 	if qid[0] != 0 {
 		f.AsNode().AsRaw().SetPackage(c.tm, qid[0])
 	}
@@ -461,11 +460,8 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 		if _, ok := fieldNames[f.Name()]; ok {
 			return fmt.Errorf("check: duplicate field %q", f.Name().Str(c.tm))
 		}
-		if err := q.tcheckTypeExpr(f.XType(), 0); err != nil {
-			return fmt.Errorf("%v in field %q", err, f.Name().Str(c.tm))
-		}
-		if _, err := q.bcheckTypeExpr(f.XType()); err != nil {
-			return fmt.Errorf("%v in field %q", err, f.Name().Str(c.tm))
+		if err := checkTypeExpr(q, f.XType()); err != nil {
+			return fmt.Errorf("%v for field %q", err, f.Name().Str(c.tm))
 		}
 		if banPtrTypes && f.XType().HasPointers() {
 			return fmt.Errorf("check: pointer-containing type %q not allowed for field %q",
@@ -487,6 +483,16 @@ func (c *Checker) checkFields(fields []*a.Node, banPtrTypes bool, checkDefaultZe
 	return nil
 }
 
+func checkTypeExpr(q *checker, n *a.TypeExpr) error {
+	if err := q.tcheckTypeExpr(n, 0); err != nil {
+		return err
+	}
+	if _, err := q.bcheckTypeExpr(n); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Checker) checkFuncSignature(node *a.Node) error {
 	n := node.AsFunc()
 	if err := c.checkFields(n.In().Fields(), false, false); err != nil {
@@ -497,17 +503,23 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 	}
 	setPlaceholderMBoundsMType(n.In().AsNode())
-	if err := c.checkFields(n.Out().Fields(), false, true); err != nil {
-		return &Error{
-			Err:      fmt.Errorf("%v in out-params for func %s", err, n.QQID().Str(c.tm)),
-			Filename: n.Filename(),
-			Line:     n.Line(),
+	if out := n.Out(); out != nil {
+		// TODO: does checking a TypeExpr need a q?
+		q := &checker{
+			c:  c,
+			tm: c.tm,
+		}
+		if err := checkTypeExpr(q, out); err != nil {
+			return &Error{
+				Err:      fmt.Errorf("%v in out-param for func %s", err, n.QQID().Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
 		}
 	}
-	setPlaceholderMBoundsMType(n.Out().AsNode())
 	setPlaceholderMBoundsMType(n.AsNode())
 
-	// TODO: check somewhere that, if n.Out() is non-empty (or we are
+	// TODO: check somewhere that, if n.Out() is non-nil (or we are
 	// suspendible), that we end with a return statement? Or is that an
 	// implicit "return out"?
 
@@ -535,13 +547,15 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	inTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
 	inTyp.AsNode().SetMType(typeExprTypeExpr)
 
-	oQID := n.Out().QID()
-	outTyp := a.NewTypeExpr(0, oQID[0], oQID[1], nil, nil, nil)
-	outTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
-	outTyp.AsNode().SetMType(typeExprTypeExpr)
+	outTyp := n.Out()
+	if outTyp == nil {
+		outTyp = typeExprEmptyStruct
+	}
 
 	localVars := typeMap{
-		t.IDIn:  inTyp,
+		t.IDIn: inTyp,
+		// TODO: drop the implicit "out" variable (and exprOut in this
+		// package)?
 		t.IDOut: outTyp,
 	}
 	if qqid[1] != 0 {

@@ -99,55 +99,55 @@ var Types = []string{
 }
 
 var Funcs = []string{
-	"u8.high_bits(n u32[..8])(ret u8)",
-	"u8.low_bits(n u32[..8])(ret u8)",
-	"u8.max(x u8)(ret u8)",
-	"u8.min(x u8)(ret u8)",
+	"u8.high_bits(n u32[..8]) u8",
+	"u8.low_bits(n u32[..8]) u8",
+	"u8.max(x u8) u8",
+	"u8.min(x u8) u8",
 
-	"u16.high_bits(n u32[..16])(ret u16)",
-	"u16.low_bits(n u32[..16])(ret u16)",
-	"u16.max(x u16)(ret u16)",
-	"u16.min(x u16)(ret u16)",
+	"u16.high_bits(n u32[..16]) u16",
+	"u16.low_bits(n u32[..16]) u16",
+	"u16.max(x u16) u16",
+	"u16.min(x u16) u16",
 
-	"u32.high_bits(n u32[..32])(ret u32)",
-	"u32.low_bits(n u32[..32])(ret u32)",
-	"u32.max(x u32)(ret u32)",
-	"u32.min(x u32)(ret u32)",
+	"u32.high_bits(n u32[..32]) u32",
+	"u32.low_bits(n u32[..32]) u32",
+	"u32.max(x u32) u32",
+	"u32.min(x u32) u32",
 
-	"u64.high_bits(n u32[..64])(ret u64)",
-	"u64.low_bits(n u32[..64])(ret u64)",
-	"u64.max(x u64)(ret u64)",
-	"u64.min(x u64)(ret u64)",
+	"u64.high_bits(n u32[..64]) u64",
+	"u64.low_bits(n u32[..64]) u64",
+	"u64.max(x u64) u64",
+	"u64.min(x u64) u64",
 
 	// ---- utility
 
-	"utility.make_range_ii_u32(min_incl u32, max_incl u32)(ret range_ii_u32)",
-	"utility.make_range_ie_u32(min_incl u32, max_excl u32)(ret range_ie_u32)",
-	"utility.make_range_ii_u64(min_incl u64, max_incl u64)(ret range_ii_u64)",
-	"utility.make_range_ie_u64(min_incl u64, max_excl u64)(ret range_ie_u64)",
-	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32)(ret rect_ii_u32)",
-	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32)(ret rect_ie_u32)",
+	"utility.make_range_ii_u32(min_incl u32, max_incl u32) range_ii_u32",
+	"utility.make_range_ie_u32(min_incl u32, max_excl u32) range_ie_u32",
+	"utility.make_range_ii_u64(min_incl u64, max_incl u64) range_ii_u64",
+	"utility.make_range_ie_u64(min_incl u64, max_excl u64) range_ie_u64",
+	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32) rect_ii_u32",
+	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32) rect_ie_u32",
 
 	// ---- io_reader
 
-	"io_reader.can_undo_byte()(ret bool)",
-	"io_reader.undo_byte!()()",
+	"io_reader.can_undo_byte() bool",
+	"io_reader.undo_byte!()",
 
-	"io_reader.read_u8?()(ret u8)",
-	"io_reader.read_u16be?()(ret u16)",
-	"io_reader.read_u16le?()(ret u16)",
-	"io_reader.read_u24be?()(ret u32[..0xFFFFFF])",
-	"io_reader.read_u24le?()(ret u32[..0xFFFFFF])",
-	"io_reader.read_u32be?()(ret u32)",
-	"io_reader.read_u32le?()(ret u32)",
-	"io_reader.read_u40be?()(ret u64[..0xFFFFFFFFFF])",
-	"io_reader.read_u40le?()(ret u64[..0xFFFFFFFFFF])",
-	"io_reader.read_u48be?()(ret u64[..0xFFFFFFFFFFFF])",
-	"io_reader.read_u48le?()(ret u64[..0xFFFFFFFFFFFF])",
-	"io_reader.read_u56be?()(ret u64[..0xFFFFFFFFFFFFFF])",
-	"io_reader.read_u56le?()(ret u64[..0xFFFFFFFFFFFFFF])",
-	"io_reader.read_u64be?()(ret u64)",
-	"io_reader.read_u64le?()(ret u64)",
+	"io_reader.read_u8?() u8",
+	"io_reader.read_u16be?() u16",
+	"io_reader.read_u16le?() u16",
+	"io_reader.read_u24be?() u32[..0xFFFFFF]",
+	"io_reader.read_u24le?() u32[..0xFFFFFF]",
+	"io_reader.read_u32be?() u32",
+	"io_reader.read_u32le?() u32",
+	"io_reader.read_u40be?() u64[..0xFFFFFFFFFF]",
+	"io_reader.read_u40le?() u64[..0xFFFFFFFFFF]",
+	"io_reader.read_u48be?() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.read_u48le?() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.read_u56be?() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.read_u56le?() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.read_u64be?() u64",
+	"io_reader.read_u64le?() u64",
 
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
@@ -155,114 +155,114 @@ var Funcs = []string{
 	// The io_reader has peek_etc methods and skip_fast, not read_etc_fast,
 	// because we sometimes advance the pointer by less than what's read. See
 	// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
-	"io_reader.peek_u8()(ret u8)",
-	"io_reader.peek_u16be()(ret u16)",
-	"io_reader.peek_u16le()(ret u16)",
-	"io_reader.peek_u24be()(ret u32[..0xFFFFFF])",
-	"io_reader.peek_u24le()(ret u32[..0xFFFFFF])",
-	"io_reader.peek_u32be()(ret u32)",
-	"io_reader.peek_u32le()(ret u32)",
-	"io_reader.peek_u40be()(ret u64[..0xFFFFFFFFFF])",
-	"io_reader.peek_u40le()(ret u64[..0xFFFFFFFFFF])",
-	"io_reader.peek_u48be()(ret u64[..0xFFFFFFFFFFFF])",
-	"io_reader.peek_u48le()(ret u64[..0xFFFFFFFFFFFF])",
-	"io_reader.peek_u56be()(ret u64[..0xFFFFFFFFFFFFFF])",
-	"io_reader.peek_u56le()(ret u64[..0xFFFFFFFFFFFFFF])",
-	"io_reader.peek_u64be()(ret u64)",
-	"io_reader.peek_u64le()(ret u64)",
+	"io_reader.peek_u8() u8",
+	"io_reader.peek_u16be() u16",
+	"io_reader.peek_u16le() u16",
+	"io_reader.peek_u24be() u32[..0xFFFFFF]",
+	"io_reader.peek_u24le() u32[..0xFFFFFF]",
+	"io_reader.peek_u32be() u32",
+	"io_reader.peek_u32le() u32",
+	"io_reader.peek_u40be() u64[..0xFFFFFFFFFF]",
+	"io_reader.peek_u40le() u64[..0xFFFFFFFFFF]",
+	"io_reader.peek_u48be() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.peek_u48le() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.peek_u56be() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.peek_u56le() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.peek_u64be() u64",
+	"io_reader.peek_u64le() u64",
 
-	"io_reader.available()(ret u64)",
-	"io_reader.set!(s slice u8, closed bool)()",
-	"io_reader.set_limit!(l u64)()",
-	"io_reader.set_mark!()()",
-	"io_reader.since_mark()(ret slice u8)",
+	"io_reader.available() u64",
+	"io_reader.set!(s slice u8, closed bool)",
+	"io_reader.set_limit!(l u64)",
+	"io_reader.set_mark!()",
+	"io_reader.since_mark() slice u8",
 
-	"io_reader.skip?(n u32)()",
+	"io_reader.skip?(n u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
 	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
-	"io_reader.skip_fast!(actual u32, worst_case u32)()",
+	"io_reader.skip_fast!(actual u32, worst_case u32)",
 
 	// ---- io_writer
 
-	"io_writer.write_u8?(x u8)()",
-	"io_writer.write_u16be?(x u16)()",
-	"io_writer.write_u16le?(x u16)()",
-	"io_writer.write_u24be?(x u32[..0xFFFFFF])()",
-	"io_writer.write_u24le?(x u32[..0xFFFFFF])()",
-	"io_writer.write_u32be?(x u32)()",
-	"io_writer.write_u32le?(x u32)()",
-	"io_writer.write_u40be?(x u64[..0xFFFFFFFFFF])()",
-	"io_writer.write_u40le?(x u64[..0xFFFFFFFFFF])()",
-	"io_writer.write_u48be?(x u64[..0xFFFFFFFFFFFF])()",
-	"io_writer.write_u48le?(x u64[..0xFFFFFFFFFFFF])()",
-	"io_writer.write_u56be?(x u64[..0xFFFFFFFFFFFFFF])()",
-	"io_writer.write_u56le?(x u64[..0xFFFFFFFFFFFFFF])()",
-	"io_writer.write_u64be?(x u64)()",
-	"io_writer.write_u64le?(x u64)()",
+	"io_writer.write_u8?(x u8)",
+	"io_writer.write_u16be?(x u16)",
+	"io_writer.write_u16le?(x u16)",
+	"io_writer.write_u24be?(x u32[..0xFFFFFF])",
+	"io_writer.write_u24le?(x u32[..0xFFFFFF])",
+	"io_writer.write_u32be?(x u32)",
+	"io_writer.write_u32le?(x u32)",
+	"io_writer.write_u40be?(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_u40le?(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_u48be?(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_u48le?(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_u56be?(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u56le?(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u64be?(x u64)",
+	"io_writer.write_u64le?(x u64)",
 
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
 	//
 	// The io_writer has write_fast_etc methods, not poke_etc and skip_fast,
 	// because skip_fast could leave uninitialized bytes in the io_buffer.
-	"io_writer.write_fast_u8!(x u8)()",
-	"io_writer.write_fast_u16be!(x u16)()",
-	"io_writer.write_fast_u16le!(x u16)()",
-	"io_writer.write_fast_u24be!(x u32[..0xFFFFFF])()",
-	"io_writer.write_fast_u24le!(x u32[..0xFFFFFF])()",
-	"io_writer.write_fast_u32be!(x u32)()",
-	"io_writer.write_fast_u32le!(x u32)()",
-	"io_writer.write_fast_u40be!(x u64[..0xFFFFFFFFFF])()",
-	"io_writer.write_fast_u40le!(x u64[..0xFFFFFFFFFF])()",
-	"io_writer.write_fast_u48be!(x u64[..0xFFFFFFFFFFFF])()",
-	"io_writer.write_fast_u48le!(x u64[..0xFFFFFFFFFFFF])()",
-	"io_writer.write_fast_u56be!(x u64[..0xFFFFFFFFFFFFFF])()",
-	"io_writer.write_fast_u56le!(x u64[..0xFFFFFFFFFFFFFF])()",
-	"io_writer.write_fast_u64be!(x u64)()",
-	"io_writer.write_fast_u64le!(x u64)()",
+	"io_writer.write_fast_u8!(x u8)",
+	"io_writer.write_fast_u16be!(x u16)",
+	"io_writer.write_fast_u16le!(x u16)",
+	"io_writer.write_fast_u24be!(x u32[..0xFFFFFF])",
+	"io_writer.write_fast_u24le!(x u32[..0xFFFFFF])",
+	"io_writer.write_fast_u32be!(x u32)",
+	"io_writer.write_fast_u32le!(x u32)",
+	"io_writer.write_fast_u40be!(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_fast_u40le!(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_fast_u48be!(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_fast_u48le!(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_fast_u56be!(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_fast_u56le!(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_fast_u64be!(x u64)",
+	"io_writer.write_fast_u64le!(x u64)",
 
-	"io_writer.available()(ret u64)",
-	"io_writer.set!(s slice u8)()",
-	"io_writer.set_limit!(l u64)()",
-	"io_writer.set_mark!()()",
-	"io_writer.since_mark()(ret slice u8)",
+	"io_writer.available() u64",
+	"io_writer.set!(s slice u8)",
+	"io_writer.set_limit!(l u64)",
+	"io_writer.set_mark!()",
+	"io_writer.since_mark() slice u8",
 
-	"io_writer.copy_from_slice!(s slice u8)(ret u64)",
-	"io_writer.copy_n_from_history!(n u32, distance u32)(ret u32)",
-	"io_writer.copy_n_from_reader!(n u32, r io_reader)(ret u32)",
-	"io_writer.copy_n_from_slice!(n u32, s slice u8)(ret u32)",
+	"io_writer.copy_from_slice!(s slice u8) u64",
+	"io_writer.copy_n_from_history!(n u32, distance u32) u32",
+	"io_writer.copy_n_from_reader!(n u32, r io_reader) u32",
+	"io_writer.copy_n_from_slice!(n u32, s slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
-	"io_writer.copy_n_from_history_fast!(n u32, distance u32)(ret u32)",
+	"io_writer.copy_n_from_history_fast!(n u32, distance u32) u32",
 
 	// ---- status
 
-	"status.is_error()(ret bool)",
-	"status.is_ok()(ret bool)",
-	"status.is_suspension()(ret bool)",
+	"status.is_error() bool",
+	"status.is_ok() bool",
+	"status.is_suspension() bool",
 
 	// ---- frame_config
 
 	// Duration's upper bound is the maximum possible i64 value.
 	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
-		"blend bool, disposal u8, palette_changed bool)()",
+		"blend bool, disposal u8, palette_changed bool)",
 
 	// ---- image_config
 
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
-		"num_loops u32, first_frame_is_opaque bool)()",
+		"num_loops u32, first_frame_is_opaque bool)",
 
 	// ---- pixel_buffer
 
-	"pixel_buffer.plane(p u32[..3])(ret table u8)",
-	"pixel_buffer.set_palette!(palette slice u8)()",
+	"pixel_buffer.plane(p u32[..3]) table u8",
+	"pixel_buffer.set_palette!(palette slice u8)",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
@@ -279,16 +279,16 @@ const (
 
 var SliceFuncs = []string{
 	// TODO: should copy_from_slice be a ! method?
-	"T1.copy_from_slice(s T1)(ret u64)",
-	"T1.length()(ret u64)",
-	"T1.prefix(up_to u64)(ret T1)",
-	"T1.suffix(up_to u64)(ret T1)",
+	"T1.copy_from_slice(s T1) u64",
+	"T1.length() u64",
+	"T1.prefix(up_to u64) T1",
+	"T1.suffix(up_to u64) T1",
 }
 
 var TableFuncs = []string{
-	"T2.height()(ret u64)",
-	"T2.stride()(ret u64)",
-	"T2.width()(ret u64)",
+	"T2.height() u64",
+	"T2.stride() u64",
+	"T2.width() u64",
 
-	"T2.row(y u32)(ret T1)",
+	"T2.row(y u32) T1",
 }

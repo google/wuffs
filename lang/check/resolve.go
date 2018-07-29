@@ -125,7 +125,7 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		const filename = "builtin.wuffs"
 		tokens, _, err := t.Tokenize(c.tm, filename, buf)
 		if err != nil {
-			return nil, fmt.Errorf("check: could not tokenize built-in funcs: %v", err)
+			return nil, fmt.Errorf("check: parsing %q: could not tokenize built-in funcs: %v", s, err)
 		}
 		if generic {
 			for i := range tokens {
@@ -138,7 +138,7 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 		}
 		file, err := parse.Parse(c.tm, filename, tokens, &opts)
 		if err != nil {
-			return nil, fmt.Errorf("check: could not parse built-in funcs: %v", err)
+			return nil, fmt.Errorf("check: parsing %q: could not parse built-in funcs: %v", s, err)
 		}
 
 		tlds := file.TopLevelDecls()

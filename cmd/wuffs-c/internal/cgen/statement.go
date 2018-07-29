@@ -358,7 +358,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	}
 
 	b.writes("return ")
-	if len(g.currFunk.astFunc.Out().Fields()) == 0 {
+	if g.currFunk.astFunc.Out() == nil {
 		if retExpr != nil {
 			return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.Str(g.tm))
 		}

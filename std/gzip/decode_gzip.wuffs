@@ -28,11 +28,11 @@ pub struct decoder?(
 	ignore_checksum base.bool,
 )
 
-pub func decoder.set_ignore_checksum!(ic base.bool)() {
+pub func decoder.set_ignore_checksum!(ic base.bool) {
 	this.ignore_checksum = in.ic
 }
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	// Read the header.
 	var c base.u8 = in.src.read_u8?()
 	if c != 0x1F {

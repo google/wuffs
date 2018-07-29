@@ -122,7 +122,7 @@ pub struct decoder?(
 	end_of_block base.bool,
 )
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	while true {
 		in.dst.set_mark!()
 		var z base.status = try this.decode_blocks?(dst:in.dst, src:in.src)
@@ -174,7 +174,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader)() {
 	}
 }
 
-pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader)() {
+pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 	var final base.u32
 	while final == 0 {
 		while this.n_bits < 3,
@@ -214,7 +214,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader)() {
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
-pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader)() {
+pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
@@ -245,7 +245,7 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader)() 
 }
 
 // init_fixed_huffman initializes this.huffs as per the RFC section 3.2.6.
-pri func decoder.init_fixed_huffman?()() {
+pri func decoder.init_fixed_huffman?() {
 	var i base.u32
 	while i < 144 {
 		this.code_lengths[i] = 8
@@ -272,7 +272,7 @@ pri func decoder.init_fixed_huffman?()() {
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
-pri func decoder.init_dynamic_huffman?(src base.io_reader)() {
+pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	var bits base.u32 = this.bits
 	var n_bits base.u32 = this.n_bits
 	while n_bits < 14,
@@ -422,7 +422,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader)() {
 // TODO: skip generating WUFFS_COROUTINE_SUSPENSION_POINTs for *callers* of
 // this function, as it can only return errors, not suspensions.
 
-pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32)() {
+pri func decoder.init_huff?(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) {
 	// For the clcode example in this package's README.md:
 	//  - n_codes0 = 0
 	//  - n_codes1 = 19

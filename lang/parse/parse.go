@@ -198,9 +198,12 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			outFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
-			if err != nil {
-				return nil, err
+			outTyp := (*a.TypeExpr)(nil)
+			if p.peek1() != t.IDOpenCurly {
+				outTyp, err = p.parseTypeExpr()
+				if err != nil {
+					return nil, err
+				}
 			}
 			asserts := []*a.Node(nil)
 			if p.peek1() == t.IDComma {
@@ -223,8 +226,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 			p.src = p.src[1:]
 			in := a.NewStruct(0, p.filename, line, t.IDIn, inFields)
-			out := a.NewStruct(0, p.filename, line, t.IDOut, outFields)
-			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
+			return a.NewFunc(flags, p.filename, line, id0, id1, in, outTyp, asserts, body).AsNode(), nil
 
 		case t.IDError, t.IDSuspension:
 			keyword := p.src[0].ID

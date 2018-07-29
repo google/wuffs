@@ -14,7 +14,7 @@
 
 // TODO: describe how the xxx_fast version differs from the xxx_slow one, the
 // assumptions that xxx_fast makes, and how that makes it fast.
-pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader)() {
+pri func decoder.decode_huffman_fast?(dst base.io_writer, src base.io_reader) {
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_slow function. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
