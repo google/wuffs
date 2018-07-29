@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) {
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_fast function. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
@@ -41,13 +41,13 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (args.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8!??() as base.u32) << n_bits
 			n_bits += 8
 		}
 
 		if (table_entry >> 31) != 0 {
 			// Literal.
-			args.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
+			args.dst.write_u8!??(x:((table_entry >> 8) & 0xFF) as base.u8)
 			continue:loop
 		} else if (table_entry >> 30) != 0 {
 			// No-op; code continues past the if-else chain.
@@ -71,13 +71,13 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8?() as base.u32) << n_bits
+				bits |= (args.src.read_u8!??() as base.u32) << n_bits
 				n_bits += 8
 			}
 
 			if (table_entry >> 31) != 0 {
 				// Literal.
-				args.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
+				args.dst.write_u8!??(x:((table_entry >> 8) & 0xFF) as base.u8)
 				continue:loop
 			} else if (table_entry >> 30) != 0 {
 				// No-op; code continues past the if-else chain.
@@ -107,7 +107,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8?() as base.u32) << n_bits
+				bits |= (args.src.read_u8!??() as base.u32) << n_bits
 				n_bits += 8
 			}
 			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
@@ -125,7 +125,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (args.src.read_u8?() as base.u32) << n_bits
+			bits |= (args.src.read_u8!??() as base.u32) << n_bits
 			n_bits += 8
 		}
 		// Check for a redirect.
@@ -144,7 +144,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8?() as base.u32) << n_bits
+				bits |= (args.src.read_u8!??() as base.u32) << n_bits
 				n_bits += 8
 			}
 		}
@@ -170,7 +170,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8?() as base.u32) << n_bits
+				bits |= (args.src.read_u8!??() as base.u32) << n_bits
 				n_bits += 8
 			}
 			dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF

@@ -133,21 +133,21 @@ var Funcs = []string{
 	"io_reader.can_undo_byte() bool",
 	"io_reader.undo_byte!()",
 
-	"io_reader.read_u8?() u8",
-	"io_reader.read_u16be?() u16",
-	"io_reader.read_u16le?() u16",
-	"io_reader.read_u24be?() u32[..0xFFFFFF]",
-	"io_reader.read_u24le?() u32[..0xFFFFFF]",
-	"io_reader.read_u32be?() u32",
-	"io_reader.read_u32le?() u32",
-	"io_reader.read_u40be?() u64[..0xFFFFFFFFFF]",
-	"io_reader.read_u40le?() u64[..0xFFFFFFFFFF]",
-	"io_reader.read_u48be?() u64[..0xFFFFFFFFFFFF]",
-	"io_reader.read_u48le?() u64[..0xFFFFFFFFFFFF]",
-	"io_reader.read_u56be?() u64[..0xFFFFFFFFFFFFFF]",
-	"io_reader.read_u56le?() u64[..0xFFFFFFFFFFFFFF]",
-	"io_reader.read_u64be?() u64",
-	"io_reader.read_u64le?() u64",
+	"io_reader.read_u8!??() u8",
+	"io_reader.read_u16be!??() u16",
+	"io_reader.read_u16le!??() u16",
+	"io_reader.read_u24be!??() u32[..0xFFFFFF]",
+	"io_reader.read_u24le!??() u32[..0xFFFFFF]",
+	"io_reader.read_u32be!??() u32",
+	"io_reader.read_u32le!??() u32",
+	"io_reader.read_u40be!??() u64[..0xFFFFFFFFFF]",
+	"io_reader.read_u40le!??() u64[..0xFFFFFFFFFF]",
+	"io_reader.read_u48be!??() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.read_u48le!??() u64[..0xFFFFFFFFFFFF]",
+	"io_reader.read_u56be!??() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.read_u56le!??() u64[..0xFFFFFFFFFFFFFF]",
+	"io_reader.read_u64be!??() u64",
+	"io_reader.read_u64le!??() u64",
 
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
@@ -177,7 +177,7 @@ var Funcs = []string{
 	"io_reader.set_mark!()",
 	"io_reader.since_mark() slice u8",
 
-	"io_reader.skip?(n u32)",
+	"io_reader.skip!??(n u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
@@ -187,21 +187,21 @@ var Funcs = []string{
 
 	// ---- io_writer
 
-	"io_writer.write_u8?(x u8)",
-	"io_writer.write_u16be?(x u16)",
-	"io_writer.write_u16le?(x u16)",
-	"io_writer.write_u24be?(x u32[..0xFFFFFF])",
-	"io_writer.write_u24le?(x u32[..0xFFFFFF])",
-	"io_writer.write_u32be?(x u32)",
-	"io_writer.write_u32le?(x u32)",
-	"io_writer.write_u40be?(x u64[..0xFFFFFFFFFF])",
-	"io_writer.write_u40le?(x u64[..0xFFFFFFFFFF])",
-	"io_writer.write_u48be?(x u64[..0xFFFFFFFFFFFF])",
-	"io_writer.write_u48le?(x u64[..0xFFFFFFFFFFFF])",
-	"io_writer.write_u56be?(x u64[..0xFFFFFFFFFFFFFF])",
-	"io_writer.write_u56le?(x u64[..0xFFFFFFFFFFFFFF])",
-	"io_writer.write_u64be?(x u64)",
-	"io_writer.write_u64le?(x u64)",
+	"io_writer.write_u8!??(x u8)",
+	"io_writer.write_u16be!??(x u16)",
+	"io_writer.write_u16le!??(x u16)",
+	"io_writer.write_u24be!??(x u32[..0xFFFFFF])",
+	"io_writer.write_u24le!??(x u32[..0xFFFFFF])",
+	"io_writer.write_u32be!??(x u32)",
+	"io_writer.write_u32le!??(x u32)",
+	"io_writer.write_u40be!??(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_u40le!??(x u64[..0xFFFFFFFFFF])",
+	"io_writer.write_u48be!??(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_u48le!??(x u64[..0xFFFFFFFFFFFF])",
+	"io_writer.write_u56be!??(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u56le!??(x u64[..0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u64be!??(x u64)",
+	"io_writer.write_u64le!??(x u64)",
 
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).

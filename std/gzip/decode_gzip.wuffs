@@ -32,28 +32,28 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 	this.ignore_checksum = args.ic
 }
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	// Read the header.
-	var c base.u8 = args.src.read_u8?()
+	var c base.u8 = args.src.read_u8!??()
 	if c != 0x1F {
 		return error "bad header"
 	}
-	c = args.src.read_u8?()
+	c = args.src.read_u8!??()
 	if c != 0x8B {
 		return error "bad header"
 	}
-	c = args.src.read_u8?()
+	c = args.src.read_u8!??()
 	if c != 0x08 {
 		return error "bad compression method"
 	}
-	var flags base.u8 = args.src.read_u8?()
+	var flags base.u8 = args.src.read_u8!??()
 	// TODO: API for returning the header's MTIME field.
-	args.src.skip?(n:6)
+	args.src.skip!??(n:6)
 
 	// Handle FEXTRA.
 	if (flags & 0x04) != 0 {
-		var xlen base.u16 = args.src.read_u16le?()
-		args.src.skip?(n:xlen as base.u32)
+		var xlen base.u16 = args.src.read_u16le!??()
+		args.src.skip!??(n:xlen as base.u32)
 	}
 
 	// Handle FNAME.
@@ -63,7 +63,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	// filename length to NAME_MAX, which is 255.
 	if (flags & 0x08) != 0 {
 		while true {
-			c = args.src.read_u8?()
+			c = args.src.read_u8!??()
 			if c == 0 {
 				break
 			}
@@ -73,7 +73,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	// Handle FCOMMENT.
 	if (flags & 0x10) != 0 {
 		while true {
-			c = args.src.read_u8?()
+			c = args.src.read_u8!??()
 			if c == 0 {
 				break
 			}
@@ -82,7 +82,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 
 	// Handle FHCRC.
 	if (flags & 0x02) != 0 {
-		args.src.skip?(n:2)
+		args.src.skip!??(n:2)
 	}
 
 	// Reserved flags bits must be zero.
@@ -95,7 +95,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	var decoded_length_got base.u32
 	while true {
 		args.dst.set_mark!()
-		var z base.status = try this.flate.decode?(dst:args.dst, src:args.src)
+		var z base.status = try this.flate.decode!??(dst:args.dst, src:args.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update!(x:args.dst.since_mark())
 			decoded_length_got ~mod+= ((args.dst.since_mark().length() & 0xFFFFFFFF) as base.u32)
@@ -105,8 +105,8 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 		}
 		yield z
 	}
-	var checksum_want base.u32 = args.src.read_u32le?()
-	var decoded_length_want base.u32 = args.src.read_u32le?()
+	var checksum_want base.u32 = args.src.read_u32le!??()
+	var decoded_length_want base.u32 = args.src.read_u32le!??()
 	if (not this.ignore_checksum) and
 		((checksum_got != checksum_want) or (decoded_length_got != decoded_length_want)) {
 		return error "bad checksum"
