@@ -669,8 +669,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 					continue
 				}
 				o := tld.AsFunc()
-				// XXX: s/Optional/Coroutine/
-				if o.Receiver() != n.QID() || !o.Effect().Optional() {
+				if o.Receiver() != n.QID() || !o.Effect().Coroutine() {
 					continue
 				}
 				k := g.funks[o.QQID()]

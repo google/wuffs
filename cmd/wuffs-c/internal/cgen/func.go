@@ -86,8 +86,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	// TODO: write n's return values.
-	// XXX: s/Optional/Coroutine/
-	if n.Effect().Optional() {
+	if n.Effect().Coroutine() {
 		b.writes("wuffs_base__status ")
 	} else if out := n.Out(); out == nil {
 		// TODO: wuffs_base__empty_struct.
@@ -175,7 +174,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 		astFunc:     n,
 		cName:       g.funcCName(n),
 		public:      n.Public(),
-		suspendible: n.Effect().Optional(), // XXX: s/Optional/Coroutine/
+		suspendible: n.Effect().Coroutine(),
 	}
 
 	if err := g.writeFuncImplHeader(&g.currFunk.bHeader); err != nil {
