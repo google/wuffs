@@ -65,7 +65,7 @@ func TestCheck(tt *testing.T) {
 			i base.i32,
 		)
 
-		pri func foo.bar()() {
+		pri func foo.bar() {
 			var x base.u8
 			var y base.i32 = +2
 			var z base.u64[..123]
@@ -156,9 +156,8 @@ func TestCheck(tt *testing.T) {
 
 	want := [][2]string{
 		{"a", "array[4] base.u8"},
+		{"args", "args"},
 		{"b", "base.bool"},
-		{"in", "in"},
-		{"out", "out"},
 		{"p", "base.i32"},
 		{"q", "base.i32[0..8]"},
 		{"this", "ptr foo"},
@@ -206,7 +205,7 @@ func TestConstValues(tt *testing.T) {
 
 	tm := &t.Map{}
 	for s, wantInt64 := range testCases {
-		src := "packageid \"test\"\npri func foo()() {\n\t" + s + "\n}\n"
+		src := "packageid \"test\"\npri func foo() {\n\t" + s + "\n}\n"
 
 		tokens, _, err := t.Tokenize(tm, filename, []byte(src))
 		if err != nil {
