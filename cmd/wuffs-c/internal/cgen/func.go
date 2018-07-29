@@ -38,7 +38,7 @@ type funk struct {
 	tempW         uint32
 	tempR         uint32
 	public        bool
-	suspendible   bool
+	suspendible   bool // TODO: rename to coroutine.
 	usesScratch   bool
 	hasGotoOK     bool
 	shortReads    []string
@@ -86,7 +86,8 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	// TODO: write n's return values.
-	if n.Suspendible() {
+	// XXX: s/Optional/Coroutine/
+	if n.Effect().Optional() {
 		b.writes("wuffs_base__status ")
 	} else if out := n.Out(); out == nil {
 		// TODO: wuffs_base__empty_struct.
@@ -174,7 +175,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 		astFunc:     n,
 		cName:       g.funcCName(n),
 		public:      n.Public(),
-		suspendible: n.Suspendible(),
+		suspendible: n.Effect().Optional(), // XXX: s/Optional/Coroutine/
 	}
 
 	if err := g.writeFuncImplHeader(&g.currFunk.bHeader); err != nil {

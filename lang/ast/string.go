@@ -102,11 +102,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 
 		case t.IDOpenParen:
 			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
-			if n.flags&FlagsSuspendible != 0 {
-				buf = append(buf, '?')
-			} else if n.flags&FlagsImpure != 0 {
-				buf = append(buf, '!')
-			}
+			buf = append(buf, n.flags.AsEffect().String()...)
 			buf = append(buf, '(')
 			for i, o := range n.list0 {
 				if i != 0 {

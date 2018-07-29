@@ -92,37 +92,53 @@ var kindStrings = [...]string{
 type Flags uint32
 
 const (
-	FlagsImpure          = Flags(0x00000001)
-	FlagsSuspendible     = Flags(0x00000002)
-	FlagsCallImpure      = Flags(0x00000004)
-	FlagsCallSuspendible = Flags(0x00000008)
-	FlagsPublic          = Flags(0x00000010)
-	flagsUnused          = Flags(0x00000020)
-	FlagsHasBreak        = Flags(0x00000040)
-	FlagsHasContinue     = Flags(0x00000080)
-	FlagsGlobalIdent     = Flags(0x00000100)
+	// The low 8 bits are reserved. Effect values (Effect is a uint8) share the
+	// same values as Flags.
+
+	FlagsPublic      = Flags(0x00000100)
+	FlagsHasBreak    = Flags(0x00000200)
+	FlagsHasContinue = Flags(0x00000400)
+	FlagsGlobalIdent = Flags(0x00000800)
 )
+
+func (f Flags) AsEffect() Effect { return Effect(f) }
+
+type Effect uint8
 
 const (
-	flagEffect = FlagsImpure | FlagsSuspendible
+	EffectImpure    = Effect(0x01)
+	EffectOptional  = Effect(0x02)
+	EffectCoroutine = Effect(0x04)
 
-	// flagsThatMatterForEq is the bitwise or of all flags that matter for the
-	// Expr.Eq method.
-	flagsThatMatterForEq = Flags(0x0000FFFF)
+	// TODO: will we need an EffectRootCause if every ?-call requires a "do" or
+	// "try"?
+	effectMaskNonRootCause = Effect(0x07)
+	EffectRootCause        = Effect(0x08)
 )
 
-type Effect uint32
+func (e Effect) AsFlags() Flags { return Flags(e) }
+
+// TODO: replace Pure calls with the stronger "e == 0"?
+func (e Effect) Pure() bool      { return e&EffectImpure == 0 }
+func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
+func (e Effect) Optional() bool  { return e&EffectOptional != 0 }
+func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
+func (e Effect) RootCause() bool { return e&EffectRootCause != 0 }
 
 func (e Effect) String() string {
-	switch e {
-	case Effect(0):
+	switch e & effectMaskNonRootCause {
+	case 0:
 		return ""
-	case Effect(FlagsImpure):
+	case EffectImpure:
 		return "!"
-	case Effect(FlagsImpure | FlagsSuspendible):
+	case EffectOptional:
 		return "?"
+	case EffectImpure | EffectOptional:
+		return "!?"
+	case EffectImpure | EffectOptional | EffectCoroutine:
+		return "!??"
 	}
-	return "INVALID_EFFECT"
+	return "‽INVALID_EFFECT‽"
 }
 
 type Bounds [2]*big.Int
@@ -289,10 +305,6 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-//  - FlagsImpure          is if it or a sub-expr is FlagsCallImpure
-//  - FlagsSuspendible     is if it or a sub-expr is FlagsCallSuspendible
-//  - FlagsCallImpure      is "f(x)" vs "f!(x)"
-//  - FlagsCallSuspendible is "f(x)" vs "f?(x)", it implies FlagsCallImpure
 //  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
 //  - ID1:   <0|pkg> (for statuses)
 //  - ID2:   <0|literal|ident>
@@ -328,24 +340,19 @@ const MaxExprDepth = 255
 // keyword, ID1 is the package and ID2 is the message.
 type Expr Node
 
-func (n *Expr) AsNode() *Node         { return (*Node)(n) }
-func (n *Expr) Effect() Effect        { return Effect(n.flags & flagEffect) }
-func (n *Expr) Pure() bool            { return n.flags&FlagsImpure == 0 }
-func (n *Expr) Impure() bool          { return n.flags&FlagsImpure != 0 }
-func (n *Expr) Suspendible() bool     { return n.flags&FlagsSuspendible != 0 }
-func (n *Expr) CallImpure() bool      { return n.flags&FlagsCallImpure != 0 }
-func (n *Expr) CallSuspendible() bool { return n.flags&FlagsCallSuspendible != 0 }
-func (n *Expr) GlobalIdent() bool     { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) ConstValue() *big.Int  { return n.constValue }
-func (n *Expr) MBounds() Bounds       { return n.mBounds }
-func (n *Expr) MType() *TypeExpr      { return n.mType }
-func (n *Expr) Operator() t.ID        { return n.id0 }
-func (n *Expr) StatusQID() t.QID      { return t.QID{n.id1, n.id2} }
-func (n *Expr) Ident() t.ID           { return n.id2 }
-func (n *Expr) LHS() *Node            { return n.lhs }
-func (n *Expr) MHS() *Node            { return n.mhs }
-func (n *Expr) RHS() *Node            { return n.rhs }
-func (n *Expr) Args() []*Node         { return n.list0 }
+func (n *Expr) AsNode() *Node        { return (*Node)(n) }
+func (n *Expr) Effect() Effect       { return Effect(n.flags) }
+func (n *Expr) GlobalIdent() bool    { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) ConstValue() *big.Int { return n.constValue }
+func (n *Expr) MBounds() Bounds      { return n.mBounds }
+func (n *Expr) MType() *TypeExpr     { return n.mType }
+func (n *Expr) Operator() t.ID       { return n.id0 }
+func (n *Expr) StatusQID() t.QID     { return t.QID{n.id1, n.id2} }
+func (n *Expr) Ident() t.ID          { return n.id2 }
+func (n *Expr) LHS() *Node           { return n.lhs }
+func (n *Expr) MHS() *Node           { return n.mhs }
+func (n *Expr) RHS() *Node           { return n.rhs }
+func (n *Expr) Args() []*Node        { return n.list0 }
 
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
@@ -354,16 +361,16 @@ func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 
 func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	if lhs != nil {
-		flags |= lhs.flags & (FlagsImpure | FlagsSuspendible)
+		flags |= lhs.flags & Flags(effectMaskNonRootCause)
 	}
 	if mhs != nil {
-		flags |= mhs.flags & (FlagsImpure | FlagsSuspendible)
+		flags |= mhs.flags & Flags(effectMaskNonRootCause)
 	}
 	if rhs != nil {
-		flags |= rhs.flags & (FlagsImpure | FlagsSuspendible)
+		flags |= rhs.flags & Flags(effectMaskNonRootCause)
 	}
 	for _, o := range args {
-		flags |= o.flags & (FlagsImpure | FlagsSuspendible)
+		flags |= o.flags & Flags(effectMaskNonRootCause)
 	}
 
 	return &Expr{
@@ -782,8 +789,6 @@ func NewTypeExpr(decorator t.ID, pkg t.ID, name t.ID, alenRecvMin *Node, max *Ex
 const MaxBodyDepth = 255
 
 // Func is "func ID2.ID0(LHS)(RHS) { List2 }":
-//  - FlagsImpure      is "ID1" vs "ID1!"
-//  - FlagsSuspendible is "ID1" vs "ID1?", it implies FlagsImpure
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID0:   funcName
 //  - ID1:   <0|receiverPkg> (set by calling SetPackage)
@@ -806,21 +811,18 @@ const MaxBodyDepth = 255
 //  - While
 type Func Node
 
-func (n *Func) AsNode() *Node     { return (*Node)(n) }
-func (n *Func) Effect() Effect    { return Effect(n.flags & flagEffect) }
-func (n *Func) Pure() bool        { return n.flags&FlagsImpure == 0 }
-func (n *Func) Impure() bool      { return n.flags&FlagsImpure != 0 }
-func (n *Func) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
-func (n *Func) Public() bool      { return n.flags&FlagsPublic != 0 }
-func (n *Func) Filename() string  { return n.filename }
-func (n *Func) Line() uint32      { return n.line }
-func (n *Func) QQID() t.QQID      { return t.QQID{n.id1, n.id2, n.id0} }
-func (n *Func) Receiver() t.QID   { return t.QID{n.id1, n.id2} }
-func (n *Func) FuncName() t.ID    { return n.id0 }
-func (n *Func) In() *Struct       { return n.lhs.AsStruct() }
-func (n *Func) Out() *TypeExpr    { return n.rhs.AsTypeExpr() }
-func (n *Func) Asserts() []*Node  { return n.list1 }
-func (n *Func) Body() []*Node     { return n.list2 }
+func (n *Func) AsNode() *Node    { return (*Node)(n) }
+func (n *Func) Effect() Effect   { return Effect(n.flags) }
+func (n *Func) Public() bool     { return n.flags&FlagsPublic != 0 }
+func (n *Func) Filename() string { return n.filename }
+func (n *Func) Line() uint32     { return n.line }
+func (n *Func) QQID() t.QQID     { return t.QQID{n.id1, n.id2, n.id0} }
+func (n *Func) Receiver() t.QID  { return t.QID{n.id1, n.id2} }
+func (n *Func) FuncName() t.ID   { return n.id0 }
+func (n *Func) In() *Struct      { return n.lhs.AsStruct() }
+func (n *Func) Out() *TypeExpr   { return n.rhs.AsTypeExpr() }
+func (n *Func) Asserts() []*Node { return n.list1 }
+func (n *Func) Body() []*Node    { return n.list2 }
 
 func NewFunc(flags Flags, filename string, line uint32, receiverName t.ID, funcName t.ID, in *Struct, out *TypeExpr, asserts []*Node, body []*Node) *Func {
 	return &Func{
@@ -893,20 +895,19 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 }
 
 // Struct is "struct ID2(List0)":
-//  - FlagsSuspendible is "ID1" vs "ID1?"
 //  - FlagsPublic      is "pub" vs "pri"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
 //  - List0: <Field> fields
 type Struct Node
 
-func (n *Struct) AsNode() *Node     { return (*Node)(n) }
-func (n *Struct) Suspendible() bool { return n.flags&FlagsSuspendible != 0 }
-func (n *Struct) Public() bool      { return n.flags&FlagsPublic != 0 }
-func (n *Struct) Filename() string  { return n.filename }
-func (n *Struct) Line() uint32      { return n.line }
-func (n *Struct) QID() t.QID        { return t.QID{n.id1, n.id2} }
-func (n *Struct) Fields() []*Node   { return n.list0 }
+func (n *Struct) AsNode() *Node    { return (*Node)(n) }
+func (n *Struct) Optional() bool   { return n.flags&Flags(EffectOptional) != 0 }
+func (n *Struct) Public() bool     { return n.flags&FlagsPublic != 0 }
+func (n *Struct) Filename() string { return n.filename }
+func (n *Struct) Line() uint32     { return n.line }
+func (n *Struct) QID() t.QID       { return t.QID{n.id1, n.id2} }
+func (n *Struct) Fields() []*Node  { return n.list0 }
 
 func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*Node) *Struct {
 	return &Struct{

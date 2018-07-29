@@ -30,7 +30,8 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32
 	}
 	depth++
 
-	if rp == replaceCallSuspendibles && n.CallSuspendible() {
+	// XXX: s/Optional/Coroutine/
+	if rp == replaceCallSuspendibles && n.Effect().RootCause() && n.Effect().Optional() {
 		if g.currFunk.tempR >= g.currFunk.tempW {
 			return fmt.Errorf("internal error: temporary variable count out of sync")
 		}

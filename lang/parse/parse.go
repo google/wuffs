@@ -186,14 +186,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 					p.tm.ByID(id1), p.filename, p.line())
 			}
 
-			switch p.peek1() {
-			case t.IDExclam:
-				flags |= a.FlagsImpure
-				p.src = p.src[1:]
-			case t.IDQuestion:
-				flags |= a.FlagsImpure | a.FlagsSuspendible
-				p.src = p.src[1:]
-			}
+			flags |= p.parseEffect().AsFlags()
 			argFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 			if err != nil {
 				return nil, err
@@ -276,7 +269,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 
 			if p.peek1() == t.IDQuestion {
-				flags |= a.FlagsSuspendible
+				flags |= a.EffectOptional.AsFlags()
 				p.src = p.src[1:]
 			}
 			fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
@@ -1072,11 +1065,11 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			return lhs, nil
 
 		case t.IDExclam, t.IDQuestion:
-			flags |= a.FlagsImpure | a.FlagsCallImpure
-			if p.src[0].ID == t.IDQuestion {
-				flags |= a.FlagsSuspendible | a.FlagsCallSuspendible
+			e := p.parseEffect()
+			if e != 0 {
+				e |= a.EffectRootCause
 			}
-			p.src = p.src[1:]
+			flags |= e.AsFlags()
 			fallthrough
 
 		case t.IDOpenParen:
@@ -1102,4 +1095,24 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			lhs = a.NewExpr(0, t.IDDot, 0, selector, lhs.AsNode(), nil, nil, nil)
 		}
 	}
+}
+
+func (p *parser) parseEffect() a.Effect {
+	switch p.peek1() {
+	case t.IDQuestion:
+		p.src = p.src[1:]
+		return a.EffectOptional
+	case t.IDExclam:
+		p.src = p.src[1:]
+		if p.peek1() != t.IDQuestion {
+			return a.EffectImpure
+		}
+		p.src = p.src[1:]
+		if p.peek1() != t.IDQuestion {
+			return a.EffectImpure | a.EffectOptional
+		}
+		p.src = p.src[1:]
+		return a.EffectImpure | a.EffectOptional | a.EffectCoroutine
+	}
+	return 0
 }

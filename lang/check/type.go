@@ -527,7 +527,7 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 	if err != nil {
 		return err
 	}
-	if ne, fe := n.Effect(), f.Effect(); ne != fe {
+	if ne, fe := n.Effect(), f.Effect(); ne|a.EffectRootCause != fe|a.EffectRootCause {
 		return fmt.Errorf("check: %q has effect %q but %q has effect %q",
 			n.Str(q.tm), ne, f.QQID().Str(q.tm), fe)
 	}

@@ -285,17 +285,11 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				if !n.Public() {
 					continue
 				}
-				effect := ""
-				if n.Suspendible() {
-					effect = "?"
-				} else if n.Impure() {
-					effect = "!"
-				}
 				if n.Receiver().IsZero() {
 					return fmt.Errorf("TODO: genWuffs for a free-standing function")
 				}
 				// TODO: look at n.Asserts().
-				fmt.Fprintf(out, "pub func %s.%s%s(", n.Receiver().Str(&h.tm), n.FuncName().Str(&h.tm), effect)
+				fmt.Fprintf(out, "pub func %s.%s%v(", n.Receiver().Str(&h.tm), n.FuncName().Str(&h.tm), n.Effect())
 				for i, field := range n.In().Fields() {
 					field := field.AsField()
 					if i > 0 {
@@ -325,7 +319,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 					continue
 				}
 				effect := ""
-				if n.Suspendible() {
+				if n.Optional() {
 					effect = "?"
 				}
 				fmt.Fprintf(out, "pub struct %s%s()\n", n.QID().Str(&h.tm), effect)

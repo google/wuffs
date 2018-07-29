@@ -35,8 +35,7 @@ func (n *Expr) Eq(o *Expr) bool {
 		return n.constValue.Cmp(o.constValue) == 0
 	}
 
-	if (n.flags&flagsThatMatterForEq) != (o.flags&flagsThatMatterForEq) ||
-		n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
+	if n.flags != o.flags || n.id0 != o.id0 || n.id1 != o.id1 || n.id2 != o.id2 {
 		return false
 	}
 	if !n.lhs.AsExpr().Eq(o.lhs.AsExpr()) {

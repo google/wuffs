@@ -43,10 +43,12 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	switch n.Kind() {
 	case a.KAssign:
 		n := n.AsAssign()
-		mightIntroduceTemporaries = n.LHS().Suspendible() || n.RHS().Suspendible()
+		// XXX: s/Optional/Coroutine/
+		mightIntroduceTemporaries = n.LHS().Effect().Optional() || n.RHS().Effect().Optional()
 	case a.KVar:
 		v := n.AsVar().Value()
-		mightIntroduceTemporaries = v != nil && v.Suspendible()
+		// XXX: s/Optional/Coroutine/
+		mightIntroduceTemporaries = v != nil && v.Effect().Optional()
 	}
 	if mightIntroduceTemporaries {
 		// Put n's code into its own block, to restrict the scope of the
@@ -139,7 +141,8 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	if err := g.writeSuspendibles(b, n, depth); err != nil {
 		return err
 	}
-	if n.CallSuspendible() {
+	// XXX: s/Optional/Coroutine/
+	if n.Effect().RootCause() && n.Effect().Optional() {
 		return nil
 	}
 	if err := g.writeExpr(b, n, replaceCallSuspendibles, depth); err != nil {
@@ -218,7 +221,9 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 	// sub-expression evaluation correct.
 	nCloseCurly := 1
 	for first := true; ; first = false {
-		if n.Condition().Suspendible() {
+		// TODO: restrict the if condition to effect-free expressions?
+		// XXX: s/Optional/Coroutine/
+		if n.Condition().Effect().Optional() {
 			if !first {
 				b.writeb('{')
 				const maxCloseCurly = 1000
@@ -482,7 +487,8 @@ func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 }
 
 func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
-	if !n.Suspendible() {
+	// XXX: s/Optional/Coroutine/
+	if !n.Effect().Optional() {
 		return nil
 	}
 	if n.Operator() != t.IDTry {
@@ -501,7 +507,8 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 
 	// The evaluation order for suspendible calls (which can have side effects)
 	// is important here: LHS, MHS, RHS, Args and finally the node itself.
-	if !n.CallSuspendible() {
+	// XXX: s/Optional/Coroutine/
+	if e := n.Effect(); !e.RootCause() || !e.Optional() {
 		for _, o := range n.AsNode().AsRaw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
 				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth); err != nil {

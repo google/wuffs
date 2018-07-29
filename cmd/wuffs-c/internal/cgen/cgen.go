@@ -647,7 +647,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("//\n")
 	b.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
 	b.writes("struct {\n")
-	if n.Suspendible() {
+	if n.Optional() {
 		b.printf("wuffs_base__status status;\n")
 		b.writes("uint32_t magic;\n")
 		b.writes("\n")
@@ -661,7 +661,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		b.writes(";\n")
 	}
 
-	if n.Suspendible() {
+	if n.Optional() {
 		b.writeb('\n')
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
@@ -669,7 +669,8 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 					continue
 				}
 				o := tld.AsFunc()
-				if o.Receiver() != n.QID() || !o.Suspendible() {
+				// XXX: s/Optional/Coroutine/
+				if o.Receiver() != n.QID() || !o.Effect().Optional() {
 					continue
 				}
 				k := g.funks[o.QQID()]
@@ -871,7 +872,7 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 }
 
 func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
-	if !n.Suspendible() {
+	if !n.Optional() {
 		return nil
 	}
 	if err := g.writeInitializerSignature(b, n, n.Public()); err != nil {
@@ -882,7 +883,7 @@ func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 }
 
 func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
-	if !n.Suspendible() {
+	if !n.Optional() {
 		return nil
 	}
 	if err := g.writeInitializerSignature(b, n, false); err != nil {
