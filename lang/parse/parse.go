@@ -682,6 +682,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if lhs.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: assignment LHS %q is not effect-free at %s:%d`,
+				lhs.Str(p.tm), p.filename, p.line())
+		}
 		return a.NewAssign(op, lhs, rhs).AsNode(), nil
 	}
 
