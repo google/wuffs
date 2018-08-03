@@ -159,14 +159,3 @@ const baseImagePublicH = "" +
 	"buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {\n  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))\n             ? b->private_impl.planes[p]\n             : ((wuffs_base__table_u8){});\n}\n\n// wuffs_base__pixel_buffer__palette returns the palette that the pixel data\n// can index. The backing array is inside b and has length 1024.\nstatic inline wuffs_base__slice_u8  //\nwuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {\n  return b ? ((wuffs_base__slice_u8){.ptr = b->private_impl.palette,\n                                     .len = 1024})\n           : ((wuffs_base__slice_u8){});\n}\n\n#ifdef __cplusplus\n\ninline wuffs_base__status  //\nwuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,\n                                         wuffs_base__slice_u8 pixbuf_memory) {\n  return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);\n}\n\ninline void  //\nwuffs_base__pixel_buffer::set_palette(wuffs_base__slice_u8 palette) {\n  wuffs_base__pixel_buffer__set_pa" +
 	"lette(this, palette);\n}\n\ninline wuffs_base__pixel_config*  //\nwuffs_base__pixel_buffer::pixel_config() {\n  return wuffs_base__pixel_buffer__pixel_config(this);\n}\n\ninline wuffs_base__rect_ie_u32  //\nwuffs_base__pixel_buffer::bounds() {\n  return wuffs_base__pixel_buffer__bounds(this);\n}\n\ninline uint32_t  //\nwuffs_base__pixel_buffer::width() {\n  return wuffs_base__pixel_buffer__width(this);\n}\n\ninline uint32_t  //\nwuffs_base__pixel_buffer::height() {\n  return wuffs_base__pixel_buffer__height(this);\n}\n\ninline wuffs_base__table_u8  //\nwuffs_base__pixel_buffer::plane(uint32_t p) {\n  return wuffs_base__pixel_buffer__plane(this, p);\n}\n\ninline wuffs_base__slice_u8  //\nwuffs_base__pixel_buffer::palette() {\n  return wuffs_base__pixel_buffer__palette(this);\n}\n\n#endif  // __cplusplus\n\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n" +
 	""
-
-type template_args_short_read struct {
-	name string
-}
-
-func template_short_read(b *buffer, args template_args_short_read) error {
-	b.printf("short_read_%s:\nstatus = WUFFS_BASE__SUSPENSION_SHORT_READ;\ngoto suspend;\n",
-		args.name,
-	)
-	return nil
-}
