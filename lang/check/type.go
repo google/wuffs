@@ -580,10 +580,6 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		setPlaceholderMBoundsMType(o.AsNode())
 	}
 
-	// TODO: distinguish t.IDOpenParen vs t.IDTry in a more principled way?
-	//
-	// TODO: figure out calls with and without "?" should interact with the out
-	// type.
 	if n.Operator() == t.IDTry {
 		n.SetMType(typeExprStatus)
 	} else {

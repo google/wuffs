@@ -902,16 +902,9 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 	} else if p.peek1() == t.IDEq {
 		op = t.IDEq
 		p.src = p.src[1:]
-		if p.peek1() == t.IDTry {
-			value, err = p.parseTryExpr()
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			value, err = p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
+		value, err = p.parseExpr()
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -936,24 +929,6 @@ func (p *parser) parsePossibleDollarExpr() (*a.Expr, error) {
 		return nil, err
 	}
 	return a.NewExpr(0, t.IDDollar, 0, 0, nil, nil, nil, args), nil
-}
-
-func (p *parser) parseTryExpr() (*a.Expr, error) {
-	if x := p.peek1(); x != t.IDTry {
-		got := p.tm.ByID(x)
-		return nil, fmt.Errorf(`parse: expected "try", got %q at %s:%d`, got, p.filename, p.line())
-	}
-	p.src = p.src[1:]
-	call, err := p.parseExpr()
-	if err != nil {
-		return nil, err
-	}
-	if call.Operator() != t.IDOpenParen {
-		return nil, fmt.Errorf(`parse: expected function call after "try", got %q at %s:%d`,
-			call.Str(p.tm), p.filename, p.line())
-	}
-	return a.NewExpr(call.AsNode().AsRaw().Flags(), t.IDTry, 0, call.Ident(),
-		call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
 }
 
 func (p *parser) parseExprNode() (*a.Node, error) {
@@ -1032,6 +1007,20 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 
 	default:
 		switch x {
+		case t.IDTry:
+			p.src = p.src[1:]
+			call, err := p.parseOperand()
+			if err != nil {
+				return nil, err
+			}
+			callFlags := call.AsNode().AsRaw().Flags()
+			if (call.Operator() != t.IDOpenParen) || (!callFlags.AsEffect().Optional()) {
+				return nil, fmt.Errorf(`parse: expected ?-function call after "try", got %q at %s:%d`,
+					call.Str(p.tm), p.filename, p.line())
+			}
+			return a.NewExpr(callFlags, x, 0, call.Ident(),
+				call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
+
 		case t.IDOpenParen:
 			p.src = p.src[1:]
 			expr, err := p.parseExpr()
