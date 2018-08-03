@@ -570,9 +570,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, name string, size uint32, endia
 	}
 	b.printf("while (true) {")
 
-	b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_%s == iobounds1_%s)) { goto short_read_%s; }",
-		name, name, name)
-	g.currFunk.shortReads = append(g.currFunk.shortReads, name)
+	b.printf("if (WUFFS_BASE__UNLIKELY(ioptr_%s == iobounds1_%s)) {"+
+		"status = WUFFS_BASE__SUSPENSION_SHORT_READ; goto suspend; }",
+		name, name)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)
 	b.printf("uint32_t %s%d = *scratch", tPrefix, temp0)

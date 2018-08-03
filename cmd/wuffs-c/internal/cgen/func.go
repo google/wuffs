@@ -41,7 +41,6 @@ type funk struct {
 	suspendible   bool // TODO: rename to coroutine.
 	usesScratch   bool
 	hasGotoOK     bool
-	shortReads    []string
 }
 
 func (k *funk) jumpTarget(n a.Loop) (uint32, error) {
@@ -344,19 +343,6 @@ func (g *gen) writeFuncImplFooter(b *buffer) error {
 			b.writes("self->private_impl.status = status;\n")
 		}
 		b.writes("return status;\n\n")
-
-		shortReadsSeen := map[string]struct{}{}
-		for _, sr := range g.currFunk.shortReads {
-			if _, ok := shortReadsSeen[sr]; ok {
-				continue
-			}
-			shortReadsSeen[sr] = struct{}{}
-			if err := template_short_read(b, template_args_short_read{
-				name: sr,
-			}); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
