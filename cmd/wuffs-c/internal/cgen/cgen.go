@@ -30,10 +30,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/wuffs/lang/base38"
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
+	"github.com/google/wuffs/lib/base38"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 

@@ -19,7 +19,7 @@ package parse
 import (
 	"fmt"
 
-	"github.com/google/wuffs/lang/base38"
+	"github.com/google/wuffs/lib/base38"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"

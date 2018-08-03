@@ -36,7 +36,8 @@
 - Made a packageid declaration mandatory.
 - Disallowed certain packageid's like `base` or `config`.
 - Disallowed `__double_underscore` prefixed names.
-- Added a stand-alone lang/interval package.
+- Moved the base38 package from `lang/base38` to `lib/base38`.
+- Added a stand-alone `lib/interval` package.
 - Added fuzz tests.
 - Added `WUFFS_CONFIG__MODULES`.
 - Added `WUFFS_CONFIG__STATIC_FUNCTIONS`.
