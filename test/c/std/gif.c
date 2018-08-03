@@ -57,7 +57,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 #define WUFFS_CONFIG__MODULE__GIF
 #define WUFFS_CONFIG__MODULE__LZW
 
-// If building this program in an environment that doesn't easily accomodate
+// If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../../../release/c/wuffs-unsupported-snapshot.h"

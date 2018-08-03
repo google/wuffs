@@ -66,7 +66,7 @@
 // compiling it.
 #define WUFFS_IMPLEMENTATION
 
-// If building this program in an environment that doesn't easily accomodate
+// If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
 #include "../release/c/wuffs-unsupported-snapshot.h"
