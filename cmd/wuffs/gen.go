@@ -318,11 +318,11 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				if !n.Public() {
 					continue
 				}
-				effect := ""
-				if n.Optional() {
-					effect = "?"
+				classy := ""
+				if n.Classy() {
+					classy = "?"
 				}
-				fmt.Fprintf(out, "pub struct %s%s()\n", n.QID().Str(&h.tm), effect)
+				fmt.Fprintf(out, "pub struct %s%s()\n", n.QID().Str(&h.tm), classy)
 			}
 		}
 	}

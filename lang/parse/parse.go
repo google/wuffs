@@ -269,7 +269,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 
 			if p.peek1() == t.IDQuestion {
-				flags |= a.EffectOptional.AsFlags()
+				flags |= a.FlagsClassy
 				p.src = p.src[1:]
 			}
 			fields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)

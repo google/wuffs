@@ -647,7 +647,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("//\n")
 	b.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
 	b.writes("struct {\n")
-	if n.Optional() {
+	if n.Classy() {
 		b.printf("wuffs_base__status status;\n")
 		b.writes("uint32_t magic;\n")
 		b.writes("\n")
@@ -661,7 +661,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		b.writes(";\n")
 	}
 
-	if n.Optional() {
+	if n.Classy() {
 		b.writeb('\n')
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
@@ -871,7 +871,7 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 }
 
 func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
-	if !n.Optional() {
+	if !n.Classy() {
 		return nil
 	}
 	if err := g.writeInitializerSignature(b, n, n.Public()); err != nil {
@@ -882,7 +882,7 @@ func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 }
 
 func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
-	if !n.Optional() {
+	if !n.Classy() {
 		return nil
 	}
 	if err := g.writeInitializerSignature(b, n, false); err != nil {

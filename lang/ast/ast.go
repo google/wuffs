@@ -99,6 +99,7 @@ const (
 	FlagsHasBreak    = Flags(0x00000200)
 	FlagsHasContinue = Flags(0x00000400)
 	FlagsGlobalIdent = Flags(0x00000800)
+	FlagsClassy      = Flags(0x00001000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -894,15 +895,19 @@ func NewConst(flags Flags, filename string, line uint32, name t.ID, xType *TypeE
 	}
 }
 
-// Struct is "struct ID2(List0)":
+// Struct is "struct ID2(List0)" or "struct ID2?(List0)":
 //  - FlagsPublic      is "pub" vs "pri"
+//  - FlagsClassy      is "ID2" vs "ID2?"
 //  - ID1:   <0|pkg> (set by calling SetPackage)
 //  - ID2:   name
 //  - List0: <Field> fields
+//
+// The question mark indicates a classy struct - one that supports methods,
+// especially coroutines.
 type Struct Node
 
 func (n *Struct) AsNode() *Node    { return (*Node)(n) }
-func (n *Struct) Optional() bool   { return n.flags&Flags(EffectOptional) != 0 }
+func (n *Struct) Classy() bool     { return n.flags&FlagsClassy != 0 }
 func (n *Struct) Public() bool     { return n.flags&FlagsPublic != 0 }
 func (n *Struct) Filename() string { return n.filename }
 func (n *Struct) Line() uint32     { return n.line }
