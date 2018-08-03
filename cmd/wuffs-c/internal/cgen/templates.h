@@ -23,10 +23,6 @@
 
 template short_read(string qnameq) {
 short_read_qnameq:
-  if (wuffs_base__io_reader__is_eof(a_qnameq)) {
-    status = WUFFS_BASE__ERROR_UNEXPECTED_EOF;
-    goto exit;
-  }
   status = WUFFS_BASE__SUSPENSION_SHORT_READ;
   goto suspend;
 }

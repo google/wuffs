@@ -237,7 +237,6 @@ pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) 
 		}
 		length -= n_copied
 		if args.dst.available() == 0 {
-			// TODO: "closed for writes" instead?
 			yield suspension "short write"
 		} else {
 			yield suspension "short read"

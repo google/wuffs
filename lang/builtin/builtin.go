@@ -51,11 +51,8 @@ var StatusList = [...]Status{
 
 	{t.IDError, -0x20, "cannot return a suspension"},
 
-	{t.IDError, -0x30, "unexpected EOF"},    // Used if reading when closed == true.
-	{t.IDError, -0x31, "closed for writes"}, // TODO: is this unused? Should callee or caller check closed-ness?
-
 	{t.IDSuspension, +0x01, "end of data"},
-	{t.IDSuspension, +0x02, "short read"}, // Used if reading when closed == false.
+	{t.IDSuspension, +0x02, "short read"},
 	{t.IDSuspension, +0x03, "short write"},
 }
 

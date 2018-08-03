@@ -123,7 +123,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 					break
 				}
 				s = (s + ((n_copied & 4095) as base.u32)) & 4095
-				// TODO: "closed for writes" instead?
 				yield suspension "short write"
 			}
 

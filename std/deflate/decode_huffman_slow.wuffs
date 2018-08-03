@@ -220,7 +220,6 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 							break
 						}
 					}
-					// TODO: "closed for writes" instead?
 					yield suspension "short write"
 				}
 				// Copy from the start of this.history, if we wrapped around.
@@ -234,7 +233,6 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 						}
 						hlen -= n_copied
 						hdist ~mod+= n_copied
-						// TODO: "closed for writes" instead?
 						yield suspension "short write"
 					}
 				}
@@ -252,7 +250,6 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			length -= n_copied
-			// TODO: "closed for writes" instead?
 			yield suspension "short write"
 		}
 	}

@@ -32,6 +32,7 @@
 - Supported animated (not just single frame) and interlaced GIFs.
 - Marked the `std/gif` LZW decoder as private.
 - Marked some internal status codes as private.
+- Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.
 - Made a packageid declaration mandatory.
 - Disallowed certain packageid's like `base` or `config`.

@@ -521,6 +521,10 @@ wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
          (buf.wi >= buf.ri);
 }
 
+// TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
+// it might be handy to programs that use Wuffs. Either delete it, or promote
+// it to the public API.
+
 static inline bool  //
 wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
