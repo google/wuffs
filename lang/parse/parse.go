@@ -1078,6 +1078,15 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
+			if flags.AsEffect() != 0 {
+				for _, arg := range args {
+					o := arg.AsArg().Value()
+					if o.Effect() != 0 {
+						return nil, fmt.Errorf(`parse: effectful function call %q has effectful argument %q at %s:%d`,
+							lhs.Str(p.tm), o.Str(p.tm), p.filename, p.line())
+					}
+				}
+			}
 			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.AsNode(), nil, nil, args)
 
 		case t.IDOpenBracket:
