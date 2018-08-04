@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file contains a hand-written C implementation of gen/c/std/deflate.c's
-// generated wuffs_deflate__decoder__decode_huffman_fast function.
+// This file contains a hand-written C implementation of
+// release/c/wuffs-unsupported-snapshot.h's generated
+// wuffs_deflate__decoder__decode_huffman_fast function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
 // purpose is to give a rough upper bound on how fast Wuffs' generated C code
@@ -26,13 +27,14 @@
 // ----------------
 //
 // Having said that, to generate the benchmark numbers with this hand-written C
-// implementation, edit gen/c/std/deflate.c and find the line that says
+// implementation, edit release/c/wuffs-unsupported-snapshot.h and find the
+// line that says
 //
-// !! C HEADER ENDS HERE.
+// #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 //
 // After that, add this line:
 //
-// #include "../../../script/wuffs-deflate-decoder-decode-huffman.c"
+// #include "../../script/wuffs-deflate-decoder-decode-huffman.c"
 //
 // Then find the call to wuffs_deflate__decoder__decode_huffman_fast. It should
 // be inside the wuffs_deflate__decoder__decode_blocks function body, and the
@@ -42,36 +44,40 @@
 //
 // Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
 // should look something like:
-
+//
+// clang-format off
 /*
-$ git diff gen/c/std/deflate.c
-diff --git a/gen/c/std/deflate.c b/gen/c/std/deflate.c
-index 3698e98..4bee3b0 100644
---- a/gen/c/std/deflate.c
-+++ b/gen/c/std/deflate.c
-@@ -279,6 +279,8 @@ wuffs_deflate__status wuffs_deflate__decoder__decode(
- #endif  // WUFFS_DEFLATE_H
 
- // C HEADER ENDS HERE.
-+#include "../../../script/wuffs-deflate-decoder-decode-huffman.c"
+$ git diff release/c/wuffs-unsupported-snapshot.h
+diff --git a/release/c/wuffs-unsupported-snapshot.h b/release/c/wuffs-unsupported-snapshot.h
+index 7561915..b2a79ee 100644
+--- a/release/c/wuffs-unsupported-snapshot.h
++++ b/release/c/wuffs-unsupported-snapshot.h
+@@ -3698,6 +3698,8 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
+ }  // extern "C"
+ #endif
+
++#include "../../script/wuffs-deflate-decoder-decode-huffman.c"
 +
+ #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
- #ifndef WUFFS_BASE_IMPL_H
- #define WUFFS_BASE_IMPL_H
-@@ -1050,7 +1052,7 @@ static wuffs_deflate__status wuffs_deflate__decoder__decode_blocks(
-           }
-         }
+ static const char wuffs_base__status__string_data[] = {
+@@ -4999,7 +5001,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
+       if (a_src.private_impl.buf) {
+         a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
        }
 -      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 +      status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-       if (a_src.buf) {
-         b_rptr_src = a_src.buf->ptr + a_src.buf->ri;
+       if (a_src.private_impl.buf) {
+         ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
        }
-*/
 
-// That concludes the two edits to gen/c/std/deflate.c. Run the tests and
-// benchmarks with the "-skipgen" flag, otherwise the "wuffs" tool will
-// re-generate the C code and override your gen/c/std/deflate.c edit:
+*/
+// clang-format on
+//
+// That concludes the two edits to release/c/wuffs-unsupported-snapshot.h. Run
+// the tests and benchmarks with the "-skipgen" flag, otherwise the "wuffs"
+// tool will re-generate the C code and override your edits:
 //
 // wuffs test  -skipgen std/deflate
 // wuffs bench -skipgen std/deflate
@@ -118,13 +124,13 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
-static wuffs_deflate__status wuffs_deflate__decoder__decode_huffman_fast(
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src);
 
 // This is the overriding implementation.
-wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
+wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
     wuffs_base__io_writer a_dst,
     wuffs_base__io_reader a_src) {
@@ -132,24 +138,24 @@ wuffs_deflate__status c_wuffs_deflate__decoder__decode_huffman_fast(
   // overridden wuffs_deflate__decoder__decode_huffman_fast.
   (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
-  if (!a_dst.buf || !a_src.buf) {
-    return WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
+  if (!a_dst.private_impl.buf || !a_src.private_impl.buf) {
+    return WUFFS_BASE__ERROR_BAD_ARGUMENT;
   }
-  wuffs_deflate__status status = WUFFS_DEFLATE__STATUS_OK;
+  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
-  uint8_t* pdst = a_dst.buf->ptr + a_dst.buf->wi;
-  uint8_t* qdst = a_dst.buf->ptr + a_dst.buf->len;
+  uint8_t* pdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
+  uint8_t* qdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->len;
   if ((qdst - pdst) < 258) {
-    return WUFFS_DEFLATE__STATUS_OK;
+    return WUFFS_BASE__STATUS_OK;
   } else {
     qdst -= 258;
   }
-  uint8_t* psrc = a_src.buf->ptr + a_src.buf->ri;
-  uint8_t* qsrc = a_src.buf->ptr + a_src.buf->wi;
+  uint8_t* psrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
+  uint8_t* qsrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->wi;
   if ((qsrc - psrc) < 12) {
-    return WUFFS_DEFLATE__STATUS_OK;
+    return WUFFS_BASE__STATUS_OK;
   } else {
     qsrc -= 12;
   }
@@ -300,7 +306,7 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst0)) {
-      status = WUFFS_DEFLATE__ERROR_BAD_ARGUMENT;
+      status = WUFFS_BASE__ERROR_BAD_ARGUMENT;
       goto end;
     }
 
@@ -347,8 +353,8 @@ end:
   bits &= wuffs_base__width_to_mask_table[n_bits];
 
   // Save contextual state.
-  a_dst.buf->wi = pdst - a_dst.buf->ptr;
-  a_src.buf->ri = psrc - a_src.buf->ptr;
+  a_dst.private_impl.buf->wi = pdst - a_dst.private_impl.buf->ptr;
+  a_src.private_impl.buf->ri = psrc - a_src.private_impl.buf->ptr;
   self->private_impl.f_bits = bits;
   self->private_impl.f_n_bits = n_bits;
 
