@@ -24,9 +24,13 @@ for f in example/*; do
     g++ -O3 $f/*.cc -o $f/a.out
   elif [ "$f" = "example/library" ]; then
     # example/library is unusual in that it uses separately compiled libraries
-    # (built by "wuffs genlib" above) instead of directly #include'ing Wuffs'
-    # .c files.
-    gcc -O3 -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
+    # (built by "wuffs genlib", e.g. by running build-all.sh) instead of
+    # directly #include'ing Wuffs' .c files.
+    if [ -e gen/lib/c/gcc-static/libwuffs.a ]; then
+      gcc -O3 -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
+    else
+      echo "    Skipping example/library; run \"wuffs genlib\" first"
+    fi
   elif [ -e $f/*.c ]; then
     gcc -O3 $f/*.c -o $f/a.out
   fi
