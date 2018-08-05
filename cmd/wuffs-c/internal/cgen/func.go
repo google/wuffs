@@ -230,7 +230,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {" +
-			"self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_NOT_CALLED; }")
+			"self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_MISSING; }")
 
 		b.writes("if (self->private_impl.status < 0) { return ")
 		if g.currFunk.suspendible {

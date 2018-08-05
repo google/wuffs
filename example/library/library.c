@@ -60,11 +60,14 @@ static const char* decode() {
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  wuffs_base__status s =
-      wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
-  if (s) {
-    return wuffs_deflate__status__string(s);
+  wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+      &dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    return wuffs_deflate__status__string(z);
+  }
+  z = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+  if (z) {
+    return wuffs_deflate__status__string(z);
   }
   ignore_return_value(write(1, dst.ptr, dst.wi));
   return NULL;

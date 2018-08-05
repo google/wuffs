@@ -23,6 +23,9 @@ extern "C" {
 
 #define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
 
+static inline void wuffs_base__ignore_check_wuffs_version_status(
+    wuffs_base__status z) {}
+
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,
 // but it should catch 99.99% of cases.

@@ -126,8 +126,13 @@ void test_wuffs_adler32_golden() {
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-      wuffs_adler32__hasher__check_wuffs_version(&checksum, sizeof checksum,
-                                                 WUFFS_VERSION);
+      wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+          &checksum, sizeof checksum, WUFFS_VERSION);
+      if (z) {
+        FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
+             wuffs_adler32__status__string(z));
+        return;
+      }
 
       uint32_t got = 0;
       size_t num_fragments = 0;
@@ -186,8 +191,13 @@ void test_wuffs_adler32_pi() {
   int i;
   for (i = 0; i < 64; i++) {
     wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-    wuffs_adler32__hasher__check_wuffs_version(&checksum, sizeof checksum,
-                                               WUFFS_VERSION);
+    wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+        &checksum, sizeof checksum, WUFFS_VERSION);
+    if (z) {
+      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
+           wuffs_adler32__status__string(z));
+      return;
+    }
     uint32_t got =
         wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
                                                      .ptr = (uint8_t*)(digits),
@@ -214,8 +224,11 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-  wuffs_adler32__hasher__check_wuffs_version(&checksum, sizeof checksum,
-                                             WUFFS_VERSION);
+  wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+      &checksum, sizeof checksum, WUFFS_VERSION);
+  if (z) {
+    return wuffs_adler32__status__string(z);
+  }
   global_wuffs_adler32_unused_u32 =
       wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
                                                    .ptr = src->ptr + src->ri,

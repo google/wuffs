@@ -706,7 +706,10 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 
 func (g *gen) writeCppPrototypes(b *buffer, n *a.Struct) error {
 	b.writes("#ifdef __cplusplus\n")
-	b.writes("inline void check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);\n")
+	// The empty // comment makes clang-format place the function name
+	// at the start of a line.
+	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
+		"check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);\n")
 
 	structID := n.QID()[1]
 	for _, file := range g.files {
@@ -747,10 +750,10 @@ func (g *gen) writeCppImpls(b *buffer) error {
 			structName := structID.Str(g.tm)
 			// The empty // comment makes clang-format place the function name
 			// at the start of a line.
-			b.writes("inline void //\n")
+			b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n")
 			b.printf("%s%s::check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n",
 				g.pkgPrefix, structName)
-			b.printf("%s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n",
+			b.printf("return %s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n",
 				g.pkgPrefix, structName)
 			b.printf("}\n\n")
 
@@ -865,7 +868,8 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 		b.printf("//\n")
 		b.printf("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
 	}
-	b.printf("void %s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version)",
+	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
+		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -889,23 +893,18 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return; }\n")
+	b.writes("if (!self) { return WUFFS_BASE__ERROR_BAD_RECEIVER; }\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;\n")
-	b.writes("return;\n")
+	b.writes("return WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;\n")
 	b.writes("}\n")
 	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;\n")
-	b.writes("return;\n")
+	b.writes("return WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;\n")
 	b.writes("}\n")
 	b.writes("if (self->private_impl.magic != 0) {\n")
-	b.writes("self->private_impl.status = WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n")
-	b.writes("return;\n")
+	b.writes("return WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n")
 	b.writes("}\n")
-
-	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {
@@ -929,10 +928,16 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 			continue
 		}
 
-		b.printf("%s%s__check_wuffs_version(&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
+		b.printf("{\n")
+		b.printf("wuffs_base__status z = %s%s__check_wuffs_version("+
+			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
+		b.printf("if (z) { return z; }\n")
+		b.printf("}\n")
 	}
 
+	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
+	b.writes("return WUFFS_BASE__STATUS_OK;\n")
 	b.writes("}\n\n")
 	return nil
 }

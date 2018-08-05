@@ -45,7 +45,7 @@ var StatusList = [...]Status{
 	{t.IDError, -0x04, "bad argument"},
 	{t.IDError, -0x04, "bad argument (length too short)"},
 
-	{t.IDError, -0x10, "check_wuffs_version not called"},
+	{t.IDError, -0x10, "check_wuffs_version missing"},
 	{t.IDError, -0x11, "check_wuffs_version called twice"},
 	{t.IDError, -0x12, "invalid call sequence"},
 

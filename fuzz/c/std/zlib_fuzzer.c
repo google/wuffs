@@ -48,9 +48,12 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
-  wuffs_base__status s = 0;
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  wuffs_base__status z =
+      wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    return wuffs_zlib__status__string(z);
+  }
 
   // Ignore the checksum for 99.99%-ish of all input. When fuzzers generate
   // random input, the checkum is very unlikely to match. Still, it's useful to
@@ -64,9 +67,9 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
   while (true) {
     dst.wi = 0;
-    s = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
-    if (s != WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
-      ret = wuffs_zlib__status__string(s);
+    z = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
+    if (z != WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
+      ret = wuffs_zlib__status__string(z);
       break;
     }
     if (dst.wi == 0) {

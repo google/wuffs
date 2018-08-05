@@ -117,11 +117,12 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			}
 			b.printf(", 0, sizeof ((%s%s){})),", g.packagePrefix(qid), qid[1].Str(g.tm))
 
-			b.printf("%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
+			b.printf("wuffs_base__ignore_check_wuffs_version_status("+
+				"%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
 			if err := g.writeExpr(b, recv, rp, depth); err != nil {
 				return err
 			}
-			b.printf(", sizeof ((%s%s){}), WUFFS_VERSION)", g.packagePrefix(qid), qid[1].Str(g.tm))
+			b.printf(", sizeof ((%s%s){}), WUFFS_VERSION))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
 			b.writes(", wuffs_base__return_empty_struct())")
 			return nil

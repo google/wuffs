@@ -53,14 +53,17 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
   {
-    wuffs_base__status s = 0;
     wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-    wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+    wuffs_base__status z = wuffs_gif__decoder__check_wuffs_version(
+        &dec, sizeof dec, WUFFS_VERSION);
+    if (z) {
+      return wuffs_gif__status__string(z);
+    }
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
-    s = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-    if (s) {
-      ret = wuffs_gif__status__string(s);
+    z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    if (z) {
+      ret = wuffs_gif__status__string(z);
       goto exit;
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
@@ -81,23 +84,23 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-    s = wuffs_base__pixel_buffer__set_from_slice(
+    z = wuffs_base__pixel_buffer__set_from_slice(
         &pb, wuffs_base__image_config__pixel_config(&ic),
         ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
-    if (s) {
-      ret = wuffs_gif__status__string(s);
+    if (z) {
+      ret = wuffs_gif__status__string(z);
       goto exit;
     }
 
     bool seen_ok = false;
     while (true) {
-      s = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
+      z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
                                            ((wuffs_base__slice_u8){}));
-      if (s) {
-        if ((s == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
-          s = WUFFS_BASE__STATUS_OK;
+      if (z) {
+        if ((z == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
+          z = WUFFS_BASE__STATUS_OK;
         }
-        ret = wuffs_gif__status__string(s);
+        ret = wuffs_gif__status__string(z);
         goto exit;
       }
       seen_ok = true;

@@ -75,7 +75,11 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
-  wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  wuffs_base__status z =
+      wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    return wuffs_gzip__status__string(z);
+  }
 
   wuffs_base__io_buffer src =
       ((wuffs_base__io_buffer){.ptr = src_buffer, .len = SRC_BUFFER_SIZE});
@@ -98,7 +102,7 @@ static const char* decode() {
       wuffs_base__io_buffer dst =
           ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
 
-      wuffs_base__status s =
+      wuffs_base__status z =
           wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
                                       wuffs_base__io_buffer__reader(&src));
 
@@ -108,16 +112,16 @@ static const char* decode() {
         ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
       }
 
-      if (s == WUFFS_BASE__STATUS_OK) {
+      if (z == WUFFS_BASE__STATUS_OK) {
         return NULL;
       }
-      if (s == WUFFS_BASE__SUSPENSION_SHORT_READ) {
+      if (z == WUFFS_BASE__SUSPENSION_SHORT_READ) {
         break;
       }
-      if (s == WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
+      if (z == WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
         continue;
       }
-      return wuffs_gzip__status__string(s);
+      return wuffs_gzip__status__string(z);
     }
 
     wuffs_base__io_buffer__compact(&src);

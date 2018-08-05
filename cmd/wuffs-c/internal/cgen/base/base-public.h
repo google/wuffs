@@ -59,6 +59,13 @@ extern "C" {
 #define WUFFS_BASE__MAYBE_STATIC
 #endif
 
+// Clang also defines "__GNUC__".
+#if defined(__GNUC__)
+#define WUFFS_BASE__WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#else
+#define WUFFS_BASE__WARN_UNUSED_RESULT
+#endif
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".

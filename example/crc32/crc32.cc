@@ -57,7 +57,11 @@ uint8_t src_buffer[SRC_BUFFER_SIZE];
 
 int main(int argc, char** argv) {
   wuffs_crc32__ieee_hasher h = ((wuffs_crc32__ieee_hasher){});
-  h.check_wuffs_version(sizeof h, WUFFS_VERSION);
+  wuffs_base__status z = h.check_wuffs_version(sizeof h, WUFFS_VERSION);
+  if (z) {
+    fprintf(stderr, "%s\n", wuffs_crc32__status__string(z));
+    return 1;
+  }
 
   while (true) {
     const int stdin_fd = 0;
