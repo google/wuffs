@@ -79,7 +79,7 @@ func (g *gen) findDerivedVars() {
 	}
 }
 
-func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr, header bool) error {
+func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.ID, typ *a.TypeExpr, header bool) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:args.src".
 	if name.Str(g.tm) == "dummy" {
@@ -87,7 +87,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("ioptr_w = %sw.ptr + %sw.wi;\n", uPrefix, uPrefix)
+		b.printf("%s%sw = %sw.ptr + %sw.wi;\n", iopPrefix, vPrefix, uPrefix, uPrefix)
 		return nil
 	}
 
@@ -100,47 +100,48 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	if _, ok := g.currFunk.derivedVars[name]; !ok {
 		return nil
 	}
-	nameStr := name.Str(g.tm)
+
+	preName := prefix + name.Str(g.tm)
 	i0, i1 := "ri", "wi"
 	if typ.QID()[1] == t.IDIOWriter {
 		i0, i1 = "wi", "len"
 	}
 
 	if header {
-		b.printf("uint8_t* ioptr_%s = NULL;", nameStr)
-		b.printf("uint8_t* iobounds0orig_%s = NULL;", nameStr)
-		b.printf("uint8_t* iobounds1_%s = NULL;", nameStr)
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds0orig_%s);", nameStr)
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);", nameStr)
+		b.printf("uint8_t* %s%s = NULL;", iopPrefix, preName)
+		b.printf("uint8_t* %s%s = NULL;", io0Prefix, preName)
+		b.printf("uint8_t* %s%s = NULL;", io1Prefix, preName)
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);", io0Prefix, preName)
+		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);", io1Prefix, preName)
 	}
 
-	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
+	b.printf("if (%s.private_impl.buf) {", preName)
 
-	b.printf("ioptr_%s = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->%s;",
-		nameStr, aPrefix, nameStr, aPrefix, nameStr, i0)
+	b.printf("%s%s = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
+		iopPrefix, preName, preName, preName, i0)
 
 	if header {
-		b.printf("if (!%s%s.private_impl.bounds[0]) {", aPrefix, nameStr)
-		b.printf("%s%s.private_impl.bounds[0] = ioptr_%s;", aPrefix, nameStr, nameStr)
-		b.printf("%s%s.private_impl.bounds[1] = %s%s.private_impl.buf->ptr + %s%s.private_impl.buf->%s;",
-			aPrefix, nameStr, aPrefix, nameStr, aPrefix, nameStr, i1)
+		b.printf("if (!%s.private_impl.bounds[0]) {", preName)
+		b.printf("%s.private_impl.bounds[0] = %s%s;", preName, iopPrefix, preName)
+		b.printf("%s.private_impl.bounds[1] = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
+			preName, preName, preName, i1)
 		b.printf("}\n")
 
 		if typ.QID()[1] == t.IDIOWriter {
-			b.printf("if (%s%s.private_impl.buf->closed) {", aPrefix, nameStr)
-			b.printf("%s%s.private_impl.bounds[1] = ioptr_%s;", aPrefix, nameStr, nameStr)
+			b.printf("if (%s.private_impl.buf->closed) {", preName)
+			b.printf("%s.private_impl.bounds[1] = %s%s;", preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
 
-		b.printf("iobounds0orig_%s = %s%s.private_impl.bounds[0];", nameStr, aPrefix, nameStr)
-		b.printf("iobounds1_%s = %s%s.private_impl.bounds[1];", nameStr, aPrefix, nameStr)
+		b.printf("%s%s = %s.private_impl.bounds[0];", io0Prefix, preName, preName)
+		b.printf("%s%s = %s.private_impl.bounds[1];", io1Prefix, preName, preName)
 	}
 
 	b.printf("}\n")
 	return nil
 }
 
-func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.TypeExpr) error {
+func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.ID, typ *a.TypeExpr) error {
 	// TODO: remove this hack. We're picking up the wrong name for "src:r,
 	// dummy:args.src".
 	if name.Str(g.tm) == "dummy" {
@@ -148,7 +149,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%sw.wi = ioptr_w - %sw.ptr;\n", uPrefix, uPrefix)
+		b.printf("%sw.wi = %s%sw - %sw.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
 		return nil
 	}
 
@@ -161,15 +162,16 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, name t.ID, typ *a.Type
 	if _, ok := g.currFunk.derivedVars[name]; !ok {
 		return nil
 	}
-	nameStr := name.Str(g.tm)
+
+	preName := prefix + name.Str(g.tm)
 	i0 := "ri"
 	if typ.QID()[1] == t.IDIOWriter {
 		i0 = "wi"
 	}
 
-	b.printf("if (%s%s.private_impl.buf) {", aPrefix, nameStr)
-	b.printf("%s%s.private_impl.buf->%s = ioptr_%s - %s%s.private_impl.buf->ptr;",
-		aPrefix, nameStr, i0, nameStr, aPrefix, nameStr)
+	b.printf("if (%s.private_impl.buf) {", preName)
+	b.printf("%s.private_impl.buf->%s = %s%s - %s.private_impl.buf->ptr;",
+		preName, i0, iopPrefix, preName, preName)
 	b.printf("}\n")
 	return nil
 }
@@ -183,14 +185,16 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	}
 	for _, o := range n.Args() {
 		o := o.AsArg()
+		prefix := aPrefix
 		// TODO: don't hard-code these.
 		hack := ""
 		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
 			continue
 		} else if s == "w" {
+			prefix = vPrefix
 			hack = "w"
 		}
-		if err := g.writeLoadDerivedVar(b, hack, o.Name(), o.Value().MType(), false); err != nil {
+		if err := g.writeLoadDerivedVar(b, hack, prefix, o.Name(), o.Value().MType(), false); err != nil {
 			return err
 		}
 	}
@@ -206,14 +210,16 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	}
 	for _, o := range n.Args() {
 		o := o.AsArg()
+		prefix := aPrefix
 		// TODO: don't hard-code these.
 		hack := ""
 		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
 			continue
 		} else if s == "w" {
+			prefix = vPrefix
 			hack = "w"
 		}
-		if err := g.writeSaveDerivedVar(b, hack, o.Name(), o.Value().MType()); err != nil {
+		if err := g.writeSaveDerivedVar(b, hack, prefix, o.Name(), o.Value().MType()); err != nil {
 			return err
 		}
 	}
@@ -379,12 +385,13 @@ func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipI
 		b.writes(";\n")
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
-			// TODO: iobounds0_%s or iobounds0orig_%s variables?
-			b.printf("uint8_t* ioptr_%s = NULL;\n", name)
-			b.printf("uint8_t* iobounds1_%s = NULL;\n", name)
+			preName := vPrefix + name
+			// TODO: io0_etc variables?
+			b.printf("uint8_t* %s%s = NULL;\n", iopPrefix, preName)
+			b.printf("uint8_t* %s%s = NULL;\n", io1Prefix, preName)
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", uPrefix, name)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(ioptr_%s);\n", name)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iobounds1_%s);\n", name)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", iopPrefix, preName)
+			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", io1Prefix, preName)
 		}
 		return nil
 	})

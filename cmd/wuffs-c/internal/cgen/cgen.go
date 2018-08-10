@@ -59,6 +59,36 @@ const (
 	vPrefix = "v_" // Local variable.
 )
 
+// I/O (reader/writer) prefixes. In the generated C code, the variables with
+// these prefixes all have type uint8_t*. The iop_etc variables are the key
+// ones. For an io_reader or io_writer function argument a_src or a_dst,
+// reading or writing the next byte (and advancing the stream) is essentially
+// "etc = *iop_a_src++" or "*io_a_dst++ = etc".
+//
+// The other two prefixes, giving names like io0_etc and io1_etc, are
+// auxilliary pointers: lower and upper inclusive bounds. As an iop_etc pointer
+// advances, it cannot advance past io1_etc. In the rarer case that an iop_etc
+// pointer retreats, undoing a read or write, it cannot retreat past io0_etc.
+//
+// At the start of a function, these pointers are initialized from an
+// io_buffer's fields (ptr, ri, wi, len), or possibly a limit field. For an
+// io_reader:
+//  - io0_etc = ptr + ri
+//  - iop_etc = ptr + ri
+//  - io1_etc = ptr + wi   or  limit
+// and for an io_writer:
+//  - io0_etc = ptr + wi
+//  - iop_etc = ptr + wi
+//  - io1_etc = ptr + len  or  limit
+//
+// TODO: discuss marks and limits, and how (if at all) auxilliary pointers can
+// change over a function's lifetime.
+const (
+	io0Prefix = "io0_" // Lower bound.
+	io1Prefix = "io1_" // Upper bound.
+	iopPrefix = "iop_" // Pointer.
+)
+
 // Do transpiles a Wuffs program to a C program.
 //
 // The arguments list the source Wuffs files. If no arguments are given, it
