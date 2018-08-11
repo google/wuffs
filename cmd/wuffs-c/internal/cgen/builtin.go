@@ -350,11 +350,11 @@ func (g *gen) writeBuiltinStatus(b *buffer, recv *a.Expr, method t.ID, args []*a
 	}
 	switch method {
 	case t.IDIsError:
-		b.writes(" < 0")
+		b.writes(".code < 0")
 	case t.IDIsOK:
-		b.writes(" == 0")
+		b.writes(".code == 0")
 	case t.IDIsSuspension:
-		b.writes(" > 0")
+		b.writes(".code > 0")
 	default:
 		return fmt.Errorf("cgen: internal error for writeBuiltinStatus")
 	}
@@ -430,7 +430,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			g.currFunk.tempW++
 
 			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {" +
-				"status = WUFFS_BASE__SUSPENSION_SHORT_READ; goto suspend; }")
+				"status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__SUSPENSION_SHORT_READ); goto suspend; }")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
 			// array type can decay into a pointer.
@@ -491,7 +491,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			b.printf("%s -= io1_a_src - iop_a_src;\n", scratchName)
 			b.printf("iop_a_src = io1_a_src;\n")
 
-			b.writes("status = WUFFS_BASE__SUSPENSION_SHORT_READ; goto suspend; }\n")
+			b.writes("status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__SUSPENSION_SHORT_READ); goto suspend; }\n")
 			b.printf("iop_a_src += %s;\n", scratchName)
 			return nil
 		}
@@ -500,7 +500,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 		switch method.Ident() {
 		case t.IDWriteU8:
 			b.writes("if (iop_a_dst == io1_a_dst) {\n" +
-				"status = WUFFS_BASE__SUSPENSION_SHORT_WRITE; goto suspend; }\n" +
+				"status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__SUSPENSION_SHORT_WRITE); goto suspend; }\n" +
 				"*iop_a_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {

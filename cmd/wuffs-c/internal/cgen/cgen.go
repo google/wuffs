@@ -378,7 +378,7 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	b.writes("\n")
 
-	b.printf("const char* %sstatus__string(wuffs_base__status s);\n\n", g.pkgPrefix)
+	b.printf("const char* %sstatus__string(int32_t status_code);\n\n", g.pkgPrefix)
 
 	b.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(b, pubOnly, (*gen).writeConst); err != nil {
@@ -435,18 +435,18 @@ func (g *gen) genImpl(b *buffer) error {
 		}
 	}
 
-	b.printf("const char* %sstatus__string(wuffs_base__status s) {\n", g.pkgPrefix)
+	b.printf("const char* %sstatus__string(int32_t status_code) {\n", g.pkgPrefix)
 	b.printf("uint16_t o;")
-	b.printf("switch (s & 0x%X) {\n", (1<<base38.MaxBits)-1)
-	b.printf("case 0: return wuffs_base__status__string(s);\n")
+	b.printf("switch (status_code & 0x%X) {\n", (1<<base38.MaxBits)-1)
+	b.printf("case 0: return wuffs_base__status__string(status_code);\n")
 	b.printf("case %spackageid:\n", g.pkgPrefix)
-	b.printf("o = %sstatus__string_offsets[(uint8_t)(s >> 24)];\n", g.pkgPrefix)
+	b.printf("o = %sstatus__string_offsets[(uint8_t)(status_code >> 24)];\n", g.pkgPrefix)
 	b.printf("if (o) { return %sstatus__string_data + o; } break;\n", g.pkgPrefix)
 	for _, u := range g.usesList {
 		// TODO: is path.Base always correct? Should we check
 		// validName(packageName)?
 		useePkgName := path.Base(u)
-		b.printf("case wuffs_%s__packageid: return wuffs_%s__status__string(s);\n", useePkgName, useePkgName)
+		b.printf("case wuffs_%s__packageid: return wuffs_%s__status__string(status_code);\n", useePkgName, useePkgName)
 	}
 	b.printf("}\n")
 	b.printf("return \"unknown status\";\n")
@@ -923,17 +923,17 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return WUFFS_BASE__ERROR_BAD_RECEIVER; }\n")
+	b.writes("if (!self) { return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_RECEIVER); }\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.writes("return WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER;\n")
+	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER);\n")
 	b.writes("}\n")
 	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.writes("return WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;\n")
+	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_WUFFS_VERSION);\n")
 	b.writes("}\n")
 	b.writes("if (self->private_impl.magic != 0) {\n")
-	b.writes("return WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE;\n")
+	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE);\n")
 	b.writes("}\n")
 
 	// Call any ctors on sub-structs.
@@ -962,12 +962,12 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		b.printf("wuffs_base__status z = %s%s__check_wuffs_version("+
 			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
-		b.printf("if (z) { return z; }\n")
+		b.printf("if (z.code) { return z; }\n")
 		b.printf("}\n")
 	}
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
-	b.writes("return WUFFS_BASE__STATUS_OK;\n")
+	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__STATUS_OK);\n")
 	b.writes("}\n\n")
 	return nil
 }

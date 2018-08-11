@@ -103,9 +103,9 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
   wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
   wuffs_base__status z =
       wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
-         wuffs_lzw__status__string(z));
+  if (z.code) {
+    FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
+         wuffs_lzw__status__string(z.code));
     return false;
   }
   wuffs_lzw__decoder__set_literal_width(&dec, literal_width);
@@ -124,18 +124,19 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_ri = src.ri;
 
     z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
-    if (z == WUFFS_BASE__STATUS_OK) {
+    if (z.code == WUFFS_BASE__STATUS_OK) {
       if (src.ri != src.wi) {
         FAIL("decode returned \"ok\" but src was not exhausted");
         return false;
       }
       break;
     }
-    if ((z != WUFFS_BASE__SUSPENSION_SHORT_READ) &&
-        (z != WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
+    if ((z.code != WUFFS_BASE__SUSPENSION_SHORT_READ) &&
+        (z.code != WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
       FAIL("decode: got %" PRIi32 " (%s), want %" PRIi32 " (%s) or %" PRIi32
            " (%s)",
-           z, wuffs_lzw__status__string(z), WUFFS_BASE__SUSPENSION_SHORT_READ,
+           z.code, wuffs_lzw__status__string(z.code),
+           WUFFS_BASE__SUSPENSION_SHORT_READ,
            wuffs_lzw__status__string(WUFFS_BASE__SUSPENSION_SHORT_READ),
            WUFFS_BASE__SUSPENSION_SHORT_WRITE,
            wuffs_lzw__status__string(WUFFS_BASE__SUSPENSION_SHORT_WRITE));
@@ -234,14 +235,15 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
     wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
     wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
-           wuffs_lzw__status__string(z));
+    if (z.code) {
+      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
+           wuffs_lzw__status__string(z.code));
       return false;
     }
     z = wuffs_lzw__decoder__decode(&dec, dst_writer, src_reader);
-    if (z) {
-      FAIL("decode: %" PRIi32 " (%s)", z, wuffs_lzw__status__string(z));
+    if (z.code) {
+      FAIL("decode: %" PRIi32 " (%s)", z.code,
+           wuffs_lzw__status__string(z.code));
       return false;
     }
     n_bytes += dst.wi;

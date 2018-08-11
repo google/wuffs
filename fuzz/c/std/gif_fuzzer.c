@@ -56,14 +56,14 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
     wuffs_base__status z = wuffs_gif__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z) {
-      return wuffs_gif__status__string(z);
+    if (z.code) {
+      return wuffs_gif__status__string(z.code);
     }
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-    if (z) {
-      ret = wuffs_gif__status__string(z);
+    if (z.code) {
+      ret = wuffs_gif__status__string(z.code);
       goto exit;
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
@@ -87,8 +87,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     z = wuffs_base__pixel_buffer__set_from_slice(
         &pb, wuffs_base__image_config__pixel_config(&ic),
         ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
-    if (z) {
-      ret = wuffs_gif__status__string(z);
+    if (z.code) {
+      ret = wuffs_gif__status__string(z.code);
       goto exit;
     }
 
@@ -96,11 +96,11 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     while (true) {
       z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
                                            ((wuffs_base__slice_u8){}));
-      if (z) {
-        if ((z == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
-          z = WUFFS_BASE__STATUS_OK;
+      if (z.code) {
+        if ((z.code == WUFFS_BASE__SUSPENSION_END_OF_DATA) && seen_ok) {
+          z.code = WUFFS_BASE__STATUS_OK;
         }
-        ret = wuffs_gif__status__string(z);
+        ret = wuffs_gif__status__string(z.code);
         goto exit;
       }
       seen_ok = true;

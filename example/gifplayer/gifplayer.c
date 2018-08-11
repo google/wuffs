@@ -273,8 +273,8 @@ const char* play() {
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_base__status z =
       wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    return wuffs_gif__status__string(z);
+  if (z.code) {
+    return wuffs_gif__status__string(z.code);
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -285,8 +285,8 @@ const char* play() {
     first_play = false;
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-    if (z) {
-      return wuffs_gif__status__string(z);
+    if (z.code) {
+      return wuffs_gif__status__string(z.code);
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
@@ -303,8 +303,8 @@ const char* play() {
     z = wuffs_base__pixel_buffer__set_from_slice(
         &pb, wuffs_base__image_config__pixel_config(&ic),
         ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
-    if (z) {
-      return wuffs_gif__status__string(z);
+    if (z.code) {
+      return wuffs_gif__status__string(z.code);
     }
     memset(image_buffer, 0, image_len);
     memset(dst_buffer, 0, dst_len);
@@ -315,11 +315,11 @@ const char* play() {
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     wuffs_base__status z =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
-    if (z) {
-      if (z == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
+    if (z.code) {
+      if (z.code == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;
       }
-      return wuffs_gif__status__string(z);
+      return wuffs_gif__status__string(z.code);
     }
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
@@ -331,11 +331,11 @@ const char* play() {
 
     z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
                                          ((wuffs_base__slice_u8){}));
-    if (z) {
-      if (z == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
+    if (z.code) {
+      if (z.code == WUFFS_BASE__SUSPENSION_END_OF_DATA) {
         break;
       }
-      return wuffs_gif__status__string(z);
+      return wuffs_gif__status__string(z.code);
     }
 
     compose(&pb, wuffs_base__frame_config__bounds(&fc));

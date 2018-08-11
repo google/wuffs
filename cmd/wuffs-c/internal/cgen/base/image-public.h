@@ -809,17 +809,18 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
                                          wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   if (!b) {
-    return WUFFS_BASE__ERROR_BAD_RECEIVER;
+    return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_RECEIVER);
   }
   *b = ((wuffs_base__pixel_buffer){});
   if (!pixcfg) {
-    return WUFFS_BASE__ERROR_BAD_ARGUMENT;
+    return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_ARGUMENT);
   }
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
   if (wh > pixbuf_memory.len) {
-    return WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT;
+    return WUFFS_BASE__MAKE_STATUS(
+        WUFFS_BASE__ERROR_BAD_ARGUMENT_LENGTH_TOO_SHORT);
   }
   b->private_impl.pixcfg = *pixcfg;
   wuffs_base__table_u8* tab = &b->private_impl.planes[0];
@@ -827,7 +828,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   tab->width = pixcfg->private_impl.width;
   tab->height = pixcfg->private_impl.height;
   tab->stride = pixcfg->private_impl.width;
-  return WUFFS_BASE__STATUS_OK;
+  return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__STATUS_OK);
 }
 
 // The palette argument is ignored unless its length is exactly 1024.

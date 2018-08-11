@@ -25,8 +25,8 @@
 // !! INSERT wuffs_base__status__string data.
 
 const char*  //
-wuffs_base__status__string(wuffs_base__status s) {
-  uint16_t o = wuffs_base__status__string_offsets[(uint8_t)(s >> 24)];
+wuffs_base__status__string(int32_t status_code) {
+  uint16_t o = wuffs_base__status__string_offsets[(uint8_t)(status_code >> 24)];
   return o ? wuffs_base__status__string_data + o : "unknown status";
 }
 

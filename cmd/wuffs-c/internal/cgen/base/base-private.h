@@ -56,9 +56,9 @@ static inline void wuffs_base__ignore_check_wuffs_version_status(
   case n:;
 
 #define WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(n) \
-  if (status < 0) {                                             \
+  if (status.code < 0) {                                        \
     goto exit;                                                  \
-  } else if (status == 0) {                                     \
+  } else if (status.code == 0) {                                \
     goto ok;                                                    \
   }                                                             \
   coro_susp_point = n;                                          \

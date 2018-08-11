@@ -108,27 +108,38 @@ typedef struct {
 //
 // Do not manipulate these bits directly; they are private implementation
 // details. Use methods such as wuffs_base__status__is_error instead.
-typedef int32_t wuffs_base__status;
+typedef struct {
+  int32_t code;
+} wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
 
+// TODO: turn WUFFS_BASE__MAKE_STATUS into a macro, and add a msg field.
+
+static inline wuffs_base__status  //
+WUFFS_BASE__MAKE_STATUS(int32_t code) {
+  return ((wuffs_base__status){
+      .code = code,
+  });
+}
+
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status s) {
-  return s < 0;
+  return s.code < 0;
 }
 
 static inline bool  //
 wuffs_base__status__is_ok(wuffs_base__status s) {
-  return s == 0;
+  return s.code == 0;
 }
 
 static inline bool  //
 wuffs_base__status__is_suspension(wuffs_base__status s) {
-  return s > 0;
+  return s.code > 0;
 }
 
 const char*  //
-wuffs_base__status__string(wuffs_base__status s);
+wuffs_base__status__string(int32_t status_code);
 
 // --------
 

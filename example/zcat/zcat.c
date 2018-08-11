@@ -77,8 +77,8 @@ static const char* decode() {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
   wuffs_base__status z =
       wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    return wuffs_gzip__status__string(z);
+  if (z.code) {
+    return wuffs_gzip__status__string(z.code);
   }
 
   wuffs_base__io_buffer src =
@@ -112,16 +112,16 @@ static const char* decode() {
         ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
       }
 
-      if (z == WUFFS_BASE__STATUS_OK) {
+      if (z.code == WUFFS_BASE__STATUS_OK) {
         return NULL;
       }
-      if (z == WUFFS_BASE__SUSPENSION_SHORT_READ) {
+      if (z.code == WUFFS_BASE__SUSPENSION_SHORT_READ) {
         break;
       }
-      if (z == WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
+      if (z.code == WUFFS_BASE__SUSPENSION_SHORT_WRITE) {
         continue;
       }
-      return wuffs_gzip__status__string(z);
+      return wuffs_gzip__status__string(z.code);
     }
 
     wuffs_base__io_buffer__compact(&src);

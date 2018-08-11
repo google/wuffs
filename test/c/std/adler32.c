@@ -128,9 +128,9 @@ void test_wuffs_adler32_golden() {
       wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
       wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
           &checksum, sizeof checksum, WUFFS_VERSION);
-      if (z) {
-        FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
-             wuffs_adler32__status__string(z));
+      if (z.code) {
+        FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
+             wuffs_adler32__status__string(z.code));
         return;
       }
 
@@ -193,9 +193,9 @@ void test_wuffs_adler32_pi() {
     wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
     wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
         &checksum, sizeof checksum, WUFFS_VERSION);
-    if (z) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z,
-           wuffs_adler32__status__string(z));
+    if (z.code) {
+      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
+           wuffs_adler32__status__string(z.code));
       return;
     }
     uint32_t got =
@@ -226,8 +226,8 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
   wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
       &checksum, sizeof checksum, WUFFS_VERSION);
-  if (z) {
-    return wuffs_adler32__status__string(z);
+  if (z.code) {
+    return wuffs_adler32__status__string(z.code);
   }
   global_wuffs_adler32_unused_u32 =
       wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
