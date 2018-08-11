@@ -4854,7 +4854,7 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
         }
         v_z = t_0;
       }
-      if (!(v_z.code > 0)) {
+      if (!wuffs_base__status__is_suspension(v_z)) {
         status = v_z;
         if (status.code == 0) {
           goto ok;
@@ -8499,7 +8499,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           io1_v_w = o_0_io1_v_w;
           a_src = o_0_a_src;
         }
-        if ((v_z.code == 0) ||
+        if (wuffs_base__status__is_ok(v_z) ||
             (v_z.code ==
              WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__SUSPENSION_SHORT_WRITE)
                  .code)) {
@@ -9075,7 +9075,7 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                      .len)) &
              4294967295)));
       }
-      if (v_z.code == 0) {
+      if (wuffs_base__status__is_ok(v_z)) {
         goto label_2_break;
       }
       status = v_z;
@@ -9803,7 +9803,7 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
                 .len = (size_t)(iop_a_dst - a_dst.private_impl.bounds[0]),
             }));
       }
-      if (v_z.code == 0) {
+      if (wuffs_base__status__is_ok(v_z)) {
         goto label_0_break;
       }
       status = v_z;

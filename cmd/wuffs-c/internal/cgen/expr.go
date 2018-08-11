@@ -324,6 +324,8 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, rp replacementPolic
 	recvTyp, addr := recv.MType(), "&"
 	if p := recvTyp.Decorator(); p == t.IDNptr || p == t.IDPtr {
 		recvTyp, addr = recvTyp.Inner(), ""
+	} else if recvTyp.IsStatus() {
+		addr = ""
 	}
 	if recvTyp.Decorator() != 0 {
 		return fmt.Errorf("cannot generate user-defined method call %q for receiver type %q",

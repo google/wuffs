@@ -71,8 +71,6 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), rp, depth)
 		case t.IDIOWriter:
 			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), rp, depth)
-		case t.IDStatus:
-			return g.writeBuiltinStatus(b, recv, method.Ident(), n.Args(), rp, depth)
 		}
 	}
 	return errNoSuchBuiltin
@@ -341,25 +339,6 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		return g.writeArgs(b, args, rp, depth)
 	}
 	return errNoSuchBuiltin
-}
-
-func (g *gen) writeBuiltinStatus(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
-	b.writeb('(')
-	if err := g.writeExpr(b, recv, rp, depth); err != nil {
-		return err
-	}
-	switch method {
-	case t.IDIsError:
-		b.writes(".code < 0")
-	case t.IDIsOK:
-		b.writes(".code == 0")
-	case t.IDIsSuspension:
-		b.writes(".code > 0")
-	default:
-		return fmt.Errorf("cgen: internal error for writeBuiltinStatus")
-	}
-	b.writeb(')')
-	return nil
 }
 
 func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
