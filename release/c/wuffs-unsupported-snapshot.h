@@ -134,6 +134,7 @@ typedef struct {
 // details. Use methods such as wuffs_base__status__is_error instead.
 typedef struct {
   int32_t code;
+  const char* msg;
 } wuffs_base__status;
 
 #define WUFFS_BASE__STATUS_OK 0                                    // 0x00000000
@@ -157,6 +158,7 @@ static inline wuffs_base__status  //
 WUFFS_BASE__MAKE_STATUS(int32_t code) {
   return ((wuffs_base__status){
       .code = code,
+      .msg = NULL,
   });
 }
 
