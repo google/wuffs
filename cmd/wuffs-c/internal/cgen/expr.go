@@ -237,14 +237,13 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
-	opName, lhsExtra, rhsExtra := "", "", ""
+	opName, extra := "", ""
 
 	op := n.Operator()
 	switch op {
 	case t.IDXBinaryEqEq, t.IDXBinaryNotEq:
 		if lhs := n.LHS().AsExpr(); lhs.MType().IsStatus() {
-			lhsExtra = ".code"
-			rhsExtra = ".code"
+			extra = ".code"
 		}
 
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
@@ -274,12 +273,12 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 	if err := g.writeExpr(b, n.LHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
-	b.writes(lhsExtra)
+	b.writes(extra)
 	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
-	b.writes(rhsExtra)
+	b.writes(extra)
 	b.writeb(')')
 	return nil
 }
