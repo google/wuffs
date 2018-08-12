@@ -124,9 +124,6 @@ wuffs_base__status__is_suspension(wuffs_base__status z) {
   return z && (*z == '$');
 }
 
-const char*  //
-wuffs_base__status__string(int32_t status_code);
-
 // --------
 
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a

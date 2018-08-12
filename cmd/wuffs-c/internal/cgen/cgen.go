@@ -25,7 +25,6 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -33,7 +32,6 @@ import (
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/generate"
-	"github.com/google/wuffs/lib/base38"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 
@@ -113,18 +111,7 @@ func Do(args []string) error {
 			if err := expandBangBangInsert(&buf, baseBaseImplC, map[string]func(*buffer) error{
 				"// !! INSERT base-private.h.\n": insertBasePrivateH,
 				"// !! INSERT base-public.h.\n":  insertBasePublicH,
-				"// !! INSERT wuffs_base__status__string data.\n": func(b *buffer) error {
-					messages := [256]string{}
-					for _, z := range builtin.StatusList {
-						if z.Message == "" {
-							continue
-						}
-						messages[uint8(z.Value)] = z.Message[:1] + "base: " + z.Message[1:]
-					}
-					if err := genStatusStringData(b, "wuffs_base__", &messages); err != nil {
-						return err
-					}
-
+				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.StatusList {
 						pre := ""
 						switch z.Keyword {
@@ -135,8 +122,8 @@ func Do(args []string) error {
 						default:
 							continue
 						}
-						b.printf("const char* wuffs_base__%s__%s = \"%s\";\n",
-							pre, cName(z.Message, ""), messages[uint8(z.Value)])
+						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
+							pre, cName(z.Message, ""), z.Message[:1], z.Message[1:])
 					}
 					return nil
 				},
@@ -268,12 +255,6 @@ func insertBasePublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.StatusList {
-				code := int32(z.Value) << 24
-				b.printf("#define %s %d // 0x%08X\n",
-					strings.ToUpper(cName(z.String(), "WUFFS_BASE__")), code, uint32(code))
-			}
-			b.writes("\n")
-			for _, z := range builtin.StatusList {
 				pre := ""
 				switch z.Keyword {
 				case t.IDError:
@@ -295,36 +276,6 @@ func insertBasePublicH(buf *buffer) error {
 	buf.writes(baseImagePublicH)
 
 	buf.writes("\n#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n\n")
-	return nil
-}
-
-func genStatusStringData(b *buffer, pkgPrefix string, ss *[256]string) error {
-	data := []byte{0x00}
-	offsets := [256]uint16{}
-	for i, s := range ss {
-		if s == "" {
-			continue
-		}
-		if len(data) > 0xFFFF {
-			return errors.New("status string messages are too long")
-		}
-		offsets[i] = uint16(len(data))
-		data = append(data, s...)
-		data = append(data, 0x00)
-	}
-
-	b.printf("static const char %sstatus__string_data[] = {\n", pkgPrefix)
-	for _, x := range data {
-		b.printf("0x%02X,", x)
-	}
-	b.writes("};\n\n")
-
-	b.printf("static const uint16_t %sstatus__string_offsets[] = {\n", pkgPrefix)
-	for _, x := range offsets {
-		b.printf("0x%04X,", x)
-	}
-	b.writes("};\n\n")
-
 	return nil
 }
 
@@ -410,15 +361,6 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes\n\n")
 
-	pkgID := g.checker.PackageID()
-	b.printf("#define %spackageid %d // 0x%08X\n\n", g.pkgPrefix, pkgID, pkgID)
-
-	for _, s := range g.statusList {
-		code := (int32(s.value) << 24) | int32(pkgID)
-		b.printf("#define %s %d // 0x%08X\n", s.name, code, uint32(code))
-	}
-	b.writes("\n")
-
 	for _, s := range g.statusList {
 		if !s.public {
 			continue
@@ -426,8 +368,6 @@ func (g *gen) genHeader(b *buffer) error {
 		b.printf("extern const char* %s%s__%s;\n", g.pkgPrefix, s.cNamePrefix(), s.cName)
 	}
 	b.writes("\n")
-
-	b.printf("const char* %sstatus__string(int32_t status_code);\n\n", g.pkgPrefix)
 
 	b.writes("// ---------------- Public Consts\n\n")
 	if err := g.forEachConst(b, pubOnly, (*gen).writeConst); err != nil {
@@ -474,42 +414,14 @@ func (g *gen) genImpl(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 
-	messages := [256]string{}
-	{
-		for _, s := range g.statusList {
-			if s.msg == "" {
-				continue
-			}
-			messages[uint8(s.value)] = s.msg[:1] + g.pkgName + ": " + s.msg[1:]
+	for _, z := range g.statusList {
+		if z.msg == "" {
+			continue
 		}
-		if err := genStatusStringData(b, g.pkgPrefix, &messages); err != nil {
-			return err
-		}
-	}
-
-	for _, s := range g.statusList {
-		b.printf("const char* %s%s__%s = \"%s\";\n",
-			g.pkgPrefix, s.cNamePrefix(), s.cName, messages[uint8(s.value)])
+		b.printf("const char* %s%s__%s = \"%s%s: %s\";\n",
+			g.pkgPrefix, z.cNamePrefix(), z.cName, z.msg[:1], g.pkgName, z.msg[1:])
 	}
 	b.writes("\n")
-
-	b.printf("const char* %sstatus__string(int32_t status_code) {\n", g.pkgPrefix)
-	b.printf("uint16_t o;")
-	b.printf("switch (status_code & 0x%X) {\n", (1<<base38.MaxBits)-1)
-	b.printf("case 0: return wuffs_base__status__string(status_code);\n")
-	b.printf("case %spackageid:\n", g.pkgPrefix)
-	b.printf("o = %sstatus__string_offsets[(uint8_t)(status_code >> 24)];\n", g.pkgPrefix)
-	b.printf("if (o) { return %sstatus__string_data + o; } break;\n", g.pkgPrefix)
-	for _, u := range g.usesList {
-		// TODO: is path.Base always correct? Should we check
-		// validName(packageName)?
-		useePkgName := path.Base(u)
-		b.printf("case wuffs_%s__packageid: return wuffs_%s__status__string(status_code);\n", useePkgName, useePkgName)
-	}
-	b.printf("}\n")
-	b.printf("return \"unknown status\";\n")
-
-	b.writes("}\n\n")
 
 	b.writes("// ---------------- Private Consts\n\n")
 	if err := g.forEachConst(b, priOnly, (*gen).writeConst); err != nil {
