@@ -489,8 +489,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.IDDot:
 		return q.tcheckDot(n, depth)
 
-	// TODO: remove all but t.IDStatus.
-	case t.IDError, t.IDStatus, t.IDSuspension:
+	case t.IDStatus:
 		if _, ok := q.c.statuses[n.StatusQID()]; !ok {
 			msg, _ := t.Unescape(n.Ident().Str(q.tm))
 			if _, ok := builtin.StatusMap[msg]; !ok {

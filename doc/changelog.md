@@ -34,6 +34,7 @@
 - Marked some internal status codes as private.
 - Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.
+- Changed `error "foo"` to `status "?foo"`.
 - Made the status type a `const char *`, not an `int32_t`.
 - Made a packageid declaration mandatory.
 - Disallowed certain packageid's like `base` or `config`.

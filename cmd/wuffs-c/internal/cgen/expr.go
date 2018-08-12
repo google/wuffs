@@ -208,22 +208,21 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		b.writes(n.Ident().Str(g.tm))
 		return nil
 
-	case t.IDError, t.IDStatus, t.IDSuspension:
+	case t.IDStatus:
 		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
 			b.writes(z.cName)
 		} else {
 			msg, _ := t.Unescape(n.Ident().Str(g.tm))
-			z := builtin.StatusMap[msg]
-			if z.Message == "" {
+			if !builtin.StatusMap[msg] {
 				return fmt.Errorf("no status code for %q", msg)
 			}
 			b.writes("wuffs_base__")
-			if z.Keyword == t.IDSuspension {
-				b.writes("suspension__")
-			} else {
+			if statusMsgIsError(msg) {
 				b.writes("error__")
+			} else {
+				b.writes("suspension__")
 			}
-			b.writes(cName(z.Message, ""))
+			b.writes(cName(msg, ""))
 		}
 		return nil
 	}

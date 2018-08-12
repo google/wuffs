@@ -306,12 +306,16 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	retExpr := n.Value()
 
 	if g.currFunk.suspendible {
+		isError, isOK := false, false
 		b.writes("status = ")
-		retKeyword := t.IDStatus
 		if retExpr == nil {
 			b.writes("NULL")
+			isOK = true
 		} else {
-			retKeyword = retExpr.Operator()
+			if retExpr.Operator() == t.IDStatus {
+				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
+				isError = statusMsgIsError(msg)
+			}
 			// TODO: check that retExpr has no call-suspendibles.
 			if err := g.writeExpr(
 				b, retExpr, replaceCallSuspendibles, depth); err != nil {
@@ -324,13 +328,12 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			return g.writeCoroSuspPoint(b, true)
 		}
 
-		switch retKeyword {
-		case t.IDError:
+		if isError {
 			b.writes("goto exit;")
-		case t.IDStatus:
+		} else if isOK {
 			g.currFunk.hasGotoOK = true
 			b.writes("goto ok;")
-		default:
+		} else {
 			g.currFunk.hasGotoOK = true
 			b.writes("if (!status) { goto ok; }" +
 				"else if (wuffs_base__status__is_suspension(status)) { " +

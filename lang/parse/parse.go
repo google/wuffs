@@ -1022,8 +1022,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			p.src = p.src[1:]
 			return expr, nil
 
-		case t.IDError, t.IDStatus, t.IDSuspension:
-			keyword := x
+		case t.IDStatus:
 			p.src = p.src[1:]
 			message := p.peek1()
 			// TODO: parse the "pkg" in `error pkg."foo"`.
@@ -1033,7 +1032,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 				return nil, fmt.Errorf(`parse: expected string literal, got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewExpr(0, keyword, statusPkg, message, nil, nil, nil, nil), nil
+			return a.NewExpr(0, t.IDStatus, statusPkg, message, nil, nil, nil, nil), nil
 		}
 	}
 

@@ -78,15 +78,8 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 
 	} else {
 		switch n.id0 {
-		case t.IDError, t.IDStatus, t.IDSuspension:
-			switch n.id0 {
-			case t.IDError:
-				buf = append(buf, "error "...)
-			case t.IDStatus:
-				buf = append(buf, "status "...)
-			case t.IDSuspension:
-				buf = append(buf, "suspension "...)
-			}
+		case t.IDStatus:
+			buf = append(buf, "status "...)
 			if n.id1 != 0 {
 				buf = append(buf, tm.ByID(n.id1)...)
 				buf = append(buf, '.')

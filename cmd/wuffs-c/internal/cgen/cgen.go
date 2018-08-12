@@ -113,17 +113,15 @@ func Do(args []string) error {
 				"// !! INSERT base-public.h.\n":  insertBasePublicH,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.StatusList {
-						pre := ""
-						switch z.Keyword {
-						case t.IDError:
-							pre = "error"
-						case t.IDSuspension:
-							pre = "suspension"
-						default:
+						if z == "" {
 							continue
 						}
+						pre := "error"
+						if z[0] == '$' {
+							pre = "suspension"
+						}
 						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
-							pre, cName(z.Message, ""), z.Message[:1], z.Message[1:])
+							pre, cName(z, ""), z[:1], z[1:])
 					}
 					return nil
 				},
@@ -186,6 +184,10 @@ type status struct {
 	public bool
 }
 
+func statusMsgIsError(msg string) bool {
+	return (len(msg) == 0) || (msg[0] != '$')
+}
+
 type buffer []byte
 
 func (b *buffer) Write(p []byte) (int, error) {
@@ -245,16 +247,11 @@ func insertBasePublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.StatusList {
-				pre := ""
-				switch z.Keyword {
-				case t.IDError:
-					pre = "error"
-				case t.IDSuspension:
+				pre := "error"
+				if !statusMsgIsError(z) {
 					pre = "suspension"
-				default:
-					continue
 				}
-				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(z.Message, ""))
+				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(z, ""))
 			}
 			return nil
 		},

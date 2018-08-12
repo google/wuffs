@@ -19,48 +19,29 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-type Status struct {
-	Keyword t.ID
-	Value   int8
-	Message string
+var StatusList = [...]string{
+	"?bad wuffs version",
+	"?bad sizeof receiver",
+	"?bad receiver",
+	"?bad argument",
+	"?bad argument (length too short)",
+
+	"?check_wuffs_version missing",
+	"?check_wuffs_version called twice",
+	"?invalid call sequence",
+
+	"?cannot return a suspension",
+
+	"$end of data",
+	"$short read",
+	"$short write",
 }
 
-func (z Status) String() string {
-	prefix := "status "
-	switch z.Keyword {
-	case t.IDError:
-		prefix = "error "
-	case t.IDSuspension:
-		prefix = "suspension "
-	}
-	return prefix + z.Message
-}
-
-var StatusList = [...]Status{
-	{0, 0x00, "+ok"},
-
-	{t.IDError, -0x01, "?bad wuffs version"},
-	{t.IDError, -0x02, "?bad sizeof receiver"},
-	{t.IDError, -0x03, "?bad receiver"},
-	{t.IDError, -0x04, "?bad argument"},
-	{t.IDError, -0x05, "?bad argument (length too short)"},
-
-	{t.IDError, -0x10, "?check_wuffs_version missing"},
-	{t.IDError, -0x11, "?check_wuffs_version called twice"},
-	{t.IDError, -0x12, "?invalid call sequence"},
-
-	{t.IDError, -0x20, "?cannot return a suspension"},
-
-	{t.IDSuspension, +0x01, "$end of data"},
-	{t.IDSuspension, +0x02, "$short read"},
-	{t.IDSuspension, +0x03, "$short write"},
-}
-
-var StatusMap = map[string]Status{}
+var StatusMap = map[string]bool{}
 
 func init() {
 	for _, s := range StatusList {
-		StatusMap[s.Message] = s
+		StatusMap[s] = true
 	}
 }
 

@@ -866,7 +866,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
-	case t.IDError, t.IDStatus, t.IDSuspension:
+	case t.IDStatus:
 		// No-op.
 
 	case t.IDDollar:

@@ -331,31 +331,29 @@ const (
 	maxKeyword = 0x9F
 
 	// TODO: sort these by name, when the list has stabilized.
-	IDFunc       = ID(0x80)
-	IDAssert     = ID(0x81)
-	IDWhile      = ID(0x82)
-	IDIf         = ID(0x83)
-	IDElse       = ID(0x84)
-	IDReturn     = ID(0x85)
-	IDBreak      = ID(0x86)
-	IDContinue   = ID(0x87)
-	IDStruct     = ID(0x88)
-	IDUse        = ID(0x89)
-	IDVar        = ID(0x8A)
-	IDPre        = ID(0x8B)
-	IDInv        = ID(0x8C)
-	IDPost       = ID(0x8D)
-	IDVia        = ID(0x8E)
-	IDPub        = ID(0x8F)
-	IDPri        = ID(0x90)
-	IDError      = ID(0x91)
-	IDSuspension = ID(0x92)
-	IDPackageID  = ID(0x93)
-	IDConst      = ID(0x94)
-	IDTry        = ID(0x95)
-	IDIterate    = ID(0x96)
-	IDYield      = ID(0x97)
-	IDIOBind     = ID(0x98)
+	IDFunc      = ID(0x80)
+	IDAssert    = ID(0x81)
+	IDWhile     = ID(0x82)
+	IDIf        = ID(0x83)
+	IDElse      = ID(0x84)
+	IDReturn    = ID(0x85)
+	IDBreak     = ID(0x86)
+	IDContinue  = ID(0x87)
+	IDStruct    = ID(0x88)
+	IDUse       = ID(0x89)
+	IDVar       = ID(0x8A)
+	IDPre       = ID(0x8B)
+	IDInv       = ID(0x8C)
+	IDPost      = ID(0x8D)
+	IDVia       = ID(0x8E)
+	IDPub       = ID(0x8F)
+	IDPri       = ID(0x90)
+	IDPackageID = ID(0x91)
+	IDConst     = ID(0x92)
+	IDTry       = ID(0x93)
+	IDIterate   = ID(0x94)
+	IDYield     = ID(0x95)
+	IDIOBind    = ID(0x96)
 )
 
 const (
@@ -621,31 +619,29 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDRef:   "ref",
 	IDDeref: "deref",
 
-	IDFunc:       "func",
-	IDAssert:     "assert",
-	IDWhile:      "while",
-	IDIf:         "if",
-	IDElse:       "else",
-	IDReturn:     "return",
-	IDBreak:      "break",
-	IDContinue:   "continue",
-	IDStruct:     "struct",
-	IDUse:        "use",
-	IDVar:        "var",
-	IDPre:        "pre",
-	IDInv:        "inv",
-	IDPost:       "post",
-	IDVia:        "via",
-	IDPub:        "pub",
-	IDPri:        "pri",
-	IDError:      "error",
-	IDSuspension: "suspension",
-	IDPackageID:  "packageid",
-	IDConst:      "const",
-	IDTry:        "try",
-	IDIterate:    "iterate",
-	IDYield:      "yield",
-	IDIOBind:     "io_bind",
+	IDFunc:      "func",
+	IDAssert:    "assert",
+	IDWhile:     "while",
+	IDIf:        "if",
+	IDElse:      "else",
+	IDReturn:    "return",
+	IDBreak:     "break",
+	IDContinue:  "continue",
+	IDStruct:    "struct",
+	IDUse:       "use",
+	IDVar:       "var",
+	IDPre:       "pre",
+	IDInv:       "inv",
+	IDPost:      "post",
+	IDVia:       "via",
+	IDPub:       "pub",
+	IDPri:       "pri",
+	IDPackageID: "packageid",
+	IDConst:     "const",
+	IDTry:       "try",
+	IDIterate:   "iterate",
+	IDYield:     "yield",
+	IDIOBind:    "io_bind",
 
 	IDArray: "array",
 	IDNptr:  "nptr",

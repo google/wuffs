@@ -36,15 +36,15 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	// Read the header.
 	var c base.u8 = args.src.read_u8!??()
 	if c != 0x1F {
-		return error "?bad header"
+		return status "?bad header"
 	}
 	c = args.src.read_u8!??()
 	if c != 0x8B {
-		return error "?bad header"
+		return status "?bad header"
 	}
 	c = args.src.read_u8!??()
 	if c != 0x08 {
-		return error "?bad compression method"
+		return status "?bad compression method"
 	}
 	var flags base.u8 = args.src.read_u8!??()
 	// TODO: API for returning the header's MTIME field.
@@ -87,7 +87,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 	// Reserved flags bits must be zero.
 	if (flags & 0xE0) != 0 {
-		return error "?bad encoding flags"
+		return status "?bad encoding flags"
 	}
 
 	// Decode and checksum the DEFLATE-encoded payload.
@@ -109,6 +109,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var decoded_length_want base.u32 = args.src.read_u32le!??()
 	if (not this.ignore_checksum) and
 		((checksum_got != checksum_want) or (decoded_length_got != decoded_length_want)) {
-		return error "?bad checksum"
+		return status "?bad checksum"
 	}
 }

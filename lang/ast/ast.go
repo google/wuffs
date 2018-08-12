@@ -277,11 +277,8 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 			// No-op.
 
 		case KExpr:
-			switch o.id0 {
-			default:
+			if o.id0 != t.IDStatus {
 				return nil
-			case t.IDError, t.IDStatus, t.IDSuspension:
-				// No-op.
 			}
 
 		case KTypeExpr:
@@ -337,8 +334,8 @@ const MaxExprDepth = 255
 //
 // For lists, like "$(0, 1, 2)", ID0 is IDDollar.
 //
-// For statuses, like `error "foo"` and `suspension bar."baz"`, ID0 is the
-// keyword, ID1 is the package and ID2 is the message.
+// For statuses like "?foo" and bar."$baz", ID0 is IDStatus, ID1 is the package
+// and ID2 is the message.
 type Expr Node
 
 func (n *Expr) AsNode() *Node        { return (*Node)(n) }
