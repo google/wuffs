@@ -88,8 +88,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
   wuffs_base__status z =
       wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z.code) {
-    return wuffs_zlib__status__string(z.code);
+  if (z) {
+    return z;
   }
 
   while (true) {
@@ -105,14 +105,11 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
     wuffs_base__status z =
         wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (z.code == WUFFS_BASE__STATUS_OK) {
-      return NULL;
-    }
-    if ((wlimit && (z.code == WUFFS_BASE__SUSPENSION_SHORT_WRITE)) ||
-        (rlimit && (z.code == WUFFS_BASE__SUSPENSION_SHORT_READ))) {
+    if ((wlimit && (z == wuffs_base__suspension__short_write)) ||
+        (rlimit && (z == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return wuffs_zlib__status__string(z.code);
+    return z;
   }
 }
 
@@ -139,9 +136,8 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
     wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
     wuffs_base__status z = wuffs_zlib__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z.code) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-           wuffs_zlib__status__string(z.code));
+    if (z) {
+      FAIL("check_wuffs_version: \"%s\"", z);
       return false;
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
@@ -154,7 +150,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
     int i;
     for (i = 0; i < 2; i++) {
       wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-      int32_t want_z_code = 0;
+      const char* want_z = NULL;
       if (i == 0) {
         if (end_limit == 0) {
           continue;
@@ -164,19 +160,17 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
           return false;
         }
         set_reader_limit(&src_reader, src.wi - (uint64_t)(end_limit));
-        want_z_code = WUFFS_BASE__SUSPENSION_SHORT_READ;
+        want_z = wuffs_base__suspension__short_read;
       } else {
-        want_z_code = (bad_checksum && !ignore_checksum)
-                          ? WUFFS_ZLIB__ERROR_BAD_CHECKSUM
-                          : WUFFS_BASE__STATUS_OK;
+        want_z = (bad_checksum && !ignore_checksum)
+                     ? wuffs_zlib__error__bad_checksum
+                     : NULL;
       }
 
       wuffs_base__status got_z =
           wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
-      if (got_z.code != want_z_code) {
-        FAIL("end_limit=%d: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
-             end_limit, got_z.code, wuffs_zlib__status__string(got_z.code),
-             want_z_code, wuffs_zlib__status__string(want_z_code));
+      if (got_z != want_z) {
+        FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z, want_z);
         return false;
       }
     }

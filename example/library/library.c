@@ -62,12 +62,12 @@ static const char* decode() {
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
   wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
       &dec, sizeof dec, WUFFS_VERSION);
-  if (z.code) {
-    return wuffs_deflate__status__string(z.code);
+  if (z) {
+    return z;
   }
   z = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
-  if (z.code) {
-    return wuffs_deflate__status__string(z.code);
+  if (z) {
+    return z;
   }
   ignore_return_value(write(1, dst.ptr, dst.wi));
   return NULL;

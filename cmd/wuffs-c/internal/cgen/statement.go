@@ -309,7 +309,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		b.writes("status = ")
 		retKeyword := t.IDStatus
 		if retExpr == nil {
-			b.writes("WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__STATUS_OK)")
+			b.writes("NULL")
 		} else {
 			retKeyword = retExpr.Operator()
 			// TODO: check that retExpr has no call-suspendibles.
@@ -332,8 +332,9 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			b.writes("goto ok;")
 		default:
 			g.currFunk.hasGotoOK = true
-			b.writes("if (status.code == 0) { goto ok; } else if (status.code > 0) { " +
-				"status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_CANNOT_RETURN_A_SUSPENSION); } goto exit;")
+			b.writes("if (!status) { goto ok; }" +
+				"else if (wuffs_base__status__is_suspension(status)) { " +
+				"status = wuffs_base__error__cannot_return_a_suspension; } goto exit;")
 		}
 		return nil
 	}
@@ -528,7 +529,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	if n.Operator() != t.IDTry {
-		b.writes("if (status.code) { goto suspend; }\n")
+		b.writes("if (status) { goto suspend; }\n")
 	}
 	return nil
 }
@@ -571,7 +572,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 	b.printf("while (true) {")
 
 	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io1_%s)) {"+
-		"status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__SUSPENSION_SHORT_READ); goto suspend; }",
+		"status = wuffs_base__suspension__short_read; goto suspend; }",
 		preName, preName)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)

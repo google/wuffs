@@ -34,7 +34,7 @@
 - Marked some internal status codes as private.
 - Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.
-- Made the status type a struct, not an int32\_t.
+- Made the status type a `const char *`, not an `int32_t`.
 - Made a packageid declaration mandatory.
 - Disallowed certain packageid's like `base` or `config`.
 - Disallowed `__double_underscore` prefixed names.

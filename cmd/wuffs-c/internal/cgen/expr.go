@@ -16,7 +16,6 @@ package cgen
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/google/wuffs/lang/builtin"
 
@@ -210,16 +209,28 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		return nil
 
 	case t.IDError, t.IDStatus, t.IDSuspension:
-		status := g.statusMap[n.StatusQID()]
-		if status.name == "" {
+		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+			b.writes(g.pkgPrefix)
+			if z.keyword == t.IDSuspension {
+				b.writes("suspension__")
+			} else {
+				b.writes("error__")
+			}
+			b.writes(z.cName)
+		} else {
 			msg, _ := t.Unescape(n.Ident().Str(g.tm))
 			z := builtin.StatusMap[msg]
 			if z.Message == "" {
 				return fmt.Errorf("no status code for %q", msg)
 			}
-			status.name = strings.ToUpper(cName(z.String(), "WUFFS_BASE__"))
+			b.writes("wuffs_base__")
+			if z.Keyword == t.IDSuspension {
+				b.writes("suspension__")
+			} else {
+				b.writes("error__")
+			}
+			b.writes(cName(z.Message, ""))
 		}
-		b.printf("WUFFS_BASE__MAKE_STATUS(%s)", status.name)
 		return nil
 	}
 	return fmt.Errorf("unrecognized token (0x%X) for writeExprOther", n.Operator())
@@ -237,15 +248,10 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
-	opName, extra := "", ""
+	opName := ""
 
 	op := n.Operator()
 	switch op {
-	case t.IDXBinaryEqEq, t.IDXBinaryNotEq:
-		if lhs := n.LHS().AsExpr(); lhs.MType().IsStatus() {
-			extra = ".code"
-		}
-
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
 		uBits := uintBits(n.MType().QID())
 		if uBits == 0 {
@@ -260,9 +266,8 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), rp, depth)
-	}
 
-	if opName == "" {
+	default:
 		opName = cOpName(op)
 		if opName == "" {
 			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
@@ -273,12 +278,10 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, rp replacementPolicy, dept
 	if err := g.writeExpr(b, n.LHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
-	b.writes(extra)
 	b.writes(opName)
 	if err := g.writeExpr(b, n.RHS().AsExpr(), rp, depth); err != nil {
 		return err
 	}
-	b.writes(extra)
 	b.writeb(')')
 	return nil
 }

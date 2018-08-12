@@ -99,45 +99,29 @@ typedef struct {
 
 // --------
 
-// A status code is either zero (OK), positive (a recoverable suspension or
-// pause in processing) or negative (a non-recoverable error). Its bits:
-//  - bit        31 (the sign bit) indicates unrecoverable-ness: an error.
-//  - bits 30 .. 24 are a package-namespaced numeric code
-//  - bits 23 .. 21 are reserved.
-//  - bits 20 ..  0 are the packageid (a namespace) as a base38 value.
+// A status is either NULL (meaning OK or no error) or string message. That
+// message is human-readable, for programmers, but it is not for end users. It
+// is not localized, and does not contain additional contextual information
+// such as a source filename.
 //
-// Do not manipulate these bits directly; they are private implementation
-// details. Use methods such as wuffs_base__status__is_error instead.
-typedef struct {
-  int32_t code;
-  const char* msg;
-} wuffs_base__status;
+// Status strings are statically allocated and should never be free'd.
+typedef const char* wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
 
-// TODO: turn WUFFS_BASE__MAKE_STATUS into a macro, and add a msg field.
-
-static inline wuffs_base__status  //
-WUFFS_BASE__MAKE_STATUS(int32_t code) {
-  return ((wuffs_base__status){
-      .code = code,
-      .msg = NULL,
-  });
+static inline bool  //
+wuffs_base__status__is_error(wuffs_base__status z) {
+  return z && (*z != '$');
 }
 
 static inline bool  //
-wuffs_base__status__is_error(wuffs_base__status s) {
-  return s.code < 0;
+wuffs_base__status__is_ok(wuffs_base__status z) {
+  return z == NULL;
 }
 
 static inline bool  //
-wuffs_base__status__is_ok(wuffs_base__status s) {
-  return s.code == 0;
-}
-
-static inline bool  //
-wuffs_base__status__is_suspension(wuffs_base__status s) {
-  return s.code > 0;
+wuffs_base__status__is_suspension(wuffs_base__status z) {
+  return z && (*z == '$');
 }
 
 const char*  //

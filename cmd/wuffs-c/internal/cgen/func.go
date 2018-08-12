@@ -223,16 +223,16 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 
 		b.writes("if (!self) { return ")
 		if g.currFunk.suspendible {
-			b.writes("WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_RECEIVER)")
+			b.writes("wuffs_base__error__bad_receiver")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
 		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {" +
-			"self->private_impl.status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_MISSING); }")
+			"self->private_impl.status = wuffs_base__error__check_wuffs_version_missing; }")
 
-		b.writes("if (self->private_impl.status.code < 0) { return ")
+		b.writes("if (wuffs_base__status__is_error(self->private_impl.status)) { return ")
 		if g.currFunk.suspendible {
 			b.writes("self->private_impl.status")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
@@ -250,7 +250,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 	}
 
 	if g.currFunk.suspendible {
-		b.printf("wuffs_base__status status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__STATUS_OK);\n")
+		b.printf("wuffs_base__status status = NULL;\n")
 	}
 	b.writes("\n")
 
@@ -408,12 +408,12 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	b.writes(") {")
 	if g.currFunk.suspendible {
 		if g.currFunk.public {
-			b.writes("self->private_impl.status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_ARGUMENT);\n")
+			b.writes("self->private_impl.status = wuffs_base__error__bad_argument;\n")
 		}
-		b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_ARGUMENT);\n\n")
+		b.writes("return wuffs_base__error__bad_argument;\n\n")
 	} else if !n.Receiver().IsZero() {
 		// TODO: unused code path??
-		b.writes("self->private_impl.status = WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_ARGUMENT); return;")
+		b.writes("self->private_impl.status = wuffs_base__error__bad_argument; return;")
 	} else {
 		b.printf("return;")
 	}

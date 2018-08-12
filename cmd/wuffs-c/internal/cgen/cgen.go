@@ -724,7 +724,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	// For API/ABI compatibility, the very first field in the struct's
 	// private_impl must be the status code. This lets the initializer callee
-	// set "self->private_impl.status = WUFFS_BASE__ERROR_BAD_WUFFS_VERSION;"
+	// set "self->private_impl.status = wuffs_base__error__bad_wuffs_version;"
 	// regardless of the sizeof(*self) struct reserved by the caller and even
 	// if the caller and callee were built with different versions.
 	structName := n.QID().Str(g.tm)
@@ -983,17 +983,17 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writes("if (!self) { return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_RECEIVER); }\n")
+	b.writes("if (!self) { return wuffs_base__error__bad_receiver; }\n")
 
 	b.writes("if (sizeof(*self) != sizeof_star_self) {\n")
-	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_SIZEOF_RECEIVER);\n")
+	b.writes("return wuffs_base__error__bad_sizeof_receiver;\n")
 	b.writes("}\n")
 	b.writes("if (((wuffs_version >> 32) != WUFFS_VERSION_MAJOR) || " +
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
-	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_BAD_WUFFS_VERSION);\n")
+	b.writes("return wuffs_base__error__bad_wuffs_version;\n")
 	b.writes("}\n")
 	b.writes("if (self->private_impl.magic != 0) {\n")
-	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__ERROR_CHECK_WUFFS_VERSION_CALLED_TWICE);\n")
+	b.writes("return wuffs_base__error__check_wuffs_version_called_twice;\n")
 	b.writes("}\n")
 
 	// Call any ctors on sub-structs.
@@ -1022,12 +1022,12 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		b.printf("wuffs_base__status z = %s%s__check_wuffs_version("+
 			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
-		b.printf("if (z.code) { return z; }\n")
+		b.printf("if (z) { return z; }\n")
 		b.printf("}\n")
 	}
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
-	b.writes("return WUFFS_BASE__MAKE_STATUS(WUFFS_BASE__STATUS_OK);\n")
+	b.writes("return NULL;\n")
 	b.writes("}\n\n")
 	return nil
 }

@@ -133,9 +133,8 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
   wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
       &dec, sizeof dec, WUFFS_VERSION);
-  if (z.code) {
-    FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-         wuffs_deflate__status__string(z.code));
+  if (z) {
+    FAIL("check_wuffs_version: \"%s\"", z);
     return false;
   }
 
@@ -152,14 +151,11 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
     wuffs_base__status z =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (z.code == WUFFS_BASE__STATUS_OK) {
-      return NULL;
-    }
-    if ((wlimit && (z.code == WUFFS_BASE__SUSPENSION_SHORT_WRITE)) ||
-        (rlimit && (z.code == WUFFS_BASE__SUSPENSION_SHORT_READ))) {
+    if ((wlimit && (z == wuffs_base__suspension__short_write)) ||
+        (rlimit && (z == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return wuffs_deflate__status__string(z.code);
+    return z;
   }
 }
 
@@ -248,9 +244,8 @@ void test_wuffs_deflate_decode_split_src() {
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z.code) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-           wuffs_deflate__status__string(z.code));
+    if (z) {
+      FAIL("check_wuffs_version: \"%s\"", z);
       return;
     }
 
@@ -266,18 +261,14 @@ void test_wuffs_deflate_decode_split_src() {
     wuffs_base__status z1 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    if (z0.code != WUFFS_BASE__SUSPENSION_SHORT_READ) {
-      FAIL("i=%d: z0: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, z0.code,
-           wuffs_deflate__status__string(z0.code),
-           WUFFS_BASE__SUSPENSION_SHORT_READ,
-           wuffs_deflate__status__string(WUFFS_BASE__SUSPENSION_SHORT_READ));
+    if (z0 != wuffs_base__suspension__short_read) {
+      FAIL("i=%d: z0: got \"%s\", want \"%s\"", i, z0,
+           wuffs_base__suspension__short_read);
       return;
     }
 
-    if (z1.code != WUFFS_BASE__STATUS_OK) {
-      FAIL("i=%d: z1: got %" PRIi32 " (%s), want %" PRIi32 " (%s)", i, z1.code,
-           wuffs_deflate__status__string(z1.code), WUFFS_BASE__STATUS_OK,
-           wuffs_deflate__status__string(WUFFS_BASE__STATUS_OK));
+    if (z1) {
+      FAIL("i=%d: z1: got \"%s\"", i, z1);
       return;
     }
 
@@ -296,7 +287,7 @@ bool do_test_wuffs_deflate_history(int i,
                                    wuffs_deflate__decoder* dec,
                                    uint32_t starting_history_index,
                                    uint64_t limit,
-                                   int32_t want_z_code) {
+                                   const char* want_z) {
   src->ri = gt->src_offset0;
   src->wi = gt->src_offset1;
   got->ri = 0;
@@ -311,12 +302,10 @@ bool do_test_wuffs_deflate_history(int i,
 
   wuffs_base__status got_z =
       wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
-  if (got_z.code != want_z_code) {
+  if (got_z != want_z) {
     FAIL("i=%d: starting_history_index=0x%04" PRIX32
-         ": decode status: got %" PRIi32 " (%s), want %" PRIi32 " (%s)",
-         i, starting_history_index, got_z.code,
-         wuffs_deflate__status__string(got_z.code), want_z_code,
-         wuffs_deflate__status__string(want_z_code));
+         ": decode status: got \"%s\", want \"%s\"",
+         i, starting_history_index, got_z, want_z);
     return false;
   }
   return true;
@@ -346,16 +335,14 @@ void test_wuffs_deflate_history_full() {
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z.code) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-           wuffs_deflate__status__string(z.code));
+    if (z) {
+      FAIL("check_wuffs_version: \"%s\"", z);
       return;
     }
 
     if (!do_test_wuffs_deflate_history(
             i, gt, &src, &got, &dec, 0, want.wi + i,
-            i >= 0 ? WUFFS_BASE__STATUS_OK
-                   : WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
+            i >= 0 ? NULL : wuffs_base__suspension__short_write)) {
       return;
     }
 
@@ -418,15 +405,14 @@ void test_wuffs_deflate_history_partial() {
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
-    if (z.code) {
-      FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-           wuffs_deflate__status__string(z.code));
+    if (z) {
+      FAIL("check_wuffs_version: \"%s\"", z);
       return;
     }
 
     if (!do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
                                        starting_history_index, fragment_length,
-                                       WUFFS_BASE__SUSPENSION_SHORT_WRITE)) {
+                                       wuffs_base__suspension__short_write)) {
       return;
     }
 
@@ -507,9 +493,8 @@ void test_wuffs_deflate_table_redirect() {
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
   wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
       &dec, sizeof dec, WUFFS_VERSION);
-  if (z.code) {
-    FAIL("check_wuffs_version: %" PRIi32 " (%s)", z.code,
-         wuffs_deflate__status__string(z.code));
+  if (z) {
+    FAIL("check_wuffs_version: \"%s\"", z);
     return;
   }
 
@@ -531,9 +516,8 @@ void test_wuffs_deflate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
 
   z = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
-  if (z.code) {
-    FAIL("init_huff: %" PRIi32 " (%s)", z.code,
-         wuffs_deflate__status__string(z.code));
+  if (z) {
+    FAIL("init_huff: \"%s\"", z);
     return;
   }
 
