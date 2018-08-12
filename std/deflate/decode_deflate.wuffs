@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-packageid "dflt"
-
 pub status "?bad Huffman code (over-subscribed)"
 pub status "?bad Huffman code (under-subscribed)"
 pub status "?bad Huffman code length count"

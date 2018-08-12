@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-packageid "lzw "
-
 pub status "?bad code"
 pub status "?cyclical prefix chain"
 

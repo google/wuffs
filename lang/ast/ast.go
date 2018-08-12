@@ -47,7 +47,6 @@ const (
 	KIf
 	KIterate
 	KJump
-	KPackageID
 	KRet
 	KStatus
 	KStruct
@@ -67,26 +66,25 @@ func (k Kind) String() string {
 var kindStrings = [...]string{
 	KInvalid: "KInvalid",
 
-	KArg:       "KArg",
-	KAssert:    "KAssert",
-	KAssign:    "KAssign",
-	KConst:     "KConst",
-	KExpr:      "KExpr",
-	KField:     "KField",
-	KFile:      "KFile",
-	KFunc:      "KFunc",
-	KIOBind:    "KIOBind",
-	KIf:        "KIf",
-	KIterate:   "KIterate",
-	KJump:      "KJump",
-	KPackageID: "KPackageID",
-	KRet:       "KRet",
-	KStatus:    "KStatus",
-	KStruct:    "KStruct",
-	KTypeExpr:  "KTypeExpr",
-	KUse:       "KUse",
-	KVar:       "KVar",
-	KWhile:     "KWhile",
+	KArg:      "KArg",
+	KAssert:   "KAssert",
+	KAssign:   "KAssign",
+	KConst:    "KConst",
+	KExpr:     "KExpr",
+	KField:    "KField",
+	KFile:     "KFile",
+	KFunc:     "KFunc",
+	KIOBind:   "KIOBind",
+	KIf:       "KIf",
+	KIterate:  "KIterate",
+	KJump:     "KJump",
+	KRet:      "KRet",
+	KStatus:   "KStatus",
+	KStruct:   "KStruct",
+	KTypeExpr: "KTypeExpr",
+	KUse:      "KUse",
+	KVar:      "KVar",
+	KWhile:    "KWhile",
 }
 
 type Flags uint32
@@ -176,7 +174,6 @@ type Node struct {
 	// If            .             .             .             If
 	// Iterate       unroll        label         length        Iterate
 	// Jump          keyword       label         .             Jump
-	// PackageID     .             .             lit(pkgID)    PackageID
 	// Ret           keyword       .             .             Ret
 	// Status        keyword       pkg           lit(message)  Status
 	// Struct        .             pkg           name          Struct
@@ -203,27 +200,26 @@ func (n *Node) MType() *TypeExpr     { return n.mType }
 func (n *Node) SetMBounds(x Bounds)  { n.mBounds = x }
 func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
 
-func (n *Node) AsArg() *Arg             { return (*Arg)(n) }
-func (n *Node) AsAssert() *Assert       { return (*Assert)(n) }
-func (n *Node) AsAssign() *Assign       { return (*Assign)(n) }
-func (n *Node) AsConst() *Const         { return (*Const)(n) }
-func (n *Node) AsExpr() *Expr           { return (*Expr)(n) }
-func (n *Node) AsField() *Field         { return (*Field)(n) }
-func (n *Node) AsFile() *File           { return (*File)(n) }
-func (n *Node) AsFunc() *Func           { return (*Func)(n) }
-func (n *Node) AsIOBind() *IOBind       { return (*IOBind)(n) }
-func (n *Node) AsIf() *If               { return (*If)(n) }
-func (n *Node) AsIterate() *Iterate     { return (*Iterate)(n) }
-func (n *Node) AsJump() *Jump           { return (*Jump)(n) }
-func (n *Node) AsPackageID() *PackageID { return (*PackageID)(n) }
-func (n *Node) AsRaw() *Raw             { return (*Raw)(n) }
-func (n *Node) AsRet() *Ret             { return (*Ret)(n) }
-func (n *Node) AsStatus() *Status       { return (*Status)(n) }
-func (n *Node) AsStruct() *Struct       { return (*Struct)(n) }
-func (n *Node) AsTypeExpr() *TypeExpr   { return (*TypeExpr)(n) }
-func (n *Node) AsUse() *Use             { return (*Use)(n) }
-func (n *Node) AsVar() *Var             { return (*Var)(n) }
-func (n *Node) AsWhile() *While         { return (*While)(n) }
+func (n *Node) AsArg() *Arg           { return (*Arg)(n) }
+func (n *Node) AsAssert() *Assert     { return (*Assert)(n) }
+func (n *Node) AsAssign() *Assign     { return (*Assign)(n) }
+func (n *Node) AsConst() *Const       { return (*Const)(n) }
+func (n *Node) AsExpr() *Expr         { return (*Expr)(n) }
+func (n *Node) AsField() *Field       { return (*Field)(n) }
+func (n *Node) AsFile() *File         { return (*File)(n) }
+func (n *Node) AsFunc() *Func         { return (*Func)(n) }
+func (n *Node) AsIOBind() *IOBind     { return (*IOBind)(n) }
+func (n *Node) AsIf() *If             { return (*If)(n) }
+func (n *Node) AsIterate() *Iterate   { return (*Iterate)(n) }
+func (n *Node) AsJump() *Jump         { return (*Jump)(n) }
+func (n *Node) AsRaw() *Raw           { return (*Raw)(n) }
+func (n *Node) AsRet() *Ret           { return (*Ret)(n) }
+func (n *Node) AsStatus() *Status     { return (*Status)(n) }
+func (n *Node) AsStruct() *Struct     { return (*Struct)(n) }
+func (n *Node) AsTypeExpr() *TypeExpr { return (*TypeExpr)(n) }
+func (n *Node) AsUse() *Use           { return (*Use)(n) }
+func (n *Node) AsVar() *Var           { return (*Var)(n) }
+func (n *Node) AsWhile() *While       { return (*While)(n) }
 
 func (n *Node) Walk(f func(*Node) error) error {
 	if n != nil {
@@ -921,24 +917,6 @@ func NewStruct(flags Flags, filename string, line uint32, name t.ID, fields []*N
 	}
 }
 
-// PackageID is "packageid ID2":
-//  - ID2:   <string literal> package ID
-type PackageID Node
-
-func (n *PackageID) AsNode() *Node    { return (*Node)(n) }
-func (n *PackageID) Filename() string { return n.filename }
-func (n *PackageID) Line() uint32     { return n.line }
-func (n *PackageID) ID() t.ID         { return n.id2 }
-
-func NewPackageID(filename string, line uint32, id t.ID) *PackageID {
-	return &PackageID{
-		kind:     KPackageID,
-		filename: filename,
-		line:     line,
-		id2:      id,
-	}
-}
-
 // Use is "use ID2":
 //  - ID2:   <string literal> package path
 type Use Node
@@ -958,7 +936,7 @@ func NewUse(filename string, line uint32, path t.ID) *Use {
 }
 
 // File is a file of source code:
-//  - List0: <Const|Func|PackageID|Status|Struct|Use> top-level declarations
+//  - List0: <Const|Func|Status|Struct|Use> top-level declarations
 type File Node
 
 func (n *File) AsNode() *Node          { return (*Node)(n) }

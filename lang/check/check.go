@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/wuffs/lang/builtin"
 	"github.com/google/wuffs/lang/parse"
-	"github.com/google/wuffs/lib/base38"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -87,7 +86,6 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		tm:           tm,
 		resolveUse:   resolveUse,
 		reasonMap:    rMap,
-		packageID:    base38.Max + 1,
 		consts:       map[t.QID]*a.Const{},
 		funcs:        map[t.QQID]*a.Func{},
 		localVars:    map[t.QQID]typeMap{},
@@ -136,8 +134,6 @@ var phases = [...]struct {
 	kind  a.Kind
 	check func(*Checker, *a.Node) error
 }{
-	{a.KPackageID, (*Checker).checkPackageID},
-	{a.KInvalid, (*Checker).checkPackageIDExists},
 	{a.KUse, (*Checker).checkUse},
 	{a.KStatus, (*Checker).checkStatus},
 	{a.KConst, (*Checker).checkConst},
@@ -161,9 +157,6 @@ type Checker struct {
 	resolveUse func(usePath string) ([]byte, error)
 	reasonMap  reasonMap
 
-	packageID      uint32
-	otherPackageID *a.PackageID
-
 	consts    map[t.QID]*a.Const
 	funcs     map[t.QQID]*a.Func
 	localVars map[t.QQID]typeMap
@@ -177,49 +170,6 @@ type Checker struct {
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct
-}
-
-func (c *Checker) PackageID() uint32 { return c.packageID }
-
-func (c *Checker) checkPackageID(node *a.Node) error {
-	n := node.AsPackageID()
-	if c.otherPackageID != nil {
-		return &Error{
-			Err:           fmt.Errorf("check: multiple packageid declarations"),
-			Filename:      n.Filename(),
-			Line:          n.Line(),
-			OtherFilename: c.otherPackageID.Filename(),
-			OtherLine:     c.otherPackageID.Line(),
-		}
-	}
-	raw := n.ID().Str(c.tm)
-	s, ok := t.Unescape(raw)
-	if !ok {
-		return &Error{
-			Err:      fmt.Errorf("check: %q is not a valid packageid", raw),
-			Filename: n.Filename(),
-			Line:     n.Line(),
-		}
-	}
-	u, ok := base38.Encode(s)
-	if !ok || u == 0 {
-		return &Error{
-			Err:      fmt.Errorf("check: %q is not a valid packageid", s),
-			Filename: n.Filename(),
-			Line:     n.Line(),
-		}
-	}
-	c.packageID = u
-	c.otherPackageID = n
-	setPlaceholderMBoundsMType(n.AsNode())
-	return nil
-}
-
-func (c *Checker) checkPackageIDExists(node *a.Node) error {
-	if c.otherPackageID == nil {
-		return fmt.Errorf("check: missing packageid declaration")
-	}
-	return nil
 }
 
 func (c *Checker) checkUse(node *a.Node) error {

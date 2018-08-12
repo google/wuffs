@@ -19,8 +19,6 @@ package parse
 import (
 	"fmt"
 
-	"github.com/google/wuffs/lib/base38"
-
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
@@ -102,7 +100,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 	flags := a.Flags(0)
 	line := p.src[0].Line
 	switch k := p.peek1(); k {
-	case t.IDPackageID, t.IDUse:
+	case t.IDUse:
 		p.src = p.src[1:]
 		path := p.peek1()
 		if !path.IsStrLiteral(p.tm) {
@@ -115,19 +113,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		if k == t.IDPackageID {
-			raw := path.Str(p.tm)
-			s, ok := t.Unescape(raw)
-			if !ok {
-				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, raw)
-			}
-			if u, ok := base38.Encode(s); !ok || u == 0 {
-				return nil, fmt.Errorf(`parse: %q is not a valid packageid`, s)
-			}
-			return a.NewPackageID(p.filename, line, path).AsNode(), nil
-		} else {
-			return a.NewUse(p.filename, line, path).AsNode(), nil
-		}
+		return a.NewUse(p.filename, line, path).AsNode(), nil
 
 	case t.IDPub:
 		flags |= a.FlagsPublic

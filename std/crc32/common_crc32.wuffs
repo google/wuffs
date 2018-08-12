@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-packageid "crc3"
-
 // TODO: drop the '?' but still generate wuffs_crc32__ieee_hasher__initialize?
 pub struct ieee_hasher?(
 	state base.u32,

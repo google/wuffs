@@ -36,8 +36,6 @@
 - Changed the string messages for built-in status codes.
 - Changed `error "foo"` to `status "?foo"`.
 - Made the status type a `const char *`, not an `int32_t`.
-- Made a packageid declaration mandatory.
-- Disallowed certain packageid's like `base` or `config`.
 - Disallowed `__double_underscore` prefixed names.
 - Moved the base38 package from `lang/base38` to `lib/base38`.
 - Added a stand-alone `lib/interval` package.
