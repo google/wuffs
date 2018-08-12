@@ -20,21 +20,18 @@ import (
 )
 
 var StatusList = [...]string{
-	"?bad wuffs version",
-	"?bad sizeof receiver",
-	"?bad receiver",
-	"?bad argument",
-	"?bad argument (length too short)",
-
-	"?check_wuffs_version missing",
-	"?check_wuffs_version called twice",
-	"?invalid call sequence",
-
-	"?cannot return a suspension",
-
 	"$end of data",
 	"$short read",
 	"$short write",
+	"?bad argument (length too short)",
+	"?bad argument",
+	"?bad receiver",
+	"?bad sizeof receiver",
+	"?bad wuffs version",
+	"?cannot return a suspension",
+	"?check_wuffs_version called twice",
+	"?check_wuffs_version missing",
+	"?invalid call sequence",
 }
 
 var StatusMap = map[string]bool{}

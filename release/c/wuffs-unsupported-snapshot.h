@@ -132,18 +132,18 @@ typedef struct {
 // be compared by the == operator and not just by strcmp.
 typedef const char* wuffs_base__status;
 
-extern const char* wuffs_base__error__bad_wuffs_version;
-extern const char* wuffs_base__error__bad_sizeof_receiver;
-extern const char* wuffs_base__error__bad_receiver;
-extern const char* wuffs_base__error__bad_argument;
-extern const char* wuffs_base__error__bad_argument_length_too_short;
-extern const char* wuffs_base__error__check_wuffs_version_missing;
-extern const char* wuffs_base__error__check_wuffs_version_called_twice;
-extern const char* wuffs_base__error__invalid_call_sequence;
-extern const char* wuffs_base__error__cannot_return_a_suspension;
 extern const char* wuffs_base__suspension__end_of_data;
 extern const char* wuffs_base__suspension__short_read;
 extern const char* wuffs_base__suspension__short_write;
+extern const char* wuffs_base__error__bad_argument_length_too_short;
+extern const char* wuffs_base__error__bad_argument;
+extern const char* wuffs_base__error__bad_receiver;
+extern const char* wuffs_base__error__bad_sizeof_receiver;
+extern const char* wuffs_base__error__bad_wuffs_version;
+extern const char* wuffs_base__error__cannot_return_a_suspension;
+extern const char* wuffs_base__error__check_wuffs_version_called_twice;
+extern const char* wuffs_base__error__check_wuffs_version_missing;
+extern const char* wuffs_base__error__invalid_call_sequence;
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
@@ -3659,24 +3659,24 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
-const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
-const char* wuffs_base__error__bad_sizeof_receiver =
-    "?base: bad sizeof receiver";
-const char* wuffs_base__error__bad_receiver = "?base: bad receiver";
-const char* wuffs_base__error__bad_argument = "?base: bad argument";
-const char* wuffs_base__error__bad_argument_length_too_short =
-    "?base: bad argument (length too short)";
-const char* wuffs_base__error__check_wuffs_version_missing =
-    "?base: check_wuffs_version missing";
-const char* wuffs_base__error__check_wuffs_version_called_twice =
-    "?base: check_wuffs_version called twice";
-const char* wuffs_base__error__invalid_call_sequence =
-    "?base: invalid call sequence";
-const char* wuffs_base__error__cannot_return_a_suspension =
-    "?base: cannot return a suspension";
 const char* wuffs_base__suspension__end_of_data = "$base: end of data";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
+const char* wuffs_base__error__bad_argument_length_too_short =
+    "?base: bad argument (length too short)";
+const char* wuffs_base__error__bad_argument = "?base: bad argument";
+const char* wuffs_base__error__bad_receiver = "?base: bad receiver";
+const char* wuffs_base__error__bad_sizeof_receiver =
+    "?base: bad sizeof receiver";
+const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
+const char* wuffs_base__error__cannot_return_a_suspension =
+    "?base: cannot return a suspension";
+const char* wuffs_base__error__check_wuffs_version_called_twice =
+    "?base: check_wuffs_version called twice";
+const char* wuffs_base__error__check_wuffs_version_missing =
+    "?base: check_wuffs_version missing";
+const char* wuffs_base__error__invalid_call_sequence =
+    "?base: invalid call sequence";
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
