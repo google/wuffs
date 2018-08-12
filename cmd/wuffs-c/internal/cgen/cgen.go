@@ -116,7 +116,11 @@ func Do(args []string) error {
 				"// !! INSERT wuffs_base__status__string data.\n": func(b *buffer) error {
 					messages := [256]string{}
 					for _, z := range builtin.StatusList {
-						messages[uint8(z.Value)] = z.Message
+						statusPrefix := "?"
+						if z.Keyword == t.IDSuspension {
+							statusPrefix = "$"
+						}
+						messages[uint8(z.Value)] = statusPrefix + "base: " + z.Message
 					}
 					return genStatusStringData(b, "wuffs_base__", &messages)
 				},
@@ -428,7 +432,11 @@ func (g *gen) genImpl(b *buffer) error {
 	{
 		messages := [256]string{}
 		for _, s := range g.statusList {
-			messages[uint8(s.value)] = g.pkgName + ": " + s.msg
+			statusPrefix := "?"
+			if s.keyword == t.IDSuspension {
+				statusPrefix = "$"
+			}
+			messages[uint8(s.value)] = statusPrefix + g.pkgName + ": " + s.msg
 		}
 		if err := genStatusStringData(b, g.pkgPrefix, &messages); err != nil {
 			return err

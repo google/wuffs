@@ -153,27 +153,27 @@ void test_basic_status_is_error() {
 void test_basic_status_strings() {
   CHECK_FOCUS(__func__);
   const char* s0 = wuffs_gif__status__string(WUFFS_BASE__STATUS_OK);
-  const char* t0 = "ok";
+  const char* t0 = "?base: ok";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
   }
   const char* s1 =
       wuffs_gif__status__string(WUFFS_BASE__ERROR_BAD_WUFFS_VERSION);
-  const char* t1 = "bad wuffs version";
+  const char* t1 = "?base: bad wuffs version";
   if (strcmp(s1, t1)) {
     FAIL("got \"%s\", want \"%s\"", s1, t1);
     return;
   }
   const char* s2 =
       wuffs_gif__status__string(WUFFS_BASE__SUSPENSION_SHORT_WRITE);
-  const char* t2 = "short write";
+  const char* t2 = "$base: short write";
   if (strcmp(s2, t2)) {
     FAIL("got \"%s\", want \"%s\"", s2, t2);
     return;
   }
   const char* s3 = wuffs_gif__status__string(WUFFS_GIF__ERROR_BAD_HEADER);
-  const char* t3 = "gif: bad header";
+  const char* t3 = "?gif: bad header";
   if (strcmp(s3, t3)) {
     FAIL("got \"%s\", want \"%s\"", s3, t3);
     return;
@@ -191,7 +191,7 @@ void test_basic_status_used_package() {
   // The function call here is from "std/gif" but the argument is from
   // "std/lzw". The former package depends on the latter.
   const char* s0 = wuffs_gif__status__string(WUFFS_LZW__ERROR_BAD_CODE);
-  const char* t0 = "lzw: bad code";
+  const char* t0 = "?lzw: bad code";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;
