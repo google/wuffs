@@ -199,6 +199,7 @@ type status struct {
 	value   int8
 	msg     string
 	keyword t.ID
+	public  bool
 }
 
 func (z status) cNamePrefix() string {
@@ -419,6 +420,9 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("\n")
 
 	for _, s := range g.statusList {
+		if !s.public {
+			continue
+		}
 		b.printf("extern const char* %s%s__%s;\n", g.pkgPrefix, s.cNamePrefix(), s.cName)
 	}
 	b.writes("\n")
@@ -674,6 +678,7 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 		value:   value,
 		msg:     msg,
 		keyword: n.Keyword(),
+		public:  n.Public(),
 	}
 	g.statusList = append(g.statusList, s)
 	g.statusMap[n.QID()] = s

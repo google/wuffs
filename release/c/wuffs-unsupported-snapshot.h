@@ -2274,13 +2274,7 @@ extern const char* wuffs_deflate__error__bad_literal_length_code_count;
 extern const char* wuffs_deflate__error__inconsistent_stored_block_length;
 extern const char* wuffs_deflate__error__missing_end_of_block_code;
 extern const char* wuffs_deflate__error__no_huffman_codes;
-extern const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-extern const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block;
 extern const char* wuffs_deflate__error__internal_error_inconsistent_i_o;
-extern const char* wuffs_deflate__error__internal_error_inconsistent_distance;
-extern const char* wuffs_deflate__error__internal_error_inconsistent_n_bits;
 
 const char* wuffs_deflate__status__string(int32_t status_code);
 
@@ -2565,7 +2559,6 @@ extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
 extern const char* wuffs_gif__error__not_enough_pixel_data;
 extern const char* wuffs_gif__error__too_much_pixel_data;
-extern const char* wuffs_gif__error__internal_error_inconsistent_ri_wi;
 
 const char* wuffs_gif__status__string(int32_t status_code);
 
@@ -2960,7 +2953,6 @@ extern const char* wuffs_zlib__error__bad_checksum;
 extern const char* wuffs_zlib__error__bad_compression_method;
 extern const char* wuffs_zlib__error__bad_compression_window_size;
 extern const char* wuffs_zlib__error__bad_parity_check;
-extern const char* wuffs_zlib__error__todo_unsupported_preset_dictionary;
 
 const char* wuffs_zlib__status__string(int32_t status_code);
 
