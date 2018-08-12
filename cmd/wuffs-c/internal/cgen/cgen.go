@@ -122,7 +122,24 @@ func Do(args []string) error {
 						}
 						messages[uint8(z.Value)] = statusPrefix + "base: " + z.Message
 					}
-					return genStatusStringData(b, "wuffs_base__", &messages)
+					if err := genStatusStringData(b, "wuffs_base__", &messages); err != nil {
+						return err
+					}
+
+					for _, z := range builtin.StatusList {
+						pre := ""
+						switch z.Keyword {
+						case t.IDError:
+							pre = "error"
+						case t.IDSuspension:
+							pre = "suspension"
+						default:
+							continue
+						}
+						b.printf("const char* wuffs_base__%s__%s = \"%s\";\n",
+							pre, cName(z.Message, ""), messages[uint8(z.Value)])
+					}
+					return nil
 				},
 			}); err != nil {
 				return nil, err
@@ -178,10 +195,18 @@ const (
 )
 
 type status struct {
+	cName   string
 	name    string
 	value   int8
 	msg     string
 	keyword t.ID
+}
+
+func (z status) cNamePrefix() string {
+	if z.keyword == t.IDSuspension {
+		return "suspension"
+	}
+	return "error"
 }
 
 type buffer []byte
@@ -248,6 +273,18 @@ func insertBasePublicH(buf *buffer) error {
 					strings.ToUpper(cName(z.String(), "WUFFS_BASE__")), code, uint32(code))
 			}
 			b.writes("\n")
+			for _, z := range builtin.StatusList {
+				pre := ""
+				switch z.Keyword {
+				case t.IDError:
+					pre = "error"
+				case t.IDSuspension:
+					pre = "suspension"
+				default:
+					continue
+				}
+				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(z.Message, ""))
+			}
 			return nil
 		},
 	}); err != nil {
@@ -382,6 +419,11 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 	b.writes("\n")
 
+	for _, s := range g.statusList {
+		b.printf("extern const char* %s%s__%s;\n", g.pkgPrefix, s.cNamePrefix(), s.cName)
+	}
+	b.writes("\n")
+
 	b.printf("const char* %sstatus__string(int32_t status_code);\n\n", g.pkgPrefix)
 
 	b.writes("// ---------------- Public Consts\n\n")
@@ -429,8 +471,8 @@ func (g *gen) genImpl(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 
+	messages := [256]string{}
 	{
-		messages := [256]string{}
 		for _, s := range g.statusList {
 			statusPrefix := "?"
 			if s.keyword == t.IDSuspension {
@@ -442,6 +484,12 @@ func (g *gen) genImpl(b *buffer) error {
 			return err
 		}
 	}
+
+	for _, s := range g.statusList {
+		b.printf("const char* %s%s__%s = \"%s\";\n",
+			g.pkgPrefix, s.cNamePrefix(), s.cName, messages[uint8(s.value)])
+	}
+	b.writes("\n")
 
 	b.printf("const char* %sstatus__string(int32_t status_code) {\n", g.pkgPrefix)
 	b.printf("uint16_t o;")
@@ -614,15 +662,16 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 	if !ok {
 		return fmt.Errorf("bad status message %q", raw)
 	}
-	prefix := "SUSPENSION_"
+	prefix := "suspension_"
 	if n.Keyword() == t.IDError {
-		prefix = "ERROR_"
+		prefix = "error_"
 	}
 	value := int8(n.Value().ConstValue().Int64())
 	if n.Keyword() == t.IDError {
 		value = -value
 	}
 	s := status{
+		cName:   cName(msg, ""),
 		name:    strings.ToUpper(g.cName(prefix + msg)),
 		value:   value,
 		msg:     msg,
