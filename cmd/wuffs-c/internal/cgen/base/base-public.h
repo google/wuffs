@@ -104,7 +104,8 @@ typedef struct {
 // is not localized, and does not contain additional contextual information
 // such as a source filename.
 //
-// Status strings are statically allocated and should never be free'd.
+// Status strings are statically allocated and should never be free'd. They can
+// be compared by the == operator and not just by strcmp.
 typedef const char* wuffs_base__status;
 
 // !! INSERT wuffs_base__status names.
