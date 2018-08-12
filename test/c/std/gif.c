@@ -153,7 +153,7 @@ void test_basic_status_is_error() {
 void test_basic_status_strings() {
   CHECK_FOCUS(__func__);
   const char* s0 = wuffs_gif__status__string(WUFFS_BASE__STATUS_OK);
-  const char* t0 = "?base: ok";
+  const char* t0 = "+base: ok";
   if (strcmp(s0, t0)) {
     FAIL("got \"%s\", want \"%s\"", s0, t0);
     return;

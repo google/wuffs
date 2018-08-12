@@ -37,23 +37,23 @@ func (z Status) String() string {
 }
 
 var StatusList = [...]Status{
-	{0, 0x00, "ok"},
+	{0, 0x00, "+ok"},
 
-	{t.IDError, -0x01, "bad wuffs version"},
-	{t.IDError, -0x02, "bad sizeof receiver"},
-	{t.IDError, -0x03, "bad receiver"},
-	{t.IDError, -0x04, "bad argument"},
-	{t.IDError, -0x04, "bad argument (length too short)"},
+	{t.IDError, -0x01, "?bad wuffs version"},
+	{t.IDError, -0x02, "?bad sizeof receiver"},
+	{t.IDError, -0x03, "?bad receiver"},
+	{t.IDError, -0x04, "?bad argument"},
+	{t.IDError, -0x04, "?bad argument (length too short)"},
 
-	{t.IDError, -0x10, "check_wuffs_version missing"},
-	{t.IDError, -0x11, "check_wuffs_version called twice"},
-	{t.IDError, -0x12, "invalid call sequence"},
+	{t.IDError, -0x10, "?check_wuffs_version missing"},
+	{t.IDError, -0x11, "?check_wuffs_version called twice"},
+	{t.IDError, -0x12, "?invalid call sequence"},
 
-	{t.IDError, -0x20, "cannot return a suspension"},
+	{t.IDError, -0x20, "?cannot return a suspension"},
 
-	{t.IDSuspension, +0x01, "end of data"},
-	{t.IDSuspension, +0x02, "short read"},
-	{t.IDSuspension, +0x03, "short write"},
+	{t.IDSuspension, +0x01, "$end of data"},
+	{t.IDSuspension, +0x02, "$short read"},
+	{t.IDSuspension, +0x03, "$short write"},
 }
 
 var StatusMap = map[string]Status{}

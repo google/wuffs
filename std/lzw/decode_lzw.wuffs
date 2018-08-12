@@ -14,8 +14,8 @@
 
 packageid "lzw "
 
-pub error (0x01) "bad code"
-pub error (0x02) "cyclical prefix chain"
+pub error (0x01) "?bad code"
+pub error (0x02) "?cyclical prefix chain"
 
 pub struct decoder?(
 	literal_width base.u32[..8],
@@ -102,7 +102,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			{
 				this.stack[s] = this.suffixes[c]
 				if s == 0 {
-					return error "cyclical prefix chain"
+					return error "?cyclical prefix chain"
 				}
 				s -= 1
 				c = this.prefixes[c] as base.u32
@@ -123,7 +123,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 					break
 				}
 				s = (s + ((n_copied & 4095) as base.u32)) & 4095
-				yield suspension "short write"
+				yield suspension "$short write"
 			}
 
 			if save_code <= 4095 {
@@ -137,7 +137,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			}
 
 		} else {
-			return error "bad code"
+			return error "?bad code"
 		}
 	}
 }

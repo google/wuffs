@@ -17,12 +17,12 @@ packageid "zlib"
 use "std/adler32"
 use "std/deflate"
 
-pub error (0x01) "bad checksum"
-pub error (0x02) "bad compression method"
-pub error (0x03) "bad compression window size"
-pub error (0x04) "bad parity check"
+pub error (0x01) "?bad checksum"
+pub error (0x02) "?bad compression method"
+pub error (0x03) "?bad compression window size"
+pub error (0x04) "?bad parity check"
 
-pri error (0x40) "TODO: unsupported preset dictionary"
+pri error (0x40) "?TODO: unsupported preset dictionary"
 
 pub struct decoder?(
 	flate deflate.decoder,
@@ -37,16 +37,16 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var x base.u16 = args.src.read_u16be!??()
 	if ((x >> 8) & 0x0F) != 0x08 {
-		return error "bad compression method"
+		return error "?bad compression method"
 	}
 	if (x >> 12) > 0x07 {
-		return error "bad compression window size"
+		return error "?bad compression window size"
 	}
 	if (x & 0x20) != 0 {
-		return error "TODO: unsupported preset dictionary"
+		return error "?TODO: unsupported preset dictionary"
 	}
 	if (x % 31) != 0 {
-		return error "bad parity check"
+		return error "?bad parity check"
 	}
 
 	// Decode and checksum the DEFLATE-encoded payload.
@@ -64,6 +64,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	}
 	var checksum_want base.u32 = args.src.read_u32be!??()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
-		return error "bad checksum"
+		return error "?bad checksum"
 	}
 }
