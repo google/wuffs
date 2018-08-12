@@ -17,12 +17,12 @@ packageid "zlib"
 use "std/adler32"
 use "std/deflate"
 
-pub error (0x01) "?bad checksum"
-pub error (0x02) "?bad compression method"
-pub error (0x03) "?bad compression window size"
-pub error (0x04) "?bad parity check"
+pub status "?bad checksum"
+pub status "?bad compression method"
+pub status "?bad compression window size"
+pub status "?bad parity check"
 
-pri error (0x40) "?TODO: unsupported preset dictionary"
+pri status "?TODO: unsupported preset dictionary"
 
 pub struct decoder?(
 	flate deflate.decoder,

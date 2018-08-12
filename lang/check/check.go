@@ -177,8 +177,6 @@ type Checker struct {
 	builtInSliceFuncs map[t.QQID]*a.Func
 	builtInTableFuncs map[t.QQID]*a.Func
 	unsortedStructs   []*a.Struct
-
-	statusByValue [256]t.ID
 }
 
 func (c *Checker) PackageID() uint32 { return c.packageID }
@@ -297,33 +295,6 @@ func (c *Checker) checkStatus(node *a.Node) error {
 		}
 	}
 	c.statuses[qid] = n
-
-	q := &checker{
-		c:  c,
-		tm: c.tm,
-	}
-	if err := q.tcheckExpr(n.Value(), 0); err != nil {
-		return fmt.Errorf("%v in status %s", err, qid.Str(c.tm))
-	}
-	if _, err := q.bcheckExpr(n.Value(), 0); err != nil {
-		return fmt.Errorf("%v in status %s", err, qid.Str(c.tm))
-	}
-
-	if cv := n.Value().ConstValue(); cv == nil {
-		return fmt.Errorf("status %s value is not a constant expression", qid.Str(c.tm))
-	} else if cv.Cmp(zero) <= 0 || oneTwentyEight.Cmp(cv) <= 0 {
-		return fmt.Errorf("status %s value %v is out of range [0x01..0x7F]", qid.Str(c.tm), cv)
-	} else if n.QID()[0] == 0 {
-		x := uint8(cv.Int64())
-		if n.Keyword() == t.IDError {
-			x = -x
-		}
-		if other := c.statusByValue[x]; other != 0 {
-			return fmt.Errorf("duplicate %s value 0x%02X: %s and %s",
-				n.Keyword().Str(c.tm), cv, other.Str(c.tm), n.QID()[1].Str(c.tm))
-		}
-		c.statusByValue[x] = n.QID()[1]
-	}
 
 	setPlaceholderMBoundsMType(n.AsNode())
 	return nil

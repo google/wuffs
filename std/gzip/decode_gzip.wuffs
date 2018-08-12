@@ -17,10 +17,10 @@ packageid "gzip"
 use "std/crc32"
 use "std/deflate"
 
-pub error (0x01) "?bad checksum"
-pub error (0x02) "?bad compression method"
-pub error (0x03) "?bad encoding flags"
-pub error (0x04) "?bad header"
+pub status "?bad checksum"
+pub status "?bad compression method"
+pub status "?bad encoding flags"
+pub status "?bad header"
 
 pub struct decoder?(
 	flate deflate.decoder,

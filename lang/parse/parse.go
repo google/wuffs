@@ -221,23 +221,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			in := a.NewStruct(0, p.filename, line, t.IDArgs, argFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
 
-		case t.IDError, t.IDSuspension:
-			keyword := p.src[0].ID
-			p.src = p.src[1:]
-
-			if x := p.peek1(); x != t.IDOpenParen {
-				got := p.tm.ByID(x)
-				return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`, got, p.filename, p.line())
-			}
-			p.src = p.src[1:]
-			value, err := p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
-			if x := p.peek1(); x != t.IDCloseParen {
-				got := p.tm.ByID(x)
-				return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
-			}
+		case t.IDStatus:
 			p.src = p.src[1:]
 
 			message := p.peek1()
@@ -251,7 +235,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			return a.NewStatus(flags, p.filename, line, keyword, value, message).AsNode(), nil
+			return a.NewStatus(flags, p.filename, line, message).AsNode(), nil
 
 		case t.IDStruct:
 			p.src = p.src[1:]

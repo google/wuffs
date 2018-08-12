@@ -210,12 +210,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 
 	case t.IDError, t.IDStatus, t.IDSuspension:
 		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
-			b.writes(g.pkgPrefix)
-			if z.keyword == t.IDSuspension {
-				b.writes("suspension__")
-			} else {
-				b.writes("error__")
-			}
 			b.writes(z.cName)
 		} else {
 			msg, _ := t.Unescape(n.Ident().Str(g.tm))

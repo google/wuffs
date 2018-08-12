@@ -181,19 +181,9 @@ const (
 )
 
 type status struct {
-	cName   string
-	name    string
-	value   int8
-	msg     string
-	keyword t.ID
-	public  bool
-}
-
-func (z status) cNamePrefix() string {
-	if z.keyword == t.IDSuspension {
-		return "suspension"
-	}
-	return "error"
+	cName  string
+	msg    string
+	public bool
 }
 
 type buffer []byte
@@ -361,11 +351,11 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Status Codes\n\n")
 
-	for _, s := range g.statusList {
-		if !s.public {
+	for _, z := range g.statusList {
+		if !z.public {
 			continue
 		}
-		b.printf("extern const char* %s%s__%s;\n", g.pkgPrefix, s.cNamePrefix(), s.cName)
+		b.printf("extern const char* %s;\n", z.cName)
 	}
 	b.writes("\n")
 
@@ -418,8 +408,7 @@ func (g *gen) genImpl(b *buffer) error {
 		if z.msg == "" {
 			continue
 		}
-		b.printf("const char* %s%s__%s = \"%s%s: %s\";\n",
-			g.pkgPrefix, z.cNamePrefix(), z.cName, z.msg[:1], g.pkgName, z.msg[1:])
+		b.printf("const char* %s = \"%s%s: %s\";\n", z.cName, z.msg[:1], g.pkgName, z.msg[1:])
 	}
 	b.writes("\n")
 
@@ -573,27 +562,20 @@ func (g *gen) sizeof(typ *a.TypeExpr) (uint32, error) {
 func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 	raw := n.QID()[1].Str(g.tm)
 	msg, ok := t.Unescape(raw)
-	if !ok {
+	if !ok || msg == "" {
 		return fmt.Errorf("bad status message %q", raw)
 	}
-	prefix := "suspension_"
-	if n.Keyword() == t.IDError {
-		prefix = "error_"
+	errSus := "error__"
+	if msg[0] == '$' {
+		errSus = "suspension__"
 	}
-	value := int8(n.Value().ConstValue().Int64())
-	if n.Keyword() == t.IDError {
-		value = -value
+	z := status{
+		cName:  g.pkgPrefix + errSus + cName(msg, ""),
+		msg:    msg,
+		public: n.Public(),
 	}
-	s := status{
-		cName:   cName(msg, ""),
-		name:    strings.ToUpper(g.cName(prefix + msg)),
-		value:   value,
-		msg:     msg,
-		keyword: n.Keyword(),
-		public:  n.Public(),
-	}
-	g.statusList = append(g.statusList, s)
-	g.statusMap[n.QID()] = s
+	g.statusList = append(g.statusList, z)
+	g.statusMap[n.QID()] = z
 	return nil
 }
 

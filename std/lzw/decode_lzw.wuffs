@@ -14,8 +14,8 @@
 
 packageid "lzw "
 
-pub error (0x01) "?bad code"
-pub error (0x02) "?cyclical prefix chain"
+pub status "?bad code"
+pub status "?cyclical prefix chain"
 
 pub struct decoder?(
 	literal_width base.u32[..8],

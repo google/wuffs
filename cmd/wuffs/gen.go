@@ -310,8 +310,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				if !n.Public() {
 					continue
 				}
-				fmt.Fprintf(out, "pub %s (%s) %s\n",
-					n.Keyword().Str(&h.tm), n.Value().Str(&h.tm), n.QID().Str(&h.tm))
+				fmt.Fprintf(out, "pub status %s\n", n.QID().Str(&h.tm))
 
 			case a.KStruct:
 				n := n.AsStruct()

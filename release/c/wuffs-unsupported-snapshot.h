@@ -2199,7 +2199,6 @@ extern const char* wuffs_deflate__error__bad_literal_length_code_count;
 extern const char* wuffs_deflate__error__inconsistent_stored_block_length;
 extern const char* wuffs_deflate__error__missing_end_of_block_code;
 extern const char* wuffs_deflate__error__no_huffman_codes;
-extern const char* wuffs_deflate__error__internal_error_inconsistent_i_o;
 
 // ---------------- Public Consts
 

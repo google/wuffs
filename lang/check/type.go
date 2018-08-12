@@ -489,22 +489,13 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 	case t.IDDot:
 		return q.tcheckDot(n, depth)
 
+	// TODO: remove all but t.IDStatus.
 	case t.IDError, t.IDStatus, t.IDSuspension:
-		nominalKeyword := n.Operator()
-		declaredKeyword := t.ID(0)
-		if s, ok := q.c.statuses[n.StatusQID()]; ok {
-			declaredKeyword = s.Keyword()
-		} else {
+		if _, ok := q.c.statuses[n.StatusQID()]; !ok {
 			msg, _ := t.Unescape(n.Ident().Str(q.tm))
-			z, ok := builtin.StatusMap[msg]
-			if !ok {
+			if _, ok := builtin.StatusMap[msg]; !ok {
 				return fmt.Errorf("check: no error or status with message %q", msg)
 			}
-			declaredKeyword = z.Keyword
-		}
-		if nominalKeyword != declaredKeyword {
-			return fmt.Errorf("check: status literal says %q but declaration says %q",
-				nominalKeyword.Str(q.tm), declaredKeyword.Str(q.tm))
 		}
 		n.SetMType(typeExprStatus)
 		return nil
