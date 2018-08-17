@@ -527,35 +527,38 @@ wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
 // TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
 // it might be handy to programs that use Wuffs. Either delete it, or promote
 // it to the public API.
+//
+// If making this function public (i.e. moving it to base-header.h), it also
+// needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
 
 static inline bool  //
 wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
-  return buf && buf->closed && (buf->ptr + buf->wi == o.private_impl.bounds[1]);
+  return buf && buf->closed && (buf->ptr + buf->wi == o.private_impl.limit);
 }
 
 static inline bool  //
 wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it
-  // also needs to allow NULL (i.e. implicit, callee-calculated) bounds.
-  return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
-                (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
-                (o.private_impl.bounds[1] <= buf->ptr + buf->len))
-             : ((o.private_impl.bounds[0] == NULL) &&
-                (o.private_impl.bounds[1] == NULL));
+  // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
+  return buf ? ((buf->ptr <= o.private_impl.mark) &&
+                (o.private_impl.mark <= o.private_impl.limit) &&
+                (o.private_impl.limit <= buf->ptr + buf->len))
+             : ((o.private_impl.mark == NULL) &&
+                (o.private_impl.limit == NULL));
 }
 
 static inline bool  //
 wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it
-  // also needs to allow NULL (i.e. implicit, callee-calculated) bounds.
-  return buf ? ((buf->ptr <= o.private_impl.bounds[0]) &&
-                (o.private_impl.bounds[0] <= o.private_impl.bounds[1]) &&
-                (o.private_impl.bounds[1] <= buf->ptr + buf->len))
-             : ((o.private_impl.bounds[0] == NULL) &&
-                (o.private_impl.bounds[1] == NULL));
+  // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
+  return buf ? ((buf->ptr <= o.private_impl.mark) &&
+                (o.private_impl.mark <= o.private_impl.limit) &&
+                (o.private_impl.limit <= buf->ptr + buf->len))
+             : ((o.private_impl.mark == NULL) &&
+                (o.private_impl.limit == NULL));
 }
 
 static inline uint32_t  //
@@ -690,15 +693,15 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
                                  uint8_t* ioptr_r,
                                  uint64_t limit) {
-  if (o && (((size_t)(o->private_impl.bounds[1] - ioptr_r)) > limit)) {
-    o->private_impl.bounds[1] = ioptr_r + limit;
+  if (o && (((size_t)(o->private_impl.limit - ioptr_r)) > limit)) {
+    o->private_impl.limit = ioptr_r + limit;
   }
   return ((wuffs_base__empty_struct){});
 }
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
-  o->private_impl.bounds[0] = mark;
+  o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -714,8 +717,8 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   b->ri = 0;
   b->closed = false;
   o->private_impl.buf = b;
-  o->private_impl.bounds[0] = s.ptr;
-  o->private_impl.bounds[1] = s.ptr + s.len;
+  o->private_impl.mark = s.ptr;
+  o->private_impl.limit = s.ptr + s.len;
   *ioptr1_ptr = s.ptr;
   *ioptr2_ptr = s.ptr + s.len;
   return ((wuffs_base__empty_struct){});
@@ -723,7 +726,7 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
-  o->private_impl.bounds[0] = mark;
+  o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
 

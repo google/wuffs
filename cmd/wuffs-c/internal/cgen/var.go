@@ -121,20 +121,20 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		iopPrefix, preName, preName, preName, i0)
 
 	if header {
-		b.printf("if (!%s.private_impl.bounds[0]) {", preName)
-		b.printf("%s.private_impl.bounds[0] = %s%s;", preName, iopPrefix, preName)
-		b.printf("%s.private_impl.bounds[1] = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
+		b.printf("if (!%s.private_impl.mark) {", preName)
+		b.printf("%s.private_impl.mark = %s%s;", preName, iopPrefix, preName)
+		b.printf("%s.private_impl.limit = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
 			preName, preName, preName, i1)
 		b.printf("}\n")
 
 		if typ.QID()[1] == t.IDIOWriter {
 			b.printf("if (%s.private_impl.buf->closed) {", preName)
-			b.printf("%s.private_impl.bounds[1] = %s%s;", preName, iopPrefix, preName)
+			b.printf("%s.private_impl.limit = %s%s;", preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
 
-		b.printf("%s%s = %s.private_impl.bounds[0];", io0Prefix, preName, preName)
-		b.printf("%s%s = %s.private_impl.bounds[1];", io1Prefix, preName, preName)
+		b.printf("%s%s = %s.private_impl.mark;", io0Prefix, preName, preName)
+		b.printf("%s%s = %s.private_impl.limit;", io1Prefix, preName, preName)
 	}
 
 	b.printf("}\n")

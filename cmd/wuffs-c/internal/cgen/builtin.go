@@ -133,8 +133,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDSinceMark:
 		b.printf("((wuffs_base__slice_u8){ "+
-			".ptr = %ssrc.private_impl.bounds[0], "+
-			".len = (size_t)(iop_a_src - %ssrc.private_impl.bounds[0]), })",
+			".ptr = %ssrc.private_impl.mark, "+
+			".len = (size_t)(iop_a_src - %ssrc.private_impl.mark), })",
 			aPrefix, aPrefix)
 		return nil
 
@@ -172,7 +172,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
-			"&iop_a_dst, %sdst.private_impl.bounds[0], io1_a_dst",
+			"&iop_a_dst, %sdst.private_impl.mark, io1_a_dst",
 			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
@@ -201,7 +201,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return g.writeArgs(b, args, rp, depth)
 
 	case t.IDSetMark:
-		// TODO: is a private_impl.bounds[0] the right representation? What
+		// TODO: is a private_impl.mark the right representation? What
 		// if the function is passed a (ptr io_writer) instead of a
 		// (io_writer)? Do we still want to have that mark live outside of
 		// the function scope?
@@ -210,8 +210,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDSinceMark:
 		b.printf("((wuffs_base__slice_u8){ "+
-			".ptr = %sdst.private_impl.bounds[0], "+
-			".len = (size_t)(iop_a_dst - %sdst.private_impl.bounds[0]), })",
+			".ptr = %sdst.private_impl.mark, "+
+			".len = (size_t)(iop_a_dst - %sdst.private_impl.mark), })",
 			aPrefix, aPrefix)
 		return nil
 	}

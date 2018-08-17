@@ -307,12 +307,12 @@ void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->ri;
     uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->wi;
-    if (!o->private_impl.bounds[0]) {
-      o->private_impl.bounds[0] = p;
-      o->private_impl.bounds[1] = q;
+    if (!o->private_impl.mark) {
+      o->private_impl.mark = p;
+      o->private_impl.limit = q;
     }
-    if ((o->private_impl.bounds[1] - p) > limit) {
-      o->private_impl.bounds[1] = p + limit;
+    if ((o->private_impl.limit - p) > limit) {
+      o->private_impl.limit = p + limit;
     }
   }
 }
@@ -321,12 +321,12 @@ void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
     uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->wi;
     uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->len;
-    if (!o->private_impl.bounds[0]) {
-      o->private_impl.bounds[0] = p;
-      o->private_impl.bounds[1] = q;
+    if (!o->private_impl.mark) {
+      o->private_impl.mark = p;
+      o->private_impl.limit = q;
     }
-    if ((o->private_impl.bounds[1] - p) > limit) {
-      o->private_impl.bounds[1] = p + limit;
+    if ((o->private_impl.limit - p) > limit) {
+      o->private_impl.limit = p + limit;
     }
   }
 }

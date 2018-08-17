@@ -971,7 +971,8 @@ typedef struct {
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
-    uint8_t* bounds[2];
+    uint8_t* mark;
+    uint8_t* limit;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -983,7 +984,8 @@ typedef struct {
     // The bounds values are typically NULL, when created by the Wuffs public
     // API. NULL means that the callee substitutes the implicit bounds derived
     // from buf.
-    uint8_t* bounds[2];
+    uint8_t* mark;
+    uint8_t* limit;
   } private_impl;
 } wuffs_base__io_writer;
 
