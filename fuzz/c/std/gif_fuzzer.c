@@ -72,8 +72,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    size_t pixbuf_size = wuffs_base__pixel_config__pixbuf_size(
-        wuffs_base__image_config__pixel_config(&ic));
+    size_t pixbuf_size = wuffs_base__pixel_config__pixbuf_size(&ic.pixcfg);
     // Don't try to allocate more than 64 MiB.
     if (pixbuf_size > 64 * 1024 * 1024) {
       ret = "image too large";
@@ -86,7 +85,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     }
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, wuffs_base__image_config__pixel_config(&ic),
+        &pb, &ic.pixcfg,
         ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
     if (z) {
       ret = z;

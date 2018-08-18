@@ -211,7 +211,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     return z;
   }
   z = wuffs_base__pixel_buffer__set_from_slice(
-      &pb, wuffs_base__image_config__pixel_config(&ic),
+      &pb, &ic.pixcfg,
       ((wuffs_base__slice_u8){
           .ptr = global_pixel_buffer,
           .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
@@ -276,23 +276,23 @@ bool do_test_wuffs_gif_decode(const char* filename,
       FAIL("decode_image_config: got \"%s\"", z);
       return false;
     }
-    if (wuffs_base__image_config__pixel_format(&ic) !=
+    if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg) !=
         WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED) {
       FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
-           wuffs_base__image_config__pixel_format(&ic),
+           wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
            WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED);
       return false;
     }
 
     // bricks-dither.gif is a 160 × 120, opaque, still (not animated) GIF.
-    if (wuffs_base__image_config__width(&ic) != 160) {
+    if (wuffs_base__pixel_config__width(&ic.pixcfg) != 160) {
       FAIL("width: got %" PRIu32 ", want 160",
-           wuffs_base__image_config__width(&ic));
+           wuffs_base__pixel_config__width(&ic.pixcfg));
       return false;
     }
-    if (wuffs_base__image_config__height(&ic) != 120) {
+    if (wuffs_base__pixel_config__height(&ic.pixcfg) != 120) {
       FAIL("height: got %" PRIu32 ", want 120",
-           wuffs_base__image_config__height(&ic));
+           wuffs_base__pixel_config__height(&ic.pixcfg));
       return false;
     }
     if (wuffs_base__image_config__num_loops(&ic) != 1) {
@@ -305,7 +305,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
       return false;
     }
     z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, wuffs_base__image_config__pixel_config(&ic),
+        &pb, &ic.pixcfg,
         ((wuffs_base__slice_u8){
             .ptr = global_pixel_buffer,
             .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
@@ -511,7 +511,7 @@ bool do_test_wuffs_gif_decode_animated(
     return false;
   }
   z = wuffs_base__pixel_buffer__set_from_slice(
-      &pb, wuffs_base__image_config__pixel_config(&ic),
+      &pb, &ic.pixcfg,
       ((wuffs_base__slice_u8){
           .ptr = global_pixel_buffer,
           .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),
@@ -628,14 +628,14 @@ void test_wuffs_gif_decode_frame_out_of_bounds() {
   // test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
   // more discussion.
 
-  if (wuffs_base__image_config__width(&ic) != 4) {
+  if (wuffs_base__pixel_config__width(&ic.pixcfg) != 4) {
     FAIL("width: got %" PRIu32 ", want 4",
-         wuffs_base__image_config__width(&ic));
+         wuffs_base__pixel_config__width(&ic.pixcfg));
     return;
   }
-  if (wuffs_base__image_config__height(&ic) != 2) {
+  if (wuffs_base__pixel_config__height(&ic.pixcfg) != 2) {
     FAIL("height: got %" PRIu32 ", want 2",
-         wuffs_base__image_config__height(&ic));
+         wuffs_base__pixel_config__height(&ic.pixcfg));
     return;
   }
 }
@@ -727,7 +727,7 @@ bool do_test_wuffs_gif_num_decoded(bool frame_config) {
     }
 
     z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, wuffs_base__image_config__pixel_config(&ic),
+        &pb, &ic.pixcfg,
         ((wuffs_base__slice_u8){
             .ptr = global_pixel_buffer,
             .len = WUFFS_TESTLIB_ARRAY_SIZE(global_pixel_buffer),

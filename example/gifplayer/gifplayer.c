@@ -133,7 +133,7 @@ static inline uint32_t load_u32le(uint8_t* p) {
 
 void restore_background(wuffs_base__pixel_buffer* pb,
                         wuffs_base__rect_ie_u32 bounds) {
-  size_t width = wuffs_base__pixel_buffer__width(pb);
+  size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
@@ -149,7 +149,7 @@ void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
   if (palette.len != 1024) {
     return;
   }
-  size_t width = wuffs_base__pixel_buffer__width(pb);
+  size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
@@ -167,8 +167,8 @@ void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
 }
 
 size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
-  uint32_t width = wuffs_base__pixel_buffer__width(pb);
-  uint32_t height = wuffs_base__pixel_buffer__height(pb);
+  uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
@@ -193,8 +193,8 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
 }
 
 size_t print_color_art(wuffs_base__pixel_buffer* pb) {
-  uint32_t width = wuffs_base__pixel_buffer__width(pb);
-  uint32_t height = wuffs_base__pixel_buffer__height(pb);
+  uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
   wuffs_base__color_u32argb* d = dst_buffer;
   uint8_t* p = print_buffer;
@@ -291,17 +291,17 @@ const char* play() {
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
     }
-    uint32_t width = wuffs_base__image_config__width(&ic);
-    uint32_t height = wuffs_base__image_config__height(&ic);
+    uint32_t width = wuffs_base__pixel_config__width(&ic.pixcfg);
+    uint32_t height = wuffs_base__pixel_config__height(&ic.pixcfg);
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
-    const char* msg = allocate(wuffs_base__image_config__pixel_config(&ic));
+    const char* msg = allocate(&ic.pixcfg);
     if (msg) {
       return msg;
     }
     z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, wuffs_base__image_config__pixel_config(&ic),
+        &pb, &ic.pixcfg,
         ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
     if (z) {
       return z;
