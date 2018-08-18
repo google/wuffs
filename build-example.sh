@@ -17,21 +17,41 @@
 
 # See build-all.sh for commentary.
 
-for f in example/*; do
-  echo "Building $f"
-  if [ "$f" = "example/crc32" ]; then
+if [ ! -e release/c/wuffs-unsupported-snapshot.h ]; then
+  echo "$0 should be run from the Wuffs root directory."
+  exit 1
+fi
+
+mkdir -p gen/bin
+
+sources=$@
+if [ $# -eq 0 ]; then
+  sources=example/*
+fi
+
+for f in $sources; do
+  f=${f%/}
+  f=${f##*/}
+  if [ -z $f ]; then
+    continue
+  fi
+
+  if [ $f = crc32 ]; then
+    echo "Building gen/bin/example-$f"
     # example/crc32 is unusual in that it's C++, not C.
-    g++ -O3 $f/*.cc -o $f/a.out
-  elif [ "$f" = "example/library" ]; then
+    g++ -O3 example/$f/*.cc -o gen/bin/example-$f
+  elif [ $f = library ]; then
     # example/library is unusual in that it uses separately compiled libraries
     # (built by "wuffs genlib", e.g. by running build-all.sh) instead of
     # directly #include'ing Wuffs' .c files.
     if [ -e gen/lib/c/gcc-static/libwuffs.a ]; then
-      gcc -O3 -static -I.. $f/*.c gen/lib/c/gcc-static/libwuffs.a -o $f/a.out
+      echo "Building gen/bin/example-$f"
+      gcc -O3 -static -I.. example/$f/*.c gen/lib/c/gcc-static/libwuffs.a -o gen/bin/example-$f
     else
-      echo "    Skipping example/library; run \"wuffs genlib\" first"
+      echo "Skipping gen/bin/example-$f; run \"wuffs genlib\" first"
     fi
-  elif [ -e $f/*.c ]; then
-    gcc -O3 $f/*.c -o $f/a.out
+  elif [ -e example/$f/*.c ]; then
+    echo "Building gen/bin/example-$f"
+    gcc -O3 example/$f/*.c -o gen/bin/example-$f
   fi
 done

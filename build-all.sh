@@ -37,6 +37,11 @@
 # gcc zcat.c
 # ./a.out < ../../test/data/romeo.txt.gz
 
+if [ ! -e release/c/wuffs-unsupported-snapshot.h ]; then
+  echo "$0 should be run from the Wuffs root directory."
+  exit 1
+fi
+
 go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
 wuffs gen

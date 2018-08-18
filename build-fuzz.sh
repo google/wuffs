@@ -17,7 +17,26 @@
 
 # See build-all.sh for commentary.
 
-for f in fuzz/c/std/*_fuzzer.c; do
-  echo "Building $f"
-  gcc -DWUFFS_CONFIG__FUZZLIB_MAIN $f -o ${f%.c}.out
+if [ ! -e release/c/wuffs-unsupported-snapshot.h ]; then
+  echo "$0 should be run from the Wuffs root directory."
+  exit 1
+fi
+
+mkdir -p gen/bin
+
+sources=$@
+if [ $# -eq 0 ]; then
+  sources=fuzz/c/std/*_fuzzer.c
+fi
+
+for f in $sources; do
+  f=${f%_fuzzer.c}
+  f=${f%/}
+  f=${f##*/}
+  if [ -z $f ]; then
+    continue
+  fi
+  echo "Building gen/bin/fuzz-$f"
+
+  gcc -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c -o gen/bin/fuzz-$f
 done
