@@ -595,7 +595,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
-	if n.Operator() == t.IDDollar {
+	if n.Operator() == t.IDComma {
 		b.writeb('{')
 		for _, o := range n.Args() {
 			if err := g.writeConstList(b, o.AsExpr()); err != nil {

@@ -37,8 +37,8 @@ pri status "?internal error: inconsistent ri/wi"
 // accessed after all interlace stages are complete. Being the maximum base.u32
 // value means that, after all interlace stages are complete, dst_y will be set
 // to that maximum value (and therefore outside the frame rect).
-pri const interlace_start array[5] base.u32 = $(0xFFFFFFFF, 1, 2, 4, 0)
-pri const interlace_delta array[5] base.u8 = $(1, 2, 4, 8, 8)
+pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
+pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 
 pub struct decoder?(
 	width base.u32,
@@ -352,14 +352,14 @@ pri func decoder.skip_blocks!??(src base.io_reader) {
 }
 
 // animexts1dot0 is "ANIMEXTS1.0" as bytes.
-pri const animexts1dot0 array[11] base.u8 = $(
+pri const animexts1dot0 array[11] base.u8 = [
 	0x41, 0x4E, 0x49, 0x4D, 0x45, 0x58, 0x54, 0x53, 0x31, 0x2E, 0x30,
-)
+]
 
 // netscape2dot0 is "NETSCAPE2.0" as bytes.
-pri const netscape2dot0 array[11] base.u8 = $(
+pri const netscape2dot0 array[11] base.u8 = [
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
-)
+]
 
 // decode_ae reads an Application Extension.
 pri func decoder.decode_ae!??(src base.io_reader) {

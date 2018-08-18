@@ -107,7 +107,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		// Render the lineTokens.
 		prevID, prevIsTightRight := t.ID(0), false
 		for _, tok := range lineTokens {
-			if prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft() {
+			if prevID == t.IDEq || (prevID != 0 && !prevIsTightRight && !tok.ID.IsTightLeft()) {
 				// The "(" token's tight-left-ness is context dependent. For
 				// "f(x)", the "(" is tight-left. For "a * (b + c)", it is not.
 				if tok.ID != t.IDOpenParen || !isCloseIdentStrLiteral(tm, prevID) {

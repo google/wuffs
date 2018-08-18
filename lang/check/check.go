@@ -306,7 +306,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 func (c *Checker) checkConstElement(n *a.Expr, nb a.Bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
-		if n.Operator() != t.IDDollar {
+		if n.Operator() != t.IDComma {
 			return fmt.Errorf("invalid const value %q", n.Str(c.tm))
 		}
 		for _, o := range n.Args() {

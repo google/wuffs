@@ -328,7 +328,7 @@ const MaxExprDepth = 255
 //
 // For selectors, like "LHS.ID2", ID0 is IDDot.
 //
-// For lists, like "$(0, 1, 2)", ID0 is IDDollar.
+// For lists, like "[0, 1, 2]", ID0 is IDComma.
 //
 // For statuses like "?foo" and bar."$baz", ID0 is IDStatus, ID1 is the package
 // and ID2 is the message.

@@ -499,7 +499,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.SetMType(typeExprStatus)
 		return nil
 
-	case t.IDDollar:
+	case t.IDComma:
 		for _, o := range n.Args() {
 			o := o.AsExpr()
 			if err := q.tcheckExpr(o, depth); err != nil {

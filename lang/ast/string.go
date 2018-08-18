@@ -126,15 +126,15 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			buf = append(buf, '.')
 			buf = append(buf, tm.ByID(n.id2)...)
 
-		case t.IDDollar:
-			buf = append(buf, "$("...)
+		case t.IDComma:
+			buf = append(buf, '[')
 			for i, o := range n.list0 {
 				if i != 0 {
 					buf = append(buf, ", "...)
 				}
 				buf = o.AsExpr().appendStr(buf, tm, false, depth)
 			}
-			buf = append(buf, ')')
+			buf = append(buf, ']')
 		}
 	}
 

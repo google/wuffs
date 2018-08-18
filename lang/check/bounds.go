@@ -869,7 +869,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 	case t.IDStatus:
 		// No-op.
 
-	case t.IDDollar:
+	case t.IDComma:
 		for _, o := range n.Args() {
 			if _, err := q.bcheckExpr(o.AsExpr(), depth); err != nil {
 				return a.Bounds{}, err

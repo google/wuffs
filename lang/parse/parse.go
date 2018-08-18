@@ -138,7 +138,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 					p.tm.ByID(id), p.filename, p.line())
 			}
 			p.src = p.src[1:]
-			value, err := p.parsePossibleDollarExpr()
+			value, err := p.parsePossibleListExpr()
 			if err != nil {
 				return nil, err
 			}
@@ -301,7 +301,7 @@ func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) 
 	ret := []*a.Node(nil)
 	for len(p.src) > 0 {
 		if p.src[0].ID == stop {
-			if stop == t.IDCloseParen {
+			if stop == t.IDCloseParen || stop == t.IDCloseBracket {
 				p.src = p.src[1:]
 			}
 			return ret, nil
@@ -315,7 +315,7 @@ func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) 
 
 		switch x := p.peek1(); x {
 		case stop:
-			if stop == t.IDCloseParen {
+			if stop == t.IDCloseParen || stop == t.IDCloseBracket {
 				p.src = p.src[1:]
 			}
 			return ret, nil
@@ -885,24 +885,25 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 	return a.NewVar(op, id, typ, value).AsNode(), nil
 }
 
-func (p *parser) parsePossibleDollarExprNode() (*a.Node, error) {
-	n, err := p.parsePossibleDollarExpr()
+func (p *parser) parsePossibleListExprNode() (*a.Node, error) {
+	n, err := p.parsePossibleListExpr()
 	if err != nil {
 		return nil, err
 	}
 	return n.AsNode(), err
 }
 
-func (p *parser) parsePossibleDollarExpr() (*a.Expr, error) {
-	if x := p.peek1(); x != t.IDDollar {
+func (p *parser) parsePossibleListExpr() (*a.Expr, error) {
+	// TODO: put the [ and ] parsing into parseExpr.
+	if x := p.peek1(); x != t.IDOpenBracket {
 		return p.parseExpr()
 	}
 	p.src = p.src[1:]
-	args, err := p.parseList(t.IDCloseParen, (*parser).parsePossibleDollarExprNode)
+	args, err := p.parseList(t.IDCloseBracket, (*parser).parsePossibleListExprNode)
 	if err != nil {
 		return nil, err
 	}
-	return a.NewExpr(0, t.IDDollar, 0, 0, nil, nil, nil, args), nil
+	return a.NewExpr(0, t.IDComma, 0, 0, nil, nil, nil, args), nil
 }
 
 func (p *parser) parseExprNode() (*a.Node, error) {
