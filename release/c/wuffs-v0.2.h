@@ -65,14 +65,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-08-18 UTC,
-// based on revision 5e8801d86611c4df0dbe2de69734e2901adc0840.
+// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-08-19 UTC,
+// based on revision f836d3b74346f72a55e2a02d8762d46a4470e310.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.11"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.11"
+#define WUFFS_VERSION_EXTENSION "alpha.12"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.12"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -142,8 +142,9 @@ extern const char* wuffs_base__error__bad_receiver;
 extern const char* wuffs_base__error__bad_sizeof_receiver;
 extern const char* wuffs_base__error__bad_wuffs_version;
 extern const char* wuffs_base__error__cannot_return_a_suspension;
-extern const char* wuffs_base__error__check_wuffs_version_called_twice;
+extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
 extern const char* wuffs_base__error__check_wuffs_version_missing;
+extern const char* wuffs_base__error__disabled_by_previous_error;
 extern const char* wuffs_base__error__invalid_call_sequence;
 
 static inline bool  //
@@ -1643,6 +1644,26 @@ wuffs_base__image_config::first_frame_is_opaque() {
 
 // --------
 
+// wuffs_base__animation_blend encodes, for an animated image, how to blend the
+// transparent pixels of this frame with the existing canvas. In Porter-Duff
+// compositing operator terminology:
+//  - 0 means the frame may be transparent, and should be blended "src over
+//    dst", also known as just "over".
+//  - 1 means the frame may be transparent, and should be blended "src".
+//  - 2 means the frame is completely opaque, so that "src over dst" and "src"
+//    are equivalent.
+//
+// These semantics are conservative. It is valid for a completely opaque frame
+// to have a blend value other than 2.
+typedef uint8_t wuffs_base__animation_blend;
+
+#define WUFFS_BASE__ANIMATION_BLEND__SRC_OVER_DST \
+  ((wuffs_base__animation_blend)0)
+#define WUFFS_BASE__ANIMATION_BLEND__SRC ((wuffs_base__animation_blend)1)
+#define WUFFS_BASE__ANIMATION_BLEND__OPAQUE ((wuffs_base__animation_blend)2)
+
+// --------
+
 // wuffs_base__animation_disposal encodes, for an animated image, how to
 // dispose of a frame after displaying it:
 //  - None means to draw the next frame on top of this one.
@@ -1667,7 +1688,7 @@ typedef struct {
   struct {
     wuffs_base__rect_ie_u32 bounds;
     wuffs_base__flicks duration;
-    bool blend;
+    wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
     bool palette_changed;
   } private_impl;
@@ -1675,14 +1696,14 @@ typedef struct {
 #ifdef __cplusplus
   inline void update(wuffs_base__rect_ie_u32 bounds,
                      wuffs_base__flicks duration,
-                     bool blend,
+                     wuffs_base__animation_blend blend,
                      wuffs_base__animation_disposal disposal,
                      bool palette_changed);
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
   inline wuffs_base__flicks duration();
-  inline bool blend();
+  inline wuffs_base__animation_blend blend();
   inline wuffs_base__animation_disposal disposal();
   inline bool palette_changed();
 #endif  // __cplusplus
@@ -1693,7 +1714,7 @@ static inline void  //
 wuffs_base__frame_config__update(wuffs_base__frame_config* c,
                                  wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
-                                 bool blend,
+                                 wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
   if (!c) {
@@ -1729,12 +1750,9 @@ wuffs_base__frame_config__duration(wuffs_base__frame_config* c) {
   return c ? c->private_impl.duration : 0;
 }
 
-// wuffs_base__frame_config__blend returns, for a transparent image, whether to
-// blend this frame with the existing canvas.
-//
-// In Porter-Duff compositing operator terminology, false means "src" and true
-// means "src over dst".
-static inline bool  //
+// wuffs_base__frame_config__blend returns, for an animated image, how to blend
+// the transparent pixels of this frame with the existing canvas.
+static inline wuffs_base__animation_blend  //
 wuffs_base__frame_config__blend(wuffs_base__frame_config* c) {
   return c && c->private_impl.blend;
 }
@@ -1759,7 +1777,7 @@ wuffs_base__frame_config__palette_changed(wuffs_base__frame_config* c) {
 inline void  //
 wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
-                                 bool blend,
+                                 wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
   wuffs_base__frame_config__update(this, bounds, duration, blend, disposal,
@@ -1786,7 +1804,7 @@ wuffs_base__frame_config::duration() {
   return wuffs_base__frame_config__duration(this);
 }
 
-inline bool  //
+inline wuffs_base__animation_blend  //
 wuffs_base__frame_config::blend() {
   return wuffs_base__frame_config__blend(this);
 }
@@ -1929,7 +1947,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;
@@ -2008,7 +2025,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_state;
@@ -2100,7 +2116,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_bits;
@@ -2249,7 +2264,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_literal_width;
@@ -2363,7 +2377,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     uint32_t f_width;
@@ -2406,6 +2419,7 @@ typedef struct {
     } c_decode_image_config[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_blend;
     } c_decode_frame_config[1];
     struct {
       uint32_t coro_susp_point;
@@ -2620,7 +2634,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
@@ -2737,7 +2750,6 @@ typedef struct {
   //
   // It is a struct, not a struct*, so that it can be stack allocated.
   struct {
-    wuffs_base__status status;
     uint32_t magic;
 
     wuffs_deflate__decoder f_flate;
@@ -2845,6 +2857,12 @@ static inline void wuffs_base__ignore_check_wuffs_version_status(
 //
 // Its (non-zero) value is arbitrary, based on md5sum("wuffs").
 #define WUFFS_BASE__MAGIC ((uint32_t)0x3CCB6C71)
+
+// WUFFS_BASE__DISABLED is a magic number to indicate that a non-recoverable
+// error was previously encountered.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("disabled").
+#define WUFFS_BASE__DISABLED ((uint32_t)0x075AE3D2)
 
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
@@ -3561,10 +3579,12 @@ const char* wuffs_base__error__bad_sizeof_receiver =
 const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
 const char* wuffs_base__error__cannot_return_a_suspension =
     "?base: cannot return a suspension";
-const char* wuffs_base__error__check_wuffs_version_called_twice =
-    "?base: check_wuffs_version called twice";
+const char* wuffs_base__error__check_wuffs_version_not_applicable =
+    "?base: check_wuffs_version not applicable";
 const char* wuffs_base__error__check_wuffs_version_missing =
     "?base: check_wuffs_version missing";
+const char* wuffs_base__error__disabled_by_previous_error =
+    "?base: disabled by previous error";
 const char* wuffs_base__error__invalid_call_sequence =
     "?base: invalid call sequence";
 
@@ -3598,7 +3618,7 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -3615,9 +3635,6 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
     return 0;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return 0;
   }
 
@@ -4077,7 +4094,7 @@ wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -4094,9 +4111,6 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
     return 0;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return 0;
   }
 
@@ -4377,7 +4391,7 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -4395,10 +4409,9 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
 
@@ -4519,7 +4532,9 @@ exit:
     a_dst.private_impl.buf->wi = iop_a_dst - a_dst.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -6266,7 +6281,7 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
@@ -6292,10 +6307,9 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
 
@@ -6364,7 +6378,9 @@ suspend:
 
   goto exit;
 exit:
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -6376,9 +6392,6 @@ wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self) {
     return 0;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return 0;
   }
 
@@ -6393,9 +6406,6 @@ wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self) {
     return 0;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return 0;
   }
 
@@ -6410,9 +6420,6 @@ wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self) {
     return ((wuffs_base__range_ii_u64){});
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return ((wuffs_base__range_ii_u64){});
   }
 
@@ -6430,16 +6437,18 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
+
+  uint8_t v_blend;
 
   uint32_t coro_susp_point =
       self->private_impl.c_decode_frame_config[0].coro_susp_point;
   if (coro_susp_point) {
+    v_blend = self->private_impl.c_decode_frame_config[0].v_blend;
   } else {
   }
   switch (coro_susp_point) {
@@ -6484,6 +6493,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     self->private_impl.f_previous_use_global_palette =
         !(self->private_impl.f_use_local_palette ||
           self->private_impl.f_gc_has_transparent_index);
+    v_blend = 0;
+    if (!self->private_impl.f_gc_has_transparent_index) {
+      v_blend = 2;
+    }
     if (a_dst != NULL) {
       wuffs_base__frame_config__update(
           a_dst,
@@ -6492,7 +6505,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
               self->private_impl.f_frame_rect_y0,
               self->private_impl.f_frame_rect_x1,
               self->private_impl.f_frame_rect_y1),
-          self->private_impl.f_gc_duration, true,
+          self->private_impl.f_gc_duration, v_blend,
           self->private_impl.f_gc_disposal,
           (self->private_impl.f_which_palette != 2));
     }
@@ -6509,10 +6522,13 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_frame_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_frame_config[0].v_blend = v_blend;
 
   goto exit;
 exit:
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -6611,13 +6627,12 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   if (!a_dst) {
-    self->private_impl.status = wuffs_base__error__bad_argument;
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__error__bad_argument;
   }
   wuffs_base__status status = NULL;
@@ -6663,7 +6678,9 @@ suspend:
 
   goto exit;
 exit:
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -8201,7 +8218,7 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
@@ -8233,9 +8250,6 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
     return;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return;
   }
 
@@ -8252,10 +8266,9 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
 
@@ -8606,7 +8619,9 @@ exit:
     a_src.private_impl.buf->ri = iop_a_src - a_src.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -8644,7 +8659,7 @@ wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -8660,13 +8675,10 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
     return;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return;
   }
   if (a_lw < 2 || a_lw > 8) {
-    self->private_impl.status = wuffs_base__error__bad_argument;
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
     return;
   }
 
@@ -8683,10 +8695,9 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
 
@@ -8893,7 +8904,9 @@ exit:
     a_src.private_impl.buf->ri = iop_a_src - a_src.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
@@ -8935,7 +8948,7 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
@@ -8967,9 +8980,6 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
     return;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
     return;
   }
 
@@ -8986,10 +8996,9 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     return wuffs_base__error__bad_receiver;
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    self->private_impl.status = wuffs_base__error__check_wuffs_version_missing;
-  }
-  if (wuffs_base__status__is_error(self->private_impl.status)) {
-    return self->private_impl.status;
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
   }
   wuffs_base__status status = NULL;
 
@@ -9181,7 +9190,9 @@ exit:
     a_src.private_impl.buf->ri = iop_a_src - a_src.private_impl.buf->ptr;
   }
 
-  self->private_impl.status = status;
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
   return status;
 }
 
