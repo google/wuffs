@@ -141,7 +141,7 @@ extern const char* wuffs_base__error__bad_receiver;
 extern const char* wuffs_base__error__bad_sizeof_receiver;
 extern const char* wuffs_base__error__bad_wuffs_version;
 extern const char* wuffs_base__error__cannot_return_a_suspension;
-extern const char* wuffs_base__error__check_wuffs_version_called_twice;
+extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
 extern const char* wuffs_base__error__check_wuffs_version_missing;
 extern const char* wuffs_base__error__disabled_by_previous_error;
 extern const char* wuffs_base__error__invalid_call_sequence;
@@ -3578,8 +3578,8 @@ const char* wuffs_base__error__bad_sizeof_receiver =
 const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
 const char* wuffs_base__error__cannot_return_a_suspension =
     "?base: cannot return a suspension";
-const char* wuffs_base__error__check_wuffs_version_called_twice =
-    "?base: check_wuffs_version called twice";
+const char* wuffs_base__error__check_wuffs_version_not_applicable =
+    "?base: check_wuffs_version not applicable";
 const char* wuffs_base__error__check_wuffs_version_missing =
     "?base: check_wuffs_version missing";
 const char* wuffs_base__error__disabled_by_previous_error =
@@ -3617,7 +3617,7 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -4093,7 +4093,7 @@ wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -4390,7 +4390,7 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -6280,7 +6280,7 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
@@ -8217,7 +8217,7 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
@@ -8658,7 +8658,7 @@ wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -8947,7 +8947,7 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
     return wuffs_base__error__bad_wuffs_version;
   }
   if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_called_twice;
+    return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(

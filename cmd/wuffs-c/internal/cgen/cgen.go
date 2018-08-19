@@ -878,7 +878,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("return wuffs_base__error__bad_wuffs_version;\n")
 	b.writes("}\n")
 	b.writes("if (self->private_impl.magic != 0) {\n")
-	b.writes("return wuffs_base__error__check_wuffs_version_called_twice;\n")
+	b.writes("return wuffs_base__error__check_wuffs_version_not_applicable;\n")
 	b.writes("}\n")
 
 	// Call any ctors on sub-structs.
