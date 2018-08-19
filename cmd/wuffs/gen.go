@@ -71,7 +71,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	}
 	args = flags.Args()
 	if len(args) == 0 {
-		args = []string{"std/..."}
+		args = []string{"base", "std/..."}
 	}
 
 	h := genHelper{

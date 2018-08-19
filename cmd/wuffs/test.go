@@ -68,7 +68,7 @@ func doBenchTest(wuffsRoot string, args []string, bench bool) error {
 
 	args = flags.Args()
 	if len(args) == 0 {
-		args = []string{"std/..."}
+		args = []string{"base", "std/..."}
 	}
 
 	cmdArgs := []string(nil)
@@ -156,6 +156,9 @@ type testHelper struct {
 }
 
 func (h *testHelper) benchTest(dirname string, recursive bool) (failed bool, err error) {
+	if dirname == "base" {
+		return false, nil
+	}
 	qualFilenames, dirnames, err := listDir(
 		filepath.Join(h.wuffsRoot, filepath.FromSlash(dirname)), ".wuffs", recursive)
 	if err != nil {
