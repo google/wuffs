@@ -1753,7 +1753,7 @@ wuffs_base__frame_config__duration(wuffs_base__frame_config* c) {
 // the transparent pixels of this frame with the existing canvas.
 static inline wuffs_base__animation_blend  //
 wuffs_base__frame_config__blend(wuffs_base__frame_config* c) {
-  return c && c->private_impl.blend;
+  return c ? c->private_impl.blend : 0;
 }
 
 // wuffs_base__frame_config__disposal returns, for an animated image, how to
