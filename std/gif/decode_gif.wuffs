@@ -147,8 +147,13 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 		//
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
-		args.dst.initialize!(pixfmt:0x22088888, pixsub:0,
-			width:this.width, height:this.height, num_loops:num_loops, first_frame_is_opaque:ffio)
+		args.dst.initialize!(
+			pixfmt:0x22088888,
+			pixsub:0,
+			width:this.width,
+			height:this.height,
+			num_loops:num_loops,
+			first_frame_is_opaque:ffio)
 	}
 
 	this.call_sequence = 1
@@ -199,13 +204,20 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 	this.previous_use_global_palette =
 		not (this.use_local_palette or this.gc_has_transparent_index)
 
+	var blend base.u8 = 0
+	if not this.gc_has_transparent_index {
+		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
+	}
+
 	if args.dst != nullptr {
 		args.dst.update!(bounds:this.util.make_rect_ie_u32(
 			min_incl_x:this.frame_rect_x0,
 			min_incl_y:this.frame_rect_y0,
 			max_excl_x:this.frame_rect_x1,
 			max_excl_y:this.frame_rect_y1),
-			duration:this.gc_duration, blend:true, disposal:this.gc_disposal,
+			duration:this.gc_duration,
+			blend:blend,
+			disposal:this.gc_disposal,
 			palette_changed:this.which_palette != 2)
 	}
 
@@ -309,6 +321,9 @@ pri func decoder.decode_lsd!??(src base.io_reader) {
 		}
 		this.has_full_global_palette = i == 256
 		// Set the remaining palette entries to transparent black.
+		//
+		// TODO: opaque black?? Is this consistent with frame_config.blend?
+		// Should we mask the LZW-decoded data if num_palette_entries < 256?
 		while i < 256 {
 			this.palettes[0][(4 * i) + 0] = 0x00
 			this.palettes[0][(4 * i) + 1] = 0x00

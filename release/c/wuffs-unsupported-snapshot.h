@@ -1643,6 +1643,26 @@ wuffs_base__image_config::first_frame_is_opaque() {
 
 // --------
 
+// wuffs_base__animation_blend encodes, for an animated image, how to blend the
+// transparent pixels of this frame with the existing canvas. In Porter-Duff
+// compositing operator terminology:
+//  - 0 means the frame may be transparent, and should be blended "src over
+//    dst", also known as just "over".
+//  - 1 means the frame may be transparent, and should be blended "src".
+//  - 2 means the frame is completely opaque, so that "src over dst" and "src"
+//    are equivalent.
+//
+// These semantics are conservative. It is valid for a completely opaque frame
+// to have a blend value other than 2.
+typedef uint8_t wuffs_base__animation_blend;
+
+#define WUFFS_BASE__ANIMATION_BLEND__SRC_OVER_DST \
+  ((wuffs_base__animation_blend)0)
+#define WUFFS_BASE__ANIMATION_BLEND__SRC ((wuffs_base__animation_blend)1)
+#define WUFFS_BASE__ANIMATION_BLEND__OPAQUE ((wuffs_base__animation_blend)2)
+
+// --------
+
 // wuffs_base__animation_disposal encodes, for an animated image, how to
 // dispose of a frame after displaying it:
 //  - None means to draw the next frame on top of this one.
@@ -1667,7 +1687,7 @@ typedef struct {
   struct {
     wuffs_base__rect_ie_u32 bounds;
     wuffs_base__flicks duration;
-    bool blend;
+    wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
     bool palette_changed;
   } private_impl;
@@ -1675,14 +1695,14 @@ typedef struct {
 #ifdef __cplusplus
   inline void update(wuffs_base__rect_ie_u32 bounds,
                      wuffs_base__flicks duration,
-                     bool blend,
+                     wuffs_base__animation_blend blend,
                      wuffs_base__animation_disposal disposal,
                      bool palette_changed);
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
   inline wuffs_base__flicks duration();
-  inline bool blend();
+  inline wuffs_base__animation_blend blend();
   inline wuffs_base__animation_disposal disposal();
   inline bool palette_changed();
 #endif  // __cplusplus
@@ -1693,7 +1713,7 @@ static inline void  //
 wuffs_base__frame_config__update(wuffs_base__frame_config* c,
                                  wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
-                                 bool blend,
+                                 wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
   if (!c) {
@@ -1729,12 +1749,9 @@ wuffs_base__frame_config__duration(wuffs_base__frame_config* c) {
   return c ? c->private_impl.duration : 0;
 }
 
-// wuffs_base__frame_config__blend returns, for a transparent image, whether to
-// blend this frame with the existing canvas.
-//
-// In Porter-Duff compositing operator terminology, false means "src" and true
-// means "src over dst".
-static inline bool  //
+// wuffs_base__frame_config__blend returns, for an animated image, how to blend
+// the transparent pixels of this frame with the existing canvas.
+static inline wuffs_base__animation_blend  //
 wuffs_base__frame_config__blend(wuffs_base__frame_config* c) {
   return c && c->private_impl.blend;
 }
@@ -1759,7 +1776,7 @@ wuffs_base__frame_config__palette_changed(wuffs_base__frame_config* c) {
 inline void  //
 wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
-                                 bool blend,
+                                 wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
   wuffs_base__frame_config__update(this, bounds, duration, blend, disposal,
@@ -1786,7 +1803,7 @@ wuffs_base__frame_config::duration() {
   return wuffs_base__frame_config__duration(this);
 }
 
-inline bool  //
+inline wuffs_base__animation_blend  //
 wuffs_base__frame_config::blend() {
   return wuffs_base__frame_config__blend(this);
 }
@@ -2401,6 +2418,7 @@ typedef struct {
     } c_decode_image_config[1];
     struct {
       uint32_t coro_susp_point;
+      uint8_t v_blend;
     } c_decode_frame_config[1];
     struct {
       uint32_t coro_susp_point;
@@ -6424,9 +6442,12 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   }
   wuffs_base__status status = NULL;
 
+  uint8_t v_blend;
+
   uint32_t coro_susp_point =
       self->private_impl.c_decode_frame_config[0].coro_susp_point;
   if (coro_susp_point) {
+    v_blend = self->private_impl.c_decode_frame_config[0].v_blend;
   } else {
   }
   switch (coro_susp_point) {
@@ -6471,6 +6492,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     self->private_impl.f_previous_use_global_palette =
         !(self->private_impl.f_use_local_palette ||
           self->private_impl.f_gc_has_transparent_index);
+    v_blend = 0;
+    if (!self->private_impl.f_gc_has_transparent_index) {
+      v_blend = 2;
+    }
     if (a_dst != NULL) {
       wuffs_base__frame_config__update(
           a_dst,
@@ -6479,7 +6504,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
               self->private_impl.f_frame_rect_y0,
               self->private_impl.f_frame_rect_x1,
               self->private_impl.f_frame_rect_y1),
-          self->private_impl.f_gc_duration, true,
+          self->private_impl.f_gc_duration, v_blend,
           self->private_impl.f_gc_disposal,
           (self->private_impl.f_which_palette != 2));
     }
@@ -6496,6 +6521,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_frame_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_frame_config[0].v_blend = v_blend;
 
   goto exit;
 exit:
