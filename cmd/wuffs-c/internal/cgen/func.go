@@ -217,7 +217,7 @@ func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 }
 
 func (g *gen) writeFuncImplHeader(b *buffer) error {
-	// Check the previous status and the "self" arg.
+	// Check the initialized/disabled state and the "self" arg.
 	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
 		out := g.currFunk.astFunc.Out()
 
@@ -229,15 +229,15 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 		}
 		b.writes(";}")
 
-		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {" +
-			"self->private_impl.status = wuffs_base__error__check_wuffs_version_missing; }")
-
-		b.writes("if (wuffs_base__status__is_error(self->private_impl.status)) { return ")
+		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) { return ")
 		if g.currFunk.suspendible {
-			b.writes("self->private_impl.status")
+			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
+				"? wuffs_base__error__disabled_by_previous_error " +
+				": wuffs_base__error__check_wuffs_version_missing")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}
+
 		b.writes(";}\n")
 	}
 
@@ -340,7 +340,8 @@ func (g *gen) writeFuncImplFooter(b *buffer) error {
 		b.writes("\n")
 
 		if g.currFunk.public {
-			b.writes("self->private_impl.status = status;\n")
+			b.writes("if (wuffs_base__status__is_error(status)) { " +
+				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
 		}
 		b.writes("return status;\n\n")
 	}
@@ -408,12 +409,12 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	b.writes(") {")
 	if g.currFunk.suspendible {
 		if g.currFunk.public {
-			b.writes("self->private_impl.status = wuffs_base__error__bad_argument;\n")
+			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
 		}
 		b.writes("return wuffs_base__error__bad_argument;\n\n")
 	} else if !n.Receiver().IsZero() {
 		// TODO: unused code path??
-		b.writes("self->private_impl.status = wuffs_base__error__bad_argument; return;")
+		b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED; return;")
 	} else {
 		b.printf("return;")
 	}

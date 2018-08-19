@@ -33,6 +33,12 @@ static inline void wuffs_base__ignore_check_wuffs_version_status(
 // Its (non-zero) value is arbitrary, based on md5sum("wuffs").
 #define WUFFS_BASE__MAGIC ((uint32_t)0x3CCB6C71)
 
+// WUFFS_BASE__DISABLED is a magic number to indicate that a non-recoverable
+// error was previously encountered.
+//
+// Its (non-zero) value is arbitrary, based on md5sum("disabled").
+#define WUFFS_BASE__DISABLED ((uint32_t)0x075AE3D2)
+
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
 // The order matters here. Clang also defines "__GNUC__".

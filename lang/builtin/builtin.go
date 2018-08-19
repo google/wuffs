@@ -31,6 +31,7 @@ var StatusList = [...]string{
 	"?cannot return a suspension",
 	"?check_wuffs_version called twice",
 	"?check_wuffs_version missing",
+	"?disabled by previous error",
 	"?invalid call sequence",
 }
 

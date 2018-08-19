@@ -613,11 +613,6 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 }
 
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
-	// For API/ABI compatibility, the very first field in the struct's
-	// private_impl must be the status code. This lets the initializer callee
-	// set "self->private_impl.status = wuffs_base__error__bad_wuffs_version;"
-	// regardless of the sizeof(*self) struct reserved by the caller and even
-	// if the caller and callee were built with different versions.
 	structName := n.QID().Str(g.tm)
 	b.writes("typedef struct {\n")
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
@@ -629,7 +624,6 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
 	b.writes("struct {\n")
 	if n.Classy() {
-		b.printf("wuffs_base__status status;\n")
 		b.writes("uint32_t magic;\n")
 		b.writes("\n")
 	}
