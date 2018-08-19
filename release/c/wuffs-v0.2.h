@@ -66,13 +66,13 @@ extern "C" {
 // forwards compatibility guarantees.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-08-19 UTC,
-// based on revision f836d3b74346f72a55e2a02d8762d46a4470e310.
+// based on revision d47bf4e4e549807784f2dad381c6514e4f45ff17.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.12"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.12"
+#define WUFFS_VERSION_EXTENSION "alpha.13"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.13"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -1754,7 +1754,7 @@ wuffs_base__frame_config__duration(wuffs_base__frame_config* c) {
 // the transparent pixels of this frame with the existing canvas.
 static inline wuffs_base__animation_blend  //
 wuffs_base__frame_config__blend(wuffs_base__frame_config* c) {
-  return c && c->private_impl.blend;
+  return c ? c->private_impl.blend : 0;
 }
 
 // wuffs_base__frame_config__disposal returns, for an animated image, how to
