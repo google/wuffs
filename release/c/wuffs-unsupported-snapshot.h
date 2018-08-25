@@ -2384,8 +2384,6 @@ typedef struct {
     bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_previous_use_global_palette;
-    bool f_has_full_global_palette;
-    bool f_has_full_palette;
     bool f_use_local_palette;
     uint8_t f_which_palette;
     uint8_t f_interlace;
@@ -6354,8 +6352,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
          (self->private_impl.f_frame_rect_x0 == 0) &&
          (self->private_impl.f_frame_rect_y0 == 0) &&
          (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
-         (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height) &&
-         self->private_impl.f_has_full_palette);
+         (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
     if (a_dst != NULL) {
       wuffs_base__image_config__initialize(
           a_dst, 570984584, 0, self->private_impl.f_width,
@@ -7021,12 +7018,11 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      self->private_impl.f_has_full_global_palette = (v_i == 256);
       while (v_i < 256) {
         self->private_impl.f_palettes[0][((4 * v_i) + 0)] = 0;
         self->private_impl.f_palettes[0][((4 * v_i) + 1)] = 0;
         self->private_impl.f_palettes[0][((4 * v_i) + 2)] = 0;
-        self->private_impl.f_palettes[0][((4 * v_i) + 3)] = 0;
+        self->private_impl.f_palettes[0][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
     }
@@ -7775,8 +7771,6 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     } else {
       self->private_impl.f_interlace = 0;
     }
-    self->private_impl.f_has_full_palette =
-        self->private_impl.f_has_full_global_palette;
     self->private_impl.f_use_local_palette = ((v_flags & 128) != 0);
     if (self->private_impl.f_use_local_palette) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
@@ -7822,12 +7816,11 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      self->private_impl.f_has_full_palette = (v_i == 256);
       while (v_i < 256) {
         self->private_impl.f_palettes[1][((4 * v_i) + 0)] = 0;
         self->private_impl.f_palettes[1][((4 * v_i) + 1)] = 0;
         self->private_impl.f_palettes[1][((4 * v_i) + 2)] = 0;
-        self->private_impl.f_palettes[1][((4 * v_i) + 3)] = 0;
+        self->private_impl.f_palettes[1][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
     }

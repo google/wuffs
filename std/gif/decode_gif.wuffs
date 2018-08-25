@@ -76,8 +76,6 @@ pub struct decoder?(
 	previous_lzw_decode_ended_abruptly base.bool,
 	previous_use_global_palette base.bool,
 
-	has_full_global_palette base.bool,
-	has_full_palette base.bool,
 	use_local_palette base.bool,
 
 	which_palette base.u8[..2],
@@ -139,8 +137,7 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 		(this.frame_rect_x0 == 0) and
 		(this.frame_rect_y0 == 0) and
 		(this.frame_rect_x1 == this.width) and
-		(this.frame_rect_y1 == this.height) and
-		(this.has_full_palette)
+		(this.frame_rect_y1 == this.height)
 
 	if args.dst != nullptr {
 		// TODO: rename initialize to set?
@@ -319,16 +316,12 @@ pri func decoder.decode_lsd!??(src base.io_reader) {
 			this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
 		}
-		this.has_full_global_palette = i == 256
-		// Set the remaining palette entries to transparent black.
-		//
-		// TODO: opaque black?? Is this consistent with frame_config.blend?
-		// Should we mask the LZW-decoded data if num_palette_entries < 256?
+		// Set the remaining palette entries to opaque black.
 		while i < 256 {
 			this.palettes[0][(4 * i) + 0] = 0x00
 			this.palettes[0][(4 * i) + 1] = 0x00
 			this.palettes[0][(4 * i) + 2] = 0x00
-			this.palettes[0][(4 * i) + 3] = 0x00
+			this.palettes[0][(4 * i) + 3] = 0xFF
 			i += 1
 		}
 	}
@@ -517,8 +510,6 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 		this.interlace = 0
 	}
 
-	this.has_full_palette = this.has_full_global_palette
-
 	// Read the optional Local Color Table.
 	this.use_local_palette = (flags & 0x80) != 0
 	if this.use_local_palette {
@@ -535,13 +526,12 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 			this.palettes[1][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
 		}
-		this.has_full_palette = i == 256
-		// Set the remaining palette entries to transparent black.
+		// Set the remaining palette entries to opaque black.
 		while i < 256 {
 			this.palettes[1][(4 * i) + 0] = 0x00
 			this.palettes[1][(4 * i) + 1] = 0x00
 			this.palettes[1][(4 * i) + 2] = 0x00
-			this.palettes[1][(4 * i) + 3] = 0x00
+			this.palettes[1][(4 * i) + 3] = 0xFF
 			i += 1
 		}
 	}
