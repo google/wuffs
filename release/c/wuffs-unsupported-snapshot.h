@@ -123,16 +123,16 @@ typedef struct {
 
 // --------
 
-// A status is either NULL (meaning OK or no error) or string message. That
-// message is human-readable, for programmers, but it is not for end users. It
-// is not localized, and does not contain additional contextual information
-// such as a source filename.
+// A status is either NULL (meaning OK) or a string message. That message is
+// human-readable, for programmers, but it is not for end users. It is not
+// localized, and does not contain additional contextual information such as a
+// source filename.
 //
 // Status strings are statically allocated and should never be free'd. They can
 // be compared by the == operator and not just by strcmp.
 typedef const char* wuffs_base__status;
 
-extern const char* wuffs_base__suspension__end_of_data;
+extern const char* wuffs_base__warning__end_of_data;
 extern const char* wuffs_base__suspension__short_read;
 extern const char* wuffs_base__suspension__short_write;
 extern const char* wuffs_base__error__bad_argument_length_too_short;
@@ -148,7 +148,7 @@ extern const char* wuffs_base__error__disabled_by_previous_error;
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z != '$');
+  return z && (*z == '?');
 }
 
 static inline bool  //
@@ -159,6 +159,11 @@ wuffs_base__status__is_ok(wuffs_base__status z) {
 static inline bool  //
 wuffs_base__status__is_suspension(wuffs_base__status z) {
   return z && (*z == '$');
+}
+
+static inline bool  //
+wuffs_base__status__is_warning(wuffs_base__status z) {
+  return z && (*z != '$') && (*z != '?');
 }
 
 // --------
@@ -3616,7 +3621,7 @@ wuffs_base__frame_config__rect_y1(wuffs_base__frame_config* c) {
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
-const char* wuffs_base__suspension__end_of_data = "$base: end of data";
+const char* wuffs_base__warning__end_of_data = "!base: end of data";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_argument_length_too_short =
@@ -4514,12 +4519,13 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
       }
       if (!wuffs_base__status__is_suspension(v_z)) {
         status = v_z;
-        if (!status) {
-          goto ok;
+        if (wuffs_base__status__is_error(status)) {
+          goto exit;
         } else if (wuffs_base__status__is_suspension(status)) {
           status = wuffs_base__error__cannot_return_a_suspension;
+          goto exit;
         }
-        goto exit;
+        goto ok;
       }
       v_written = ((wuffs_base__slice_u8){
           .ptr = a_dst.private_impl.mark,
@@ -6603,10 +6609,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       }
     }
     if (self->private_impl.f_end_of_data) {
-      while (true) {
-        status = wuffs_base__suspension__end_of_data;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
-      }
+      status = wuffs_base__warning__end_of_data;
+      goto ok;
     }
     v_blend = 0;
     if (!self->private_impl.f_gc_has_transparent_index) {

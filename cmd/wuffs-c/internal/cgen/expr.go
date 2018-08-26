@@ -219,8 +219,10 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			b.writes("wuffs_base__")
 			if statusMsgIsError(msg) {
 				b.writes("error__")
-			} else {
+			} else if statusMsgIsSuspension(msg) {
 				b.writes("suspension__")
+			} else {
+				b.writes("warning__")
 			}
 			b.writes(cName(msg, ""))
 		}

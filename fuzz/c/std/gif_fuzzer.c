@@ -97,7 +97,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
                                            ((wuffs_base__slice_u8){}));
       if (z) {
-        if ((z != wuffs_base__suspension__end_of_data) || !seen_ok) {
+        if ((z != wuffs_base__warning__end_of_data) || !seen_ok) {
           ret = z;
         }
         goto exit;

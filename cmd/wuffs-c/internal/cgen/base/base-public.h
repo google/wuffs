@@ -99,10 +99,10 @@ typedef struct {
 
 // --------
 
-// A status is either NULL (meaning OK or no error) or string message. That
-// message is human-readable, for programmers, but it is not for end users. It
-// is not localized, and does not contain additional contextual information
-// such as a source filename.
+// A status is either NULL (meaning OK) or a string message. That message is
+// human-readable, for programmers, but it is not for end users. It is not
+// localized, and does not contain additional contextual information such as a
+// source filename.
 //
 // Status strings are statically allocated and should never be free'd. They can
 // be compared by the == operator and not just by strcmp.
@@ -112,7 +112,7 @@ typedef const char* wuffs_base__status;
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z != '$');
+  return z && (*z == '?');
 }
 
 static inline bool  //
@@ -123,6 +123,11 @@ wuffs_base__status__is_ok(wuffs_base__status z) {
 static inline bool  //
 wuffs_base__status__is_suspension(wuffs_base__status z) {
   return z && (*z == '$');
+}
+
+static inline bool  //
+wuffs_base__status__is_warning(wuffs_base__status z) {
+  return z && (*z != '$') && (*z != '?');
 }
 
 // --------

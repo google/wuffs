@@ -223,7 +223,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   while (true) {
     z = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
     if (z) {
-      if (z == wuffs_base__suspension__end_of_data) {
+      if (z == wuffs_base__warning__end_of_data) {
         break;
       }
       return z;
@@ -428,9 +428,9 @@ bool do_test_wuffs_gif_decode(const char* filename,
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
     wuffs_base__status z = wuffs_gif__decoder__decode_frame(
         &dec, &pb, 0, 0, src_reader, ((wuffs_base__slice_u8){}));
-    if (z != wuffs_base__suspension__end_of_data) {
+    if (z != wuffs_base__warning__end_of_data) {
       FAIL("decode_frame: got \"%s\", want \"%s\"", z,
-           wuffs_base__suspension__end_of_data);
+           wuffs_base__warning__end_of_data);
       return false;
     }
     if (src.ri != src.wi) {
@@ -557,9 +557,9 @@ bool do_test_wuffs_gif_decode_animated(
   for (i = 0; i < 3; i++) {
     z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
                                          ((wuffs_base__slice_u8){}));
-    if (z != wuffs_base__suspension__end_of_data) {
+    if (z != wuffs_base__warning__end_of_data) {
       FAIL("decode_frame: got \"%s\", want \"%s\"", z,
-           wuffs_base__suspension__end_of_data);
+           wuffs_base__warning__end_of_data);
       return false;
     }
   }
@@ -769,7 +769,7 @@ bool do_test_wuffs_gif_num_decoded(bool frame_config) {
     if (!z) {
       want++;
       continue;
-    } else if (z == wuffs_base__suspension__end_of_data) {
+    } else if (z == wuffs_base__warning__end_of_data) {
       end_of_data = true;
       continue;
     }
@@ -902,7 +902,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
   }
 
   z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
-  if (z != wuffs_base__suspension__end_of_data) {
+  if (z != wuffs_base__warning__end_of_data) {
     FAIL("decode_frame_config EOD: \"%s\"", z);
     return false;
   }
@@ -922,9 +922,6 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
       FAIL("reset_for_decode_frame #%d: \"%s\"", i, z);
       return false;
     }
-
-    // TODO: delete this hack to get out of the end-of-data loop.
-    dec.private_impl.c_decode_frame_config[0].coro_susp_point = 0;
 
     int j;
     for (j = i + 1; j < 4; j++) {
@@ -953,7 +950,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     }
 
     z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
-    if (z != wuffs_base__suspension__end_of_data) {
+    if (z != wuffs_base__warning__end_of_data) {
       FAIL("decode_frame_config EOD #%d: \"%s\"", i, z);
       return false;
     }

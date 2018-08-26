@@ -315,6 +315,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			if retExpr.Operator() == t.IDStatus {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
 				isError = statusMsgIsError(msg)
+				isOK = statusMsgIsWarning(msg)
 			}
 			// TODO: check that retExpr has no call-suspendibles.
 			if err := g.writeExpr(
@@ -335,9 +336,10 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			b.writes("goto ok;")
 		} else {
 			g.currFunk.hasGotoOK = true
-			b.writes("if (!status) { goto ok; }" +
+			// TODO: the "goto exit"s can be "goto ok".
+			b.writes("if (wuffs_base__status__is_error(status)) { goto exit; }" +
 				"else if (wuffs_base__status__is_suspension(status)) { " +
-				"status = wuffs_base__error__cannot_return_a_suspension; } goto exit;")
+				"status = wuffs_base__error__cannot_return_a_suspension; goto exit; } goto ok;")
 		}
 		return nil
 	}

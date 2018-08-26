@@ -116,9 +116,11 @@ func Do(args []string) error {
 						if z == "" {
 							continue
 						}
-						pre := "error"
+						pre := "warning"
 						if z[0] == '$' {
 							pre = "suspension"
+						} else if z[0] == '?' {
+							pre = "error"
 						}
 						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
 							pre, cName(z, ""), z[:1], z[1:])
@@ -185,7 +187,15 @@ type status struct {
 }
 
 func statusMsgIsError(msg string) bool {
-	return (len(msg) == 0) || (msg[0] != '$')
+	return (len(msg) != 0) && (msg[0] == '?')
+}
+
+func statusMsgIsSuspension(msg string) bool {
+	return (len(msg) != 0) && (msg[0] == '$')
+}
+
+func statusMsgIsWarning(msg string) bool {
+	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '?')
 }
 
 type buffer []byte
@@ -247,8 +257,10 @@ func insertBasePublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.StatusList {
-				pre := "error"
-				if !statusMsgIsError(z) {
+				pre := "warning"
+				if statusMsgIsError(z) {
+					pre = "error"
+				} else if statusMsgIsSuspension(z) {
 					pre = "suspension"
 				}
 				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(z, ""))

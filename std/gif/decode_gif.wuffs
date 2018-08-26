@@ -205,9 +205,7 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 	// This is a new "if", not an "else", because the calls above can modify
 	// this.end_of_data.
 	if this.end_of_data {
-		while true {
-			yield status "$end of data"
-		}
+		return status "!end of data"
 	}
 
 	var blend base.u8 = 0

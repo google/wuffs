@@ -20,7 +20,7 @@ import (
 )
 
 var StatusList = [...]string{
-	"$end of data",
+	"!end of data",
 	"$short read",
 	"$short write",
 	"?bad argument (length too short)",
@@ -225,6 +225,7 @@ var Funcs = []string{
 	"status.is_error() bool",
 	"status.is_ok() bool",
 	"status.is_suspension() bool",
+	"status.is_warning() bool",
 
 	// ---- frame_config
 	// Duration's upper bound is the maximum possible i64 value.

@@ -37,6 +37,7 @@
 - Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.
 - Changed `error "foo"` to `status "?foo"`.
+- Added warnings as another status code category.
 - Made the status type a `const char *`, not an `int32_t`.
 - Disallowed `__double_underscore` prefixed names.
 - Moved the base38 package from `lang/base38` to `lib/base38`.
