@@ -6535,12 +6535,6 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
       }
     }
-    if ((self->private_impl.f_local_palette_log2_size != 0) ||
-        self->private_impl.f_gc_has_transparent_index) {
-      self->private_impl.f_which_palette = 1;
-    } else {
-      self->private_impl.f_which_palette = 0;
-    }
     v_blend = 0;
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_blend = 2;
@@ -7991,6 +7985,12 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       self->private_impl.f_palettes[1][(
           (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 3)] =
           0;
+    }
+    if ((self->private_impl.f_local_palette_log2_size != 0) ||
+        self->private_impl.f_gc_has_transparent_index) {
+      self->private_impl.f_which_palette = 1;
+    } else {
+      self->private_impl.f_which_palette = 0;
     }
     wuffs_base__pixel_buffer__set_palette(
         a_dst, ((wuffs_base__slice_u8){

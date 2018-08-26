@@ -187,12 +187,6 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 		}
 	}
 
-	if (this.local_palette_log2_size != 0) or this.gc_has_transparent_index {
-		this.which_palette = 1
-	} else {
-		this.which_palette = 0
-	}
-
 	var blend base.u8 = 0
 	if not this.gc_has_transparent_index {
 		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
@@ -550,6 +544,12 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 1] = 0x00
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 2] = 0x00
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
+	}
+
+	if (this.local_palette_log2_size != 0) or this.gc_has_transparent_index {
+		this.which_palette = 1
+	} else {
+		this.which_palette = 0
 	}
 	args.dst.set_palette!(palette:this.palettes[this.which_palette][:])
 
