@@ -844,7 +844,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     return false;
   }
 
-  uint64_t wants[4] = {818, 2144, 2205, 2560};
+  uint64_t wants[4] = {817, 2143, 2204, 2559};
   int i;
   for (i = 0; i < 4; i++) {
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
@@ -860,13 +860,13 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
       return false;
     }
 
-    // Look for the 0x2C byte that's the start of a GIF's Image Descriptor, 10
+    // Look for the 0x2C byte that's the start of a GIF's Image Descriptor, 9
     // bytes before the frame_config's I/O position.
-    if ((got < 10) || (got - 10 < src.pos)) {
+    if ((got < 9) || (got - 9 < src.pos)) {
       FAIL("io_position #%d: got %" PRIu64 ", was too small", i, got);
       return false;
     }
-    uint64_t index = got - 10 - src.pos;
+    uint64_t index = got - 9 - src.pos;
     if (index >= src.wi) {
       FAIL("io_position #%d: got %" PRIu64 ", was too large", i, got);
       return false;
