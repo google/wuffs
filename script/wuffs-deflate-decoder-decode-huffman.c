@@ -30,7 +30,7 @@
 // implementation, edit release/c/wuffs-unsupported-snapshot.h and find the
 // line that says
 //
-// #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
+// #ifdef WUFFS_IMPLEMENTATION
 //
 // After that, add this line:
 //
@@ -50,26 +50,26 @@
 
 $ git diff release/c/wuffs-unsupported-snapshot.h
 diff --git a/release/c/wuffs-unsupported-snapshot.h b/release/c/wuffs-unsupported-snapshot.h
-index 7561915..b2a79ee 100644
+index eb60bdbe..2941e337 100644
 --- a/release/c/wuffs-unsupported-snapshot.h
 +++ b/release/c/wuffs-unsupported-snapshot.h
-@@ -3698,6 +3698,8 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
- }  // extern "C"
- #endif
+@@ -2825,6 +2825,8 @@ wuffs_zlib__decoder::decode(wuffs_base__io_writer a_dst,
+
+ #ifdef WUFFS_IMPLEMENTATION
 
 +#include "../../script/wuffs-deflate-decoder-decode-huffman.c"
 +
- #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
-
- static const char wuffs_base__status__string_data[] = {
-@@ -4999,7 +5001,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
+ // Copyright 2017 The Wuffs Authors.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+@@ -4633,7 +4635,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
        if (a_src.private_impl.buf) {
-         a_src.private_impl.buf->ri = ioptr_src - a_src.private_impl.buf->ptr;
+         a_src.private_impl.buf->ri = iop_a_src - a_src.private_impl.buf->ptr;
        }
 -      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 +      status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
        if (a_src.private_impl.buf) {
-         ioptr_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
+         iop_a_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
        }
 
 */
@@ -89,6 +89,9 @@ index 7561915..b2a79ee 100644
 
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
+
+extern const char*
+    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
 
 // Define this macro to further speed up this C implementation, using two
 // techniques that are not used by the zlib-the-library C implementation (as of
@@ -139,23 +142,23 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
   if (!a_dst.private_impl.buf || !a_src.private_impl.buf) {
-    return WUFFS_BASE__ERROR_BAD_ARGUMENT;
+    return wuffs_base__error__bad_argument;
   }
-  wuffs_base__status status = WUFFS_BASE__STATUS_OK;
+  wuffs_base__status z = NULL;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
   uint8_t* pdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
   uint8_t* qdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->len;
   if ((qdst - pdst) < 258) {
-    return WUFFS_BASE__STATUS_OK;
+    return NULL;
   } else {
     qdst -= 258;
   }
   uint8_t* psrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
   uint8_t* qsrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->wi;
   if ((qsrc - psrc) < 12) {
-    return WUFFS_BASE__STATUS_OK;
+    return NULL;
   } else {
     qsrc -= 12;
   }
@@ -225,8 +228,7 @@ outer_loop:
         goto end;
       }
       if ((table_entry >> 24) != 0x10) {
-        status =
-            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        z = wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -273,8 +275,7 @@ outer_loop:
         break;
       }
       if ((table_entry >> 24) != 0x10) {
-        status =
-            WUFFS_DEFLATE__ERROR_INTERNAL_ERROR_INCONSISTENT_HUFFMAN_DECODER_STATE;
+        z = wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -306,7 +307,7 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst0)) {
-      status = WUFFS_BASE__ERROR_BAD_ARGUMENT;
+      z = wuffs_base__error__bad_argument;
       goto end;
     }
 
@@ -358,5 +359,5 @@ end:
   self->private_impl.f_bits = bits;
   self->private_impl.f_n_bits = n_bits;
 
-  return status;
+  return z;
 }
