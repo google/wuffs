@@ -148,6 +148,7 @@ var Funcs = []string{
 	"io_reader.peek_u64le() u64",
 
 	"io_reader.available() u64",
+	"io_reader.position() u64",
 	"io_reader.set!(s slice u8, closed bool)",
 	"io_reader.set_limit!(l u64)",
 	"io_reader.set_mark!()",
@@ -201,6 +202,7 @@ var Funcs = []string{
 	"io_writer.write_fast_u64le!(x u64)",
 
 	"io_writer.available() u64",
+	"io_writer.position() u64",
 	"io_writer.set!(s slice u8)",
 	"io_writer.set_limit!(l u64)",
 	"io_writer.set_mark!()",
@@ -228,7 +230,7 @@ var Funcs = []string{
 
 	// Duration's upper bound is the maximum possible i64 value.
 	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
-		"blend u8, disposal u8, palette_changed bool)",
+		"index u64, io_position u64, blend u8, disposal u8, palette_changed bool)",
 
 	// ---- image_config
 

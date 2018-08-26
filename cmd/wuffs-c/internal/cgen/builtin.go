@@ -122,6 +122,11 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writes("(iop_a_src > io0_a_src)")
 		return nil
 
+	case t.IDPosition:
+		b.printf("(a_src.private_impl.buf ? wuffs_base__u64__sat_add(" +
+			"a_src.private_impl.buf->pos, iop_a_src - a_src.private_impl.buf->ptr) : 0)")
+		return nil
+
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, iop_a_src,", aPrefix)
 		// TODO: update the iop variables?
@@ -199,6 +204,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 	case t.IDCopyNFromSlice:
 		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io1_a_dst,")
 		return g.writeArgs(b, args, rp, depth)
+
+	case t.IDPosition:
+		b.printf("(a_dst.private_impl.buf ? wuffs_base__u64__sat_add(" +
+			"a_dst.private_impl.buf->pos, iop_a_dst - a_dst.private_impl.buf->ptr) : 0)")
+		return nil
 
 	case t.IDSetMark:
 		// TODO: is a private_impl.mark the right representation? What

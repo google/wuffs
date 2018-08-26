@@ -407,6 +407,7 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
     return false;
   }
   fclose(f);
+  dst->pos = 0;
   dst->closed = true;
   return true;
 }

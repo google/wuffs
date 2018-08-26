@@ -990,7 +990,8 @@ typedef struct {
 } wuffs_base__io_writer;
 
 // wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
-// additional indexes into that buffer, plus an opened / closed flag.
+// additional indexes into that buffer, plus a buffer position and an opened /
+// closed flag.
 //
 // A value with all fields NULL or zero is a valid, empty buffer.
 typedef struct wuffs_base__io_buffer__struct {
@@ -998,6 +999,7 @@ typedef struct wuffs_base__io_buffer__struct {
   size_t len;    // Length.
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
+  uint64_t pos;  // Position of the buffer start relative to the stream start.
   bool closed;   // No further writes are expected.
 
 #ifdef __cplusplus
@@ -1015,6 +1017,7 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   if (!buf || (buf->ri == 0)) {
     return;
   }
+  buf->pos = wuffs_base__u64__sat_add(buf->pos, buf->ri);
   size_t n = buf->wi - buf->ri;
   if (n != 0) {
     memmove(buf->ptr, buf->ptr + buf->ri, n);

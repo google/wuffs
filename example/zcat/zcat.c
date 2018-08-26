@@ -81,6 +81,8 @@ static const char* decode() {
     return z;
   }
 
+  wuffs_base__io_buffer dst =
+      ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
   wuffs_base__io_buffer src =
       ((wuffs_base__io_buffer){.ptr = src_buffer, .len = SRC_BUFFER_SIZE});
 
@@ -99,9 +101,6 @@ static const char* decode() {
     }
 
     while (true) {
-      wuffs_base__io_buffer dst =
-          ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
-
       wuffs_base__status z =
           wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
                                       wuffs_base__io_buffer__reader(&src));
@@ -110,6 +109,8 @@ static const char* decode() {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
         ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
+        dst.ri = dst.wi;
+        wuffs_base__io_buffer__compact(&dst);
       }
 
       if (z == wuffs_base__suspension__short_read) {

@@ -591,6 +591,8 @@ typedef struct {
   struct {
     wuffs_base__rect_ie_u32 bounds;
     wuffs_base__flicks duration;
+    uint64_t index;
+    uint64_t io_position;
     wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
     bool palette_changed;
@@ -599,6 +601,8 @@ typedef struct {
 #ifdef __cplusplus
   inline void update(wuffs_base__rect_ie_u32 bounds,
                      wuffs_base__flicks duration,
+                     uint64_t index,
+                     uint64_t io_position,
                      wuffs_base__animation_blend blend,
                      wuffs_base__animation_disposal disposal,
                      bool palette_changed);
@@ -606,6 +610,8 @@ typedef struct {
   inline uint32_t width();
   inline uint32_t height();
   inline wuffs_base__flicks duration();
+  inline uint64_t index();
+  inline uint64_t io_position();
   inline wuffs_base__animation_blend blend();
   inline wuffs_base__animation_disposal disposal();
   inline bool palette_changed();
@@ -617,6 +623,8 @@ static inline void  //
 wuffs_base__frame_config__update(wuffs_base__frame_config* c,
                                  wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
+                                 uint64_t index,
+                                 uint64_t io_position,
                                  wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
@@ -626,6 +634,8 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
 
   c->private_impl.bounds = bounds;
   c->private_impl.duration = duration;
+  c->private_impl.index = index;
+  c->private_impl.io_position = io_position;
   c->private_impl.blend = blend;
   c->private_impl.disposal = disposal;
   c->private_impl.palette_changed = palette_changed;
@@ -651,6 +661,20 @@ wuffs_base__frame_config__height(wuffs_base__frame_config* c) {
 static inline wuffs_base__flicks  //
 wuffs_base__frame_config__duration(wuffs_base__frame_config* c) {
   return c ? c->private_impl.duration : 0;
+}
+
+// wuffs_base__frame_config__index returns the index of this frame. The first
+// frame in an image has index 0, the second frame has index 1, and so on.
+static inline uint64_t  //
+wuffs_base__frame_config__index(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.index : 0;
+}
+
+// wuffs_base__frame_config__io_position returns the I/O stream position after
+// the frame config but before the frame's pixel data.
+static inline uint64_t  //
+wuffs_base__frame_config__io_position(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.io_position : 0;
 }
 
 // wuffs_base__frame_config__blend returns, for an animated image, how to blend
@@ -680,10 +704,13 @@ wuffs_base__frame_config__palette_changed(wuffs_base__frame_config* c) {
 inline void  //
 wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
                                  wuffs_base__flicks duration,
+                                 uint64_t index,
+                                 uint64_t io_position,
                                  wuffs_base__animation_blend blend,
                                  wuffs_base__animation_disposal disposal,
                                  bool palette_changed) {
-  wuffs_base__frame_config__update(this, bounds, duration, blend, disposal,
+  wuffs_base__frame_config__update(this, bounds, duration, index,
+                                   io_position, blend, disposal,
                                    palette_changed);
 }
 
@@ -705,6 +732,16 @@ wuffs_base__frame_config::height() {
 inline wuffs_base__flicks  //
 wuffs_base__frame_config::duration() {
   return wuffs_base__frame_config__duration(this);
+}
+
+inline uint64_t  //
+wuffs_base__frame_config::index() {
+  return wuffs_base__frame_config__index(this);
+}
+
+inline uint64_t  //
+wuffs_base__frame_config::io_position() {
+  return wuffs_base__frame_config__io_position(this);
 }
 
 inline wuffs_base__animation_blend  //

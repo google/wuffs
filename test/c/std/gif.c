@@ -791,6 +791,86 @@ void test_wuffs_gif_num_decoded_frames() {
   do_test_wuffs_gif_num_decoded(false);
 }
 
+bool do_test_wuffs_gif_io_position(bool chunked) {
+  wuffs_base__io_buffer src =
+      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  if (!read_file(&src, "../../data/animated-red-blue.gif")) {
+    return false;
+  }
+
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_base__status z =
+      wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    FAIL("check_wuffs_version: \"%s\"", z);
+    return false;
+  }
+
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+
+  if (chunked) {
+    if (src.wi < 20) {
+      FAIL("src is too short");
+      return false;
+    }
+    size_t saved_wi = src.wi;
+    bool saved_closed = src.closed;
+    src.wi = 10;
+    src.closed = false;
+
+    z = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
+    if (z != wuffs_base__suspension__short_read) {
+      FAIL("decode_image_config (chunked): \"%s\"", z);
+      return false;
+    }
+
+    src.wi = saved_wi;
+    src.closed = saved_closed;
+    wuffs_base__io_buffer__compact(&src);
+  }
+
+  z = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
+  if (z) {
+    FAIL("decode_image_config: \"%s\"", z);
+    return false;
+  }
+
+  uint64_t wants[4] = {1586, 2144, 2205, 2560};
+  int i;
+  for (i = 0; i < 4; i++) {
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+    z = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+    if (z) {
+      FAIL("decode_frame_config #%d: \"%s\"", i, z);
+      return false;
+    }
+    uint64_t got = wuffs_base__frame_config__io_position(&fc);
+    uint64_t want = wants[i];
+    if (got != want) {
+      FAIL("decode_frame_config #%d: got %" PRIu64 ", want %" PRIu64, i, got,
+           want);
+      return false;
+    }
+  }
+
+  z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
+  if (z != wuffs_base__suspension__end_of_data) {
+    FAIL("decode_frame_config EOD: \"%s\"", z);
+    return false;
+  }
+  return true;
+}
+
+void test_wuffs_gif_io_position_one_chunk() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_gif_io_position(false);
+}
+
+void test_wuffs_gif_io_position_two_chunks() {
+  CHECK_FOCUS(__func__);
+  do_test_wuffs_gif_io_position(true);
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -824,7 +904,8 @@ bool do_test_mimic_gif_decode(const char* filename) {
     return false;
   }
 
-  // TODO: check the palette RGB values, not just the palette indexes (pixels).
+  // TODO: check the palette RGB values, not just the palette indexes
+  // (pixels).
 
   return true;
 }
@@ -1011,6 +1092,8 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_png,                    //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //
+    test_wuffs_gif_io_position_one_chunk,                    //
+    test_wuffs_gif_io_position_two_chunks,                   //
 
 #ifdef WUFFS_MIMIC
 

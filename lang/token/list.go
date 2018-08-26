@@ -513,11 +513,12 @@ const (
 	IDWriteFastU64LE = ID(0x17F)
 
 	IDCanUndoByte = ID(0x180)
-	IDSetLimit    = ID(0x181)
-	IDSetMark     = ID(0x182)
-	IDSinceMark   = ID(0x183)
-	IDSkip        = ID(0x184)
-	IDSkipFast    = ID(0x185)
+	IDPosition    = ID(0x181)
+	IDSetLimit    = ID(0x182)
+	IDSetMark     = ID(0x183)
+	IDSinceMark   = ID(0x184)
+	IDSkip        = ID(0x185)
+	IDSkipFast    = ID(0x186)
 
 	IDCopyFromSlice        = ID(0x190)
 	IDCopyNFromHistory     = ID(0x191)
@@ -796,6 +797,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteFastU64LE: "write_fast_u64le",
 
 	IDCanUndoByte: "can_undo_byte",
+	IDPosition:    "position",
 	IDSetLimit:    "set_limit",
 	IDSetMark:     "set_mark",
 	IDSinceMark:   "since_mark",

@@ -54,6 +54,7 @@ static const char* decode() {
       .ptr = lgtm_ptr,
       .len = lgtm_len,
       .wi = lgtm_len,
+      .pos = 0,
       .closed = true,
   });
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);

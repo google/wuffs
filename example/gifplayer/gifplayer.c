@@ -278,7 +278,12 @@ const char* play() {
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .ptr = src_buffer, .len = src_len, .wi = src_len, .closed = true});
+      .ptr = src_buffer,
+      .len = src_len,
+      .wi = src_len,
+      .pos = 0,
+      .closed = true,
+  });
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (first_play) {
