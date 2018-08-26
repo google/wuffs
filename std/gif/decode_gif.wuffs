@@ -74,11 +74,10 @@ pub struct decoder?(
 
 	end_of_data base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
-	previous_use_global_palette base.bool,
 
 	local_palette_log2_size base.u8[..8],  // 0 means no local palette.
 
-	which_palette base.u8[..2],
+	which_palette base.u8[..1],
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
 	interlace base.u8[..4],
@@ -190,16 +189,9 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 
 	if (this.local_palette_log2_size != 0) or this.gc_has_transparent_index {
 		this.which_palette = 1
-	} else if not this.previous_use_global_palette {
-		// This frame uses the global palette but the previous one didn't.
-		this.which_palette = 0
 	} else {
-		// Both this frame and the previous one used the global palette. No
-		// palette update is necessary.
-		this.which_palette = 2
+		this.which_palette = 0
 	}
-	this.previous_use_global_palette =
-		(this.local_palette_log2_size == 0) and not this.gc_has_transparent_index
 
 	var blend base.u8 = 0
 	if not this.gc_has_transparent_index {
@@ -559,7 +551,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 2] = 0x00
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
-	args.dst.set_palette!(palette:this.palettes[this.which_palette & 1][:])
+	args.dst.set_palette!(palette:this.palettes[this.which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file

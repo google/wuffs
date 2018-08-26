@@ -2403,7 +2403,6 @@ typedef struct {
     uint8_t f_call_sequence;
     bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
-    bool f_previous_use_global_palette;
     uint8_t f_local_palette_log2_size;
     uint8_t f_which_palette;
     uint8_t f_interlace;
@@ -6539,14 +6538,9 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     if ((self->private_impl.f_local_palette_log2_size != 0) ||
         self->private_impl.f_gc_has_transparent_index) {
       self->private_impl.f_which_palette = 1;
-    } else if (!self->private_impl.f_previous_use_global_palette) {
-      self->private_impl.f_which_palette = 0;
     } else {
-      self->private_impl.f_which_palette = 2;
+      self->private_impl.f_which_palette = 0;
     }
-    self->private_impl.f_previous_use_global_palette =
-        ((self->private_impl.f_local_palette_log2_size == 0) &&
-         !self->private_impl.f_gc_has_transparent_index);
     v_blend = 0;
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_blend = 2;
@@ -7999,10 +7993,10 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           0;
     }
     wuffs_base__pixel_buffer__set_palette(
-        a_dst,
-        ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[(
-                                    self->private_impl.f_which_palette & 1)],
-                                .len = 1024}));
+        a_dst, ((wuffs_base__slice_u8){
+                   .ptr = self->private_impl
+                              .f_palettes[self->private_impl.f_which_palette],
+                   .len = 1024}));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
        wuffs_base__ignore_check_wuffs_version_status(
