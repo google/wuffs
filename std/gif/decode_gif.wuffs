@@ -165,6 +165,31 @@ pub func decoder.work_buffer_size() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
+pub func decoder.reset_for_decode_frame!??(fc ptr base.frame_config) {
+	if this.call_sequence == 0 {
+		return status "?invalid call sequence"
+	}
+	// TODO: change ~sat+ to + or change the semantics so that the io_position
+	// is before, not after, the frame config.
+	this.num_decoded_frame_configs_value = args.fc.index() ~sat+ 1
+	this.num_decoded_frames_value = args.fc.index()
+
+	this.frame_rect_x0 = args.fc.rect_x0()
+	this.frame_rect_y0 = args.fc.rect_y0()
+	this.frame_rect_x1 = args.fc.rect_x1()
+	this.frame_rect_y1 = args.fc.rect_y1()
+	this.dst_x = this.frame_rect_x0
+	this.dst_y = this.frame_rect_y0
+
+	this.end_of_data = false
+
+	// TODO: delete this hack.
+	this.call_sequence = 2
+
+	// TODO: restoring the state above isn't enough. We also need to restore
+	// gc_etc fields like gc_transparent_index, but they're not in args.fc.
+}
+
 pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_reader) {
 	if not this.end_of_data {
 		if this.call_sequence == 0 {

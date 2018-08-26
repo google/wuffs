@@ -227,10 +227,22 @@ var Funcs = []string{
 	"status.is_suspension() bool",
 
 	// ---- frame_config
-
 	// Duration's upper bound is the maximum possible i64 value.
+
+	"frame_config.blend() u8",
+	"frame_config.disposal() u8",
+	"frame_config.duration() u64[..0x7FFFFFFFFFFFFFFF]",
+	"frame_config.index() u64",
+	"frame_config.io_position() u64",
+
 	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
 		"index u64, io_position u64, blend u8, disposal u8)",
+
+	// TODO: delete these hacks.
+	"frame_config.rect_x0() u32",
+	"frame_config.rect_y0() u32",
+	"frame_config.rect_x1() u32",
+	"frame_config.rect_y1() u32",
 
 	// ---- image_config
 
@@ -240,6 +252,7 @@ var Funcs = []string{
 	// ---- pixel_buffer
 
 	"pixel_buffer.plane(p u32[..3]) table u8",
+
 	"pixel_buffer.set_palette!(palette slice u8)",
 }
 

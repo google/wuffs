@@ -2510,6 +2510,8 @@ typedef struct {
   inline uint64_t num_decoded_frame_configs();
   inline uint64_t num_decoded_frames();
   inline wuffs_base__range_ii_u64 work_buffer_size();
+  inline wuffs_base__status reset_for_decode_frame(
+      wuffs_base__frame_config* a_fc);
   inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
                                                 wuffs_base__io_reader a_src);
   inline wuffs_base__status decode_frame(wuffs_base__pixel_buffer* a_dst,
@@ -2548,6 +2550,10 @@ wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__reset_for_decode_frame(wuffs_gif__decoder* self,
+                                           wuffs_base__frame_config* a_fc);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
@@ -2592,6 +2598,11 @@ wuffs_gif__decoder::num_decoded_frames() {
 inline wuffs_base__range_ii_u64  //
 wuffs_gif__decoder::work_buffer_size() {
   return wuffs_gif__decoder__work_buffer_size(this);
+}
+
+inline wuffs_base__status  //
+wuffs_gif__decoder::reset_for_decode_frame(wuffs_base__frame_config* a_fc) {
+  return wuffs_gif__decoder__reset_for_decode_frame(this, a_fc);
 }
 
 inline wuffs_base__status  //
@@ -3577,6 +3588,26 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
+}
+
+static inline uint32_t  //
+wuffs_base__frame_config__rect_x0(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.bounds.min_incl_x : 0;
+}
+
+static inline uint32_t  //
+wuffs_base__frame_config__rect_y0(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.bounds.min_incl_y : 0;
+}
+
+static inline uint32_t  //
+wuffs_base__frame_config__rect_x1(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.bounds.max_excl_x : 0;
+}
+
+static inline uint32_t  //
+wuffs_base__frame_config__rect_y1(wuffs_base__frame_config* c) {
+  return c ? c->private_impl.bounds.max_excl_y : 0;
 }
 
 #ifdef __cplusplus
@@ -6442,6 +6473,49 @@ wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self) {
 
   return wuffs_base__utility__make_range_ii_u64(&self->private_impl.f_util, 0,
                                                 0);
+}
+
+// -------- func gif.decoder.reset_for_decode_frame
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__reset_for_decode_frame(wuffs_gif__decoder* self,
+                                           wuffs_base__frame_config* a_fc) {
+  if (!self) {
+    return wuffs_base__error__bad_receiver;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return (self->private_impl.magic == WUFFS_BASE__DISABLED)
+               ? wuffs_base__error__disabled_by_previous_error
+               : wuffs_base__error__check_wuffs_version_missing;
+  }
+  if (!a_fc) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
+  }
+  wuffs_base__status status = NULL;
+
+  if (self->private_impl.f_call_sequence == 0) {
+    status = wuffs_base__error__invalid_call_sequence;
+    goto exit;
+  }
+  self->private_impl.f_num_decoded_frame_configs_value =
+      wuffs_base__u64__sat_add(wuffs_base__frame_config__index(a_fc), 1);
+  self->private_impl.f_num_decoded_frames_value =
+      wuffs_base__frame_config__index(a_fc);
+  self->private_impl.f_frame_rect_x0 = wuffs_base__frame_config__rect_x0(a_fc);
+  self->private_impl.f_frame_rect_y0 = wuffs_base__frame_config__rect_y0(a_fc);
+  self->private_impl.f_frame_rect_x1 = wuffs_base__frame_config__rect_x1(a_fc);
+  self->private_impl.f_frame_rect_y1 = wuffs_base__frame_config__rect_y1(a_fc);
+  self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
+  self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
+  self->private_impl.f_end_of_data = false;
+  self->private_impl.f_call_sequence = 2;
+  goto exit;
+exit:
+  if (wuffs_base__status__is_error(status)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+  }
+  return status;
 }
 
 // -------- func gif.decoder.decode_frame_config

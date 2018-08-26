@@ -903,6 +903,59 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     FAIL("decode_frame_config EOD: \"%s\"", z);
     return false;
   }
+
+  // If we're chunked, we've discarded some source bytes due to an earlier
+  // wuffs_base__io_buffer__compact call. We won't bother testing
+  // reset_for_decode_frame in that case.
+  if (chunked) {
+    return true;
+  }
+
+  for (i = 0; i < 4; i++) {
+    src.ri = pos_wants[i];
+
+    z = wuffs_gif__decoder__reset_for_decode_frame(&dec, &fcs[i]);
+    if (z) {
+      FAIL("reset_for_decode_frame #%d: \"%s\"", i, z);
+      return false;
+    }
+
+    // TODO: delete this hack to get out of the end-of-data loop.
+    dec.private_impl.c_decode_frame_config[0].coro_susp_point = 0;
+
+    int j;
+    for (j = i + 1; j < 4; j++) {
+      wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+      z = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+      if (z) {
+        FAIL("decode_frame_config #%d, #%d: \"%s\"", i, j, z);
+        return false;
+      }
+
+      uint64_t index_got = wuffs_base__frame_config__index(&fc);
+      uint64_t index_want = j;
+      if (index_got != index_want) {
+        FAIL("index #%d, #%d: got %" PRIu64 ", want %" PRIu64, i, j, index_got,
+             index_want);
+        return false;
+      }
+
+      uint32_t width_got = wuffs_base__frame_config__width(&fc);
+      uint32_t width_want = width_wants[j];
+      if (width_got != width_want) {
+        FAIL("width #%d, #%d: got %" PRIu32 ", want %" PRIu32, i, j, width_got,
+             width_want);
+        return false;
+      }
+    }
+
+    z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
+    if (z != wuffs_base__suspension__end_of_data) {
+      FAIL("decode_frame_config EOD #%d: \"%s\"", i, z);
+      return false;
+    }
+  }
+
   return true;
 }
 
