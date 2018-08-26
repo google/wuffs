@@ -844,42 +844,54 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     return false;
   }
 
-  uint64_t wants[4] = {817, 2143, 2204, 2559};
+  wuffs_base__frame_config fcs[4];
+  uint32_t width_wants[4] = {64, 37, 49, 49};
+  uint64_t pos_wants[4] = {817, 2143, 2204, 2559};
   int i;
   for (i = 0; i < 4; i++) {
-    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-    z = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+    fcs[i] = ((wuffs_base__frame_config){});
+    z = wuffs_gif__decoder__decode_frame_config(&dec, &fcs[i], src_reader);
     if (z) {
       FAIL("decode_frame_config #%d: \"%s\"", i, z);
       return false;
     }
 
-    uint64_t got = wuffs_base__frame_config__index(&fc);
-    uint64_t want = i;
-    if (got != want) {
-      FAIL("index #%d: got %" PRIu64 ", want %" PRIu64, i, got, want);
+    uint64_t index_got = wuffs_base__frame_config__index(&fcs[i]);
+    uint64_t index_want = i;
+    if (index_got != index_want) {
+      FAIL("index #%d: got %" PRIu64 ", want %" PRIu64, i, index_got,
+           index_want);
       return false;
     }
 
-    got = wuffs_base__frame_config__io_position(&fc);
-    want = wants[i];
-    if (got != want) {
-      FAIL("io_position #%d: got %" PRIu64 ", want %" PRIu64, i, got, want);
+    uint32_t width_got = wuffs_base__frame_config__width(&fcs[i]);
+    uint32_t width_want = width_wants[i];
+    if (width_got != width_want) {
+      FAIL("width #%d: got %" PRIu32 ", want %" PRIu32, i, width_got,
+           width_want);
+      return false;
+    }
+
+    uint64_t pos_got = wuffs_base__frame_config__io_position(&fcs[i]);
+    uint64_t pos_want = pos_wants[i];
+    if (pos_got != pos_want) {
+      FAIL("io_position #%d: got %" PRIu64 ", want %" PRIu64, i, pos_got,
+           pos_want);
       return false;
     }
 
     // Look for the 0x2C byte that's the start of a GIF's Image Descriptor, 9
     // bytes before the frame_config's I/O position.
-    if ((got < 9) || (got - 9 < src.pos)) {
-      FAIL("io_position #%d: got %" PRIu64 ", was too small", i, got);
+    if ((pos_got < 9) || (pos_got - 9 < src.pos)) {
+      FAIL("io_position #%d: got %" PRIu64 ", was too small", i, pos_got);
       return false;
     }
-    uint64_t index = got - 9 - src.pos;
-    if (index >= src.wi) {
-      FAIL("io_position #%d: got %" PRIu64 ", was too large", i, got);
+    uint64_t src_ptr_offset = pos_got - 9 - src.pos;
+    if (src_ptr_offset >= src.wi) {
+      FAIL("io_position #%d: got %" PRIu64 ", was too large", i, pos_got);
       return false;
     }
-    uint8_t x = src.ptr[index];
+    uint8_t x = src.ptr[src_ptr_offset];
     if (x != 0x2C) {
       FAIL("Image Descriptor byte #%d: got 0x%02X, want 0x2C", i, (int)x);
       return false;
