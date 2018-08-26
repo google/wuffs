@@ -809,13 +809,13 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (chunked) {
-    if (src.wi < 20) {
+    if (src.wi < 50) {
       FAIL("src is too short");
       return false;
     }
     size_t saved_wi = src.wi;
     bool saved_closed = src.closed;
-    src.wi = 10;
+    src.wi = 30;
     src.closed = false;
 
     z = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
@@ -826,7 +826,16 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
 
     src.wi = saved_wi;
     src.closed = saved_closed;
+
+    if (src.pos != 0) {
+      FAIL("src.pos: got %" PRIu64 ", want zero", src.pos);
+      return false;
+    }
     wuffs_base__io_buffer__compact(&src);
+    if (src.pos == 0) {
+      FAIL("src.pos: got %" PRIu64 ", want non-zero", src.pos);
+      return false;
+    }
   }
 
   z = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
@@ -835,7 +844,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     return false;
   }
 
-  uint64_t wants[4] = {1586, 2144, 2205, 2560};
+  uint64_t wants[4] = {818, 2144, 2205, 2560};
   int i;
   for (i = 0; i < 4; i++) {
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
@@ -847,8 +856,24 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
     uint64_t got = wuffs_base__frame_config__io_position(&fc);
     uint64_t want = wants[i];
     if (got != want) {
-      FAIL("decode_frame_config #%d: got %" PRIu64 ", want %" PRIu64, i, got,
-           want);
+      FAIL("io_position #%d: got %" PRIu64 ", want %" PRIu64, i, got, want);
+      return false;
+    }
+
+    // Look for the 0x2C byte that's the start of a GIF's Image Descriptor, 10
+    // bytes before the frame_config's I/O position.
+    if ((got < 10) || (got - 10 < src.pos)) {
+      FAIL("io_position #%d: got %" PRIu64 ", was too small", i, got);
+      return false;
+    }
+    uint64_t index = got - 10 - src.pos;
+    if (index >= src.wi) {
+      FAIL("io_position #%d: got %" PRIu64 ", was too large", i, got);
+      return false;
+    }
+    uint8_t x = src.ptr[index];
+    if (x != 0x2C) {
+      FAIL("Image Descriptor byte #%d: got 0x%02X, want 0x2C", i, (int)x);
       return false;
     }
   }

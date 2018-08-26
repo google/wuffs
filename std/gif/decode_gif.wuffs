@@ -225,6 +225,11 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 }
 
 pri func decoder.skip_frame!??(src base.io_reader) {
+	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
+	if this.local_palette_log2_size != 0 {
+		args.src.skip!??(n:(3 as base.u32) << this.local_palette_log2_size)
+	}
+
 	var lw base.u8 = args.src.read_u8!??()
 	this.skip_blocks!??(src:args.src)
 
@@ -512,11 +517,14 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 		this.interlace = 0
 	}
 
-	// Read the optional Local Color Table.
 	this.local_palette_log2_size = 0
 	if (flags & 0x80) != 0 {
 		this.local_palette_log2_size = 1 + (flags & 0x07)
 	}
+}
+
+pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
+	// Read the optional Local Color Table.
 	if this.local_palette_log2_size != 0 {
 		var num_palette_entries base.u32[..256] = (1 as base.u32) << this.local_palette_log2_size
 		var i base.u32
@@ -540,9 +548,7 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 			i += 1
 		}
 	}
-}
 
-pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
 	if this.gc_has_transparent_index {
 		if this.local_palette_log2_size == 0 {
 			this.palettes[1][:].copy_from_slice(s:this.palettes[0][:])
