@@ -76,7 +76,7 @@ pub struct decoder?(
 	previous_lzw_decode_ended_abruptly base.bool,
 	previous_use_global_palette base.bool,
 
-	use_local_palette base.bool,
+	local_palette_log2_size base.u8[..8],  // 0 means no local palette.
 
 	which_palette base.u8[..2],
 
@@ -188,7 +188,7 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 		}
 	}
 
-	if this.use_local_palette or this.gc_has_transparent_index {
+	if (this.local_palette_log2_size != 0) or this.gc_has_transparent_index {
 		this.which_palette = 1
 	} else if not this.previous_use_global_palette {
 		// This frame uses the global palette but the previous one didn't.
@@ -199,7 +199,7 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 		this.which_palette = 2
 	}
 	this.previous_use_global_palette =
-		not (this.use_local_palette or this.gc_has_transparent_index)
+		(this.local_palette_log2_size == 0) and not this.gc_has_transparent_index
 
 	var blend base.u8 = 0
 	if not this.gc_has_transparent_index {
@@ -513,9 +513,12 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 	}
 
 	// Read the optional Local Color Table.
-	this.use_local_palette = (flags & 0x80) != 0
-	if this.use_local_palette {
-		var num_palette_entries base.u32[..256] = (1 as base.u32) << (1 + (flags & 0x07))
+	this.local_palette_log2_size = 0
+	if (flags & 0x80) != 0 {
+		this.local_palette_log2_size = 1 + (flags & 0x07)
+	}
+	if this.local_palette_log2_size != 0 {
+		var num_palette_entries base.u32[..256] = (1 as base.u32) << this.local_palette_log2_size
 		var i base.u32
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
@@ -541,7 +544,7 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 
 pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
 	if this.gc_has_transparent_index {
-		if not this.use_local_palette {
+		if this.local_palette_log2_size == 0 {
 			this.palettes[1][:].copy_from_slice(s:this.palettes[0][:])
 		}
 

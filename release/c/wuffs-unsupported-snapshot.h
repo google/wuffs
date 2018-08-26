@@ -2423,7 +2423,7 @@ typedef struct {
     bool f_end_of_data;
     bool f_previous_lzw_decode_ended_abruptly;
     bool f_previous_use_global_palette;
-    bool f_use_local_palette;
+    uint8_t f_local_palette_log2_size;
     uint8_t f_which_palette;
     uint8_t f_interlace;
     bool f_seen_num_loops;
@@ -6553,7 +6553,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
       }
     }
-    if (self->private_impl.f_use_local_palette ||
+    if ((self->private_impl.f_local_palette_log2_size != 0) ||
         self->private_impl.f_gc_has_transparent_index) {
       self->private_impl.f_which_palette = 1;
     } else if (!self->private_impl.f_previous_use_global_palette) {
@@ -6562,8 +6562,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       self->private_impl.f_which_palette = 2;
     }
     self->private_impl.f_previous_use_global_palette =
-        !(self->private_impl.f_use_local_palette ||
-          self->private_impl.f_gc_has_transparent_index);
+        ((self->private_impl.f_local_palette_log2_size == 0) &&
+         !self->private_impl.f_gc_has_transparent_index);
     v_blend = 0;
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_blend = 2;
@@ -7855,9 +7855,13 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     } else {
       self->private_impl.f_interlace = 0;
     }
-    self->private_impl.f_use_local_palette = ((v_flags & 128) != 0);
-    if (self->private_impl.f_use_local_palette) {
-      v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
+    self->private_impl.f_local_palette_log2_size = 0;
+    if ((v_flags & 128) != 0) {
+      self->private_impl.f_local_palette_log2_size = (1 + (v_flags & 7));
+    }
+    if (self->private_impl.f_local_palette_log2_size != 0) {
+      v_num_palette_entries =
+          (((uint32_t)(1)) << self->private_impl.f_local_palette_log2_size);
       v_i = 0;
       while (v_i < v_num_palette_entries) {
         {
@@ -7982,7 +7986,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_gc_has_transparent_index) {
-      if (!self->private_impl.f_use_local_palette) {
+      if (self->private_impl.f_local_palette_log2_size == 0) {
         wuffs_base__slice_u8__copy_from_slice(
             ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[1],
                                     .len = 1024}),
