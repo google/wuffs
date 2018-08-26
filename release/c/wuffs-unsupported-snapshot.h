@@ -137,6 +137,7 @@ extern const char* wuffs_base__suspension__short_read;
 extern const char* wuffs_base__suspension__short_write;
 extern const char* wuffs_base__error__bad_argument_length_too_short;
 extern const char* wuffs_base__error__bad_argument;
+extern const char* wuffs_base__error__bad_call_sequence;
 extern const char* wuffs_base__error__bad_receiver;
 extern const char* wuffs_base__error__bad_sizeof_receiver;
 extern const char* wuffs_base__error__bad_wuffs_version;
@@ -144,7 +145,6 @@ extern const char* wuffs_base__error__cannot_return_a_suspension;
 extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
 extern const char* wuffs_base__error__check_wuffs_version_missing;
 extern const char* wuffs_base__error__disabled_by_previous_error;
-extern const char* wuffs_base__error__invalid_call_sequence;
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
@@ -3622,6 +3622,7 @@ const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_argument_length_too_short =
     "?base: bad argument (length too short)";
 const char* wuffs_base__error__bad_argument = "?base: bad argument";
+const char* wuffs_base__error__bad_call_sequence = "?base: bad call sequence";
 const char* wuffs_base__error__bad_receiver = "?base: bad receiver";
 const char* wuffs_base__error__bad_sizeof_receiver =
     "?base: bad sizeof receiver";
@@ -3634,8 +3635,6 @@ const char* wuffs_base__error__check_wuffs_version_missing =
     "?base: check_wuffs_version missing";
 const char* wuffs_base__error__disabled_by_previous_error =
     "?base: disabled by previous error";
-const char* wuffs_base__error__invalid_call_sequence =
-    "?base: invalid call sequence";
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) ||
         // defined(WUFFS_CONFIG__MODULE__BASE)
@@ -6377,7 +6376,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if (self->private_impl.f_call_sequence >= 1) {
-      status = wuffs_base__error__invalid_call_sequence;
+      status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
@@ -6495,7 +6494,7 @@ wuffs_gif__decoder__reset_for_decode_frame(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   if (self->private_impl.f_call_sequence == 0) {
-    status = wuffs_base__error__invalid_call_sequence;
+    status = wuffs_base__error__bad_call_sequence;
     goto exit;
   }
   self->private_impl.f_num_decoded_frame_configs_value =

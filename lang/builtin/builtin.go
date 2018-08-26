@@ -25,6 +25,7 @@ var StatusList = [...]string{
 	"$short write",
 	"?bad argument (length too short)",
 	"?bad argument",
+	"?bad call sequence",
 	"?bad receiver",
 	"?bad sizeof receiver",
 	"?bad wuffs version",
@@ -32,7 +33,6 @@ var StatusList = [...]string{
 	"?check_wuffs_version not applicable",
 	"?check_wuffs_version missing",
 	"?disabled by previous error",
-	"?invalid call sequence",
 }
 
 var StatusMap = map[string]bool{}

@@ -117,7 +117,7 @@ pub struct decoder?(
 
 pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_reader) {
 	if this.call_sequence >= 1 {
-		return status "?invalid call sequence"
+		return status "?bad call sequence"
 	}
 	this.decode_header!??(src:args.src)
 	this.decode_lsd!??(src:args.src)
@@ -167,7 +167,7 @@ pub func decoder.work_buffer_size() base.range_ii_u64 {
 
 pub func decoder.reset_for_decode_frame!??(fc ptr base.frame_config) {
 	if this.call_sequence == 0 {
-		return status "?invalid call sequence"
+		return status "?bad call sequence"
 	}
 	// TODO: change ~sat+ to + or change the semantics so that the io_position
 	// is before, not after, the frame config.

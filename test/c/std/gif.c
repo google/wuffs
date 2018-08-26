@@ -469,9 +469,9 @@ void test_wuffs_gif_call_sequence() {
   }
 
   z = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
-  if (z != wuffs_base__error__invalid_call_sequence) {
+  if (z != wuffs_base__error__bad_call_sequence) {
     FAIL("decode_image_config: got \"%s\", want \"%s\"", z,
-         wuffs_base__error__invalid_call_sequence);
+         wuffs_base__error__bad_call_sequence);
     return;
   }
 }
