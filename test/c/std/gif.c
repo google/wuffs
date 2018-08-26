@@ -853,8 +853,16 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
       FAIL("decode_frame_config #%d: \"%s\"", i, z);
       return false;
     }
-    uint64_t got = wuffs_base__frame_config__io_position(&fc);
-    uint64_t want = wants[i];
+
+    uint64_t got = wuffs_base__frame_config__index(&fc);
+    uint64_t want = i;
+    if (got != want) {
+      FAIL("index #%d: got %" PRIu64 ", want %" PRIu64, i, got, want);
+      return false;
+    }
+
+    got = wuffs_base__frame_config__io_position(&fc);
+    want = wants[i];
     if (got != want) {
       FAIL("io_position #%d: got %" PRIu64 ", want %" PRIu64, i, got, want);
       return false;
