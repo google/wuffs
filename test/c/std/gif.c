@@ -849,7 +849,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
 
   wuffs_base__frame_config fcs[4];
   uint32_t width_wants[4] = {64, 37, 49, 49};
-  uint64_t pos_wants[4] = {817, 2143, 2204, 2559};
+  uint64_t pos_wants[4] = {781, 2126, 2187, 2542};
   int i;
   for (i = 0; i < 4; i++) {
     fcs[i] = ((wuffs_base__frame_config){});
@@ -883,19 +883,20 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
       return false;
     }
 
-    // Look for the 0x2C byte that's the start of a GIF's Image Descriptor, 9
-    // bytes before the frame_config's I/O position.
-    if ((pos_got < 9) || (pos_got - 9 < src.pos)) {
+    // Look for the 0x21 byte that's a GIF's Extension Introducer. Not every
+    // GIF's frame_config's I/O position will point to 0x21, as an 0x2C Image
+    // Separator is also valid. But for animated-red-blue.gif, it'll be 0x21.
+    if (pos_got < src.pos) {
       FAIL("io_position #%d: got %" PRIu64 ", was too small", i, pos_got);
       return false;
     }
-    uint64_t src_ptr_offset = pos_got - 9 - src.pos;
+    uint64_t src_ptr_offset = pos_got - src.pos;
     if (src_ptr_offset >= src.wi) {
       FAIL("io_position #%d: got %" PRIu64 ", was too large", i, pos_got);
       return false;
     }
     uint8_t x = src.ptr[src_ptr_offset];
-    if (x != 0x2C) {
+    if (x != 0x21) {
       FAIL("Image Descriptor byte #%d: got 0x%02X, want 0x2C", i, (int)x);
       return false;
     }
@@ -909,7 +910,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
 
   // If we're chunked, we've discarded some source bytes due to an earlier
   // wuffs_base__io_buffer__compact call. We won't bother testing
-  // reset_for_decode_frame in that case.
+  // wuffs_gif__decoder__reset_before in that case.
   if (chunked) {
     return true;
   }
@@ -917,14 +918,14 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
   for (i = 0; i < 4; i++) {
     src.ri = pos_wants[i];
 
-    z = wuffs_gif__decoder__reset_for_decode_frame(&dec, &fcs[i]);
+    z = wuffs_gif__decoder__reset_before(&dec, &fcs[i]);
     if (z) {
-      FAIL("reset_for_decode_frame #%d: \"%s\"", i, z);
+      FAIL("reset_before #%d: \"%s\"", i, z);
       return false;
     }
 
     int j;
-    for (j = i + 1; j < 4; j++) {
+    for (j = i; j < 4; j++) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       z = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
       if (z) {

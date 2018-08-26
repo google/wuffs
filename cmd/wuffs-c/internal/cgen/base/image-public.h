@@ -665,8 +665,8 @@ wuffs_base__frame_config__index(wuffs_base__frame_config* c) {
   return c ? c->private_impl.index : 0;
 }
 
-// wuffs_base__frame_config__io_position returns the I/O stream position after
-// the frame config but before the frame's pixel data.
+// wuffs_base__frame_config__io_position returns the I/O stream position before
+// the frame config.
 static inline uint64_t  //
 wuffs_base__frame_config__io_position(wuffs_base__frame_config* c) {
   return c ? c->private_impl.io_position : 0;

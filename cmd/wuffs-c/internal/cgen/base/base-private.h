@@ -736,26 +736,6 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   return ((wuffs_base__empty_struct){});
 }
 
-static inline uint32_t  //
-wuffs_base__frame_config__rect_x0(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds.min_incl_x : 0;
-}
-
-static inline uint32_t  //
-wuffs_base__frame_config__rect_y0(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds.min_incl_y : 0;
-}
-
-static inline uint32_t  //
-wuffs_base__frame_config__rect_x1(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds.max_excl_x : 0;
-}
-
-static inline uint32_t  //
-wuffs_base__frame_config__rect_y1(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds.max_excl_y : 0;
-}
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif
