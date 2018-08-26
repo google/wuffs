@@ -216,8 +216,7 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 			index:this.num_decoded_frame_configs_value,
 			io_position:args.src.position(),
 			blend:blend,
-			disposal:this.gc_disposal,
-			palette_changed:this.which_palette != 2)
+			disposal:this.gc_disposal)
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1

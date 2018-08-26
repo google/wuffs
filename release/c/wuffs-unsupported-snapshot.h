@@ -1694,7 +1694,6 @@ typedef struct {
     uint64_t io_position;
     wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
-    bool palette_changed;
   } private_impl;
 
 #ifdef __cplusplus
@@ -1703,8 +1702,7 @@ typedef struct {
                      uint64_t index,
                      uint64_t io_position,
                      wuffs_base__animation_blend blend,
-                     wuffs_base__animation_disposal disposal,
-                     bool palette_changed);
+                     wuffs_base__animation_disposal disposal);
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
@@ -1713,7 +1711,6 @@ typedef struct {
   inline uint64_t io_position();
   inline wuffs_base__animation_blend blend();
   inline wuffs_base__animation_disposal disposal();
-  inline bool palette_changed();
 #endif  // __cplusplus
 
 } wuffs_base__frame_config;
@@ -1725,8 +1722,7 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
                                  uint64_t index,
                                  uint64_t io_position,
                                  wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal,
-                                 bool palette_changed) {
+                                 wuffs_base__animation_disposal disposal) {
   if (!c) {
     return;
   }
@@ -1737,7 +1733,6 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
   c->private_impl.io_position = io_position;
   c->private_impl.blend = blend;
   c->private_impl.disposal = disposal;
-  c->private_impl.palette_changed = palette_changed;
 }
 
 static inline wuffs_base__rect_ie_u32  //
@@ -1790,14 +1785,6 @@ wuffs_base__frame_config__disposal(wuffs_base__frame_config* c) {
   return c ? c->private_impl.disposal : 0;
 }
 
-// wuffs_base__frame_config__palette_changed returns whether this frame's
-// palette differs from the previous frame. It is conservative and may return
-// false positives (but never false negatives).
-static inline bool  //
-wuffs_base__frame_config__palette_changed(wuffs_base__frame_config* c) {
-  return c && c->private_impl.palette_changed;
-}
-
 #ifdef __cplusplus
 
 inline void  //
@@ -1806,10 +1793,9 @@ wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
                                  uint64_t index,
                                  uint64_t io_position,
                                  wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal,
-                                 bool palette_changed) {
+                                 wuffs_base__animation_disposal disposal) {
   wuffs_base__frame_config__update(this, bounds, duration, index, io_position,
-                                   blend, disposal, palette_changed);
+                                   blend, disposal);
 }
 
 inline wuffs_base__rect_ie_u32  //
@@ -1850,11 +1836,6 @@ wuffs_base__frame_config::blend() {
 inline wuffs_base__animation_disposal  //
 wuffs_base__frame_config::disposal() {
   return wuffs_base__frame_config__disposal(this);
-}
-
-inline bool  //
-wuffs_base__frame_config::palette_changed() {
-  return wuffs_base__frame_config__palette_changed(this);
 }
 
 #endif  // __cplusplus
@@ -6584,8 +6565,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
                                         a_src.private_impl.buf->pos,
                                         iop_a_src - a_src.private_impl.buf->ptr)
                                   : 0),
-          v_blend, self->private_impl.f_gc_disposal,
-          (self->private_impl.f_which_palette != 2));
+          v_blend, self->private_impl.f_gc_disposal);
     }
     wuffs_base__u64__sat_add_indirect(
         &self->private_impl.f_num_decoded_frame_configs_value, 1);

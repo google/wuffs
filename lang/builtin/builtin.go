@@ -230,7 +230,7 @@ var Funcs = []string{
 
 	// Duration's upper bound is the maximum possible i64 value.
 	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
-		"index u64, io_position u64, blend u8, disposal u8, palette_changed bool)",
+		"index u64, io_position u64, blend u8, disposal u8)",
 
 	// ---- image_config
 
