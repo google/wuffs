@@ -29,6 +29,7 @@ var StatusList = [...]string{
 	"?bad receiver",
 	"?bad restart",
 	"?bad sizeof receiver",
+	"?bad work buffer length",
 	"?bad wuffs version",
 	"?cannot return a suspension",
 	"?check_wuffs_version not applicable",
@@ -243,6 +244,7 @@ var Funcs = []string{
 	// ---- image_config
 
 	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
+		"work_buffer_size0 u64, work_buffer_size1 u64, " +
 		"num_loops u32, first_frame_is_opaque bool)",
 
 	// ---- pixel_buffer

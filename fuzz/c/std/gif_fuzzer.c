@@ -49,6 +49,7 @@ It should print "PASS", amongst other information, and exit(0).
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
   void* pixbuf = NULL;
+  void* workbuf = NULL;
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
@@ -72,6 +73,19 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
+    uint64_t workbuf_size =
+        wuffs_base__image_config__work_buffer_size(&ic).max_incl;
+    // Don't try to allocate more than 64 MiB.
+    if ((workbuf_size > 64 * 1024 * 1024) || (workbuf_size > SIZE_MAX)) {
+      ret = "image too large";
+      goto exit;
+    }
+    workbuf = malloc(workbuf_size);
+    if (!workbuf) {
+      ret = "out of memory";
+      goto exit;
+    }
+
     size_t pixbuf_size = wuffs_base__pixel_config__pixbuf_size(&ic.pixcfg);
     // Don't try to allocate more than 64 MiB.
     if (pixbuf_size > 64 * 1024 * 1024) {
@@ -83,6 +97,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       ret = "out of memory";
       goto exit;
     }
+
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
     z = wuffs_base__pixel_buffer__set_from_slice(
         &pb, &ic.pixcfg,
@@ -95,7 +110,10 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     bool seen_ok = false;
     while (true) {
       z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
-                                           ((wuffs_base__slice_u8){}));
+                                           ((wuffs_base__slice_u8){
+                                               .ptr = workbuf,
+                                               .len = workbuf_size,
+                                           }));
       if (z) {
         if ((z != wuffs_base__warning__end_of_data) || !seen_ok) {
           ret = z;
@@ -107,6 +125,9 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   }
 
 exit:
+  if (workbuf) {
+    free(workbuf);
+  }
   if (pixbuf) {
     free(pixbuf);
   }

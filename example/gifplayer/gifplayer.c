@@ -81,8 +81,12 @@ size_t src_len = 0;
 wuffs_base__color_u32argb* dst_buffer = NULL;
 wuffs_base__color_u32argb* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
+
 uint8_t* image_buffer = NULL;
 size_t image_len = 0;
+
+uint8_t* work_buffer = NULL;
+size_t work_len = 0;
 
 uint8_t* print_buffer = NULL;
 size_t print_len = 0;
@@ -220,8 +224,8 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 
 // ----
 
-const char* allocate(wuffs_base__pixel_config* pc) {
-  image_len = wuffs_base__pixel_config__pixbuf_size(pc);
+const char* allocate(wuffs_base__image_config* ic) {
+  image_len = wuffs_base__pixel_config__pixbuf_size(&ic->pixcfg);
   if (image_len > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
     return "could not allocate dst buffer";
   }
@@ -248,8 +252,24 @@ const char* allocate(wuffs_base__pixel_config* pc) {
     return "could not allocate image buffer";
   }
 
-  uint32_t width = wuffs_base__pixel_config__width(pc);
-  uint32_t height = wuffs_base__pixel_config__height(pc);
+  uint64_t work_len_u64 =
+      wuffs_base__image_config__work_buffer_size(ic).max_incl;
+  if (work_len_u64 <= SIZE_MAX) {
+    work_buffer = malloc(work_len_u64);
+    work_len = work_len_u64;
+  }
+  if (!work_buffer) {
+    free(image_buffer);
+    image_buffer = NULL;
+    free(prev_dst_buffer);
+    prev_dst_buffer = NULL;
+    free(dst_buffer);
+    dst_buffer = NULL;
+    return "could not allocate image buffer";
+  }
+
+  uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
   uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
   if (plen <= ((uint64_t)SIZE_MAX) / bytes_per_print_pixel) {
@@ -257,6 +277,8 @@ const char* allocate(wuffs_base__pixel_config* pc) {
     print_buffer = malloc(print_len);
   }
   if (!print_buffer) {
+    free(work_buffer);
+    work_buffer = NULL;
     free(image_buffer);
     image_buffer = NULL;
     free(prev_dst_buffer);
@@ -301,7 +323,7 @@ const char* play() {
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
-    const char* msg = allocate(&ic.pixcfg);
+    const char* msg = allocate(&ic);
     if (msg) {
       return msg;
     }
@@ -335,7 +357,10 @@ const char* play() {
     }
 
     z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
-                                         ((wuffs_base__slice_u8){}));
+                                         ((wuffs_base__slice_u8){
+                                             .ptr = work_buffer,
+                                             .len = work_len,
+                                         }));
     if (z) {
       if (z == wuffs_base__warning__end_of_data) {
         break;

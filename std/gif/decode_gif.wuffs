@@ -148,6 +148,8 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 			pixsub:0,
 			width:this.width,
 			height:this.height,
+			work_buffer_size0:this.width as base.u64,
+			work_buffer_size1:this.width as base.u64,
 			num_loops:num_loops,
 			first_frame_is_opaque:ffio)
 	}
@@ -234,6 +236,9 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 
 // TODO: honor pixbuf_origin_x and pixbuf_origin_y args.
 pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, pixbuf_origin_x base.u32, pixbuf_origin_y base.u32, src base.io_reader, work_buffer slice base.u8) {
+	if args.work_buffer.length() != (this.width as base.u64) {
+		return status "?bad work buffer length"
+	}
 	if this.call_sequence != 2 {
 		this.decode_frame_config!??(dst:nullptr, src:args.src)
 	}

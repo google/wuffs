@@ -26,6 +26,7 @@
 
 uint8_t global_got_buffer[BUFFER_SIZE];
 uint8_t global_want_buffer[BUFFER_SIZE];
+uint8_t global_work_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
 uint8_t global_pixel_buffer[BUFFER_SIZE];
 uint8_t global_palette_buffer[PALETTE_BUFFER_SIZE];
