@@ -139,6 +139,7 @@ extern const char* wuffs_base__error__bad_argument_length_too_short;
 extern const char* wuffs_base__error__bad_argument;
 extern const char* wuffs_base__error__bad_call_sequence;
 extern const char* wuffs_base__error__bad_receiver;
+extern const char* wuffs_base__error__bad_restart;
 extern const char* wuffs_base__error__bad_sizeof_receiver;
 extern const char* wuffs_base__error__bad_wuffs_version;
 extern const char* wuffs_base__error__cannot_return_a_suspension;
@@ -2407,6 +2408,7 @@ typedef struct {
     uint32_t f_height;
     uint8_t f_call_sequence;
     bool f_end_of_data;
+    bool f_restarted;
     bool f_previous_lzw_decode_ended_abruptly;
     uint8_t f_which_palette;
     uint8_t f_interlace;
@@ -2516,7 +2518,8 @@ typedef struct {
   inline uint64_t num_decoded_frame_configs();
   inline uint64_t num_decoded_frames();
   inline wuffs_base__range_ii_u64 work_buffer_size();
-  inline wuffs_base__status reset_before(wuffs_base__frame_config* a_fc);
+  inline wuffs_base__status restart_frame(uint64_t a_index,
+                                          uint64_t a_io_position);
   inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
                                                 wuffs_base__io_reader a_src);
   inline wuffs_base__status decode_frame(wuffs_base__pixel_buffer* a_dst,
@@ -2557,8 +2560,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__reset_before(wuffs_gif__decoder* self,
-                                 wuffs_base__frame_config* a_fc);
+wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
+                                  uint64_t a_index,
+                                  uint64_t a_io_position);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
@@ -2606,8 +2610,8 @@ wuffs_gif__decoder::work_buffer_size() {
 }
 
 inline wuffs_base__status  //
-wuffs_gif__decoder::reset_before(wuffs_base__frame_config* a_fc) {
-  return wuffs_gif__decoder__reset_before(this, a_fc);
+wuffs_gif__decoder::restart_frame(uint64_t a_index, uint64_t a_io_position) {
+  return wuffs_gif__decoder__restart_frame(this, a_index, a_io_position);
 }
 
 inline wuffs_base__status  //
@@ -3609,6 +3613,7 @@ const char* wuffs_base__error__bad_argument_length_too_short =
 const char* wuffs_base__error__bad_argument = "?base: bad argument";
 const char* wuffs_base__error__bad_call_sequence = "?base: bad call sequence";
 const char* wuffs_base__error__bad_receiver = "?base: bad receiver";
+const char* wuffs_base__error__bad_restart = "?base: bad restart";
 const char* wuffs_base__error__bad_sizeof_receiver =
     "?base: bad sizeof receiver";
 const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
@@ -6463,11 +6468,12 @@ wuffs_gif__decoder__work_buffer_size(wuffs_gif__decoder* self) {
                                                 0);
 }
 
-// -------- func gif.decoder.reset_before
+// -------- func gif.decoder.restart_frame
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__reset_before(wuffs_gif__decoder* self,
-                                 wuffs_base__frame_config* a_fc) {
+wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
+                                  uint64_t a_index,
+                                  uint64_t a_io_position) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -6476,10 +6482,6 @@ wuffs_gif__decoder__reset_before(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
-  if (!a_fc) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-    return wuffs_base__error__bad_argument;
-  }
   wuffs_base__status status = NULL;
 
   if (self->private_impl.f_call_sequence == 0) {
@@ -6487,10 +6489,10 @@ wuffs_gif__decoder__reset_before(wuffs_gif__decoder* self,
     goto exit;
   }
   self->private_impl.f_end_of_data = false;
-  self->private_impl.f_num_decoded_frame_configs_value =
-      wuffs_base__frame_config__index(a_fc);
-  self->private_impl.f_num_decoded_frames_value =
-      self->private_impl.f_num_decoded_frame_configs_value;
+  self->private_impl.f_restarted = true;
+  self->private_impl.f_frame_config_io_position = a_io_position;
+  self->private_impl.f_num_decoded_frame_configs_value = a_index;
+  self->private_impl.f_num_decoded_frames_value = a_index;
   wuffs_gif__decoder__reset_gc(self);
   goto exit;
 exit:
@@ -6807,11 +6809,23 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    self->private_impl.f_frame_config_io_position =
-        (a_src.private_impl.buf
-             ? wuffs_base__u64__sat_add(a_src.private_impl.buf->pos,
+    if (!self->private_impl.f_restarted) {
+      self->private_impl.f_frame_config_io_position =
+          (a_src.private_impl.buf ? wuffs_base__u64__sat_add(
+                                        a_src.private_impl.buf->pos,
                                         iop_a_src - a_src.private_impl.buf->ptr)
-             : 0);
+                                  : 0);
+    } else if (self->private_impl.f_frame_config_io_position !=
+               (a_src.private_impl.buf
+                    ? wuffs_base__u64__sat_add(
+                          a_src.private_impl.buf->pos,
+                          iop_a_src - a_src.private_impl.buf->ptr)
+                    : 0)) {
+      status = wuffs_base__error__bad_restart;
+      goto exit;
+    } else {
+      self->private_impl.f_restarted = false;
+    }
     while (true) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);

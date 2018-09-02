@@ -27,6 +27,7 @@ var StatusList = [...]string{
 	"?bad argument",
 	"?bad call sequence",
 	"?bad receiver",
+	"?bad restart",
 	"?bad sizeof receiver",
 	"?bad wuffs version",
 	"?cannot return a suspension",

@@ -910,7 +910,7 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
 
   // If we're chunked, we've discarded some source bytes due to an earlier
   // wuffs_base__io_buffer__compact call. We won't bother testing
-  // wuffs_gif__decoder__reset_before in that case.
+  // wuffs_gif__decoder__restart_frame in that case.
   if (chunked) {
     return true;
   }
@@ -918,9 +918,10 @@ bool do_test_wuffs_gif_io_position(bool chunked) {
   for (i = 0; i < 4; i++) {
     src.ri = pos_wants[i];
 
-    z = wuffs_gif__decoder__reset_before(&dec, &fcs[i]);
+    z = wuffs_gif__decoder__restart_frame(
+        &dec, i, wuffs_base__frame_config__io_position(&fcs[i]));
     if (z) {
-      FAIL("reset_before #%d: \"%s\"", i, z);
+      FAIL("restart_frame #%d: \"%s\"", i, z);
       return false;
     }
 

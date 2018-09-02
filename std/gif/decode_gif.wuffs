@@ -73,6 +73,7 @@ pub struct decoder?(
 	call_sequence base.u8,
 
 	end_of_data base.bool,
+	restarted base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
 
 	which_palette base.u8[..1],
@@ -166,14 +167,15 @@ pub func decoder.work_buffer_size() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
-pub func decoder.reset_before!??(fc ptr base.frame_config) {
+pub func decoder.restart_frame!??(index base.u64, io_position base.u64) {
 	if this.call_sequence == 0 {
 		return status "?bad call sequence"
 	}
-	// TODO: take an io_reader and check that its pos equals fc's pos?
 	this.end_of_data = false
-	this.num_decoded_frame_configs_value = args.fc.index()
-	this.num_decoded_frames_value = this.num_decoded_frame_configs_value
+	this.restarted = true
+	this.frame_config_io_position = args.io_position
+	this.num_decoded_frame_configs_value = args.index
+	this.num_decoded_frames_value = args.index
 	this.reset_gc!()
 }
 
@@ -253,7 +255,14 @@ pri func decoder.reset_gc!() {
 }
 
 pri func decoder.decode_up_to_id_part1!??(src base.io_reader) {
-	this.frame_config_io_position = args.src.position()
+	if not this.restarted {
+		this.frame_config_io_position = args.src.position()
+	} else if this.frame_config_io_position != args.src.position() {
+		return status "?bad restart"
+	} else {
+		this.restarted = false
+	}
+
 	while true {
 		var block_type base.u8 = args.src.read_u8!??()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
