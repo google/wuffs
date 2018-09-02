@@ -861,6 +861,24 @@ wuffs_base__pixel_buffer::palette() {
 
 #endif  // __cplusplus
 
+// --------
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so.
+  struct {
+    uint8_t TODO;
+  } private_impl;
+
+#ifdef __cplusplus
+#endif  // __cplusplus
+
+} wuffs_base__decode_frame_options;
+
+#ifdef __cplusplus
+
+#endif  // __cplusplus
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

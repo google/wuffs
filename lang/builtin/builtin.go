@@ -74,6 +74,8 @@ var Types = []string{
 	"image_config",
 	"pixel_buffer",
 	"pixel_config",
+
+	"decode_frame_options",
 }
 
 var Funcs = []string{

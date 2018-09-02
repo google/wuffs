@@ -356,11 +356,12 @@ const char* play() {
       }
     }
 
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
                                          ((wuffs_base__slice_u8){
                                              .ptr = work_buffer,
                                              .len = work_len,
-                                         }));
+                                         }),
+                                         NULL);
     if (z) {
       if (z == wuffs_base__warning__end_of_data) {
         break;

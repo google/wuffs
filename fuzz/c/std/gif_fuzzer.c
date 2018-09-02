@@ -109,11 +109,12 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
     bool seen_ok = false;
     while (true) {
-      z = wuffs_gif__decoder__decode_frame(&dec, &pb, 0, 0, src_reader,
+      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
                                            ((wuffs_base__slice_u8){
                                                .ptr = workbuf,
                                                .len = workbuf_size,
-                                           }));
+                                           }),
+                                           NULL);
       if (z) {
         if ((z != wuffs_base__warning__end_of_data) || !seen_ok) {
           ret = z;

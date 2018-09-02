@@ -66,6 +66,8 @@ var (
 	typeExprPixelBuffer = a.NewTypeExpr(0, t.IDBase, t.IDPixelBuffer, nil, nil, nil)
 	typeExprPixelConfig = a.NewTypeExpr(0, t.IDBase, t.IDPixelConfig, nil, nil, nil)
 
+	typeExprDecodeFrameOptions = a.NewTypeExpr(0, t.IDBase, t.IDDecodeFrameOptions, nil, nil, nil)
+
 	typeExprSliceU8 = a.NewTypeExpr(t.IDSlice, 0, 0, nil, nil, typeExprU8)
 	typeExprTableU8 = a.NewTypeExpr(t.IDTable, 0, 0, nil, nil, typeExprU8)
 )
@@ -103,6 +105,8 @@ var builtInTypeMap = typeMap{
 	t.IDImageConfig: typeExprImageConfig,
 	t.IDPixelBuffer: typeExprPixelBuffer,
 	t.IDPixelConfig: typeExprPixelConfig,
+
+	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,
 }
 
 func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Func, error) {

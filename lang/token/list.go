@@ -413,11 +413,6 @@ const (
 	IDIOWriter = ID(0x111)
 	IDStatus   = ID(0x112)
 
-	IDFrameConfig = ID(0x114)
-	IDImageConfig = ID(0x115)
-	IDPixelBuffer = ID(0x116)
-	IDPixelConfig = ID(0x117)
-
 	IDT1      = ID(0x118)
 	IDT2      = ID(0x119)
 	IDDagger1 = ID(0x11A)
@@ -525,6 +520,13 @@ const (
 	IDCopyNFromHistoryFast = ID(0x192)
 	IDCopyNFromReader      = ID(0x193)
 	IDCopyNFromSlice       = ID(0x194)
+
+	IDFrameConfig = ID(0x1C0)
+	IDImageConfig = ID(0x1C1)
+	IDPixelBuffer = ID(0x1C2)
+	IDPixelConfig = ID(0x1C3)
+
+	IDDecodeFrameOptions = ID(0x1C8)
 
 	// -------- 0x200 block.
 
@@ -680,11 +682,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIOWriter: "io_writer",
 	IDStatus:   "status",
 
-	IDFrameConfig: "frame_config",
-	IDImageConfig: "image_config",
-	IDPixelBuffer: "pixel_buffer",
-	IDPixelConfig: "pixel_config",
-
 	// Some of the next few IDs are never returned by the tokenizer, as it
 	// rejects non-ASCII input. The string representations "¶", "ℤ" etc. are
 	// specifically non-ASCII so that no user-defined (non built-in) identifier
@@ -809,6 +806,13 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDCopyNFromHistoryFast: "copy_n_from_history_fast",
 	IDCopyNFromReader:      "copy_n_from_reader",
 	IDCopyNFromSlice:       "copy_n_from_slice",
+
+	IDFrameConfig: "frame_config",
+	IDImageConfig: "image_config",
+	IDPixelBuffer: "pixel_buffer",
+	IDPixelConfig: "pixel_config",
+
+	IDDecodeFrameOptions: "decode_frame_options",
 
 	// -------- 0x200 block.
 

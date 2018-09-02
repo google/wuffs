@@ -234,8 +234,8 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 	this.reset_gc!()
 }
 
-// TODO: honor pixbuf_origin_x and pixbuf_origin_y args.
-pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, pixbuf_origin_x base.u32, pixbuf_origin_y base.u32, src base.io_reader, work_buffer slice base.u8) {
+// TODO: honor args.opts.
+pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, src base.io_reader, work_buffer slice base.u8, opts nptr base.decode_frame_options) {
 	if args.work_buffer.length() != (this.width as base.u64) {
 		return status "?bad work buffer length"
 	}
