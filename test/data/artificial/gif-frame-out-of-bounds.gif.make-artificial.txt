@@ -6,6 +6,7 @@
 #  - frame #0 has bounds (1, 0) - (4, 1).
 #  - frame #1 has bounds (0, 1) - (2, 3).
 #  - frame #2 has bounds (0, 4) - (1, 5).
+#  - frame #3 has bounds (2, 0) - (6, 3).
 #
 # Here are some (but not all) possible decoding policies:
 #
@@ -87,5 +88,10 @@ frame {
 	frameLeftTopWidthHeight 0 4 1 1
 }
 lzw 4 0x0E
+
+frame {
+	frameLeftTopWidthHeight 2 0 4 3
+}
+lzw 4 0x04 0x05 0x06 0x07 0x08 0x09 0x0A 0x0B 0x0C 0x0D 0x0E 0x0F
 
 trailer
