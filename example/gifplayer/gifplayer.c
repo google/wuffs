@@ -225,7 +225,7 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 // ----
 
 const char* allocate(wuffs_base__image_config* ic) {
-  image_len = wuffs_base__pixel_config__pixbuf_size(&ic->pixcfg);
+  image_len = wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg);
   if (image_len > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
     return "could not allocate dst buffer";
   }

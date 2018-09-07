@@ -1427,7 +1427,7 @@ typedef struct {
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
-  inline size_t pixbuf_size();
+  inline size_t pixbuf_len();
 #endif  // __cplusplus
 
 } wuffs_base__pixel_config;
@@ -1503,7 +1503,7 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // decoding into a color model different from the format's intrinsic one? For
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline size_t  //
-wuffs_base__pixel_config__pixbuf_size(wuffs_base__pixel_config* c) {
+wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
   if (c) {
     uint64_t wh =
         ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
@@ -1559,8 +1559,8 @@ wuffs_base__pixel_config::height() {
 }
 
 inline size_t  //
-wuffs_base__pixel_config::pixbuf_size() {
-  return wuffs_base__pixel_config__pixbuf_size(this);
+wuffs_base__pixel_config::pixbuf_len() {
+  return wuffs_base__pixel_config__pixbuf_len(this);
 }
 
 #endif  // __cplusplus

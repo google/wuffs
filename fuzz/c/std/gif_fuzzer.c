@@ -48,7 +48,7 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
-  void* pixbuf = NULL;
+  void* pixbuf_ptr = NULL;
   void* workbuf = NULL;
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
@@ -86,22 +86,24 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    size_t pixbuf_size = wuffs_base__pixel_config__pixbuf_size(&ic.pixcfg);
+    size_t pixbuf_len = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
     // Don't try to allocate more than 64 MiB.
-    if (pixbuf_size > 64 * 1024 * 1024) {
+    if (pixbuf_len > 64 * 1024 * 1024) {
       ret = "image too large";
       goto exit;
     }
-    pixbuf = malloc(pixbuf_size);
-    if (!pixbuf) {
+    pixbuf_ptr = malloc(pixbuf_len);
+    if (!pixbuf_ptr) {
       ret = "out of memory";
       goto exit;
     }
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-    z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, &ic.pixcfg,
-        ((wuffs_base__slice_u8){.ptr = pixbuf, .len = pixbuf_size}));
+    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                 ((wuffs_base__slice_u8){
+                                                     .ptr = pixbuf_ptr,
+                                                     .len = pixbuf_len,
+                                                 }));
     if (z) {
       ret = z;
       goto exit;
@@ -129,8 +131,8 @@ exit:
   if (workbuf) {
     free(workbuf);
   }
-  if (pixbuf) {
-    free(pixbuf);
+  if (pixbuf_ptr) {
+    free(pixbuf_ptr);
   }
   return ret;
 }
