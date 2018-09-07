@@ -252,8 +252,7 @@ const char* allocate(wuffs_base__image_config* ic) {
     return "could not allocate image buffer";
   }
 
-  uint64_t work_len_u64 =
-      wuffs_base__image_config__work_buffer_size(ic).max_incl;
+  uint64_t work_len_u64 = wuffs_base__image_config__workbuf_len(ic).max_incl;
   if (work_len_u64 <= SIZE_MAX) {
     work_buffer = malloc(work_len_u64);
     work_len = work_len_u64;

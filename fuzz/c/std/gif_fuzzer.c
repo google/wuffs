@@ -49,7 +49,7 @@ It should print "PASS", amongst other information, and exit(0).
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
   void* pixbuf_ptr = NULL;
-  void* workbuf = NULL;
+  void* workbuf_ptr = NULL;
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
@@ -73,15 +73,14 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    uint64_t workbuf_size =
-        wuffs_base__image_config__work_buffer_size(&ic).max_incl;
+    uint64_t workbuf_len = wuffs_base__image_config__workbuf_len(&ic).max_incl;
     // Don't try to allocate more than 64 MiB.
-    if ((workbuf_size > 64 * 1024 * 1024) || (workbuf_size > SIZE_MAX)) {
+    if ((workbuf_len > 64 * 1024 * 1024) || (workbuf_len > SIZE_MAX)) {
       ret = "image too large";
       goto exit;
     }
-    workbuf = malloc(workbuf_size);
-    if (!workbuf) {
+    workbuf_ptr = malloc(workbuf_len);
+    if (!workbuf_ptr) {
       ret = "out of memory";
       goto exit;
     }
@@ -113,8 +112,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     while (true) {
       z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
                                            ((wuffs_base__slice_u8){
-                                               .ptr = workbuf,
-                                               .len = workbuf_size,
+                                               .ptr = workbuf_ptr,
+                                               .len = workbuf_len,
                                            }),
                                            NULL);
       if (z) {
@@ -128,8 +127,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   }
 
 exit:
-  if (workbuf) {
-    free(workbuf);
+  if (workbuf_ptr) {
+    free(workbuf_ptr);
   }
   if (pixbuf_ptr) {
     free(pixbuf_ptr);

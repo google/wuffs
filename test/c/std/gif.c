@@ -222,14 +222,13 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     return z;
   }
 
-  uint64_t work_buffer_size =
-      wuffs_base__image_config__work_buffer_size(&ic).max_incl;
-  if (work_buffer_size > BUFFER_SIZE) {
+  uint64_t workbuf_len = wuffs_base__image_config__workbuf_len(&ic).max_incl;
+  if (workbuf_len > BUFFER_SIZE) {
     return "work buffer size is too large";
   }
-  wuffs_base__slice_u8 work_buffer = ((wuffs_base__slice_u8){
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){
       .ptr = global_work_buffer,
-      .len = work_buffer_size,
+      .len = workbuf_len,
   });
 
   while (true) {
@@ -241,8 +240,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
       return z;
     }
 
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, work_buffer,
-                                         NULL);
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
     if (z) {
       return z;
     }
@@ -307,9 +305,9 @@ bool do_test_wuffs_gif_decode(const char* filename,
            wuffs_base__pixel_config__height(&ic.pixcfg));
       return false;
     }
-    if (wuffs_base__image_config__work_buffer_size(&ic).max_incl != 160) {
-      FAIL("work_buffer_size: got %" PRIu64 ", want 160",
-           wuffs_base__image_config__work_buffer_size(&ic).max_incl);
+    if (wuffs_base__image_config__workbuf_len(&ic).max_incl != 160) {
+      FAIL("workbuf_len: got %" PRIu64 ", want 160",
+           wuffs_base__image_config__workbuf_len(&ic).max_incl);
       return false;
     }
     if (wuffs_base__image_config__num_loops(&ic) != 1) {
@@ -333,7 +331,7 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
   }
 
-  wuffs_base__slice_u8 work_buffer = ((wuffs_base__slice_u8){
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){
       .ptr = global_work_buffer,
       .len = 160,
   });
@@ -377,8 +375,8 @@ bool do_test_wuffs_gif_decode(const char* filename,
     }
     size_t old_ri = src.ri;
 
-    wuffs_base__status z = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, src_reader, work_buffer, NULL);
+    wuffs_base__status z =
+        wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
 
     if (!z) {
       break;
@@ -448,8 +446,8 @@ bool do_test_wuffs_gif_decode(const char* filename,
       return false;
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    wuffs_base__status z = wuffs_gif__decoder__decode_frame(
-        &dec, &pb, src_reader, work_buffer, NULL);
+    wuffs_base__status z =
+        wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
     if (z != wuffs_base__warning__end_of_data) {
       FAIL("decode_frame: got \"%s\", want \"%s\"", z,
            wuffs_base__warning__end_of_data);
@@ -526,14 +524,13 @@ bool do_test_wuffs_gif_decode_animated(
     return false;
   }
 
-  uint64_t work_buffer_size =
-      wuffs_base__image_config__work_buffer_size(&ic).max_incl;
-  if (work_buffer_size > BUFFER_SIZE) {
+  uint64_t workbuf_len = wuffs_base__image_config__workbuf_len(&ic).max_incl;
+  if (workbuf_len > BUFFER_SIZE) {
     return "work buffer size is too large";
   }
-  wuffs_base__slice_u8 work_buffer = ((wuffs_base__slice_u8){
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){
       .ptr = global_work_buffer,
-      .len = work_buffer_size,
+      .len = workbuf_len,
   });
 
   if (wuffs_base__image_config__num_loops(&ic) != want_num_loops) {
@@ -577,8 +574,7 @@ bool do_test_wuffs_gif_decode_animated(
       }
     }
 
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, work_buffer,
-                                         NULL);
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
     if (z) {
       FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i, z);
       return false;
@@ -588,8 +584,7 @@ bool do_test_wuffs_gif_decode_animated(
   // There should be no more frames, no matter how many times we call
   // decode_frame.
   for (i = 0; i < 3; i++) {
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, work_buffer,
-                                         NULL);
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
     if (z != wuffs_base__warning__end_of_data) {
       FAIL("decode_frame: got \"%s\", want \"%s\"", z,
            wuffs_base__warning__end_of_data);
@@ -691,15 +686,14 @@ void test_wuffs_gif_decode_frame_out_of_bounds() {
     return;
   }
 
-  uint64_t work_buffer_size =
-      wuffs_base__image_config__work_buffer_size(&ic).max_incl;
-  if (work_buffer_size > BUFFER_SIZE) {
+  uint64_t workbuf_len = wuffs_base__image_config__workbuf_len(&ic).max_incl;
+  if (workbuf_len > BUFFER_SIZE) {
     FAIL("work buffer size is too large");
     return;
   }
-  wuffs_base__slice_u8 work_buffer = ((wuffs_base__slice_u8){
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){
       .ptr = global_work_buffer,
-      .len = work_buffer_size,
+      .len = workbuf_len,
   });
 
   // See test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
@@ -758,7 +752,7 @@ void test_wuffs_gif_decode_frame_out_of_bounds() {
         }
       }
 
-      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, work_buffer,
+      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf,
                                            NULL);
       if (z) {
         FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i, z);
@@ -882,7 +876,7 @@ bool do_test_wuffs_gif_num_decoded(bool frame_config) {
     }
   }
 
-  wuffs_base__slice_u8 work_buffer = ((wuffs_base__slice_u8){
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){
       .ptr = global_work_buffer,
       .len = 64,
   });
@@ -908,7 +902,7 @@ bool do_test_wuffs_gif_num_decoded(bool frame_config) {
     if (frame_config) {
       z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
     } else {
-      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, work_buffer,
+      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf,
                                            NULL);
     }
 

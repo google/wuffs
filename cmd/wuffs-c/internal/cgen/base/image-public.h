@@ -445,7 +445,7 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__range_ii_u64 work_buffer_size;
+    wuffs_base__range_ii_u64 workbuf_len;
     uint64_t first_frame_io_position;
     uint32_t num_loops;
     bool first_frame_is_opaque;
@@ -456,14 +456,14 @@ typedef struct {
                          wuffs_base__pixel_subsampling pixsub,
                          uint32_t width,
                          uint32_t height,
-                         uint64_t work_buffer_size0,
-                         uint64_t work_buffer_size1,
+                         uint64_t workbuf_len0,
+                         uint64_t workbuf_len1,
                          uint32_t num_loops,
                          uint64_t first_frame_io_position,
                          bool first_frame_is_opaque);
   inline void invalidate();
   inline bool is_valid();
-  inline wuffs_base__range_ii_u64 work_buffer_size();
+  inline wuffs_base__range_ii_u64 workbuf_len();
   inline uint32_t num_loops();
   inline uint64_t first_frame_io_position();
   inline bool first_frame_is_opaque();
@@ -478,8 +478,8 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
                                      wuffs_base__pixel_subsampling pixsub,
                                      uint32_t width,
                                      uint32_t height,
-                                     uint64_t work_buffer_size0,
-                                     uint64_t work_buffer_size1,
+                                     uint64_t workbuf_len0,
+                                     uint64_t workbuf_len1,
                                      uint32_t num_loops,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
@@ -491,8 +491,8 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
     c->pixcfg.private_impl.pixsub = pixsub;
     c->pixcfg.private_impl.width = width;
     c->pixcfg.private_impl.height = height;
-    c->private_impl.work_buffer_size.min_incl = work_buffer_size0;
-    c->private_impl.work_buffer_size.max_incl = work_buffer_size1;
+    c->private_impl.workbuf_len.min_incl = workbuf_len0;
+    c->private_impl.workbuf_len.max_incl = workbuf_len1;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.num_loops = num_loops;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
@@ -514,8 +514,8 @@ wuffs_base__image_config__is_valid(wuffs_base__image_config* c) {
 }
 
 static inline wuffs_base__range_ii_u64  //
-wuffs_base__image_config__work_buffer_size(wuffs_base__image_config* c) {
-  return c ? c->private_impl.work_buffer_size : ((wuffs_base__range_ii_u64){});
+wuffs_base__image_config__workbuf_len(wuffs_base__image_config* c) {
+  return c ? c->private_impl.workbuf_len : ((wuffs_base__range_ii_u64){});
 }
 
 static inline uint32_t  //
@@ -540,13 +540,13 @@ wuffs_base__image_config::initialize(wuffs_base__pixel_format pixfmt,
                                      wuffs_base__pixel_subsampling pixsub,
                                      uint32_t width,
                                      uint32_t height,
-                                     uint64_t work_buffer_size0,
-                                     uint64_t work_buffer_size1,
+                                     uint64_t workbuf_len0,
+                                     uint64_t workbuf_len1,
                                      uint32_t num_loops,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
   wuffs_base__image_config__initialize(
-      this, pixfmt, pixsub, width, height, work_buffer_size0, work_buffer_size1,
+      this, pixfmt, pixsub, width, height, workbuf_len0, workbuf_len1,
       num_loops, first_frame_io_position, first_frame_is_opaque);
 }
 
@@ -561,8 +561,8 @@ wuffs_base__image_config::is_valid() {
 }
 
 inline wuffs_base__range_ii_u64  //
-wuffs_base__image_config::work_buffer_size() {
-  return wuffs_base__image_config__work_buffer_size(this);
+wuffs_base__image_config::workbuf_len() {
+  return wuffs_base__image_config__workbuf_len(this);
 }
 
 inline uint32_t  //
