@@ -225,12 +225,14 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 // ----
 
 const char* allocate(wuffs_base__image_config* ic) {
-  image_len = wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg);
-  if (image_len > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
+  uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
+  uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
+  uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
+  if (num_pixels > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
     return "could not allocate dst buffer";
   }
 
-  dst_len = image_len * sizeof(wuffs_base__color_u32argb);
+  dst_len = num_pixels * sizeof(wuffs_base__color_u32argb);
   dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
   if (!dst_buffer) {
     return "could not allocate dst buffer";
@@ -243,6 +245,7 @@ const char* allocate(wuffs_base__image_config* ic) {
     return "could not allocate prev-dst buffer";
   }
 
+  image_len = wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg);
   image_buffer = malloc(image_len);
   if (!image_buffer) {
     free(prev_dst_buffer);
@@ -267,8 +270,6 @@ const char* allocate(wuffs_base__image_config* ic) {
     return "could not allocate image buffer";
   }
 
-  uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
-  uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
   uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
   if (plen <= ((uint64_t)SIZE_MAX) / bytes_per_print_pixel) {
@@ -326,9 +327,11 @@ const char* play() {
     if (msg) {
       return msg;
     }
-    z = wuffs_base__pixel_buffer__set_from_slice(
-        &pb, &ic.pixcfg,
-        ((wuffs_base__slice_u8){.ptr = image_buffer, .len = image_len}));
+    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                 ((wuffs_base__slice_u8){
+                                                     .ptr = image_buffer,
+                                                     .len = image_len,
+                                                 }));
     if (z) {
       return z;
     }
