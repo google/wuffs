@@ -151,6 +151,7 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 			work_buffer_size0:this.width as base.u64,
 			work_buffer_size1:this.width as base.u64,
 			num_loops:num_loops,
+			first_frame_io_position:this.frame_config_io_position,
 			first_frame_is_opaque:ffio)
 	}
 
