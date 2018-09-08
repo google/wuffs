@@ -560,9 +560,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
 
-	// TODO: remove the set_palette method. Instead, call palette and
-	// copy_from_slice.
-	args.dst.set_palette!(palette:this.palettes[this.which_palette][:])
+	args.dst.palette().copy_from_slice(s:this.palettes[this.which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file

@@ -1927,9 +1927,8 @@ typedef struct {
 #ifdef __cplusplus
   inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
                                            wuffs_base__slice_u8 pixbuf_memory);
-  inline wuffs_base__table_u8 plane(uint32_t p);
   inline wuffs_base__slice_u8 palette();
-  inline void set_palette(wuffs_base__slice_u8 palette);
+  inline wuffs_base__table_u8 plane(uint32_t p);
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -1981,13 +1980,6 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   return NULL;
 }
 
-static inline wuffs_base__table_u8  //
-wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
-  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
-             ? b->private_impl.planes[p]
-             : ((wuffs_base__table_u8){});
-}
-
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
 // non-empty, it will have length 1024.
 static inline wuffs_base__slice_u8  //
@@ -2006,14 +1998,11 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
   return ((wuffs_base__slice_u8){});
 }
 
-// The palette argument is ignored unless its length is exactly 1024.
-static inline void  //
-wuffs_base__pixel_buffer__set_palette(wuffs_base__pixel_buffer* b,
-                                      wuffs_base__slice_u8 palette) {
-  wuffs_base__slice_u8 dst = wuffs_base__pixel_buffer__palette(b);
-  if ((dst.len == 1024) && (palette.len == 1024)) {
-    memmove(dst.ptr, palette.ptr, 1024);
-  }
+static inline wuffs_base__table_u8  //
+wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
+  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
+             ? b->private_impl.planes[p]
+             : ((wuffs_base__table_u8){});
 }
 
 #ifdef __cplusplus
@@ -2024,19 +2013,14 @@ wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
 }
 
-inline wuffs_base__table_u8  //
-wuffs_base__pixel_buffer::plane(uint32_t p) {
-  return wuffs_base__pixel_buffer__plane(this, p);
-}
-
 inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer::palette() {
   return wuffs_base__pixel_buffer__palette(this);
 }
 
-inline void  //
-wuffs_base__pixel_buffer::set_palette(wuffs_base__slice_u8 palette) {
-  wuffs_base__pixel_buffer__set_palette(this, palette);
+inline wuffs_base__table_u8  //
+wuffs_base__pixel_buffer::plane(uint32_t p) {
+  return wuffs_base__pixel_buffer__plane(this, p);
 }
 
 #endif  // __cplusplus
@@ -8149,11 +8133,12 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           (4 * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 3)] =
           0;
     }
-    wuffs_base__pixel_buffer__set_palette(
-        a_dst, ((wuffs_base__slice_u8){
-                   .ptr = self->private_impl
-                              .f_palettes[self->private_impl.f_which_palette],
-                   .len = 1024}));
+    wuffs_base__slice_u8__copy_from_slice(
+        wuffs_base__pixel_buffer__palette(a_dst),
+        ((wuffs_base__slice_u8){
+            .ptr = self->private_impl
+                       .f_palettes[self->private_impl.f_which_palette],
+            .len = 1024}));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
        wuffs_base__ignore_check_wuffs_version_status(

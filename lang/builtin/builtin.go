@@ -251,9 +251,8 @@ var Funcs = []string{
 
 	// ---- pixel_buffer
 
+	"pixel_buffer.palette() slice u8",
 	"pixel_buffer.plane(p u32[..3]) table u8",
-
-	"pixel_buffer.set_palette!(palette slice u8)",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
