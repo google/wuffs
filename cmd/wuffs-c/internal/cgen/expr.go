@@ -168,7 +168,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			return err
 		}
 		if lhsIsArray {
-			b.printf(",.len=%v})", lhs.MType().ArrayLength().ConstValue())
+			b.printf(",.len=%v,})", lhs.MType().ArrayLength().ConstValue())
 		}
 
 		if mhs != nil {

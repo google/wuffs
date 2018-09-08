@@ -4616,22 +4616,28 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
         wuffs_base__slice_u8__copy_from_slice(
-            ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                    .len = 32768}),
+            ((wuffs_base__slice_u8){
+                .ptr = self->private_impl.f_history,
+                .len = 32768,
+            }),
             v_written);
         self->private_impl.f_history_index = 32768;
       } else {
         v_n_copied = wuffs_base__slice_u8__copy_from_slice(
             wuffs_base__slice_u8__subslice_i(
-                ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                        .len = 32768}),
+                ((wuffs_base__slice_u8){
+                    .ptr = self->private_impl.f_history,
+                    .len = 32768,
+                }),
                 (self->private_impl.f_history_index & 32767)),
             v_written);
         if (v_n_copied < ((uint64_t)(v_written.len))) {
           v_written = wuffs_base__slice_u8__subslice_i(v_written, v_n_copied);
           v_n_copied = wuffs_base__slice_u8__copy_from_slice(
-              ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                      .len = 32768}),
+              ((wuffs_base__slice_u8){
+                  .ptr = self->private_impl.f_history,
+                  .len = 32768,
+              }),
               v_written);
           self->private_impl.f_history_index =
               (((uint32_t)((v_n_copied & 32767))) + 32768);
@@ -5831,8 +5837,10 @@ label_0_continue:;
           v_n_copied = wuffs_base__io_writer__copy_n_from_slice(
               &iop_a_dst, io1_a_dst, v_hlen,
               wuffs_base__slice_u8__subslice_i(
-                  ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                          .len = 32768}),
+                  ((wuffs_base__slice_u8){
+                      .ptr = self->private_impl.f_history,
+                      .len = 32768,
+                  }),
                   (v_hdist & 32767)));
           if (v_hlen <= v_n_copied) {
             goto label_1_break;
@@ -5840,8 +5848,10 @@ label_0_continue:;
           v_hlen -= v_n_copied;
           wuffs_base__io_writer__copy_n_from_slice(
               &iop_a_dst, io1_a_dst, v_hlen,
-              ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                      .len = 32768}));
+              ((wuffs_base__slice_u8){
+                  .ptr = self->private_impl.f_history,
+                  .len = 32768,
+              }));
           goto label_1_break;
         }
       label_1_break:;
@@ -6216,8 +6226,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
             v_n_copied = wuffs_base__io_writer__copy_n_from_slice(
                 &iop_a_dst, io1_a_dst, v_hlen,
                 wuffs_base__slice_u8__subslice_i(
-                    ((wuffs_base__slice_u8){.ptr = self->private_impl.f_history,
-                                            .len = 32768}),
+                    ((wuffs_base__slice_u8){
+                        .ptr = self->private_impl.f_history,
+                        .len = 32768,
+                    }),
                     (v_hdist & 32767)));
             if (v_hlen <= v_n_copied) {
               v_hlen = 0;
@@ -6240,7 +6252,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
                   &iop_a_dst, io1_a_dst, v_hlen,
                   wuffs_base__slice_u8__subslice_i(
                       ((wuffs_base__slice_u8){
-                          .ptr = self->private_impl.f_history, .len = 32768}),
+                          .ptr = self->private_impl.f_history,
+                          .len = 32768,
+                      }),
                       (v_hdist & 32767)));
               if (v_hlen <= v_n_copied) {
                 v_hlen = 0;
@@ -8112,10 +8126,14 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       }
     } else if (self->private_impl.f_gc_has_transparent_index) {
       wuffs_base__slice_u8__copy_from_slice(
-          ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[1],
-                                  .len = 1024}),
-          ((wuffs_base__slice_u8){.ptr = self->private_impl.f_palettes[0],
-                                  .len = 1024}));
+          ((wuffs_base__slice_u8){
+              .ptr = self->private_impl.f_palettes[1],
+              .len = 1024,
+          }),
+          ((wuffs_base__slice_u8){
+              .ptr = self->private_impl.f_palettes[0],
+              .len = 1024,
+          }));
     } else {
       self->private_impl.f_which_palette = 0;
     }
@@ -8138,7 +8156,8 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         ((wuffs_base__slice_u8){
             .ptr = self->private_impl
                        .f_palettes[self->private_impl.f_which_palette],
-            .len = 1024}));
+            .len = 1024,
+        }));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
        wuffs_base__ignore_check_wuffs_version_status(
@@ -8189,7 +8208,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               &v_w, &u_w, &iop_v_w, &io1_v_w,
               wuffs_base__slice_u8__subslice_i(
                   ((wuffs_base__slice_u8){
-                      .ptr = self->private_impl.f_uncompressed, .len = 4096}),
+                      .ptr = self->private_impl.f_uncompressed,
+                      .len = 4096,
+                  }),
                   self->private_impl.f_uncompressed_wi));
           wuffs_base__io_reader__set_limit(&a_src, iop_a_src, v_block_size);
           wuffs_base__io_reader__set_mark(&a_src, iop_a_src);
@@ -8305,8 +8326,10 @@ label_0_continue:;
   while (self->private_impl.f_uncompressed_wi >
          self->private_impl.f_uncompressed_ri) {
     v_src = wuffs_base__slice_u8__subslice_ij(
-        ((wuffs_base__slice_u8){.ptr = self->private_impl.f_uncompressed,
-                                .len = 4096}),
+        ((wuffs_base__slice_u8){
+            .ptr = self->private_impl.f_uncompressed,
+            .len = 4096,
+        }),
         self->private_impl.f_uncompressed_ri,
         self->private_impl.f_uncompressed_wi);
     if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
@@ -9057,8 +9080,10 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         }
         while (true) {
           v_expansion = wuffs_base__slice_u8__subslice_i(
-              ((wuffs_base__slice_u8){.ptr = self->private_impl.f_stack,
-                                      .len = 4096}),
+              ((wuffs_base__slice_u8){
+                  .ptr = self->private_impl.f_stack,
+                  .len = 4096,
+              }),
               v_s);
           v_n_copied = wuffs_base__io_writer__copy_from_slice(
               &iop_a_dst, io1_a_dst, v_expansion);
