@@ -33,11 +33,13 @@ typedef uint32_t wuffs_base__color_u32argb;
 //  - bits 30 .. 28 encodes color (and channel order, in terms of memory).
 //  - bits 27 .. 26 are reserved.
 //  - bits 25 .. 24 encodes transparency.
-//  - bit        23 indicates big-endian/MSB-first (as opposed to little/LSB).
-//  - bit        22 indicates floating point (as opposed to integer).
-//  - bits 21 .. 20 are the number of planes, minus 1. Zero means packed.
-//  - bits 19 .. 16 encodes the number of bits (depth) in an index value.
-//                  Zero means direct, not palette-indexed.
+//  - bits 23 .. 21 are reserved.
+//  - bit        20 indicates big-endian/MSB-first (as opposed to little/LSB).
+//  - bit        19 indicates floating point (as opposed to integer).
+//  - bit        18 indicates palette-indexed. The number-of-planes (the next
+//                  field) will be zero, as the format is considered packed,
+//                  but the 8-bit N-BGRA color data is stored in plane 3.
+//  - bits 17 .. 16 are the number of planes, minus 1. Zero means packed.
 //  - bits 15 .. 12 encodes the number of bits (depth) in the 3rd channel.
 //  - bits 11 ..  8 encodes the number of bits (depth) in the 2nd channel.
 //  - bits  7 ..  4 encodes the number of bits (depth) in the 1st channel.
@@ -56,10 +58,12 @@ typedef uint32_t wuffs_base__color_u32argb;
 // For direct formats with N > 1 channels, those channels can be laid out in
 // either 1 (packed) or N (planar) planes. For example, RGBA data is usually
 // packed, but YUV data is usually planar, due to chroma subsampling (for
-// details, see the wuffs_base__pixel_subsampling type). For indexed formats,
-// the palette (always 256 × 4 bytes) holds up to 4 packed bytes of color data
-// per index value, and there is only 1 plane (for the index). The distance
-// between successive palette elements is always 4 bytes.
+// details, see the wuffs_base__pixel_subsampling type).
+//
+// For indexed formats, the palette (always 256 × 4 bytes) holds 8 bits per
+// channel non-alpha-premultiplied BGRA color data. There is only 1 plane (for
+// the index), as the format is considered packed. Plane 0 holds the per-pixel
+// indices. Plane 3 is re-purposed to hold the per-index colors.
 //
 // The color field is encoded in 3 bits:
 //  - 0 means                 A (Alpha).
@@ -98,7 +102,7 @@ typedef uint32_t wuffs_base__color_u32argb;
 //  - 14 means a bit depth of 48.
 //  - 15 means a bit depth of 64.
 //
-// For example, wuffs_base__pixel_format 0x3280BBBB is a natural format for
+// For example, wuffs_base__pixel_format 0x3210BBBB is a natural format for
 // decoding a PNG image - network byte order (also known as big-endian),
 // packed, non-premultiplied alpha - that happens to be 16-bit-depth truecolor
 // with alpha (RGBA). In memory order:
@@ -148,35 +152,30 @@ typedef uint32_t wuffs_base__pixel_format;
 #define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL \
   ((wuffs_base__pixel_format)0x13000008)
 
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL \
+  ((wuffs_base__pixel_format)0x22040008)
+
 #define WUFFS_BASE__PIXEL_FORMAT__BGR ((wuffs_base__pixel_format)0x20000888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRX ((wuffs_base__pixel_format)0x21008888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRX_INDEXED \
-  ((wuffs_base__pixel_format)0x21088888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL \
   ((wuffs_base__pixel_format)0x22008888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED \
-  ((wuffs_base__pixel_format)0x22088888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL \
   ((wuffs_base__pixel_format)0x23008888)
 
 #define WUFFS_BASE__PIXEL_FORMAT__RGB ((wuffs_base__pixel_format)0x30000888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBX ((wuffs_base__pixel_format)0x31008888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBX_INDEXED \
-  ((wuffs_base__pixel_format)0x31088888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL \
   ((wuffs_base__pixel_format)0x32008888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL_INDEXED \
-  ((wuffs_base__pixel_format)0x32088888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL \
   ((wuffs_base__pixel_format)0x33008888)
 
-#define WUFFS_BASE__PIXEL_FORMAT__YUV ((wuffs_base__pixel_format)0x40200888)
-#define WUFFS_BASE__PIXEL_FORMAT__YUVK ((wuffs_base__pixel_format)0x41308888)
+#define WUFFS_BASE__PIXEL_FORMAT__YUV ((wuffs_base__pixel_format)0x40020888)
+#define WUFFS_BASE__PIXEL_FORMAT__YUVK ((wuffs_base__pixel_format)0x41038888)
 #define WUFFS_BASE__PIXEL_FORMAT__YUVA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x42308888)
+  ((wuffs_base__pixel_format)0x42038888)
 
-#define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x50200888)
-#define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x51308888)
+#define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x50020888)
+#define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x51038888)
 
 static inline bool  //
 wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
@@ -185,15 +184,18 @@ wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
 
 static inline bool  //
 wuffs_base__pixel_format__is_indexed(wuffs_base__pixel_format f) {
-  return ((f >> 16) & 0x0F) != 0;
+  return (f >> 18) & 0x01;
+}
+
+static inline uint32_t  //
+wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
+  return f ? (((f >> 16) & 0x03) + 1) : 0;
 }
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
 
-static inline uint32_t  //
-wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
-  return f ? (((f >> 20) & 0x03) + 1) : 0;
-}
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__INDEX_PLANE 0
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE 3
 
 // --------
 
@@ -379,7 +381,11 @@ wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
   if (c) {
     uint64_t wh =
         ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-    // TODO: handle things other than 1 byte per pixel.
+    // TODO: handle things other than 1 byte per pixel. When doing so, consider
+    // that the +1024 below could overflow.
+    if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
+      wh += 1024;
+    }
     return (size_t)wh;
   }
   return 0;
@@ -787,16 +793,15 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     wuffs_base__table_u8 planes[WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX];
-    uint8_t palette[1024];
     // TODO: color spaces.
   } private_impl;
 
 #ifdef __cplusplus
   inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
                                            wuffs_base__slice_u8 pixbuf_memory);
-  inline void set_palette(wuffs_base__slice_u8 palette);
   inline wuffs_base__table_u8 plane(uint32_t p);
   inline wuffs_base__slice_u8 palette();
+  inline void set_palette(wuffs_base__slice_u8 palette);
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
@@ -812,28 +817,40 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (!pixcfg) {
     return wuffs_base__error__bad_argument;
   }
+
+  uint8_t* ptr = pixbuf_memory.ptr;
+  size_t len = pixbuf_memory.len;
+  if (wuffs_base__pixel_format__is_indexed(pixcfg->private_impl.pixfmt)) {
+    // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
+    // the start of pixbuf_memory. We split from the start, not the end, so
+    // that the remaining ptr has the same alignment as the original ptr, up to
+    // an alignment of 1024.
+    if (len < 1024) {
+      return wuffs_base__error__bad_argument_length_too_short;
+    }
+    wuffs_base__table_u8* tab =
+        &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+    tab->ptr = ptr;
+    tab->width = 1024;
+    tab->height = 1;
+    tab->stride = 1024;
+    ptr += 1024;
+    len -= 1024;
+  }
+
   // TODO: don't assume 1 byte per pixel. Don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
-  if (wh > pixbuf_memory.len) {
+  if (wh > len) {
     return wuffs_base__error__bad_argument_length_too_short;
   }
   b->pixcfg = *pixcfg;
   wuffs_base__table_u8* tab = &b->private_impl.planes[0];
-  tab->ptr = pixbuf_memory.ptr;
+  tab->ptr = ptr;
   tab->width = pixcfg->private_impl.width;
   tab->height = pixcfg->private_impl.height;
   tab->stride = pixcfg->private_impl.width;
   return NULL;
-}
-
-// The palette argument is ignored unless its length is exactly 1024.
-static inline void  //
-wuffs_base__pixel_buffer__set_palette(wuffs_base__pixel_buffer* b,
-                                      wuffs_base__slice_u8 palette) {
-  if (b && palette.ptr && (palette.len == 1024)) {
-    memmove(b->private_impl.palette, palette.ptr, 1024);
-  }
 }
 
 static inline wuffs_base__table_u8  //
@@ -843,13 +860,32 @@ wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
              : ((wuffs_base__table_u8){});
 }
 
-// wuffs_base__pixel_buffer__palette returns the palette that the pixel data
-// can index. The backing array is inside b and has length 1024.
+// wuffs_base__pixel_buffer__palette returns the palette color data. If
+// non-empty, it will have length 1024.
 static inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
-  return b ? ((wuffs_base__slice_u8){.ptr = b->private_impl.palette,
-                                     .len = 1024})
-           : ((wuffs_base__slice_u8){});
+  if (b &&
+      wuffs_base__pixel_format__is_indexed(b->pixcfg.private_impl.pixfmt)) {
+    wuffs_base__table_u8* tab =
+        &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
+    if ((tab->width == 1024) && (tab->height == 1)) {
+      return ((wuffs_base__slice_u8){
+          .ptr = tab->ptr,
+          .len = 1024,
+      });
+    }
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
+// The palette argument is ignored unless its length is exactly 1024.
+static inline void  //
+wuffs_base__pixel_buffer__set_palette(wuffs_base__pixel_buffer* b,
+                                      wuffs_base__slice_u8 palette) {
+  wuffs_base__slice_u8 dst = wuffs_base__pixel_buffer__palette(b);
+  if ((dst.len == 1024) && (palette.len == 1024)) {
+    memmove(dst.ptr, palette.ptr, 1024);
+  }
 }
 
 #ifdef __cplusplus
@@ -860,11 +896,6 @@ wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
 }
 
-inline void  //
-wuffs_base__pixel_buffer::set_palette(wuffs_base__slice_u8 palette) {
-  wuffs_base__pixel_buffer__set_palette(this, palette);
-}
-
 inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer::plane(uint32_t p) {
   return wuffs_base__pixel_buffer__plane(this, p);
@@ -873,6 +904,11 @@ wuffs_base__pixel_buffer::plane(uint32_t p) {
 inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer::palette() {
   return wuffs_base__pixel_buffer__palette(this);
+}
+
+inline void  //
+wuffs_base__pixel_buffer::set_palette(wuffs_base__slice_u8 palette) {
+  wuffs_base__pixel_buffer__set_palette(this, palette);
 }
 
 #endif  // __cplusplus

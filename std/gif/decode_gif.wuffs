@@ -142,9 +142,9 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 		// TODO: rename initialize to set?
 		//
 		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED magic pixfmt constant.
+		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL magic pixfmt constant.
 		args.dst.initialize!(
-			pixfmt:0x22088888,
+			pixfmt:0x22040008,
 			pixsub:0,
 			width:this.width,
 			height:this.height,
@@ -560,6 +560,8 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
 
+	// TODO: remove the set_palette method. Instead, call palette and
+	// copy_from_slice.
 	args.dst.set_palette!(palette:this.palettes[this.which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec

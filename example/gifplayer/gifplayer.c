@@ -153,15 +153,16 @@ void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
   if (palette.len != 1024) {
     return;
   }
+  wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(pb, 0);
   size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
     wuffs_base__color_u32argb* d = dst_buffer + (y * width) + bounds.min_incl_x;
-    uint8_t* s = image_buffer + (y * width) + bounds.min_incl_x;
+    uint8_t* s = tab.ptr + (y * tab.stride) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       uint32_t index = *s++;
-      wuffs_base__color_u32argb c = load_u32le(palette.ptr + 4 * index);
+      wuffs_base__color_u32argb c = load_u32le(palette.ptr + (4 * index));
       if (c) {
         *d = c;
       }

@@ -287,10 +287,10 @@ bool do_test_wuffs_gif_decode(const char* filename,
       return false;
     }
     if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg) !=
-        WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED) {
+        WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL) {
       FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
            wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
-           WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL_INDEXED);
+           WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL);
       return false;
     }
 
