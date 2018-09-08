@@ -822,8 +822,8 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (wuffs_base__pixel_format__is_indexed(pixcfg->private_impl.pixfmt)) {
     // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
     // the start of pixbuf_memory. We split from the start, not the end, so
-    // that the remaining ptr has the same alignment as the original ptr, up to
-    // an alignment of 1024.
+    // that the both chunks' pointers have the same alignment as the original
+    // pointer, up to an alignment of 1024.
     if (len < 1024) {
       return wuffs_base__error__bad_argument_length_too_short;
     }
