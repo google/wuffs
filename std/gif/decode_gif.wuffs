@@ -547,7 +547,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			i += 1
 		}
 	} else if this.gc_has_transparent_index {
-		this.palettes[1][:].copy_from_slice(s:this.palettes[0][:])
+		this.palettes[1][:].copy_from_slice!(s:this.palettes[0][:])
 	} else {
 		this.which_palette = 0
 	}
@@ -560,7 +560,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		this.palettes[1][(4 * (this.gc_transparent_index as base.u32)) + 3] = 0x00
 	}
 
-	args.dst.palette().copy_from_slice(s:this.palettes[this.which_palette][:])
+	args.dst.palette().copy_from_slice!(s:this.palettes[this.which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file
@@ -666,7 +666,7 @@ pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
 			} else {
 				dst = dst[this.dst_x as base.u64:]
 			}
-			n = (dst.copy_from_slice(s:src) & 0xFFFFFFFF) as base.u32
+			n = (dst.copy_from_slice!(s:src) & 0xFFFFFFFF) as base.u32
 
 			new_ri = this.uncompressed_ri ~sat+ n
 			this.uncompressed_ri = new_ri.min(x:4096)

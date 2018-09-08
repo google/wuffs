@@ -138,12 +138,12 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			// previous value of history_index, as we will overwrite the whole
 			// ringbuffer.
 			written = written.suffix(up_to:0x8000)
-			this.history[:].copy_from_slice(s:written)
+			this.history[:].copy_from_slice!(s:written)
 			this.history_index = 0x8000
 		} else {
 			// Otherwise, append written to the history ringbuffer starting at
 			// the previous history_index (modulo 0x8000).
-			var n_copied base.u64 = this.history[this.history_index & 0x7FFF:].copy_from_slice(s:written)
+			var n_copied base.u64 = this.history[this.history_index & 0x7FFF:].copy_from_slice!(s:written)
 			if n_copied < written.length() {
 				// a_slice.copy_from(s:b_slice) returns the minimum of the two
 				// slice lengths. If that value is less than b_slice.length(),
@@ -153,7 +153,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				// to wrap around and copy the remainder of written over the
 				// start of the history ringbuffer.
 				written = written[n_copied:]
-				n_copied = this.history[:].copy_from_slice(s:written)
+				n_copied = this.history[:].copy_from_slice!(s:written)
 				// Set history_index (modulo 0x8000) to the length of this
 				// remainder. The &0x7FFF is redundant, but proves to the
 				// compiler that the conversion to u32 will not overflow. The

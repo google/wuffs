@@ -268,8 +268,7 @@ const (
 )
 
 var SliceFuncs = []string{
-	// TODO: should copy_from_slice be a ! method?
-	"T1.copy_from_slice(s T1) u64",
+	"T1.copy_from_slice!(s T1) u64",
 	"T1.length() u64",
 	"T1.prefix(up_to u64) T1",
 	"T1.suffix(up_to u64) T1",
