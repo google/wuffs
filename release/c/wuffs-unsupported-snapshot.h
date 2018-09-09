@@ -324,6 +324,8 @@ wuffs_base__u64__byte_swapped(uint64_t x) {
 
 // WUFFS_BASE__SLICE is a 1-dimensional buffer.
 //
+// len measures a number of elements, not necessarily a size in bytes.
+//
 // A value with all fields NULL or zero is a valid, empty slice.
 #define WUFFS_BASE__SLICE(T) \
   struct {                   \
@@ -332,6 +334,9 @@ wuffs_base__u64__byte_swapped(uint64_t x) {
   }
 
 // WUFFS_BASE__TABLE is a 2-dimensional buffer.
+//
+// width height, and stride measure a number of elements, not necessarily a
+// size in bytes.
 //
 // A value with all fields NULL or zero is a valid, empty table.
 #define WUFFS_BASE__TABLE(T) \
@@ -1123,6 +1128,77 @@ wuffs_base__io_buffer__struct::writer() {
 }
 
 #endif  // __cplusplus
+
+// ---------------- Memory Allocation
+
+// The memory allocation related functions in this section aren't used by Wuffs
+// per se, but they may be helpful to the code that uses Wuffs.
+
+// wuffs_base__malloc_slice_uxx wraps calling a malloc-like function, except
+// that it takes a uint64_t number of elements instead of a size_t size in
+// bytes, and it returns a slice (a pointer and a length) instead of just a
+// pointer.
+//
+// You can pass the C stdlib's malloc as the malloc_func.
+//
+// It returns an empty slice (containing a NULL ptr field) if (num_uxx *
+// sizeof(uintxx_t)) would overflow SIZE_MAX.
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
+  if (malloc_func && (num_u8 <= (SIZE_MAX / sizeof(uint8_t)))) {
+    void* p = (*malloc_func)(num_u8 * sizeof(uint8_t));
+    if (p) {
+      return ((wuffs_base__slice_u8){
+          .ptr = p,
+          .len = num_u8,
+      });
+    }
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
+static inline wuffs_base__slice_u16  //
+wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
+  if (malloc_func && (num_u16 <= (SIZE_MAX / sizeof(uint16_t)))) {
+    void* p = (*malloc_func)(num_u16 * sizeof(uint16_t));
+    if (p) {
+      return ((wuffs_base__slice_u16){
+          .ptr = p,
+          .len = num_u16,
+      });
+    }
+  }
+  return ((wuffs_base__slice_u16){});
+}
+
+static inline wuffs_base__slice_u32  //
+wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
+  if (malloc_func && (num_u32 <= (SIZE_MAX / sizeof(uint32_t)))) {
+    void* p = (*malloc_func)(num_u32 * sizeof(uint32_t));
+    if (p) {
+      return ((wuffs_base__slice_u32){
+          .ptr = p,
+          .len = num_u32,
+      });
+    }
+  }
+  return ((wuffs_base__slice_u32){});
+}
+
+static inline wuffs_base__slice_u64  //
+wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
+  if (malloc_func && (num_u64 <= (SIZE_MAX / sizeof(uint64_t)))) {
+    void* p = (*malloc_func)(num_u64 * sizeof(uint64_t));
+    if (p) {
+      return ((wuffs_base__slice_u64){
+          .ptr = p,
+          .len = num_u64,
+      });
+    }
+  }
+  return ((wuffs_base__slice_u64){});
+}
 
 #ifdef __cplusplus
 }  // extern "C"

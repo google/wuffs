@@ -48,8 +48,8 @@ It should print "PASS", amongst other information, and exit(0).
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   const char* ret = NULL;
-  void* pixbuf_ptr = NULL;
-  void* workbuf_ptr = NULL;
+  wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
+  wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){});
 
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
@@ -73,36 +73,30 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    uint64_t workbuf_len = wuffs_base__image_config__workbuf_len(&ic).max_incl;
-    // Don't try to allocate more than 64 MiB.
-    if ((workbuf_len > 64 * 1024 * 1024) || (workbuf_len > SIZE_MAX)) {
+    uint64_t n = wuffs_base__image_config__workbuf_len(&ic).max_incl;
+    if (n > 64 * 1024 * 1024) {  // Don't allocate more than 64 MiB.
       ret = "image too large";
       goto exit;
     }
-    workbuf_ptr = malloc(workbuf_len);
-    if (!workbuf_ptr) {
+    workbuf = wuffs_base__malloc_slice_u8(malloc, n);
+    if (!workbuf.ptr) {
       ret = "out of memory";
       goto exit;
     }
 
-    size_t pixbuf_len = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
-    // Don't try to allocate more than 64 MiB.
-    if (pixbuf_len > 64 * 1024 * 1024) {
+    n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
+    if (n > 64 * 1024 * 1024) {  // Don't allocate more than 64 MiB.
       ret = "image too large";
       goto exit;
     }
-    pixbuf_ptr = malloc(pixbuf_len);
-    if (!pixbuf_ptr) {
+    pixbuf = wuffs_base__malloc_slice_u8(malloc, n);
+    if (!pixbuf.ptr) {
       ret = "out of memory";
       goto exit;
     }
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                 ((wuffs_base__slice_u8){
-                                                     .ptr = pixbuf_ptr,
-                                                     .len = pixbuf_len,
-                                                 }));
+    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
     if (z) {
       ret = z;
       goto exit;
@@ -110,11 +104,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
     bool seen_ok = false;
     while (true) {
-      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
-                                           ((wuffs_base__slice_u8){
-                                               .ptr = workbuf_ptr,
-                                               .len = workbuf_len,
-                                           }),
+      z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf,
                                            NULL);
       if (z) {
         if ((z != wuffs_base__warning__end_of_data) || !seen_ok) {
@@ -127,11 +117,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   }
 
 exit:
-  if (workbuf_ptr) {
-    free(workbuf_ptr);
-  }
-  if (pixbuf_ptr) {
-    free(pixbuf_ptr);
-  }
+  free(workbuf.ptr);
+  free(pixbuf.ptr);
   return ret;
 }

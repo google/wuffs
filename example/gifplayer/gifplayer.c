@@ -78,18 +78,13 @@ uint64_t micros_since_start(struct timespec* now) {
 uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
 
-wuffs_base__color_u32argb* dst_buffer = NULL;
+wuffs_base__color_u32argb* curr_dst_buffer = NULL;
 wuffs_base__color_u32argb* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
 
-uint8_t* image_buffer = NULL;
-size_t image_len = 0;
-
-uint8_t* work_buffer = NULL;
-size_t work_len = 0;
-
-uint8_t* print_buffer = NULL;
-size_t print_len = 0;
+wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
+wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){});
+wuffs_base__slice_u8 printbuf = ((wuffs_base__slice_u8){});
 
 bool first_play = true;
 uint32_t num_loops_remaining = 0;
@@ -141,7 +136,8 @@ void restore_background(wuffs_base__pixel_buffer* pb,
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32argb* d = dst_buffer + (y * width) + bounds.min_incl_x;
+    wuffs_base__color_u32argb* d =
+        curr_dst_buffer + (y * width) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       *d++ = 0;
     }
@@ -158,7 +154,8 @@ void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32argb* d = dst_buffer + (y * width) + bounds.min_incl_x;
+    wuffs_base__color_u32argb* d =
+        curr_dst_buffer + (y * width) + bounds.min_incl_x;
     uint8_t* s = tab.ptr + (y * tab.stride) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       uint32_t index = *s++;
@@ -175,8 +172,8 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32argb* d = dst_buffer;
-  uint8_t* p = print_buffer;
+  wuffs_base__color_u32argb* d = curr_dst_buffer;
+  uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   uint32_t y;
   for (y = 0; y < height; y++) {
@@ -194,15 +191,15 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
     }
     *p++ = '\n';
   }
-  return p - print_buffer;
+  return p - printbuf.ptr;
 }
 
 size_t print_color_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32argb* d = dst_buffer;
-  uint8_t* p = print_buffer;
+  wuffs_base__color_u32argb* d = curr_dst_buffer;
+  uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   p += sprintf((char*)p, "%s", reset_color);
   uint32_t y;
@@ -220,12 +217,12 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
     *p++ = '\n';
   }
   p += sprintf((char*)p, "%s", reset_color);
-  return p - print_buffer;
+  return p - printbuf.ptr;
 }
 
 // ----
 
-const char* allocate(wuffs_base__image_config* ic) {
+const char* try_allocate(wuffs_base__image_config* ic) {
   uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
@@ -234,62 +231,57 @@ const char* allocate(wuffs_base__image_config* ic) {
   }
 
   dst_len = num_pixels * sizeof(wuffs_base__color_u32argb);
-  dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
-  if (!dst_buffer) {
-    return "could not allocate dst buffer";
+  curr_dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
+  if (!curr_dst_buffer) {
+    return "could not allocate curr-dst buffer";
   }
 
   prev_dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
   if (!prev_dst_buffer) {
-    free(dst_buffer);
-    dst_buffer = NULL;
     return "could not allocate prev-dst buffer";
   }
 
-  image_len = wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg);
-  image_buffer = malloc(image_len);
-  if (!image_buffer) {
-    free(prev_dst_buffer);
-    prev_dst_buffer = NULL;
-    free(dst_buffer);
-    dst_buffer = NULL;
-    return "could not allocate image buffer";
+  pixbuf = wuffs_base__malloc_slice_u8(
+      malloc, wuffs_base__pixel_config__pixbuf_len(&ic->pixcfg));
+  if (!pixbuf.ptr) {
+    return "could not allocate pixel buffer";
   }
 
-  uint64_t work_len_u64 = wuffs_base__image_config__workbuf_len(ic).max_incl;
-  if (work_len_u64 <= SIZE_MAX) {
-    work_buffer = malloc(work_len_u64);
-    work_len = work_len_u64;
-  }
-  if (!work_buffer) {
-    free(image_buffer);
-    image_buffer = NULL;
-    free(prev_dst_buffer);
-    prev_dst_buffer = NULL;
-    free(dst_buffer);
-    dst_buffer = NULL;
-    return "could not allocate image buffer";
+  workbuf = wuffs_base__malloc_slice_u8(
+      malloc, wuffs_base__image_config__workbuf_len(ic).max_incl);
+  if (!workbuf.ptr) {
+    return "could not allocate work buffer";
   }
 
   uint64_t plen = 1 + ((uint64_t)(width) + 1) * (uint64_t)(height);
   uint64_t bytes_per_print_pixel = color_flag ? BYTES_PER_COLOR_PIXEL : 1;
   if (plen <= ((uint64_t)SIZE_MAX) / bytes_per_print_pixel) {
-    print_len = (size_t)(plen * bytes_per_print_pixel);
-    print_buffer = malloc(print_len);
+    printbuf =
+        wuffs_base__malloc_slice_u8(malloc, plen * bytes_per_print_pixel);
   }
-  if (!print_buffer) {
-    free(work_buffer);
-    work_buffer = NULL;
-    free(image_buffer);
-    image_buffer = NULL;
-    free(prev_dst_buffer);
-    prev_dst_buffer = NULL;
-    free(dst_buffer);
-    dst_buffer = NULL;
+  if (!printbuf.ptr) {
     return "could not allocate print buffer";
   }
 
   return NULL;
+}
+
+const char* allocate(wuffs_base__image_config* ic) {
+  const char* z = try_allocate(ic);
+  if (z) {
+    free(printbuf.ptr);
+    printbuf = ((wuffs_base__slice_u8){});
+    free(workbuf.ptr);
+    workbuf = ((wuffs_base__slice_u8){});
+    free(pixbuf.ptr);
+    pixbuf = ((wuffs_base__slice_u8){});
+    free(prev_dst_buffer);
+    prev_dst_buffer = NULL;
+    free(curr_dst_buffer);
+    curr_dst_buffer = NULL;
+    dst_len = 0;
+  }
+  return z;
 }
 
 const char* play() {
@@ -304,6 +296,7 @@ const char* play() {
       .ptr = src_buffer,
       .len = src_len,
       .wi = src_len,
+      .ri = 0,
       .pos = 0,
       .closed = true,
   });
@@ -328,16 +321,12 @@ const char* play() {
     if (msg) {
       return msg;
     }
-    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                 ((wuffs_base__slice_u8){
-                                                     .ptr = image_buffer,
-                                                     .len = image_len,
-                                                 }));
+    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
     if (z) {
       return z;
     }
-    memset(image_buffer, 0, image_len);
-    memset(dst_buffer, 0, dst_len);
+    memset(pixbuf.ptr, 0, pixbuf.len);
+    memset(curr_dst_buffer, 0, dst_len);
     num_loops_remaining = wuffs_base__image_config__num_loops(&ic);
   }
 
@@ -354,17 +343,12 @@ const char* play() {
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        memcpy(prev_dst_buffer, dst_buffer, dst_len);
+        memcpy(prev_dst_buffer, curr_dst_buffer, dst_len);
         break;
       }
     }
 
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
-                                         ((wuffs_base__slice_u8){
-                                             .ptr = work_buffer,
-                                             .len = work_len,
-                                         }),
-                                         NULL);
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
     if (z) {
       if (z == wuffs_base__warning__end_of_data) {
         break;
@@ -382,8 +366,8 @@ const char* play() {
         break;
       }
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        wuffs_base__color_u32argb* swap = dst_buffer;
-        dst_buffer = prev_dst_buffer;
+        wuffs_base__color_u32argb* swap = curr_dst_buffer;
+        curr_dst_buffer = prev_dst_buffer;
         prev_dst_buffer = swap;
         break;
       }
@@ -408,7 +392,7 @@ const char* play() {
     }
 #endif
 
-    ignore_return_value(write(stdout_fd, print_buffer, n));
+    ignore_return_value(write(stdout_fd, printbuf.ptr, n));
 
     cumulative_delay_micros +=
         (1000 * wuffs_base__frame_config__duration(&fc)) /
