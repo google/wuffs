@@ -422,8 +422,8 @@ bool do_test_wuffs_gif_decode(const char* filename,
   wuffs_base__io_buffer pal_got = {.ptr = pal_got_slice.ptr,
                                    .len = pal_got_slice.len,
                                    .wi = pal_got_slice.len};
-  wuffs_base__io_buffer pal_want = {.ptr = global_palette_buffer,
-                                    .len = 4 * 256};
+  uint8_t pal_want_array[1024];
+  wuffs_base__io_buffer pal_want = {.ptr = pal_want_array, .len = 1024};
   if (!read_file(&pal_want, palette_filename)) {
     return false;
   }

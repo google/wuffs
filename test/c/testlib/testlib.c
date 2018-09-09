@@ -20,7 +20,6 @@
 #include <sys/time.h>
 
 #define BUFFER_SIZE (64 * 1024 * 1024)
-#define PALETTE_BUFFER_SIZE (4 * 256)
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -29,7 +28,6 @@ uint8_t global_want_buffer[BUFFER_SIZE];
 uint8_t global_work_buffer[BUFFER_SIZE];
 uint8_t global_src_buffer[BUFFER_SIZE];
 uint8_t global_pixel_buffer[BUFFER_SIZE];
-uint8_t global_palette_buffer[PALETTE_BUFFER_SIZE];
 
 char fail_msg[65536] = {0};
 
