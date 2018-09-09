@@ -373,38 +373,6 @@ wuffs_base__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 
 // ---------------- Slices and Tables
 
-static inline wuffs_base__slice_u8  //
-wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
-  if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return ((wuffs_base__slice_u8){
-        .ptr = s.ptr + i,
-        .len = s.len - i,
-    });
-  }
-  return ((wuffs_base__slice_u8){});
-}
-
-static inline wuffs_base__slice_u8  //
-wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
-  if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return ((wuffs_base__slice_u8){.ptr = s.ptr, .len = j});
-  }
-  return ((wuffs_base__slice_u8){});
-}
-
-static inline wuffs_base__slice_u8  //
-wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
-                                  uint64_t i,
-                                  uint64_t j) {
-  if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return ((wuffs_base__slice_u8){
-        .ptr = s.ptr + i,
-        .len = j - i,
-    });
-  }
-  return ((wuffs_base__slice_u8){});
-}
-
 // wuffs_base__slice_u8__prefix returns up to the first up_to bytes of s.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__prefix(wuffs_base__slice_u8 s, uint64_t up_to) {

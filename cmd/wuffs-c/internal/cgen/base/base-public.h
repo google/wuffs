@@ -319,6 +319,50 @@ typedef WUFFS_BASE__TABLE(uint16_t) wuffs_base__table_u16;
 typedef WUFFS_BASE__TABLE(uint32_t) wuffs_base__table_u32;
 typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 
+// wuffs_base__slice_u8__subslice_i returns s[i:].
+//
+// It returns an empty slice if i is out of bounds.
+static inline wuffs_base__slice_u8  //
+wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
+  if ((i <= SIZE_MAX) && (i <= s.len)) {
+    return ((wuffs_base__slice_u8){
+        .ptr = s.ptr + i,
+        .len = s.len - i,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
+// wuffs_base__slice_u8__subslice_j returns s[:j].
+//
+// It returns an empty slice if j is out of bounds.
+static inline wuffs_base__slice_u8  //
+wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
+  if ((j <= SIZE_MAX) && (j <= s.len)) {
+    return ((wuffs_base__slice_u8){
+        .ptr = s.ptr,
+        .len = j,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
+// wuffs_base__slice_u8__subslice_ij returns s[i:j].
+//
+// It returns an empty slice if i or j is out of bounds.
+static inline wuffs_base__slice_u8  //
+wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
+                                  uint64_t i,
+                                  uint64_t j) {
+  if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
+    return ((wuffs_base__slice_u8){
+        .ptr = s.ptr + i,
+        .len = j - i,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
 // ---------------- Ranges and Rects
 
 // Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
