@@ -87,7 +87,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%s%sw = %sw.ptr + %sw.wi;\n", iopPrefix, vPrefix, uPrefix, uPrefix)
+		b.printf("%s%sw = %sw.data.ptr + %sw.meta.wi;\n", iopPrefix, vPrefix, uPrefix, uPrefix)
 		return nil
 	}
 
@@ -102,9 +102,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	preName := prefix + name.Str(g.tm)
-	i0, i1 := "ri", "wi"
+	i0, i1 := "meta.ri", "meta.wi"
 	if typ.QID()[1] == t.IDIOWriter {
-		i0, i1 = "wi", "len"
+		i0, i1 = "meta.wi", "data.len"
 	}
 
 	if header {
@@ -117,18 +117,18 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	b.printf("if (%s.private_impl.buf) {", preName)
 
-	b.printf("%s%s = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
+	b.printf("%s%s = %s.private_impl.buf->data.ptr + %s.private_impl.buf->%s;",
 		iopPrefix, preName, preName, preName, i0)
 
 	if header {
 		b.printf("if (!%s.private_impl.mark) {", preName)
 		b.printf("%s.private_impl.mark = %s%s;", preName, iopPrefix, preName)
-		b.printf("%s.private_impl.limit = %s.private_impl.buf->ptr + %s.private_impl.buf->%s;",
+		b.printf("%s.private_impl.limit = %s.private_impl.buf->data.ptr + %s.private_impl.buf->%s;",
 			preName, preName, preName, i1)
 		b.printf("}\n")
 
 		if typ.QID()[1] == t.IDIOWriter {
-			b.printf("if (%s.private_impl.buf->closed) {", preName)
+			b.printf("if (%s.private_impl.buf->meta.closed) {", preName)
 			b.printf("%s.private_impl.limit = %s%s;", preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
@@ -149,7 +149,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%sw.wi = %s%sw - %sw.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
+		b.printf("%sw.meta.wi = %s%sw - %sw.data.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
 		return nil
 	}
 
@@ -170,7 +170,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	b.printf("if (%s.private_impl.buf) {", preName)
-	b.printf("%s.private_impl.buf->%s = %s%s - %s.private_impl.buf->ptr;",
+	b.printf("%s.private_impl.buf->meta.%s = %s%s - %s.private_impl.buf->data.ptr;",
 		preName, i0, iopPrefix, preName, preName)
 	b.printf("}\n")
 	return nil

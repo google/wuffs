@@ -41,11 +41,18 @@ static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   hash ^= hash >> 11;
   hash += hash << 15;
 
-  wuffs_base__io_buffer src = {.ptr = (uint8_t*)(data),
-                               .len = size,
-                               .wi = size,
-                               .ri = 0,
-                               .closed = true};
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = (uint8_t*)(data),
+          .len = size,
+      }),
+      .meta = ((wuffs_base__io_buffer_meta){
+          .wi = size,
+          .ri = 0,
+          .pos = 0,
+          .closed = true,
+      }),
+  });
   return fuzz(wuffs_base__io_buffer__reader(&src), hash);
 }
 

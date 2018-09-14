@@ -114,21 +114,23 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
 }
 
 bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
 
   if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
     return false;
   }
   // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
-  if (src.wi < 4) {
+  if (src.meta.wi < 4) {
     FAIL("source file was too short");
     return false;
   }
   if (bad_checksum) {
-    src.ptr[src.wi - 1 - (bad_checksum & 3)] ^= 1;
+    src.data.ptr[src.meta.wi - 1 - (bad_checksum & 3)] ^= 1;
   }
 
   int end_limit;
@@ -141,9 +143,9 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
       return false;
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
-    got.wi = 0;
+    got.meta.wi = 0;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
-    src.ri = 0;
+    src.meta.ri = 0;
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
     // or isn't zero.
@@ -155,11 +157,11 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
         if (end_limit == 0) {
           continue;
         }
-        if (src.wi < end_limit) {
+        if (src.meta.wi < end_limit) {
           FAIL("end_limit=%d: not enough source data", end_limit);
           return false;
         }
-        set_reader_limit(&src_reader, src.wi - (uint64_t)(end_limit));
+        set_reader_limit(&src_reader, src.meta.wi - (uint64_t)(end_limit));
         want_z = wuffs_base__suspension__short_read;
       } else {
         want_z = (bad_checksum && !ignore_checksum)

@@ -23,11 +23,36 @@
 
 #define WUFFS_TESTLIB_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-uint8_t global_got_buffer[BUFFER_SIZE];
-uint8_t global_want_buffer[BUFFER_SIZE];
-uint8_t global_work_buffer[BUFFER_SIZE];
-uint8_t global_src_buffer[BUFFER_SIZE];
-uint8_t global_pixel_buffer[BUFFER_SIZE];
+uint8_t global_got_array[BUFFER_SIZE];
+uint8_t global_want_array[BUFFER_SIZE];
+uint8_t global_work_array[BUFFER_SIZE];
+uint8_t global_src_array[BUFFER_SIZE];
+uint8_t global_pixel_array[BUFFER_SIZE];
+
+wuffs_base__slice_u8 global_got_slice = ((wuffs_base__slice_u8){
+    .ptr = global_got_array,
+    .len = BUFFER_SIZE,
+});
+
+wuffs_base__slice_u8 global_want_slice = ((wuffs_base__slice_u8){
+    .ptr = global_want_array,
+    .len = BUFFER_SIZE,
+});
+
+wuffs_base__slice_u8 global_work_slice = ((wuffs_base__slice_u8){
+    .ptr = global_work_array,
+    .len = BUFFER_SIZE,
+});
+
+wuffs_base__slice_u8 global_src_slice = ((wuffs_base__slice_u8){
+    .ptr = global_src_array,
+    .len = BUFFER_SIZE,
+});
+
+wuffs_base__slice_u8 global_pixel_slice = ((wuffs_base__slice_u8){
+    .ptr = global_pixel_array,
+    .len = BUFFER_SIZE,
+});
 
 char fail_msg[65536] = {0};
 
@@ -304,8 +329,8 @@ wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
 
 void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->ri;
-    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->wi;
+    uint8_t* p = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.ri;
+    uint8_t* q = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.wi;
     if (!o->private_impl.mark) {
       o->private_impl.mark = p;
       o->private_impl.limit = q;
@@ -318,8 +343,8 @@ void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
 
 void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
   if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->ptr + o->private_impl.buf->wi;
-    uint8_t* q = o->private_impl.buf->ptr + o->private_impl.buf->len;
+    uint8_t* p = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.wi;
+    uint8_t* q = o->private_impl.buf->data.ptr + o->private_impl.buf->data.len;
     if (!o->private_impl.mark) {
       o->private_impl.mark = p;
       o->private_impl.limit = q;
@@ -345,11 +370,11 @@ const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
         break;
       }
       uint32_t n = r.max_excl_x - r.min_incl_x;
-      if (n > (dst->len - dst->wi)) {
+      if (n > (dst->data.len - dst->meta.wi)) {
         return "copy_to_io_buffer_from_pixel_buffer: dst buffer is too small";
       }
-      memmove(dst->ptr + dst->wi, row.ptr + r.min_incl_x, n);
-      dst->wi += n;
+      memmove(dst->data.ptr + dst->meta.wi, row.ptr + r.min_incl_x, n);
+      dst->meta.wi += n;
     }
   }
   return NULL;
@@ -360,7 +385,7 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
     FAIL("read_file: NULL argument");
     return false;
   }
-  if (dst->closed) {
+  if (dst->meta.closed) {
     FAIL("read_file: dst buffer closed for writes");
     return false;
   }
@@ -371,8 +396,8 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
   }
 
   uint8_t dummy[1];
-  uint8_t* ptr = dst->ptr + dst->wi;
-  size_t len = dst->len - dst->wi;
+  uint8_t* ptr = dst->data.ptr + dst->meta.wi;
+  size_t len = dst->data.len - dst->meta.wi;
   while (true) {
     if (!len) {
       // We have read all that dst can hold. Check that we have read the full
@@ -384,7 +409,7 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
     if (ptr != dummy) {
       ptr += n;
       len -= n;
-      dst->wi += n;
+      dst->meta.wi += n;
     } else if (n) {
       FAIL("read_file(\"%s\"): EOF not reached", path);
       fclose(f);
@@ -406,8 +431,8 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
     return false;
   }
   fclose(f);
-  dst->pos = 0;
-  dst->closed = true;
+  dst->meta.pos = 0;
+  dst->meta.closed = true;
   return true;
 }
 
@@ -416,7 +441,7 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
     FAIL("hex_dump: NULL argument");
     return NULL;
   }
-  if (buf->wi == 0) {
+  if (buf->meta.wi == 0) {
     return msg;
   }
   size_t base = i - (i & 15);
@@ -426,10 +451,10 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
       continue;
     }
     size_t b = base + j;
-    if (b >= buf->wi) {
+    if (b >= buf->meta.wi) {
       break;
     }
-    size_t n = buf->wi - b;
+    size_t n = buf->meta.wi - b;
     INCR_FAIL(msg, "  %06zx:", b);
     size_t k;
     for (k = 0; k < 16; k++) {
@@ -437,7 +462,7 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
         INCR_FAIL(msg, " ");
       }
       if (k < n) {
-        INCR_FAIL(msg, "%02x", buf->ptr[b + k]);
+        INCR_FAIL(msg, "%02x", buf->data.ptr[b + k]);
       } else {
         INCR_FAIL(msg, "  ");
       }
@@ -446,7 +471,7 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
     for (k = 0; k < 16; k++) {
       char c = ' ';
       if (k < n) {
-        c = buf->ptr[b + k];
+        c = buf->data.ptr[b + k];
         if ((c < 0x20) || (0x7F <= c)) {
           c = '.';
         }
@@ -470,16 +495,16 @@ bool io_buffers_equal(const char* prefix,
   }
   char* msg = fail_msg;
   size_t i;
-  size_t n = got->wi < want->wi ? got->wi : want->wi;
+  size_t n = got->meta.wi < want->meta.wi ? got->meta.wi : want->meta.wi;
   for (i = 0; i < n; i++) {
-    if (got->ptr[i] != want->ptr[i]) {
+    if (got->data.ptr[i] != want->data.ptr[i]) {
       break;
     }
   }
-  if (got->wi != want->wi) {
+  if (got->meta.wi != want->meta.wi) {
     INCR_FAIL(msg, "%sio_buffers_equal: wi: got %zu, want %zu.\n", prefix,
-              got->wi, want->wi);
-  } else if (i < got->wi) {
+              got->meta.wi, want->meta.wi);
+  } else if (i < got->meta.wi) {
     INCR_FAIL(msg, "%sio_buffers_equal: wi=%zu:\n", prefix, n);
   } else {
     return true;
@@ -520,15 +545,18 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
     return false;
   }
 
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer want =
-      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
 
   if (!gt->src_filename) {
-    src.closed = true;
+    src.meta.closed = true;
   } else if (!read_file(&src, gt->src_filename)) {
     return false;
   }
@@ -537,12 +565,12 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
       FAIL("inconsistent src_offsets");
       return false;
     }
-    if (gt->src_offset1 > src.wi) {
+    if (gt->src_offset1 > src.meta.wi) {
       FAIL("src_offset1 too large");
       return false;
     }
-    src.ri = gt->src_offset0;
-    src.wi = gt->src_offset1;
+    src.meta.ri = gt->src_offset0;
+    src.meta.wi = gt->src_offset1;
   }
 
   if (bench) {
@@ -552,8 +580,8 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   uint64_t i;
   uint64_t iters = iters_unscaled * iterscale;
   for (i = 0; i < iters; i++) {
-    got.wi = 0;
-    src.ri = gt->src_offset0;
+    got.meta.wi = 0;
+    src.meta.ri = gt->src_offset0;
     const char* s = codec_func(&got, &src, wlimit, rlimit);
     if (s) {
       FAIL("%s", s);
@@ -563,10 +591,10 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
       case tc_neither:
         break;
       case tc_dst:
-        n_bytes += got.wi;
+        n_bytes += got.meta.wi;
         break;
       case tc_src:
-        n_bytes += src.ri - gt->src_offset0;
+        n_bytes += src.meta.ri - gt->src_offset0;
         break;
     }
   }
@@ -576,7 +604,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
 
   if (!gt->want_filename) {
-    want.closed = true;
+    want.meta.closed = true;
   } else if (!read_file(&want, gt->want_filename)) {
     return false;
   }

@@ -48,14 +48,23 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   uint8_t dst_buffer[DST_BUFFER_SIZE];
-  wuffs_base__io_buffer dst =
-      ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
+  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = dst_buffer,
+          .len = DST_BUFFER_SIZE,
+      }),
+  });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .ptr = lgtm_ptr,
-      .len = lgtm_len,
-      .wi = lgtm_len,
-      .pos = 0,
-      .closed = true,
+      .data = ((wuffs_base__slice_u8){
+          .ptr = lgtm_ptr,
+          .len = lgtm_len,
+      }),
+      .meta = ((wuffs_base__io_buffer_meta){
+          .wi = lgtm_len,
+          .ri = 0,
+          .pos = 0,
+          .closed = true,
+      }),
   });
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -70,7 +79,7 @@ static const char* decode() {
   if (z) {
     return z;
   }
-  ignore_return_value(write(1, dst.ptr, dst.wi));
+  ignore_return_value(write(1, dst.data.ptr, dst.meta.wi));
   return NULL;
 }
 

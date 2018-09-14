@@ -214,12 +214,15 @@ void test_wuffs_deflate_decode_romeo_fixed() {
 void test_wuffs_deflate_decode_split_src() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer want =
-      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
 
   golden_test* gt = &deflate_256_bytes_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -239,7 +242,7 @@ void test_wuffs_deflate_decode_split_src() {
       FAIL("i=%d: split was not an interior split", i);
       return;
     }
-    got.wi = 0;
+    got.meta.wi = 0;
 
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
     wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
@@ -249,15 +252,15 @@ void test_wuffs_deflate_decode_split_src() {
       return;
     }
 
-    src.closed = false;
-    src.ri = gt->src_offset0;
-    src.wi = split;
+    src.meta.closed = false;
+    src.meta.ri = gt->src_offset0;
+    src.meta.wi = split;
     wuffs_base__status z0 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    src.closed = true;
-    src.ri = split;
-    src.wi = gt->src_offset1;
+    src.meta.closed = true;
+    src.meta.ri = split;
+    src.meta.wi = gt->src_offset1;
     wuffs_base__status z1 =
         wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
@@ -288,10 +291,10 @@ bool do_test_wuffs_deflate_history(int i,
                                    uint32_t starting_history_index,
                                    uint64_t limit,
                                    const char* want_z) {
-  src->ri = gt->src_offset0;
-  src->wi = gt->src_offset1;
-  got->ri = 0;
-  got->wi = 0;
+  src->meta.ri = gt->src_offset0;
+  src->meta.wi = gt->src_offset1;
+  got->meta.ri = 0;
+  got->meta.wi = 0;
 
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
@@ -314,12 +317,15 @@ bool do_test_wuffs_deflate_history(int i,
 void test_wuffs_deflate_history_full() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer want =
-      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
 
   golden_test* gt = &deflate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {
@@ -341,7 +347,7 @@ void test_wuffs_deflate_history_full() {
     }
 
     if (!do_test_wuffs_deflate_history(
-            i, gt, &src, &got, &dec, 0, want.wi + i,
+            i, gt, &src, &got, &dec, 0, want.meta.wi + i,
             i >= 0 ? NULL : wuffs_base__suspension__short_write)) {
       return;
     }
@@ -357,19 +363,23 @@ void test_wuffs_deflate_history_full() {
     }
 
     wuffs_base__io_buffer history_got = ((wuffs_base__io_buffer){
-        .ptr = dec.private_impl.f_history,
-        .len = full_history_size,
-        .wi = full_history_size,
+        .data = ((wuffs_base__slice_u8){
+            .ptr = dec.private_impl.f_history,
+            .len = full_history_size,
+        }),
     });
-    if (want.wi < full_history_size - i) {
+    history_got.meta.wi = full_history_size;
+    if (want.meta.wi < full_history_size - i) {
       FAIL("i=%d: want file is too short", i);
       return;
     }
     wuffs_base__io_buffer history_want = ((wuffs_base__io_buffer){
-        .ptr = global_want_buffer + want.wi - (full_history_size - i),
-        .len = full_history_size,
-        .wi = full_history_size,
+        .data = ((wuffs_base__slice_u8){
+            .ptr = global_want_array + want.meta.wi - (full_history_size - i),
+            .len = full_history_size,
+        }),
     });
+    history_want.meta.wi = full_history_size;
     if (!io_buffers_equal("", &history_got, &history_want)) {
       return;
     }
@@ -379,10 +389,12 @@ void test_wuffs_deflate_history_full() {
 void test_wuffs_deflate_history_partial() {
   CHECK_FOCUS(__func__);
 
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
 
   golden_test* gt = &deflate_pi_gt;
   if (!read_file(&src, gt->src_filename)) {

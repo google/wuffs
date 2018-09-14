@@ -61,16 +61,21 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
   const size_t dstbuf_size = 65536;
   uint8_t dstbuf[dstbuf_size];
-  wuffs_base__io_buffer dst = {.ptr = dstbuf, .len = dstbuf_size};
+  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = dstbuf,
+          .len = dstbuf_size,
+      }),
+  });
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
 
   while (true) {
-    dst.wi = 0;
+    dst.meta.wi = 0;
     z = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
     if (z != wuffs_base__suspension__short_write) {
       break;
     }
-    if (dst.wi == 0) {
+    if (dst.meta.wi == 0) {
       fprintf(stderr, "wuffs_zlib__decoder__decode made no progress\n");
       intentional_segfault();
     }

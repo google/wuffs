@@ -1043,18 +1043,22 @@ typedef struct {
   } private_impl;
 } wuffs_base__io_writer;
 
-// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length), plus
-// additional indexes into that buffer, plus a buffer position and an opened /
-// closed flag.
-//
-// A value with all fields NULL or zero is a valid, empty buffer.
-typedef struct wuffs_base__io_buffer__struct {
-  uint8_t* ptr;  // Pointer.
-  size_t len;    // Length.
+// wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
+// data.
+typedef struct {
   size_t wi;     // Write index. Invariant: wi <= len.
   size_t ri;     // Read  index. Invariant: ri <= wi.
   uint64_t pos;  // Position of the buffer start relative to the stream start.
   bool closed;   // No further writes are expected.
+} wuffs_base__io_buffer_meta;
+
+// wuffs_base__io_buffer is a 1-dimensional buffer (a pointer and length) plus
+// additional metadata.
+//
+// A value with all fields zero is a valid, empty buffer.
+typedef struct wuffs_base__io_buffer__struct {
+  wuffs_base__slice_u8 data;
+  wuffs_base__io_buffer_meta meta;
 
 #ifdef __cplusplus
   inline void compact();
@@ -1070,26 +1074,26 @@ typedef struct wuffs_base__io_buffer__struct {
 // start of the buffer.
 static inline void  //
 wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
-  if (!buf || (buf->ri == 0)) {
+  if (!buf || (buf->meta.ri == 0)) {
     return;
   }
-  buf->pos = wuffs_base__u64__sat_add(buf->pos, buf->ri);
-  size_t n = buf->wi - buf->ri;
+  buf->meta.pos = wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri);
+  size_t n = buf->meta.wi - buf->meta.ri;
   if (n != 0) {
-    memmove(buf->ptr, buf->ptr + buf->ri, n);
+    memmove(buf->data.ptr, buf->data.ptr + buf->meta.ri, n);
   }
-  buf->wi = n;
-  buf->ri = 0;
+  buf->meta.wi = n;
+  buf->meta.ri = 0;
 }
 
 static inline uint64_t  //
 wuffs_base__io_buffer__io_position_reader(wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__u64__sat_add(buf->pos, buf->ri) : 0;
+  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri) : 0;
 }
 
 static inline uint64_t  //
 wuffs_base__io_buffer__io_position_writer(wuffs_base__io_buffer* buf) {
-  return buf ? wuffs_base__u64__sat_add(buf->pos, buf->wi) : 0;
+  return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.wi) : 0;
 }
 
 static inline wuffs_base__io_reader  //
@@ -1156,7 +1160,7 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
     void* p = (*malloc_func)(num_u8 * sizeof(uint8_t));
     if (p) {
       return ((wuffs_base__slice_u8){
-          .ptr = p,
+          .ptr = (uint8_t*)(p),
           .len = num_u8,
       });
     }
@@ -1170,7 +1174,7 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
     void* p = (*malloc_func)(num_u16 * sizeof(uint16_t));
     if (p) {
       return ((wuffs_base__slice_u16){
-          .ptr = p,
+          .ptr = (uint16_t*)(p),
           .len = num_u16,
       });
     }
@@ -1184,7 +1188,7 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
     void* p = (*malloc_func)(num_u32 * sizeof(uint32_t));
     if (p) {
       return ((wuffs_base__slice_u32){
-          .ptr = p,
+          .ptr = (uint32_t*)(p),
           .len = num_u32,
       });
     }
@@ -1198,7 +1202,7 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
     void* p = (*malloc_func)(num_u64 * sizeof(uint64_t));
     if (p) {
       return ((wuffs_base__slice_u64){
-          .ptr = p,
+          .ptr = (uint64_t*)(p),
           .len = num_u64,
       });
     }

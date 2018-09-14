@@ -70,33 +70,36 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
                               uint64_t want_size,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  wuffs_base__io_buffer got =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer want =
-      ((wuffs_base__io_buffer){.ptr = global_want_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
 
   if (!read_file(&src, src_filename)) {
     return false;
   }
-  if (src.wi != src_size) {
-    FAIL("src size: got %d, want %d", (int)(src.wi), (int)(src_size));
+  if (src.meta.wi != src_size) {
+    FAIL("src size: got %d, want %d", (int)(src.meta.wi), (int)(src_size));
     return false;
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
-  uint8_t literal_width = src.ptr[0];
+  uint8_t literal_width = src.data.ptr[0];
   if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
+    FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]), 0x08);
     return false;
   }
-  src.ri++;
+  src.meta.ri++;
 
   if (!read_file(&want, want_filename)) {
     return false;
   }
-  if (want.wi != want_size) {
-    FAIL("want size: got %d, want %d", (int)(want.wi), (int)(want_size));
+  if (want.meta.wi != want_size) {
+    FAIL("want size: got %d, want %d", (int)(want.meta.wi), (int)(want_size));
     return false;
   }
 
@@ -119,12 +122,12 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     if (rlimit) {
       set_reader_limit(&src_reader, rlimit);
     }
-    size_t old_wi = got.wi;
-    size_t old_ri = src.ri;
+    size_t old_wi = got.meta.wi;
+    size_t old_ri = src.meta.ri;
 
     z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
     if (!z) {
-      if (src.ri != src.wi) {
+      if (src.meta.ri != src.meta.wi) {
         FAIL("decode returned \"ok\" but src was not exhausted");
         return false;
       }
@@ -138,15 +141,15 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
       return false;
     }
 
-    if (got.wi < old_wi) {
+    if (got.meta.wi < old_wi) {
       FAIL("write index got.wi went backwards");
       return false;
     }
-    if (src.ri < old_ri) {
+    if (src.meta.ri < old_ri) {
       FAIL("read index src.ri went backwards");
       return false;
     }
-    if ((got.wi == old_wi) && (src.ri == old_ri)) {
+    if ((got.meta.wi == old_wi) && (src.meta.ri == old_ri)) {
       FAIL("no progress was made");
       return false;
     }
@@ -200,23 +203,25 @@ void test_wuffs_lzw_decode_pi() {
 // ---------------- LZW Benches
 
 bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
-  wuffs_base__io_buffer dst =
-      ((wuffs_base__io_buffer){.ptr = global_got_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (!read_file(&src, filename)) {
     return false;
   }
-  if (src.wi <= 0) {
-    FAIL("src size: got %d, want > 0", (int)(src.wi));
+  if (src.meta.wi <= 0) {
+    FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
     return false;
   }
-  uint8_t literal_width = src.ptr[0];
+  uint8_t literal_width = src.data.ptr[0];
   if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.ptr[0]), 0x08);
+    FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]), 0x08);
     return false;
   }
 
@@ -225,8 +230,8 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   uint64_t i;
   uint64_t iters = iters_unscaled * iterscale;
   for (i = 0; i < iters; i++) {
-    dst.wi = 0;
-    src.ri = 1;  // Skip the literal width.
+    got.meta.wi = 0;
+    src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
     wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
         &dec, sizeof dec, WUFFS_VERSION);
@@ -234,12 +239,12 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
       FAIL("check_wuffs_version: \"%s\"", z);
       return false;
     }
-    z = wuffs_lzw__decoder__decode(&dec, dst_writer, src_reader);
+    z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
     if (z) {
       FAIL("decode: \"%s\"", z);
       return false;
     }
-    n_bytes += dst.wi;
+    n_bytes += got.meta.wi;
   }
   bench_finish(iters, n_bytes);
   return true;

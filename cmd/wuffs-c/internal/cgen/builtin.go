@@ -124,7 +124,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDPosition:
 		b.printf("(a_src.private_impl.buf ? wuffs_base__u64__sat_add(" +
-			"a_src.private_impl.buf->pos, iop_a_src - a_src.private_impl.buf->ptr) : 0)")
+			"a_src.private_impl.buf->meta.pos, iop_a_src - a_src.private_impl.buf->data.ptr) : 0)")
 		return nil
 
 	case t.IDSetLimit:
@@ -207,7 +207,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDPosition:
 		b.printf("(a_dst.private_impl.buf ? wuffs_base__u64__sat_add(" +
-			"a_dst.private_impl.buf->pos, iop_a_dst - a_dst.private_impl.buf->ptr) : 0)")
+			"a_dst.private_impl.buf->meta.pos, iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
 		return nil
 
 	case t.IDSetMark:

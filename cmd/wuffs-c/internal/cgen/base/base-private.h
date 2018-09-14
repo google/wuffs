@@ -494,8 +494,8 @@ wuffs_base__utility__make_rect_ie_u32(wuffs_base__utility* ignored,
 
 static inline bool  //
 wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
-  return (buf.ptr || (buf.len == 0)) && (buf.len >= buf.wi) &&
-         (buf.wi >= buf.ri);
+  return (buf.data.ptr || (buf.data.len == 0)) &&
+         (buf.data.len >= buf.meta.wi) && (buf.meta.wi >= buf.meta.ri);
 }
 
 // TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
@@ -508,7 +508,8 @@ wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
 static inline bool  //
 wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
-  return buf && buf->closed && (buf->ptr + buf->wi == o.private_impl.limit);
+  return buf && buf->meta.closed &&
+         (buf->data.ptr + buf->meta.wi == o.private_impl.limit);
 }
 
 static inline bool  //
@@ -516,9 +517,9 @@ wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it
   // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
-  return buf ? ((buf->ptr <= o.private_impl.mark) &&
+  return buf ? ((buf->data.ptr <= o.private_impl.mark) &&
                 (o.private_impl.mark <= o.private_impl.limit) &&
-                (o.private_impl.limit <= buf->ptr + buf->len))
+                (o.private_impl.limit <= buf->data.ptr + buf->data.len))
              : ((o.private_impl.mark == NULL) &&
                 (o.private_impl.limit == NULL));
 }
@@ -528,9 +529,9 @@ wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   // Note: if making this function public (i.e. moving it to base-header.h), it
   // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
-  return buf ? ((buf->ptr <= o.private_impl.mark) &&
+  return buf ? ((buf->data.ptr <= o.private_impl.mark) &&
                 (o.private_impl.mark <= o.private_impl.limit) &&
-                (o.private_impl.limit <= buf->ptr + buf->len))
+                (o.private_impl.limit <= buf->data.ptr + buf->data.len))
              : ((o.private_impl.mark == NULL) &&
                 (o.private_impl.limit == NULL));
 }
@@ -685,11 +686,12 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
                            uint8_t** ioptr1_ptr,
                            uint8_t** ioptr2_ptr,
                            wuffs_base__slice_u8 s) {
-  b->ptr = s.ptr;
-  b->len = s.len;
-  b->wi = 0;
-  b->ri = 0;
-  b->closed = false;
+  b->data.ptr = s.ptr;
+  b->data.len = s.len;
+  b->meta.wi = 0;
+  b->meta.ri = 0;
+  // TODO: set b->meta.pos.
+  b->meta.closed = false;
   o->private_impl.buf = b;
   o->private_impl.mark = s.ptr;
   o->private_impl.limit = s.ptr + s.len;

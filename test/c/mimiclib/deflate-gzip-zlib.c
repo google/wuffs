@@ -42,14 +42,14 @@ const char* mimic_deflate_zlib_decode(wuffs_base__io_buffer* dst,
   if (!deflate_instead_of_zlib) {
     flags |= TINFL_FLAG_PARSE_ZLIB_HEADER;
   }
-  size_t n =
-      tinfl_decompress_mem_to_mem(dst->ptr + dst->wi, dst->len - dst->wi,
-                                  src->ptr + src->ri, src->wi - src->ri, flags);
+  size_t n = tinfl_decompress_mem_to_mem(
+      dst->data.ptr + dst->meta.wi, dst->data.len - dst->meta.wi,
+      src->data.ptr + src->meta.ri, src->meta.wi - src->meta.ri, flags);
   if (n == TINFL_DECOMPRESS_MEM_TO_MEM_FAILED) {
     return "TINFL_DECOMPRESS_MEM_TO_MEM_FAILED";
   }
-  dst->wi += n;
-  src->ri = src->wi;
+  dst->meta.wi += n;
+  src->meta.ri = src->meta.wi;
   return NULL;
 }
 
@@ -84,13 +84,13 @@ const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
-  uint8_t* ptr = src->ptr + src->ri;
-  size_t len = src->wi - src->ri;
+  uint8_t* ptr = src->data.ptr + src->meta.ri;
+  size_t len = src->meta.wi - src->meta.ri;
   if (len > 0x7FFFFFFF) {
     return "src length is too large";
   }
   global_mimiclib_deflate_unused_u32 = adler32(0L, ptr, len);
-  src->ri = src->wi;
+  src->meta.ri = src->meta.wi;
   return NULL;
 }
 
@@ -99,13 +99,13 @@ const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   // TODO: don't ignore wlimit and rlimit.
-  uint8_t* ptr = src->ptr + src->ri;
-  size_t len = src->wi - src->ri;
+  uint8_t* ptr = src->data.ptr + src->meta.ri;
+  size_t len = src->meta.wi - src->meta.ri;
   if (len > 0x7FFFFFFF) {
     return "src length is too large";
   }
   global_mimiclib_deflate_unused_u32 = crc32(0L, ptr, len);
-  src->ri = src->wi;
+  src->meta.ri = src->meta.wi;
   return NULL;
 }
 
@@ -147,10 +147,10 @@ const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
     goto cleanup0;
   }
 
-  z.avail_in = src->wi - src->ri;
-  z.next_in = src->ptr + src->ri;
-  z.avail_out = dst->len - dst->wi;
-  z.next_out = dst->ptr + dst->wi;
+  z.avail_in = src->meta.wi - src->meta.ri;
+  z.next_in = src->data.ptr + src->meta.ri;
+  z.avail_out = dst->data.len - dst->meta.wi;
+  z.next_out = dst->data.ptr + dst->meta.wi;
 
   int i_err = inflate(&z, Z_NO_FLUSH);
   if (i_err != Z_STREAM_END) {
@@ -158,21 +158,21 @@ const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
     goto cleanup1;
   }
 
-  size_t readable = src->wi - src->ri;
+  size_t readable = src->meta.wi - src->meta.ri;
   size_t r_remaining = z.avail_in;
   if (readable < r_remaining) {
     ret = "inconsistent avail_in";
     goto cleanup1;
   }
-  src->ri += readable - r_remaining;
+  src->meta.ri += readable - r_remaining;
 
-  size_t writable = dst->len - dst->wi;
+  size_t writable = dst->data.len - dst->meta.wi;
   size_t w_remaining = z.avail_out;
   if (writable < w_remaining) {
     ret = "inconsistent avail_out";
     goto cleanup1;
   }
-  dst->wi += writable - w_remaining;
+  dst->meta.wi += writable - w_remaining;
 
 cleanup1:;
   int ie_err = inflateEnd(&z);

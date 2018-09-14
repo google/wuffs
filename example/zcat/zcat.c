@@ -81,23 +81,32 @@ static const char* decode() {
     return z;
   }
 
-  wuffs_base__io_buffer dst =
-      ((wuffs_base__io_buffer){.ptr = dst_buffer, .len = DST_BUFFER_SIZE});
-  wuffs_base__io_buffer src =
-      ((wuffs_base__io_buffer){.ptr = src_buffer, .len = SRC_BUFFER_SIZE});
+  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = dst_buffer,
+          .len = DST_BUFFER_SIZE,
+      }),
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = src_buffer,
+          .len = SRC_BUFFER_SIZE,
+      }),
+  });
 
   while (true) {
     const int stdin_fd = 0;
-    ssize_t n = read(stdin_fd, src.ptr + src.wi, src.len - src.wi);
+    ssize_t n =
+        read(stdin_fd, src.data.ptr + src.meta.wi, src.data.len - src.meta.wi);
     if (n < 0) {
       if (errno != EINTR) {
         return strerror(errno);
       }
       continue;
     }
-    src.wi += n;
+    src.meta.wi += n;
     if (n == 0) {
-      src.closed = true;
+      src.meta.closed = true;
     }
 
     while (true) {
@@ -105,11 +114,11 @@ static const char* decode() {
           wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
                                       wuffs_base__io_buffer__reader(&src));
 
-      if (dst.wi) {
+      if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".
         const int stdout_fd = 1;
-        ignore_return_value(write(stdout_fd, dst_buffer, dst.wi));
-        dst.ri = dst.wi;
+        ignore_return_value(write(stdout_fd, dst_buffer, dst.meta.wi));
+        dst.meta.ri = dst.meta.wi;
         wuffs_base__io_buffer__compact(&dst);
       }
 
@@ -123,7 +132,7 @@ static const char* decode() {
     }
 
     wuffs_base__io_buffer__compact(&src);
-    if (src.wi == src.len) {
+    if (src.meta.wi == src.data.len) {
       return "internal error: no I/O progress possible";
     }
   }

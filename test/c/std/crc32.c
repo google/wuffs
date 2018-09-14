@@ -117,8 +117,9 @@ void test_wuffs_crc32_ieee_golden() {
 
   int i;
   for (i = 0; i < WUFFS_TESTLIB_ARRAY_SIZE(test_cases); i++) {
-    wuffs_base__io_buffer src =
-        ((wuffs_base__io_buffer){.ptr = global_src_buffer, .len = BUFFER_SIZE});
+    wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+        .data = global_src_slice,
+    });
     if (!read_file(&src, test_cases[i].filename)) {
       return;
     }
@@ -138,8 +139,8 @@ void test_wuffs_crc32_ieee_golden() {
       size_t num_bytes = 0;
       do {
         wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
-            .ptr = src.ptr + num_bytes,
-            .len = src.wi - num_bytes,
+            .ptr = src.data.ptr + num_bytes,
+            .len = src.meta.wi - num_bytes,
         });
         size_t limit = 101 + 103 * num_fragments;
         if ((j > 0) && (data.len > limit)) {
@@ -148,7 +149,7 @@ void test_wuffs_crc32_ieee_golden() {
         got = wuffs_crc32__ieee_hasher__update(&checksum, data);
         num_fragments++;
         num_bytes += data.len;
-      } while (num_bytes < src.wi);
+      } while (num_bytes < src.meta.wi);
 
       if (got != test_cases[i].want) {
         FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
@@ -217,7 +218,7 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    wuffs_base__io_buffer* src,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
-  uint64_t len = src->wi - src->ri;
+  uint64_t len = src->meta.wi - src->meta.ri;
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
   }
@@ -227,12 +228,12 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
   if (z) {
     return z;
   }
-  global_wuffs_crc32_unused_u32 =
-      wuffs_crc32__ieee_hasher__update(&checksum, ((wuffs_base__slice_u8){
-                                                      .ptr = src->ptr + src->ri,
-                                                      .len = len,
-                                                  }));
-  src->ri += len;
+  global_wuffs_crc32_unused_u32 = wuffs_crc32__ieee_hasher__update(
+      &checksum, ((wuffs_base__slice_u8){
+                     .ptr = src->data.ptr + src->meta.ri,
+                     .len = len,
+                 }));
+  src->meta.ri += len;
   return NULL;
 }
 
