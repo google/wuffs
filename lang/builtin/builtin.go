@@ -20,9 +20,14 @@ import (
 )
 
 var StatusList = [...]string{
-	"!end of data",
+	// Warnings.
+	"~end of data",
+
+	// Suspensions.
 	"$short read",
 	"$short write",
+
+	// Errors.
 	"?bad argument (length too short)",
 	"?bad argument",
 	"?bad call sequence",

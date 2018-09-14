@@ -3796,7 +3796,7 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 
-const char* wuffs_base__warning__end_of_data = "!base: end of data";
+const char* wuffs_base__warning__end_of_data = "~base: end of data";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_argument_length_too_short =
