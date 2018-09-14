@@ -130,6 +130,17 @@ typedef struct {
 //
 // Status strings are statically allocated and should never be free'd. They can
 // be compared by the == operator and not just by strcmp.
+//
+// Statuses come in four categories:
+//  - OK:          the request was completed, successfully.
+//  - Warnings:    the request was completed, unsuccessfully.
+//  - Suspensions: the request was not completed, but can be re-tried.
+//  - Errors:      the request was not completed, permanently.
+//
+// When a function returns an incomplete status, a suspension means that that
+// function should be called again within a new context, such as after flushing
+// or re-filling an I/O buffer. An error means that an irrecoverable failure
+// state was reached.
 typedef const char* wuffs_base__status;
 
 extern const char* wuffs_base__warning__end_of_data;
@@ -147,6 +158,11 @@ extern const char* wuffs_base__error__cannot_return_a_suspension;
 extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
 extern const char* wuffs_base__error__check_wuffs_version_missing;
 extern const char* wuffs_base__error__disabled_by_previous_error;
+
+static inline bool  //
+wuffs_base__status__is_complete(wuffs_base__status z) {
+  return (z == NULL) || ((*z != '$') && (*z != '?'));
+}
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
