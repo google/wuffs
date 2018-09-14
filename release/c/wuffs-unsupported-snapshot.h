@@ -3773,8 +3773,9 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   b->data.len = s.len;
   b->meta.wi = 0;
   b->meta.ri = 0;
-  // TODO: set b->meta.pos.
+  b->meta.pos = 0;
   b->meta.closed = false;
+
   o->private_impl.buf = b;
   o->private_impl.mark = s.ptr;
   o->private_impl.limit = s.ptr + s.len;
