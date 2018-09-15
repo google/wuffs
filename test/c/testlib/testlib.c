@@ -578,7 +578,10 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled * iterscale;
+  uint64_t iters = iters_unscaled;
+  if (bench) {
+    iters *= iterscale;
+  }
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
