@@ -301,7 +301,7 @@ typedef struct {
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
-  inline size_t pixbuf_len();
+  inline uint64_t pixbuf_len();
 #endif  // __cplusplus
 
 } wuffs_base__pixel_config;
@@ -376,17 +376,17 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // TODO: this is the right API for planar (not packed) pixbufs? Should it allow
 // decoding into a color model different from the format's intrinsic one? For
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
-static inline size_t  //
+static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
   if (c) {
-    uint64_t wh =
+    uint64_t n =
         ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
     // TODO: handle things other than 1 byte per pixel. When doing so, consider
     // that the +1024 below could overflow.
     if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
-      wh += 1024;
+      n += 1024;
     }
-    return (size_t)wh;
+    return n;
   }
   return 0;
 }
@@ -436,7 +436,7 @@ wuffs_base__pixel_config::height() {
   return wuffs_base__pixel_config__height(this);
 }
 
-inline size_t  //
+inline uint64_t  //
 wuffs_base__pixel_config::pixbuf_len() {
   return wuffs_base__pixel_config__pixbuf_len(this);
 }
@@ -818,7 +818,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   }
 
   uint8_t* ptr = pixbuf_memory.ptr;
-  size_t len = pixbuf_memory.len;
+  uint64_t len = pixbuf_memory.len;
   if (wuffs_base__pixel_format__is_indexed(pixcfg->private_impl.pixfmt)) {
     // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
     // the start of pixbuf_memory. We split from the start, not the end, so
