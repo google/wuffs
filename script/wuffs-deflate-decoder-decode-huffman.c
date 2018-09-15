@@ -148,15 +148,15 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
-  uint8_t* pdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->wi;
-  uint8_t* qdst = a_dst.private_impl.buf->ptr + a_dst.private_impl.buf->len;
+  uint8_t* pdst = a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
+  uint8_t* qdst = a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
   if ((qdst - pdst) < 258) {
     return NULL;
   } else {
     qdst -= 258;
   }
-  uint8_t* psrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-  uint8_t* qsrc = a_src.private_impl.buf->ptr + a_src.private_impl.buf->wi;
+  uint8_t* psrc = a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+  uint8_t* qsrc = a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   if ((qsrc - psrc) < 12) {
     return NULL;
   } else {
@@ -354,8 +354,8 @@ end:
   bits &= wuffs_base__width_to_mask_table[n_bits];
 
   // Save contextual state.
-  a_dst.private_impl.buf->wi = pdst - a_dst.private_impl.buf->ptr;
-  a_src.private_impl.buf->ri = psrc - a_src.private_impl.buf->ptr;
+  a_dst.private_impl.buf->meta.wi = pdst - a_dst.private_impl.buf->data.ptr;
+  a_src.private_impl.buf->meta.ri = psrc - a_src.private_impl.buf->data.ptr;
   self->private_impl.f_bits = bits;
   self->private_impl.f_n_bits = n_bits;
 
