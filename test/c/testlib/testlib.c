@@ -534,7 +534,7 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                      golden_test* gt,
                      uint64_t wlimit,
                      uint64_t rlimit,
-                     uint64_t iters_unscaled,
+                     uint64_t iters,
                      bool bench) {
   if (!codec_func) {
     FAIL("NULL codec_func");
@@ -578,10 +578,6 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
   uint64_t n_bytes = 0;
   uint64_t i;
-  uint64_t iters = iters_unscaled;
-  if (bench) {
-    iters *= iterscale;
-  }
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
@@ -626,8 +622,8 @@ bool do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                          uint64_t wlimit,
                          uint64_t rlimit,
                          uint64_t iters_unscaled) {
-  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit, iters_unscaled,
-                         true);
+  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit,
+                         iters_unscaled * iterscale, true);
 }
 
 bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
