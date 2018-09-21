@@ -77,7 +77,7 @@ golden_test adler32_pi_gt = {
 
 // ---------------- Adler32 Tests
 
-void test_wuffs_adler32_golden() {
+const char* test_wuffs_adler32_golden() {
   CHECK_FOCUS(__func__);
 
   struct {
@@ -120,18 +120,18 @@ void test_wuffs_adler32_golden() {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    if (!read_file(&src, test_cases[i].filename)) {
-      return;
+    const char* z = read_file(&src, test_cases[i].filename);
+    if (z) {
+      return z;
     }
 
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-      wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
-          &checksum, sizeof checksum, WUFFS_VERSION);
+      z = wuffs_adler32__hasher__check_wuffs_version(&checksum, sizeof checksum,
+                                                     WUFFS_VERSION);
       if (z) {
-        FAIL("check_wuffs_version: \"%s\"", z);
-        return;
+        RETURN_FAIL("check_wuffs_version: \"%s\"", z);
       }
 
       uint32_t got = 0;
@@ -152,23 +152,22 @@ void test_wuffs_adler32_golden() {
       } while (num_bytes < src.meta.wi);
 
       if (got != test_cases[i].want) {
-        FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
-             ", want 0x%08" PRIX32 "\n",
-             i, j, test_cases[i].filename, got, test_cases[i].want);
-        return;
+        RETURN_FAIL("i=%d, j=%d, filename=\"%s\": got 0x%08" PRIX32
+                    ", want 0x%08" PRIX32 "\n",
+                    i, j, test_cases[i].filename, got, test_cases[i].want);
       }
     }
   }
+  return NULL;
 }
 
-void test_wuffs_adler32_pi() {
+const char* test_wuffs_adler32_pi() {
   CHECK_FOCUS(__func__);
 
   const char* digits =
       "3.1415926535897932384626433832795028841971693993751058209749445";
   if (strlen(digits) != 63) {
-    FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
-    return;
+    RETURN_FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
   }
 
   // The want values are determined by script/checksum.go.
@@ -191,11 +190,10 @@ void test_wuffs_adler32_pi() {
   int i;
   for (i = 0; i < 64; i++) {
     wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-    wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+    const char* z = wuffs_adler32__hasher__check_wuffs_version(
         &checksum, sizeof checksum, WUFFS_VERSION);
     if (z) {
-      FAIL("check_wuffs_version: \"%s\"", z);
-      return;
+      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
     }
     uint32_t got =
         wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
@@ -203,11 +201,11 @@ void test_wuffs_adler32_pi() {
                                                      .len = i,
                                                  }));
     if (got != wants[i]) {
-      FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32 "\n", i, got,
-           wants[i]);
-      return;
+      RETURN_FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32, i, got,
+                  wants[i]);
     }
   }
+  return NULL;
 }
 
 // ---------------- Adler32 Benches
@@ -223,7 +221,7 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-  wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+  const char* z = wuffs_adler32__hasher__check_wuffs_version(
       &checksum, sizeof checksum, WUFFS_VERSION);
   if (z) {
     return z;
@@ -237,30 +235,32 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   return NULL;
 }
 
-void bench_wuffs_adler32_10k() {
+const char* bench_wuffs_adler32_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      1500);
+  return do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt,
+                             0, 0, 1500);
 }
 
-void bench_wuffs_adler32_100k() {
+const char* bench_wuffs_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 150);
+  return do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0,
+                             150);
 }
 
   // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-void bench_mimic_adler32_10k() {
+const char* bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt, 0, 0,
-                      1500);
+  return do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt,
+                             0, 0, 1500);
 }
 
-void bench_mimic_adler32_100k() {
+const char* bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0, 150);
+  return do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0,
+                             150);
 }
 
 #endif  // WUFFS_MIMIC

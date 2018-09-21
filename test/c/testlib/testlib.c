@@ -56,7 +56,9 @@ wuffs_base__slice_u8 global_pixel_slice = ((wuffs_base__slice_u8){
 
 char fail_msg[65536] = {0};
 
-#define FAIL(...) snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__)
+#define RETURN_FAIL(...)                               \
+  snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__); \
+  return fail_msg
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
 
@@ -73,7 +75,7 @@ bool in_focus = false;
   proc_func_name = func_name;  \
   in_focus = check_focus();    \
   if (!in_focus) {             \
-    return;                    \
+    return NULL;               \
   }
 
 bool check_focus() {
@@ -207,7 +209,7 @@ void bench_finish(uint64_t iters, uint64_t n_bytes) {
   fflush(stdout);
 }
 
-typedef void (*proc)();
+typedef const char* (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
   bool bench = false;
@@ -285,14 +287,15 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
     proc* p;
     for (p = procs; *p; p++) {
       proc_func_name = "unknown_func_name";
+      fail_msg[0] = 0;
       in_focus = false;
-      (*p)();
+      const char* z = (*p)();
       if (!in_focus) {
         continue;
       }
-      if (fail_msg[0]) {
+      if (z) {
         printf("%-16s%-8sFAIL %s: %s\n", proc_package_name, cc, proc_func_name,
-               fail_msg);
+               z);
         return 1;
       }
       if (i == 0) {
@@ -380,19 +383,17 @@ const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
   return NULL;
 }
 
-bool read_file(wuffs_base__io_buffer* dst, const char* path) {
+const char* read_file(wuffs_base__io_buffer* dst, const char* path) {
   if (!dst || !path) {
-    FAIL("read_file: NULL argument");
-    return false;
+    RETURN_FAIL("read_file: NULL argument");
   }
   if (dst->meta.closed) {
-    FAIL("read_file: dst buffer closed for writes");
-    return false;
+    RETURN_FAIL("read_file: dst buffer closed for writes");
   }
   FILE* f = fopen(path, "r");
   if (!f) {
-    FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno), errno);
-    return false;
+    RETURN_FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(errno),
+                errno);
   }
 
   uint8_t dummy[1];
@@ -411,9 +412,8 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
       len -= n;
       dst->meta.wi += n;
     } else if (n) {
-      FAIL("read_file(\"%s\"): EOF not reached", path);
       fclose(f);
-      return false;
+      RETURN_FAIL("read_file(\"%s\"): EOF not reached", path);
     }
     if (feof(f)) {
       break;
@@ -426,20 +426,18 @@ bool read_file(wuffs_base__io_buffer* dst, const char* path) {
       clearerr(f);
       continue;
     }
-    FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(err), err);
     fclose(f);
-    return false;
+    RETURN_FAIL("read_file(\"%s\"): %s (errno=%d)", path, strerror(err), err);
   }
   fclose(f);
   dst->meta.pos = 0;
   dst->meta.closed = true;
-  return true;
+  return NULL;
 }
 
 char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
   if (!msg || !buf) {
-    FAIL("hex_dump: NULL argument");
-    return NULL;
+    RETURN_FAIL("hex_dump: NULL argument");
   }
   if (buf->meta.wi == 0) {
     return msg;
@@ -486,12 +484,11 @@ char* hex_dump(char* msg, wuffs_base__io_buffer* buf, size_t i) {
   return msg;
 }
 
-bool io_buffers_equal(const char* prefix,
-                      wuffs_base__io_buffer* got,
-                      wuffs_base__io_buffer* want) {
+const char* check_io_buffers_equal(const char* prefix,
+                                   wuffs_base__io_buffer* got,
+                                   wuffs_base__io_buffer* want) {
   if (!got || !want) {
-    FAIL("%sio_buffers_equal: NULL argument", prefix);
-    return false;
+    RETURN_FAIL("%sio_buffers_equal: NULL argument", prefix);
   }
   char* msg = fail_msg;
   size_t i;
@@ -507,13 +504,13 @@ bool io_buffers_equal(const char* prefix,
   } else if (i < got->meta.wi) {
     INCR_FAIL(msg, "%sio_buffers_equal: wi=%zu:\n", prefix, n);
   } else {
-    return true;
+    return NULL;
   }
   INCR_FAIL(msg, "contents differ at byte %zu (in hex: 0x%06zx):\n", i, i);
   msg = hex_dump(msg, got, i);
   INCR_FAIL(msg, "excerpts of got (above) versus want (below):\n");
   msg = hex_dump(msg, want, i);
-  return false;
+  return fail_msg;
 }
 
 // throughput_counter is whether to count dst or src bytes, or neither, when
@@ -526,23 +523,21 @@ typedef enum {
   tc_src = 2,
 } throughput_counter;
 
-bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
-                                               wuffs_base__io_buffer*,
-                                               uint64_t,
-                                               uint64_t),
-                     throughput_counter tc,
-                     golden_test* gt,
-                     uint64_t wlimit,
-                     uint64_t rlimit,
-                     uint64_t iters,
-                     bool bench) {
+const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
+                                                      wuffs_base__io_buffer*,
+                                                      uint64_t,
+                                                      uint64_t),
+                            throughput_counter tc,
+                            golden_test* gt,
+                            uint64_t wlimit,
+                            uint64_t rlimit,
+                            uint64_t iters,
+                            bool bench) {
   if (!codec_func) {
-    FAIL("NULL codec_func");
-    return false;
+    RETURN_FAIL("NULL codec_func");
   }
   if (!gt) {
-    FAIL("NULL golden_test");
-    return false;
+    RETURN_FAIL("NULL golden_test");
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -557,17 +552,18 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
 
   if (!gt->src_filename) {
     src.meta.closed = true;
-  } else if (!read_file(&src, gt->src_filename)) {
-    return false;
+  } else {
+    const char* z = read_file(&src, gt->src_filename);
+    if (z) {
+      return z;
+    }
   }
   if (gt->src_offset0 || gt->src_offset1) {
     if (gt->src_offset0 > gt->src_offset1) {
-      FAIL("inconsistent src_offsets");
-      return false;
+      RETURN_FAIL("inconsistent src_offsets");
     }
     if (gt->src_offset1 > src.meta.wi) {
-      FAIL("src_offset1 too large");
-      return false;
+      RETURN_FAIL("src_offset1 too large");
     }
     src.meta.ri = gt->src_offset0;
     src.meta.wi = gt->src_offset1;
@@ -581,10 +577,9 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
-    const char* s = codec_func(&got, &src, wlimit, rlimit);
-    if (s) {
-      FAIL("%s", s);
-      return false;
+    const char* z = codec_func(&got, &src, wlimit, rlimit);
+    if (z) {
+      return z;
     }
     switch (tc) {
       case tc_neither:
@@ -599,40 +594,41 @@ bool proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   }
   if (bench) {
     bench_finish(iters, n_bytes);
-    return true;
+    return NULL;
   }
 
   if (!gt->want_filename) {
     want.meta.closed = true;
-  } else if (!read_file(&want, gt->want_filename)) {
-    return false;
+  } else {
+    const char* z = read_file(&want, gt->want_filename);
+    if (z) {
+      return z;
+    }
   }
-  if (!io_buffers_equal("", &got, &want)) {
-    return false;
-  }
-  return true;
+  return check_io_buffers_equal("", &got, &want);
 }
 
-bool do_bench_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
-                                                   wuffs_base__io_buffer*,
-                                                   uint64_t,
-                                                   uint64_t),
-                         throughput_counter tc,
-                         golden_test* gt,
-                         uint64_t wlimit,
-                         uint64_t rlimit,
-                         uint64_t iters_unscaled) {
+const char* do_bench_io_buffers(
+    const char* (*codec_func)(wuffs_base__io_buffer*,
+                              wuffs_base__io_buffer*,
+                              uint64_t,
+                              uint64_t),
+    throughput_counter tc,
+    golden_test* gt,
+    uint64_t wlimit,
+    uint64_t rlimit,
+    uint64_t iters_unscaled) {
   return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit,
                          iters_unscaled * iterscale, true);
 }
 
-bool do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
-                                                  wuffs_base__io_buffer*,
-                                                  uint64_t,
-                                                  uint64_t),
-                        golden_test* gt,
-                        uint64_t wlimit,
-                        uint64_t rlimit) {
+const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
+                                                         wuffs_base__io_buffer*,
+                                                         uint64_t,
+                                                         uint64_t),
+                               golden_test* gt,
+                               uint64_t wlimit,
+                               uint64_t rlimit) {
   return proc_io_buffers(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
 }
 

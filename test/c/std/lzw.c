@@ -64,12 +64,12 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 
 // ---------------- LZW Tests
 
-bool do_test_wuffs_lzw_decode(const char* src_filename,
-                              uint64_t src_size,
-                              const char* want_filename,
-                              uint64_t want_size,
-                              uint64_t wlimit,
-                              uint64_t rlimit) {
+const char* do_test_wuffs_lzw_decode(const char* src_filename,
+                                     uint64_t src_size,
+                                     const char* want_filename,
+                                     uint64_t want_size,
+                                     uint64_t wlimit,
+                                     uint64_t rlimit) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
@@ -80,35 +80,35 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
       .data = global_src_slice,
   });
 
-  if (!read_file(&src, src_filename)) {
-    return false;
+  const char* z = read_file(&src, src_filename);
+  if (z) {
+    return z;
   }
   if (src.meta.wi != src_size) {
-    FAIL("src size: got %d, want %d", (int)(src.meta.wi), (int)(src_size));
-    return false;
+    RETURN_FAIL("src size: got %d, want %d", (int)(src.meta.wi),
+                (int)(src_size));
   }
   // The first byte in that file, the LZW literal width, should be 0x08.
   uint8_t literal_width = src.data.ptr[0];
   if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]), 0x08);
-    return false;
+    RETURN_FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]),
+                0x08);
   }
   src.meta.ri++;
 
-  if (!read_file(&want, want_filename)) {
-    return false;
+  z = read_file(&want, want_filename);
+  if (z) {
+    return z;
   }
   if (want.meta.wi != want_size) {
-    FAIL("want size: got %d, want %d", (int)(want.meta.wi), (int)(want_size));
-    return false;
+    RETURN_FAIL("want size: got %d, want %d", (int)(want.meta.wi),
+                (int)(want_size));
   }
 
   wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-  wuffs_base__status z =
-      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  z = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
   if (z) {
-    FAIL("check_wuffs_version: \"%s\"", z);
-    return false;
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, literal_width);
   int num_iters = 0;
@@ -128,81 +128,79 @@ bool do_test_wuffs_lzw_decode(const char* src_filename,
     z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
     if (!z) {
       if (src.meta.ri != src.meta.wi) {
-        FAIL("decode returned \"ok\" but src was not exhausted");
-        return false;
+        RETURN_FAIL("decode returned \"ok\" but src was not exhausted");
       }
       break;
     }
     if ((z != wuffs_base__suspension__short_read) &&
         (z != wuffs_base__suspension__short_write)) {
-      FAIL("decode: got \"%s\", want \"%s\" or \"%s\"", z,
-           wuffs_base__suspension__short_read,
-           wuffs_base__suspension__short_write);
-      return false;
+      RETURN_FAIL("decode: got \"%s\", want \"%s\" or \"%s\"", z,
+                  wuffs_base__suspension__short_read,
+                  wuffs_base__suspension__short_write);
     }
 
     if (got.meta.wi < old_wi) {
-      FAIL("write index got.wi went backwards");
-      return false;
+      RETURN_FAIL("write index got.wi went backwards");
     }
     if (src.meta.ri < old_ri) {
-      FAIL("read index src.ri went backwards");
-      return false;
+      RETURN_FAIL("read index src.ri went backwards");
     }
     if ((got.meta.wi == old_wi) && (src.meta.ri == old_ri)) {
-      FAIL("no progress was made");
-      return false;
+      RETURN_FAIL("no progress was made");
     }
   }
 
   if (wlimit || rlimit) {
     if (num_iters <= 1) {
-      FAIL("num_iters: got %d, want > 1", num_iters);
-      return false;
+      RETURN_FAIL("num_iters: got %d, want > 1", num_iters);
     }
   } else {
     if (num_iters != 1) {
-      FAIL("num_iters: got %d, want 1", num_iters);
-      return false;
+      RETURN_FAIL("num_iters: got %d, want 1", num_iters);
     }
   }
 
-  return io_buffers_equal("", &got, &want);
+  return check_io_buffers_equal("", &got, &want);
 }
 
-void test_wuffs_lzw_decode_many_big_reads() {
+const char* test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
-                           "../../data/bricks-gray.indexes", 19200, 0, 4096);
+  return do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw",
+                                  14731, "../../data/bricks-gray.indexes",
+                                  19200, 0, 4096);
 }
 
-void test_wuffs_lzw_decode_many_small_writes_reads() {
+const char* test_wuffs_lzw_decode_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 14731,
-                           "../../data/bricks-gray.indexes", 19200, 41, 43);
+  return do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw",
+                                  14731, "../../data/bricks-gray.indexes",
+                                  19200, 41, 43);
 }
 
-void test_wuffs_lzw_decode_bricks_dither() {
+const char* test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-dither.indexes.giflzw", 14923,
-                           "../../data/bricks-dither.indexes", 19200, 0, 0);
+  return do_test_wuffs_lzw_decode("../../data/bricks-dither.indexes.giflzw",
+                                  14923, "../../data/bricks-dither.indexes",
+                                  19200, 0, 0);
 }
 
-void test_wuffs_lzw_decode_bricks_nodither() {
+const char* test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/bricks-nodither.indexes.giflzw", 13382,
-                           "../../data/bricks-nodither.indexes", 19200, 0, 0);
+  return do_test_wuffs_lzw_decode("../../data/bricks-nodither.indexes.giflzw",
+                                  13382, "../../data/bricks-nodither.indexes",
+                                  19200, 0, 0);
 }
 
-void test_wuffs_lzw_decode_pi() {
+const char* test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_lzw_decode("../../data/pi.txt.giflzw", 50550,
-                           "../../data/pi.txt", 100003, 0, 0);
+  return do_test_wuffs_lzw_decode("../../data/pi.txt.giflzw", 50550,
+                                  "../../data/pi.txt", 100003, 0, 0);
 }
 
 // ---------------- LZW Benches
 
-bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
+const char* do_bench_wuffs_lzw_decode(const char* filename,
+                                      uint64_t iters_unscaled) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
@@ -212,17 +210,17 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
   wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  if (!read_file(&src, filename)) {
-    return false;
+  const char* z = read_file(&src, filename);
+  if (z) {
+    return z;
   }
   if (src.meta.wi <= 0) {
-    FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
-    return false;
+    RETURN_FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
   }
   uint8_t literal_width = src.data.ptr[0];
   if (literal_width != 0x08) {
-    FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]), 0x08);
-    return false;
+    RETURN_FAIL("LZW literal width: got %d, want %d", (int)(src.data.ptr[0]),
+                0x08);
   }
 
   bench_start();
@@ -233,31 +231,29 @@ bool do_bench_wuffs_lzw_decode(const char* filename, uint64_t iters_unscaled) {
     got.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-    wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
-        &dec, sizeof dec, WUFFS_VERSION);
+    z = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                WUFFS_VERSION);
     if (z) {
-      FAIL("check_wuffs_version: \"%s\"", z);
-      return false;
+      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
     }
     z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
     if (z) {
-      FAIL("decode: \"%s\"", z);
-      return false;
+      RETURN_FAIL("decode: \"%s\"", z);
     }
     n_bytes += got.meta.wi;
   }
   bench_finish(iters, n_bytes);
-  return true;
+  return NULL;
 }
 
-void bench_wuffs_lzw_decode_20k() {
+const char* bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 50);
+  return do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 50);
 }
 
-void bench_wuffs_lzw_decode_100k() {
+const char* bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 10);
+  return do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 10);
 }
 
 // ---------------- Manifest

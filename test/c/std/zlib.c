@@ -86,7 +86,7 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  wuffs_base__status z =
+  const char* z =
       wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
   if (z) {
     return z;
@@ -102,8 +102,7 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    wuffs_base__status z =
-        wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
+    z = wuffs_zlib__decoder__decode(&dec, dst_writer, src_reader);
 
     if ((wlimit && (z == wuffs_base__suspension__short_write)) ||
         (rlimit && (z == wuffs_base__suspension__short_read))) {
@@ -113,7 +112,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
   }
 }
 
-bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
+const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
+                                        uint32_t bad_checksum) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
@@ -121,13 +121,13 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
       .data = global_src_slice,
   });
 
-  if (!read_file(&src, zlib_midsummer_gt.src_filename)) {
-    return false;
+  const char* z = read_file(&src, zlib_midsummer_gt.src_filename);
+  if (z) {
+    return z;
   }
   // Flip a bit in the zlib checksum, which is in the last 4 bytes of the file.
   if (src.meta.wi < 4) {
-    FAIL("source file was too short");
-    return false;
+    RETURN_FAIL("source file was too short");
   }
   if (bad_checksum) {
     src.data.ptr[src.meta.wi - 1 - (bad_checksum & 3)] ^= 1;
@@ -136,11 +136,10 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
   int end_limit;
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-    wuffs_base__status z = wuffs_zlib__decoder__check_wuffs_version(
-        &dec, sizeof dec, WUFFS_VERSION);
+    z = wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                 WUFFS_VERSION);
     if (z) {
-      FAIL("check_wuffs_version: \"%s\"", z);
-      return false;
+      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
@@ -158,8 +157,7 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
           continue;
         }
         if (src.meta.wi < end_limit) {
-          FAIL("end_limit=%d: not enough source data", end_limit);
-          return false;
+          RETURN_FAIL("end_limit=%d: not enough source data", end_limit);
         }
         set_reader_limit(&src_reader, src.meta.wi - (uint64_t)(end_limit));
         want_z = wuffs_base__suspension__short_read;
@@ -169,82 +167,89 @@ bool do_test_wuffs_zlib_checksum(bool ignore_checksum, bool bad_checksum) {
                      : NULL;
       }
 
-      wuffs_base__status got_z =
+      const char* got_z =
           wuffs_zlib__decoder__decode(&dec, got_writer, src_reader);
       if (got_z != want_z) {
-        FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z, want_z);
-        return false;
+        RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
+                    want_z);
       }
     }
   }
-  return true;
+  return NULL;
 }
 
-void test_wuffs_zlib_checksum_ignore() {
+const char* test_wuffs_zlib_checksum_ignore() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(true, 1);
+  return do_test_wuffs_zlib_checksum(true, 4 | 0);
 }
 
-void test_wuffs_zlib_checksum_verify_bad() {
+const char* test_wuffs_zlib_checksum_verify_bad0() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(false, 1);
+  return do_test_wuffs_zlib_checksum(false, 4 | 0);
 }
 
-void test_wuffs_zlib_checksum_verify_good() {
+const char* test_wuffs_zlib_checksum_verify_bad3() {
   CHECK_FOCUS(__func__);
-  do_test_wuffs_zlib_checksum(false, 0);
+  return do_test_wuffs_zlib_checksum(false, 4 | 3);
 }
 
-void test_wuffs_zlib_decode_midsummer() {
+const char* test_wuffs_zlib_checksum_verify_good() {
   CHECK_FOCUS(__func__);
-  do_test_io_buffers(wuffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
+  return do_test_wuffs_zlib_checksum(false, 0);
 }
 
-void test_wuffs_zlib_decode_pi() {
+const char* test_wuffs_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_io_buffers(wuffs_zlib_decode, &zlib_pi_gt, 0, 0);
+  return do_test_io_buffers(wuffs_zlib_decode, &zlib_midsummer_gt, 0, 0);
+}
+
+const char* test_wuffs_zlib_decode_pi() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(wuffs_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
-void test_mimic_zlib_decode_midsummer() {
+const char* test_mimic_zlib_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  do_test_io_buffers(mimic_zlib_decode, &zlib_midsummer_gt, 0, 0);
+  return do_test_io_buffers(mimic_zlib_decode, &zlib_midsummer_gt, 0, 0);
 }
 
-void test_mimic_zlib_decode_pi() {
+const char* test_mimic_zlib_decode_pi() {
   CHECK_FOCUS(__func__);
-  do_test_io_buffers(mimic_zlib_decode, &zlib_pi_gt, 0, 0);
+  return do_test_io_buffers(mimic_zlib_decode, &zlib_pi_gt, 0, 0);
 }
 
 #endif  // WUFFS_MIMIC
 
 // ---------------- Zlib Benches
 
-void bench_wuffs_zlib_decode_10k() {
+const char* bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0, 300);
+  return do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0,
+                             0, 300);
 }
 
-void bench_wuffs_zlib_decode_100k() {
+const char* bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
+  return do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
 }
 
   // ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 
-void bench_mimic_zlib_decode_10k() {
+const char* bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0, 0, 300);
+  return do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0,
+                             0, 300);
 }
 
-void bench_mimic_zlib_decode_100k() {
+const char* bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
+  return do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
 }
 
 #endif  // WUFFS_MIMIC
@@ -255,7 +260,8 @@ void bench_mimic_zlib_decode_100k() {
 proc tests[] = {
 
     test_wuffs_zlib_checksum_ignore,       //
-    test_wuffs_zlib_checksum_verify_bad,   //
+    test_wuffs_zlib_checksum_verify_bad0,  //
+    test_wuffs_zlib_checksum_verify_bad3,  //
     test_wuffs_zlib_checksum_verify_good,  //
     test_wuffs_zlib_decode_midsummer,      //
     test_wuffs_zlib_decode_pi,             //
