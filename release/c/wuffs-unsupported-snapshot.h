@@ -2237,6 +2237,9 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
                                            size_t sizeof_star_self,
                                            uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_adler32__hasher();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
@@ -2313,6 +2316,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
                                               size_t sizeof_star_self,
                                               uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_crc32__ieee_hasher();
 
 // ---------------- Public Function Prototypes
 
@@ -2465,6 +2471,9 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
                                             size_t sizeof_star_self,
                                             uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_deflate__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2572,6 +2581,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
                                         size_t sizeof_star_self,
                                         uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_lzw__decoder();
 
 // ---------------- Public Function Prototypes
 
@@ -2781,6 +2793,9 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
                                         size_t sizeof_star_self,
                                         uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_gif__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2950,6 +2965,9 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
                                          size_t sizeof_star_self,
                                          uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_gzip__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC void  //
@@ -3061,6 +3079,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
                                          size_t sizeof_star_self,
                                          uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_zlib__decoder();
 
 // ---------------- Public Function Prototypes
 
@@ -3870,6 +3891,11 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_adler32__hasher() {
+  return sizeof((wuffs_adler32__hasher){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func adler32.hasher.update
@@ -4346,6 +4372,11 @@ wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_crc32__ieee_hasher() {
+  return sizeof((wuffs_crc32__ieee_hasher){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func crc32.ieee_hasher.update
@@ -4641,6 +4672,11 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_deflate__decoder() {
+  return sizeof((wuffs_deflate__decoder){});
 }
 
 // ---------------- Function Implementations
@@ -6585,6 +6621,11 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_gif__decoder() {
+  return sizeof((wuffs_gif__decoder){});
 }
 
 // ---------------- Function Implementations
@@ -8650,6 +8691,11 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_gzip__decoder() {
+  return sizeof((wuffs_gzip__decoder){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func gzip.decoder.set_ignore_checksum
@@ -9083,6 +9129,11 @@ wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_lzw__decoder() {
+  return sizeof((wuffs_lzw__decoder){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func lzw.decoder.set_literal_width
@@ -9392,6 +9443,11 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_zlib__decoder() {
+  return sizeof((wuffs_zlib__decoder){});
 }
 
 // ---------------- Function Implementations

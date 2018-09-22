@@ -861,6 +861,11 @@ func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) err
 	return nil
 }
 
+func (g *gen) writeSizeofSignature(b *buffer, n *a.Struct) error {
+	b.printf("size_t //\nsizeof__%s%s()", g.pkgPrefix, n.QID().Str(g.tm))
+	return nil
+}
+
 func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 	if !n.Classy() {
 		return nil
@@ -869,6 +874,12 @@ func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes(";\n\n")
+	if n.Public() {
+		if err := g.writeSizeofSignature(b, n); err != nil {
+			return err
+		}
+		b.writes(";\n\n")
+	}
 	return nil
 }
 
@@ -926,5 +937,12 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 	b.writes("return NULL;\n")
 	b.writes("}\n\n")
+
+	if n.Public() {
+		if err := g.writeSizeofSignature(b, n); err != nil {
+			return err
+		}
+		b.printf("{ return sizeof((%s%s){}); }\n\n", g.pkgPrefix, n.QID().Str(g.tm))
+	}
 	return nil
 }
