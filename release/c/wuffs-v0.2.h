@@ -65,14 +65,14 @@ extern "C" {
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-09-14 UTC,
-// based on revision a12c45bb7f62bfcd4ccc568caba2c8154b7d813a.
+// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-09-23 UTC,
+// based on revision c4edf6ac2597cb939594924f832d0b8820fe38aa.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.18"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.18"
+#define WUFFS_VERSION_EXTENSION "alpha.19"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.19"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -1570,7 +1570,7 @@ typedef struct {
   inline wuffs_base__rect_ie_u32 bounds();
   inline uint32_t width();
   inline uint32_t height();
-  inline size_t pixbuf_len();
+  inline uint64_t pixbuf_len();
 #endif  // __cplusplus
 
 } wuffs_base__pixel_config;
@@ -1645,17 +1645,17 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // TODO: this is the right API for planar (not packed) pixbufs? Should it allow
 // decoding into a color model different from the format's intrinsic one? For
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
-static inline size_t  //
+static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
   if (c) {
-    uint64_t wh =
+    uint64_t n =
         ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
     // TODO: handle things other than 1 byte per pixel. When doing so, consider
     // that the +1024 below could overflow.
     if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
-      wh += 1024;
+      n += 1024;
     }
-    return (size_t)wh;
+    return n;
   }
   return 0;
 }
@@ -1705,7 +1705,7 @@ wuffs_base__pixel_config::height() {
   return wuffs_base__pixel_config__height(this);
 }
 
-inline size_t  //
+inline uint64_t  //
 wuffs_base__pixel_config::pixbuf_len() {
   return wuffs_base__pixel_config__pixbuf_len(this);
 }
@@ -2087,7 +2087,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   }
 
   uint8_t* ptr = pixbuf_memory.ptr;
-  size_t len = pixbuf_memory.len;
+  uint64_t len = pixbuf_memory.len;
   if (wuffs_base__pixel_format__is_indexed(pixcfg->private_impl.pixfmt)) {
     // Split a 1024 byte chunk (256 palette entries × 4 bytes per entry) from
     // the start of pixbuf_memory. We split from the start, not the end, so
@@ -2238,6 +2238,9 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
                                            size_t sizeof_star_self,
                                            uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_adler32__hasher();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
@@ -2314,6 +2317,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
                                               size_t sizeof_star_self,
                                               uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_crc32__ieee_hasher();
 
 // ---------------- Public Function Prototypes
 
@@ -2466,6 +2472,9 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
                                             size_t sizeof_star_self,
                                             uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_deflate__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2573,6 +2582,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
                                         size_t sizeof_star_self,
                                         uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_lzw__decoder();
 
 // ---------------- Public Function Prototypes
 
@@ -2782,6 +2794,9 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
                                         size_t sizeof_star_self,
                                         uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_gif__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2951,6 +2966,9 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
                                          size_t sizeof_star_self,
                                          uint64_t wuffs_version);
 
+size_t  //
+sizeof__wuffs_gzip__decoder();
+
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC void  //
@@ -3062,6 +3080,9 @@ wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
                                          size_t sizeof_star_self,
                                          uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_zlib__decoder();
 
 // ---------------- Public Function Prototypes
 
@@ -3871,6 +3892,11 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_adler32__hasher() {
+  return sizeof((wuffs_adler32__hasher){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func adler32.hasher.update
@@ -4347,6 +4373,11 @@ wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_crc32__ieee_hasher() {
+  return sizeof((wuffs_crc32__ieee_hasher){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func crc32.ieee_hasher.update
@@ -4642,6 +4673,11 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_deflate__decoder() {
+  return sizeof((wuffs_deflate__decoder){});
 }
 
 // ---------------- Function Implementations
@@ -6586,6 +6622,11 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_gif__decoder() {
+  return sizeof((wuffs_gif__decoder){});
 }
 
 // ---------------- Function Implementations
@@ -8651,6 +8692,11 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_gzip__decoder() {
+  return sizeof((wuffs_gzip__decoder){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func gzip.decoder.set_ignore_checksum
@@ -9084,6 +9130,11 @@ wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
   return NULL;
 }
 
+size_t  //
+sizeof__wuffs_lzw__decoder() {
+  return sizeof((wuffs_lzw__decoder){});
+}
+
 // ---------------- Function Implementations
 
 // -------- func lzw.decoder.set_literal_width
@@ -9393,6 +9444,11 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+size_t  //
+sizeof__wuffs_zlib__decoder() {
+  return sizeof((wuffs_zlib__decoder){});
 }
 
 // ---------------- Function Implementations
