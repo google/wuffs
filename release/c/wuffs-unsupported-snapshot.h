@@ -3121,6 +3121,7 @@ wuffs_zlib__decoder::decode(wuffs_base__io_writer a_dst,
 }  // extern "C"
 #endif
 
+// WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
 // Copyright 2017 The Wuffs Authors.

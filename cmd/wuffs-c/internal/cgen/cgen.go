@@ -778,7 +778,7 @@ func (g *gen) writeCppImpls(b *buffer) error {
 }
 
 var (
-	wiStart = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiStart = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
 	wiEnd   = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 
 	wigbpStart = []byte("\n#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")

@@ -79,7 +79,7 @@ func doGenrelease(args []string) error {
 			}
 		}
 		if len(trimmed) == 0 {
-			return fmt.Errorf("could not find %q or %q", grImplStartsHere, grImplEndsHere)
+			return fmt.Errorf("could not find %q or %q in %s", grImplStartsHere, grImplEndsHere, filename)
 		}
 
 		if err := h.gen(unformatted, s); err != nil {
@@ -110,7 +110,7 @@ func doGenrelease(args []string) error {
 }
 
 var (
-	grImplStartsHere = []byte("#ifdef WUFFS_IMPLEMENTATION\n")
+	grImplStartsHere = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n")
 	grImplEndsHere   = []byte("#endif  // WUFFS_IMPLEMENTATION\n")
 	grNN             = []byte("\n\n")
 	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")

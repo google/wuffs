@@ -16,6 +16,7 @@
 
 // !! INSERT base-public.h.
 
+// WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
 // !! INSERT base-private.h.
