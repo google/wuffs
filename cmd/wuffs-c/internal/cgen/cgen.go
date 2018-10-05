@@ -375,6 +375,8 @@ func (g *gen) genHeader(b *buffer) error {
 
 	b.writes("// ---------------- Structs\n\n")
 	for _, n := range g.structList {
+		structName := n.QID().Str(g.tm)
+		b.printf("typedef struct %s%s__struct %s%s;\n\n", g.pkgPrefix, structName, g.pkgPrefix, structName)
 		if err := g.writeStruct(b, n); err != nil {
 			return err
 		}
@@ -626,7 +628,7 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 
 func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-	b.writes("typedef struct {\n")
+	b.printf("struct %s%s__struct {\n", g.pkgPrefix, structName)
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
 	b.printf("// %s%s__etc functions.\n", g.pkgPrefix, structName)
@@ -687,7 +689,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		}
 	}
 
-	b.printf("} %s%s;\n\n", g.pkgPrefix, structName)
+	b.writes("};\n\n")
 	return nil
 }
 

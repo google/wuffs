@@ -2201,7 +2201,9 @@ extern "C" {
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_adler32__hasher__struct wuffs_adler32__hasher;
+
+struct wuffs_adler32__hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_adler32__hasher__etc functions.
@@ -2222,8 +2224,7 @@ typedef struct {
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
   inline uint32_t update(wuffs_base__slice_u8 a_x);
 #endif  // __cplusplus
-
-} wuffs_adler32__hasher;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -2282,7 +2283,9 @@ extern "C" {
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_crc32__ieee_hasher__struct wuffs_crc32__ieee_hasher;
+
+struct wuffs_crc32__ieee_hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_crc32__ieee_hasher__etc functions.
@@ -2302,8 +2305,7 @@ typedef struct {
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
   inline uint32_t update(wuffs_base__slice_u8 a_x);
 #endif  // __cplusplus
-
-} wuffs_crc32__ieee_hasher;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -2376,7 +2378,9 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
+
+struct wuffs_deflate__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_deflate__decoder__etc functions.
@@ -2456,8 +2460,7 @@ typedef struct {
   inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
-
-} wuffs_deflate__decoder;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -2527,7 +2530,9 @@ extern const char* wuffs_lzw__error__cyclical_prefix_chain;
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
+
+struct wuffs_lzw__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_lzw__decoder__etc functions.
@@ -2567,8 +2572,7 @@ typedef struct {
   inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
-
-} wuffs_lzw__decoder;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -2643,7 +2647,9 @@ extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
+
+struct wuffs_gif__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_gif__decoder__etc functions.
@@ -2778,8 +2784,7 @@ typedef struct {
       wuffs_base__slice_u8 a_workbuf,
       wuffs_base__decode_frame_options* a_opts);
 #endif  // __cplusplus
-
-} wuffs_gif__decoder;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -2914,7 +2919,9 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
+
+struct wuffs_gzip__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_gzip__decoder__etc functions.
@@ -2950,8 +2957,7 @@ typedef struct {
   inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
-
-} wuffs_gzip__decoder;
+};
 
 // ---------------- Public Initializer Prototypes
 
@@ -3033,7 +3039,9 @@ extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Structs
 
-typedef struct {
+typedef struct wuffs_zlib__decoder__struct wuffs_zlib__decoder;
+
+struct wuffs_zlib__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
   // wuffs_zlib__decoder__etc functions.
@@ -3065,8 +3073,7 @@ typedef struct {
   inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
-
-} wuffs_zlib__decoder;
+};
 
 // ---------------- Public Initializer Prototypes
 
