@@ -373,13 +373,10 @@ func (g *gen) genHeader(b *buffer) error {
 		return err
 	}
 
-	b.writes("// ---------------- Structs\n\n")
+	b.writes("// ---------------- Struct Declarations\n\n")
 	for _, n := range g.structList {
 		structName := n.QID().Str(g.tm)
 		b.printf("typedef struct %s%s__struct %s%s;\n\n", g.pkgPrefix, structName, g.pkgPrefix, structName)
-		if err := g.writeStruct(b, n); err != nil {
-			return err
-		}
 	}
 
 	b.writes("// ---------------- Public Initializer Prototypes\n\n")
@@ -394,6 +391,13 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// ---------------- Public Function Prototypes\n\n")
 	if err := g.forEachFunc(b, pubOnly, (*gen).writeFuncPrototype); err != nil {
 		return err
+	}
+
+	b.writes("// ---------------- Struct Definitions\n\n")
+	for _, n := range g.structList {
+		if err := g.writeStruct(b, n); err != nil {
+			return err
+		}
 	}
 
 	b.writes("// ---------------- C++ Convenience Methods \n\n")

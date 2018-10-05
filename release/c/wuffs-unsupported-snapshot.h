@@ -2199,9 +2199,32 @@ extern "C" {
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_adler32__hasher__struct wuffs_adler32__hasher;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_adler32__hasher__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_adler32__hasher__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
+                                           size_t sizeof_star_self,
+                                           uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_adler32__hasher();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
+                              wuffs_base__slice_u8 a_x);
+
+// ---------------- Struct Definitions
 
 struct wuffs_adler32__hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2225,27 +2248,6 @@ struct wuffs_adler32__hasher__struct {
   inline uint32_t update(wuffs_base__slice_u8 a_x);
 #endif  // __cplusplus
 };
-
-// ---------------- Public Initializer Prototypes
-
-// wuffs_adler32__hasher__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_adler32__hasher__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
-                                           size_t sizeof_star_self,
-                                           uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_adler32__hasher();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
-                              wuffs_base__slice_u8 a_x);
 
 // ---------------- C++ Convenience Methods
 
@@ -2281,9 +2283,32 @@ extern "C" {
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_crc32__ieee_hasher__struct wuffs_crc32__ieee_hasher;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_crc32__ieee_hasher__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_crc32__ieee_hasher__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
+                                              size_t sizeof_star_self,
+                                              uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_crc32__ieee_hasher();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
+                                 wuffs_base__slice_u8 a_x);
+
+// ---------------- Struct Definitions
 
 struct wuffs_crc32__ieee_hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2306,27 +2331,6 @@ struct wuffs_crc32__ieee_hasher__struct {
   inline uint32_t update(wuffs_base__slice_u8 a_x);
 #endif  // __cplusplus
 };
-
-// ---------------- Public Initializer Prototypes
-
-// wuffs_crc32__ieee_hasher__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_crc32__ieee_hasher__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
-                                              size_t sizeof_star_self,
-                                              uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_crc32__ieee_hasher();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
-                                 wuffs_base__slice_u8 a_x);
 
 // ---------------- C++ Convenience Methods
 
@@ -2376,9 +2380,33 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_deflate__decoder__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_deflate__decoder__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
+                                            size_t sizeof_star_self,
+                                            uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_deflate__decoder();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
+                               wuffs_base__io_writer a_dst,
+                               wuffs_base__io_reader a_src);
+
+// ---------------- Struct Definitions
 
 struct wuffs_deflate__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2462,28 +2490,6 @@ struct wuffs_deflate__decoder__struct {
 #endif  // __cplusplus
 };
 
-// ---------------- Public Initializer Prototypes
-
-// wuffs_deflate__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_deflate__decoder__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                            size_t sizeof_star_self,
-                                            uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_deflate__decoder();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                               wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src);
-
 // ---------------- C++ Convenience Methods
 
 #ifdef __cplusplus
@@ -2528,9 +2534,36 @@ extern const char* wuffs_lzw__error__cyclical_prefix_chain;
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_lzw__decoder__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_lzw__decoder__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
+                                        size_t sizeof_star_self,
+                                        uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_lzw__decoder();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC void  //
+wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
+                           wuffs_base__io_writer a_dst,
+                           wuffs_base__io_reader a_src);
+
+// ---------------- Struct Definitions
 
 struct wuffs_lzw__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2573,31 +2606,6 @@ struct wuffs_lzw__decoder__struct {
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
 };
-
-// ---------------- Public Initializer Prototypes
-
-// wuffs_lzw__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_lzw__decoder__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_lzw__decoder();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC void  //
-wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                           wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -2645,9 +2653,59 @@ extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_gif__decoder__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_gif__decoder__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
+                                        size_t sizeof_star_self,
+                                        uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_gif__decoder();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
+                                        wuffs_base__image_config* a_dst,
+                                        wuffs_base__io_reader a_src);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
+wuffs_gif__decoder__workbuf_len(wuffs_gif__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
+                                  uint64_t a_index,
+                                  uint64_t a_io_position);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
+                                        wuffs_base__frame_config* a_dst,
+                                        wuffs_base__io_reader a_src);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
+                                 wuffs_base__pixel_buffer* a_dst,
+                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__slice_u8 a_workbuf,
+                                 wuffs_base__decode_frame_options* a_opts);
+
+// ---------------- Struct Definitions
 
 struct wuffs_gif__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2786,54 +2844,6 @@ struct wuffs_gif__decoder__struct {
 #endif  // __cplusplus
 };
 
-// ---------------- Public Initializer Prototypes
-
-// wuffs_gif__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_gif__decoder__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_gif__decoder();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
-                                        wuffs_base__image_config* a_dst,
-                                        wuffs_base__io_reader a_src);
-
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
-
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_gif__decoder__workbuf_len(wuffs_gif__decoder* self);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
-                                  uint64_t a_index,
-                                  uint64_t a_io_position);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
-                                        wuffs_base__frame_config* a_dst,
-                                        wuffs_base__io_reader a_src);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
-                                 wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_workbuf,
-                                 wuffs_base__decode_frame_options* a_opts);
-
 // ---------------- C++ Convenience Methods
 
 #ifdef __cplusplus
@@ -2917,9 +2927,36 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_gzip__decoder__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_gzip__decoder__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
+                                         size_t sizeof_star_self,
+                                         uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_gzip__decoder();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC void  //
+wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src);
+
+// ---------------- Struct Definitions
 
 struct wuffs_gzip__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2958,31 +2995,6 @@ struct wuffs_gzip__decoder__struct {
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
 };
-
-// ---------------- Public Initializer Prototypes
-
-// wuffs_gzip__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_gzip__decoder__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_gzip__decoder();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC void  //
-wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
@@ -3037,9 +3049,36 @@ extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Public Consts
 
-// ---------------- Structs
+// ---------------- Struct Declarations
 
 typedef struct wuffs_zlib__decoder__struct wuffs_zlib__decoder;
+
+// ---------------- Public Initializer Prototypes
+
+// wuffs_zlib__decoder__check_wuffs_version is an initializer function.
+//
+// It should be called before any other wuffs_zlib__decoder__* function.
+//
+// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
+                                         size_t sizeof_star_self,
+                                         uint64_t wuffs_version);
+
+size_t  //
+sizeof__wuffs_zlib__decoder();
+
+// ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC void  //
+wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
+wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
+                            wuffs_base__io_writer a_dst,
+                            wuffs_base__io_reader a_src);
+
+// ---------------- Struct Definitions
 
 struct wuffs_zlib__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -3074,31 +3113,6 @@ struct wuffs_zlib__decoder__struct {
                                    wuffs_base__io_reader a_src);
 #endif  // __cplusplus
 };
-
-// ---------------- Public Initializer Prototypes
-
-// wuffs_zlib__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_zlib__decoder__* function.
-//
-// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version);
-
-size_t  //
-sizeof__wuffs_zlib__decoder();
-
-// ---------------- Public Function Prototypes
-
-WUFFS_BASE__MAYBE_STATIC void  //
-wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
-
-WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
 
 // ---------------- C++ Convenience Methods
 
