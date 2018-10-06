@@ -400,11 +400,6 @@ func (g *gen) genHeader(b *buffer) error {
 		}
 	}
 
-	b.writes("// ---------------- C++ Convenience Methods \n\n")
-	if err := g.writeCppImpls(b); err != nil {
-		return err
-	}
-
 	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	return nil
 }
@@ -688,21 +683,25 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("} private_impl;\n\n")
 
 	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
-		if err := g.writeCppPrototypes(b, n); err != nil {
+		if err := g.writeCppMethods(b, n); err != nil {
 			return err
 		}
 	}
 
-	b.writes("};\n\n")
+	b.printf("};  // struct %s%s__struct\n\n", g.pkgPrefix, structName)
 	return nil
 }
 
-func (g *gen) writeCppPrototypes(b *buffer, n *a.Struct) error {
-	b.writes("#ifdef __cplusplus\n")
+func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
+	structName := n.QID().Str(g.tm)
+
+	b.writes("#ifdef __cplusplus\n\n")
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
-		"check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);\n")
+		"check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n")
+	b.printf("return %s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n}\n\n",
+		g.pkgPrefix, structName)
 
 	structID := n.QID()[1]
 	for _, file := range g.files {
@@ -719,58 +718,10 @@ func (g *gen) writeCppPrototypes(b *buffer, n *a.Struct) error {
 			if err := g.writeFuncSignature(b, f, cppInsideStruct); err != nil {
 				return err
 			}
-			b.writes(";\n")
-		}
-	}
-
-	b.writes("#endif  // __cplusplus\n\n")
-	return nil
-}
-
-func (g *gen) writeCppImpls(b *buffer) error {
-	b.writes("\n#ifdef __cplusplus\n\n")
-
-	publicStructs := map[t.ID]bool{}
-
-	for _, file := range g.files {
-		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KStruct) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
-				continue
-			}
-			n := tld.AsStruct()
-
-			structID := n.QID()[1]
-			structName := structID.Str(g.tm)
-			// The empty // comment makes clang-format place the function name
-			// at the start of a line.
-			b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n")
-			b.printf("%s%s::check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n",
-				g.pkgPrefix, structName)
-			b.printf("return %s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n",
-				g.pkgPrefix, structName)
-			b.printf("}\n\n")
-
-			publicStructs[structID] = true
-		}
-	}
-
-	for _, file := range g.files {
-		for _, tld := range file.TopLevelDecls() {
-			if (tld.Kind() != a.KFunc) || (tld.AsRaw().Flags()&a.FlagsPublic == 0) {
-				continue
-			}
-			n := tld.AsFunc()
-			if !publicStructs[n.QQID()[1]] {
-				continue
-			}
-
-			if err := g.writeFuncSignature(b, n, cppOutsideStruct); err != nil {
-				return err
-			}
 			b.writes("{ return ")
-			b.writes(g.funcCName(n))
+			b.writes(g.funcCName(f))
 			b.writes("(this")
-			for _, o := range n.In().Fields() {
+			for _, o := range f.In().Fields() {
 				b.writeb(',')
 				b.writes(aPrefix)
 				b.writes(o.AsField().Name().Str(g.tm))

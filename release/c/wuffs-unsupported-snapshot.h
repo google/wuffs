@@ -2243,29 +2243,21 @@ struct wuffs_adler32__hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline uint32_t update(wuffs_base__slice_u8 a_x);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_adler32__hasher__check_wuffs_version(this, sizeof_star_self,
+                                                      wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
-
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_adler32__hasher::check_wuffs_version(size_t sizeof_star_self,
-                                           uint64_t wuffs_version) {
-  return wuffs_adler32__hasher__check_wuffs_version(this, sizeof_star_self,
-                                                    wuffs_version);
-}
-
-inline uint32_t  //
-wuffs_adler32__hasher::update(wuffs_base__slice_u8 a_x) {
-  return wuffs_adler32__hasher__update(this, a_x);
-}
+  inline uint32_t  //
+  update(wuffs_base__slice_u8 a_x) {
+    return wuffs_adler32__hasher__update(this, a_x);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_adler32__hasher__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2326,29 +2318,21 @@ struct wuffs_crc32__ieee_hasher__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline uint32_t update(wuffs_base__slice_u8 a_x);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_crc32__ieee_hasher__check_wuffs_version(this, sizeof_star_self,
+                                                         wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
-
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_crc32__ieee_hasher::check_wuffs_version(size_t sizeof_star_self,
-                                              uint64_t wuffs_version) {
-  return wuffs_crc32__ieee_hasher__check_wuffs_version(this, sizeof_star_self,
-                                                       wuffs_version);
-}
-
-inline uint32_t  //
-wuffs_crc32__ieee_hasher::update(wuffs_base__slice_u8 a_x) {
-  return wuffs_crc32__ieee_hasher__update(this, a_x);
-}
+  inline uint32_t  //
+  update(wuffs_base__slice_u8 a_x) {
+    return wuffs_crc32__ieee_hasher__update(this, a_x);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_crc32__ieee_hasher__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2483,31 +2467,21 @@ struct wuffs_deflate__decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
-                                   wuffs_base__io_reader a_src);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_deflate__decoder__check_wuffs_version(this, sizeof_star_self,
+                                                       wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
-
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_deflate__decoder::check_wuffs_version(size_t sizeof_star_self,
-                                            uint64_t wuffs_version) {
-  return wuffs_deflate__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                     wuffs_version);
-}
-
-inline wuffs_base__status  //
-wuffs_deflate__decoder::decode(wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src) {
-  return wuffs_deflate__decoder__decode(this, a_dst, a_src);
-}
+  inline wuffs_base__status  //
+  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_deflate__decoder__decode(this, a_dst, a_src);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_deflate__decoder__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2599,37 +2573,26 @@ struct wuffs_lzw__decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline void set_literal_width(uint32_t a_lw);
-  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
-                                   wuffs_base__io_reader a_src);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_lzw__decoder__check_wuffs_version(this, sizeof_star_self,
+                                                   wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
+  inline void  //
+  set_literal_width(uint32_t a_lw) {
+    return wuffs_lzw__decoder__set_literal_width(this, a_lw);
+  }
 
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_lzw__decoder::check_wuffs_version(size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
-  return wuffs_lzw__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                 wuffs_version);
-}
-
-inline void  //
-wuffs_lzw__decoder::set_literal_width(uint32_t a_lw) {
-  return wuffs_lzw__decoder__set_literal_width(this, a_lw);
-}
-
-inline wuffs_base__status  //
-wuffs_lzw__decoder::decode(wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src) {
-  return wuffs_lzw__decoder__decode(this, a_dst, a_src);
-}
+  inline wuffs_base__status  //
+  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_lzw__decoder__decode(this, a_dst, a_src);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_lzw__decoder__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2825,78 +2788,57 @@ struct wuffs_gif__decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline wuffs_base__status decode_image_config(wuffs_base__image_config* a_dst,
-                                                wuffs_base__io_reader a_src);
-  inline uint64_t num_decoded_frame_configs();
-  inline uint64_t num_decoded_frames();
-  inline wuffs_base__range_ii_u64 workbuf_len();
-  inline wuffs_base__status restart_frame(uint64_t a_index,
-                                          uint64_t a_io_position);
-  inline wuffs_base__status decode_frame_config(wuffs_base__frame_config* a_dst,
-                                                wuffs_base__io_reader a_src);
-  inline wuffs_base__status decode_frame(
-      wuffs_base__pixel_buffer* a_dst,
-      wuffs_base__io_reader a_src,
-      wuffs_base__slice_u8 a_workbuf,
-      wuffs_base__decode_frame_options* a_opts);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_gif__decoder__check_wuffs_version(this, sizeof_star_self,
+                                                   wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
+  inline wuffs_base__status  //
+  decode_image_config(wuffs_base__image_config* a_dst,
+                      wuffs_base__io_reader a_src) {
+    return wuffs_gif__decoder__decode_image_config(this, a_dst, a_src);
+  }
 
-#ifdef __cplusplus
+  inline uint64_t  //
+  num_decoded_frame_configs() {
+    return wuffs_gif__decoder__num_decoded_frame_configs(this);
+  }
 
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gif__decoder::check_wuffs_version(size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
-  return wuffs_gif__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                 wuffs_version);
-}
+  inline uint64_t  //
+  num_decoded_frames() {
+    return wuffs_gif__decoder__num_decoded_frames(this);
+  }
 
-inline wuffs_base__status  //
-wuffs_gif__decoder::decode_image_config(wuffs_base__image_config* a_dst,
-                                        wuffs_base__io_reader a_src) {
-  return wuffs_gif__decoder__decode_image_config(this, a_dst, a_src);
-}
+  inline wuffs_base__range_ii_u64  //
+  workbuf_len() {
+    return wuffs_gif__decoder__workbuf_len(this);
+  }
 
-inline uint64_t  //
-wuffs_gif__decoder::num_decoded_frame_configs() {
-  return wuffs_gif__decoder__num_decoded_frame_configs(this);
-}
+  inline wuffs_base__status  //
+  restart_frame(uint64_t a_index, uint64_t a_io_position) {
+    return wuffs_gif__decoder__restart_frame(this, a_index, a_io_position);
+  }
 
-inline uint64_t  //
-wuffs_gif__decoder::num_decoded_frames() {
-  return wuffs_gif__decoder__num_decoded_frames(this);
-}
+  inline wuffs_base__status  //
+  decode_frame_config(wuffs_base__frame_config* a_dst,
+                      wuffs_base__io_reader a_src) {
+    return wuffs_gif__decoder__decode_frame_config(this, a_dst, a_src);
+  }
 
-inline wuffs_base__range_ii_u64  //
-wuffs_gif__decoder::workbuf_len() {
-  return wuffs_gif__decoder__workbuf_len(this);
-}
-
-inline wuffs_base__status  //
-wuffs_gif__decoder::restart_frame(uint64_t a_index, uint64_t a_io_position) {
-  return wuffs_gif__decoder__restart_frame(this, a_index, a_io_position);
-}
-
-inline wuffs_base__status  //
-wuffs_gif__decoder::decode_frame_config(wuffs_base__frame_config* a_dst,
-                                        wuffs_base__io_reader a_src) {
-  return wuffs_gif__decoder__decode_frame_config(this, a_dst, a_src);
-}
-
-inline wuffs_base__status  //
-wuffs_gif__decoder::decode_frame(wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
-                                 wuffs_base__slice_u8 a_workbuf,
-                                 wuffs_base__decode_frame_options* a_opts) {
-  return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_workbuf,
-                                          a_opts);
-}
+  inline wuffs_base__status  //
+  decode_frame(wuffs_base__pixel_buffer* a_dst,
+               wuffs_base__io_reader a_src,
+               wuffs_base__slice_u8 a_workbuf,
+               wuffs_base__decode_frame_options* a_opts) {
+    return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_workbuf,
+                                            a_opts);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_gif__decoder__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2988,37 +2930,26 @@ struct wuffs_gzip__decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline void set_ignore_checksum(bool a_ic);
-  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
-                                   wuffs_base__io_reader a_src);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_gzip__decoder__check_wuffs_version(this, sizeof_star_self,
+                                                    wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
+  inline void  //
+  set_ignore_checksum(bool a_ic) {
+    return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
+  }
 
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gzip__decoder::check_wuffs_version(size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
-  return wuffs_gzip__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                  wuffs_version);
-}
-
-inline void  //
-wuffs_gzip__decoder::set_ignore_checksum(bool a_ic) {
-  return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
-}
-
-inline wuffs_base__status  //
-wuffs_gzip__decoder::decode(wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
-  return wuffs_gzip__decoder__decode(this, a_dst, a_src);
-}
+  inline wuffs_base__status  //
+  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_gzip__decoder__decode(this, a_dst, a_src);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_gzip__decoder__struct
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -3106,37 +3037,26 @@ struct wuffs_zlib__decoder__struct {
   } private_impl;
 
 #ifdef __cplusplus
+
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version);
-  inline void set_ignore_checksum(bool a_ic);
-  inline wuffs_base__status decode(wuffs_base__io_writer a_dst,
-                                   wuffs_base__io_reader a_src);
-#endif  // __cplusplus
-};
+  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
+    return wuffs_zlib__decoder__check_wuffs_version(this, sizeof_star_self,
+                                                    wuffs_version);
+  }
 
-// ---------------- C++ Convenience Methods
+  inline void  //
+  set_ignore_checksum(bool a_ic) {
+    return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
+  }
 
-#ifdef __cplusplus
-
-inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_zlib__decoder::check_wuffs_version(size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
-  return wuffs_zlib__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                  wuffs_version);
-}
-
-inline void  //
-wuffs_zlib__decoder::set_ignore_checksum(bool a_ic) {
-  return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
-}
-
-inline wuffs_base__status  //
-wuffs_zlib__decoder::decode(wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
-  return wuffs_zlib__decoder__decode(this, a_dst, a_src);
-}
+  inline wuffs_base__status  //
+  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_zlib__decoder__decode(this, a_dst, a_src);
+  }
 
 #endif  // __cplusplus
+
+};  // struct wuffs_zlib__decoder__struct
 
 #ifdef __cplusplus
 }  // extern "C"

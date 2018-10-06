@@ -95,11 +95,9 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 		return err
 	}
 
-	if cpp != cppInsideStruct {
-		// The empty // comment makes clang-format place the function name at
-		// the start of a line.
-		b.writes("//\n")
-	}
+	// The empty // comment makes clang-format place the function name at the
+	// start of a line.
+	b.writes("//\n")
 
 	switch cpp {
 	case cppNone:
