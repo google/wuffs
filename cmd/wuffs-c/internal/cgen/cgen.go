@@ -336,7 +336,7 @@ func (g *gen) generate() ([]byte, error) {
 	if err := g.genHeader(b); err != nil {
 		return nil, err
 	}
-	b.writex(wiStart)
+	b.writex(wiStartImpl)
 	if err := g.genImpl(b); err != nil {
 		return nil, err
 	}
@@ -394,11 +394,17 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 
 	b.writes("// ---------------- Struct Definitions\n\n")
+	b.writes("// These structs' fields, and the sizeof them, are private implementation\n")
+	b.writes("// details that aren't guaranteed to be stable across Wuffs versions.\n")
+	b.writes("//\n")
+	b.writes("// See https://en.wikipedia.org/wiki/Opaque_pointer#C\n")
+	b.writex(wiStart)
 	for _, n := range g.structList {
 		if err := g.writeStruct(b, n); err != nil {
 			return err
 		}
 	}
+	b.writex(wiEnd)
 
 	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	return nil
@@ -735,8 +741,9 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 }
 
 var (
-	wiStart = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
-	wiEnd   = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
+	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiStart     = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 
 	wigbpStart = []byte("\n#ifndef WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
 	wigbpEnd   = []byte("\n#endif  // WUFFS_INCLUDE_GUARD__BASE_PUBLIC\n")
@@ -770,8 +777,8 @@ func (g *gen) writeUse(b *buffer, n *a.Use) error {
 		return err
 	}
 	trimmed := []byte(nil)
-	if i := bytes.Index(usee, wiStart); i >= 0 {
-		remaining := usee[i+len(wiStart):]
+	if i := bytes.Index(usee, wiStartImpl); i >= 0 {
+		remaining := usee[i+len(wiStartImpl):]
 		if j := bytes.Index(remaining, wiEnd); j >= 0 {
 			trimmed = append(trimmed, usee[:i]...)
 			trimmed = append(trimmed, '\n')

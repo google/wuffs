@@ -30,6 +30,7 @@ rm -f a.out
 for a C compiler $CC, such as clang or gcc.
 */
 
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "wuffs/release/c/wuffs-unsupported-snapshot.h"
@@ -69,17 +70,23 @@ static const char* decode() {
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
+  wuffs_deflate__decoder* dec = calloc(sizeof__wuffs_deflate__decoder(), 1);
+  if (!dec) {
+    return "out of memory";
+  }
   wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
-      &dec, sizeof dec, WUFFS_VERSION);
+      dec, sizeof__wuffs_deflate__decoder(), WUFFS_VERSION);
   if (z) {
+    free(dec);
     return z;
   }
-  z = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+  z = wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
   if (z) {
+    free(dec);
     return z;
   }
   ignore_return_value(write(1, dst.data.ptr, dst.meta.wi));
+  free(dec);
   return NULL;
 }
 

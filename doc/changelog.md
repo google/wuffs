@@ -47,6 +47,7 @@
 - Added `WUFFS_CONFIG__STATIC_FUNCTIONS`.
 - Added some C++ convenience methods.
 - Added some Go and Rust benchmarks.
+- Made struct implementations private (opaque pointers).
 - Sped up the `mimic_deflate_xxx` benchmarks.
 
 

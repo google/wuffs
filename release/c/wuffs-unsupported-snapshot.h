@@ -2226,6 +2226,13 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 // ---------------- Struct Definitions
 
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
+
 struct wuffs_adler32__hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
@@ -2258,6 +2265,8 @@ struct wuffs_adler32__hasher__struct {
 #endif  // __cplusplus
 
 };  // struct wuffs_adler32__hasher__struct
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2302,6 +2311,13 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 
 // ---------------- Struct Definitions
 
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
+
 struct wuffs_crc32__ieee_hasher__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
@@ -2333,6 +2349,8 @@ struct wuffs_crc32__ieee_hasher__struct {
 #endif  // __cplusplus
 
 };  // struct wuffs_crc32__ieee_hasher__struct
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2391,6 +2409,13 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
                                wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
 
 struct wuffs_deflate__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2483,6 +2508,8 @@ struct wuffs_deflate__decoder__struct {
 
 };  // struct wuffs_deflate__decoder__struct
 
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -2539,6 +2566,13 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
 
 // ---------------- Struct Definitions
 
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
+
 struct wuffs_lzw__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
@@ -2593,6 +2627,8 @@ struct wuffs_lzw__decoder__struct {
 #endif  // __cplusplus
 
 };  // struct wuffs_lzw__decoder__struct
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2669,6 +2705,13 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__decode_frame_options* a_opts);
 
 // ---------------- Struct Definitions
+
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
 
 struct wuffs_gif__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
@@ -2840,6 +2883,8 @@ struct wuffs_gif__decoder__struct {
 
 };  // struct wuffs_gif__decoder__struct
 
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -2900,6 +2945,13 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
 // ---------------- Struct Definitions
 
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
+
 struct wuffs_gzip__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
@@ -2950,6 +3002,8 @@ struct wuffs_gzip__decoder__struct {
 #endif  // __cplusplus
 
 };  // struct wuffs_gzip__decoder__struct
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -3011,6 +3065,13 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 
 // ---------------- Struct Definitions
 
+// These structs' fields, and the sizeof them, are private implementation
+// details that aren't guaranteed to be stable across Wuffs versions.
+//
+// See https://en.wikipedia.org/wiki/Opaque_pointer#C
+
+#ifdef WUFFS_IMPLEMENTATION
+
 struct wuffs_zlib__decoder__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
@@ -3057,6 +3118,8 @@ struct wuffs_zlib__decoder__struct {
 #endif  // __cplusplus
 
 };  // struct wuffs_zlib__decoder__struct
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 }  // extern "C"
