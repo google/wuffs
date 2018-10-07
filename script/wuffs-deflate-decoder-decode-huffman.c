@@ -28,8 +28,9 @@
 //
 // Having said that, to generate the benchmark numbers with this hand-written C
 // implementation, edit release/c/wuffs-unsupported-snapshot.h and find the
-// line that says
+// lines that say
 //
+// // WUFFS C HEADER ENDS HERE.
 // #ifdef WUFFS_IMPLEMENTATION
 //
 // After that, add this line:
@@ -50,11 +51,11 @@
 
 $ git diff release/c/wuffs-unsupported-snapshot.h
 diff --git a/release/c/wuffs-unsupported-snapshot.h b/release/c/wuffs-unsupported-snapshot.h
-index eb60bdbe..2941e337 100644
+index f240b9b..33d7089 100644
 --- a/release/c/wuffs-unsupported-snapshot.h
 +++ b/release/c/wuffs-unsupported-snapshot.h
-@@ -2825,6 +2825,8 @@ wuffs_zlib__decoder::decode(wuffs_base__io_writer a_dst,
-
+@@ -3128,6 +3128,8 @@ struct wuffs_zlib__decoder__struct {
+ // WUFFS C HEADER ENDS HERE.
  #ifdef WUFFS_IMPLEMENTATION
 
 +#include "../../script/wuffs-deflate-decoder-decode-huffman.c"
@@ -62,15 +63,15 @@ index eb60bdbe..2941e337 100644
  // Copyright 2017 The Wuffs Authors.
  //
  // Licensed under the Apache License, Version 2.0 (the "License");
-@@ -4633,7 +4635,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
-       if (a_src.private_impl.buf) {
-         a_src.private_impl.buf->ri = iop_a_src - a_src.private_impl.buf->ptr;
+@@ -4940,7 +4942,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
+         a_src.private_impl.buf->meta.ri =
+             iop_a_src - a_src.private_impl.buf->data.ptr;
        }
 -      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 +      status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
        if (a_src.private_impl.buf) {
-         iop_a_src = a_src.private_impl.buf->ptr + a_src.private_impl.buf->ri;
-       }
+         iop_a_src =
+             a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
 
 */
 // clang-format on
@@ -148,15 +149,19 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
-  uint8_t* pdst = a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-  uint8_t* qdst = a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
+  uint8_t* pdst =
+      a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
+  uint8_t* qdst =
+      a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
   if ((qdst - pdst) < 258) {
     return NULL;
   } else {
     qdst -= 258;
   }
-  uint8_t* psrc = a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-  uint8_t* qsrc = a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
+  uint8_t* psrc =
+      a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+  uint8_t* qsrc =
+      a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   if ((qsrc - psrc) < 12) {
     return NULL;
   } else {
@@ -289,20 +294,18 @@ outer_loop:
     uint32_t dist_minus_1 = (table_entry >> 8) & 0xFFFF;
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
-      if (n) {
 #if !defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
-        // Ensure that we have at least 15 bits of input.
-        if (n_bits < 15) {
-          bits |= ((uint32_t)(*psrc++)) << n_bits;
-          n_bits += 8;
-          bits |= ((uint32_t)(*psrc++)) << n_bits;
-          n_bits += 8;
-        }
-#endif
-        dist_minus_1 += bits & wuffs_base__width_to_mask_table[n];
-        bits >>= n;
-        n_bits -= n;
+      // Ensure that we have at least 15 bits of input.
+      if (n_bits < n) {
+        bits |= ((uint32_t)(*psrc++)) << n_bits;
+        n_bits += 8;
+        bits |= ((uint32_t)(*psrc++)) << n_bits;
+        n_bits += 8;
       }
+#endif
+      dist_minus_1 += bits & wuffs_base__width_to_mask_table[n];
+      bits >>= n;
+      n_bits -= n;
     }
 
     // TODO: look at a sliding window, not just output written so far to dst.
