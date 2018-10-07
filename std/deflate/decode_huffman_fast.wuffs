@@ -256,25 +256,23 @@ pri func decoder.decode_huffman_fast!??(dst base.io_writer, src base.io_reader) 
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
 		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
-		if table_entry_n_bits > 0 {
-			// Ensure that we have at least 15 bits of input.
-			if n_bits < 15 {
-				assert n_bits >= 0  // TODO: this shouldn't be necessary.
-				bits |= (args.src.peek_u8() as base.u32) << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
-				n_bits += 8
-				bits |= (args.src.peek_u8() as base.u32) << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
-				n_bits += 8
-				assert n_bits >= 15
-			}
-			// Once again, redundant but explicit assertions.
+		// Ensure that we have at least 15 bits of input.
+		if n_bits < 15 {
+			assert n_bits >= 0  // TODO: this shouldn't be necessary.
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
+			n_bits += 8
+			bits |= (args.src.peek_u8() as base.u32) << n_bits
+			args.src.skip_fast!(actual:1, worst_case:1)
+			n_bits += 8
 			assert n_bits >= 15
-
-			dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
-			bits >>= table_entry_n_bits
-			n_bits -= table_entry_n_bits
 		}
+		// Once again, redundant but explicit assertions.
+		assert n_bits >= 15
+
+		dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+		bits >>= table_entry_n_bits
+		n_bits -= table_entry_n_bits
 
 		var n_copied base.u32
 		// The "while true { etc; break }" is a redundant version of "etc", but
