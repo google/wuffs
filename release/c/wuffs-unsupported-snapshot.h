@@ -5958,7 +5958,7 @@ label_0_continue:;
     }
     v_dist_minus_1 = ((v_table_entry >> 8) & 32767);
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
-    if (v_n_bits < 15) {
+    if (v_n_bits < v_table_entry_n_bits) {
       v_bits |= (((uint32_t)(wuffs_base__load_u8be(iop_a_src))) << v_n_bits);
       (iop_a_src += 1, wuffs_base__return_empty_struct());
       v_n_bits += 8;

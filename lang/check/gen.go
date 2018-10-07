@@ -37,10 +37,14 @@ var reasons = [...]string{
 	"a < b: a < c; c <= b",
 	"a < b: a <= c; c < b",
 
+	"a > b: b < a",
+
 	"a <= b: b >= a",
 	"a <= b: a <= c; c <= b",
 	"a <= b: a <= c; c == b",
 	"a <= b: a == c; c <= b",
+
+	"a >= b: b <= a",
 
 	"a < (b + c): a < c; 0 <= b",
 	"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c",

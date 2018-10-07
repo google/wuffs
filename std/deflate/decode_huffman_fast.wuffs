@@ -256,8 +256,9 @@ pri func decoder.decode_huffman_fast!??(dst base.io_writer, src base.io_reader) 
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
 		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
-		// Ensure that we have at least 15 bits of input.
-		if n_bits < 15 {
+		// Ensure that we have at least table_entry_n_bits bits of input.
+		if n_bits < table_entry_n_bits {
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= (args.src.peek_u8() as base.u32) << n_bits
 			args.src.skip_fast!(actual:1, worst_case:1)
@@ -265,10 +266,11 @@ pri func decoder.decode_huffman_fast!??(dst base.io_writer, src base.io_reader) 
 			bits |= (args.src.peek_u8() as base.u32) << n_bits
 			args.src.skip_fast!(actual:1, worst_case:1)
 			n_bits += 8
-			assert n_bits >= 15
+			assert table_entry_n_bits <= n_bits via "a <= b: a <= c; c <= b"(c:16)
+			assert n_bits >= table_entry_n_bits via "a >= b: b <= a"()
 		}
 		// Once again, redundant but explicit assertions.
-		assert n_bits >= 15
+		assert n_bits >= table_entry_n_bits
 
 		dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
 		bits >>= table_entry_n_bits

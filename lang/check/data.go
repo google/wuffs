@@ -138,6 +138,18 @@ var reasons = [...]struct {
 		return nil
 	}},
 
+	{`"a > b: b < a"`, func(q *checker, n *a.Assert) error {
+		op, xa, xb := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryGreaterThan {
+			return errFailed
+		}
+		// b < a
+		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xb, xa); err != nil {
+			return err
+		}
+		return nil
+	}},
+
 	{`"a <= b: b >= a"`, func(q *checker, n *a.Assert) error {
 		op, xa, xb := parseBinaryOp(n.Condition())
 		if op != t.IDXBinaryLessEq {
@@ -205,6 +217,18 @@ var reasons = [...]struct {
 		}
 		// c <= b
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xc, xb); err != nil {
+			return err
+		}
+		return nil
+	}},
+
+	{`"a >= b: b <= a"`, func(q *checker, n *a.Assert) error {
+		op, xa, xb := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryGreaterEq {
+			return errFailed
+		}
+		// b <= a
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xb, xa); err != nil {
 			return err
 		}
 		return nil
