@@ -295,7 +295,7 @@ outer_loop:
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
 #if !defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
-      // Ensure that we have at least 15 bits of input.
+      // Ensure that we have at least n bits of input.
       if (n_bits < n) {
         bits |= ((uint32_t)(*psrc++)) << n_bits;
         n_bits += 8;
