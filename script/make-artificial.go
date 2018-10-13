@@ -502,7 +502,8 @@ var gifGlobals struct {
 
 func stateGif(line string) (stateFunc, error) {
 	const (
-		cmdL = "lzw "
+		cmdL  = "lzw "
+		cmdLC = "loopCount "
 	)
 outer:
 	switch {
@@ -561,6 +562,27 @@ outer:
 			}
 		}
 		out = append(out, 0x00)
+		return stateGif, nil
+
+	case strings.HasPrefix(line, cmdLC):
+		s := line[len(cmdLC):]
+		loopCount, _, ok := parseNum(s)
+		if !ok || 0xFFFF < loopCount {
+			break
+		}
+		out = append(out,
+			0x21, // Extension Introducer.
+			0xFF, // Application Extension Label.
+			0x0B, // Block Size.
+		)
+		out = append(out, "NETSCAPE2.0"...)
+		out = append(out,
+			0x03, // Block Size.
+			0x01, // Magic Number.
+			byte(loopCount),
+			byte(loopCount>>8),
+			0x00, // Block Terminator.
+		)
 		return stateGif, nil
 	}
 

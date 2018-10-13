@@ -1721,7 +1721,6 @@ typedef struct {
   struct {
     wuffs_base__range_ii_u64 workbuf_len;
     uint64_t first_frame_io_position;
-    uint32_t num_loops;
     bool first_frame_is_opaque;
   } private_impl;
 
@@ -1732,13 +1731,11 @@ typedef struct {
                          uint32_t height,
                          uint64_t workbuf_len0,
                          uint64_t workbuf_len1,
-                         uint32_t num_loops,
                          uint64_t first_frame_io_position,
                          bool first_frame_is_opaque);
   inline void invalidate();
   inline bool is_valid();
   inline wuffs_base__range_ii_u64 workbuf_len();
-  inline uint32_t num_loops();
   inline uint64_t first_frame_io_position();
   inline bool first_frame_is_opaque();
 #endif  // __cplusplus
@@ -1754,7 +1751,6 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
                                      uint32_t height,
                                      uint64_t workbuf_len0,
                                      uint64_t workbuf_len1,
-                                     uint32_t num_loops,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
   if (!c) {
@@ -1768,7 +1764,6 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
     c->private_impl.workbuf_len.min_incl = workbuf_len0;
     c->private_impl.workbuf_len.max_incl = workbuf_len1;
     c->private_impl.first_frame_io_position = first_frame_io_position;
-    c->private_impl.num_loops = num_loops;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
     return;
   }
@@ -1792,11 +1787,6 @@ wuffs_base__image_config__workbuf_len(wuffs_base__image_config* c) {
   return c ? c->private_impl.workbuf_len : ((wuffs_base__range_ii_u64){});
 }
 
-static inline uint32_t  //
-wuffs_base__image_config__num_loops(wuffs_base__image_config* c) {
-  return c ? c->private_impl.num_loops : 0;
-}
-
 static inline uint64_t  //
 wuffs_base__image_config__first_frame_io_position(wuffs_base__image_config* c) {
   return c ? c->private_impl.first_frame_io_position : 0;
@@ -1816,12 +1806,11 @@ wuffs_base__image_config::initialize(wuffs_base__pixel_format pixfmt,
                                      uint32_t height,
                                      uint64_t workbuf_len0,
                                      uint64_t workbuf_len1,
-                                     uint32_t num_loops,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
   wuffs_base__image_config__initialize(
       this, pixfmt, pixsub, width, height, workbuf_len0, workbuf_len1,
-      num_loops, first_frame_io_position, first_frame_is_opaque);
+      first_frame_io_position, first_frame_is_opaque);
 }
 
 inline void  //
@@ -1837,11 +1826,6 @@ wuffs_base__image_config::is_valid() {
 inline wuffs_base__range_ii_u64  //
 wuffs_base__image_config::workbuf_len() {
   return wuffs_base__image_config__workbuf_len(this);
-}
-
-inline uint32_t  //
-wuffs_base__image_config::num_loops() {
-  return wuffs_base__image_config__num_loops(this);
 }
 
 inline uint64_t  //
@@ -2678,6 +2662,9 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__image_config* a_dst,
                                         wuffs_base__io_reader a_src);
 
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_gif__decoder__num_animation_loops(wuffs_gif__decoder* self);
+
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
 
@@ -2757,7 +2744,6 @@ struct wuffs_gif__decoder__struct {
 
     struct {
       uint32_t coro_susp_point;
-      uint32_t v_num_loops;
       bool v_ffio;
     } c_decode_image_config[1];
     struct {
@@ -2842,6 +2828,11 @@ struct wuffs_gif__decoder__struct {
   decode_image_config(wuffs_base__image_config* a_dst,
                       wuffs_base__io_reader a_src) {
     return wuffs_gif__decoder__decode_image_config(this, a_dst, a_src);
+  }
+
+  inline uint32_t  //
+  num_animation_loops() {
+    return wuffs_gif__decoder__num_animation_loops(this);
   }
 
   inline uint64_t  //
@@ -6961,13 +6952,11 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   }
   wuffs_base__status status = NULL;
 
-  uint32_t v_num_loops;
   bool v_ffio;
 
   uint32_t coro_susp_point =
       self->private_impl.c_decode_image_config[0].coro_susp_point;
   if (coro_susp_point) {
-    v_num_loops = self->private_impl.c_decode_image_config[0].v_num_loops;
     v_ffio = self->private_impl.c_decode_image_config[0].v_ffio;
   } else {
     v_ffio = false;
@@ -6994,10 +6983,6 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     if (status) {
       goto suspend;
     }
-    v_num_loops = 1;
-    if (self->private_impl.f_seen_num_loops) {
-      v_num_loops = self->private_impl.f_num_loops;
-    }
     v_ffio =
         (!self->private_impl.f_gc_has_transparent_index &&
          (self->private_impl.f_frame_rect_x0 == 0) &&
@@ -7008,7 +6993,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       wuffs_base__image_config__initialize(
           a_dst, 570687496, 0, self->private_impl.f_width,
           self->private_impl.f_height, ((uint64_t)(self->private_impl.f_width)),
-          ((uint64_t)(self->private_impl.f_width)), v_num_loops,
+          ((uint64_t)(self->private_impl.f_width)),
           self->private_impl.f_frame_config_io_position, v_ffio);
     }
     self->private_impl.f_call_sequence = 1;
@@ -7022,7 +7007,6 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_image_config[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode_image_config[0].v_num_loops = v_num_loops;
   self->private_impl.c_decode_image_config[0].v_ffio = v_ffio;
 
   goto exit;
@@ -7031,6 +7015,23 @@ exit:
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
   return status;
+}
+
+// -------- func gif.decoder.num_animation_loops
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_gif__decoder__num_animation_loops(wuffs_gif__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  if (self->private_impl.f_seen_num_loops) {
+    return self->private_impl.f_num_loops;
+  }
+  return 1;
 }
 
 // -------- func gif.decoder.num_decoded_frame_configs

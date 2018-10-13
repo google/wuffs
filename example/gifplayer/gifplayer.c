@@ -307,7 +307,6 @@ const char* play() {
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (first_play) {
-    first_play = false;
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (z) {
@@ -331,7 +330,6 @@ const char* play() {
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
     memset(curr_dst_buffer, 0, dst_len);
-    num_loops_remaining = wuffs_base__image_config__num_loops(&ic);
   }
 
   while (1) {
@@ -404,6 +402,12 @@ const char* play() {
 
     // TODO: should a zero duration mean to show this frame forever?
   }
+
+  if (first_play) {
+    first_play = false;
+    num_loops_remaining = wuffs_gif__decoder__num_animation_loops(&dec);
+  }
+
   return NULL;
 }
 

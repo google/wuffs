@@ -294,10 +294,6 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       RETURN_FAIL("workbuf_len: got %" PRIu64 ", want 160",
                   wuffs_base__image_config__workbuf_len(&ic).max_incl);
     }
-    if (wuffs_base__image_config__num_loops(&ic) != 1) {
-      RETURN_FAIL("num_loops: got %" PRIu32 ", want 1",
-                  wuffs_base__image_config__num_loops(&ic));
-    }
     if (!wuffs_base__image_config__first_frame_is_opaque(&ic)) {
       RETURN_FAIL("first_frame_is_opaque: got false, want true");
     }
@@ -305,6 +301,11 @@ const char* do_test_wuffs_gif_decode(const char* filename,
                                                  global_pixel_slice);
     if (z) {
       RETURN_FAIL("set_from_slice: \"%s\"", z);
+    }
+
+    uint32_t got = wuffs_gif__decoder__num_animation_loops(&dec);
+    if (got != 1) {
+      RETURN_FAIL("num_animation_loops: got %" PRIu32 ", want 1", got);
     }
   }
 
@@ -504,9 +505,10 @@ const char* do_test_wuffs_gif_decode_animated(
       .len = workbuf_len,
   });
 
-  if (wuffs_base__image_config__num_loops(&ic) != want_num_loops) {
-    RETURN_FAIL("num_loops: got %" PRIu32 ", want %" PRIu32,
-                wuffs_base__image_config__num_loops(&ic), want_num_loops);
+  uint32_t got_num_loops = wuffs_gif__decoder__num_animation_loops(&dec);
+  if (got_num_loops != want_num_loops) {
+    RETURN_FAIL("num_loops: got %" PRIu32 ", want %" PRIu32, got_num_loops,
+                want_num_loops);
   }
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
@@ -782,6 +784,70 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   if (z != wuffs_gif__error__bad_header) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", z,
                 wuffs_gif__error__bad_header);
+  }
+  return NULL;
+}
+
+const char* test_wuffs_gif_decode_multiple_loop_counts() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* z =
+      read_file(&src, "../../data/artificial/gif-multiple-loop-counts.gif");
+  if (z) {
+    return z;
+  }
+
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  z = wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  }
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+  z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+  if (z) {
+    RETURN_FAIL("decode_image_config: \"%s\"", z);
+  }
+
+  // See test/data/artificial/gif-multiple-loop-counts.gif.make-artificial.txt
+  // for the want_num_animation_loops source. Note that the GIF wire format's
+  // loop counts are the number of animation loops *after* the first play
+  // through, and Wuffs' are the number *including* the first play through.
+
+  uint32_t want_num_animation_loops[4] = {1, 1, 51, 31};
+
+  uint32_t i;
+  for (i = 0; true; i++) {
+    {
+      z = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
+      if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_num_animation_loops)) {
+        if (z != wuffs_base__warning__end_of_data) {
+          RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i, z);
+        }
+        break;
+      }
+      if (z) {
+        RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i, z);
+      }
+    }
+
+    uint32_t got = wuffs_gif__decoder__num_animation_loops(&dec);
+    uint32_t want = want_num_animation_loops[i];
+    if (got != want) {
+      RETURN_FAIL("num_animation_loops #%" PRIu32 ": got %" PRIu32
+                  ", want %" PRIu32,
+                  i, got, want);
+    }
+  }
+
+  uint32_t got = wuffs_gif__decoder__num_animation_loops(&dec);
+  uint32_t want = 41;
+  if (got != want) {
+    RETURN_FAIL("num_animation_loops #%" PRIu32 ": got %" PRIu32
+                ", want %" PRIu32,
+                i, got, want);
   }
   return NULL;
 }
@@ -1260,6 +1326,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
+    test_wuffs_gif_decode_multiple_loop_counts,              //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //
     test_wuffs_gif_io_position_one_chunk,                    //

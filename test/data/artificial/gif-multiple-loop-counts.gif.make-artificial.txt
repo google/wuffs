@@ -1,0 +1,43 @@
+# Feed this file to script/make-artificial.go
+
+make gif
+
+header
+
+image {
+	imageWidthHeight 2 2
+	palette {
+		0x00 0x00 0xFF
+		0x11 0x00 0xFF
+		0x22 0x00 0xFF
+		0x33 0x00 0xFF
+	}
+}
+
+frame {
+	frameLeftTopWidthHeight 0 0 1 1
+}
+lzw 2 0x00
+
+frame {
+	frameLeftTopWidthHeight 0 0 1 1
+}
+lzw 2 0x00
+
+loopCount 50
+
+frame {
+	frameLeftTopWidthHeight 0 0 1 1
+}
+lzw 2 0x00
+
+loopCount 30
+
+frame {
+	frameLeftTopWidthHeight 0 0 1 1
+}
+lzw 2 0x00
+
+loopCount 40
+
+trailer

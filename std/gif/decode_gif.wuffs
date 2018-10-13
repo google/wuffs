@@ -127,11 +127,6 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
-	var num_loops base.u32 = 1
-	if this.seen_num_loops {
-		num_loops = this.num_loops
-	}
-
 	var ffio base.bool = (not this.gc_has_transparent_index) and
 		(this.frame_rect_x0 == 0) and
 		(this.frame_rect_y0 == 0) and
@@ -150,12 +145,18 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 			height:this.height,
 			workbuf_len0:this.width as base.u64,
 			workbuf_len1:this.width as base.u64,
-			num_loops:num_loops,
 			first_frame_io_position:this.frame_config_io_position,
 			first_frame_is_opaque:ffio)
 	}
 
 	this.call_sequence = 1
+}
+
+pub func decoder.num_animation_loops() base.u32 {
+	if this.seen_num_loops {
+		return this.num_loops
+	}
+	return 1
 }
 
 pub func decoder.num_decoded_frame_configs() base.u64 {
