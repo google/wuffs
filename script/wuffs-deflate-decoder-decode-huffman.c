@@ -126,6 +126,11 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
     0x1FFFFFFFu, 0x3FFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu,
 };
 
+// Uncomment exactly one of these. Choosing between them lets us measure the
+// effect of the table-based mask.
+//#define MASK(n) ((((uint32_t)1) << (n)) - 1)
+#define MASK(n) wuffs_base__width_to_mask_table[n]
+
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
@@ -176,10 +181,8 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Initialize other local variables.
   uint8_t* pdst0 = pdst;
-  uint32_t lmask =
-      wuffs_base__width_to_mask_table[self->private_impl.f_n_huffs_bits[0]];
-  uint32_t dmask =
-      wuffs_base__width_to_mask_table[self->private_impl.f_n_huffs_bits[1]];
+  uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
+  uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
 
 outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
@@ -237,8 +240,7 @@ outer_loop:
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
-      uint32_t mask =
-          wuffs_base__width_to_mask_table[(table_entry >> 4) & 0x0F];
+      uint32_t mask = MASK((table_entry >> 4) & 0x0F);
       table_entry = self->private_impl.f_huffs[0][top + (bits & mask)];
     }
 
@@ -253,7 +255,7 @@ outer_loop:
           n_bits += 8;
         }
 #endif
-        length += bits & wuffs_base__width_to_mask_table[n];
+        length += bits & MASK(n);
         bits >>= n;
         n_bits -= n;
       }
@@ -284,8 +286,7 @@ outer_loop:
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
-      uint32_t mask =
-          wuffs_base__width_to_mask_table[(table_entry >> 4) & 0x0F];
+      uint32_t mask = MASK((table_entry >> 4) & 0x0F);
       table_entry = self->private_impl.f_huffs[1][top + (bits & mask)];
     }
 
@@ -303,7 +304,7 @@ outer_loop:
         n_bits += 8;
       }
 #endif
-      dist_minus_1 += bits & wuffs_base__width_to_mask_table[n];
+      dist_minus_1 += bits & MASK(n);
       bits >>= n;
       n_bits -= n;
     }
@@ -354,7 +355,7 @@ end:
   for (; n_bits >= 8; n_bits -= 8) {
     psrc--;
   }
-  bits &= wuffs_base__width_to_mask_table[n_bits];
+  bits &= MASK(n_bits);
 
   // Save contextual state.
   a_dst.private_impl.buf->meta.wi = pdst - a_dst.private_impl.buf->data.ptr;
