@@ -9571,15 +9571,22 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         v_n_bits |= 24;
       } else {
         while (v_n_bits < v_width) {
-          {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-            if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
-              status = wuffs_base__suspension__short_read;
-              goto suspend;
+          while (((uint64_t)(io1_a_src - iop_a_src)) <= 0) {
+            if (v_j > 0) {
+              self->private_impl.f_flush_j = v_j;
+              WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+              status = wuffs_lzw__decoder__flush(self, a_dst);
+              if (status) {
+                goto suspend;
+              }
+              v_j = 0;
             }
-            uint8_t t_0 = *iop_a_src++;
-            v_bits |= (((uint32_t)(t_0)) << v_n_bits);
+            status = wuffs_base__suspension__short_read;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
           }
+          v_bits |=
+              (((uint32_t)(wuffs_base__load_u8be(iop_a_src))) << v_n_bits);
+          (iop_a_src += 1, wuffs_base__return_empty_struct());
           v_n_bits += 8;
         }
       }
@@ -9654,7 +9661,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         }
         v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
         self->private_impl.f_flush_j = v_j;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_lzw__decoder__flush(self, a_dst);
         if (status) {
           goto suspend;
@@ -9675,7 +9682,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
       }
       v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
       self->private_impl.f_flush_j = v_j;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       status = wuffs_lzw__decoder__flush(self, a_dst);
       if (status) {
         goto suspend;
