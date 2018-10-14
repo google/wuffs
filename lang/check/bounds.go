@@ -416,6 +416,12 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 		}); err != nil {
 			return err
 		}
+
+		// TODO: don't hard code the fact that "x |= n" implies "x >= n", for
+		// constant n.
+		if (op == t.IDPipeEq) && (rhs.ConstValue() != nil) {
+			q.facts.appendFact(a.NewExpr(0, t.IDXBinaryGreaterEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil))
+		}
 	}
 
 	return nil

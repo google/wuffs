@@ -9420,8 +9420,8 @@ exit:
 // ---------------- Status Codes Implementations
 
 const char* wuffs_lzw__error__bad_code = "?lzw: bad code";
-const char* wuffs_lzw__error__internal_error_inconsistent_i_j =
-    "?lzw: internal error: inconsistent i:j";
+const char* wuffs_lzw__error__internal_error_inconsistent_i_o =
+    "?lzw: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -9564,17 +9564,24 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_bits = 0;
     v_n_bits = 0;
     while (true) {
-      while (v_n_bits < v_width) {
-        {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
-            status = wuffs_base__suspension__short_read;
-            goto suspend;
+      if (((uint64_t)(io1_a_src - iop_a_src)) >= 4) {
+        v_bits |= (((uint32_t)(wuffs_base__load_u32le(iop_a_src))) << v_n_bits);
+        (iop_a_src += ((31 - v_n_bits) >> 3),
+         wuffs_base__return_empty_struct());
+        v_n_bits |= 24;
+      } else {
+        while (v_n_bits < v_width) {
+          {
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+              status = wuffs_base__suspension__short_read;
+              goto suspend;
+            }
+            uint8_t t_0 = *iop_a_src++;
+            v_bits |= (((uint32_t)(t_0)) << v_n_bits);
           }
-          uint8_t t_0 = *iop_a_src++;
-          v_bits |= (((uint32_t)(t_0)) << v_n_bits);
+          v_n_bits += 8;
         }
-        v_n_bits += 8;
       }
       v_code = ((v_bits) & ((1 << (v_width)) - 1));
       v_bits >>= v_width;
@@ -9636,6 +9643,16 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         goto exit;
       }
       if (v_j > 4095) {
+        while (v_n_bits >= 8) {
+          v_n_bits -= 8;
+          if (iop_a_src > io0_a_src) {
+            (iop_a_src--, wuffs_base__return_empty_struct());
+          } else {
+            status = wuffs_lzw__error__internal_error_inconsistent_i_o;
+            goto exit;
+          }
+        }
+        v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
         self->private_impl.f_flush_j = v_j;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         status = wuffs_lzw__decoder__flush(self, a_dst);
@@ -9647,6 +9664,16 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     }
   label_0_break:;
     if (v_j > 0) {
+      while (v_n_bits >= 8) {
+        v_n_bits -= 8;
+        if (iop_a_src > io0_a_src) {
+          (iop_a_src--, wuffs_base__return_empty_struct());
+        } else {
+          status = wuffs_lzw__error__internal_error_inconsistent_i_o;
+          goto exit;
+        }
+      }
+      v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
       self->private_impl.f_flush_j = v_j;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       status = wuffs_lzw__decoder__flush(self, a_dst);
@@ -9738,7 +9765,7 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
     v_j = self->private_impl.f_flush_j;
     while (true) {
       if (v_i > v_j) {
-        status = wuffs_lzw__error__internal_error_inconsistent_i_j;
+        status = wuffs_lzw__error__internal_error_inconsistent_i_o;
         goto exit;
       }
       v_s = wuffs_base__slice_u8__subslice_ij(

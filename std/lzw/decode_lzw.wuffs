@@ -14,7 +14,7 @@
 
 pub status "?bad code"
 
-pri status "?internal error: inconsistent i:j"
+pri status "?internal error: inconsistent I/O"
 
 pub struct decoder?(
 	literal_width base.u32[..8],
@@ -60,20 +60,27 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 	// These variables produce src's bits in Least Significant Bits order.
 	var bits base.u32
-	var n_bits base.u32
+	var n_bits base.u32[..31]
 
-	while true,
-		pre n_bits < 8,
-	{
-		assert n_bits < (width + 8) via "a < (b + c): a < c; 0 <= b"()
-		while n_bits < width,
-			inv n_bits < (width + 8),
-			post n_bits >= width,
-		{
-			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
-			bits |= (args.src.read_u8!??() as base.u32) << n_bits
-			n_bits += 8
+	while true {
+		if args.src.available() >= 4 {
+			// Read 4 bytes, using the "Variant 4" technique of
+			// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
+			bits |= (args.src.peek_u32le() as base.u32) ~mod<< n_bits
+			args.src.skip_fast!(actual:(31 - n_bits) >> 3, worst_case:3)
+			n_bits |= 24
+			assert width <= n_bits via "a <= b: a <= c; c <= b"(c:12)
+			assert n_bits >= width via "a >= b: b <= a"()
+		} else {
+			while n_bits < width,
+				post n_bits >= width,
+			{
+				assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
+				bits |= (args.src.read_u8!??() as base.u32) << n_bits
+				n_bits += 8
+			}
 		}
+
 		var code base.u32[..4095] = bits.low_bits(n:width)
 		bits >>= width
 		n_bits -= width
@@ -100,7 +107,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			save_code = end_code
 			prev_code = 0
 			width = literal_width + 1
-
 		} else if code <= save_code {
 			var c base.u32[..4095] = code
 			if code == save_code {
@@ -119,7 +125,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			j = (o + 1) & 8191
 
 			while c >= clear_code,
-				inv n_bits < 8,
 				post c < 256 via "a < b: a < c; c <= b"(c:clear_code),
 			{
 				this.output[o] = this.suffixes[c]
@@ -155,6 +160,17 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		// less than 4096 and output's length is 8192, so a conservative
 		// threshold is ensuring that j <= 4095.
 		if j > 4095 {
+			// Rewind args.src, if we've read too many bits.
+			while n_bits >= 8 {
+				n_bits -= 8
+				if args.src.can_undo_byte() {
+					args.src.undo_byte!()
+				} else {
+					return status "?internal error: inconsistent I/O"
+				}
+			}
+			bits = bits.low_bits(n:n_bits)
+
 			this.flush_j = j
 			this.flush!??(dst:args.dst)
 			j = 0
@@ -162,6 +178,17 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	}
 
 	if j > 0 {
+		// Rewind args.src, if we've read too many bits.
+		while n_bits >= 8 {
+			n_bits -= 8
+			if args.src.can_undo_byte() {
+				args.src.undo_byte!()
+			} else {
+				return status "?internal error: inconsistent I/O"
+			}
+		}
+		bits = bits.low_bits(n:n_bits)
+
 		this.flush_j = j
 		this.flush!??(dst:args.dst)
 	}
@@ -172,7 +199,7 @@ pri func decoder.flush!??(dst base.io_writer) {
 	var j base.u32[..8191] = this.flush_j
 	while true {
 		if i > j {
-			return status "?internal error: inconsistent i:j"
+			return status "?internal error: inconsistent I/O"
 		}
 		var s slice base.u8 = this.output[i:j]
 		var n base.u64 = args.dst.copy_from_slice!(s:s)
