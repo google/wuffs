@@ -149,7 +149,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		// call (to a static inline function) instead of a struct literal, to
 		// avoid a "expression result unused" compiler error.
 		b.writes("(iop_a_src += ")
-		if err := g.writeExpr(b, args[1].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
 			return err
 		}
 		b.writes(", wuffs_base__return_empty_struct())")
