@@ -14,11 +14,15 @@
 
 pub status "?bad code"
 
+pri status "?internal error: inconsistent i:j"
+
 pub struct decoder?(
 	literal_width base.u32[..8],
-	stack array[4096] base.u8,
+	flush_j base.u32[..8191],
 	suffixes array[4096] base.u8,
 	prefixes array[4096] base.u16[..4095],
+	prefix_lengths array[4096] base.u16[..4095],
+	output array[8192] base.u8,
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
@@ -43,7 +47,18 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var prev_code base.u32[..4095]
 	var width base.u32[..12] = literal_width + 1
 
-	// These variables yield src's bits in Least Significant Bits order.
+	// First, use the j variable to iterate over prefix_lengths.
+	var j base.u32[..8191]
+	while j < clear_code {
+		assert j < 256 via "a < b: a < c; c <= b"(c:clear_code)
+		this.prefix_lengths[j] = 0
+		j += 1
+	}
+	// For the rest of this function, j is such that output[:j] accumulates the
+	// decoded output to write (in batches) to args.dst.
+	j = 0
+
+	// These variables produce src's bits in Least Significant Bits order.
 	var bits base.u32
 	var n_bits base.u32
 
@@ -65,10 +80,12 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 		if code < clear_code {
 			assert code < 256 via "a < b: a < c; c <= b"(c:clear_code)
-			args.dst.write_u8!??(x:code as base.u8)
+			this.output[j] = code as base.u8
+			j = (j + 1) & 8191
 			if save_code <= 4095 {
 				this.suffixes[save_code] = code as base.u8
 				this.prefixes[save_code] = prev_code as base.u16
+				this.prefix_lengths[save_code] = (this.prefix_lengths[prev_code] + 1) & 4095
 				save_code += 1
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1
@@ -78,53 +95,50 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 		} else if code <= end_code {
 			if code == end_code {
-				return
+				break
 			}
 			save_code = end_code
 			prev_code = 0
 			width = literal_width + 1
 
 		} else if code <= save_code {
-			var s base.u32[..4095] = 4095
 			var c base.u32[..4095] = code
-
 			if code == save_code {
-				s -= 1
 				c = prev_code
 			}
+
+			// Letting old_j and new_j denote the values of j before and after
+			// these two lines of code, the decoded bytes will be written to
+			// output[old_j:new_j]. They will be written back-to-front,
+			// starting by writing output[o], also known as output[new_j - 1].
+			//
+			// In the special case that code == save_code, the decoded bytes
+			// contain an extra copy (at the end) of the first byte, and will
+			// be written to output[old_j:new_j + 1].
+			var o base.u32[..8191] = (j + (this.prefix_lengths[c] as base.u32)) & 8191
+			j = (o + 1) & 8191
 
 			while c >= clear_code,
 				inv n_bits < 8,
 				post c < 256 via "a < b: a < c; c <= b"(c:clear_code),
 			{
-				this.stack[s] = this.suffixes[c]
-				// The bitwise-and with 4095 is algorithmically a no-op, but is
-				// necessary for the overflow checker.
-				s = (s ~mod- 1) & 4095
+				this.output[o] = this.suffixes[c]
+				// This line is essentially "o -= 1". The "& 8191" is a no-op
+				// in practice, but is necessary for the overflow checker.
+				o = (o ~mod- 1) & 8191
 				c = this.prefixes[c] as base.u32
 			}
-			this.stack[s] = c as base.u8
+			this.output[o] = c as base.u8
 
 			if code == save_code {
-				this.stack[4095] = c as base.u8
-			}
-
-			while true,
-				inv n_bits < 8,
-				inv c < 256,
-			{
-				var expansion slice base.u8 = this.stack[s:]
-				var n_copied base.u64 = args.dst.copy_from_slice!(s:expansion)
-				if n_copied == expansion.length() {
-					break
-				}
-				s = (s + ((n_copied & 4095) as base.u32)) & 4095
-				yield status "$short write"
+				this.output[j] = c as base.u8
+				j = (j + 1) & 8191
 			}
 
 			if save_code <= 4095 {
 				this.suffixes[save_code] = c as base.u8
 				this.prefixes[save_code] = prev_code as base.u16
+				this.prefix_lengths[save_code] = (this.prefix_lengths[prev_code] + 1) & 4095
 				save_code += 1
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1
@@ -135,5 +149,37 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		} else {
 			return status "?bad code"
 		}
+
+		// Flush the output if it could be too full to contain the entire
+		// decoding of the next code. The longest possible decoding is slightly
+		// less than 4096 and output's length is 8192, so a conservative
+		// threshold is ensuring that j <= 4095.
+		if j > 4095 {
+			this.flush_j = j
+			this.flush!??(dst:args.dst)
+			j = 0
+		}
+	}
+
+	if j > 0 {
+		this.flush_j = j
+		this.flush!??(dst:args.dst)
+	}
+}
+
+pri func decoder.flush!??(dst base.io_writer) {
+	var i base.u32[..8191]
+	var j base.u32[..8191] = this.flush_j
+	while true {
+		if i > j {
+			return status "?internal error: inconsistent i:j"
+		}
+		var s slice base.u8 = this.output[i:j]
+		var n base.u64 = args.dst.copy_from_slice!(s:s)
+		if n == s.length() {
+			return
+		}
+		i = (i + ((n & 8191) as base.u32)) & 8191
+		yield status "$short write"
 	}
 }
