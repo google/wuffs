@@ -2515,7 +2515,6 @@ extern "C" {
 // ---------------- Status Codes
 
 extern const char* wuffs_lzw__error__bad_code;
-extern const char* wuffs_lzw__error__cyclical_prefix_chain;
 
 // ---------------- Public Consts
 
@@ -9413,8 +9412,6 @@ exit:
 // ---------------- Status Codes Implementations
 
 const char* wuffs_lzw__error__bad_code = "?lzw: bad code";
-const char* wuffs_lzw__error__cyclical_prefix_chain =
-    "?lzw: cyclical prefix chain";
 
 // ---------------- Private Consts
 
@@ -9618,11 +9615,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         }
         while (v_c >= v_clear_code) {
           self->private_impl.f_stack[v_s] = self->private_impl.f_suffixes[v_c];
-          if (v_s == 0) {
-            status = wuffs_lzw__error__cyclical_prefix_chain;
-            goto exit;
-          }
-          v_s -= 1;
+          v_s = ((v_s - 1) & 4095);
           v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
         }
         self->private_impl.f_stack[v_s] = ((uint8_t)(v_c));

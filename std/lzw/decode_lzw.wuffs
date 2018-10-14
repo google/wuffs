@@ -13,7 +13,6 @@
 // limitations under the License.
 
 pub status "?bad code"
-pub status "?cyclical prefix chain"
 
 pub struct decoder?(
 	literal_width base.u32[..8],
@@ -99,10 +98,9 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				post c < 256 via "a < b: a < c; c <= b"(c:clear_code),
 			{
 				this.stack[s] = this.suffixes[c]
-				if s == 0 {
-					return status "?cyclical prefix chain"
-				}
-				s -= 1
+				// The bitwise-and with 4095 is algorithmically a no-op, but is
+				// necessary for the overflow checker.
+				s = (s ~mod- 1) & 4095
 				c = this.prefixes[c] as base.u32
 			}
 			this.stack[s] = c as base.u8
