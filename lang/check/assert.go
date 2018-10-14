@@ -66,12 +66,6 @@ func (z *facts) appendFact(fact *a.Expr) {
 	}
 
 	switch fact.Operator() {
-	case 0:
-		for _, x := range *z {
-			if op, other := otherHandSide(x, fact); op == t.IDXBinaryEqEq {
-				z.appendFact(other)
-			}
-		}
 	case t.IDXBinaryAnd:
 		z.appendFact(fact.LHS().AsExpr())
 		z.appendFact(fact.RHS().AsExpr())
