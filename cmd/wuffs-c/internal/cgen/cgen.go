@@ -40,8 +40,11 @@ import (
 )
 
 var (
-	zero = big.NewInt(0)
-	one  = big.NewInt(1)
+	zero  = big.NewInt(0)
+	one   = big.NewInt(1)
+	eight = big.NewInt(8)
+
+	mibi = big.NewInt(1 << 20)
 )
 
 // Prefixes are prepended to names to form a namespace and to avoid e.g.

@@ -35,6 +35,8 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryGreaterThan, xb, xa); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
 		return nil
 	}},
 
@@ -55,6 +57,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -75,6 +80,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryEqEq, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -95,6 +103,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -115,6 +126,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -135,6 +149,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -147,6 +164,8 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, xb, xa); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
 		return nil
 	}},
 
@@ -159,6 +178,8 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryGreaterEq, xb, xa); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
 		return nil
 	}},
 
@@ -179,6 +200,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -199,6 +223,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryEqEq, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -219,6 +246,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xc, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -231,6 +261,8 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xb, xa); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
 		return nil
 	}},
 
@@ -251,6 +283,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, xb); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 
@@ -284,6 +319,29 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xc0, xc); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xb0
+		_ = xc
+		_ = xc0
+		return nil
+	}},
+
+	{`"a <= (a + b): 0 <= b"`, func(q *checker, n *a.Assert) error {
+		op, xa, t0 := parseBinaryOp(n.Condition())
+		if op != t.IDXBinaryLessEq {
+			return errFailed
+		}
+		op, xa, xb := parseBinaryOp(t0)
+		if op != t.IDXBinaryPlus {
+			return errFailed
+		}
+		// 0 <= b
+		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, xb); err != nil {
+			return err
+		}
+		_ = xa
+		_ = xb
 		return nil
 	}},
 
@@ -301,6 +359,9 @@ var reasons = [...]struct {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, xa, t1); err != nil {
 			return err
 		}
+		_ = xa
+		_ = xb
+		_ = xc
 		return nil
 	}},
 }

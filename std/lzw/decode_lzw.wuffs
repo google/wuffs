@@ -19,10 +19,10 @@ pri status "?internal error: inconsistent I/O"
 pub struct decoder?(
 	literal_width base.u32[..8],
 	flush_j base.u32[..8191],
-	suffixes array[4096] base.u8,
+	suffixes array[4096] array[8] base.u8,
 	prefixes array[4096] base.u16[..4095],
-	prefix_lengths array[4096] base.u16[..4095],
-	output array[8192] base.u8,
+	prefix_lengths array[4096] base.u16[..4095],  // TODO: rename this field.
+	output array[8192 + 7] base.u8,
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
@@ -44,7 +44,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	// next back-reference expands to. The README.md file also calls this value
 	// `max`. 4096 means do not save.
 	var save_code base.u32[..4096] = end_code
-	var prev_code base.u32[..4095]
+	var prev_code base.u32[..4095] = end_code
 	var width base.u32[..12] = literal_width + 1
 
 	// First, use the j variable to iterate over prefix_lengths.
@@ -52,6 +52,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	while j < clear_code {
 		assert j < 256 via "a < b: a < c; c <= b"(c:clear_code)
 		this.prefix_lengths[j] = 0
+		this.suffixes[j][0] = j as base.u8
 		j += 1
 	}
 	// For the rest of this function, j is such that output[:j] accumulates the
@@ -109,9 +110,18 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			this.output[j] = code as base.u8
 			j = (j + 1) & 8191
 			if save_code <= 4095 {
-				this.suffixes[save_code] = code as base.u8
-				this.prefixes[save_code] = prev_code as base.u16
-				this.prefix_lengths[save_code] = (this.prefix_lengths[prev_code] + 1) & 4095
+				var lm1_a base.u16[..4095] = (this.prefix_lengths[prev_code] + 1) & 4095
+				this.prefix_lengths[save_code] = lm1_a
+
+				if (lm1_a % 8) != 0 {
+					this.prefixes[save_code] = this.prefixes[prev_code]
+					this.suffixes[save_code] = this.suffixes[prev_code]
+					this.suffixes[save_code][lm1_a % 8] = code as base.u8
+				} else {
+					this.prefixes[save_code] = prev_code as base.u16
+					this.suffixes[save_code][0] = code as base.u8
+				}
+
 				save_code += 1
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1
@@ -124,8 +134,9 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				break
 			}
 			save_code = end_code
-			prev_code = 0
+			prev_code = end_code
 			width = literal_width + 1
+
 		} else if code <= save_code {
 			var c base.u32[..4095] = code
 			if code == save_code {
@@ -134,35 +145,50 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 			// Letting old_j and new_j denote the values of j before and after
 			// these two lines of code, the decoded bytes will be written to
-			// output[old_j:new_j]. They will be written back-to-front,
-			// starting by writing output[o], also known as output[new_j - 1].
+			// output[old_j:new_j]. They will be written back-to-front, 8 bytes
+			// at a time, starting by writing output[o:o + 8], which will
+			// contain output[new_j - 1].
 			//
 			// In the special case that code == save_code, the decoded bytes
 			// contain an extra copy (at the end) of the first byte, and will
 			// be written to output[old_j:new_j + 1].
-			var o base.u32[..8191] = (j + (this.prefix_lengths[c] as base.u32)) & 8191
-			j = (o + 1) & 8191
+			var o base.u32[..8191] = (j + ((this.prefix_lengths[c] as base.u32) & 0xFFFFFFF8)) & 8191
+			j = (j + 1 + (this.prefix_lengths[c] as base.u32)) & 8191
 
-			while c >= clear_code,
-				post c < 256 via "a < b: a < c; c <= b"(c:clear_code),
-			{
-				this.output[o] = this.suffixes[c]
-				// This line is essentially "o -= 1". The "& 8191" is a no-op
+			var steps base.u32 = (this.prefix_lengths[c] as base.u32) >> 3
+			while true {
+				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
+				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][0:0 + 8])
+				if steps <= 0 {
+					break
+				}
+				steps -= 1
+
+				// This line is essentially "o -= 8". The "& 8191" is a no-op
 				// in practice, but is necessary for the overflow checker.
-				o = (o ~mod- 1) & 8191
+				o = (o ~mod- 8) & 8191
 				c = this.prefixes[c] as base.u32
 			}
-			this.output[o] = c as base.u8
+			var first_byte base.u8 = this.suffixes[c][0]
 
 			if code == save_code {
-				this.output[j] = c as base.u8
+				this.output[j] = first_byte
 				j = (j + 1) & 8191
 			}
 
 			if save_code <= 4095 {
-				this.suffixes[save_code] = c as base.u8
-				this.prefixes[save_code] = prev_code as base.u16
-				this.prefix_lengths[save_code] = (this.prefix_lengths[prev_code] + 1) & 4095
+				var lm1_b base.u16[..4095] = (this.prefix_lengths[prev_code] + 1) & 4095
+				this.prefix_lengths[save_code] = lm1_b
+
+				if (lm1_b % 8) != 0 {
+					this.prefixes[save_code] = this.prefixes[prev_code]
+					this.suffixes[save_code] = this.suffixes[prev_code]
+					this.suffixes[save_code][lm1_b % 8] = first_byte
+				} else {
+					this.prefixes[save_code] = prev_code as base.u16
+					this.suffixes[save_code][0] = first_byte as base.u8
+				}
+
 				save_code += 1
 				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
 					width += 1

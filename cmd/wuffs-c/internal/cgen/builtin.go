@@ -22,7 +22,10 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-var errNoSuchBuiltin = errors.New("cgen: internal error: no such built-in")
+var (
+	errNoSuchBuiltin             = errors.New("cgen: internal error: no such built-in")
+	errOptimizationNotApplicable = errors.New("cgen: internal error: optimization not applicable")
+)
 
 func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
 	if n.Operator() != t.IDOpenParen {
@@ -323,6 +326,10 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	switch method {
 	case t.IDCopyFromSlice:
+		if err := g.writeBuiltinSliceCopyFromSlice8(b, recv, method, args, rp, depth); err != errOptimizationNotApplicable {
+			return err
+		}
+
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__copy_from_slice(")
 		if err := g.writeExpr(b, recv, rp, depth); err != nil {
@@ -349,6 +356,57 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		return g.writeArgs(b, args, rp, depth)
 	}
 	return errNoSuchBuiltin
+}
+
+// writeBuiltinSliceCopyFromSlice8 writes an optimized version of:
+//
+// foo[fIndex:fIndex + 8].copy_from_slice!(s:bar[bIndex:bIndex + 8])
+func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+	if method != t.IDCopyFromSlice || len(args) != 1 {
+		return errOptimizationNotApplicable
+	}
+	foo, fIndex := matchFooIndexIndexPlus8(recv)
+	bar, bIndex := matchFooIndexIndexPlus8(args[0].AsArg().Value())
+	if foo == nil || bar == nil {
+		return errOptimizationNotApplicable
+	}
+	b.writes("memcpy((")
+	if err := g.writeExpr(b, foo, rp, depth); err != nil {
+		return err
+	}
+	b.writes(")+(")
+	if err := g.writeExpr(b, fIndex, rp, depth); err != nil {
+		return err
+	}
+	b.writes("),(")
+	if err := g.writeExpr(b, bar, rp, depth); err != nil {
+		return err
+	}
+	b.writes(")+(")
+	if err := g.writeExpr(b, bIndex, rp, depth); err != nil {
+		return err
+	}
+	// TODO: don't assume that the slice is a slice of base.u8.
+	b.writes("), 8)")
+	return nil
+}
+
+// matchFooIndexIndexPlus8 matches n with "foo[index:index + 8]". It returns
+// nil values if there isn't a match.
+func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
+	if n.Operator() != t.IDColon {
+		return nil, nil
+	}
+	foo = n.LHS().AsExpr()
+	index = n.MHS().AsExpr()
+	rhs := n.RHS().AsExpr()
+	if index == nil || rhs == nil || rhs.Operator() != t.IDXBinaryPlus || !rhs.LHS().AsExpr().Eq(index) {
+		return nil, nil
+	}
+	if cv := rhs.RHS().AsExpr().ConstValue(); cv == nil || cv.Cmp(eight) != 0 {
+		return nil, nil
+	}
+	return foo, index
 }
 
 func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {

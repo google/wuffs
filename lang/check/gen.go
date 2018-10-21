@@ -26,6 +26,7 @@ import (
 	"go/format"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -48,6 +49,8 @@ var reasons = [...]string{
 
 	"a < (b + c): a < c; 0 <= b",
 	"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c",
+
+	"a <= (a + b): 0 <= b",
 
 	"(a + b) <= c: a <= (c - b)",
 }
@@ -106,6 +109,17 @@ func gen(reason string) error {
 		req = strings.TrimSpace(req)
 		if err := genReq(req); err != nil {
 			return fmt.Errorf("bad req %q: %v", req, err)
+		}
+	}
+
+	{
+		namesAsList := []string(nil)
+		for name := range names {
+			namesAsList = append(namesAsList, name)
+		}
+		sort.Strings(namesAsList)
+		for _, name := range namesAsList {
+			fmt.Fprintf(&out, "_ = x%s\n", name)
 		}
 	}
 

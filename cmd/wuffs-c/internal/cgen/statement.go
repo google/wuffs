@@ -98,26 +98,43 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 	if err := g.writeSuspendibles(b, n.RHS(), depth); err != nil {
 		return err
 	}
-	opName, tilde := "", false
+	opName, closer := "", ""
 
-	op := n.Operator()
-	switch op {
-	case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-		uBits := uintBits(n.LHS().MType().QID())
-		if uBits == 0 {
-			return fmt.Errorf("unsupported tilde-operator type %q", n.LHS().MType().Str(g.tm))
-		}
-		uOp := "add"
-		if op != t.IDTildeSatPlusEq {
-			uOp = "sub"
-		}
-		b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-		opName, tilde = ",", true
+	if lTyp := n.LHS().MType(); lTyp.IsNumType() || lTyp.IsBool() || lTyp.IsSliceType() {
+		op := n.Operator()
+		switch op {
+		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+			uBits := uintBits(n.LHS().MType().QID())
+			if uBits == 0 {
+				return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
+			}
+			uOp := "add"
+			if op != t.IDTildeSatPlusEq {
+				uOp = "sub"
+			}
+			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+			opName, closer = ",", ")"
 
-	default:
-		opName = cOpName(op)
-		if opName == "" {
-			return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+		default:
+			opName = cOpName(op)
+			if opName == "" {
+				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+			}
+		}
+	} else {
+		if lTyp.IsArrayType() {
+			if nElem := lTyp.ArrayLength().ConstValue(); nElem.Sign() > 0 && nElem.Cmp(mibi) <= 0 {
+				if elemTyp := lTyp.Inner(); elemTyp.IsNumType() {
+					if nBits := uintBits(elemTyp.QID()); nBits != 0 {
+						b.writes("memcpy(")
+						opName, closer = ",", fmt.Sprintf(", %d)", nElem.Int64()*int64(nBits/8))
+					}
+				}
+			}
+		}
+
+		if closer == "" {
+			return fmt.Errorf("unsupported assignment type %q", lTyp.Str(g.tm))
 		}
 	}
 
@@ -128,9 +145,7 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 	if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, depth); err != nil {
 		return err
 	}
-	if tilde {
-		b.writeb(')')
-	}
+	b.writes(closer)
 	b.writes(";\n")
 	return nil
 }
