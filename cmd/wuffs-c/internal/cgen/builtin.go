@@ -374,25 +374,29 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	if err := g.writeExpr(b, foo, rp, depth); err != nil {
 		return err
 	}
-	b.writes(")+(")
-	if err := g.writeExpr(b, fIndex, rp, depth); err != nil {
-		return err
+	if fIndex != nil {
+		b.writes(")+(")
+		if err := g.writeExpr(b, fIndex, rp, depth); err != nil {
+			return err
+		}
 	}
 	b.writes("),(")
 	if err := g.writeExpr(b, bar, rp, depth); err != nil {
 		return err
 	}
-	b.writes(")+(")
-	if err := g.writeExpr(b, bIndex, rp, depth); err != nil {
-		return err
+	if bIndex != nil {
+		b.writes(")+(")
+		if err := g.writeExpr(b, bIndex, rp, depth); err != nil {
+			return err
+		}
 	}
 	// TODO: don't assume that the slice is a slice of base.u8.
 	b.writes("), 8)")
 	return nil
 }
 
-// matchFooIndexIndexPlus8 matches n with "foo[index:index + 8]". It returns
-// nil values if there isn't a match.
+// matchFooIndexIndexPlus8 matches n with "foo[index:index + 8]" or "foo[:8]".
+// It returns a nil foo if there isn't a match.
 func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
 	if n.Operator() != t.IDColon {
 		return nil, nil
@@ -400,10 +404,19 @@ func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
 	foo = n.LHS().AsExpr()
 	index = n.MHS().AsExpr()
 	rhs := n.RHS().AsExpr()
-	if index == nil || rhs == nil || rhs.Operator() != t.IDXBinaryPlus || !rhs.LHS().AsExpr().Eq(index) {
+	if rhs == nil {
 		return nil, nil
 	}
-	if cv := rhs.RHS().AsExpr().ConstValue(); cv == nil || cv.Cmp(eight) != 0 {
+
+	if index == nil {
+		// No-op.
+	} else if rhs.Operator() != t.IDXBinaryPlus || !rhs.LHS().AsExpr().Eq(index) {
+		return nil, nil
+	} else {
+		rhs = rhs.RHS().AsExpr()
+	}
+
+	if cv := rhs.ConstValue(); cv == nil || cv.Cmp(eight) != 0 {
 		return nil, nil
 	}
 	return foo, index

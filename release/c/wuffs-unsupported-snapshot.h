@@ -9656,7 +9656,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         v_steps = (((uint32_t)(self->private_impl.f_lm1s[v_c])) >> 3);
         while (true) {
           memcpy((self->private_impl.f_output) + (v_o),
-                 (self->private_impl.f_suffixes[v_c]) + (0), 8);
+                 (self->private_impl.f_suffixes[v_c]), 8);
           if (v_steps <= 0) {
             goto label_2_break;
           }

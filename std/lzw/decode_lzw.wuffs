@@ -160,7 +160,12 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			var steps base.u32 = (this.lm1s[c] as base.u32) >> 3
 			while true {
 				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
-				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][0:0 + 8])
+
+				// The final "8" is redundant semantically, but helps the
+				// wuffs-c code generator recognize that both slices have the
+				// same constant length, and hence produce efficient C code.
+				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][:8])
+
 				if steps <= 0 {
 					break
 				}
