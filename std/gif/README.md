@@ -200,10 +200,9 @@ The final byte is 0x3B.
 
 # LZW (Lempel Ziv Welch) Compression
 
-LZW is a general purpose compression algorithm, not specific to GIF or even to
-graphics. In practice, there are two incompatible implementations, LSB (Least
-Significant Bits) and MSB (Most Significant Bits) first. The GIF format uses
-LSB first. The PDF and TIFF formats use MSB first, but are not discussed here.
+See `std/lzw/README.md` for a description of LZW: a general purpose compression
+algorithm. Below is a detailed decoding of the LZW data from the Wire Format
+Worked Example, deconstructed above.
 
 It is not an official format, but the
 `test/data/bricks-nodither.indexes.giflzw` file contains the extracted "Pixel
@@ -266,8 +265,8 @@ Each code decodes to either a literal value (one byte), a back-reference
 data stream.
 
 The first `1<<l2lw` codes are literal codes, where `l2lw` is the
-`log2(literal_width)` mentioned above. Valid `l2lw` values are between 2 and 8
-inclusive.
+`log2(literal_width)` mentioned above. For GIF's flavor of LZW, valid `l2lw`
+values are between 2 and 8 inclusive.
 
 For example, if `l2lw == 8`, then the first 256 codes are literal codes: the 0
 code decodes one 0x00 byte, the 1 code decodes one 0x01 byte, etc. The next
