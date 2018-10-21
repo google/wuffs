@@ -1177,9 +1177,14 @@ const char* test_mimic_gif_decode_hat() {
   return do_test_mimic_gif_decode("../../data/hat.gif");
 }
 
-const char* test_mimic_gif_decode_hibiscus() {
+const char* test_mimic_gif_decode_hibiscus_primitive() {
   CHECK_FOCUS(__func__);
-  return do_test_mimic_gif_decode("../../data/hibiscus.gif");
+  return do_test_mimic_gif_decode("../../data/hibiscus.primitive.gif");
+}
+
+const char* test_mimic_gif_decode_hibiscus_regular() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_gif_decode("../../data/hibiscus.regular.gif");
 }
 
 const char* test_mimic_gif_decode_hippopotamus_interlaced() {
@@ -1256,14 +1261,27 @@ const char* bench_wuffs_gif_decode_10k() {
   return do_bench_gif_decode(wuffs_gif_decode, "../../data/hat.gif", 100);
 }
 
-const char* bench_wuffs_gif_decode_100k() {
+const char* bench_wuffs_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "../../data/hibiscus.gif", 10);
+  return do_bench_gif_decode(wuffs_gif_decode,
+                             "../../data/hibiscus.primitive.gif", 15);
+}
+
+const char* bench_wuffs_gif_decode_100k_realistic() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(wuffs_gif_decode,
+                             "../../data/hibiscus.regular.gif", 10);
 }
 
 const char* bench_wuffs_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(wuffs_gif_decode, "../../data/harvesters.gif", 1);
+}
+
+const char* bench_wuffs_gif_decode_anim_screencap() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(wuffs_gif_decode,
+                             "../../data/gifplayer-muybridge.gif", 1);
 }
 
   // ---------------- Mimic Benches
@@ -1287,14 +1305,27 @@ const char* bench_mimic_gif_decode_10k() {
   return do_bench_gif_decode(mimic_gif_decode, "../../data/hat.gif", 100);
 }
 
-const char* bench_mimic_gif_decode_100k() {
+const char* bench_mimic_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "../../data/hibiscus.gif", 10);
+  return do_bench_gif_decode(mimic_gif_decode,
+                             "../../data/hibiscus.primitive.gif", 15);
+}
+
+const char* bench_mimic_gif_decode_100k_realistic() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(mimic_gif_decode,
+                             "../../data/hibiscus.regular.gif", 10);
 }
 
 const char* bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(mimic_gif_decode, "../../data/harvesters.gif", 1);
+}
+
+const char* bench_mimic_gif_decode_anim_screencap() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(mimic_gif_decode,
+                             "../../data/gifplayer-muybridge.gif", 1);
 }
 
 #endif  // WUFFS_MIMIC
@@ -1341,7 +1372,8 @@ proc tests[] = {
     test_mimic_gif_decode_gifplayer_muybridge,      //
     test_mimic_gif_decode_harvesters,               //
     test_mimic_gif_decode_hat,                      //
-    test_mimic_gif_decode_hibiscus,                 //
+    test_mimic_gif_decode_hibiscus_primitive,       //
+    test_mimic_gif_decode_hibiscus_regular,         //
     test_mimic_gif_decode_hippopotamus_interlaced,  //
     test_mimic_gif_decode_hippopotamus_regular,     //
     test_mimic_gif_decode_muybridge,                //
@@ -1355,19 +1387,23 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_gif_decode_1k_bw,     //
-    bench_wuffs_gif_decode_1k_color,  //
-    bench_wuffs_gif_decode_10k,       //
-    bench_wuffs_gif_decode_100k,      //
-    bench_wuffs_gif_decode_1000k,     //
+    bench_wuffs_gif_decode_1k_bw,            //
+    bench_wuffs_gif_decode_1k_color,         //
+    bench_wuffs_gif_decode_10k,              //
+    bench_wuffs_gif_decode_100k_artificial,  //
+    bench_wuffs_gif_decode_100k_realistic,   //
+    bench_wuffs_gif_decode_1000k,            //
+    bench_wuffs_gif_decode_anim_screencap,   //
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_gif_decode_1k_bw,     //
-    bench_mimic_gif_decode_1k_color,  //
-    bench_mimic_gif_decode_10k,       //
-    bench_mimic_gif_decode_100k,      //
-    bench_mimic_gif_decode_1000k,     //
+    bench_mimic_gif_decode_1k_bw,            //
+    bench_mimic_gif_decode_1k_color,         //
+    bench_mimic_gif_decode_10k,              //
+    bench_mimic_gif_decode_100k_artificial,  //
+    bench_mimic_gif_decode_100k_realistic,   //
+    bench_mimic_gif_decode_1000k,            //
+    bench_mimic_gif_decode_anim_screencap,   //
 
 #endif  // WUFFS_MIMIC
 

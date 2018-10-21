@@ -41,10 +41,16 @@ hat.\* are various encodings of a photo of "Self-Portrait with a Straw Hat
 Museum of art. `http://www.metmuseum.org/art/collection/search/436532` lists
 that image as in the public domain.
 
-hibiscus.\* are various encodings of a photo of "Hibiscus and Parrots" by Louis
-Comfort Tiffany, held by the Metropolitan Museum of Art.
+hibiscus.regular.\* are various encodings of a photo of "Hibiscus and Parrots"
+by Louis Comfort Tiffany, held by the Metropolitan Museum of Art.
 `http://www.metmuseum.org/art/collection/search/13503` lists that image as in
 the public domain.
+
+hibiscus.primitive.\* is the result of running the hibiscus.regular.png image
+through `github.com/fogleman/primitive` and other programs:
+  - `primitive -i hibiscus.regular.png -o hibiscus.primitive.svg -s 442 -n 32`
+  - `inkscape -z -e hibiscus.primitive.png hibiscus.primitive.svg`
+  - Various invocations of `convert` and `cwebp`
 
 hippopotamus.\* are various encodings of a cropping of a photo of "Hippopotamus
 (William)", held by the Metropolitan Museum of Art.
