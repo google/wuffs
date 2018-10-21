@@ -3419,6 +3419,18 @@ wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
   p[7] = x >> 56;
 }
 
+  // --------
+
+  // TODO: do we need to care about (1 << 32) being re-interpreted as (1 << 0)
+  // on some architectures??
+  //
+  // Should the first "1" be "(uint32_t)1"?
+
+#define WUFFS_BASE__LOW_BITS_MASK__U8(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U16(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U32(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U64(n) ((1 << (n)) - 1)
+
 // --------
 
 static inline void  //
@@ -3888,7 +3900,7 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
     self->private_impl.f_started = true;
     self->private_impl.f_state = 1;
   }
-  v_s1 = ((self->private_impl.f_state) & ((1 << (16)) - 1));
+  v_s1 = ((self->private_impl.f_state) & 0xFFFF);
   v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
   while (((uint64_t)(a_x.len)) > 0) {
     v_remaining = ((wuffs_base__slice_u8){});
@@ -5365,12 +5377,11 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
       }
       v_length = t_1;
     }
-    if ((((v_length) & ((1 << (16)) - 1)) + ((v_length) >> (32 - (16)))) !=
-        65535) {
+    if ((((v_length)&0xFFFF) + ((v_length) >> (32 - (16)))) != 65535) {
       status = wuffs_deflate__error__inconsistent_stored_block_length;
       goto exit;
     }
-    v_length = ((v_length) & ((1 << (16)) - 1));
+    v_length = ((v_length)&0xFFFF);
     while (true) {
       v_n_copied = wuffs_base__io_writer__copy_n_from_reader(
           &iop_a_dst, io1_a_dst, v_length, &iop_a_src, io1_a_src);
@@ -5552,19 +5563,19 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
       }
       v_n_bits += 8;
     }
-    v_n_lit = (((v_bits) & ((1 << (5)) - 1)) + 257);
+    v_n_lit = (((v_bits)&0x1F) + 257);
     if (v_n_lit > 286) {
       status = wuffs_deflate__error__bad_literal_length_code_count;
       goto exit;
     }
     v_bits >>= 5;
-    v_n_dist = (((v_bits) & ((1 << (5)) - 1)) + 1);
+    v_n_dist = (((v_bits)&0x1F) + 1);
     if (v_n_dist > 30) {
       status = wuffs_deflate__error__bad_distance_code_count;
       goto exit;
     }
     v_bits >>= 5;
-    v_n_clen = (((v_bits) & ((1 << (4)) - 1)) + 4);
+    v_n_clen = (((v_bits)&0xF) + 4);
     v_bits >>= 4;
     v_n_bits -= 14;
     v_i = 0;
@@ -5668,7 +5679,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
         }
         v_n_bits += 8;
       }
-      v_rep_count += ((v_bits) & ((1 << (v_n_extra_bits)) - 1));
+      v_rep_count += ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_n_extra_bits));
       v_bits >>= v_n_extra_bits;
       v_n_bits -= v_n_extra_bits;
       while (v_rep_count > 0) {
@@ -5922,7 +5933,7 @@ label_1_break:;
       v_tmp = (v_cl - 9);
       v_cl = v_tmp;
       v_redirect_key = ((v_key >> v_tmp) & 511);
-      v_key = ((v_key) & ((1 << (v_tmp)) - 1));
+      v_key = ((v_key)&WUFFS_BASE__LOW_BITS_MASK__U32(v_tmp));
       if (v_prev_redirect_key != v_redirect_key) {
         v_prev_redirect_key = v_redirect_key;
         v_remaining = (((uint32_t)(1)) << v_cl);
@@ -6176,7 +6187,8 @@ label_0_continue:;
       } else {
       }
       v_length =
-          ((v_length + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
+          ((v_length +
+            ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
            32767);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -6244,7 +6256,8 @@ label_0_continue:;
       v_n_bits += 8;
     }
     v_dist_minus_1 =
-        ((v_dist_minus_1 + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
+        ((v_dist_minus_1 +
+          ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
          32767);
     v_bits >>= v_table_entry_n_bits;
     v_n_bits -= v_table_entry_n_bits;
@@ -6559,7 +6572,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
           v_n_bits += 8;
         }
         v_length =
-            ((v_length + ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
+            ((v_length +
+              ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
              32767);
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
@@ -6639,9 +6653,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
           }
           v_n_bits += 8;
         }
-        v_dist_minus_1 = ((v_dist_minus_1 +
-                           ((v_bits) & ((1 << (v_table_entry_n_bits)) - 1))) &
-                          32767);
+        v_dist_minus_1 =
+            ((v_dist_minus_1 +
+              ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
+             32767);
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
@@ -9573,7 +9588,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         label_0_break:;
         }
       }
-      v_code = ((v_bits) & ((1 << (v_width)) - 1));
+      v_code = ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_width));
       v_bits >>= v_width;
       v_n_bits -= v_width;
       if (v_code < v_clear_code) {
@@ -9669,7 +9684,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
             goto exit;
           }
         }
-        v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
+        v_bits = ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_n_bits));
         self->private_impl.f_flush_j = v_j;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_lzw__decoder__flush(self, a_dst);
@@ -9690,7 +9705,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           goto exit;
         }
       }
-      v_bits = ((v_bits) & ((1 << (v_n_bits)) - 1));
+      v_bits = ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_n_bits));
       self->private_impl.f_flush_j = v_j;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       status = wuffs_lzw__decoder__flush(self, a_dst);

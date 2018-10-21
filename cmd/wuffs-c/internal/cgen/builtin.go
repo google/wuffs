@@ -17,6 +17,8 @@ package cgen
 import (
 	"errors"
 	"fmt"
+	"math/big"
+	"strings"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -253,16 +255,33 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
 	switch method {
 	case t.IDLowBits:
-		// "recv.low_bits(n:etc)" in C is "((recv) & ((1 << (n)) - 1))".
+		// "recv.low_bits(n:etc)" in C is one of:
+		//  - "((recv) & constant)"
+		//  - "((recv) & WUFFS_BASE__LOW_BITS_MASK__UXX(n))"
 		b.writes("((")
 		if err := g.writeExpr(b, recv, rp, depth); err != nil {
 			return err
 		}
-		b.writes(") & ((1 << (")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
-			return err
+		b.writes(") & ")
+
+		if cv := args[0].AsArg().Value().ConstValue(); cv != nil && cv.Sign() >= 0 && cv.Cmp(sixtyFour) <= 0 {
+			mask := big.NewInt(0)
+			mask.Lsh(one, uint(cv.Uint64()))
+			mask.Sub(mask, one)
+			b.printf("0x%s", strings.ToUpper(mask.Text(16)))
+		} else {
+			if sz, err := g.sizeof(recv.MType()); err != nil {
+				return err
+			} else {
+				b.printf("WUFFS_BASE__LOW_BITS_MASK__U%d(", 8*sz)
+			}
+			if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+				return err
+			}
+			b.writes(")")
 		}
-		b.writes(")) - 1))")
+
+		b.writes(")")
 		return nil
 
 	case t.IDHighBits:

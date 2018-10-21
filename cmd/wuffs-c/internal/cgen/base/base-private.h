@@ -329,6 +329,18 @@ wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
   p[7] = x >> 56;
 }
 
+  // --------
+
+  // TODO: do we need to care about (1 << 32) being re-interpreted as (1 << 0)
+  // on some architectures??
+  //
+  // Should the first "1" be "(uint32_t)1"?
+
+#define WUFFS_BASE__LOW_BITS_MASK__U8(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U16(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U32(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U64(n) ((1 << (n)) - 1)
+
 // --------
 
 static inline void  //
