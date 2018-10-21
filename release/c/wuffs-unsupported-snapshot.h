@@ -2571,7 +2571,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_flush_j;
     uint8_t f_suffixes[4096][8];
     uint16_t f_prefixes[4096];
-    uint16_t f_prefix_lengths[4096];
+    uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
 
     struct {
@@ -9569,7 +9569,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_width = (v_literal_width + 1);
     v_j = 0;
     while (v_j < v_clear_code) {
-      self->private_impl.f_prefix_lengths[v_j] = 0;
+      self->private_impl.f_lm1s[v_j] = 0;
       self->private_impl.f_suffixes[v_j][0] = ((uint8_t)(v_j));
       v_j += 1;
     }
@@ -9617,9 +9617,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         self->private_impl.f_output[v_j] = ((uint8_t)(v_code));
         v_j = ((v_j + 1) & 8191);
         if (v_save_code <= 4095) {
-          v_lm1_a =
-              ((self->private_impl.f_prefix_lengths[v_prev_code] + 1) & 4095);
-          self->private_impl.f_prefix_lengths[v_save_code] = v_lm1_a;
+          v_lm1_a = ((self->private_impl.f_lm1s[v_prev_code] + 1) & 4095);
+          self->private_impl.f_lm1s[v_save_code] = v_lm1_a;
           if ((v_lm1_a % 8) != 0) {
             self->private_impl.f_prefixes[v_save_code] =
                 self->private_impl.f_prefixes[v_prev_code];
@@ -9650,13 +9649,11 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         if (v_code == v_save_code) {
           v_c = v_prev_code;
         }
-        v_o = ((v_j + (((uint32_t)(self->private_impl.f_prefix_lengths[v_c])) &
-                       4294967288)) &
+        v_o = ((v_j +
+                (((uint32_t)(self->private_impl.f_lm1s[v_c])) & 4294967288)) &
                8191);
-        v_j = ((v_j + 1 +
-                ((uint32_t)(self->private_impl.f_prefix_lengths[v_c]))) &
-               8191);
-        v_steps = (((uint32_t)(self->private_impl.f_prefix_lengths[v_c])) >> 3);
+        v_j = ((v_j + 1 + ((uint32_t)(self->private_impl.f_lm1s[v_c]))) & 8191);
+        v_steps = (((uint32_t)(self->private_impl.f_lm1s[v_c])) >> 3);
         while (true) {
           memcpy((self->private_impl.f_output) + (v_o),
                  (self->private_impl.f_suffixes[v_c]) + (0), 8);
@@ -9674,9 +9671,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           v_j = ((v_j + 1) & 8191);
         }
         if (v_save_code <= 4095) {
-          v_lm1_b =
-              ((self->private_impl.f_prefix_lengths[v_prev_code] + 1) & 4095);
-          self->private_impl.f_prefix_lengths[v_save_code] = v_lm1_b;
+          v_lm1_b = ((self->private_impl.f_lm1s[v_prev_code] + 1) & 4095);
+          self->private_impl.f_lm1s[v_save_code] = v_lm1_b;
           if ((v_lm1_b % 8) != 0) {
             self->private_impl.f_prefixes[v_save_code] =
                 self->private_impl.f_prefixes[v_prev_code];

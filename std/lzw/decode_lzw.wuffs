@@ -21,7 +21,9 @@ pub struct decoder?(
 	flush_j base.u32[..8191],
 	suffixes array[4096] array[8] base.u8,
 	prefixes array[4096] base.u16[..4095],
-	prefix_lengths array[4096] base.u16[..4095],  // TODO: rename this field.
+	// lm1s is the "length minus 1"s of the values for the implicit key-value
+	// table in this decoder. See std/lzw/README.md for more detail.
+	lm1s array[4096] base.u16[..4095],
 	output array[8192 + 7] base.u8,
 )
 
@@ -47,11 +49,11 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var prev_code base.u32[..4095] = end_code
 	var width base.u32[..12] = literal_width + 1
 
-	// First, use the j variable to iterate over prefix_lengths.
+	// First, use the j variable to initialize some state.
 	var j base.u32[..8191]
 	while j < clear_code {
 		assert j < 256 via "a < b: a < c; c <= b"(c:clear_code)
-		this.prefix_lengths[j] = 0
+		this.lm1s[j] = 0
 		this.suffixes[j][0] = j as base.u8
 		j += 1
 	}
@@ -110,8 +112,8 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			this.output[j] = code as base.u8
 			j = (j + 1) & 8191
 			if save_code <= 4095 {
-				var lm1_a base.u16[..4095] = (this.prefix_lengths[prev_code] + 1) & 4095
-				this.prefix_lengths[save_code] = lm1_a
+				var lm1_a base.u16[..4095] = (this.lm1s[prev_code] + 1) & 4095
+				this.lm1s[save_code] = lm1_a
 
 				if (lm1_a % 8) != 0 {
 					this.prefixes[save_code] = this.prefixes[prev_code]
@@ -152,10 +154,10 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			// In the special case that code == save_code, the decoded bytes
 			// contain an extra copy (at the end) of the first byte, and will
 			// be written to output[old_j:new_j + 1].
-			var o base.u32[..8191] = (j + ((this.prefix_lengths[c] as base.u32) & 0xFFFFFFF8)) & 8191
-			j = (j + 1 + (this.prefix_lengths[c] as base.u32)) & 8191
+			var o base.u32[..8191] = (j + ((this.lm1s[c] as base.u32) & 0xFFFFFFF8)) & 8191
+			j = (j + 1 + (this.lm1s[c] as base.u32)) & 8191
 
-			var steps base.u32 = (this.prefix_lengths[c] as base.u32) >> 3
+			var steps base.u32 = (this.lm1s[c] as base.u32) >> 3
 			while true {
 				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
 				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][0:0 + 8])
@@ -177,8 +179,8 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			}
 
 			if save_code <= 4095 {
-				var lm1_b base.u16[..4095] = (this.prefix_lengths[prev_code] + 1) & 4095
-				this.prefix_lengths[save_code] = lm1_b
+				var lm1_b base.u16[..4095] = (this.lm1s[prev_code] + 1) & 4095
+				this.lm1s[save_code] = lm1_b
 
 				if (lm1_b % 8) != 0 {
 					this.prefixes[save_code] = this.prefixes[prev_code]
