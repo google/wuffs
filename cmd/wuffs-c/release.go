@@ -235,12 +235,10 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, relFilename string, which int, d
 		return fmt.Errorf("cannot resolve %q", relFilename)
 	}
 
-	// For headers, process the files in #include-ee before #include-er order.
-	if which == 0 {
-		for _, inc := range f.includes {
-			if err := h.gen(w, inc, which, depth); err != nil {
-				return err
-			}
+	// Process the files in #include-ee before #include-er order.
+	for _, inc := range f.includes {
+		if err := h.gen(w, inc, which, depth); err != nil {
+			return err
 		}
 	}
 
