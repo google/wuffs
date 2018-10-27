@@ -1,8 +1,5 @@
 // After editing this file, run "go generate" in the parent directory.
 
-#ifndef WUFFS_INCLUDE_GUARD__BASE_PRIVATE
-#define WUFFS_INCLUDE_GUARD__BASE_PRIVATE
-
 // Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -722,5 +719,3 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 #ifdef __cplusplus
 }  // extern "C"
 #endif
-
-#endif  // WUFFS_INCLUDE_GUARD__BASE_PRIVATE

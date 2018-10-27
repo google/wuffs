@@ -21,6 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
@@ -47,54 +50,63 @@ func doGenrelease(args []string) error {
 	}
 	args = flags.Args()
 
-	h := &genReleaseHelper{
-		seen:     map[string]bool{},
-		revision: *revisionFlag,
-		version:  v,
+	// Calculate the base directory.
+	baseDir := ""
+	for _, filename := range args {
+		if filepath.Base(filename) != "base.h" {
+			continue
+		}
+		baseDir = filepath.Dir(filename)
 	}
+	if baseDir == "" {
+		return fmt.Errorf("could not determine base directory")
+	}
+	baseDirSlash := baseDir + string(filepath.Separator)
+
+	h := &genReleaseHelper{
+		filesList: nil,
+		filesMap:  map[string]parsedCFile{},
+		seen:      nil,
+		revision:  *revisionFlag,
+		version:   v,
+	}
+
+	for _, filename := range args {
+		if !strings.HasPrefix(filename, baseDirSlash) {
+			return fmt.Errorf("filename %q is not under base directory %q", filename, baseDir)
+		}
+		relFilename := filename[len(baseDirSlash):]
+
+		s, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+
+		if err := h.parse(relFilename, s); err != nil {
+			return err
+		}
+	}
+	sort.Strings(h.filesList)
 
 	unformatted := bytes.NewBuffer(nil)
 	unformatted.WriteString("#ifndef WUFFS_INCLUDE_GUARD\n")
 	unformatted.WriteString("#define WUFFS_INCLUDE_GUARD\n\n")
 	unformatted.WriteString(grSingleFileGuidance)
 
-	// First, cat all of the headers together, filtering out duplicate
-	// WUFFS_INCLUDE_GUARD__FOO sections and overriding WUFFS_VERSION.
-	implementations := [][]byte(nil)
-	for _, filename := range args {
-		s, err := ioutil.ReadFile(filename)
-		if err != nil {
+	h.seen = map[string]bool{}
+	for _, f := range h.filesList {
+		if err := h.gen(unformatted, f, 0, 0); err != nil {
 			return err
-		}
-
-		trimmed := []byte(nil)
-		if i := bytes.Index(s, grImplStartsHere); i >= 0 {
-			remaining := s[i+len(grImplStartsHere):]
-			if j := bytes.Index(remaining, grImplEndsHere); j >= 0 {
-				implementations = append(implementations, remaining[:j])
-				trimmed = append(trimmed, s[:i]...)
-				trimmed = append(trimmed, '\n')
-				trimmed = append(trimmed, remaining[j+len(grImplEndsHere):]...)
-				s = trimmed
-			}
-		}
-		if len(trimmed) == 0 {
-			return fmt.Errorf("could not find %q or %q in %s", grImplStartsHere, grImplEndsHere, filename)
-		}
-
-		if err := h.gen(unformatted, s); err != nil {
-			return fmt.Errorf("%v in %s", err, filename)
 		}
 	}
 
 	unformatted.Write(grImplStartsHere)
 	unformatted.WriteString("\n")
 
-	// Then, cat all of the implementations together, filtering out duplicate
-	// WUFFS_INCLUDE_GUARD__BASE_PRIVATE sections.
-	for i, s := range implementations {
-		if err := h.gen(unformatted, s); err != nil {
-			return fmt.Errorf("%v in %s", err, args[i])
+	h.seen = map[string]bool{}
+	for _, f := range h.filesList {
+		if err := h.gen(unformatted, f, 1, 0); err != nil {
+			return err
 		}
 	}
 
@@ -112,13 +124,12 @@ func doGenrelease(args []string) error {
 var (
 	grImplStartsHere = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n")
 	grImplEndsHere   = []byte("#endif  // WUFFS_IMPLEMENTATION\n")
+	grIncludeQuote   = []byte("#include \"")
 	grNN             = []byte("\n\n")
 	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
 	grVString        = []byte(`#define WUFFS_VERSION_STRING "0.0.0"`)
-
-	grWigDefine = []byte("#define WUFFS_INCLUDE_GUARD__")
-	grWigEndif  = []byte("#endif  // WUFFS_INCLUDE_GUARD__")
-	grWigIfndef = []byte("#ifndef WUFFS_INCLUDE_GUARD__")
+	grWmrAbove       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n")
+	grWmrBelow       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n")
 )
 
 const grSingleFileGuidance = `
@@ -131,105 +142,134 @@ const grSingleFileGuidance = `
 
 `
 
-type genReleaseHelper struct {
-	seen     map[string]bool
-	revision string
-	version  cf.Version
+type parsedCFile struct {
+	includes []string
+	// fragments[0] is the header, fragments[1] is the implementation.
+	fragments [2][]byte
 }
 
-func (h *genReleaseHelper) gen(w *bytes.Buffer, s []byte) error {
-	skipping := 0
-	stack := []string{}
+type genReleaseHelper struct {
+	filesList []string
+	filesMap  map[string]parsedCFile
+	seen      map[string]bool
+	revision  string
+	version   cf.Version
+}
 
+func (h *genReleaseHelper) parse(relFilename string, s []byte) error {
+	if _, ok := h.filesMap[relFilename]; ok {
+		return fmt.Errorf("duplicate %q", relFilename)
+	}
+
+	f := parsedCFile{}
+
+	if i := bytes.Index(s, grWmrAbove); i < 0 {
+		return fmt.Errorf("could not find %q in %s", grWmrAbove, relFilename)
+	} else {
+		f.includes = parseIncludes(s[:i])
+		s = s[i+len(grWmrAbove):]
+	}
+
+	if i := bytes.LastIndex(s, grWmrBelow); i < 0 {
+		return fmt.Errorf("could not find %q in %s", grWmrBelow, relFilename)
+	} else {
+		s = s[:i]
+	}
+
+	if i := bytes.Index(s, grImplStartsHere); i < 0 {
+		return fmt.Errorf("could not find %q in %s", grImplStartsHere, relFilename)
+	} else {
+		f.fragments[0], s = s[:i], s[i+len(grImplStartsHere):]
+	}
+
+	if i := bytes.LastIndex(s, grImplEndsHere); i < 0 {
+		return fmt.Errorf("could not find %q in %s", grImplEndsHere, relFilename)
+	} else {
+		f.fragments[1] = s[:i]
+	}
+
+	if relFilename == "base.h" && (h.version != cf.Version{}) {
+		if subs, err := h.substituteWuffsVersion(f.fragments[0]); err != nil {
+			return err
+		} else {
+			f.fragments[0] = subs
+		}
+	}
+
+	h.filesList = append(h.filesList, relFilename)
+	h.filesMap[relFilename] = f
+	return nil
+}
+
+func parseIncludes(s []byte) (ret []string) {
 	for remaining := []byte(nil); len(s) > 0; s, remaining = remaining, nil {
 		if i := bytes.IndexByte(s, '\n'); i >= 0 {
 			s, remaining = s[:i+1], s[i+1:]
 		}
-		if len(s) == 0 {
+		if len(s) == 0 || s[0] != '#' || !bytes.HasPrefix(s, grIncludeQuote) {
 			continue
 		}
-
-		if s[0] == '#' {
-			switch {
-			case bytes.HasPrefix(s, grWigIfndef):
-				pkg := string(s[len(grWigIfndef):])
-				for _, p := range stack {
-					if p == pkg {
-						return fmt.Errorf("unexpected %q", s)
-					}
-				}
-
-				if h.seen[pkg] {
-					skipping++
-				}
-
-				stack = append(stack, pkg)
-				continue
-
-			case bytes.HasPrefix(s, grWigDefine):
-				pkg := string(s[len(grWigDefine):])
-				if (len(stack) == 0) || (stack[len(stack)-1] != pkg) {
-					return fmt.Errorf("unexpected %q", s)
-				}
-				continue
-
-			case bytes.HasPrefix(s, grWigEndif):
-				pkg := string(s[len(grWigEndif):])
-				if (len(stack) == 0) || (stack[len(stack)-1] != pkg) {
-					return fmt.Errorf("unexpected %q", s)
-				}
-
-				if h.seen[pkg] {
-					skipping--
-				} else {
-					h.seen[pkg] = true
-				}
-
-				stack = stack[:len(stack)-1]
-				continue
-			}
-		}
-
-		if skipping > 0 {
+		s = s[len(grIncludeQuote):]
+		if len(s) < 2 || s[len(s)-2] != '"' || s[len(s)-1] != '\n' {
 			continue
 		}
+		s = s[:len(s)-2]
 
-		if s[0] == '/' {
-			switch {
-			case bytes.Equal(s, grVOverride):
-				if (h.version == cf.Version{}) {
-					break
-				}
-				var err error
-				remaining, err = h.genWuffsVersion(w, remaining)
-				if err != nil {
-					return err
-				}
-				continue
+		ret = append(ret, string(s))
+	}
+	sort.Strings(ret)
+	return ret
+}
+
+func (h *genReleaseHelper) gen(w *bytes.Buffer, relFilename string, which int, depth uint32) error {
+	if depth > 1024 {
+		return fmt.Errorf("genrelease recursion depth too large")
+	}
+	depth++
+
+	if h.seen[relFilename] {
+		return nil
+	}
+	f, ok := h.filesMap[relFilename]
+	if !ok {
+		return fmt.Errorf("cannot resolve %q", relFilename)
+	}
+
+	// For headers, process the files in #include-ee before #include-er order.
+	if which == 0 {
+		for _, inc := range f.includes {
+			if err := h.gen(w, inc, which, depth); err != nil {
+				return err
 			}
 		}
-
-		w.Write(s)
 	}
 
-	if len(stack) != 0 {
-		return fmt.Errorf("unmatched %q", string(grWigIfndef)+stack[len(stack)-1])
-	}
+	w.Write(f.fragments[which])
+	h.seen[relFilename] = true
 	return nil
 }
 
-func (h *genReleaseHelper) genWuffsVersion(w *bytes.Buffer, s []byte) (remaining []byte, err error) {
-	cut := []byte(nil)
-	if i := bytes.Index(s, grNN); i >= 0 {
-		cut, s = s[:i], s[i+len(grNN):]
+func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
+	ret := []byte(nil)
+	if i := bytes.Index(s, grVOverride); i < 0 {
+		return nil, fmt.Errorf("could not find %q in %s", grVOverride, "base.h")
 	} else {
+		ret = append(ret, s[:i]...)
+		s = s[i+len(grVOverride):]
+	}
+
+	cut := []byte(nil)
+	if i := bytes.Index(s, grNN); i < 0 {
 		return nil, fmt.Errorf(`could not find "\n\n" near WUFFS_VERSION`)
+	} else {
+		cut, s = s[:i], s[i+len(grNN):]
 	}
 
 	if !bytes.HasSuffix(cut, grVString) {
 		return nil, fmt.Errorf("%q did not end with %q", cut, grVString)
 	}
 
+	w := bytes.NewBuffer(nil)
 	fmt.Fprintf(w, "// WUFFS_VERSION was overridden by \"wuffs gen -version\" on %v UTC",
 		time.Now().UTC().Format("2006-01-02"))
 	if h.revision != "" {
@@ -247,5 +287,7 @@ func (h *genReleaseHelper) genWuffsVersion(w *bytes.Buffer, s []byte) (remaining
 	`, h.version.Uint64(), h.version.Major, h.version.Minor, h.version.Patch,
 		h.version.Extension, h.version)
 
-	return s, nil
+	ret = append(ret, w.Bytes()...)
+	ret = append(ret, s...)
+	return ret, nil
 }

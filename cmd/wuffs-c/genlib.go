@@ -82,7 +82,7 @@ func genObj(outDir string, inDir string, cc string, dynamism string, filenames [
 		out := genlibOutFilename(outDir, dynamism, filename)
 
 		args := []string(nil)
-		args = append(args, "-x", "c", "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION")
+		args = append(args, "-x", "c", "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION", "-I", inDir)
 		if dynamism == "dynamic" {
 			args = append(args, "-fPIC", "-DPIC")
 		}

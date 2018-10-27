@@ -14,6 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef WUFFS_INCLUDE_GUARD__BASE
+#define WUFFS_INCLUDE_GUARD__BASE
+
+#if defined(WUFFS_IMPLEMENTATION) && !defined(WUFFS_CONFIG__MODULES)
+#define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__BASE
+#endif
+
+// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.
+
 // !! INSERT base-public.h.
 
 // WUFFS C HEADER ENDS HERE.
@@ -29,3 +39,7 @@
         // defined(WUFFS_CONFIG__MODULE__BASE)
 
 #endif  // WUFFS_IMPLEMENTATION
+
+// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.
+
+#endif  // WUFFS_INCLUDE_GUARD__BASE
