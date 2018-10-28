@@ -115,6 +115,9 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	comma := false
 	if cpp == cppNone {
 		if r := n.Receiver(); !r.IsZero() {
+			if n.Effect().Pure() {
+				b.writes("const ")
+			}
 			b.printf("%s%s *self", g.pkgPrefix, r.Str(g.tm))
 			comma = true
 		}
@@ -132,6 +135,9 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	b.printf(")")
+	if cpp != cppNone && !n.Receiver().IsZero() && n.Effect().Pure() {
+		b.writes(" const ")
+	}
 	return nil
 }
 

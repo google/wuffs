@@ -432,7 +432,7 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
 // ---------------- Utility
 
 static inline wuffs_base__range_ii_u32  //
-wuffs_base__utility__make_range_ii_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
                                        uint32_t min_incl,
                                        uint32_t max_incl) {
   return ((wuffs_base__range_ii_u32){
@@ -442,7 +442,7 @@ wuffs_base__utility__make_range_ii_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u32  //
-wuffs_base__utility__make_range_ie_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ie_u32(const wuffs_base__utility* ignored,
                                        uint32_t min_incl,
                                        uint32_t max_excl) {
   return ((wuffs_base__range_ie_u32){
@@ -452,7 +452,7 @@ wuffs_base__utility__make_range_ie_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ii_u64  //
-wuffs_base__utility__make_range_ii_u64(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ii_u64(const wuffs_base__utility* ignored,
                                        uint64_t min_incl,
                                        uint64_t max_incl) {
   return ((wuffs_base__range_ii_u64){
@@ -462,7 +462,7 @@ wuffs_base__utility__make_range_ii_u64(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u64  //
-wuffs_base__utility__make_range_ie_u64(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ie_u64(const wuffs_base__utility* ignored,
                                        uint64_t min_incl,
                                        uint64_t max_excl) {
   return ((wuffs_base__range_ie_u64){
@@ -472,7 +472,7 @@ wuffs_base__utility__make_range_ie_u64(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ii_u32  //
-wuffs_base__utility__make_rect_ii_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_rect_ii_u32(const wuffs_base__utility* ignored,
                                       uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_incl_x,
@@ -486,7 +486,7 @@ wuffs_base__utility__make_rect_ii_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ie_u32  //
-wuffs_base__utility__make_rect_ie_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_rect_ie_u32(const wuffs_base__utility* ignored,
                                       uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_excl_x,

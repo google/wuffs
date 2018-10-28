@@ -2597,16 +2597,16 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_gif__decoder__num_animation_loops(wuffs_gif__decoder* self);
+wuffs_gif__decoder__num_animation_loops(const wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self);
+wuffs_gif__decoder__num_decoded_frame_configs(const wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self);
+wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_gif__decoder__workbuf_len(wuffs_gif__decoder* self);
+wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
@@ -2765,22 +2765,22 @@ struct wuffs_gif__decoder__struct {
   }
 
   inline uint32_t  //
-  num_animation_loops() {
+  num_animation_loops() const {
     return wuffs_gif__decoder__num_animation_loops(this);
   }
 
   inline uint64_t  //
-  num_decoded_frame_configs() {
+  num_decoded_frame_configs() const {
     return wuffs_gif__decoder__num_decoded_frame_configs(this);
   }
 
   inline uint64_t  //
-  num_decoded_frames() {
+  num_decoded_frames() const {
     return wuffs_gif__decoder__num_decoded_frames(this);
   }
 
   inline wuffs_base__range_ii_u64  //
-  workbuf_len() {
+  workbuf_len() const {
     return wuffs_gif__decoder__workbuf_len(this);
   }
 
@@ -3461,7 +3461,7 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
 // ---------------- Utility
 
 static inline wuffs_base__range_ii_u32  //
-wuffs_base__utility__make_range_ii_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
                                        uint32_t min_incl,
                                        uint32_t max_incl) {
   return ((wuffs_base__range_ii_u32){
@@ -3471,7 +3471,7 @@ wuffs_base__utility__make_range_ii_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u32  //
-wuffs_base__utility__make_range_ie_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ie_u32(const wuffs_base__utility* ignored,
                                        uint32_t min_incl,
                                        uint32_t max_excl) {
   return ((wuffs_base__range_ie_u32){
@@ -3481,7 +3481,7 @@ wuffs_base__utility__make_range_ie_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ii_u64  //
-wuffs_base__utility__make_range_ii_u64(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ii_u64(const wuffs_base__utility* ignored,
                                        uint64_t min_incl,
                                        uint64_t max_incl) {
   return ((wuffs_base__range_ii_u64){
@@ -3491,7 +3491,7 @@ wuffs_base__utility__make_range_ii_u64(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u64  //
-wuffs_base__utility__make_range_ie_u64(wuffs_base__utility* ignored,
+wuffs_base__utility__make_range_ie_u64(const wuffs_base__utility* ignored,
                                        uint64_t min_incl,
                                        uint64_t max_excl) {
   return ((wuffs_base__range_ie_u64){
@@ -3501,7 +3501,7 @@ wuffs_base__utility__make_range_ie_u64(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ii_u32  //
-wuffs_base__utility__make_rect_ii_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_rect_ii_u32(const wuffs_base__utility* ignored,
                                       uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_incl_x,
@@ -3515,7 +3515,7 @@ wuffs_base__utility__make_rect_ii_u32(wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ie_u32  //
-wuffs_base__utility__make_rect_ie_u32(wuffs_base__utility* ignored,
+wuffs_base__utility__make_rect_ie_u32(const wuffs_base__utility* ignored,
                                       uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_excl_x,
@@ -7436,7 +7436,7 @@ exit:
 // -------- func gif.decoder.num_animation_loops
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
-wuffs_gif__decoder__num_animation_loops(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__num_animation_loops(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -7453,7 +7453,7 @@ wuffs_gif__decoder__num_animation_loops(wuffs_gif__decoder* self) {
 // -------- func gif.decoder.num_decoded_frame_configs
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__num_decoded_frame_configs(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -7467,7 +7467,7 @@ wuffs_gif__decoder__num_decoded_frame_configs(wuffs_gif__decoder* self) {
 // -------- func gif.decoder.num_decoded_frames
 
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
@@ -7481,7 +7481,7 @@ wuffs_gif__decoder__num_decoded_frames(wuffs_gif__decoder* self) {
 // -------- func gif.decoder.workbuf_len
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
-wuffs_gif__decoder__workbuf_len(wuffs_gif__decoder* self) {
+wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){});
   }
