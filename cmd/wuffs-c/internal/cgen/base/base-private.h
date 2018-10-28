@@ -328,15 +328,15 @@ wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
 
   // --------
 
-  // TODO: do we need to care about (1 << 32) being re-interpreted as (1 << 0)
-  // on some architectures??
-  //
-  // Should the first "1" be "(uint32_t)1"?
+extern const uint8_t wuffs_base__low_bits_mask__u8[9];
+extern const uint16_t wuffs_base__low_bits_mask__u16[17];
+extern const uint32_t wuffs_base__low_bits_mask__u32[33];
+extern const uint64_t wuffs_base__low_bits_mask__u64[65];
 
-#define WUFFS_BASE__LOW_BITS_MASK__U8(n) ((1 << (n)) - 1)
-#define WUFFS_BASE__LOW_BITS_MASK__U16(n) ((1 << (n)) - 1)
-#define WUFFS_BASE__LOW_BITS_MASK__U32(n) ((1 << (n)) - 1)
-#define WUFFS_BASE__LOW_BITS_MASK__U64(n) ((1 << (n)) - 1)
+#define WUFFS_BASE__LOW_BITS_MASK__U8(n) (wuffs_base__low_bits_mask__u8[n])
+#define WUFFS_BASE__LOW_BITS_MASK__U16(n) (wuffs_base__low_bits_mask__u16[n])
+#define WUFFS_BASE__LOW_BITS_MASK__U32(n) (wuffs_base__low_bits_mask__u32[n])
+#define WUFFS_BASE__LOW_BITS_MASK__U64(n) (wuffs_base__low_bits_mask__u64[n])
 
 // --------
 
