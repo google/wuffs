@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE (64 * 1024 * 1024)
 
@@ -209,9 +210,39 @@ void bench_finish(uint64_t iters, uint64_t n_bytes) {
   fflush(stdout);
 }
 
+const char* chdir_to_the_wuffs_root_directory() {
+  // Chdir to the Wuffs root directory, assuming that we're starting from
+  // somewhere in the Wuffs repository, so we can find the root directory by
+  // running chdir("..") a number of times.
+  int n;
+  for (n = 0; n < 64; n++) {
+    if (access("wuffs-root-directory.txt", F_OK) == 0) {
+      return NULL;
+    }
+
+    // If we're at the root "/", chdir("..") won't change anything.
+    char cwd_buffer[4];
+    char* cwd = getcwd(cwd_buffer, 4);
+    if ((cwd != NULL) && (cwd[0] == '/') && (cwd[1] == '\x00')) {
+      break;
+    }
+
+    if (chdir("..")) {
+      return "could not chdir(\"..\")";
+    }
+  }
+  return "could not find Wuffs root directory; chdir there before running this program";
+}
+
 typedef const char* (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
+  const char* z = chdir_to_the_wuffs_root_directory();
+  if (z) {
+    fprintf(stderr, "%s\n", z);
+    return 1;
+  }
+
   bool bench = false;
   int reps = 5;
 

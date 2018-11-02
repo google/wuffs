@@ -68,11 +68,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test adler32_midsummer_gt = {
-    .src_filename = "../../data/midsummer.txt",  //
+    .src_filename = "test/data/midsummer.txt",  //
 };
 
 golden_test adler32_pi_gt = {
-    .src_filename = "../../data/pi.txt",  //
+    .src_filename = "test/data/pi.txt",  //
 };
 
 // ---------------- Adler32 Tests
@@ -86,31 +86,31 @@ const char* test_wuffs_adler32_golden() {
     uint32_t want;
   } test_cases[] = {
       {
-          .filename = "../../data/hat.bmp",
+          .filename = "test/data/hat.bmp",
           .want = 0x3D26D034,
       },
       {
-          .filename = "../../data/hat.gif",
+          .filename = "test/data/hat.gif",
           .want = 0x2A5EB144,
       },
       {
-          .filename = "../../data/hat.jpeg",
+          .filename = "test/data/hat.jpeg",
           .want = 0x3A503B1A,
       },
       {
-          .filename = "../../data/hat.lossless.webp",
+          .filename = "test/data/hat.lossless.webp",
           .want = 0xD059D427,
       },
       {
-          .filename = "../../data/hat.lossy.webp",
+          .filename = "test/data/hat.lossy.webp",
           .want = 0xF1BB258D,
       },
       {
-          .filename = "../../data/hat.png",
+          .filename = "test/data/hat.png",
           .want = 0xDFC6C9C6,
       },
       {
-          .filename = "../../data/hat.tiff",
+          .filename = "test/data/hat.tiff",
           .want = 0xBDC011E9,
       },
   };

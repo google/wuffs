@@ -68,11 +68,11 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test crc32_midsummer_gt = {
-    .src_filename = "../../data/midsummer.txt",  //
+    .src_filename = "test/data/midsummer.txt",  //
 };
 
 golden_test crc32_pi_gt = {
-    .src_filename = "../../data/pi.txt",  //
+    .src_filename = "test/data/pi.txt",  //
 };
 
 // ---------------- CRC32 Tests
@@ -86,31 +86,31 @@ const char* test_wuffs_crc32_ieee_golden() {
     uint32_t want;
   } test_cases[] = {
       {
-          .filename = "../../data/hat.bmp",
+          .filename = "test/data/hat.bmp",
           .want = 0xA95A578B,
       },
       {
-          .filename = "../../data/hat.gif",
+          .filename = "test/data/hat.gif",
           .want = 0xD9743B6A,
       },
       {
-          .filename = "../../data/hat.jpeg",
+          .filename = "test/data/hat.jpeg",
           .want = 0x7F1A90CD,
       },
       {
-          .filename = "../../data/hat.lossless.webp",
+          .filename = "test/data/hat.lossless.webp",
           .want = 0x485AA040,
       },
       {
-          .filename = "../../data/hat.lossy.webp",
+          .filename = "test/data/hat.lossy.webp",
           .want = 0x89F53B4E,
       },
       {
-          .filename = "../../data/hat.png",
+          .filename = "test/data/hat.png",
           .want = 0xD5DA5C2F,
       },
       {
-          .filename = "../../data/hat.tiff",
+          .filename = "test/data/hat.tiff",
           .want = 0xBEF54503,
       },
   };

@@ -70,13 +70,13 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test zlib_midsummer_gt = {
-    .want_filename = "../../data/midsummer.txt",      //
-    .src_filename = "../../data/midsummer.txt.zlib",  //
+    .want_filename = "test/data/midsummer.txt",      //
+    .src_filename = "test/data/midsummer.txt.zlib",  //
 };
 
 golden_test zlib_pi_gt = {
-    .want_filename = "../../data/pi.txt",      //
-    .src_filename = "../../data/pi.txt.zlib",  //
+    .want_filename = "test/data/pi.txt",      //
+    .src_filename = "test/data/pi.txt.zlib",  //
 };
 
 // ---------------- Zlib Tests

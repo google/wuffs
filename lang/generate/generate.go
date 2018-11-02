@@ -15,18 +15,16 @@
 package generate
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/google/wuffs/lang/check"
 	"github.com/google/wuffs/lang/parse"
+	"github.com/google/wuffs/lang/wuffsroot"
 
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
@@ -138,37 +136,9 @@ func ParseFiles(tm *t.Map, filenames []string, opts *parse.Options) (files []*a.
 }
 
 func resolveUse(usePath string) ([]byte, error) {
-	wuffsRoot, err := WuffsRoot()
+	wuffsRoot, err := wuffsroot.Value()
 	if err != nil {
 		return nil, err
 	}
 	return ioutil.ReadFile(filepath.Join(wuffsRoot, "gen", "wuffs", filepath.FromSlash(usePath)))
-}
-
-var cachedWuffsRoot struct {
-	mu    sync.Mutex
-	value string
-}
-
-func WuffsRoot() (string, error) {
-	cachedWuffsRoot.mu.Lock()
-	value := cachedWuffsRoot.value
-	cachedWuffsRoot.mu.Unlock()
-
-	if value != "" {
-		return value, nil
-	}
-
-	// TODO: look for a WUFFSROOT environment variable?
-	for _, p := range filepath.SplitList(build.Default.GOPATH) {
-		p = filepath.Join(p, "src", "github.com", "google", "wuffs")
-		if o, err := os.Stat(p); err == nil && o.IsDir() {
-			cachedWuffsRoot.mu.Lock()
-			cachedWuffsRoot.value = p
-			cachedWuffsRoot.mu.Unlock()
-
-			return p, nil
-		}
-	}
-	return "", errors.New("could not find Wuffs root directory")
 }

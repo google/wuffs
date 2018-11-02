@@ -25,7 +25,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/wuffs/lang/generate"
+	"github.com/google/wuffs/lang/wuffsroot"
 )
 
 var commands = []struct {
@@ -65,7 +65,7 @@ func main1() error {
 	flag.Usage = usage
 	flag.Parse()
 
-	wuffsRoot, err := generate.WuffsRoot()
+	wuffsRoot, err := wuffsroot.Value()
 	if err != nil {
 		return err
 	}

@@ -74,54 +74,54 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // The empty comments forces clang-format to place one element per line.
 
 golden_test deflate_256_bytes_gt = {
-    .want_filename = "../../data/artificial/256.bytes",    //
-    .src_filename = "../../data/artificial/256.bytes.gz",  //
-    .src_offset0 = 20,                                     //
-    .src_offset1 = 281,                                    //
+    .want_filename = "test/data/artificial/256.bytes",    //
+    .src_filename = "test/data/artificial/256.bytes.gz",  //
+    .src_offset0 = 20,                                    //
+    .src_offset1 = 281,                                   //
 };
 
 golden_test deflate_deflate_backref_crosses_blocks_gt = {
     .want_filename =
-        "../../data/artificial/"
+        "test/data/artificial/"
         "deflate-backref-crosses-blocks.deflate.decompressed",
     .src_filename =
-        "../../data/artificial/"
+        "test/data/artificial/"
         "deflate-backref-crosses-blocks.deflate",
 };
 
 golden_test deflate_deflate_distance_32768_gt = {
     .want_filename =
-        "../../data/artificial/"
+        "test/data/artificial/"
         "deflate-distance-32768.deflate.decompressed",
     .src_filename =
-        "../../data/artificial/"
+        "test/data/artificial/"
         "deflate-distance-32768.deflate",
 };
 
 golden_test deflate_midsummer_gt = {
-    .want_filename = "../../data/midsummer.txt",    //
-    .src_filename = "../../data/midsummer.txt.gz",  //
-    .src_offset0 = 24,                              //
-    .src_offset1 = 5166,                            //
+    .want_filename = "test/data/midsummer.txt",    //
+    .src_filename = "test/data/midsummer.txt.gz",  //
+    .src_offset0 = 24,                             //
+    .src_offset1 = 5166,                           //
 };
 
 golden_test deflate_pi_gt = {
-    .want_filename = "../../data/pi.txt",    //
-    .src_filename = "../../data/pi.txt.gz",  //
-    .src_offset0 = 17,                       //
-    .src_offset1 = 48335,                    //
+    .want_filename = "test/data/pi.txt",    //
+    .src_filename = "test/data/pi.txt.gz",  //
+    .src_offset0 = 17,                      //
+    .src_offset1 = 48335,                   //
 };
 
 golden_test deflate_romeo_gt = {
-    .want_filename = "../../data/romeo.txt",    //
-    .src_filename = "../../data/romeo.txt.gz",  //
-    .src_offset0 = 20,                          //
-    .src_offset1 = 550,                         //
+    .want_filename = "test/data/romeo.txt",    //
+    .src_filename = "test/data/romeo.txt.gz",  //
+    .src_offset0 = 20,                         //
+    .src_offset1 = 550,                        //
 };
 
 golden_test deflate_romeo_fixed_gt = {
-    .want_filename = "../../data/romeo.txt",                    //
-    .src_filename = "../../data/romeo.txt.fixed-huff.deflate",  //
+    .want_filename = "test/data/romeo.txt",                    //
+    .src_filename = "test/data/romeo.txt.fixed-huff.deflate",  //
 };
 
 // ---------------- Deflate Tests

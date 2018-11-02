@@ -165,36 +165,36 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
 
 const char* test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw",
-                                  14731, "../../data/bricks-gray.indexes",
-                                  19200, 0, 4096);
+  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
+                                  "test/data/bricks-gray.indexes", 19200, 0,
+                                  4096);
 }
 
 const char* test_wuffs_lzw_decode_many_small_writes_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw",
-                                  14731, "../../data/bricks-gray.indexes",
-                                  19200, 41, 43);
+  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
+                                  "test/data/bricks-gray.indexes", 19200, 41,
+                                  43);
 }
 
 const char* test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("../../data/bricks-dither.indexes.giflzw",
-                                  14923, "../../data/bricks-dither.indexes",
+  return do_test_wuffs_lzw_decode("test/data/bricks-dither.indexes.giflzw",
+                                  14923, "test/data/bricks-dither.indexes",
                                   19200, 0, 0);
 }
 
 const char* test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("../../data/bricks-nodither.indexes.giflzw",
-                                  13382, "../../data/bricks-nodither.indexes",
+  return do_test_wuffs_lzw_decode("test/data/bricks-nodither.indexes.giflzw",
+                                  13382, "test/data/bricks-nodither.indexes",
                                   19200, 0, 0);
 }
 
 const char* test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("../../data/pi.txt.giflzw", 50550,
-                                  "../../data/pi.txt", 100003, 0, 0);
+  return do_test_wuffs_lzw_decode("test/data/pi.txt.giflzw", 50550,
+                                  "test/data/pi.txt", 100003, 0, 0);
 }
 
 // ---------------- LZW Benches
@@ -248,12 +248,12 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
 
 const char* bench_wuffs_lzw_decode_20k() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_lzw_decode("../../data/bricks-gray.indexes.giflzw", 50);
+  return do_bench_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 50);
 }
 
 const char* bench_wuffs_lzw_decode_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_wuffs_lzw_decode("../../data/pi.txt.giflzw", 10);
+  return do_bench_wuffs_lzw_decode("test/data/pi.txt.giflzw", 10);
 }
 
 // ---------------- Manifest

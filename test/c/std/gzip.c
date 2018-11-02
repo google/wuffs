@@ -70,13 +70,13 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 // ---------------- Golden Tests
 
 golden_test gzip_midsummer_gt = {
-    .want_filename = "../../data/midsummer.txt",    //
-    .src_filename = "../../data/midsummer.txt.gz",  //
+    .want_filename = "test/data/midsummer.txt",    //
+    .src_filename = "test/data/midsummer.txt.gz",  //
 };
 
 golden_test gzip_pi_gt = {
-    .want_filename = "../../data/pi.txt",    //
-    .src_filename = "../../data/pi.txt.gz",  //
+    .want_filename = "test/data/pi.txt",    //
+    .src_filename = "test/data/pi.txt.gz",  //
 };
 
 // ---------------- Gzip Tests

@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/wuffs/lang/wuffsroot"
+
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
 
@@ -132,7 +134,9 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string,
 		outCmd := exec.Command(out, outArgs...)
 		outCmd.Stdout = os.Stdout
 		outCmd.Stderr = os.Stderr
-		outCmd.Dir = filepath.Dir(filename)
+		if outCmd.Dir, err = wuffsroot.Value(); err != nil {
+			return false, err
+		}
 		if err := outCmd.Run(); err == nil {
 			// No-op.
 		} else if _, ok := err.(*exec.ExitError); ok {
