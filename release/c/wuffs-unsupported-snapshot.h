@@ -3355,7 +3355,7 @@ wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
   p[7] = x >> 56;
 }
 
-  // --------
+// --------
 
 extern const uint8_t wuffs_base__low_bits_mask__u8[9];
 extern const uint16_t wuffs_base__low_bits_mask__u16[17];
