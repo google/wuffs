@@ -53,7 +53,7 @@ func doGenrelease(args []string) error {
 	// Calculate the base directory.
 	baseDir := ""
 	for _, filename := range args {
-		if filepath.Base(filename) != "base.h" {
+		if filepath.Base(filename) != "wuffs-base.h" {
 			continue
 		}
 		baseDir = filepath.Dir(filename)
@@ -188,7 +188,7 @@ func (h *genReleaseHelper) parse(relFilename string, s []byte) error {
 		f.fragments[1] = s[:i]
 	}
 
-	if relFilename == "base.h" && (h.version != cf.Version{}) {
+	if relFilename == "wuffs-base.h" && (h.version != cf.Version{}) {
 		if subs, err := h.substituteWuffsVersion(f.fragments[0]); err != nil {
 			return err
 		} else {
@@ -227,6 +227,10 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, relFilename string, which int, d
 	}
 	depth++
 
+	if strings.HasPrefix(relFilename, "./") {
+		relFilename = relFilename[2:]
+	}
+
 	if h.seen[relFilename] {
 		return nil
 	}
@@ -250,7 +254,7 @@ func (h *genReleaseHelper) gen(w *bytes.Buffer, relFilename string, which int, d
 func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 	ret := []byte(nil)
 	if i := bytes.Index(s, grVOverride); i < 0 {
-		return nil, fmt.Errorf("could not find %q in %s", grVOverride, "base.h")
+		return nil, fmt.Errorf("could not find %q in %s", grVOverride, "wuffs-base.h")
 	} else {
 		ret = append(ret, s[:i]...)
 		s = s[i+len(grVOverride):]

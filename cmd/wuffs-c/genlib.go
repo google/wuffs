@@ -35,6 +35,11 @@ func doGenlib(args []string) error {
 	}
 	args = flags.Args()
 
+	filenames := make([]string, len(args))
+	for i, arg := range args {
+		filenames[i] = "wuffs-" + strings.Replace(filepath.ToSlash(arg), "/", "-", -1)
+	}
+
 	if *dstdirFlag == "" {
 		return fmt.Errorf("empty -dstdir flag")
 	}
@@ -53,10 +58,10 @@ func doGenlib(args []string) error {
 			if err := os.MkdirAll(outDir, 0755); err != nil {
 				return err
 			}
-			if err := genObj(outDir, *srcdirFlag, cc, dynamism, args); err != nil {
+			if err := genObj(outDir, *srcdirFlag, cc, dynamism, filenames); err != nil {
 				return err
 			}
-			if err := genLib(outDir, cc, dynamism, args); err != nil {
+			if err := genLib(outDir, cc, dynamism, filenames); err != nil {
 				return err
 			}
 		}
@@ -82,7 +87,7 @@ func genObj(outDir string, inDir string, cc string, dynamism string, filenames [
 		out := genlibOutFilename(outDir, dynamism, filename)
 
 		args := []string(nil)
-		args = append(args, "-x", "c", "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION", "-I", inDir)
+		args = append(args, "-x", "c", "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION")
 		if dynamism == "dynamic" {
 			args = append(args, "-fPIC", "-DPIC")
 		}
@@ -127,8 +132,5 @@ func genLib(outDir string, cc string, dynamism string, filenames []string) error
 }
 
 func genlibOutFilename(outDir string, dynamism string, filename string) string {
-	filename = strings.Replace(filename, "/", "-", -1)
-	filename = strings.Replace(filename, "\\", "-", -1)
-	filename = filepath.Join(outDir, filename+objExtensions[dynamism])
-	return filename
+	return filepath.Join(outDir, filename+objExtensions[dynamism])
 }

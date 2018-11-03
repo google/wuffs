@@ -204,7 +204,8 @@ func (h *genHelper) genDir(dirname string, qualFilenames []string) error {
 			suffix = "h"
 		}
 
-		if err := h.genFile(dirname, lang, suffix, out); err != nil {
+		flatDirname := fmt.Sprintf("wuffs-%s", strings.Replace(dirname, "/", "-", -1))
+		if err := h.genFile(flatDirname, lang, suffix, out); err != nil {
 			return err
 		}
 	}
