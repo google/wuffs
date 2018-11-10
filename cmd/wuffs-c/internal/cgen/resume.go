@@ -97,11 +97,13 @@ func (g *gen) findVars() error {
 	}
 
 	f := g.currFunk.astFunc
-	if err := g.visitVars(nil, f.Body(), 0, func(g *gen, b *buffer, n *a.Var) error {
-		name := n.Name()
-		if _, ok := h.vars[name]; !ok {
-			g.currFunk.varList = append(g.currFunk.varList, n)
-			h.vars[name] = len(h.vars)
+	if err := f.AsNode().Walk(func(n *a.Node) error {
+		if n.Kind() == a.KVar {
+			name := n.AsVar().Name()
+			if _, ok := h.vars[name]; !ok {
+				g.currFunk.varList = append(g.currFunk.varList, n.AsVar())
+				h.vars[name] = len(h.vars)
+			}
 		}
 		return nil
 	}); err != nil {

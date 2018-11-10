@@ -6826,12 +6826,12 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
   uint32_t v_bits;
   uint32_t v_n_bits;
   uint32_t v_code;
-  uint16_t v_lm1_a;
   uint32_t v_c;
   uint32_t v_o;
   uint32_t v_steps;
   uint8_t v_first_byte;
   uint16_t v_lm1_b;
+  uint16_t v_lm1_a;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -6862,12 +6862,12 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_bits = self->private_impl.c_decode[0].v_bits;
     v_n_bits = self->private_impl.c_decode[0].v_n_bits;
     v_code = 0;
-    v_lm1_a = 0;
     v_c = 0;
     v_o = 0;
     v_steps = 0;
     v_first_byte = 0;
     v_lm1_b = 0;
+    v_lm1_a = 0;
   } else {
   }
   switch (coro_susp_point) {

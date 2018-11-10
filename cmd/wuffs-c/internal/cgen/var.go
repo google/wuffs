@@ -226,51 +226,6 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	return nil
 }
 
-func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *buffer, *a.Var) error) error {
-	if depth > a.MaxBodyDepth {
-		return fmt.Errorf("body recursion depth too large")
-	}
-	depth++
-
-	for _, o := range block {
-		switch o.Kind() {
-		case a.KIOBind:
-			if err := g.visitVars(b, o.AsIOBind().Body(), depth, f); err != nil {
-				return err
-			}
-
-		case a.KIf:
-			for o := o.AsIf(); o != nil; o = o.ElseIf() {
-				if err := g.visitVars(b, o.BodyIfTrue(), depth, f); err != nil {
-					return err
-				}
-				if err := g.visitVars(b, o.BodyIfFalse(), depth, f); err != nil {
-					return err
-				}
-			}
-
-		case a.KIterate:
-			if err := g.visitVars(b, o.AsIterate().Variables(), depth, f); err != nil {
-				return err
-			}
-			if err := g.visitVars(b, o.AsIterate().Body(), depth, f); err != nil {
-				return err
-			}
-
-		case a.KVar:
-			if err := f(g, b, o.AsVar()); err != nil {
-				return err
-			}
-
-		case a.KWhile:
-			if err := g.visitVars(b, o.AsWhile().Body(), depth, f); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool, initBoolTypedVars bool) error {
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
@@ -383,22 +338,25 @@ fail:
 }
 
 func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool, initBoolTypedVars bool) error {
-	return g.visitVars(b, f.astFunc.Body(), 0, func(g *gen, b *buffer, n *a.Var) error {
-		return g.writeResumeSuspend1(b, f, n, suspend, initBoolTypedVars)
-	})
+	for _, n := range f.varList {
+		if err := g.writeResumeSuspend1(b, f, n, suspend, initBoolTypedVars); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipIterateVariables bool, skipNonresumable bool) error {
-	return g.visitVars(b, f.astFunc.Body(), 0, func(g *gen, b *buffer, n *a.Var) error {
+	for _, n := range f.varList {
 		typ := n.XType()
 		if skipPointerTypes && typ.HasPointers() {
-			return nil
+			continue
 		}
 		if skipIterateVariables && n.IterateVariable() {
-			return nil
+			continue
 		}
 		if skipNonresumable && (f.varResumables == nil || !f.varResumables[n.Name()]) {
-			return nil
+			continue
 		}
 		name := n.Name().Str(g.tm)
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
@@ -415,6 +373,6 @@ func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipIterateVa
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", iopPrefix, preName)
 			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", io1Prefix, preName)
 		}
-		return nil
-	})
+	}
+	return nil
 }
