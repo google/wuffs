@@ -31,6 +31,8 @@ type funk struct {
 
 	astFunc       *a.Func
 	cName         string
+	varList       []*a.Var
+	varResumables map[t.ID]bool
 	derivedVars   map[t.ID]struct{}
 	jumpTargets   map[a.Loop]uint32
 	coroSuspPoint uint32
@@ -180,6 +182,10 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 		suspendible: n.Effect().Coroutine(),
 	}
 
+	if err := g.findVars(); err != nil {
+		return err
+	}
+
 	if err := g.writeFuncImplHeader(&g.currFunk.bHeader); err != nil {
 		return err
 	}
@@ -259,7 +265,7 @@ func (g *gen) writeFuncImplHeader(b *buffer) error {
 	b.writes("\n")
 
 	// Generate the local variables.
-	if err := g.writeVars(b, g.currFunk.astFunc.Body(), false, true); err != nil {
+	if err := g.writeVars(b, &g.currFunk, false, true, false); err != nil {
 		return err
 	}
 	b.writes("\n")
@@ -283,11 +289,11 @@ func (g *gen) writeFuncImplBodyResume(b *buffer) error {
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0].coro_susp_point;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		b.printf("if (coro_susp_point) {\n")
-		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), false, false); err != nil {
+		if err := g.writeResumeSuspend(b, &g.currFunk, false, false); err != nil {
 			return err
 		}
 		b.writes("} else {\n")
-		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), false, true); err != nil {
+		if err := g.writeResumeSuspend(b, &g.currFunk, false, true); err != nil {
 			return err
 		}
 		b.writes("}\n")
@@ -323,7 +329,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
-		if err := g.writeResumeSuspend(b, g.currFunk.astFunc.Body(), true, false); err != nil {
+		if err := g.writeResumeSuspend(b, &g.currFunk, true, false); err != nil {
 			return err
 		}
 		b.writes("\n")

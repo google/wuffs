@@ -271,7 +271,7 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 	return nil
 }
 
-func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTypedVars bool) error {
+func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool, initBoolTypedVars bool) error {
 	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 
 	if typ := n.XType(); typ.HasPointers() {
@@ -299,6 +299,25 @@ func (g *gen) writeResumeSuspend1(b *buffer, n *a.Var, suspend bool, initBoolTyp
 			b.printf("%s = ((%s){});\n", local, rhs)
 			return nil
 		}
+
+	} else if f.varResumables == nil || !f.varResumables[n.Name()] {
+		if !suspend {
+			if initBoolTypedVars && typ.QID() == (t.QID{t.IDBase, t.IDBool}) {
+				b.printf("%s = false;\n", local)
+				return nil
+			}
+			// TODO: drop this (after we stop emitting unnecessary
+			// WUFFS_BASE__COROUTINE_SUSPENSION_POINT lines); we shouldn't need
+			// to zero-initialize these variables.
+			if !initBoolTypedVars {
+				zero := "0"
+				if typ.QID() == (t.QID{t.IDBase, t.IDBool}) {
+					zero = "false"
+				}
+				b.printf("%s = %s;\n", local, zero)
+			}
+		}
+		return nil
 
 	} else {
 		lhs := local
@@ -363,19 +382,22 @@ fail:
 		n.Name().Str(g.tm), n.XType().Str(g.tm))
 }
 
-func (g *gen) writeResumeSuspend(b *buffer, block []*a.Node, suspend bool, initBoolTypedVars bool) error {
-	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
-		return g.writeResumeSuspend1(b, n, suspend, initBoolTypedVars)
+func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool, initBoolTypedVars bool) error {
+	return g.visitVars(b, f.astFunc.Body(), 0, func(g *gen, b *buffer, n *a.Var) error {
+		return g.writeResumeSuspend1(b, f, n, suspend, initBoolTypedVars)
 	})
 }
 
-func (g *gen) writeVars(b *buffer, block []*a.Node, skipPointerTypes bool, skipIterateVariables bool) error {
-	return g.visitVars(b, block, 0, func(g *gen, b *buffer, n *a.Var) error {
+func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipIterateVariables bool, skipNonresumable bool) error {
+	return g.visitVars(b, f.astFunc.Body(), 0, func(g *gen, b *buffer, n *a.Var) error {
 		typ := n.XType()
 		if skipPointerTypes && typ.HasPointers() {
 			return nil
 		}
 		if skipIterateVariables && n.IterateVariable() {
+			return nil
+		}
+		if skipNonresumable && (f.varResumables == nil || !f.varResumables[n.Name()]) {
 			return nil
 		}
 		name := n.Name().Str(g.tm)
