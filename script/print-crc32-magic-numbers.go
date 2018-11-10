@@ -37,10 +37,8 @@ func main1() error {
 	tables := [16]crc32.Table{}
 	tables[0] = *crc32.MakeTable(crc32.IEEE)
 
-	// This slicing-by-N table generation algorithm is based on that from Go's
-	// standard library (the hash/crc32 package).
-	//
-	// See also https://create.stephan-brumme.com/crc32/#slicing-by-16-overview
+	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
+	// the slicing-by-M algorithm. We use an M of 16.
 	for i := 0; i < 256; i++ {
 		crc := tables[0][i]
 		for j := 1; j < 16; j++ {

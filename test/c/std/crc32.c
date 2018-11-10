@@ -161,9 +161,7 @@ const char* test_wuffs_crc32_ieee_golden() {
   return NULL;
 }
 
-const char* test_wuffs_crc32_ieee_pi() {
-  CHECK_FOCUS(__func__);
-
+const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
   const char* digits =
       "3.1415926535897932384626433832795028841971693993751058209749445";
   if (strlen(digits) != 63) {
@@ -189,17 +187,38 @@ const char* test_wuffs_crc32_ieee_pi() {
 
   int i;
   for (i = 0; i < 64; i++) {
-    wuffs_crc32__ieee_hasher checksum = ((wuffs_crc32__ieee_hasher){});
-    const char* z = wuffs_crc32__ieee_hasher__check_wuffs_version(
-        &checksum, sizeof checksum, WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    uint32_t got;
+    wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
+        .ptr = (uint8_t*)(digits),
+        .len = i,
+    });
+
+    if (mimic) {
+      // A simple, slow CRC-32 IEEE implementation, 1 bit at a time.
+      got = 0xFFFFFFFF;
+      while (data.len--) {
+        uint8_t byte = *data.ptr++;
+        for (int i = 0; i < 8; i++) {
+          if ((got ^ byte) & 1) {
+            got = (got >> 1) ^ 0xEDB88320;
+          } else {
+            got = (got >> 1);
+          }
+          byte >>= 1;
+        }
+      }
+      got ^= 0xFFFFFFFF;
+
+    } else {
+      wuffs_crc32__ieee_hasher checksum = ((wuffs_crc32__ieee_hasher){});
+      const char* z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+          &checksum, sizeof checksum, WUFFS_VERSION);
+      if (z) {
+        RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+      }
+      got = wuffs_crc32__ieee_hasher__update(&checksum, data);
     }
-    uint32_t got = wuffs_crc32__ieee_hasher__update(
-        &checksum, ((wuffs_base__slice_u8){
-                       .ptr = (uint8_t*)(digits),
-                       .len = i,
-                   }));
+
     if (got != wants[i]) {
       RETURN_FAIL("i=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32, i, got,
                   wants[i]);
@@ -207,6 +226,22 @@ const char* test_wuffs_crc32_ieee_pi() {
   }
   return NULL;
 }
+
+const char* test_wuffs_crc32_ieee_pi() {
+  CHECK_FOCUS(__func__);
+  return do_test_xxxxx_crc32_ieee_pi(false);
+}
+
+  // ---------------- Mimic Tests
+
+#ifdef WUFFS_MIMIC
+
+const char* test_mimic_crc32_ieee_pi() {
+  CHECK_FOCUS(__func__);
+  return do_test_xxxxx_crc32_ieee_pi(true);
+}
+
+#endif  // WUFFS_MIMIC
 
 // ---------------- CRC32 Benches
 
@@ -275,6 +310,12 @@ proc tests[] = {
 
     test_wuffs_crc32_ieee_golden,  //
     test_wuffs_crc32_ieee_pi,      //
+
+#ifdef WUFFS_MIMIC
+
+    test_mimic_crc32_ieee_pi,  //
+
+#endif  // WUFFS_MIMIC
 
     NULL,
 };
