@@ -234,6 +234,11 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 
 	for _, o := range block {
 		switch o.Kind() {
+		case a.KIOBind:
+			if err := g.visitVars(b, o.AsIOBind().Body(), depth, f); err != nil {
+				return err
+			}
+
 		case a.KIf:
 			for o := o.AsIf(); o != nil; o = o.ElseIf() {
 				if err := g.visitVars(b, o.BodyIfTrue(), depth, f); err != nil {
@@ -242,11 +247,6 @@ func (g *gen) visitVars(b *buffer, block []*a.Node, depth uint32, f func(*gen, *
 				if err := g.visitVars(b, o.BodyIfFalse(), depth, f); err != nil {
 					return err
 				}
-			}
-
-		case a.KIOBind:
-			if err := g.visitVars(b, o.AsIOBind().Body(), depth, f); err != nil {
-				return err
 			}
 
 		case a.KIterate:
