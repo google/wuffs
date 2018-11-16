@@ -549,13 +549,20 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			return g.writeReadUXX(b, n, "a_src", 64, "le")
 
 		case t.IDSkip:
+			x := n.Args()[0].AsArg().Value()
+			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
+				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {" +
+					"status = wuffs_base__suspension__short_read; goto suspend; }")
+				b.printf("iop_a_src++;\n")
+				return nil
+			}
+
 			g.currFunk.usesScratch = true
 			// TODO: don't hard-code [0], and allow recursive coroutines.
 			scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
 				cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
-			x := n.Args()[0].AsArg().Value()
 			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
 				return err
 			}

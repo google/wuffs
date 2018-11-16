@@ -7576,7 +7576,6 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags;
-  uint8_t v_lw;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -7598,7 +7597,6 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   uint32_t coro_susp_point = self->private_impl.c_skip_frame[0].coro_susp_point;
   if (coro_susp_point) {
     v_flags = 0;
-    v_lw = 0;
   } else {
   }
   switch (coro_susp_point) {
@@ -7627,17 +7625,12 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
       }
       iop_a_src += self->private_impl.c_skip_frame[0].scratch;
     }
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
-        status = wuffs_base__suspension__short_read;
-        goto suspend;
-      }
-      uint8_t t_1 = *iop_a_src++;
-      v_lw = t_1;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+    if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+      status = wuffs_base__suspension__short_read;
+      goto suspend;
     }
-    if (v_lw != 0) {
-    }
+    iop_a_src++;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
     if (a_src.private_impl.buf) {
       a_src.private_impl.buf->meta.ri =

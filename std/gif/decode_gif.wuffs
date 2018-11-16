@@ -229,9 +229,9 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 	if (flags & 0x80) != 0 {
 		args.src.skip!??(n:(3 as base.u32) << (1 + (flags & 0x07)))
 	}
-	var lw base.u8 = args.src.read_u8!??()
-	if lw != 0 {  // TODO: delete the lw variable.
-	}
+	// Skip the literal width.
+	args.src.skip!??(n:1)
+	// Skip the blocks of LZW-compressed data.
 	this.skip_blocks!??(src:args.src)
 
 	this.num_decoded_frames_value ~sat+= 1
