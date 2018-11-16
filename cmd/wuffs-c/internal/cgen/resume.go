@@ -14,6 +14,54 @@
 
 package cgen
 
+// This file deals with determining whether local variables need to be kept:
+// saved / loaded when suspending / resuming a coroutine. For simplicity, this
+// is a boolean property of each local variable. The analysis does not
+// determine that a local variable needs saving at some CSPs (coroutine
+// suspension points) but not others.
+//
+// Fexample, in this code:
+//
+//   i = etc
+//   yield foo  // The first CSP.
+//   j = 0
+//   while j < i {
+//     a[j] = 42
+//     j += 1
+//   }
+//   c = 100 + args.src.read_u8!??()  // The second CSP.
+//   k = a[c]
+//
+// There are two CSPs. The i local variable will need to be kept, as it is
+// written to before the first CSP and read from after the first CSP.
+// Similarly, the a local variable (an array) will need to be kept, as its use
+// crosses the second CSP. The j local variable need not be kept, as all of its
+// uses happens between two consecutive CSPs. To be precise, for every possible
+// code path (including if branches and while loops), each read from j is
+// preceded by a write to j without an intervening CSP. The c and k local
+// variables also need not be kept, as their uses are all after the last CSP.
+//
+// Algorithmically, we walk through a function's statements in two passes. The
+// first pass finds all of the local variables, and assigns an integer index to
+// each one. The second tracks (in a slice indexed by that integer index) each
+// local variable's resumability, one of three possible states: none, weak and
+// strong. Strong means that the local variable definitely needs to be kept.
+// Weak means that we have (in the worst case, for branches' and loops'
+// multiple paths) seen a CSP without a write afterwards, so that seeing a read
+// would change the resumability to strong. None means that we have not seen a
+// CSP since the last write.
+//
+// Essentially, the state transitions are: strong is sticky, weak to strong
+// happens on a read, weak to none happens on a write, and none to weak happens
+// on a CSP. When reconciling multiple code paths, the strongest wins, where
+// strong > weak and weak > none. Loops are repeated until the reconciliations
+// between the N'th and N+1'th iteration are all no-ops. There can be multiple
+// reconciliations per iteration, due to break and continue statements.
+//
+// Care is taken with a coroutine call in a statement or expression. Arguments
+// to the coroutine are 'inside' and are before the CSP. The rest of the
+// expression is 'outside' and are after the CSP.
+
 import (
 	"fmt"
 
@@ -21,6 +69,8 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
+// subExprFilter is used, when analyzing an expression containing a coroutine
+// call, for multiple analysis passes: before, during and after that call.
 type subExprFilter uint32
 
 const (
@@ -30,6 +80,8 @@ const (
 	subExprFilterAfterCoroutine  = subExprFilter(3)
 )
 
+// resumability tracks whether a local variable's value will need to be kept
+// across CSPs (coroutine suspension points).
 type resumability uint32
 
 const (
@@ -38,13 +90,14 @@ const (
 	resumabilityStrong = resumability(2)
 )
 
+// resumabilities is a slice of resumability values, one per local variable.
 type resumabilities []resumability
 
 func (r resumabilities) clone() resumabilities {
 	return append(resumabilities(nil), r...)
 }
 
-func (r resumabilities) merge(s resumabilities) (changed bool) {
+func (r resumabilities) reconcile(s resumabilities) (changed bool) {
 	if len(r) != len(s) {
 		panic("resumabilities have different length")
 	}
@@ -85,7 +138,7 @@ type loopResumable struct {
 
 type resumabilityHelper struct {
 	tm    *t.Map
-	vars  map[t.ID]int
+	vars  map[t.ID]int // Maps from local variable name to resumabilities index.
 	loops map[a.Loop]*loopResumable
 }
 
@@ -315,13 +368,13 @@ func (h *resumabilityHelper) doIf(r resumabilities, n *a.If, depth uint32) error
 		if err := h.doBlock(scratch, n.BodyIfTrue(), depth); err != nil {
 			return err
 		}
-		result.merge(scratch)
+		result.reconcile(scratch)
 
 		copy(scratch, r)
 		if err := h.doBlock(scratch, n.BodyIfFalse(), depth); err != nil {
 			return err
 		}
-		result.merge(scratch)
+		result.reconcile(scratch)
 	}
 	copy(r, result)
 	return nil
@@ -348,9 +401,9 @@ func (h *resumabilityHelper) doJump(r resumabilities, n *a.Jump, depth uint32) e
 	l := h.loops[n.JumpTarget()]
 	switch n.Keyword() {
 	case t.IDBreak:
-		l.changed = l.before.merge(r) || l.changed
+		l.changed = l.before.reconcile(r) || l.changed
 	case t.IDContinue:
-		l.changed = l.after.merge(r) || l.changed
+		l.changed = l.after.reconcile(r) || l.changed
 	default:
 		return fmt.Errorf("unrecognized ast.Jump keyword")
 	}
@@ -410,13 +463,13 @@ func (h *resumabilityHelper) doWhile(r resumabilities, n *a.While, depth uint32)
 		if err := h.doBlock(r, n.Body(), depth); err != nil {
 			return err
 		}
-		l.changed = l.before.merge(r) || l.changed
+		l.changed = l.before.reconcile(r) || l.changed
 
 		copy(r, l.before)
 		if err := h.doExpr(r, n.Condition()); err != nil {
 			return err
 		}
-		l.changed = l.after.merge(r) || l.changed
+		l.changed = l.after.reconcile(r) || l.changed
 
 		if !l.changed {
 			break
