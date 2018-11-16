@@ -80,8 +80,8 @@ polynomial is `N=4, LSB, BITS=0xC`. If `N` and `LSB`-ness is agreed beforehand,
 For 32 bit CRCs, the two popular polynomials (presented in `LSB` order) are
 `0xEDB88320` and `0x82F63B78`, also called the IEEE and Castagnoli polynomials,
 also called CRC-32 and CRC-32C. For example, the bit string representation of
-the IEEE polynomial `0xEDB88320`, reversed and with the implicit high bit, is
-`0b1_00000100_11000001_00011101_10110111`.
+the IEEE polynomial `0xEDB88320`, un-reversed and with the implicit high bit,
+is `0b1_00000100_11000001_00011101_10110111`.
 
 
 # Worked Example
@@ -93,7 +93,7 @@ simpler worked example for the CRC-4-ITU hash, above, with two additional
 inversion steps, described below.
 
 Both the CRC-4-ITU and the CRC-32 worked examples are output by the
-`script/print-crc32.go` program.
+`script/print-crc32-example.go` program.
 
 ```
 input   00010010 10010110 01010000
@@ -231,6 +231,8 @@ Wuffs does not currently implement the SIMD algorithm.
 
 # Further Reading
 
-See a couple of
-[Wikipedia](https://en.wikipedia.org/wiki/Cyclic_redundancy_check)
-[articles](https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks).
+See a couple of Wikipedia articles:
+
+- [CRC](https://en.wikipedia.org/wiki/Cyclic_redundancy_check),
+- [Computation of
+  CRCs](https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks).
