@@ -825,6 +825,73 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
   return NULL;
 }
 
+const char* test_wuffs_gif_frame_dirty_rect() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* z = read_file(&src, "test/data/hippopotamus.interlaced.gif");
+  if (z) {
+    return z;
+  }
+
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  z = wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  z = wuffs_gif__decoder__decode_image_config(
+      &dec, &ic, wuffs_base__io_buffer__reader(&src));
+  if (z) {
+    RETURN_FAIL("decode_image_config: \"%s\"", z);
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                               global_pixel_slice);
+  if (z) {
+    RETURN_FAIL("set_from_slice: \"%s\"", z);
+  }
+
+  // The hippopotamus.interlaced.gif image is 28 pixels high. As we decode rows
+  // of pixels, interlacing means that we decode rows 0, 8, 16, 24, 4, 12, 20,
+  // 2, 6, 10, ..., 22, 26, 1, 3, 5, ..., 25, 27. As we progress, the dirty
+  // rect's max_excl_y should be one more than the highest decoded row so far.
+  // If we haven't decoded any rows yet, max_excl_y should be zero.
+  //
+  // TODO: this should be 0, 1, 9, 17, 25, 27, 28.
+  uint32_t wants[2] = {0, 28};
+  int i = 0;
+
+  while (true) {
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    set_reader_limit(&src_reader, 1);
+    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
+                                         global_work_slice, NULL);
+
+    wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
+    if ((i < WUFFS_TESTLIB_ARRAY_SIZE(wants)) && (wants[i] == r.max_excl_y)) {
+      i++;
+    }
+
+    if (!z) {
+      break;
+    } else if (z != wuffs_base__suspension__short_read) {
+      RETURN_FAIL("decode_frame: \"%s\"", z);
+    }
+  }
+
+  if (i != WUFFS_TESTLIB_ARRAY_SIZE(wants)) {
+    RETURN_FAIL("i: got %d, want %d", i,
+                (int)(WUFFS_TESTLIB_ARRAY_SIZE(wants)));
+  }
+  return NULL;
+}
+
 const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -1326,6 +1393,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
     test_wuffs_gif_decode_multiple_loop_counts,              //
+    test_wuffs_gif_frame_dirty_rect,                         //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //
     test_wuffs_gif_io_position_one_chunk,                    //
