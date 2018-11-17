@@ -78,8 +78,8 @@ uint64_t micros_since_start(struct timespec* now) {
 uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
 
-wuffs_base__color_u32argb* curr_dst_buffer = NULL;
-wuffs_base__color_u32argb* prev_dst_buffer = NULL;
+wuffs_base__color_u32_argb_premul* curr_dst_buffer = NULL;
+wuffs_base__color_u32_argb_premul* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
 
 wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
@@ -136,7 +136,7 @@ void restore_background(wuffs_base__pixel_buffer* pb,
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32argb* d =
+    wuffs_base__color_u32_argb_premul* d =
         curr_dst_buffer + (y * width) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       *d++ = 0;
@@ -154,12 +154,13 @@ void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
-    wuffs_base__color_u32argb* d =
+    wuffs_base__color_u32_argb_premul* d =
         curr_dst_buffer + (y * width) + bounds.min_incl_x;
     uint8_t* s = tab.ptr + (y * tab.stride) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
       uint32_t index = *s++;
-      wuffs_base__color_u32argb c = load_u32le(palette.ptr + (4 * index));
+      wuffs_base__color_u32_argb_premul c =
+          load_u32le(palette.ptr + (4 * index));
       if (c) {
         *d = c;
       }
@@ -172,14 +173,14 @@ size_t print_ascii_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32argb* d = curr_dst_buffer;
+  wuffs_base__color_u32_argb_premul* d = curr_dst_buffer;
   uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   uint32_t y;
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32argb c = *d++;
+      wuffs_base__color_u32_argb_premul c = *d++;
       // Convert to grayscale via the formula
       //  Y = (0.299 * R) + (0.587 * G) + (0.114 * B)
       // translated into fixed point arithmetic.
@@ -198,7 +199,7 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
   uint32_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&pb->pixcfg);
 
-  wuffs_base__color_u32argb* d = curr_dst_buffer;
+  wuffs_base__color_u32_argb_premul* d = curr_dst_buffer;
   uint8_t* p = printbuf.ptr;
   *p++ = '\n';
   p += sprintf((char*)p, "%s", reset_color);
@@ -206,7 +207,7 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
   for (y = 0; y < height; y++) {
     uint32_t x;
     for (x = 0; x < width; x++) {
-      wuffs_base__color_u32argb c = *d++;
+      wuffs_base__color_u32_argb_premul c = *d++;
       int b = 0xFF & (c >> 0);
       int g = 0xFF & (c >> 8);
       int r = 0xFF & (c >> 16);
@@ -226,17 +227,17 @@ const char* try_allocate(wuffs_base__image_config* ic) {
   uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
-  if (num_pixels > (SIZE_MAX / sizeof(wuffs_base__color_u32argb))) {
+  if (num_pixels > (SIZE_MAX / sizeof(wuffs_base__color_u32_argb_premul))) {
     return "could not allocate dst buffer";
   }
 
-  dst_len = num_pixels * sizeof(wuffs_base__color_u32argb);
-  curr_dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
+  dst_len = num_pixels * sizeof(wuffs_base__color_u32_argb_premul);
+  curr_dst_buffer = (wuffs_base__color_u32_argb_premul*)malloc(dst_len);
   if (!curr_dst_buffer) {
     return "could not allocate curr-dst buffer";
   }
 
-  prev_dst_buffer = (wuffs_base__color_u32argb*)malloc(dst_len);
+  prev_dst_buffer = (wuffs_base__color_u32_argb_premul*)malloc(dst_len);
   if (!prev_dst_buffer) {
     return "could not allocate prev-dst buffer";
   }
@@ -368,7 +369,7 @@ const char* play() {
         break;
       }
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
-        wuffs_base__color_u32argb* swap = curr_dst_buffer;
+        wuffs_base__color_u32_argb_premul* swap = curr_dst_buffer;
         curr_dst_buffer = prev_dst_buffer;
         prev_dst_buffer = swap;
         break;

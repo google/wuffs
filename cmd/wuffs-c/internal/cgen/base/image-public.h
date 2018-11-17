@@ -20,10 +20,10 @@ extern "C" {
 
 // ---------------- Images
 
-// wuffs_base__color_u32argb is an 8 bit per channel Alpha, Red, Green, Blue
-// color, as a uint32_t value. It is in word order, not byte order: its value
-// is always 0xAARRGGBB, regardless of endianness. It uses premultiplied alpha.
-typedef uint32_t wuffs_base__color_u32argb;
+// wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
+// Alpha, Red, Green, Blue color, as a uint32_t value. It is in word order, not
+// byte order: its value is always 0xAARRGGBB, regardless of endianness.
+typedef uint32_t wuffs_base__color_u32_argb_premul;
 
 // --------
 
@@ -57,7 +57,7 @@ typedef uint32_t wuffs_base__color_u32argb;
 //
 // For direct formats with N > 1 channels, those channels can be laid out in
 // either 1 (packed) or N (planar) planes. For example, RGBA data is usually
-// packed, but YUV data is usually planar, due to chroma subsampling (for
+// packed, but YCbCr data is usually planar, due to chroma subsampling (for
 // details, see the wuffs_base__pixel_subsampling type).
 //
 // For indexed formats, the palette (always 256 × 4 bytes) holds 8 bits per
@@ -66,12 +66,13 @@ typedef uint32_t wuffs_base__color_u32argb;
 // indices. Plane 3 is re-purposed to hold the per-index colors.
 //
 // The color field is encoded in 3 bits:
-//  - 0 means                 A (Alpha).
-//  - 1 means   Y       or   YA (Gray, Alpha).
-//  - 2 means BGR, BGRX or BGRA (Blue, Green, Red, X-padding or Alpha).
-//  - 3 means RGB, RGBX or RGBA (Red, Green, Blue, X-padding or Alpha).
-//  - 4 means YUV       or YUVA (Luma, Chroma-blue, Chroma-red, Alpha).
-//  - 5 means CMY       or CMYK (Cyan, Magenta, Yellow, Black).
+//  - 0 means                   A (Alpha).
+//  - 1 means Y         or     YA (Gray, Alpha).
+//  - 2 means YCbCr     or YCbCrA (Luma, Chroma-blue, Chroma-red, Alpha).
+//  - 3 means YCoCg     or YCoCgA (Luma, Chroma-orange, Chroma-green, Alpha).
+//  - 4 means BGR, BGRX or   BGRA (Blue, Green, Red, X-padding or Alpha).
+//  - 5 means RGB, RGBX or   RGBA (Red, Green, Blue, X-padding or Alpha).
+//  - 6 means CMY       or   CMYK (Cyan, Magenta, Yellow, Black).
 //  - all other values are reserved.
 //
 // In Wuffs, channels are given in memory order (also known as byte order),
@@ -102,7 +103,7 @@ typedef uint32_t wuffs_base__color_u32argb;
 //  - 14 means a bit depth of 48.
 //  - 15 means a bit depth of 64.
 //
-// For example, wuffs_base__pixel_format 0x3210BBBB is a natural format for
+// For example, wuffs_base__pixel_format 0x5210BBBB is a natural format for
 // decoding a PNG image - network byte order (also known as big-endian),
 // packed, non-premultiplied alpha - that happens to be 16-bit-depth truecolor
 // with alpha (RGBA). In memory order:
@@ -110,7 +111,7 @@ typedef uint32_t wuffs_base__color_u32argb;
 //  ptr+0  ptr+1  ptr+2  ptr+3  ptr+4  ptr+5  ptr+6  ptr+7
 //  Rhi    Rlo    Ghi    Glo    Bhi    Blo    Ahi    Alo
 //
-// For example, the value wuffs_base__pixel_format 0x20000565 means BGR with no
+// For example, the value wuffs_base__pixel_format 0x40000565 means BGR with no
 // alpha or padding, 5/6/5 bits for blue/green/red, packed 2 bytes per pixel,
 // laid out LSB-first in memory order:
 //
@@ -119,12 +120,12 @@ typedef uint32_t wuffs_base__color_u32argb;
 //  G₂G₁G₀B₄B₃B₂B₁B₀  R₄R₃R₂R₁R₀G₅G₄G₃
 //
 // On little-endian systems (but not big-endian), this Wuffs pixel format value
-// (0x20000565) corresponds to the Cairo library's CAIRO_FORMAT_RGB16_565, the
+// (0x40000565) corresponds to the Cairo library's CAIRO_FORMAT_RGB16_565, the
 // SDL2 (Simple DirectMedia Layer 2) library's SDL_PIXELFORMAT_RGB565 and the
 // Skia library's kRGB_565_SkColorType. Note BGR in Wuffs versus RGB in the
 // other libraries.
 //
-// Regardless of endianness, this Wuffs pixel format value (0x20000565)
+// Regardless of endianness, this Wuffs pixel format value (0x40000565)
 // corresponds to the V4L2 (Video For Linux 2) library's V4L2_PIX_FMT_RGB565
 // and the Wayland-DRM library's WL_DRM_FORMAT_RGB565.
 //
@@ -152,30 +153,35 @@ typedef uint32_t wuffs_base__pixel_format;
 #define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL \
   ((wuffs_base__pixel_format)0x13000008)
 
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCR ((wuffs_base__pixel_format)0x20020888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRK ((wuffs_base__pixel_format)0x21038888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL \
+  ((wuffs_base__pixel_format)0x22038888)
+
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCG ((wuffs_base__pixel_format)0x30020888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGK ((wuffs_base__pixel_format)0x31038888)
+#define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL \
+  ((wuffs_base__pixel_format)0x32038888)
+
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x22040008)
+  ((wuffs_base__pixel_format)0x42040008)
 
-#define WUFFS_BASE__PIXEL_FORMAT__BGR ((wuffs_base__pixel_format)0x20000888)
-#define WUFFS_BASE__PIXEL_FORMAT__BGRX ((wuffs_base__pixel_format)0x21008888)
+#define WUFFS_BASE__PIXEL_FORMAT__BGR ((wuffs_base__pixel_format)0x40000888)
+#define WUFFS_BASE__PIXEL_FORMAT__BGRX ((wuffs_base__pixel_format)0x41008888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x22008888)
+  ((wuffs_base__pixel_format)0x42008888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL \
-  ((wuffs_base__pixel_format)0x23008888)
+  ((wuffs_base__pixel_format)0x43008888)
 
-#define WUFFS_BASE__PIXEL_FORMAT__RGB ((wuffs_base__pixel_format)0x30000888)
-#define WUFFS_BASE__PIXEL_FORMAT__RGBX ((wuffs_base__pixel_format)0x31008888)
+#define WUFFS_BASE__PIXEL_FORMAT__RGB ((wuffs_base__pixel_format)0x50000888)
+#define WUFFS_BASE__PIXEL_FORMAT__RGBX ((wuffs_base__pixel_format)0x51008888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x32008888)
+  ((wuffs_base__pixel_format)0x52008888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL \
-  ((wuffs_base__pixel_format)0x33008888)
+  ((wuffs_base__pixel_format)0x53008888)
 
-#define WUFFS_BASE__PIXEL_FORMAT__YUV ((wuffs_base__pixel_format)0x40020888)
-#define WUFFS_BASE__PIXEL_FORMAT__YUVK ((wuffs_base__pixel_format)0x41038888)
-#define WUFFS_BASE__PIXEL_FORMAT__YUVA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x42038888)
-
-#define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x50020888)
-#define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x51038888)
+#define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x60020888)
+#define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x61038888)
 
 static inline bool  //
 wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
@@ -206,9 +212,9 @@ wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
 //
 // For packed pixel formats, the mapping is trivial: i = x and j = y. For
 // planar pixel formats, the mapping can differ due to chroma subsampling. For
-// example, consider a three plane YUV pixel format with 4:2:2 subsampling. For
-// the luma (Y) channel, there is one sample for every pixel, but for the
-// chroma (U, V) channels, there is one sample for every two pixels: pairs of
+// example, consider a three plane YCbCr pixel format with 4:2:2 subsampling.
+// For the luma (Y) channel, there is one sample for every pixel, but for the
+// chroma (Cb, Cr) channels, there is one sample for every two pixels: pairs of
 // horizontally adjacent pixels form one macropixel, i = x / 2 and j == y. In
 // general, for a given p:
 //  - i = (x + bias_x) >> shift_x.
