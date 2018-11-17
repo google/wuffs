@@ -105,6 +105,7 @@ pub struct decoder?(
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
 	dst_x base.u32,
 	dst_y base.u32,
+	dirty_y base.range_ie_u32,
 
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
@@ -121,6 +122,8 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 	if this.call_sequence >= 1 {
 		return status "?bad call sequence"
 	}
+	this.dirty_y.reset!()
+
 	this.decode_header!??(src:args.src)
 	this.decode_lsd!??(src:args.src)
 	this.decode_up_to_id_part1!??(src:args.src)
@@ -165,6 +168,14 @@ pub func decoder.num_decoded_frame_configs() base.u64 {
 
 pub func decoder.num_decoded_frames() base.u64 {
 	return this.num_decoded_frames_value
+}
+
+pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
+	return this.util.make_rect_ie_u32(
+		min_incl_x:this.frame_rect_x0,
+		min_incl_y:this.dirty_y.get_min_incl(),
+		max_excl_x:this.frame_rect_x1,
+		max_excl_y:this.dirty_y.get_max_excl())
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -581,7 +592,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	// a coroutine-in-progress lzw_decoder.decode call, still waiting for that
 	// end code. To cancel that coroutine, we reset the LZW decoder.
 	if this.previous_lzw_decode_ended_abruptly {
-		this.lzw.reset()
+		this.lzw.reset()  // TODO: needs an ! effect.
 	}
 
 	var lw base.u8 = args.src.read_u8!??()
@@ -674,6 +685,10 @@ pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
 			new_ri = this.uncompressed_ri ~sat+ n
 			this.uncompressed_ri = new_ri.min(x:4096)
 			this.dst_x ~sat+= n
+
+			this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
+				min_incl:this.dst_y,
+				max_excl:this.dst_y ~sat+ 1))
 		}
 
 		if this.frame_rect_x1 <= this.dst_x {

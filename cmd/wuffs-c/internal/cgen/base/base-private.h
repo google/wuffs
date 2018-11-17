@@ -326,7 +326,7 @@ wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
   p[7] = x >> 56;
 }
 
-  // --------
+// --------
 
 extern const uint8_t wuffs_base__low_bits_mask__u8[9];
 extern const uint16_t wuffs_base__low_bits_mask__u16[17];
@@ -427,6 +427,48 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
     });
   }
   return ((wuffs_base__slice_u8){});
+}
+
+// ---------------- Ranges and Rects
+
+static inline uint32_t  //
+wuffs_base__range_ii_u32__get_min_incl(const wuffs_base__range_ii_u32* r) {
+  return r->min_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ii_u32__get_max_incl(const wuffs_base__range_ii_u32* r) {
+  return r->max_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ie_u32__get_min_incl(const wuffs_base__range_ie_u32* r) {
+  return r->min_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ie_u32__get_max_excl(const wuffs_base__range_ie_u32* r) {
+  return r->max_excl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ii_u64__get_min_incl(const wuffs_base__range_ii_u64* r) {
+  return r->min_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ii_u64__get_max_incl(const wuffs_base__range_ii_u64* r) {
+  return r->max_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ie_u64__get_min_incl(const wuffs_base__range_ie_u64* r) {
+  return r->min_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
+  return r->max_excl;
 }
 
 // ---------------- Utility

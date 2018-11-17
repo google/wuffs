@@ -131,9 +131,13 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 					}
 				}
 			}
+		} else if isBaseRangeType(lTyp.QID()) {
+			if n.Operator() == t.IDEq {
+				opName = "="
+			}
 		}
 
-		if closer == "" {
+		if opName == "" {
 			return fmt.Errorf("unsupported assignment type %q", lTyp.Str(g.tm))
 		}
 	}

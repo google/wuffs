@@ -2595,6 +2595,9 @@ wuffs_gif__decoder__num_decoded_frame_configs(const wuffs_gif__decoder* self);
 WUFFS_BASE__MAYBE_STATIC uint64_t  //
 wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self);
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
+wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self);
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self);
 
@@ -2659,6 +2662,7 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_frame_rect_y1;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
+    wuffs_base__range_ie_u32 f_dirty_y;
     uint32_t f_uncompressed_ri;
     uint32_t f_uncompressed_wi;
     uint8_t f_uncompressed[4096];
@@ -2753,6 +2757,11 @@ struct wuffs_gif__decoder__struct {
   inline uint64_t  //
   num_decoded_frames() const {
     return wuffs_gif__decoder__num_decoded_frames(this);
+  }
+
+  inline wuffs_base__rect_ie_u32  //
+  frame_dirty_rect() const {
+    return wuffs_gif__decoder__frame_dirty_rect(this);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -3425,6 +3434,48 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
     });
   }
   return ((wuffs_base__slice_u8){});
+}
+
+// ---------------- Ranges and Rects
+
+static inline uint32_t  //
+wuffs_base__range_ii_u32__get_min_incl(const wuffs_base__range_ii_u32* r) {
+  return r->min_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ii_u32__get_max_incl(const wuffs_base__range_ii_u32* r) {
+  return r->max_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ie_u32__get_min_incl(const wuffs_base__range_ie_u32* r) {
+  return r->min_incl;
+}
+
+static inline uint32_t  //
+wuffs_base__range_ie_u32__get_max_excl(const wuffs_base__range_ie_u32* r) {
+  return r->max_excl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ii_u64__get_min_incl(const wuffs_base__range_ii_u64* r) {
+  return r->min_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ii_u64__get_max_incl(const wuffs_base__range_ii_u64* r) {
+  return r->max_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ie_u64__get_min_incl(const wuffs_base__range_ie_u64* r) {
+  return r->min_incl;
+}
+
+static inline uint64_t  //
+wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
+  return r->max_excl;
 }
 
 // ---------------- Utility
@@ -7335,6 +7386,9 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
+    (memset(&self->private_impl.f_dirty_y, 0,
+            sizeof((wuffs_base__range_ie_u32){})),
+     wuffs_base__return_empty_struct());
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     status = wuffs_gif__decoder__decode_header(self, a_src);
     if (status) {
@@ -7426,6 +7480,24 @@ wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self) {
   }
 
   return self->private_impl.f_num_decoded_frames_value;
+}
+
+// -------- func gif.decoder.frame_dirty_rect
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__rect_ie_u32  //
+wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
+  if (!self) {
+    return ((wuffs_base__rect_ie_u32){});
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return ((wuffs_base__rect_ie_u32){});
+  }
+
+  return wuffs_base__utility__make_rect_ie_u32(
+      &self->private_impl.f_util, self->private_impl.f_frame_rect_x0,
+      wuffs_base__range_ie_u32__get_min_incl(&self->private_impl.f_dirty_y),
+      self->private_impl.f_frame_rect_x1,
+      wuffs_base__range_ie_u32__get_max_excl(&self->private_impl.f_dirty_y));
 }
 
 // -------- func gif.decoder.workbuf_len
@@ -9235,6 +9307,11 @@ label_0_continue:;
       self->private_impl.f_uncompressed_ri =
           wuffs_base__u32__min(v_new_ri, 4096);
       wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x, v_n);
+      self->private_impl.f_dirty_y = wuffs_base__range_ie_u32__unite(
+          &self->private_impl.f_dirty_y,
+          wuffs_base__utility__make_range_ie_u32(
+              &self->private_impl.f_util, self->private_impl.f_dst_y,
+              wuffs_base__u32__sat_add(self->private_impl.f_dst_y, 1)));
     }
     if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
       self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;

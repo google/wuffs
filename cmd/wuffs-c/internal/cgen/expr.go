@@ -103,25 +103,30 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			}
 			qid := recvTyp.QID()
 
-			// Generate a three part expression using the comma operator:
+			// Generate a 2 or 3 part expression using the comma operator:
 			// "(memset call, check_wuffs_version call, return_empty_struct
 			// call)". The final part is a function call (to a static inline
 			// function) instead of a struct literal, to avoid a "expression
 			// result unused" compiler error.
+			//
+			// The middle part, the check_wuffs_version call, is optional, for
+			// some built-in types.
 
 			b.printf("(memset(%s", addr)
 			// TODO: ensure that the recv expression is idempotent.
 			if err := g.writeExpr(b, recv, rp, depth); err != nil {
 				return err
 			}
-			b.printf(", 0, sizeof ((%s%s){})),", g.packagePrefix(qid), qid[1].Str(g.tm))
+			b.printf(", 0, sizeof ((%s%s){}))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
-			b.printf("wuffs_base__ignore_check_wuffs_version_status("+
-				"%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
-			if err := g.writeExpr(b, recv, rp, depth); err != nil {
-				return err
+			if !isBaseRangeType(qid) {
+				b.printf(", wuffs_base__ignore_check_wuffs_version_status("+
+					"%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
+				if err := g.writeExpr(b, recv, rp, depth); err != nil {
+					return err
+				}
+				b.printf(", sizeof ((%s%s){}), WUFFS_VERSION))", g.packagePrefix(qid), qid[1].Str(g.tm))
 			}
-			b.printf(", sizeof ((%s%s){}), WUFFS_VERSION))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
 			b.writes(", wuffs_base__return_empty_struct())")
 			return nil
@@ -437,6 +442,16 @@ func (g *gen) packagePrefix(qid t.QID) string {
 		return "wuffs_" + otherPkg + "__"
 	}
 	return g.pkgPrefix
+}
+
+func isBaseRangeType(qid t.QID) bool {
+	if qid[0] == t.IDBase {
+		switch qid[1] {
+		case t.IDRangeIEU32, t.IDRangeIIU32, t.IDRangeIEU64, t.IDRangeIIU64:
+			return true
+		}
+	}
+	return false
 }
 
 var cTypeNames = [...]string{
