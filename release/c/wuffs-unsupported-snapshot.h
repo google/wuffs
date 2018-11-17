@@ -7511,8 +7511,9 @@ wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
     return ((wuffs_base__range_ii_u64){});
   }
 
-  return wuffs_base__utility__make_range_ii_u64(&self->private_impl.f_util, 0,
-                                                0);
+  return wuffs_base__utility__make_range_ii_u64(
+      &self->private_impl.f_util, ((uint64_t)(self->private_impl.f_width)),
+      ((uint64_t)(self->private_impl.f_width)));
 }
 
 // -------- func gif.decoder.restart_frame
@@ -7776,7 +7777,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (((uint64_t)(a_workbuf.len)) !=
+    if (((uint64_t)(a_workbuf.len)) <
         ((uint64_t)(self->private_impl.f_width))) {
       status = wuffs_base__error__bad_workbuf_length;
       goto exit;

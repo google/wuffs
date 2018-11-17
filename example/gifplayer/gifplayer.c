@@ -223,7 +223,8 @@ size_t print_color_art(wuffs_base__pixel_buffer* pb) {
 
 // ----
 
-const char* try_allocate(wuffs_base__image_config* ic) {
+const char* try_allocate(wuffs_gif__decoder* dec,
+                         wuffs_base__image_config* ic) {
   uint32_t width = wuffs_base__pixel_config__width(&ic->pixcfg);
   uint32_t height = wuffs_base__pixel_config__height(&ic->pixcfg);
   uint64_t num_pixels = ((uint64_t)width) * ((uint64_t)height);
@@ -249,7 +250,7 @@ const char* try_allocate(wuffs_base__image_config* ic) {
   }
 
   workbuf = wuffs_base__malloc_slice_u8(
-      malloc, wuffs_base__image_config__workbuf_len(ic).max_incl);
+      malloc, wuffs_gif__decoder__workbuf_len(dec).max_incl);
   if (!workbuf.ptr) {
     return "could not allocate work buffer";
   }
@@ -267,8 +268,8 @@ const char* try_allocate(wuffs_base__image_config* ic) {
   return NULL;
 }
 
-const char* allocate(wuffs_base__image_config* ic) {
-  const char* z = try_allocate(ic);
+const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
+  const char* z = try_allocate(dec, ic);
   if (z) {
     free(printbuf.ptr);
     printbuf = ((wuffs_base__slice_u8){});
@@ -321,7 +322,7 @@ const char* play() {
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
-    const char* msg = allocate(&ic);
+    const char* msg = allocate(&dec, &ic);
     if (msg) {
       return msg;
     }

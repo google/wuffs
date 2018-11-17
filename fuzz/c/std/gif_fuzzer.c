@@ -73,7 +73,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
-    uint64_t n = wuffs_base__image_config__workbuf_len(&ic).max_incl;
+    uint64_t n = wuffs_gif__decoder__workbuf_len(&dec).max_incl;
     if (n > 64 * 1024 * 1024) {  // Don't allocate more than 64 MiB.
       ret = "image too large";
       goto exit;

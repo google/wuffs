@@ -146,6 +146,7 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 			pixsub:0,
 			width:this.width,
 			height:this.height,
+			// TODO: workbuf_len should be an aspect of the decoder, not the image_config.
 			workbuf_len0:this.width as base.u64,
 			workbuf_len1:this.width as base.u64,
 			first_frame_io_position:this.frame_config_io_position,
@@ -179,7 +180,9 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
+	return this.util.make_range_ii_u64(
+		min_incl:this.width as base.u64,
+		max_incl:this.width as base.u64)
 }
 
 pub func decoder.restart_frame!??(index base.u64, io_position base.u64) {
@@ -251,7 +254,7 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 
 // TODO: honor args.opts.
 pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
-	if args.workbuf.length() != (this.width as base.u64) {
+	if args.workbuf.length() < (this.width as base.u64) {
 		return status "?bad workbuf length"
 	}
 	if this.call_sequence != 2 {
