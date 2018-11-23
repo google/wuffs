@@ -257,6 +257,7 @@ var Funcs = []string{
 
 	// ---- status
 
+	// TODO: should we add is_complete?
 	"status.is_error() bool",
 	"status.is_ok() bool",
 	"status.is_suspension() bool",
