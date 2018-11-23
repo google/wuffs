@@ -862,9 +862,7 @@ const char* test_wuffs_gif_frame_dirty_rect() {
   // 2, 6, 10, ..., 22, 26, 1, 3, 5, ..., 25, 27. As we progress, the dirty
   // rect's max_excl_y should be one more than the highest decoded row so far.
   // If we haven't decoded any rows yet, max_excl_y should be zero.
-  //
-  // TODO: this should be 0, 1, 9, 17, 25, 27, 28.
-  uint32_t wants[2] = {0, 28};
+  uint32_t wants[7] = {0, 1, 9, 17, 25, 27, 28};
   int i = 0;
 
   while (true) {
@@ -1135,7 +1133,7 @@ const char* test_wuffs_gif_io_position_two_chunks() {
   return do_test_wuffs_gif_io_position(true);
 }
 
-  // ---------------- Mimic Tests
+// ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
 
@@ -1319,7 +1317,7 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
                              "test/data/gifplayer-muybridge.gif", 1);
 }
 
-  // ---------------- Mimic Benches
+// ---------------- Mimic Benches
 
 #ifdef WUFFS_MIMIC
 

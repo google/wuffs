@@ -606,6 +606,11 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 	this.previous_lzw_decode_ended_abruptly = true
 	while true {
+		if args.src.available() == 0 {
+			if this.uncompressed_ri != this.uncompressed_wi {
+				this.copy_to_image_buffer!??(pb:args.dst)
+			}
+		}
 		var block_size base.u64 = args.src.read_u8!??() as base.u64
 		if block_size == 0 {
 			break
@@ -629,18 +634,21 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				block_size ~sat-= args.src.since_mark().length()
 			}
 
-			if z.is_ok() or (z == status "$short write") {
-				this.copy_to_image_buffer!??(pb:args.dst)
+			if (block_size == 0) and (z == status "$short read") {
+				break:inner
+			}
 
-				if z == status "$short write" {
-					continue:inner
-				}
+			if this.uncompressed_ri != this.uncompressed_wi {
+				this.copy_to_image_buffer!??(pb:args.dst)
+			}
+
+			if z.is_ok() {
 				// TODO: check that block_size is zero?
 				this.previous_lzw_decode_ended_abruptly = false
 				break:inner
 			}
-			if (block_size == 0) and (z == status "$short read") {
-				break:inner
+			if z == status "$short write" {
+				continue:inner
 			}
 			yield z
 		}

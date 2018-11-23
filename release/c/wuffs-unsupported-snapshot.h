@@ -9137,8 +9137,18 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                           ((uint32_t)(v_lw)));
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
     while (true) {
+      if (((uint64_t)(io1_a_src - iop_a_src)) == 0) {
+        if (self->private_impl.f_uncompressed_ri !=
+            self->private_impl.f_uncompressed_wi) {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+          status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst);
+          if (status) {
+            goto suspend;
+          }
+        }
+      }
       {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
         if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
           status = wuffs_base__suspension__short_read;
           goto suspend;
@@ -9199,32 +9209,34 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           io1_v_w = o_0_io1_v_w;
           a_src = o_0_a_src;
         }
-        if (wuffs_base__status__is_ok(v_z) ||
-            (v_z == wuffs_base__suspension__short_write)) {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-          status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst);
-          if (status) {
-            goto suspend;
-          }
-          if (v_z == wuffs_base__suspension__short_write) {
-            goto label_1_continue;
-          }
-          self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
-          goto label_1_break;
-        }
         if ((v_block_size == 0) &&
             (v_z == wuffs_base__suspension__short_read)) {
           goto label_1_break;
         }
+        if (self->private_impl.f_uncompressed_ri !=
+            self->private_impl.f_uncompressed_wi) {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+          status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst);
+          if (status) {
+            goto suspend;
+          }
+        }
+        if (wuffs_base__status__is_ok(v_z)) {
+          self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
+          goto label_1_break;
+        }
+        if (v_z == wuffs_base__suspension__short_write) {
+          goto label_1_continue;
+        }
         status = v_z;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(7);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(8);
       }
     label_1_break:;
     }
   label_0_break:;
     if (self->private_impl.f_uncompressed_ri !=
         self->private_impl.f_uncompressed_wi) {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
       status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst);
       if (status) {
         goto suspend;
