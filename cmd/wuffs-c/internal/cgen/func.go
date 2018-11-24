@@ -157,11 +157,11 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	}
 	b.writes("{\n")
 	b.writex(k.bPrologue)
-	if k.astFunc.Effect().Coroutine() && k.coroSuspPoint > 0 {
+	if k.astFunc.Effect().Coroutine() {
 		b.writex(k.bBodyResume)
 	}
 	b.writex(k.bBody)
-	if k.astFunc.Effect().Coroutine() && k.coroSuspPoint > 0 {
+	if k.astFunc.Effect().Coroutine() {
 		b.writex(k.bBodySuspend)
 	} else if k.hasGotoOK {
 		b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
