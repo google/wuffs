@@ -185,12 +185,21 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KRet:
 		n := n.AsRet()
+		lTyp := q.astFunc.Out()
+		if q.astFunc.Effect().Optional() {
+			lTyp = typeExprStatus
+		} else if lTyp == nil {
+			return fmt.Errorf("TODO: allow returning nothing")
+		}
 		if value := n.Value(); value != nil {
 			if err := q.tcheckExpr(value, 0); err != nil {
 				return err
 			}
-			// TODO: type-check that value is assignable to the return value.
-			// This needs the context of what func we're in.
+			rTyp := value.MType()
+			if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
+				return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
+					value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
+			}
 		}
 
 	case a.KVar:
@@ -317,14 +326,14 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 		}
 	}
 
-	if rTyp.IsIdeal() || lTyp.EqIgnoringRefinements(rTyp) {
-		return nil
+	if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
+		return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
+			n.Operator().Str(q.tm),
+			lhs.Str(q.tm), rhs.Str(q.tm),
+			lTyp.Str(q.tm), rTyp.Str(q.tm),
+		)
 	}
-	return fmt.Errorf("check: assignment %q: %q and %q, of types %q and %q, do not have compatible types",
-		n.Operator().Str(q.tm),
-		lhs.Str(q.tm), rhs.Str(q.tm),
-		lTyp.Str(q.tm), rTyp.Str(q.tm),
-	)
+	return nil
 }
 
 func (q *checker) tcheckLoop(n a.Loop) error {

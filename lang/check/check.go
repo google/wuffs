@@ -433,6 +433,13 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	}
 	setPlaceholderMBoundsMType(n.In().AsNode())
 	if out := n.Out(); out != nil {
+		if n.Effect().Optional() && n.Receiver()[0] != t.IDBase {
+			return &Error{
+				Err:      fmt.Errorf("func %s has ? effect but non-empty return type", n.QQID().Str(c.tm)),
+				Filename: n.Filename(),
+				Line:     n.Line(),
+			}
+		}
 		// TODO: does checking a TypeExpr need a q?
 		q := &checker{
 			c:  c,

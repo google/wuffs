@@ -291,10 +291,15 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		q.facts = q.facts[:0]
 
 	case a.KRet:
-		// TODO: compare the value to the out type?
 		n := n.AsRet()
+		lTyp := q.astFunc.Out()
+		if q.astFunc.Effect().Optional() {
+			lTyp = typeExprStatus
+		} else if lTyp == nil {
+			return fmt.Errorf("TODO: allow returning nothing")
+		}
 		if v := n.Value(); v != nil {
-			if _, err := q.bcheckExpr(v, 0); err != nil {
+			if err := q.bcheckAssignment1(nil, lTyp, t.IDEq, v); err != nil {
 				return err
 			}
 		}
