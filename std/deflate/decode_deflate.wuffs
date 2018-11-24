@@ -265,8 +265,8 @@ pri func decoder.init_fixed_huffman!??() {
 		this.code_lengths[i] = 5
 		i += 1
 	}
-	this.init_huff!??(which:0, n_codes0:0, n_codes1:288, base_symbol:257)
-	this.init_huff!??(which:1, n_codes0:288, n_codes1:320, base_symbol:0)
+	this.init_huff!?(which:0, n_codes0:0, n_codes1:288, base_symbol:257)
+	this.init_huff!?(which:1, n_codes0:288, n_codes1:320, base_symbol:0)
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
@@ -313,7 +313,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
-	this.init_huff!??(which:0, n_codes0:0, n_codes1:19, base_symbol:0xFFF)
+	this.init_huff!?(which:0, n_codes0:0, n_codes1:19, base_symbol:0xFFF)
 
 	// Decode the code lengths for the next two Huffman tables.
 	var mask base.u32[..511] = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
@@ -408,8 +408,8 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 		return "?missing end-of-block code"
 	}
 
-	this.init_huff!??(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
-	this.init_huff!??(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist, base_symbol:0)
+	this.init_huff!?(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
+	this.init_huff!?(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist, base_symbol:0)
 
 	this.bits = bits
 	this.n_bits = n_bits
@@ -417,10 +417,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 
 // TODO: make named constants for 15, 19, 319, etc.
 
-// TODO: skip generating WUFFS_COROUTINE_SUSPENSION_POINTs for *callers* of
-// this function, as it can only return errors, not suspensions.
-
-pri func decoder.init_huff!??(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) {
+pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) {
 	// For the clcode example in this package's README.md:
 	//  - n_codes0 = 0
 	//  - n_codes1 = 19

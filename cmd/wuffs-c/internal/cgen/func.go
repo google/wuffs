@@ -346,9 +346,9 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 			b.writes("if (wuffs_base__status__is_error(status)) { " +
 				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
 		}
-		b.writes("return status;\n\n")
+		b.writes("return status;\n")
 	} else if effect.Optional() {
-		// TODO.
+		b.writes("return NULL;\n")
 	} else if g.currFunk.astFunc.Out() == nil {
 		b.writes("return ((wuffs_base__empty_struct){});\n")
 	}

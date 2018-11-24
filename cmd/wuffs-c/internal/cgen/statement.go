@@ -158,13 +158,22 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	if err := g.writeSuspendibles(b, n, depth); err != nil {
 		return err
 	}
-	if n.Effect().RootCause() && n.Effect().Coroutine() {
-		return nil
+	checkStatus := false
+	if n.Effect().RootCause() {
+		if n.Effect().Coroutine() {
+			return nil
+		} else if n.Effect().Optional() {
+			b.writes("status = ")
+			checkStatus = true
+		}
 	}
 	if err := g.writeExpr(b, n, replaceCallSuspendibles, depth); err != nil {
 		return err
 	}
 	b.writes(";\n")
+	if checkStatus {
+		b.writes("if (status) { goto exit; }\n")
+	}
 	return nil
 }
 
@@ -364,7 +373,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	}
 
 	b.writes("return ")
-	if g.currFunk.astFunc.Out() == nil { // TODO: Out() can be nil if the func has ? effect.
+	if g.currFunk.astFunc.Out() == nil && !g.currFunk.astFunc.Effect().Optional() {
 		return fmt.Errorf("TODO: allow empty return type (when not suspendible)")
 	} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, depth); err != nil {
 		return err
