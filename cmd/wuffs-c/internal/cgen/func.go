@@ -23,11 +23,11 @@ import (
 )
 
 type funk struct {
-	bHeader      buffer
+	bPrologue    buffer
 	bBodyResume  buffer
 	bBody        buffer
 	bBodySuspend buffer
-	bFooter      buffer
+	bEpilogue    buffer
 
 	astFunc       *a.Func
 	cName         string
@@ -159,7 +159,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 		return err
 	}
 	b.writes("{\n")
-	b.writex(k.bHeader)
+	b.writex(k.bPrologue)
 	if k.suspendible && k.coroSuspPoint > 0 {
 		b.writex(k.bBodyResume)
 	}
@@ -169,7 +169,7 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	} else if k.hasGotoOK {
 		b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
 	}
-	b.writex(k.bFooter)
+	b.writex(k.bEpilogue)
 	b.writes("}\n\n")
 	return nil
 }
@@ -186,7 +186,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 		return err
 	}
 
-	if err := g.writeFuncImplHeader(&g.currFunk.bHeader); err != nil {
+	if err := g.writeFuncImplPrologue(&g.currFunk.bPrologue); err != nil {
 		return err
 	}
 	if err := g.writeFuncImplBodyResume(&g.currFunk.bBodyResume); err != nil {
@@ -198,7 +198,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	if err := g.writeFuncImplBodySuspend(&g.currFunk.bBodySuspend); err != nil {
 		return err
 	}
-	if err := g.writeFuncImplFooter(&g.currFunk.bFooter); err != nil {
+	if err := g.writeFuncImplEpilogue(&g.currFunk.bEpilogue); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 	return nil
 }
 
-func (g *gen) writeFuncImplHeader(b *buffer) error {
+func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	// Check the initialized/disabled state and the "self" arg.
 	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
 		out := g.currFunk.astFunc.Out()
@@ -337,7 +337,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 	return nil
 }
 
-func (g *gen) writeFuncImplFooter(b *buffer) error {
+func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 	if g.currFunk.suspendible {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
