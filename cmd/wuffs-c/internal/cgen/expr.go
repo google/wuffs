@@ -44,7 +44,7 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())
-		} else if typ.IsNullptr() {
+		} else if typ.IsNullptr() || typ.IsStatus() {
 			b.writes("NULL")
 		} else if cv.Cmp(zero) == 0 {
 			b.writes("false")
