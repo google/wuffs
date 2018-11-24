@@ -115,17 +115,18 @@ func Do(args []string) error {
 				"// !! INSERT base-public.h.\n":  insertBasePublicH,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
-						if z == "" {
+						msg, _ := t.Unescape(z)
+						if msg == "" {
 							continue
 						}
 						pre := "warning"
-						if z[0] == '$' {
+						if msg[0] == '$' {
 							pre = "suspension"
-						} else if z[0] == '?' {
+						} else if msg[0] == '?' {
 							pre = "error"
 						}
 						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
-							pre, cName(z, ""), z[:1], z[1:])
+							pre, cName(msg, ""), msg[:1], msg[1:])
 					}
 					return nil
 				},
@@ -256,13 +257,17 @@ func insertBasePublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.Statuses {
+				msg, _ := t.Unescape(z)
+				if msg == "" {
+					return fmt.Errorf("bad built-in status %q", z)
+				}
 				pre := "warning"
-				if statusMsgIsError(z) {
+				if statusMsgIsError(msg) {
 					pre = "error"
-				} else if statusMsgIsSuspension(z) {
+				} else if statusMsgIsSuspension(msg) {
 					pre = "suspension"
 				}
-				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(z, ""))
+				b.printf("extern const char* wuffs_base__%s__%s;\n", pre, cName(msg, ""))
 			}
 			return nil
 		},
@@ -301,11 +306,15 @@ func (g *gen) generate() ([]byte, error) {
 		return nil, err
 	}
 	for _, z := range builtin.Statuses {
-		id, err := g.tm.Insert(`"` + z + `"`)
+		id, err := g.tm.Insert(z)
 		if err != nil {
 			return nil, err
 		}
-		if err := g.addStatus(t.QID{t.IDBase, id}, z, true); err != nil {
+		msg, _ := t.Unescape(z)
+		if msg == "" {
+			return nil, fmt.Errorf("bad built-in status %q", z)
+		}
+		if err := g.addStatus(t.QID{t.IDBase, id}, msg, true); err != nil {
 			return nil, err
 		}
 	}

@@ -21,25 +21,25 @@ import (
 
 var Statuses = [...]string{
 	// Warnings.
-	"~end of data",
+	`"~end of data"`,
 
 	// Suspensions.
-	"$short read",
-	"$short write",
+	`"$short read"`,
+	`"$short write"`,
 
 	// Errors.
-	"?bad argument (length too short)",
-	"?bad argument",
-	"?bad call sequence",
-	"?bad receiver",
-	"?bad restart",
-	"?bad sizeof receiver",
-	"?bad workbuf length",
-	"?bad wuffs version",
-	"?cannot return a suspension",
-	"?check_wuffs_version not applicable",
-	"?check_wuffs_version missing",
-	"?disabled by previous error",
+	`"?bad argument (length too short)"`,
+	`"?bad argument"`,
+	`"?bad call sequence"`,
+	`"?bad receiver"`,
+	`"?bad restart"`,
+	`"?bad sizeof receiver"`,
+	`"?bad workbuf length"`,
+	`"?bad wuffs version"`,
+	`"?cannot return a suspension"`,
+	`"?check_wuffs_version not applicable"`,
+	`"?check_wuffs_version missing"`,
+	`"?disabled by previous error"`,
 }
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,

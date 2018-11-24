@@ -108,7 +108,7 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 	}
 
 	for _, z := range builtin.Statuses {
-		id, err := tm.Insert(`"` + z + `"`)
+		id, err := tm.Insert(z)
 		if err != nil {
 			return nil, err
 		}
