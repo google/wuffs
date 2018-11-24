@@ -88,8 +88,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	if n.Effect().Optional() {
 		b.writes("wuffs_base__status ")
 	} else if out := n.Out(); out == nil {
-		// TODO: wuffs_base__empty_struct.
-		b.writes("void ")
+		b.writes("wuffs_base__empty_struct ")
 		// TODO: does writeCTypeName generate the right C if out is an array?
 	} else if err := g.writeCTypeName(b, out, "", ""); err != nil {
 		return err
@@ -207,9 +206,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 
 func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 	if typ == nil {
-		// No-op. It's "return;" and not "return foo;".
-		//
-		// TODO: "return ((wuffs_base__empty_struct){})".
+		b.writes("((wuffs_base__empty_struct){})")
 	} else if typ.IsNumType() {
 		b.writes("0")
 	} else {
@@ -334,7 +331,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if effect := g.currFunk.astFunc.Effect(); effect.Coroutine() {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
@@ -350,6 +347,10 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
 		}
 		b.writes("return status;\n\n")
+	} else if effect.Optional() {
+		// TODO.
+	} else if g.currFunk.astFunc.Out() == nil {
+		b.writes("return ((wuffs_base__empty_struct){});\n")
 	}
 	return nil
 }
@@ -413,16 +414,12 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 		b.writes(c)
 	}
 	b.writes(") {")
-	if g.currFunk.astFunc.Effect().Coroutine() {
-		if g.currFunk.astFunc.Public() {
-			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
-		}
+	b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
+	if g.currFunk.astFunc.Effect().Optional() {
 		b.writes("return wuffs_base__error__bad_argument;\n\n")
-	} else if !n.Receiver().IsZero() {
-		// TODO: unused code path??
-		b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED; return;")
 	} else {
-		b.printf("return;")
+		// TODO: don't assume that the return type is empty.
+		b.printf("return ((wuffs_base__empty_struct){});\n")
 	}
 	b.writes("}\n")
 	return nil

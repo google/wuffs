@@ -2462,7 +2462,7 @@ sizeof__wuffs_lzw__decoder();
 
 // ---------------- Public Function Prototypes
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2524,7 +2524,7 @@ struct wuffs_lzw__decoder__struct {
                                                    wuffs_version);
   }
 
-  inline void  //
+  inline wuffs_base__empty_struct  //
   set_literal_width(uint32_t a_lw) {
     return wuffs_lzw__decoder__set_literal_width(this, a_lw);
   }
@@ -2833,7 +2833,7 @@ sizeof__wuffs_gzip__decoder();
 
 // ---------------- Public Function Prototypes
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2883,7 +2883,7 @@ struct wuffs_gzip__decoder__struct {
                                                     wuffs_version);
   }
 
-  inline void  //
+  inline wuffs_base__empty_struct  //
   set_ignore_checksum(bool a_ic) {
     return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
   }
@@ -2937,7 +2937,7 @@ sizeof__wuffs_zlib__decoder();
 
 // ---------------- Public Function Prototypes
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -2984,7 +2984,7 @@ struct wuffs_zlib__decoder__struct {
                                                     wuffs_version);
   }
 
-  inline void  //
+  inline wuffs_base__empty_struct  //
   set_ignore_checksum(bool a_ic) {
     return wuffs_zlib__decoder__set_ignore_checksum(this, a_ic);
   }
@@ -6841,20 +6841,21 @@ sizeof__wuffs_lzw__decoder() {
 
 // -------- func lzw.decoder.set_literal_width
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   if (!self) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
   if (a_lw < 2 || a_lw > 8) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
-    return;
+    return ((wuffs_base__empty_struct){});
   }
 
   self->private_impl.f_literal_width = a_lw;
+  return ((wuffs_base__empty_struct){});
 }
 
 // -------- func lzw.decoder.decode
@@ -7272,7 +7273,7 @@ static wuffs_base__status  //
 wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
                                wuffs_base__io_reader a_src);
 
-static void  //
+static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self);
 
 static wuffs_base__status  //
@@ -7818,7 +7819,7 @@ exit:
 
 // -------- func gif.decoder.reset_gc
 
-static void  //
+static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
   self->private_impl.f_call_sequence = 3;
   self->private_impl.f_seen_graphic_control = false;
@@ -7826,6 +7827,7 @@ wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
   self->private_impl.f_gc_transparent_index = 0;
   self->private_impl.f_gc_disposal = 0;
   self->private_impl.f_gc_duration = 0;
+  return ((wuffs_base__empty_struct){});
 }
 
 // -------- func gif.decoder.decode_up_to_id_part1
@@ -9454,16 +9456,17 @@ sizeof__wuffs_gzip__decoder() {
 
 // -------- func gzip.decoder.set_ignore_checksum
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
   if (!self) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
 
   self->private_impl.f_ignore_checksum = a_ic;
+  return ((wuffs_base__empty_struct){});
 }
 
 // -------- func gzip.decoder.decode
@@ -9908,16 +9911,17 @@ sizeof__wuffs_zlib__decoder() {
 
 // -------- func zlib.decoder.set_ignore_checksum
 
-WUFFS_BASE__MAYBE_STATIC void  //
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
   if (!self) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return;
+    return ((wuffs_base__empty_struct){});
   }
 
   self->private_impl.f_ignore_checksum = a_ic;
+  return ((wuffs_base__empty_struct){});
 }
 
 // -------- func zlib.decoder.decode
