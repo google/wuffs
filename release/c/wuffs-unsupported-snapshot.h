@@ -5419,6 +5419,8 @@ exit:
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self) {
+  wuffs_base__status status = NULL;
+
   uint32_t v_i;
 
   v_i = 0;
@@ -5442,21 +5444,17 @@ wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self) {
     self->private_impl.f_code_lengths[v_i] = 5;
     v_i += 1;
   }
-  {
-    wuffs_base__status status =
-        wuffs_deflate__decoder__init_huff(self, 0, 0, 288, 257);
-    if (status) {
-      return status;
-    }
+  status = wuffs_deflate__decoder__init_huff(self, 0, 0, 288, 257);
+  if (status) {
+    goto exit;
   }
-  {
-    wuffs_base__status status =
-        wuffs_deflate__decoder__init_huff(self, 1, 288, 320, 0);
-    if (status) {
-      return status;
-    }
+  status = wuffs_deflate__decoder__init_huff(self, 1, 288, 320, 0);
+  if (status) {
+    goto exit;
   }
-  return NULL;
+  goto exit;
+exit:
+  return status;
 }
 
 // -------- func deflate.decoder.init_dynamic_huffman
@@ -5719,6 +5717,8 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
                                   uint32_t a_n_codes0,
                                   uint32_t a_n_codes1,
                                   uint32_t a_base_symbol) {
+  wuffs_base__status status = NULL;
+
   uint16_t v_counts[16];
   uint32_t v_i;
   uint32_t v_remaining;
@@ -5749,29 +5749,36 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
     if (v_counts[self->private_impl.f_code_lengths[v_i]] >= 320) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_counts[self->private_impl.f_code_lengths[v_i]] += 1;
     v_i += 1;
   }
   if ((((uint32_t)(v_counts[0])) + a_n_codes0) == a_n_codes1) {
-    return wuffs_deflate__error__no_huffman_codes;
+    status = wuffs_deflate__error__no_huffman_codes;
+    goto exit;
   }
   v_remaining = 1;
   v_i = 1;
   while (v_i <= 15) {
     if (v_remaining > 1073741824) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_remaining <<= 1;
     if (v_remaining < ((uint32_t)(v_counts[v_i]))) {
-      return wuffs_deflate__error__bad_huffman_code_over_subscribed;
+      status = wuffs_deflate__error__bad_huffman_code_over_subscribed;
+      goto exit;
     }
     v_remaining -= ((uint32_t)(v_counts[v_i]));
     v_i += 1;
   }
   if (v_remaining != 0) {
-    return wuffs_deflate__error__bad_huffman_code_under_subscribed;
+    status = wuffs_deflate__error__bad_huffman_code_under_subscribed;
+    goto exit;
   }
   memset(v_offsets, 0, sizeof(v_offsets));
   v_n_symbols = 0;
@@ -5780,23 +5787,31 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
     v_offsets[v_i] = ((uint16_t)(v_n_symbols));
     v_count = ((uint32_t)(v_counts[v_i]));
     if (v_n_symbols > (320 - v_count)) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_n_symbols = (v_n_symbols + v_count);
     v_i += 1;
   }
   if (v_n_symbols > 288) {
-    return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    status =
+        wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    goto exit;
   }
   memset(v_symbols, 0, sizeof(v_symbols));
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
     if (v_i < a_n_codes0) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     if (self->private_impl.f_code_lengths[v_i] != 0) {
       if (v_offsets[self->private_impl.f_code_lengths[v_i]] >= 320) {
-        return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        goto exit;
       }
       v_symbols[v_offsets[self->private_impl.f_code_lengths[v_i]]] =
           ((uint16_t)((v_i - a_n_codes0)));
@@ -5810,7 +5825,8 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
       goto label_0_break;
     }
     if (v_min_cl >= 9) {
-      return wuffs_deflate__error__bad_huffman_minimum_code_length;
+      status = wuffs_deflate__error__bad_huffman_minimum_code_length;
+      goto exit;
     }
     v_min_cl += 1;
   }
@@ -5821,7 +5837,8 @@ label_0_break:;
       goto label_1_break;
     }
     if (v_max_cl <= 1) {
-      return wuffs_deflate__error__no_huffman_codes;
+      status = wuffs_deflate__error__no_huffman_codes;
+      goto exit;
     }
     v_max_cl -= 1;
   }
@@ -5834,10 +5851,14 @@ label_1_break:;
   v_i = 0;
   if ((v_n_symbols != ((uint32_t)(v_offsets[v_max_cl]))) ||
       (v_n_symbols != ((uint32_t)(v_offsets[15])))) {
-    return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    status =
+        wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    goto exit;
   }
   if ((a_n_codes0 + ((uint32_t)(v_symbols[0]))) >= 320) {
-    return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    status =
+        wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+    goto exit;
   }
   v_initial_high_bits = 512;
   if (v_max_cl < 9) {
@@ -5853,14 +5874,18 @@ label_1_break:;
   v_value = 0;
   while (true) {
     if ((a_n_codes0 + ((uint32_t)(v_symbols[v_i]))) >= 320) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_cl = ((uint32_t)(self->private_impl.f_code_lengths[(
         a_n_codes0 + ((uint32_t)(v_symbols[v_i])))]));
     if (v_cl > v_prev_cl) {
       v_code <<= (v_cl - v_prev_cl);
       if (v_code >= 32768) {
-        return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        goto exit;
       }
     }
     v_prev_cl = v_cl;
@@ -5880,20 +5905,26 @@ label_1_break:;
           }
           v_remaining -= ((uint32_t)(v_counts[v_j]));
           if (v_remaining > 1073741824) {
-            return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+            status =
+                wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+            goto exit;
           }
           v_remaining <<= 1;
           v_j += 1;
         }
       label_2_break:;
         if ((v_j <= 9) || (15 < v_j)) {
-          return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+          status =
+              wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+          goto exit;
         }
         v_tmp = (v_j - 9);
         v_initial_high_bits = (((uint32_t)(1)) << v_tmp);
         v_top = v_next_top;
         if ((v_top + (((uint32_t)(1)) << v_tmp)) > 1234) {
-          return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+          status =
+              wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+          goto exit;
         }
         v_next_top = (v_top + (((uint32_t)(1)) << v_tmp));
         v_redirect_key =
@@ -5904,7 +5935,9 @@ label_1_break:;
       }
     }
     if ((v_key >= 512) || (v_counts[v_prev_cl] <= 0)) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_counts[v_prev_cl] -= 1;
     v_reversed_key = (((uint32_t)(wuffs_deflate__reverse8[(v_key >> 1)])) |
@@ -5923,14 +5956,18 @@ label_1_break:;
         v_value = (wuffs_deflate__dcode_magic_numbers[(v_symbol & 31)] | v_cl);
       }
     } else {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
     v_high_bits = v_initial_high_bits;
     v_delta = (((uint32_t)(1)) << v_cl);
     while (v_high_bits >= v_delta) {
       v_high_bits -= v_delta;
       if ((v_top + ((v_high_bits | v_reversed_key) & 511)) >= 1234) {
-        return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        goto exit;
       }
       self->private_impl
           .f_huffs[a_which][(v_top + ((v_high_bits | v_reversed_key) & 511))] =
@@ -5942,11 +5979,15 @@ label_1_break:;
     }
     v_code += 1;
     if (v_code >= 32768) {
-      return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      status =
+          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+      goto exit;
     }
   }
 label_3_break:;
-  return NULL;
+  goto exit;
+exit:
+  return status;
 }
 
 // -------- func deflate.decoder.decode_huffman_fast

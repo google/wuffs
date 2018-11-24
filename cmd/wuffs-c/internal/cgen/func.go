@@ -252,7 +252,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		}
 	}
 
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if g.currFunk.astFunc.Effect().Optional() {
 		b.printf("wuffs_base__status status = NULL;\n")
 	}
 	b.writes("\n")
@@ -263,7 +263,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	}
 	b.writes("\n")
 
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if g.currFunk.astFunc.Effect().Optional() {
 		g.findDerivedVars()
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
@@ -331,7 +331,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
-	if effect := g.currFunk.astFunc.Effect(); effect.Coroutine() {
+	if g.currFunk.astFunc.Effect().Optional() {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
@@ -347,8 +347,6 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
 		}
 		b.writes("return status;\n")
-	} else if effect.Optional() {
-		b.writes("return NULL;\n")
 	} else if g.currFunk.astFunc.Out() == nil {
 		b.writes("return ((wuffs_base__empty_struct){});\n")
 	}

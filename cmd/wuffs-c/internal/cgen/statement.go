@@ -163,11 +163,7 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 		if n.Effect().Coroutine() {
 			return nil
 		} else if n.Effect().Optional() {
-			if g.currFunk.astFunc.Effect().Coroutine() {
-				b.writes("status = ")
-			} else {
-				b.writes("{ wuffs_base__status status = ")
-			}
+			b.writes("status = ")
 			checkStatus = true
 		}
 	}
@@ -176,11 +172,7 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	}
 	b.writes(";\n")
 	if checkStatus {
-		if g.currFunk.astFunc.Effect().Coroutine() {
-			b.writes("if (status) { goto exit; }\n")
-		} else {
-			b.writes("if (status) { return status; }}\n")
-		}
+		b.writes("if (status) { goto exit; }\n")
 	}
 	return nil
 }
@@ -341,7 +333,7 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	retExpr := n.Value()
 
-	if g.currFunk.astFunc.Effect().Coroutine() {
+	if g.currFunk.astFunc.Effect().Optional() {
 		isError, isOK := false, false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
@@ -381,7 +373,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	}
 
 	b.writes("return ")
-	if g.currFunk.astFunc.Out() == nil && !g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Out() == nil {
 		return fmt.Errorf("TODO: allow empty return type (when not suspendible)")
 	} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, depth); err != nil {
 		return err
