@@ -155,9 +155,21 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 }
 
 func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
+	// TODO: this same derived code-gen should happen for assignment and var
+	// statements.
+	//
+	// TODO: clean up how this and writeSuspendibles interact.
+	derived := n.Effect().RootCause() && n.Effect().Optional() && !n.Effect().Coroutine()
+	if derived {
+		if err := g.writeSaveExprDerivedVars(b, n); err != nil {
+			return err
+		}
+	}
+
 	if err := g.writeSuspendibles(b, n, depth); err != nil {
 		return err
 	}
+
 	checkStatus := false
 	if n.Effect().RootCause() {
 		if n.Effect().Coroutine() {
@@ -171,6 +183,13 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 	b.writes(";\n")
+
+	if derived {
+		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
+			return err
+		}
+	}
+
 	if checkStatus {
 		b.writes("if (status) { goto exit; }\n")
 	}

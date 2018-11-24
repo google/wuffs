@@ -199,7 +199,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		}
 
 		this.end_of_block = false
-		this.decode_huffman_fast!??(dst:args.dst, src:args.src)
+		this.decode_huffman_fast!?(dst:args.dst, src:args.src)
 		if this.end_of_block {
 			continue
 		}

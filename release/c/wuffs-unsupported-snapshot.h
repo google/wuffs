@@ -5216,7 +5216,6 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         goto exit;
       }
       self->private_impl.f_end_of_block = false;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (a_src.private_impl.buf) {
         a_src.private_impl.buf->meta.ri =
             iop_a_src - a_src.private_impl.buf->data.ptr;
@@ -5227,12 +5226,12 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
             a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
       }
       if (status) {
-        goto suspend;
+        goto exit;
       }
       if (self->private_impl.f_end_of_block) {
         goto label_0_continue;
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (a_src.private_impl.buf) {
         a_src.private_impl.buf->meta.ri =
             iop_a_src - a_src.private_impl.buf->data.ptr;
