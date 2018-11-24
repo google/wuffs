@@ -366,10 +366,10 @@ pri func decoder.decode_extension!??(src base.io_reader) {
 	var label base.u8 = args.src.read_u8!??()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		this.decode_gc!??(src:args.src)
-		return
+		return ok
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
 		this.decode_ae!??(src:args.src)
-		return
+		return ok
 	}
 	// We skip over all other extensions, including 0x01 "Plain Text Label" and
 	// 0xFE "Comment Label".
@@ -380,7 +380,7 @@ pri func decoder.skip_blocks!??(src base.io_reader) {
 	while true {
 		var block_size base.u8 = args.src.read_u8!??()
 		if block_size == 0 {
-			return
+			return ok
 		}
 		args.src.skip!??(n:block_size as base.u32)
 	}
@@ -404,7 +404,7 @@ pri func decoder.decode_ae!??(src base.io_reader) {
 		var c base.u8
 		var block_size base.u8 = args.src.read_u8!??()
 		if block_size == 0 {
-			return
+			return ok
 		}
 
 		// Look only for an 11 byte "ANIMEXTS1.0" or "NETSCAPE2.0" extension,

@@ -603,12 +603,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDReturn, t.IDYield:
 		p.src = p.src[1:]
-		value, err := (*a.Expr)(nil), error(nil)
-		if p.peek1() != t.IDSemicolon {
-			value, err = p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
+		value, err := p.parseExpr()
+		if err != nil {
+			return nil, err
 		}
 		return a.NewRet(x, value).AsNode(), nil
 

@@ -327,7 +327,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	if g.currFunk.suspendible {
 		isError, isOK := false, false
 		b.writes("status = ")
-		if retExpr == nil {
+		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
 			b.writes("NULL")
 			isOK = true
 		} else {
@@ -364,13 +364,8 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	}
 
 	b.writes("return ")
-	if g.currFunk.astFunc.Out() == nil {
-		if retExpr != nil {
-			return fmt.Errorf("return expression %q incompatible with empty return type", retExpr.Str(g.tm))
-		}
-	} else if retExpr == nil {
-		// TODO: should a bare "return" imply "return out"?
-		return fmt.Errorf("empty return expression incompatible with non-empty return type")
+	if g.currFunk.astFunc.Out() == nil { // TODO: Out() can be nil if the func has ? effect.
+		return fmt.Errorf("TODO: allow empty return type (when not suspendible)")
 	} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, depth); err != nil {
 		return err
 	}

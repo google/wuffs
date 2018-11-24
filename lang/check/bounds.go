@@ -298,10 +298,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		} else if lTyp == nil {
 			return fmt.Errorf("TODO: allow returning nothing")
 		}
-		if v := n.Value(); v != nil {
-			if err := q.bcheckAssignment1(nil, lTyp, t.IDEq, v); err != nil {
-				return err
-			}
+		if err := q.bcheckAssignment1(nil, lTyp, t.IDEq, n.Value()); err != nil {
+			return err
 		}
 
 	case a.KVar:

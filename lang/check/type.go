@@ -191,15 +191,14 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		} else if lTyp == nil {
 			return fmt.Errorf("TODO: allow returning nothing")
 		}
-		if value := n.Value(); value != nil {
-			if err := q.tcheckExpr(value, 0); err != nil {
-				return err
-			}
-			rTyp := value.MType()
-			if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
-				return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
-					value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
-			}
+		value := n.Value()
+		if err := q.tcheckExpr(value, 0); err != nil {
+			return err
+		}
+		rTyp := value.MType()
+		if !(rTyp.IsIdeal() && lTyp.IsNumType()) && !lTyp.EqIgnoringRefinements(rTyp) {
+			return fmt.Errorf("check: cannot return %q (of type %q) as type %q",
+				value.Str(q.tm), rTyp.Str(q.tm), lTyp.Str(q.tm))
 		}
 
 	case a.KVar:
@@ -430,6 +429,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		case t.IDNullptr:
 			n.SetConstValue(zero)
 			n.SetMType(typeExprNullptr)
+			return nil
+
+		case t.IDOk:
+			n.SetConstValue(zero)
+			n.SetMType(typeExprStatus)
 			return nil
 		}
 

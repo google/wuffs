@@ -10,6 +10,7 @@
 - Added an `io_bind` keyword.
 - Added a `use` keyword.
 - Added a `yield` keyword.
+- Made the `return` value mandatory; added `ok` literal.
 - Changed func out-type from struct to bare type.
 - Renamed the implicit `in` variable to `args`.
 - Added `std/adler32`, `std/crc32` and `std/gzip`.
@@ -60,4 +61,4 @@
 
 ---
 
-Updated on May 2018.
+Updated on November 2018.

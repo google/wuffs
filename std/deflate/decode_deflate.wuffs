@@ -231,7 +231,7 @@ pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) 
 	while true {
 		var n_copied base.u32 = args.dst.copy_n_from_reader!(n:length, r:args.src)
 		if length <= n_copied {
-			return
+			return ok
 		}
 		length -= n_copied
 		if args.dst.available() == 0 {

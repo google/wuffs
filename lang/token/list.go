@@ -368,24 +368,25 @@ const (
 
 const (
 	minBuiltInLiteral    = 0xB0
-	minBuiltInNumLiteral = 0xB3
+	minBuiltInNumLiteral = 0xB4
 	maxBuiltInNumLiteral = 0xBF
 	maxBuiltInLiteral    = 0xBF
 
 	IDFalse   = ID(0xB0)
 	IDTrue    = ID(0xB1)
 	IDNullptr = ID(0xB2)
+	IDOk      = ID(0xB3)
 
-	ID0   = ID(0xB3)
-	ID1   = ID(0xB4)
-	ID2   = ID(0xB5)
-	ID4   = ID(0xB6)
-	ID8   = ID(0xB7)
-	ID16  = ID(0xB8)
-	ID32  = ID(0xB9)
-	ID64  = ID(0xBA)
-	ID128 = ID(0xBB)
-	ID256 = ID(0xBC)
+	ID0   = ID(0xB4)
+	ID1   = ID(0xB5)
+	ID2   = ID(0xB6)
+	ID4   = ID(0xB7)
+	ID8   = ID(0xB8)
+	ID16  = ID(0xB9)
+	ID32  = ID(0xBA)
+	ID64  = ID(0xBB)
+	ID128 = ID(0xBC)
+	ID256 = ID(0xBD)
 )
 
 const (
@@ -653,6 +654,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDFalse:   "false",
 	IDTrue:    "true",
 	IDNullptr: "nullptr",
+	IDOk:      "ok",
 
 	ID0:   "0",
 	ID1:   "1",

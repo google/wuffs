@@ -411,10 +411,8 @@ func (h *resumabilityHelper) doJump(r resumabilities, n *a.Jump, depth uint32) e
 }
 
 func (h *resumabilityHelper) doRet(r resumabilities, n *a.Ret, depth uint32) error {
-	if n.Value() != nil {
-		if err := h.doExpr(r, n.Value()); err != nil {
-			return err
-		}
+	if err := h.doExpr(r, n.Value()); err != nil {
+		return err
 	}
 
 	switch n.Keyword() {

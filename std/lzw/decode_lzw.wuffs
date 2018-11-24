@@ -256,7 +256,7 @@ pri func decoder.flush!??(dst base.io_writer) {
 		var s slice base.u8 = this.output[i:j]
 		var n base.u64 = args.dst.copy_from_slice!(s:s)
 		if n == s.length() {
-			return
+			return ok
 		}
 		i = (i + ((n & 8191) as base.u32)) & 8191
 		yield base."$short write"

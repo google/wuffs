@@ -596,7 +596,7 @@ func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If)
 
 // Ret is "return LHS" or "yield LHS":
 //  - ID0:   <IDReturn|IDYield>
-//  - LHS:   <nil|Expr>
+//  - LHS:   <Expr>
 type Ret Node
 
 func (n *Ret) AsNode() *Node { return (*Node)(n) }
