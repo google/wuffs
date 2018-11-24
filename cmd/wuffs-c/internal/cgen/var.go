@@ -268,6 +268,8 @@ func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool, in
 				zero := "0"
 				if typ.QID() == (t.QID{t.IDBase, t.IDBool}) {
 					zero = "false"
+				} else if typ.QID() == (t.QID{t.IDBase, t.IDStatus}) {
+					zero = "NULL"
 				}
 				b.printf("%s = %s;\n", local, zero)
 			}

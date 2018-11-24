@@ -225,7 +225,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		out := g.currFunk.astFunc.Out()
 
 		b.writes("if (!self) { return ")
-		if g.currFunk.astFunc.Effect().Coroutine() {
+		if g.currFunk.astFunc.Effect().Optional() {
 			b.writes("wuffs_base__error__bad_receiver")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
@@ -233,7 +233,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) { return ")
-		if g.currFunk.astFunc.Effect().Coroutine() {
+		if g.currFunk.astFunc.Effect().Optional() {
 			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +
 				": wuffs_base__error__check_wuffs_version_missing")

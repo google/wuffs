@@ -185,7 +185,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl:this.width as base.u64)
 }
 
-pub func decoder.restart_frame!??(index base.u64, io_position base.u64) {
+pub func decoder.restart_frame!?(index base.u64, io_position base.u64) {
 	if this.call_sequence == 0 {
 		return base."?bad call sequence"
 	}
@@ -608,7 +608,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	while true {
 		if args.src.available() == 0 {
 			if this.uncompressed_ri != this.uncompressed_wi {
-				this.copy_to_image_buffer!??(pb:args.dst)
+				this.copy_to_image_buffer!?(pb:args.dst)
 			}
 		}
 		var block_size base.u64 = args.src.read_u8!??() as base.u64
@@ -639,7 +639,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			}
 
 			if this.uncompressed_ri != this.uncompressed_wi {
-				this.copy_to_image_buffer!??(pb:args.dst)
+				this.copy_to_image_buffer!?(pb:args.dst)
 			}
 
 			if z.is_ok() {
@@ -655,13 +655,13 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	}
 
 	if this.uncompressed_ri != this.uncompressed_wi {
-		this.copy_to_image_buffer!??(pb:args.dst)
+		this.copy_to_image_buffer!?(pb:args.dst)
 	}
 
 	// TODO: check for "not enough pixel data".
 }
 
-pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
+pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var src slice base.u8
