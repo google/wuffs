@@ -120,7 +120,7 @@ pub struct decoder?(
 
 pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_reader) {
 	if this.call_sequence >= 1 {
-		return status "?bad call sequence"
+		return "?bad call sequence"
 	}
 	this.dirty_y.reset!()
 
@@ -187,7 +187,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 
 pub func decoder.restart_frame!??(index base.u64, io_position base.u64) {
 	if this.call_sequence == 0 {
-		return status "?bad call sequence"
+		return "?bad call sequence"
 	}
 	this.end_of_data = false
 	this.restarted = true
@@ -212,7 +212,7 @@ pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_
 	// This is a new "if", not an "else", because the calls above can modify
 	// this.end_of_data.
 	if this.end_of_data {
-		return status "~end of data"
+		return "~end of data"
 	}
 
 	var blend base.u8 = 0
@@ -255,7 +255,7 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 // TODO: honor args.opts.
 pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
 	if args.workbuf.length() < (this.width as base.u64) {
-		return status "?bad workbuf length"
+		return "?bad workbuf length"
 	}
 	if this.call_sequence != 2 {
 		this.decode_frame_config!??(dst:nullptr, src:args.src)
@@ -281,7 +281,7 @@ pri func decoder.decode_up_to_id_part1!??(src base.io_reader) {
 	if not this.restarted {
 		this.frame_config_io_position = args.src.position()
 	} else if this.frame_config_io_position != args.src.position() {
-		return status "?bad restart"
+		return "?bad restart"
 	} else {
 		this.restarted = false
 	}
@@ -297,7 +297,7 @@ pri func decoder.decode_up_to_id_part1!??(src base.io_reader) {
 			this.end_of_data = true
 			break
 		} else {
-			return status "?bad block"
+			return "?bad block"
 		}
 	}
 }
@@ -314,7 +314,7 @@ pri func decoder.decode_header!??(src base.io_reader) {
 	}
 	if (c[0] != 0x47) or (c[1] != 0x49) or (c[2] != 0x46) or (c[3] != 0x38) or
 		((c[4] != 0x37) and (c[4] != 0x39)) or (c[5] != 0x61) {
-		return status "?bad header"
+		return "?bad header"
 	}
 }
 
@@ -465,11 +465,11 @@ pri func decoder.decode_ae!??(src base.io_reader) {
 // decode_gc reads a Graphic Control.
 pri func decoder.decode_gc!??(src base.io_reader) {
 	if this.seen_graphic_control {
-		return status "?bad graphic control"
+		return "?bad graphic control"
 	}
 	var c base.u8 = args.src.read_u8!??()
 	if c != 4 {
-		return status "?bad graphic control"
+		return "?bad graphic control"
 	}
 
 	var flags base.u8 = args.src.read_u8!??()
@@ -499,7 +499,7 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 
 	c = args.src.read_u8!??()
 	if c != 0 {
-		return status "?bad graphic control"
+		return "?bad graphic control"
 	}
 	this.seen_graphic_control = true
 }
@@ -600,7 +600,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 	var lw base.u8 = args.src.read_u8!??()
 	if (lw < 2) or (8 < lw) {
-		return status "?bad literal width"
+		return "?bad literal width"
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
@@ -634,7 +634,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				block_size ~sat-= args.src.since_mark().length()
 			}
 
-			if (block_size == 0) and (z == status "$short read") {
+			if (block_size == 0) and (z == "$short read") {
 				break:inner
 			}
 
@@ -647,7 +647,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.previous_lzw_decode_ended_abruptly = false
 				break:inner
 			}
-			if z == status "$short write" {
+			if z == "$short write" {
 				continue:inner
 			}
 			yield z
@@ -676,7 +676,7 @@ pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
 		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
 
 		if this.dst_y >= this.frame_rect_y1 {
-			return status "?too much pixel data"
+			return "?too much pixel data"
 		}
 
 		// First, copy from src to that part of the frame rect that is inside
@@ -715,7 +715,7 @@ pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
 		if this.uncompressed_wi == this.uncompressed_ri {
 			break
 		} else if this.uncompressed_wi < this.uncompressed_ri {
-			return status "?internal error: inconsistent ri/wi"
+			return "?internal error: inconsistent ri/wi"
 		}
 
 		// Second, skip over src for that part of the frame rect that is
@@ -740,7 +740,7 @@ pri func decoder.copy_to_image_buffer!??(pb ptr base.pixel_buffer) {
 		}
 
 		if this.uncompressed_ri != this.uncompressed_wi {
-			return status "?internal error: inconsistent ri/wi"
+			return "?internal error: inconsistent ri/wi"
 		}
 		break
 	}

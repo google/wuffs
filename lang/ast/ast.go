@@ -307,7 +307,9 @@ const MaxExprDepth = 255
 //  - RHS:   <nil|Expr|TypeExpr>
 //  - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
-// A zero ID0 means an identifier or literal in ID2, like "foo" or "42".
+// A zero ID0 means an identifier or literal in ID2, like `foo`, `42` or a
+// status literal like `"?foo"` or `pkg."$bar"`. For status literals, ID1 is
+// the package.
 //
 // For unary operators, ID0 is the operator and RHS is the operand.
 //
@@ -329,9 +331,6 @@ const MaxExprDepth = 255
 // For selectors, like "LHS.ID2", ID0 is IDDot.
 //
 // For lists, like "[0, 1, 2]", ID0 is IDComma.
-//
-// For statuses like "?foo" and bar."$baz", ID0 is IDStatus, ID1 is the package
-// and ID2 is the message.
 type Expr Node
 
 func (n *Expr) AsNode() *Node        { return (*Node)(n) }

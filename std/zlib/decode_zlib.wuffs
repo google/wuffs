@@ -35,16 +35,16 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var x base.u16 = args.src.read_u16be!??()
 	if ((x >> 8) & 0x0F) != 0x08 {
-		return status "?bad compression method"
+		return "?bad compression method"
 	}
 	if (x >> 12) > 0x07 {
-		return status "?bad compression window size"
+		return "?bad compression window size"
 	}
 	if (x & 0x20) != 0 {
-		return status "?TODO: unsupported preset dictionary"
+		return "?TODO: unsupported preset dictionary"
 	}
 	if (x % 31) != 0 {
-		return status "?bad parity check"
+		return "?bad parity check"
 	}
 
 	// Decode and checksum the DEFLATE-encoded payload.
@@ -62,6 +62,6 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	}
 	var checksum_want base.u32 = args.src.read_u32be!??()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
-		return status "?bad checksum"
+		return "?bad checksum"
 	}
 }

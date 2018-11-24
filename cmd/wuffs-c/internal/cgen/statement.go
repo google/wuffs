@@ -331,7 +331,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			b.writes("NULL")
 			isOK = true
 		} else {
-			if retExpr.Operator() == t.IDStatus {
+			if retExpr.Ident().IsStrLiteral(g.tm) {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
 				isError = statusMsgIsError(msg)
 				isOK = statusMsgIsWarning(msg)

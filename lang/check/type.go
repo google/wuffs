@@ -383,6 +383,16 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			n.SetMType(typeExprIdeal)
 			return nil
 
+		} else if id1.IsStrLiteral(q.tm) {
+			if _, ok := q.c.statuses[n.StatusQID()]; !ok {
+				msg, _ := t.Unescape(n.Ident().Str(q.tm))
+				if _, ok := builtin.StatusMap[msg]; !ok {
+					return fmt.Errorf("check: no error or status with message %q", msg)
+				}
+			}
+			n.SetMType(typeExprStatus)
+			return nil
+
 		} else if id1.IsIdent(q.tm) {
 			if q.localVars != nil {
 				if typ, ok := q.localVars[id1]; ok {
@@ -488,16 +498,6 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 	case t.IDDot:
 		return q.tcheckDot(n, depth)
-
-	case t.IDStatus:
-		if _, ok := q.c.statuses[n.StatusQID()]; !ok {
-			msg, _ := t.Unescape(n.Ident().Str(q.tm))
-			if _, ok := builtin.StatusMap[msg]; !ok {
-				return fmt.Errorf("check: no error or status with message %q", msg)
-			}
-		}
-		n.SetMType(typeExprStatus)
-		return nil
 
 	case t.IDComma:
 		for _, o := range n.Args() {

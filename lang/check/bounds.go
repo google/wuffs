@@ -872,9 +872,6 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
-	case t.IDStatus:
-		// No-op.
-
 	case t.IDComma:
 		for _, o := range n.Args() {
 			if _, err := q.bcheckExpr(o.AsExpr(), depth); err != nil {

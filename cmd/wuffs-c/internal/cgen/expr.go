@@ -72,15 +72,35 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32
 func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
 	switch n.Operator() {
 	case 0:
-		if id1 := n.Ident(); id1 == t.IDThis {
+		if ident := n.Ident(); ident == t.IDThis {
 			b.writes("self")
+
+		} else if ident.IsStrLiteral(g.tm) {
+			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
+				b.writes(z.cName)
+			} else {
+				msg, _ := t.Unescape(n.Ident().Str(g.tm))
+				if !builtin.StatusMap[msg] {
+					return fmt.Errorf("no status code for %q", msg)
+				}
+				b.writes("wuffs_base__")
+				if statusMsgIsError(msg) {
+					b.writes("error__")
+				} else if statusMsgIsSuspension(msg) {
+					b.writes("suspension__")
+				} else {
+					b.writes("warning__")
+				}
+				b.writes(cName(msg, ""))
+			}
+
 		} else {
 			if n.GlobalIdent() {
 				b.writes(g.pkgPrefix)
 			} else {
 				b.writes(vPrefix)
 			}
-			b.writes(id1.Str(g.tm))
+			b.writes(ident.Str(g.tm))
 		}
 		return nil
 
@@ -211,26 +231,6 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 		}
 		b.writes("private_impl." + fPrefix)
 		b.writes(n.Ident().Str(g.tm))
-		return nil
-
-	case t.IDStatus:
-		if z := g.statusMap[n.StatusQID()]; z.cName != "" {
-			b.writes(z.cName)
-		} else {
-			msg, _ := t.Unescape(n.Ident().Str(g.tm))
-			if !builtin.StatusMap[msg] {
-				return fmt.Errorf("no status code for %q", msg)
-			}
-			b.writes("wuffs_base__")
-			if statusMsgIsError(msg) {
-				b.writes("error__")
-			} else if statusMsgIsSuspension(msg) {
-				b.writes("suspension__")
-			} else {
-				b.writes("warning__")
-			}
-			b.writes(cName(msg, ""))
-		}
 		return nil
 	}
 	return fmt.Errorf("unrecognized token (0x%X) for writeExprOther", n.Operator())

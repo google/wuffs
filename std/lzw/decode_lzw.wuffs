@@ -90,7 +90,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 							this.flush!??(dst:args.dst)
 							j = 0
 						}
-						yield status "$short read"
+						yield "$short read"
 					}
 					bits |= (args.src.peek_u8() as base.u32) << n_bits
 					args.src.skip_fast!(actual:1, worst_case:1)
@@ -204,7 +204,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			}
 
 		} else {
-			return status "?bad code"
+			return "?bad code"
 		}
 
 		// Flush the output if it could be too full to contain the entire
@@ -218,7 +218,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				if args.src.can_undo_byte() {
 					args.src.undo_byte!()
 				} else {
-					return status "?internal error: inconsistent I/O"
+					return "?internal error: inconsistent I/O"
 				}
 			}
 			bits = bits.low_bits(n:n_bits)
@@ -236,7 +236,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			if args.src.can_undo_byte() {
 				args.src.undo_byte!()
 			} else {
-				return status "?internal error: inconsistent I/O"
+				return "?internal error: inconsistent I/O"
 			}
 		}
 		bits = bits.low_bits(n:n_bits)
@@ -251,7 +251,7 @@ pri func decoder.flush!??(dst base.io_writer) {
 	var j base.u32[..8191] = this.flush_j
 	while true {
 		if i > j {
-			return status "?internal error: inconsistent I/O"
+			return "?internal error: inconsistent I/O"
 		}
 		var s slice base.u8 = this.output[i:j]
 		var n base.u64 = args.dst.copy_from_slice!(s:s)
@@ -259,6 +259,6 @@ pri func decoder.flush!??(dst base.io_writer) {
 			return
 		}
 		i = (i + ((n & 8191) as base.u32)) & 8191
-		yield status "$short write"
+		yield "$short write"
 	}
 }
