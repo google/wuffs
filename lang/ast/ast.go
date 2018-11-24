@@ -106,7 +106,7 @@ type Effect uint8
 
 const (
 	EffectImpure    = Effect(0x01)
-	EffectOptional  = Effect(0x02)
+	EffectOptional  = Effect(0x02) // TODO: rename to Statusful or Throws?
 	EffectCoroutine = Effect(0x04)
 
 	// TODO: will we need an EffectRootCause if every ?-call requires a "do" or

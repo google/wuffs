@@ -85,7 +85,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	// TODO: write n's return values.
-	if n.Effect().Coroutine() {
+	if n.Effect().Optional() {
 		b.writes("wuffs_base__status ")
 	} else if out := n.Out(); out == nil {
 		// TODO: wuffs_base__empty_struct.
