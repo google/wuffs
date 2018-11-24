@@ -220,7 +220,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 							break
 						}
 					}
-					yield "$short write"
+					yield base."$short write"
 				}
 				// Copy from the start of this.history, if we wrapped around.
 				if hlen > 0 {
@@ -233,7 +233,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 						}
 						hlen -= n_copied
 						hdist ~mod+= n_copied
-						yield "$short write"
+						yield base."$short write"
 					}
 				}
 
@@ -250,7 +250,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			length -= n_copied
-			yield "$short write"
+			yield base."$short write"
 		}
 	}
 

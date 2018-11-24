@@ -1017,7 +1017,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 	}
 	lhs := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
 
-	for {
+	for first := true; ; first = false {
 		flags := a.Flags(0)
 		switch p.peek1() {
 		default:
@@ -1056,6 +1056,16 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 
 		case t.IDDot:
 			p.src = p.src[1:]
+
+			if x := p.peek1(); x.IsStrLiteral(p.tm) {
+				if !first {
+					return nil, fmt.Errorf(`parse: string literal %s has too many package qualifiers at %s:%d`,
+						x.Str(p.tm), p.filename, p.line())
+				}
+				p.src = p.src[1:]
+				return a.NewExpr(0, 0, id, x, nil, nil, nil, nil), nil
+			}
+
 			selector, err := p.parseIdent()
 			if err != nil {
 				return nil, err

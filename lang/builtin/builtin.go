@@ -19,7 +19,7 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-var StatusList = [...]string{
+var Statuses = [...]string{
 	// Warnings.
 	"~end of data",
 
@@ -40,14 +40,6 @@ var StatusList = [...]string{
 	"?check_wuffs_version not applicable",
 	"?check_wuffs_version missing",
 	"?disabled by previous error",
-}
-
-var StatusMap = map[string]bool{}
-
-func init() {
-	for _, s := range StatusList {
-		StatusMap[s] = true
-	}
 }
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,

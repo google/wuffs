@@ -107,6 +107,14 @@ func Check(tm *t.Map, files []*a.File, resolveUse func(usePath string) ([]byte, 
 		return nil, err
 	}
 
+	for _, z := range builtin.Statuses {
+		id, err := tm.Insert(`"` + z + `"`)
+		if err != nil {
+			return nil, err
+		}
+		c.statuses[t.QID{t.IDBase, id}] = nil
+	}
+
 	for _, phase := range phases {
 		for _, f := range files {
 			if phase.kind == a.KInvalid {
@@ -586,6 +594,10 @@ func (c *Checker) checkAllTypeChecked(node *a.Node) error {
 		}
 	}
 	for _, v := range c.statuses {
+		if v == nil {
+			// Built-in statuses have a nil v node.
+			continue
+		}
 		if err := allTypeChecked(c.tm, v.AsNode()); err != nil {
 			return err
 		}

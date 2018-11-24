@@ -114,7 +114,7 @@ func Do(args []string) error {
 				"// !! INSERT base-private.h.\n": insertBasePrivateH,
 				"// !! INSERT base-public.h.\n":  insertBasePublicH,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
-					for _, z := range builtin.StatusList {
+					for _, z := range builtin.Statuses {
 						if z == "" {
 							continue
 						}
@@ -183,9 +183,10 @@ const (
 )
 
 type status struct {
-	cName  string
-	msg    string
-	public bool
+	cName       string
+	msg         string
+	fromThisPkg bool
+	public      bool
 }
 
 func statusMsgIsError(msg string) bool {
@@ -254,7 +255,7 @@ func insertBasePrivateH(buf *buffer) error {
 func insertBasePublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
-			for _, z := range builtin.StatusList {
+			for _, z := range builtin.Statuses {
 				pre := "warning"
 				if statusMsgIsError(z) {
 					pre = "error"
@@ -298,6 +299,15 @@ func (g *gen) generate() ([]byte, error) {
 	g.statusMap = map[t.QID]status{}
 	if err := g.forEachStatus(b, bothPubPri, (*gen).gatherStatuses); err != nil {
 		return nil, err
+	}
+	for _, z := range builtin.Statuses {
+		id, err := g.tm.Insert(`"` + z + `"`)
+		if err != nil {
+			return nil, err
+		}
+		if err := g.addStatus(t.QID{t.IDBase, id}, z, true); err != nil {
+			return nil, err
+		}
 	}
 
 	// Make a topologically sorted list of structs.
@@ -392,7 +402,7 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// ---------------- Status Codes\n\n")
 
 	for _, z := range g.statusList {
-		if !z.public {
+		if !z.fromThisPkg || !z.public {
 			continue
 		}
 		b.printf("extern const char* %s;\n", z.cName)
@@ -449,7 +459,7 @@ func (g *gen) genImpl(b *buffer) error {
 	b.writes("// ---------------- Status Codes Implementations\n\n")
 
 	for _, z := range g.statusList {
-		if z.msg == "" {
+		if !z.fromThisPkg || z.msg == "" {
 			continue
 		}
 		b.printf("const char* %s = \"%s%s: %s\";\n", z.cName, z.msg[:1], g.pkgName, z.msg[1:])
@@ -595,17 +605,24 @@ func (g *gen) gatherStatuses(b *buffer, n *a.Status) error {
 	if !ok || msg == "" {
 		return fmt.Errorf("bad status message %q", raw)
 	}
-	errSus := "error__"
+	return g.addStatus(n.QID(), msg, n.Public())
+}
+
+func (g *gen) addStatus(qid t.QID, msg string, public bool) error {
+	category := "warning__"
 	if msg[0] == '$' {
-		errSus = "suspension__"
+		category = "suspension__"
+	} else if msg[0] == '?' {
+		category = "error__"
 	}
 	z := status{
-		cName:  g.pkgPrefix + errSus + cName(msg, ""),
-		msg:    msg,
-		public: n.Public(),
+		cName:       g.packagePrefix(qid) + category + cName(msg, ""),
+		msg:         msg,
+		fromThisPkg: qid[0] == 0,
+		public:      public,
 	}
 	g.statusList = append(g.statusList, z)
-	g.statusMap[n.QID()] = z
+	g.statusMap[qid] = z
 	return nil
 }
 

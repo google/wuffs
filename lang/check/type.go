@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/google/wuffs/lang/builtin"
-
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
@@ -385,10 +383,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 
 		} else if id1.IsStrLiteral(q.tm) {
 			if _, ok := q.c.statuses[n.StatusQID()]; !ok {
-				msg, _ := t.Unescape(n.Ident().Str(q.tm))
-				if _, ok := builtin.StatusMap[msg]; !ok {
-					return fmt.Errorf("check: no error or status with message %q", msg)
-				}
+				return fmt.Errorf("check: unrecognized status %s", n.StatusQID().Str(q.tm))
 			}
 			n.SetMType(typeExprStatus)
 			return nil

@@ -17,8 +17,6 @@ package cgen
 import (
 	"fmt"
 
-	"github.com/google/wuffs/lang/builtin"
-
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
@@ -79,19 +77,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, rp replacementPolicy, depth u
 			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
 				b.writes(z.cName)
 			} else {
-				msg, _ := t.Unescape(n.Ident().Str(g.tm))
-				if !builtin.StatusMap[msg] {
-					return fmt.Errorf("no status code for %q", msg)
-				}
-				b.writes("wuffs_base__")
-				if statusMsgIsError(msg) {
-					b.writes("error__")
-				} else if statusMsgIsSuspension(msg) {
-					b.writes("suspension__")
-				} else {
-					b.writes("warning__")
-				}
-				b.writes(cName(msg, ""))
+				return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
 			}
 
 		} else {
