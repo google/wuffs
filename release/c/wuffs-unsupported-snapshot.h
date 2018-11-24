@@ -5193,13 +5193,12 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         }
         goto label_0_continue;
       } else if (v_type == 1) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_deflate__decoder__init_fixed_huffman(self);
         if (status) {
-          goto suspend;
+          goto exit;
         }
       } else if (v_type == 2) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (a_src.private_impl.buf) {
           a_src.private_impl.buf->meta.ri =
               iop_a_src - a_src.private_impl.buf->data.ptr;
@@ -5217,7 +5216,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         goto exit;
       }
       self->private_impl.f_end_of_block = false;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       if (a_src.private_impl.buf) {
         a_src.private_impl.buf->meta.ri =
             iop_a_src - a_src.private_impl.buf->data.ptr;
@@ -5233,7 +5232,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
       if (self->private_impl.f_end_of_block) {
         goto label_0_continue;
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       if (a_src.private_impl.buf) {
         a_src.private_impl.buf->meta.ri =
             iop_a_src - a_src.private_impl.buf->data.ptr;
@@ -5420,8 +5419,6 @@ exit:
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self) {
-  wuffs_base__status status = NULL;
-
   uint32_t v_i;
 
   v_i = 0;
@@ -5445,17 +5442,21 @@ wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self) {
     self->private_impl.f_code_lengths[v_i] = 5;
     v_i += 1;
   }
-  status = wuffs_deflate__decoder__init_huff(self, 0, 0, 288, 257);
-  if (status) {
-    goto exit;
+  {
+    wuffs_base__status status =
+        wuffs_deflate__decoder__init_huff(self, 0, 0, 288, 257);
+    if (status) {
+      return status;
+    }
   }
-  status = wuffs_deflate__decoder__init_huff(self, 1, 288, 320, 0);
-  if (status) {
-    goto exit;
+  {
+    wuffs_base__status status =
+        wuffs_deflate__decoder__init_huff(self, 1, 288, 320, 0);
+    if (status) {
+      return status;
+    }
   }
-  goto exit;
-exit:
-  return status;
+  return NULL;
 }
 
 // -------- func deflate.decoder.init_dynamic_huffman

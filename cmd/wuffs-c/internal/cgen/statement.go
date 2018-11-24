@@ -163,7 +163,11 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 		if n.Effect().Coroutine() {
 			return nil
 		} else if n.Effect().Optional() {
-			b.writes("status = ")
+			if g.currFunk.astFunc.Effect().Coroutine() {
+				b.writes("status = ")
+			} else {
+				b.writes("{ wuffs_base__status status = ")
+			}
 			checkStatus = true
 		}
 	}
@@ -172,7 +176,11 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	}
 	b.writes(";\n")
 	if checkStatus {
-		b.writes("if (status) { goto exit; }\n")
+		if g.currFunk.astFunc.Effect().Coroutine() {
+			b.writes("if (status) { goto exit; }\n")
+		} else {
+			b.writes("if (status) { return status; }}\n")
+		}
 	}
 	return nil
 }

@@ -191,7 +191,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 			this.decode_uncompressed!??(dst:args.dst, src:args.src)
 			continue
 		} else if type == 1 {
-			this.init_fixed_huffman!??()
+			this.init_fixed_huffman!?()
 		} else if type == 2 {
 			this.init_dynamic_huffman!??(src:args.src)
 		} else {
@@ -243,7 +243,7 @@ pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) 
 }
 
 // init_fixed_huffman initializes this.huffs as per the RFC section 3.2.6.
-pri func decoder.init_fixed_huffman!??() {
+pri func decoder.init_fixed_huffman!?() {
 	var i base.u32
 	while i < 144 {
 		this.code_lengths[i] = 8
