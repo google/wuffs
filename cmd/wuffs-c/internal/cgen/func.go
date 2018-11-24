@@ -39,8 +39,6 @@ type funk struct {
 	ioBinds       uint32
 	tempW         uint32
 	tempR         uint32
-	public        bool
-	suspendible   bool // TODO: rename to coroutine.
 	usesScratch   bool
 	hasGotoOK     bool
 }
@@ -160,11 +158,11 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 	}
 	b.writes("{\n")
 	b.writex(k.bPrologue)
-	if k.suspendible && k.coroSuspPoint > 0 {
+	if k.astFunc.Effect().Coroutine() && k.coroSuspPoint > 0 {
 		b.writex(k.bBodyResume)
 	}
 	b.writex(k.bBody)
-	if k.suspendible && k.coroSuspPoint > 0 {
+	if k.astFunc.Effect().Coroutine() && k.coroSuspPoint > 0 {
 		b.writex(k.bBodySuspend)
 	} else if k.hasGotoOK {
 		b.writes("\ngoto ok;ok:\n") // The goto avoids the "unused label" warning.
@@ -176,10 +174,8 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 
 func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	g.currFunk = funk{
-		astFunc:     n,
-		cName:       g.funcCName(n),
-		public:      n.Public(),
-		suspendible: n.Effect().Coroutine(),
+		astFunc: n,
+		cName:   g.funcCName(n),
 	}
 
 	if err := g.findVars(); err != nil {
@@ -228,11 +224,11 @@ func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 
 func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	// Check the initialized/disabled state and the "self" arg.
-	if g.currFunk.public && !g.currFunk.astFunc.Receiver().IsZero() {
+	if g.currFunk.astFunc.Public() && !g.currFunk.astFunc.Receiver().IsZero() {
 		out := g.currFunk.astFunc.Out()
 
 		b.writes("if (!self) { return ")
-		if g.currFunk.suspendible {
+		if g.currFunk.astFunc.Effect().Coroutine() {
 			b.writes("wuffs_base__error__bad_receiver")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
@@ -240,7 +236,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) { return ")
-		if g.currFunk.suspendible {
+		if g.currFunk.astFunc.Effect().Coroutine() {
 			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +
 				": wuffs_base__error__check_wuffs_version_missing")
@@ -253,13 +249,13 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 
 	// For public functions, check (at runtime) the other args for bounds and
 	// null-ness. For private functions, those checks are done at compile time.
-	if g.currFunk.public {
+	if g.currFunk.astFunc.Public() {
 		if err := g.writeFuncImplArgChecks(b, g.currFunk.astFunc); err != nil {
 			return err
 		}
 	}
 
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		b.printf("wuffs_base__status status = NULL;\n")
 	}
 	b.writes("\n")
@@ -270,7 +266,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	}
 	b.writes("\n")
 
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		g.findDerivedVars()
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
@@ -284,7 +280,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplBodyResume(b *buffer) error {
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		// TODO: don't hard-code [0], and allow recursive coroutines.
 		b.printf("uint32_t coro_susp_point = self->private_impl.%s%s[0].coro_susp_point;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
@@ -316,7 +312,7 @@ func (g *gen) writeFuncImplBody(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		// We've reached the end of the function body. Reset the coroutine
 		// suspension point so that the next call to this function starts at
 		// the top.
@@ -338,7 +334,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 
 		for _, o := range g.currFunk.astFunc.In().Fields() {
@@ -349,7 +345,7 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		}
 		b.writes("\n")
 
-		if g.currFunk.public {
+		if g.currFunk.astFunc.Public() {
 			b.writes("if (wuffs_base__status__is_error(status)) { " +
 				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")
 		}
@@ -417,8 +413,8 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 		b.writes(c)
 	}
 	b.writes(") {")
-	if g.currFunk.suspendible {
-		if g.currFunk.public {
+	if g.currFunk.astFunc.Effect().Coroutine() {
+		if g.currFunk.astFunc.Public() {
 			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
 		}
 		b.writes("return wuffs_base__error__bad_argument;\n\n")

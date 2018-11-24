@@ -324,7 +324,7 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	retExpr := n.Value()
 
-	if g.currFunk.suspendible {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		isError, isOK := false, false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
