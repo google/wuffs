@@ -41,7 +41,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (args.src.read_u8!??() as base.u32) << n_bits
+			bits |= args.src.read_u8_as_u32!??() << n_bits
 			n_bits += 8
 		}
 
@@ -71,7 +71,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8!??() as base.u32) << n_bits
+				bits |= args.src.read_u8_as_u32!??() << n_bits
 				n_bits += 8
 			}
 
@@ -107,7 +107,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8!??() as base.u32) << n_bits
+				bits |= args.src.read_u8_as_u32!??() << n_bits
 				n_bits += 8
 			}
 			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
@@ -125,7 +125,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= (args.src.read_u8!??() as base.u32) << n_bits
+			bits |= args.src.read_u8_as_u32!??() << n_bits
 			n_bits += 8
 		}
 		// Check for a redirect.
@@ -144,7 +144,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8!??() as base.u32) << n_bits
+				bits |= args.src.read_u8_as_u32!??() << n_bits
 				n_bits += 8
 			}
 		}
@@ -170,7 +170,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				bits |= (args.src.read_u8!??() as base.u32) << n_bits
+				bits |= args.src.read_u8_as_u32!??() << n_bits
 				n_bits += 8
 			}
 			dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF

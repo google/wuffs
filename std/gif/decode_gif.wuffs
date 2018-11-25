@@ -322,8 +322,8 @@ pri func decoder.decode_header!??(src base.io_reader) {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd!??(src base.io_reader) {
-	this.width = args.src.read_u16le!??() as base.u32
-	this.height = args.src.read_u16le!??() as base.u32
+	this.width = args.src.read_u16le_as_u32!??()
+	this.height = args.src.read_u16le_as_u32!??()
 	var flags base.u8 = args.src.read_u8!??()
 	// Ignore the Background Color Index and Pixel Aspect Ratio bytes.
 	args.src.skip!??(n:2)
@@ -440,7 +440,7 @@ pri func decoder.decode_ae!??(src base.io_reader) {
 			args.src.skip!??(n:2)
 			break
 		}
-		this.num_loops = args.src.read_u16le!??() as base.u32
+		this.num_loops = args.src.read_u16le_as_u32!??()
 		this.seen_num_loops = true
 
 		// A loop count of N, in the wire format, actually means "repeat N
@@ -494,7 +494,7 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 	}
 
 	// There are 7056000 flicks per centisecond.
-	this.gc_duration = (args.src.read_u16le!??() as base.u64) * 7056000
+	this.gc_duration = args.src.read_u16le_as_u64!??() * 7056000
 	this.gc_transparent_index = args.src.read_u8!??()
 
 	c = args.src.read_u8!??()
@@ -513,10 +513,10 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 // overall image's width and height also requires decoding the first frame's
 // bounds (but doesn't require decoding the first frame's pixels).
 pri func decoder.decode_id_part0!??(src base.io_reader) {
-	this.frame_rect_x0 = args.src.read_u16le!??() as base.u32
-	this.frame_rect_y0 = args.src.read_u16le!??() as base.u32
-	this.frame_rect_x1 = this.frame_rect_x0 ~mod+ (args.src.read_u16le!??() as base.u32)
-	this.frame_rect_y1 = this.frame_rect_y0 ~mod+ (args.src.read_u16le!??() as base.u32)
+	this.frame_rect_x0 = args.src.read_u16le_as_u32!??()
+	this.frame_rect_y0 = args.src.read_u16le_as_u32!??()
+	this.frame_rect_x1 = this.frame_rect_x0 ~mod+ args.src.read_u16le_as_u32!??()
+	this.frame_rect_y1 = this.frame_rect_y0 ~mod+ args.src.read_u16le_as_u32!??()
 	this.dst_x = this.frame_rect_x0
 	this.dst_y = this.frame_rect_y0
 
@@ -611,7 +611,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.copy_to_image_buffer!?(pb:args.dst)
 			}
 		}
-		var block_size base.u64 = args.src.read_u8!??() as base.u64
+		var block_size base.u64 = args.src.read_u8_as_u64!??()
 		if block_size == 0 {
 			break
 		}
