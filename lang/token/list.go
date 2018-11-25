@@ -368,33 +368,33 @@ const (
 
 const (
 	minBuiltInLiteral    = 0xB0
-	minBuiltInNumLiteral = 0xB4
-	maxBuiltInNumLiteral = 0xBF
-	maxBuiltInLiteral    = 0xBF
+	minBuiltInNumLiteral = 0xC0
+	maxBuiltInNumLiteral = 0xCF
+	maxBuiltInLiteral    = 0xCF
 
 	IDFalse   = ID(0xB0)
 	IDTrue    = ID(0xB1)
 	IDNullptr = ID(0xB2)
 	IDOk      = ID(0xB3)
 
-	ID0   = ID(0xB4)
-	ID1   = ID(0xB5)
-	ID2   = ID(0xB6)
-	ID4   = ID(0xB7)
-	ID8   = ID(0xB8)
-	ID16  = ID(0xB9)
-	ID32  = ID(0xBA)
-	ID64  = ID(0xBB)
-	ID128 = ID(0xBC)
-	ID256 = ID(0xBD)
+	ID0   = ID(0xC0)
+	ID1   = ID(0xC1)
+	ID2   = ID(0xC2)
+	ID4   = ID(0xC3)
+	ID8   = ID(0xC4)
+	ID16  = ID(0xC5)
+	ID32  = ID(0xC6)
+	ID64  = ID(0xC7)
+	ID128 = ID(0xC8)
+	ID256 = ID(0xC9)
 )
 
 const (
 	minBuiltInIdent   = 0x100
-	minNumTypeOrIdeal = 0x11F
-	minNumType        = 0x120
-	maxNumType        = 0x127
-	maxNumTypeOrIdeal = 0x127
+	minNumTypeOrIdeal = 0x10F
+	minNumType        = 0x110
+	maxNumType        = 0x117
+	maxNumTypeOrIdeal = 0x117
 	maxBuiltInIdent   = 0x3FF
 
 	// -------- 0x100 block.
@@ -403,131 +403,131 @@ const (
 	IDBool        = ID(0x101)
 	IDUtility     = ID(0x102)
 
-	IDRangeIEU32 = ID(0x108)
-	IDRangeIIU32 = ID(0x109)
-	IDRangeIEU64 = ID(0x10A)
-	IDRangeIIU64 = ID(0x10B)
-	IDRectIEU32  = ID(0x10C)
-	IDRectIIU32  = ID(0x10D)
+	IDT1      = ID(0x108)
+	IDT2      = ID(0x109)
+	IDDagger1 = ID(0x10A)
+	IDDagger2 = ID(0x10B)
 
-	IDIOReader = ID(0x110)
-	IDIOWriter = ID(0x111)
-	IDStatus   = ID(0x112)
-
-	IDT1      = ID(0x118)
-	IDT2      = ID(0x119)
-	IDDagger1 = ID(0x11A)
-	IDDagger2 = ID(0x11B)
-
-	IDQNullptr     = ID(0x11C)
-	IDQPlaceholder = ID(0x11D)
-	IDQTypeExpr    = ID(0x11E)
+	IDQNullptr     = ID(0x10C)
+	IDQPlaceholder = ID(0x10D)
+	IDQTypeExpr    = ID(0x10E)
 
 	// It is important that IDQIdeal is right next to the IDI8..IDU64 block.
 	// See the ID.IsNumTypeOrIdeal method.
-	IDQIdeal = ID(0x11F)
+	IDQIdeal = ID(0x10F)
 
-	IDI8  = ID(0x120)
-	IDI16 = ID(0x121)
-	IDI32 = ID(0x122)
-	IDI64 = ID(0x123)
-	IDU8  = ID(0x124)
-	IDU16 = ID(0x125)
-	IDU32 = ID(0x126)
-	IDU64 = ID(0x127)
+	IDI8  = ID(0x110)
+	IDI16 = ID(0x111)
+	IDI32 = ID(0x112)
+	IDI64 = ID(0x113)
+	IDU8  = ID(0x114)
+	IDU16 = ID(0x115)
+	IDU32 = ID(0x116)
+	IDU64 = ID(0x117)
+
+	IDRangeIEU32 = ID(0x120)
+	IDRangeIIU32 = ID(0x121)
+	IDRangeIEU64 = ID(0x122)
+	IDRangeIIU64 = ID(0x123)
+	IDRectIEU32  = ID(0x124)
+	IDRectIIU32  = ID(0x125)
+
+	IDIOReader = ID(0x128)
+	IDIOWriter = ID(0x129)
+	IDStatus   = ID(0x12A)
 
 	IDArgs = ID(0x130)
 	IDBase = ID(0x131)
 	IDThis = ID(0x132)
 
-	// TODO Read/Write 24 bits? It might be useful for RGB triples.
+	IDFrameConfig = ID(0x160)
+	IDImageConfig = ID(0x161)
+	IDPixelBuffer = ID(0x162)
+	IDPixelConfig = ID(0x163)
 
-	IDUndoByte  = ID(0x140)
-	IDReadU8    = ID(0x141)
-	IDReadU16BE = ID(0x142)
-	IDReadU16LE = ID(0x143)
-	IDReadU24BE = ID(0x144)
-	IDReadU24LE = ID(0x145)
-	IDReadU32BE = ID(0x146)
-	IDReadU32LE = ID(0x147)
-	IDReadU40BE = ID(0x148)
-	IDReadU40LE = ID(0x149)
-	IDReadU48BE = ID(0x14A)
-	IDReadU48LE = ID(0x14B)
-	IDReadU56BE = ID(0x14C)
-	IDReadU56LE = ID(0x14D)
-	IDReadU64BE = ID(0x14E)
-	IDReadU64LE = ID(0x14F)
+	IDDecodeFrameOptions = ID(0x168)
 
-	IDPeekU8    = ID(0x151)
-	IDPeekU16BE = ID(0x152)
-	IDPeekU16LE = ID(0x153)
-	IDPeekU24BE = ID(0x154)
-	IDPeekU24LE = ID(0x155)
-	IDPeekU32BE = ID(0x156)
-	IDPeekU32LE = ID(0x157)
-	IDPeekU40BE = ID(0x158)
-	IDPeekU40LE = ID(0x159)
-	IDPeekU48BE = ID(0x15A)
-	IDPeekU48LE = ID(0x15B)
-	IDPeekU56BE = ID(0x15C)
-	IDPeekU56LE = ID(0x15D)
-	IDPeekU64BE = ID(0x15E)
-	IDPeekU64LE = ID(0x15F)
+	IDCanUndoByte = ID(0x170)
+	IDPosition    = ID(0x171)
+	IDSetLimit    = ID(0x172)
+	IDSetMark     = ID(0x173)
+	IDSinceMark   = ID(0x174)
+	IDSkip        = ID(0x175)
+	IDSkipFast    = ID(0x176)
+
+	IDCopyFromSlice        = ID(0x178)
+	IDCopyNFromHistory     = ID(0x179)
+	IDCopyNFromHistoryFast = ID(0x17A)
+	IDCopyNFromReader      = ID(0x17B)
+	IDCopyNFromSlice       = ID(0x17C)
+
+	// -------- 0x180 block.
+
+	IDUndoByte  = ID(0x180)
+	IDReadU8    = ID(0x181)
+	IDReadU16BE = ID(0x182)
+	IDReadU16LE = ID(0x183)
+	IDReadU24BE = ID(0x184)
+	IDReadU24LE = ID(0x185)
+	IDReadU32BE = ID(0x186)
+	IDReadU32LE = ID(0x187)
+	IDReadU40BE = ID(0x188)
+	IDReadU40LE = ID(0x189)
+	IDReadU48BE = ID(0x18A)
+	IDReadU48LE = ID(0x18B)
+	IDReadU56BE = ID(0x18C)
+	IDReadU56LE = ID(0x18D)
+	IDReadU64BE = ID(0x18E)
+	IDReadU64LE = ID(0x18F)
+
+	IDPeekU8    = ID(0x1A1)
+	IDPeekU16BE = ID(0x1A2)
+	IDPeekU16LE = ID(0x1A3)
+	IDPeekU24BE = ID(0x1A4)
+	IDPeekU24LE = ID(0x1A5)
+	IDPeekU32BE = ID(0x1A6)
+	IDPeekU32LE = ID(0x1A7)
+	IDPeekU40BE = ID(0x1A8)
+	IDPeekU40LE = ID(0x1A9)
+	IDPeekU48BE = ID(0x1AA)
+	IDPeekU48LE = ID(0x1AB)
+	IDPeekU56BE = ID(0x1AC)
+	IDPeekU56LE = ID(0x1AD)
+	IDPeekU64BE = ID(0x1AE)
+	IDPeekU64LE = ID(0x1AF)
 
 	// TODO: IDUnwriteU8?
-	IDWriteU8    = ID(0x161)
-	IDWriteU16BE = ID(0x162)
-	IDWriteU16LE = ID(0x163)
-	IDWriteU24BE = ID(0x164)
-	IDWriteU24LE = ID(0x165)
-	IDWriteU32BE = ID(0x166)
-	IDWriteU32LE = ID(0x167)
-	IDWriteU40BE = ID(0x168)
-	IDWriteU40LE = ID(0x169)
-	IDWriteU48BE = ID(0x16A)
-	IDWriteU48LE = ID(0x16B)
-	IDWriteU56BE = ID(0x16C)
-	IDWriteU56LE = ID(0x16D)
-	IDWriteU64BE = ID(0x16E)
-	IDWriteU64LE = ID(0x16F)
+	IDWriteU8    = ID(0x1C1)
+	IDWriteU16BE = ID(0x1C2)
+	IDWriteU16LE = ID(0x1C3)
+	IDWriteU24BE = ID(0x1C4)
+	IDWriteU24LE = ID(0x1C5)
+	IDWriteU32BE = ID(0x1C6)
+	IDWriteU32LE = ID(0x1C7)
+	IDWriteU40BE = ID(0x1C8)
+	IDWriteU40LE = ID(0x1C9)
+	IDWriteU48BE = ID(0x1CA)
+	IDWriteU48LE = ID(0x1CB)
+	IDWriteU56BE = ID(0x1CC)
+	IDWriteU56LE = ID(0x1CD)
+	IDWriteU64BE = ID(0x1CE)
+	IDWriteU64LE = ID(0x1CF)
 
-	IDWriteFastU8    = ID(0x171)
-	IDWriteFastU16BE = ID(0x172)
-	IDWriteFastU16LE = ID(0x173)
-	IDWriteFastU24BE = ID(0x174)
-	IDWriteFastU24LE = ID(0x175)
-	IDWriteFastU32BE = ID(0x176)
-	IDWriteFastU32LE = ID(0x177)
-	IDWriteFastU40BE = ID(0x178)
-	IDWriteFastU40LE = ID(0x179)
-	IDWriteFastU48BE = ID(0x17A)
-	IDWriteFastU48LE = ID(0x17B)
-	IDWriteFastU56BE = ID(0x17C)
-	IDWriteFastU56LE = ID(0x17D)
-	IDWriteFastU64BE = ID(0x17E)
-	IDWriteFastU64LE = ID(0x17F)
-
-	IDCanUndoByte = ID(0x180)
-	IDPosition    = ID(0x181)
-	IDSetLimit    = ID(0x182)
-	IDSetMark     = ID(0x183)
-	IDSinceMark   = ID(0x184)
-	IDSkip        = ID(0x185)
-	IDSkipFast    = ID(0x186)
-
-	IDCopyFromSlice        = ID(0x190)
-	IDCopyNFromHistory     = ID(0x191)
-	IDCopyNFromHistoryFast = ID(0x192)
-	IDCopyNFromReader      = ID(0x193)
-	IDCopyNFromSlice       = ID(0x194)
-
-	IDFrameConfig = ID(0x1C0)
-	IDImageConfig = ID(0x1C1)
-	IDPixelBuffer = ID(0x1C2)
-	IDPixelConfig = ID(0x1C3)
-
-	IDDecodeFrameOptions = ID(0x1C8)
+	IDWriteFastU8    = ID(0x1E1)
+	IDWriteFastU16BE = ID(0x1E2)
+	IDWriteFastU16LE = ID(0x1E3)
+	IDWriteFastU24BE = ID(0x1E4)
+	IDWriteFastU24LE = ID(0x1E5)
+	IDWriteFastU32BE = ID(0x1E6)
+	IDWriteFastU32LE = ID(0x1E7)
+	IDWriteFastU40BE = ID(0x1E8)
+	IDWriteFastU40LE = ID(0x1E9)
+	IDWriteFastU48BE = ID(0x1EA)
+	IDWriteFastU48LE = ID(0x1EB)
+	IDWriteFastU56BE = ID(0x1EC)
+	IDWriteFastU56LE = ID(0x1ED)
+	IDWriteFastU64BE = ID(0x1EE)
+	IDWriteFastU64LE = ID(0x1EF)
 
 	// -------- 0x200 block.
 
@@ -673,17 +673,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDBool:        "bool",
 	IDUtility:     "utility",
 
-	IDRangeIEU32: "range_ie_u32",
-	IDRangeIIU32: "range_ii_u32",
-	IDRangeIEU64: "range_ie_u64",
-	IDRangeIIU64: "range_ii_u64",
-	IDRectIEU32:  "rect_ie_u32",
-	IDRectIIU32:  "rect_ii_u32",
-
-	IDIOReader: "io_reader",
-	IDIOWriter: "io_writer",
-	IDStatus:   "status",
-
 	// Some of the next few IDs are never returned by the tokenizer, as it
 	// rejects non-ASCII input. The string representations "¶", "ℤ" etc. are
 	// specifically non-ASCII so that no user-defined (non built-in) identifier
@@ -726,9 +715,43 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
+	IDRangeIEU32: "range_ie_u32",
+	IDRangeIIU32: "range_ii_u32",
+	IDRangeIEU64: "range_ie_u64",
+	IDRangeIIU64: "range_ii_u64",
+	IDRectIEU32:  "rect_ie_u32",
+	IDRectIIU32:  "rect_ii_u32",
+
+	IDIOReader: "io_reader",
+	IDIOWriter: "io_writer",
+	IDStatus:   "status",
+
 	IDArgs: "args",
 	IDBase: "base",
 	IDThis: "this",
+
+	IDFrameConfig: "frame_config",
+	IDImageConfig: "image_config",
+	IDPixelBuffer: "pixel_buffer",
+	IDPixelConfig: "pixel_config",
+
+	IDDecodeFrameOptions: "decode_frame_options",
+
+	IDCanUndoByte: "can_undo_byte",
+	IDPosition:    "position",
+	IDSetLimit:    "set_limit",
+	IDSetMark:     "set_mark",
+	IDSinceMark:   "since_mark",
+	IDSkip:        "skip",
+	IDSkipFast:    "skip_fast",
+
+	IDCopyFromSlice:        "copy_from_slice",
+	IDCopyNFromHistory:     "copy_n_from_history",
+	IDCopyNFromHistoryFast: "copy_n_from_history_fast",
+	IDCopyNFromReader:      "copy_n_from_reader",
+	IDCopyNFromSlice:       "copy_n_from_slice",
+
+	// -------- 0x180 block.
 
 	IDUndoByte:  "undo_byte",
 	IDReadU8:    "read_u8",
@@ -794,27 +817,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteFastU56LE: "write_fast_u56le",
 	IDWriteFastU64BE: "write_fast_u64be",
 	IDWriteFastU64LE: "write_fast_u64le",
-
-	IDCanUndoByte: "can_undo_byte",
-	IDPosition:    "position",
-	IDSetLimit:    "set_limit",
-	IDSetMark:     "set_mark",
-	IDSinceMark:   "since_mark",
-	IDSkip:        "skip",
-	IDSkipFast:    "skip_fast",
-
-	IDCopyFromSlice:        "copy_from_slice",
-	IDCopyNFromHistory:     "copy_n_from_history",
-	IDCopyNFromHistoryFast: "copy_n_from_history_fast",
-	IDCopyNFromReader:      "copy_n_from_reader",
-	IDCopyNFromSlice:       "copy_n_from_slice",
-
-	IDFrameConfig: "frame_config",
-	IDImageConfig: "image_config",
-	IDPixelBuffer: "pixel_buffer",
-	IDPixelConfig: "pixel_config",
-
-	IDDecodeFrameOptions: "decode_frame_options",
 
 	// -------- 0x200 block.
 
