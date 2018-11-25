@@ -463,40 +463,71 @@ const (
 
 	// -------- 0x180 block.
 
-	IDUndoByte  = ID(0x180)
-	IDReadU8    = ID(0x181)
+	IDUndoByte = ID(0x180)
+	IDReadU8   = ID(0x181)
+
 	IDReadU16BE = ID(0x182)
 	IDReadU16LE = ID(0x183)
-	IDReadU24BE = ID(0x184)
-	IDReadU24LE = ID(0x185)
-	IDReadU32BE = ID(0x186)
-	IDReadU32LE = ID(0x187)
-	IDReadU40BE = ID(0x188)
-	IDReadU40LE = ID(0x189)
-	IDReadU48BE = ID(0x18A)
-	IDReadU48LE = ID(0x18B)
-	IDReadU56BE = ID(0x18C)
-	IDReadU56LE = ID(0x18D)
-	IDReadU64BE = ID(0x18E)
-	IDReadU64LE = ID(0x18F)
 
-	IDPeekU8    = ID(0x1A1)
+	IDReadU8AsU32    = ID(0x189)
+	IDReadU16BEAsU32 = ID(0x18A)
+	IDReadU16LEAsU32 = ID(0x18B)
+	IDReadU24BEAsU32 = ID(0x18C)
+	IDReadU24LEAsU32 = ID(0x18D)
+	IDReadU32BE      = ID(0x18E)
+	IDReadU32LE      = ID(0x18F)
+
+	IDReadU8AsU64    = ID(0x191)
+	IDReadU16BEAsU64 = ID(0x192)
+	IDReadU16LEAsU64 = ID(0x193)
+	IDReadU24BEAsU64 = ID(0x194)
+	IDReadU24LEAsU64 = ID(0x195)
+	IDReadU32BEAsU64 = ID(0x196)
+	IDReadU32LEAsU64 = ID(0x197)
+	IDReadU40BEAsU64 = ID(0x198)
+	IDReadU40LEAsU64 = ID(0x199)
+	IDReadU48BEAsU64 = ID(0x19A)
+	IDReadU48LEAsU64 = ID(0x19B)
+	IDReadU56BEAsU64 = ID(0x19C)
+	IDReadU56LEAsU64 = ID(0x19D)
+	IDReadU64BE      = ID(0x19E)
+	IDReadU64LE      = ID(0x19F)
+
+	// --------
+
+	IDPeekU8 = ID(0x1A1)
+
 	IDPeekU16BE = ID(0x1A2)
 	IDPeekU16LE = ID(0x1A3)
-	IDPeekU24BE = ID(0x1A4)
-	IDPeekU24LE = ID(0x1A5)
-	IDPeekU32BE = ID(0x1A6)
-	IDPeekU32LE = ID(0x1A7)
-	IDPeekU40BE = ID(0x1A8)
-	IDPeekU40LE = ID(0x1A9)
-	IDPeekU48BE = ID(0x1AA)
-	IDPeekU48LE = ID(0x1AB)
-	IDPeekU56BE = ID(0x1AC)
-	IDPeekU56LE = ID(0x1AD)
-	IDPeekU64BE = ID(0x1AE)
-	IDPeekU64LE = ID(0x1AF)
+
+	IDPeekU8AsU32    = ID(0x1A9)
+	IDPeekU16BEAsU32 = ID(0x1AA)
+	IDPeekU16LEAsU32 = ID(0x1AB)
+	IDPeekU24BEAsU32 = ID(0x1AC)
+	IDPeekU24LEAsU32 = ID(0x1AD)
+	IDPeekU32BE      = ID(0x1AE)
+	IDPeekU32LE      = ID(0x1AF)
+
+	IDPeekU8AsU64    = ID(0x1B1)
+	IDPeekU16BEAsU64 = ID(0x1B2)
+	IDPeekU16LEAsU64 = ID(0x1B3)
+	IDPeekU24BEAsU64 = ID(0x1B4)
+	IDPeekU24LEAsU64 = ID(0x1B5)
+	IDPeekU32BEAsU64 = ID(0x1B6)
+	IDPeekU32LEAsU64 = ID(0x1B7)
+	IDPeekU40BEAsU64 = ID(0x1B8)
+	IDPeekU40LEAsU64 = ID(0x1B9)
+	IDPeekU48BEAsU64 = ID(0x1BA)
+	IDPeekU48LEAsU64 = ID(0x1BB)
+	IDPeekU56BEAsU64 = ID(0x1BC)
+	IDPeekU56LEAsU64 = ID(0x1BD)
+	IDPeekU64BE      = ID(0x1BE)
+	IDPeekU64LE      = ID(0x1BF)
+
+	// --------
 
 	// TODO: IDUnwriteU8?
+
 	IDWriteU8    = ID(0x1C1)
 	IDWriteU16BE = ID(0x1C2)
 	IDWriteU16LE = ID(0x1C3)
@@ -512,6 +543,8 @@ const (
 	IDWriteU56LE = ID(0x1CD)
 	IDWriteU64BE = ID(0x1CE)
 	IDWriteU64LE = ID(0x1CF)
+
+	// --------
 
 	IDWriteFastU8    = ID(0x1E1)
 	IDWriteFastU16BE = ID(0x1E2)
@@ -753,38 +786,68 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x180 block.
 
-	IDUndoByte:  "undo_byte",
-	IDReadU8:    "read_u8",
+	IDUndoByte: "undo_byte",
+	IDReadU8:   "read_u8",
+
 	IDReadU16BE: "read_u16be",
 	IDReadU16LE: "read_u16le",
-	IDReadU24BE: "read_u24be",
-	IDReadU24LE: "read_u24le",
-	IDReadU32BE: "read_u32be",
-	IDReadU32LE: "read_u32le",
-	IDReadU40BE: "read_u40be",
-	IDReadU40LE: "read_u40le",
-	IDReadU48BE: "read_u48be",
-	IDReadU48LE: "read_u48le",
-	IDReadU56BE: "read_u56be",
-	IDReadU56LE: "read_u56le",
-	IDReadU64BE: "read_u64be",
-	IDReadU64LE: "read_u64le",
 
-	IDPeekU8:    "peek_u8",
+	IDReadU8AsU32:    "read_u8_as_u32",
+	IDReadU16BEAsU32: "read_u16be_as_u32",
+	IDReadU16LEAsU32: "read_u16le_as_u32",
+	IDReadU24BEAsU32: "read_u24be_as_u32",
+	IDReadU24LEAsU32: "read_u24le_as_u32",
+	IDReadU32BE:      "read_u32be",
+	IDReadU32LE:      "read_u32le",
+
+	IDReadU8AsU64:    "read_u8_as_u64",
+	IDReadU16BEAsU64: "read_u16be_as_u64",
+	IDReadU16LEAsU64: "read_u16le_as_u64",
+	IDReadU24BEAsU64: "read_u24be_as_u64",
+	IDReadU24LEAsU64: "read_u24le_as_u64",
+	IDReadU32BEAsU64: "read_u32be_as_u64",
+	IDReadU32LEAsU64: "read_u32le_as_u64",
+	IDReadU40BEAsU64: "read_u40be_as_u64",
+	IDReadU40LEAsU64: "read_u40le_as_u64",
+	IDReadU48BEAsU64: "read_u48be_as_u64",
+	IDReadU48LEAsU64: "read_u48le_as_u64",
+	IDReadU56BEAsU64: "read_u56be_as_u64",
+	IDReadU56LEAsU64: "read_u56le_as_u64",
+	IDReadU64BE:      "read_u64be",
+	IDReadU64LE:      "read_u64le",
+
+	// --------
+
+	IDPeekU8: "peek_u8",
+
 	IDPeekU16BE: "peek_u16be",
 	IDPeekU16LE: "peek_u16le",
-	IDPeekU24BE: "peek_u24be",
-	IDPeekU24LE: "peek_u24le",
-	IDPeekU32BE: "peek_u32be",
-	IDPeekU32LE: "peek_u32le",
-	IDPeekU40BE: "peek_u40be",
-	IDPeekU40LE: "peek_u40le",
-	IDPeekU48BE: "peek_u48be",
-	IDPeekU48LE: "peek_u48le",
-	IDPeekU56BE: "peek_u56be",
-	IDPeekU56LE: "peek_u56le",
-	IDPeekU64BE: "peek_u64be",
-	IDPeekU64LE: "peek_u64le",
+
+	IDPeekU8AsU32:    "peek_u8_as_u32",
+	IDPeekU16BEAsU32: "peek_u16be_as_u32",
+	IDPeekU16LEAsU32: "peek_u16le_as_u32",
+	IDPeekU24BEAsU32: "peek_u24be_as_u32",
+	IDPeekU24LEAsU32: "peek_u24le_as_u32",
+	IDPeekU32BE:      "peek_u32be",
+	IDPeekU32LE:      "peek_u32le",
+
+	IDPeekU8AsU64:    "peek_u8_as_u64",
+	IDPeekU16BEAsU64: "peek_u16be_as_u64",
+	IDPeekU16LEAsU64: "peek_u16le_as_u64",
+	IDPeekU24BEAsU64: "peek_u24be_as_u64",
+	IDPeekU24LEAsU64: "peek_u24le_as_u64",
+	IDPeekU32BEAsU64: "peek_u32be_as_u64",
+	IDPeekU32LEAsU64: "peek_u32le_as_u64",
+	IDPeekU40BEAsU64: "peek_u40be_as_u64",
+	IDPeekU40LEAsU64: "peek_u40le_as_u64",
+	IDPeekU48BEAsU64: "peek_u48be_as_u64",
+	IDPeekU48LEAsU64: "peek_u48le_as_u64",
+	IDPeekU56BEAsU64: "peek_u56be_as_u64",
+	IDPeekU56LEAsU64: "peek_u56le_as_u64",
+	IDPeekU64BE:      "peek_u64be",
+	IDPeekU64LE:      "peek_u64le",
+
+	// --------
 
 	IDWriteU8:    "write_u8",
 	IDWriteU16BE: "write_u16be",
@@ -801,6 +864,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDWriteU56LE: "write_u56le",
 	IDWriteU64BE: "write_u64be",
 	IDWriteU64LE: "write_u64le",
+
+	// --------
 
 	IDWriteFastU8:    "write_fast_u8",
 	IDWriteFastU16BE: "write_fast_u16be",

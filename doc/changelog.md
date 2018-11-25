@@ -30,6 +30,7 @@
 - Added `{frame,image,pixel}_config` and `pixel_buffer` types.
 - Added a `reset` method.
 - Added `peek_uxx`, `skip_fast` and `write_fast_uxx` methods.
+- Renamed some `read_uxx` methods as `read_uxx_as_uyy`.
 - Added I/O positions.
 - Tweaked how marks and limits work.
 - Supported animated (not just single frame) and interlaced GIFs.

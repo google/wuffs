@@ -501,7 +501,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 
 	if recvTyp.QID()[1] == t.IDIOReader {
 		switch method.Ident() {
-		case t.IDReadU8:
+		case t.IDReadU8, t.IDReadU8AsU32, t.IDReadU8AsU64:
 			if g.currFunk.tempW > maxTemp {
 				return fmt.Errorf("too many temporary variables required")
 			}
@@ -519,29 +519,29 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDReadU16BE:
+		case t.IDReadU16BE, t.IDReadU16BEAsU32, t.IDReadU16BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 16, "be")
-		case t.IDReadU16LE:
+		case t.IDReadU16LE, t.IDReadU16LEAsU32, t.IDReadU16LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 16, "le")
-		case t.IDReadU24BE:
+		case t.IDReadU24BEAsU32, t.IDReadU24BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 24, "be")
-		case t.IDReadU24LE:
+		case t.IDReadU24LEAsU32, t.IDReadU24LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 24, "le")
-		case t.IDReadU32BE:
+		case t.IDReadU32BE, t.IDReadU32BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 32, "be")
-		case t.IDReadU32LE:
+		case t.IDReadU32LE, t.IDReadU32LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 32, "le")
-		case t.IDReadU40BE:
+		case t.IDReadU40BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 40, "be")
-		case t.IDReadU40LE:
+		case t.IDReadU40LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 40, "le")
-		case t.IDReadU48BE:
+		case t.IDReadU48BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 48, "be")
-		case t.IDReadU48LE:
+		case t.IDReadU48LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 48, "le")
-		case t.IDReadU56BE:
+		case t.IDReadU56BEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 56, "be")
-		case t.IDReadU56LE:
+		case t.IDReadU56LEAsU64:
 			return g.writeReadUXX(b, n, "a_src", 56, "le")
 		case t.IDReadU64BE:
 			return g.writeReadUXX(b, n, "a_src", 64, "be")
@@ -605,21 +605,34 @@ var peekMethods = [...]struct {
 	n          uint8
 	endianness uint8
 }{
-	t.IDPeekU8 - peekMethodsBase:    {8, 'b'},
+	t.IDPeekU8 - peekMethodsBase: {8, 'b'},
+
 	t.IDPeekU16BE - peekMethodsBase: {16, 'b'},
 	t.IDPeekU16LE - peekMethodsBase: {16, 'l'},
-	t.IDPeekU24BE - peekMethodsBase: {24, 'b'},
-	t.IDPeekU24LE - peekMethodsBase: {24, 'l'},
-	t.IDPeekU32BE - peekMethodsBase: {32, 'b'},
-	t.IDPeekU32LE - peekMethodsBase: {32, 'l'},
-	t.IDPeekU40BE - peekMethodsBase: {40, 'b'},
-	t.IDPeekU40LE - peekMethodsBase: {40, 'l'},
-	t.IDPeekU48BE - peekMethodsBase: {48, 'b'},
-	t.IDPeekU48LE - peekMethodsBase: {48, 'l'},
-	t.IDPeekU56BE - peekMethodsBase: {56, 'b'},
-	t.IDPeekU56LE - peekMethodsBase: {56, 'l'},
-	t.IDPeekU64BE - peekMethodsBase: {64, 'b'},
-	t.IDPeekU64LE - peekMethodsBase: {64, 'l'},
+
+	t.IDPeekU8AsU32 - peekMethodsBase:    {8, 'b'},
+	t.IDPeekU16BEAsU32 - peekMethodsBase: {16, 'b'},
+	t.IDPeekU16LEAsU32 - peekMethodsBase: {16, 'l'},
+	t.IDPeekU24BEAsU32 - peekMethodsBase: {24, 'b'},
+	t.IDPeekU24LEAsU32 - peekMethodsBase: {24, 'l'},
+	t.IDPeekU32BE - peekMethodsBase:      {32, 'b'},
+	t.IDPeekU32LE - peekMethodsBase:      {32, 'l'},
+
+	t.IDPeekU8AsU64 - peekMethodsBase:    {8, 'b'},
+	t.IDPeekU16BEAsU64 - peekMethodsBase: {16, 'b'},
+	t.IDPeekU16LEAsU64 - peekMethodsBase: {16, 'l'},
+	t.IDPeekU24BEAsU64 - peekMethodsBase: {24, 'b'},
+	t.IDPeekU24LEAsU64 - peekMethodsBase: {24, 'l'},
+	t.IDPeekU32BEAsU64 - peekMethodsBase: {32, 'b'},
+	t.IDPeekU32LEAsU64 - peekMethodsBase: {32, 'l'},
+	t.IDPeekU40BEAsU64 - peekMethodsBase: {40, 'b'},
+	t.IDPeekU40LEAsU64 - peekMethodsBase: {40, 'l'},
+	t.IDPeekU48BEAsU64 - peekMethodsBase: {48, 'b'},
+	t.IDPeekU48LEAsU64 - peekMethodsBase: {48, 'l'},
+	t.IDPeekU56BEAsU64 - peekMethodsBase: {56, 'b'},
+	t.IDPeekU56LEAsU64 - peekMethodsBase: {56, 'l'},
+	t.IDPeekU64BE - peekMethodsBase:      {64, 'b'},
+	t.IDPeekU64LE - peekMethodsBase:      {64, 'l'},
 }
 
 const writeFastMethodsBase = t.IDWriteFastU8

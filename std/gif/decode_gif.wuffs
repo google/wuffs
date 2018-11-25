@@ -336,7 +336,7 @@ pri func decoder.decode_lsd!??(src base.io_reader) {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
-			var argb base.u32 = args.src.read_u24be!??() | 0xFF000000
+			var argb base.u32 = args.src.read_u24be_as_u32!??() | 0xFF000000
 			this.palettes[0][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
@@ -548,7 +548,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
-			var argb base.u32 = args.src.read_u24be!??() | 0xFF000000
+			var argb base.u32 = args.src.read_u24be_as_u32!??() | 0xFF000000
 			this.palettes[1][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
 			this.palettes[1][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
 			this.palettes[1][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
