@@ -101,8 +101,11 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 			return "?internal error: inconsistent Huffman decoder state"
 		}
 
-		// length = base_number + extra_bits.
-		var length base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
+		// length = base_number_minus_3 + 3 + extra_bits.
+		//
+		// The -3 is from the bias in script/print-deflate-magic-numbers.go.
+		// That bias makes the "& 0xFF" 1 and 15-ish lines below correct.
+		var length base.u32[..258] = ((table_entry >> 8) & 0xFF) + 3
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			while n_bits < table_entry_n_bits,
@@ -113,7 +116,9 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				bits |= b2 << n_bits
 				n_bits += 8
 			}
-			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+			// The "+ 253" is the same as "- 3", after the "& 0xFF", but the
+			// plus form won't require an underflow check.
+			length = ((length + 253 + bits.low_bits(n:table_entry_n_bits)) & 0xFF) + 3
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 		}
@@ -166,7 +171,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 		// distance     = dist_minus_1 + 1.
 		//
 		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
-		// That bias makes the "& 0x7FFF" 15-ish lines below correct and
+		// That bias makes the "& 0x7FFF" 2 and 15-ish lines below correct and
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
 		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F

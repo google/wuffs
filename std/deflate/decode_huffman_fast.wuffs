@@ -153,8 +153,11 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 			return "?internal error: inconsistent Huffman decoder state"
 		}
 
-		// length = base_number + extra_bits.
-		var length base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
+		// length = base_number_minus_3 + 3 + extra_bits.
+		//
+		// The -3 is from the bias in script/print-deflate-magic-numbers.go.
+		// That bias makes the "& 0xFF" 1 and 15-ish lines below correct.
+		var length base.u32[..258] = ((table_entry >> 8) & 0xFF) + 3
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			// Ensure that we have at least 15 bits of input.
@@ -174,15 +177,14 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 			assert args.src.available() >= 6
 			assert n_bits >= 15
 
-			length = (length + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+			// The "+ 253" is the same as "- 3", after the "& 0xFF", but the
+			// plus form won't require an underflow check.
+			length = ((length + 253 + bits.low_bits(n:table_entry_n_bits)) & 0xFF) + 3
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 
 		} else {
 			assert args.src.available() >= 6
-		}
-		if length > 258 {
-			return "?internal error: inconsistent Huffman decoder state"
 		}
 
 		// Ensure that we have at least 15 bits of input.
@@ -252,7 +254,7 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 		// distance     = dist_minus_1 + 1.
 		//
 		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
-		// That bias makes the "& 0x7FFF" 15-ish lines below correct and
+		// That bias makes the "& 0x7FFF" 2 and 15-ish lines below correct and
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
 		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
@@ -281,7 +283,6 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
 		while true,
-			pre length <= 258,
 			pre args.dst.available() >= 258,
 		{
 			// Copy from this.history.
@@ -297,14 +298,9 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)
 					length -= hdist
 					hlen = hdist
-					// TODO: this if check should be redundant.
-					if length > 258 {
-						return "?internal error: inconsistent Huffman decoder state"
-					}
 				} else {
 					hlen = length
 					length = 0
-					assert length <= 258
 				}
 				if this.history_index < hdist {
 					return "?bad distance"
@@ -324,7 +320,6 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 				// "etc", but its presence minimizes the diff between
 				// decode_huffman_fast and decode_huffman_slow.
 				while true,
-					inv length <= 258,
 					inv args.dst.available() >= 258,
 				{
 					// TODO: copy_from_slice32 should probably update the
@@ -350,7 +345,6 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 				}
 			}
 			// Once again, redundant but explicit assertions.
-			assert length <= 258
 			assert ((dist_minus_1 + 1) as base.u64) <= args.dst.since_mark().length()
 			assert args.dst.available() >= 258
 

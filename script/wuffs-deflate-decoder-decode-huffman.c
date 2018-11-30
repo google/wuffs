@@ -244,8 +244,8 @@ outer_loop:
       table_entry = self->private_impl.f_huffs[0][top + (bits & mask)];
     }
 
-    // length = base_number + extra_bits.
-    uint32_t length = (table_entry >> 8) & 0xFFFF;
+    // length = base_number_minus_3 + 3 + extra_bits.
+    uint32_t length = ((table_entry >> 8) & 0xFF) + 3;
     {
       uint32_t n = (table_entry >> 4) & 0x0F;
       if (n) {
@@ -290,8 +290,8 @@ outer_loop:
       table_entry = self->private_impl.f_huffs[1][top + (bits & mask)];
     }
 
-    // dist_minus_1 = base_number_minus_1 + extra_bits + 1.
-    // distance = dist_minus_1 + 1.
+    // dist_minus_1 = base_number_minus_1 + extra_bits.
+    // distance     = dist_minus_1 + 1.
     uint32_t dist_minus_1 = (table_entry >> 8) & 0xFFFF;
     {
       uint32_t n = (table_entry >> 4) & 0x0F;

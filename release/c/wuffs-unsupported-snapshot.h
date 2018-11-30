@@ -4885,11 +4885,11 @@ static const uint8_t wuffs_deflate__reverse8[256] = {
 };
 
 static const uint32_t wuffs_deflate__lcode_magic_numbers[32] = {
-    1073742592, 1073742848, 1073743104, 1073743360, 1073743616, 1073743872,
-    1073744128, 1073744384, 1073744656, 1073745168, 1073745680, 1073746192,
-    1073746720, 1073747744, 1073748768, 1073749792, 1073750832, 1073752880,
-    1073754928, 1073756976, 1073759040, 1073763136, 1073767232, 1073771328,
-    1073775440, 1073783632, 1073791824, 1073800016, 1073807872, 134217728,
+    1073741824, 1073742080, 1073742336, 1073742592, 1073742848, 1073743104,
+    1073743360, 1073743616, 1073743888, 1073744400, 1073744912, 1073745424,
+    1073745952, 1073746976, 1073748000, 1073749024, 1073750064, 1073752112,
+    1073754160, 1073756208, 1073758272, 1073762368, 1073766464, 1073770560,
+    1073774672, 1073782864, 1073791056, 1073799248, 1073807104, 134217728,
     134217728,  134217728,
 };
 
@@ -6147,7 +6147,7 @@ label_0_continue:;
           wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
       goto exit;
     }
-    v_length = ((v_table_entry >> 8) & 32767);
+    v_length = (((v_table_entry >> 8) & 255) + 3);
     v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
     if (v_table_entry_n_bits > 0) {
       if (v_n_bits < 15) {
@@ -6160,17 +6160,13 @@ label_0_continue:;
       } else {
       }
       v_length =
-          ((v_length +
-            ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
-           32767);
+          (((v_length + 253 +
+             ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
+            255) +
+           3);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
     } else {
-    }
-    if (v_length > 258) {
-      status =
-          wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-      goto exit;
     }
     if (v_n_bits < 15) {
       v_bits |= (((uint32_t)(wuffs_base__load_u8be(iop_a_src))) << v_n_bits);
@@ -6254,11 +6250,6 @@ label_0_continue:;
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
-          if (v_length > 258) {
-            status =
-                wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-            goto exit;
-          }
         } else {
           v_hlen = v_length;
           v_length = 0;
@@ -6543,7 +6534,7 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
             wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto exit;
       }
-      v_length = ((v_table_entry >> 8) & 32767);
+      v_length = (((v_table_entry >> 8) & 255) + 3);
       v_table_entry_n_bits = ((v_table_entry >> 4) & 15);
       if (v_table_entry_n_bits > 0) {
         while (v_n_bits < v_table_entry_n_bits) {
@@ -6559,10 +6550,11 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
           v_bits |= (v_b2 << v_n_bits);
           v_n_bits += 8;
         }
-        v_length =
-            ((v_length +
-              ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_table_entry_n_bits))) &
-             32767);
+        v_length = (((v_length + 253 +
+                      ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(
+                          v_table_entry_n_bits))) &
+                     255) +
+                    3);
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
