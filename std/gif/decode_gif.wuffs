@@ -336,7 +336,8 @@ pri func decoder.decode_lsd!??(src base.io_reader) {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
-			var argb base.u32 = args.src.read_u24be_as_u32!??() | 0xFF000000
+			var argb base.u32 = args.src.read_u24be_as_u32!??()
+			argb |= 0xFF000000
 			this.palettes[0][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
@@ -494,7 +495,8 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 	}
 
 	// There are 7056000 flicks per centisecond.
-	this.gc_duration = args.src.read_u16le_as_u64!??() * 7056000
+	var gc_duration_centiseconds base.u16 = args.src.read_u16le!??()
+	this.gc_duration = (gc_duration_centiseconds as base.u64) * 7056000
 	this.gc_transparent_index = args.src.read_u8!??()
 
 	c = args.src.read_u8!??()
@@ -515,8 +517,10 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 pri func decoder.decode_id_part0!??(src base.io_reader) {
 	this.frame_rect_x0 = args.src.read_u16le_as_u32!??()
 	this.frame_rect_y0 = args.src.read_u16le_as_u32!??()
-	this.frame_rect_x1 = this.frame_rect_x0 ~mod+ args.src.read_u16le_as_u32!??()
-	this.frame_rect_y1 = this.frame_rect_y0 ~mod+ args.src.read_u16le_as_u32!??()
+	this.frame_rect_x1 = args.src.read_u16le_as_u32!??()
+	this.frame_rect_x1 ~mod+= this.frame_rect_x0
+	this.frame_rect_y1 = args.src.read_u16le_as_u32!??()
+	this.frame_rect_y1 ~mod+= this.frame_rect_y0
 	this.dst_x = this.frame_rect_x0
 	this.dst_y = this.frame_rect_y0
 
@@ -548,7 +552,8 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
-			var argb base.u32 = args.src.read_u24be_as_u32!??() | 0xFF000000
+			var argb base.u32 = args.src.read_u24be_as_u32!??()
+			argb |= 0xFF000000
 			this.palettes[1][(4 * i) + 0] = ((argb >> 0) & 0xFF) as base.u8
 			this.palettes[1][(4 * i) + 1] = ((argb >> 8) & 0xFF) as base.u8
 			this.palettes[1][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
@@ -691,7 +696,8 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			} else {
 				dst = dst[this.dst_x as base.u64:]
 			}
-			n = (dst.copy_from_slice!(s:src) & 0xFFFFFFFF) as base.u32
+			var n64 base.u64 = dst.copy_from_slice!(s:src)
+			n = (n64 & 0xFFFFFFFF) as base.u32
 
 			new_ri = this.uncompressed_ri ~sat+ n
 			this.uncompressed_ri = new_ri.min(x:4096)

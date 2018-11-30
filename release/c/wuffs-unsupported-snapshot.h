@@ -8150,8 +8150,9 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
               *scratch |= ((uint64_t)(t_5));
             }
           }
-          v_argb = (t_6 | 4278190080);
+          v_argb = t_6;
         }
+        v_argb |= 4278190080;
         self->private_impl.f_palettes[0][((4 * v_i) + 0)] =
             ((uint8_t)(((v_argb >> 0) & 255)));
         self->private_impl.f_palettes[0][((4 * v_i) + 1)] =
@@ -8610,6 +8611,7 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
 
   uint8_t v_c;
   uint8_t v_flags;
+  uint16_t v_gc_duration_centiseconds;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -8632,6 +8634,7 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   if (coro_susp_point) {
     v_c = 0;
     v_flags = 0;
+    v_gc_duration_centiseconds = 0;
   } else {
   }
   switch (coro_susp_point) {
@@ -8674,7 +8677,7 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-      uint64_t t_3;
+      uint16_t t_3;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
         t_3 = wuffs_base__load_u16le(iop_a_src);
         iop_a_src += 2;
@@ -8699,8 +8702,10 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
           *scratch |= ((uint64_t)(t_2)) << 56;
         }
       }
-      self->private_impl.f_gc_duration = (t_3 * 7056000);
+      v_gc_duration_centiseconds = t_3;
     }
+    self->private_impl.f_gc_duration =
+        (((uint64_t)(v_gc_duration_centiseconds)) * 7056000);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
@@ -8862,9 +8867,9 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch |= ((uint64_t)(t_4)) << 56;
         }
       }
-      self->private_impl.f_frame_rect_x1 =
-          (self->private_impl.f_frame_rect_x0 + t_5);
+      self->private_impl.f_frame_rect_x1 = t_5;
     }
+    self->private_impl.f_frame_rect_x1 += self->private_impl.f_frame_rect_x0;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
       uint32_t t_7;
@@ -8892,9 +8897,9 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch |= ((uint64_t)(t_6)) << 56;
         }
       }
-      self->private_impl.f_frame_rect_y1 =
-          (self->private_impl.f_frame_rect_y0 + t_7);
+      self->private_impl.f_frame_rect_y1 = t_7;
     }
+    self->private_impl.f_frame_rect_y1 += self->private_impl.f_frame_rect_y0;
     self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
     self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
     if (self->private_impl.f_call_sequence == 0) {
@@ -9029,8 +9034,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               *scratch |= ((uint64_t)(t_1));
             }
           }
-          v_argb = (t_2 | 4278190080);
+          v_argb = t_2;
         }
+        v_argb |= 4278190080;
         self->private_impl.f_palettes[1][((4 * v_i) + 0)] =
             ((uint8_t)(((v_argb >> 0) & 255)));
         self->private_impl.f_palettes[1][((4 * v_i) + 1)] =
@@ -9246,6 +9252,7 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   uint32_t v_n;
   uint32_t v_new_ri;
   wuffs_base__table_u8 v_tab;
+  uint64_t v_n64;
 
   v_dst = ((wuffs_base__slice_u8){});
   v_src = ((wuffs_base__slice_u8){});
@@ -9279,8 +9286,8 @@ label_0_continue:;
         v_dst = wuffs_base__slice_u8__subslice_i(
             v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
       }
-      v_n = ((uint32_t)(
-          (wuffs_base__slice_u8__copy_from_slice(v_dst, v_src) & 4294967295)));
+      v_n64 = wuffs_base__slice_u8__copy_from_slice(v_dst, v_src);
+      v_n = ((uint32_t)((v_n64 & 4294967295)));
       v_new_ri =
           wuffs_base__u32__sat_add(self->private_impl.f_uncompressed_ri, v_n);
       self->private_impl.f_uncompressed_ri =
