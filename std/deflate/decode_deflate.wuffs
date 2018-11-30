@@ -179,7 +179,8 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
-			this.bits |= args.src.read_u8_as_u32!??() << this.n_bits
+			var b0 base.u32[..255] = args.src.read_u8_as_u32!??()
+			this.bits |= b0 << this.n_bits
 			this.n_bits += 8
 		}
 		final = this.bits & 0x01
@@ -276,7 +277,8 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 	while n_bits < 14,
 		post n_bits >= 14,
 	{
-		bits |= args.src.read_u8_as_u32!??() << n_bits
+		var b0 base.u32[..255] = args.src.read_u8_as_u32!??()
+		bits |= b0 << n_bits
 		n_bits += 8
 	}
 	var n_lit base.u32[257..288] = bits.low_bits(n:5) + 257
@@ -300,7 +302,8 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 			inv i < n_clen,
 			post n_bits >= 3,
 		{
-			bits |= args.src.read_u8_as_u32!??() << n_bits
+			var b1 base.u32[..255] = args.src.read_u8_as_u32!??()
+			bits |= b1 << n_bits
 			n_bits += 8
 		}
 		assert i < 19 via "a < b: a < c; c <= b"(c:n_clen)
@@ -334,7 +337,8 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			bits |= args.src.read_u8_as_u32!??() << n_bits
+			var b2 base.u32[..255] = args.src.read_u8_as_u32!??()
+			bits |= b2 << n_bits
 			n_bits += 8
 		}
 		// For H-CL, there should be no redirections and all symbols should be
@@ -382,7 +386,8 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 			post n_bits >= n_extra_bits,
 		{
 			assert n_bits < 7 via "a < b: a < c; c <= b"(c:n_extra_bits)
-			bits |= args.src.read_u8_as_u32!??() << n_bits
+			var b3 base.u32[..255] = args.src.read_u8_as_u32!??()
+			bits |= b3 << n_bits
 			n_bits += 8
 		}
 		rep_count += bits.low_bits(n:n_extra_bits)
