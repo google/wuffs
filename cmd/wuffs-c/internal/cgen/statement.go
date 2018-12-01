@@ -572,12 +572,11 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
 	}
 
-	if g.currFunk.tempW > maxTemp-1 {
+	if g.currFunk.tempW > maxTemp {
 		return fmt.Errorf("too many temporary variables required")
 	}
-	temp := g.currFunk.tempW + 1
-	g.currFunk.tempW += 2
-	g.currFunk.tempR += 1
+	temp := g.currFunk.tempW
+	g.currFunk.tempW++
 
 	if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 		return err
