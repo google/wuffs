@@ -70,7 +70,8 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 
 	switch n.Kind() {
 	case a.KAssign:
-		return g.writeStatementAssign(b, n.AsAssign(), depth)
+		n := n.AsAssign()
+		return g.writeStatementAssign(b, 0, n.LHS(), n.LHS().MType(), n.Operator(), n.RHS(), depth)
 	case a.KExpr:
 		return g.writeStatementExpr(b, n.AsExpr(), depth)
 	case a.KIOBind:
@@ -84,27 +85,53 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	case a.KRet:
 		return g.writeStatementRet(b, n.AsRet(), depth)
 	case a.KVar:
-		return g.writeStatementVar(b, n.AsVar(), depth)
+		n := n.AsVar()
+		op := n.Operator()
+		if n.Value() == nil {
+			op = t.IDEq
+		}
+		return g.writeStatementAssign(b, n.Name(), nil, n.XType(), op, n.Value(), depth)
 	case a.KWhile:
 		return g.writeStatementWhile(b, n.AsWhile(), depth)
 	}
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
-	if err := g.writeSuspendibles(b, n.LHS(), depth); err != nil {
-		return err
-	}
-	if err := g.writeSuspendibles(b, n.RHS(), depth); err != nil {
-		return err
-	}
-	opName, closer := "", ""
+func (g *gen) writeStatementAssign(b *buffer,
+	lhsIdent t.ID, lhsExpr *a.Expr, lTyp *a.TypeExpr,
+	op t.ID, rhsExpr *a.Expr, depth uint32) error {
 
-	if lTyp := n.LHS().MType(); lTyp.IsNumType() || lTyp.IsBool() || lTyp.IsSliceType() {
-		op := n.Operator()
+	if rhsExpr != nil && rhsExpr.Effect().Coroutine() {
+		if op != t.IDEqQuestion {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+		}
+		if err := g.writeCallSuspendibles(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
+			return err
+		}
+	}
+
+	lhs := buffer(nil)
+	if lhsIdent != 0 {
+		lhs.printf("%s%s", vPrefix, lhsIdent.Str(g.tm))
+	} else if err := g.writeExpr(&lhs, lhsExpr, replaceCallSuspendibles, depth); err != nil {
+		return err
+	}
+
+	opName, closer := "", ""
+	if lTyp.IsArrayType() {
+		if rhsExpr != nil {
+			b.writes("memcpy(")
+		} else {
+			b.writes("memset(")
+		}
+		opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhs)
+
+	} else {
 		switch op {
 		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-			uBits := uintBits(n.LHS().MType().QID())
+			uBits := uintBits(lTyp.QID())
 			if uBits == 0 {
 				return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
 			}
@@ -121,33 +148,29 @@ func (g *gen) writeStatementAssign(b *buffer, n *a.Assign, depth uint32) error {
 				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 			}
 		}
-	} else {
-		if lTyp.IsArrayType() {
-			if nElem := lTyp.ArrayLength().ConstValue(); nElem.Sign() > 0 && nElem.Cmp(mibi) <= 0 {
-				if elemTyp := lTyp.Inner(); elemTyp.IsNumType() {
-					if nBits := uintBits(elemTyp.QID()); nBits != 0 {
-						b.writes("memcpy(")
-						opName, closer = ",", fmt.Sprintf(", %d)", nElem.Int64()*int64(nBits/8))
-					}
-				}
-			}
-		} else if isBaseRangeType(lTyp.QID()) {
-			if n.Operator() == t.IDEq {
-				opName = "="
-			}
-		}
-
-		if opName == "" {
-			return fmt.Errorf("unsupported assignment type %q", lTyp.Str(g.tm))
-		}
 	}
 
-	if err := g.writeExpr(b, n.LHS(), replaceCallSuspendibles, depth); err != nil {
-		return err
-	}
+	b.writex(lhs)
 	b.writes(opName)
-	if err := g.writeExpr(b, n.RHS(), replaceCallSuspendibles, depth); err != nil {
-		return err
+
+	if rhsExpr != nil {
+		if err := g.writeExpr(b, rhsExpr, replaceCallSuspendibles, depth); err != nil {
+			return err
+		}
+	} else if lTyp.IsSliceType() {
+		// TODO: don't assume that the slice is a slice of base.u8.
+		b.printf("((wuffs_base__slice_u8){})")
+	} else if lTyp.IsTableType() {
+		// TODO: don't assume that the table is a table of base.u8.
+		b.printf("((wuffs_base__table_u8){})")
+	} else if lTyp.IsIOType() {
+		s := "reader"
+		if lTyp.QID()[1] == t.IDIOWriter {
+			s = "writer"
+		}
+		b.printf("((wuffs_base__io_%s){})", s)
+	} else {
+		b.writeb('0')
 	}
 	b.writes(closer)
 	b.writes(";\n")
@@ -396,58 +419,6 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		return err
 	}
 	b.writeb(';')
-	return nil
-}
-
-func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
-	if v := n.Value(); v != nil && v.Effect().Coroutine() {
-		eqQuestion := n.Operator() == t.IDEqQuestion
-		if !eqQuestion {
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-		}
-		if err := g.writeCallSuspendibles(b, v, depth, eqQuestion); err != nil {
-			return err
-		}
-	}
-
-	if nTyp := n.XType(); nTyp.IsArrayType() {
-		if n.Value() != nil {
-			// TODO: something like:
-			// cv := nTyp.ArrayLength().ConstValue()
-			// // TODO: check that cv is within size_t's range.
-			// g.printf("{ size_t i; for (i = 0; i < %d; i++) { %s%s[i] = $DEFAULT_VALUE; }}\n",
-			// cv, vPrefix, n.Name().Str(g.tm))
-			return fmt.Errorf("TODO: array initializers for non-zero default values")
-		}
-		// TODO: arrays of arrays.
-		name := n.Name().Str(g.tm)
-		b.printf("memset(%s%s, 0, sizeof(%s%s));\n", vPrefix, name, vPrefix, name)
-
-	} else {
-		b.printf("%s%s = ", vPrefix, n.Name().Str(g.tm))
-		if v := n.Value(); v != nil {
-			if err := g.writeExpr(b, v, replaceCallSuspendibles, 0); err != nil {
-				return err
-			}
-		} else if nTyp.IsSliceType() {
-			// TODO: don't assume that the slice is a slice of base.u8.
-			b.printf("((wuffs_base__slice_u8){})")
-		} else if nTyp.IsTableType() {
-			// TODO: don't assume that the table is a table of base.u8.
-			b.printf("((wuffs_base__table_u8){})")
-		} else if nTyp.IsIOType() {
-			s := "reader"
-			if nTyp.QID()[1] == t.IDIOWriter {
-				s = "writer"
-			}
-			b.printf("((wuffs_base__io_%s){})", s)
-		} else {
-			b.writeb('0')
-		}
-		b.writes(";\n")
-	}
 	return nil
 }
 

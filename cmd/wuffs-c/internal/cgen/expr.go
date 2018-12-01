@@ -461,7 +461,6 @@ func cOpName(x t.ID) string {
 }
 
 var cOpNames = [...]string{
-	t.IDEq:               " = ",
 	t.IDPlusEq:           " += ",
 	t.IDMinusEq:          " -= ",
 	t.IDStarEq:           " *= ",
@@ -477,6 +476,9 @@ var cOpNames = [...]string{
 	t.IDTildeModMinusEq:  " -= ",
 	t.IDTildeSatPlusEq:   noSuchCOperator,
 	t.IDTildeSatMinusEq:  noSuchCOperator,
+
+	t.IDEq:         " = ",
+	t.IDEqQuestion: " = ",
 
 	t.IDXUnaryPlus:  " + ",
 	t.IDXUnaryMinus: " - ",
