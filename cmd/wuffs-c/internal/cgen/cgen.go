@@ -165,7 +165,7 @@ func Do(args []string) error {
 type replacementPolicy bool
 
 const (
-	replaceNothing          = replacementPolicy(false)
+	replaceNothingUNUSED    = replacementPolicy(false)
 	replaceCallSuspendibles = replacementPolicy(true)
 )
 

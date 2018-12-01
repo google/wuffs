@@ -520,7 +520,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32, eqQuesti
 		b.writes("status = ")
 	}
 
-	if err := g.writeExprUserDefinedCall(b, n, replaceNothing, depth); err != nil {
+	if err := g.writeExprUserDefinedCall(b, n, replaceCallSuspendibles, depth); err != nil {
 		return err
 	}
 	b.writes(";\n")
