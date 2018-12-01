@@ -102,12 +102,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 	op t.ID, rhsExpr *a.Expr, depth uint32) error {
 
 	if rhsExpr != nil && rhsExpr.Effect().Coroutine() {
-		if op != t.IDEqQuestion {
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-		}
-		if err := g.writeCallSuspendibles(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
+		if err := g.writeQuestionCall(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
 			return err
 		}
 	}
@@ -189,8 +184,10 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 		}
 	}
 
-	if err := g.writeSuspendibles(b, n, depth); err != nil {
-		return err
+	if n.Effect().Coroutine() {
+		if err := g.writeQuestionCall(b, n, depth, false); err != nil {
+			return err
+		}
 	}
 
 	checkStatus := false
@@ -484,27 +481,23 @@ func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 	return nil
 }
 
-func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
-	if !n.Effect().Coroutine() {
-		return nil
-	}
-	if err := g.writeCoroSuspPoint(b, false); err != nil {
-		return err
-	}
-	return g.writeCallSuspendibles(b, n, depth, false)
-}
-
-func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32, eqQuestion bool) error {
+func (g *gen) writeQuestionCall(b *buffer, n *a.Expr, depth uint32, eqQuestion bool) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
 	depth++
 
-	if err := g.writeSaveExprDerivedVars(b, n); err != nil {
+	if !eqQuestion && n.Effect().Coroutine() {
+		if err := g.writeCoroSuspPoint(b, false); err != nil {
+			return err
+		}
+	}
+
+	if err := g.writeBuiltinQuestionCall(b, n, depth); err != errNoSuchBuiltin {
 		return err
 	}
 
-	if err := g.writeBuiltinCallSuspendibles(b, n, depth); err != errNoSuchBuiltin {
+	if err := g.writeSaveExprDerivedVars(b, n); err != nil {
 		return err
 	}
 

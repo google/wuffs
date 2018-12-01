@@ -487,7 +487,7 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 	return nil
 }
 
-func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
+func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error {
 	// TODO: also handle (or reject??) t.IDTry.
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
