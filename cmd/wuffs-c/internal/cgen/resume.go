@@ -285,21 +285,16 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 
 	processOnlySubExprs := false
 	if sef != subExprFilterNone {
-		const mask = a.EffectCoroutine | a.EffectRootCause
 		switch sef {
 		case subExprFilterBeforeCoroutine:
-			switch n.Effect() & mask {
-			case a.EffectCoroutine | a.EffectRootCause:
-				sef = subExprFilterNone
-			case a.EffectCoroutine:
-				// No-op.
-			default:
+			if !n.Effect().Coroutine() {
 				return nil
 			}
+			sef = subExprFilterNone
 			processOnlySubExprs = true
 
 		case subExprFilterDuringCoroutine:
-			if n.Effect()&mask == mask {
+			if n.Effect().Coroutine() {
 				switch n.Operator() {
 				case t.IDOpenParen:
 					r.raiseNoneToWeak()
@@ -311,7 +306,7 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 			processOnlySubExprs = true
 
 		case subExprFilterAfterCoroutine:
-			if n.Effect()&mask == mask {
+			if n.Effect().Coroutine() {
 				return nil
 			}
 		}

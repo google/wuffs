@@ -27,15 +27,10 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32
 	}
 	depth++
 
-	if rp == replaceCallSuspendibles && n.Effect().RootCause() && n.Effect().Coroutine() {
+	if rp == replaceCallSuspendibles && n.Effect().Coroutine() {
 		if g.currFunk.tempR >= g.currFunk.tempW {
 			return fmt.Errorf("internal error: temporary variable count out of sync")
 		}
-		// TODO: check that this works with nested call-suspendibles:
-		// "foo?().bar().qux?()(p?(), q?())".
-		//
-		// Also be aware of evaluation order in the presence of side effects:
-		// in "foo(a?(), b!(), c?())", b should be called between a and c.
 		b.printf("%s%d", tPrefix, g.currFunk.tempR)
 		g.currFunk.tempR++
 		return nil

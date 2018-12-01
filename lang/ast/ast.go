@@ -111,11 +111,7 @@ const (
 
 	EffectSubExprHasEffect = Effect(0x08)
 
-	// TODO: will we need an EffectRootCause if every ?-call requires a "do" or
-	// "try"?
-	effectMaskNonRootCause = Effect(0x7F)
-
-	EffectRootCause = Effect(0x80)
+	effectMask = Effect(0xFF)
 )
 
 func (e Effect) AsFlags() Flags { return Flags(e) }
@@ -126,10 +122,9 @@ func (e Effect) Impure() bool           { return e&EffectImpure != 0 }
 func (e Effect) Optional() bool         { return e&EffectOptional != 0 }
 func (e Effect) Coroutine() bool        { return e&EffectCoroutine != 0 }
 func (e Effect) SubExprHasEffect() bool { return e&EffectSubExprHasEffect != 0 }
-func (e Effect) RootCause() bool        { return e&EffectRootCause != 0 }
 
 func (e Effect) String() string {
-	switch e & effectMaskNonRootCause {
+	switch e & effectMask {
 	case 0:
 		return ""
 	case EffectImpure:
@@ -357,16 +352,16 @@ func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	subExprEffect := Flags(0)
 	if lhs != nil {
-		subExprEffect |= lhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= lhs.flags & Flags(effectMask)
 	}
 	if mhs != nil {
-		subExprEffect |= mhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= mhs.flags & Flags(effectMask)
 	}
 	if rhs != nil {
-		subExprEffect |= rhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= rhs.flags & Flags(effectMask)
 	}
 	for _, o := range args {
-		subExprEffect |= o.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= o.flags & Flags(effectMask)
 	}
 	if subExprEffect != 0 {
 		flags |= subExprEffect | EffectSubExprHasEffect.AsFlags()

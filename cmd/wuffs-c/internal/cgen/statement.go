@@ -159,7 +159,7 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	// statements.
 	//
 	// TODO: clean up how this and writeSuspendibles interact.
-	derived := n.Effect().RootCause() && n.Effect().Optional() && !n.Effect().Coroutine()
+	derived := n.Effect().Optional() && !n.Effect().Coroutine()
 	if derived {
 		if err := g.writeSaveExprDerivedVars(b, n); err != nil {
 			return err
@@ -171,13 +171,11 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 	}
 
 	checkStatus := false
-	if n.Effect().RootCause() {
-		if n.Effect().Coroutine() {
-			return nil
-		} else if n.Effect().Optional() {
-			b.writes("status = ")
-			checkStatus = true
-		}
+	if effect := n.Effect(); effect.Coroutine() {
+		return nil
+	} else if effect.Optional() {
+		b.writes("status = ")
+		checkStatus = true
 	}
 	if err := g.writeExpr(b, n, replaceCallSuspendibles, depth); err != nil {
 		return err
@@ -530,26 +528,6 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32, eqQuesti
 		return fmt.Errorf("expression recursion depth too large")
 	}
 	depth++
-
-	// The evaluation order for suspendible calls (which can have side effects)
-	// is important here: LHS, MHS, RHS, Args and finally the node itself.
-	if e := n.Effect(); !e.RootCause() || !e.Coroutine() {
-		for _, o := range n.AsNode().AsRaw().SubNodes() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth, false); err != nil {
-					return err
-				}
-			}
-		}
-		for _, o := range n.Args() {
-			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth, false); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
 
 	if err := g.writeSaveExprDerivedVars(b, n); err != nil {
 		return err

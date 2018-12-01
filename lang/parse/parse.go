@@ -1022,11 +1022,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			return lhs, nil
 
 		case t.IDExclam, t.IDQuestion:
-			e := p.parseEffect()
-			if e != 0 {
-				e |= a.EffectRootCause
-			}
-			flags |= e.AsFlags()
+			flags |= p.parseEffect().AsFlags()
 			fallthrough
 
 		case t.IDOpenParen:
