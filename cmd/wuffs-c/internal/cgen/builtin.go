@@ -29,7 +29,7 @@ var (
 	errOptimizationNotApplicable = errors.New("cgen: internal error: optimization not applicable")
 )
 
-func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
@@ -49,16 +49,16 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 		b.printf("wuffs_base__image_config__initialize(a_dst")
 		for _, o := range n.Args() {
 			b.writeb(',')
-			if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 				return err
 			}
 		}
 		b.printf(")")
 		return nil
 	case t.IDSlice:
-		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), rp, depth)
+		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), depth)
 	case t.IDTable:
-		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), rp, depth)
+		return g.writeBuiltinTable(b, recv, method.Ident(), n.Args(), depth)
 	default:
 		return errNoSuchBuiltin
 	}
@@ -69,19 +69,19 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, rp replacementPolicy, depth
 	}
 
 	if qid[1].IsNumType() {
-		return g.writeBuiltinNumType(b, recv, method.Ident(), n.Args(), rp, depth)
+		return g.writeBuiltinNumType(b, recv, method.Ident(), n.Args(), depth)
 	} else {
 		switch qid[1] {
 		case t.IDIOReader:
-			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), rp, depth)
+			return g.writeBuiltinIOReader(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDIOWriter:
-			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), rp, depth)
+			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
 		}
 	}
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
 	case t.IDAvailable:
 		p0, p1 := "", ""
@@ -110,13 +110,13 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		}
 		// TODO: don't hard-code v_w and u_w.
 		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &iop_v_w, &io1_v_w,", typ)
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 
 	}
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
 	case t.IDUndoByte:
@@ -135,7 +135,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	case t.IDSetLimit:
 		b.printf("wuffs_base__io_reader__set_limit(&%ssrc, iop_a_src,", aPrefix)
 		// TODO: update the iop variables?
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 
 	case t.IDSetMark:
 		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, iop_a_src)", aPrefix)
@@ -154,7 +154,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		// call (to a static inline function) instead of a struct literal, to
 		// avoid a "expression result unused" compiler error.
 		b.writes("(iop_a_src += ")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		b.writes(", wuffs_base__return_empty_struct())")
@@ -170,10 +170,10 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 	}
 
-	return g.writeBuiltinIO(b, recv, method, args, rp, depth)
+	return g.writeBuiltinIO(b, recv, method, args, depth)
 }
 
-func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	// TODO: don't hard-code the recv being a_dst.
 	switch method {
 	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
@@ -186,7 +186,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
-			if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 				return err
 			}
 		}
@@ -195,7 +195,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDCopyNFromReader:
 		b.printf("wuffs_base__io_writer__copy_n_from_reader(&iop_a_dst, io1_a_dst,")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		// TODO: don't assume that the last argument is "args.src".
@@ -204,11 +204,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDCopyFromSlice:
 		b.printf("wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io1_a_dst,")
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 
 	case t.IDCopyNFromSlice:
 		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io1_a_dst,")
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 
 	case t.IDPosition:
 		b.printf("(a_dst.private_impl.buf ? wuffs_base__u64__sat_add(" +
@@ -240,7 +240,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				// instead of a struct literal, to avoid a "expression result
 				// unused" compiler error.
 				b.printf("(wuffs_base__store_u%d%ce(iop_a_dst,", p.n, p.endianness)
-				if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 					return err
 				}
 				b.printf("), iop_a_dst += %d, wuffs_base__return_empty_struct())", p.n/8)
@@ -249,17 +249,17 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 	}
 
-	return g.writeBuiltinIO(b, recv, method, args, rp, depth)
+	return g.writeBuiltinIO(b, recv, method, args, depth)
 }
 
-func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
 	case t.IDLowBits:
 		// "recv.low_bits(n:etc)" in C is one of:
 		//  - "((recv) & constant)"
 		//  - "((recv) & WUFFS_BASE__LOW_BITS_MASK__UXX(n))"
 		b.writes("((")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writes(") & ")
@@ -275,7 +275,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			} else {
 				b.printf("WUFFS_BASE__LOW_BITS_MASK__U%d(", 8*sz)
 			}
-			if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+			if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 				return err
 			}
 			b.writes(")")
@@ -287,7 +287,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 	case t.IDHighBits:
 		// "recv.high_bits(n:etc)" in C is "((recv) >> (8*sizeof(recv) - (n)))".
 		b.writes("((")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writes(") >> (")
@@ -297,7 +297,7 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes(" - (")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		b.writes(")))")
@@ -311,11 +311,11 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes("__max(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writes(",")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -329,11 +329,11 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 			b.printf("%d", 8*sz)
 		}
 		b.writes("__min(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writes(",")
-		if err := g.writeExpr(b, args[0].AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		b.writes(")")
@@ -342,24 +342,24 @@ func (g *gen) writeBuiltinNumType(b *buffer, recv *a.Expr, method t.ID, args []*
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
 	case t.IDCopyFromSlice:
-		if err := g.writeBuiltinSliceCopyFromSlice8(b, recv, method, args, rp, depth); err != errOptimizationNotApplicable {
+		if err := g.writeBuiltinSliceCopyFromSlice8(b, recv, method, args, depth); err != errOptimizationNotApplicable {
 			return err
 		}
 
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__copy_from_slice(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writeb(',')
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 
 	case t.IDLength:
 		b.writes("((uint64_t)(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writes(".len))")
@@ -368,11 +368,11 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	case t.IDSuffix:
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.writes("wuffs_base__slice_u8__suffix(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writeb(',')
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 	}
 	return errNoSuchBuiltin
 }
@@ -380,7 +380,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 // writeBuiltinSliceCopyFromSlice8 writes an optimized version of:
 //
 // foo[fIndex:fIndex + 8].copy_from_slice!(s:bar[bIndex:bIndex + 8])
-func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	if method != t.IDCopyFromSlice || len(args) != 1 {
 		return errOptimizationNotApplicable
 	}
@@ -390,22 +390,22 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 		return errOptimizationNotApplicable
 	}
 	b.writes("memcpy((")
-	if err := g.writeExpr(b, foo, rp, depth); err != nil {
+	if err := g.writeExpr(b, foo, depth); err != nil {
 		return err
 	}
 	if fIndex != nil {
 		b.writes(")+(")
-		if err := g.writeExpr(b, fIndex, rp, depth); err != nil {
+		if err := g.writeExpr(b, fIndex, depth); err != nil {
 			return err
 		}
 	}
 	b.writes("),(")
-	if err := g.writeExpr(b, bar, rp, depth); err != nil {
+	if err := g.writeExpr(b, bar, depth); err != nil {
 		return err
 	}
 	if bIndex != nil {
 		b.writes(")+(")
-		if err := g.writeExpr(b, bIndex, rp, depth); err != nil {
+		if err := g.writeExpr(b, bIndex, depth); err != nil {
 			return err
 		}
 	}
@@ -441,7 +441,7 @@ func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
 	return foo, index
 }
 
-func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	field := ""
 
 	switch method {
@@ -455,16 +455,16 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	case t.IDRow:
 		// TODO: don't assume that the table is a table of base.u8.
 		b.writes("wuffs_base__table_u8__row(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.writeb(',')
-		return g.writeArgs(b, args, rp, depth)
+		return g.writeArgs(b, args, depth)
 	}
 
 	if field != "" {
 		b.writes("((uint64_t)(")
-		if err := g.writeExpr(b, recv, rp, depth); err != nil {
+		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err
 		}
 		b.printf(".%s))", field)
@@ -474,12 +474,12 @@ func (g *gen) writeBuiltinTable(b *buffer, recv *a.Expr, method t.ID, args []*a.
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeArgs(b *buffer, args []*a.Node, rp replacementPolicy, depth uint32) error {
+func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 	for i, o := range args {
 		if i > 0 {
 			b.writeb(',')
 		}
-		if err := g.writeExpr(b, o.AsArg().Value(), rp, depth); err != nil {
+		if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 			return err
 		}
 	}
@@ -563,7 +563,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 				cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 			b.printf("%s = ", scratchName)
-			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
+			if err := g.writeExpr(b, x, depth); err != nil {
 				return err
 			}
 			b.writes(";\n")
@@ -589,7 +589,7 @@ func (g *gen) writeBuiltinCallSuspendibles(b *buffer, n *a.Expr, depth uint32) e
 				"status = wuffs_base__suspension__short_write; goto suspend; }\n" +
 				"*iop_a_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
-			if err := g.writeExpr(b, x, replaceCallSuspendibles, depth); err != nil {
+			if err := g.writeExpr(b, x, depth); err != nil {
 				return err
 			}
 			b.writes(";\n")

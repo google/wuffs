@@ -115,7 +115,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 	lhs := buffer(nil)
 	if lhsIdent != 0 {
 		lhs.printf("%s%s", vPrefix, lhsIdent.Str(g.tm))
-	} else if err := g.writeExpr(&lhs, lhsExpr, replaceCallSuspendibles, depth); err != nil {
+	} else if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 	b.writes(opName)
 
 	if rhsExpr != nil {
-		if err := g.writeExpr(b, rhsExpr, replaceCallSuspendibles, depth); err != nil {
+		if err := g.writeExpr(b, rhsExpr, depth); err != nil {
 			return err
 		}
 	} else if lTyp.IsSliceType() {
@@ -200,7 +200,7 @@ func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
 		b.writes("status = ")
 		checkStatus = true
 	}
-	if err := g.writeExpr(b, n, replaceCallSuspendibles, depth); err != nil {
+	if err := g.writeExpr(b, n, depth); err != nil {
 		return err
 	}
 	b.writes(";\n")
@@ -284,7 +284,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 	for {
 		condition := buffer(nil)
-		if err := g.writeExpr(&condition, n.Condition(), replaceCallSuspendibles, 0); err != nil {
+		if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
 			return err
 		}
 		// Calling trimParens avoids clang's -Wparentheses-equality warning.
@@ -329,7 +329,7 @@ func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error
 	// particular, the code gen can be subtle if the slice element type has
 	// zero size, such as the empty struct.
 	b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
-	if err := g.writeExpr(b, v.Value(), replaceCallSuspendibles, 0); err != nil {
+	if err := g.writeExpr(b, v.Value(), 0); err != nil {
 		return err
 	}
 	b.writes(";\n")
@@ -387,7 +387,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			}
 			// TODO: check that retExpr has no call-suspendibles.
 			if err := g.writeExpr(
-				b, retExpr, replaceCallSuspendibles, depth); err != nil {
+				b, retExpr, depth); err != nil {
 				return err
 			}
 		}
@@ -415,7 +415,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	b.writes("return ")
 	if g.currFunk.astFunc.Out() == nil {
 		return fmt.Errorf("TODO: allow empty return type (when not suspendible)")
-	} else if err := g.writeExpr(b, retExpr, replaceCallSuspendibles, depth); err != nil {
+	} else if err := g.writeExpr(b, retExpr, depth); err != nil {
 		return err
 	}
 	b.writeb(';')
@@ -431,7 +431,7 @@ func (g *gen) writeStatementWhile(b *buffer, n *a.While, depth uint32) error {
 		b.printf("label_%d_continue:;\n", jt)
 	}
 	condition := buffer(nil)
-	if err := g.writeExpr(&condition, n.Condition(), replaceCallSuspendibles, 0); err != nil {
+	if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
 		return err
 	}
 	// Calling trimParens avoids clang's -Wparentheses-equality warning.
@@ -520,7 +520,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32, eqQuesti
 		b.writes("status = ")
 	}
 
-	if err := g.writeExprUserDefinedCall(b, n, replaceCallSuspendibles, depth); err != nil {
+	if err := g.writeExprUserDefinedCall(b, n, depth); err != nil {
 		return err
 	}
 	b.writes(";\n")

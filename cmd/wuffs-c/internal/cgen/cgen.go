@@ -162,13 +162,6 @@ func Do(args []string) error {
 	})
 }
 
-type replacementPolicy bool
-
-const (
-	replaceNothingUNUSED    = replacementPolicy(false)
-	replaceCallSuspendibles = replacementPolicy(true)
-)
-
 type visibility uint32
 
 const (
