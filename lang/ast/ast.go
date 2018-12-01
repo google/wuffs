@@ -326,8 +326,6 @@ const MaxExprDepth = 255
 //
 // For function calls, like "LHS(List0)", ID0 is IDOpenParen.
 //
-// For try/function calls, like "try LHS(List0)", ID0 is IDTry.
-//
 // For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
 //
 // For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
@@ -447,15 +445,16 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
-// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or an iterate variable
-// declaration "ID1 LHS =: RHS":
-//  - ID0:   <0|IDEq|IDEqColon>
+// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or "var ID2 LHS =? etc!?(etc)"
+// or an iterate variable declaration "ID1 LHS =: RHS":
+//  - ID0:   <0|IDEq|IDEqColon|IDEqQuestion>
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Var Node
 
 func (n *Var) AsNode() *Node         { return (*Node)(n) }
+func (n *Var) Operator() t.ID        { return n.id0 }
 func (n *Var) IterateVariable() bool { return n.id0 == t.IDEqColon }
 func (n *Var) Name() t.ID            { return n.id2 }
 func (n *Var) XType() *TypeExpr      { return n.lhs.AsTypeExpr() }

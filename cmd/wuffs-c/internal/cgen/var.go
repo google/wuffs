@@ -180,7 +180,7 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
+	if n.Operator() != t.IDOpenParen {
 		return nil
 	}
 	for _, o := range n.Args() {
@@ -205,7 +205,7 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	if g.currFunk.derivedVars == nil {
 		return nil
 	}
-	if k := n.Operator(); k != t.IDOpenParen && k != t.IDTry {
+	if n.Operator() != t.IDOpenParen {
 		return nil
 	}
 	for _, o := range n.Args() {

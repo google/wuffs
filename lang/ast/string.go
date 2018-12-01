@@ -89,10 +89,6 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 		case 0:
 			buf = append(buf, tm.ByID(n.id2)...)
 
-		case t.IDTry:
-			buf = append(buf, "try "...)
-			fallthrough
-
 		case t.IDOpenParen:
 			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, n.flags.AsEffect().String()...)

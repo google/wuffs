@@ -402,11 +402,18 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 }
 
 func (g *gen) writeStatementVar(b *buffer, n *a.Var, depth uint32) error {
-	if v := n.Value(); v != nil {
-		if err := g.writeSuspendibles(b, v, depth); err != nil {
+	if v := n.Value(); v != nil && v.Effect().Coroutine() {
+		eqQuestion := n.Operator() == t.IDEqQuestion
+		if !eqQuestion {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+		}
+		if err := g.writeCallSuspendibles(b, v, depth, eqQuestion); err != nil {
 			return err
 		}
 	}
+
 	if nTyp := n.XType(); nTyp.IsArrayType() {
 		if n.Value() != nil {
 			// TODO: something like:
@@ -512,15 +519,13 @@ func (g *gen) writeSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	if !n.Effect().Coroutine() {
 		return nil
 	}
-	if n.Operator() != t.IDTry {
-		if err := g.writeCoroSuspPoint(b, false); err != nil {
-			return err
-		}
+	if err := g.writeCoroSuspPoint(b, false); err != nil {
+		return err
 	}
-	return g.writeCallSuspendibles(b, n, depth)
+	return g.writeCallSuspendibles(b, n, depth, false)
 }
 
-func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
+func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32, eqQuestion bool) error {
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
@@ -531,14 +536,14 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 	if e := n.Effect(); !e.RootCause() || !e.Coroutine() {
 		for _, o := range n.AsNode().AsRaw().SubNodes() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth); err != nil {
+				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth, false); err != nil {
 					return err
 				}
 			}
 		}
 		for _, o := range n.Args() {
 			if o != nil && o.Kind() == a.KExpr {
-				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth); err != nil {
+				if err := g.writeCallSuspendibles(b, o.AsExpr(), depth, false); err != nil {
 					return err
 				}
 			}
@@ -554,7 +559,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 
-	if n.Operator() == t.IDTry {
+	if eqQuestion {
 		if g.currFunk.tempW > maxTemp {
 			return fmt.Errorf("too many temporary variables required")
 		}
@@ -575,7 +580,7 @@ func (g *gen) writeCallSuspendibles(b *buffer, n *a.Expr, depth uint32) error {
 		return err
 	}
 
-	if n.Operator() != t.IDTry {
+	if !eqQuestion {
 		b.writes("if (status) { goto suspend; }\n")
 	}
 	return nil

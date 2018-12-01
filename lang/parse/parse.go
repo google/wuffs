@@ -644,6 +644,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 	}
 
 	if op := p.peek1(); op.IsAssign() {
+		if op == t.IDEqQuestion {
+			return nil, fmt.Errorf(`parse: TODO: support "=?" without "var" at %s:%d`, p.filename, p.line())
+		}
 		p.src = p.src[1:]
 		rhs, err := p.parseExpr()
 		if err != nil {
@@ -874,12 +877,19 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 				value.Str(p.tm), p.filename, p.line())
 		}
 
-	} else if p.peek1() == t.IDEq {
-		op = t.IDEq
+	} else if eqOp := p.peek1(); eqOp == t.IDEq || eqOp == t.IDEqQuestion {
+		op = eqOp
 		p.src = p.src[1:]
 		value, err = p.parseExpr()
 		if err != nil {
 			return nil, err
+		}
+
+		if op == t.IDEqQuestion {
+			if (value.Operator() != t.IDOpenParen) || (!value.Effect().Optional()) {
+				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
+					value.Str(p.tm), p.filename, p.line())
+			}
 		}
 	}
 
@@ -985,35 +995,18 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		p.src = p.src[1:]
 		return a.NewExpr(0, 0, 0, x, nil, nil, nil, nil), nil
 
-	default:
-		switch x {
-		case t.IDTry:
-			p.src = p.src[1:]
-			call, err := p.parseOperand()
-			if err != nil {
-				return nil, err
-			}
-			callFlags := call.AsNode().AsRaw().Flags()
-			if (call.Operator() != t.IDOpenParen) || (!callFlags.AsEffect().Optional()) {
-				return nil, fmt.Errorf(`parse: expected ?-function call after "try", got %q at %s:%d`,
-					call.Str(p.tm), p.filename, p.line())
-			}
-			return a.NewExpr(callFlags, x, 0, call.Ident(),
-				call.LHS(), call.MHS(), call.RHS(), call.Args()), nil
-
-		case t.IDOpenParen:
-			p.src = p.src[1:]
-			expr, err := p.parseExpr()
-			if err != nil {
-				return nil, err
-			}
-			if x := p.peek1(); x != t.IDCloseParen {
-				got := p.tm.ByID(x)
-				return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
-			}
-			p.src = p.src[1:]
-			return expr, nil
+	case x == t.IDOpenParen:
+		p.src = p.src[1:]
+		expr, err := p.parseExpr()
+		if err != nil {
+			return nil, err
 		}
+		if x := p.peek1(); x != t.IDCloseParen {
+			got := p.tm.ByID(x)
+			return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		return expr, nil
 	}
 
 	id, err := p.parseIdent()

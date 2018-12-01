@@ -51,7 +51,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var checksum_got base.u32
 	while true {
 		args.dst.set_mark!()
-		var z base.status = try this.flate.decode!??(dst:args.dst, src:args.src)
+		var z base.status =? this.flate.decode!??(dst:args.dst, src:args.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update!(x:args.dst.since_mark())
 		}

@@ -437,7 +437,7 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 			return nil
 		}
 
-	case t.IDOpenParen, t.IDTry:
+	case t.IDOpenParen:
 		// n is a function call.
 		return q.tcheckExprCall(n, depth)
 
@@ -578,19 +578,19 @@ func (q *checker) tcheckExprCall(n *a.Expr, depth uint32) error {
 		setPlaceholderMBoundsMType(o.AsNode())
 	}
 
-	if n.Operator() == t.IDTry {
-		n.SetMType(typeExprStatus)
-	} else {
-		oTyp := f.Out()
-		if oTyp == nil {
-			n.SetMType(typeExprEmptyStruct)
-		} else if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
-			n.SetMType(genericType1)
-		} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
-			n.SetMType(genericType2)
+	oTyp := f.Out()
+	if oTyp == nil {
+		if n.Effect().Optional() {
+			n.SetMType(typeExprStatus)
 		} else {
-			n.SetMType(oTyp)
+			n.SetMType(typeExprEmptyStruct)
 		}
+	} else if genericType1 != nil && oTyp.Eq(typeExprGeneric1) {
+		n.SetMType(genericType1)
+	} else if genericType2 != nil && oTyp.Eq(typeExprGeneric2) {
+		n.SetMType(genericType2)
+	} else {
+		n.SetMType(oTyp)
 	}
 	return nil
 }

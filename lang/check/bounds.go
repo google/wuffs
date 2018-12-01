@@ -769,7 +769,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 			}
 		}
 
-	case t.IDOpenParen, t.IDTry:
+	case t.IDOpenParen:
 		lhs := n.LHS().AsExpr()
 		if _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return a.Bounds{}, err

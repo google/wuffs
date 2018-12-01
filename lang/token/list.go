@@ -239,8 +239,9 @@ const (
 	IDTildeSatPlusEq   = ID(0x1D)
 	IDTildeSatMinusEq  = ID(0x1E)
 
-	IDEq      = ID(0x2E)
-	IDEqColon = ID(0x2F)
+	IDEq         = ID(0x20)
+	IDEqColon    = ID(0x21)
+	IDEqQuestion = ID(0x22)
 )
 
 const (
@@ -349,10 +350,9 @@ const (
 	IDPub      = ID(0x8F)
 	IDPri      = ID(0x90)
 	IDConst    = ID(0x91)
-	IDTry      = ID(0x92)
-	IDIterate  = ID(0x93)
-	IDYield    = ID(0x94)
-	IDIOBind   = ID(0x95)
+	IDIterate  = ID(0x92)
+	IDYield    = ID(0x93)
+	IDIOBind   = ID(0x94)
 )
 
 const (
@@ -622,8 +622,9 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDTildeSatPlusEq:   "~sat+=",
 	IDTildeSatMinusEq:  "~sat-=",
 
-	IDEq:      "=",
-	IDEqColon: "=:",
+	IDEq:         "=",
+	IDEqColon:    "=:",
+	IDEqQuestion: "=?",
 
 	IDPlus:           "+",
 	IDMinus:          "-",
@@ -673,7 +674,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDPub:      "pub",
 	IDPri:      "pri",
 	IDConst:    "const",
-	IDTry:      "try",
 	IDIterate:  "iterate",
 	IDYield:    "yield",
 	IDIOBind:   "io_bind",
@@ -988,6 +988,7 @@ var lexers = [256][]suffixLexer{
 	'=': {
 		{"=", IDEqEq},
 		{":", IDEqColon},
+		{"?", IDEqQuestion},
 		{"", IDEq},
 	},
 	'<': {

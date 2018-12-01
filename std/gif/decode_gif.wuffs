@@ -634,7 +634,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				// Should calling r.set_mark also require r.is_bound()?
 				args.src.set_limit!(l:block_size)
 				args.src.set_mark!()
-				var z base.status = try this.lzw.decode!??(dst:w, src:args.src)
+				var z base.status =? this.lzw.decode!??(dst:w, src:args.src)
 				this.uncompressed_wi = 4096 - (w.available().min(x:4096) as base.u32)
 				block_size ~sat-= args.src.since_mark().length()
 			}

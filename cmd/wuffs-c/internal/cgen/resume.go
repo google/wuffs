@@ -303,8 +303,6 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 				switch n.Operator() {
 				case t.IDOpenParen:
 					r.raiseNoneToWeak()
-				case t.IDTry:
-					// No-op.
 				default:
 					return fmt.Errorf("unrecognized ast.Expr coroutine operator")
 				}
