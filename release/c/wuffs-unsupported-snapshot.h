@@ -5354,16 +5354,16 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
           }
           uint64_t* scratch =
               &self->private_impl.c_decode_uncompressed[0].scratch;
-          uint32_t t_0 = *scratch >> 56;
+          uint32_t num_bits_1 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_0;
-          if (t_0 == 24) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
+          if (num_bits_1 == 24) {
             t_1 = *scratch;
             break;
           }
-          t_0 += 8;
-          *scratch |= ((uint64_t)(t_0)) << 56;
+          num_bits_1 += 8;
+          *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
       v_length = t_1;
@@ -8081,16 +8081,16 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_lsd[0].scratch;
-          uint32_t t_0 = *scratch >> 56;
+          uint32_t num_bits_1 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_0;
-          if (t_0 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
+          if (num_bits_1 == 8) {
             t_1 = *scratch;
             break;
           }
-          t_0 += 8;
-          *scratch |= ((uint64_t)(t_0)) << 56;
+          num_bits_1 += 8;
+          *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
       self->private_impl.f_width = t_1;
@@ -8110,16 +8110,16 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_lsd[0].scratch;
-          uint32_t t_2 = *scratch >> 56;
+          uint32_t num_bits_3 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_2;
-          if (t_2 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_3;
+          if (num_bits_3 == 8) {
             t_3 = *scratch;
             break;
           }
-          t_2 += 8;
-          *scratch |= ((uint64_t)(t_2)) << 56;
+          num_bits_3 += 8;
+          *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
       self->private_impl.f_height = t_3;
@@ -8163,16 +8163,16 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
                 goto suspend;
               }
               uint64_t* scratch = &self->private_impl.c_decode_lsd[0].scratch;
-              uint32_t t_5 = *scratch & 0xFF;
+              uint32_t num_bits_6 = *scratch & 0xFF;
               *scratch >>= 8;
               *scratch <<= 8;
-              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - t_5);
-              if (t_5 == 16) {
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_6);
+              if (num_bits_6 == 16) {
                 t_6 = *scratch >> (64 - 24);
                 break;
               }
-              t_5 += 8;
-              *scratch |= ((uint64_t)(t_5));
+              num_bits_6 += 8;
+              *scratch |= ((uint64_t)(num_bits_6));
             }
           }
           v_argb = t_6;
@@ -8568,16 +8568,16 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
               goto suspend;
             }
             uint64_t* scratch = &self->private_impl.c_decode_ae[0].scratch;
-            uint32_t t_4 = *scratch >> 56;
+            uint32_t num_bits_5 = *scratch >> 56;
             *scratch <<= 8;
             *scratch >>= 8;
-            *scratch |= ((uint64_t)(*iop_a_src++)) << t_4;
-            if (t_4 == 8) {
+            *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_5;
+            if (num_bits_5 == 8) {
               t_5 = *scratch;
               break;
             }
-            t_4 += 8;
-            *scratch |= ((uint64_t)(t_4)) << 56;
+            num_bits_5 += 8;
+            *scratch |= ((uint64_t)(num_bits_5)) << 56;
           }
         }
         self->private_impl.f_num_loops = t_5;
@@ -8715,16 +8715,16 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_gc[0].scratch;
-          uint32_t t_2 = *scratch >> 56;
+          uint32_t num_bits_3 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_2;
-          if (t_2 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_3;
+          if (num_bits_3 == 8) {
             t_3 = *scratch;
             break;
           }
-          t_2 += 8;
-          *scratch |= ((uint64_t)(t_2)) << 56;
+          num_bits_3 += 8;
+          *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
       v_gc_duration_centiseconds = t_3;
@@ -8822,16 +8822,16 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
-          uint32_t t_0 = *scratch >> 56;
+          uint32_t num_bits_1 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_0;
-          if (t_0 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
+          if (num_bits_1 == 8) {
             t_1 = *scratch;
             break;
           }
-          t_0 += 8;
-          *scratch |= ((uint64_t)(t_0)) << 56;
+          num_bits_1 += 8;
+          *scratch |= ((uint64_t)(num_bits_1)) << 56;
         }
       }
       self->private_impl.f_frame_rect_x0 = t_1;
@@ -8851,16 +8851,16 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
-          uint32_t t_2 = *scratch >> 56;
+          uint32_t num_bits_3 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_2;
-          if (t_2 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_3;
+          if (num_bits_3 == 8) {
             t_3 = *scratch;
             break;
           }
-          t_2 += 8;
-          *scratch |= ((uint64_t)(t_2)) << 56;
+          num_bits_3 += 8;
+          *scratch |= ((uint64_t)(num_bits_3)) << 56;
         }
       }
       self->private_impl.f_frame_rect_y0 = t_3;
@@ -8880,16 +8880,16 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
-          uint32_t t_4 = *scratch >> 56;
+          uint32_t num_bits_5 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_4;
-          if (t_4 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_5;
+          if (num_bits_5 == 8) {
             t_5 = *scratch;
             break;
           }
-          t_4 += 8;
-          *scratch |= ((uint64_t)(t_4)) << 56;
+          num_bits_5 += 8;
+          *scratch |= ((uint64_t)(num_bits_5)) << 56;
         }
       }
       self->private_impl.f_frame_rect_x1 = t_5;
@@ -8910,16 +8910,16 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode_id_part0[0].scratch;
-          uint32_t t_6 = *scratch >> 56;
+          uint32_t num_bits_7 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_6;
-          if (t_6 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_7;
+          if (num_bits_7 == 8) {
             t_7 = *scratch;
             break;
           }
-          t_6 += 8;
-          *scratch |= ((uint64_t)(t_6)) << 56;
+          num_bits_7 += 8;
+          *scratch |= ((uint64_t)(num_bits_7)) << 56;
         }
       }
       self->private_impl.f_frame_rect_y1 = t_7;
@@ -9047,16 +9047,16 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               }
               uint64_t* scratch =
                   &self->private_impl.c_decode_id_part1[0].scratch;
-              uint32_t t_1 = *scratch & 0xFF;
+              uint32_t num_bits_2 = *scratch & 0xFF;
               *scratch >>= 8;
               *scratch <<= 8;
-              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - t_1);
-              if (t_1 == 16) {
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
+              if (num_bits_2 == 16) {
                 t_2 = *scratch >> (64 - 24);
                 break;
               }
-              t_1 += 8;
-              *scratch |= ((uint64_t)(t_1));
+              num_bits_2 += 8;
+              *scratch |= ((uint64_t)(num_bits_2));
             }
           }
           v_argb = t_2;
@@ -9616,16 +9616,16 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
               goto suspend;
             }
             uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
-            uint32_t t_4 = *scratch >> 56;
+            uint32_t num_bits_5 = *scratch >> 56;
             *scratch <<= 8;
             *scratch >>= 8;
-            *scratch |= ((uint64_t)(*iop_a_src++)) << t_4;
-            if (t_4 == 8) {
+            *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_5;
+            if (num_bits_5 == 8) {
               t_5 = *scratch;
               break;
             }
-            t_4 += 8;
-            *scratch |= ((uint64_t)(t_4)) << 56;
+            num_bits_5 += 8;
+            *scratch |= ((uint64_t)(num_bits_5)) << 56;
           }
         }
         v_xlen = t_5;
@@ -9756,16 +9756,16 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
-          uint32_t t_9 = *scratch >> 56;
+          uint32_t num_bits_10 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_9;
-          if (t_9 == 24) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_10;
+          if (num_bits_10 == 24) {
             t_10 = *scratch;
             break;
           }
-          t_9 += 8;
-          *scratch |= ((uint64_t)(t_9)) << 56;
+          num_bits_10 += 8;
+          *scratch |= ((uint64_t)(num_bits_10)) << 56;
         }
       }
       v_checksum_want = t_10;
@@ -9785,16 +9785,16 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
-          uint32_t t_11 = *scratch >> 56;
+          uint32_t num_bits_12 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << t_11;
-          if (t_11 == 24) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_12;
+          if (num_bits_12 == 24) {
             t_12 = *scratch;
             break;
           }
-          t_11 += 8;
-          *scratch |= ((uint64_t)(t_11)) << 56;
+          num_bits_12 += 8;
+          *scratch |= ((uint64_t)(num_bits_12)) << 56;
         }
       }
       v_decoded_length_want = t_12;
@@ -10003,16 +10003,16 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
-          uint32_t t_0 = *scratch & 0xFF;
+          uint32_t num_bits_1 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - t_0);
-          if (t_0 == 8) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
+          if (num_bits_1 == 8) {
             t_1 = *scratch >> (64 - 16);
             break;
           }
-          t_0 += 8;
-          *scratch |= ((uint64_t)(t_0));
+          num_bits_1 += 8;
+          *scratch |= ((uint64_t)(num_bits_1));
         }
       }
       v_x = t_1;
@@ -10087,16 +10087,16 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
             goto suspend;
           }
           uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
-          uint32_t t_3 = *scratch & 0xFF;
+          uint32_t num_bits_4 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - t_3);
-          if (t_3 == 24) {
+          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
+          if (num_bits_4 == 24) {
             t_4 = *scratch >> (64 - 32);
             break;
           }
-          t_3 += 8;
-          *scratch |= ((uint64_t)(t_3));
+          num_bits_4 += 8;
+          *scratch |= ((uint64_t)(num_bits_4));
         }
       }
       v_checksum_want = t_4;

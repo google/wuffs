@@ -575,13 +575,11 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 	if g.currFunk.tempW > maxTemp-1 {
 		return fmt.Errorf("too many temporary variables required")
 	}
-	// temp0 is read by code generated in this function. temp1 is read elsewhere.
-	temp0 := g.currFunk.tempW + 0
-	temp1 := g.currFunk.tempW + 1
+	temp := g.currFunk.tempW + 1
 	g.currFunk.tempW += 2
 	g.currFunk.tempR += 1
 
-	if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp1)); err != nil {
+	if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
 		return err
 	}
 	b.writes(";")
@@ -592,7 +590,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", size/8)
-	b.printf("%s%d = wuffs_base__load_u%d%s(iop_a_src);\n", tPrefix, temp1, size, endianness)
+	b.printf("%s%d = wuffs_base__load_u%d%s(iop_a_src);\n", tPrefix, temp, size, endianness)
 	b.printf("iop_a_src += %d;\n", size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
@@ -606,34 +604,34 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 		preName, preName)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)
-	b.printf("uint32_t %s%d = *scratch", tPrefix, temp0)
+	b.printf("uint32_t num_bits_%d = *scratch", temp)
 	switch endianness {
 	case "be":
 		b.writes("& 0xFF; *scratch >>= 8; *scratch <<= 8;")
-		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - %s%d);",
-			iopPrefix, preName, tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);",
+			iopPrefix, preName, temp)
 	case "le":
 		b.writes(">> 56; *scratch <<= 8; *scratch >>= 8;")
-		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << %s%d;",
-			iopPrefix, preName, tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;",
+			iopPrefix, preName, temp)
 	}
 
-	b.printf("if (%s%d == %d) {", tPrefix, temp0, size-8)
+	b.printf("if (num_bits_%d == %d) {", temp, size-8)
 	switch endianness {
 	case "be":
-		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp1, size)
+		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, size)
 	case "le":
-		b.printf("%s%d = *scratch;", tPrefix, temp1)
+		b.printf("%s%d = *scratch;", tPrefix, temp)
 	}
 	b.printf("break;")
 	b.printf("}")
 
-	b.printf("%s%d += 8;", tPrefix, temp0)
+	b.printf("num_bits_%d += 8;", temp)
 	switch endianness {
 	case "be":
-		b.printf("*scratch |= ((uint64_t)(%s%d));", tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d));", temp)
 	case "le":
-		b.printf("*scratch |= ((uint64_t)(%s%d)) << 56;", tPrefix, temp0)
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d)) << 56;", temp)
 	}
 
 	b.writes("}}\n")
