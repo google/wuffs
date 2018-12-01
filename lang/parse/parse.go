@@ -869,6 +869,10 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if value.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: iterate value %q is not effect-free at %s:%d`,
+				value.Str(p.tm), p.filename, p.line())
+		}
 
 	} else if p.peek1() == t.IDEq {
 		op = t.IDEq
@@ -903,15 +907,19 @@ func (p *parser) parsePossibleListExpr() (*a.Expr, error) {
 	return a.NewExpr(0, t.IDComma, 0, 0, nil, nil, nil, args), nil
 }
 
-func (p *parser) parseExprNode() (*a.Node, error) {
-	n, err := p.parseExpr()
+func (p *parser) parseExpr() (*a.Expr, error) {
+	e, err := p.parseExpr1()
 	if err != nil {
 		return nil, err
 	}
-	return n.AsNode(), err
+	if e.Effect().SubExprHasEffect() {
+		return nil, fmt.Errorf(`parse: expression %q has an effect-ful sub-expression at %s:%d`,
+			e.Str(p.tm), p.filename, p.line())
+	}
+	return e, nil
 }
 
-func (p *parser) parseExpr() (*a.Expr, error) {
+func (p *parser) parseExpr1() (*a.Expr, error) {
 	lhs, err := p.parseOperand()
 	if err != nil {
 		return nil, err
@@ -1032,15 +1040,6 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			args, err := p.parseList(t.IDCloseParen, (*parser).parseArgNode)
 			if err != nil {
 				return nil, err
-			}
-			if flags.AsEffect() != 0 {
-				for _, arg := range args {
-					o := arg.AsArg().Value()
-					if o.Effect() != 0 {
-						return nil, fmt.Errorf(`parse: effectful function call %q has effectful argument %q at %s:%d`,
-							lhs.Str(p.tm), o.Str(p.tm), p.filename, p.line())
-					}
-				}
 			}
 			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.AsNode(), nil, nil, args)
 

@@ -109,20 +109,24 @@ const (
 	EffectOptional  = Effect(0x02) // TODO: rename to Statusful or Throws?
 	EffectCoroutine = Effect(0x04)
 
+	EffectSubExprHasEffect = Effect(0x08)
+
 	// TODO: will we need an EffectRootCause if every ?-call requires a "do" or
 	// "try"?
-	effectMaskNonRootCause = Effect(0x07)
-	EffectRootCause        = Effect(0x08)
+	effectMaskNonRootCause = Effect(0x7F)
+
+	EffectRootCause = Effect(0x80)
 )
 
 func (e Effect) AsFlags() Flags { return Flags(e) }
 
 // TODO: replace Pure calls with the stronger "e == 0"?
-func (e Effect) Pure() bool      { return e&EffectImpure == 0 }
-func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
-func (e Effect) Optional() bool  { return e&EffectOptional != 0 }
-func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
-func (e Effect) RootCause() bool { return e&EffectRootCause != 0 }
+func (e Effect) Pure() bool             { return e&EffectImpure == 0 }
+func (e Effect) Impure() bool           { return e&EffectImpure != 0 }
+func (e Effect) Optional() bool         { return e&EffectOptional != 0 }
+func (e Effect) Coroutine() bool        { return e&EffectCoroutine != 0 }
+func (e Effect) SubExprHasEffect() bool { return e&EffectSubExprHasEffect != 0 }
+func (e Effect) RootCause() bool        { return e&EffectRootCause != 0 }
 
 func (e Effect) String() string {
 	switch e & effectMaskNonRootCause {
@@ -353,17 +357,21 @@ func (n *Expr) SetMBounds(x Bounds)      { n.mBounds = x }
 func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
 
 func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
+	subExprEffect := Flags(0)
 	if lhs != nil {
-		flags |= lhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= lhs.flags & Flags(effectMaskNonRootCause)
 	}
 	if mhs != nil {
-		flags |= mhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= mhs.flags & Flags(effectMaskNonRootCause)
 	}
 	if rhs != nil {
-		flags |= rhs.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= rhs.flags & Flags(effectMaskNonRootCause)
 	}
 	for _, o := range args {
-		flags |= o.flags & Flags(effectMaskNonRootCause)
+		subExprEffect |= o.flags & Flags(effectMaskNonRootCause)
+	}
+	if subExprEffect != 0 {
+		flags |= subExprEffect | EffectSubExprHasEffect.AsFlags()
 	}
 
 	return &Expr{
