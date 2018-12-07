@@ -73,7 +73,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		n := n.AsAssign()
 		return g.writeStatementAssign(b, 0, n.LHS(), n.LHS().MType(), n.Operator(), n.RHS(), depth)
 	case a.KExpr:
-		return g.writeStatementExpr(b, n.AsExpr(), depth)
+		return g.writeStatementAssign(b, 0, nil, nil, 0, n.AsExpr(), depth)
 	case a.KIOBind:
 		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
@@ -101,57 +101,94 @@ func (g *gen) writeStatementAssign(b *buffer,
 	lhsIdent t.ID, lhsExpr *a.Expr, lTyp *a.TypeExpr,
 	op t.ID, rhsExpr *a.Expr, depth uint32) error {
 
-	if rhsExpr != nil && rhsExpr.Effect().Coroutine() {
+	// TODO: clean this method body up.
+
+	if depth > a.MaxExprDepth {
+		return fmt.Errorf("expression recursion depth too large")
+	}
+	depth++
+
+	if op != 0 && rhsExpr != nil && rhsExpr.Effect().Coroutine() {
 		if err := g.writeQuestionCall(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
 			return err
 		}
 	}
 
-	lhs := buffer(nil)
-	if lhsIdent != 0 {
-		lhs.printf("%s%s", vPrefix, lhsIdent.Str(g.tm))
-	} else if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
-		return err
-	}
-
-	opName, closer := "", ""
-	if lTyp.IsArrayType() {
-		if rhsExpr != nil {
-			b.writes("memcpy(")
-		} else {
-			b.writes("memset(")
-		}
-		opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhs)
+	closer := ""
+	if lTyp == nil {
+		// No-op.
 
 	} else {
-		switch op {
-		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-			uBits := uintBits(lTyp.QID())
-			if uBits == 0 {
-				return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
-			}
-			uOp := "add"
-			if op != t.IDTildeSatPlusEq {
-				uOp = "sub"
-			}
-			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-			opName, closer = ",", ")"
-
-		default:
-			opName = cOpName(op)
-			if opName == "" {
-				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
-			}
-		}
-	}
-
-	b.writex(lhs)
-	b.writes(opName)
-
-	if rhsExpr != nil {
-		if err := g.writeExpr(b, rhsExpr, depth); err != nil {
+		lhs := buffer(nil)
+		if lhsIdent != 0 {
+			lhs.printf("%s%s", vPrefix, lhsIdent.Str(g.tm))
+		} else if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
 			return err
 		}
+
+		opName := ""
+		if lTyp.IsArrayType() {
+			if rhsExpr != nil {
+				b.writes("memcpy(")
+			} else {
+				b.writes("memset(")
+			}
+			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhs)
+
+		} else {
+			switch op {
+			case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+				uBits := uintBits(lTyp.QID())
+				if uBits == 0 {
+					return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
+				}
+				uOp := "add"
+				if op != t.IDTildeSatPlusEq {
+					uOp = "sub"
+				}
+				b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+				opName, closer = ",", ")"
+
+			default:
+				opName = cOpName(op)
+				if opName == "" {
+					return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
+				}
+			}
+		}
+
+		b.writex(lhs)
+		b.writes(opName)
+	}
+
+	if rhsExpr != nil {
+		if op == 0 {
+			if rhsExpr.Effect().Coroutine() {
+				if err := g.writeCoroSuspPoint(b, false); err != nil {
+					return err
+				}
+			}
+
+			if err := g.writeBuiltinQuestionCall(b, rhsExpr, depth); err != errNoSuchBuiltin {
+				return err
+			}
+
+			if err := g.writeSaveExprDerivedVars(b, rhsExpr); err != nil {
+				return err
+			}
+
+			if rhsExpr.Effect().Optional() {
+				b.writes("status = ")
+			}
+
+			// TODO: drop the "Other" in writeExprOther.
+			if err := g.writeExprOther(b, rhsExpr, depth); err != nil {
+				return err
+			}
+		} else if err := g.writeExpr(b, rhsExpr, depth); err != nil {
+			return err
+		}
+
 	} else if lTyp.IsSliceType() {
 		// TODO: don't assume that the slice is a slice of base.u8.
 		b.printf("((wuffs_base__slice_u8){})")
@@ -169,48 +206,21 @@ func (g *gen) writeStatementAssign(b *buffer,
 	}
 	b.writes(closer)
 	b.writes(";\n")
-	return nil
-}
 
-func (g *gen) writeStatementExpr(b *buffer, n *a.Expr, depth uint32) error {
-	// TODO: this same derived code-gen should happen for assignment and var
-	// statements.
-	//
-	// TODO: clean up how this and writeSuspendibles interact.
-	derived := n.Effect().Optional() && !n.Effect().Coroutine()
-	if derived {
-		if err := g.writeSaveExprDerivedVars(b, n); err != nil {
+	if op == 0 && rhsExpr != nil {
+		if err := g.writeLoadExprDerivedVars(b, rhsExpr); err != nil {
 			return err
+		}
+
+		if rhsExpr.Effect().Optional() {
+			target := "exit"
+			if rhsExpr.Effect().Coroutine() {
+				target = "suspend"
+			}
+			b.printf("if (status) { goto %s; }\n", target)
 		}
 	}
 
-	if n.Effect().Coroutine() {
-		if err := g.writeQuestionCall(b, n, depth, false); err != nil {
-			return err
-		}
-	}
-
-	checkStatus := false
-	if effect := n.Effect(); effect.Coroutine() {
-		return nil
-	} else if effect.Optional() {
-		b.writes("status = ")
-		checkStatus = true
-	}
-	if err := g.writeExpr(b, n, depth); err != nil {
-		return err
-	}
-	b.writes(";\n")
-
-	if derived {
-		if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-			return err
-		}
-	}
-
-	if checkStatus {
-		b.writes("if (status) { goto exit; }\n")
-	}
 	return nil
 }
 
