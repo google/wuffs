@@ -14,10 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Images
 
 // wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
@@ -904,7 +900,3 @@ typedef struct {
 #ifdef __cplusplus
 
 #endif  // __cplusplus
-
-#ifdef __cplusplus
-}  // extern "C"
-#endif

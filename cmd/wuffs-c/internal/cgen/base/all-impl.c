@@ -1,6 +1,6 @@
 // After editing this file, run "go generate" in the parent directory.
 
-// Copyright 2018 The Wuffs Authors.
+// Copyright 2017 The Wuffs Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,34 @@
 
 // !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.
 
-// !! INSERT base-public.h.
+// !! INSERT base/copyright
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// !! INSERT base/all-public.h.
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
-// !! INSERT base-private.h.
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// !! INSERT base/all-private.h.
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__BASE)
 

@@ -73,11 +73,22 @@ func genBase(out *bytes.Buffer) error {
 	files := []struct {
 		filename, varname string
 	}{
-		{"base/base-public.h", "baseBasePublicH"},
-		{"base/base-private.h", "baseBasePrivateH"},
-		{"base/base-impl.c", "baseBaseImplC"},
+		{"base/all-impl.c", "baseAllImplC"},
+		{"base/core-private.h", "baseCorePrivateH"},
+		{"base/core-public.h", "baseCorePublicH"},
+		{"base/memory-private.h", "baseMemoryPrivateH"},
+		{"base/memory-public.h", "baseMemoryPublicH"},
+		{"base/image-private.h", "baseImagePrivateH"},
 		{"base/image-public.h", "baseImagePublicH"},
+		{"base/io-private.h", "baseIOPrivateH"},
+		{"base/io-public.h", "baseIOPublicH"},
+		{"base/range-private.h", "baseRangePrivateH"},
+		{"base/range-public.h", "baseRangePublicH"},
 	}
+
+	prefixAfterEditing := []byte("// After editing this file,")
+	prefixCopyright := []byte("// Copyright ")
+	copyright := []byte(nil)
 
 	for _, f := range files {
 		in, err := ioutil.ReadFile(f.filename)
@@ -85,11 +96,20 @@ func genBase(out *bytes.Buffer) error {
 			return err
 		}
 
-		const afterEditing = "// After editing this file,"
-		if !bytes.HasPrefix(in, []byte(afterEditing)) {
-			return fmt.Errorf("%s's contents do not start with %q", f.filename, afterEditing)
+		if !bytes.HasPrefix(in, prefixAfterEditing) {
+			return fmt.Errorf("%s's contents do not start with %q", f.filename, prefixAfterEditing)
 		}
 		if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
+			in = in[i+2:]
+		}
+
+		if !bytes.HasPrefix(in, prefixCopyright) {
+			return fmt.Errorf("%s's contents do not start with %q", f.filename, prefixCopyright)
+		}
+		if i := bytes.Index(in, []byte("\n\n")); i >= 0 {
+			if len(copyright) == 0 {
+				copyright = in[:i+2]
+			}
 			in = in[i+2:]
 		}
 
@@ -97,6 +117,10 @@ func genBase(out *bytes.Buffer) error {
 		writeStringConst(out, in)
 		out.WriteString("\"\"\n\n")
 	}
+
+	fmt.Fprintf(out, "const baseCopyright = \"\" +\n")
+	writeStringConst(out, copyright)
+	out.WriteString("\"\"\n\n")
 	return nil
 }
 

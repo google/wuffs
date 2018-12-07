@@ -1211,28 +1211,6 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
   return ((wuffs_base__slice_u64){});
 }
 
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-// Copyright 2017 The Wuffs Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ---------------- Images
 
 // wuffs_base__color_u32_argb_premul is an 8 bit per channel premultiplied
@@ -3003,20 +2981,6 @@ struct wuffs_zlib__decoder__struct {
 // WUFFS C HEADER ENDS HERE.
 #ifdef WUFFS_IMPLEMENTATION
 
-// Copyright 2017 The Wuffs Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3760,6 +3724,10 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
 }
+
+  // ---------------- Memory Allocation
+
+  // ---------------- Images
 
 #ifdef __cplusplus
 }  // extern "C"

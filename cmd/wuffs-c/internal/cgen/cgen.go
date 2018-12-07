@@ -110,9 +110,10 @@ func Do(args []string) error {
 				return nil, fmt.Errorf("base package shouldn't have any .wuffs files")
 			}
 			buf := make(buffer, 0, 128*1024)
-			if err := expandBangBangInsert(&buf, baseBaseImplC, map[string]func(*buffer) error{
-				"// !! INSERT base-private.h.\n": insertBasePrivateH,
-				"// !! INSERT base-public.h.\n":  insertBasePublicH,
+			if err := expandBangBangInsert(&buf, baseAllImplC, map[string]func(*buffer) error{
+				"// !! INSERT base/all-private.h.\n": insertBaseAllPrivateH,
+				"// !! INSERT base/all-public.h.\n":  insertBaseAllPublicH,
+				"// !! INSERT base/copyright\n":      insertBaseCopyright,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
@@ -241,13 +242,22 @@ func expandBangBangInsert(b *buffer, s string, m map[string]func(*buffer) error)
 	return nil
 }
 
-func insertBasePrivateH(buf *buffer) error {
-	buf.writes(baseBasePrivateH)
+func insertBaseAllPrivateH(buf *buffer) error {
+	buf.writes(baseCorePrivateH)
+	buf.writeb('\n')
+	buf.writes(baseRangePrivateH)
+	buf.writeb('\n')
+	buf.writes(baseIOPrivateH)
+	buf.writeb('\n')
+	buf.writes(baseMemoryPrivateH)
+	buf.writeb('\n')
+	buf.writes(baseImagePrivateH)
+	buf.writeb('\n')
 	return nil
 }
 
-func insertBasePublicH(buf *buffer) error {
-	if err := expandBangBangInsert(buf, baseBasePublicH, map[string]func(*buffer) error{
+func insertBaseAllPublicH(buf *buffer) error {
+	if err := expandBangBangInsert(buf, baseCorePublicH, map[string]func(*buffer) error{
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.Statuses {
 				msg, _ := t.Unescape(z)
@@ -267,10 +277,22 @@ func insertBasePublicH(buf *buffer) error {
 	}); err != nil {
 		return err
 	}
+	buf.writeb('\n')
 
+	buf.writes(baseRangePublicH)
+	buf.writeb('\n')
+	buf.writes(baseIOPublicH)
+	buf.writeb('\n')
+	buf.writes(baseMemoryPublicH)
 	buf.writeb('\n')
 	buf.writes(baseImagePublicH)
+	buf.writeb('\n')
+	return nil
+}
 
+func insertBaseCopyright(buf *buffer) error {
+	buf.writes(baseCopyright)
+	buf.writeb('\n')
 	return nil
 }
 
