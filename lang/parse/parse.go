@@ -699,38 +699,35 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 			io.Str(p.tm), p.filename, p.line())
 	}
 
-	limit := (*a.Expr)(nil)
-	if keyword == t.IDIOBind {
-		// No-op.
+	if x := p.peek1(); x != t.IDComma {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
 
-	} else {
-		if x := p.peek1(); x != t.IDComma {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
+	arg1Name := t.IDData
+	if keyword == t.IDIOLimit {
+		arg1Name = t.IDLimit
+	}
+	if x := p.peek1(); x != arg1Name {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected %q, got %q at %s:%d`, arg1Name.Str(p.tm), got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
 
-		if x := p.peek1(); x != t.IDLimit {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected "limit", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
+	if x := p.peek1(); x != t.IDColon {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
 
-		if x := p.peek1(); x != t.IDColon {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-
-		var err error
-		limit, err = p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		if limit.Effect() != 0 {
-			return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
-				io.Str(p.tm), p.filename, p.line())
-		}
+	arg1, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if arg1.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
+			io.Str(p.tm), p.filename, p.line())
 	}
 
 	if x := p.peek1(); x != t.IDCloseParen {
@@ -744,7 +741,7 @@ func (p *parser) parseIOBindNode() (*a.Node, error) {
 		return nil, err
 	}
 
-	return a.NewIOBind(keyword, io, limit, body).AsNode(), nil
+	return a.NewIOBind(keyword, io, arg1, body).AsNode(), nil
 }
 
 func (p *parser) parseIf() (*a.If, error) {

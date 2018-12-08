@@ -140,8 +140,6 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 		(this.frame_rect_y1 == this.height)
 
 	if args.dst != nullptr {
-		// TODO: rename initialize to set?
-		//
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL magic pixfmt constant.
 		args.dst.initialize!(
@@ -638,8 +636,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 		while:inner true {
 			var w base.io_writer
-			io_bind (io:w) {
-				w.set!(s:this.uncompressed[this.uncompressed_wi:])
+			io_bind (io:w, data:this.uncompressed[this.uncompressed_wi:]) {
 				io_limit (io:args.src, limit:block_size) {
 					args.src.set_mark!()
 					var z base.status =? this.lzw.decode!??(dst:w, src:args.src)

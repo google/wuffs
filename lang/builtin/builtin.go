@@ -204,8 +204,8 @@ var Funcs = []string{
 
 	"io_reader.available() u64",
 	"io_reader.position() u64",
-	"io_reader.set!(s slice u8, closed bool)",
-	"io_reader.set_limit!(l u64)", // TODO: remove, as it's no longer used?
+	"io_reader.set!(s slice u8, closed bool)", // TODO: remove, as it's no longer used?
+	"io_reader.set_limit!(l u64)",             // TODO: remove, as it's no longer used?
 	"io_reader.set_mark!()",
 	"io_reader.since_mark() slice u8",
 
@@ -258,8 +258,8 @@ var Funcs = []string{
 
 	"io_writer.available() u64",
 	"io_writer.position() u64",
-	"io_writer.set!(s slice u8)",
-	"io_writer.set_limit!(l u64)",
+	"io_writer.set!(s slice u8)",  // TODO: remove, as it's no longer used?
+	"io_writer.set_limit!(l u64)", // TODO: remove, as it's no longer used?
 	"io_writer.set_mark!()",
 	"io_writer.since_mark() slice u8",
 

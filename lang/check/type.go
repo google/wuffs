@@ -128,17 +128,18 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 				n.Keyword().Str(q.tm), n.IO().Str(q.tm), typ.Str(q.tm))
 		}
 
-		if n.Keyword() == t.IDIOBind {
-			// No-op.
-		} else {
-			if err := q.tcheckExpr(n.Limit(), 0); err != nil {
-				return err
-			}
-			if typ := n.Limit().MType(); !typ.Eq(typeExprU64) {
-				return fmt.Errorf("check: %s expression %q, of type %q, does not have base.u64 type",
-					n.Keyword().Str(q.tm), n.Limit().Str(q.tm), typ.Str(q.tm))
-			}
+		arg1Typ := typeExprSliceU8
+		if n.Keyword() == t.IDIOLimit {
+			arg1Typ = typeExprU64
 		}
+		if err := q.tcheckExpr(n.Arg1(), 0); err != nil {
+			return err
+		}
+		if typ := n.Arg1().MType(); !typ.Eq(arg1Typ) {
+			return fmt.Errorf("check: %s expression %q, of type %q, does not have type %q",
+				n.Keyword().Str(q.tm), n.Arg1().Str(q.tm), typ.Str(q.tm), arg1Typ.Str(q.tm))
+		}
+
 		for _, o := range n.Body() {
 			// TODO: prohibit jumps (breaks, continues), rets (returns, yields)
 			// and retry-calling ? methods while inside an io_bind body.

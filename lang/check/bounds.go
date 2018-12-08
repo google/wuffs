@@ -237,12 +237,8 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		if _, err := q.bcheckExpr(n.IO(), 0); err != nil {
 			return err
 		}
-		if n.Keyword() == t.IDIOBind {
-			// No-op.
-		} else {
-			if _, err := q.bcheckExpr(n.Limit(), 0); err != nil {
-				return err
-			}
+		if _, err := q.bcheckExpr(n.Arg1(), 0); err != nil {
+			return err
 		}
 		if err := q.bcheckBlock(n.Body()); err != nil {
 			return err

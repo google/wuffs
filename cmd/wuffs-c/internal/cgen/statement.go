@@ -237,6 +237,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	b.writes("{\n")
 	{
 		e := n.IO()
+		// TODO: restrict (in the type checker or parser) that e is either a
+		// local variable or args.foo?
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix
@@ -249,13 +251,6 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
 			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
 
-		if n.Keyword() == t.IDIOLimit {
-			b.printf("wuffs_base__io_%s__set_limit(&%s%s, iop_%s%s,\n", cTyp, prefix, name, prefix, name)
-			if err := g.writeExpr(b, n.Limit(), 0); err != nil {
-				return err
-			}
-			b.printf(");\n")
-		}
 		// TODO: save / restore all iop vars, not just for local IO vars? How
 		// does this work if the io_bind body advances these pointers, either
 		// directly or by calling other funcs?
@@ -264,6 +259,24 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 				oPrefix, ioBindNum, iopPrefix, prefix, name, iopPrefix, prefix, name)
 			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
 				oPrefix, ioBindNum, io1Prefix, prefix, name, io1Prefix, prefix, name)
+		}
+
+		if n.Keyword() == t.IDIOBind {
+			b.printf("wuffs_base__io_%s__set(&%s%s, &u_%s, &iop_%s%s, &io1_%s%s,",
+				cTyp, prefix, name, name, prefix, name, prefix, name)
+			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
+				return err
+			}
+			b.writes(");\n")
+
+		} else {
+			// TODO: restrict (in the type checker or parser) that e is
+			// args.foo?
+			b.printf("wuffs_base__io_%s__set_limit(&%s%s, iop_%s%s,\n", cTyp, prefix, name, prefix, name)
+			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
+				return err
+			}
+			b.writes(");\n")
 		}
 	}
 
