@@ -353,6 +353,7 @@ const (
 	IDIterate  = ID(0x92)
 	IDYield    = ID(0x93)
 	IDIOBind   = ID(0x94)
+	IDIOLimit  = ID(0x95)
 )
 
 const (
@@ -588,6 +589,8 @@ const (
 	IDStride    = ID(0x245)
 	IDSuffix    = ID(0x246)
 	IDWidth     = ID(0x247)
+	IDIO        = ID(0x248)
+	IDLimit     = ID(0x249)
 )
 
 var builtInsByID = [nBuiltInIDs]string{
@@ -678,6 +681,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDIterate:  "iterate",
 	IDYield:    "yield",
 	IDIOBind:   "io_bind",
+	IDIOLimit:  "io_limit",
 
 	IDArray: "array",
 	IDNptr:  "nptr",
@@ -908,6 +912,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDStride:    "stride",
 	IDSuffix:    "suffix",
 	IDWidth:     "width",
+	IDIO:        "io",
+	IDLimit:     "limit",
 }
 
 var builtInsByName = map[string]ID{}

@@ -234,8 +234,17 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KIOBind:
 		n := n.AsIOBind()
-		for _, o := range n.InFields() {
-			if _, err := q.bcheckExpr(o.AsExpr(), 0); err != nil {
+		if n.Keyword() == t.IDIOBind {
+			for _, o := range n.InFields() {
+				if _, err := q.bcheckExpr(o.AsExpr(), 0); err != nil {
+					return err
+				}
+			}
+		} else {
+			if _, err := q.bcheckExpr(n.IO(), 0); err != nil {
+				return err
+			}
+			if _, err := q.bcheckExpr(n.Limit(), 0); err != nil {
 				return err
 			}
 		}

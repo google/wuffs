@@ -344,8 +344,16 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 }
 
 func (h *resumabilityHelper) doIOBind(r resumabilities, n *a.IOBind, depth uint32) error {
-	// Ignore the IOBind fields, as they should be I/O types and therefore not
-	// resumable.
+	if n.IO() != nil {
+		if err := h.doExpr(r, n.IO()); err != nil {
+			return err
+		}
+	}
+	if n.Limit() != nil {
+		if err := h.doExpr(r, n.Limit()); err != nil {
+			return err
+		}
+	}
 	return h.doBlock(r, n.Body(), depth)
 }
 

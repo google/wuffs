@@ -226,6 +226,9 @@ func (g *gen) writeStatementAssign(b *buffer,
 
 func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	inFields := n.InFields()
+	if n.Keyword() == t.IDIOLimit {
+		inFields = []*a.Node{n.IO().AsNode()}
+	}
 
 	if g.currFunk.ioBinds > maxIOBinds || len(inFields) > maxIOBindInFields {
 		return fmt.Errorf("too many temporary variables required")
@@ -251,6 +254,13 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
 			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
 
+		if n.Keyword() == t.IDIOLimit {
+			b.printf("wuffs_base__io_%s__set_limit(&%s%s, iop_%s%s,\n", cTyp, prefix, name, prefix, name)
+			if err := g.writeExpr(b, n.Limit(), 0); err != nil {
+				return err
+			}
+			b.printf(");\n")
+		}
 		// TODO: save / restore all iop vars, not just for local IO vars? How
 		// does this work if the io_bind body advances these pointers, either
 		// directly or by calling other funcs?

@@ -7,7 +7,7 @@
 - Ship as a "single file C library"
 - Added a `skipgendeps` flag.
 - Added a `nullptr` literal and `nptr T` type.
-- Added an `io_bind` keyword.
+- Added `io_bind` and `io_limit` keywords.
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Made the `return` value mandatory; added `ok` literal.

@@ -582,17 +582,8 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewJump(x, label).AsNode(), nil
 
-	case t.IDIOBind:
-		p.src = p.src[1:]
-		in_fields, err := p.parseList(t.IDCloseParen, (*parser).parseIOBindExprNode)
-		if err != nil {
-			return nil, err
-		}
-		body, err := p.parseBlock()
-		if err != nil {
-			return nil, err
-		}
-		return a.NewIOBind(in_fields, body).AsNode(), nil
+	case t.IDIOBind, t.IDIOLimit:
+		return p.parseIOBindNode()
 
 	case t.IDIf:
 		o, err := p.parseIf()
@@ -675,6 +666,89 @@ func (p *parser) parseAsserts() ([]*a.Node, error) {
 		}
 	}
 	return asserts, nil
+}
+
+func (p *parser) parseIOBindNode() (*a.Node, error) {
+	if p.peek1() == t.IDIOBind {
+		p.src = p.src[1:]
+		in_fields, err := p.parseList(t.IDCloseParen, (*parser).parseIOBindExprNode)
+		if err != nil {
+			return nil, err
+		}
+		body, err := p.parseBlock()
+		if err != nil {
+			return nil, err
+		}
+		return a.NewIOBind(t.IDIOBind, nil, nil, in_fields, body).AsNode(), nil
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDOpenParen {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDIO {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "io", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDColon {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	io, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if io.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
+			io.Str(p.tm), p.filename, p.line())
+	}
+
+	if x := p.peek1(); x != t.IDComma {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ",", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDLimit {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected "limit", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	if x := p.peek1(); x != t.IDColon {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	limit, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if limit.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: argument %q is not effect-free at %s:%d`,
+			io.Str(p.tm), p.filename, p.line())
+	}
+
+	if x := p.peek1(); x != t.IDCloseParen {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ")", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
+
+	body, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return a.NewIOBind(t.IDIOLimit, io, limit, nil, body).AsNode(), nil
 }
 
 func (p *parser) parseIf() (*a.If, error) {

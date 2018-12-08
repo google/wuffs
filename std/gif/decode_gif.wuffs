@@ -640,14 +640,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			var w base.io_writer
 			io_bind (w) {
 				w.set!(s:this.uncompressed[this.uncompressed_wi:])
-				// TODO: enforce that calling r.set_limit has a precondition
-				// that r.is_bound(), and that you can't suspend inside an
-				// io_bind? Otherwise, the cgen implementation becomes more
-				// complicated if we must save and re-apply limits.
-				//
-				// Should calling r.set_mark also require r.is_bound()?
-				io_bind (args.src) {
-					args.src.set_limit!(l:block_size)
+				io_limit (io:args.src, limit:block_size) {
 					args.src.set_mark!()
 					var z base.status =? this.lzw.decode!??(dst:w, src:args.src)
 					this.uncompressed_wi = 4096 - (w.available().min(x:4096) as base.u32)

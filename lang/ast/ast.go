@@ -482,7 +482,10 @@ func NewField(name t.ID, xType *TypeExpr) *Field {
 	}
 }
 
-// IOBind is "io_bind (in_fields) { List2 }":
+// IOBind is "io_bind (in_fields) { List2 }" or "io_limit (io:LHS, limit:MHS)":
+//  - ID0:   <IDIOBind|IDIOLimit>
+//  - LHS:   <nil|Expr>
+//  - MHS:   <nil|Expr>
 //  - List0: <Expr> in.something fields
 //  - List2: <Statement> body
 //
@@ -490,12 +493,18 @@ func NewField(name t.ID, xType *TypeExpr) *Field {
 type IOBind Node
 
 func (n *IOBind) AsNode() *Node     { return (*Node)(n) }
+func (n *IOBind) Keyword() t.ID     { return n.id0 }
+func (n *IOBind) IO() *Expr         { return n.lhs.AsExpr() }
+func (n *IOBind) Limit() *Expr      { return n.mhs.AsExpr() }
 func (n *IOBind) InFields() []*Node { return n.list0 }
 func (n *IOBind) Body() []*Node     { return n.list2 }
 
-func NewIOBind(in_fields []*Node, body []*Node) *IOBind {
+func NewIOBind(keyword t.ID, io *Expr, limit *Expr, in_fields []*Node, body []*Node) *IOBind {
 	return &IOBind{
 		kind:  KIOBind,
+		id0:   keyword,
+		lhs:   io.AsNode(),
+		mhs:   limit.AsNode(),
 		list0: in_fields,
 		list2: body,
 	}
