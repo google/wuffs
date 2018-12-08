@@ -174,7 +174,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 }
 
 func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
-	// TODO: don't hard-code the recv being a_dst.
+	// TODO: don't hard-code the recv being a_dst or w.
 	switch method {
 	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
 		suffix := ""
@@ -224,10 +224,14 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSinceMark:
+		prefix, name := aPrefix, "dst"
+		if recv.Operator() == 0 {
+			prefix, name = vPrefix, recv.Ident().Str(g.tm)
+		}
 		b.printf("((wuffs_base__slice_u8){ "+
-			".ptr = %sdst.private_impl.mark, "+
-			".len = (size_t)(iop_a_dst - %sdst.private_impl.mark), })",
-			aPrefix, aPrefix)
+			".ptr = %s%s.private_impl.mark, "+
+			".len = (size_t)(iop_%s%s - %s%s.private_impl.mark), })",
+			prefix, name, prefix, name, prefix, name)
 		return nil
 	}
 

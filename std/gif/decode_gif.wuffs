@@ -640,7 +640,8 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				io_limit (io:args.src, limit:block_size) {
 					args.src.set_mark!()
 					var z base.status =? this.lzw.decode!??(dst:w, src:args.src)
-					this.uncompressed_wi = 4096 - (w.available().min(x:4096) as base.u32)
+					var wi base.u64 = (this.uncompressed_wi as base.u64) ~sat+ w.since_mark().length()
+					this.uncompressed_wi = wi.min(x:4096) as base.u32
 					block_size ~sat-= args.src.since_mark().length()
 				}
 			}

@@ -9191,6 +9191,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iop_v_w);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(io1_v_w);
   wuffs_base__status v_z;
+  uint64_t v_wi;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -9222,6 +9223,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     v_block_size = self->private_impl.c_decode_id_part1[0].v_block_size;
     v_w = ((wuffs_base__io_writer){});
     v_z = NULL;
+    v_wi = 0;
   } else {
     v_dst_palette = ((wuffs_base__slice_u8){});
     v_w = ((wuffs_base__io_writer){});
@@ -9420,9 +9422,16 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               }
               v_z = t_4;
             }
+            v_wi = wuffs_base__u64__sat_add(
+                ((uint64_t)(self->private_impl.f_uncompressed_wi)),
+                ((uint64_t)(
+                    ((wuffs_base__slice_u8){
+                         .ptr = v_w.private_impl.mark,
+                         .len = (size_t)(iop_v_w - v_w.private_impl.mark),
+                     })
+                        .len)));
             self->private_impl.f_uncompressed_wi =
-                (4096 - ((uint32_t)(wuffs_base__u64__min(
-                            ((uint64_t)(io1_v_w - iop_v_w)), 4096))));
+                ((uint32_t)(wuffs_base__u64__min(v_wi, 4096)));
             wuffs_base__u64__sat_sub_indirect(
                 &v_block_size,
                 ((uint64_t)(
