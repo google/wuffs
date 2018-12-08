@@ -922,13 +922,18 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     // TODO: should the func type take restrict pointers?
-    uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 src);
+    uint64_t (*func)(wuffs_base__slice_u8 dst,
+                     wuffs_base__slice_u8 dst_palette,
+                     wuffs_base__slice_u8 src);
   } private_impl;
 
 #ifdef __cplusplus
   inline void initialize(wuffs_base__pixel_format dst_format,
-                         wuffs_base__pixel_format src_format);
+                         wuffs_base__slice_u8 dst_palette,
+                         wuffs_base__pixel_format src_format,
+                         wuffs_base__slice_u8 src_palette);
   inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 dst_palette,
                                  wuffs_base__slice_u8 src);
 #endif  // __cplusplus
 
@@ -939,25 +944,33 @@ typedef struct {
 void  //
 wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
                                        wuffs_base__pixel_format dst_format,
-                                       wuffs_base__pixel_format src_format);
+                                       wuffs_base__slice_u8 dst_palette,
+                                       wuffs_base__pixel_format src_format,
+                                       wuffs_base__slice_u8 src_palette);
 
 uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
                                            wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 dst_palette,
                                            wuffs_base__slice_u8 src);
 
 #ifdef __cplusplus
 
 inline void  //
 wuffs_base__pixel_swizzler::initialize(wuffs_base__pixel_format dst_format,
-                                       wuffs_base__pixel_format src_format) {
-  wuffs_base__pixel_swizzler__initialize(this, dst_format, src_format);
+                                       wuffs_base__slice_u8 dst_palette,
+                                       wuffs_base__pixel_format src_format,
+                                       wuffs_base__slice_u8 src_palette) {
+  wuffs_base__pixel_swizzler__initialize(this, dst_format, dst_palette,
+                                         src_format, src_palette);
 }
 
 uint64_t  //
 wuffs_base__pixel_swizzler::swizzle_packed(wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 dst_palette,
                                            wuffs_base__slice_u8 src) {
-  wuffs_base__pixel_swizzler__swizzle_packed(this, dst, src);
+  return wuffs_base__pixel_swizzler__swizzle_packed(this, dst, dst_palette,
+                                                    src);
 }
 
 #endif  // __cplusplus

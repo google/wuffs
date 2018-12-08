@@ -18,30 +18,70 @@
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
+                                     wuffs_base__slice_u8 dst_palette,
                                      wuffs_base__slice_u8 src) {
   return wuffs_base__slice_u8__copy_from_slice(dst, src);
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 src) {
+  size_t length4 = (dst.len < src.len ? dst.len : src.len) / 4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = length4;
+  while (n--) {
+    uint8_t b0 = s[0];
+    uint8_t b1 = s[1];
+    uint8_t b2 = s[2];
+    uint8_t b3 = s[3];
+    d[0] = b2;
+    d[1] = b1;
+    d[2] = b0;
+    d[3] = b3;
+    s += 4;
+    d += 4;
+  }
+  return length4 * 4;
 }
 
 void  //
 wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
                                        wuffs_base__pixel_format dst_format,
-                                       wuffs_base__pixel_format src_format) {
+                                       wuffs_base__slice_u8 dst_palette,
+                                       wuffs_base__pixel_format src_format,
+                                       wuffs_base__slice_u8 src_palette) {
   if (!p) {
     return;
   }
 
   // TODO: support many more formats.
 
-  uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 src) = NULL;
+  uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 dst_palette,
+                   wuffs_base__slice_u8 src) = NULL;
 
   switch (src_format) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
       switch (dst_format) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+              1024) {
+            break;
+          }
           func = wuffs_base__pixel_swizzler__copy_1_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+              1024) {
+            break;
+          }
+          // TODO: implement.
+          break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+          if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
+                                                         src_palette) != 1024) {
+            break;
+          }
           // TODO: implement.
           break;
         default:
@@ -59,9 +99,10 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
 uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
                                            wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 dst_palette,
                                            wuffs_base__slice_u8 src) {
   if (p && p->private_impl.func) {
-    return (*(p->private_impl.func))(dst, src);
+    return (*(p->private_impl.func))(dst, dst_palette, src);
   }
   return 0;
 }
