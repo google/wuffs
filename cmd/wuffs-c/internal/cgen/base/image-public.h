@@ -786,6 +786,7 @@ typedef struct {
   inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
                                            wuffs_base__slice_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
+  inline wuffs_base__pixel_format pixel_format();
   inline wuffs_base__table_u8 plane(uint32_t p);
 #endif  // __cplusplus
 
@@ -856,6 +857,14 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
   return ((wuffs_base__slice_u8){});
 }
 
+static inline wuffs_base__pixel_format  //
+wuffs_base__pixel_buffer__pixel_format(wuffs_base__pixel_buffer* b) {
+  if (b) {
+    return b->pixcfg.private_impl.pixfmt;
+  }
+  return WUFFS_BASE__PIXEL_FORMAT__INVALID;
+}
+
 static inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
   return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
@@ -874,6 +883,11 @@ wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
 inline wuffs_base__slice_u8  //
 wuffs_base__pixel_buffer::palette() {
   return wuffs_base__pixel_buffer__palette(this);
+}
+
+inline wuffs_base__pixel_format  //
+wuffs_base__pixel_buffer::pixel_format() {
+  return wuffs_base__pixel_buffer__pixel_format(this);
 }
 
 inline wuffs_base__table_u8  //
@@ -898,5 +912,52 @@ typedef struct {
 } wuffs_base__decode_frame_options;
 
 #ifdef __cplusplus
+
+#endif  // __cplusplus
+
+// --------
+
+typedef struct {
+  // Do not access the private_impl's fields directly. There is no API/ABI
+  // compatibility or safety guarantee if you do so.
+  struct {
+    // TODO: should the func type take restrict pointers?
+    uint64_t (*func)(wuffs_base__slice_u8 dst, wuffs_base__slice_u8 src);
+  } private_impl;
+
+#ifdef __cplusplus
+  inline void initialize(wuffs_base__pixel_format dst_format,
+                         wuffs_base__pixel_format src_format);
+  inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
+                                 wuffs_base__slice_u8 src);
+#endif  // __cplusplus
+
+} wuffs_base__pixel_swizzler;
+
+// TODO: should initialize (both the C and C++ methods) return a status?
+
+void  //
+wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
+                                       wuffs_base__pixel_format dst_format,
+                                       wuffs_base__pixel_format src_format);
+
+uint64_t  //
+wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
+                                           wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 src);
+
+#ifdef __cplusplus
+
+inline void  //
+wuffs_base__pixel_swizzler::initialize(wuffs_base__pixel_format dst_format,
+                                       wuffs_base__pixel_format src_format) {
+  wuffs_base__pixel_swizzler__initialize(this, dst_format, src_format);
+}
+
+uint64_t  //
+wuffs_base__pixel_swizzler::swizzle_packed(wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 src) {
+  wuffs_base__pixel_swizzler__swizzle_packed(this, dst, src);
+}
 
 #endif  // __cplusplus

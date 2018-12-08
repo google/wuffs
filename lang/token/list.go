@@ -440,10 +440,11 @@ const (
 	IDBase = ID(0x131)
 	IDThis = ID(0x132)
 
-	IDFrameConfig = ID(0x160)
-	IDImageConfig = ID(0x161)
-	IDPixelBuffer = ID(0x162)
-	IDPixelConfig = ID(0x163)
+	IDFrameConfig   = ID(0x160)
+	IDImageConfig   = ID(0x161)
+	IDPixelBuffer   = ID(0x162)
+	IDPixelConfig   = ID(0x163)
+	IDPixelSwizzler = ID(0x164)
 
 	IDDecodeFrameOptions = ID(0x168)
 
@@ -763,10 +764,11 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDBase: "base",
 	IDThis: "this",
 
-	IDFrameConfig: "frame_config",
-	IDImageConfig: "image_config",
-	IDPixelBuffer: "pixel_buffer",
-	IDPixelConfig: "pixel_config",
+	IDFrameConfig:   "frame_config",
+	IDImageConfig:   "image_config",
+	IDPixelBuffer:   "pixel_buffer",
+	IDPixelConfig:   "pixel_config",
+	IDPixelSwizzler: "pixel_swizzler",
 
 	IDDecodeFrameOptions: "decode_frame_options",
 

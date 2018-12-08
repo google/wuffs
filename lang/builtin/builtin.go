@@ -71,6 +71,7 @@ var Types = []string{
 	"image_config",
 	"pixel_buffer",
 	"pixel_config",
+	"pixel_swizzler",
 
 	"decode_frame_options",
 }
@@ -303,7 +304,13 @@ var Funcs = []string{
 	// ---- pixel_buffer
 
 	"pixel_buffer.palette() slice u8",
+	"pixel_buffer.pixel_format() u32",
 	"pixel_buffer.plane(p u32[..3]) table u8",
+
+	// ---- pixel_swizzler
+
+	"pixel_swizzler.initialize!(dst_pixfmt u32, src_pixfmt u32)",
+	"pixel_swizzler.swizzle_packed!(dst slice u8, src slice u8) u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

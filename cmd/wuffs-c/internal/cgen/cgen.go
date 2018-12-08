@@ -114,6 +114,7 @@ func Do(args []string) error {
 				"// !! INSERT base/all-private.h.\n": insertBaseAllPrivateH,
 				"// !! INSERT base/all-public.h.\n":  insertBaseAllPublicH,
 				"// !! INSERT base/copyright\n":      insertBaseCopyright,
+				"// !! INSERT base/image-impl.c.\n":  insertBaseImageImplC,
 				"// !! INSERT wuffs_base__status strings.\n": func(b *buffer) error {
 					for _, z := range builtin.Statuses {
 						msg, _ := t.Unescape(z)
@@ -292,6 +293,12 @@ func insertBaseAllPublicH(buf *buffer) error {
 
 func insertBaseCopyright(buf *buffer) error {
 	buf.writes(baseCopyright)
+	buf.writeb('\n')
+	return nil
+}
+
+func insertBaseImageImplC(buf *buffer) error {
+	buf.writes(baseImageImplC)
 	buf.writeb('\n')
 	return nil
 }

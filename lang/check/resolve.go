@@ -61,10 +61,11 @@ var (
 	typeExprIOWriter = a.NewTypeExpr(0, t.IDBase, t.IDIOWriter, nil, nil, nil)
 	typeExprStatus   = a.NewTypeExpr(0, t.IDBase, t.IDStatus, nil, nil, nil)
 
-	typeExprFrameConfig = a.NewTypeExpr(0, t.IDBase, t.IDFrameConfig, nil, nil, nil)
-	typeExprImageConfig = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
-	typeExprPixelBuffer = a.NewTypeExpr(0, t.IDBase, t.IDPixelBuffer, nil, nil, nil)
-	typeExprPixelConfig = a.NewTypeExpr(0, t.IDBase, t.IDPixelConfig, nil, nil, nil)
+	typeExprFrameConfig   = a.NewTypeExpr(0, t.IDBase, t.IDFrameConfig, nil, nil, nil)
+	typeExprImageConfig   = a.NewTypeExpr(0, t.IDBase, t.IDImageConfig, nil, nil, nil)
+	typeExprPixelBuffer   = a.NewTypeExpr(0, t.IDBase, t.IDPixelBuffer, nil, nil, nil)
+	typeExprPixelConfig   = a.NewTypeExpr(0, t.IDBase, t.IDPixelConfig, nil, nil, nil)
+	typeExprPixelSwizzler = a.NewTypeExpr(0, t.IDBase, t.IDPixelSwizzler, nil, nil, nil)
 
 	typeExprDecodeFrameOptions = a.NewTypeExpr(0, t.IDBase, t.IDDecodeFrameOptions, nil, nil, nil)
 
@@ -101,10 +102,11 @@ var builtInTypeMap = typeMap{
 	t.IDIOWriter: typeExprIOWriter,
 	t.IDStatus:   typeExprStatus,
 
-	t.IDFrameConfig: typeExprFrameConfig,
-	t.IDImageConfig: typeExprImageConfig,
-	t.IDPixelBuffer: typeExprPixelBuffer,
-	t.IDPixelConfig: typeExprPixelConfig,
+	t.IDFrameConfig:   typeExprFrameConfig,
+	t.IDImageConfig:   typeExprImageConfig,
+	t.IDPixelBuffer:   typeExprPixelBuffer,
+	t.IDPixelConfig:   typeExprPixelConfig,
+	t.IDPixelSwizzler: typeExprPixelSwizzler,
 
 	t.IDDecodeFrameOptions: typeExprDecodeFrameOptions,
 }

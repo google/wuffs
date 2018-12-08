@@ -114,6 +114,7 @@ pub struct decoder?(
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
 
+	swizzler base.pixel_swizzler,
 	util base.utility,
 	lzw lzw.decoder,
 )
@@ -584,6 +585,10 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 	args.dst.palette().copy_from_slice!(s:this.palettes[this.which_palette][:])
 
+	// TODO: a Wuffs (not just C) name for the
+	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL magic pixfmt constant.
+	this.swizzler.initialize!(dst_pixfmt:args.dst.pixel_format(), src_pixfmt:0x42040008)
+
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file
 	// (created by the gifsicle program) is accepted by other GIF decoders.
@@ -696,7 +701,7 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			} else {
 				dst = dst[this.dst_x as base.u64:]
 			}
-			var n64 base.u64 = dst.copy_from_slice!(s:src)
+			var n64 base.u64 = this.swizzler.swizzle_packed!(dst:dst, src:src)
 			n = (n64 & 0xFFFFFFFF) as base.u32
 
 			new_ri = this.uncompressed_ri ~sat+ n

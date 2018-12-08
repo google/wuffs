@@ -74,6 +74,8 @@ func genBase(out *bytes.Buffer) error {
 		filename, varname string
 	}{
 		{"base/all-impl.c", "baseAllImplC"},
+		{"base/image-impl.c", "baseImageImplC"},
+
 		{"base/core-private.h", "baseCorePrivateH"},
 		{"base/core-public.h", "baseCorePublicH"},
 		{"base/memory-private.h", "baseMemoryPrivateH"},
