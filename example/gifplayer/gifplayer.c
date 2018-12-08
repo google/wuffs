@@ -145,26 +145,21 @@ void restore_background(wuffs_base__pixel_buffer* pb,
 }
 
 void compose(wuffs_base__pixel_buffer* pb, wuffs_base__rect_ie_u32 bounds) {
-  wuffs_base__slice_u8 palette = wuffs_base__pixel_buffer__palette(pb);
-  if (palette.len != 1024) {
-    return;
-  }
   wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(pb, 0);
   size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
     size_t x;
     wuffs_base__color_u32_argb_premul* d =
-        curr_dst_buffer + (y * width) + bounds.min_incl_x;
-    uint8_t* s = tab.ptr + (y * tab.stride) + bounds.min_incl_x;
+        curr_dst_buffer + (y * width) + (bounds.min_incl_x * 1);
+    uint8_t* s = tab.ptr + (y * tab.stride) + (bounds.min_incl_x * 4);
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      uint32_t index = *s++;
-      wuffs_base__color_u32_argb_premul c =
-          load_u32le(palette.ptr + (4 * index));
+      wuffs_base__color_u32_argb_premul c = load_u32le(s);
       if (c) {
         *d = c;
       }
-      d++;
+      d += 1;
+      s += 4;
     }
   }
 }
@@ -322,6 +317,12 @@ const char* play() {
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
+
+    // Override the source's indexed pixel format to be non-indexed.
+    wuffs_base__pixel_config__initialize(
+        &ic.pixcfg, WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL,
+        WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, width, height);
+
     const char* msg = allocate(&dec, &ic);
     if (msg) {
       return msg;

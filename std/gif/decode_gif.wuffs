@@ -688,6 +688,14 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 	// TODO: we shouldn't need this temporary variable.
 	var new_ri base.u32
 
+	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
+	// magic pixfmt constants. Also, support more formats.
+	var bytes_per_pixel base.u32[1..64] = 1
+	var pixfmt base.u32 = args.pb.pixel_format()
+	if (pixfmt == 0x42008888) or (pixfmt == 0x52008888) {
+		bytes_per_pixel = 4
+	}
+
 	var tab table base.u8 = args.pb.plane(p:0)
 
 	while this.uncompressed_wi > this.uncompressed_ri {
@@ -702,13 +710,13 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 		// args.pb's bounds.
 
 		dst = tab.row(y:this.dst_y)
-		if (this.dst_x as base.u64) < dst.length() {
-			if ((this.dst_x as base.u64) <= (this.frame_rect_x1 as base.u64)) and
-				((this.frame_rect_x1 as base.u64) <= dst.length()) {
-				// TODO: drop the "as base.u64"s on the next line?
-				dst = dst[this.dst_x as base.u64:this.frame_rect_x1 as base.u64]
+		var i base.u64 = (this.dst_x as base.u64) * (bytes_per_pixel as base.u64)
+		if i < dst.length() {
+			var j base.u64 = (this.frame_rect_x1 as base.u64) * (bytes_per_pixel as base.u64)
+			if (i <= j) and (j <= dst.length()) {
+				dst = dst[i:j]
 			} else {
-				dst = dst[this.dst_x as base.u64:]
+				dst = dst[i:]
 			}
 			var n64 base.u64 = this.swizzler.swizzle_packed!(dst:dst, dst_palette:this.dst_palette[:], src:src)
 			n = (n64 & 0xFFFFFFFF) as base.u32

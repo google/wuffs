@@ -1577,17 +1577,40 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
-  if (c) {
-    uint64_t n =
-        ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-    // TODO: handle things other than 1 byte per pixel. When doing so, consider
-    // that the +1024 below could overflow.
-    if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
-      n += 1024;
-    }
-    return n;
+  // TODO: support more pixel formats.
+  uint64_t bytes_per_pixel = 0;
+  switch (wuffs_base__pixel_config__pixel_format(c)) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+      bytes_per_pixel = 1;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      bytes_per_pixel = 4;
+      break;
+    default:
+      return 0;
   }
-  return 0;
+
+  if (!c) {
+    return 0;
+  }
+
+  uint64_t n =
+      ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
+
+  if (n > (UINT64_MAX / bytes_per_pixel)) {
+    return 0;
+  }
+  n *= bytes_per_pixel;
+
+  if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
+    if (n > (UINT64_MAX - 1024)) {
+      return 0;
+    }
+    n += 1024;
+  }
+
+  return n;
 }
 
 #ifdef __cplusplus
@@ -2021,18 +2044,40 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
     len -= 1024;
   }
 
-  // TODO: don't assume 1 byte per pixel. Don't assume packed.
+  // TODO: support more pixel formats.
+  uint64_t bytes_per_pixel = 0;
+  switch (wuffs_base__pixel_config__pixel_format(pixcfg)) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+      bytes_per_pixel = 1;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      bytes_per_pixel = 4;
+      break;
+    default:
+      return wuffs_base__error__bad_argument;
+  }
+
+  // TODO: don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
+  size_t width = (size_t)(pixcfg->private_impl.width);
+  if ((wh > (UINT64_MAX / bytes_per_pixel)) ||
+      (width > (SIZE_MAX / bytes_per_pixel))) {
+    return wuffs_base__error__bad_argument;
+  }
+  wh *= bytes_per_pixel;
+  width *= bytes_per_pixel;
   if (wh > len) {
     return wuffs_base__error__bad_argument_length_too_short;
   }
+
   b->pixcfg = *pixcfg;
   wuffs_base__table_u8* tab = &b->private_impl.planes[0];
   tab->ptr = ptr;
-  tab->width = pixcfg->private_impl.width;
+  tab->width = width;
   tab->height = pixcfg->private_impl.height;
-  tab->stride = pixcfg->private_impl.width;
+  tab->stride = width;
   return NULL;
 }
 
@@ -3444,19 +3489,19 @@ wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
   return s;
 }
 
-// wuffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr,
-// length) where length is the minimum of dst.len and src.len.
+// wuffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr, len)
+// where len is the minimum of dst.len and src.len.
 //
 // Passing a wuffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
 static inline uint64_t  //
 wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
                                       wuffs_base__slice_u8 src) {
-  size_t length = dst.len < src.len ? dst.len : src.len;
-  if (length > 0) {
-    memmove(dst.ptr, src.ptr, length);
+  size_t len = dst.len < src.len ? dst.len : src.len;
+  if (len > 0) {
+    memmove(dst.ptr, src.ptr, len);
   }
-  return length;
+  return len;
 }
 
 // --------
@@ -3882,12 +3927,42 @@ wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 src) {
-  size_t length4 = (dst.len < src.len ? dst.len : src.len) / 4;
+wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
+                                     wuffs_base__slice_u8 dst_palette,
+                                     wuffs_base__slice_u8 src) {
+  if (dst_palette.len != 1024) {
+    return 0;
+  }
+  size_t dst_len4 = dst.len / 4;
+  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
-  size_t n = length4;
+
+  size_t n = len;
+  while (n--) {
+    uint8_t* p = dst_palette.ptr + ((size_t)(*s) * 4);
+    uint8_t b0 = p[0];
+    uint8_t b1 = p[1];
+    uint8_t b2 = p[2];
+    uint8_t b3 = p[3];
+    d[0] = b0;
+    d[1] = b1;
+    d[2] = b2;
+    d[3] = b3;
+    s += 1;
+    d += 4;
+  }
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 src) {
+  size_t len4 = (dst.len < src.len ? dst.len : src.len) / 4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+
+  size_t n = len4;
   while (n--) {
     uint8_t b0 = s[0];
     uint8_t b1 = s[1];
@@ -3900,7 +3975,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
     s += 4;
     d += 4;
   }
-  return length4 * 4;
+  return len4 * 4;
 }
 
 void  //
@@ -3933,14 +4008,14 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
               1024) {
             break;
           }
-          // TODO: implement.
+          func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
                                                          src_palette) != 1024) {
             break;
           }
-          // TODO: implement.
+          func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         default:
           break;
@@ -9427,13 +9502,22 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   wuffs_base__slice_u8 v_src;
   uint32_t v_n;
   uint32_t v_new_ri;
+  uint32_t v_bytes_per_pixel;
+  uint32_t v_pixfmt;
   wuffs_base__table_u8 v_tab;
+  uint64_t v_i;
+  uint64_t v_j;
   uint64_t v_n64;
 
   v_dst = ((wuffs_base__slice_u8){});
   v_src = ((wuffs_base__slice_u8){});
   v_n = 0;
   v_new_ri = 0;
+  v_bytes_per_pixel = 1;
+  v_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_pb);
+  if ((v_pixfmt == 1107331208) || (v_pixfmt == 1375766664)) {
+    v_bytes_per_pixel = 4;
+  }
   v_tab = wuffs_base__pixel_buffer__plane(a_pb, 0);
 label_0_continue:;
   while (self->private_impl.f_uncompressed_wi >
@@ -9450,17 +9534,15 @@ label_0_continue:;
       goto exit;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
-    if (((uint64_t)(self->private_impl.f_dst_x)) < ((uint64_t)(v_dst.len))) {
-      if ((((uint64_t)(self->private_impl.f_dst_x)) <=
-           ((uint64_t)(self->private_impl.f_frame_rect_x1))) &&
-          (((uint64_t)(self->private_impl.f_frame_rect_x1)) <=
-           ((uint64_t)(v_dst.len)))) {
-        v_dst = wuffs_base__slice_u8__subslice_ij(
-            v_dst, ((uint64_t)(self->private_impl.f_dst_x)),
-            ((uint64_t)(self->private_impl.f_frame_rect_x1)));
+    v_i = (((uint64_t)(self->private_impl.f_dst_x)) *
+           ((uint64_t)(v_bytes_per_pixel)));
+    if (v_i < ((uint64_t)(v_dst.len))) {
+      v_j = (((uint64_t)(self->private_impl.f_frame_rect_x1)) *
+             ((uint64_t)(v_bytes_per_pixel)));
+      if ((v_i <= v_j) && (v_j <= ((uint64_t)(v_dst.len)))) {
+        v_dst = wuffs_base__slice_u8__subslice_ij(v_dst, v_i, v_j);
       } else {
-        v_dst = wuffs_base__slice_u8__subslice_i(
-            v_dst, ((uint64_t)(self->private_impl.f_dst_x)));
+        v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_i);
       }
       v_n64 = wuffs_base__pixel_swizzler__swizzle_packed(
           &self->private_impl.f_swizzler, v_dst,

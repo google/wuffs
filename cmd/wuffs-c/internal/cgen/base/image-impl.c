@@ -24,12 +24,42 @@ wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
-wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 src) {
-  size_t length4 = (dst.len < src.len ? dst.len : src.len) / 4;
+wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
+                                     wuffs_base__slice_u8 dst_palette,
+                                     wuffs_base__slice_u8 src) {
+  if (dst_palette.len != 1024) {
+    return 0;
+  }
+  size_t dst_len4 = dst.len / 4;
+  size_t len = dst_len4 < src.len ? dst_len4 : src.len;
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
-  size_t n = length4;
+
+  size_t n = len;
+  while (n--) {
+    uint8_t* p = dst_palette.ptr + ((size_t)(*s) * 4);
+    uint8_t b0 = p[0];
+    uint8_t b1 = p[1];
+    uint8_t b2 = p[2];
+    uint8_t b3 = p[3];
+    d[0] = b0;
+    d[1] = b1;
+    d[2] = b2;
+    d[3] = b3;
+    s += 1;
+    d += 4;
+  }
+  return len;
+}
+
+static uint64_t  //
+wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
+                                           wuffs_base__slice_u8 src) {
+  size_t len4 = (dst.len < src.len ? dst.len : src.len) / 4;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+
+  size_t n = len4;
   while (n--) {
     uint8_t b0 = s[0];
     uint8_t b1 = s[1];
@@ -42,7 +72,7 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
     s += 4;
     d += 4;
   }
-  return length4 * 4;
+  return len4 * 4;
 }
 
 void  //
@@ -75,14 +105,14 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
               1024) {
             break;
           }
-          // TODO: implement.
+          func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
                                                          src_palette) != 1024) {
             break;
           }
-          // TODO: implement.
+          func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         default:
           break;

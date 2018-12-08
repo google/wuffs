@@ -380,17 +380,40 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
-  if (c) {
-    uint64_t n =
-        ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-    // TODO: handle things other than 1 byte per pixel. When doing so, consider
-    // that the +1024 below could overflow.
-    if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
-      n += 1024;
-    }
-    return n;
+  // TODO: support more pixel formats.
+  uint64_t bytes_per_pixel = 0;
+  switch (wuffs_base__pixel_config__pixel_format(c)) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+      bytes_per_pixel = 1;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      bytes_per_pixel = 4;
+      break;
+    default:
+      return 0;
   }
-  return 0;
+
+  if (!c) {
+    return 0;
+  }
+
+  uint64_t n =
+      ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
+
+  if (n > (UINT64_MAX / bytes_per_pixel)) {
+    return 0;
+  }
+  n *= bytes_per_pixel;
+
+  if (wuffs_base__pixel_format__is_indexed(c->private_impl.pixfmt)) {
+    if (n > (UINT64_MAX - 1024)) {
+      return 0;
+    }
+    n += 1024;
+  }
+
+  return n;
 }
 
 #ifdef __cplusplus
@@ -824,18 +847,40 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
     len -= 1024;
   }
 
-  // TODO: don't assume 1 byte per pixel. Don't assume packed.
+  // TODO: support more pixel formats.
+  uint64_t bytes_per_pixel = 0;
+  switch (wuffs_base__pixel_config__pixel_format(pixcfg)) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+      bytes_per_pixel = 1;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      bytes_per_pixel = 4;
+      break;
+    default:
+      return wuffs_base__error__bad_argument;
+  }
+
+  // TODO: don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
+  size_t width = (size_t)(pixcfg->private_impl.width);
+  if ((wh > (UINT64_MAX / bytes_per_pixel)) ||
+      (width > (SIZE_MAX / bytes_per_pixel))) {
+    return wuffs_base__error__bad_argument;
+  }
+  wh *= bytes_per_pixel;
+  width *= bytes_per_pixel;
   if (wh > len) {
     return wuffs_base__error__bad_argument_length_too_short;
   }
+
   b->pixcfg = *pixcfg;
   wuffs_base__table_u8* tab = &b->private_impl.planes[0];
   tab->ptr = ptr;
-  tab->width = pixcfg->private_impl.width;
+  tab->width = width;
   tab->height = pixcfg->private_impl.height;
-  tab->stride = pixcfg->private_impl.width;
+  tab->stride = width;
   return NULL;
 }
 

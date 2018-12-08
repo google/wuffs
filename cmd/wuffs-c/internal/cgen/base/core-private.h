@@ -397,19 +397,19 @@ wuffs_base__slice_u8__suffix(wuffs_base__slice_u8 s, uint64_t up_to) {
   return s;
 }
 
-// wuffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr,
-// length) where length is the minimum of dst.len and src.len.
+// wuffs_base__slice_u8__copy_from_slice calls memmove(dst.ptr, src.ptr, len)
+// where len is the minimum of dst.len and src.len.
 //
 // Passing a wuffs_base__slice_u8 with all fields NULL or zero (a valid, empty
 // slice) is valid and results in a no-op.
 static inline uint64_t  //
 wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
                                       wuffs_base__slice_u8 src) {
-  size_t length = dst.len < src.len ? dst.len : src.len;
-  if (length > 0) {
-    memmove(dst.ptr, src.ptr, length);
+  size_t len = dst.len < src.len ? dst.len : src.len;
+  if (len > 0) {
+    memmove(dst.ptr, src.ptr, len);
   }
-  return length;
+  return len;
 }
 
 // --------

@@ -231,7 +231,8 @@ const char* chdir_to_the_wuffs_root_directory() {
       return "could not chdir(\"..\")";
     }
   }
-  return "could not find Wuffs root directory; chdir there before running this program";
+  return "could not find Wuffs root directory; chdir there before running this "
+         "program";
 }
 
 typedef const char* (*proc)();
@@ -393,17 +394,46 @@ void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
 const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
                                                 wuffs_base__pixel_buffer* src,
                                                 wuffs_base__rect_ie_u32 r) {
-  // TODO: don't assume 1 plane or WUFFS_BASE__PIXEL_SUBSAMPLING__NONE.
+  if (!src) {
+    return "copy_to_io_buffer_from_pixel_buffer: NULL src";
+  }
+
+  // TODO: don't assume 1 plane or WUFFS_BASE__PIXEL_SUBSAMPLING__NONE. Also,
+  // support more pixel formats.
+  size_t bytes_per_pixel = 0;
+  wuffs_base__pixel_format pixfmt =
+      wuffs_base__pixel_config__pixel_format(&src->pixcfg);
+  switch (pixfmt) {
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+      bytes_per_pixel = 1;
+      break;
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      bytes_per_pixel = 4;
+      break;
+    default:
+      RETURN_FAIL(
+          "copy_to_io_buffer_from_pixel_buffer: unsupported src pixfmt: 0x%08x",
+          (int)(pixfmt));
+  }
+
   uint32_t p;
   for (p = 0; p < 1; p++) {
     wuffs_base__table_u8 tab = wuffs_base__pixel_buffer__plane(src, p);
     uint32_t y;
     for (y = r.min_incl_y; y < r.max_excl_y; y++) {
       wuffs_base__slice_u8 row = wuffs_base__table_u8__row(tab, y);
-      if ((r.min_incl_x >= r.max_excl_x) || (r.max_excl_x > row.len)) {
+      if ((r.min_incl_x >= r.max_excl_x) ||
+          (r.max_excl_x > (row.len / bytes_per_pixel))) {
         break;
       }
-      uint32_t n = r.max_excl_x - r.min_incl_x;
+
+      size_t n = r.max_excl_x - r.min_incl_x;
+      if (n > (SIZE_MAX / bytes_per_pixel)) {
+        return "copy_to_io_buffer_from_pixel_buffer: n is too large";
+      }
+      n *= bytes_per_pixel;
+
       if (n > (dst->data.len - dst->meta.wi)) {
         return "copy_to_io_buffer_from_pixel_buffer: dst buffer is too small";
       }
