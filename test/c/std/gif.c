@@ -188,6 +188,7 @@ const char* test_basic_sub_struct_initializer() {
 // ---------------- GIF Tests
 
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
+                             wuffs_base__pixel_format pixfmt,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   const char* z =
@@ -203,6 +204,11 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   if (z) {
     return z;
   }
+
+  wuffs_base__pixel_config__initialize(
+      &ic.pixcfg, pixfmt, WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
+      wuffs_base__pixel_config__width(&ic.pixcfg),
+      wuffs_base__pixel_config__height(&ic.pixcfg));
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
@@ -1191,7 +1197,8 @@ const char* do_test_mimic_gif_decode(const char* filename) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
-  z = wuffs_gif_decode(&got, &src);
+  z = wuffs_gif_decode(&got, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                       &src);
   if (z) {
     return z;
   }
@@ -1200,7 +1207,8 @@ const char* do_test_mimic_gif_decode(const char* filename) {
   wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
       .data = global_want_slice,
   });
-  z = mimic_gif_decode(&want, &src);
+  z = mimic_gif_decode(&want, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                       &src);
   if (z) {
     return z;
   }
@@ -1286,8 +1294,11 @@ const char* test_mimic_gif_decode_pjw_thumbnail() {
 // ---------------- GIF Benches
 
 const char* do_bench_gif_decode(
-    const char* (*decode_func)(wuffs_base__io_buffer*, wuffs_base__io_buffer*),
+    const char* (*decode_func)(wuffs_base__io_buffer*,
+                               wuffs_base__pixel_format,
+                               wuffs_base__io_buffer*),
     const char* filename,
+    wuffs_base__pixel_format pixfmt,
     uint64_t iters_unscaled) {
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
@@ -1308,7 +1319,7 @@ const char* do_bench_gif_decode(
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = 0;
-    z = decode_func(&got, &src);
+    z = decode_func(&got, pixfmt, &src);
     if (z) {
       return z;
     }
@@ -1321,41 +1332,56 @@ const char* do_bench_gif_decode(
 const char* bench_wuffs_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(wuffs_gif_decode, "test/data/pjw-thumbnail.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
                              2000);
 }
 
 const char* bench_wuffs_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode,
-                             "test/data/hippopotamus.regular.gif", 1000);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, "test/data/hippopotamus.regular.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 1000);
 }
 
-const char* bench_wuffs_gif_decode_10k() {
+const char* bench_wuffs_gif_decode_10k_bgra() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hat.gif", 100);
+  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hat.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL, 100);
+}
+
+const char* bench_wuffs_gif_decode_10k_indexed() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hat.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                             100);
 }
 
 const char* bench_wuffs_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode,
-                             "test/data/hibiscus.primitive.gif", 15);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, "test/data/hibiscus.primitive.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 15);
 }
 
 const char* bench_wuffs_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(wuffs_gif_decode, "test/data/hibiscus.regular.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
                              10);
 }
 
 const char* bench_wuffs_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/harvesters.gif", 1);
+  return do_bench_gif_decode(wuffs_gif_decode, "test/data/harvesters.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                             1);
 }
 
 const char* bench_wuffs_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode,
-                             "test/data/gifplayer-muybridge.gif", 1);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, "test/data/gifplayer-muybridge.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 1);
 }
 
 // ---------------- Mimic Benches
@@ -1365,41 +1391,50 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
 const char* bench_mimic_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(mimic_gif_decode, "test/data/pjw-thumbnail.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
                              2000);
 }
 
 const char* bench_mimic_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode,
-                             "test/data/hippopotamus.regular.gif", 1000);
+  return do_bench_gif_decode(
+      mimic_gif_decode, "test/data/hippopotamus.regular.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 1000);
 }
 
-const char* bench_mimic_gif_decode_10k() {
+const char* bench_mimic_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/hat.gif", 100);
+  return do_bench_gif_decode(mimic_gif_decode, "test/data/hat.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                             100);
 }
 
 const char* bench_mimic_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode,
-                             "test/data/hibiscus.primitive.gif", 15);
+  return do_bench_gif_decode(
+      mimic_gif_decode, "test/data/hibiscus.primitive.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 15);
 }
 
 const char* bench_mimic_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(mimic_gif_decode, "test/data/hibiscus.regular.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
                              10);
 }
 
 const char* bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/harvesters.gif", 1);
+  return do_bench_gif_decode(mimic_gif_decode, "test/data/harvesters.gif",
+                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL,
+                             1);
 }
 
 const char* bench_mimic_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode,
-                             "test/data/gifplayer-muybridge.gif", 1);
+  return do_bench_gif_decode(
+      mimic_gif_decode, "test/data/gifplayer-muybridge.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL, 1);
 }
 
 #endif  // WUFFS_MIMIC
@@ -1465,7 +1500,8 @@ proc benches[] = {
 
     bench_wuffs_gif_decode_1k_bw,            //
     bench_wuffs_gif_decode_1k_color,         //
-    bench_wuffs_gif_decode_10k,              //
+    bench_wuffs_gif_decode_10k_bgra,         //
+    bench_wuffs_gif_decode_10k_indexed,      //
     bench_wuffs_gif_decode_100k_artificial,  //
     bench_wuffs_gif_decode_100k_realistic,   //
     bench_wuffs_gif_decode_1000k,            //
@@ -1475,7 +1511,7 @@ proc benches[] = {
 
     bench_mimic_gif_decode_1k_bw,            //
     bench_mimic_gif_decode_1k_color,         //
-    bench_mimic_gif_decode_10k,              //
+    bench_mimic_gif_decode_10k_indexed,      //
     bench_mimic_gif_decode_100k_artificial,  //
     bench_mimic_gif_decode_100k_realistic,   //
     bench_mimic_gif_decode_1000k,            //
