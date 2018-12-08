@@ -7518,7 +7518,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src);
+                                    wuffs_base__io_reader a_src,
+                                    wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
@@ -7985,11 +7986,6 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (((uint64_t)(a_workbuf.len)) <
-        ((uint64_t)(self->private_impl.f_width))) {
-      status = wuffs_base__error__bad_workbuf_length;
-      goto exit;
-    }
     if (self->private_impl.f_call_sequence != 2) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       status = wuffs_gif__decoder__decode_frame_config(self, NULL, a_src);
@@ -7998,7 +7994,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
       }
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-    status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src);
+    status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src, a_workbuf);
     if (status) {
       goto suspend;
     }
@@ -9173,7 +9169,8 @@ exit:
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src) {
+                                    wuffs_base__io_reader a_src,
+                                    wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = NULL;
 
   uint8_t v_flags;
@@ -9388,6 +9385,15 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         goto label_0_break;
       }
       self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
+      if (((uint64_t)(self->private_impl.f_width)) <
+          ((uint64_t)(a_workbuf.len))) {
+        a_workbuf = wuffs_base__slice_u8__subslice_j(
+            a_workbuf, ((uint64_t)(self->private_impl.f_width)));
+      } else if (((uint64_t)(self->private_impl.f_width)) >
+                 ((uint64_t)(a_workbuf.len))) {
+        status = wuffs_base__error__bad_workbuf_length;
+        goto exit;
+      }
     label_1_continue:;
       while (true) {
         v_w = ((wuffs_base__io_writer){});
@@ -9466,6 +9472,15 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         }
         status = v_z;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(6);
+        if (((uint64_t)(self->private_impl.f_width)) <
+            ((uint64_t)(a_workbuf.len))) {
+          a_workbuf = wuffs_base__slice_u8__subslice_j(
+              a_workbuf, ((uint64_t)(self->private_impl.f_width)));
+        } else if (((uint64_t)(self->private_impl.f_width)) >
+                   ((uint64_t)(a_workbuf.len))) {
+          status = wuffs_base__error__bad_workbuf_length;
+          goto exit;
+        }
       }
     label_1_break:;
     }

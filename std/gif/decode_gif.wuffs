@@ -255,13 +255,10 @@ pri func decoder.skip_frame!??(src base.io_reader) {
 
 // TODO: honor args.opts.
 pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
-	if args.workbuf.length() < (this.width as base.u64) {
-		return base."?bad workbuf length"
-	}
 	if this.call_sequence != 2 {
 		this.decode_frame_config!??(dst:nullptr, src:args.src)
 	}
-	this.decode_id_part1!??(dst:args.dst, src:args.src)
+	this.decode_id_part1!??(dst:args.dst, src:args.src, workbuf:args.workbuf)
 
 	this.num_decoded_frames_value ~sat+= 1
 	this.reset_gc!()
@@ -536,7 +533,7 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 	}
 }
 
-pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
+pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
 	var flags base.u8 = args.src.read_u8!??()
 	if (flags & 0x40) != 0 {
 		this.interlace = 4
@@ -634,6 +631,12 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		}
 		this.previous_lzw_decode_ended_abruptly = true
 
+		if (this.width as base.u64) < args.workbuf.length() {
+			args.workbuf = args.workbuf[:this.width as base.u64]
+		} else if (this.width as base.u64) > args.workbuf.length() {
+			return base."?bad workbuf length"
+		}
+
 		while:inner true {
 			var w base.io_writer
 			io_bind (io:w, data:this.uncompressed[this.uncompressed_wi:]) {
@@ -662,7 +665,14 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			if z == base."$short write" {
 				continue:inner
 			}
+
 			yield z
+
+			if (this.width as base.u64) < args.workbuf.length() {
+				args.workbuf = args.workbuf[:this.width as base.u64]
+			} else if (this.width as base.u64) > args.workbuf.length() {
+				return base."?bad workbuf length"
+			}
 		}
 	}
 
