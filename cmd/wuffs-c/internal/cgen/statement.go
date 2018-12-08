@@ -225,12 +225,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 }
 
 func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
-	inFields := n.InFields()
-	if n.Keyword() == t.IDIOLimit {
-		inFields = []*a.Node{n.IO().AsNode()}
-	}
-
-	if g.currFunk.ioBinds > maxIOBinds || len(inFields) > maxIOBindInFields {
+	if g.currFunk.ioBinds > maxIOBinds {
 		return fmt.Errorf("too many temporary variables required")
 	}
 	ioBindNum := g.currFunk.ioBinds
@@ -240,8 +235,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 	// instead of block-scoped (smaller scope) if the coro_susp_point
 	// switch can jump past this initialization??
 	b.writes("{\n")
-	for i := 0; i < len(inFields); i++ {
-		e := inFields[i].AsExpr()
+	{
+		e := n.IO()
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix
@@ -278,8 +273,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		}
 	}
 
-	for i := len(inFields) - 1; i >= 0; i-- {
-		e := inFields[i].AsExpr()
+	{
+		e := n.IO()
 		prefix := vPrefix
 		if e.Operator() != 0 {
 			prefix = aPrefix

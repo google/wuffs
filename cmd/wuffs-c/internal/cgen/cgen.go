@@ -173,9 +173,8 @@ const (
 )
 
 const (
-	maxIOBinds        = 100
-	maxIOBindInFields = 100
-	maxTemp           = 10000
+	maxIOBinds = 100
+	maxTemp    = 10000
 )
 
 type status struct {

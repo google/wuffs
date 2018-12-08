@@ -638,7 +638,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 		while:inner true {
 			var w base.io_writer
-			io_bind (w) {
+			io_bind (io:w) {
 				w.set!(s:this.uncompressed[this.uncompressed_wi:])
 				io_limit (io:args.src, limit:block_size) {
 					args.src.set_mark!()

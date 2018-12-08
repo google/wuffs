@@ -120,25 +120,17 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIOBind:
 		n := n.AsIOBind()
-		if n.Keyword() == t.IDIOBind {
-			for _, o := range n.InFields() {
-				if err := q.tcheckExpr(o.AsExpr(), 0); err != nil {
-					return err
-				}
-				if typ := o.AsExpr().MType(); !typ.IsIOType() {
-					return fmt.Errorf("check: io_bind expression %q, of type %q, does not have an I/O type",
-						o.AsExpr().Str(q.tm), typ.Str(q.tm))
-				}
-			}
-		} else {
-			if err := q.tcheckExpr(n.IO(), 0); err != nil {
-				return err
-			}
-			if typ := n.IO().MType(); !typ.IsIOType() {
-				return fmt.Errorf("check: %s expression %q, of type %q, does not have an I/O type",
-					n.Keyword().Str(q.tm), n.IO().Str(q.tm), typ.Str(q.tm))
-			}
+		if err := q.tcheckExpr(n.IO(), 0); err != nil {
+			return err
+		}
+		if typ := n.IO().MType(); !typ.IsIOType() {
+			return fmt.Errorf("check: %s expression %q, of type %q, does not have an I/O type",
+				n.Keyword().Str(q.tm), n.IO().Str(q.tm), typ.Str(q.tm))
+		}
 
+		if n.Keyword() == t.IDIOBind {
+			// No-op.
+		} else {
 			if err := q.tcheckExpr(n.Limit(), 0); err != nil {
 				return err
 			}
