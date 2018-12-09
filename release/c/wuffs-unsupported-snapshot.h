@@ -6445,20 +6445,11 @@ label_0_continue:;
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)((v_dist_minus_1 + 1))) >
-          ((uint64_t)(((wuffs_base__slice_u8){
-                           .ptr = a_dst.private_impl.mark,
-                           .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                       })
-                          .len))) {
+          ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
         v_hlen = 0;
-        v_hdist = ((uint32_t)(
-            (((uint64_t)((v_dist_minus_1 + 1))) -
-             ((uint64_t)(
-                 ((wuffs_base__slice_u8){
-                      .ptr = a_dst.private_impl.mark,
-                      .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                  })
-                     .len)))));
+        v_hdist =
+            ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
+                         ((uint64_t)(iop_a_dst - a_dst.private_impl.mark)))));
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
@@ -6497,12 +6488,7 @@ label_0_continue:;
           goto label_0_continue;
         }
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(
-                ((wuffs_base__slice_u8){
-                     .ptr = a_dst.private_impl.mark,
-                     .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                 })
-                    .len))) {
+            ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
           status = wuffs_deflate__error__internal_error_inconsistent_distance;
           goto exit;
         }
@@ -6858,21 +6844,11 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
       v_n_copied = 0;
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(
-                ((wuffs_base__slice_u8){
-                     .ptr = a_dst.private_impl.mark,
-                     .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                 })
-                    .len))) {
+            ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
           v_hlen = 0;
-          v_hdist = ((uint32_t)(
-              (((uint64_t)((v_dist_minus_1 + 1))) -
-               ((uint64_t)(
-                   ((wuffs_base__slice_u8){
-                        .ptr = a_dst.private_impl.mark,
-                        .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                    })
-                       .len)))));
+          v_hdist =
+              ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
+                           ((uint64_t)(iop_a_dst - a_dst.private_impl.mark)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;
@@ -9430,22 +9406,12 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
             }
             v_wi = wuffs_base__u64__sat_add(
                 ((uint64_t)(self->private_impl.f_uncompressed_wi)),
-                ((uint64_t)(
-                    ((wuffs_base__slice_u8){
-                         .ptr = v_w.private_impl.mark,
-                         .len = (size_t)(iop_v_w - v_w.private_impl.mark),
-                     })
-                        .len)));
+                ((uint64_t)(iop_v_w - v_w.private_impl.mark)));
             self->private_impl.f_uncompressed_wi =
                 ((uint32_t)(wuffs_base__u64__min(v_wi, 4096)));
             wuffs_base__u64__sat_sub_indirect(
                 &v_block_size,
-                ((uint64_t)(
-                    ((wuffs_base__slice_u8){
-                         .ptr = a_src.private_impl.mark,
-                         .len = (size_t)(iop_a_src - a_src.private_impl.mark),
-                     })
-                        .len)));
+                ((uint64_t)(iop_a_src - a_src.private_impl.mark)));
             a_src = o_1_a_src;
           }
           v_w = o_0_v_w;
@@ -9991,13 +9957,7 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
                 .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
             }));
         v_decoded_length_got += ((uint32_t)(
-            (((uint64_t)(
-                 ((wuffs_base__slice_u8){
-                      .ptr = a_dst.private_impl.mark,
-                      .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
-                  })
-                     .len)) &
-             4294967295)));
+            (((uint64_t)(iop_a_dst - a_dst.private_impl.mark)) & 4294967295)));
       }
       if (wuffs_base__status__is_ok(v_z)) {
         goto label_2_break;

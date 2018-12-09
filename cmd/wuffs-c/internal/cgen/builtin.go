@@ -141,11 +141,17 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, iop_a_src)", aPrefix)
 		return nil
 
-	case t.IDSinceMark:
-		b.printf("((wuffs_base__slice_u8){ "+
-			".ptr = %ssrc.private_impl.mark, "+
-			".len = (size_t)(iop_a_src - %ssrc.private_impl.mark), })",
-			aPrefix, aPrefix)
+	case t.IDSinceMark, t.IDSinceMarkLength:
+		if method == t.IDSinceMark {
+			b.printf("((wuffs_base__slice_u8){ "+
+				".ptr = %ssrc.private_impl.mark, "+
+				".len = (size_t)(",
+				aPrefix)
+		}
+		b.printf("iop_a_src - %ssrc.private_impl.mark", aPrefix)
+		if method == t.IDSinceMark {
+			b.writes("), })")
+		}
 		return nil
 
 	case t.IDSkipFast:
@@ -223,15 +229,22 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("wuffs_base__io_writer__set_mark(&%sdst, iop_a_dst)", aPrefix)
 		return nil
 
-	case t.IDSinceMark:
+	case t.IDSinceMark, t.IDSinceMarkLength:
 		prefix, name := aPrefix, "dst"
 		if recv.Operator() == 0 {
 			prefix, name = vPrefix, recv.Ident().Str(g.tm)
 		}
-		b.printf("((wuffs_base__slice_u8){ "+
-			".ptr = %s%s.private_impl.mark, "+
-			".len = (size_t)(iop_%s%s - %s%s.private_impl.mark), })",
-			prefix, name, prefix, name, prefix, name)
+
+		if method == t.IDSinceMark {
+			b.printf("((wuffs_base__slice_u8){ "+
+				".ptr = %s%s.private_impl.mark, "+
+				".len = (size_t)(",
+				prefix, name)
+		}
+		b.printf("iop_%s%s - %s%s.private_impl.mark", prefix, name, prefix, name)
+		if method == t.IDSinceMark {
+			b.writes("), })")
+		}
 		return nil
 	}
 
@@ -362,6 +375,25 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 		return g.writeArgs(b, args, depth)
 
 	case t.IDLength:
+		if recv.Operator() == t.IDOpenParen {
+			if method := recv.LHS().AsExpr(); method.Operator() == t.IDDot && method.Ident() == t.IDSinceMark {
+				if lhs := method.LHS().AsExpr(); lhs.MType().IsIOType() {
+					b.writes("((uint64_t)(")
+					if lhs.MType().QID()[1] == t.IDIOReader {
+						if err := g.writeBuiltinIOReader(b, lhs, t.IDSinceMarkLength, nil, depth); err != nil {
+							return err
+						}
+					} else {
+						if err := g.writeBuiltinIOWriter(b, lhs, t.IDSinceMarkLength, nil, depth); err != nil {
+							return err
+						}
+					}
+					b.writes("))")
+					return nil
+				}
+			}
+		}
+
 		b.writes("((uint64_t)(")
 		if err := g.writeExpr(b, recv, depth); err != nil {
 			return err

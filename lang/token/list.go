@@ -449,13 +449,14 @@ const (
 
 	IDDecodeFrameOptions = ID(0x168)
 
-	IDCanUndoByte = ID(0x170)
-	IDPosition    = ID(0x171)
-	IDSetLimit    = ID(0x172)
-	IDSetMark     = ID(0x173)
-	IDSinceMark   = ID(0x174)
-	IDSkip        = ID(0x175)
-	IDSkipFast    = ID(0x176)
+	IDCanUndoByte     = ID(0x170)
+	IDPosition        = ID(0x171)
+	IDSetLimit        = ID(0x172)
+	IDSetMark         = ID(0x173)
+	IDSinceMark       = ID(0x174)
+	IDSinceMarkLength = ID(0x175)
+	IDSkip            = ID(0x176)
+	IDSkipFast        = ID(0x177)
 
 	IDCopyFromSlice        = ID(0x178)
 	IDCopyNFromHistory     = ID(0x179)
@@ -777,13 +778,14 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDDecodeFrameOptions: "decode_frame_options",
 
-	IDCanUndoByte: "can_undo_byte",
-	IDPosition:    "position",
-	IDSetLimit:    "set_limit",
-	IDSetMark:     "set_mark",
-	IDSinceMark:   "since_mark",
-	IDSkip:        "skip",
-	IDSkipFast:    "skip_fast",
+	IDCanUndoByte:     "can_undo_byte",
+	IDPosition:        "position",
+	IDSetLimit:        "set_limit",
+	IDSetMark:         "set_mark",
+	IDSinceMark:       "since_mark",
+	IDSinceMarkLength: "since_mark_length",
+	IDSkip:            "skip",
+	IDSkipFast:        "skip_fast",
 
 	IDCopyFromSlice:        "copy_from_slice",
 	IDCopyNFromHistory:     "copy_n_from_history",
