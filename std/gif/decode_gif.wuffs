@@ -625,7 +625,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.copy_to_image_buffer!?(pb:args.dst)
 			}
 		}
-		var block_size base.u64 = args.src.read_u8_as_u64!??()
+		var block_size base.u64[..255] = args.src.read_u8_as_u64!??()
 		if block_size == 0 {
 			break
 		}

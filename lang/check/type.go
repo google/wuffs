@@ -135,7 +135,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if err := q.tcheckExpr(n.Arg1(), 0); err != nil {
 			return err
 		}
-		if typ := n.Arg1().MType(); !typ.Eq(arg1Typ) {
+		if typ := n.Arg1().MType(); !typ.EqIgnoringRefinements(arg1Typ) {
 			return fmt.Errorf("check: %s expression %q, of type %q, does not have type %q",
 				n.Keyword().Str(q.tm), n.Arg1().Str(q.tm), typ.Str(q.tm), arg1Typ.Str(q.tm))
 		}
