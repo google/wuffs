@@ -189,6 +189,26 @@ wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_ioptr_w,
 }
 
 static inline wuffs_base__empty_struct  //
+wuffs_base__io_reader__set(wuffs_base__io_reader* o,
+                           wuffs_base__io_buffer* b,
+                           uint8_t** ptr_iop,
+                           uint8_t** ptr_io1,
+                           wuffs_base__slice_u8 data) {
+  b->data = data;
+  b->meta.wi = data.len;
+  b->meta.ri = 0;
+  b->meta.pos = 0;
+  b->meta.closed = false;
+
+  o->private_impl.buf = b;
+  o->private_impl.mark = data.ptr;
+  o->private_impl.limit = data.ptr + data.len;
+  *ptr_iop = data.ptr;
+  *ptr_io1 = data.ptr + data.len;
+  return ((wuffs_base__empty_struct){});
+}
+
+static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
                                  uint8_t* ioptr_r,
                                  uint64_t limit) {
@@ -204,24 +224,36 @@ wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
   return ((wuffs_base__empty_struct){});
 }
 
+static inline wuffs_base__slice_u8  //
+wuffs_base__io_reader__take(uint8_t** ptr_iop, uint8_t* io1, uint64_t n) {
+  if (n <= (io1 - *ptr_iop)) {
+    uint8_t* p = *ptr_iop;
+    *ptr_iop += n;
+    return ((wuffs_base__slice_u8){
+        .ptr = p,
+        .len = n,
+    });
+  }
+  return ((wuffs_base__slice_u8){});
+}
+
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set(wuffs_base__io_writer* o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ioptr1_ptr,
                            uint8_t** ioptr2_ptr,
-                           wuffs_base__slice_u8 s) {
-  b->data.ptr = s.ptr;
-  b->data.len = s.len;
+                           wuffs_base__slice_u8 data) {
+  b->data = data;
   b->meta.wi = 0;
   b->meta.ri = 0;
   b->meta.pos = 0;
   b->meta.closed = false;
 
   o->private_impl.buf = b;
-  o->private_impl.mark = s.ptr;
-  o->private_impl.limit = s.ptr + s.len;
-  *ioptr1_ptr = s.ptr;
-  *ioptr2_ptr = s.ptr + s.len;
+  o->private_impl.mark = data.ptr;
+  o->private_impl.limit = data.ptr + data.len;
+  *ioptr1_ptr = data.ptr;
+  *ioptr2_ptr = data.ptr + data.len;
   return ((wuffs_base__empty_struct){});
 }
 

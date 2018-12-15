@@ -107,8 +107,12 @@ pub struct decoder?(
 	dst_y base.u32,
 	dirty_y base.range_ie_u32,
 
+	compressed_ri base.u64,
+	compressed_wi base.u64,
 	uncompressed_ri base.u32[..4096],
 	uncompressed_wi base.u32[..4096],
+
+	compressed array[4096] base.u8,
 	uncompressed array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
@@ -619,17 +623,31 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
 	this.previous_lzw_decode_ended_abruptly = true
-	while true {
-		if args.src.available() == 0 {
-			if this.uncompressed_ri != this.uncompressed_wi {
-				this.copy_to_image_buffer!?(pb:args.dst)
+
+	var block_size base.u64[..255] = args.src.read_u8_as_u64!??()
+	while:outer block_size > 0 {
+		while args.src.available() == 0 {
+			yield base."$short read"
+		}
+
+		if this.compressed_ri == this.compressed_wi {
+			this.compressed_ri = 0
+			this.compressed_wi = 0
+		}
+		while this.compressed_wi <= (4096 - 255) {
+			var n_compressed base.u64 = block_size.min(x:args.src.available())
+			if n_compressed <= 0 {
+				break
 			}
+			var compressed slice base.u8 = args.src.take!(n:n_compressed)
+			this.compressed[this.compressed_wi:].copy_from_slice!(s:compressed)
+			this.compressed_wi ~sat+= n_compressed
+			block_size ~sat-= n_compressed
+			if block_size > 0 {
+				break
+			}
+			block_size = args.src.read_u8_as_u64!??()
 		}
-		var block_size base.u64[..255] = args.src.read_u8_as_u64!??()
-		if block_size == 0 {
-			break
-		}
-		this.previous_lzw_decode_ended_abruptly = true
 
 		if (this.width as base.u64) < args.workbuf.length() {
 			args.workbuf = args.workbuf[:this.width as base.u64]
@@ -639,45 +657,38 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 		while:inner true {
 			var w base.io_writer
+			var r base.io_reader
+			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
+				return "?internal error: inconsistent ri/wi"
+			}
 			io_bind (io:w, data:this.uncompressed[this.uncompressed_wi:]) {
-				io_limit (io:args.src, limit:block_size) {
-					args.src.set_mark!()
-					var z base.status =? this.lzw.decode!??(dst:w, src:args.src)
+				io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
+					var z base.status =? this.lzw.decode!??(dst:w, src:r)
 					var wi base.u64 = (this.uncompressed_wi as base.u64) ~sat+ w.since_mark().length()
 					this.uncompressed_wi = wi.min(x:4096) as base.u32
-					block_size ~sat-= args.src.since_mark().length()
+					this.compressed_ri ~sat+= r.since_mark().length()
 				}
 			}
 
-			if (block_size == 0) and (z == base."$short read") {
-				break:inner
-			}
-
-			if this.uncompressed_ri != this.uncompressed_wi {
-				this.copy_to_image_buffer!?(pb:args.dst)
-			}
+			this.copy_to_image_buffer!?(pb:args.dst)
 
 			if z.is_ok() {
-				// TODO: check that block_size is zero?
 				this.previous_lzw_decode_ended_abruptly = false
-				break:inner
-			}
-			if z == base."$short write" {
+
+				// Skip any trailing blocks.
+				if block_size > 0 {
+					args.src.skip!??(n:block_size as base.u32)
+					this.skip_blocks!??(src:args.src)
+				}
+
+				break:outer
+			} else if z == base."$short read" {
+				continue:outer
+			} else if z == base."$short write" {
 				continue:inner
 			}
-
-			yield z
-
-			if (this.width as base.u64) < args.workbuf.length() {
-				args.workbuf = args.workbuf[:this.width as base.u64]
-			} else if (this.width as base.u64) > args.workbuf.length() {
-				return base."?bad workbuf length"
-			}
+			return z
 		}
-	}
-
-	if this.uncompressed_ri != this.uncompressed_wi {
-		this.copy_to_image_buffer!?(pb:args.dst)
 	}
 
 	// TODO: check for "not enough pixel data".

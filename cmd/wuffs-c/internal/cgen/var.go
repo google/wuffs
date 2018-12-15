@@ -89,6 +89,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	if hack == "w" {
 		b.printf("%s%sw = %sw.data.ptr + %sw.meta.wi;\n", iopPrefix, vPrefix, uPrefix, uPrefix)
 		return nil
+	} else if hack == "r" {
+		b.printf("%s%sr = %sr.data.ptr + %sr.meta.ri;\n", iopPrefix, vPrefix, uPrefix, uPrefix)
+		return nil
 	}
 
 	if !typ.IsIOType() {
@@ -151,6 +154,9 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	if hack == "w" {
 		b.printf("%sw.meta.wi = %s%sw - %sw.data.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
 		return nil
+	} else if hack == "r" {
+		b.printf("%sr.meta.ri = %s%sr - %sr.data.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
+		return nil
 	}
 
 	if !typ.IsIOType() {
@@ -188,11 +194,11 @@ func (g *gen) writeLoadExprDerivedVars(b *buffer, n *a.Expr) error {
 		prefix := aPrefix
 		// TODO: don't hard-code these.
 		hack := ""
-		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
+		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" && s != "r" {
 			continue
-		} else if s == "w" {
+		} else if s == "w" || s == "r" {
 			prefix = vPrefix
-			hack = "w"
+			hack = s
 		}
 		if err := g.writeLoadDerivedVar(b, hack, prefix, o.Name(), o.Value().MType(), false); err != nil {
 			return err
@@ -213,11 +219,11 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 		prefix := aPrefix
 		// TODO: don't hard-code these.
 		hack := ""
-		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" {
+		if s := o.Value().Str(g.tm); s != "args.dst" && s != "args.src" && s != "w" && s != "r" {
 			continue
-		} else if s == "w" {
+		} else if s == "w" || s == "r" {
 			prefix = vPrefix
-			hack = "w"
+			hack = s
 		}
 		if err := g.writeSaveDerivedVar(b, hack, prefix, o.Name(), o.Value().MType()); err != nil {
 			return err

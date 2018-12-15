@@ -441,28 +441,29 @@ const (
 	IDBase = ID(0x131)
 	IDThis = ID(0x132)
 
-	IDFrameConfig   = ID(0x160)
-	IDImageConfig   = ID(0x161)
-	IDPixelBuffer   = ID(0x162)
-	IDPixelConfig   = ID(0x163)
-	IDPixelSwizzler = ID(0x164)
+	IDFrameConfig   = ID(0x150)
+	IDImageConfig   = ID(0x151)
+	IDPixelBuffer   = ID(0x152)
+	IDPixelConfig   = ID(0x153)
+	IDPixelSwizzler = ID(0x154)
 
-	IDDecodeFrameOptions = ID(0x168)
+	IDDecodeFrameOptions = ID(0x158)
 
-	IDCanUndoByte     = ID(0x170)
-	IDPosition        = ID(0x171)
-	IDSetLimit        = ID(0x172)
-	IDSetMark         = ID(0x173)
-	IDSinceMark       = ID(0x174)
-	IDSinceMarkLength = ID(0x175)
-	IDSkip            = ID(0x176)
-	IDSkipFast        = ID(0x177)
+	IDCanUndoByte     = ID(0x160)
+	IDPosition        = ID(0x161)
+	IDSetLimit        = ID(0x162)
+	IDSetMark         = ID(0x163)
+	IDSinceMark       = ID(0x164)
+	IDSinceMarkLength = ID(0x165)
+	IDSkip            = ID(0x166)
+	IDSkipFast        = ID(0x167)
+	IDTake            = ID(0x168)
 
-	IDCopyFromSlice        = ID(0x178)
-	IDCopyNFromHistory     = ID(0x179)
-	IDCopyNFromHistoryFast = ID(0x17A)
-	IDCopyNFromReader      = ID(0x17B)
-	IDCopyNFromSlice       = ID(0x17C)
+	IDCopyFromSlice        = ID(0x170)
+	IDCopyNFromHistory     = ID(0x171)
+	IDCopyNFromHistoryFast = ID(0x172)
+	IDCopyNFromReader      = ID(0x173)
+	IDCopyNFromSlice       = ID(0x174)
 
 	// -------- 0x180 block.
 
@@ -786,6 +787,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSinceMarkLength: "since_mark_length",
 	IDSkip:            "skip",
 	IDSkipFast:        "skip_fast",
+	IDTake:            "take",
 
 	IDCopyFromSlice:        "copy_from_slice",
 	IDCopyNFromHistory:     "copy_n_from_history",

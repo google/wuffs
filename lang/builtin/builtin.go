@@ -208,6 +208,7 @@ var Funcs = []string{
 	"io_reader.set_limit!(l u64)",             // TODO: remove, as it's no longer used?
 	"io_reader.set_mark!()",
 	"io_reader.since_mark() slice u8",
+	"io_reader.take!(n u64) slice u8",
 
 	"io_reader.skip!??(n u32)",
 

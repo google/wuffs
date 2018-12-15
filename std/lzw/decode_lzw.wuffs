@@ -89,8 +89,9 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 							this.flush_j = j
 							this.flush!??(dst:args.dst)
 							j = 0
+						} else {
+							yield base."$short read"
 						}
-						yield base."$short read"
 					}
 					bits |= (args.src.peek_u8() as base.u32) << n_bits
 					args.src.skip_fast!(actual:1, worst_case:1)

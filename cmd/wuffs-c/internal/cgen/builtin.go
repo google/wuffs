@@ -104,12 +104,11 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		return nil
 
 	case t.IDSet:
-		typ := "reader"
+		typ, v := "reader", "r"
 		if len(args) == 1 {
-			typ = "writer"
+			typ, v = "writer", "w"
 		}
-		// TODO: don't hard-code v_w and u_w.
-		b.printf("wuffs_base__io_%s__set(&v_w, &u_w, &iop_v_w, &io1_v_w,", typ)
+		b.printf("wuffs_base__io_%s__set(&v_%s, &u_%s, &iop_v_%s, &io1_v_%s,", typ, v, v, v, v)
 		return g.writeArgs(b, args, depth)
 
 	}
@@ -142,13 +141,18 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSinceMark, t.IDSinceMarkLength:
+		prefix, name := aPrefix, "src"
+		if recv.Operator() == 0 {
+			prefix, name = vPrefix, recv.Ident().Str(g.tm)
+		}
+
 		if method == t.IDSinceMark {
 			b.printf("((wuffs_base__slice_u8){ "+
-				".ptr = %ssrc.private_impl.mark, "+
+				".ptr = %s%s.private_impl.mark, "+
 				".len = (size_t)(",
-				aPrefix)
+				prefix, name)
 		}
-		b.printf("iop_a_src - %ssrc.private_impl.mark", aPrefix)
+		b.printf("iop_%s%s - %s%s.private_impl.mark", prefix, name, prefix, name)
 		if method == t.IDSinceMark {
 			b.writes("), })")
 		}
@@ -165,6 +169,10 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 		b.writes(", wuffs_base__return_empty_struct())")
 		return nil
+
+	case t.IDTake:
+		b.printf("wuffs_base__io_reader__take(&iop_a_src, io1_a_src,")
+		return g.writeArgs(b, args, depth)
 	}
 
 	if method >= peekMethodsBase {
