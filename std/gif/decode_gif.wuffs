@@ -109,8 +109,8 @@ pub struct decoder?(
 
 	compressed_ri base.u64,
 	compressed_wi base.u64,
-	uncompressed_ri base.u32[..4096],
-	uncompressed_wi base.u32[..4096],
+	uncompressed_ri base.u64,
+	uncompressed_wi base.u64,
 
 	compressed array[4096] base.u8,
 	uncompressed array[4096] base.u8,
@@ -658,14 +658,14 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		while:inner true {
 			var w base.io_writer
 			var r base.io_reader
-			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
+			if (this.compressed_ri > this.compressed_wi) or
+				(this.compressed_wi > 4096) or (this.uncompressed_wi > 4096) {
 				return "?internal error: inconsistent ri/wi"
 			}
 			io_bind (io:w, data:this.uncompressed[this.uncompressed_wi:]) {
 				io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
 					var z base.status =? this.lzw.decode!??(dst:w, src:r)
-					var wi base.u64 = (this.uncompressed_wi as base.u64) ~sat+ w.since_mark().length()
-					this.uncompressed_wi = wi.min(x:4096) as base.u32
+					this.uncompressed_wi ~sat+= w.since_mark().length()
 					this.compressed_ri ~sat+= r.since_mark().length()
 				}
 			}
@@ -698,9 +698,7 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var src slice base.u8
-	var n base.u32
-	// TODO: we shouldn't need this temporary variable.
-	var new_ri base.u32
+	var n base.u64
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.
@@ -712,7 +710,12 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 
 	var tab table base.u8 = args.pb.plane(p:0)
 
-	while this.uncompressed_wi > this.uncompressed_ri {
+	if this.uncompressed_wi > 4096 {
+		return "?internal error: inconsistent ri/wi"
+	}
+	while this.uncompressed_wi > this.uncompressed_ri,
+		inv this.uncompressed_wi <= 4096,
+	{
 		assert this.uncompressed_ri < this.uncompressed_wi via "a < b: b > a"()
 		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
 
@@ -732,12 +735,10 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			} else {
 				dst = dst[i:]
 			}
-			var n64 base.u64 = this.swizzler.swizzle_packed!(dst:dst, dst_palette:this.dst_palette[:], src:src)
-			n = (n64 & 0xFFFFFFFF) as base.u32
+			n = this.swizzler.swizzle_packed!(dst:dst, dst_palette:this.dst_palette[:], src:src)
 
-			new_ri = this.uncompressed_ri ~sat+ n
-			this.uncompressed_ri = new_ri.min(x:4096)
-			this.dst_x ~sat+= n
+			this.uncompressed_ri ~sat+= n
+			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
 			this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
 				min_incl:this.dst_y,
@@ -764,12 +765,11 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 		// outside args.pb's bounds. This second step should be infrequent.
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
-		n = this.frame_rect_x1 - this.dst_x
+		n = (this.frame_rect_x1 - this.dst_x) as base.u64
 		n = n.min(x:this.uncompressed_wi - this.uncompressed_ri)
 
-		new_ri = this.uncompressed_ri ~sat+ n
-		this.uncompressed_ri = new_ri.min(x:4096)
-		this.dst_x ~sat+= n
+		this.uncompressed_ri ~sat+= n
+		this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
 		if this.frame_rect_x1 <= this.dst_x {
 			this.dst_x = this.frame_rect_x0
