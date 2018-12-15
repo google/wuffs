@@ -24,6 +24,8 @@ import (
 )
 
 type Options struct {
+	// TODO: drop AllowBuiltIns as those names are package-qualified
+	// ("base.u32" and not a bare "u32")?
 	AllowBuiltIns              bool
 	AllowDoubleUnderscoreNames bool
 }
@@ -161,10 +163,6 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				if id0 != 0 && id0.IsBuiltIn() {
 					return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
 						p.tm.ByID(id0), p.filename, p.line())
-				}
-				if id1.IsBuiltIn() {
-					return nil, fmt.Errorf(`parse: built-in %q used for func name at %s:%d`,
-						p.tm.ByID(id1), p.filename, p.line())
 				}
 			}
 			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(id1)) {

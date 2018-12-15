@@ -2564,6 +2564,12 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                            wuffs_base__io_writer a_dst,
                            wuffs_base__io_reader a_src);
 
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_lzw__decoder__available(const wuffs_lzw__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
+wuffs_lzw__decoder__take_all(wuffs_lzw__decoder* self);
+
 // ---------------- Struct Definitions
 
 // These structs' fields, and the sizeof them, are private implementation
@@ -2606,7 +2612,6 @@ struct wuffs_lzw__decoder__struct {
     struct {
       uint32_t coro_susp_point;
       uint32_t v_i;
-      uint32_t v_j;
     } c_flush[1];
   } private_impl;
 
@@ -2626,6 +2631,16 @@ struct wuffs_lzw__decoder__struct {
   inline wuffs_base__status  //
   decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
     return wuffs_lzw__decoder__decode(this, a_dst, a_src);
+  }
+
+  inline uint64_t  //
+  available() const {
+    return wuffs_lzw__decoder__available(this);
+  }
+
+  inline wuffs_base__slice_u8  //
+  take_all() {
+    return wuffs_lzw__decoder__take_all(this);
   }
 
 #endif  // __cplusplus
@@ -2759,9 +2774,7 @@ struct wuffs_gif__decoder__struct {
     wuffs_base__range_ie_u32 f_dirty_y;
     uint64_t f_compressed_ri;
     uint64_t f_compressed_wi;
-    uint64_t f_uncompressed_wi;
     uint8_t f_compressed[4096];
-    uint8_t f_uncompressed[4096];
     uint8_t f_palettes[2][1024];
     uint8_t f_dst_palette[1024];
     wuffs_base__pixel_swizzler f_swizzler;
@@ -7368,7 +7381,6 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
   wuffs_base__status status = NULL;
 
   uint32_t v_i;
-  uint32_t v_j;
   wuffs_base__slice_u8 v_s;
   uint64_t v_n;
 
@@ -7395,7 +7407,6 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
   uint32_t coro_susp_point = self->private_impl.c_flush[0].coro_susp_point;
   if (coro_susp_point) {
     v_i = self->private_impl.c_flush[0].v_i;
-    v_j = self->private_impl.c_flush[0].v_j;
     v_s = ((wuffs_base__slice_u8){});
     v_n = 0;
   } else {
@@ -7405,9 +7416,8 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_i = 0;
-    v_j = self->private_impl.f_flush_j;
-    while (true) {
-      if (v_i > v_j) {
+    while (self->private_impl.f_flush_j > 0) {
+      if (v_i > self->private_impl.f_flush_j) {
         status = wuffs_lzw__error__internal_error_inconsistent_i_o;
         goto exit;
       }
@@ -7416,7 +7426,7 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
               .ptr = self->private_impl.f_output,
               .len = 8199,
           }),
-          v_i, v_j);
+          v_i, self->private_impl.f_flush_j);
       v_n = wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io1_a_dst, v_s);
       if (v_n == ((uint64_t)(v_s.len))) {
         status = NULL;
@@ -7437,7 +7447,6 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self,
 suspend:
   self->private_impl.c_flush[0].coro_susp_point = coro_susp_point;
   self->private_impl.c_flush[0].v_i = v_i;
-  self->private_impl.c_flush[0].v_j = v_j;
 
   goto exit;
 exit:
@@ -7447,6 +7456,42 @@ exit:
   }
 
   return status;
+}
+
+// -------- func lzw.decoder.available
+
+WUFFS_BASE__MAYBE_STATIC uint64_t  //
+wuffs_lzw__decoder__available(const wuffs_lzw__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return 0;
+  }
+
+  return ((uint64_t)(self->private_impl.f_flush_j));
+}
+
+// -------- func lzw.decoder.take_all
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
+wuffs_lzw__decoder__take_all(wuffs_lzw__decoder* self) {
+  if (!self) {
+    return ((wuffs_base__slice_u8){});
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return ((wuffs_base__slice_u8){});
+  }
+
+  wuffs_base__slice_u8 v_s;
+
+  v_s = wuffs_base__slice_u8__subslice_j(((wuffs_base__slice_u8){
+                                             .ptr = self->private_impl.f_output,
+                                             .len = 8199,
+                                         }),
+                                         self->private_impl.f_flush_j);
+  self->private_impl.f_flush_j = 0;
+  return v_s;
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__LZW)
@@ -9210,6 +9255,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iop_v_r);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(io1_v_r);
   wuffs_base__status v_z;
+  wuffs_base__slice_u8 v_uncompressed;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -9244,11 +9290,13 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     v_w = ((wuffs_base__io_writer){});
     v_r = ((wuffs_base__io_reader){});
     v_z = self->private_impl.c_decode_id_part1[0].v_z;
+    v_uncompressed = ((wuffs_base__slice_u8){});
   } else {
     v_dst_palette = ((wuffs_base__slice_u8){});
     v_compressed = ((wuffs_base__slice_u8){});
     v_w = ((wuffs_base__io_writer){});
     v_r = ((wuffs_base__io_reader){});
+    v_uncompressed = ((wuffs_base__slice_u8){});
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9455,8 +9503,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         v_r = ((wuffs_base__io_reader){});
         if ((self->private_impl.f_compressed_ri >
              self->private_impl.f_compressed_wi) ||
-            (self->private_impl.f_compressed_wi > 4096) ||
-            (self->private_impl.f_uncompressed_wi > 4096)) {
+            (self->private_impl.f_compressed_wi > 4096)) {
           status = wuffs_gif__error__internal_error_inconsistent_ri_wi;
           goto exit;
         }
@@ -9466,12 +9513,12 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           uint8_t* o_0_io1_v_w = io1_v_w;
           wuffs_base__io_writer__set(
               &v_w, &u_w, &iop_v_w, &io1_v_w,
-              wuffs_base__slice_u8__subslice_i(
+              wuffs_base__slice_u8__subslice_j(
                   ((wuffs_base__slice_u8){
-                      .ptr = self->private_impl.f_uncompressed,
+                      .ptr = self->private_impl.f_compressed,
                       .len = 4096,
                   }),
-                  self->private_impl.f_uncompressed_wi));
+                  0));
           {
             wuffs_base__io_reader o_1_v_r = v_r;
             uint8_t* o_1_iop_v_r = iop_v_r;
@@ -9495,9 +9542,6 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               v_z = t_5;
             }
             wuffs_base__u64__sat_add_indirect(
-                &self->private_impl.f_uncompressed_wi,
-                ((uint64_t)(iop_v_w - v_w.private_impl.mark)));
-            wuffs_base__u64__sat_add_indirect(
                 &self->private_impl.f_compressed_ri,
                 ((uint64_t)(iop_v_r - v_r.private_impl.mark)));
             v_r = o_1_v_r;
@@ -9508,22 +9552,15 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           iop_v_w = o_0_iop_v_w;
           io1_v_w = o_0_io1_v_w;
         }
-        if (self->private_impl.f_uncompressed_wi > 4096) {
-          status = wuffs_gif__error__internal_error_inconsistent_ri_wi;
-          goto exit;
+        if (wuffs_lzw__decoder__available(&self->private_impl.f_lzw) > 0) {
+          v_uncompressed =
+              wuffs_lzw__decoder__take_all(&self->private_impl.f_lzw);
+          status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst,
+                                                            v_uncompressed);
+          if (status) {
+            goto exit;
+          }
         }
-        status = wuffs_gif__decoder__copy_to_image_buffer(
-            self, a_dst,
-            wuffs_base__slice_u8__subslice_j(
-                ((wuffs_base__slice_u8){
-                    .ptr = self->private_impl.f_uncompressed,
-                    .len = 4096,
-                }),
-                self->private_impl.f_uncompressed_wi));
-        if (status) {
-          goto exit;
-        }
-        self->private_impl.f_uncompressed_wi = 0;
         if (wuffs_base__status__is_ok(v_z)) {
           self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
           if (v_block_size > 0) {

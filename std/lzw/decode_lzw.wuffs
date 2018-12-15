@@ -252,12 +252,11 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 pri func decoder.flush!??(dst base.io_writer) {
 	var i base.u32[..8191]
-	var j base.u32[..8191] = this.flush_j
-	while true {
-		if i > j {
+	while this.flush_j > 0 {
+		if i > this.flush_j {
 			return "?internal error: inconsistent I/O"
 		}
-		var s slice base.u8 = this.output[i:j]
+		var s slice base.u8 = this.output[i:this.flush_j]
 		var n base.u64 = args.dst.copy_from_slice!(s:s)
 		if n == s.length() {
 			return ok
@@ -265,4 +264,18 @@ pri func decoder.flush!??(dst base.io_writer) {
 		i = (i + ((n & 8191) as base.u32)) & 8191
 		yield base."$short write"
 	}
+}
+
+// TODO: enforce that available and take_all are only valid to call if decode
+// was passed a 0-length dst base.io_writer? The (non-obvious) hard part is to
+// enforce that without regressing benchmarks.
+
+pub func decoder.available() base.u64 {
+	return this.flush_j as base.u64
+}
+
+pub func decoder.take_all!() slice base.u8 {
+	var s slice base.u8 = this.output[:this.flush_j]
+	this.flush_j = 0
+	return s
 }

@@ -109,10 +109,7 @@ pub struct decoder?(
 
 	compressed_ri base.u64,
 	compressed_wi base.u64,
-	uncompressed_wi base.u64,
-
 	compressed array[4096] base.u8,
-	uncompressed array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
@@ -657,23 +654,20 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		while:inner true {
 			var w base.io_writer
 			var r base.io_reader
-			if (this.compressed_ri > this.compressed_wi) or
-				(this.compressed_wi > 4096) or (this.uncompressed_wi > 4096) {
+			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "?internal error: inconsistent ri/wi"
 			}
-			io_bind (io:w, data:this.uncompressed[this.uncompressed_wi:]) {
+			io_bind (io:w, data:this.compressed[:0]) {  // TODO: delete.
 				io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
 					var z base.status =? this.lzw.decode!??(dst:w, src:r)
-					this.uncompressed_wi ~sat+= w.since_mark().length()
 					this.compressed_ri ~sat+= r.since_mark().length()
 				}
 			}
 
-			if this.uncompressed_wi > 4096 {
-				return "?internal error: inconsistent ri/wi"
+			if this.lzw.available() > 0 {
+				var uncompressed slice base.u8 = this.lzw.take_all!()
+				this.copy_to_image_buffer!?(pb:args.dst, src:uncompressed)
 			}
-			this.copy_to_image_buffer!?(pb:args.dst, src:this.uncompressed[:this.uncompressed_wi])
-			this.uncompressed_wi = 0
 
 			if z.is_ok() {
 				this.previous_lzw_decode_ended_abruptly = false
