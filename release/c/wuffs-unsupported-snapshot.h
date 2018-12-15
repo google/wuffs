@@ -3575,7 +3575,7 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
   return r->max_excl;
 }
 
-// ---------------- Utility
+// ---------------- Ranges and Rects (Utility)
 
 static inline wuffs_base__range_ii_u32  //
 wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
@@ -3892,6 +3892,18 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   o->private_impl.mark = mark;
   return ((wuffs_base__empty_struct){});
+}
+
+// ---------------- I/O (Utility)
+
+static inline wuffs_base__io_reader  //
+wuffs_base__utility__null_io_reader(const wuffs_base__utility* ignored) {
+  return ((wuffs_base__io_reader){});
+}
+
+static inline wuffs_base__io_writer  //
+wuffs_base__utility__null_io_writer(const wuffs_base__utility* ignored) {
+  return ((wuffs_base__io_writer){});
 }
 
   // ---------------- Memory Allocation
@@ -9240,13 +9252,6 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   uint64_t v_block_size;
   uint64_t v_n_compressed;
   wuffs_base__slice_u8 v_compressed;
-  wuffs_base__io_writer v_w;
-  wuffs_base__io_buffer u_w;
-  uint8_t* iop_v_w = NULL;
-  uint8_t* io1_v_w = NULL;
-  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(u_w);
-  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iop_v_w);
-  WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(io1_v_w);
   wuffs_base__io_reader v_r;
   wuffs_base__io_buffer u_r;
   uint8_t* iop_v_r = NULL;
@@ -9287,14 +9292,12 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     v_block_size = self->private_impl.c_decode_id_part1[0].v_block_size;
     v_n_compressed = 0;
     v_compressed = ((wuffs_base__slice_u8){});
-    v_w = ((wuffs_base__io_writer){});
     v_r = ((wuffs_base__io_reader){});
     v_z = self->private_impl.c_decode_id_part1[0].v_z;
     v_uncompressed = ((wuffs_base__slice_u8){});
   } else {
     v_dst_palette = ((wuffs_base__slice_u8){});
     v_compressed = ((wuffs_base__slice_u8){});
-    v_w = ((wuffs_base__io_writer){});
     v_r = ((wuffs_base__io_reader){});
     v_uncompressed = ((wuffs_base__slice_u8){});
   }
@@ -9499,7 +9502,6 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       }
     label_2_continue:;
       while (true) {
-        v_w = ((wuffs_base__io_writer){});
         v_r = ((wuffs_base__io_reader){});
         if ((self->private_impl.f_compressed_ri >
              self->private_impl.f_compressed_wi) ||
@@ -9508,49 +9510,33 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           goto exit;
         }
         {
-          wuffs_base__io_writer o_0_v_w = v_w;
-          uint8_t* o_0_iop_v_w = iop_v_w;
-          uint8_t* o_0_io1_v_w = io1_v_w;
-          wuffs_base__io_writer__set(
-              &v_w, &u_w, &iop_v_w, &io1_v_w,
-              wuffs_base__slice_u8__subslice_j(
+          wuffs_base__io_reader o_0_v_r = v_r;
+          uint8_t* o_0_iop_v_r = iop_v_r;
+          uint8_t* o_0_io1_v_r = io1_v_r;
+          wuffs_base__io_reader__set(
+              &v_r, &u_r, &iop_v_r, &io1_v_r,
+              wuffs_base__slice_u8__subslice_ij(
                   ((wuffs_base__slice_u8){
                       .ptr = self->private_impl.f_compressed,
                       .len = 4096,
                   }),
-                  0));
+                  self->private_impl.f_compressed_ri,
+                  self->private_impl.f_compressed_wi));
           {
-            wuffs_base__io_reader o_1_v_r = v_r;
-            uint8_t* o_1_iop_v_r = iop_v_r;
-            uint8_t* o_1_io1_v_r = io1_v_r;
-            wuffs_base__io_reader__set(
-                &v_r, &u_r, &iop_v_r, &io1_v_r,
-                wuffs_base__slice_u8__subslice_ij(
-                    ((wuffs_base__slice_u8){
-                        .ptr = self->private_impl.f_compressed,
-                        .len = 4096,
-                    }),
-                    self->private_impl.f_compressed_ri,
-                    self->private_impl.f_compressed_wi));
-            {
-              u_w.meta.wi = iop_v_w - u_w.data.ptr;
-              u_r.meta.ri = iop_v_r - u_r.data.ptr;
-              wuffs_base__status t_5 = wuffs_lzw__decoder__decode(
-                  &self->private_impl.f_lzw, v_w, v_r);
-              iop_v_w = u_w.data.ptr + u_w.meta.wi;
-              iop_v_r = u_r.data.ptr + u_r.meta.ri;
-              v_z = t_5;
-            }
-            wuffs_base__u64__sat_add_indirect(
-                &self->private_impl.f_compressed_ri,
-                ((uint64_t)(iop_v_r - v_r.private_impl.mark)));
-            v_r = o_1_v_r;
-            iop_v_r = o_1_iop_v_r;
-            io1_v_r = o_1_io1_v_r;
+            u_r.meta.ri = iop_v_r - u_r.data.ptr;
+            wuffs_base__status t_5 = wuffs_lzw__decoder__decode(
+                &self->private_impl.f_lzw,
+                wuffs_base__utility__null_io_writer(&self->private_impl.f_util),
+                v_r);
+            iop_v_r = u_r.data.ptr + u_r.meta.ri;
+            v_z = t_5;
           }
-          v_w = o_0_v_w;
-          iop_v_w = o_0_iop_v_w;
-          io1_v_w = o_0_io1_v_w;
+          wuffs_base__u64__sat_add_indirect(
+              &self->private_impl.f_compressed_ri,
+              ((uint64_t)(iop_v_r - v_r.private_impl.mark)));
+          v_r = o_0_v_r;
+          iop_v_r = o_0_iop_v_r;
+          io1_v_r = o_0_io1_v_r;
         }
         if (wuffs_lzw__decoder__available(&self->private_impl.f_lzw) > 0) {
           v_uncompressed =

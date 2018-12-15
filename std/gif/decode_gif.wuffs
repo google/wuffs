@@ -652,16 +652,13 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		}
 
 		while:inner true {
-			var w base.io_writer
 			var r base.io_reader
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "?internal error: inconsistent ri/wi"
 			}
-			io_bind (io:w, data:this.compressed[:0]) {  // TODO: delete.
-				io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
-					var z base.status =? this.lzw.decode!??(dst:w, src:r)
-					this.compressed_ri ~sat+= r.since_mark().length()
-				}
+			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
+				var z base.status =? this.lzw.decode!??(dst:this.util.null_io_writer(), src:r)
+				this.compressed_ri ~sat+= r.since_mark().length()
 			}
 
 			if this.lzw.available() > 0 {

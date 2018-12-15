@@ -105,6 +105,8 @@ var Funcs = []string{
 	"utility.make_range_ie_u64(min_incl u64, max_excl u64) range_ie_u64",
 	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32) rect_ii_u32",
 	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32) rect_ie_u32",
+	"utility.null_io_reader() io_reader",
+	"utility.null_io_writer() io_writer",
 
 	// ---- ranges
 

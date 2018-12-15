@@ -56,7 +56,7 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
   return r->max_excl;
 }
 
-// ---------------- Utility
+// ---------------- Ranges and Rects (Utility)
 
 static inline wuffs_base__range_ii_u32  //
 wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
