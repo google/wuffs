@@ -744,7 +744,7 @@ const char* test_wuffs_gif_decode_bgra_nonpremul() {
                                   WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
 }
 
-const char* test_wuffs_gif_decode_input_is_a_gif() {
+const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
@@ -1462,7 +1462,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_small,                    //
     test_wuffs_gif_decode_bgra_nonpremul,                    //
     test_wuffs_gif_decode_frame_out_of_bounds,               //
-    test_wuffs_gif_decode_input_is_a_gif,                    //
+    test_wuffs_gif_decode_input_is_a_gif_just_one_read,      //
     test_wuffs_gif_decode_input_is_a_gif_many_big_reads,     //
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //

@@ -179,7 +179,7 @@ const char* test_wuffs_deflate_decode_midsummer() {
   return do_test_io_buffers(wuffs_deflate_decode, &deflate_midsummer_gt, 0, 0);
 }
 
-const char* test_wuffs_deflate_decode_pi() {
+const char* test_wuffs_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, 0, 0);
 }
@@ -686,7 +686,7 @@ proc tests[] = {
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,  //
     test_wuffs_deflate_decode_deflate_distance_32768,          //
     test_wuffs_deflate_decode_midsummer,                       //
-    test_wuffs_deflate_decode_pi,                              //
+    test_wuffs_deflate_decode_pi_just_one_read,                //
     test_wuffs_deflate_decode_pi_many_big_reads,               //
     test_wuffs_deflate_decode_pi_many_medium_reads,            //
     test_wuffs_deflate_decode_pi_many_small_writes_reads,      //
