@@ -7176,7 +7176,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           v_n_bits |= 24;
         } else {
           while (true) {
-            while (((uint64_t)(io1_a_src - iop_a_src)) <= 0) {
+            if (((uint64_t)(io1_a_src - iop_a_src)) <= 0) {
               if (v_j > 0) {
                 self->private_impl.f_flush_j = v_j;
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
@@ -7185,7 +7185,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                   goto suspend;
                 }
                 v_j = 0;
-              } else {
+              }
+              while (((uint64_t)(io1_a_src - iop_a_src)) <= 0) {
                 status = wuffs_base__suspension__short_read;
                 WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
               }

@@ -81,15 +81,16 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 					pre n_bits < 12,
 					post n_bits >= width,
 				{
-					while args.src.available() <= 0,
-						inv n_bits < 12,
-						post args.src.available() >= 1,
-					{
+					if args.src.available() <= 0 {
 						if j > 0 {
 							this.flush_j = j
 							this.flush!??(dst:args.dst)
 							j = 0
-						} else {
+						}
+						while args.src.available() <= 0,
+							inv n_bits < 12,
+							post args.src.available() > 0,
+						{
 							yield base."$short read"
 						}
 					}
