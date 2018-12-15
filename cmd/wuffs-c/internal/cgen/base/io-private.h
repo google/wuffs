@@ -226,7 +226,7 @@ wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_reader__take(uint8_t** ptr_iop, uint8_t* io1, uint64_t n) {
-  if (n <= (io1 - *ptr_iop)) {
+  if (n <= ((size_t)(io1 - *ptr_iop))) {
     uint8_t* p = *ptr_iop;
     *ptr_iop += n;
     return ((wuffs_base__slice_u8){
