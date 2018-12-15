@@ -2564,9 +2564,6 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
                            wuffs_base__io_writer a_dst,
                            wuffs_base__io_reader a_src);
 
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_lzw__decoder__available(const wuffs_lzw__decoder* self);
-
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
 wuffs_lzw__decoder__take_all(wuffs_lzw__decoder* self);
 
@@ -2631,11 +2628,6 @@ struct wuffs_lzw__decoder__struct {
   inline wuffs_base__status  //
   decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
     return wuffs_lzw__decoder__decode(this, a_dst, a_src);
-  }
-
-  inline uint64_t  //
-  available() const {
-    return wuffs_lzw__decoder__available(this);
   }
 
   inline wuffs_base__slice_u8  //
@@ -7470,20 +7462,6 @@ exit:
   return status;
 }
 
-// -------- func lzw.decoder.available
-
-WUFFS_BASE__MAYBE_STATIC uint64_t  //
-wuffs_lzw__decoder__available(const wuffs_lzw__decoder* self) {
-  if (!self) {
-    return 0;
-  }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
-    return 0;
-  }
-
-  return ((uint64_t)(self->private_impl.f_flush_j));
-}
-
 // -------- func lzw.decoder.take_all
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
@@ -9538,9 +9516,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           iop_v_r = o_0_iop_v_r;
           io1_v_r = o_0_io1_v_r;
         }
-        if (wuffs_lzw__decoder__available(&self->private_impl.f_lzw) > 0) {
-          v_uncompressed =
-              wuffs_lzw__decoder__take_all(&self->private_impl.f_lzw);
+        v_uncompressed =
+            wuffs_lzw__decoder__take_all(&self->private_impl.f_lzw);
+        if (((uint64_t)(v_uncompressed.len)) > 0) {
           status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst,
                                                             v_uncompressed);
           if (status) {

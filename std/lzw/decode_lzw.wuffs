@@ -266,13 +266,9 @@ pri func decoder.flush!??(dst base.io_writer) {
 	}
 }
 
-// TODO: enforce that available and take_all are only valid to call if decode
-// was passed a 0-length dst base.io_writer? The (non-obvious) hard part is to
+// TODO: enforce that take_all is only valid to call if decode was always
+// passed a 0-length dst base.io_writer? The (non-obvious) hard part is to
 // enforce that without regressing benchmarks.
-
-pub func decoder.available() base.u64 {
-	return this.flush_j as base.u64
-}
 
 pub func decoder.take_all!() slice base.u8 {
 	var s slice base.u8 = this.output[:this.flush_j]
