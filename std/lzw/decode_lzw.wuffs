@@ -90,7 +90,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 					{
 						if j > 0 {
 							this.flush_j = j
-							this.flush!??(dst:args.dst)
+							this.auto_flush!??(dst:args.dst)
 							j = 0
 						} else {
 							yield base."$short read"
@@ -228,7 +228,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			bits = bits.low_bits(n:n_bits)
 
 			this.flush_j = j
-			this.flush!??(dst:args.dst)
+			this.auto_flush!??(dst:args.dst)
 			j = 0
 		}
 	}
@@ -246,11 +246,11 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		bits = bits.low_bits(n:n_bits)
 
 		this.flush_j = j
-		this.flush!??(dst:args.dst)
+		this.auto_flush!??(dst:args.dst)
 	}
 }
 
-pri func decoder.flush!??(dst base.io_writer) {
+pri func decoder.auto_flush!??(dst base.io_writer) {
 	var i base.u32[..8191]
 	while this.flush_j > 0 {
 		if i > this.flush_j {
@@ -266,11 +266,11 @@ pri func decoder.flush!??(dst base.io_writer) {
 	}
 }
 
-// TODO: enforce that take_all is only valid to call if decode was always
-// passed a 0-length dst base.io_writer? The (non-obvious) hard part is to
-// enforce that without regressing benchmarks.
+// TODO: enforce that flush is only valid to call if decode was always passed a
+// 0-length dst base.io_writer? The (non-obvious) hard part is to enforce that
+// without regressing benchmarks.
 
-pub func decoder.take_all!() slice base.u8 {
+pub func decoder.flush!() slice base.u8 {
 	var s slice base.u8 = this.output[:this.flush_j]
 	this.flush_j = 0
 	return s

@@ -661,7 +661,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.compressed_ri ~sat+= r.since_mark().length()
 			}
 
-			var uncompressed slice base.u8 = this.lzw.take_all!()
+			var uncompressed slice base.u8 = this.lzw.flush!()
 			if uncompressed.length() > 0 {
 				this.copy_to_image_buffer!?(pb:args.dst, src:uncompressed)
 			}
