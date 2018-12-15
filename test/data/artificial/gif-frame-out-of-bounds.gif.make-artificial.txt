@@ -1,6 +1,6 @@
 # Feed this file to script/make-artificial.go
 
-# This GIF image contains three frames, each of which are outside the nominal
+# This GIF image contains four frames, each of which are outside the nominal
 # image's bounds: (0, 0) - (2, 2):
 #
 #  - frame #0 has bounds (1, 0) - (4, 1).
