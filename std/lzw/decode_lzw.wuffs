@@ -81,16 +81,18 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 					pre n_bits < 12,
 					post n_bits >= width,
 				{
-					if args.src.available() <= 0 {
+					// TODO: there is some optimization we could probably do
+					// around here. See commit ecb3995 `Tweak how std/lzw
+					// yields "short read"`.
+					while args.src.available() <= 0,
+						inv n_bits < 12,
+						post args.src.available() > 0,
+					{
 						if j > 0 {
 							this.flush_j = j
 							this.flush!??(dst:args.dst)
 							j = 0
-						}
-						while args.src.available() <= 0,
-							inv n_bits < 12,
-							post args.src.available() > 0,
-						{
+						} else {
 							yield base."$short read"
 						}
 					}
