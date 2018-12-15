@@ -109,7 +109,6 @@ pub struct decoder?(
 
 	compressed_ri base.u64,
 	compressed_wi base.u64,
-	uncompressed_ri base.u64,
 	uncompressed_wi base.u64,
 
 	compressed array[4096] base.u8,
@@ -670,7 +669,11 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				}
 			}
 
-			this.copy_to_image_buffer!?(pb:args.dst)
+			if this.uncompressed_wi > 4096 {
+				return "?internal error: inconsistent ri/wi"
+			}
+			this.copy_to_image_buffer!?(pb:args.dst, src:this.uncompressed[:this.uncompressed_wi])
+			this.uncompressed_wi = 0
 
 			if z.is_ok() {
 				this.previous_lzw_decode_ended_abruptly = false
@@ -694,11 +697,12 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	// TODO: check for "not enough pixel data".
 }
 
-pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
+pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base.u8) {
 	// TODO: don't assume a packed pixel format.
 	var dst slice base.u8
 	var src slice base.u8
 	var n base.u64
+	var src_ri base.u64
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.
@@ -709,15 +713,8 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 	}
 
 	var tab table base.u8 = args.pb.plane(p:0)
-
-	if this.uncompressed_wi > 4096 {
-		return "?internal error: inconsistent ri/wi"
-	}
-	while this.uncompressed_wi > this.uncompressed_ri,
-		inv this.uncompressed_wi <= 4096,
-	{
-		assert this.uncompressed_ri < this.uncompressed_wi via "a < b: b > a"()
-		src = this.uncompressed[this.uncompressed_ri:this.uncompressed_wi]
+	while src_ri < args.src.length() {
+		src = args.src[src_ri:]
 
 		if this.dst_y >= this.frame_rect_y1 {
 			return "?too much pixel data"
@@ -737,7 +734,7 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			}
 			n = this.swizzler.swizzle_packed!(dst:dst, dst_palette:this.dst_palette[:], src:src)
 
-			this.uncompressed_ri ~sat+= n
+			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
 			this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
@@ -755,9 +752,9 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			continue
 		}
 
-		if this.uncompressed_wi == this.uncompressed_ri {
+		if args.src.length() == src_ri {
 			break
-		} else if this.uncompressed_wi < this.uncompressed_ri {
+		} else if args.src.length() < src_ri {
 			return "?internal error: inconsistent ri/wi"
 		}
 
@@ -766,9 +763,9 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
 		n = (this.frame_rect_x1 - this.dst_x) as base.u64
-		n = n.min(x:this.uncompressed_wi - this.uncompressed_ri)
+		n = n.min(x:args.src.length() - src_ri)
 
-		this.uncompressed_ri ~sat+= n
+		src_ri ~sat+= n
 		this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
 		if this.frame_rect_x1 <= this.dst_x {
@@ -781,11 +778,9 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer) {
 			continue
 		}
 
-		if this.uncompressed_ri != this.uncompressed_wi {
+		if src_ri != args.src.length() {
 			return "?internal error: inconsistent ri/wi"
 		}
 		break
 	}
-	this.uncompressed_ri = 0
-	this.uncompressed_wi = 0
 }
