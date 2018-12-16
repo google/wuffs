@@ -93,11 +93,12 @@ const (
 	// The low 8 bits are reserved. Effect values (Effect is a uint8) share the
 	// same values as Flags.
 
-	FlagsPublic      = Flags(0x00000100)
-	FlagsHasBreak    = Flags(0x00000200)
-	FlagsHasContinue = Flags(0x00000400)
-	FlagsGlobalIdent = Flags(0x00000800)
-	FlagsClassy      = Flags(0x00001000)
+	FlagsPublic           = Flags(0x00000100)
+	FlagsHasBreak         = Flags(0x00000200)
+	FlagsHasContinue      = Flags(0x00000400)
+	FlagsGlobalIdent      = Flags(0x00000800)
+	FlagsClassy           = Flags(0x00001000)
+	FlagsSubExprHasEffect = Flags(0x00002000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -109,19 +110,15 @@ const (
 	EffectOptional  = Effect(0x02) // TODO: rename to Statusful or Throws?
 	EffectCoroutine = Effect(0x04)
 
-	EffectSubExprHasEffect = Effect(0x08)
-
 	effectMask = Effect(0xFF)
 )
 
 func (e Effect) AsFlags() Flags { return Flags(e) }
 
-// TODO: replace Pure calls with the stronger "e == 0"?
-func (e Effect) Pure() bool             { return e&EffectImpure == 0 }
-func (e Effect) Impure() bool           { return e&EffectImpure != 0 }
-func (e Effect) Optional() bool         { return e&EffectOptional != 0 }
-func (e Effect) Coroutine() bool        { return e&EffectCoroutine != 0 }
-func (e Effect) SubExprHasEffect() bool { return e&EffectSubExprHasEffect != 0 }
+func (e Effect) Pure() bool      { return e == 0 }
+func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
+func (e Effect) Optional() bool  { return e&EffectOptional != 0 }
+func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
 
 func (e Effect) String() string {
 	switch e & effectMask {
@@ -328,19 +325,20 @@ const MaxExprDepth = 255
 // For lists, like "[0, 1, 2]", ID0 is IDComma.
 type Expr Node
 
-func (n *Expr) AsNode() *Node        { return (*Node)(n) }
-func (n *Expr) Effect() Effect       { return Effect(n.flags) }
-func (n *Expr) GlobalIdent() bool    { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) ConstValue() *big.Int { return n.constValue }
-func (n *Expr) MBounds() Bounds      { return n.mBounds }
-func (n *Expr) MType() *TypeExpr     { return n.mType }
-func (n *Expr) Operator() t.ID       { return n.id0 }
-func (n *Expr) StatusQID() t.QID     { return t.QID{n.id1, n.id2} }
-func (n *Expr) Ident() t.ID          { return n.id2 }
-func (n *Expr) LHS() *Node           { return n.lhs }
-func (n *Expr) MHS() *Node           { return n.mhs }
-func (n *Expr) RHS() *Node           { return n.rhs }
-func (n *Expr) Args() []*Node        { return n.list0 }
+func (n *Expr) AsNode() *Node          { return (*Node)(n) }
+func (n *Expr) Effect() Effect         { return Effect(n.flags) }
+func (n *Expr) GlobalIdent() bool      { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) SubExprHasEffect() bool { return n.flags&FlagsSubExprHasEffect != 0 }
+func (n *Expr) ConstValue() *big.Int   { return n.constValue }
+func (n *Expr) MBounds() Bounds        { return n.mBounds }
+func (n *Expr) MType() *TypeExpr       { return n.mType }
+func (n *Expr) Operator() t.ID         { return n.id0 }
+func (n *Expr) StatusQID() t.QID       { return t.QID{n.id1, n.id2} }
+func (n *Expr) Ident() t.ID            { return n.id2 }
+func (n *Expr) LHS() *Node             { return n.lhs }
+func (n *Expr) MHS() *Node             { return n.mhs }
+func (n *Expr) RHS() *Node             { return n.rhs }
+func (n *Expr) Args() []*Node          { return n.list0 }
 
 func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
 func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
@@ -362,7 +360,7 @@ func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, 
 		subExprEffect |= o.flags & Flags(effectMask)
 	}
 	if subExprEffect != 0 {
-		flags |= subExprEffect | EffectSubExprHasEffect.AsFlags()
+		flags |= subExprEffect | FlagsSubExprHasEffect
 	}
 
 	return &Expr{

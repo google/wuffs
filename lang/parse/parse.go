@@ -987,7 +987,7 @@ func (p *parser) parseExpr() (*a.Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e.Effect().SubExprHasEffect() {
+	if e.SubExprHasEffect() {
 		return nil, fmt.Errorf(`parse: expression %q has an effect-ful sub-expression at %s:%d`,
 			e.Str(p.tm), p.filename, p.line())
 	}
