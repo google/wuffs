@@ -3685,19 +3685,19 @@ wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
 
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
-                                           uint8_t* start,
+                                           uint8_t* io0_w,
                                            uint8_t* io1_w,
                                            uint32_t length,
                                            uint32_t distance) {
   if (!distance) {
     return 0;
   }
-  uint8_t* iop_w = *ptr_iop_w;
-  if ((size_t)(iop_w - start) < (size_t)(distance)) {
+  uint8_t* p = *ptr_iop_w;
+  if ((size_t)(p - io0_w) < (size_t)(distance)) {
     return 0;
   }
-  start = iop_w - distance;
-  size_t n = io1_w - iop_w;
+  uint8_t* q = p - distance;
+  size_t n = io1_w - p;
   if ((size_t)(length) > n) {
     length = n;
   } else {
@@ -3714,14 +3714,14 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
   // Alternatively, or additionally, have a sloppy_copy_n_from_history method
   // that copies 8 bytes at a time, possibly writing more than length bytes?
   for (; n >= 3; n -= 3) {
-    *iop_w++ = *start++;
-    *iop_w++ = *start++;
-    *iop_w++ = *start++;
+    *p++ = *q++;
+    *p++ = *q++;
+    *p++ = *q++;
   }
   for (; n; n--) {
-    *iop_w++ = *start++;
+    *p++ = *q++;
   }
-  *ptr_iop_w = iop_w;
+  *ptr_iop_w = p;
   return length;
 }
 
@@ -3729,26 +3729,26 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
 // wuffs_base__io_writer__copy_n_from_history function above, but has stronger
 // pre-conditions. The caller needs to prove that:
 //  - distance >  0
-//  - distance <= (*ptr_iop_w - start)
+//  - distance <= (*ptr_iop_w - io0_w)
 //  - length   <= (io1_w      - *ptr_iop_w)
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
-                                                uint8_t* start,
+                                                uint8_t* io0_w,
                                                 uint8_t* io1_w,
                                                 uint32_t length,
                                                 uint32_t distance) {
-  uint8_t* iop_w = *ptr_iop_w;
-  start = iop_w - distance;
+  uint8_t* p = *ptr_iop_w;
+  uint8_t* q = p - distance;
   uint32_t n = length;
   for (; n >= 3; n -= 3) {
-    *iop_w++ = *start++;
-    *iop_w++ = *start++;
-    *iop_w++ = *start++;
+    *p++ = *q++;
+    *p++ = *q++;
+    *p++ = *q++;
   }
   for (; n; n--) {
-    *iop_w++ = *start++;
+    *p++ = *q++;
   }
-  *ptr_iop_w = iop_w;
+  *ptr_iop_w = p;
   return length;
 }
 
