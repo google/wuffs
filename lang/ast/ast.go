@@ -129,8 +129,6 @@ func (e Effect) String() string {
 		return ""
 	case EffectImpure:
 		return "!"
-	case EffectOptional:
-		return "?"
 	case EffectImpure | EffectOptional:
 		return "!?"
 	case EffectImpure | EffectOptional | EffectCoroutine:
