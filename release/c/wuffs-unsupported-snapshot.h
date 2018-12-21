@@ -1224,8 +1224,8 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 // image frame's pixel data. Its bits:
 //  - bit        31  is reserved.
 //  - bits 30 .. 28 encodes color (and channel order, in terms of memory).
-//  - bits 27 .. 26 are reserved.
-//  - bits 25 .. 24 encodes transparency.
+//  - bit        27  is reserved.
+//  - bits 26 .. 24 encodes transparency.
 //  - bits 23 .. 21 are reserved.
 //  - bit        20 indicates big-endian/MSB-first (as opposed to little/LSB).
 //  - bit        19 indicates floating point (as opposed to integer).
@@ -1276,11 +1276,17 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 // little-endian, 0xAARRGGBB.
 //
 // When the color field (3 bits) encodes multiple options, the transparency
-// field (2 bits) distinguishes them:
+// field (3 bits) distinguishes them:
 //  - 0 means fully opaque, no extra channels
 //  - 1 means fully opaque, one extra channel (X or K, padding or black).
-//  - 2 means one extra alpha channel, other channels are non-premultiplied.
-//  - 3 means one extra alpha channel, other channels are     premultiplied.
+//  - 5 means one extra alpha channel, other channels are non-premultiplied.
+//  - 6 means one extra alpha channel, other channels are     premultiplied.
+//  - 7 means one extra alpha channel, binary alpha.
+//  - all other values are reserved.
+//
+// Binary alpha means that if a color is not completely opaque, it is
+// completely transparent black. As a source pixel format, it can therefore be
+// treated as either non-premultiplied or premultiplied.
 //
 // The zero wuffs_base__pixel_format value is an invalid pixel format, as it is
 // invalid to combine the zero color (alpha only) with the zero transparency.
@@ -1296,7 +1302,7 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 //  - 14 means a bit depth of 48.
 //  - 15 means a bit depth of 64.
 //
-// For example, wuffs_base__pixel_format 0x5210BBBB is a natural format for
+// For example, wuffs_base__pixel_format 0x5510BBBB is a natural format for
 // decoding a PNG image - network byte order (also known as big-endian),
 // packed, non-premultiplied alpha - that happens to be 16-bit-depth truecolor
 // with alpha (RGBA). In memory order:
@@ -1342,36 +1348,44 @@ typedef uint32_t wuffs_base__pixel_format;
 
 #define WUFFS_BASE__PIXEL_FORMAT__Y ((wuffs_base__pixel_format)0x10000008)
 #define WUFFS_BASE__PIXEL_FORMAT__YA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x12000008)
+  ((wuffs_base__pixel_format)0x15000008)
 #define WUFFS_BASE__PIXEL_FORMAT__YA_PREMUL \
-  ((wuffs_base__pixel_format)0x13000008)
+  ((wuffs_base__pixel_format)0x16000008)
 
 #define WUFFS_BASE__PIXEL_FORMAT__YCBCR ((wuffs_base__pixel_format)0x20020888)
 #define WUFFS_BASE__PIXEL_FORMAT__YCBCRK ((wuffs_base__pixel_format)0x21038888)
 #define WUFFS_BASE__PIXEL_FORMAT__YCBCRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x22038888)
+  ((wuffs_base__pixel_format)0x25038888)
 
 #define WUFFS_BASE__PIXEL_FORMAT__YCOCG ((wuffs_base__pixel_format)0x30020888)
 #define WUFFS_BASE__PIXEL_FORMAT__YCOCGK ((wuffs_base__pixel_format)0x31038888)
 #define WUFFS_BASE__PIXEL_FORMAT__YCOCGA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x32038888)
+  ((wuffs_base__pixel_format)0x35038888)
 
 #define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x42040008)
+  ((wuffs_base__pixel_format)0x45040008)
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL \
+  ((wuffs_base__pixel_format)0x46040008)
+#define WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY \
+  ((wuffs_base__pixel_format)0x47040008)
 
 #define WUFFS_BASE__PIXEL_FORMAT__BGR ((wuffs_base__pixel_format)0x40000888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRX ((wuffs_base__pixel_format)0x41008888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x42008888)
+  ((wuffs_base__pixel_format)0x45008888)
 #define WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL \
-  ((wuffs_base__pixel_format)0x43008888)
+  ((wuffs_base__pixel_format)0x46008888)
+#define WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY \
+  ((wuffs_base__pixel_format)0x47008888)
 
 #define WUFFS_BASE__PIXEL_FORMAT__RGB ((wuffs_base__pixel_format)0x50000888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBX ((wuffs_base__pixel_format)0x51008888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL \
-  ((wuffs_base__pixel_format)0x52008888)
+  ((wuffs_base__pixel_format)0x55008888)
 #define WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL \
-  ((wuffs_base__pixel_format)0x53008888)
+  ((wuffs_base__pixel_format)0x56008888)
+#define WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY \
+  ((wuffs_base__pixel_format)0x57008888)
 
 #define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x60020888)
 #define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x61038888)
@@ -1581,10 +1595,16 @@ wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
   uint64_t bytes_per_pixel = 0;
   switch (wuffs_base__pixel_config__pixel_format(c)) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       bytes_per_pixel = 1;
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       bytes_per_pixel = 4;
       break;
     default:
@@ -2048,10 +2068,16 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   uint64_t bytes_per_pixel = 0;
   switch (wuffs_base__pixel_config__pixel_format(pixcfg)) {
     case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       bytes_per_pixel = 1;
       break;
     case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
     case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
       bytes_per_pixel = 4;
       break;
     default:
@@ -4046,9 +4072,11 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
                    wuffs_base__slice_u8 src) = NULL;
 
   switch (src_format) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       switch (dst_format) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
               1024) {
             break;
@@ -4056,6 +4084,8 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
           func = wuffs_base__pixel_swizzler__copy_1_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
               1024) {
             break;
@@ -4063,6 +4093,8 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
           func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
                                                          src_palette) != 1024) {
             break;
@@ -7669,7 +7701,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
          (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
     if (a_dst != NULL) {
       wuffs_base__image_config__initialize(
-          a_dst, 1107558408, 0, self->private_impl.f_width,
+          a_dst, 1191444488, 0, self->private_impl.f_width,
           self->private_impl.f_height, ((uint64_t)(self->private_impl.f_width)),
           ((uint64_t)(self->private_impl.f_width)),
           self->private_impl.f_frame_config_io_position, v_ffio);
@@ -9386,7 +9418,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     wuffs_base__pixel_swizzler__initialize(
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
-        1107558408,
+        1191444488,
         ((wuffs_base__slice_u8){
             .ptr = self->private_impl
                        .f_palettes[self->private_impl.f_which_palette],
@@ -9621,7 +9653,9 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   v_src_ri = 0;
   v_bytes_per_pixel = 1;
   v_pixfmt = wuffs_base__pixel_buffer__pixel_format(a_pb);
-  if ((v_pixfmt == 1107331208) || (v_pixfmt == 1375766664)) {
+  if ((v_pixfmt == 1157662856) || (v_pixfmt == 1426098312) ||
+      (v_pixfmt == 1174440072) || (v_pixfmt == 1442875528) ||
+      (v_pixfmt == 1191217288) || (v_pixfmt == 1459652744)) {
     v_bytes_per_pixel = 4;
   }
   v_tab = wuffs_base__pixel_buffer__plane(a_pb, 0);

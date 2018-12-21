@@ -141,9 +141,9 @@ pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_
 
 	if args.dst != nullptr {
 		// TODO: a Wuffs (not just C) name for the
-		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL magic pixfmt constant.
+		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.initialize!(
-			pixfmt:0x42040008,
+			pixfmt:0x47040008,
 			pixsub:0,
 			width:this.width,
 			height:this.height,
@@ -586,11 +586,11 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	}
 
 	// TODO: a Wuffs (not just C) name for the
-	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL magic pixfmt constant.
+	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 	this.swizzler.initialize!(
 		dst_pixfmt:args.dst.pixel_format(),
 		dst_palette:dst_palette,
-		src_pixfmt:0x42040008,
+		src_pixfmt:0x47040008,
 		src_palette:this.palettes[this.which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
@@ -699,7 +699,9 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base
 	// magic pixfmt constants. Also, support more formats.
 	var bytes_per_pixel base.u32[1..64] = 1
 	var pixfmt base.u32 = args.pb.pixel_format()
-	if (pixfmt == 0x42008888) or (pixfmt == 0x52008888) {
+	if (pixfmt == 0x45008888) or (pixfmt == 0x55008888) or
+		(pixfmt == 0x46008888) or (pixfmt == 0x56008888) or
+		(pixfmt == 0x47008888) or (pixfmt == 0x57008888) {
 		bytes_per_pixel = 4
 	}
 

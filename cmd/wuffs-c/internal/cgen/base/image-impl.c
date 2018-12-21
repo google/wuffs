@@ -91,9 +91,11 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
                    wuffs_base__slice_u8 src) = NULL;
 
   switch (src_format) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
       switch (dst_format) {
         case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
               1024) {
             break;
@@ -101,6 +103,8 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
           func = wuffs_base__pixel_swizzler__copy_1_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
           if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
               1024) {
             break;
@@ -108,6 +112,8 @@ wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
           func = wuffs_base__pixel_swizzler__copy_4_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+        case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
           if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
                                                          src_palette) != 1024) {
             break;
