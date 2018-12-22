@@ -178,7 +178,13 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	if method >= peekMethodsBase {
 		if m := method - peekMethodsBase; m < t.ID(len(peekMethods)) {
 			if p := peekMethods[m]; p.n != 0 {
+				if p.size != p.n {
+					b.printf("((uint%d_t)(", p.size)
+				}
 				b.printf("wuffs_base__load_u%d%ce(iop_a_src)", p.n, p.endianness)
+				if p.size != p.n {
+					b.writes("))")
+				}
 				return nil
 			}
 		}
@@ -646,37 +652,38 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 const peekMethodsBase = t.IDPeekU8
 
 var peekMethods = [...]struct {
+	size       uint8
 	n          uint8
 	endianness uint8
 }{
-	t.IDPeekU8 - peekMethodsBase: {8, 'b'},
+	t.IDPeekU8 - peekMethodsBase: {8, 8, 'b'},
 
-	t.IDPeekU16BE - peekMethodsBase: {16, 'b'},
-	t.IDPeekU16LE - peekMethodsBase: {16, 'l'},
+	t.IDPeekU16BE - peekMethodsBase: {16, 16, 'b'},
+	t.IDPeekU16LE - peekMethodsBase: {16, 16, 'l'},
 
-	t.IDPeekU8AsU32 - peekMethodsBase:    {8, 'b'},
-	t.IDPeekU16BEAsU32 - peekMethodsBase: {16, 'b'},
-	t.IDPeekU16LEAsU32 - peekMethodsBase: {16, 'l'},
-	t.IDPeekU24BEAsU32 - peekMethodsBase: {24, 'b'},
-	t.IDPeekU24LEAsU32 - peekMethodsBase: {24, 'l'},
-	t.IDPeekU32BE - peekMethodsBase:      {32, 'b'},
-	t.IDPeekU32LE - peekMethodsBase:      {32, 'l'},
+	t.IDPeekU8AsU32 - peekMethodsBase:    {32, 8, 'b'},
+	t.IDPeekU16BEAsU32 - peekMethodsBase: {32, 16, 'b'},
+	t.IDPeekU16LEAsU32 - peekMethodsBase: {32, 16, 'l'},
+	t.IDPeekU24BEAsU32 - peekMethodsBase: {32, 24, 'b'},
+	t.IDPeekU24LEAsU32 - peekMethodsBase: {32, 24, 'l'},
+	t.IDPeekU32BE - peekMethodsBase:      {32, 32, 'b'},
+	t.IDPeekU32LE - peekMethodsBase:      {32, 32, 'l'},
 
-	t.IDPeekU8AsU64 - peekMethodsBase:    {8, 'b'},
-	t.IDPeekU16BEAsU64 - peekMethodsBase: {16, 'b'},
-	t.IDPeekU16LEAsU64 - peekMethodsBase: {16, 'l'},
-	t.IDPeekU24BEAsU64 - peekMethodsBase: {24, 'b'},
-	t.IDPeekU24LEAsU64 - peekMethodsBase: {24, 'l'},
-	t.IDPeekU32BEAsU64 - peekMethodsBase: {32, 'b'},
-	t.IDPeekU32LEAsU64 - peekMethodsBase: {32, 'l'},
-	t.IDPeekU40BEAsU64 - peekMethodsBase: {40, 'b'},
-	t.IDPeekU40LEAsU64 - peekMethodsBase: {40, 'l'},
-	t.IDPeekU48BEAsU64 - peekMethodsBase: {48, 'b'},
-	t.IDPeekU48LEAsU64 - peekMethodsBase: {48, 'l'},
-	t.IDPeekU56BEAsU64 - peekMethodsBase: {56, 'b'},
-	t.IDPeekU56LEAsU64 - peekMethodsBase: {56, 'l'},
-	t.IDPeekU64BE - peekMethodsBase:      {64, 'b'},
-	t.IDPeekU64LE - peekMethodsBase:      {64, 'l'},
+	t.IDPeekU8AsU64 - peekMethodsBase:    {64, 8, 'b'},
+	t.IDPeekU16BEAsU64 - peekMethodsBase: {64, 16, 'b'},
+	t.IDPeekU16LEAsU64 - peekMethodsBase: {64, 16, 'l'},
+	t.IDPeekU24BEAsU64 - peekMethodsBase: {64, 24, 'b'},
+	t.IDPeekU24LEAsU64 - peekMethodsBase: {64, 24, 'l'},
+	t.IDPeekU32BEAsU64 - peekMethodsBase: {64, 32, 'b'},
+	t.IDPeekU32LEAsU64 - peekMethodsBase: {64, 32, 'l'},
+	t.IDPeekU40BEAsU64 - peekMethodsBase: {64, 40, 'b'},
+	t.IDPeekU40LEAsU64 - peekMethodsBase: {64, 40, 'l'},
+	t.IDPeekU48BEAsU64 - peekMethodsBase: {64, 48, 'b'},
+	t.IDPeekU48LEAsU64 - peekMethodsBase: {64, 48, 'l'},
+	t.IDPeekU56BEAsU64 - peekMethodsBase: {64, 56, 'b'},
+	t.IDPeekU56LEAsU64 - peekMethodsBase: {64, 56, 'l'},
+	t.IDPeekU64BE - peekMethodsBase:      {64, 64, 'b'},
+	t.IDPeekU64LE - peekMethodsBase:      {64, 64, 'l'},
 }
 
 const writeFastMethodsBase = t.IDWriteFastU8

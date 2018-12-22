@@ -9588,7 +9588,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           v_need_block_size = true;
           goto label_1_break;
         }
-        v_block_size = wuffs_base__load_u8be(iop_a_src);
+        v_block_size = ((uint64_t)(wuffs_base__load_u8be(iop_a_src)));
         (iop_a_src += 1, wuffs_base__return_empty_struct());
       }
     label_1_break:;
