@@ -649,6 +649,79 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	return errNoSuchBuiltin
 }
 
+func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, endianness string) error {
+	if (size&7 != 0) || (size < 16) || (size > 64) {
+		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
+	}
+	if endianness != "be" && endianness != "le" {
+		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
+	}
+
+	if g.currFunk.tempW > maxTemp {
+		return fmt.Errorf("too many temporary variables required")
+	}
+	temp := g.currFunk.tempW
+	g.currFunk.tempW++
+
+	if err := g.writeCTypeName(b, n.MType(), tPrefix, fmt.Sprint(temp)); err != nil {
+		return err
+	}
+	b.writes(";")
+
+	g.currFunk.usesScratch = true
+	// TODO: don't hard-code [0], and allow recursive coroutines.
+	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
+		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+
+	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", size/8)
+	b.printf("%s%d = wuffs_base__load_u%d%s(iop_a_src);\n", tPrefix, temp, size, endianness)
+	b.printf("iop_a_src += %d;\n", size/8)
+	b.printf("} else {")
+	b.printf("%s = 0;\n", scratchName)
+	if err := g.writeCoroSuspPoint(b, false); err != nil {
+		return err
+	}
+	b.printf("while (true) {")
+
+	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io1_%s)) {"+
+		"status = wuffs_base__suspension__short_read; goto suspend; }",
+		preName, preName)
+
+	b.printf("uint64_t *scratch = &%s;", scratchName)
+	b.printf("uint32_t num_bits_%d = *scratch", temp)
+	switch endianness {
+	case "be":
+		b.writes("& 0xFF; *scratch >>= 8; *scratch <<= 8;")
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);",
+			iopPrefix, preName, temp)
+	case "le":
+		b.writes(">> 56; *scratch <<= 8; *scratch >>= 8;")
+		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;",
+			iopPrefix, preName, temp)
+	}
+
+	b.printf("if (num_bits_%d == %d) {", temp, size-8)
+	switch endianness {
+	case "be":
+		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, size)
+	case "le":
+		b.printf("%s%d = *scratch;", tPrefix, temp)
+	}
+	b.printf("break;")
+	b.printf("}")
+
+	b.printf("num_bits_%d += 8;", temp)
+	switch endianness {
+	case "be":
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d));", temp)
+	case "le":
+		b.printf("*scratch |= ((uint64_t)(num_bits_%d)) << 56;", temp)
+	}
+
+	b.writes("}}\n")
+	return nil
+}
+
 const peekMethodsBase = t.IDPeekU8
 
 var peekMethods = [...]struct {
