@@ -258,7 +258,8 @@ pub func decoder.decode_frame!??(dst ptr base.pixel_buffer, src base.io_reader, 
 	if this.call_sequence != 2 {
 		this.decode_frame_config!??(dst:nullptr, src:args.src)
 	}
-	this.decode_id_part1!??(dst:args.dst, src:args.src, workbuf:args.workbuf)
+	this.decode_id_part1!??(dst:args.dst, src:args.src)
+	this.decode_id_part2!??(dst:args.dst, src:args.src, workbuf:args.workbuf)
 
 	this.num_decoded_frames_value ~sat+= 1
 	this.reset_gc!()
@@ -509,9 +510,13 @@ pri func decoder.decode_gc!??(src base.io_reader) {
 //
 // See the spec section 20 "Image Descriptor" on page 11.
 //
-// The code is split into two parts (part0 and part1) because determining the
-// overall image's width and height also requires decoding the first frame's
-// bounds (but doesn't require decoding the first frame's pixels).
+// The code is split into three parts (part0, part 1 and part12 because
+// determining the overall image's width and height also requires decoding the
+// first frame's bounds (part0), but doesn't require decoding the first frame's
+// pixels (the other two parts). Decoding the actual pixels is split into two
+// (part1 and part2) not out of necessity, just for the general programming
+// principle that smaller functions are easier to understand.
+
 pri func decoder.decode_id_part0!??(src base.io_reader) {
 	this.frame_rect_x0 = args.src.read_u16le_as_u32!??()
 	this.frame_rect_y0 = args.src.read_u16le_as_u32!??()
@@ -533,7 +538,7 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 	}
 }
 
-pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
+pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
 	var flags base.u8 = args.src.read_u8!??()
 	if (flags & 0x40) != 0 {
 		this.interlace = 4
@@ -619,7 +624,9 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
 	this.previous_lzw_decode_ended_abruptly = true
+}
 
+pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
 	var block_size base.u64[..255]
 	var need_block_size base.bool = true
 	while:outer true {
