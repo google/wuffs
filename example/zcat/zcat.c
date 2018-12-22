@@ -34,7 +34,7 @@ for a C compiler $CC, such as clang or gcc.
 #define WUFFS_IMPLEMENTATION
 
 // Defining the WUFFS_CONFIG__MODULE* macros are optional, but it lets users of
-// release/c/etc.h whitelist which parts of Wuffs to build. That file contains
+// release/c/etc.c whitelist which parts of Wuffs to build. That file contains
 // the entire Wuffs standard library, implementing a variety of codecs and file
 // formats. Without this macro definition, an optimizing compiler or linker may
 // very well discard Wuffs code for unused codecs, but listing the Wuffs
@@ -49,7 +49,7 @@ for a C compiler $CC, such as clang or gcc.
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../release/c/wuffs-unsupported-snapshot.h"
+#include "../../release/c/wuffs-unsupported-snapshot.c"
 
 #ifdef __linux__
 #include <linux/prctl.h>

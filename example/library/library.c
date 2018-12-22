@@ -33,7 +33,12 @@ for a C compiler $CC, such as clang or gcc.
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "wuffs/release/c/wuffs-unsupported-snapshot.h"
+// Wuffs ships as a "single file C library" or "header file library" as per
+// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+//
+// By #include'ing it "as is" without #define'ing WUFFS_IMPLEMENTATION, we use
+// it as a "foo.h"-like header, instead of a "foo.c"-like implementation.
+#include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
 #define DST_BUFFER_SIZE (1024 * 1024)
 

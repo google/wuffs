@@ -17,7 +17,7 @@
 
 # See build-all.sh for commentary.
 
-if [ ! -e release/c/wuffs-unsupported-snapshot.h ]; then
+if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
   echo "$0 should be run from the Wuffs root directory."
   exit 1
 fi

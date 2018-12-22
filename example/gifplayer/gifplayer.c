@@ -64,7 +64,7 @@ uint64_t micros_since_start(struct timespec* now) {
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../release/c/wuffs-unsupported-snapshot.h"
+#include "../../release/c/wuffs-unsupported-snapshot.c"
 
 // Limit the input GIF image to (64 MiB - 1 byte) compressed and 4096 × 4096
 // pixels uncompressed. This is a limitation of this example program (which

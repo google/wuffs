@@ -28,12 +28,7 @@ import (
 func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	revision := findRevision(wuffsRoot)
 	for _, lang := range langs {
-		suffix := lang
-		if suffix == "c" {
-			suffix = "h"
-		}
-
-		filename, contents, err := genreleaseLang(wuffsRoot, revision, v, lang, suffix)
+		filename, contents, err := genreleaseLang(wuffsRoot, revision, v, lang)
 		if err != nil {
 			return err
 		}
@@ -44,7 +39,7 @@ func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	return nil
 }
 
-func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string, suffix string) (filename string, contents []byte, err error) {
+func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string) (filename string, contents []byte, err error) {
 	// During a transitional period (starting in November 2018), remove any
 	// existing wuffs-c generated files that use the old naming scheme (e.g.
 	// "base.h" or "std/gif.h") instead of the new naming scheme (e.g.
@@ -55,7 +50,7 @@ func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string
 		os.RemoveAll(filepath.Join(baseDir, "std"))
 	}
 
-	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+suffix)
+	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+lang)
 	if err != nil {
 		return "", nil, err
 	}
@@ -81,11 +76,7 @@ func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string
 	if v.Major != 0 || v.Minor != 0 {
 		base = fmt.Sprintf("wuffs-v%d.%d", v.Major, v.Minor)
 	}
-	ext := lang
-	if ext == "c" {
-		ext = "h"
-	}
-	return filepath.Join(wuffsRoot, "release", lang, base+"."+ext), stdout.Bytes(), nil
+	return filepath.Join(wuffsRoot, "release", lang, base+"."+lang), stdout.Bytes(), nil
 }
 
 func findRevision(wuffsRoot string) string {

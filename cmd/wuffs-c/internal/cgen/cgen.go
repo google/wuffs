@@ -416,9 +416,9 @@ func (g *gen) genIncludes(b *buffer) error {
 	}
 	sort.Strings(usesList)
 
-	b.writes("#include \"./wuffs-base.h\"\n")
+	b.writes("#include \"./wuffs-base.c\"\n")
 	for _, use := range usesList {
-		b.printf("#include \"./wuffs-%s.h\"\n",
+		b.printf("#include \"./wuffs-%s.c\"\n",
 			strings.Replace(use, "/", "-", -1))
 	}
 

@@ -43,7 +43,7 @@ It should print "PASS", amongst other information, and exit(0).
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../../../release/c/wuffs-unsupported-snapshot.h"
+#include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {

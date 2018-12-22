@@ -83,11 +83,11 @@ var (
 
 func genObj(outDir string, inDir string, cc string, dynamism string, filenames []string) error {
 	for _, filename := range filenames {
-		in := filepath.Join(inDir, filename+".h")
+		in := filepath.Join(inDir, filename+".c")
 		out := genlibOutFilename(outDir, dynamism, filename)
 
 		args := []string(nil)
-		args = append(args, "-x", "c", "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION")
+		args = append(args, "-O3", "-std=c99", "-DWUFFS_IMPLEMENTATION")
 		if dynamism == "dynamic" {
 			args = append(args, "-fPIC", "-DPIC")
 		}

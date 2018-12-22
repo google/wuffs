@@ -37,7 +37,7 @@
 # gcc zcat.c
 # ./a.out < ../../test/data/romeo.txt.gz
 
-if [ ! -e release/c/wuffs-unsupported-snapshot.h ]; then
+if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
   echo "$0 should be run from the Wuffs root directory."
   exit 1
 fi
@@ -48,11 +48,11 @@ wuffs gen
 
 echo "Checking snapshot compiles cleanly (as C)"
 gcc -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c99 \
-    release/c/wuffs-unsupported-snapshot.h -o /dev/null
+    release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 echo "Checking snapshot compiles cleanly (as C++)"
 g++ -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c++11 \
-    release/c/wuffs-unsupported-snapshot.h -o /dev/null
+    release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen
 wuffs test   -skipgen -mimic
