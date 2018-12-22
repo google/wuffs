@@ -197,6 +197,52 @@ const char* test_wuffs_lzw_decode_pi() {
                                   "test/data/pi.txt", 100003, 0, 0);
 }
 
+const char* test_wuffs_lzw_decode_output_bad() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  // Set up src to be 20 bytes long, starting with three 8-bit literal codes
+  // (0x41, 0x42, 0x43) then a bad 8-bit code 0xFF. Decoding should produce 3
+  // bytes and consume 4 bytes.
+  src.meta.wi = 20;
+  int i;
+  for (i = 0; i < src.meta.wi; i++) {
+    src.data.ptr[i] = 0;
+  }
+  src.data.ptr[0] = 0x41;
+  src.data.ptr[1] = 0x42;
+  src.data.ptr[2] = 0x43;
+  src.data.ptr[3] = 0xFF;
+
+  wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
+  const char* z =
+      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  }
+  wuffs_lzw__decoder__set_literal_width(&dec, 7);
+
+  z = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
+                                 wuffs_base__io_buffer__reader(&src));
+  if (z != wuffs_lzw__error__bad_code) {
+    RETURN_FAIL("decode: \"%s\"", z);
+  }
+
+  if (got.meta.wi != 3) {
+    RETURN_FAIL("got.meta.wi: got %d, want 3", (int)(got.meta.wi));
+  }
+  if (src.meta.ri != 4) {
+    RETURN_FAIL("src.meta.ri: got %d, want 4", (int)(src.meta.ri));
+  }
+  return NULL;
+}
+
 const char* test_wuffs_lzw_decode_output_empty() {
   CHECK_FOCUS(__func__);
 
@@ -208,7 +254,7 @@ const char* test_wuffs_lzw_decode_output_empty() {
   });
 
   // Set up src to be 20 bytes long, starting with the 9-bit end code 0x101.
-  // Decoding should consume only 2 of those bytes.
+  // Decoding should produce 0 bytes and consume 2 bytes.
   src.meta.wi = 20;
   int i;
   for (i = 0; i < src.meta.wi; i++) {
@@ -308,6 +354,7 @@ proc tests[] = {
     test_wuffs_lzw_decode_bricks_nodither,          //
     test_wuffs_lzw_decode_many_big_reads,           //
     test_wuffs_lzw_decode_many_small_writes_reads,  //
+    test_wuffs_lzw_decode_output_bad,               //
     test_wuffs_lzw_decode_output_empty,             //
     test_wuffs_lzw_decode_pi,                       //
 

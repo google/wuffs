@@ -49,6 +49,8 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var prev_code base.u32[..4095] = end_code
 	var width base.u32[..12] = literal_width + 1
 
+	var bad base.bool
+
 	// First, use the j variable to initialize some state.
 	var j base.u32[..8191]
 	while j < clear_code {
@@ -208,7 +210,8 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			}
 
 		} else {
-			return "?bad code"
+			bad = true
+			break
 		}
 
 		// Flush the output if it could be too full to contain the entire
@@ -246,6 +249,10 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	if j > 0 {
 		this.flush_j = j
 		this.auto_flush!??(dst:args.dst)
+	}
+
+	if bad {
+		return "?bad code"
 	}
 }
 

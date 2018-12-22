@@ -2628,6 +2628,7 @@ struct wuffs_lzw__decoder__struct {
       uint32_t v_save_code;
       uint32_t v_prev_code;
       uint32_t v_width;
+      bool v_bad;
       uint32_t v_j;
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -7145,6 +7146,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
   uint32_t v_save_code;
   uint32_t v_prev_code;
   uint32_t v_width;
+  bool v_bad;
   uint32_t v_j;
   uint32_t v_bits;
   uint32_t v_n_bits;
@@ -7181,6 +7183,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_save_code = self->private_impl.c_decode[0].v_save_code;
     v_prev_code = self->private_impl.c_decode[0].v_prev_code;
     v_width = self->private_impl.c_decode[0].v_width;
+    v_bad = self->private_impl.c_decode[0].v_bad;
     v_j = self->private_impl.c_decode[0].v_j;
     v_bits = self->private_impl.c_decode[0].v_bits;
     v_n_bits = self->private_impl.c_decode[0].v_n_bits;
@@ -7192,6 +7195,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_lm1_b = 0;
     v_lm1_a = 0;
   } else {
+    v_bad = false;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -7205,6 +7209,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     v_save_code = v_end_code;
     v_prev_code = v_end_code;
     v_width = (v_literal_width + 1);
+    v_bad = 0;
     v_j = 0;
     while (v_j < v_clear_code) {
       self->private_impl.f_lm1s[v_j] = 0;
@@ -7334,8 +7339,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
           v_prev_code = v_code;
         }
       } else {
-        status = wuffs_lzw__error__bad_code;
-        goto exit;
+        v_bad = true;
+        goto label_1_break;
       }
       if (v_j > 4095) {
         while (v_n_bits >= 8) {
@@ -7375,6 +7380,10 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
         goto suspend;
       }
     }
+    if (v_bad) {
+      status = wuffs_lzw__error__bad_code;
+      goto exit;
+    }
 
     goto ok;
   ok:
@@ -7391,6 +7400,7 @@ suspend:
   self->private_impl.c_decode[0].v_save_code = v_save_code;
   self->private_impl.c_decode[0].v_prev_code = v_prev_code;
   self->private_impl.c_decode[0].v_width = v_width;
+  self->private_impl.c_decode[0].v_bad = v_bad;
   self->private_impl.c_decode[0].v_j = v_j;
   self->private_impl.c_decode[0].v_bits = v_bits;
   self->private_impl.c_decode[0].v_n_bits = v_n_bits;
