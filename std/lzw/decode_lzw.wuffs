@@ -233,18 +233,17 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		}
 	}
 
-	if j > 0 {
-		// Rewind args.src, if we've read too many bits.
-		while n_bits >= 8 {
-			n_bits -= 8
-			if args.src.can_undo_byte() {
-				args.src.undo_byte!()
-			} else {
-				return "?internal error: inconsistent I/O"
-			}
+	// Rewind args.src, if we've read too many bits.
+	while n_bits >= 8 {
+		n_bits -= 8
+		if args.src.can_undo_byte() {
+			args.src.undo_byte!()
+		} else {
+			return "?internal error: inconsistent I/O"
 		}
-		bits = bits.low_bits(n:n_bits)
+	}
 
+	if j > 0 {
 		this.flush_j = j
 		this.auto_flush!??(dst:args.dst)
 	}

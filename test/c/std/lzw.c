@@ -163,20 +163,6 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   return check_io_buffers_equal("", &got, &want);
 }
 
-const char* test_wuffs_lzw_decode_many_big_reads() {
-  CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
-                                  "test/data/bricks-gray.indexes", 19200, 0,
-                                  4096);
-}
-
-const char* test_wuffs_lzw_decode_many_small_writes_reads() {
-  CHECK_FOCUS(__func__);
-  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
-                                  "test/data/bricks-gray.indexes", 19200, 41,
-                                  43);
-}
-
 const char* test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-dither.indexes.giflzw",
@@ -191,10 +177,67 @@ const char* test_wuffs_lzw_decode_bricks_nodither() {
                                   19200, 0, 0);
 }
 
+const char* test_wuffs_lzw_decode_many_big_reads() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
+                                  "test/data/bricks-gray.indexes", 19200, 0,
+                                  4096);
+}
+
+const char* test_wuffs_lzw_decode_many_small_writes_reads() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
+                                  "test/data/bricks-gray.indexes", 19200, 41,
+                                  43);
+}
+
 const char* test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/pi.txt.giflzw", 50550,
                                   "test/data/pi.txt", 100003, 0, 0);
+}
+
+const char* test_wuffs_lzw_decode_output_empty() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  // Set up src to be 20 bytes long, starting with the 9-bit end code 0x101.
+  // Decoding should consume only 2 of those bytes.
+  src.meta.wi = 20;
+  int i;
+  for (i = 0; i < src.meta.wi; i++) {
+    src.data.ptr[i] = 0;
+  }
+  src.data.ptr[0] = 0x01;
+  src.data.ptr[1] = 0x01;
+
+  wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
+  const char* z =
+      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  }
+  wuffs_lzw__decoder__set_literal_width(&dec, 8);
+
+  z = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
+                                 wuffs_base__io_buffer__reader(&src));
+  if (z) {
+    RETURN_FAIL("decode: \"%s\"", z);
+  }
+
+  if (got.meta.wi != 0) {
+    RETURN_FAIL("got.meta.wi: got %d, want 0", (int)(got.meta.wi));
+  }
+  if (src.meta.ri != 2) {
+    RETURN_FAIL("src.meta.ri: got %d, want 2", (int)(src.meta.ri));
+  }
+  return NULL;
 }
 
 // ---------------- LZW Benches
@@ -261,10 +304,11 @@ const char* bench_wuffs_lzw_decode_100k() {
 // The empty comments forces clang-format to place one element per line.
 proc tests[] = {
 
-    test_wuffs_lzw_decode_many_big_reads,           //
-    test_wuffs_lzw_decode_many_small_writes_reads,  //
     test_wuffs_lzw_decode_bricks_dither,            //
     test_wuffs_lzw_decode_bricks_nodither,          //
+    test_wuffs_lzw_decode_many_big_reads,           //
+    test_wuffs_lzw_decode_many_small_writes_reads,  //
+    test_wuffs_lzw_decode_output_empty,             //
     test_wuffs_lzw_decode_pi,                       //
 
     NULL,

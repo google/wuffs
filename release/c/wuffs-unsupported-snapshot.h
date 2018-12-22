@@ -7358,17 +7358,16 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
       }
     }
   label_1_break:;
-    if (v_j > 0) {
-      while (v_n_bits >= 8) {
-        v_n_bits -= 8;
-        if (iop_a_src > io0_a_src) {
-          (iop_a_src--, wuffs_base__return_empty_struct());
-        } else {
-          status = wuffs_lzw__error__internal_error_inconsistent_i_o;
-          goto exit;
-        }
+    while (v_n_bits >= 8) {
+      v_n_bits -= 8;
+      if (iop_a_src > io0_a_src) {
+        (iop_a_src--, wuffs_base__return_empty_struct());
+      } else {
+        status = wuffs_lzw__error__internal_error_inconsistent_i_o;
+        goto exit;
       }
-      v_bits = ((v_bits)&WUFFS_BASE__LOW_BITS_MASK__U32(v_n_bits));
+    }
+    if (v_j > 0) {
       self->private_impl.f_flush_j = v_j;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
       status = wuffs_lzw__decoder__auto_flush(self, a_dst);
