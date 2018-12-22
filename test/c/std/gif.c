@@ -808,6 +808,60 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_missing_two_src_bytes() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* z = read_file(&src, "test/data/pjw-thumbnail.gif");
+  if (z) {
+    return z;
+  }
+
+  // Trim the final two bytes: the 0x00 end-of-block and the 0x3B trailer.
+  if (src.meta.wi < 2) {
+    return "src file is too short";
+  }
+  src.meta.wi -= 2;
+
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  z = wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (z) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+
+  z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+  if (z) {
+    RETURN_FAIL("decode_image_config: got \"%s\"", z);
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                               global_pixel_slice);
+  if (z) {
+    RETURN_FAIL("set_from_slice: \"%s\"", z);
+  }
+
+  z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, global_work_slice,
+                                       NULL);
+  if (z != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("decode_frame: got \"%s\"", z);
+  }
+
+  // Even we though we haven't seen the 0x00 end-of-block, we should still have
+  // some pixel data.
+  wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
+  if (wuffs_base__rect_ie_u32__is_empty(&r)) {
+    RETURN_FAIL("dirty_rect: got empty, want non-empty");
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_multiple_loop_counts() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -1465,6 +1519,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
+    test_wuffs_gif_decode_missing_two_src_bytes,             //
     test_wuffs_gif_decode_multiple_loop_counts,              //
     test_wuffs_gif_frame_dirty_rect,                         //
     test_wuffs_gif_num_decoded_frame_configs,                //

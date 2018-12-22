@@ -620,8 +620,16 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 
 	this.previous_lzw_decode_ended_abruptly = true
 
-	var block_size base.u64[..255] = args.src.read_u8_as_u64!??()
-	while:outer block_size > 0 {
+	var block_size base.u64[..255]
+	var need_block_size base.bool = true
+	while:outer true {
+		if need_block_size {
+			need_block_size = false
+			block_size = args.src.read_u8_as_u64!??()
+		}
+		if block_size == 0 {
+			break
+		}
 		while args.src.available() == 0 {
 			yield base."$short read"
 		}
@@ -642,7 +650,12 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 			if block_size > 0 {
 				break
 			}
-			block_size = args.src.read_u8_as_u64!??()
+			if args.src.available() <= 0 {
+				need_block_size = true
+				break
+			}
+			block_size = args.src.peek_u8_as_u64()
+			args.src.skip_fast!(actual:1, worst_case:1)
 		}
 
 		if (this.width as base.u64) < args.workbuf.length() {
@@ -670,7 +683,7 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.previous_lzw_decode_ended_abruptly = false
 
 				// Skip any trailing blocks.
-				if block_size > 0 {
+				if need_block_size or (block_size > 0) {
 					args.src.skip!??(n:block_size as base.u32)
 					this.skip_blocks!??(src:args.src)
 				}
