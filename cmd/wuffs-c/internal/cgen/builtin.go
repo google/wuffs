@@ -606,7 +606,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 		if method.Ident() >= readMethodsBase {
 			if m := method.Ident() - readMethodsBase; m < t.ID(len(readMethods)) {
 				if p := readMethods[m]; p.n != 0 {
-					return g.writeReadUXX(b, n, "a_src", p.n, p.endianness)
+					return g.writeReadUxxAsUyy(b, n, "a_src", p.n, p.size, p.endianness)
 				}
 			}
 		}
@@ -628,9 +628,9 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint8, endianness uint8) error {
-	if (size&7 != 0) || (size < 16) || (size > 64) {
-		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
+func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, yy uint8, endianness uint8) error {
+	if (xx&7 != 0) || (xx < 16) || (xx > 64) {
+		return fmt.Errorf("internal error: bad writeReadUXX size %d", xx)
 	}
 	if endianness != 'b' && endianness != 'l' {
 		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
@@ -652,9 +652,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint8, end
 	scratchName := fmt.Sprintf("self->private_impl.%s%s[0].scratch",
 		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
-	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", size/8)
-	b.printf("%s%d = wuffs_base__load_u%d%ce(iop_a_src);\n", tPrefix, temp, size, endianness)
-	b.printf("iop_a_src += %d;\n", size/8)
+	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", xx/8)
+	b.printf("%s%d = wuffs_base__load_u%d%ce(iop_a_src);\n", tPrefix, temp, xx, endianness)
+	b.printf("iop_a_src += %d;\n", xx/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
 	if err := g.writeCoroSuspPoint(b, false); err != nil {
@@ -679,10 +679,10 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint8, end
 			iopPrefix, preName, temp)
 	}
 
-	b.printf("if (num_bits_%d == %d) {", temp, size-8)
+	b.printf("if (num_bits_%d == %d) {", temp, xx-8)
 	switch endianness {
 	case 'b':
-		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, size)
+		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, xx)
 	case 'l':
 		b.printf("%s%d = *scratch;", tPrefix, temp)
 	}
