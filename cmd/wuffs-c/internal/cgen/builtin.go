@@ -569,35 +569,6 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			b.printf(" = *iop_a_src++;\n")
 			return nil
 
-		case t.IDReadU16BE, t.IDReadU16BEAsU32, t.IDReadU16BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 16, "be")
-		case t.IDReadU16LE, t.IDReadU16LEAsU32, t.IDReadU16LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 16, "le")
-		case t.IDReadU24BEAsU32, t.IDReadU24BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 24, "be")
-		case t.IDReadU24LEAsU32, t.IDReadU24LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 24, "le")
-		case t.IDReadU32BE, t.IDReadU32BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 32, "be")
-		case t.IDReadU32LE, t.IDReadU32LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 32, "le")
-		case t.IDReadU40BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 40, "be")
-		case t.IDReadU40LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 40, "le")
-		case t.IDReadU48BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 48, "be")
-		case t.IDReadU48LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 48, "le")
-		case t.IDReadU56BEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 56, "be")
-		case t.IDReadU56LEAsU64:
-			return g.writeReadUXX(b, n, "a_src", 56, "le")
-		case t.IDReadU64BE:
-			return g.writeReadUXX(b, n, "a_src", 64, "be")
-		case t.IDReadU64LE:
-			return g.writeReadUXX(b, n, "a_src", 64, "le")
-
 		case t.IDSkip:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
@@ -632,6 +603,14 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			return nil
 		}
 
+		if method.Ident() >= readMethodsBase {
+			if m := method.Ident() - readMethodsBase; m < t.ID(len(readMethods)) {
+				if p := readMethods[m]; p.n != 0 {
+					return g.writeReadUXX(b, n, "a_src", p.n, p.endianness)
+				}
+			}
+		}
+
 	} else {
 		switch method.Ident() {
 		case t.IDWriteU8:
@@ -649,11 +628,11 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	return errNoSuchBuiltin
 }
 
-func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, endianness string) error {
+func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint8, endianness uint8) error {
 	if (size&7 != 0) || (size < 16) || (size > 64) {
 		return fmt.Errorf("internal error: bad writeReadUXX size %d", size)
 	}
-	if endianness != "be" && endianness != "le" {
+	if endianness != 'b' && endianness != 'l' {
 		return fmt.Errorf("internal error: bad writeReadUXX endianness %q", endianness)
 	}
 
@@ -674,7 +653,7 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", size/8)
-	b.printf("%s%d = wuffs_base__load_u%d%s(iop_a_src);\n", tPrefix, temp, size, endianness)
+	b.printf("%s%d = wuffs_base__load_u%d%ce(iop_a_src);\n", tPrefix, temp, size, endianness)
 	b.printf("iop_a_src += %d;\n", size/8)
 	b.printf("} else {")
 	b.printf("%s = 0;\n", scratchName)
@@ -690,11 +669,11 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 	b.printf("uint64_t *scratch = &%s;", scratchName)
 	b.printf("uint32_t num_bits_%d = *scratch", temp)
 	switch endianness {
-	case "be":
+	case 'b':
 		b.writes("& 0xFF; *scratch >>= 8; *scratch <<= 8;")
 		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);",
 			iopPrefix, preName, temp)
-	case "le":
+	case 'l':
 		b.writes(">> 56; *scratch <<= 8; *scratch >>= 8;")
 		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;",
 			iopPrefix, preName, temp)
@@ -702,9 +681,9 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 
 	b.printf("if (num_bits_%d == %d) {", temp, size-8)
 	switch endianness {
-	case "be":
+	case 'b':
 		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, size)
-	case "le":
+	case 'l':
 		b.printf("%s%d = *scratch;", tPrefix, temp)
 	}
 	b.printf("break;")
@@ -712,14 +691,51 @@ func (g *gen) writeReadUXX(b *buffer, n *a.Expr, preName string, size uint32, en
 
 	b.printf("num_bits_%d += 8;", temp)
 	switch endianness {
-	case "be":
+	case 'b':
 		b.printf("*scratch |= ((uint64_t)(num_bits_%d));", temp)
-	case "le":
+	case 'l':
 		b.printf("*scratch |= ((uint64_t)(num_bits_%d)) << 56;", temp)
 	}
 
 	b.writes("}}\n")
 	return nil
+}
+
+const readMethodsBase = t.IDReadU8
+
+var readMethods = [...]struct {
+	size       uint8
+	n          uint8
+	endianness uint8
+}{
+	t.IDReadU8 - readMethodsBase: {8, 8, 'b'},
+
+	t.IDReadU16BE - readMethodsBase: {16, 16, 'b'},
+	t.IDReadU16LE - readMethodsBase: {16, 16, 'l'},
+
+	t.IDReadU8AsU32 - readMethodsBase:    {32, 8, 'b'},
+	t.IDReadU16BEAsU32 - readMethodsBase: {32, 16, 'b'},
+	t.IDReadU16LEAsU32 - readMethodsBase: {32, 16, 'l'},
+	t.IDReadU24BEAsU32 - readMethodsBase: {32, 24, 'b'},
+	t.IDReadU24LEAsU32 - readMethodsBase: {32, 24, 'l'},
+	t.IDReadU32BE - readMethodsBase:      {32, 32, 'b'},
+	t.IDReadU32LE - readMethodsBase:      {32, 32, 'l'},
+
+	t.IDReadU8AsU64 - readMethodsBase:    {64, 8, 'b'},
+	t.IDReadU16BEAsU64 - readMethodsBase: {64, 16, 'b'},
+	t.IDReadU16LEAsU64 - readMethodsBase: {64, 16, 'l'},
+	t.IDReadU24BEAsU64 - readMethodsBase: {64, 24, 'b'},
+	t.IDReadU24LEAsU64 - readMethodsBase: {64, 24, 'l'},
+	t.IDReadU32BEAsU64 - readMethodsBase: {64, 32, 'b'},
+	t.IDReadU32LEAsU64 - readMethodsBase: {64, 32, 'l'},
+	t.IDReadU40BEAsU64 - readMethodsBase: {64, 40, 'b'},
+	t.IDReadU40LEAsU64 - readMethodsBase: {64, 40, 'l'},
+	t.IDReadU48BEAsU64 - readMethodsBase: {64, 48, 'b'},
+	t.IDReadU48LEAsU64 - readMethodsBase: {64, 48, 'l'},
+	t.IDReadU56BEAsU64 - readMethodsBase: {64, 56, 'b'},
+	t.IDReadU56LEAsU64 - readMethodsBase: {64, 56, 'l'},
+	t.IDReadU64BE - readMethodsBase:      {64, 64, 'b'},
+	t.IDReadU64LE - readMethodsBase:      {64, 64, 'l'},
 }
 
 const peekMethodsBase = t.IDPeekU8
