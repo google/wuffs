@@ -72,7 +72,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			if args.src.available() >= 4 {
 				// Read 4 bytes, using the "Variant 4" technique of
 				// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
-				bits |= (args.src.peek_u32le() as base.u32) ~mod<< n_bits
+				bits |= args.src.peek_u32le() ~mod<< n_bits
 				args.src.skip_fast!(actual:(31 - n_bits) >> 3, worst_case:3)
 				n_bits |= 24
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c:12)
@@ -98,7 +98,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 							yield base."$short read"
 						}
 					}
-					bits |= (args.src.peek_u8() as base.u32) << n_bits
+					bits |= args.src.peek_u8_as_u32() << n_bits
 					args.src.skip_fast!(actual:1, worst_case:1)
 					n_bits += 8
 					if n_bits >= width {

@@ -7227,8 +7227,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     while (true) {
       if (v_n_bits < v_width) {
         if (((uint64_t)(io1_a_src - iop_a_src)) >= 4) {
-          v_bits |=
-              (((uint32_t)(wuffs_base__load_u32le(iop_a_src))) << v_n_bits);
+          v_bits |= (wuffs_base__load_u32le(iop_a_src) << v_n_bits);
           (iop_a_src += ((31 - v_n_bits) >> 3),
            wuffs_base__return_empty_struct());
           v_n_bits |= 24;
