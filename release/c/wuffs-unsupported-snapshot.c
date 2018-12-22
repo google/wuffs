@@ -8383,7 +8383,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint32_t t_0;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_0 = wuffs_base__load_u16le(iop_a_src);
+        t_0 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_lsd[0].scratch = 0;
@@ -8399,7 +8399,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
           if (num_bits_0 == 8) {
-            t_0 = *scratch;
+            t_0 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_0 += 8;
@@ -8412,7 +8412,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       uint32_t t_1;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_1 = wuffs_base__load_u16le(iop_a_src);
+        t_1 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_lsd[0].scratch = 0;
@@ -8428,7 +8428,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
           if (num_bits_1 == 8) {
-            t_1 = *scratch;
+            t_1 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_1 += 8;
@@ -8465,7 +8465,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
           uint32_t t_3;
           if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 3)) {
-            t_3 = wuffs_base__load_u24be(iop_a_src);
+            t_3 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
             iop_a_src += 3;
           } else {
             self->private_impl.c_decode_lsd[0].scratch = 0;
@@ -8481,7 +8481,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
               if (num_bits_3 == 16) {
-                t_3 = *scratch >> (64 - 24);
+                t_3 = ((uint32_t)(*scratch >> 40));
                 break;
               }
               num_bits_3 += 8;
@@ -8870,7 +8870,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
         uint32_t t_4;
         if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-          t_4 = wuffs_base__load_u16le(iop_a_src);
+          t_4 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
           iop_a_src += 2;
         } else {
           self->private_impl.c_decode_ae[0].scratch = 0;
@@ -8886,7 +8886,7 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
             *scratch >>= 8;
             *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_4;
             if (num_bits_4 == 8) {
-              t_4 = *scratch;
+              t_4 = ((uint32_t)(*scratch));
               break;
             }
             num_bits_4 += 8;
@@ -9124,7 +9124,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint32_t t_0;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_0 = wuffs_base__load_u16le(iop_a_src);
+        t_0 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_id_part0[0].scratch = 0;
@@ -9140,7 +9140,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
           if (num_bits_0 == 8) {
-            t_0 = *scratch;
+            t_0 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_0 += 8;
@@ -9153,7 +9153,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       uint32_t t_1;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_1 = wuffs_base__load_u16le(iop_a_src);
+        t_1 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_id_part0[0].scratch = 0;
@@ -9169,7 +9169,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_1;
           if (num_bits_1 == 8) {
-            t_1 = *scratch;
+            t_1 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_1 += 8;
@@ -9182,7 +9182,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
       uint32_t t_2;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_2 = wuffs_base__load_u16le(iop_a_src);
+        t_2 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_id_part0[0].scratch = 0;
@@ -9198,7 +9198,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_2;
           if (num_bits_2 == 8) {
-            t_2 = *scratch;
+            t_2 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_2 += 8;
@@ -9212,7 +9212,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
       uint32_t t_3;
       if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 2)) {
-        t_3 = wuffs_base__load_u16le(iop_a_src);
+        t_3 = ((uint32_t)(wuffs_base__load_u16le(iop_a_src)));
         iop_a_src += 2;
       } else {
         self->private_impl.c_decode_id_part0[0].scratch = 0;
@@ -9228,7 +9228,7 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
           *scratch >>= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_3;
           if (num_bits_3 == 8) {
-            t_3 = *scratch;
+            t_3 = ((uint32_t)(*scratch));
             break;
           }
           num_bits_3 += 8;
@@ -9338,7 +9338,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
           uint32_t t_1;
           if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 3)) {
-            t_1 = wuffs_base__load_u24be(iop_a_src);
+            t_1 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
             iop_a_src += 3;
           } else {
             self->private_impl.c_decode_id_part1[0].scratch = 0;
@@ -9355,7 +9355,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
               *scratch <<= 8;
               *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
               if (num_bits_1 == 16) {
-                t_1 = *scratch >> (64 - 24);
+                t_1 = ((uint32_t)(*scratch >> 40));
                 break;
               }
               num_bits_1 += 8;
@@ -10455,7 +10455,7 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
           if (num_bits_0 == 8) {
-            t_0 = *scratch >> (64 - 16);
+            t_0 = *scratch >> 48;
             break;
           }
           num_bits_0 += 8;
@@ -10539,7 +10539,7 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           *scratch <<= 8;
           *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
           if (num_bits_2 == 24) {
-            t_2 = *scratch >> (64 - 32);
+            t_2 = *scratch >> 32;
             break;
           }
           num_bits_2 += 8;

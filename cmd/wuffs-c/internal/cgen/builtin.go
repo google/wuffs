@@ -653,9 +653,17 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 		cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
 	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", xx/8)
-	b.printf("%s%d = wuffs_base__load_u%d%ce(iop_a_src);\n", tPrefix, temp, xx, endianness)
-	b.printf("iop_a_src += %d;\n", xx/8)
+	b.printf("%s%d =", tPrefix, temp)
+	if xx != yy {
+		b.printf("((uint%d_t)(", yy)
+	}
+	b.printf("wuffs_base__load_u%d%ce(iop_a_src)", xx, endianness)
+	if xx != yy {
+		b.writes("))")
+	}
+	b.printf("; iop_a_src += %d;\n", xx/8)
 	b.printf("} else {")
+
 	b.printf("%s = 0;\n", scratchName)
 	if err := g.writeCoroSuspPoint(b, false); err != nil {
 		return err
@@ -679,14 +687,20 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 			iopPrefix, preName, temp)
 	}
 
-	b.printf("if (num_bits_%d == %d) {", temp, xx-8)
+	b.printf("if (num_bits_%d == %d) { %s%d =", temp, xx-8, tPrefix, temp)
+	if xx != yy {
+		b.printf("((uint%d_t)(", yy)
+	}
 	switch endianness {
 	case 'b':
-		b.printf("%s%d = *scratch >> (64 - %d);", tPrefix, temp, xx)
+		b.printf("*scratch >> %d", 64-xx)
 	case 'l':
-		b.printf("%s%d = *scratch;", tPrefix, temp)
+		b.printf("*scratch")
 	}
-	b.printf("break;")
+	if xx != yy {
+		b.writes("))")
+	}
+	b.printf("; break;")
 	b.printf("}")
 
 	b.printf("num_bits_%d += 8;", temp)
