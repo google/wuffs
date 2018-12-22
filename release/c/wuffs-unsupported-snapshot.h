@@ -9603,6 +9603,8 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       }
     }
   label_0_break:;
+    self->private_impl.f_compressed_ri = 0;
+    self->private_impl.f_compressed_wi = 0;
 
     goto ok;
   ok:

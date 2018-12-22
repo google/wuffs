@@ -685,6 +685,9 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 		}
 	}
 
+	this.compressed_ri = 0
+	this.compressed_wi = 0
+
 	// TODO: check for "not enough pixel data".
 }
 
