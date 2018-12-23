@@ -40,16 +40,6 @@ func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 }
 
 func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string) (filename string, contents []byte, err error) {
-	// During a transitional period (starting in November 2018), remove any
-	// existing wuffs-c generated files that use the old naming scheme (e.g.
-	// "base.h" or "std/gif.h") instead of the new naming scheme (e.g.
-	// "wuffs-base.h" or "wuffs-std-gif.h").
-	if lang == "c" {
-		baseDir := filepath.Join(wuffsRoot, "gen", lang)
-		os.Remove(filepath.Join(baseDir, "base.h"))
-		os.RemoveAll(filepath.Join(baseDir, "std"))
-	}
-
 	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+lang)
 	if err != nil {
 		return "", nil, err
