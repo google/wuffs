@@ -380,13 +380,14 @@ func (h *resumabilityHelper) doIf(r resumabilities, n *a.If, depth uint32) error
 func (h *resumabilityHelper) doIterate(r resumabilities, n *a.Iterate, depth uint32) error {
 	// TODO: ban jumps, rets and coroutine calls inside an iterate. Also ensure
 	// that the iterate variable values are all pure expressions.
-	for _, v := range n.Variables() {
-		v := v.AsVar()
-		if err := h.doExpr(r, v.Value()); err != nil {
+	for _, o := range n.Assigns() {
+		o := o.AsAssign()
+		if err := h.doExpr(r, o.RHS()); err != nil {
 			return err
 		}
-		if i, ok := h.vars[v.Name()]; !ok {
-			return fmt.Errorf("unrecognized variable %q", v.Name().Str(h.tm))
+		name := o.LHS().Ident()
+		if i, ok := h.vars[name]; !ok {
+			return fmt.Errorf("unrecognized variable %q", name.Str(h.tm))
 		} else {
 			r.lowerWeakToNone(i)
 		}

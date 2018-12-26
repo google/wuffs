@@ -4209,10 +4209,12 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
   uint32_t v_s1;
   uint32_t v_s2;
   wuffs_base__slice_u8 v_remaining;
+  wuffs_base__slice_u8 v_p;
 
   v_s1 = 0;
   v_s2 = 0;
   v_remaining = ((wuffs_base__slice_u8){});
+  v_p = ((wuffs_base__slice_u8){});
   if (!self->private_impl.f_started) {
     self->private_impl.f_started = true;
     self->private_impl.f_state = 1;
@@ -4227,7 +4229,7 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
     }
     {
       wuffs_base__slice_u8 i_slice_p = a_x;
-      wuffs_base__slice_u8 v_p = i_slice_p;
+      v_p = i_slice_p;
       v_p.len = 1;
       uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 8) * 8;
       while (v_p.ptr < i_end0_p) {
@@ -5051,12 +5053,14 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
   }
 
   uint32_t v_s;
+  wuffs_base__slice_u8 v_p;
 
   v_s = 0;
+  v_p = ((wuffs_base__slice_u8){});
   v_s = (4294967295 ^ self->private_impl.f_state);
   {
     wuffs_base__slice_u8 i_slice_p = a_x;
-    wuffs_base__slice_u8 v_p = i_slice_p;
+    v_p = i_slice_p;
     v_p.len = 16;
     uint8_t* i_end0_p = i_slice_p.ptr + (i_slice_p.len / 32) * 32;
     while (v_p.ptr < i_end0_p) {

@@ -44,9 +44,6 @@ func (q *checker) tcheckVars(block []*a.Node) error {
 
 		case a.KIterate:
 			for o := o.AsIterate(); o != nil; o = o.ElseIterate() {
-				if err := q.tcheckVars(o.Variables()); err != nil {
-					return err
-				}
 				if err := q.tcheckVars(o.Body()); err != nil {
 					return err
 				}
@@ -150,9 +147,14 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		for n := n.AsIterate(); n != nil; n = n.ElseIterate() {
-			for _, o := range n.Variables() {
+			for _, o := range n.Assigns() {
 				if err := q.tcheckStatement(o); err != nil {
 					return err
+				}
+				o := o.AsAssign()
+				if typ := o.LHS().MType(); !typ.IsSliceType() {
+					return fmt.Errorf("check: iterate assignment to %q, of type %q, does not have slice type",
+						o.LHS().Str(q.tm), typ.Str(q.tm))
 				}
 			}
 			// TODO: prohibit jumps (breaks, continues), rets (returns, yields) and
@@ -223,17 +225,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			}
 			lTyp := n.XType()
 			rTyp := value.MType()
-			if n.IterateVariable() {
-				if !lTyp.IsSliceType() {
-					return fmt.Errorf("check: iterate variable %q, of type %q, does not have a slice type",
-						n.Name().Str(q.tm), lTyp.Str(q.tm))
-				}
-				if !lTyp.Eq(rTyp) {
-					return fmt.Errorf("check: cannot iterate %q of type %q over %q of type %q "+
-						"as their types don't match",
-						n.Name().Str(q.tm), lTyp.Str(q.tm), value.Str(q.tm), rTyp.Str(q.tm))
-				}
-			} else if err := q.tcheckEq(n.Name(), nil, lTyp, value, rTyp); err != nil {
+			if err := q.tcheckEq(n.Name(), nil, lTyp, value, rTyp); err != nil {
 				return err
 			}
 

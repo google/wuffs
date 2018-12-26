@@ -344,13 +344,10 @@ func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool, initBoolTyped
 	return nil
 }
 
-func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipIterateVariables bool, skipNonresumable bool) error {
+func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipNonresumable bool) error {
 	for _, n := range f.varList {
 		typ := n.XType()
 		if skipPointerTypes && typ.HasPointers() {
-			continue
-		}
-		if skipIterateVariables && n.IterateVariable() {
 			continue
 		}
 		if skipNonresumable && (f.varResumables == nil || !f.varResumables[n.Name()]) {

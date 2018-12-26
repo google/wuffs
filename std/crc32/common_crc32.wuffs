@@ -22,12 +22,13 @@ pub struct ieee_hasher?(
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
 pub func ieee_hasher.update!(x slice base.u8) base.u32 {
 	var s base.u32
+	var p slice base.u8
 
 	s = 0xFFFFFFFF ^ this.state
 
 	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
 	// the slicing-by-M algorithm. We use an M of 16.
-	iterate (p slice base.u8 =: args.x)(length:16, unroll:2) {
+	iterate (p = args.x)(length:16, unroll:2) {
 		s ^= ((p[0x00] as base.u32) << 0) |
 			((p[0x01] as base.u32) << 8) |
 			((p[0x02] as base.u32) << 16) |

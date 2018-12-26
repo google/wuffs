@@ -256,8 +256,9 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 
 	case a.KIterate:
 		n := n.AsIterate()
-		for _, o := range n.Variables() {
-			if err := q.bcheckVar(o.AsVar()); err != nil {
+		for _, o := range n.Assigns() {
+			o := o.AsAssign()
+			if err := q.bcheckAssignment(o.LHS(), o.Operator(), o.RHS()); err != nil {
 				return err
 			}
 		}
@@ -265,12 +266,12 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		// execute-exactly-once block. We should have pre / inv / post
 		// conditions, a la bcheckWhile.
 
-		variables := n.Variables()
+		assigns := n.Assigns()
 		for ; n != nil; n = n.ElseIterate() {
 			q.facts = q.facts[:0]
-			for _, o := range variables {
-				v := o.AsVar()
-				q.facts = append(q.facts, makeSliceLengthEqEq(v.Name(), v.XType(), n.Length()))
+			for _, o := range assigns {
+				lhs := o.AsAssign().LHS()
+				q.facts = append(q.facts, makeSliceLengthEqEq(lhs.Ident(), lhs.MType(), n.Length()))
 			}
 			if err := q.bcheckBlock(n.Body()); err != nil {
 				return err

@@ -258,7 +258,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	b.writes("\n")
 
 	// Generate the local variables.
-	if err := g.writeVars(b, &g.currFunk, false, true, false); err != nil {
+	if err := g.writeVars(b, &g.currFunk, false, false); err != nil {
 		return err
 	}
 	b.writes("\n")

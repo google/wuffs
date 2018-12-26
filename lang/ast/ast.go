@@ -434,20 +434,18 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
-// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or "var ID2 LHS =? etc!?(etc)"
-// or an iterate variable declaration "ID1 LHS =: RHS":
-//  - ID0:   <0|IDEq|IDEqColon|IDEqQuestion>
+// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or "var ID2 LHS =? etc!?(etc)":
+//  - ID0:   <0|IDEq|IDEqQuestion>
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
 //  - RHS:   <nil|Expr>
 type Var Node
 
-func (n *Var) AsNode() *Node         { return (*Node)(n) }
-func (n *Var) Operator() t.ID        { return n.id0 }
-func (n *Var) IterateVariable() bool { return n.id0 == t.IDEqColon }
-func (n *Var) Name() t.ID            { return n.id2 }
-func (n *Var) XType() *TypeExpr      { return n.lhs.AsTypeExpr() }
-func (n *Var) Value() *Expr          { return n.rhs.AsExpr() }
+func (n *Var) AsNode() *Node    { return (*Node)(n) }
+func (n *Var) Operator() t.ID   { return n.id0 }
+func (n *Var) Name() t.ID       { return n.id2 }
+func (n *Var) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
+func (n *Var) Value() *Expr     { return n.rhs.AsExpr() }
 
 func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
 	return &Var{
@@ -501,14 +499,14 @@ func NewIOBind(keyword t.ID, io *Expr, arg1 *Expr, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate:ID1 (vars)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
+// "iterate:ID1 (assigns)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
 //  - ID1:   <0|label>
 //  - ID2:   length
 //  - RHS:   <nil|Iterate>
-//  - List0: <Var> vars
+//  - List0: <Assign> assigns
 //  - List1: <Assert> asserts
 //  - List2: <Statement> body
 type Iterate Node
@@ -520,21 +518,21 @@ func (n *Iterate) Unroll() t.ID          { return n.id0 }
 func (n *Iterate) Label() t.ID           { return n.id1 }
 func (n *Iterate) Length() t.ID          { return n.id2 }
 func (n *Iterate) ElseIterate() *Iterate { return n.rhs.AsIterate() }
-func (n *Iterate) Variables() []*Node    { return n.list0 }
+func (n *Iterate) Assigns() []*Node      { return n.list0 }
 func (n *Iterate) Asserts() []*Node      { return n.list1 }
 func (n *Iterate) Body() []*Node         { return n.list2 }
 
 func (n *Iterate) SetHasBreak()    { n.flags |= FlagsHasBreak }
 func (n *Iterate) SetHasContinue() { n.flags |= FlagsHasContinue }
 
-func NewIterate(label t.ID, vars []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, elseIterate *Iterate) *Iterate {
+func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts []*Node, body []*Node, elseIterate *Iterate) *Iterate {
 	return &Iterate{
 		kind:  KIterate,
 		id0:   unroll,
 		id1:   label,
 		id2:   length,
 		rhs:   elseIterate.AsNode(),
-		list0: vars,
+		list0: assigns,
 		list1: asserts,
 		list2: body,
 	}

@@ -339,26 +339,26 @@ func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
 }
 
 func (g *gen) writeStatementIterate(b *buffer, n *a.Iterate, depth uint32) error {
-	vars := n.Variables()
-	if len(vars) == 0 {
+	assigns := n.Assigns()
+	if len(assigns) == 0 {
 		return nil
 	}
-	if len(vars) != 1 {
-		return fmt.Errorf("TODO: iterate over more than one variable")
+	if len(assigns) != 1 {
+		return fmt.Errorf("TODO: iterate over more than one assign")
 	}
-	v := vars[0].AsVar()
-	name := v.Name().Str(g.tm)
+	o := assigns[0].AsAssign()
+	name := o.LHS().Ident().Str(g.tm)
 	b.writes("{\n")
 
 	// TODO: don't assume that the slice is a slice of base.u8. In
 	// particular, the code gen can be subtle if the slice element type has
 	// zero size, such as the empty struct.
 	b.printf("wuffs_base__slice_u8 %sslice_%s =", iPrefix, name)
-	if err := g.writeExpr(b, v.Value(), 0); err != nil {
+	if err := g.writeExpr(b, o.RHS(), 0); err != nil {
 		return err
 	}
 	b.writes(";\n")
-	b.printf("wuffs_base__slice_u8 %s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
+	b.printf("%s%s = %sslice_%s;\n", vPrefix, name, iPrefix, name)
 	// TODO: look at n.HasContinue() and n.HasBreak().
 
 	round := uint32(0)

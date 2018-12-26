@@ -558,7 +558,7 @@ func (p *parser) parseStatement() (*a.Node, error) {
 	if n != nil {
 		n.AsRaw().SetFilenameLine(p.filename, line)
 		if n.Kind() == a.KIterate {
-			for _, o := range n.AsIterate().Variables() {
+			for _, o := range n.AsIterate().Assigns() {
 				o.AsRaw().SetFilenameLine(p.filename, line)
 			}
 		}
@@ -610,7 +610,7 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDVar:
 		p.src = p.src[1:]
-		return p.parseVarNode(false)
+		return p.parseVarNode()
 
 	case t.IDWhile:
 		p.src = p.src[1:]
@@ -636,7 +636,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		}
 		return a.NewWhile(label, condition, asserts, body).AsNode(), nil
 	}
+	return p.parseAssignNode()
+}
 
+func (p *parser) parseAssignNode() (*a.Node, error) {
 	lhs := (*a.Expr)(nil)
 	rhs, err := p.parseExpr()
 	if err != nil {
@@ -649,6 +652,10 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		lhs = rhs
 		if lhs.Effect() != 0 {
 			return nil, fmt.Errorf(`parse: assignment LHS %q is not effect-free at %s:%d`,
+				lhs.Str(p.tm), p.filename, p.line())
+		}
+		if lhs.Operator() == 0 && lhs.Ident().IsLiteral(p.tm) {
+			return nil, fmt.Errorf(`parse: assignment LHS %q is a literal at %s:%d`,
 				lhs.Str(p.tm), p.filename, p.line())
 		}
 		rhs, err = p.parseExpr()
@@ -666,6 +673,24 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return rhs.AsNode(), nil
 	}
 	return a.NewAssign(op, lhs, rhs).AsNode(), nil
+}
+
+func (p *parser) parseIterateAssignNode() (*a.Node, error) {
+	n, err := p.parseAssignNode()
+	if err != nil {
+		return nil, err
+	}
+	o := n.AsAssign()
+	if op := o.Operator(); op != t.IDEq {
+		return nil, fmt.Errorf(`parse: expected "=", got %q at %s:%d`, op.Str(p.tm), p.filename, p.line())
+	}
+	if lhs := o.LHS(); lhs.Operator() != 0 {
+		return nil, fmt.Errorf(`parse: expected variable, got %q at %s:%d`, lhs.Str(p.tm), p.filename, p.line())
+	}
+	if rhs := o.RHS(); rhs.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: value %q is not effect-free at %s:%d`, rhs.Str(p.tm), p.filename, p.line())
+	}
+	return o.AsNode(), nil
 }
 
 func (p *parser) parseAsserts() ([]*a.Node, error) {
@@ -805,18 +830,18 @@ func (p *parser) parseIterateNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	vars, err := p.parseList(t.IDCloseParen, (*parser).parseIterateVarNode)
+	assigns, err := p.parseList(t.IDCloseParen, (*parser).parseIterateAssignNode)
 	if err != nil {
 		return nil, err
 	}
-	n, err := p.parseIterateBlock(label, vars)
+	n, err := p.parseIterateBlock(label, assigns)
 	if err != nil {
 		return nil, err
 	}
 	return n.AsNode(), nil
 }
 
-func (p *parser) parseIterateBlock(label t.ID, vars []*a.Node) (*a.Iterate, error) {
+func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, error) {
 	if x := p.peek1(); x != t.IDOpenParen {
 		got := p.tm.ByID(x)
 		return nil, fmt.Errorf(`parse: expected "(", got %q at %s:%d`, got, p.filename, p.line())
@@ -891,7 +916,7 @@ func (p *parser) parseIterateBlock(label t.ID, vars []*a.Node) (*a.Iterate, erro
 		}
 	}
 
-	return a.NewIterate(label, vars, length, unroll, asserts, body, elseIterate), nil
+	return a.NewIterate(label, assigns, length, unroll, asserts, body, elseIterate), nil
 }
 
 func (p *parser) parseArgNode() (*a.Node, error) {
@@ -931,11 +956,7 @@ func (p *parser) parseIOBindExprNode() (*a.Node, error) {
 	return nil, fmt.Errorf(`parse: expected "args.something", got %q at %s:%d`, e.Str(p.tm), p.filename, p.line())
 }
 
-func (p *parser) parseIterateVarNode() (*a.Node, error) {
-	return p.parseVarNode(true)
-}
-
-func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
+func (p *parser) parseVarNode() (*a.Node, error) {
 	id, err := p.parseIdent()
 	if err != nil {
 		return nil, err
@@ -947,23 +968,7 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 	value := (*a.Expr)(nil)
 
 	op := t.ID(0)
-	if inIterate {
-		op = t.IDEqColon
-		if x := p.peek1(); x != t.IDEqColon {
-			got := p.tm.ByID(x)
-			return nil, fmt.Errorf(`parse: expected "=:", got %q at %s:%d`, got, p.filename, p.line())
-		}
-		p.src = p.src[1:]
-		value, err = p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-		if value.Effect() != 0 {
-			return nil, fmt.Errorf(`parse: iterate value %q is not effect-free at %s:%d`,
-				value.Str(p.tm), p.filename, p.line())
-		}
-
-	} else if eqOp := p.peek1(); eqOp == t.IDEq || eqOp == t.IDEqQuestion {
+	if eqOp := p.peek1(); eqOp == t.IDEq || eqOp == t.IDEqQuestion {
 		op = eqOp
 		p.src = p.src[1:]
 		value, err = p.parseExpr()
@@ -1133,7 +1138,10 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 		case t.IDDot:
 			p.src = p.src[1:]
 
-			if x := p.peek1(); x.IsStrLiteral(p.tm) {
+			if x := p.peek1(); x.IsLiteral(p.tm) {
+				if x.IsNumLiteral(p.tm) {
+					return nil, fmt.Errorf(`parse: dot followed by numeric literal at %s:%d`, p.filename, p.line())
+				}
 				if !first {
 					return nil, fmt.Errorf(`parse: string literal %s has too many package qualifiers at %s:%d`,
 						x.Str(p.tm), p.filename, p.line())
