@@ -33,25 +33,28 @@
 # having to separately configure, build or install a library:
 #
 # git clone https://github.com/google/wuffs.git
-# cd wuffs/example/zcat
-# gcc zcat.c
-# ./a.out < ../../test/data/romeo.txt.gz
+# cd wuffs
+# gcc ./example/zcat/zcat.c
+# ./a.out < ./test/data/romeo.txt.gz
 
 if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
   echo "$0 should be run from the Wuffs root directory."
   exit 1
 fi
 
+CC=${CC:-gcc}
+CXX=${CXX:-g++}
+
 go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
 wuffs gen
 
 echo "Checking snapshot compiles cleanly (as C)"
-gcc -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c99 \
+$CC  -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c99 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 echo "Checking snapshot compiles cleanly (as C++)"
-g++ -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c++11 \
+$CXX -c -Wall -Werror -DWUFFS_IMPLEMENTATION -std=c++11 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen

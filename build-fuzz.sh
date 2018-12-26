@@ -22,6 +22,9 @@ if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
   exit 1
 fi
 
+CC=${CC:-gcc}
+CXX=${CXX:-g++}
+
 mkdir -p gen/bin
 
 sources=$@
@@ -38,5 +41,5 @@ for f in $sources; do
   fi
   echo "Building gen/bin/fuzz-$f"
 
-  gcc -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c -o gen/bin/fuzz-$f
+  $CC -DWUFFS_CONFIG__FUZZLIB_MAIN fuzz/c/std/${f}_fuzzer.c -o gen/bin/fuzz-$f
 done

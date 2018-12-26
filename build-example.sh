@@ -22,6 +22,9 @@ if [ ! -e release/c/wuffs-unsupported-snapshot.c ]; then
   exit 1
 fi
 
+CC=${CC:-gcc}
+CXX=${CXX:-g++}
+
 mkdir -p gen/bin
 
 sources=$@
@@ -39,19 +42,19 @@ for f in $sources; do
   if [ $f = crc32 ]; then
     echo "Building gen/bin/example-$f"
     # example/crc32 is unusual in that it's C++, not C.
-    g++ -O3 example/$f/*.cc -o gen/bin/example-$f
+    $CXX -O3 example/$f/*.cc -o gen/bin/example-$f
   elif [ $f = library ]; then
     # example/library is unusual in that it uses separately compiled libraries
     # (built by "wuffs genlib", e.g. by running build-all.sh) instead of
     # directly #include'ing Wuffs' .c files.
-    if [ -e gen/lib/c/gcc-static/libwuffs.a ]; then
+    if [ -e gen/lib/c/$CC-static/libwuffs.a ]; then
       echo "Building gen/bin/example-$f"
-      gcc -O3 -static -I.. example/$f/*.c gen/lib/c/gcc-static/libwuffs.a -o gen/bin/example-$f
+      $CC -O3 -static -I.. example/$f/*.c gen/lib/c/$CC-static/libwuffs.a -o gen/bin/example-$f
     else
       echo "Skipping gen/bin/example-$f; run \"wuffs genlib\" first"
     fi
   elif [ -e example/$f/*.c ]; then
     echo "Building gen/bin/example-$f"
-    gcc -O3 example/$f/*.c -o gen/bin/example-$f
+    $CC -O3 example/$f/*.c -o gen/bin/example-$f
   fi
 done
