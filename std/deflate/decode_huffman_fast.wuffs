@@ -20,17 +20,29 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
+	var bits base.u32
+	var n_bits base.u32
+	var table_entry base.u32
+	var table_entry_n_bits base.u32[..15]
+	var lmask base.u32[..511]
+	var dmask base.u32[..511]
+	var redir_top base.u32[..0xFFFF]
+	var redir_mask base.u32[..0x7FFF]
+	var length base.u32[..258]
+	var dist_minus_1 base.u32[..0x7FFF]
+	var n_copied base.u32
+	var hlen base.u32[..0x7FFF]
+	var hdist base.u32
+
 	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
 		return "?internal error: inconsistent n_bits"
 	}
 
-	var bits base.u32 = this.bits
-	var n_bits base.u32 = this.n_bits
+	bits = this.bits
+	n_bits = this.n_bits
 
-	var table_entry base.u32
-	var table_entry_n_bits base.u32[..15]
-	var lmask base.u32[..511] = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
-	var dmask base.u32[..511] = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
+	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
+	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
 
 	// Check up front, on each iteration, that we have enough buffer space to
 	// both read (12 bytes) and write (258 bytes) as much as we need to. Doing
@@ -116,8 +128,8 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 			assert args.src.available() >= 8
 			assert n_bits >= 15
 
-			var redir_top base.u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
-			var redir_mask base.u32[..0x7FFF] = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+			redir_top = (table_entry >> 8) & 0xFFFF
+			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			if (redir_top + (bits & redir_mask)) >= 1234 {
 				return "?internal error: inconsistent Huffman decoder state"
 			}
@@ -157,7 +169,7 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 		//
 		// The -3 is from the bias in script/print-deflate-magic-numbers.go.
 		// That bias makes the "& 0xFF" 1 and 15-ish lines below correct.
-		var length base.u32[..258] = ((table_entry >> 8) & 0xFF) + 3
+		length = ((table_entry >> 8) & 0xFF) + 3
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			// Ensure that we have at least 15 bits of input.
@@ -256,7 +268,7 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
 		// That bias makes the "& 0x7FFF" 2 and 15-ish lines below correct and
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
-		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
+		dist_minus_1 = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		// Ensure that we have at least table_entry_n_bits bits of input.
 		if n_bits < table_entry_n_bits {
@@ -278,7 +290,7 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
-		var n_copied base.u32
+		n_copied = 0
 		// The "while true { etc; break }" is a redundant version of "etc", but
 		// its presence minimizes the diff between decode_huffman_fast and
 		// decode_huffman_slow.
@@ -290,9 +302,8 @@ pri func decoder.decode_huffman_fast!?(dst base.io_writer, src base.io_reader) {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from args.dst.
-				var hlen base.u32[..0x7FFF]
-				var hdist base.u32 =
-					(((dist_minus_1 + 1) as base.u64) - args.dst.since_mark().length()) as base.u32
+				hlen = 0
+				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.since_mark().length()) as base.u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)

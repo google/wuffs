@@ -13,6 +13,26 @@
 // limitations under the License.
 
 pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) {
+	var bits base.u32
+	var n_bits base.u32
+	var table_entry base.u32
+	var table_entry_n_bits base.u32[..15]
+	var lmask base.u32[..511]
+	var dmask base.u32[..511]
+	var b0 base.u32[..255]
+	var redir_top base.u32[..0xFFFF]
+	var redir_mask base.u32[..0x7FFF]
+	var b1 base.u32[..255]
+	var length base.u32[..258]
+	var b2 base.u32[..255]
+	var b3 base.u32[..255]
+	var b4 base.u32[..255]
+	var dist_minus_1 base.u32[..0x7FFF]
+	var b5 base.u32[..255]
+	var n_copied base.u32
+	var hlen base.u32[..0x7FFF]
+	var hdist base.u32
+
 	// When editing this function, consider making the equivalent change to the
 	// decode_huffman_fast function. Keep the diff between the two
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
@@ -22,13 +42,11 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 		return "?internal error: inconsistent n_bits"
 	}
 
-	var bits base.u32 = this.bits
-	var n_bits base.u32 = this.n_bits
+	bits = this.bits
+	n_bits = this.n_bits
 
-	var table_entry base.u32
-	var table_entry_n_bits base.u32[..15]
-	var lmask base.u32[..511] = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
-	var dmask base.u32[..511] = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
+	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
+	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
 
 	while:loop true {
 		// Decode an lcode symbol from H-L.
@@ -41,7 +59,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			var b0 base.u32[..255] = args.src.read_u8_as_u32!??()
+			b0 = args.src.read_u8_as_u32!??()
 			bits |= b0 << n_bits
 			n_bits += 8
 		}
@@ -58,8 +76,8 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 			break:loop
 		} else if (table_entry >> 28) != 0 {
 			// Redirect.
-			var redir_top base.u32[..0xFFFF] = (table_entry >> 8) & 0xFFFF
-			var redir_mask base.u32[..0x7FFF] = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
+			redir_top = (table_entry >> 8) & 0xFFFF
+			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
 				if (redir_top + (bits & redir_mask)) >= 1234 {
 					return "?internal error: inconsistent Huffman decoder state"
@@ -72,7 +90,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				var b1 base.u32[..255] = args.src.read_u8_as_u32!??()
+				b1 = args.src.read_u8_as_u32!??()
 				bits |= b1 << n_bits
 				n_bits += 8
 			}
@@ -105,14 +123,14 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 		//
 		// The -3 is from the bias in script/print-deflate-magic-numbers.go.
 		// That bias makes the "& 0xFF" 1 and 15-ish lines below correct.
-		var length base.u32[..258] = ((table_entry >> 8) & 0xFF) + 3
+		length = ((table_entry >> 8) & 0xFF) + 3
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			while n_bits < table_entry_n_bits,
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				var b2 base.u32[..255] = args.src.read_u8_as_u32!??()
+				b2 = args.src.read_u8_as_u32!??()
 				bits |= b2 << n_bits
 				n_bits += 8
 			}
@@ -133,7 +151,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			var b3 base.u32[..255] = args.src.read_u8_as_u32!??()
+			b3 = args.src.read_u8_as_u32!??()
 			bits |= b3 << n_bits
 			n_bits += 8
 		}
@@ -153,7 +171,7 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 					break
 				}
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				var b4 base.u32[..255] = args.src.read_u8_as_u32!??()
+				b4 = args.src.read_u8_as_u32!??()
 				bits |= b4 << n_bits
 				n_bits += 8
 			}
@@ -173,14 +191,14 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 		// The -1 is from the bias in script/print-deflate-magic-numbers.go.
 		// That bias makes the "& 0x7FFF" 2 and 15-ish lines below correct and
 		// undoing that bias makes proving (dist_minus_1 + 1) > 0 trivial.
-		var dist_minus_1 base.u32[..0x7FFF] = (table_entry >> 8) & 0x7FFF
+		dist_minus_1 = (table_entry >> 8) & 0x7FFF
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		if table_entry_n_bits > 0 {
 			while n_bits < table_entry_n_bits,
 				post n_bits >= table_entry_n_bits,
 			{
 				assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-				var b5 base.u32[..255] = args.src.read_u8_as_u32!??()
+				b5 = args.src.read_u8_as_u32!??()
 				bits |= b5 << n_bits
 				n_bits += 8
 			}
@@ -189,16 +207,13 @@ pri func decoder.decode_huffman_slow!??(dst base.io_writer, src base.io_reader) 
 			n_bits -= table_entry_n_bits
 		}
 
-		var n_copied base.u32
 		while true {
 			// Copy from this.history.
 			if ((dist_minus_1 + 1) as base.u64) > args.dst.since_mark().length() {
 				// Set (hlen, hdist) to be the length-distance pair to copy
 				// from this.history, and (length, distance) to be the
 				// remaining length-distance pair to copy from args.dst.
-				var hlen base.u32[..0x7FFF]
-				var hdist base.u32 =
-					(((dist_minus_1 + 1) as base.u64) - args.dst.since_mark().length()) as base.u32
+				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.since_mark().length()) as base.u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
 					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)

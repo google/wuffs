@@ -5346,6 +5346,10 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_z = 0;
+    v_written = ((wuffs_base__slice_u8){});
+    v_n_copied = 0;
+    v_already_full = 0;
     while (true) {
       wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
       {
@@ -5481,6 +5485,8 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     v_final = 0;
+    v_b0 = 0;
+    v_type = 0;
   label_0_continue:;
     while (v_final == 0) {
       while (self->private_impl.f_n_bits < 3) {
@@ -5654,6 +5660,8 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_length = 0;
+    v_n_copied = 0;
     if ((self->private_impl.f_n_bits >= 8) ||
         ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
       status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
@@ -5846,6 +5854,22 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_bits = 0;
+    v_n_bits = 0;
+    v_b0 = 0;
+    v_n_lit = 0;
+    v_n_dist = 0;
+    v_n_clen = 0;
+    v_i = 0;
+    v_b1 = 0;
+    v_mask = 0;
+    v_table_entry = 0;
+    v_table_entry_n_bits = 0;
+    v_b2 = 0;
+    v_n_extra_bits = 0;
+    v_rep_symbol = 0;
+    v_rep_count = 0;
+    v_b3 = 0;
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
     while (v_n_bits < 14) {
@@ -5909,7 +5933,6 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
     v_i = 0;
   label_0_continue:;
     while (v_i < (v_n_lit + v_n_dist)) {
-      v_table_entry = 0;
       while (true) {
         v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_mask)];
         v_table_entry_n_bits = (v_table_entry & 15);
@@ -6081,6 +6104,30 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
   uint32_t v_delta;
 
   memset(v_counts, 0, sizeof(v_counts));
+  v_i = 0;
+  v_remaining = 0;
+  memset(v_offsets, 0, sizeof(v_offsets));
+  v_n_symbols = 0;
+  v_count = 0;
+  memset(v_symbols, 0, sizeof(v_symbols));
+  v_min_cl = 0;
+  v_max_cl = 0;
+  v_initial_high_bits = 0;
+  v_prev_cl = 0;
+  v_prev_redirect_key = 0;
+  v_top = 0;
+  v_next_top = 0;
+  v_code = 0;
+  v_key = 0;
+  v_value = 0;
+  v_cl = 0;
+  v_tmp = 0;
+  v_redirect_key = 0;
+  v_j = 0;
+  v_reversed_key = 0;
+  v_symbol = 0;
+  v_high_bits = 0;
+  v_delta = 0;
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
     if (v_counts[self->private_impl.f_code_lengths[v_i]] >= 320) {
@@ -6115,8 +6162,6 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
     status = wuffs_deflate__error__bad_huffman_code_under_subscribed;
     goto exit;
   }
-  memset(v_offsets, 0, sizeof(v_offsets));
-  v_n_symbols = 0;
   v_i = 1;
   while (v_i <= 15) {
     v_offsets[v_i] = ((uint16_t)(v_n_symbols));
@@ -6134,7 +6179,6 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
         wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     goto exit;
   }
-  memset(v_symbols, 0, sizeof(v_symbols));
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
     if (v_i < a_n_codes0) {
@@ -6383,6 +6427,19 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
     io1_a_src = a_src.private_impl.limit;
   }
 
+  v_bits = 0;
+  v_n_bits = 0;
+  v_table_entry = 0;
+  v_table_entry_n_bits = 0;
+  v_lmask = 0;
+  v_dmask = 0;
+  v_redir_top = 0;
+  v_redir_mask = 0;
+  v_length = 0;
+  v_dist_minus_1 = 0;
+  v_n_copied = 0;
+  v_hlen = 0;
+  v_hdist = 0;
   if ((self->private_impl.f_n_bits >= 8) ||
       ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
     status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
@@ -6390,8 +6447,6 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   }
   v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
-  v_table_entry = 0;
-  v_table_entry_n_bits = 0;
   v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
   v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
 label_0_continue:;
@@ -6734,6 +6789,25 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_bits = 0;
+    v_n_bits = 0;
+    v_table_entry = 0;
+    v_table_entry_n_bits = 0;
+    v_lmask = 0;
+    v_dmask = 0;
+    v_b0 = 0;
+    v_redir_top = 0;
+    v_redir_mask = 0;
+    v_b1 = 0;
+    v_length = 0;
+    v_b2 = 0;
+    v_b3 = 0;
+    v_b4 = 0;
+    v_dist_minus_1 = 0;
+    v_b5 = 0;
+    v_n_copied = 0;
+    v_hlen = 0;
+    v_hdist = 0;
     if ((self->private_impl.f_n_bits >= 8) ||
         ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
       status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
@@ -6741,8 +6815,6 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
-    v_table_entry = 0;
-    v_table_entry_n_bits = 0;
     v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
@@ -6952,11 +7024,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         v_bits >>= v_table_entry_n_bits;
         v_n_bits -= v_table_entry_n_bits;
       }
-      v_n_copied = 0;
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
             ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
-          v_hlen = 0;
           v_hdist =
               ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
                            ((uint64_t)(iop_a_dst - a_dst.private_impl.mark)))));
