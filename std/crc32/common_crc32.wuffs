@@ -21,7 +21,9 @@ pub struct ieee_hasher?(
 // to signal "initializer not called"? Should the return type, in the generated
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
 pub func ieee_hasher.update!(x slice base.u8) base.u32 {
-	var s base.u32 = 0xFFFFFFFF ^ this.state
+	var s base.u32
+
+	s = 0xFFFFFFFF ^ this.state
 
 	// See "Multi-Byte Lookup Tables" in std/crc32/README.md for more detail on
 	// the slicing-by-M algorithm. We use an M of 16.

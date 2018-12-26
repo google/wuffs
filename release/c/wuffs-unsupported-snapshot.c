@@ -4210,6 +4210,9 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
   uint32_t v_s2;
   wuffs_base__slice_u8 v_remaining;
 
+  v_s1 = 0;
+  v_s2 = 0;
+  v_remaining = ((wuffs_base__slice_u8){});
   if (!self->private_impl.f_started) {
     self->private_impl.f_started = true;
     self->private_impl.f_state = 1;
@@ -4217,7 +4220,7 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
   v_s1 = ((self->private_impl.f_state) & 0xFFFF);
   v_s2 = ((self->private_impl.f_state) >> (32 - (16)));
   while (((uint64_t)(a_x.len)) > 0) {
-    v_remaining = ((wuffs_base__slice_u8){});
+    v_remaining = wuffs_base__slice_u8__subslice_j(a_x, 0);
     if (((uint64_t)(a_x.len)) > 5552) {
       v_remaining = wuffs_base__slice_u8__subslice_i(a_x, 5552);
       a_x = wuffs_base__slice_u8__subslice_j(a_x, 5552);
@@ -5049,6 +5052,7 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 
   uint32_t v_s;
 
+  v_s = 0;
   v_s = (4294967295 ^ self->private_impl.f_state);
   {
     wuffs_base__slice_u8 i_slice_p = a_x;
@@ -10012,6 +10016,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_c = 0;
+    v_flags = 0;
+    v_xlen = 0;
+    v_checksum_got = 0;
+    v_decoded_length_got = 0;
+    v_z = 0;
+    v_checksum_want = 0;
+    v_decoded_length_want = 0;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
@@ -10164,8 +10176,6 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       status = wuffs_gzip__error__bad_encoding_flags;
       goto exit;
     }
-    v_checksum_got = 0;
-    v_decoded_length_got = 0;
     while (true) {
       wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
       {
