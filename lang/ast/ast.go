@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/google/wuffs/lib/interval"
+
 	t "github.com/google/wuffs/lang/token"
 )
 
@@ -136,18 +138,12 @@ func (e Effect) String() string {
 	return "‽INVALID_EFFECT‽"
 }
 
-type Bounds [2]*big.Int
-
-func (b Bounds) String() string {
-	return fmt.Sprintf("[%v..%v]", b[0], b[1])
-}
-
 type Node struct {
 	kind  Kind
 	flags Flags
 
 	constValue *big.Int
-	mBounds    Bounds
+	mBounds    interval.IntRange
 	mType      *TypeExpr
 	jumpTarget Loop
 
@@ -190,11 +186,11 @@ type Node struct {
 	list2 []*Node
 }
 
-func (n *Node) Kind() Kind           { return n.kind }
-func (n *Node) MBounds() Bounds      { return n.mBounds }
-func (n *Node) MType() *TypeExpr     { return n.mType }
-func (n *Node) SetMBounds(x Bounds)  { n.mBounds = x }
-func (n *Node) SetMType(x *TypeExpr) { n.mType = x }
+func (n *Node) Kind() Kind                     { return n.kind }
+func (n *Node) MBounds() interval.IntRange     { return n.mBounds }
+func (n *Node) MType() *TypeExpr               { return n.mType }
+func (n *Node) SetMBounds(x interval.IntRange) { n.mBounds = x }
+func (n *Node) SetMType(x *TypeExpr)           { n.mType = x }
 
 func (n *Node) AsArg() *Arg           { return (*Arg)(n) }
 func (n *Node) AsAssert() *Assert     { return (*Assert)(n) }
@@ -327,25 +323,25 @@ const MaxExprDepth = 255
 // For lists, like "[0, 1, 2]", ID0 is IDComma.
 type Expr Node
 
-func (n *Expr) AsNode() *Node          { return (*Node)(n) }
-func (n *Expr) Effect() Effect         { return Effect(n.flags) }
-func (n *Expr) GlobalIdent() bool      { return n.flags&FlagsGlobalIdent != 0 }
-func (n *Expr) SubExprHasEffect() bool { return n.flags&FlagsSubExprHasEffect != 0 }
-func (n *Expr) ConstValue() *big.Int   { return n.constValue }
-func (n *Expr) MBounds() Bounds        { return n.mBounds }
-func (n *Expr) MType() *TypeExpr       { return n.mType }
-func (n *Expr) Operator() t.ID         { return n.id0 }
-func (n *Expr) StatusQID() t.QID       { return t.QID{n.id1, n.id2} }
-func (n *Expr) Ident() t.ID            { return n.id2 }
-func (n *Expr) LHS() *Node             { return n.lhs }
-func (n *Expr) MHS() *Node             { return n.mhs }
-func (n *Expr) RHS() *Node             { return n.rhs }
-func (n *Expr) Args() []*Node          { return n.list0 }
+func (n *Expr) AsNode() *Node              { return (*Node)(n) }
+func (n *Expr) Effect() Effect             { return Effect(n.flags) }
+func (n *Expr) GlobalIdent() bool          { return n.flags&FlagsGlobalIdent != 0 }
+func (n *Expr) SubExprHasEffect() bool     { return n.flags&FlagsSubExprHasEffect != 0 }
+func (n *Expr) ConstValue() *big.Int       { return n.constValue }
+func (n *Expr) MBounds() interval.IntRange { return n.mBounds }
+func (n *Expr) MType() *TypeExpr           { return n.mType }
+func (n *Expr) Operator() t.ID             { return n.id0 }
+func (n *Expr) StatusQID() t.QID           { return t.QID{n.id1, n.id2} }
+func (n *Expr) Ident() t.ID                { return n.id2 }
+func (n *Expr) LHS() *Node                 { return n.lhs }
+func (n *Expr) MHS() *Node                 { return n.mhs }
+func (n *Expr) RHS() *Node                 { return n.rhs }
+func (n *Expr) Args() []*Node              { return n.list0 }
 
-func (n *Expr) SetConstValue(x *big.Int) { n.constValue = x }
-func (n *Expr) SetGlobalIdent()          { n.flags |= FlagsGlobalIdent }
-func (n *Expr) SetMBounds(x Bounds)      { n.mBounds = x }
-func (n *Expr) SetMType(x *TypeExpr)     { n.mType = x }
+func (n *Expr) SetConstValue(x *big.Int)       { n.constValue = x }
+func (n *Expr) SetGlobalIdent()                { n.flags |= FlagsGlobalIdent }
+func (n *Expr) SetMBounds(x interval.IntRange) { n.mBounds = x }
+func (n *Expr) SetMType(x *TypeExpr)           { n.mType = x }
 
 func NewExpr(flags Flags, operator t.ID, statusPkg t.ID, ident t.ID, lhs *Node, mhs *Node, rhs *Node, args []*Node) *Expr {
 	subExprEffect := Flags(0)

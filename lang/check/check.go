@@ -311,7 +311,7 @@ func (c *Checker) checkConst(node *a.Node) error {
 	return nil
 }
 
-func (c *Checker) checkConstElement(n *a.Expr, nb a.Bounds, nLists int) error {
+func (c *Checker) checkConstElement(n *a.Expr, nb bounds, nLists int) error {
 	if nLists > 0 {
 		nLists--
 		if n.Operator() != t.IDComma {
@@ -480,7 +480,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 
 	iQID := n.In().QID()
 	inTyp := a.NewTypeExpr(0, iQID[0], iQID[1], nil, nil, nil)
-	inTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
+	inTyp.AsNode().SetMBounds(bounds{zero, zero})
 	inTyp.AsNode().SetMType(typeExprTypeExpr)
 
 	localVars := typeMap{
@@ -496,11 +496,11 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 		}
 
 		sTyp := a.NewTypeExpr(0, qqid[0], qqid[1], nil, nil, nil)
-		sTyp.AsNode().SetMBounds(a.Bounds{zero, zero})
+		sTyp.AsNode().SetMBounds(bounds{zero, zero})
 		sTyp.AsNode().SetMType(typeExprTypeExpr)
 
 		pTyp := a.NewTypeExpr(t.IDPtr, 0, 0, nil, nil, sTyp)
-		pTyp.AsNode().SetMBounds(a.Bounds{one, one})
+		pTyp.AsNode().SetMBounds(bounds{one, one})
 		pTyp.AsNode().SetMType(typeExprTypeExpr)
 
 		localVars[t.IDThis] = pTyp

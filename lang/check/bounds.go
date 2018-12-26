@@ -19,11 +19,15 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/google/wuffs/lib/interval"
+
 	a "github.com/google/wuffs/lang/ast"
 	t "github.com/google/wuffs/lang/token"
 )
 
-var numTypeBounds = [...]a.Bounds{
+type bounds = interval.IntRange
+
+var numTypeBounds = [...]bounds{
 	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
 	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
 	t.IDI32:  {big.NewInt(-1 << 31), big.NewInt(1<<31 - 1)},
@@ -62,7 +66,7 @@ var (
 
 func init() {
 	zeroExpr.SetConstValue(zero)
-	zeroExpr.SetMBounds(a.Bounds{zero, zero})
+	zeroExpr.SetMBounds(bounds{zero, zero})
 	zeroExpr.SetMType(typeExprIdeal)
 }
 
@@ -441,7 +445,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return err
 	}
 
-	rb := a.Bounds{}
+	rb := bounds{}
 	if op == t.IDEq {
 		rb, err = q.bcheckExpr(rhs, 0)
 	} else {
@@ -688,9 +692,9 @@ func (q *checker) bcheckVar(n *a.Var) error {
 	return q.bcheckAssignment(lhs, t.IDEq, rhs)
 }
 
-func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (bounds, error) {
 	if depth > a.MaxExprDepth {
-		return a.Bounds{}, fmt.Errorf("check: expression recursion depth too large")
+		return bounds{}, fmt.Errorf("check: expression recursion depth too large")
 	}
 	depth++
 
@@ -703,19 +707,19 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 
 	nb, err := q.bcheckExpr1(n, depth)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 	nb, err = q.facts.refine(n, nb, q.tm)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 	tb, err := q.bcheckTypeExpr(n.MType())
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 
 	if (nb[0].Cmp(tb[0]) < 0) || (nb[1].Cmp(tb[1]) > 0) {
-		return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
+		return bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 			n.Str(q.tm), nb, tb)
 	}
 
@@ -723,7 +727,7 @@ func (q *checker) bcheckExpr(n *a.Expr, depth uint32) (a.Bounds, error) {
 	return nb, nil
 }
 
-func bcheckExprConstValue(n *a.Expr) a.Bounds {
+func bcheckExprConstValue(n *a.Expr) bounds {
 	if o := n.LHS(); o != nil {
 		bcheckExprConstValue(o.AsExpr())
 	}
@@ -734,12 +738,12 @@ func bcheckExprConstValue(n *a.Expr) a.Bounds {
 		bcheckExprConstValue(o.AsExpr())
 	}
 	cv := n.ConstValue()
-	b := a.Bounds{cv, cv}
+	b := bounds{cv, cv}
 	n.SetMBounds(b)
 	return b
 }
 
-func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (bounds, error) {
 	switch op := n.Operator(); {
 	case op.IsXUnaryOp():
 		return q.bcheckExprUnaryOp(n, depth)
@@ -755,7 +759,7 @@ func (q *checker) bcheckExpr1(n *a.Expr, depth uint32) (a.Bounds, error) {
 	return q.bcheckExprOther(n, depth)
 }
 
-func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 	switch n.Operator() {
 	case 0:
 		// Look for named consts.
@@ -766,32 +770,32 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 		qid := t.QID{0, n.Ident()}
 		if c, ok := q.c.consts[qid]; ok {
 			if cv := c.Value().ConstValue(); cv != nil {
-				return a.Bounds{cv, cv}, nil
+				return bounds{cv, cv}, nil
 			}
 		}
 
 	case t.IDOpenParen:
 		lhs := n.LHS().AsExpr()
 		if _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		if err := q.bcheckExprCall(n, depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		if nb, err := q.bcheckExprCallSpecialCases(n, depth); err == nil {
 			return nb, nil
 		} else if err != errNotASpecialCase {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 
 	case t.IDOpenBracket:
 		lhs := n.LHS().AsExpr()
 		if _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		rhs := n.RHS().AsExpr()
 		if _, err := q.bcheckExpr(rhs, depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 
 		lengthExpr := (*a.Expr)(nil)
@@ -802,32 +806,32 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 		}
 
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, rhs); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, rhs, lengthExpr); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 
 	case t.IDColon:
 		lhs := n.LHS().AsExpr()
 		if _, err := q.bcheckExpr(lhs, depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		mhs := n.MHS().AsExpr()
 		if mhs != nil {
 			if _, err := q.bcheckExpr(mhs, depth); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 		}
 		rhs := n.RHS().AsExpr()
 		if rhs != nil {
 			if _, err := q.bcheckExpr(rhs, depth); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 		}
 
 		if mhs == nil && rhs == nil {
-			return a.Bounds{zero, zero}, nil
+			return bounds{zero, zero}, nil
 		}
 
 		lengthExpr := (*a.Expr)(nil)
@@ -846,21 +850,21 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 
 		if mhs != zeroExpr {
 			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, mhs); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 		}
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, mhs, rhs); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 		if rhs != lengthExpr {
 			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, rhs, lengthExpr); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 		}
 
 	case t.IDDot:
 		if _, err := q.bcheckExpr(n.LHS().AsExpr(), depth); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 
 		// TODO: delete this hack that only matches "args".
@@ -872,19 +876,19 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (a.Bounds, error) {
 				}
 			}
 			lTyp := n.LHS().AsExpr().MType()
-			return a.Bounds{}, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
+			return bounds{}, fmt.Errorf("check: no field named %q found in struct type %q for expression %q",
 				n.Ident().Str(q.tm), lTyp.QID().Str(q.tm), n.Str(q.tm))
 		}
 
 	case t.IDComma:
 		for _, o := range n.Args() {
 			if _, err := q.bcheckExpr(o.AsExpr(), depth); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 		}
 
 	default:
-		return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
+		return bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprOther", n.Operator())
 	}
 	return q.bcheckTypeExpr(n.MType())
 }
@@ -928,13 +932,13 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 
 var errNotASpecialCase = errors.New("not a special case")
 
-func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (bounds, error) {
 	lhs := n.LHS().AsExpr()
 	recv := lhs.LHS().AsExpr()
 	method := lhs.Ident()
 
 	if recvTyp := recv.MType(); recvTyp == nil {
-		return a.Bounds{}, errNotASpecialCase
+		return bounds{}, errNotASpecialCase
 
 	} else if recvTyp.IsNumType() {
 		// For a numeric type's low_bits, etc. methods. The bound on the output
@@ -944,9 +948,9 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 		case t.IDLowBits, t.IDHighBits:
 			ab, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
-			return a.Bounds{
+			return bounds{
 				zero,
 				bitMask(int(ab[1].Int64())),
 			}, nil
@@ -956,19 +960,19 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 			// need to bcheck lhs.LHS().Expr() twice.
 			lb, err := q.bcheckExpr(lhs.LHS().AsExpr(), depth)
 			if err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 			ab, err := q.bcheckExpr(n.Args()[0].AsArg().Value(), depth)
 			if err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 			if method == t.IDMin {
-				return a.Bounds{
+				return bounds{
 					min(lb[0], ab[0]),
 					min(lb[1], ab[1]),
 				}, nil
 			} else {
-				return a.Bounds{
+				return bounds{
 					max(lb[0], ab[0]),
 					max(lb[1], ab[1]),
 				}, nil
@@ -980,30 +984,30 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 
 		if method == t.IDUndoByte {
 			if err := q.canUndoByte(recv); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 
 		} else if method == t.IDCopyNFromHistoryFast {
 			if err := q.canCopyNFromHistoryFast(recv, n.Args()); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 
 		} else if method == t.IDSkipFast {
 			args := n.Args()
 			if len(args) != 2 {
-				return a.Bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")
+				return bounds{}, fmt.Errorf("check: internal error: bad skip_fast arguments")
 			}
 			actual := args[0].AsArg().Value()
 			worstCase := args[1].AsArg().Value()
 			if err := q.proveBinaryOp(t.IDXBinaryLessEq, actual, worstCase); err == errFailed {
-				return a.Bounds{}, fmt.Errorf("check: could not prove skip_fast pre-condition: %s <= %s",
+				return bounds{}, fmt.Errorf("check: could not prove skip_fast pre-condition: %s <= %s",
 					actual.Str(q.tm), worstCase.Str(q.tm))
 			} else if err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 			advance, update = worstCase.ConstValue(), true
 			if advance == nil {
-				return a.Bounds{}, fmt.Errorf("check: skip_fast worst_case is not a constant value")
+				return bounds{}, fmt.Errorf("check: skip_fast worst_case is not a constant value")
 			}
 
 		} else if method >= t.IDPeekU8 {
@@ -1015,16 +1019,16 @@ func (q *checker) bcheckExprCallSpecialCases(n *a.Expr, depth uint32) (a.Bounds,
 
 		if advance != nil {
 			if ok, err := q.optimizeIOMethodAdvance(recv, advance, update); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			} else if !ok {
-				return a.Bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %v",
+				return bounds{}, fmt.Errorf("check: could not prove %s pre-condition: %s.available() >= %v",
 					method.Str(q.tm), recv.Str(q.tm), advance)
 			}
 			// TODO: drop other recv-related facts?
 		}
 	}
 
-	return a.Bounds{}, errNotASpecialCase
+	return bounds{}, errNotASpecialCase
 }
 
 func (q *checker) canUndoByte(recv *a.Expr) error {
@@ -1232,34 +1236,34 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	return ret
 }
 
-func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (bounds, error) {
 	rb, err := q.bcheckExpr(n.RHS().AsExpr(), depth)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 
 	switch n.Operator() {
 	case t.IDXUnaryPlus:
 		return rb, nil
 	case t.IDXUnaryMinus:
-		return a.Bounds{neg(rb[1]), neg(rb[0])}, nil
+		return bounds{neg(rb[1]), neg(rb[0])}, nil
 	case t.IDXUnaryNot:
-		return a.Bounds{zero, one}, nil
+		return bounds{zero, one}, nil
 	case t.IDXUnaryRef, t.IDXUnaryDeref:
 		return q.bcheckTypeExpr(n.MType())
 	}
 
-	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
+	return bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())
 }
 
-func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lb a.Bounds, rhs *a.Expr, rb a.Bounds) (a.Bounds, error) {
-	return a.Bounds{
+func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lb bounds, rhs *a.Expr, rb bounds) (bounds, error) {
+	return bounds{
 		big.NewInt(0).Add(lb[0], rb[0]),
 		big.NewInt(0).Add(lb[1], rb[1]),
 	}, nil
 }
 
-func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb a.Bounds, rhs *a.Expr, rb a.Bounds) (a.Bounds, error) {
+func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb bounds, rhs *a.Expr, rb bounds) (bounds, error) {
 	nMin := big.NewInt(0).Sub(lb[0], rb[1])
 	nMax := big.NewInt(0).Sub(lb[1], rb[0])
 	for _, x := range q.facts {
@@ -1278,21 +1282,21 @@ func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb a.Bounds, rhs *a.Expr, 
 			nMin = max(nMin, one)
 		}
 	}
-	return a.Bounds{nMin, nMax}, nil
+	return bounds{nMin, nMax}, nil
 }
 
-func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (bounds, error) {
 	lb, err := q.bcheckExpr(lhs, depth)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 	return q.bcheckExprBinaryOp1(op, lhs, lb, rhs, depth)
 }
 
-func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Expr, depth uint32) (bounds, error) {
 	rb, err := q.bcheckExpr(rhs, depth)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 
 	switch op {
@@ -1306,12 +1310,12 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 		// TODO: handle multiplication by negative numbers. Note that this
 		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
 		if lb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		return a.Bounds{
+		return bounds{
 			big.NewInt(0).Mul(lb[0], rb[0]),
 			big.NewInt(0).Mul(lb[1], rb[1]),
 		}, nil
@@ -1319,31 +1323,31 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 	case t.IDXBinarySlash, t.IDXBinaryPercent:
 		// Prohibit division by zero.
 		if lb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly negative", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rb[0].Sign() <= 0 {
-			return a.Bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		if op == t.IDXBinarySlash {
-			return a.Bounds{
+			return bounds{
 				big.NewInt(0).Mul(lb[0], rb[1]),
 				big.NewInt(0).Mul(lb[1], rb[0]),
 			}, nil
 		}
-		return a.Bounds{
+		return bounds{
 			zero,
 			big.NewInt(0).Sub(rb[1], one),
 		}, nil
 
 	case t.IDXBinaryShiftL, t.IDXBinaryTildeModShiftL:
 		if lb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rb[1].Cmp(ffff) > 0 {
-			return a.Bounds{}, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
 		}
 		nMin := big.NewInt(0).Lsh(lb[0], uint(rb[0].Uint64()))
 		nMax := big.NewInt(0).Lsh(lb[1], uint(rb[1].Uint64()))
@@ -1353,23 +1357,23 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 				nMax = min(nMax, b[1])
 			}
 		}
-		return a.Bounds{nMin, nMax}, nil
+		return bounds{nMin, nMax}, nil
 
 	case t.IDXBinaryShiftR:
 		if lb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if rb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rb[0].Cmp(maxIntBits) >= 0 {
-			return a.Bounds{zero, zero}, nil
+			return bounds{zero, zero}, nil
 		}
 		nMax := big.NewInt(0).Rsh(lb[1], uint(rb[0].Uint64()))
 		if rb[1].Cmp(maxIntBits) >= 0 {
-			return a.Bounds{zero, nMax}, nil
+			return bounds{zero, nMax}, nil
 		}
-		return a.Bounds{
+		return bounds{
 			big.NewInt(0).Rsh(lb[0], uint(rb[1].Uint64())),
 			nMax,
 		}, nil
@@ -1378,16 +1382,16 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 		// TODO: should type-checking ensure that bitwise ops only apply to
 		// *unsigned* integer types?
 		if lb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
 		if lb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
 		}
 		if rb[0].Sign() < 0 {
-			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
 		if rb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return a.Bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
+			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
 		}
 		z := (*big.Int)(nil)
 		switch op {
@@ -1398,7 +1402,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 		}
 		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
 		// conservative, but works fine in practice.
-		return a.Bounds{
+		return bounds{
 			zero,
 			bitMask(z.BitLen()),
 		}, nil
@@ -1426,7 +1430,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 			}
 			nb, err := nFunc(q, lhs, lb, rhs, rb)
 			if err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 
 			if op == t.IDXBinaryTildeSatPlus {
@@ -1441,27 +1445,27 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb a.Bounds, rhs *a.
 
 	case t.IDXBinaryNotEq, t.IDXBinaryLessThan, t.IDXBinaryLessEq, t.IDXBinaryEqEq,
 		t.IDXBinaryGreaterEq, t.IDXBinaryGreaterThan, t.IDXBinaryAnd, t.IDXBinaryOr:
-		return a.Bounds{zero, one}, nil
+		return bounds{zero, one}, nil
 
 	case t.IDXBinaryAs:
 		// Unreachable, as this is checked by the caller.
 	}
-	return a.Bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
+	return bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprBinaryOp", op)
 }
 
-func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, error) {
+func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (bounds, error) {
 	op := n.Operator().AmbiguousForm().BinaryForm()
 	if op == 0 {
-		return a.Bounds{}, fmt.Errorf(
+		return bounds{}, fmt.Errorf(
 			"check: unrecognized token (0x%X) for bcheckExprAssociativeOp", n.Operator())
 	}
 	args := n.Args()
 	if len(args) < 1 {
-		return a.Bounds{}, fmt.Errorf("check: associative op has no arguments")
+		return bounds{}, fmt.Errorf("check: associative op has no arguments")
 	}
 	lb, err := q.bcheckExpr(args[0].AsExpr(), depth)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 	for i, o := range args {
 		if i == 0 {
@@ -1471,32 +1475,32 @@ func (q *checker) bcheckExprAssociativeOp(n *a.Expr, depth uint32) (a.Bounds, er
 			n.Operator(), 0, n.Ident(), n.LHS(), n.MHS(), n.RHS(), args[:i])
 		lb, err = q.bcheckExprBinaryOp1(op, lhs, lb, o.AsExpr(), depth)
 		if err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 	}
 	return lb, nil
 }
 
-func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (a.Bounds, error) {
+func (q *checker) bcheckTypeExpr(typ *a.TypeExpr) (bounds, error) {
 	if b := typ.AsNode().MBounds(); b[0] != nil {
 		return b, nil
 	}
 	b, err := q.bcheckTypeExpr1(typ)
 	if err != nil {
-		return a.Bounds{}, err
+		return bounds{}, err
 	}
 	typ.AsNode().SetMBounds(b)
 	return b, nil
 }
 
-func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (a.Bounds, error) {
+func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (bounds, error) {
 	if typ.IsIdeal() {
-		return a.Bounds{minIdeal, maxIdeal}, nil
+		return bounds{minIdeal, maxIdeal}, nil
 	}
 
 	if innTyp := typ.Inner(); innTyp != nil {
 		if _, err := q.bcheckTypeExpr(innTyp); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
 	}
 
@@ -1505,29 +1509,29 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (a.Bounds, error) {
 		// No-op.
 	case t.IDArray:
 		if _, err := q.bcheckExpr(typ.ArrayLength(), 0); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
-		return a.Bounds{zero, zero}, nil
+		return bounds{zero, zero}, nil
 	case t.IDFunc:
 		if _, err := q.bcheckTypeExpr(typ.Receiver()); err != nil {
-			return a.Bounds{}, err
+			return bounds{}, err
 		}
-		return a.Bounds{one, one}, nil
+		return bounds{one, one}, nil
 	case t.IDNptr:
-		return a.Bounds{zero, one}, nil
+		return bounds{zero, one}, nil
 	case t.IDPtr:
-		return a.Bounds{one, one}, nil
+		return bounds{one, one}, nil
 	case t.IDSlice, t.IDTable:
-		return a.Bounds{zero, zero}, nil
+		return bounds{zero, zero}, nil
 	default:
-		return a.Bounds{}, fmt.Errorf("check: internal error: unrecognized decorator")
+		return bounds{}, fmt.Errorf("check: internal error: unrecognized decorator")
 	}
 
-	b := a.Bounds{zero, zero}
+	b := bounds{zero, zero}
 
 	if qid := typ.QID(); qid[0] == t.IDBase {
 		if qid[1] == t.IDDagger1 || qid[1] == t.IDDagger2 {
-			return a.Bounds{zero, zero}, nil
+			return bounds{zero, zero}, nil
 		} else if qid[1] < t.ID(len(numTypeBounds)) {
 			if x := numTypeBounds[qid[1]]; x[0] != nil {
 				b = x
@@ -1538,12 +1542,12 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (a.Bounds, error) {
 	if typ.IsRefined() {
 		if x := typ.Min(); x != nil {
 			if _, err := q.bcheckExpr(x, 0); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 			if cv := x.ConstValue(); cv == nil {
-				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
+				return bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if cv.Cmp(b[0]) < 0 {
-				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
+				return bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
 			} else {
 				b[0] = cv
 			}
@@ -1551,12 +1555,12 @@ func (q *checker) bcheckTypeExpr1(typ *a.TypeExpr) (a.Bounds, error) {
 
 		if x := typ.Max(); x != nil {
 			if _, err := q.bcheckExpr(x, 0); err != nil {
-				return a.Bounds{}, err
+				return bounds{}, err
 			}
 			if cv := x.ConstValue(); cv == nil {
-				return a.Bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
+				return bounds{}, fmt.Errorf("check: internal error: refinement has no const-value")
 			} else if cv.Cmp(b[1]) > 0 {
-				return a.Bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
+				return bounds{}, fmt.Errorf("check: type refinement %v for %q is out of bounds", cv, typ.Str(q.tm))
 			} else {
 				b[1] = cv
 			}

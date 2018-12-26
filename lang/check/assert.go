@@ -101,7 +101,7 @@ func (z *facts) update(f func(*a.Expr) (*a.Expr, error)) error {
 	return nil
 }
 
-func (z facts) refine(n *a.Expr, nb a.Bounds, tm *t.Map) (a.Bounds, error) {
+func (z facts) refine(n *a.Expr, nb bounds, tm *t.Map) (bounds, error) {
 	if nb[0] == nil || nb[1] == nil {
 		return nb, nil
 	}
@@ -152,7 +152,7 @@ func (z facts) refine(n *a.Expr, nb a.Bounds, tm *t.Map) (a.Bounds, error) {
 		}
 
 		if changed && nb[0].Cmp(nb[1]) > 0 {
-			return a.Bounds{}, fmt.Errorf("check: expression %q bounds %v inconsistent with fact %q",
+			return bounds{}, fmt.Errorf("check: expression %q bounds %v inconsistent with fact %q",
 				n.Str(tm), originalNB, x.Str(tm))
 		}
 	}
@@ -242,7 +242,7 @@ func parseBinaryOp(n *a.Expr) (op t.ID, lhs *a.Expr, rhs *a.Expr) {
 	return op, n.LHS().AsExpr(), n.RHS().AsExpr()
 }
 
-func proveBinaryOpConstValues(op t.ID, lb a.Bounds, rb a.Bounds) (ok bool) {
+func proveBinaryOpConstValues(op t.ID, lb bounds, rb bounds) (ok bool) {
 	switch op {
 	case t.IDXBinaryNotEq:
 		return lb[1].Cmp(rb[0]) < 0 || lb[0].Cmp(rb[1]) > 0
@@ -267,7 +267,7 @@ func (q *checker) proveBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, a.Bounds{lcv, lcv}, rb) {
+		if proveBinaryOpConstValues(op, bounds{lcv, lcv}, rb) {
 			return nil
 		}
 	}
@@ -277,7 +277,7 @@ func (q *checker) proveBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 		if err != nil {
 			return err
 		}
-		if proveBinaryOpConstValues(op, lb, a.Bounds{rcv, rcv}) {
+		if proveBinaryOpConstValues(op, lb, bounds{rcv, rcv}) {
 			return nil
 		}
 	}

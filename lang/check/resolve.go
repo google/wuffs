@@ -74,7 +74,7 @@ var (
 )
 
 func setPlaceholderMBoundsMType(n *a.Node) {
-	n.SetMBounds(a.Bounds{zero, zero})
+	n.SetMBounds(bounds{zero, zero})
 	n.SetMType(typeExprPlaceholder)
 }
 

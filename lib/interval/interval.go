@@ -152,7 +152,7 @@ func (x IntRange) String() string {
 	} else {
 		buf = append(buf, '[')
 		buf = x[0].Append(buf, 10)
-		buf = append(buf, ", "...)
+		buf = append(buf, ".."...)
 	}
 	if x[1] == nil {
 		buf = append(buf, "+∞)"...)
