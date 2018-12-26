@@ -1257,15 +1257,11 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (bounds, error) {
 }
 
 func (q *checker) bcheckExprXBinaryPlus(lhs *a.Expr, lb bounds, rhs *a.Expr, rb bounds) (bounds, error) {
-	return bounds{
-		big.NewInt(0).Add(lb[0], rb[0]),
-		big.NewInt(0).Add(lb[1], rb[1]),
-	}, nil
+	return lb.Add(rb), nil
 }
 
 func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb bounds, rhs *a.Expr, rb bounds) (bounds, error) {
-	nMin := big.NewInt(0).Sub(lb[0], rb[1])
-	nMax := big.NewInt(0).Sub(lb[1], rb[0])
+	nb := lb.Sub(rb)
 	for _, x := range q.facts {
 		xOp, xLHS, xRHS := parseBinaryOp(x)
 		if !lhs.Eq(xLHS) || !rhs.Eq(xRHS) {
@@ -1273,16 +1269,16 @@ func (q *checker) bcheckExprXBinaryMinus(lhs *a.Expr, lb bounds, rhs *a.Expr, rb
 		}
 		switch xOp {
 		case t.IDXBinaryLessThan:
-			nMax = min(nMax, minusOne)
+			nb[1] = min(nb[1], minusOne)
 		case t.IDXBinaryLessEq:
-			nMax = min(nMax, zero)
+			nb[1] = min(nb[1], zero)
 		case t.IDXBinaryGreaterEq:
-			nMin = max(nMin, zero)
+			nb[0] = max(nb[0], zero)
 		case t.IDXBinaryGreaterThan:
-			nMin = max(nMin, one)
+			nb[0] = max(nb[0], one)
 		}
 	}
-	return bounds{nMin, nMax}, nil
+	return nb, nil
 }
 
 func (q *checker) bcheckExprBinaryOp(op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) (bounds, error) {
@@ -1307,18 +1303,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 		return q.bcheckExprXBinaryMinus(lhs, lb, rhs, rb)
 
 	case t.IDXBinaryStar:
-		// TODO: handle multiplication by negative numbers. Note that this
-		// might reverse the inequality: if 0 < a < b but c < 0 then a*c > b*c.
-		if lb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", lhs.Str(q.tm))
-		}
-		if rb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: multiply op argument %q is possibly negative", rhs.Str(q.tm))
-		}
-		return bounds{
-			big.NewInt(0).Mul(lb[0], rb[0]),
-			big.NewInt(0).Mul(lb[1], rb[1]),
-		}, nil
+		return lb.Mul(rb), nil
 
 	case t.IDXBinarySlash, t.IDXBinaryPercent:
 		// Prohibit division by zero.
@@ -1329,10 +1314,8 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 			return bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		if op == t.IDXBinarySlash {
-			return bounds{
-				big.NewInt(0).Mul(lb[0], rb[1]),
-				big.NewInt(0).Mul(lb[1], rb[0]),
-			}, nil
+			nb, _ := lb.Quo(rb)
+			return nb, nil
 		}
 		return bounds{
 			zero,
@@ -1349,15 +1332,14 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 		if rb[1].Cmp(ffff) > 0 {
 			return bounds{}, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
 		}
-		nMin := big.NewInt(0).Lsh(lb[0], uint(rb[0].Uint64()))
-		nMax := big.NewInt(0).Lsh(lb[1], uint(rb[1].Uint64()))
+		nb, _ := lb.Lsh(rb)
 		if op == t.IDXBinaryTildeModShiftL {
 			if qid := lhs.MType().QID(); qid[0] == t.IDBase {
 				b := numTypeBounds[qid[1]]
-				nMax = min(nMax, b[1])
+				nb[1] = min(nb[1], b[1])
 			}
 		}
-		return bounds{nMin, nMax}, nil
+		return nb, nil
 
 	case t.IDXBinaryShiftR:
 		if lb[0].Sign() < 0 {
@@ -1366,17 +1348,8 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 		if rb[0].Sign() < 0 {
 			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rb[0].Cmp(maxIntBits) >= 0 {
-			return bounds{zero, zero}, nil
-		}
-		nMax := big.NewInt(0).Rsh(lb[1], uint(rb[0].Uint64()))
-		if rb[1].Cmp(maxIntBits) >= 0 {
-			return bounds{zero, nMax}, nil
-		}
-		return bounds{
-			big.NewInt(0).Rsh(lb[0], uint(rb[1].Uint64())),
-			nMax,
-		}, nil
+		nb, _ := lb.Rsh(rb)
+		return nb, nil
 
 	case t.IDXBinaryAmp, t.IDXBinaryPipe, t.IDXBinaryHat:
 		// TODO: should type-checking ensure that bitwise ops only apply to
@@ -1384,28 +1357,25 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 		if lb[0].Sign() < 0 {
 			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", lhs.Str(q.tm))
 		}
-		if lb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", lhs.Str(q.tm))
-		}
 		if rb[0].Sign() < 0 {
 			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly negative", rhs.Str(q.tm))
 		}
-		if rb[1].Cmp(numTypeBounds[t.IDU64][1]) > 0 {
-			return bounds{}, fmt.Errorf("check: bitwise op argument %q is possibly too large", rhs.Str(q.tm))
-		}
-		z := (*big.Int)(nil)
 		switch op {
 		case t.IDXBinaryAmp:
-			z = min(lb[1], rb[1])
-		case t.IDXBinaryPipe, t.IDXBinaryHat:
-			z = max(lb[1], rb[1])
+			nb, _ := lb.And(rb)
+			return nb, nil
+		case t.IDXBinaryPipe:
+			nb, _ := lb.Or(rb)
+			return nb, nil
+		case t.IDXBinaryHat:
+			z := max(lb[1], rb[1])
+			// Return [0, z rounded up to the next power-of-2-minus-1]. This is
+			// conservative, but works fine in practice.
+			return bounds{
+				zero,
+				bitMask(z.BitLen()),
+			}, nil
 		}
-		// Return [0, z rounded up to the next power-of-2-minus-1]. This is
-		// conservative, but works fine in practice.
-		return bounds{
-			zero,
-			bitMask(z.BitLen()),
-		}, nil
 
 	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lhs.MType()
