@@ -36,19 +36,37 @@ wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
   uint8_t* s = src.ptr;
 
   size_t n = len;
-  while (n--) {
-    uint8_t* p = dst_palette.ptr + ((size_t)(*s) * 4);
-    uint8_t b0 = p[0];
-    uint8_t b1 = p[1];
-    uint8_t b2 = p[2];
-    uint8_t b3 = p[3];
-    d[0] = b0;
-    d[1] = b1;
-    d[2] = b2;
-    d[3] = b3;
-    s += 1;
-    d += 4;
+  const int N = 4;
+
+  while (n >= N) {
+    wuffs_base__store_u32le(
+        d + (0 * 4),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+    wuffs_base__store_u32le(
+        d + (1 * 4),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4)));
+    wuffs_base__store_u32le(
+        d + (2 * 4),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4)));
+    wuffs_base__store_u32le(
+        d + (3 * 4),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4)));
+
+    s += 1 * N;
+    d += 4 * N;
+    n -= 1 * N;
   }
+
+  while (n >= 1) {
+    wuffs_base__store_u32le(
+        d + (0 * 4),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+
+    s += 1 * 1;
+    d += 4 * 1;
+    n -= 1 * 1;
+  }
+
   return len;
 }
 
