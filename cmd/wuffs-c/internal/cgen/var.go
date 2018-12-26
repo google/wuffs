@@ -27,7 +27,7 @@ var errNeedDerivedVar = errors.New("internal: need derived var")
 func (g *gen) needDerivedVar(name t.ID) bool {
 	for _, o := range g.currFunk.astFunc.Body() {
 		err := o.Walk(func(p *a.Node) error {
-			// Look for p matching "in.name.etc(etc)".
+			// Look for p matching "args.name.etc(etc)".
 			if p.Kind() != a.KExpr {
 				return nil
 			}
@@ -59,17 +59,7 @@ func (g *gen) needDerivedVar(name t.ID) bool {
 func (g *gen) findDerivedVars() {
 	for _, o := range g.currFunk.astFunc.In().Fields() {
 		o := o.AsField()
-		oTyp := o.XType()
-		if oTyp.Decorator() != 0 {
-			continue
-		}
-		switch oTyp.QID() {
-		default:
-			continue
-		case t.QID{t.IDBase, t.IDIOReader}, t.QID{t.IDBase, t.IDIOWriter}:
-			// No-op.
-		}
-		if !g.needDerivedVar(o.Name()) {
+		if !o.XType().IsIOType() || !g.needDerivedVar(o.Name()) {
 			continue
 		}
 		if g.currFunk.derivedVars == nil {
