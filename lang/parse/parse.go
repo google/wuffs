@@ -65,11 +65,12 @@ func ParseExpr(tm *t.Map, filename string, src []t.Token, opts *Options) (*a.Exp
 }
 
 type parser struct {
-	tm       *t.Map
-	filename string
-	src      []t.Token
-	opts     Options
-	lastLine uint32
+	tm         *t.Map
+	filename   string
+	src        []t.Token
+	opts       Options
+	lastLine   uint32
+	funcEffect a.Effect
 }
 
 func (p *parser) line() uint32 {
@@ -170,7 +171,8 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 					p.tm.ByID(id1), p.filename, p.line())
 			}
 
-			flags |= p.parseEffect().AsFlags()
+			p.funcEffect = p.parseEffect()
+			flags |= p.funcEffect.AsFlags()
 			argFields, err := p.parseList(t.IDCloseParen, (*parser).parseFieldNode)
 			if err != nil {
 				return nil, err
@@ -202,6 +204,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
 			}
 			p.src = p.src[1:]
+			p.funcEffect = 0
 			in := a.NewStruct(0, p.filename, line, t.IDArgs, argFields)
 			return a.NewFunc(flags, p.filename, line, id0, id1, in, out, asserts, body).AsNode(), nil
 
@@ -596,6 +599,9 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDReturn, t.IDYield:
 		p.src = p.src[1:]
+		if x == t.IDYield && !p.funcEffect.Coroutine() {
+			return nil, fmt.Errorf(`parse: yield within non-coroutine at %s:%d`, p.filename, p.line())
+		}
 		value, err := p.parseExpr()
 		if err != nil {
 			return nil, err
@@ -631,28 +637,38 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 		return a.NewWhile(label, condition, asserts, body).AsNode(), nil
 	}
 
-	lhs, err := p.parseExpr()
+	lhs := (*a.Expr)(nil)
+	rhs, err := p.parseExpr()
 	if err != nil {
 		return nil, err
 	}
 
-	if op := p.peek1(); op.IsAssign() {
+	op := p.peek1()
+	if op.IsAssign() {
 		if op == t.IDEqQuestion {
 			return nil, fmt.Errorf(`parse: TODO: support "=?" without "var" at %s:%d`, p.filename, p.line())
 		}
 		p.src = p.src[1:]
-		rhs, err := p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
+		lhs = rhs
 		if lhs.Effect() != 0 {
 			return nil, fmt.Errorf(`parse: assignment LHS %q is not effect-free at %s:%d`,
 				lhs.Str(p.tm), p.filename, p.line())
 		}
-		return a.NewAssign(op, lhs, rhs).AsNode(), nil
+		rhs, err = p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return lhs.AsNode(), nil
+	if p.funcEffect.WeakerThan(rhs.Effect()) {
+		return nil, fmt.Errorf(`parse: value %q's effect %q is stronger than the func's effect %q at %s:%d`,
+			rhs.Str(p.tm), rhs.Effect(), p.funcEffect, p.filename, p.line())
+	}
+
+	if lhs == nil {
+		return rhs.AsNode(), nil
+	}
+	return a.NewAssign(op, lhs, rhs).AsNode(), nil
 }
 
 func (p *parser) parseAsserts() ([]*a.Node, error) {
@@ -963,6 +979,11 @@ func (p *parser) parseVarNode(inIterate bool) (*a.Node, error) {
 				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
 					value.Str(p.tm), p.filename, p.line())
 			}
+		}
+
+		if p.funcEffect.WeakerThan(value.Effect()) {
+			return nil, fmt.Errorf(`parse: value %q's effect %q is stronger than the func's effect %q at %s:%d`,
+				value.Str(p.tm), value.Effect(), p.funcEffect, p.filename, p.line())
 		}
 	}
 

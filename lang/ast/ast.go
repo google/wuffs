@@ -120,6 +120,8 @@ func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
 func (e Effect) Optional() bool  { return e&EffectOptional != 0 }
 func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
 
+func (e Effect) WeakerThan(o Effect) bool { return e < o }
+
 func (e Effect) String() string {
 	switch e & effectMask {
 	case 0:
