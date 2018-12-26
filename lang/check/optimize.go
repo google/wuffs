@@ -103,13 +103,10 @@ func (q *checker) optimizeIOMethodAdvance(receiver *a.Expr, advance *big.Int, up
 
 		// Create a new a.Expr to hold the adjusted RHS constant value, newRCV.
 		newRCV := big.NewInt(0).Sub(rcv, advance)
-		id, err := q.tm.Insert(newRCV.String())
+		o, err := makeConstValueExpr(q.tm, newRCV)
 		if err != nil {
 			return nil, err
 		}
-		o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
-		o.SetConstValue(newRCV)
-		o.SetMType(typeExprIdeal)
 
 		return a.NewExpr(x.AsNode().AsRaw().Flags(),
 			t.IDXBinaryGreaterEq, 0, 0, x.LHS(), nil, o.AsNode(), nil), nil

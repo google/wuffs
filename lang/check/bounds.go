@@ -303,7 +303,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		} else if lTyp == nil {
 			return fmt.Errorf("TODO: allow returning nothing")
 		}
-		if err := q.bcheckAssignment1(nil, lTyp, t.IDEq, n.Value()); err != nil {
+		if _, err := q.bcheckAssignment1(nil, lTyp, t.IDEq, n.Value()); err != nil {
 			return err
 		}
 
@@ -324,7 +324,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 }
 
 func (q *checker) bcheckAssert(n *a.Assert) error {
-	// TODO: check, here or elsewhere, that the condition is pure.
 	condition := n.Condition()
 	if _, err := q.bcheckExpr(condition, 0); err != nil {
 		return err
@@ -375,10 +374,11 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 	if _, err := q.bcheckExpr(lhs, 0); err != nil {
 		return err
 	}
-	if err := q.bcheckAssignment1(lhs, lhs.MType(), op, rhs); err != nil {
+	nb, err := q.bcheckAssignment1(lhs, lhs.MType(), op, rhs)
+	if err != nil {
 		return err
 	}
-	// TODO: check lhs and rhs are pure expressions.
+
 	if op == t.IDEq {
 		// Drop any facts involving lhs.
 		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
@@ -390,11 +390,10 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			return err
 		}
 
-		if lhs.Effect().Pure() && rhs.Effect().Pure() && lhs.MType().IsNumType() {
-			o := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
-			o.SetMType(lhs.MType())
-			q.facts.appendFact(o)
+		if lhs.MType().IsNumType() && rhs.Effect().Pure() {
+			q.facts.appendBinaryOpFact(t.IDXBinaryEqEq, lhs, rhs)
 		}
+
 	} else {
 		// Update any facts involving lhs.
 		if err := q.facts.update(func(x *a.Expr) (*a.Expr, error) {
@@ -411,38 +410,55 @@ func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
 			switch op {
 			case t.IDPlusEq, t.IDMinusEq:
 				oRHS := a.NewExpr(0, op.BinaryForm(), 0, 0, xRHS.AsNode(), nil, rhs.AsNode(), nil)
-				oRHS.SetMType(xRHS.MType())
+				// TODO: call SetMBounds?
+				oRHS.SetMType(typeExprIdeal)
 				oRHS, err := simplify(q.tm, oRHS)
 				if err != nil {
 					return nil, err
 				}
 				o := a.NewExpr(0, xOp, 0, 0, xLHS.AsNode(), nil, oRHS.AsNode(), nil)
-				o.SetMType(x.MType())
+				o.SetMBounds(bounds{zero, one})
+				o.SetMType(typeExprBool)
 				return o, nil
 			}
 			return nil, nil
 		}); err != nil {
 			return err
 		}
+	}
 
-		// TODO: don't hard code the fact that "x |= n" implies "x >= n", for
-		// constant n.
-		if (op == t.IDPipeEq) && (rhs.ConstValue() != nil) {
-			q.facts.appendFact(a.NewExpr(0, t.IDXBinaryGreaterEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil))
+	if lhs.MType().IsNumType() && ((op != t.IDEq) || (rhs.ConstValue() == nil)) {
+		lb, err := q.bcheckTypeExpr(lhs.MType())
+		if err != nil {
+			return err
+		}
+		if lb[0].Cmp(nb[0]) < 0 {
+			c, err := makeConstValueExpr(q.tm, nb[0])
+			if err != nil {
+				return err
+			}
+			q.facts.appendBinaryOpFact(t.IDXBinaryGreaterEq, lhs, c)
+		}
+		if lb[1].Cmp(nb[1]) > 0 {
+			c, err := makeConstValueExpr(q.tm, nb[1])
+			if err != nil {
+				return err
+			}
+			q.facts.appendBinaryOpFact(t.IDXBinaryLessEq, lhs, c)
 		}
 	}
 
 	return nil
 }
 
-func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) error {
+func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs *a.Expr) (bounds, error) {
 	if lhs == nil && op != t.IDEq {
-		return fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
+		return bounds{}, fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
 	lb, err := q.bcheckTypeExpr(lTyp)
 	if err != nil {
-		return err
+		return bounds{}, err
 	}
 
 	rb := bounds{}
@@ -452,19 +468,19 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		rb, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)
 	}
 	if err != nil {
-		return err
+		return bounds{}, err
 	}
 
 	if (rb[0].Cmp(lb[0]) < 0) || (rb[1].Cmp(lb[1]) > 0) {
 		if op == t.IDEq {
-			return fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
+			return bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 				rhs.Str(q.tm), rb, lb)
 		} else {
-			return fmt.Errorf("check: assignment %q bounds %v is not within bounds %v",
+			return bounds{}, fmt.Errorf("check: assignment %q bounds %v is not within bounds %v",
 				lhs.Str(q.tm)+" "+op.Str(q.tm)+" "+rhs.Str(q.tm), rb, lb)
 		}
 	}
-	return nil
+	return rb, nil
 }
 
 // terminates returns whether a block of statements terminates. In other words,
@@ -906,7 +922,7 @@ func (q *checker) bcheckExprCall(n *a.Expr, depth uint32) error {
 			lhs.MType().Str(q.tm), len(inFields), len(n.Args()))
 	}
 	for i, o := range n.Args() {
-		if err := q.bcheckAssignment1(nil, inFields[i].AsField().XType(), t.IDEq, o.AsArg().Value()); err != nil {
+		if _, err := q.bcheckAssignment1(nil, inFields[i].AsField().XType(), t.IDEq, o.AsArg().Value()); err != nil {
 			return err
 		}
 	}
@@ -1205,11 +1221,25 @@ var ioMethodAdvances = [...]struct {
 	t.IDWriteFastU64LE - t.IDPeekU8: {eight, true},
 }
 
+func makeConstValueExpr(tm *t.Map, cv *big.Int) (*a.Expr, error) {
+	id, err := tm.Insert(cv.String())
+	if err != nil {
+		return nil, err
+	}
+	o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
+	o.SetConstValue(cv)
+	o.SetMBounds(bounds{cv, cv})
+	o.SetMType(typeExprIdeal)
+	return o, nil
+}
+
 // makeSliceLength returns "x.length()".
 func makeSliceLength(slice *a.Expr) *a.Expr {
 	x := a.NewExpr(0, t.IDDot, 0, t.IDLength, slice.AsNode(), nil, nil, nil)
+	x.SetMBounds(bounds{one, one})
 	x.SetMType(a.NewTypeExpr(t.IDFunc, 0, t.IDLength, slice.MType().AsNode(), nil, nil))
 	x = a.NewExpr(0, t.IDOpenParen, 0, 0, x.AsNode(), nil, nil, nil)
+	// TODO: call SetMBounds?
 	x.SetMType(typeExprU64)
 	return x
 }
@@ -1227,11 +1257,15 @@ func makeSliceLengthEqEq(x t.ID, xTyp *a.TypeExpr, n t.ID) *a.Expr {
 	if nValue == 0 {
 		panic("check: internal error: makeSliceLengthEqEq called but not with a small power of 2")
 	}
+	cv := big.NewInt(int64(nValue))
+
 	rhs := a.NewExpr(0, 0, 0, n, nil, nil, nil, nil)
-	rhs.SetConstValue(big.NewInt(int64(nValue)))
+	rhs.SetConstValue(cv)
+	rhs.SetMBounds(bounds{cv, cv})
 	rhs.SetMType(typeExprIdeal)
 
 	ret := a.NewExpr(0, t.IDXBinaryEqEq, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
+	ret.SetMBounds(bounds{zero, one})
 	ret.SetMType(typeExprBool)
 	return ret
 }

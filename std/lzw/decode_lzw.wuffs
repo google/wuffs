@@ -138,7 +138,12 @@ pri func decoder.read_from!(src base.io_reader) {
 					bits |= args.src.peek_u8_as_u32() << n_bits
 					args.src.skip_fast!(actual:1, worst_case:1)
 					n_bits += 8
-					if n_bits < width {  // TODO: should be unnecessary: n_bits >= 16 > width.
+					assert width <= n_bits via "a <= b: a <= c; c <= b"(c:12)
+					assert n_bits >= width via "a >= b: b <= a"()
+
+					// This if condition is always false, but for some unknown
+					// reason, removing it worsens the benchmarks slightly.
+					if n_bits < width {
 						this.read_from_return_value = 4
 						break
 					}

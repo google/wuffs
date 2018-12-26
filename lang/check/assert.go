@@ -57,6 +57,13 @@ func otherHandSide(n *a.Expr, thisHS *a.Expr) (op t.ID, thatHS *a.Expr) {
 
 type facts []*a.Expr
 
+func (z *facts) appendBinaryOpFact(op t.ID, lhs *a.Expr, rhs *a.Expr) {
+	o := a.NewExpr(0, op, 0, 0, lhs.AsNode(), nil, rhs.AsNode(), nil)
+	o.SetMBounds(bounds{zero, one})
+	o.SetMType(typeExprBool)
+	z.appendFact(o)
+}
+
 func (z *facts) appendFact(fact *a.Expr) {
 	// TODO: make this faster than O(N) by keeping facts sorted somehow?
 	for _, x := range *z {
@@ -170,14 +177,7 @@ func simplify(tm *t.Map, n *a.Expr) (*a.Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			id, err := tm.Insert(ncv.String())
-			if err != nil {
-				return nil, err
-			}
-			o := a.NewExpr(0, 0, 0, id, nil, nil, nil, nil)
-			o.SetConstValue(ncv)
-			o.SetMType(typeExprIdeal)
-			return o, nil
+			return makeConstValueExpr(tm, ncv)
 		}
 	}
 
