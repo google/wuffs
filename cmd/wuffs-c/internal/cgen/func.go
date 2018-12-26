@@ -263,7 +263,10 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	}
 	b.writes("\n")
 
-	if g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Effect().Optional() ||
+		// TODO: delete this lzw.read_from hack.
+		((g.pkgName == "lzw") && (g.currFunk.astFunc.FuncName().Str(g.tm) == "read_from")) {
+
 		g.findDerivedVars()
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
@@ -331,6 +334,17 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
+	// TODO: delete this lzw.read_from hack.
+	if (g.pkgName == "lzw") && (g.currFunk.astFunc.FuncName().Str(g.tm) == "read_from") {
+		for _, o := range g.currFunk.astFunc.In().Fields() {
+			o := o.AsField()
+			if err := g.writeSaveDerivedVar(b, "", aPrefix, o.Name(), o.XType()); err != nil {
+				return err
+			}
+		}
+		b.writes("\n")
+	}
+
 	if g.currFunk.astFunc.Effect().Optional() {
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 

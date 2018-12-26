@@ -17,58 +17,103 @@ pub status "?bad code"
 pri status "?internal error: inconsistent I/O"
 
 pub struct decoder?(
+	// The value passed to set_literal_width. This lw field is copied to the
+	// literal_width field at the start of the decode method. During that
+	// method, calling set_literal_width will change lw but not literal_width.
+	lw base.u32[..8],
+
+	// read_from state that does not change during a decode call.
 	literal_width base.u32[..8],
+	clear_code base.u32[..256],
+	end_code base.u32[..257],
+
+	// read_from state that does change during a decode call.
+	save_code base.u32[..4096],
+	prev_code base.u32[..4095],
+	width base.u32[..12],
+	bits base.u32,
+	n_bits base.u32[..31],
 	flush_j base.u32[..8191],
+
+	// read_from return value. The read_from method effectively returns a
+	// base.u32 to show how decode should continue after calling write_to. That
+	// value needs to be saved across write_to's possible suspension, so we
+	// might as well save it explicitly as a decoder field.
+	read_from_return_value base.u32,
+
+	// read_from per-code state.
 	suffixes array[4096] array[8] base.u8,
 	prefixes array[4096] base.u16[..4095],
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.
 	lm1s array[4096] base.u16[..4095],
+
+	// output[:flush_j] is the buffered output, connecting read_from with
+	// write_to and flush.
 	output array[8192 + 7] base.u8,
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
-	this.literal_width = args.lw
+	this.lw = args.lw
 }
 
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
-	// These variables don't change over the lifetime of this func.
-	var literal_width base.u32[2..8] = 8
-	if this.literal_width >= 2 {
-		literal_width = this.literal_width
+	// Initialize read_from state.
+	this.literal_width = 8
+	if this.lw >= 2 {
+		this.literal_width = this.lw
 	}
-	var clear_code base.u32[4..256] = (1 as base.u32) << literal_width
-	var end_code base.u32[5..257] = clear_code + 1
-
-	// These variables do change.
-	//
-	// save_code is the code for which, after decoding a code, we save what the
-	// next back-reference expands to. The README.md file also calls this value
-	// `max`. 4096 means do not save.
-	var save_code base.u32[..4096] = end_code
-	var prev_code base.u32[..4095] = end_code
-	var width base.u32[..12] = literal_width + 1
-
-	var bad base.bool
-
-	// First, use the j variable to initialize some state.
-	var j base.u32[..8191]
-	while j < clear_code {
-		assert j < 256 via "a < b: a < c; c <= b"(c:clear_code)
-		this.lm1s[j] = 0
-		this.suffixes[j][0] = j as base.u8
-		j += 1
+	this.clear_code = (1 as base.u32) << this.literal_width
+	this.end_code = this.clear_code + 1
+	this.save_code = this.end_code
+	this.prev_code = this.end_code
+	this.width = this.literal_width + 1
+	this.bits = 0
+	this.n_bits = 0
+	this.flush_j = 0
+	var i base.u32[..8191]
+	while i < this.clear_code {
+		assert i < 256 via "a < b: a < c; c <= b"(c:this.clear_code)
+		this.lm1s[i] = 0
+		this.suffixes[i][0] = i as base.u8
+		i += 1
 	}
-	// For the rest of this function, j is such that output[:j] accumulates the
-	// decoded output to write (in batches) to args.dst.
-	j = 0
 
-	// These variables produce src's bits in Least Significant Bits order.
-	var bits base.u32
-	var n_bits base.u32[..31]
+	while true {
+		this.read_from!(src:args.src)
+
+		if this.flush_j > 0 {
+			this.write_to!??(dst:args.dst)
+		}
+
+		if this.read_from_return_value == 0 {
+			break
+		} else if this.read_from_return_value == 1 {
+			continue
+		} else if this.read_from_return_value == 2 {
+			yield base."$short read"
+		} else if this.read_from_return_value == 3 {
+			return "?bad code"
+		} else {
+			return "?internal error: inconsistent I/O"
+		}
+	}
+}
+
+pri func decoder.read_from!(src base.io_reader) {
+	var clear_code base.u32[..256] = this.clear_code
+	var end_code base.u32[..257] = this.end_code
+
+	var save_code base.u32[..4096] = this.save_code
+	var prev_code base.u32[..4095] = this.prev_code
+	var width base.u32[..12] = this.width
+	var bits base.u32 = this.bits
+	var n_bits base.u32[..31] = this.n_bits
+	var j base.u32[..8191] = this.flush_j
 
 	while true {
 		if n_bits < width {
+			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
 			if args.src.available() >= 4 {
 				// Read 4 bytes, using the "Variant 4" technique of
 				// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
@@ -77,34 +122,26 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				n_bits |= 24
 				assert width <= n_bits via "a <= b: a <= c; c <= b"(c:12)
 				assert n_bits >= width via "a >= b: b <= a"()
+			} else if args.src.available() <= 0 {
+				this.read_from_return_value = 2
+				break
 			} else {
-				assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
-				while true,
-					pre n_bits < 12,
-					post n_bits >= width,
-				{
-					// TODO: there is some optimization we could probably do
-					// around here. See commit ecb3995 `Tweak how std/lzw
-					// yields "short read"`.
-					while args.src.available() <= 0,
-						inv n_bits < 12,
-						post args.src.available() > 0,
-					{
-						if j > 0 {
-							this.flush_j = j
-							this.auto_flush!??(dst:args.dst)
-							j = 0
-						} else {
-							yield base."$short read"
-						}
-					}
+				bits |= args.src.peek_u8_as_u32() << n_bits
+				args.src.skip_fast!(actual:1, worst_case:1)
+				n_bits += 8
+				if n_bits >= width {
+					// No-op.
+				} else if args.src.available() <= 0 {
+					this.read_from_return_value = 2
+					break
+				} else {
 					bits |= args.src.peek_u8_as_u32() << n_bits
 					args.src.skip_fast!(actual:1, worst_case:1)
 					n_bits += 8
-					if n_bits >= width {
+					if n_bits < width {  // TODO: should be unnecessary: n_bits >= 16 > width.
+						this.read_from_return_value = 4
 						break
 					}
-					assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
 				}
 			}
 		}
@@ -139,11 +176,12 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 		} else if code <= end_code {
 			if code == end_code {
+				this.read_from_return_value = 0
 				break
 			}
 			save_code = end_code
 			prev_code = end_code
-			width = literal_width + 1
+			width = this.literal_width + 1
 
 		} else if code <= save_code {
 			var c base.u32[..4095] = code
@@ -210,7 +248,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 			}
 
 		} else {
-			bad = true
+			this.read_from_return_value = 3
 			break
 		}
 
@@ -219,44 +257,34 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		// less than 4096 and output's length is 8192, so a conservative
 		// threshold is ensuring that j <= 4095.
 		if j > 4095 {
-			// Rewind args.src, if we've read too many bits.
-			while n_bits >= 8 {
-				n_bits -= 8
-				if args.src.can_undo_byte() {
-					args.src.undo_byte!()
-				} else {
-					return "?internal error: inconsistent I/O"
-				}
+			this.read_from_return_value = 1
+			break
+		}
+	}
+
+	// Rewind args.src, if we're not in "$short read" and we've read too many
+	// bits.
+	if this.read_from_return_value != 2 {
+		while n_bits >= 8 {
+			n_bits -= 8
+			if args.src.can_undo_byte() {
+				args.src.undo_byte!()
+			} else {
+				this.read_from_return_value = 4
+				break
 			}
-			bits = bits.low_bits(n:n_bits)
-
-			this.flush_j = j
-			this.auto_flush!??(dst:args.dst)
-			j = 0
 		}
 	}
 
-	// Rewind args.src, if we've read too many bits.
-	while n_bits >= 8 {
-		n_bits -= 8
-		if args.src.can_undo_byte() {
-			args.src.undo_byte!()
-		} else {
-			return "?internal error: inconsistent I/O"
-		}
-	}
-
-	if j > 0 {
-		this.flush_j = j
-		this.auto_flush!??(dst:args.dst)
-	}
-
-	if bad {
-		return "?bad code"
-	}
+	this.save_code = save_code
+	this.prev_code = prev_code
+	this.width = width
+	this.bits = bits
+	this.n_bits = n_bits
+	this.flush_j = j
 }
 
-pri func decoder.auto_flush!??(dst base.io_writer) {
+pri func decoder.write_to!??(dst base.io_writer) {
 	var i base.u32[..8191]
 	while this.flush_j > 0 {
 		if i > this.flush_j {
@@ -265,6 +293,7 @@ pri func decoder.auto_flush!??(dst base.io_writer) {
 		var s slice base.u8 = this.output[i:this.flush_j]
 		var n base.u64 = args.dst.copy_from_slice!(s:s)
 		if n == s.length() {
+			this.flush_j = 0
 			return ok
 		}
 		i = (i + ((n & 8191) as base.u32)) & 8191
