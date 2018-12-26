@@ -523,6 +523,10 @@ func (p *parser) parseAssertNode() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+		if condition.Effect() != 0 {
+			return nil, fmt.Errorf(`parse: assert-condition %q is not effect-free at %s:%d`,
+				condition.Str(p.tm), p.filename, p.line())
+		}
 		reason, args := t.ID(0), []*a.Node(nil)
 		if p.peek1() == t.IDVia {
 			p.src = p.src[1:]
@@ -890,6 +894,10 @@ func (p *parser) parseArgNode() (*a.Node, error) {
 	value, err := p.parseExpr()
 	if err != nil {
 		return nil, err
+	}
+	if value.Effect() != 0 {
+		return nil, fmt.Errorf(`parse: arg-value %q is not effect-free at %s:%d`,
+			value.Str(p.tm), p.filename, p.line())
 	}
 	return a.NewArg(name, value).AsNode(), nil
 }
