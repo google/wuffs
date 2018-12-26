@@ -58,6 +58,8 @@ pub func decoder.set_literal_width!(lw base.u32[2..8]) {
 }
 
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
+	var i base.u32[..8191]
+
 	// Initialize read_from state.
 	this.literal_width = 8
 	if this.lw >= 2 {
@@ -71,7 +73,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	this.bits = 0
 	this.n_bits = 0
 	this.output_wi = 0
-	var i base.u32[..8191]
+	i = 0
 	while i < this.clear_code {
 		assert i < 256 via "a < b: a < c; c <= b"(c:this.clear_code)
 		this.lm1s[i] = 0
@@ -101,15 +103,33 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 }
 
 pri func decoder.read_from!(src base.io_reader) {
-	var clear_code base.u32[..256] = this.clear_code
-	var end_code base.u32[..257] = this.end_code
+	var clear_code base.u32[..256]
+	var end_code base.u32[..257]
 
-	var save_code base.u32[..4096] = this.save_code
-	var prev_code base.u32[..4095] = this.prev_code
-	var width base.u32[..12] = this.width
-	var bits base.u32 = this.bits
-	var n_bits base.u32[..31] = this.n_bits
-	var output_wi base.u32[..8191] = this.output_wi
+	var save_code base.u32[..4096]
+	var prev_code base.u32[..4095]
+	var width base.u32[..12]
+	var bits base.u32
+	var n_bits base.u32[..31]
+	var output_wi base.u32[..8191]
+
+	var code base.u32[..4095]
+	var c base.u32[..4095]
+	var o base.u32[..8191]
+	var steps base.u32
+	var first_byte base.u8
+	var lm1_b base.u16[..4095]
+	var lm1_a base.u16[..4095]
+
+	clear_code = this.clear_code
+	end_code = this.end_code
+
+	save_code = this.save_code
+	prev_code = this.prev_code
+	width = this.width
+	bits = this.bits
+	n_bits = this.n_bits
+	output_wi = this.output_wi
 
 	while true {
 		if n_bits < width {
@@ -151,7 +171,7 @@ pri func decoder.read_from!(src base.io_reader) {
 			}
 		}
 
-		var code base.u32[..4095] = bits.low_bits(n:width)
+		code = bits.low_bits(n:width)
 		bits >>= width
 		n_bits -= width
 
@@ -160,7 +180,7 @@ pri func decoder.read_from!(src base.io_reader) {
 			this.output[output_wi] = code as base.u8
 			output_wi = (output_wi + 1) & 8191
 			if save_code <= 4095 {
-				var lm1_a base.u16[..4095] = (this.lm1s[prev_code] + 1) & 4095
+				lm1_a = (this.lm1s[prev_code] + 1) & 4095
 				this.lm1s[save_code] = lm1_a
 
 				if (lm1_a % 8) != 0 {
@@ -189,7 +209,7 @@ pri func decoder.read_from!(src base.io_reader) {
 			width = this.literal_width + 1
 
 		} else if code <= save_code {
-			var c base.u32[..4095] = code
+			c = code
 			if code == save_code {
 				c = prev_code
 			}
@@ -203,10 +223,10 @@ pri func decoder.read_from!(src base.io_reader) {
 			// In the special case that code == save_code, the decoded bytes
 			// contain an extra copy (at the end) of the first byte, and will
 			// be written to output[old_wi:new_wi + 1].
-			var o base.u32[..8191] = (output_wi + ((this.lm1s[c] as base.u32) & 0xFFFFFFF8)) & 8191
+			o = (output_wi + ((this.lm1s[c] as base.u32) & 0xFFFFFFF8)) & 8191
 			output_wi = (output_wi + 1 + (this.lm1s[c] as base.u32)) & 8191
 
-			var steps base.u32 = (this.lm1s[c] as base.u32) >> 3
+			steps = (this.lm1s[c] as base.u32) >> 3
 			while true {
 				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
 
@@ -225,7 +245,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				o = (o ~mod- 8) & 8191
 				c = this.prefixes[c] as base.u32
 			}
-			var first_byte base.u8 = this.suffixes[c][0]
+			first_byte = this.suffixes[c][0]
 
 			if code == save_code {
 				this.output[output_wi] = first_byte
@@ -233,7 +253,7 @@ pri func decoder.read_from!(src base.io_reader) {
 			}
 
 			if save_code <= 4095 {
-				var lm1_b base.u16[..4095] = (this.lm1s[prev_code] + 1) & 4095
+				lm1_b = (this.lm1s[prev_code] + 1) & 4095
 				this.lm1s[save_code] = lm1_b
 
 				if (lm1_b % 8) != 0 {
@@ -291,12 +311,15 @@ pri func decoder.read_from!(src base.io_reader) {
 
 pri func decoder.write_to!??(dst base.io_writer) {
 	var i base.u32[..8191]
+	var s slice base.u8
+	var n base.u64
+
 	while this.output_wi > 0 {
 		if i > this.output_wi {
 			return "?internal error: inconsistent I/O"
 		}
-		var s slice base.u8 = this.output[i:this.output_wi]
-		var n base.u64 = args.dst.copy_from_slice!(s:s)
+		s = this.output[i:this.output_wi]
+		n = args.dst.copy_from_slice!(s:s)
 		if n == s.length() {
 			this.output_wi = 0
 			return ok
@@ -311,7 +334,9 @@ pri func decoder.write_to!??(dst base.io_writer) {
 // without regressing benchmarks.
 
 pub func decoder.flush!() slice base.u8 {
-	var s slice base.u8 = this.output[:this.output_wi]
+	var s slice base.u8
+
+	s = this.output[:this.output_wi]
 	this.output_wi = 0
 	return s
 }
