@@ -10453,6 +10453,10 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    v_x = 0;
+    v_checksum_got = 0;
+    v_z = 0;
+    v_checksum_want = 0;
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint16_t t_0;
@@ -10498,7 +10502,6 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
       status = wuffs_zlib__error__bad_parity_check;
       goto exit;
     }
-    v_checksum_got = 0;
     while (true) {
       wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
       {

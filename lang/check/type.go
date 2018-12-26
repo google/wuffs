@@ -313,7 +313,7 @@ func (q *checker) tcheckAssign(n *a.Assign) error {
 	lTyp := lhs.MType()
 	rTyp := rhs.MType()
 
-	if n.Operator() == t.IDEq {
+	if op := n.Operator(); op == t.IDEq || op == t.IDEqQuestion {
 		return q.tcheckEq(0, lhs, lTyp, rhs, rTyp)
 	}
 

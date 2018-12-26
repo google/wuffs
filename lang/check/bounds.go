@@ -462,7 +462,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 	}
 
 	rb := bounds{}
-	if op == t.IDEq {
+	if op == t.IDEq || op == t.IDEqQuestion {
 		rb, err = q.bcheckExpr(rhs, 0)
 	} else {
 		rb, err = q.bcheckExprBinaryOp(op.BinaryForm(), lhs, rhs, 0)

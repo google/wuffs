@@ -248,7 +248,7 @@ func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint3
 	// If the LHS is not a local variable (e.g. "this.foo[bar] = etc", or if
 	// the LHS is implicitly also on the RHS (e.g. for a += or *= operator),
 	// walk the LHS Expr.
-	if n.LHS().Operator() != 0 || n.Operator() != t.IDEq {
+	if n.LHS().Operator() != 0 || (n.Operator() != t.IDEq && n.Operator() != t.IDEqQuestion) {
 		if err := h.doExpr(r, n.LHS()); err != nil {
 			return err
 		}

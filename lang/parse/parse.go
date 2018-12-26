@@ -645,9 +645,6 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	op := p.peek1()
 	if op.IsAssign() {
-		if op == t.IDEqQuestion {
-			return nil, fmt.Errorf(`parse: TODO: support "=?" without "var" at %s:%d`, p.filename, p.line())
-		}
 		p.src = p.src[1:]
 		lhs = rhs
 		if lhs.Effect() != 0 {
