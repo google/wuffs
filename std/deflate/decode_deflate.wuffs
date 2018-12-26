@@ -281,17 +281,17 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 		bits |= b0 << n_bits
 		n_bits += 8
 	}
-	var n_lit base.u32[257..288] = bits.low_bits(n:5) + 257
+	var n_lit base.u32[..288] = bits.low_bits(n:5) + 257
 	if n_lit > 286 {
 		return "?bad literal/length code count"
 	}
 	bits >>= 5
-	var n_dist base.u32[1..32] = bits.low_bits(n:5) + 1
+	var n_dist base.u32[..32] = bits.low_bits(n:5) + 1
 	if n_dist > 30 {
 		return "?bad distance code count"
 	}
 	bits >>= 5
-	var n_clen base.u32[4..19] = bits.low_bits(n:4) + 4
+	var n_clen base.u32[..19] = bits.low_bits(n:4) + 4
 	bits >>= 4
 	n_bits -= 14
 
@@ -566,7 +566,7 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 	// For the clcode example in this package's README.md:
 	//  - min_cl = 3
 	//  - max_cl = 5
-	var min_cl base.u32[1..9] = 1
+	var min_cl base.u32[..9] = 1
 	while true,
 		inv n_symbols <= 288,
 	{
@@ -578,7 +578,7 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 		}
 		min_cl += 1
 	}
-	var max_cl base.u32[1..15] = 15
+	var max_cl base.u32[..15] = 15
 	while true,
 		inv n_symbols <= 288,
 	{

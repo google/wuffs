@@ -720,7 +720,7 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.
-	var bytes_per_pixel base.u32[1..64] = 1
+	var bytes_per_pixel base.u32[..64] = 1
 	var pixfmt base.u32 = args.pb.pixel_format()
 	if (pixfmt == 0x45008888) or (pixfmt == 0x55008888) or
 		(pixfmt == 0x46008888) or (pixfmt == 0x56008888) or
