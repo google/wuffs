@@ -583,7 +583,6 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				b.printf("iop_a_src++;\n")
 				return nil
 			}
-			g.currFunk.coroSuspPoint++ // TEMPORARY, in order to minimize the diff.
 
 			g.currFunk.usesScratch = true
 			// TODO: don't hard-code [0], and allow recursive coroutines.
