@@ -654,10 +654,30 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 			return nil, fmt.Errorf(`parse: assignment LHS %q is not effect-free at %s:%d`,
 				lhs.Str(p.tm), p.filename, p.line())
 		}
-		if lhs.Operator() == 0 && lhs.Ident().IsLiteral(p.tm) {
-			return nil, fmt.Errorf(`parse: assignment LHS %q is a literal at %s:%d`,
-				lhs.Str(p.tm), p.filename, p.line())
+
+		for l := lhs; l != nil; l = l.LHS().AsExpr() {
+			switch l.Operator() {
+			case 0:
+				if id := l.Ident(); id.IsLiteral(p.tm) {
+					return nil, fmt.Errorf(`parse: assignment LHS %q is a literal at %s:%d`,
+						l.Str(p.tm), p.filename, p.line())
+				} else if id == t.IDThis {
+					if l == lhs {
+						return nil, fmt.Errorf(`parse: cannot assign to "this" at %s:%d`, p.filename, p.line())
+					}
+					if !p.funcEffect.Impure() {
+						return nil, fmt.Errorf(`parse: cannot assign to %q in a pure function at %s:%d`,
+							lhs.Str(p.tm), p.filename, p.line())
+					}
+				}
+			case t.IDDot, t.IDOpenBracket:
+				// No-op.
+			default:
+				return nil, fmt.Errorf(`parse: invalid assignment LHS %q at %s:%d`,
+					lhs.Str(p.tm), p.filename, p.line())
+			}
 		}
+
 		rhs, err = p.parseExpr()
 		if err != nil {
 			return nil, err

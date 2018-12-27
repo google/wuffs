@@ -53,8 +53,6 @@ pub func hasher.update!(x slice base.u8) base.u32 {
 		args.x = remaining
 	}
 
-	// TODO: check that you can't assign to this.foo unless the method's effect
-	// is "!" impure or "?" impure coroutine.
 	this.state = ((s2 & 0xFFFF) << 16) | (s1 & 0xFFFF)
 	return this.state
 }
