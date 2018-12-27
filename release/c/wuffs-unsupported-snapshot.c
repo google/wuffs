@@ -9427,7 +9427,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   uint64_t v_n_compressed = 0;
   wuffs_base__slice_u8 v_compressed = {};
   wuffs_base__io_reader v_r = {};
-  wuffs_base__io_buffer u_r;
+  wuffs_base__io_buffer u_r = {};
   uint8_t* iop_v_r = NULL;
   uint8_t* io1_v_r = NULL;
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(u_r);

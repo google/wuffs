@@ -296,7 +296,7 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		}
 
 		if typ.IsIOType() {
-			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
+			b.printf("wuffs_base__io_buffer %s%s = {};\n", uPrefix, name)
 			preName := vPrefix + name
 			// TODO: io0_etc variables?
 			b.printf("uint8_t* %s%s = NULL;\n", iopPrefix, preName)
