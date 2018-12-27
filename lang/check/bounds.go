@@ -230,12 +230,6 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 
-	case a.KExpr:
-		n := n.AsExpr()
-		if _, err := q.bcheckExpr(n, 0); err != nil {
-			return err
-		}
-
 	case a.KIOBind:
 		n := n.AsIOBind()
 		if _, err := q.bcheckExpr(n.IO(), 0); err != nil {
@@ -372,12 +366,21 @@ func (q *checker) bcheckAssert(n *a.Assert) error {
 }
 
 func (q *checker) bcheckAssignment(lhs *a.Expr, op t.ID, rhs *a.Expr) error {
-	if _, err := q.bcheckExpr(lhs, 0); err != nil {
-		return err
+	lTyp := (*a.TypeExpr)(nil)
+	if lhs != nil {
+		if _, err := q.bcheckExpr(lhs, 0); err != nil {
+			return err
+		}
+		lTyp = lhs.MType()
 	}
-	nb, err := q.bcheckAssignment1(lhs, lhs.MType(), op, rhs)
+
+	nb, err := q.bcheckAssignment1(lhs, lTyp, op, rhs)
 	if err != nil {
 		return err
+	}
+
+	if lhs == nil {
+		return nil
 	}
 
 	if op == t.IDEq {
@@ -457,9 +460,12 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return bounds{}, fmt.Errorf("check: internal error: missing LHS for op key 0x%02X", op)
 	}
 
-	lb, err := q.bcheckTypeExpr(lTyp)
-	if err != nil {
-		return bounds{}, err
+	lb, err := bounds{}, (error)(nil)
+	if lTyp != nil {
+		lb, err = q.bcheckTypeExpr(lTyp)
+		if err != nil {
+			return bounds{}, err
+		}
 	}
 
 	rb := bounds{}
@@ -472,7 +478,7 @@ func (q *checker) bcheckAssignment1(lhs *a.Expr, lTyp *a.TypeExpr, op t.ID, rhs 
 		return bounds{}, err
 	}
 
-	if (rb[0].Cmp(lb[0]) < 0) || (rb[1].Cmp(lb[1]) > 0) {
+	if (lTyp != nil) && ((rb[0].Cmp(lb[0]) < 0) || (rb[1].Cmp(lb[1]) > 0)) {
 		if op == t.IDEq {
 			return bounds{}, fmt.Errorf("check: expression %q bounds %v is not within bounds %v",
 				rhs.Str(q.tm), rb, lb)

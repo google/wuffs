@@ -57,9 +57,6 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 			return err
 		}
 
-	case a.KExpr:
-		return q.tcheckExpr(n.AsExpr(), 0)
-
 	case a.KIf:
 		for n := n.AsIf(); n != nil; n = n.ElseIf() {
 			cond := n.Condition()
@@ -256,12 +253,15 @@ func (q *checker) tcheckEq(lID t.ID, lhs *a.Expr, lTyp *a.TypeExpr, rhs *a.Expr,
 }
 
 func (q *checker) tcheckAssign(n *a.Assign) error {
-	lhs := n.LHS()
 	rhs := n.RHS()
-	if err := q.tcheckExpr(lhs, 0); err != nil {
+	if err := q.tcheckExpr(rhs, 0); err != nil {
 		return err
 	}
-	if err := q.tcheckExpr(rhs, 0); err != nil {
+	lhs := n.LHS()
+	if lhs == nil {
+		return nil
+	}
+	if err := q.tcheckExpr(lhs, 0); err != nil {
 		return err
 	}
 	lTyp := lhs.MType()

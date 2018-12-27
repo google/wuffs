@@ -240,6 +240,10 @@ func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint3
 		return err
 	}
 
+	if n.LHS() == nil {
+		return nil
+	}
+
 	// If the LHS is not a local variable (e.g. "this.foo[bar] = etc", or if
 	// the LHS is implicitly also on the RHS (e.g. for a += or *= operator),
 	// walk the LHS Expr.

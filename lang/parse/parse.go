@@ -701,6 +701,8 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 					rhs.Str(p.tm), p.filename, p.line())
 			}
 		}
+	} else {
+		op = t.IDEq
 	}
 
 	if p.funcEffect.WeakerThan(rhs.Effect()) {
@@ -708,9 +710,6 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 			rhs.Str(p.tm), rhs.Effect(), p.funcEffect, p.filename, p.line())
 	}
 
-	if lhs == nil {
-		return rhs.AsNode(), nil
-	}
 	return a.NewAssign(op, lhs, rhs).AsNode(), nil
 }
 

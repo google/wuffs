@@ -414,9 +414,9 @@ func NewArg(name t.ID, value *Expr) *Arg {
 	}
 }
 
-// Assign is "LHS = RHS" or "LHS op= RHS":
+// Assign is "LHS = RHS" or "LHS op= RHS" or "RHS":
 //  - ID0:   operator
-//  - LHS:   <Expr>
+//  - LHS:   <nil|Expr>
 //  - RHS:   <Expr>
 type Assign Node
 
@@ -791,7 +791,6 @@ const MaxBodyDepth = 255
 // Statement means one of:
 //  - Assert
 //  - Assign
-//  - Expr
 //  - IOBind
 //  - If
 //  - Iterate

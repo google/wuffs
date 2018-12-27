@@ -39,15 +39,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return nil
 	}
 
-	mightIntroduceTemporaries := false
-	switch n.Kind() {
-	case a.KAssign:
-		n := n.AsAssign()
-		mightIntroduceTemporaries = n.RHS().Effect().Coroutine()
-	case a.KExpr:
-		// TODO.
-	}
-	if mightIntroduceTemporaries {
+	if (n.Kind() == a.KAssign) && (n.AsAssign().LHS() != nil) && n.AsAssign().RHS().Effect().Coroutine() {
 		// Put n's code into its own block, to restrict the scope of the
 		// tPrefix temporary variables. This helps avoid "jump bypasses
 		// variable initialization" compiler warnings with the coroutine
@@ -71,8 +63,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	case a.KAssign:
 		n := n.AsAssign()
 		return g.writeStatementAssign(b, n.Operator(), n.LHS(), n.RHS(), depth)
-	case a.KExpr:
-		return g.writeStatementAssign(b, 0, nil, n.AsExpr(), depth)
 	case a.KIOBind:
 		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
@@ -92,8 +82,6 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 }
 
 func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) error {
-	// TODO: clean this method body up.
-
 	if depth > a.MaxExprDepth {
 		return fmt.Errorf("expression recursion depth too large")
 	}
