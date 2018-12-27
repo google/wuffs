@@ -7964,7 +7964,6 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
       v_flags = t_0;
     }
     if ((v_flags & 128) != 0) {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
       self->private_impl.c_skip_frame[0].scratch =
           (((uint32_t)(3)) << (1 + (v_flags & 7)));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
@@ -8404,7 +8403,6 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_flags = t_2;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
     self->private_impl.c_decode_lsd[0].scratch = 2;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
     if (self->private_impl.c_decode_lsd[0].scratch >
@@ -8648,7 +8646,6 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
         status = NULL;
         goto ok;
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
       self->private_impl.c_skip_blocks[0].scratch = ((uint32_t)(v_block_size));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       if (self->private_impl.c_skip_blocks[0].scratch >
@@ -8734,7 +8731,6 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         goto ok;
       }
       if (v_block_size != 11) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         if (self->private_impl.c_decode_ae[0].scratch >
@@ -8779,7 +8775,6 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         v_block_size = t_2;
       }
       if (v_block_size != 3) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
         self->private_impl.c_decode_ae[0].scratch = ((uint32_t)(v_block_size));
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
         if (self->private_impl.c_decode_ae[0].scratch >
@@ -8802,7 +8797,6 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         v_c = t_3;
       }
       if (v_c != 1) {
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
         self->private_impl.c_decode_ae[0].scratch = 2;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
         if (self->private_impl.c_decode_ae[0].scratch >
@@ -9576,7 +9570,6 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         if (wuffs_base__status__is_ok(v_z)) {
           self->private_impl.f_previous_lzw_decode_ended_abruptly = false;
           if (v_need_block_size || (v_block_size > 0)) {
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
             self->private_impl.c_decode_id_part2[0].scratch =
                 ((uint32_t)(v_block_size));
             WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
@@ -9960,7 +9953,6 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       uint8_t t_3 = *iop_a_src++;
       v_flags = t_3;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
     self->private_impl.c_decode[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
     if (self->private_impl.c_decode[0].scratch >
@@ -10001,7 +9993,6 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         }
         v_xlen = t_4;
       }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
       self->private_impl.c_decode[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(10);
       if (self->private_impl.c_decode[0].scratch >
@@ -10048,7 +10039,6 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     label_1_break:;
     }
     if ((v_flags & 2) != 0) {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(13);
       self->private_impl.c_decode[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
       if (self->private_impl.c_decode[0].scratch >

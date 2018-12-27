@@ -538,7 +538,7 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 }
 
 func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error {
-	// TODO: also handle (or reject??) t.IDTry.
+	// TODO: also handle (or reject??) being on the RHS of an =? operator.
 	if n.Operator() != t.IDOpenParen {
 		return errNoSuchBuiltin
 	}
@@ -552,6 +552,9 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	if recvTyp.QID()[1] == t.IDIOReader {
 		switch method.Ident() {
 		case t.IDReadU8, t.IDReadU8AsU32, t.IDReadU8AsU64:
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
 			if g.currFunk.tempW > maxTemp {
 				return fmt.Errorf("too many temporary variables required")
 			}
@@ -572,11 +575,15 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 		case t.IDSkip:
 			x := n.Args()[0].AsArg().Value()
 			if cv := x.ConstValue(); cv != nil && cv.Cmp(one) == 0 {
+				if err := g.writeCoroSuspPoint(b, false); err != nil {
+					return err
+				}
 				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {" +
 					"status = wuffs_base__suspension__short_read; goto suspend; }")
 				b.printf("iop_a_src++;\n")
 				return nil
 			}
+			g.currFunk.coroSuspPoint++ // TEMPORARY, in order to minimize the diff.
 
 			g.currFunk.usesScratch = true
 			// TODO: don't hard-code [0], and allow recursive coroutines.
@@ -589,7 +596,6 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			}
 			b.writes(";\n")
 
-			// TODO: the CSP prior to this is probably unnecessary.
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
@@ -606,6 +612,9 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 		if method.Ident() >= readMethodsBase {
 			if m := method.Ident() - readMethodsBase; m < t.ID(len(readMethods)) {
 				if p := readMethods[m]; p.n != 0 {
+					if err := g.writeCoroSuspPoint(b, false); err != nil {
+						return err
+					}
 					return g.writeReadUxxAsUyy(b, n, "a_src", p.n, p.size, p.endianness)
 				}
 			}
@@ -614,6 +623,9 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 	} else {
 		switch method.Ident() {
 		case t.IDWriteU8:
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
 			b.writes("if (iop_a_dst == io1_a_dst) {\n" +
 				"status = wuffs_base__suspension__short_write; goto suspend; }\n" +
 				"*iop_a_dst++ = ")
