@@ -24,15 +24,15 @@ pub struct decoder?(
 
 	// read_from state that does not change during a decode call.
 	literal_width base.u32[..8],
-	clear_code base.u32[..256],
-	end_code base.u32[..257],
+	clear_code    base.u32[..256],
+	end_code      base.u32[..257],
 
 	// read_from state that does change during a decode call.
 	save_code base.u32[..4096],
 	prev_code base.u32[..4095],
-	width base.u32[..12],
-	bits base.u32,
-	n_bits base.u32[..31],
+	width     base.u32[..12],
+	bits      base.u32,
+	n_bits    base.u32[..31],
 	output_wi base.u32[..8191],
 
 	// read_from return value. The read_from method effectively returns a

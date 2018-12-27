@@ -56,7 +56,7 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
-	bits base.u32,
+	bits   base.u32,
 	n_bits base.u32,
 
 	// huffs and n_huffs_bits are the lookup tables for Huffman decodings.
@@ -92,7 +92,7 @@ pub struct decoder?(
 	//
 	// TODO: replace the magic "big enough" 1234 with something more
 	// principled, perhaps discovered via an exhaustive search.
-	huffs array[2] array[1234] base.u32,
+	huffs        array[2] array[1234] base.u32,
 	n_huffs_bits array[2] base.u32[..9],
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
@@ -106,7 +106,7 @@ pub struct decoder?(
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history array[0x8000] base.u8,  // 32 KiB.
+	history       array[0x8000] base.u8,  // 32 KiB.
 	history_index base.u32,
 
 	// code_lengths is used to pass out-of-band data to init_huff.

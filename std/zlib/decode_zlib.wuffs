@@ -23,8 +23,8 @@ pub status "?bad parity check"
 pri status "?TODO: unsupported preset dictionary"
 
 pub struct decoder?(
-	flate deflate.decoder,
-	checksum adler32.hasher,
+	flate           deflate.decoder,
+	checksum        adler32.hasher,
 	ignore_checksum base.bool,
 )
 

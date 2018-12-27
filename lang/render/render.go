@@ -43,7 +43,10 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 	indent := 0
 	buf := make([]byte, 0, 1024)
 	commentLine := uint32(0)
+
+	inStruct := false
 	varNameLength := uint32(0)
+
 	prevLine := src[0].Line - 1
 	prevLineHanging := false
 
@@ -79,6 +82,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if _, err = w.Write(buf); err != nil {
 				return err
 			}
+			varNameLength = 0
 			prevLine = commentLine
 		}
 
@@ -113,19 +117,28 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)
 
-		if (len(lineTokens) < 2) || (lineTokens[0].ID != t.IDVar) {
+		// Apply or update varNameLength.
+		if len(lineTokens) < 3 {
 			varNameLength = 0
-		} else {
+		} else if id := lineTokens[0].ID; id == t.IDPri || id == t.IDPub {
+			inStruct = lineTokens[1].ID == t.IDStruct
+			varNameLength = 0
+		} else if id == t.IDVar || inStruct {
 			if varNameLength == 0 {
 				varNameLength = measureVarNameLength(tm, lineTokens, src)
 			}
-			name := tm.ByID(lineTokens[1].ID)
-			buf = append(buf, "var "...)
+			if id == t.IDVar {
+				buf = append(buf, "var "...)
+				lineTokens = lineTokens[1:]
+			}
+			name := tm.ByID(lineTokens[0].ID)
+			lineTokens = lineTokens[1:]
 			buf = append(buf, name...)
 			for i := uint32(len(name)); i <= varNameLength; i++ {
 				buf = append(buf, ' ')
 			}
-			lineTokens = lineTokens[2:]
+		} else {
+			varNameLength = 0
 		}
 
 		// Render the lineTokens.
@@ -241,19 +254,21 @@ func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) 
 	if len(lineTokens) < 2 {
 		return 0
 	}
-	line := lineTokens[0].Line
-	length := len(tm.ByID(lineTokens[1].ID))
-	for len(remaining) >= 2 && (remaining[0].ID == t.IDVar) && (remaining[0].Line == line+1) {
-		line = remaining[0].Line
-		length = max(length, len(tm.ByID(remaining[1].ID)))
 
-		remaining = remaining[2:]
-		for len(remaining) > 0 {
-			id := remaining[0].ID
+	x := 0 // "x T" struct field.
+	if lineTokens[0].ID == t.IDVar {
+		x = 1 // "var x T" var statement.
+	}
+
+	line := lineTokens[0].Line
+	length := len(tm.ByID(lineTokens[x].ID))
+	for (len(remaining) > x) && ((x == 0) || (remaining[0].ID == t.IDVar)) && (remaining[0].Line == line+1) {
+		line = remaining[0].Line
+		length = max(length, len(tm.ByID(remaining[x].ID)))
+
+		remaining = remaining[x+1:]
+		for len(remaining) > 0 && remaining[0].Line == line {
 			remaining = remaining[1:]
-			if id == t.IDSemicolon {
-				break
-			}
 		}
 	}
 	return uint32(length)

@@ -14,7 +14,7 @@
 
 // TODO: drop the '?' but still generate wuffs_adler32__hasher__initialize?
 pub struct hasher?(
-	state base.u32,
+	state   base.u32,
 	started base.bool,
 )
 

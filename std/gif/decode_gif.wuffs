@@ -41,7 +41,7 @@ pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
 pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 
 pub struct decoder?(
-	width base.u32,
+	width  base.u32,
 	height base.u32,
 
 	// Call sequence states:
@@ -72,8 +72,8 @@ pub struct decoder?(
 	//  - IC is decode_image_config, implicit means nullptr args.dst
 	call_sequence base.u8,
 
-	end_of_data base.bool,
-	restarted base.bool,
+	end_of_data                        base.bool,
+	restarted                          base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
 
 	which_palette base.u8[..1],
@@ -84,18 +84,18 @@ pub struct decoder?(
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
 	seen_num_loops base.bool,
-	num_loops base.u32,
+	num_loops      base.u32,
 
-	seen_graphic_control base.bool,
+	seen_graphic_control     base.bool,
 	gc_has_transparent_index base.bool,
-	gc_transparent_index base.u8,
-	gc_disposal base.u8,
+	gc_transparent_index     base.u8,
+	gc_disposal              base.u8,
 	// There are 7056000 flicks per centisecond.
 	gc_duration base.u64[..0xFFFF * 7056000],
 
-	frame_config_io_position base.u64,
+	frame_config_io_position        base.u64,
 	num_decoded_frame_configs_value base.u64,
-	num_decoded_frames_value base.u64,
+	num_decoded_frames_value        base.u64,
 
 	frame_rect_x0 base.u32,
 	frame_rect_y0 base.u32,
@@ -103,13 +103,13 @@ pub struct decoder?(
 	frame_rect_y1 base.u32,
 
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
-	dst_x base.u32,
-	dst_y base.u32,
+	dst_x   base.u32,
+	dst_y   base.u32,
 	dirty_y base.range_ie_u32,
 
 	compressed_ri base.u64,
 	compressed_wi base.u64,
-	compressed array[4096] base.u8,
+	compressed    array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
@@ -117,8 +117,8 @@ pub struct decoder?(
 	dst_palette array[4 * 256] base.u8,
 
 	swizzler base.pixel_swizzler,
-	util base.utility,
-	lzw lzw.decoder,
+	util     base.utility,
+	lzw      lzw.decoder,
 )
 
 pub func decoder.decode_image_config!??(dst nptr base.image_config, src base.io_reader) {

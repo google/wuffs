@@ -21,8 +21,8 @@ pub status "?bad encoding flags"
 pub status "?bad header"
 
 pub struct decoder?(
-	flate deflate.decoder,
-	checksum crc32.ieee_hasher,
+	flate           deflate.decoder,
+	checksum        crc32.ieee_hasher,
 	ignore_checksum base.bool,
 )
 
