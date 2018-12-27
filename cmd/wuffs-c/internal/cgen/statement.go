@@ -43,10 +43,9 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	switch n.Kind() {
 	case a.KAssign:
 		n := n.AsAssign()
-		mightIntroduceTemporaries = n.LHS().Effect().Coroutine() || n.RHS().Effect().Coroutine()
-	case a.KVar:
-		v := n.AsVar().Value()
-		mightIntroduceTemporaries = v != nil && v.Effect().Coroutine()
+		mightIntroduceTemporaries = n.RHS().Effect().Coroutine()
+	case a.KExpr:
+		// TODO.
 	}
 	if mightIntroduceTemporaries {
 		// Put n's code into its own block, to restrict the scope of the
@@ -86,11 +85,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		return g.writeStatementRet(b, n.AsRet(), depth)
 	case a.KVar:
 		n := n.AsVar()
-		op := n.Operator()
-		if n.Value() == nil {
-			op = t.IDEq
-		}
-		return g.writeStatementAssign(b, n.Name(), nil, n.XType(), op, n.Value(), depth)
+		return g.writeStatementAssign(b, n.Name(), nil, n.XType(), t.IDEq, nil, depth)
 	case a.KWhile:
 		return g.writeStatementWhile(b, n.AsWhile(), depth)
 	}

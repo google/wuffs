@@ -434,26 +434,20 @@ func NewAssign(operator t.ID, lhs *Expr, rhs *Expr) *Assign {
 	}
 }
 
-// Var is "var ID2 LHS" or "var ID2 LHS = RHS" or "var ID2 LHS =? etc!?(etc)":
-//  - ID0:   <0|IDEq|IDEqQuestion>
+// Var is "var ID2 LHS":
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
-//  - RHS:   <nil|Expr>
 type Var Node
 
 func (n *Var) AsNode() *Node    { return (*Node)(n) }
-func (n *Var) Operator() t.ID   { return n.id0 }
 func (n *Var) Name() t.ID       { return n.id2 }
 func (n *Var) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
-func (n *Var) Value() *Expr     { return n.rhs.AsExpr() }
 
-func NewVar(op t.ID, name t.ID, xType *TypeExpr, value *Expr) *Var {
+func NewVar(name t.ID, xType *TypeExpr) *Var {
 	return &Var{
 		kind: KVar,
-		id0:  op,
 		id2:  name,
 		lhs:  xType.AsNode(),
-		rhs:  value.AsNode(),
 	}
 }
 

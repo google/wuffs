@@ -420,12 +420,6 @@ func (h *resumabilityHelper) doRet(r resumabilities, n *a.Ret, depth uint32) err
 }
 
 func (h *resumabilityHelper) doVar(r resumabilities, n *a.Var, depth uint32) error {
-	if n.Value() != nil {
-		if err := h.doExpr(r, n.Value()); err != nil {
-			return err
-		}
-	}
-
 	name := n.Name()
 	if i, ok := h.vars[name]; !ok {
 		return fmt.Errorf("unrecognized variable %q", name.Str(h.tm))

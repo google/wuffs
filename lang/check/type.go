@@ -193,19 +193,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if n.XType().AsNode().MType() == nil {
 			return fmt.Errorf("check: internal error: unchecked type expression %q", n.XType().Str(q.tm))
 		}
-		if value := n.Value(); value != nil {
-			if err := q.tcheckExpr(value, 0); err != nil {
-				return err
-			}
-			lTyp := n.XType()
-			rTyp := value.MType()
-			if err := q.tcheckEq(n.Name(), nil, lTyp, value, rTyp); err != nil {
-				return err
-			}
-
-		} else {
-			// TODO: check that the default zero value is assignable to n.XType().
-		}
+		// TODO: check that the default zero value is assignable to n.XType().
 
 	case a.KWhile:
 		n := n.AsWhile()

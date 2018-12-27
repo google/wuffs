@@ -694,6 +694,13 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if op == t.IDEqQuestion {
+			if (rhs.Operator() != t.IDOpenParen) || (!rhs.Effect().Optional()) {
+				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
+					rhs.Str(p.tm), p.filename, p.line())
+			}
+		}
 	}
 
 	if p.funcEffect.WeakerThan(rhs.Effect()) {
@@ -997,31 +1004,7 @@ func (p *parser) parseVarNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	value := (*a.Expr)(nil)
-
-	op := t.ID(0)
-	if eqOp := p.peek1(); eqOp == t.IDEq || eqOp == t.IDEqQuestion {
-		op = eqOp
-		p.src = p.src[1:]
-		value, err = p.parseExpr()
-		if err != nil {
-			return nil, err
-		}
-
-		if op == t.IDEqQuestion {
-			if (value.Operator() != t.IDOpenParen) || (!value.Effect().Optional()) {
-				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
-					value.Str(p.tm), p.filename, p.line())
-			}
-		}
-
-		if p.funcEffect.WeakerThan(value.Effect()) {
-			return nil, fmt.Errorf(`parse: value %q's effect %q is stronger than the func's effect %q at %s:%d`,
-				value.Str(p.tm), value.Effect(), p.funcEffect, p.filename, p.line())
-		}
-	}
-
-	return a.NewVar(op, id, typ, value).AsNode(), nil
+	return a.NewVar(id, typ).AsNode(), nil
 }
 
 func (p *parser) parsePossibleListExprNode() (*a.Node, error) {

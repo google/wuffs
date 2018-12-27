@@ -699,13 +699,10 @@ func (q *checker) bcheckVar(n *a.Var) error {
 
 	lhs := a.NewExpr(0, 0, 0, n.Name(), nil, nil, nil, nil)
 	lhs.SetMType(n.XType())
-	rhs := n.Value()
-	if rhs == nil {
-		// "var x T" has an implicit "= 0".
-		//
-		// TODO: check that T is an integer type.
-		rhs = zeroExpr
-	}
+	// "var x T" has an implicit "= 0".
+	//
+	// TODO: check that T is an integer type.
+	rhs := zeroExpr
 	return q.bcheckAssignment(lhs, t.IDEq, rhs)
 }
 
