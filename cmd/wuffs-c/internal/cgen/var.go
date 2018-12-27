@@ -222,89 +222,16 @@ func (g *gen) writeSaveExprDerivedVars(b *buffer, n *a.Expr) error {
 	return nil
 }
 
-func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool, initBoolTypedVars bool) error {
-	local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
-
+func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool) error {
 	if typ := n.XType(); typ.HasPointers() {
-		if suspend {
-			return nil
-		}
-		rhs := ""
-
-		// TODO: move this initialization to writeVars?
-		switch typ.Decorator() {
-		case 0:
-			if qid := typ.QID(); qid[0] == t.IDBase {
-				if key := qid[1]; key < t.ID(len(cTypeNames)) {
-					rhs = cTypeNames[key]
-				}
-			}
-		case t.IDSlice:
-			// TODO: don't assume that the slice is a slice of base.u8.
-			rhs = "wuffs_base__slice_u8"
-		case t.IDTable:
-			// TODO: don't assume that the table is a table of base.u8.
-			rhs = "wuffs_base__table_u8"
-		}
-		if rhs != "" {
-			b.printf("%s = ((%s){});\n", local, rhs)
-			return nil
-		}
-
-	} else if f.varResumables == nil || !f.varResumables[n.Name()] {
-		if !suspend {
-			if initBoolTypedVars && typ.QID() == (t.QID{t.IDBase, t.IDBool}) {
-				b.printf("%s = false;\n", local)
-				return nil
-			}
-			// TODO: drop this (after we stop emitting unnecessary
-			// WUFFS_BASE__COROUTINE_SUSPENSION_POINT lines); we shouldn't need
-			// to zero-initialize these variables.
-			if !initBoolTypedVars {
-				zero := "0"
-				if typ.QID() == (t.QID{t.IDBase, t.IDBool}) {
-					zero = "false"
-				} else if typ.QID() == (t.QID{t.IDBase, t.IDStatus}) {
-					zero = "NULL"
-				}
-				b.printf("%s = %s;\n", local, zero)
-			}
-		}
 		return nil
-
+	} else if f.varResumables == nil || !f.varResumables[n.Name()] {
+		return nil
 	} else {
+		local := fmt.Sprintf("%s%s", vPrefix, n.Name().Str(g.tm))
 		lhs := local
-		rhs := ""
 		// TODO: don't hard-code [0], and allow recursive coroutines.
-		if !initBoolTypedVars {
-			rhs = fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
-		} else if typ.QID() != (t.QID{t.IDBase, t.IDBool}) {
-			return nil
-		} else if typ.Decorator() != 0 {
-			goto fail
-		} else {
-			// Explicitly initialize the bool-typed local variable to false.
-			//
-			// Otherwise, the variable (in C) can hold an uninitialized value.
-			// In terms of registers and memory (which work in integers, not
-			// bools), that uninitialized value could be something like 255,
-			// not 0 or 1.
-			//
-			// In the Wuffs language, a variable "foo" cannot be used before
-			// initialization, but that's not easily seen by running C language
-			// tools on Wuffs' generated C code. In C, that uninitialized v_foo
-			// local variable could be suspended to and then resumed from the
-			// f_foo coroutine state.
-			//
-			// This generated code explicitly initializes bool typed variables,
-			// in order to avoid ubsan (undefined behavior sanitizer) warnings.
-			//
-			// In general, we don't initialize (set to zero or assign from
-			// "this" fields) all of the v_etc local variables when not
-			// resuming a coroutine, due to the performance impact. Commit
-			// 2b6b0ac "Unconditionally resume local vars" has some numbers.
-			rhs = "false"
-		}
+		rhs := fmt.Sprintf("self->private_impl.%s%s[0].%s", cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm), lhs)
 		if suspend {
 			lhs, rhs = rhs, lhs
 		}
@@ -330,14 +257,13 @@ func (g *gen) writeResumeSuspend1(b *buffer, f *funk, n *a.Var, suspend bool, in
 		}
 	}
 
-fail:
 	return fmt.Errorf("cannot resume or suspend a local variable %q of type %q",
 		n.Name().Str(g.tm), n.XType().Str(g.tm))
 }
 
-func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool, initBoolTypedVars bool) error {
+func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool) error {
 	for _, n := range f.varList {
-		if err := g.writeResumeSuspend1(b, f, n, suspend, initBoolTypedVars); err != nil {
+		if err := g.writeResumeSuspend1(b, f, n, suspend); err != nil {
 			return err
 		}
 	}
