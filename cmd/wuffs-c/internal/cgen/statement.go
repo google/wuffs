@@ -70,9 +70,9 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	switch n.Kind() {
 	case a.KAssign:
 		n := n.AsAssign()
-		return g.writeStatementAssign(b, 0, n.LHS(), n.LHS().MType(), n.Operator(), n.RHS(), depth)
+		return g.writeStatementAssign(b, n.LHS(), n.LHS().MType(), n.Operator(), n.RHS(), depth)
 	case a.KExpr:
-		return g.writeStatementAssign(b, 0, nil, nil, 0, n.AsExpr(), depth)
+		return g.writeStatementAssign(b, nil, nil, 0, n.AsExpr(), depth)
 	case a.KIOBind:
 		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
@@ -92,7 +92,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 }
 
 func (g *gen) writeStatementAssign(b *buffer,
-	lhsIdent t.ID, lhsExpr *a.Expr, lTyp *a.TypeExpr,
+	lhsExpr *a.Expr, lTyp *a.TypeExpr,
 	op t.ID, rhsExpr *a.Expr, depth uint32) error {
 
 	// TODO: clean this method body up.
@@ -114,9 +114,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 
 	} else {
 		lhs := buffer(nil)
-		if lhsIdent != 0 {
-			lhs.printf("%s%s", vPrefix, lhsIdent.Str(g.tm))
-		} else if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
+		if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
 			return err
 		}
 
