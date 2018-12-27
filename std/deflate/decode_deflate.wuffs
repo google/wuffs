@@ -469,9 +469,8 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 	var key base.u32
 	var value base.u32
 	var cl base.u32[..15]
-	var tmp base.u32[..6]
 	var redirect_key base.u32[..511]
-	var j base.u32
+	var j base.u32[..16]
 	var reversed_key base.u32[..511]
 	var symbol base.u32[..319]
 	var high_bits base.u32
@@ -700,13 +699,11 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 
 		key = code
 		if cl > 9 {
-			// TODO: we shouldn't need a temporary variable.
-			tmp = cl - 9
-			cl = tmp
-			assert cl <= 9 via "a <= b: a == c; c <= b"(c:tmp)
+			cl -= 9
+			assert cl <= 9
 
-			redirect_key = (key >> tmp) & 511
-			key = key.low_bits(n:tmp)
+			redirect_key = (key >> cl) & 511
+			key = key.low_bits(n:cl)
 			if prev_redirect_key != redirect_key {
 				prev_redirect_key = redirect_key
 
@@ -734,17 +731,17 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 				if (j <= 9) or (15 < j) {
 					return "?internal error: inconsistent Huffman decoder state"
 				}
-				tmp = j - 9
-				initial_high_bits = (1 as base.u32) << tmp
+				j -= 9
+				initial_high_bits = (1 as base.u32) << j
 
 				top = next_top
-				if (top + ((1 as base.u32) << tmp)) > 1234 {
+				if (top + ((1 as base.u32) << j)) > 1234 {
 					return "?internal error: inconsistent Huffman decoder state"
 				}
-				next_top = top + ((1 as base.u32) << tmp)
+				next_top = top + ((1 as base.u32) << j)
 
 				redirect_key = (reverse8[redirect_key >> 1] as base.u32) | ((redirect_key & 1) << 8)
-				this.huffs[args.which][redirect_key] = 0x10000009 | (top << 8) | (tmp << 4)
+				this.huffs[args.which][redirect_key] = 0x10000009 | (top << 8) | (j << 4)
 			}
 		}
 		if (key >= (1 << 9)) or (counts[prev_cl] <= 0) {

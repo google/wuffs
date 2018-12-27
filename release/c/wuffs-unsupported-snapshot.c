@@ -6050,7 +6050,6 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
   uint32_t v_key = 0;
   uint32_t v_value = 0;
   uint32_t v_cl = 0;
-  uint32_t v_tmp = 0;
   uint32_t v_redirect_key = 0;
   uint32_t v_j = 0;
   uint32_t v_reversed_key = 0;
@@ -6200,10 +6199,9 @@ label_1_break:;
     v_prev_cl = v_cl;
     v_key = v_code;
     if (v_cl > 9) {
-      v_tmp = (v_cl - 9);
-      v_cl = v_tmp;
-      v_redirect_key = ((v_key >> v_tmp) & 511);
-      v_key = ((v_key)&WUFFS_BASE__LOW_BITS_MASK__U32(v_tmp));
+      v_cl -= 9;
+      v_redirect_key = ((v_key >> v_cl) & 511);
+      v_key = ((v_key)&WUFFS_BASE__LOW_BITS_MASK__U32(v_cl));
       if (v_prev_redirect_key != v_redirect_key) {
         v_prev_redirect_key = v_redirect_key;
         v_remaining = (((uint32_t)(1)) << v_cl);
@@ -6227,20 +6225,20 @@ label_1_break:;
               wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
           goto exit;
         }
-        v_tmp = (v_j - 9);
-        v_initial_high_bits = (((uint32_t)(1)) << v_tmp);
+        v_j -= 9;
+        v_initial_high_bits = (((uint32_t)(1)) << v_j);
         v_top = v_next_top;
-        if ((v_top + (((uint32_t)(1)) << v_tmp)) > 1234) {
+        if ((v_top + (((uint32_t)(1)) << v_j)) > 1234) {
           status =
               wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
           goto exit;
         }
-        v_next_top = (v_top + (((uint32_t)(1)) << v_tmp));
+        v_next_top = (v_top + (((uint32_t)(1)) << v_j));
         v_redirect_key =
             (((uint32_t)(wuffs_deflate__reverse8[(v_redirect_key >> 1)])) |
              ((v_redirect_key & 1) << 8));
         self->private_impl.f_huffs[a_which][v_redirect_key] =
-            (268435465 | (v_top << 8) | (v_tmp << 4));
+            (268435465 | (v_top << 8) | (v_j << 4));
       }
     }
     if ((v_key >= 512) || (v_counts[v_prev_cl] <= 0)) {
