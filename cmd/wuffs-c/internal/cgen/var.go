@@ -344,20 +344,31 @@ func (g *gen) writeResumeSuspend(b *buffer, f *funk, suspend bool, initBoolTyped
 	return nil
 }
 
-func (g *gen) writeVars(b *buffer, f *funk, skipPointerTypes bool, skipNonresumable bool) error {
+func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 	for _, n := range f.varList {
 		typ := n.XType()
-		if skipPointerTypes && typ.HasPointers() {
-			continue
+		if inStructDecl {
+			if typ.HasPointers() || f.varResumables == nil || !f.varResumables[n.Name()] {
+				continue
+			}
 		}
-		if skipNonresumable && (f.varResumables == nil || !f.varResumables[n.Name()]) {
-			continue
-		}
+
 		name := n.Name().Str(g.tm)
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
 			return err
 		}
-		b.writes(";\n")
+		if inStructDecl {
+			b.writes(";\n")
+		} else if typ.IsNumType() {
+			b.writes(" = 0;\n")
+		} else if typ.IsBool() {
+			b.writes(" = false;\n")
+		} else if typ.IsStatus() {
+			b.writes(" = NULL;\n")
+		} else {
+			b.writes(" = {};\n")
+		}
+
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s;\n", uPrefix, name)
 			preName := vPrefix + name

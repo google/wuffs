@@ -736,7 +736,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 				b.writes("struct {\n")
 				if k.coroSuspPoint != 0 {
 					b.writes("uint32_t coro_susp_point;\n")
-					if err := g.writeVars(b, &k, true, true); err != nil {
+					if err := g.writeVars(b, &k, true); err != nil {
 						return err
 					}
 				}

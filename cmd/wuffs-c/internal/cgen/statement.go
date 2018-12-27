@@ -84,8 +84,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	case a.KRet:
 		return g.writeStatementRet(b, n.AsRet(), depth)
 	case a.KVar:
-		n := n.AsVar()
-		return g.writeStatementAssign(b, n.Name(), nil, n.XType(), t.IDEq, nil, depth)
+		return nil
 	case a.KWhile:
 		return g.writeStatementWhile(b, n.AsWhile(), depth)
 	}
