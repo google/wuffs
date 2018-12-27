@@ -101,7 +101,44 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 
 	if lhs != nil {
 		if rhs.Effect().Coroutine() {
-			if err := g.writeQuestionCall(b, rhs, depth, op == t.IDEqQuestion); err != nil {
+			if op != t.IDEqQuestion {
+				if err := g.writeCoroSuspPoint(b, false); err != nil {
+					return err
+				}
+			}
+			switch err := g.writeBuiltinQuestionCall(b, rhs, depth); err {
+			case nil:
+				// No-op.
+			case errNoSuchBuiltin:
+				if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
+					return err
+				}
+
+				if op == t.IDEqQuestion {
+					if g.currFunk.tempW > maxTemp {
+						return fmt.Errorf("too many temporary variables required")
+					}
+					temp := g.currFunk.tempW
+					g.currFunk.tempW++
+
+					b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
+				} else {
+					b.writes("status = ")
+				}
+
+				if err := g.writeExprUserDefinedCall(b, rhs, depth); err != nil {
+					return err
+				}
+				b.writes(";\n")
+
+				if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
+					return err
+				}
+
+				if op != t.IDEqQuestion {
+					b.writes("if (status) { goto suspend; }\n")
+				}
+			default:
 				return err
 			}
 		}
@@ -470,53 +507,6 @@ func (g *gen) writeCoroSuspPoint(b *buffer, maybeSuspend bool) error {
 		macro = "_MAYBE_SUSPEND"
 	}
 	b.printf("WUFFS_BASE__COROUTINE_SUSPENSION_POINT%s(%d);\n", macro, g.currFunk.coroSuspPoint)
-	return nil
-}
-
-func (g *gen) writeQuestionCall(b *buffer, n *a.Expr, depth uint32, eqQuestion bool) error {
-	if depth > a.MaxExprDepth {
-		return fmt.Errorf("expression recursion depth too large")
-	}
-	depth++
-
-	if !eqQuestion && n.Effect().Coroutine() {
-		if err := g.writeCoroSuspPoint(b, false); err != nil {
-			return err
-		}
-	}
-
-	if err := g.writeBuiltinQuestionCall(b, n, depth); err != errNoSuchBuiltin {
-		return err
-	}
-
-	if err := g.writeSaveExprDerivedVars(b, n); err != nil {
-		return err
-	}
-
-	if eqQuestion {
-		if g.currFunk.tempW > maxTemp {
-			return fmt.Errorf("too many temporary variables required")
-		}
-		temp := g.currFunk.tempW
-		g.currFunk.tempW++
-
-		b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
-	} else {
-		b.writes("status = ")
-	}
-
-	if err := g.writeExprUserDefinedCall(b, n, depth); err != nil {
-		return err
-	}
-	b.writes(";\n")
-
-	if err := g.writeLoadExprDerivedVars(b, n); err != nil {
-		return err
-	}
-
-	if !eqQuestion {
-		b.writes("if (status) { goto suspend; }\n")
-	}
 	return nil
 }
 
