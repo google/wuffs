@@ -539,7 +539,7 @@ func (g *gen) writeArgs(b *buffer, args []*a.Node, depth uint32) error {
 
 func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error {
 	// TODO: also handle (or reject??) being on the RHS of an =? operator.
-	if n.Operator() != t.IDOpenParen {
+	if (n.Operator() != t.IDOpenParen) || (!n.Effect().Coroutine()) {
 		return errNoSuchBuiltin
 	}
 	method := n.LHS().AsExpr()

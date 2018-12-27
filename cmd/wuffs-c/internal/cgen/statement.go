@@ -111,12 +111,8 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 }
 
 func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
-	if rhs.Effect().Coroutine() {
-		if err := g.writeBuiltinQuestionCall(b, rhs, 0); err == nil {
-			return nil
-		} else if err != errNoSuchBuiltin {
-			return err
-		}
+	if err := g.writeBuiltinQuestionCall(b, rhs, 0); err != errNoSuchBuiltin {
+		return err
 	}
 
 	if (lhs == nil) || rhs.Effect().Coroutine() {
