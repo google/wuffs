@@ -104,22 +104,22 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 pri func decoder.read_from!(src base.io_reader) {
 	var clear_code base.u32[..256]
-	var end_code base.u32[..257]
+	var end_code   base.u32[..257]
 
 	var save_code base.u32[..4096]
 	var prev_code base.u32[..4095]
-	var width base.u32[..12]
-	var bits base.u32
-	var n_bits base.u32[..31]
+	var width     base.u32[..12]
+	var bits      base.u32
+	var n_bits    base.u32[..31]
 	var output_wi base.u32[..8191]
 
-	var code base.u32[..4095]
-	var c base.u32[..4095]
-	var o base.u32[..8191]
-	var steps base.u32
+	var code       base.u32[..4095]
+	var c          base.u32[..4095]
+	var o          base.u32[..8191]
+	var steps      base.u32
 	var first_byte base.u8
-	var lm1_b base.u16[..4095]
-	var lm1_a base.u16[..4095]
+	var lm1_b      base.u16[..4095]
+	var lm1_a      base.u16[..4095]
 
 	clear_code = this.clear_code
 	end_code = this.end_code

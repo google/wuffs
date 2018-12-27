@@ -31,13 +31,13 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 }
 
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
-	var c base.u8
-	var flags base.u8
-	var xlen base.u16
-	var checksum_got base.u32
-	var decoded_length_got base.u32
-	var z base.status
-	var checksum_want base.u32
+	var c                   base.u8
+	var flags               base.u8
+	var xlen                base.u16
+	var checksum_got        base.u32
+	var decoded_length_got  base.u32
+	var z                   base.status
+	var checksum_want       base.u32
 	var decoded_length_want base.u32
 
 	// Read the header.

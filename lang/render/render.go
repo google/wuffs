@@ -27,6 +27,13 @@ import (
 
 var newLine = []byte{'\n'}
 
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error) {
 	if len(src) == 0 {
 		return nil
@@ -36,6 +43,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 	indent := 0
 	buf := make([]byte, 0, 1024)
 	commentLine := uint32(0)
+	varNameLength := uint32(0)
 	prevLine := src[0].Line - 1
 	prevLineHanging := false
 
@@ -90,6 +98,7 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			if _, err = w.Write(newLine); err != nil {
 				return err
 			}
+			varNameLength = 0
 		}
 
 		// Render any leading indentation. If this line starts with a close
@@ -103,6 +112,21 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 			indentAdjustment++
 		}
 		buf = appendTabs(buf, indent+indentAdjustment)
+
+		if (len(lineTokens) < 2) || (lineTokens[0].ID != t.IDVar) {
+			varNameLength = 0
+		} else {
+			if varNameLength == 0 {
+				varNameLength = measureVarNameLength(tm, lineTokens, src)
+			}
+			name := tm.ByID(lineTokens[1].ID)
+			buf = append(buf, "var "...)
+			buf = append(buf, name...)
+			for i := uint32(len(name)); i <= varNameLength; i++ {
+				buf = append(buf, ' ')
+			}
+			lineTokens = lineTokens[2:]
+		}
 
 		// Render the lineTokens.
 		prevID, prevIsTightRight := t.ID(0), false
@@ -211,4 +235,26 @@ func isCloseIdentLiteral(tm *t.Map, x t.ID) bool {
 
 func isCloseIdentStrLiteral(tm *t.Map, x t.ID) bool {
 	return x.IsClose() || x.IsIdent(tm) || x.IsStrLiteral(tm)
+}
+
+func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) uint32 {
+	if len(lineTokens) < 2 {
+		return 0
+	}
+	line := lineTokens[0].Line
+	length := len(tm.ByID(lineTokens[1].ID))
+	for len(remaining) >= 2 && (remaining[0].ID == t.IDVar) && (remaining[0].Line == line+1) {
+		line = remaining[0].Line
+		length = max(length, len(tm.ByID(remaining[1].ID)))
+
+		remaining = remaining[2:]
+		for len(remaining) > 0 {
+			id := remaining[0].ID
+			remaining = remaining[1:]
+			if id == t.IDSemicolon {
+				break
+			}
+		}
+	}
+	return uint32(length)
 }

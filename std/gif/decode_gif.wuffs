@@ -330,10 +330,10 @@ pri func decoder.decode_header!??(src base.io_reader) {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd!??(src base.io_reader) {
-	var flags base.u8
+	var flags               base.u8
 	var num_palette_entries base.u32[..256]
-	var i base.u32
-	var argb base.u32
+	var i                   base.u32
+	var argb                base.u32
 
 	this.width = args.src.read_u16le_as_u32!??()
 	this.height = args.src.read_u16le_as_u32!??()
@@ -416,8 +416,8 @@ pri const netscape2dot0 array[11] base.u8 = [
 
 // decode_ae reads an Application Extension.
 pri func decoder.decode_ae!??(src base.io_reader) {
-	var c base.u8
-	var block_size base.u8
+	var c            base.u8
+	var block_size   base.u8
 	var not_animexts base.bool
 	var not_netscape base.bool
 
@@ -486,8 +486,8 @@ pri func decoder.decode_ae!??(src base.io_reader) {
 
 // decode_gc reads a Graphic Control.
 pri func decoder.decode_gc!??(src base.io_reader) {
-	var c base.u8
-	var flags base.u8
+	var c                        base.u8
+	var flags                    base.u8
 	var gc_duration_centiseconds base.u16
 
 	if this.seen_graphic_control {
@@ -565,12 +565,12 @@ pri func decoder.decode_id_part0!??(src base.io_reader) {
 }
 
 pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reader) {
-	var flags base.u8
+	var flags               base.u8
 	var num_palette_entries base.u32[..256]
-	var i base.u32
-	var argb base.u32
-	var dst_palette slice base.u8
-	var lw base.u8
+	var i                   base.u32
+	var argb                base.u32
+	var dst_palette         slice base.u8
+	var lw                  base.u8
 
 	flags = args.src.read_u8!??()
 	if (flags & 0x40) != 0 {
@@ -660,13 +660,13 @@ pri func decoder.decode_id_part1!??(dst ptr base.pixel_buffer, src base.io_reade
 }
 
 pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
-	var block_size base.u64[..255]
+	var block_size      base.u64[..255]
 	var need_block_size base.bool
-	var n_compressed base.u64
-	var compressed slice base.u8
-	var r base.io_reader
-	var z base.status
-	var uncompressed slice base.u8
+	var n_compressed    base.u64
+	var compressed      slice base.u8
+	var r               base.io_reader
+	var z               base.status
+	var uncompressed    slice base.u8
 
 	need_block_size = true
 	while:outer true {
@@ -752,15 +752,15 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 
 pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base.u8) {
 	// TODO: don't assume a packed pixel format.
-	var dst slice base.u8
-	var src slice base.u8
-	var n base.u64
-	var src_ri base.u64
+	var dst             slice base.u8
+	var src             slice base.u8
+	var n               base.u64
+	var src_ri          base.u64
 	var bytes_per_pixel base.u32[..64]
-	var pixfmt base.u32
-	var tab table base.u8
-	var i base.u64
-	var j base.u64
+	var pixfmt          base.u32
+	var tab             table base.u8
+	var i               base.u64
+	var j               base.u64
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.

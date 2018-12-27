@@ -122,9 +122,9 @@ pub struct decoder?(
 )
 
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
-	var z base.status
-	var written slice base.u8
-	var n_copied base.u64
+	var z            base.status
+	var written      slice base.u8
+	var n_copied     base.u64
 	var already_full base.u32[..0x8000]
 
 	while true {
@@ -180,8 +180,8 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 	var final base.u32
-	var b0 base.u32[..255]
-	var type base.u32
+	var b0    base.u32[..255]
+	var type  base.u32
 
 	while final == 0 {
 		while this.n_bits < 3,
@@ -223,7 +223,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
 pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) {
-	var length base.u32
+	var length   base.u32
 	var n_copied base.u32
 
 	// TODO: make this "if" into a function invariant?
@@ -284,22 +284,22 @@ pri func decoder.init_fixed_huffman!?() {
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
 pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
-	var bits base.u32
-	var n_bits base.u32
-	var b0 base.u32[..255]
-	var n_lit base.u32[..288]
-	var n_dist base.u32[..32]
-	var n_clen base.u32[..19]
-	var i base.u32
-	var b1 base.u32[..255]
-	var mask base.u32[..511]
-	var table_entry base.u32
+	var bits               base.u32
+	var n_bits             base.u32
+	var b0                 base.u32[..255]
+	var n_lit              base.u32[..288]
+	var n_dist             base.u32[..32]
+	var n_clen             base.u32[..19]
+	var i                  base.u32
+	var b1                 base.u32[..255]
+	var mask               base.u32[..511]
+	var table_entry        base.u32
 	var table_entry_n_bits base.u32[..15]
-	var b2 base.u32[..255]
-	var n_extra_bits base.u32[..7]
-	var rep_symbol base.u8[..15]
-	var rep_count base.u32
-	var b3 base.u32[..255]
+	var b2                 base.u32[..255]
+	var n_extra_bits       base.u32[..7]
+	var rep_symbol         base.u8[..15]
+	var rep_count          base.u32
+	var b3                 base.u32[..255]
 
 	bits = this.bits
 	n_bits = this.n_bits
@@ -451,30 +451,30 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 // TODO: make named constants for 15, 19, 319, etc.
 
 pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) {
-	var counts array[16] base.u16[..320]
-	var i base.u32
-	var remaining base.u32
-	var offsets array[16] base.u16[..320]
-	var n_symbols base.u32[..320]
-	var count base.u32[..320]
-	var symbols array[320] base.u16[..319]
-	var min_cl base.u32[..9]
-	var max_cl base.u32[..15]
+	var counts            array[16] base.u16[..320]
+	var i                 base.u32
+	var remaining         base.u32
+	var offsets           array[16] base.u16[..320]
+	var n_symbols         base.u32[..320]
+	var count             base.u32[..320]
+	var symbols           array[320] base.u16[..319]
+	var min_cl            base.u32[..9]
+	var max_cl            base.u32[..15]
 	var initial_high_bits base.u32
-	var prev_cl base.u32[..15]
+	var prev_cl           base.u32[..15]
 	var prev_redirect_key base.u32
-	var top base.u32[..1234]
-	var next_top base.u32[..1234]
-	var code base.u32
-	var key base.u32
-	var value base.u32
-	var cl base.u32[..15]
-	var redirect_key base.u32[..511]
-	var j base.u32[..16]
-	var reversed_key base.u32[..511]
-	var symbol base.u32[..319]
-	var high_bits base.u32
-	var delta base.u32
+	var top               base.u32[..1234]
+	var next_top          base.u32[..1234]
+	var code              base.u32
+	var key               base.u32
+	var value             base.u32
+	var cl                base.u32[..15]
+	var redirect_key      base.u32[..511]
+	var j                 base.u32[..16]
+	var reversed_key      base.u32[..511]
+	var symbol            base.u32[..319]
+	var high_bits         base.u32
+	var delta             base.u32
 
 	// For the clcode example in this package's README.md:
 	//  - n_codes0 = 0
