@@ -71,6 +71,7 @@ type parser struct {
 	opts       Options
 	lastLine   uint32
 	funcEffect a.Effect
+	allowVar   bool
 }
 
 func (p *parser) line() uint32 {
@@ -195,10 +196,14 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 					return nil, err
 				}
 			}
+
+			p.allowVar = true
 			body, err := p.parseBlock()
 			if err != nil {
 				return nil, err
 			}
+			p.allowVar = false
+
 			if x := p.peek1(); x != t.IDSemicolon {
 				got := p.tm.ByID(x)
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
@@ -575,7 +580,18 @@ func (p *parser) parseLabel() (t.ID, error) {
 }
 
 func (p *parser) parseStatement1() (*a.Node, error) {
-	switch x := p.peek1(); x {
+	x := p.peek1()
+	if x == t.IDVar {
+		if !p.allowVar {
+			return nil, fmt.Errorf(`parse: var statement not at the top of a function at %s:%d`,
+				p.filename, p.line())
+		}
+		p.src = p.src[1:]
+		return p.parseVarNode()
+	}
+	p.allowVar = false
+
+	switch x {
 	case t.IDAssert, t.IDPre, t.IDPost:
 		return p.parseAssertNode()
 
@@ -607,10 +623,6 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 			return nil, err
 		}
 		return a.NewRet(x, value).AsNode(), nil
-
-	case t.IDVar:
-		p.src = p.src[1:]
-		return p.parseVarNode()
 
 	case t.IDWhile:
 		p.src = p.src[1:]

@@ -150,17 +150,12 @@ func (g *gen) findVars() error {
 	}
 
 	f := g.currFunk.astFunc
-	if err := f.AsNode().Walk(func(n *a.Node) error {
-		if n.Kind() == a.KVar {
-			name := n.AsVar().Name()
-			if _, ok := h.vars[name]; !ok {
-				g.currFunk.varList = append(g.currFunk.varList, n.AsVar())
-				h.vars[name] = len(h.vars)
-			}
+	for _, n := range f.Body() {
+		if n.Kind() != a.KVar {
+			break
 		}
-		return nil
-	}); err != nil {
-		return err
+		g.currFunk.varList = append(g.currFunk.varList, n.AsVar())
+		h.vars[n.AsVar().Name()] = len(h.vars)
 	}
 
 	if f.Effect().Coroutine() {

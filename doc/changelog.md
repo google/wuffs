@@ -11,6 +11,7 @@
 - Added a `use` keyword.
 - Added a `yield` keyword.
 - Made the `return` value mandatory; added `ok` literal.
+- Restricted `var` statements to the top of functions.
 - Changed func out-type from struct to bare type.
 - Renamed the implicit `in` variable to `args`.
 - Added `std/adler32`, `std/crc32` and `std/gzip`.

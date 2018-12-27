@@ -540,9 +540,7 @@ func (c *Checker) checkFuncBody(node *a.Node) error {
 		localVars: c.localVars[n.QQID()],
 	}
 
-	// Fill in the TypeMap with all local variables. Note that they have
-	// function scope and can be hoisted, JavaScript style, a la
-	// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/var
+	// Fill in the TypeMap with all local variables.
 	if err := q.tcheckVars(n.Body()); err != nil {
 		return &Error{
 			Err:      err,

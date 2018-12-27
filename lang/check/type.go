@@ -24,47 +24,21 @@ import (
 
 func (q *checker) tcheckVars(block []*a.Node) error {
 	for _, o := range block {
+		if o.Kind() != a.KVar {
+			break
+		}
+
 		q.errFilename, q.errLine = o.AsRaw().FilenameLine()
 
-		switch o.Kind() {
-		case a.KIf:
-			for o := o.AsIf(); o != nil; o = o.ElseIf() {
-				if err := q.tcheckVars(o.BodyIfTrue()); err != nil {
-					return err
-				}
-				if err := q.tcheckVars(o.BodyIfFalse()); err != nil {
-					return err
-				}
-			}
-
-		case a.KIOBind:
-			if err := q.tcheckVars(o.AsIOBind().Body()); err != nil {
-				return err
-			}
-
-		case a.KIterate:
-			for o := o.AsIterate(); o != nil; o = o.ElseIterate() {
-				if err := q.tcheckVars(o.Body()); err != nil {
-					return err
-				}
-			}
-
-		case a.KVar:
-			o := o.AsVar()
-			name := o.Name()
-			if _, ok := q.localVars[name]; ok {
-				return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
-			}
-			if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
-				return err
-			}
-			q.localVars[name] = o.XType()
-
-		case a.KWhile:
-			if err := q.tcheckVars(o.AsWhile().Body()); err != nil {
-				return err
-			}
+		o := o.AsVar()
+		name := o.Name()
+		if _, ok := q.localVars[name]; ok {
+			return fmt.Errorf("check: duplicate var %q", name.Str(q.tm))
 		}
+		if err := q.tcheckTypeExpr(o.XType(), 0); err != nil {
+			return err
+		}
+		q.localVars[name] = o.XType()
 	}
 	return nil
 }
