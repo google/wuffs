@@ -27,15 +27,6 @@ func (g *gen) writeExpr(b *buffer, n *a.Expr, depth uint32) error {
 	}
 	depth++
 
-	if n.Effect().Coroutine() {
-		if g.currFunk.tempR >= g.currFunk.tempW {
-			return fmt.Errorf("internal error: temporary variable count out of sync")
-		}
-		b.printf("%s%d", tPrefix, g.currFunk.tempR)
-		g.currFunk.tempR++
-		return nil
-	}
-
 	if cv := n.ConstValue(); cv != nil {
 		if typ := n.MType(); typ.IsNumTypeOrIdeal() {
 			b.writes(cv.String())

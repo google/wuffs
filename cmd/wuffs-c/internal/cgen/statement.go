@@ -141,8 +141,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			b.writes("status = ")
 		}
 
-		// TODO: drop the "Other" in writeExprOther.
-		if err := g.writeExprOther(b, rhs, 0); err != nil {
+		if err := g.writeExpr(b, rhs, 0); err != nil {
 			return err
 		}
 		b.writes(";\n")
@@ -198,7 +197,13 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 
 	b.writex(lhsBuf)
 	b.writes(opName)
-	if err := g.writeExpr(b, rhs, 0); err != nil {
+	if rhs.Effect().Coroutine() {
+		if g.currFunk.tempR != (g.currFunk.tempW - 1) {
+			return fmt.Errorf("internal error: temporary variable count out of sync")
+		}
+		b.printf("%s%d", tPrefix, g.currFunk.tempR)
+		g.currFunk.tempR++
+	} else if err := g.writeExpr(b, rhs, 0); err != nil {
 		return err
 	}
 	b.writes(closer)
