@@ -70,9 +70,9 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	switch n.Kind() {
 	case a.KAssign:
 		n := n.AsAssign()
-		return g.writeStatementAssign(b, n.LHS(), n.LHS().MType(), n.Operator(), n.RHS(), depth)
+		return g.writeStatementAssign(b, n.Operator(), n.LHS(), n.RHS(), depth)
 	case a.KExpr:
-		return g.writeStatementAssign(b, nil, nil, 0, n.AsExpr(), depth)
+		return g.writeStatementAssign(b, 0, nil, n.AsExpr(), depth)
 	case a.KIOBind:
 		return g.writeStatementIOBind(b, n.AsIOBind(), depth)
 	case a.KIf:
@@ -91,10 +91,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	return fmt.Errorf("unrecognized ast.Kind (%s) for writeStatement", n.Kind())
 }
 
-func (g *gen) writeStatementAssign(b *buffer,
-	lhsExpr *a.Expr, lTyp *a.TypeExpr,
-	op t.ID, rhsExpr *a.Expr, depth uint32) error {
-
+func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr, depth uint32) error {
 	// TODO: clean this method body up.
 
 	if depth > a.MaxExprDepth {
@@ -102,26 +99,22 @@ func (g *gen) writeStatementAssign(b *buffer,
 	}
 	depth++
 
-	if op != 0 && rhsExpr.Effect().Coroutine() {
-		if err := g.writeQuestionCall(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
-			return err
+	if lhs != nil {
+		if rhs.Effect().Coroutine() {
+			if err := g.writeQuestionCall(b, rhs, depth, op == t.IDEqQuestion); err != nil {
+				return err
+			}
 		}
-	}
 
-	closer := ""
-	if lTyp == nil {
-		// No-op.
-
-	} else {
-		lhs := buffer(nil)
-		if err := g.writeExpr(&lhs, lhsExpr, depth); err != nil {
+		lhsBuf := buffer(nil)
+		if err := g.writeExpr(&lhsBuf, lhs, depth); err != nil {
 			return err
 		}
 
-		opName := ""
-		if lTyp.IsArrayType() {
+		opName, closer := "", ""
+		if lTyp := lhs.MType(); lTyp.IsArrayType() {
 			b.writes("memcpy(")
-			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhs)
+			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
 
 		} else {
 			switch op {
@@ -145,48 +138,47 @@ func (g *gen) writeStatementAssign(b *buffer,
 			}
 		}
 
-		b.writex(lhs)
+		b.writex(lhsBuf)
 		b.writes(opName)
-	}
+		if err := g.writeExpr(b, rhs, depth); err != nil {
+			return err
+		}
+		b.writes(closer)
+		b.writes(";\n")
 
-	if op == 0 {
-		if rhsExpr.Effect().Coroutine() {
+	} else {
+		if rhs.Effect().Coroutine() {
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
 		}
 
-		if err := g.writeBuiltinQuestionCall(b, rhsExpr, depth); err != errNoSuchBuiltin {
+		if err := g.writeBuiltinQuestionCall(b, rhs, depth); err != errNoSuchBuiltin {
 			return err
 		}
 
-		if err := g.writeSaveExprDerivedVars(b, rhsExpr); err != nil {
+		if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
 			return err
 		}
 
-		if rhsExpr.Effect().Optional() {
+		if rhs.Effect().Optional() {
 			b.writes("status = ")
 		}
 
 		// TODO: drop the "Other" in writeExprOther.
-		if err := g.writeExprOther(b, rhsExpr, depth); err != nil {
-			return err
-		}
-	} else if err := g.writeExpr(b, rhsExpr, depth); err != nil {
-		return err
-	}
-
-	b.writes(closer)
-	b.writes(";\n")
-
-	if op == 0 {
-		if err := g.writeLoadExprDerivedVars(b, rhsExpr); err != nil {
+		if err := g.writeExprOther(b, rhs, depth); err != nil {
 			return err
 		}
 
-		if rhsExpr.Effect().Optional() {
+		b.writes(";\n")
+
+		if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
+			return err
+		}
+
+		if rhs.Effect().Optional() {
 			target := "exit"
-			if rhsExpr.Effect().Coroutine() {
+			if rhs.Effect().Coroutine() {
 				target = "suspend"
 			}
 			b.printf("if (status) { goto %s; }\n", target)
