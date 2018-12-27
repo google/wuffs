@@ -99,22 +99,32 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	}
 	depth++
 
-	wbqcErr := errNoSuchBuiltin
+	if err := g.writeStatementAssign0(b, op, lhs, rhs); err != nil {
+		return err
+	}
+	if lhs != nil {
+		if err := g.writeStatementAssign1(b, op, lhs, rhs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
 	if rhs.Effect().Coroutine() {
 		if op != t.IDEqQuestion {
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
 		}
-		wbqcErr = g.writeBuiltinQuestionCall(b, rhs, depth)
-		if wbqcErr == nil {
-			// No-op.
-		} else if wbqcErr != errNoSuchBuiltin {
-			return wbqcErr
+		if err := g.writeBuiltinQuestionCall(b, rhs, 0); err == nil {
+			return nil
+		} else if err != errNoSuchBuiltin {
+			return err
 		}
 	}
 
-	if (wbqcErr != nil) && ((lhs == nil) || (rhs.Effect().Coroutine())) {
+	if (lhs == nil) || rhs.Effect().Coroutine() {
 		if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
 			return err
 		}
@@ -132,7 +142,7 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 		}
 
 		// TODO: drop the "Other" in writeExprOther.
-		if err := g.writeExprOther(b, rhs, depth); err != nil {
+		if err := g.writeExprOther(b, rhs, 0); err != nil {
 			return err
 		}
 		b.writes(";\n")
@@ -150,47 +160,49 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 		}
 	}
 
-	if lhs != nil {
-		lhsBuf := buffer(nil)
-		if err := g.writeExpr(&lhsBuf, lhs, depth); err != nil {
-			return err
-		}
+	return nil
+}
 
-		opName, closer := "", ""
-		if lTyp := lhs.MType(); lTyp.IsArrayType() {
-			b.writes("memcpy(")
-			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
+func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
+	lhsBuf := buffer(nil)
+	if err := g.writeExpr(&lhsBuf, lhs, 0); err != nil {
+		return err
+	}
 
-		} else {
-			switch op {
-			case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
-				uBits := uintBits(lTyp.QID())
-				if uBits == 0 {
-					return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
-				}
-				uOp := "add"
-				if op != t.IDTildeSatPlusEq {
-					uOp = "sub"
-				}
-				b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
-				opName, closer = ",", ")"
+	opName, closer := "", ""
+	if lTyp := lhs.MType(); lTyp.IsArrayType() {
+		b.writes("memcpy(")
+		opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
 
-			default:
-				opName = cOpName(op)
-				if opName == "" {
-					return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
-				}
+	} else {
+		switch op {
+		case t.IDTildeSatPlusEq, t.IDTildeSatMinusEq:
+			uBits := uintBits(lTyp.QID())
+			if uBits == 0 {
+				return fmt.Errorf("unsupported tilde-operator type %q", lTyp.Str(g.tm))
+			}
+			uOp := "add"
+			if op != t.IDTildeSatPlusEq {
+				uOp = "sub"
+			}
+			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
+			opName, closer = ",", ")"
+
+		default:
+			opName = cOpName(op)
+			if opName == "" {
+				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 			}
 		}
-
-		b.writex(lhsBuf)
-		b.writes(opName)
-		if err := g.writeExpr(b, rhs, depth); err != nil {
-			return err
-		}
-		b.writes(closer)
-		b.writes(";\n")
 	}
+
+	b.writex(lhsBuf)
+	b.writes(opName)
+	if err := g.writeExpr(b, rhs, 0); err != nil {
+		return err
+	}
+	b.writes(closer)
+	b.writes(";\n")
 
 	return nil
 }
