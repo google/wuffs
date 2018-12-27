@@ -99,50 +99,58 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 	}
 	depth++
 
-	if lhs != nil {
-		if rhs.Effect().Coroutine() {
-			if op != t.IDEqQuestion {
-				if err := g.writeCoroSuspPoint(b, false); err != nil {
-					return err
-				}
-			}
-			switch err := g.writeBuiltinQuestionCall(b, rhs, depth); err {
-			case nil:
-				// No-op.
-			case errNoSuchBuiltin:
-				if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
-					return err
-				}
-
-				if op == t.IDEqQuestion {
-					if g.currFunk.tempW > maxTemp {
-						return fmt.Errorf("too many temporary variables required")
-					}
-					temp := g.currFunk.tempW
-					g.currFunk.tempW++
-
-					b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
-				} else {
-					b.writes("status = ")
-				}
-
-				if err := g.writeExprUserDefinedCall(b, rhs, depth); err != nil {
-					return err
-				}
-				b.writes(";\n")
-
-				if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
-					return err
-				}
-
-				if op != t.IDEqQuestion {
-					b.writes("if (status) { goto suspend; }\n")
-				}
-			default:
+	wbqcErr := errNoSuchBuiltin
+	if rhs.Effect().Coroutine() {
+		if op != t.IDEqQuestion {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
 		}
+		wbqcErr = g.writeBuiltinQuestionCall(b, rhs, depth)
+		if wbqcErr == nil {
+			// No-op.
+		} else if wbqcErr != errNoSuchBuiltin {
+			return wbqcErr
+		}
+	}
 
+	if (wbqcErr != nil) && ((lhs == nil) || (rhs.Effect().Coroutine())) {
+		if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
+			return err
+		}
+
+		if op == t.IDEqQuestion {
+			if g.currFunk.tempW > maxTemp {
+				return fmt.Errorf("too many temporary variables required")
+			}
+			temp := g.currFunk.tempW
+			g.currFunk.tempW++
+
+			b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
+		} else if rhs.Effect().Optional() {
+			b.writes("status = ")
+		}
+
+		// TODO: drop the "Other" in writeExprOther.
+		if err := g.writeExprOther(b, rhs, depth); err != nil {
+			return err
+		}
+		b.writes(";\n")
+
+		if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
+			return err
+		}
+
+		if op != t.IDEqQuestion && rhs.Effect().Optional() {
+			target := "exit"
+			if rhs.Effect().Coroutine() {
+				target = "suspend"
+			}
+			b.printf("if (status) { goto %s; }\n", target)
+		}
+	}
+
+	if lhs != nil {
 		lhsBuf := buffer(nil)
 		if err := g.writeExpr(&lhsBuf, lhs, depth); err != nil {
 			return err
@@ -182,44 +190,6 @@ func (g *gen) writeStatementAssign(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr,
 		}
 		b.writes(closer)
 		b.writes(";\n")
-
-	} else {
-		if rhs.Effect().Coroutine() {
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-		}
-
-		if err := g.writeBuiltinQuestionCall(b, rhs, depth); err != errNoSuchBuiltin {
-			return err
-		}
-
-		if err := g.writeSaveExprDerivedVars(b, rhs); err != nil {
-			return err
-		}
-
-		if rhs.Effect().Optional() {
-			b.writes("status = ")
-		}
-
-		// TODO: drop the "Other" in writeExprOther.
-		if err := g.writeExprOther(b, rhs, depth); err != nil {
-			return err
-		}
-
-		b.writes(";\n")
-
-		if err := g.writeLoadExprDerivedVars(b, rhs); err != nil {
-			return err
-		}
-
-		if rhs.Effect().Optional() {
-			target := "exit"
-			if rhs.Effect().Coroutine() {
-				target = "suspend"
-			}
-			b.printf("if (status) { goto %s; }\n", target)
-		}
 	}
 
 	return nil
