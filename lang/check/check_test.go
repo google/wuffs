@@ -65,10 +65,13 @@ func TestCheck(tt *testing.T) {
 
 		pri func foo.bar() {
 			var x base.u8
-			var y base.i32 = +2
+			var y base.i32
 			var z base.u64[..123]
 			var a array[4] base.u8
 			var b base.bool
+
+			var p base.i32
+			var q base.i32[0..8]
 
 			x = 0
 			x = 1 + (x * 0)
@@ -77,9 +80,6 @@ func TestCheck(tt *testing.T) {
 			b = not true
 
 			y = x as base.i32
-
-			var p base.i32
-			var q base.i32[0..8]
 
 			assert true
 
@@ -171,39 +171,45 @@ func TestCheck(tt *testing.T) {
 func TestConstValues(tt *testing.T) {
 	const filename = "test.wuffs"
 	testCases := map[string]int64{
-		"var i base.i32 = 42": 42,
+		"i = 42": 42,
 
-		"var i base.i32 = +7": +7,
-		"var i base.i32 = -7": -7,
+		"i = +7": +7,
+		"i = -7": -7,
 
-		"var b base.bool = false":         0,
-		"var b base.bool = not false":     1,
-		"var b base.bool = not not false": 0,
+		"b = false":         0,
+		"b = not false":     1,
+		"b = not not false": 0,
 
-		"var i base.i32 = 10  + 3": 13,
-		"var i base.i32 = 10  - 3": 7,
-		"var i base.i32 = 10  * 3": 30,
-		"var i base.i32 = 10  / 3": 3,
-		"var i base.i32 = 10 << 3": 80,
-		"var i base.i32 = 10 >> 3": 1,
-		"var i base.i32 = 10  & 3": 2,
-		"var i base.i32 = 10  | 3": 11,
-		"var i base.i32 = 10  ^ 3": 9,
+		"i = 10  + 3": 13,
+		"i = 10  - 3": 7,
+		"i = 10  * 3": 30,
+		"i = 10  / 3": 3,
+		"i = 10 << 3": 80,
+		"i = 10 >> 3": 1,
+		"i = 10  & 3": 2,
+		"i = 10  | 3": 11,
+		"i = 10  ^ 3": 9,
 
-		"var b base.bool = 10 != 3": 1,
-		"var b base.bool = 10  < 3": 0,
-		"var b base.bool = 10 <= 3": 0,
-		"var b base.bool = 10 == 3": 0,
-		"var b base.bool = 10 >= 3": 1,
-		"var b base.bool = 10  > 3": 1,
+		"b = 10 != 3": 1,
+		"b = 10  < 3": 0,
+		"b = 10 <= 3": 0,
+		"b = 10 == 3": 0,
+		"b = 10 >= 3": 1,
+		"b = 10  > 3": 1,
 
-		"var b base.bool = false and true": 0,
-		"var b base.bool = false  or true": 1,
+		"b = false and true": 0,
+		"b = false  or true": 1,
 	}
 
 	tm := &t.Map{}
 	for s, wantInt64 := range testCases {
-		src := "pri func foo() {\n\t" + s + "\n}\n"
+		src := "pri func foo() {\n"
+		if s[0] == 'b' {
+			src += "var b base.bool\n"
+		} else {
+			src += "var i base.i32\n"
+		}
+		src += s + "\n}\n"
 
 		tokens, _, err := t.Tokenize(tm, filename, []byte(src))
 		if err != nil {
@@ -241,7 +247,7 @@ func TestConstValues(tt *testing.T) {
 			continue
 		}
 		body := foo.Body()
-		if len(body) != 1 {
+		if len(body) != 2 {
 			tt.Errorf("%q: Body: got %d elements, want 1", s, len(body))
 			continue
 		}
@@ -249,8 +255,12 @@ func TestConstValues(tt *testing.T) {
 			tt.Errorf("%q: Body[0]: got %s, want %s", s, body[0].Kind(), a.KVar)
 			continue
 		}
+		if body[1].Kind() != a.KAssign {
+			tt.Errorf("%q: Body[1]: got %s, want %s", s, body[1].Kind(), a.KAssign)
+			continue
+		}
 
-		got := body[0].AsVar().Value().ConstValue()
+		got := body[1].AsAssign().RHS().ConstValue()
 		want := big.NewInt(wantInt64)
 		if got == nil || want == nil || got.Cmp(want) != 0 {
 			tt.Errorf("%q: got %v, want %v", s, got, want)
