@@ -117,11 +117,6 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		} else if err != errNoSuchBuiltin {
 			return err
 		}
-		if op != t.IDEqQuestion {
-			if err := g.writeCoroSuspPoint(b, false); err != nil {
-				return err
-			}
-		}
 	}
 
 	if (lhs == nil) || rhs.Effect().Coroutine() {
@@ -137,6 +132,11 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			g.currFunk.tempW++
 
 			b.printf("wuffs_base__status %s%d = ", tPrefix, temp)
+		} else if rhs.Effect().Coroutine() {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
+				return err
+			}
+			b.writes("status = ")
 		} else if rhs.Effect().Optional() {
 			b.writes("status = ")
 		}
