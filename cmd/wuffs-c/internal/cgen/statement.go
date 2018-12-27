@@ -102,7 +102,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 	}
 	depth++
 
-	if op != 0 && rhsExpr != nil && rhsExpr.Effect().Coroutine() {
+	if op != 0 && rhsExpr.Effect().Coroutine() {
 		if err := g.writeQuestionCall(b, rhsExpr, depth, op == t.IDEqQuestion); err != nil {
 			return err
 		}
@@ -122,11 +122,7 @@ func (g *gen) writeStatementAssign(b *buffer,
 
 		opName := ""
 		if lTyp.IsArrayType() {
-			if rhsExpr != nil {
-				b.writes("memcpy(")
-			} else {
-				b.writes("memset(")
-			}
+			b.writes("memcpy(")
 			opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhs)
 
 		} else {
@@ -155,53 +151,37 @@ func (g *gen) writeStatementAssign(b *buffer,
 		b.writes(opName)
 	}
 
-	if rhsExpr != nil {
-		if op == 0 {
-			if rhsExpr.Effect().Coroutine() {
-				if err := g.writeCoroSuspPoint(b, false); err != nil {
-					return err
-				}
-			}
-
-			if err := g.writeBuiltinQuestionCall(b, rhsExpr, depth); err != errNoSuchBuiltin {
+	if op == 0 {
+		if rhsExpr.Effect().Coroutine() {
+			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
+		}
 
-			if err := g.writeSaveExprDerivedVars(b, rhsExpr); err != nil {
-				return err
-			}
-
-			if rhsExpr.Effect().Optional() {
-				b.writes("status = ")
-			}
-
-			// TODO: drop the "Other" in writeExprOther.
-			if err := g.writeExprOther(b, rhsExpr, depth); err != nil {
-				return err
-			}
-		} else if err := g.writeExpr(b, rhsExpr, depth); err != nil {
+		if err := g.writeBuiltinQuestionCall(b, rhsExpr, depth); err != errNoSuchBuiltin {
 			return err
 		}
 
-	} else if lTyp.IsSliceType() {
-		// TODO: don't assume that the slice is a slice of base.u8.
-		b.printf("((wuffs_base__slice_u8){})")
-	} else if lTyp.IsTableType() {
-		// TODO: don't assume that the table is a table of base.u8.
-		b.printf("((wuffs_base__table_u8){})")
-	} else if lTyp.IsIOType() {
-		s := "reader"
-		if lTyp.QID()[1] == t.IDIOWriter {
-			s = "writer"
+		if err := g.writeSaveExprDerivedVars(b, rhsExpr); err != nil {
+			return err
 		}
-		b.printf("((wuffs_base__io_%s){})", s)
-	} else {
-		b.writeb('0')
+
+		if rhsExpr.Effect().Optional() {
+			b.writes("status = ")
+		}
+
+		// TODO: drop the "Other" in writeExprOther.
+		if err := g.writeExprOther(b, rhsExpr, depth); err != nil {
+			return err
+		}
+	} else if err := g.writeExpr(b, rhsExpr, depth); err != nil {
+		return err
 	}
+
 	b.writes(closer)
 	b.writes(";\n")
 
-	if op == 0 && rhsExpr != nil {
+	if op == 0 {
 		if err := g.writeLoadExprDerivedVars(b, rhsExpr); err != nil {
 			return err
 		}
