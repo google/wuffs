@@ -122,16 +122,16 @@ pub struct decoder?(
 )
 
 pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
-	var z            base.status
+	var status       base.status
 	var written      slice base.u8
 	var n_copied     base.u64
 	var already_full base.u32[..0x8000]
 
 	while true {
 		args.dst.set_mark!()
-		z =? this.decode_blocks!??(dst:args.dst, src:args.src)
-		if not z.is_suspension() {
-			return z
+		status =? this.decode_blocks!??(dst:args.dst, src:args.src)
+		if not status.is_suspension() {
+			return status
 		}
 		// TODO: should "since_mark" be "since_mark!", as the return value lets
 		// you modify the state of args.dst, so future mutations (via the
@@ -174,7 +174,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 				this.history_index = (this.history_index & 0x7FFF) + ((n_copied & 0x7FFF) as base.u32) + already_full
 			}
 		}
-		yield z
+		yield status
 	}
 }
 

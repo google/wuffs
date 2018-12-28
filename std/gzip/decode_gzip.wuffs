@@ -36,7 +36,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	var xlen                base.u16
 	var checksum_got        base.u32
 	var decoded_length_got  base.u32
-	var z                   base.status
+	var status              base.status
 	var checksum_want       base.u32
 	var decoded_length_want base.u32
 
@@ -100,15 +100,15 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
 		args.dst.set_mark!()
-		z =? this.flate.decode!??(dst:args.dst, src:args.src)
+		status =? this.flate.decode!??(dst:args.dst, src:args.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update!(x:args.dst.since_mark())
 			decoded_length_got ~mod+= ((args.dst.since_mark().length() & 0xFFFFFFFF) as base.u32)
 		}
-		if z.is_ok() {
+		if status.is_ok() {
 			break
 		}
-		yield z
+		yield status
 	}
 	checksum_want = args.src.read_u32le!??()
 	decoded_length_want = args.src.read_u32le!??()

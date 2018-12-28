@@ -665,7 +665,7 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 	var n_compressed    base.u64
 	var compressed      slice base.u8
 	var r               base.io_reader
-	var z               base.status
+	var status          base.status
 	var uncompressed    slice base.u8
 
 	need_block_size = true
@@ -716,7 +716,7 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 				return "?internal error: inconsistent ri/wi"
 			}
 			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
-				z =? this.lzw.decode!??(dst:this.util.null_io_writer(), src:r)
+				status =? this.lzw.decode!??(dst:this.util.null_io_writer(), src:r)
 				this.compressed_ri ~sat+= r.since_mark().length()
 			}
 
@@ -725,7 +725,7 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 				this.copy_to_image_buffer!?(pb:args.dst, src:uncompressed)
 			}
 
-			if z.is_ok() {
+			if status.is_ok() {
 				this.previous_lzw_decode_ended_abruptly = false
 
 				// Skip any trailing blocks.
@@ -735,12 +735,12 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 				}
 
 				break:outer
-			} else if z == base."$short read" {
+			} else if status == base."$short read" {
 				continue:outer
-			} else if z == base."$short write" {
+			} else if status == base."$short write" {
 				continue:inner
 			}
-			return z
+			return status
 		}
 	}
 
