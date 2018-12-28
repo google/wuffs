@@ -31,6 +31,8 @@ type funk struct {
 
 	astFunc       *a.Func
 	cName         string
+	returnsStatus bool
+
 	varList       []*a.Var
 	varResumables map[t.ID]bool
 	derivedVars   map[t.ID]struct{}
@@ -175,6 +177,9 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	g.currFunk = funk{
 		astFunc: n,
 		cName:   g.funcCName(n),
+
+		returnsStatus: n.Effect().Optional() ||
+			((n.Out() != nil) && n.Out().IsStatus()),
 	}
 
 	if err := g.findVars(); err != nil {
@@ -225,7 +230,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		out := g.currFunk.astFunc.Out()
 
 		b.writes("if (!self) { return ")
-		if g.currFunk.astFunc.Effect().Optional() {
+		if g.currFunk.returnsStatus {
 			b.writes("wuffs_base__error__bad_receiver")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
@@ -233,7 +238,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		b.writes(";}")
 
 		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) { return ")
-		if g.currFunk.astFunc.Effect().Optional() {
+		if g.currFunk.returnsStatus {
 			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +
 				": wuffs_base__error__check_wuffs_version_missing")

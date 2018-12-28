@@ -188,7 +188,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl:this.width as base.u64)
 }
 
-pub func decoder.restart_frame!?(index base.u64, io_position base.u64) {
+pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
 	if this.call_sequence == 0 {
 		return base."?bad call sequence"
 	}
@@ -198,6 +198,7 @@ pub func decoder.restart_frame!?(index base.u64, io_position base.u64) {
 	this.num_decoded_frame_configs_value = args.index
 	this.num_decoded_frames_value = args.index
 	this.reset_gc!()
+	return ok
 }
 
 pub func decoder.decode_frame_config!??(dst nptr base.frame_config, src base.io_reader) {

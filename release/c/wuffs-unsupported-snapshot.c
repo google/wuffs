@@ -7807,11 +7807,9 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
-  wuffs_base__status status = NULL;
 
   if (self->private_impl.f_call_sequence == 0) {
-    status = wuffs_base__error__bad_call_sequence;
-    goto exit;
+    return wuffs_base__error__bad_call_sequence;
   }
   self->private_impl.f_end_of_data = false;
   self->private_impl.f_restarted = true;
@@ -7819,12 +7817,7 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
   self->private_impl.f_num_decoded_frame_configs_value = a_index;
   self->private_impl.f_num_decoded_frames_value = a_index;
   wuffs_gif__decoder__reset_gc(self);
-  goto exit;
-exit:
-  if (wuffs_base__status__is_error(status)) {
-    self->private_impl.magic = WUFFS_BASE__DISABLED;
-  }
-  return status;
+  return NULL;
 }
 
 // -------- func gif.decoder.decode_frame_config
