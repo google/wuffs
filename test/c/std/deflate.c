@@ -131,10 +131,10 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  const char* z = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                              WUFFS_VERSION);
-  if (z) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  const char* status = wuffs_deflate__decoder__check_wuffs_version(
+      &dec, sizeof dec, WUFFS_VERSION);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
   }
 
   while (true) {
@@ -147,13 +147,13 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    z = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+    status = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
 
-    if ((wlimit && (z == wuffs_base__suspension__short_write)) ||
-        (rlimit && (z == wuffs_base__suspension__short_read))) {
+    if ((wlimit && (status == wuffs_base__suspension__short_write)) ||
+        (rlimit && (status == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return z;
+    return status;
   }
 }
 
@@ -223,15 +223,15 @@ const char* test_wuffs_deflate_decode_split_src() {
       .data = global_want_slice,
   });
 
-  const char* z;
+  const char* status;
   golden_test* gt = &deflate_256_bytes_gt;
-  z = read_file(&src, gt->src_filename);
-  if (z) {
-    return z;
+  status = read_file(&src, gt->src_filename);
+  if (status) {
+    return status;
   }
-  z = read_file(&want, gt->want_filename);
-  if (z) {
-    return z;
+  status = read_file(&want, gt->want_filename);
+  if (status) {
+    return status;
   }
 
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&got);
@@ -246,10 +246,10 @@ const char* test_wuffs_deflate_decode_split_src() {
     got.meta.wi = 0;
 
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    z = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                    WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                         WUFFS_VERSION);
+    if (status) {
+      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
 
     src.meta.closed = false;
@@ -275,9 +275,9 @@ const char* test_wuffs_deflate_decode_split_src() {
 
     char prefix[64];
     snprintf(prefix, 64, "i=%d: ", i);
-    z = check_io_buffers_equal(prefix, &got, &want);
-    if (z) {
-      return z;
+    status = check_io_buffers_equal(prefix, &got, &want);
+    if (status) {
+      return status;
     }
   }
   return NULL;
@@ -326,32 +326,32 @@ const char* test_wuffs_deflate_history_full() {
       .data = global_want_slice,
   });
 
-  const char* z;
+  const char* status;
   golden_test* gt = &deflate_pi_gt;
-  z = read_file(&src, gt->src_filename);
-  if (z) {
-    return z;
+  status = read_file(&src, gt->src_filename);
+  if (status) {
+    return status;
   }
-  z = read_file(&want, gt->want_filename);
-  if (z) {
-    return z;
+  status = read_file(&want, gt->want_filename);
+  if (status) {
+    return status;
   }
 
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    z = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                    WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                         WUFFS_VERSION);
+    if (status) {
+      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
 
-    z = do_test_wuffs_deflate_history(
+    status = do_test_wuffs_deflate_history(
         i, gt, &src, &got, &dec, 0, want.meta.wi + i,
         i >= 0 ? NULL : wuffs_base__suspension__short_write);
-    if (z) {
-      return z;
+    if (status) {
+      return status;
     }
 
     uint32_t want_history_index = i >= 0 ? 0 : full_history_size;
@@ -381,9 +381,9 @@ const char* test_wuffs_deflate_history_full() {
     });
     history_want.meta.wi = full_history_size;
 
-    z = check_io_buffers_equal("", &history_got, &history_want);
-    if (z) {
-      return z;
+    status = check_io_buffers_equal("", &history_got, &history_want);
+    if (status) {
+      return status;
     }
   }
   return NULL;
@@ -400,9 +400,9 @@ const char* test_wuffs_deflate_history_partial() {
   });
 
   golden_test* gt = &deflate_pi_gt;
-  const char* z = read_file(&src, gt->src_filename);
-  if (z) {
-    return z;
+  const char* status = read_file(&src, gt->src_filename);
+  if (status) {
+    return status;
   }
 
   uint32_t starting_history_indexes[] = {
@@ -419,17 +419,17 @@ const char* test_wuffs_deflate_history_partial() {
     const uint32_t fragment_length = 4;
 
     wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    z = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                    WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                         WUFFS_VERSION);
+    if (status) {
+      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
 
-    z = do_test_wuffs_deflate_history(i, gt, &src, &got, &dec,
-                                      starting_history_index, fragment_length,
-                                      wuffs_base__suspension__short_write);
-    if (z) {
-      return z;
+    status = do_test_wuffs_deflate_history(
+        i, gt, &src, &got, &dec, starting_history_index, fragment_length,
+        wuffs_base__suspension__short_write);
+    if (status) {
+      return status;
     }
 
     bool got_full = dec.private_impl.f_history_index >= 0x8000;
@@ -506,10 +506,10 @@ const char* test_wuffs_deflate_table_redirect() {
   // 2nd is the key in the second level table (variable bits).
 
   wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  const char* z = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                              WUFFS_VERSION);
-  if (z) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  const char* status = wuffs_deflate__decoder__check_wuffs_version(
+      &dec, sizeof dec, WUFFS_VERSION);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
   }
 
   int i;
@@ -529,9 +529,9 @@ const char* test_wuffs_deflate_table_redirect() {
   dec.private_impl.f_code_lengths[n++] = 13;
   dec.private_impl.f_code_lengths[n++] = 13;
 
-  z = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
-  if (z) {
-    RETURN_FAIL("init_huff: \"%s\"", z);
+  status = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
+  if (status) {
+    RETURN_FAIL("init_huff: \"%s\"", status);
   }
 
   // There is one 1st-level table (9 bits), and three 2nd-level tables (3, 3

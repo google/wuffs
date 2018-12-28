@@ -238,9 +238,9 @@ const char* chdir_to_the_wuffs_root_directory() {
 typedef const char* (*proc)();
 
 int test_main(int argc, char** argv, proc* tests, proc* benches) {
-  const char* z = chdir_to_the_wuffs_root_directory();
-  if (z) {
-    fprintf(stderr, "%s\n", z);
+  const char* status = chdir_to_the_wuffs_root_directory();
+  if (status) {
+    fprintf(stderr, "%s\n", status);
     return 1;
   }
 
@@ -321,13 +321,13 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
       proc_func_name = "unknown_func_name";
       fail_msg[0] = 0;
       in_focus = false;
-      const char* z = (*p)();
+      const char* status = (*p)();
       if (!in_focus) {
         continue;
       }
-      if (z) {
+      if (status) {
         printf("%-16s%-8sFAIL %s: %s\n", proc_package_name, cc, proc_func_name,
-               z);
+               status);
         return 1;
       }
       if (i == 0) {
@@ -620,9 +620,9 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   if (!gt->src_filename) {
     src.meta.closed = true;
   } else {
-    const char* z = read_file(&src, gt->src_filename);
-    if (z) {
-      return z;
+    const char* status = read_file(&src, gt->src_filename);
+    if (status) {
+      return status;
     }
   }
   if (gt->src_offset0 || gt->src_offset1) {
@@ -644,9 +644,9 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
-    const char* z = codec_func(&got, &src, wlimit, rlimit);
-    if (z) {
-      return z;
+    const char* status = codec_func(&got, &src, wlimit, rlimit);
+    if (status) {
+      return status;
     }
     switch (tc) {
       case tc_neither:
@@ -667,9 +667,9 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   if (!gt->want_filename) {
     want.meta.closed = true;
   } else {
-    const char* z = read_file(&want, gt->want_filename);
-    if (z) {
-      return z;
+    const char* status = read_file(&want, gt->want_filename);
+    if (status) {
+      return status;
     }
   }
   return check_io_buffers_equal("", &got, &want);

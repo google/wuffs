@@ -120,18 +120,18 @@ const char* test_wuffs_crc32_ieee_golden() {
     wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
         .data = global_src_slice,
     });
-    const char* z = read_file(&src, test_cases[i].filename);
-    if (z) {
-      return z;
+    const char* status = read_file(&src, test_cases[i].filename);
+    if (status) {
+      return status;
     }
 
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_crc32__ieee_hasher checksum = ((wuffs_crc32__ieee_hasher){});
-      z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+      status = wuffs_crc32__ieee_hasher__check_wuffs_version(
           &checksum, sizeof checksum, WUFFS_VERSION);
-      if (z) {
-        RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+      if (status) {
+        RETURN_FAIL("check_wuffs_version: \"%s\"", status);
       }
 
       uint32_t got = 0;
@@ -211,10 +211,10 @@ const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
 
     } else {
       wuffs_crc32__ieee_hasher checksum = ((wuffs_crc32__ieee_hasher){});
-      const char* z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+      const char* status = wuffs_crc32__ieee_hasher__check_wuffs_version(
           &checksum, sizeof checksum, WUFFS_VERSION);
-      if (z) {
-        RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+      if (status) {
+        RETURN_FAIL("check_wuffs_version: \"%s\"", status);
       }
       got = wuffs_crc32__ieee_hasher__update(&checksum, data);
     }
@@ -256,10 +256,10 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
     len = wuffs_base__u64__min(len, rlimit);
   }
   wuffs_crc32__ieee_hasher checksum = ((wuffs_crc32__ieee_hasher){});
-  const char* z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+  const char* status = wuffs_crc32__ieee_hasher__check_wuffs_version(
       &checksum, sizeof checksum, WUFFS_VERSION);
-  if (z) {
-    return z;
+  if (status) {
+    return status;
   }
   global_wuffs_crc32_unused_u32 = wuffs_crc32__ieee_hasher__update(
       &checksum, ((wuffs_base__slice_u8){

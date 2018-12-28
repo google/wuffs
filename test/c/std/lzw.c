@@ -80,9 +80,9 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
       .data = global_src_slice,
   });
 
-  const char* z = read_file(&src, src_filename);
-  if (z) {
-    return z;
+  const char* status = read_file(&src, src_filename);
+  if (status) {
+    return status;
   }
   if (src.meta.wi != src_size) {
     RETURN_FAIL("src size: got %d, want %d", (int)(src.meta.wi),
@@ -96,9 +96,9 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
   src.meta.ri++;
 
-  z = read_file(&want, want_filename);
-  if (z) {
-    return z;
+  status = read_file(&want, want_filename);
+  if (status) {
+    return status;
   }
   if (want.meta.wi != want_size) {
     RETURN_FAIL("want size: got %d, want %d", (int)(want.meta.wi),
@@ -106,9 +106,10 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
 
   wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-  z = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  status =
+      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, literal_width);
   int num_iters = 0;
@@ -125,16 +126,16 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_wi = got.meta.wi;
     size_t old_ri = src.meta.ri;
 
-    z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
-    if (!z) {
+    status = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
+    if (!status) {
       if (src.meta.ri != src.meta.wi) {
         RETURN_FAIL("decode returned \"ok\" but src was not exhausted");
       }
       break;
     }
-    if ((z != wuffs_base__suspension__short_read) &&
-        (z != wuffs_base__suspension__short_write)) {
-      RETURN_FAIL("decode: got \"%s\", want \"%s\" or \"%s\"", z,
+    if ((status != wuffs_base__suspension__short_read) &&
+        (status != wuffs_base__suspension__short_write)) {
+      RETURN_FAIL("decode: got \"%s\", want \"%s\" or \"%s\"", status,
                   wuffs_base__suspension__short_read,
                   wuffs_base__suspension__short_write);
     }
@@ -221,17 +222,17 @@ const char* test_wuffs_lzw_decode_output_bad() {
   src.data.ptr[3] = 0xFF;
 
   wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-  const char* z =
+  const char* status =
       wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 7);
 
-  z = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
-                                 wuffs_base__io_buffer__reader(&src));
-  if (z != wuffs_lzw__error__bad_code) {
-    RETURN_FAIL("decode: \"%s\"", z);
+  status = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
+                                      wuffs_base__io_buffer__reader(&src));
+  if (status != wuffs_lzw__error__bad_code) {
+    RETURN_FAIL("decode: \"%s\"", status);
   }
 
   if (got.meta.wi != 3) {
@@ -264,17 +265,17 @@ const char* test_wuffs_lzw_decode_output_empty() {
   src.data.ptr[1] = 0x01;
 
   wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-  const char* z =
+  const char* status =
       wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 8);
 
-  z = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
-                                 wuffs_base__io_buffer__reader(&src));
-  if (z) {
-    RETURN_FAIL("decode: \"%s\"", z);
+  status = wuffs_lzw__decoder__decode(&dec, wuffs_base__io_buffer__writer(&got),
+                                      wuffs_base__io_buffer__reader(&src));
+  if (status) {
+    RETURN_FAIL("decode: \"%s\"", status);
   }
 
   if (got.meta.wi != 0) {
@@ -299,9 +300,9 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
   wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  const char* z = read_file(&src, filename);
-  if (z) {
-    return z;
+  const char* status = read_file(&src, filename);
+  if (status) {
+    return status;
   }
   if (src.meta.wi <= 0) {
     RETURN_FAIL("src size: got %d, want > 0", (int)(src.meta.wi));
@@ -320,14 +321,14 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
     got.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-    z = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    status = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                     WUFFS_VERSION);
+    if (status) {
+      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
-    z = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
-    if (z) {
-      RETURN_FAIL("decode: \"%s\"", z);
+    status = wuffs_lzw__decoder__decode(&dec, got_writer, src_reader);
+    if (status) {
+      RETURN_FAIL("decode: \"%s\"", status);
     }
     n_bytes += got.meta.wi;
   }

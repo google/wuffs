@@ -150,7 +150,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   if (!a_dst.private_impl.buf || !a_src.private_impl.buf) {
     return wuffs_base__error__bad_argument;
   }
-  wuffs_base__status z = NULL;
+  wuffs_base__status status = NULL;
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
@@ -236,7 +236,8 @@ outer_loop:
         goto end;
       }
       if ((table_entry >> 24) != 0x10) {
-        z = wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -282,7 +283,8 @@ outer_loop:
         break;
       }
       if ((table_entry >> 24) != 0x10) {
-        z = wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto end;
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
@@ -311,7 +313,7 @@ outer_loop:
 
     // TODO: look at a sliding window, not just output written so far to dst.
     if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst0)) {
-      z = wuffs_base__error__bad_argument;
+      status = wuffs_base__error__bad_argument;
       goto end;
     }
 
@@ -363,5 +365,5 @@ end:
   self->private_impl.f_bits = bits;
   self->private_impl.f_n_bits = n_bits;
 
-  return z;
+  return status;
 }

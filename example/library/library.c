@@ -79,16 +79,16 @@ static const char* decode() {
   if (!dec) {
     return "out of memory";
   }
-  wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+  const char* status = wuffs_deflate__decoder__check_wuffs_version(
       dec, sizeof__wuffs_deflate__decoder(), WUFFS_VERSION);
-  if (z) {
+  if (status) {
     free(dec);
-    return z;
+    return status;
   }
-  z = wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
-  if (z) {
+  status = wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
+  if (status) {
     free(dec);
-    return z;
+    return status;
   }
   ignore_return_value(write(1, dst.data.ptr, dst.meta.wi));
   free(dec);

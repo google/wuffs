@@ -264,8 +264,8 @@ const char* try_allocate(wuffs_gif__decoder* dec,
 }
 
 const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
-  const char* z = try_allocate(dec, ic);
-  if (z) {
+  const char* status = try_allocate(dec, ic);
+  if (status) {
     free(printbuf.ptr);
     printbuf = ((wuffs_base__slice_u8){});
     free(workbuf.ptr);
@@ -278,15 +278,15 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
     curr_dst_buffer = NULL;
     dst_len = 0;
   }
-  return z;
+  return status;
 }
 
 const char* play() {
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-  wuffs_base__status z =
+  wuffs_base__status status =
       wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    return z;
+  if (status) {
+    return status;
   }
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -305,9 +305,9 @@ const char* play() {
 
   if (first_play) {
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
-    z = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-    if (z) {
-      return z;
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    if (status) {
+      return status;
     }
     if (!wuffs_base__image_config__is_valid(&ic)) {
       return "invalid image configuration";
@@ -327,9 +327,9 @@ const char* play() {
     if (msg) {
       return msg;
     }
-    z = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
-    if (z) {
-      return z;
+    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg, pixbuf);
+    if (status) {
+      return status;
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
     memset(curr_dst_buffer, 0, dst_len);
@@ -337,13 +337,13 @@ const char* play() {
 
   while (1) {
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-    wuffs_base__status z =
+    wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
-    if (z) {
-      if (z == wuffs_base__warning__end_of_data) {
+    if (status) {
+      if (status == wuffs_base__warning__end_of_data) {
         break;
       }
-      return z;
+      return status;
     }
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
@@ -353,12 +353,13 @@ const char* play() {
       }
     }
 
-    z = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
-    if (z) {
-      if (z == wuffs_base__warning__end_of_data) {
+    status =
+        wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
+    if (status) {
+      if (status == wuffs_base__warning__end_of_data) {
         break;
       }
-      return z;
+      return status;
     }
 
     compose(&pb, wuffs_base__frame_config__bounds(&fc));

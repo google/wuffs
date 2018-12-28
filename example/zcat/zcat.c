@@ -75,10 +75,10 @@ static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
-  wuffs_base__status z =
+  const char* status =
       wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    return z;
+  if (status) {
+    return status;
   }
 
   wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
@@ -110,7 +110,7 @@ static const char* decode() {
     }
 
     while (true) {
-      wuffs_base__status z =
+      status =
           wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
                                       wuffs_base__io_buffer__reader(&src));
 
@@ -122,13 +122,13 @@ static const char* decode() {
         wuffs_base__io_buffer__compact(&dst);
       }
 
-      if (z == wuffs_base__suspension__short_read) {
+      if (status == wuffs_base__suspension__short_read) {
         break;
       }
-      if (z == wuffs_base__suspension__short_write) {
+      if (status == wuffs_base__suspension__short_write) {
         continue;
       }
-      return z;
+      return status;
     }
 
     wuffs_base__io_buffer__compact(&src);

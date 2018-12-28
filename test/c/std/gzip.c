@@ -86,10 +86,10 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
-  const char* z =
+  const char* status =
       wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
-  if (z) {
-    return z;
+  if (status) {
+    return status;
   }
 
   while (true) {
@@ -102,13 +102,13 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    z = wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
+    status = wuffs_gzip__decoder__decode(&dec, dst_writer, src_reader);
 
-    if ((wlimit && (z == wuffs_base__suspension__short_write)) ||
-        (rlimit && (z == wuffs_base__suspension__short_read))) {
+    if ((wlimit && (status == wuffs_base__suspension__short_write)) ||
+        (rlimit && (status == wuffs_base__suspension__short_read))) {
       continue;
     }
-    return z;
+    return status;
   }
 }
 
@@ -121,9 +121,9 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
       .data = global_src_slice,
   });
 
-  const char* z = read_file(&src, gzip_midsummer_gt.src_filename);
-  if (z) {
-    return z;
+  const char* status = read_file(&src, gzip_midsummer_gt.src_filename);
+  if (status) {
+    return status;
   }
 
   // Flip a bit in the gzip checksum, which is in the last 8 bytes of the file.
@@ -137,10 +137,10 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
   int end_limit;
   for (end_limit = 0; end_limit < 10; end_limit++) {
     wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
-    z = wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                 WUFFS_VERSION);
-    if (z) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", z);
+    status = wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec,
+                                                      WUFFS_VERSION);
+    if (status) {
+      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
     wuffs_gzip__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
