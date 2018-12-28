@@ -185,6 +185,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 	if err := g.findVars(); err != nil {
 		return err
 	}
+	g.findDerivedVars()
 
 	if err := g.writeFuncImplPrologue(&g.currFunk.bPrologue); err != nil {
 		return err
@@ -257,7 +258,9 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		}
 	}
 
-	if g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Effect().Optional() ||
+		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
+		// TODO: rename the "status" variable to "ret"?
 		b.printf("wuffs_base__status status = NULL;\n")
 	}
 	b.writes("\n")
@@ -268,7 +271,6 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 	}
 	b.writes("\n")
 
-	g.findDerivedVars()
 	if g.currFunk.derivedVars != nil {
 		for _, o := range g.currFunk.astFunc.In().Fields() {
 			o := o.AsField()
@@ -332,7 +334,9 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
-	if g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Effect().Optional() ||
+		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
+
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
 	}
 
@@ -346,7 +350,9 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		b.writes("\n")
 	}
 
-	if g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Effect().Optional() ||
+		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
+
 		if g.currFunk.astFunc.Public() {
 			b.writes("if (wuffs_base__status__is_error(status)) { " +
 				"self->private_impl.magic = WUFFS_BASE__DISABLED; }\n")

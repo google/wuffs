@@ -179,9 +179,10 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 }
 
 pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
-	var final base.u32
-	var b0    base.u32[..255]
-	var type  base.u32
+	var final  base.u32
+	var b0     base.u32[..255]
+	var type   base.u32
+	var status base.status
 
 	while final == 0 {
 		while this.n_bits < 3,
@@ -208,7 +209,10 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		}
 
 		this.end_of_block = false
-		this.decode_huffman_fast!?(dst:args.dst, src:args.src)
+		status = this.decode_huffman_fast!(dst:args.dst, src:args.src)
+		if status.is_error() {
+			return status
+		}
 		if this.end_of_block {
 			continue
 		}

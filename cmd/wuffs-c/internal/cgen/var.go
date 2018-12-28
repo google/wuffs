@@ -22,7 +22,7 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-var errNeedDerivedVar = errors.New("internal: need derived var")
+var errNeedDerivedVar = errors.New("cgen: internal error: need derived var")
 
 func (g *gen) needDerivedVar(name t.ID) bool {
 	for _, o := range g.currFunk.astFunc.Body() {

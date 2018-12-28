@@ -5443,6 +5443,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
   uint32_t v_final = 0;
   uint32_t v_b0 = 0;
   uint32_t v_type = 0;
+  wuffs_base__status v_status = NULL;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src = NULL;
@@ -5532,12 +5533,14 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         a_src.private_impl.buf->meta.ri =
             iop_a_src - a_src.private_impl.buf->data.ptr;
       }
-      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+      v_status =
+          wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
       if (a_src.private_impl.buf) {
         iop_a_src =
             a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
       }
-      if (status) {
+      if (wuffs_base__status__is_error(v_status)) {
+        status = v_status;
         goto exit;
       }
       if (self->private_impl.f_end_of_block) {
