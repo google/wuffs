@@ -98,6 +98,7 @@ const (
 func Do(args []string) error {
 	flags := flag.FlagSet{}
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
+	genlinenumFlag := flags.Bool("genlinenum", cf.GenlinenumDefault, cf.GenlinenumUsage)
 
 	return generate.Do(&flags, args, func(pkgName string, tm *t.Map, c *check.Checker, files []*a.File) ([]byte, error) {
 		if !cf.IsAlphaNumericIsh(*cformatterFlag) {
@@ -139,11 +140,12 @@ func Do(args []string) error {
 
 		} else {
 			g := &gen{
-				pkgPrefix: "wuffs_" + pkgName + "__",
-				pkgName:   pkgName,
-				tm:        tm,
-				checker:   c,
-				files:     files,
+				pkgPrefix:  "wuffs_" + pkgName + "__",
+				pkgName:    pkgName,
+				tm:         tm,
+				checker:    c,
+				files:      files,
+				genlinenum: *genlinenumFlag,
 			}
 			var err error
 			unformatted, err = g.generate()
@@ -309,6 +311,12 @@ type gen struct {
 	tm      *t.Map
 	checker *check.Checker
 	files   []*a.File
+
+	// genlinenum is whether to print "// foo.wuffs:123" comments in the
+	// generated C code. This can be useful for debugging, although it is not
+	// enabled by default as it can lead to many spurious changes in the
+	// generated C code (due to line numbers changing) when editing Wuffs code.
+	genlinenum bool
 
 	statusList []status
 	statusMap  map[t.QID]status

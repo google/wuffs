@@ -22,12 +22,6 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-// genFilenameLineComments is whether to print "// foo.wuffs:123\n" comments in
-// the generated code. This can be useful for debugging, although it is not
-// enabled by default as it can lead to many spurious changes in the generated
-// C code (due to line numbers changing) when editing Wuffs code.
-const genFilenameLineComments = false
-
 func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
@@ -48,7 +42,7 @@ func (g *gen) writeStatement(b *buffer, n *a.Node, depth uint32) error {
 		defer b.writes("}\n")
 	}
 
-	if genFilenameLineComments {
+	if g.genlinenum {
 		filename, line := n.AsRaw().FilenameLine()
 		if i := strings.LastIndexByte(filename, '/'); i >= 0 {
 			filename = filename[i+1:]

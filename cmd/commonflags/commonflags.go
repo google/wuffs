@@ -34,6 +34,9 @@ const (
 	FocusDefault = ""
 	FocusUsage   = `comma-separated list of tests or benchmarks (name prefixes) to focus on, e.g. "wuffs_gif_decode"`
 
+	GenlinenumDefault = false
+	GenlinenumUsage   = `whether to generate filename:line_number comments`
+
 	IterscaleDefault = 100
 	IterscaleMin     = 0
 	IterscaleMax     = 1000000
