@@ -201,7 +201,10 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 			this.decode_uncompressed!??(dst:args.dst, src:args.src)
 			continue
 		} else if type == 1 {
-			this.init_fixed_huffman!?()
+			status = this.init_fixed_huffman!()
+			if status.is_error() {
+				return status
+			}
 		} else if type == 2 {
 			this.init_dynamic_huffman!??(src:args.src)
 		} else {
@@ -259,8 +262,9 @@ pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) 
 }
 
 // init_fixed_huffman initializes this.huffs as per the RFC section 3.2.6.
-pri func decoder.init_fixed_huffman!?() {
-	var i base.u32
+pri func decoder.init_fixed_huffman!() base.status {
+	var i      base.u32
+	var status base.status
 
 	while i < 144 {
 		this.code_lengths[i] = 8
@@ -282,8 +286,16 @@ pri func decoder.init_fixed_huffman!?() {
 		this.code_lengths[i] = 5
 		i += 1
 	}
-	this.init_huff!?(which:0, n_codes0:0, n_codes1:288, base_symbol:257)
-	this.init_huff!?(which:1, n_codes0:288, n_codes1:320, base_symbol:0)
+
+	status = this.init_huff!(which:0, n_codes0:0, n_codes1:288, base_symbol:257)
+	if status.is_error() {
+		return status
+	}
+	status = this.init_huff!(which:1, n_codes0:288, n_codes1:320, base_symbol:0)
+	if status.is_error() {
+		return status
+	}
+	return ok
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
@@ -296,6 +308,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 	var n_clen             base.u32[..19]
 	var i                  base.u32
 	var b1                 base.u32[..255]
+	var status             base.status
 	var mask               base.u32[..511]
 	var table_entry        base.u32
 	var table_entry_n_bits base.u32[..15]
@@ -349,7 +362,10 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 		this.code_lengths[code_order[i]] = 0
 		i += 1
 	}
-	this.init_huff!?(which:0, n_codes0:0, n_codes1:19, base_symbol:0xFFF)
+	status = this.init_huff!(which:0, n_codes0:0, n_codes1:19, base_symbol:0xFFF)
+	if status.is_error() {
+		return status
+	}
 
 	// Decode the code lengths for the next two Huffman tables.
 	mask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
@@ -445,8 +461,14 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 		return "?missing end-of-block code"
 	}
 
-	this.init_huff!?(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
-	this.init_huff!?(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist, base_symbol:0)
+	status = this.init_huff!(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
+	if status.is_error() {
+		return status
+	}
+	status = this.init_huff!(which:1, n_codes0:n_lit, n_codes1:n_lit + n_dist, base_symbol:0)
+	if status.is_error() {
+		return status
+	}
 
 	this.bits = bits
 	this.n_bits = n_bits
@@ -454,7 +476,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 
 // TODO: make named constants for 15, 19, 319, etc.
 
-pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) {
+pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) base.status {
 	var counts            array[16] base.u16[..320]
 	var i                 base.u32
 	var remaining         base.u32
@@ -802,4 +824,5 @@ pri func decoder.init_huff!?(which base.u32[..1], n_codes0 base.u32[..320], n_co
 			return "?internal error: inconsistent Huffman decoder state"
 		}
 	}
+	return ok
 }
