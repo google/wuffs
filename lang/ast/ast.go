@@ -101,6 +101,7 @@ const (
 	FlagsGlobalIdent      = Flags(0x00000800)
 	FlagsClassy           = Flags(0x00001000)
 	FlagsSubExprHasEffect = Flags(0x00002000)
+	FlagsRetsError        = Flags(0x00004000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -588,13 +589,17 @@ func NewIf(condition *Expr, bodyIfTrue []*Node, bodyIfFalse []*Node, elseIf *If)
 }
 
 // Ret is "return LHS" or "yield LHS":
+//  - FlagsReturnsError LHS is an error status
 //  - ID0:   <IDReturn|IDYield>
 //  - LHS:   <Expr>
 type Ret Node
 
-func (n *Ret) AsNode() *Node { return (*Node)(n) }
-func (n *Ret) Keyword() t.ID { return n.id0 }
-func (n *Ret) Value() *Expr  { return n.lhs.AsExpr() }
+func (n *Ret) AsNode() *Node   { return (*Node)(n) }
+func (n *Ret) RetsError() bool { return n.flags&FlagsRetsError != 0 }
+func (n *Ret) Keyword() t.ID   { return n.id0 }
+func (n *Ret) Value() *Expr    { return n.lhs.AsExpr() }
+
+func (n *Ret) SetRetsError() { n.flags |= FlagsRetsError }
 
 func NewRet(keyword t.ID, value *Expr) *Ret {
 	return &Ret{

@@ -70,6 +70,11 @@ func init() {
 	zeroExpr.SetMType(typeExprIdeal)
 }
 
+func isErrorStatus(literal t.ID, tm *t.Map) bool {
+	s := literal.Str(tm)
+	return (len(s) >= 2) && (s[0] == '"') && (s[1] == '?')
+}
+
 func btoi(b bool) *big.Int {
 	if b {
 		return one
@@ -302,6 +307,14 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 			return err
 		}
 
+		if lTyp.IsStatus() {
+			if v := n.Value(); v.Operator() == 0 {
+				if id := v.Ident(); (id != t.IDOk) && (q.hasIsErrorFact(id) || isErrorStatus(id, q.tm)) {
+					n.SetRetsError()
+				}
+			}
+		}
+
 	case a.KVar:
 		if err := q.bcheckVar(n.AsVar()); err != nil {
 			return err
@@ -316,6 +329,24 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		return fmt.Errorf("check: unrecognized ast.Kind (%s) for bcheckStatement", n.Kind())
 	}
 	return nil
+}
+
+func (q *checker) hasIsErrorFact(id t.ID) bool {
+	for _, x := range q.facts {
+		if (x.Operator() != t.IDOpenParen) || (len(x.Args()) != 0) {
+			continue
+		}
+		x = x.LHS().AsExpr()
+		if (x.Operator() != t.IDDot) || (x.Ident() != t.IDIsError) {
+			continue
+		}
+		x = x.LHS().AsExpr()
+		if (x.Operator() != 0) || (x.Ident() != id) {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func (q *checker) bcheckAssert(n *a.Assert) error {

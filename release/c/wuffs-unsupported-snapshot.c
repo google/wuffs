@@ -9419,6 +9419,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(iop_v_r);
   WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(io1_v_r);
   wuffs_base__status v_status = NULL;
+  wuffs_base__status v_copy_status = NULL;
   wuffs_base__slice_u8 v_uncompressed = {};
 
   uint8_t* iop_a_src = NULL;
@@ -9554,9 +9555,10 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         }
         v_uncompressed = wuffs_lzw__decoder__flush(&self->private_impl.f_lzw);
         if (((uint64_t)(v_uncompressed.len)) > 0) {
-          status = wuffs_gif__decoder__copy_to_image_buffer(self, a_dst,
-                                                            v_uncompressed);
-          if (status) {
+          v_copy_status = wuffs_gif__decoder__copy_to_image_buffer(
+              self, a_dst, v_uncompressed);
+          if (wuffs_base__status__is_error(v_copy_status)) {
+            status = v_copy_status;
             goto exit;
           }
         }
@@ -9638,8 +9640,6 @@ static wuffs_base__status  //
 wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
                                          wuffs_base__pixel_buffer* a_pb,
                                          wuffs_base__slice_u8 a_src) {
-  wuffs_base__status status = NULL;
-
   wuffs_base__slice_u8 v_dst = {};
   wuffs_base__slice_u8 v_src = {};
   uint64_t v_n = 0;
@@ -9662,8 +9662,7 @@ label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
     if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
-      status = wuffs_gif__error__too_much_pixel_data;
-      goto exit;
+      return wuffs_gif__error__too_much_pixel_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) *
@@ -9711,8 +9710,7 @@ label_0_continue:;
     if (((uint64_t)(a_src.len)) == v_src_ri) {
       goto label_0_break;
     } else if (((uint64_t)(a_src.len)) < v_src_ri) {
-      status = wuffs_gif__error__internal_error_inconsistent_ri_wi;
-      goto exit;
+      return wuffs_gif__error__internal_error_inconsistent_ri_wi;
     }
     v_n = ((uint64_t)(
         (self->private_impl.f_frame_rect_x1 - self->private_impl.f_dst_x)));
@@ -9737,15 +9735,12 @@ label_0_continue:;
       goto label_0_continue;
     }
     if (v_src_ri != ((uint64_t)(a_src.len))) {
-      status = wuffs_gif__error__internal_error_inconsistent_ri_wi;
-      goto exit;
+      return wuffs_gif__error__internal_error_inconsistent_ri_wi;
     }
     goto label_0_break;
   }
 label_0_break:;
-  goto exit;
-exit:
-  return status;
+  return NULL;
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__GIF)

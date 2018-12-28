@@ -365,7 +365,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	retExpr := n.Value()
 
 	if g.currFunk.astFunc.Effect().Optional() {
-		isError, isOK := false, false
+		isOK := false
 		b.writes("status = ")
 		if retExpr.Operator() == 0 && retExpr.Ident() == t.IDOk {
 			b.writes("NULL")
@@ -373,10 +373,8 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 		} else {
 			if retExpr.Ident().IsStrLiteral(g.tm) {
 				msg, _ := t.Unescape(retExpr.Ident().Str(g.tm))
-				isError = statusMsgIsError(msg)
 				isOK = statusMsgIsWarning(msg)
 			}
-			// TODO: check that retExpr has no call-suspendibles.
 			if err := g.writeExpr(
 				b, retExpr, depth); err != nil {
 				return err
@@ -388,7 +386,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 			return g.writeCoroSuspPoint(b, true)
 		}
 
-		if isError {
+		if n.RetsError() {
 			b.writes("goto exit;")
 		} else if isOK {
 			g.currFunk.hasGotoOK = true

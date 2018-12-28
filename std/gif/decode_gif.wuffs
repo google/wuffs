@@ -667,6 +667,7 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 	var compressed      slice base.u8
 	var r               base.io_reader
 	var status          base.status
+	var copy_status     base.status
 	var uncompressed    slice base.u8
 
 	need_block_size = true
@@ -723,7 +724,10 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 
 			uncompressed = this.lzw.flush!()
 			if uncompressed.length() > 0 {
-				this.copy_to_image_buffer!?(pb:args.dst, src:uncompressed)
+				copy_status = this.copy_to_image_buffer!(pb:args.dst, src:uncompressed)
+				if copy_status.is_error() {
+					return copy_status
+				}
 			}
 
 			if status.is_ok() {
@@ -751,7 +755,7 @@ pri func decoder.decode_id_part2!??(dst ptr base.pixel_buffer, src base.io_reade
 	// TODO: check for "not enough pixel data".
 }
 
-pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base.u8) {
+pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.u8) base.status {
 	// TODO: don't assume a packed pixel format.
 	var dst             slice base.u8
 	var src             slice base.u8
@@ -844,4 +848,5 @@ pri func decoder.copy_to_image_buffer!?(pb ptr base.pixel_buffer, src slice base
 		}
 		break
 	}
+	return ok
 }
