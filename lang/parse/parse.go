@@ -24,9 +24,6 @@ import (
 )
 
 type Options struct {
-	// TODO: drop AllowBuiltIns as those names are package-qualified
-	// ("base.u32" and not a bare "u32")?
-	AllowBuiltIns              bool
 	AllowDoubleUnderscoreNames bool
 }
 
@@ -131,7 +128,7 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			// TODO: check AllowBuiltIns and AllowDoubleUnderscoreNames?
+			// TODO: check AllowDoubleUnderscoreNames?
 
 			typ, err := p.parseTypeExpr()
 			if err != nil {
@@ -161,12 +158,6 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			}
 			// TODO: should we require id0 != 0? In other words, always methods
 			// (attached to receivers) and never free standing functions?
-			if !p.opts.AllowBuiltIns {
-				if id0 != 0 && id0.IsBuiltIn() {
-					return nil, fmt.Errorf(`parse: built-in %q used for func receiver at %s:%d`,
-						p.tm.ByID(id0), p.filename, p.line())
-				}
-			}
 			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(id1)) {
 				return nil, fmt.Errorf(`parse: double-underscore %q used for func name at %s:%d`,
 					p.tm.ByID(id1), p.filename, p.line())
@@ -234,10 +225,6 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			name, err := p.parseIdent()
 			if err != nil {
 				return nil, err
-			}
-			if !p.opts.AllowBuiltIns && name.IsBuiltIn() {
-				return nil, fmt.Errorf(`parse: built-in %q used for struct name at %s:%d`,
-					p.tm.ByID(name), p.filename, p.line())
 			}
 			if !p.opts.AllowDoubleUnderscoreNames && isDoubleUnderscore(p.tm.ByID(name)) {
 				return nil, fmt.Errorf(`parse: double-underscore %q used for struct name at %s:%d`,

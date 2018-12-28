@@ -118,9 +118,6 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 	}
 
 	buf := []byte(nil)
-	opts := parse.Options{
-		AllowBuiltIns: true,
-	}
 	for _, s := range ss {
 		buf = buf[:0]
 		buf = append(buf, "pub func "...)
@@ -141,7 +138,7 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 				}
 			}
 		}
-		file, err := parse.Parse(c.tm, filename, tokens, &opts)
+		file, err := parse.Parse(c.tm, filename, tokens, nil)
 		if err != nil {
 			return nil, fmt.Errorf("check: parsing %q: could not parse built-in funcs: %v", s, err)
 		}
