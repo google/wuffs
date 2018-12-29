@@ -40,6 +40,7 @@
 #define WUFFS_VERSION_PATCH ((uint64_t)0)
 #define WUFFS_VERSION_EXTENSION ""
 #define WUFFS_VERSION_STRING "0.0.0"
+#define WUFFS_VERSION_GIT_REV_LIST_COUNT 0
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC

@@ -32,6 +32,7 @@ import (
 func doGenrelease(args []string) error {
 	flags := flag.FlagSet{}
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
+	gitRevListCountFlag := flags.Int("gitrevlistcount", 0, `git "rev-list --count" that the release was built from`)
 	revisionFlag := flags.String("revision", "", "git revision the release was built from")
 	versionFlag := flags.String("version", cf.VersionDefault, cf.VersionUsage)
 
@@ -40,6 +41,9 @@ func doGenrelease(args []string) error {
 	}
 	if !cf.IsAlphaNumericIsh(*cformatterFlag) {
 		return fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
+	}
+	if (*gitRevListCountFlag < 0) || (0x7FFFFFFF < *gitRevListCountFlag) {
+		return fmt.Errorf("bad -gitrevlistcount flag value %d", *gitRevListCountFlag)
 	}
 	if !cf.IsAlphaNumericIsh(*revisionFlag) {
 		return fmt.Errorf("bad -revision flag value %q", *revisionFlag)
@@ -64,11 +68,12 @@ func doGenrelease(args []string) error {
 	baseDirSlash := baseDir + string(filepath.Separator)
 
 	h := &genReleaseHelper{
-		filesList: nil,
-		filesMap:  map[string]parsedCFile{},
-		seen:      nil,
-		revision:  *revisionFlag,
-		version:   v,
+		filesList:       nil,
+		filesMap:        map[string]parsedCFile{},
+		seen:            nil,
+		gitRevListCount: *gitRevListCountFlag,
+		revision:        *revisionFlag,
+		version:         v,
 	}
 
 	for _, filename := range args {
@@ -127,7 +132,7 @@ var (
 	grIncludeQuote   = []byte("#include \"")
 	grNN             = []byte("\n\n")
 	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
-	grVString        = []byte(`#define WUFFS_VERSION_STRING "0.0.0"`)
+	grVEnd           = []byte("#define WUFFS_VERSION_GIT_REV_LIST_COUNT 0")
 	grWmrAbove       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n")
 	grWmrBelow       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n")
 )
@@ -149,11 +154,12 @@ type parsedCFile struct {
 }
 
 type genReleaseHelper struct {
-	filesList []string
-	filesMap  map[string]parsedCFile
-	seen      map[string]bool
-	revision  string
-	version   cf.Version
+	filesList       []string
+	filesMap        map[string]parsedCFile
+	seen            map[string]bool
+	gitRevListCount int
+	revision        string
+	version         cf.Version
 }
 
 func (h *genReleaseHelper) parse(relFilename string, s []byte) error {
@@ -267,8 +273,8 @@ func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 		cut, s = s[:i], s[i+len(grNN):]
 	}
 
-	if !bytes.HasSuffix(cut, grVString) {
-		return nil, fmt.Errorf("%q did not end with %q", cut, grVString)
+	if !bytes.HasSuffix(cut, grVEnd) {
+		return nil, fmt.Errorf("%q did not end with %q", cut, grVEnd)
 	}
 
 	w := bytes.NewBuffer(nil)
@@ -285,9 +291,10 @@ func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 		#define WUFFS_VERSION_PATCH ((uint64_t)0x%04X)
 		#define WUFFS_VERSION_EXTENSION %q
 		#define WUFFS_VERSION_STRING %q
+		#define WUFFS_VERSION_GIT_REV_LIST_COUNT %d
 
 	`, h.version.Uint64(), h.version.Major, h.version.Minor, h.version.Patch,
-		h.version.Extension, h.version)
+		h.version.Extension, h.version, h.gitRevListCount)
 
 	ret = append(ret, w.Bytes()...)
 	ret = append(ret, s...)

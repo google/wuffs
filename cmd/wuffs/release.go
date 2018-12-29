@@ -27,8 +27,9 @@ import (
 
 func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	revision := findRevision(wuffsRoot)
+	gitRevListCount := findGitRevListCount(wuffsRoot)
 	for _, lang := range langs {
-		filename, contents, err := genreleaseLang(wuffsRoot, revision, v, lang)
+		filename, contents, err := genreleaseLang(wuffsRoot, revision, gitRevListCount, v, lang)
 		if err != nil {
 			return err
 		}
@@ -39,7 +40,7 @@ func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
 	return nil
 }
 
-func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string) (filename string, contents []byte, err error) {
+func genreleaseLang(wuffsRoot string, revision string, gitRevListCount string, v cf.Version, lang string) (filename string, contents []byte, err error) {
 	qualFilenames, err := findFiles(filepath.Join(wuffsRoot, "gen", lang), "."+lang)
 	if err != nil {
 		return "", nil, err
@@ -48,6 +49,9 @@ func genreleaseLang(wuffsRoot string, revision string, v cf.Version, lang string
 	command := "wuffs-" + lang
 	args := []string(nil)
 	args = append(args, "genrelease", "-revision", revision, "-version", v.String())
+	if gitRevListCount != "" {
+		args = append(args, "-gitrevlistcount", gitRevListCount)
+	}
 	args = append(args, qualFilenames...)
 	stdout := &bytes.Buffer{}
 
@@ -96,4 +100,23 @@ func findRevision(wuffsRoot string) string {
 	ref = ref[:len(ref)-1]
 
 	return string(ref)
+}
+
+func findGitRevListCount(wuffsRoot string) string {
+	// Assume that we're using git.
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	if err := os.Chdir(wuffsRoot); err != nil {
+		return ""
+	}
+	defer os.Chdir(wd)
+
+	out, err := exec.Command("git", "rev-list", "--count", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return string(bytes.TrimSpace(out))
 }
