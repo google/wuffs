@@ -202,7 +202,10 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 			continue
 		} else if type == 1 {
 			status = this.init_fixed_huffman!()
-			if status.is_error() {
+			// TODO: "if status.is_error()" is probably more idiomatic, but for
+			// some mysterious, idiosyncratic reason, performs noticably worse
+			// for gcc (but not for clang).
+			if not status.is_ok() {
 				return status
 			}
 		} else if type == 2 {

@@ -5507,9 +5507,15 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         goto label_0_continue;
       } else if (v_type == 1) {
         v_status = wuffs_deflate__decoder__init_fixed_huffman(self);
-        if (wuffs_base__status__is_error(v_status)) {
+        if (!wuffs_base__status__is_ok(v_status)) {
           status = v_status;
-          goto exit;
+          if (wuffs_base__status__is_error(status)) {
+            goto exit;
+          } else if (wuffs_base__status__is_suspension(status)) {
+            status = wuffs_base__error__cannot_return_a_suspension;
+            goto exit;
+          }
+          goto ok;
         }
       } else if (v_type == 2) {
         if (a_src.private_impl.buf) {
