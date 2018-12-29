@@ -50,13 +50,14 @@ extern "C" {
 // forwards compatibility guarantees.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-12-29 UTC,
-// based on revision 314b1209edcd2c7d02a10064fc299ec6a22b3ea2.
+// based on revision 2b631202bcd9cd86eec387bd98c1c2eb4b4afd50.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.26"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.26"
+#define WUFFS_VERSION_EXTENSION "alpha.27"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.27"
+#define WUFFS_VERSION_GIT_REV_LIST_COUNT 1527
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
