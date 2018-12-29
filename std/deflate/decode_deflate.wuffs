@@ -205,6 +205,9 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 			// TODO: "if status.is_error()" is probably more idiomatic, but for
 			// some mysterious, idiosyncratic reason, performs noticably worse
 			// for gcc (but not for clang).
+			//
+			// See git commit 3bf9573 "Work around strange status.is_error
+			// performance".
 			if not status.is_ok() {
 				return status
 			}
