@@ -2622,6 +2622,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_width;
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_output_ri;
     uint32_t f_output_wi;
     uint32_t f_read_from_return_value;
     uint8_t f_suffixes[4096][8];
@@ -2634,7 +2635,6 @@ struct wuffs_lzw__decoder__struct {
     } c_decode[1];
     struct {
       uint32_t coro_susp_point;
-      uint32_t v_i;
     } c_write_to[1];
   } private_impl;
 
@@ -7116,6 +7116,7 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
     self->private_impl.f_width = (self->private_impl.f_literal_width + 1);
     self->private_impl.f_bits = 0;
     self->private_impl.f_n_bits = 0;
+    self->private_impl.f_output_ri = 0;
     self->private_impl.f_output_wi = 0;
     v_i = 0;
     while (v_i < self->private_impl.f_clear_code) {
@@ -7374,7 +7375,6 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
                              wuffs_base__io_writer a_dst) {
   wuffs_base__status status = NULL;
 
-  uint32_t v_i = 0;
   wuffs_base__slice_u8 v_s = {};
   uint64_t v_n = 0;
 
@@ -7400,13 +7400,12 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.c_write_to[0].coro_susp_point;
   if (coro_susp_point) {
-    v_i = self->private_impl.c_write_to[0].v_i;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (self->private_impl.f_output_wi > 0) {
-      if (v_i > self->private_impl.f_output_wi) {
+      if (self->private_impl.f_output_ri > self->private_impl.f_output_wi) {
         status = wuffs_lzw__error__internal_error_inconsistent_i_o;
         goto exit;
       }
@@ -7415,14 +7414,17 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
               .ptr = self->private_impl.f_output,
               .len = 8199,
           }),
-          v_i, self->private_impl.f_output_wi);
+          self->private_impl.f_output_ri, self->private_impl.f_output_wi);
       v_n = wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io1_a_dst, v_s);
       if (v_n == ((uint64_t)(v_s.len))) {
+        self->private_impl.f_output_ri = 0;
         self->private_impl.f_output_wi = 0;
         status = NULL;
         goto ok;
       }
-      v_i = ((v_i + ((uint32_t)((v_n & 8191)))) & 8191);
+      self->private_impl.f_output_ri =
+          ((self->private_impl.f_output_ri + ((uint32_t)((v_n & 4294967295)))) &
+           8191);
       status = wuffs_base__suspension__short_write;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
@@ -7436,7 +7438,6 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_write_to[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_write_to[0].v_i = v_i;
 
   goto exit;
 exit:
@@ -7461,11 +7462,15 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self) {
 
   wuffs_base__slice_u8 v_s = {};
 
-  v_s = wuffs_base__slice_u8__subslice_j(((wuffs_base__slice_u8){
-                                             .ptr = self->private_impl.f_output,
-                                             .len = 8199,
-                                         }),
-                                         self->private_impl.f_output_wi);
+  if (self->private_impl.f_output_ri <= self->private_impl.f_output_wi) {
+    v_s = wuffs_base__slice_u8__subslice_ij(
+        ((wuffs_base__slice_u8){
+            .ptr = self->private_impl.f_output,
+            .len = 8199,
+        }),
+        self->private_impl.f_output_ri, self->private_impl.f_output_wi);
+  }
+  self->private_impl.f_output_ri = 0;
   self->private_impl.f_output_wi = 0;
   return v_s;
 }
