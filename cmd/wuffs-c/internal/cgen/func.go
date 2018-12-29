@@ -87,7 +87,7 @@ func (g *gen) writeFuncSignature(b *buffer, n *a.Func, cpp uint32) error {
 	}
 
 	// TODO: write n's return values.
-	if n.Effect().Optional() {
+	if n.Effect().Coroutine() {
 		b.writes("wuffs_base__status ")
 	} else if out := n.Out(); out == nil {
 		b.writes("wuffs_base__empty_struct ")
@@ -178,7 +178,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 		astFunc: n,
 		cName:   g.funcCName(n),
 
-		returnsStatus: n.Effect().Optional() ||
+		returnsStatus: n.Effect().Coroutine() ||
 			((n.Out() != nil) && n.Out().IsStatus()),
 	}
 
@@ -258,7 +258,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		}
 	}
 
-	if g.currFunk.astFunc.Effect().Optional() ||
+	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 		// TODO: rename the "status" variable to "ret"?
 		b.printf("wuffs_base__status status = NULL;\n")
@@ -334,7 +334,7 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 }
 
 func (g *gen) writeFuncImplEpilogue(b *buffer) error {
-	if g.currFunk.astFunc.Effect().Optional() ||
+	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
 		b.writes("goto exit;exit:") // The goto avoids the "unused label" warning.
@@ -350,7 +350,7 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		b.writes("\n")
 	}
 
-	if g.currFunk.astFunc.Effect().Optional() ||
+	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
 		if g.currFunk.astFunc.Public() {
@@ -424,7 +424,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	}
 	b.writes(") {")
 	b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
-	if g.currFunk.astFunc.Effect().Optional() {
+	if g.currFunk.astFunc.Effect().Coroutine() {
 		b.writes("return wuffs_base__error__bad_argument;\n\n")
 	} else {
 		// TODO: don't assume that the return type is empty.

@@ -298,7 +298,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 	case a.KRet:
 		n := n.AsRet()
 		lTyp := q.astFunc.Out()
-		if q.astFunc.Effect().Optional() {
+		if q.astFunc.Effect().Coroutine() {
 			lTyp = typeExprStatus
 		} else if lTyp == nil {
 			return fmt.Errorf("TODO: allow returning nothing")

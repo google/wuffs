@@ -103,7 +103,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		return false, err
 	}
 
-	doWork, hack := (lhs == nil) || rhs.Effect().Optional(), false
+	doWork, hack := (lhs == nil) || rhs.Effect().Coroutine(), false
 	if !doWork && (rhs.Operator() == t.IDOpenParen) && (len(g.currFunk.derivedVars) > 0) {
 		// TODO: tighten this heuristic for filtering out all but user-defined
 		// method receivers.
@@ -146,7 +146,7 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 				return false, err
 			}
 			b.writes("status = ")
-		} else if rhs.Effect().Optional() {
+		} else if rhs.Effect().Coroutine() {
 			b.writes("status = ")
 		}
 
@@ -161,12 +161,8 @@ func (g *gen) writeStatementAssign0(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			}
 		}
 
-		if op != t.IDEqQuestion && rhs.Effect().Optional() {
-			target := "exit"
-			if rhs.Effect().Coroutine() {
-				target = "suspend"
-			}
-			b.printf("if (status) { goto %s; }\n", target)
+		if op != t.IDEqQuestion && rhs.Effect().Coroutine() {
+			b.writes("if (status) { goto suspend; }\n")
 		}
 	}
 
@@ -397,7 +393,7 @@ func (g *gen) writeStatementJump(b *buffer, n *a.Jump, depth uint32) error {
 func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 	retExpr := n.Value()
 
-	if g.currFunk.astFunc.Effect().Optional() ||
+	if g.currFunk.astFunc.Effect().Coroutine() ||
 		(g.currFunk.returnsStatus && (len(g.currFunk.derivedVars) > 0)) {
 
 		isOK := false

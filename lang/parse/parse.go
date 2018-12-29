@@ -683,7 +683,7 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 		}
 
 		if op == t.IDEqQuestion {
-			if (rhs.Operator() != t.IDOpenParen) || (!rhs.Effect().Optional()) {
+			if (rhs.Operator() != t.IDOpenParen) || (!rhs.Effect().Coroutine()) {
 				return nil, fmt.Errorf(`parse: expected ?-function call after "=?", got %q at %s:%d`,
 					rhs.Str(p.tm), p.filename, p.line())
 			}
@@ -1170,8 +1170,8 @@ func (p *parser) parseEffect() a.Effect {
 	}
 	p.src = p.src[1:]
 	if p.peek1() != t.IDQuestion {
-		return a.EffectImpure | a.EffectOptional
+		panic("TODO: delete")
 	}
 	p.src = p.src[1:]
-	return a.EffectImpure | a.EffectOptional | a.EffectCoroutine
+	return a.EffectImpure | a.EffectCoroutine
 }

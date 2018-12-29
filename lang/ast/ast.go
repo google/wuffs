@@ -110,8 +110,7 @@ type Effect uint8
 
 const (
 	EffectImpure    = Effect(0x01)
-	EffectOptional  = Effect(0x02) // TODO: rename to Statusful or Throws?
-	EffectCoroutine = Effect(0x04)
+	EffectCoroutine = Effect(0x02)
 
 	effectMask = Effect(0xFF)
 )
@@ -120,7 +119,6 @@ func (e Effect) AsFlags() Flags { return Flags(e) }
 
 func (e Effect) Pure() bool      { return e == 0 }
 func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
-func (e Effect) Optional() bool  { return e&EffectOptional != 0 }
 func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
 
 func (e Effect) WeakerThan(o Effect) bool { return e < o }
@@ -131,9 +129,7 @@ func (e Effect) String() string {
 		return ""
 	case EffectImpure:
 		return "!"
-	case EffectImpure | EffectOptional:
-		return "!?"
-	case EffectImpure | EffectOptional | EffectCoroutine:
+	case EffectImpure | EffectCoroutine:
 		return "!??"
 	}
 	return "‽INVALID_EFFECT‽"

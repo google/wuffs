@@ -433,7 +433,7 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	}
 	setPlaceholderMBoundsMType(n.In().AsNode())
 	if out := n.Out(); out != nil {
-		if n.Effect().Optional() && n.Receiver()[0] != t.IDBase {
+		if n.Effect().Coroutine() && n.Receiver()[0] != t.IDBase {
 			return &Error{
 				Err:      fmt.Errorf("func %s has ? effect but non-empty return type", n.QQID().Str(c.tm)),
 				Filename: n.Filename(),
