@@ -99,18 +99,18 @@ func (x ID) IsIdent(m *Map) bool {
 	return false
 }
 
-func (x ID) IsOpen() bool       { return x < ID(len(isOpen)) && isOpen[x] }
-func (x ID) IsClose() bool      { return x < ID(len(isClose)) && isClose[x] }
 func (x ID) IsTightLeft() bool  { return x < ID(len(isTightLeft)) && isTightLeft[x] }
 func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRight[x] }
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
+func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
+func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
 func (x ID) IsNumType() bool        { return minNumType <= x && x <= maxNumType }
 func (x ID) IsNumTypeOrIdeal() bool { return minNumTypeOrIdeal <= x && x <= maxNumTypeOrIdeal }
+func (x ID) IsOpen() bool           { return minOpen <= x && x <= maxOpen }
 
 func (x ID) IsImplicitSemicolon(m *Map) bool {
-	return x.IsLiteral(m) || x.IsIdent(m) ||
-		(x < ID(len(isImplicitSemicolon)) && isImplicitSemicolon[x])
+	return x.IsClose() || x.IsKeyword() || x.IsIdent(m) || x.IsLiteral(m)
 }
 
 func (x ID) IsXOp() bool            { return minXOp <= x && x <= maxXOp }
@@ -202,11 +202,18 @@ const (
 const (
 	IDInvalid = ID(0)
 
-	IDOpenParen    = ID(0x02)
-	IDCloseParen   = ID(0x03)
-	IDOpenBracket  = ID(0x04)
-	IDCloseBracket = ID(0x05)
-	IDOpenCurly    = ID(0x06)
+	minOpen = 0x02
+	maxOpen = 0x04
+
+	IDOpenParen   = ID(0x02)
+	IDOpenBracket = ID(0x03)
+	IDOpenCurly   = ID(0x04)
+
+	minClose = 0x05
+	maxClose = 0x07
+
+	IDCloseParen   = ID(0x05)
+	IDCloseBracket = ID(0x06)
 	IDCloseCurly   = ID(0x07)
 
 	IDDot       = ID(0x08)
@@ -1158,18 +1165,6 @@ var associativeForms = [nBuiltInSymbolicIDs]ID{
 	IDOr:  IDXAssociativeOr,
 }
 
-var isOpen = [...]bool{
-	IDOpenParen:   true,
-	IDOpenBracket: true,
-	IDOpenCurly:   true,
-}
-
-var isClose = [...]bool{
-	IDCloseParen:   true,
-	IDCloseBracket: true,
-	IDCloseCurly:   true,
-}
-
 var isTightLeft = [...]bool{
 	IDCloseParen:   true,
 	IDOpenBracket:  true,
@@ -1194,14 +1189,4 @@ var isTightRight = [...]bool{
 	IDQuestion: true,
 	IDColon:    true,
 	IDDollar:   true,
-}
-
-var isImplicitSemicolon = [...]bool{
-	IDCloseParen:   true,
-	IDCloseBracket: true,
-	IDCloseCurly:   true,
-
-	IDReturn:   true,
-	IDBreak:    true,
-	IDContinue: true,
 }
