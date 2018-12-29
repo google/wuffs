@@ -40,7 +40,9 @@ for a C compiler $CC, such as clang or gcc.
 // it as a "foo.h"-like header, instead of a "foo.c"-like implementation.
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
+#ifndef DST_BUFFER_SIZE
 #define DST_BUFFER_SIZE (1024 * 1024)
+#endif
 
 // lgtm_ptr and lgtm_len hold a deflate-encoded "LGTM" message.
 uint8_t lgtm_ptr[] = {

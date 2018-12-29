@@ -72,8 +72,12 @@ uint64_t micros_since_start(struct timespec* now) {
 //
 // We keep the whole input in memory, instead of one-pass stream processing,
 // because playing a looping animation requires re-winding the input.
+#ifndef SRC_BUFFER_SIZE
 #define SRC_BUFFER_SIZE (64 * 1024 * 1024)
+#endif
+#ifndef MAX_DIMENSION
 #define MAX_DIMENSION (4096)
+#endif
 
 uint8_t src_buffer[SRC_BUFFER_SIZE] = {0};
 size_t src_len = 0;
