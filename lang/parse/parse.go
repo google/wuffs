@@ -1161,17 +1161,13 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 }
 
 func (p *parser) parseEffect() a.Effect {
-	if p.peek1() != t.IDExclam {
-		return 0
-	}
-	p.src = p.src[1:]
-	if p.peek1() != t.IDQuestion {
+	switch p.peek1() {
+	case t.IDExclam:
+		p.src = p.src[1:]
 		return a.EffectImpure
+	case t.IDQuestion:
+		p.src = p.src[1:]
+		return a.EffectImpureCoroutine
 	}
-	p.src = p.src[1:]
-	if p.peek1() != t.IDQuestion {
-		panic("TODO: delete")
-	}
-	p.src = p.src[1:]
-	return a.EffectImpure | a.EffectCoroutine
+	return 0
 }

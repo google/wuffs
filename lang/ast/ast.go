@@ -109,8 +109,12 @@ func (f Flags) AsEffect() Effect { return Effect(f) }
 type Effect uint8
 
 const (
-	EffectImpure    = Effect(0x01)
-	EffectCoroutine = Effect(0x02)
+	EffectPure            = Effect(0)
+	EffectImpure          = Effect(effectBitImpure)
+	EffectImpureCoroutine = Effect(effectBitImpure | effectBitCoroutine)
+
+	effectBitImpure    = 0x01
+	effectBitCoroutine = 0x02
 
 	effectMask = Effect(0xFF)
 )
@@ -118,19 +122,19 @@ const (
 func (e Effect) AsFlags() Flags { return Flags(e) }
 
 func (e Effect) Pure() bool      { return e == 0 }
-func (e Effect) Impure() bool    { return e&EffectImpure != 0 }
-func (e Effect) Coroutine() bool { return e&EffectCoroutine != 0 }
+func (e Effect) Impure() bool    { return e&effectBitImpure != 0 }
+func (e Effect) Coroutine() bool { return e&effectBitCoroutine != 0 }
 
 func (e Effect) WeakerThan(o Effect) bool { return e < o }
 
 func (e Effect) String() string {
 	switch e & effectMask {
-	case 0:
+	case EffectPure:
 		return ""
 	case EffectImpure:
 		return "!"
-	case EffectImpure | EffectCoroutine:
-		return "!??"
+	case EffectImpureCoroutine:
+		return "?"
 	}
 	return "‽INVALID_EFFECT‽"
 }

@@ -57,7 +57,7 @@ pub func decoder.set_literal_width!(lw base.u32[2..8]) {
 	this.lw = args.lw
 }
 
-pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	var i base.u32[..8191]
 
 	// Initialize read_from state.
@@ -85,7 +85,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 		this.read_from!(src:args.src)
 
 		if this.output_wi > 0 {
-			this.write_to!??(dst:args.dst)
+			this.write_to?(dst:args.dst)
 		}
 
 		if this.read_from_return_value == 0 {
@@ -309,7 +309,7 @@ pri func decoder.read_from!(src base.io_reader) {
 	this.output_wi = output_wi
 }
 
-pri func decoder.write_to!??(dst base.io_writer) {
+pri func decoder.write_to?(dst base.io_writer) {
 	var i base.u32[..8191]
 	var s slice base.u8
 	var n base.u64

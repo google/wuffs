@@ -265,7 +265,7 @@ func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint3
 }
 
 func (h *resumabilityHelper) doExpr(r resumabilities, n *a.Expr) error {
-	if n.Effect()&a.EffectCoroutine == 0 {
+	if !n.Effect().Coroutine() {
 		return h.doExpr1(r, n, subExprFilterNone, 0)
 	}
 	for sef := subExprFilterBeforeCoroutine; sef <= subExprFilterAfterCoroutine; sef++ {

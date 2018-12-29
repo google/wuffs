@@ -121,7 +121,7 @@ pub struct decoder?(
 	end_of_block base.bool,
 )
 
-pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	var status       base.status
 	var written      slice base.u8
 	var n_copied     base.u64
@@ -129,7 +129,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 
 	while true {
 		args.dst.set_mark!()
-		status =? this.decode_blocks!??(dst:args.dst, src:args.src)
+		status =? this.decode_blocks?(dst:args.dst, src:args.src)
 		if not status.is_suspension() {
 			return status
 		}
@@ -178,7 +178,7 @@ pub func decoder.decode!??(dst base.io_writer, src base.io_reader) {
 	}
 }
 
-pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 	var final  base.u32
 	var b0     base.u32[..255]
 	var type   base.u32
@@ -188,7 +188,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
-			b0 = args.src.read_u8_as_u32!??()
+			b0 = args.src.read_u8_as_u32?()
 			this.bits |= b0 << this.n_bits
 			this.n_bits += 8
 		}
@@ -198,7 +198,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		this.n_bits -= 3
 
 		if type == 0 {
-			this.decode_uncompressed!??(dst:args.dst, src:args.src)
+			this.decode_uncompressed?(dst:args.dst, src:args.src)
 			continue
 		} else if type == 1 {
 			status = this.init_fixed_huffman!()
@@ -206,7 +206,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 				return status
 			}
 		} else if type == 2 {
-			this.init_dynamic_huffman!??(src:args.src)
+			this.init_dynamic_huffman?(src:args.src)
 		} else {
 			return "?bad block"
 		}
@@ -219,7 +219,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 		if this.end_of_block {
 			continue
 		}
-		this.decode_huffman_slow!??(dst:args.dst, src:args.src)
+		this.decode_huffman_slow?(dst:args.dst, src:args.src)
 		if this.end_of_block {
 			continue
 		}
@@ -229,7 +229,7 @@ pri func decoder.decode_blocks!??(dst base.io_writer, src base.io_reader) {
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
-pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	var length   base.u32
 	var n_copied base.u32
 
@@ -242,7 +242,7 @@ pri func decoder.decode_uncompressed!??(dst base.io_writer, src base.io_reader) 
 	this.n_bits = 0
 	this.bits = 0
 
-	length = args.src.read_u32le!??()
+	length = args.src.read_u32le?()
 	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {
 		return "?inconsistent stored block length"
 	}
@@ -299,7 +299,7 @@ pri func decoder.init_fixed_huffman!() base.status {
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
-pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
+pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	var bits               base.u32
 	var n_bits             base.u32
 	var b0                 base.u32[..255]
@@ -323,7 +323,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 	while n_bits < 14,
 		post n_bits >= 14,
 	{
-		b0 = args.src.read_u8_as_u32!??()
+		b0 = args.src.read_u8_as_u32?()
 		bits |= b0 << n_bits
 		n_bits += 8
 	}
@@ -348,7 +348,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 			inv i < n_clen,
 			post n_bits >= 3,
 		{
-			b1 = args.src.read_u8_as_u32!??()
+			b1 = args.src.read_u8_as_u32?()
 			bits |= b1 << n_bits
 			n_bits += 8
 		}
@@ -385,7 +385,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 				break
 			}
 			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
-			b2 = args.src.read_u8_as_u32!??()
+			b2 = args.src.read_u8_as_u32?()
 			bits |= b2 << n_bits
 			n_bits += 8
 		}
@@ -434,7 +434,7 @@ pri func decoder.init_dynamic_huffman!??(src base.io_reader) {
 			post n_bits >= n_extra_bits,
 		{
 			assert n_bits < 7 via "a < b: a < c; c <= b"(c:n_extra_bits)
-			b3 = args.src.read_u8_as_u32!??()
+			b3 = args.src.read_u8_as_u32?()
 			bits |= b3 << n_bits
 			n_bits += 8
 		}

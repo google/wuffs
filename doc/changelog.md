@@ -28,7 +28,7 @@
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
 - Renamed `unread_u8?` to `undo_byte!`; added `can_undo_byte`.
 - Replaced `= try foo` with `=? foo`.
-- Redesigned `!` vs `?` effects; prohibited effect-ful subexpressions.
+- Prohibited effect-ful subexpressions.
 - Redesigned iterate blocks.
 - Added `{frame,image,pixel}_config` and `pixel_buffer` types.
 - Added a `reset` method.
