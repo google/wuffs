@@ -45,6 +45,10 @@ extern "C" {
 // (such as "", "beta" or "rc.1") is part of the string representation (such as
 // "1.2.3-beta") but not the uint64_t representation.
 //
+// WUFFS_VERSION_GIT_REV_LIST_COUNT is the number of commits in the repository
+// used to build this library: the result of "git rev-list --count HEAD".
+// Within each major.minor branch, this number should increase monotonically.
+//
 // All three of major, minor and patch being zero means that this is a
 // work-in-progress version, not a release version, and has no backwards or
 // forwards compatibility guarantees.
