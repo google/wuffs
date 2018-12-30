@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	cf "github.com/google/wuffs/cmd/commonflags"
 )
@@ -32,6 +31,7 @@ import (
 func doGenrelease(args []string) error {
 	flags := flag.FlagSet{}
 	cformatterFlag := flags.String("cformatter", cf.CformatterDefault, cf.CformatterUsage)
+	commitDateFlag := flags.String("commitdate", "", "git commit date the release was built from")
 	gitRevListCountFlag := flags.Int("gitrevlistcount", 0, `git "rev-list --count" that the release was built from`)
 	revisionFlag := flags.String("revision", "", "git revision the release was built from")
 	versionFlag := flags.String("version", cf.VersionDefault, cf.VersionUsage)
@@ -44,6 +44,9 @@ func doGenrelease(args []string) error {
 	}
 	if (*gitRevListCountFlag < 0) || (0x7FFFFFFF < *gitRevListCountFlag) {
 		return fmt.Errorf("bad -gitrevlistcount flag value %d", *gitRevListCountFlag)
+	}
+	if !cf.IsAlphaNumericIsh(*commitDateFlag) {
+		return fmt.Errorf("bad -commitdate flag value %q", *commitDateFlag)
 	}
 	if !cf.IsAlphaNumericIsh(*revisionFlag) {
 		return fmt.Errorf("bad -revision flag value %q", *revisionFlag)
@@ -71,6 +74,7 @@ func doGenrelease(args []string) error {
 		filesList:       nil,
 		filesMap:        map[string]parsedCFile{},
 		seen:            nil,
+		commitDate:      *commitDateFlag,
 		gitRevListCount: *gitRevListCountFlag,
 		revision:        *revisionFlag,
 		version:         v,
@@ -157,6 +161,7 @@ type genReleaseHelper struct {
 	filesList       []string
 	filesMap        map[string]parsedCFile
 	seen            map[string]bool
+	commitDate      string
 	gitRevListCount int
 	revision        string
 	version         cf.Version
@@ -278,10 +283,9 @@ func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 	}
 
 	w := bytes.NewBuffer(nil)
-	fmt.Fprintf(w, "// WUFFS_VERSION was overridden by \"wuffs gen -version\" on %v UTC",
-		time.Now().UTC().Format("2006-01-02"))
-	if h.revision != "" {
-		fmt.Fprintf(w, ",\n// based on revision %s", h.revision)
+	fmt.Fprintf(w, `// WUFFS_VERSION was overridden by "wuffs gen -version"`)
+	if h.revision != "" && h.commitDate != "" {
+		fmt.Fprintf(w, " based on revision\n// %s committed on %s", h.revision, h.commitDate)
 	}
 
 	fmt.Fprintf(w, `.
