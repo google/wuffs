@@ -31,7 +31,7 @@ The payload:
 - 4 or 8 bytes per pixel. W×H pixels in row-major order. Row-major means that
   horizontally adjacent pixels are adjacent in memory. Values are
   little-endian. For example, with BGRA order and 8 bytes per pixel, those
-  bytes are \[B₀, B₁, G₀, G₁, R₀, R₁, A₀, A₁\}. The ₀ and ₁ subscripts denote
+  bytes are \[B₀, B₁, G₀, G₁, R₀, R₁, A₀, A₁\]. The ₀ and ₁ subscripts denote
   the low and high bytes of the `uint16`.
 
 
