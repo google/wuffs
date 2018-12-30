@@ -17,7 +17,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,8 +25,8 @@ import (
 )
 
 func genrelease(wuffsRoot string, langs []string, v cf.Version) error {
-	revision := findRevision(wuffsRoot)
-	gitRevListCount := findGitRevListCount(wuffsRoot)
+	revision := runGitCommand(wuffsRoot, "rev-parse", "HEAD")
+	gitRevListCount := runGitCommand(wuffsRoot, "rev-list", "--count", "HEAD")
 	for _, lang := range langs {
 		filename, contents, err := genreleaseLang(wuffsRoot, revision, gitRevListCount, v, lang)
 		if err != nil {
@@ -73,48 +72,10 @@ func genreleaseLang(wuffsRoot string, revision string, gitRevListCount string, v
 	return filepath.Join(wuffsRoot, "release", lang, base+"."+lang), stdout.Bytes(), nil
 }
 
-func findRevision(wuffsRoot string) string {
-	// Assume that we're using git.
-
-	head, err := ioutil.ReadFile(filepath.Join(wuffsRoot, ".git", "HEAD"))
-	if err != nil {
-		return ""
-	}
-	refPrefix := []byte("ref: ")
-	if !bytes.HasPrefix(head, refPrefix) {
-		return ""
-	}
-	head = head[len(refPrefix):]
-	if len(head) == 0 || head[len(head)-1] != '\n' {
-		return ""
-	}
-	head = head[:len(head)-1]
-
-	ref, err := ioutil.ReadFile(filepath.Join(wuffsRoot, ".git", string(head)))
-	if err != nil {
-		return ""
-	}
-	if len(ref) == 0 || ref[len(ref)-1] != '\n' {
-		return ""
-	}
-	ref = ref[:len(ref)-1]
-
-	return string(ref)
-}
-
-func findGitRevListCount(wuffsRoot string) string {
-	// Assume that we're using git.
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	if err := os.Chdir(wuffsRoot); err != nil {
-		return ""
-	}
-	defer os.Chdir(wd)
-
-	out, err := exec.Command("git", "rev-list", "--count", "HEAD").Output()
+func runGitCommand(wuffsRoot string, cmdArgs ...string) string {
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Dir = wuffsRoot
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}
