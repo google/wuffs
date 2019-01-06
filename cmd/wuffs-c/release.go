@@ -136,7 +136,7 @@ var (
 	grIncludeQuote   = []byte("#include \"")
 	grNN             = []byte("\n\n")
 	grVOverride      = []byte("// !! Some code generation programs can override WUFFS_VERSION.\n")
-	grVEnd           = []byte("#define WUFFS_VERSION_GIT_REV_LIST_COUNT 0")
+	grVEnd           = []byte(`#define WUFFS_VERSION_STRING "0.0.0+0.00000000"`)
 	grWmrAbove       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING ABOVE.\n")
 	grWmrBelow       = []byte("// !! WUFFS MONOLITHIC RELEASE DISCARDS EVERYTHING BELOW.\n")
 )
@@ -288,17 +288,29 @@ func (h *genReleaseHelper) substituteWuffsVersion(s []byte) ([]byte, error) {
 		fmt.Fprintf(w, " based on revision\n// %s committed on %s", h.revision, h.commitDate)
 	}
 
+	commitDate := "0"
+	if h.commitDate != "" {
+		commitDate = strings.Replace(h.commitDate, "-", "", -1)
+	}
+
+	buildMetadata := ""
+	if h.gitRevListCount != 0 {
+		buildMetadata = fmt.Sprintf("+%d.%s", h.gitRevListCount, commitDate)
+	}
+
 	fmt.Fprintf(w, `.
 		#define WUFFS_VERSION ((uint64_t)0x%016X)
 		#define WUFFS_VERSION_MAJOR ((uint64_t)0x%08X)
 		#define WUFFS_VERSION_MINOR ((uint64_t)0x%04X)
 		#define WUFFS_VERSION_PATCH ((uint64_t)0x%04X)
-		#define WUFFS_VERSION_EXTENSION %q
+		#define WUFFS_VERSION_PRE_RELEASE_LABEL %q
+		#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT %d
+		#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE %s
 		#define WUFFS_VERSION_STRING %q
-		#define WUFFS_VERSION_GIT_REV_LIST_COUNT %d
 
 	`, h.version.Uint64(), h.version.Major, h.version.Minor, h.version.Patch,
-		h.version.Extension, h.version, h.gitRevListCount)
+		h.version.Extension, h.gitRevListCount, commitDate,
+		h.version.String()+buildMetadata)
 
 	ret = append(ret, w.Bytes()...)
 	ret = append(ret, s...)

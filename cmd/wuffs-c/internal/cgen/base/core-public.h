@@ -25,26 +25,27 @@
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
 // as a uint64_t. The major number is the high 32 bits. The minor number is the
-// middle 16 bits. The patch number is the low 16 bits. The version extension
-// (such as "", "beta" or "rc.1") is part of the string representation (such as
-// "1.2.3-beta") but not the uint64_t representation.
+// middle 16 bits. The patch number is the low 16 bits. The pre-release label
+// and build metadata are part of the string representation (such as
+// "1.2.3-beta+456.20181231") but not the uint64_t representation.
 //
-// WUFFS_VERSION_GIT_REV_LIST_COUNT is the number of commits in the repository
-// used to build this library: the result of "git rev-list --count HEAD".
-// Within each major.minor branch, this number should increase monotonically.
+// WUFFS_VERSION_PRE_RELEASE_LABEL (such as "", "beta" or "rc.1") being
+// non-empty denotes a developer preview, not a release version, and has no
+// backwards or forwards compatibility guarantees.
 //
-// All three of major, minor and patch being zero means that this is a
-// work-in-progress version, not a release version, and has no backwards or
-// forwards compatibility guarantees.
+// WUFFS_VERSION_BUILD_METADATA_XXX, if non-zero, are the number of commits and
+// the last commit date in the repository used to build this library. Within
+// each major.minor branch, the commit count should increase monotonically.
 //
 // !! Some code generation programs can override WUFFS_VERSION.
 #define WUFFS_VERSION ((uint64_t)0)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0)
 #define WUFFS_VERSION_MINOR ((uint64_t)0)
 #define WUFFS_VERSION_PATCH ((uint64_t)0)
-#define WUFFS_VERSION_EXTENSION ""
-#define WUFFS_VERSION_STRING "0.0.0"
-#define WUFFS_VERSION_GIT_REV_LIST_COUNT 0
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "work.in.progress"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 0
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 0
+#define WUFFS_VERSION_STRING "0.0.0+0.00000000"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
