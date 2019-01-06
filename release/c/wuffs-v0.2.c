@@ -41,23 +41,28 @@ extern "C" {
 
 // WUFFS_VERSION is the major.minor.patch version, as per https://semver.org/,
 // as a uint64_t. The major number is the high 32 bits. The minor number is the
-// middle 16 bits. The patch number is the low 16 bits. The version extension
-// (such as "", "beta" or "rc.1") is part of the string representation (such as
-// "1.2.3-beta") but not the uint64_t representation.
+// middle 16 bits. The patch number is the low 16 bits. The pre-release label
+// and build metadata are part of the string representation (such as
+// "1.2.3-beta+456.20181231") but not the uint64_t representation.
 //
-// All three of major, minor and patch being zero means that this is a
-// work-in-progress version, not a release version, and has no backwards or
-// forwards compatibility guarantees.
+// WUFFS_VERSION_PRE_RELEASE_LABEL (such as "", "beta" or "rc.1") being
+// non-empty denotes a developer preview, not a release version, and has no
+// backwards or forwards compatibility guarantees.
 //
-// WUFFS_VERSION was overridden by "wuffs gen -version" on 2018-12-29 UTC,
-// based on revision 2b631202bcd9cd86eec387bd98c1c2eb4b4afd50.
+// WUFFS_VERSION_BUILD_METADATA_XXX, if non-zero, are the number of commits and
+// the last commit date in the repository used to build this library. Within
+// each major.minor branch, the commit count should increase monotonically.
+//
+// WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
+// 867ea1cdcceac218db2914a9251341cc090a4108 committed on 2019-01-06.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_EXTENSION "alpha.27"
-#define WUFFS_VERSION_STRING "0.2.0-alpha.27"
-#define WUFFS_VERSION_GIT_REV_LIST_COUNT 1527
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.28"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1535
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190106
+#define WUFFS_VERSION_STRING "0.2.0-alpha.28+1535.20190106"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
