@@ -597,12 +597,10 @@ func (q *checker) bcheckIf(n *a.If) error {
 			return err
 		}
 
-		if cv := n.Condition().ConstValue(); cv != nil {
-			return fmt.Errorf("TODO: bcheckIf for \"if true\" or \"if false\"")
-		}
-
 		// Check the if-true branch, assuming the if condition.
-		q.facts.appendFact(n.Condition())
+		if n.Condition().ConstValue() == nil {
+			q.facts.appendFact(n.Condition())
+		}
 		if err := q.bcheckBlock(n.BodyIfTrue()); err != nil {
 			return err
 		}
@@ -612,10 +610,12 @@ func (q *checker) bcheckIf(n *a.If) error {
 
 		// Check the if-false branch, assuming the inverted if condition.
 		q.facts = append(q.facts[:0], snap...)
-		if inverse, err := invert(q.tm, n.Condition()); err != nil {
-			return err
-		} else {
-			q.facts.appendFact(inverse)
+		if n.Condition().ConstValue() == nil {
+			if inverse, err := invert(q.tm, n.Condition()); err != nil {
+				return err
+			} else {
+				q.facts.appendFact(inverse)
+			}
 		}
 		if bif := n.BodyIfFalse(); len(bif) > 0 {
 			if err := q.bcheckBlock(bif); err != nil {

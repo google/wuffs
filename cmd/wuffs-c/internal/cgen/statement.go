@@ -302,6 +302,18 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 }
 
 func (g *gen) writeStatementIf(b *buffer, n *a.If, depth uint32) error {
+	// For an "if true { etc }", just write the "etc".
+	if cv := n.Condition().ConstValue(); (cv != nil) && (cv.Cmp(one) == 0) &&
+		(n.ElseIf() == nil) && (len(n.BodyIfFalse()) == 0) {
+
+		for _, o := range n.BodyIfTrue() {
+			if err := g.writeStatement(b, o, depth); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	for {
 		condition := buffer(nil)
 		if err := g.writeExpr(&condition, n.Condition(), 0); err != nil {
