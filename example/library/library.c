@@ -87,7 +87,8 @@ static const char* decode() {
     free(dec);
     return status;
   }
-  status = wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
+  status =
+      wuffs_deflate__decoder__decode_io_writer(dec, dst_writer, src_reader);
   if (status) {
     free(dec);
     return status;

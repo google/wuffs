@@ -27,6 +27,7 @@
 - Renamed `buf1`, `reader1`, etc to `io_buffer`, `io_reader`, etc.
 - Renamed `u32`, `io_reader`, etc to `base.u32`, `base.io_reader`, etc.
 - Renamed `unread_u8?` to `undo_byte!`; added `can_undo_byte`.
+- Renamed some `decode?` methods to `decode_io_writer?`.
 - Replaced `= try foo` with `=? foo`.
 - Prohibited effect-ful subexpressions.
 - Redesigned iterate blocks.
@@ -37,7 +38,6 @@
 - Added I/O positions.
 - Tweaked how marks and limits work.
 - Supported animated (not just single frame) and interlaced GIFs.
-- Marked the `std/gif` LZW decoder as private.
 - Marked some internal status codes as private.
 - Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.

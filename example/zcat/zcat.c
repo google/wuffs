@@ -110,9 +110,9 @@ static const char* decode() {
     }
 
     while (true) {
-      status =
-          wuffs_gzip__decoder__decode(&dec, wuffs_base__io_buffer__writer(&dst),
-                                      wuffs_base__io_buffer__reader(&src));
+      status = wuffs_gzip__decoder__decode_io_writer(
+          &dec, wuffs_base__io_buffer__writer(&dst),
+          wuffs_base__io_buffer__reader(&src));
 
       if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".

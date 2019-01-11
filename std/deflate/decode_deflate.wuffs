@@ -121,7 +121,7 @@ pub struct decoder?(
 	end_of_block base.bool,
 )
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader) {
 	var status       base.status
 	var written      slice base.u8
 	var n_copied     base.u64

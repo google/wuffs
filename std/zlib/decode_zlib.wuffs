@@ -32,7 +32,7 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 	this.ignore_checksum = args.ic
 }
 
-pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader) {
 	var x             base.u16
 	var checksum_got  base.u32
 	var status        base.status
@@ -55,7 +55,7 @@ pub func decoder.decode?(dst base.io_writer, src base.io_reader) {
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
 		args.dst.set_mark!()
-		status =? this.flate.decode?(dst:args.dst, src:args.src)
+		status =? this.flate.decode_io_writer?(dst:args.dst, src:args.src)
 		if not this.ignore_checksum {
 			checksum_got = this.checksum.update!(x:args.dst.since_mark())
 		}

@@ -147,7 +147,8 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    status = wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+    status =
+        wuffs_deflate__decoder__decode_io_writer(&dec, dst_writer, src_reader);
 
     if ((wlimit && (status == wuffs_base__suspension__short_write)) ||
         (rlimit && (status == wuffs_base__suspension__short_read))) {
@@ -256,13 +257,13 @@ const char* test_wuffs_deflate_decode_split_src() {
     src.meta.ri = gt->src_offset0;
     src.meta.wi = split;
     const char* z0 =
-        wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+        wuffs_deflate__decoder__decode_io_writer(&dec, dst_writer, src_reader);
 
     src.meta.closed = true;
     src.meta.ri = split;
     src.meta.wi = gt->src_offset1;
     const char* z1 =
-        wuffs_deflate__decoder__decode(&dec, dst_writer, src_reader);
+        wuffs_deflate__decoder__decode_io_writer(&dec, dst_writer, src_reader);
 
     if (z0 != wuffs_base__suspension__short_read) {
       RETURN_FAIL("i=%d: z0: got \"%s\", want \"%s\"", i, z0,
@@ -304,7 +305,7 @@ const char* do_test_wuffs_deflate_history(int i,
   set_writer_limit(&dst_writer, limit);
 
   const char* got_z =
-      wuffs_deflate__decoder__decode(dec, dst_writer, src_reader);
+      wuffs_deflate__decoder__decode_io_writer(dec, dst_writer, src_reader);
   if (got_z != want_z) {
     RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
                 ": decode status: got \"%s\", want \"%s\"",

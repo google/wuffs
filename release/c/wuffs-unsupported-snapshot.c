@@ -2458,9 +2458,9 @@ sizeof__wuffs_deflate__decoder();
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                               wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src);
+wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
+                                         wuffs_base__io_writer a_dst,
+                                         wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -2493,7 +2493,7 @@ struct wuffs_deflate__decoder__struct {
 
     struct {
       uint32_t coro_susp_point;
-    } c_decode[1];
+    } c_decode_io_writer[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_final;
@@ -2543,8 +2543,8 @@ struct wuffs_deflate__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_deflate__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
 #endif  // __cplusplus
@@ -2592,9 +2592,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                           wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src);
+wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
+                                     wuffs_base__io_writer a_dst,
+                                     wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
 wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self);
@@ -2638,7 +2638,7 @@ struct wuffs_lzw__decoder__struct {
 
     struct {
       uint32_t coro_susp_point;
-    } c_decode[1];
+    } c_decode_io_writer[1];
     struct {
       uint32_t coro_susp_point;
     } c_write_to[1];
@@ -2658,8 +2658,8 @@ struct wuffs_lzw__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_lzw__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_lzw__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
   inline wuffs_base__slice_u8  //
@@ -2977,9 +2977,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
+wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -3012,7 +3012,7 @@ struct wuffs_gzip__decoder__struct {
       uint32_t v_decoded_length_got;
       uint32_t v_checksum_want;
       uint64_t scratch;
-    } c_decode[1];
+    } c_decode_io_writer[1];
   } private_impl;
 
 #ifdef __cplusplus
@@ -3029,8 +3029,8 @@ struct wuffs_gzip__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_gzip__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
 #endif  // __cplusplus
@@ -3081,9 +3081,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
+wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -3113,7 +3113,7 @@ struct wuffs_zlib__decoder__struct {
       uint32_t coro_susp_point;
       uint32_t v_checksum_got;
       uint64_t scratch;
-    } c_decode[1];
+    } c_decode_io_writer[1];
   } private_impl;
 
 #ifdef __cplusplus
@@ -3130,8 +3130,8 @@ struct wuffs_zlib__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_zlib__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
 #endif  // __cplusplus
@@ -5297,12 +5297,12 @@ sizeof__wuffs_deflate__decoder() {
 
 // ---------------- Function Implementations
 
-// -------- func deflate.decoder.decode
+// -------- func deflate.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                               wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src) {
+wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
+                                         wuffs_base__io_writer a_dst,
+                                         wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -5338,7 +5338,8 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
     io1_a_dst = a_dst.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
   }
   switch (coro_susp_point) {
@@ -5417,13 +5418,13 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
 
   goto exit;
 exit:
@@ -7086,12 +7087,12 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func lzw.decoder.decode
+// -------- func lzw.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                           wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src) {
+wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
+                                     wuffs_base__io_writer a_dst,
+                                     wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -7104,7 +7105,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
 
   uint32_t v_i = 0;
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
   }
   switch (coro_susp_point) {
@@ -7159,13 +7161,13 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
 
   goto exit;
 exit:
@@ -9518,7 +9520,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                   self->private_impl.f_compressed_wi));
           {
             u_r.meta.ri = iop_v_r - u_r.data.ptr;
-            wuffs_base__status t_1 = wuffs_lzw__decoder__decode(
+            wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
                 &self->private_impl.f_lzw,
                 wuffs_base__utility__null_io_writer(&self->private_impl.f_util),
                 v_r);
@@ -9801,12 +9803,12 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func gzip.decoder.decode
+// -------- func gzip.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
+wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -9862,12 +9864,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     io1_a_src = a_src.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
-    v_flags = self->private_impl.c_decode[0].v_flags;
-    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
-    v_decoded_length_got = self->private_impl.c_decode[0].v_decoded_length_got;
-    v_checksum_want = self->private_impl.c_decode[0].v_checksum_want;
+    v_flags = self->private_impl.c_decode_io_writer[0].v_flags;
+    v_checksum_got = self->private_impl.c_decode_io_writer[0].v_checksum_got;
+    v_decoded_length_got =
+        self->private_impl.c_decode_io_writer[0].v_decoded_length_got;
+    v_checksum_want = self->private_impl.c_decode_io_writer[0].v_checksum_want;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9920,16 +9924,16 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       uint8_t t_3 = *iop_a_src++;
       v_flags = t_3;
     }
-    self->private_impl.c_decode[0].scratch = 6;
+    self->private_impl.c_decode_io_writer[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-    if (self->private_impl.c_decode[0].scratch >
+    if (self->private_impl.c_decode_io_writer[0].scratch >
         ((uint64_t)(io1_a_src - iop_a_src))) {
-      self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+      self->private_impl.c_decode_io_writer[0].scratch -= io1_a_src - iop_a_src;
       iop_a_src = io1_a_src;
       status = wuffs_base__suspension__short_read;
       goto suspend;
     }
-    iop_a_src += self->private_impl.c_decode[0].scratch;
+    iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     if ((v_flags & 4) != 0) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -9938,14 +9942,15 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           t_4 = wuffs_base__load_u16le(iop_a_src);
           iop_a_src += 2;
         } else {
-          self->private_impl.c_decode[0].scratch = 0;
+          self->private_impl.c_decode_io_writer[0].scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
               status = wuffs_base__suspension__short_read;
               goto suspend;
             }
-            uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+            uint64_t* scratch =
+                &self->private_impl.c_decode_io_writer[0].scratch;
             uint32_t num_bits_4 = *scratch >> 56;
             *scratch <<= 8;
             *scratch >>= 8;
@@ -9960,16 +9965,17 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         }
         v_xlen = t_4;
       }
-      self->private_impl.c_decode[0].scratch = ((uint32_t)(v_xlen));
+      self->private_impl.c_decode_io_writer[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
-      if (self->private_impl.c_decode[0].scratch >
+      if (self->private_impl.c_decode_io_writer[0].scratch >
           ((uint64_t)(io1_a_src - iop_a_src))) {
-        self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+        self->private_impl.c_decode_io_writer[0].scratch -=
+            io1_a_src - iop_a_src;
         iop_a_src = io1_a_src;
         status = wuffs_base__suspension__short_read;
         goto suspend;
       }
-      iop_a_src += self->private_impl.c_decode[0].scratch;
+      iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     }
     if ((v_flags & 8) != 0) {
       while (true) {
@@ -10006,16 +10012,17 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     label_1_break:;
     }
     if ((v_flags & 2) != 0) {
-      self->private_impl.c_decode[0].scratch = 2;
+      self->private_impl.c_decode_io_writer[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
-      if (self->private_impl.c_decode[0].scratch >
+      if (self->private_impl.c_decode_io_writer[0].scratch >
           ((uint64_t)(io1_a_src - iop_a_src))) {
-        self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+        self->private_impl.c_decode_io_writer[0].scratch -=
+            io1_a_src - iop_a_src;
         iop_a_src = io1_a_src;
         status = wuffs_base__suspension__short_read;
         goto suspend;
       }
-      iop_a_src += self->private_impl.c_decode[0].scratch;
+      iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     }
     if ((v_flags & 224) != 0) {
       status = wuffs_gzip__error__bad_encoding_flags;
@@ -10032,7 +10039,7 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           a_src.private_impl.buf->meta.ri =
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
-        wuffs_base__status t_7 = wuffs_deflate__decoder__decode(
+        wuffs_base__status t_7 = wuffs_deflate__decoder__decode_io_writer(
             &self->private_impl.f_flate, a_dst, a_src);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
@@ -10068,14 +10075,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         t_8 = wuffs_base__load_u32le(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_8 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
@@ -10097,14 +10104,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         t_9 = wuffs_base__load_u32le(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_9 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
@@ -10128,17 +10135,18 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_flags = v_flags;
-  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
-  self->private_impl.c_decode[0].v_decoded_length_got = v_decoded_length_got;
-  self->private_impl.c_decode[0].v_checksum_want = v_checksum_want;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].v_flags = v_flags;
+  self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
+  self->private_impl.c_decode_io_writer[0].v_decoded_length_got =
+      v_decoded_length_got;
+  self->private_impl.c_decode_io_writer[0].v_checksum_want = v_checksum_want;
 
   goto exit;
 exit:
@@ -10240,12 +10248,12 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func zlib.decoder.decode
+// -------- func zlib.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
+wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10297,9 +10305,10 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     io1_a_src = a_src.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
-    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
+    v_checksum_got = self->private_impl.c_decode_io_writer[0].v_checksum_got;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -10311,14 +10320,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         t_0 = wuffs_base__load_u16be(iop_a_src);
         iop_a_src += 2;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_0 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
@@ -10360,7 +10369,7 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           a_src.private_impl.buf->meta.ri =
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
-        wuffs_base__status t_1 = wuffs_deflate__decoder__decode(
+        wuffs_base__status t_1 = wuffs_deflate__decoder__decode_io_writer(
             &self->private_impl.f_flate, a_dst, a_src);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
@@ -10394,14 +10403,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         t_2 = wuffs_base__load_u32be(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_2 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
@@ -10424,14 +10433,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
 
   goto exit;
 exit:
