@@ -195,8 +195,8 @@ pri func decoder.read_from!(src base.io_reader) {
 				}
 
 				save_code += 1
-				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
-					width += 1
+				if width < 12 {
+					width += 1 & (save_code >> width)
 				}
 				prev_code = code
 			}
@@ -268,8 +268,8 @@ pri func decoder.read_from!(src base.io_reader) {
 				}
 
 				save_code += 1
-				if (save_code == ((1 as base.u32) << width)) and (width < 12) {
-					width += 1
+				if width < 12 {
+					width += 1 & (save_code >> width)
 				}
 				prev_code = code
 			}

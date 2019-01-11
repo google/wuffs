@@ -7274,8 +7274,8 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
           self->private_impl.f_suffixes[v_save_code][0] = ((uint8_t)(v_code));
         }
         v_save_code += 1;
-        if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
-          v_width += 1;
+        if (v_width < 12) {
+          v_width += (1 & (v_save_code >> v_width));
         }
         v_prev_code = v_code;
       }
@@ -7333,8 +7333,8 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
               ((uint8_t)(v_first_byte));
         }
         v_save_code += 1;
-        if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
-          v_width += 1;
+        if (v_width < 12) {
+          v_width += (1 & (v_save_code >> v_width));
         }
         v_prev_code = v_code;
       }
