@@ -616,9 +616,14 @@ const char* test_mimic_deflate_decode_midsummer() {
   return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt, 0, 0);
 }
 
-const char* test_mimic_deflate_decode_pi() {
+const char* test_mimic_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, 0, 0);
+}
+
+const char* test_mimic_deflate_decode_pi_many_big_reads() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, 0, 4096);
 }
 
 const char* test_mimic_deflate_decode_romeo() {
@@ -648,10 +653,16 @@ const char* bench_wuffs_deflate_decode_10k() {
                              &deflate_midsummer_gt, 0, 0, 300);
 }
 
-const char* bench_wuffs_deflate_decode_100k() {
+const char* bench_wuffs_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0,
                              30);
+}
+
+const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0,
+                             4096, 30);
 }
 
   // ---------------- Mimic Benches
@@ -670,10 +681,16 @@ const char* bench_mimic_deflate_decode_10k() {
                              &deflate_midsummer_gt, 0, 0, 300);
 }
 
-const char* bench_mimic_deflate_decode_100k() {
+const char* bench_mimic_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0,
                              30);
+}
+
+const char* bench_mimic_deflate_decode_100k_many_big_reads() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0,
+                             4096, 30);
 }
 
 #endif  // WUFFS_MIMIC
@@ -704,7 +721,8 @@ proc tests[] = {
     test_mimic_deflate_decode_deflate_backref_crosses_blocks,  //
     test_mimic_deflate_decode_deflate_distance_32768,          //
     test_mimic_deflate_decode_midsummer,                       //
-    test_mimic_deflate_decode_pi,                              //
+    test_mimic_deflate_decode_pi_just_one_read,                //
+    test_mimic_deflate_decode_pi_many_big_reads,               //
     test_mimic_deflate_decode_romeo,                           //
     test_mimic_deflate_decode_romeo_fixed,                     //
 
@@ -716,15 +734,17 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_deflate_decode_1k,    //
-    bench_wuffs_deflate_decode_10k,   //
-    bench_wuffs_deflate_decode_100k,  //
+    bench_wuffs_deflate_decode_1k,                   //
+    bench_wuffs_deflate_decode_10k,                  //
+    bench_wuffs_deflate_decode_100k_just_one_read,   //
+    bench_wuffs_deflate_decode_100k_many_big_reads,  //
 
 #ifdef WUFFS_MIMIC
 
-    bench_mimic_deflate_decode_1k,    //
-    bench_mimic_deflate_decode_10k,   //
-    bench_mimic_deflate_decode_100k,  //
+    bench_mimic_deflate_decode_1k,                   //
+    bench_mimic_deflate_decode_10k,                  //
+    bench_mimic_deflate_decode_100k_just_one_read,   //
+    bench_mimic_deflate_decode_100k_many_big_reads,  //
 
 #endif  // WUFFS_MIMIC
 
