@@ -148,12 +148,16 @@ bool check_focus() {
   return false;
 }
 
+// https://www.guyrutenberg.com/2008/12/20/expanding-macros-into-string-constants-in-c/
+#define WUFFS_TESTLIB_QUOTE_EXPAND(x) #x
+#define WUFFS_TESTLIB_QUOTE(x) WUFFS_TESTLIB_QUOTE_EXPAND(x)
+
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
-const char* cc = "clang";
+const char* cc = "clang" WUFFS_TESTLIB_QUOTE(__clang_major__);
 const char* cc_version = __clang_version__;
 #elif defined(__GNUC__)
-const char* cc = "gcc";
+const char* cc = "gcc" WUFFS_TESTLIB_QUOTE(__GNUC__);
 const char* cc_version = __VERSION__;
 #elif defined(_MSC_VER)
 const char* cc = "cl";
