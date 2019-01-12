@@ -95,11 +95,8 @@ func doBenchTest1(filename string, bench bool, ccompilers string, focus string,
 	ccArgs := []string(nil)
 	if bench {
 		ccArgs = append(ccArgs, "-O3")
-	} else {
-		// TODO: set these flags even if we pass -O3.
-		ccArgs = append(ccArgs, "-Wall", "-Werror")
 	}
-	ccArgs = append(ccArgs, "-std=c99", "-o", out, in)
+	ccArgs = append(ccArgs, "-Wall", "-Werror", "-std=c99", "-o", out, in)
 	if mimic {
 		extra, err := findWuffsMimicCflags(in)
 		if err != nil {
