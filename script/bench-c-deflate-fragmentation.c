@@ -28,28 +28,28 @@
 // This program reports the speed of combining the independent frag/full dst
 // and frag/full IDAT techniques.
 //
-// For example, with gcc 7.3 (and -O3) as of April 2018:
+// For example, with gcc 7.3 (and -O3) as of January 2019:
 //
 // On ../test/data/hat.png (90 × 112 pixels):
 // name                 time/op     relative
-// FragDstFragIDAT/gcc  203µs ± 1%  1.00x
-// FragDstFullIDAT/gcc  203µs ± 0%  1.00x
-// FullDstFragIDAT/gcc  170µs ± 0%  1.19x
-// FullDstFullIDAT/gcc  147µs ± 0%  1.38x
+// FragDstFragIDAT/gcc  286µs ± 1%  1.00x
+// FragDstFullIDAT/gcc  286µs ± 0%  1.00x
+// FullDstFragIDAT/gcc  214µs ± 1%  1.34x
+// FullDstFullIDAT/gcc  146µs ± 1%  1.96x
 //
-// On ../test/data/hibiscus.png (312 × 442 pixels):
+// On ../test/data/hibiscus.regular.png (312 × 442 pixels):
 // name                 time/op      relative
-// FragDstFragIDAT/gcc  2.62ms ± 1%  1.00x
-// FragDstFullIDAT/gcc  2.61ms ± 1%  1.00x
-// FullDstFragIDAT/gcc  2.44ms ± 0%  1.07x
-// FullDstFullIDAT/gcc  2.03ms ± 1%  1.29x
+// FragDstFragIDAT/gcc  3.58ms ± 1%  1.00x
+// FragDstFullIDAT/gcc  3.54ms ± 1%  1.01x
+// FullDstFragIDAT/gcc  3.09ms ± 1%  1.16x
+// FullDstFullIDAT/gcc  1.99ms ± 1%  1.80x
 //
 // On ../test/data/harvesters.png (1165 × 859 pixels):
 // name                 time/op      relative
-// FragDstFragIDAT/gcc  18.3ms ± 0%  1.00x
-// FragDstFullIDAT/gcc  18.3ms ± 1%  1.00x
-// FullDstFragIDAT/gcc  17.1ms ± 0%  1.07x
-// FullDstFullIDAT/gcc  13.9ms ± 0%  1.32x
+// FragDstFragIDAT/gcc  25.4ms ± 2%  1.00x
+// FragDstFullIDAT/gcc  25.2ms ± 0%  1.01x
+// FullDstFragIDAT/gcc  22.2ms ± 0%  1.14x
+// FullDstFullIDAT/gcc  14.0ms ± 1%  1.81x
 
 #include <errno.h>
 #include <inttypes.h>
@@ -69,7 +69,7 @@
 // If building this program in an environment that doesn't easily accommodate
 // relative includes, you can use the script/inline-c-relative-includes.go
 // program to generate a stand-alone C file.
-#include "../release/c/wuffs-unsupported-snapshot.h"
+#include "../release/c/wuffs-unsupported-snapshot.c"
 
 // The order matters here. Clang also defines "__GNUC__".
 #if defined(__clang__)
@@ -217,51 +217,68 @@ const char* process_png_chunks(uint8_t* p, size_t n) {
 
 const char* decode_once(bool frag_dst, bool frag_idat) {
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  const char* status =
+      wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (status) {
+    return status;
+  }
 
-  wuffs_base__io_buffer dst = {.ptr = dst_buffer, .len = bytes_per_frame};
-  wuffs_base__io_buffer idat = {.ptr = idat_buffer,
-                                .len = SRC_BUFFER_SIZE,
-                                .wi = idat_splits[num_idat_chunks],
-                                .closed = true};
+  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = dst_buffer,
+          .len = bytes_per_frame,
+      }),
+  });
+  wuffs_base__io_buffer idat = ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = idat_buffer,
+          .len = SRC_BUFFER_SIZE,
+      }),
+      .meta = ((wuffs_base__io_buffer_meta){
+          .wi = idat_splits[num_idat_chunks],
+          .ri = 0,
+          .pos = 0,
+          .closed = true,
+      }),
+  });
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader idat_reader = wuffs_base__io_buffer__reader(&idat);
 
   uint32_t i = 0;  // Number of dst fragments processed, if frag_dst.
   if (frag_dst) {
-    dst.len = bytes_per_row;
+    dst.data.len = bytes_per_row;
   }
 
   uint32_t j = 0;  // Number of IDAT fragments processed, if frag_idat.
   if (frag_idat) {
-    idat.wi = idat_splits[1];
-    idat.closed = (num_idat_chunks == 1);
+    idat.meta.wi = idat_splits[1];
+    idat.meta.closed = (num_idat_chunks == 1);
   }
 
   while (true) {
-    wuffs_base__status s =
-        wuffs_zlib__decoder__decode(&dec, dst_writer, idat_reader);
+    status =
+        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, idat_reader);
 
-    if (s == WUFFS_BASE__STATUS_OK) {
+    if (!status) {
       break;
     }
-    if ((s == WUFFS_BASE__SUSPENSION_SHORT_WRITE) && frag_dst &&
+    if ((status == wuffs_base__suspension__short_write) && frag_dst &&
         (i < height - 1)) {
       i++;
-      dst.len = bytes_per_row * (i + 1);
+      dst.data.len = bytes_per_row * (i + 1);
       continue;
     }
-    if ((s == WUFFS_BASE__SUSPENSION_SHORT_READ) && frag_idat &&
+    if ((status == wuffs_base__suspension__short_read) && frag_idat &&
         (j < num_idat_chunks - 1)) {
       j++;
-      idat.wi = idat_splits[j + 1];
-      idat.closed = (num_idat_chunks == j + 1);
+      idat.meta.wi = idat_splits[j + 1];
+      idat.meta.closed = (num_idat_chunks == j + 1);
       continue;
     }
-    return wuffs_zlib__status__string(s);
+    return status;
   }
 
-  if (dst.wi != bytes_per_frame) {
+  if (dst.meta.wi != bytes_per_frame) {
     return "unexpected number of bytes decoded";
   }
   return NULL;
@@ -320,7 +337,8 @@ int main(int argc, char** argv) {
   if (msg) {
     return fail(msg);
   }
-  if ((src_len < 8) || strncmp(src_buffer, "\x89PNG\x0D\x0A\x1A\x0A", 8)) {
+  if ((src_len < 8) ||
+      strncmp((const char*)(src_buffer), "\x89PNG\x0D\x0A\x1A\x0A", 8)) {
     return fail("invalid PNG");
   }
   msg = process_png_chunks(src_buffer + 8, src_len - 8);
