@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // This file contains a hand-written C implementation of
-// release/c/wuffs-unsupported-snapshot.h's generated
+// release/c/wuffs-unsupported-snapshot.c's generated
 // wuffs_deflate__decoder__decode_huffman_fast function.
 //
 // It is not intended to be used in production settings, on untrusted data. Its
@@ -27,7 +27,7 @@
 // ----------------
 //
 // Having said that, to generate the benchmark numbers with this hand-written C
-// implementation, edit release/c/wuffs-unsupported-snapshot.h and find the
+// implementation, edit release/c/wuffs-unsupported-snapshot.c and find the
 // lines that say
 //
 // // WUFFS C HEADER ENDS HERE.
@@ -41,7 +41,8 @@
 // be inside the wuffs_deflate__decoder__decode_blocks function body, and the
 // lines of code should look something like
 //
-// status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+// v_status =
+//     wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
 //
 // Change the "wuffs" to "c_wuffs", i.e. add a "c_" prefix. The net result
 // should look something like:
@@ -49,26 +50,26 @@
 // clang-format off
 /*
 
-$ git diff release/c/wuffs-unsupported-snapshot.h
-diff --git a/release/c/wuffs-unsupported-snapshot.h b/release/c/wuffs-unsupported-snapshot.h
-index f240b9b..33d7089 100644
---- a/release/c/wuffs-unsupported-snapshot.h
-+++ b/release/c/wuffs-unsupported-snapshot.h
-@@ -3128,6 +3128,8 @@ struct wuffs_zlib__decoder__struct {
+$ git diff release/c/wuffs-unsupported-snapshot.c
+diff --git a/release/c/wuffs-unsupported-snapshot.c b/release/c/wuffs-unsupported-snapshot.c
+index c570e34..0d080d8 100644
+--- a/release/c/wuffs-unsupported-snapshot.c
++++ b/release/c/wuffs-unsupported-snapshot.c
+@@ -3151,6 +3151,8 @@ struct wuffs_zlib__decoder__struct {
  // WUFFS C HEADER ENDS HERE.
  #ifdef WUFFS_IMPLEMENTATION
 
 +#include "../../script/wuffs-deflate-decoder-decode-huffman.c"
 +
- // Copyright 2017 The Wuffs Authors.
- //
- // Licensed under the Apache License, Version 2.0 (the "License");
-@@ -4940,7 +4942,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
-         a_src.private_impl.buf->meta.ri =
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -5557,7 +5559,7 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
              iop_a_src - a_src.private_impl.buf->data.ptr;
        }
--      status = wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-+      status = c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+       v_status =
+-          wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
++          c_wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
        if (a_src.private_impl.buf) {
          iop_a_src =
              a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
@@ -76,7 +77,7 @@ index f240b9b..33d7089 100644
 */
 // clang-format on
 //
-// That concludes the two edits to release/c/wuffs-unsupported-snapshot.h. Run
+// That concludes the two edits to release/c/wuffs-unsupported-snapshot.c. Run
 // the tests and benchmarks with the "-skipgen" flag, otherwise the "wuffs"
 // tool will re-generate the C code and override your edits:
 //
