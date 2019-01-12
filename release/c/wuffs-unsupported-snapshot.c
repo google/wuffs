@@ -1396,9 +1396,24 @@ typedef uint32_t wuffs_base__pixel_format;
 #define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x60020888)
 #define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x61038888)
 
+extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
+
 static inline bool  //
 wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
   return f != 0;
+}
+
+// wuffs_base__pixel_format__bits_per_pixel returns, for packed pixel formats,
+// the number of bits per pixel. It returns 0 for planar pixel formats.
+static inline uint32_t  //
+wuffs_base__pixel_format__bits_per_pixel(wuffs_base__pixel_format f) {
+  if (((f >> 16) & 0x03) != 0) {
+    return 0;
+  }
+  return wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 0)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 4)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 8)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 12)];
 }
 
 static inline bool  //
@@ -1406,9 +1421,19 @@ wuffs_base__pixel_format__is_indexed(wuffs_base__pixel_format f) {
   return (f >> 18) & 0x01;
 }
 
+static inline bool  //
+wuffs_base__pixel_format__is_packed(wuffs_base__pixel_format f) {
+  return ((f >> 16) & 0x03) == 0;
+}
+
+static inline bool  //
+wuffs_base__pixel_format__is_planar(wuffs_base__pixel_format f) {
+  return ((f >> 16) & 0x03) != 0;
+}
+
 static inline uint32_t  //
 wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
-  return f ? (((f >> 16) & 0x03) + 1) : 0;
+  return ((f >> 16) & 0x03) + 1;
 }
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
@@ -1597,33 +1622,23 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
-  // TODO: support more pixel formats.
-  uint64_t bytes_per_pixel = 0;
-  switch (wuffs_base__pixel_config__pixel_format(c)) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      bytes_per_pixel = 1;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
-      bytes_per_pixel = 4;
-      break;
-    default:
-      return 0;
-  }
-
   if (!c) {
     return 0;
   }
+  if (wuffs_base__pixel_format__is_planar(c->private_impl.pixfmt)) {
+    // TODO: support planar pixel formats, concious of pixel subsampling.
+    return 0;
+  }
+  uint32_t bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(c->private_impl.pixfmt);
+  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
+    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
+    return 0;
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
   uint64_t n =
       ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-
   if (n > (UINT64_MAX / bytes_per_pixel)) {
     return 0;
   }
@@ -2049,6 +2064,16 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (!pixcfg) {
     return wuffs_base__error__bad_argument;
   }
+  if (wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
+    // TODO: support planar pixel formats, concious of pixel subsampling.
+    return wuffs_base__error__bad_argument;
+  }
+  uint32_t bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
+  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
+    return wuffs_base__error__bad_argument;
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
   uint8_t* ptr = pixbuf_memory.ptr;
   uint64_t len = pixbuf_memory.len;
@@ -2070,27 +2095,6 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
     len -= 1024;
   }
 
-  // TODO: support more pixel formats.
-  uint64_t bytes_per_pixel = 0;
-  switch (wuffs_base__pixel_config__pixel_format(pixcfg)) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      bytes_per_pixel = 1;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
-      bytes_per_pixel = 4;
-      break;
-    default:
-      return wuffs_base__error__bad_argument;
-  }
-
-  // TODO: don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
   size_t width = (size_t)(pixcfg->private_impl.width);
@@ -4007,6 +4011,11 @@ const char* wuffs_base__error__disabled_by_previous_error =
     "?base: disabled by previous error";
 
 // ---------------- Images
+
+const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
+};
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,

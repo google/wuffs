@@ -398,30 +398,20 @@ const char* copy_to_io_buffer_from_pixel_buffer(wuffs_base__io_buffer* dst,
     return "copy_to_io_buffer_from_pixel_buffer: NULL src";
   }
 
-  // TODO: don't assume 1 plane or WUFFS_BASE__PIXEL_SUBSAMPLING__NONE. Also,
-  // support more pixel formats.
-  size_t bytes_per_pixel = 0;
   wuffs_base__pixel_format pixfmt =
       wuffs_base__pixel_config__pixel_format(&src->pixcfg);
-  switch (pixfmt) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      bytes_per_pixel = 1;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
-      bytes_per_pixel = 4;
-      break;
-    default:
-      RETURN_FAIL(
-          "copy_to_io_buffer_from_pixel_buffer: unsupported src pixfmt: 0x%08x",
-          (int)(pixfmt));
+  if (wuffs_base__pixel_format__is_planar(pixfmt)) {
+    // If we want to support planar pixel buffers, in the future, be concious
+    // of pixel subsampling.
+    return "copy_to_io_buffer_from_pixel_buffer: cannot copy from planar src";
   }
+  uint32_t bits_per_pixel = wuffs_base__pixel_format__bits_per_pixel(pixfmt);
+  if (bits_per_pixel == 0) {
+    return "copy_to_io_buffer_from_pixel_buffer: invalid bits_per_pixel";
+  } else if ((bits_per_pixel % 8) != 0) {
+    return "copy_to_io_buffer_from_pixel_buffer: cannot copy fractional bytes";
+  }
+  size_t bytes_per_pixel = bits_per_pixel / 8;
 
   uint32_t p;
   for (p = 0; p < 1; p++) {
