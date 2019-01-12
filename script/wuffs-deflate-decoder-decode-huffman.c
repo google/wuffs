@@ -155,24 +155,33 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
+
   uint8_t* pdst =
       a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
   uint8_t* qdst =
       a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
+  if (a_dst.private_impl.limit) {
+    qdst = a_dst.private_impl.limit;
+  }
   if ((qdst - pdst) < 258) {
     return NULL;
   } else {
     qdst -= 258;
   }
+
   uint8_t* psrc =
       a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
   uint8_t* qsrc =
       a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
+  if (a_src.private_impl.limit) {
+    qsrc = a_src.private_impl.limit;
+  }
   if ((qsrc - psrc) < 12) {
     return NULL;
   } else {
     qsrc -= 12;
   }
+
 #if defined(WUFFS_DEFLATE__HAVE_64_BIT_UNALIGNED_LITTLE_ENDIAN_LOADS)
   uint64_t bits = self->private_impl.f_bits;
 #else
