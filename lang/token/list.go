@@ -406,9 +406,8 @@ const (
 
 	// -------- 0x100 block.
 
-	IDEmptyStruct = ID(0x100)
-	IDBool        = ID(0x101)
-	IDUtility     = ID(0x102)
+	IDArgs = ID(0x100)
+	IDThis = ID(0x101)
 
 	IDT1      = ID(0x108)
 	IDT2      = ID(0x109)
@@ -432,20 +431,20 @@ const (
 	IDU32 = ID(0x116)
 	IDU64 = ID(0x117)
 
-	IDRangeIEU32 = ID(0x120)
-	IDRangeIIU32 = ID(0x121)
-	IDRangeIEU64 = ID(0x122)
-	IDRangeIIU64 = ID(0x123)
-	IDRectIEU32  = ID(0x124)
-	IDRectIIU32  = ID(0x125)
+	IDBase        = ID(0x120)
+	IDBool        = ID(0x121)
+	IDEmptyStruct = ID(0x122)
+	IDIOReader    = ID(0x123)
+	IDIOWriter    = ID(0x124)
+	IDStatus      = ID(0x125)
+	IDUtility     = ID(0x126)
 
-	IDIOReader = ID(0x128)
-	IDIOWriter = ID(0x129)
-	IDStatus   = ID(0x12A)
-
-	IDArgs = ID(0x130)
-	IDBase = ID(0x131)
-	IDThis = ID(0x132)
+	IDRangeIEU32 = ID(0x130)
+	IDRangeIIU32 = ID(0x131)
+	IDRangeIEU64 = ID(0x132)
+	IDRangeIIU64 = ID(0x133)
+	IDRectIEU32  = ID(0x134)
+	IDRectIIU32  = ID(0x135)
 
 	IDFrameConfig   = ID(0x150)
 	IDImageConfig   = ID(0x151)
@@ -715,9 +714,8 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x100 block.
 
-	IDEmptyStruct: "empty_struct",
-	IDBool:        "bool",
-	IDUtility:     "utility",
+	IDArgs: "args",
+	IDThis: "this",
 
 	// Some of the next few IDs are never returned by the tokenizer, as it
 	// rejects non-ASCII input. The string representations "¶", "ℤ" etc. are
@@ -761,20 +759,20 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
+	IDBase:        "base",
+	IDBool:        "bool",
+	IDEmptyStruct: "empty_struct",
+	IDIOReader:    "io_reader",
+	IDIOWriter:    "io_writer",
+	IDStatus:      "status",
+	IDUtility:     "utility",
+
 	IDRangeIEU32: "range_ie_u32",
 	IDRangeIIU32: "range_ii_u32",
 	IDRangeIEU64: "range_ie_u64",
 	IDRangeIIU64: "range_ii_u64",
 	IDRectIEU32:  "rect_ie_u32",
 	IDRectIIU32:  "rect_ii_u32",
-
-	IDIOReader: "io_reader",
-	IDIOWriter: "io_writer",
-	IDStatus:   "status",
-
-	IDArgs: "args",
-	IDBase: "base",
-	IDThis: "this",
 
 	IDFrameConfig:   "frame_config",
 	IDImageConfig:   "image_config",
