@@ -15,6 +15,7 @@
 - Dropped the `= RHS` out of `var x T = RHS`.
 - Changed func out-type from struct to bare type.
 - Renamed the implicit `in` variable to `args`.
+- Added an implicit `coroutine_resumed` variable.
 - Added `std/adler32`, `std/crc32` and `std/gzip`.
 - Spun `std/lzw` out of `std/gif`.
 - Spun `std/zlib` out of `std/flate`.

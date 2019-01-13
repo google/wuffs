@@ -484,7 +484,8 @@ func (c *Checker) checkFuncSignature(node *a.Node) error {
 	inTyp.AsNode().SetMType(typeExprTypeExpr)
 
 	localVars := typeMap{
-		t.IDArgs: inTyp,
+		t.IDArgs:             inTyp,
+		t.IDCoroutineResumed: typeExprBool,
 	}
 	if qqid[1] != 0 {
 		if _, ok := c.structs[t.QID{qqid[0], qqid[1]}]; !ok {

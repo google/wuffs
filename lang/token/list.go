@@ -400,7 +400,7 @@ const (
 const (
 	minBuiltInIdent   = 0x100
 	minCannotAssignTo = 0x100
-	maxCannotAssignTo = 0x101
+	maxCannotAssignTo = 0x102
 	minNumTypeOrIdeal = 0x10F
 	minNumType        = 0x110
 	maxNumType        = 0x117
@@ -409,8 +409,9 @@ const (
 
 	// -------- 0x100 block.
 
-	IDArgs = ID(0x100)
-	IDThis = ID(0x101)
+	IDArgs             = ID(0x100)
+	IDCoroutineResumed = ID(0x101)
+	IDThis             = ID(0x102)
 
 	IDT1      = ID(0x108)
 	IDT2      = ID(0x109)
@@ -717,8 +718,9 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x100 block.
 
-	IDArgs: "args",
-	IDThis: "this",
+	IDArgs:             "args",
+	IDCoroutineResumed: "coroutine_resumed",
+	IDThis:             "this",
 
 	// Some of the next few IDs are never returned by the tokenizer, as it
 	// rejects non-ASCII input. The string representations "¶", "ℤ" etc. are

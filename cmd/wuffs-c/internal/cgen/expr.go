@@ -59,6 +59,15 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		if ident := n.Ident(); ident == t.IDThis {
 			b.writes("self")
 
+		} else if ident == t.IDCoroutineResumed {
+			if g.currFunk.astFunc.Effect().Coroutine() {
+				// TODO: don't hard-code [0], and allow recursive coroutines.
+				b.printf("(self->private_impl.%s%s[0].coro_susp_point != 0)",
+					cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+			} else {
+				b.writes("false")
+			}
+
 		} else if ident.IsStrLiteral(g.tm) {
 			if z := g.statusMap[n.StatusQID()]; z.cName != "" {
 				b.writes(z.cName)
