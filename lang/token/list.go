@@ -103,6 +103,7 @@ func (x ID) IsTightLeft() bool  { return x < ID(len(isTightLeft)) && isTightLeft
 func (x ID) IsTightRight() bool { return x < ID(len(isTightRight)) && isTightRight[x] }
 
 func (x ID) IsAssign() bool         { return minAssign <= x && x <= maxAssign }
+func (x ID) IsCannotAssignTo() bool { return minCannotAssignTo <= x && x <= maxCannotAssignTo }
 func (x ID) IsClose() bool          { return minClose <= x && x <= maxClose }
 func (x ID) IsKeyword() bool        { return minKeyword <= x && x <= maxKeyword }
 func (x ID) IsNumType() bool        { return minNumType <= x && x <= maxNumType }
@@ -398,6 +399,8 @@ const (
 
 const (
 	minBuiltInIdent   = 0x100
+	minCannotAssignTo = 0x100
+	maxCannotAssignTo = 0x101
 	minNumTypeOrIdeal = 0x10F
 	minNumType        = 0x110
 	maxNumType        = 0x117

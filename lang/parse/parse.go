@@ -660,9 +660,10 @@ func (p *parser) parseAssignNode() (*a.Node, error) {
 				if id := l.Ident(); id.IsLiteral(p.tm) {
 					return nil, fmt.Errorf(`parse: assignment LHS %q is a literal at %s:%d`,
 						l.Str(p.tm), p.filename, p.line())
-				} else if id == t.IDThis {
+				} else if id.IsCannotAssignTo() {
 					if l == lhs {
-						return nil, fmt.Errorf(`parse: cannot assign to "this" at %s:%d`, p.filename, p.line())
+						return nil, fmt.Errorf(`parse: cannot assign to %q at %s:%d`,
+							id.Str(p.tm), p.filename, p.line())
 					}
 					if !p.funcEffect.Impure() {
 						return nil, fmt.Errorf(`parse: cannot assign to %q in a pure function at %s:%d`,
