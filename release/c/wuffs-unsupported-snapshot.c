@@ -5185,9 +5185,6 @@ const char* wuffs_deflate__error__no_huffman_codes =
 const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
         "?deflate: internal error: inconsistent Huffman decoder state";
-const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block =
-        "?deflate: internal error: inconsistent Huffman end_of_block";
 const char* wuffs_deflate__error__internal_error_inconsistent_i_o =
     "?deflate: internal error: inconsistent I/O";
 const char* wuffs_deflate__error__internal_error_inconsistent_distance =
@@ -5587,9 +5584,6 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         if (self->private_impl.f_end_of_block) {
           goto label_0_continue;
         }
-        status =
-            wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block;
-        goto exit;
       }
     }
 
@@ -6693,7 +6687,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
-    while (true) {
+    while (
+        !(self->private_impl.c_decode_huffman_slow[0].coro_susp_point != 0)) {
       while (true) {
         v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_lmask)];
         v_table_entry_n_bits = (v_table_entry & 15);

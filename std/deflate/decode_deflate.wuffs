@@ -27,7 +27,6 @@ pub status "?missing end-of-block code"
 pub status "?no Huffman codes"
 
 pri status "?internal error: inconsistent Huffman decoder state"
-pri status "?internal error: inconsistent Huffman end_of_block"
 pri status "?internal error: inconsistent I/O"
 pri status "?internal error: inconsistent distance"
 pri status "?internal error: inconsistent n_bits"
@@ -230,7 +229,6 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 			if this.end_of_block {
 				continue:outer
 			}
-			return "?internal error: inconsistent Huffman end_of_block"
 		}
 	}
 }

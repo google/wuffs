@@ -32,24 +32,24 @@
 //
 // On ../test/data/hat.png (90 × 112 pixels):
 // name                 time/op     relative
-// FragDstFragIDAT/gcc  286µs ± 1%  1.00x
-// FragDstFullIDAT/gcc  286µs ± 0%  1.00x
-// FullDstFragIDAT/gcc  214µs ± 1%  1.34x
-// FullDstFullIDAT/gcc  146µs ± 1%  1.96x
+// FragDstFragIDAT/gcc  289µs ± 1%  1.00x
+// FragDstFullIDAT/gcc  288µs ± 0%  1.00x
+// FullDstFragIDAT/gcc  149µs ± 1%  1.93x
+// FullDstFullIDAT/gcc  148µs ± 1%  1.95x
 //
 // On ../test/data/hibiscus.regular.png (312 × 442 pixels):
 // name                 time/op      relative
-// FragDstFragIDAT/gcc  3.58ms ± 1%  1.00x
-// FragDstFullIDAT/gcc  3.54ms ± 1%  1.01x
-// FullDstFragIDAT/gcc  3.09ms ± 1%  1.16x
-// FullDstFullIDAT/gcc  1.99ms ± 1%  1.80x
+// FragDstFragIDAT/gcc  2.49ms ± 0%  1.00x
+// FragDstFullIDAT/gcc  2.49ms ± 0%  1.00x
+// FullDstFragIDAT/gcc  2.08ms ± 0%  1.20x
+// FullDstFullIDAT/gcc  2.02ms ± 1%  1.23x
 //
 // On ../test/data/harvesters.png (1165 × 859 pixels):
 // name                 time/op      relative
-// FragDstFragIDAT/gcc  25.4ms ± 2%  1.00x
-// FragDstFullIDAT/gcc  25.2ms ± 0%  1.01x
-// FullDstFragIDAT/gcc  22.2ms ± 0%  1.14x
-// FullDstFullIDAT/gcc  14.0ms ± 1%  1.81x
+// FragDstFragIDAT/gcc  15.6ms ± 2%  1.00x
+// FragDstFullIDAT/gcc  15.4ms ± 0%  1.01x
+// FullDstFragIDAT/gcc  14.4ms ± 0%  1.08x
+// FullDstFullIDAT/gcc  14.1ms ± 0%  1.10x
 
 #include <errno.h>
 #include <inttypes.h>
