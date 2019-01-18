@@ -5552,42 +5552,45 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         goto exit;
       }
       self->private_impl.f_end_of_block = false;
-      if (a_src.private_impl.buf) {
-        a_src.private_impl.buf->meta.ri =
-            iop_a_src - a_src.private_impl.buf->data.ptr;
-      }
-      v_status =
-          wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-      if (a_src.private_impl.buf) {
-        iop_a_src =
-            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-      }
-      if (wuffs_base__status__is_error(v_status)) {
-        status = v_status;
+      while (true) {
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              iop_a_src - a_src.private_impl.buf->data.ptr;
+        }
+        v_status =
+            wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (wuffs_base__status__is_error(v_status)) {
+          status = v_status;
+          goto exit;
+        }
+        if (self->private_impl.f_end_of_block) {
+          goto label_0_continue;
+        }
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              iop_a_src - a_src.private_impl.buf->data.ptr;
+        }
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        status =
+            wuffs_deflate__decoder__decode_huffman_slow(self, a_dst, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (status) {
+          goto suspend;
+        }
+        if (self->private_impl.f_end_of_block) {
+          goto label_0_continue;
+        }
+        status =
+            wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block;
         goto exit;
       }
-      if (self->private_impl.f_end_of_block) {
-        goto label_0_continue;
-      }
-      if (a_src.private_impl.buf) {
-        a_src.private_impl.buf->meta.ri =
-            iop_a_src - a_src.private_impl.buf->data.ptr;
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      status = wuffs_deflate__decoder__decode_huffman_slow(self, a_dst, a_src);
-      if (a_src.private_impl.buf) {
-        iop_a_src =
-            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-      }
-      if (status) {
-        goto suspend;
-      }
-      if (self->private_impl.f_end_of_block) {
-        goto label_0_continue;
-      }
-      status =
-          wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block;
-      goto exit;
     }
 
     goto ok;

@@ -184,7 +184,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 	var type   base.u32
 	var status base.status
 
-	while final == 0 {
+	while:outer final == 0 {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
@@ -218,18 +218,20 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 		}
 
 		this.end_of_block = false
-		status = this.decode_huffman_fast!(dst:args.dst, src:args.src)
-		if status.is_error() {
-			return status
+		while true {
+			status = this.decode_huffman_fast!(dst:args.dst, src:args.src)
+			if status.is_error() {
+				return status
+			}
+			if this.end_of_block {
+				continue:outer
+			}
+			this.decode_huffman_slow?(dst:args.dst, src:args.src)
+			if this.end_of_block {
+				continue:outer
+			}
+			return "?internal error: inconsistent Huffman end_of_block"
 		}
-		if this.end_of_block {
-			continue
-		}
-		this.decode_huffman_slow?(dst:args.dst, src:args.src)
-		if this.end_of_block {
-			continue
-		}
-		return "?internal error: inconsistent Huffman end_of_block"
 	}
 }
 
