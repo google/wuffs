@@ -149,9 +149,6 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 			pixsub:0,
 			width:this.width,
 			height:this.height,
-			// TODO: workbuf_len should be an aspect of the decoder, not the image_config.
-			workbuf_len0:this.width as base.u64,
-			workbuf_len1:this.width as base.u64,
 			first_frame_io_position:this.frame_config_io_position,
 			first_frame_is_opaque:ffio)
 	}
