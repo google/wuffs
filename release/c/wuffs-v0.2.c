@@ -54,15 +54,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 867ea1cdcceac218db2914a9251341cc090a4108 committed on 2019-01-06.
+// dec519d9b42107797ef2d81249fe1a7485921253 committed on 2019-01-19.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.28"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1535
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190106
-#define WUFFS_VERSION_STRING "0.2.0-alpha.28+1535.20190106"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.29"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1556
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190119
+#define WUFFS_VERSION_STRING "0.2.0-alpha.29+1556.20190119"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -1397,9 +1397,24 @@ typedef uint32_t wuffs_base__pixel_format;
 #define WUFFS_BASE__PIXEL_FORMAT__CMY ((wuffs_base__pixel_format)0x60020888)
 #define WUFFS_BASE__PIXEL_FORMAT__CMYK ((wuffs_base__pixel_format)0x61038888)
 
+extern const uint32_t wuffs_base__pixel_format__bits_per_channel[16];
+
 static inline bool  //
 wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
   return f != 0;
+}
+
+// wuffs_base__pixel_format__bits_per_pixel returns, for packed pixel formats,
+// the number of bits per pixel. It returns 0 for planar pixel formats.
+static inline uint32_t  //
+wuffs_base__pixel_format__bits_per_pixel(wuffs_base__pixel_format f) {
+  if (((f >> 16) & 0x03) != 0) {
+    return 0;
+  }
+  return wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 0)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 4)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 8)] +
+         wuffs_base__pixel_format__bits_per_channel[0x0F & (f >> 12)];
 }
 
 static inline bool  //
@@ -1407,9 +1422,19 @@ wuffs_base__pixel_format__is_indexed(wuffs_base__pixel_format f) {
   return (f >> 18) & 0x01;
 }
 
+static inline bool  //
+wuffs_base__pixel_format__is_packed(wuffs_base__pixel_format f) {
+  return ((f >> 16) & 0x03) == 0;
+}
+
+static inline bool  //
+wuffs_base__pixel_format__is_planar(wuffs_base__pixel_format f) {
+  return ((f >> 16) & 0x03) != 0;
+}
+
 static inline uint32_t  //
 wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
-  return f ? (((f >> 16) & 0x03) + 1) : 0;
+  return ((f >> 16) & 0x03) + 1;
 }
 
 #define WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX 4
@@ -1598,33 +1623,23 @@ wuffs_base__pixel_config__height(wuffs_base__pixel_config* c) {
 // example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
-  // TODO: support more pixel formats.
-  uint64_t bytes_per_pixel = 0;
-  switch (wuffs_base__pixel_config__pixel_format(c)) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      bytes_per_pixel = 1;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
-      bytes_per_pixel = 4;
-      break;
-    default:
-      return 0;
-  }
-
   if (!c) {
     return 0;
   }
+  if (wuffs_base__pixel_format__is_planar(c->private_impl.pixfmt)) {
+    // TODO: support planar pixel formats, concious of pixel subsampling.
+    return 0;
+  }
+  uint32_t bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(c->private_impl.pixfmt);
+  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
+    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
+    return 0;
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
   uint64_t n =
       ((uint64_t)c->private_impl.width) * ((uint64_t)c->private_impl.height);
-
   if (n > (UINT64_MAX / bytes_per_pixel)) {
     return 0;
   }
@@ -1700,7 +1715,6 @@ typedef struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
   struct {
-    wuffs_base__range_ii_u64 workbuf_len;
     uint64_t first_frame_io_position;
     bool first_frame_is_opaque;
   } private_impl;
@@ -1710,13 +1724,10 @@ typedef struct {
                          wuffs_base__pixel_subsampling pixsub,
                          uint32_t width,
                          uint32_t height,
-                         uint64_t workbuf_len0,
-                         uint64_t workbuf_len1,
                          uint64_t first_frame_io_position,
                          bool first_frame_is_opaque);
   inline void invalidate();
   inline bool is_valid();
-  inline wuffs_base__range_ii_u64 workbuf_len();
   inline uint64_t first_frame_io_position();
   inline bool first_frame_is_opaque();
 #endif  // __cplusplus
@@ -1730,8 +1741,6 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
                                      wuffs_base__pixel_subsampling pixsub,
                                      uint32_t width,
                                      uint32_t height,
-                                     uint64_t workbuf_len0,
-                                     uint64_t workbuf_len1,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
   if (!c) {
@@ -1742,8 +1751,6 @@ wuffs_base__image_config__initialize(wuffs_base__image_config* c,
     c->pixcfg.private_impl.pixsub = pixsub;
     c->pixcfg.private_impl.width = width;
     c->pixcfg.private_impl.height = height;
-    c->private_impl.workbuf_len.min_incl = workbuf_len0;
-    c->private_impl.workbuf_len.max_incl = workbuf_len1;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
     return;
@@ -1763,11 +1770,6 @@ wuffs_base__image_config__is_valid(wuffs_base__image_config* c) {
   return c && wuffs_base__pixel_config__is_valid(&(c->pixcfg));
 }
 
-static inline wuffs_base__range_ii_u64  //
-wuffs_base__image_config__workbuf_len(wuffs_base__image_config* c) {
-  return c ? c->private_impl.workbuf_len : ((wuffs_base__range_ii_u64){});
-}
-
 static inline uint64_t  //
 wuffs_base__image_config__first_frame_io_position(wuffs_base__image_config* c) {
   return c ? c->private_impl.first_frame_io_position : 0;
@@ -1785,13 +1787,11 @@ wuffs_base__image_config::initialize(wuffs_base__pixel_format pixfmt,
                                      wuffs_base__pixel_subsampling pixsub,
                                      uint32_t width,
                                      uint32_t height,
-                                     uint64_t workbuf_len0,
-                                     uint64_t workbuf_len1,
                                      uint64_t first_frame_io_position,
                                      bool first_frame_is_opaque) {
-  wuffs_base__image_config__initialize(
-      this, pixfmt, pixsub, width, height, workbuf_len0, workbuf_len1,
-      first_frame_io_position, first_frame_is_opaque);
+  wuffs_base__image_config__initialize(this, pixfmt, pixsub, width, height,
+                                       first_frame_io_position,
+                                       first_frame_is_opaque);
 }
 
 inline void  //
@@ -1802,11 +1802,6 @@ wuffs_base__image_config::invalidate() {
 inline bool  //
 wuffs_base__image_config::is_valid() {
   return wuffs_base__image_config__is_valid(this);
-}
-
-inline wuffs_base__range_ii_u64  //
-wuffs_base__image_config::workbuf_len() {
-  return wuffs_base__image_config__workbuf_len(this);
 }
 
 inline uint64_t  //
@@ -2050,6 +2045,16 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (!pixcfg) {
     return wuffs_base__error__bad_argument;
   }
+  if (wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
+    // TODO: support planar pixel formats, concious of pixel subsampling.
+    return wuffs_base__error__bad_argument;
+  }
+  uint32_t bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
+  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
+    return wuffs_base__error__bad_argument;
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
   uint8_t* ptr = pixbuf_memory.ptr;
   uint64_t len = pixbuf_memory.len;
@@ -2071,27 +2076,6 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
     len -= 1024;
   }
 
-  // TODO: support more pixel formats.
-  uint64_t bytes_per_pixel = 0;
-  switch (wuffs_base__pixel_config__pixel_format(pixcfg)) {
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY:
-      bytes_per_pixel = 1;
-      break;
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
-    case WUFFS_BASE__PIXEL_FORMAT__RGBA_BINARY:
-      bytes_per_pixel = 4;
-      break;
-    default:
-      return wuffs_base__error__bad_argument;
-  }
-
-  // TODO: don't assume packed.
   uint64_t wh = ((uint64_t)pixcfg->private_impl.width) *
                 ((uint64_t)pixcfg->private_impl.height);
   size_t width = (size_t)(pixcfg->private_impl.width);
@@ -2294,16 +2278,17 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_adler32__hasher__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_adler32__hasher__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2311,6 +2296,24 @@ struct wuffs_adler32__hasher__struct {
     bool f_started;
 
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -2325,11 +2328,18 @@ struct wuffs_adler32__hasher__struct {
     return wuffs_adler32__hasher__update(this, a_x);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_adler32__hasher__struct(const wuffs_adler32__hasher__struct&) = delete;
+  wuffs_adler32__hasher__struct& operator=(
+      const wuffs_adler32__hasher__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_adler32__hasher__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2375,22 +2385,41 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_crc32__ieee_hasher__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_crc32__ieee_hasher__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
     uint32_t f_state;
 
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -2405,11 +2434,19 @@ struct wuffs_crc32__ieee_hasher__struct {
     return wuffs_crc32__ieee_hasher__update(this, a_x);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_crc32__ieee_hasher__struct(const wuffs_crc32__ieee_hasher__struct&) =
+      delete;
+  wuffs_crc32__ieee_hasher__struct& operator=(
+      const wuffs_crc32__ieee_hasher__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_crc32__ieee_hasher__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2459,9 +2496,9 @@ sizeof__wuffs_deflate__decoder();
 // ---------------- Public Function Prototypes
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                               wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src);
+wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
+                                         wuffs_base__io_writer a_dst,
+                                         wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -2470,16 +2507,17 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_deflate__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_deflate__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2494,7 +2532,7 @@ struct wuffs_deflate__decoder__struct {
 
     struct {
       uint32_t coro_susp_point;
-    } c_decode[1];
+    } c_decode_io_writer[1];
     struct {
       uint32_t coro_susp_point;
       uint32_t v_final;
@@ -2535,6 +2573,24 @@ struct wuffs_deflate__decoder__struct {
     } c_decode_huffman_slow[1];
   } private_impl;
 
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -2544,15 +2600,23 @@ struct wuffs_deflate__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_deflate__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src);
   }
+
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_deflate__decoder__struct(const wuffs_deflate__decoder__struct&) =
+      delete;
+  wuffs_deflate__decoder__struct& operator=(
+      const wuffs_deflate__decoder__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
 #endif  // __cplusplus
 
 };  // struct wuffs_deflate__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2593,9 +2657,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                           wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src);
+wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
+                                     wuffs_base__io_writer a_dst,
+                                     wuffs_base__io_reader a_src);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
 wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self);
@@ -2607,16 +2671,17 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self);
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_lzw__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_lzw__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2639,11 +2704,29 @@ struct wuffs_lzw__decoder__struct {
 
     struct {
       uint32_t coro_susp_point;
-    } c_decode[1];
+    } c_decode_io_writer[1];
     struct {
       uint32_t coro_susp_point;
     } c_write_to[1];
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -2659,8 +2742,8 @@ struct wuffs_lzw__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_lzw__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_lzw__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
   inline wuffs_base__slice_u8  //
@@ -2668,11 +2751,18 @@ struct wuffs_lzw__decoder__struct {
     return wuffs_lzw__decoder__flush(this);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_lzw__decoder__struct(const wuffs_lzw__decoder__struct&) = delete;
+  wuffs_lzw__decoder__struct& operator=(const wuffs_lzw__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_lzw__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2759,16 +2849,17 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_gif__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_gif__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2871,6 +2962,24 @@ struct wuffs_gif__decoder__struct {
     } c_decode_id_part2[1];
   } private_impl;
 
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -2930,11 +3039,18 @@ struct wuffs_gif__decoder__struct {
                                             a_opts);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_gif__decoder__struct(const wuffs_gif__decoder__struct&) = delete;
+  wuffs_gif__decoder__struct& operator=(const wuffs_gif__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_gif__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2978,9 +3094,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
+wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -2989,16 +3105,17 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_gzip__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_gzip__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -3013,8 +3130,26 @@ struct wuffs_gzip__decoder__struct {
       uint32_t v_decoded_length_got;
       uint32_t v_checksum_want;
       uint64_t scratch;
-    } c_decode[1];
+    } c_decode_io_writer[1];
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -3030,15 +3165,22 @@ struct wuffs_gzip__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_gzip__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src);
   }
+
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_gzip__decoder__struct(const wuffs_gzip__decoder__struct&) = delete;
+  wuffs_gzip__decoder__struct& operator=(const wuffs_gzip__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
 #endif  // __cplusplus
 
 };  // struct wuffs_gzip__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -3082,9 +3224,9 @@ WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src);
+wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src);
 
 // ---------------- Struct Definitions
 
@@ -3093,16 +3235,17 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_zlib__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_zlib__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -3114,8 +3257,26 @@ struct wuffs_zlib__decoder__struct {
       uint32_t coro_susp_point;
       uint32_t v_checksum_got;
       uint64_t scratch;
-    } c_decode[1];
+    } c_decode_io_writer[1];
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -3131,15 +3292,22 @@ struct wuffs_zlib__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_zlib__decoder__decode(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
+    return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src);
   }
+
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_zlib__decoder__struct(const wuffs_zlib__decoder__struct&) = delete;
+  wuffs_zlib__decoder__struct& operator=(const wuffs_zlib__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
 
 #endif  // __cplusplus
 
 };  // struct wuffs_zlib__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -4008,6 +4176,11 @@ const char* wuffs_base__error__disabled_by_previous_error =
     "?base: disabled by previous error";
 
 // ---------------- Images
+
+const uint32_t wuffs_base__pixel_format__bits_per_channel[16] = {
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x0A, 0x0C, 0x10, 0x18, 0x20, 0x30, 0x40,
+};
 
 static uint64_t  //
 wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
@@ -5177,9 +5350,6 @@ const char* wuffs_deflate__error__no_huffman_codes =
 const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
         "?deflate: internal error: inconsistent Huffman decoder state";
-const char*
-    wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block =
-        "?deflate: internal error: inconsistent Huffman end_of_block";
 const char* wuffs_deflate__error__internal_error_inconsistent_i_o =
     "?deflate: internal error: inconsistent I/O";
 const char* wuffs_deflate__error__internal_error_inconsistent_distance =
@@ -5298,12 +5468,12 @@ sizeof__wuffs_deflate__decoder() {
 
 // ---------------- Function Implementations
 
-// -------- func deflate.decoder.decode
+// -------- func deflate.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
-                               wuffs_base__io_writer a_dst,
-                               wuffs_base__io_reader a_src) {
+wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
+                                         wuffs_base__io_writer a_dst,
+                                         wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -5339,7 +5509,8 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
     io1_a_dst = a_dst.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
   }
   switch (coro_susp_point) {
@@ -5418,13 +5589,13 @@ wuffs_deflate__decoder__decode(wuffs_deflate__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
 
   goto exit;
 exit:
@@ -5543,42 +5714,42 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
         goto exit;
       }
       self->private_impl.f_end_of_block = false;
-      if (a_src.private_impl.buf) {
-        a_src.private_impl.buf->meta.ri =
-            iop_a_src - a_src.private_impl.buf->data.ptr;
+      while (true) {
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              iop_a_src - a_src.private_impl.buf->data.ptr;
+        }
+        v_status =
+            wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (wuffs_base__status__is_error(v_status)) {
+          status = v_status;
+          goto exit;
+        }
+        if (self->private_impl.f_end_of_block) {
+          goto label_0_continue;
+        }
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              iop_a_src - a_src.private_impl.buf->data.ptr;
+        }
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+        status =
+            wuffs_deflate__decoder__decode_huffman_slow(self, a_dst, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (status) {
+          goto suspend;
+        }
+        if (self->private_impl.f_end_of_block) {
+          goto label_0_continue;
+        }
       }
-      v_status =
-          wuffs_deflate__decoder__decode_huffman_fast(self, a_dst, a_src);
-      if (a_src.private_impl.buf) {
-        iop_a_src =
-            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-      }
-      if (wuffs_base__status__is_error(v_status)) {
-        status = v_status;
-        goto exit;
-      }
-      if (self->private_impl.f_end_of_block) {
-        goto label_0_continue;
-      }
-      if (a_src.private_impl.buf) {
-        a_src.private_impl.buf->meta.ri =
-            iop_a_src - a_src.private_impl.buf->data.ptr;
-      }
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      status = wuffs_deflate__decoder__decode_huffman_slow(self, a_dst, a_src);
-      if (a_src.private_impl.buf) {
-        iop_a_src =
-            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-      }
-      if (status) {
-        goto suspend;
-      }
-      if (self->private_impl.f_end_of_block) {
-        goto label_0_continue;
-      }
-      status =
-          wuffs_deflate__error__internal_error_inconsistent_huffman_end_of_block;
-      goto exit;
     }
 
     goto ok;
@@ -6681,7 +6852,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
-    while (true) {
+    while (
+        !(self->private_impl.c_decode_huffman_slow[0].coro_susp_point != 0)) {
       while (true) {
         v_table_entry = self->private_impl.f_huffs[0][(v_bits & v_lmask)];
         v_table_entry_n_bits = (v_table_entry & 15);
@@ -7087,12 +7259,12 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func lzw.decoder.decode
+// -------- func lzw.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
-                           wuffs_base__io_writer a_dst,
-                           wuffs_base__io_reader a_src) {
+wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
+                                     wuffs_base__io_writer a_dst,
+                                     wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -7105,7 +7277,8 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
 
   uint32_t v_i = 0;
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
   }
   switch (coro_susp_point) {
@@ -7160,13 +7333,13 @@ wuffs_lzw__decoder__decode(wuffs_lzw__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
 
   goto exit;
 exit:
@@ -7275,8 +7448,8 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
           self->private_impl.f_suffixes[v_save_code][0] = ((uint8_t)(v_code));
         }
         v_save_code += 1;
-        if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
-          v_width += 1;
+        if (v_width < 12) {
+          v_width += (1 & (v_save_code >> v_width));
         }
         v_prev_code = v_code;
       }
@@ -7334,8 +7507,8 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
               ((uint8_t)(v_first_byte));
         }
         v_save_code += 1;
-        if ((v_save_code == (((uint32_t)(1)) << v_width)) && (v_width < 12)) {
-          v_width += 1;
+        if (v_width < 12) {
+          v_width += (1 & (v_save_code >> v_width));
         }
         v_prev_code = v_code;
       }
@@ -7670,8 +7843,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     if (a_dst != NULL) {
       wuffs_base__image_config__initialize(
           a_dst, 1191444488, 0, self->private_impl.f_width,
-          self->private_impl.f_height, ((uint64_t)(self->private_impl.f_width)),
-          ((uint64_t)(self->private_impl.f_width)),
+          self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, v_ffio);
     }
     self->private_impl.f_call_sequence = 1;
@@ -9519,7 +9691,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                   self->private_impl.f_compressed_wi));
           {
             u_r.meta.ri = iop_v_r - u_r.data.ptr;
-            wuffs_base__status t_1 = wuffs_lzw__decoder__decode(
+            wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
                 &self->private_impl.f_lzw,
                 wuffs_base__utility__null_io_writer(&self->private_impl.f_util),
                 v_r);
@@ -9802,12 +9974,12 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func gzip.decoder.decode
+// -------- func gzip.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
+wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -9863,12 +10035,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     io1_a_src = a_src.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
-    v_flags = self->private_impl.c_decode[0].v_flags;
-    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
-    v_decoded_length_got = self->private_impl.c_decode[0].v_decoded_length_got;
-    v_checksum_want = self->private_impl.c_decode[0].v_checksum_want;
+    v_flags = self->private_impl.c_decode_io_writer[0].v_flags;
+    v_checksum_got = self->private_impl.c_decode_io_writer[0].v_checksum_got;
+    v_decoded_length_got =
+        self->private_impl.c_decode_io_writer[0].v_decoded_length_got;
+    v_checksum_want = self->private_impl.c_decode_io_writer[0].v_checksum_want;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9921,16 +10095,16 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
       uint8_t t_3 = *iop_a_src++;
       v_flags = t_3;
     }
-    self->private_impl.c_decode[0].scratch = 6;
+    self->private_impl.c_decode_io_writer[0].scratch = 6;
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
-    if (self->private_impl.c_decode[0].scratch >
+    if (self->private_impl.c_decode_io_writer[0].scratch >
         ((uint64_t)(io1_a_src - iop_a_src))) {
-      self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+      self->private_impl.c_decode_io_writer[0].scratch -= io1_a_src - iop_a_src;
       iop_a_src = io1_a_src;
       status = wuffs_base__suspension__short_read;
       goto suspend;
     }
-    iop_a_src += self->private_impl.c_decode[0].scratch;
+    iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     if ((v_flags & 4) != 0) {
       {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
@@ -9939,14 +10113,15 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           t_4 = wuffs_base__load_u16le(iop_a_src);
           iop_a_src += 2;
         } else {
-          self->private_impl.c_decode[0].scratch = 0;
+          self->private_impl.c_decode_io_writer[0].scratch = 0;
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
           while (true) {
             if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
               status = wuffs_base__suspension__short_read;
               goto suspend;
             }
-            uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+            uint64_t* scratch =
+                &self->private_impl.c_decode_io_writer[0].scratch;
             uint32_t num_bits_4 = *scratch >> 56;
             *scratch <<= 8;
             *scratch >>= 8;
@@ -9961,16 +10136,17 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         }
         v_xlen = t_4;
       }
-      self->private_impl.c_decode[0].scratch = ((uint32_t)(v_xlen));
+      self->private_impl.c_decode_io_writer[0].scratch = ((uint32_t)(v_xlen));
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
-      if (self->private_impl.c_decode[0].scratch >
+      if (self->private_impl.c_decode_io_writer[0].scratch >
           ((uint64_t)(io1_a_src - iop_a_src))) {
-        self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+        self->private_impl.c_decode_io_writer[0].scratch -=
+            io1_a_src - iop_a_src;
         iop_a_src = io1_a_src;
         status = wuffs_base__suspension__short_read;
         goto suspend;
       }
-      iop_a_src += self->private_impl.c_decode[0].scratch;
+      iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     }
     if ((v_flags & 8) != 0) {
       while (true) {
@@ -10007,16 +10183,17 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
     label_1_break:;
     }
     if ((v_flags & 2) != 0) {
-      self->private_impl.c_decode[0].scratch = 2;
+      self->private_impl.c_decode_io_writer[0].scratch = 2;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(11);
-      if (self->private_impl.c_decode[0].scratch >
+      if (self->private_impl.c_decode_io_writer[0].scratch >
           ((uint64_t)(io1_a_src - iop_a_src))) {
-        self->private_impl.c_decode[0].scratch -= io1_a_src - iop_a_src;
+        self->private_impl.c_decode_io_writer[0].scratch -=
+            io1_a_src - iop_a_src;
         iop_a_src = io1_a_src;
         status = wuffs_base__suspension__short_read;
         goto suspend;
       }
-      iop_a_src += self->private_impl.c_decode[0].scratch;
+      iop_a_src += self->private_impl.c_decode_io_writer[0].scratch;
     }
     if ((v_flags & 224) != 0) {
       status = wuffs_gzip__error__bad_encoding_flags;
@@ -10033,7 +10210,7 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
           a_src.private_impl.buf->meta.ri =
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
-        wuffs_base__status t_7 = wuffs_deflate__decoder__decode(
+        wuffs_base__status t_7 = wuffs_deflate__decoder__decode_io_writer(
             &self->private_impl.f_flate, a_dst, a_src);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
@@ -10069,14 +10246,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         t_8 = wuffs_base__load_u32le(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(14);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_8 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
@@ -10098,14 +10275,14 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
         t_9 = wuffs_base__load_u32le(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(16);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_9 = *scratch >> 56;
           *scratch <<= 8;
           *scratch >>= 8;
@@ -10129,17 +10306,18 @@ wuffs_gzip__decoder__decode(wuffs_gzip__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_flags = v_flags;
-  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
-  self->private_impl.c_decode[0].v_decoded_length_got = v_decoded_length_got;
-  self->private_impl.c_decode[0].v_checksum_want = v_checksum_want;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].v_flags = v_flags;
+  self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
+  self->private_impl.c_decode_io_writer[0].v_decoded_length_got =
+      v_decoded_length_got;
+  self->private_impl.c_decode_io_writer[0].v_checksum_want = v_checksum_want;
 
   goto exit;
 exit:
@@ -10241,12 +10419,12 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
   return ((wuffs_base__empty_struct){});
 }
 
-// -------- func zlib.decoder.decode
+// -------- func zlib.decoder.decode_io_writer
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
-wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
-                            wuffs_base__io_writer a_dst,
-                            wuffs_base__io_reader a_src) {
+wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
+                                      wuffs_base__io_writer a_dst,
+                                      wuffs_base__io_reader a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10298,9 +10476,10 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
     io1_a_src = a_src.private_impl.limit;
   }
 
-  uint32_t coro_susp_point = self->private_impl.c_decode[0].coro_susp_point;
+  uint32_t coro_susp_point =
+      self->private_impl.c_decode_io_writer[0].coro_susp_point;
   if (coro_susp_point) {
-    v_checksum_got = self->private_impl.c_decode[0].v_checksum_got;
+    v_checksum_got = self->private_impl.c_decode_io_writer[0].v_checksum_got;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -10312,14 +10491,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         t_0 = wuffs_base__load_u16be(iop_a_src);
         iop_a_src += 2;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_0 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
@@ -10361,7 +10540,7 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
           a_src.private_impl.buf->meta.ri =
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
-        wuffs_base__status t_1 = wuffs_deflate__decoder__decode(
+        wuffs_base__status t_1 = wuffs_deflate__decoder__decode_io_writer(
             &self->private_impl.f_flate, a_dst, a_src);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
@@ -10395,14 +10574,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
         t_2 = wuffs_base__load_u32be(iop_a_src);
         iop_a_src += 4;
       } else {
-        self->private_impl.c_decode[0].scratch = 0;
+        self->private_impl.c_decode_io_writer[0].scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
-          uint64_t* scratch = &self->private_impl.c_decode[0].scratch;
+          uint64_t* scratch = &self->private_impl.c_decode_io_writer[0].scratch;
           uint32_t num_bits_2 = *scratch & 0xFF;
           *scratch >>= 8;
           *scratch <<= 8;
@@ -10425,14 +10604,14 @@ wuffs_zlib__decoder__decode(wuffs_zlib__decoder* self,
 
     goto ok;
   ok:
-    self->private_impl.c_decode[0].coro_susp_point = 0;
+    self->private_impl.c_decode_io_writer[0].coro_susp_point = 0;
     goto exit;
   }
 
   goto suspend;
 suspend:
-  self->private_impl.c_decode[0].coro_susp_point = coro_susp_point;
-  self->private_impl.c_decode[0].v_checksum_got = v_checksum_got;
+  self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
 
   goto exit;
 exit:
