@@ -92,6 +92,7 @@ index c570e34..0d080d8 100644
 #include <stddef.h>
 #include <stdio.h>  // For manual printf debugging.
 
+extern const char* wuffs_deflate__error__internal_error_inconsistent_distance;
 extern const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
 
@@ -190,7 +191,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   uint32_t n_bits = self->private_impl.f_n_bits;
 
   // Initialize other local variables.
-  uint8_t* pdst0 = pdst;
+  uint8_t* pdst_mark = a_dst.private_impl.mark ? a_dst.private_impl.mark : pdst;
   uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
   uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
 
@@ -321,10 +322,48 @@ outer_loop:
       n_bits -= n;
     }
 
-    // TODO: look at a sliding window, not just output written so far to dst.
-    if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst0)) {
-      status = wuffs_base__error__bad_argument;
-      goto end;
+    // Copy from the history buffer, if necessary.
+    if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst_mark)) {
+      // Set (hlen, hdist) to be the length-distance pair to copy from
+      // this.history, and (length, distance) to be the remaining
+      // length-distance pair to copy from args.dst.
+      uint32_t hlen = 0;
+      uint32_t hdist = ((dist_minus_1 + 1) - (pdst - pdst_mark));
+      if (length > hdist) {
+        length -= hdist;
+        hlen = hdist;
+      } else {
+        hlen = length;
+        length = 0;
+      }
+      if (self->private_impl.f_history_index < hdist) {
+        status = wuffs_deflate__error__bad_distance;
+        goto end;
+      }
+
+      // Copy up to the right edge of the f_history array.
+      uint32_t history_index =
+          (self->private_impl.f_history_index - hdist) & 0x7FFF;
+      uint32_t available = 0x8000 - history_index;
+      uint32_t n_copied = (hlen < available) ? hlen : available;
+      memmove(pdst, self->private_impl.f_history + history_index, n_copied);
+      pdst += n_copied;
+
+      // Copy from the left edge of the f_history array.
+      if (hlen > n_copied) {
+        hlen -= n_copied;
+        memmove(pdst, self->private_impl.f_history, hlen);
+        pdst += hlen;
+      }
+
+      if (length == 0) {
+        goto outer_loop;
+      }
+
+      if ((ptrdiff_t)(dist_minus_1 + 1) > (pdst - pdst_mark)) {
+        status = wuffs_deflate__error__internal_error_inconsistent_distance;
+        goto end;
+      }
     }
 
     uint8_t* pback = pdst - (dist_minus_1 + 1);
