@@ -156,6 +156,7 @@ func TestCheck(tt *testing.T) {
 		{"a", "array[4] base.u8"},
 		{"args", "args"},
 		{"b", "base.bool"},
+		{"coroutine_resumed", "base.bool"},
 		{"p", "base.i32"},
 		{"q", "base.i32[0..8]"},
 		{"this", "ptr foo"},
