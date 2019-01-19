@@ -2297,16 +2297,17 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_adler32__hasher__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_adler32__hasher__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2314,6 +2315,24 @@ struct wuffs_adler32__hasher__struct {
     bool f_started;
 
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -2328,11 +2347,18 @@ struct wuffs_adler32__hasher__struct {
     return wuffs_adler32__hasher__update(this, a_x);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_adler32__hasher__struct(const wuffs_adler32__hasher__struct&) = delete;
+  wuffs_adler32__hasher__struct& operator=(
+      const wuffs_adler32__hasher__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_adler32__hasher__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2378,22 +2404,41 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_crc32__ieee_hasher__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_crc32__ieee_hasher__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
     uint32_t f_state;
 
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -2408,11 +2453,19 @@ struct wuffs_crc32__ieee_hasher__struct {
     return wuffs_crc32__ieee_hasher__update(this, a_x);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_crc32__ieee_hasher__struct(const wuffs_crc32__ieee_hasher__struct&) =
+      delete;
+  wuffs_crc32__ieee_hasher__struct& operator=(
+      const wuffs_crc32__ieee_hasher__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_crc32__ieee_hasher__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2473,16 +2526,17 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_deflate__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_deflate__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2538,6 +2592,24 @@ struct wuffs_deflate__decoder__struct {
     } c_decode_huffman_slow[1];
   } private_impl;
 
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -2551,11 +2623,19 @@ struct wuffs_deflate__decoder__struct {
     return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_deflate__decoder__struct(const wuffs_deflate__decoder__struct&) =
+      delete;
+  wuffs_deflate__decoder__struct& operator=(
+      const wuffs_deflate__decoder__struct&) = delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_deflate__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2610,16 +2690,17 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self);
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_lzw__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_lzw__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2648,6 +2729,24 @@ struct wuffs_lzw__decoder__struct {
     } c_write_to[1];
   } private_impl;
 
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -2671,11 +2770,18 @@ struct wuffs_lzw__decoder__struct {
     return wuffs_lzw__decoder__flush(this);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_lzw__decoder__struct(const wuffs_lzw__decoder__struct&) = delete;
+  wuffs_lzw__decoder__struct& operator=(const wuffs_lzw__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_lzw__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2762,16 +2868,17 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_gif__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_gif__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -2874,6 +2981,24 @@ struct wuffs_gif__decoder__struct {
     } c_decode_id_part2[1];
   } private_impl;
 
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
+
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
@@ -2933,11 +3058,18 @@ struct wuffs_gif__decoder__struct {
                                             a_opts);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_gif__decoder__struct(const wuffs_gif__decoder__struct&) = delete;
+  wuffs_gif__decoder__struct& operator=(const wuffs_gif__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_gif__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -2992,16 +3124,17 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_gzip__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_gzip__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -3018,6 +3151,24 @@ struct wuffs_gzip__decoder__struct {
       uint64_t scratch;
     } c_decode_io_writer[1];
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -3037,11 +3188,18 @@ struct wuffs_gzip__decoder__struct {
     return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_gzip__decoder__struct(const wuffs_gzip__decoder__struct&) = delete;
+  wuffs_gzip__decoder__struct& operator=(const wuffs_gzip__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_gzip__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -3096,16 +3254,17 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
 //
 // See https://en.wikipedia.org/wiki/Opaque_pointer#C
 
-#ifdef WUFFS_IMPLEMENTATION
+#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 struct wuffs_zlib__decoder__struct {
+#ifdef WUFFS_IMPLEMENTATION
+
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so. Instead, use the
-  // wuffs_zlib__decoder__etc functions.
+  // wuffs_foo__bar__baz functions.
   //
-  // In C++, these fields would be "private", but C does not support that.
-  //
-  // It is a struct, not a struct*, so that it can be stack allocated.
+  // It is a struct, not a struct*, so that the outermost wuffs_foo__bar
+  // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
 
@@ -3119,6 +3278,24 @@ struct wuffs_zlib__decoder__struct {
       uint64_t scratch;
     } c_decode_io_writer[1];
   } private_impl;
+
+#else  // WUFFS_IMPLEMENTATION
+
+  // When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is
+  // large enough to discourage trying to allocate one on the stack. The sizeof
+  // the real private_impl (and the sizeof the real outermost wuffs_foo__bar
+  // struct) is not part of the public, stable, memory-safe API. Call
+  // wuffs_foo__bar__baz methods (which all take a "this"-like pointer as their
+  // first argument) instead of fiddling with bar.private_impl.qux fields.
+  //
+  // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
+  // defines C++ convenience methods. These methods forward on "this", so that
+  // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
+  struct {
+    uint8_t placeholder[1073741824];  // 1 GiB.
+  } private_impl;
+
+#endif  // WUFFS_IMPLEMENTATION
 
 #ifdef __cplusplus
 
@@ -3138,11 +3315,18 @@ struct wuffs_zlib__decoder__struct {
     return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src);
   }
 
+#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+  // Disallow copy and assign.
+  wuffs_zlib__decoder__struct(const wuffs_zlib__decoder__struct&) = delete;
+  wuffs_zlib__decoder__struct& operator=(const wuffs_zlib__decoder__struct&) =
+      delete;
+#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
+
 #endif  // __cplusplus
 
 };  // struct wuffs_zlib__decoder__struct
 
-#endif  // WUFFS_IMPLEMENTATION
+#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)
 
 #ifdef __cplusplus
 }  // extern "C"

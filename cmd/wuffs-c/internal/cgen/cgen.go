@@ -476,14 +476,15 @@ func (g *gen) genHeader(b *buffer) error {
 	b.writes("// These structs' fields, and the sizeof them, are private implementation\n")
 	b.writes("// details that aren't guaranteed to be stable across Wuffs versions.\n")
 	b.writes("//\n")
-	b.writes("// See https://en.wikipedia.org/wiki/Opaque_pointer#C\n")
-	b.writex(wiStart)
+	b.writes("// See https://en.wikipedia.org/wiki/Opaque_pointer#C\n\n")
+	b.writes("#if defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n\n")
+
 	for _, n := range g.structList {
 		if err := g.writeStruct(b, n); err != nil {
 			return err
 		}
 	}
-	b.writex(wiEnd)
+	b.writes("#endif  // defined(__cplusplus) || defined(WUFFS_IMPLEMENTATION)\n")
 
 	b.writes("\n#ifdef __cplusplus\n}  // extern \"C\"\n#endif\n\n")
 	return nil
@@ -700,16 +701,14 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 	return nil
 }
 
-func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
-	structName := n.QID().Str(g.tm)
-	b.printf("struct %s%s__struct {\n", g.pkgPrefix, structName)
+func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
 	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
-	b.printf("// %s%s__etc functions.\n", g.pkgPrefix, structName)
+	b.writes("// wuffs_foo__bar__baz functions.\n")
 	b.writes("//\n")
-	b.writes("// In C++, these fields would be \"private\", but C does not support that.\n")
-	b.writes("//\n")
-	b.writes("// It is a struct, not a struct*, so that it can be stack allocated.\n")
+	b.writes("// It is a struct, not a struct*, so that the outermost wuffs_foo__bar\n")
+	b.writes("// struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.\n")
+
 	b.writes("struct {\n")
 	if n.Classy() {
 		b.writes("uint32_t magic;\n")
@@ -756,6 +755,34 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		}
 	}
 	b.writes("} private_impl;\n\n")
+	return nil
+}
+
+func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
+	structName := n.QID().Str(g.tm)
+	fullStructName := g.pkgPrefix + structName + "__struct"
+	b.printf("struct %s {\n", fullStructName)
+
+	b.writex(wiStart)
+	if err := g.writeStructPrivateImpl(b, n); err != nil {
+		return err
+	}
+
+	b.writex(wiElse)
+	b.writes("// When WUFFS_IMPLEMENTATION is not defined, this placeholder private_impl is\n")
+	b.writes("// large enough to discourage trying to allocate one on the stack. The sizeof\n")
+	b.writes("// the real private_impl (and the sizeof the real outermost wuffs_foo__bar\n")
+	b.writes("// struct) is not part of the public, stable, memory-safe API. Call\n")
+	b.writes("// wuffs_foo__bar__baz methods (which all take a \"this\"-like pointer as their\n")
+	b.writes("// first argument) instead of fiddling with bar.private_impl.qux fields.\n")
+	b.writes("//\n")
+	b.writes("// Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still\n")
+	b.writes("// defines C++ convenience methods. These methods forward on \"this\", so that\n")
+	b.writes("// you can write \"bar->baz(etc)\" instead of \"wuffs_foo__bar__baz(bar, etc)\".\n")
+	b.writes("struct {\n")
+	b.writes("uint8_t placeholder[1073741824];  // 1 GiB.\n")
+	b.writes("} private_impl;\n\n")
+	b.writex(wiEnd)
 
 	if n.AsNode().AsRaw().Flags()&a.FlagsPublic != 0 {
 		if err := g.writeCppMethods(b, n); err != nil {
@@ -763,14 +790,15 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 		}
 	}
 
-	b.printf("};  // struct %s%s__struct\n\n", g.pkgPrefix, structName)
+	b.printf("};  // struct %s\n\n", fullStructName)
 	return nil
 }
 
 func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	structName := n.QID().Str(g.tm)
-
+	fullStructName := g.pkgPrefix + structName + "__struct"
 	b.writes("#ifdef __cplusplus\n\n")
+
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
@@ -805,6 +833,12 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 		}
 	}
 
+	b.writes("#if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n")
+	b.writes("// Disallow copy and assign.\n")
+	b.printf("%s(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.printf("%s& operator=(const %s&) = delete;\n", fullStructName, fullStructName)
+	b.writes("#endif  // (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)\n\n")
+
 	b.writes("#endif  // __cplusplus\n\n")
 	return nil
 }
@@ -812,6 +846,7 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 var (
 	wiStartImpl = []byte("\n// WUFFS C HEADER ENDS HERE.\n#ifdef WUFFS_IMPLEMENTATION\n\n")
 	wiStart     = []byte("\n#ifdef WUFFS_IMPLEMENTATION\n\n")
+	wiElse      = []byte("\n#else   // WUFFS_IMPLEMENTATION\n\n")
 	wiEnd       = []byte("\n#endif  // WUFFS_IMPLEMENTATION\n\n")
 )
 
