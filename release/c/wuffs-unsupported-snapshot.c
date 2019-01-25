@@ -2308,9 +2308,13 @@ struct wuffs_adler32__hasher__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -2414,9 +2418,13 @@ struct wuffs_crc32__ieee_hasher__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -2584,9 +2592,13 @@ struct wuffs_deflate__decoder__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -2721,9 +2733,13 @@ struct wuffs_lzw__decoder__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -2973,9 +2989,13 @@ struct wuffs_gif__decoder__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -3144,9 +3164,13 @@ struct wuffs_gzip__decoder__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
@@ -3271,9 +3295,13 @@ struct wuffs_zlib__decoder__struct {
   // Even when WUFFS_IMPLEMENTATION is not defined, the outermost struct still
   // defines C++ convenience methods. These methods forward on "this", so that
   // you can write "bar->baz(etc)" instead of "wuffs_foo__bar__baz(bar, etc)".
-  struct {
+ private:
+  union {
+    uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
   } private_impl;
+
+ public:
 
 #endif  // WUFFS_IMPLEMENTATION
 
