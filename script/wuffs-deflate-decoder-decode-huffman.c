@@ -87,14 +87,93 @@ index c570e34..0d080d8 100644
 // You may also want to focus on one specific test, e.g.:
 //
 // wuffs test  -skipgen -focus=wuffs_deflate_decode_midsummer std/deflate
-// wuffs bench -skipgen -focus=wuffs_deflate_decode_100k      std/deflate
+// wuffs bench -skipgen -focus=wuffs_deflate_decode_100k_just std/deflate
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>  // For manual printf debugging.
+#include <string.h>
 
 extern const char* wuffs_deflate__error__internal_error_inconsistent_distance;
 extern const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
+
+// ----------------
+
+// Define this macro to make this file compilable standalone, instead of
+// hooking it into release/c/wuffs-unsupported-snapshot.c per the instructions
+// above. Standalone means that you can run a "does it compile" check by
+//
+// gcc -c script/wuffs-deflate-decoder-decode-huffman.c -o /dev/null
+//
+// and also drop this file into disassembly tools like https://godbolt.org/
+
+//#define MAKE_THIS_FILE_COMPILABLE_STANDALONE
+
+#ifdef MAKE_THIS_FILE_COMPILABLE_STANDALONE
+
+typedef const char* wuffs_base__status;
+typedef struct {
+  uint8_t* ptr;
+  size_t len;
+} wuffs_base__slice_u8;
+typedef struct {
+  size_t wi;
+  size_t ri;
+  uint64_t pos;
+  bool closed;
+} wuffs_base__io_buffer_meta;
+typedef struct wuffs_base__io_buffer__struct {
+  wuffs_base__slice_u8 data;
+  wuffs_base__io_buffer_meta meta;
+} wuffs_base__io_buffer;
+typedef struct {
+  struct {
+    struct wuffs_base__io_buffer__struct* buf;
+    uint8_t* mark;
+    uint8_t* limit;
+  } private_impl;
+} wuffs_base__io_reader;
+typedef struct {
+  struct {
+    struct wuffs_base__io_buffer__struct* buf;
+    uint8_t* mark;
+    uint8_t* limit;
+  } private_impl;
+} wuffs_base__io_writer;
+typedef struct wuffs_deflate__decoder__struct {
+  struct {
+    uint32_t magic;
+    uint32_t f_bits;
+    uint32_t f_n_bits;
+    uint32_t f_huffs[2][1234];
+    uint32_t f_n_huffs_bits[2];
+    uint8_t f_history[32768];
+    uint32_t f_history_index;
+    uint8_t f_code_lengths[320];
+    bool f_end_of_block;
+  } private_impl;
+} wuffs_deflate__decoder;
+
+const char* wuffs_base__error__bad_argument = "?base: bad argument";
+const char* wuffs_deflate__error__bad_distance = "?deflate: bad distance";
+const char* wuffs_deflate__error__internal_error_inconsistent_distance =
+    "?deflate: internal error: inconsistent distance";
+const char*
+    wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
+        "?deflate: internal error: inconsistent Huffman decoder state";
+
+static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
+    wuffs_deflate__decoder* self,
+    wuffs_base__io_writer a_dst,
+    wuffs_base__io_reader a_src) {
+  return NULL;
+}
+
+#endif  // MAKE_THIS_FILE_COMPILABLE_STANDALONE
+
+// ----------------
 
 // Define this macro to further speed up this C implementation, using two
 // techniques that are not used by the zlib-the-library C implementation (as of
@@ -132,6 +211,8 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 // effect of the table-based mask.
 //#define MASK(n) ((((uint32_t)1) << (n)) - 1)
 #define MASK(n) wuffs_base__width_to_mask_table[n]
+
+// ----------------
 
 // This is the generated function that we are explicitly overriding. Note that
 // the function name is "wuffs_etc", not "c_wuffs_etc".
