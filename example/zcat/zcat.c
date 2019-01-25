@@ -60,11 +60,11 @@ for a C compiler $CC, such as clang or gcc.
 #endif
 
 #ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE (16 * 1024)
+#define DST_BUFFER_SIZE (128 * 1024)
 #endif
 
 #ifndef SRC_BUFFER_SIZE
-#define SRC_BUFFER_SIZE (16 * 1024)
+#define SRC_BUFFER_SIZE (128 * 1024)
 #endif
 
 uint8_t dst_buffer[DST_BUFFER_SIZE];
