@@ -458,7 +458,7 @@ outer_loop:
     // the overrun.
     if (dist_minus_1 + 1 >= 8) {
       while (1) {
-        *((uint64_t*)(pdst)) = *((uint64_t*)(pback));
+        memcpy(pdst, pback, 8);
         if (length <= 8) {
           pdst += length;
           break;
