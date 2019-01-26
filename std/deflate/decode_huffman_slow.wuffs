@@ -38,7 +38,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
 		return "?internal error: inconsistent n_bits"
 	}
 
@@ -285,7 +285,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	this.bits = bits
 	this.n_bits = n_bits
 
-	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
 		return "?internal error: inconsistent n_bits"
 	}
 }

@@ -242,7 +242,7 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
-	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
 		return "?internal error: inconsistent n_bits"
 	}
 	this.n_bits = 0

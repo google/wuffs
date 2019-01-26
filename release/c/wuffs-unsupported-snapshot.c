@@ -5872,7 +5872,8 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if ((self->private_impl.f_n_bits >= 8) ||
-        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
+        ((self->private_impl.f_bits >> (self->private_impl.f_n_bits & 7)) !=
+         0)) {
       status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
       goto exit;
     }
@@ -6545,7 +6546,7 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   }
 
   if ((self->private_impl.f_n_bits >= 8) ||
-      ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
+      ((self->private_impl.f_bits >> (self->private_impl.f_n_bits & 7)) != 0)) {
     status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
     goto exit;
   }
@@ -6886,7 +6887,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     if ((self->private_impl.f_n_bits >= 8) ||
-        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
+        ((self->private_impl.f_bits >> (self->private_impl.f_n_bits & 7)) !=
+         0)) {
       status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
       goto exit;
     }
@@ -7186,7 +7188,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     self->private_impl.f_bits = v_bits;
     self->private_impl.f_n_bits = v_n_bits;
     if ((self->private_impl.f_n_bits >= 8) ||
-        ((self->private_impl.f_bits >> self->private_impl.f_n_bits) != 0)) {
+        ((self->private_impl.f_bits >> (self->private_impl.f_n_bits & 7)) !=
+         0)) {
       status = wuffs_deflate__error__internal_error_inconsistent_n_bits;
       goto exit;
     }

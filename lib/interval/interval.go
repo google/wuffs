@@ -196,10 +196,26 @@ func (x IntRange) ContainsZero() bool {
 		(x[1] == nil || x[1].Sign() >= 0)
 }
 
-// Contains returns whether x contains i.
-func (x IntRange) Contains(i *big.Int) bool {
+// ContainsInt returns whether x contains i.
+func (x IntRange) ContainsInt(i *big.Int) bool {
 	return (x[0] == nil || x[0].Cmp(i) <= 0) &&
 		(x[1] == nil || x[1].Cmp(i) >= 0)
+}
+
+// ContainsIntRange returns whether x contains every element of y.
+//
+// It returns true if y is empty.
+func (x IntRange) ContainsIntRange(y IntRange) bool {
+	if y.Empty() {
+		return true
+	}
+	if (x[0] != nil) && (y[0] == nil || x[0].Cmp(y[0]) > 0) {
+		return false
+	}
+	if (x[1] != nil) && (y[1] == nil || x[1].Cmp(y[1]) < 0) {
+		return false
+	}
+	return true
 }
 
 // Eq returns whether x equals y.
@@ -602,10 +618,10 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 		// The smaller of those is also a sufficient bound if that smaller
 		// value is contained in the other interval. For example, if both xx
 		// and yy can be x[0], then (x[0] | x[0]) is simply x[0].
-		if x.Contains(y[0]) {
+		if x.ContainsInt(y[0]) {
 			return IntRange{y[0], nil}, true
 		}
-		if y.Contains(x[0]) {
+		if y.ContainsInt(x[0]) {
 			return IntRange{x[0], nil}, true
 		}
 		if x[1] == nil && y[1] == nil {

@@ -27,6 +27,13 @@ import (
 
 type bounds = interval.IntRange
 
+var numShiftBounds = [...]bounds{
+	t.IDU8:  {zero, big.NewInt(7)},
+	t.IDU16: {zero, big.NewInt(15)},
+	t.IDU32: {zero, big.NewInt(31)},
+	t.IDU64: {zero, big.NewInt(63)},
+}
+
 var numTypeBounds = [...]bounds{
 	t.IDI8:   {big.NewInt(-1 << 7), big.NewInt(1<<7 - 1)},
 	t.IDI16:  {big.NewInt(-1 << 15), big.NewInt(1<<15 - 1)},
@@ -1391,34 +1398,37 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 			big.NewInt(0).Sub(rb[1], one),
 		}, nil
 
-	case t.IDXBinaryShiftL, t.IDXBinaryTildeModShiftL:
-		if lb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
-		}
-		if rb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
-		}
-		if rb[1].Cmp(ffff) > 0 {
-			return bounds{}, fmt.Errorf("check: shift %q out of range", rhs.Str(q.tm))
-		}
-		nb, _ := lb.Lsh(rb)
-		if op == t.IDXBinaryTildeModShiftL {
-			if qid := lhs.MType().QID(); qid[0] == t.IDBase {
-				b := numTypeBounds[qid[1]]
-				nb[1] = min(nb[1], b[1])
+	case t.IDXBinaryShiftL, t.IDXBinaryTildeModShiftL, t.IDXBinaryShiftR:
+		shiftBounds := bounds{}
+		typeBounds := bounds{}
+		if lTyp := lhs.MType(); lTyp.IsNumType() {
+			id := int(lTyp.QID()[1])
+			if id < len(numShiftBounds) {
+				shiftBounds = numShiftBounds[id]
+			}
+			if id < len(numTypeBounds) {
+				typeBounds = numTypeBounds[id]
 			}
 		}
-		return nb, nil
+		if shiftBounds[0] == nil {
+			return bounds{}, fmt.Errorf("check: shift op argument %q of type %q does not have unsigned integer type",
+				lhs.Str(q.tm), lhs.MType().Str(q.tm))
+		} else if !shiftBounds.ContainsIntRange(rb) {
+			return bounds{}, fmt.Errorf("check: shift op argument %q is outside the range %s", rhs.Str(q.tm), shiftBounds)
+		}
 
-	case t.IDXBinaryShiftR:
-		if lb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", lhs.Str(q.tm))
+		switch op {
+		case t.IDXBinaryShiftL:
+			nb, _ := lb.Lsh(rb)
+			return nb, nil
+		case t.IDXBinaryTildeModShiftL:
+			nb, _ := lb.Lsh(rb)
+			nb[1] = min(nb[1], typeBounds[1])
+			return nb, nil
+		case t.IDXBinaryShiftR:
+			nb, _ := lb.Rsh(rb)
+			return nb, nil
 		}
-		if rb[0].Sign() < 0 {
-			return bounds{}, fmt.Errorf("check: shift op argument %q is possibly negative", rhs.Str(q.tm))
-		}
-		nb, _ := lb.Rsh(rb)
-		return nb, nil
 
 	case t.IDXBinaryAmp, t.IDXBinaryPipe, t.IDXBinaryHat:
 		// TODO: should type-checking ensure that bitwise ops only apply to

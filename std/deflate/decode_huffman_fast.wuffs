@@ -34,7 +34,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 	var hlen               base.u32[..0x7FFF]
 	var hdist              base.u32
 
-	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
 		return "?internal error: inconsistent n_bits"
 	}
 
