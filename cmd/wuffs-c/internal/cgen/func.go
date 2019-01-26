@@ -31,6 +31,7 @@ type funk struct {
 
 	astFunc       *a.Func
 	cName         string
+	coroID        uint32
 	returnsStatus bool
 
 	varList       []*a.Var
@@ -174,9 +175,14 @@ func (g *gen) writeFuncImpl(b *buffer, n *a.Func) error {
 }
 
 func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
+	if n.Public() && n.Effect().Coroutine() {
+		g.numPublicCoroutines++
+	}
+
 	g.currFunk = funk{
 		astFunc: n,
 		cName:   g.funcCName(n),
+		coroID:  g.numPublicCoroutines,
 
 		returnsStatus: n.Effect().Coroutine() ||
 			((n.Out() != nil) && n.Out().IsStatus()),
@@ -256,6 +262,17 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		if err := g.writeFuncImplArgChecks(b, g.currFunk.astFunc); err != nil {
 			return err
 		}
+
+		// For public coroutines, check that we are not suspended in an active
+		// coroutine.
+		if g.currFunk.astFunc.Effect().Coroutine() {
+			b.printf("if ((self->private_impl.active_coroutine != 0) && "+
+				"(self->private_impl.active_coroutine != %d)) {\n", g.currFunk.coroID)
+			b.writes("self->private_impl.magic = WUFFS_BASE__DISABLED;\n")
+			b.writes("return wuffs_base__error__interleaved_coroutine_calls;\n")
+			b.writes("}\n")
+			b.writes("self->private_impl.active_coroutine = 0;\n")
+		}
 	}
 
 	if g.currFunk.astFunc.Effect().Coroutine() ||
@@ -325,6 +342,9 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 
 		b.printf("self->private_impl.%s%s[0].coro_susp_point = coro_susp_point;\n",
 			cPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
+		if g.currFunk.astFunc.Public() {
+			b.printf("self->private_impl.active_coroutine = %d;\n", g.currFunk.coroID)
+		}
 		if err := g.writeResumeSuspend(b, &g.currFunk, true); err != nil {
 			return err
 		}

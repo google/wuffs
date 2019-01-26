@@ -148,6 +148,7 @@ extern const char* wuffs_base__error__cannot_return_a_suspension;
 extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
 extern const char* wuffs_base__error__check_wuffs_version_missing;
 extern const char* wuffs_base__error__disabled_by_previous_error;
+extern const char* wuffs_base__error__interleaved_coroutine_calls;
 
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
@@ -2290,6 +2291,7 @@ struct wuffs_adler32__hasher__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     uint32_t f_state;
     bool f_started;
@@ -2401,6 +2403,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     uint32_t f_state;
 
@@ -2527,6 +2530,7 @@ struct wuffs_deflate__decoder__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     uint32_t f_bits;
     uint32_t f_n_bits;
@@ -2695,6 +2699,7 @@ struct wuffs_lzw__decoder__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     uint32_t f_lw;
     uint32_t f_literal_width;
@@ -2877,6 +2882,7 @@ struct wuffs_gif__decoder__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     uint32_t f_width;
     uint32_t f_height;
@@ -3137,6 +3143,7 @@ struct wuffs_gzip__decoder__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     wuffs_deflate__decoder f_flate;
     wuffs_crc32__ieee_hasher f_checksum;
@@ -3271,6 +3278,7 @@ struct wuffs_zlib__decoder__struct {
   // struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.
   struct {
     uint32_t magic;
+    uint32_t active_coroutine;
 
     wuffs_deflate__decoder f_flate;
     wuffs_adler32__hasher f_checksum;
@@ -4201,6 +4209,8 @@ const char* wuffs_base__error__check_wuffs_version_missing =
     "?base: check_wuffs_version missing";
 const char* wuffs_base__error__disabled_by_previous_error =
     "?base: disabled by previous error";
+const char* wuffs_base__error__interleaved_coroutine_calls =
+    "?base: interleaved coroutine calls";
 
 // ---------------- Images
 
@@ -5509,6 +5519,12 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   wuffs_base__status v_status = NULL;
@@ -5623,6 +5639,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 1;
 
   goto exit;
 exit:
@@ -7300,6 +7317,12 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   uint32_t v_i = 0;
@@ -7367,6 +7390,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 1;
 
   goto exit;
 exit:
@@ -7828,6 +7852,12 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   bool v_ffio = false;
@@ -7884,6 +7914,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_image_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 1;
 
   goto exit;
 exit:
@@ -8013,6 +8044,12 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 2)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   uint8_t v_blend = 0;
@@ -8085,6 +8122,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_frame_config[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 2;
 
   goto exit;
 exit:
@@ -8211,6 +8249,12 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
     self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__error__bad_argument;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 3)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   uint32_t coro_susp_point =
@@ -8250,6 +8294,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_frame[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 3;
 
   goto exit;
 exit:
@@ -10015,6 +10060,12 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   uint8_t v_c = 0;
@@ -10340,6 +10391,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 1;
   self->private_impl.c_decode_io_writer[0].v_flags = v_flags;
   self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
   self->private_impl.c_decode_io_writer[0].v_decoded_length_got =
@@ -10460,6 +10512,12 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__check_wuffs_version_missing;
   }
+  if ((self->private_impl.active_coroutine != 0) &&
+      (self->private_impl.active_coroutine != 1)) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__interleaved_coroutine_calls;
+  }
+  self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
   uint16_t v_x = 0;
@@ -10638,6 +10696,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   goto suspend;
 suspend:
   self->private_impl.c_decode_io_writer[0].coro_susp_point = coro_susp_point;
+  self->private_impl.active_coroutine = 1;
   self->private_impl.c_decode_io_writer[0].v_checksum_got = v_checksum_got;
 
   goto exit;

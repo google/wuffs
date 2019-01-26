@@ -460,6 +460,53 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   return NULL;
 }
 
+const char* test_wuffs_gif_call_interleaved() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status = read_file(&src, "test/data/bricks-dither.gif");
+  if (status) {
+    return status;
+  }
+
+  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  status =
+      wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  if (status) {
+    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+  }
+
+  {
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    set_reader_limit(&src_reader, 700);
+
+    status = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
+    if (status != wuffs_base__suspension__short_read) {
+      RETURN_FAIL("decode_frame_config: got \"%s\", want \"%s\"", status,
+                  wuffs_base__suspension__short_read);
+    }
+  }
+
+  // Calling another coroutine (decode_image_config) while suspended inside an
+  // active coroutine (decode_frame_config) should be an error:
+  // wuffs_base__error__interleaved_coroutine_calls.
+
+  {
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+
+    status = wuffs_gif__decoder__decode_image_config(&dec, NULL, src_reader);
+    if (status != wuffs_base__error__interleaved_coroutine_calls) {
+      RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
+                  wuffs_base__error__interleaved_coroutine_calls);
+    }
+  }
+
+  return NULL;
+}
+
 const char* test_wuffs_gif_call_sequence() {
   CHECK_FOCUS(__func__);
 
@@ -1534,6 +1581,7 @@ proc tests[] = {
     test_basic_status_used_package,             //
     test_basic_sub_struct_initializer,          //
 
+    test_wuffs_gif_call_interleaved,                         //
     test_wuffs_gif_call_sequence,                            //
     test_wuffs_gif_decode_animated_big,                      //
     test_wuffs_gif_decode_animated_medium,                   //

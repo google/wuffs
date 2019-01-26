@@ -325,6 +325,8 @@ type gen struct {
 
 	currFunk funk
 	funks    map[t.QQID]funk
+
+	numPublicCoroutines uint32
 }
 
 func (g *gen) generate() ([]byte, error) {
@@ -712,6 +714,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	b.writes("struct {\n")
 	if n.Classy() {
 		b.writes("uint32_t magic;\n")
+		b.writes("uint32_t active_coroutine;\n")
 		b.writes("\n")
 	}
 

@@ -40,6 +40,7 @@ var Statuses = [...]string{
 	`"?check_wuffs_version not applicable"`,
 	`"?check_wuffs_version missing"`,
 	`"?disabled by previous error"`,
+	`"?interleaved coroutine calls"`,
 }
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,
