@@ -99,11 +99,11 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
 }
 
 void  //
-wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
-                                       wuffs_base__pixel_format dst_format,
-                                       wuffs_base__slice_u8 dst_palette,
-                                       wuffs_base__pixel_format src_format,
-                                       wuffs_base__slice_u8 src_palette) {
+wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
+                                    wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette) {
   if (!p) {
     return;
   }

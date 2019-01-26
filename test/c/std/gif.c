@@ -205,10 +205,10 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     return status;
   }
 
-  wuffs_base__pixel_config__initialize(
-      &ic.pixcfg, pixfmt, WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
-      wuffs_base__pixel_config__width(&ic.pixcfg),
-      wuffs_base__pixel_config__height(&ic.pixcfg));
+  wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt,
+                                WUFFS_BASE__PIXEL_SUBSAMPLING__NONE,
+                                wuffs_base__pixel_config__width(&ic.pixcfg),
+                                wuffs_base__pixel_config__height(&ic.pixcfg));
 
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
@@ -294,7 +294,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
       RETURN_FAIL("first_frame_is_opaque: got false, want true");
     }
 
-    wuffs_base__pixel_config__initialize(
+    wuffs_base__pixel_config__set(
         &ic.pixcfg, dst_pixfmt, WUFFS_BASE__PIXEL_SUBSAMPLING__NONE, 160, 120);
 
     status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,

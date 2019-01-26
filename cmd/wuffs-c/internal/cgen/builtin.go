@@ -41,12 +41,12 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 	case 0:
 		// No-op.
 	case t.IDNptr, t.IDPtr:
-		// TODO: don't hard-code initialize.
-		if method.Ident() != g.tm.ByName("initialize") {
+		// TODO: don't hard-code set.
+		if method.Ident() != t.IDSet {
 			return errNoSuchBuiltin
 		}
 		// TODO: don't hard-code a_dst.
-		b.printf("wuffs_base__image_config__initialize(a_dst")
+		b.printf("wuffs_base__image_config__set(a_dst")
 		for _, o := range n.Args() {
 			b.writeb(',')
 			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {

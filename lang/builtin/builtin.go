@@ -301,7 +301,7 @@ var Funcs = []string{
 
 	// ---- image_config
 
-	"image_config.initialize!(pixfmt u32, pixsub u32, width u32, height u32, " +
+	"image_config.set!(pixfmt u32, pixsub u32, width u32, height u32, " +
 		"first_frame_io_position u64, first_frame_is_opaque bool)",
 
 	// ---- pixel_buffer
@@ -312,7 +312,7 @@ var Funcs = []string{
 
 	// ---- pixel_swizzler
 
-	"pixel_swizzler.initialize!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8)",
+	"pixel_swizzler.prepare!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8)",
 	"pixel_swizzler.swizzle_packed!(dst slice u8, dst_palette slice u8, src slice u8) u64",
 }
 

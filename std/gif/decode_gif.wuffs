@@ -144,7 +144,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	if args.dst != nullptr {
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
-		args.dst.initialize!(
+		args.dst.set!(
 			pixfmt:0x47040008,
 			pixsub:0,
 			width:this.width,
@@ -623,7 +623,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 
 	// TODO: a Wuffs (not just C) name for the
 	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
-	this.swizzler.initialize!(
+	this.swizzler.prepare!(
 		dst_pixfmt:args.dst.pixel_format(),
 		dst_palette:dst_palette,
 		src_pixfmt:0x47040008,

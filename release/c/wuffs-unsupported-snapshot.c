@@ -1535,10 +1535,10 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void initialize(wuffs_base__pixel_format pixfmt,
-                         wuffs_base__pixel_subsampling pixsub,
-                         uint32_t width,
-                         uint32_t height);
+  inline void set(wuffs_base__pixel_format pixfmt,
+                  wuffs_base__pixel_subsampling pixsub,
+                  uint32_t width,
+                  uint32_t height);
   inline void invalidate();
   inline bool is_valid();
   inline wuffs_base__pixel_format pixel_format();
@@ -1553,11 +1553,11 @@ typedef struct {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__pixel_config__initialize(wuffs_base__pixel_config* c,
-                                     wuffs_base__pixel_format pixfmt,
-                                     wuffs_base__pixel_subsampling pixsub,
-                                     uint32_t width,
-                                     uint32_t height) {
+wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
+                              wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height) {
   if (!c) {
     return;
   }
@@ -1658,11 +1658,11 @@ wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__pixel_config::initialize(wuffs_base__pixel_format pixfmt,
-                                     wuffs_base__pixel_subsampling pixsub,
-                                     uint32_t width,
-                                     uint32_t height) {
-  wuffs_base__pixel_config__initialize(this, pixfmt, pixsub, width, height);
+wuffs_base__pixel_config::set(wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height) {
+  wuffs_base__pixel_config__set(this, pixfmt, pixsub, width, height);
 }
 
 inline void  //
@@ -1720,12 +1720,12 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void initialize(wuffs_base__pixel_format pixfmt,
-                         wuffs_base__pixel_subsampling pixsub,
-                         uint32_t width,
-                         uint32_t height,
-                         uint64_t first_frame_io_position,
-                         bool first_frame_is_opaque);
+  inline void set(wuffs_base__pixel_format pixfmt,
+                  wuffs_base__pixel_subsampling pixsub,
+                  uint32_t width,
+                  uint32_t height,
+                  uint64_t first_frame_io_position,
+                  bool first_frame_is_opaque);
   inline void invalidate();
   inline bool is_valid();
   inline uint64_t first_frame_io_position();
@@ -1736,13 +1736,13 @@ typedef struct {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__image_config__initialize(wuffs_base__image_config* c,
-                                     wuffs_base__pixel_format pixfmt,
-                                     wuffs_base__pixel_subsampling pixsub,
-                                     uint32_t width,
-                                     uint32_t height,
-                                     uint64_t first_frame_io_position,
-                                     bool first_frame_is_opaque) {
+wuffs_base__image_config__set(wuffs_base__image_config* c,
+                              wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height,
+                              uint64_t first_frame_io_position,
+                              bool first_frame_is_opaque) {
   if (!c) {
     return;
   }
@@ -1783,15 +1783,14 @@ wuffs_base__image_config__first_frame_is_opaque(wuffs_base__image_config* c) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::initialize(wuffs_base__pixel_format pixfmt,
-                                     wuffs_base__pixel_subsampling pixsub,
-                                     uint32_t width,
-                                     uint32_t height,
-                                     uint64_t first_frame_io_position,
-                                     bool first_frame_is_opaque) {
-  wuffs_base__image_config__initialize(this, pixfmt, pixsub, width, height,
-                                       first_frame_io_position,
-                                       first_frame_is_opaque);
+wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height,
+                              uint64_t first_frame_io_position,
+                              bool first_frame_is_opaque) {
+  wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
+                                first_frame_io_position, first_frame_is_opaque);
 }
 
 inline void  //
@@ -2187,10 +2186,10 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void initialize(wuffs_base__pixel_format dst_format,
-                         wuffs_base__slice_u8 dst_palette,
-                         wuffs_base__pixel_format src_format,
-                         wuffs_base__slice_u8 src_palette);
+  inline void prepare(wuffs_base__pixel_format dst_format,
+                      wuffs_base__slice_u8 dst_palette,
+                      wuffs_base__pixel_format src_format,
+                      wuffs_base__slice_u8 src_palette);
   inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 dst_palette,
                                  wuffs_base__slice_u8 src);
@@ -2198,14 +2197,14 @@ typedef struct {
 
 } wuffs_base__pixel_swizzler;
 
-// TODO: should initialize (both the C and C++ methods) return a status?
+// TODO: should prepare (both the C and C++ methods) return a status?
 
 void  //
-wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
-                                       wuffs_base__pixel_format dst_format,
-                                       wuffs_base__slice_u8 dst_palette,
-                                       wuffs_base__pixel_format src_format,
-                                       wuffs_base__slice_u8 src_palette);
+wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
+                                    wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette);
 
 uint64_t  //
 wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
@@ -2216,12 +2215,12 @@ wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__pixel_swizzler::initialize(wuffs_base__pixel_format dst_format,
-                                       wuffs_base__slice_u8 dst_palette,
-                                       wuffs_base__pixel_format src_format,
-                                       wuffs_base__slice_u8 src_palette) {
-  wuffs_base__pixel_swizzler__initialize(this, dst_format, dst_palette,
-                                         src_format, src_palette);
+wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette) {
+  wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette, src_format,
+                                      src_palette);
 }
 
 uint64_t  //
@@ -4297,11 +4296,11 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
 }
 
 void  //
-wuffs_base__pixel_swizzler__initialize(wuffs_base__pixel_swizzler* p,
-                                       wuffs_base__pixel_format dst_format,
-                                       wuffs_base__slice_u8 dst_palette,
-                                       wuffs_base__pixel_format src_format,
-                                       wuffs_base__slice_u8 src_palette) {
+wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
+                                    wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette) {
   if (!p) {
     return;
   }
@@ -7898,7 +7897,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
          (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
          (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
     if (a_dst != NULL) {
-      wuffs_base__image_config__initialize(
+      wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, v_ffio);
@@ -9565,7 +9564,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
           .len = 1024,
       });
     }
-    wuffs_base__pixel_swizzler__initialize(
+    wuffs_base__pixel_swizzler__prepare(
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
         1191444488,
