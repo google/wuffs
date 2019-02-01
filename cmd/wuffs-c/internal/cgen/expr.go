@@ -75,6 +75,9 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				return fmt.Errorf("unrecognized status %s", n.StatusQID().Str(g.tm))
 			}
 
+		} else if c, ok := g.scalarConstsMap[t.QID{0, n.Ident()}]; ok {
+			b.writes(c.Value().ConstValue().String())
+
 		} else {
 			if n.GlobalIdent() {
 				b.writes(g.pkgPrefix)

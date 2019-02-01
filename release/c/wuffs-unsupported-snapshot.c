@@ -5436,6 +5436,8 @@ static const uint32_t wuffs_deflate__dcode_magic_numbers[32] = {
     134217728,  134217728,
 };
 
+static const uint32_t wuffs_deflate__huffs_table_size = 1234;
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes

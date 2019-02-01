@@ -932,7 +932,7 @@ swtch:
 				if err := q.tcheckExpr(b, 0); err != nil {
 					return err
 				}
-				if b.ConstValue() == nil {
+				if q.exprConstValue(b) == nil {
 					return fmt.Errorf("check: %q is not constant", b.Str(q.tm))
 				}
 			}
@@ -958,7 +958,7 @@ swtch:
 		if err := q.tcheckExpr(aLen, 0); err != nil {
 			return err
 		}
-		if aLen.ConstValue() == nil {
+		if q.exprConstValue(aLen) == nil {
 			return fmt.Errorf("check: %q is not constant", aLen.Str(q.tm))
 		}
 		fallthrough
@@ -972,6 +972,21 @@ swtch:
 		return fmt.Errorf("check: %q is not a type", typ.Str(q.tm))
 	}
 	typ.AsNode().SetMType(typeExprTypeExpr)
+	return nil
+}
+
+func (q *checker) exprConstValue(n *a.Expr) *big.Int {
+	if cv := n.ConstValue(); cv != nil {
+		return cv
+	}
+	if n.Operator() == 0 {
+		if c, ok := q.c.consts[t.QID{0, n.Ident()}]; ok {
+			if cv := c.Value().ConstValue(); cv != nil {
+				n.SetConstValue(cv)
+				return cv
+			}
+		}
+	}
 	return nil
 }
 

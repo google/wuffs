@@ -318,10 +318,11 @@ type gen struct {
 	// generated C code (due to line numbers changing) when editing Wuffs code.
 	genlinenum bool
 
-	statusList []status
-	statusMap  map[t.QID]status
-	structList []*a.Struct
-	structMap  map[t.QID]*a.Struct
+	scalarConstsMap map[t.QID]*a.Const
+	statusList      []status
+	statusMap       map[t.QID]status
+	structList      []*a.Struct
+	structMap       map[t.QID]*a.Struct
 
 	currFunk funk
 	funks    map[t.QQID]funk
@@ -348,6 +349,11 @@ func (g *gen) generate() ([]byte, error) {
 		if err := g.addStatus(t.QID{t.IDBase, id}, msg, true); err != nil {
 			return nil, err
 		}
+	}
+
+	g.scalarConstsMap = map[t.QID]*a.Const{}
+	if err := g.forEachConst(b, bothPubPri, (*gen).gatherScalarConsts); err != nil {
+		return nil, err
 	}
 
 	// Make a topologically sorted list of structs.
@@ -664,6 +670,13 @@ func (g *gen) addStatus(qid t.QID, msg string, public bool) error {
 	}
 	g.statusList = append(g.statusList, z)
 	g.statusMap[qid] = z
+	return nil
+}
+
+func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
+	if cv := n.Value().ConstValue(); cv != nil {
+		g.scalarConstsMap[n.QID()] = n
+	}
 	return nil
 }
 

@@ -53,6 +53,10 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 	0x401000B0, 0x401800B0, 0x402000C0, 0x403000C0, 0x404000D0, 0x406000D0, 0x08000000, 0x08000000,
 ]
 
+// TODO: replace the magic "big enough" 1234 with something more principled,
+// perhaps discovered via an exhaustive search.
+pri const huffs_table_size base.u32 = 1234
+
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
 	bits   base.u32,
@@ -88,10 +92,7 @@ pub struct decoder?(
 	//  - bits  3 ..  0 are the number of decoder.bits to consume.
 	//
 	// Exactly one of the eight bits 31-24 should be set.
-	//
-	// TODO: replace the magic "big enough" 1234 with something more
-	// principled, perhaps discovered via an exhaustive search.
-	huffs        array[2] array[1234] base.u32,
+	huffs        array[2] array[huffs_table_size] base.u32,
 	n_huffs_bits array[2] base.u32[..9],
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
@@ -495,8 +496,8 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	var initial_high_bits base.u32
 	var prev_cl           base.u32[..15]
 	var prev_redirect_key base.u32
-	var top               base.u32[..1234]
-	var next_top          base.u32[..1234]
+	var top               base.u32[..huffs_table_size]
+	var next_top          base.u32[..huffs_table_size]
 	var code              base.u32
 	var key               base.u32
 	var value             base.u32
@@ -767,9 +768,10 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 				initial_high_bits = (1 as base.u32) << j
 
 				top = next_top
-				if (top + ((1 as base.u32) << j)) > 1234 {
+				if (top + ((1 as base.u32) << j)) > huffs_table_size {
 					return "?internal error: inconsistent Huffman decoder state"
 				}
+				assert (top + ((1 as base.u32) << j)) <= 1234 via "a <= b: a <= c; c <= b"(c:huffs_table_size)
 				next_top = top + ((1 as base.u32) << j)
 
 				redirect_key = (reverse8[redirect_key >> 1] as base.u32) | ((redirect_key & 1) << 8)
@@ -814,9 +816,10 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			inv n_symbols <= 288,
 		{
 			high_bits -= delta
-			if (top + ((high_bits | reversed_key) & 511)) >= 1234 {
+			if (top + ((high_bits | reversed_key) & 511)) >= huffs_table_size {
 				return "?internal error: inconsistent Huffman decoder state"
 			}
+			assert (top + ((high_bits | reversed_key) & 511)) < 1234 via "a < b: a < c; c <= b"(c:huffs_table_size)
 			this.huffs[args.which][top + ((high_bits | reversed_key) & 511)] = value
 		}
 
