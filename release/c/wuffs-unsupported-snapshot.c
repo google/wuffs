@@ -2533,7 +2533,7 @@ struct wuffs_deflate__decoder__struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
-    uint32_t f_huffs[2][1234];
+    uint32_t f_huffs[2][1024];
     uint32_t f_n_huffs_bits[2];
     uint8_t f_history[32768];
     uint32_t f_history_index;
@@ -5436,7 +5436,7 @@ static const uint32_t wuffs_deflate__dcode_magic_numbers[32] = {
     134217728,  134217728,
 };
 
-static const uint32_t wuffs_deflate__huffs_table_size = 1234;
+static const uint32_t wuffs_deflate__huffs_table_size = 1024;
 
 // ---------------- Private Initializer Prototypes
 
@@ -6432,7 +6432,7 @@ label_1_break:;
         v_j -= 9;
         v_initial_high_bits = (((uint32_t)(1)) << v_j);
         v_top = v_next_top;
-        if ((v_top + (((uint32_t)(1)) << v_j)) > 1234) {
+        if ((v_top + (((uint32_t)(1)) << v_j)) > 1024) {
           return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         }
         v_next_top = (v_top + (((uint32_t)(1)) << v_j));
@@ -6469,7 +6469,7 @@ label_1_break:;
     v_delta = (((uint32_t)(1)) << v_cl);
     while (v_high_bits >= v_delta) {
       v_high_bits -= v_delta;
-      if ((v_top + ((v_high_bits | v_reversed_key) & 511)) >= 1234) {
+      if ((v_top + ((v_high_bits | v_reversed_key) & 511)) >= 1024) {
         return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
       }
       self->private_impl
@@ -6593,7 +6593,7 @@ label_0_continue:;
       }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1234) {
+      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
         status =
             wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto exit;
@@ -6678,7 +6678,7 @@ label_0_continue:;
       }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1234) {
+      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
         status =
             wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
         goto exit;
@@ -6938,7 +6938,7 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
-          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1234) {
+          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
             status =
                 wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
             goto exit;
@@ -7046,7 +7046,7 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
-          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1234) {
+          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
             status =
                 wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
             goto exit;
