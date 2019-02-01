@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 /*
 gifplayer prints an ASCII representation of the GIF image read from stdin. To
 play Eadweard Muybridge's iconic galloping horse animation, run:

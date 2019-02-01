@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 /*
 crc32 prints the CRC-32 checksum (using the IEEE polynomial) of stdin. It is
 similar to the standard /usr/bin/crc32 program, except that this example

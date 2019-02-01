@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // This file contains a hand-written C implementation of
 // release/c/wuffs-unsupported-snapshot.c's generated
 // wuffs_deflate__decoder__decode_huffman_fast function.
@@ -23,9 +25,9 @@
 // To repeat, substituting in this C implementation is NOT SAFE, and may result
 // in buffer overflows. This code exists only to aid optimization of the (safe)
 // std/deflate/*.wuffs code and the Wuffs compiler's code generation.
-//
+
 // ----------------
-//
+
 // Having said that, to generate the benchmark numbers with this hand-written C
 // implementation, edit release/c/wuffs-unsupported-snapshot.c and find the
 // lines that say

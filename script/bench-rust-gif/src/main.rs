@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // This program exercises the Rust GIF decoder at
 // https://github.com/PistonDevelopers/image-gif
 //

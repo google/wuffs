@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 /*
 zcat decodes gzip'ed data to stdout. It is similar to the standard /bin/zcat
 program, except that this example program only reads from stdin. On Linux, it

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 /*
 This test program is typically run indirectly, by the "wuffs test" or "wuffs
 bench" commands. These commands take an optional "-mimic" flag to check that

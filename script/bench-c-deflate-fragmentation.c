@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // This file contains a hand-written C benchmark of different strategies for
 // decoding PNG data.
 //

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // Uncomment this line to test and bench miniz instead of zlib-the-library.
 // #define WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB 1
 
