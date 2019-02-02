@@ -44,6 +44,8 @@ var (
 	sixtyFour = big.NewInt(64)
 
 	mibi = big.NewInt(1 << 20)
+
+	typeExprUtility = a.NewTypeExpr(0, t.IDBase, t.IDUtility, nil, nil, nil)
 )
 
 // Prefixes are prepended to names to form a namespace and to avoid e.g.

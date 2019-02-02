@@ -59,9 +59,7 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 // ---------------- Ranges and Rects (Utility)
 
 static inline wuffs_base__range_ii_u32  //
-wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
-                                       uint32_t min_incl,
-                                       uint32_t max_incl) {
+wuffs_base__utility__make_range_ii_u32(uint32_t min_incl, uint32_t max_incl) {
   return ((wuffs_base__range_ii_u32){
       .min_incl = min_incl,
       .max_incl = max_incl,
@@ -69,9 +67,7 @@ wuffs_base__utility__make_range_ii_u32(const wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u32  //
-wuffs_base__utility__make_range_ie_u32(const wuffs_base__utility* ignored,
-                                       uint32_t min_incl,
-                                       uint32_t max_excl) {
+wuffs_base__utility__make_range_ie_u32(uint32_t min_incl, uint32_t max_excl) {
   return ((wuffs_base__range_ie_u32){
       .min_incl = min_incl,
       .max_excl = max_excl,
@@ -79,9 +75,7 @@ wuffs_base__utility__make_range_ie_u32(const wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ii_u64  //
-wuffs_base__utility__make_range_ii_u64(const wuffs_base__utility* ignored,
-                                       uint64_t min_incl,
-                                       uint64_t max_incl) {
+wuffs_base__utility__make_range_ii_u64(uint64_t min_incl, uint64_t max_incl) {
   return ((wuffs_base__range_ii_u64){
       .min_incl = min_incl,
       .max_incl = max_incl,
@@ -89,9 +83,7 @@ wuffs_base__utility__make_range_ii_u64(const wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__range_ie_u64  //
-wuffs_base__utility__make_range_ie_u64(const wuffs_base__utility* ignored,
-                                       uint64_t min_incl,
-                                       uint64_t max_excl) {
+wuffs_base__utility__make_range_ie_u64(uint64_t min_incl, uint64_t max_excl) {
   return ((wuffs_base__range_ie_u64){
       .min_incl = min_incl,
       .max_excl = max_excl,
@@ -99,8 +91,7 @@ wuffs_base__utility__make_range_ie_u64(const wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ii_u32  //
-wuffs_base__utility__make_rect_ii_u32(const wuffs_base__utility* ignored,
-                                      uint32_t min_incl_x,
+wuffs_base__utility__make_rect_ii_u32(uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_incl_x,
                                       uint32_t max_incl_y) {
@@ -113,8 +104,7 @@ wuffs_base__utility__make_rect_ii_u32(const wuffs_base__utility* ignored,
 }
 
 static inline wuffs_base__rect_ie_u32  //
-wuffs_base__utility__make_rect_ie_u32(const wuffs_base__utility* ignored,
-                                      uint32_t min_incl_x,
+wuffs_base__utility__make_rect_ie_u32(uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_excl_x,
                                       uint32_t max_excl_y) {

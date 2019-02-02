@@ -319,12 +319,15 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 			n.Str(g.tm), recv.MType().Str(g.tm))
 	}
 	qid := recvTyp.QID()
-	b.printf("%s%s__%s(%s", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm), addr)
-	if err := g.writeExpr(b, recv, depth); err != nil {
-		return err
-	}
-	if len(n.Args()) > 0 {
-		b.writeb(',')
+	b.printf("%s%s__%s(", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
+	if !recvTyp.Eq(typeExprUtility) {
+		b.writes(addr)
+		if err := g.writeExpr(b, recv, depth); err != nil {
+			return err
+		}
+		if len(n.Args()) > 0 {
+			b.writeb(',')
+		}
 	}
 	return g.writeArgs(b, n.Args(), depth)
 }

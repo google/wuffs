@@ -266,12 +266,12 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 // ---------------- I/O (Utility)
 
 static inline wuffs_base__io_reader  //
-wuffs_base__utility__null_io_reader(const wuffs_base__utility* ignored) {
+wuffs_base__utility__null_io_reader() {
   return ((wuffs_base__io_reader){});
 }
 
 static inline wuffs_base__io_writer  //
-wuffs_base__utility__null_io_writer(const wuffs_base__utility* ignored) {
+wuffs_base__utility__null_io_writer() {
   return ((wuffs_base__io_writer){});
 }
 

@@ -345,7 +345,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
 // ---------------- Slices and Tables (Utility)
 
 static inline wuffs_base__slice_u8  //
-wuffs_base__utility__null_slice_u8(const wuffs_base__utility* ignored) {
+wuffs_base__utility__null_slice_u8() {
   return ((wuffs_base__slice_u8){});
 }
 
