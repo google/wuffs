@@ -2647,6 +2647,8 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Public Consts
 
+#define WUFFS_DEFLATE__MAX_INCL_WORKBUF_LEN 33280
+
 static const uint64_t                    //
     wuffs_deflate__max_incl_workbuf_len  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
@@ -2818,6 +2820,8 @@ extern const char* wuffs_lzw__error__bad_code;
 
 // ---------------- Public Consts
 
+#define WUFFS_LZW__MAX_INCL_WORKBUF_LEN 0
+
 static const uint64_t                //
     wuffs_lzw__max_incl_workbuf_len  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 0;
@@ -2981,6 +2985,8 @@ extern const char* wuffs_gif__error__not_enough_pixel_data;
 extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
+
+#define WUFFS_GIF__MAX_INCL_WORKBUF_LEN 65535
 
 static const uint64_t                //
     wuffs_gif__max_incl_workbuf_len  //
@@ -3276,6 +3282,8 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Public Consts
 
+#define WUFFS_GZIP__MAX_INCL_WORKBUF_LEN 33280
+
 static const uint64_t                 //
     wuffs_gzip__max_incl_workbuf_len  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
@@ -3417,6 +3425,8 @@ extern const char* wuffs_zlib__error__bad_compression_window_size;
 extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Public Consts
+
+#define WUFFS_ZLIB__MAX_INCL_WORKBUF_LEN 33280
 
 static const uint64_t                 //
     wuffs_zlib__max_incl_workbuf_len  //

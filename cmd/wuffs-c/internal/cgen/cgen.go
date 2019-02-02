@@ -681,6 +681,12 @@ func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
+	if n.Public() {
+		if cv := n.Value().ConstValue(); cv != nil {
+			b.printf("#define %s %v\n\n", strings.ToUpper(g.pkgPrefix+n.QID()[1].Str(g.tm)), cv)
+		}
+	}
+
 	b.writes("static const ")
 	if err := g.writeCTypeName(b, n.XType(), "//\n"+g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
 		return err

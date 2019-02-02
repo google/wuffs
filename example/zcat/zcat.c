@@ -69,7 +69,7 @@ for a C compiler $CC, such as clang or gcc.
 #define SRC_BUFFER_SIZE (128 * 1024)
 #endif
 
-#define WORK_BUFFER_SIZE (32768 + 512)
+#define WORK_BUFFER_SIZE WUFFS_GZIP__MAX_INCL_WORKBUF_LEN
 
 uint8_t dst_buffer[DST_BUFFER_SIZE];
 uint8_t src_buffer[SRC_BUFFER_SIZE];

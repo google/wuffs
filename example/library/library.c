@@ -53,7 +53,7 @@ uint8_t lgtm_ptr[] = {
 };
 size_t lgtm_len = 20;
 
-#define WORK_BUFFER_SIZE (32768 + 512)
+#define WORK_BUFFER_SIZE WUFFS_DEFLATE__MAX_INCL_WORKBUF_LEN
 uint8_t work_buffer[WORK_BUFFER_SIZE];
 
 // ignore_return_value suppresses errors from -Wall -Werror.
