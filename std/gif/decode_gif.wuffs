@@ -715,7 +715,8 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 				return "?internal error: inconsistent ri/wi"
 			}
 			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
-				lzw_status =? this.lzw.decode_io_writer?(dst:this.util.null_io_writer(), src:r)
+				lzw_status =? this.lzw.decode_io_writer?(
+					dst:this.util.null_io_writer(), src:r, workbuf:this.util.null_slice_u8())
 				this.compressed_ri ~sat+= r.since_mark().length()
 			}
 

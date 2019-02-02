@@ -58,7 +58,7 @@ pub func decoder.set_literal_width!(lw base.u32[2..8]) {
 	this.lw = args.lw
 }
 
-pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader) {
+pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
 	var i base.u32[..8191]
 
 	// Initialize read_from state.

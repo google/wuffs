@@ -69,8 +69,11 @@ for a C compiler $CC, such as clang or gcc.
 #define SRC_BUFFER_SIZE (128 * 1024)
 #endif
 
+#define WORK_BUFFER_SIZE (32768 + 512)
+
 uint8_t dst_buffer[DST_BUFFER_SIZE];
 uint8_t src_buffer[SRC_BUFFER_SIZE];
+uint8_t work_buffer[WORK_BUFFER_SIZE];
 
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
@@ -114,7 +117,11 @@ static const char* decode() {
     while (true) {
       status = wuffs_gzip__decoder__decode_io_writer(
           &dec, wuffs_base__io_buffer__writer(&dst),
-          wuffs_base__io_buffer__reader(&src));
+          wuffs_base__io_buffer__reader(&src),
+          ((wuffs_base__slice_u8){
+              .ptr = work_buffer,
+              .len = WORK_BUFFER_SIZE,
+          }));
 
       if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".

@@ -128,7 +128,8 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
     size_t old_wi = got.meta.wi;
     size_t old_ri = src.meta.ri;
 
-    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader);
+    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
+                                                  global_work_slice);
     if (!status) {
       if (src.meta.ri != src.meta.wi) {
         RETURN_FAIL("decode returned \"ok\" but src was not exhausted");
@@ -233,7 +234,7 @@ const char* test_wuffs_lzw_decode_output_bad() {
 
   status = wuffs_lzw__decoder__decode_io_writer(
       &dec, wuffs_base__io_buffer__writer(&got),
-      wuffs_base__io_buffer__reader(&src));
+      wuffs_base__io_buffer__reader(&src), global_work_slice);
   if (status != wuffs_lzw__error__bad_code) {
     RETURN_FAIL("decode: \"%s\"", status);
   }
@@ -277,7 +278,7 @@ const char* test_wuffs_lzw_decode_output_empty() {
 
   status = wuffs_lzw__decoder__decode_io_writer(
       &dec, wuffs_base__io_buffer__writer(&got),
-      wuffs_base__io_buffer__reader(&src));
+      wuffs_base__io_buffer__reader(&src), global_work_slice);
   if (status) {
     RETURN_FAIL("decode: \"%s\"", status);
   }
@@ -330,7 +331,8 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
     if (status) {
       RETURN_FAIL("check_wuffs_version: \"%s\"", status);
     }
-    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader);
+    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
+                                                  global_work_slice);
     if (status) {
       RETURN_FAIL("decode: \"%s\"", status);
     }

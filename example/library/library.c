@@ -53,6 +53,9 @@ uint8_t lgtm_ptr[] = {
 };
 size_t lgtm_len = 20;
 
+#define WORK_BUFFER_SIZE (32768 + 512)
+uint8_t work_buffer[WORK_BUFFER_SIZE];
+
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
 
@@ -89,8 +92,11 @@ static const char* decode() {
     free(dec);
     return status;
   }
-  status =
-      wuffs_deflate__decoder__decode_io_writer(dec, dst_writer, src_reader);
+  status = wuffs_deflate__decoder__decode_io_writer(dec, dst_writer, src_reader,
+                                                    ((wuffs_base__slice_u8){
+                                                        .ptr = work_buffer,
+                                                        .len = WORK_BUFFER_SIZE,
+                                                    }));
   if (status) {
     free(dec);
     return status;

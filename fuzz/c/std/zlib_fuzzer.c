@@ -48,6 +48,9 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
+#define WORK_BUFFER_SIZE (32768 + 512)
+uint8_t work_buffer[WORK_BUFFER_SIZE];
+
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
   const char* status =
@@ -73,8 +76,11 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
   while (true) {
     dst.meta.wi = 0;
-    status =
-        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader);
+    status = wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader,
+                                                   ((wuffs_base__slice_u8){
+                                                       .ptr = work_buffer,
+                                                       .len = WORK_BUFFER_SIZE,
+                                                   }));
     if (status != wuffs_base__suspension__short_write) {
       break;
     }

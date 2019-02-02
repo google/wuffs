@@ -373,6 +373,13 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return ((wuffs_base__slice_u8){});
 }
 
+// ---------------- Slices and Tables (Utility)
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__utility__null_slice_u8(const wuffs_base__utility* ignored) {
+  return ((wuffs_base__slice_u8){});
+}
+
 // ---------------- Bureaucracy re -Wunused-function
 
 static inline void
@@ -405,6 +412,7 @@ wuffs_base__acknowledge_potentially_unused_functions__core_public() {
   (void)(wuffs_base__u8__min);
   (void)(wuffs_base__u8__sat_add);
   (void)(wuffs_base__u8__sat_sub);
+  (void)(wuffs_base__utility__null_slice_u8);
 }
 
 // ---------------- Ranges and Rects
@@ -2663,7 +2671,8 @@ sizeof__wuffs_deflate__decoder();
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
                                          wuffs_base__io_writer a_dst,
-                                         wuffs_base__io_reader a_src);
+                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
 
@@ -2770,8 +2779,11 @@ struct wuffs_deflate__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst,
+                   wuffs_base__io_reader a_src,
+                   wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src,
+                                                    a_workbuf);
   }
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
@@ -2829,7 +2841,8 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
                                      wuffs_base__io_writer a_dst,
-                                     wuffs_base__io_reader a_src);
+                                     wuffs_base__io_reader a_src,
+                                     wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
 wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self);
@@ -2917,8 +2930,10 @@ struct wuffs_lzw__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_lzw__decoder__decode_io_writer(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst,
+                   wuffs_base__io_reader a_src,
+                   wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_lzw__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
 
   inline wuffs_base__slice_u8  //
@@ -3276,7 +3291,8 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
                                       wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src);
+                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
 
@@ -3350,8 +3366,10 @@ struct wuffs_gzip__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst,
+                   wuffs_base__io_reader a_src,
+                   wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
@@ -3411,7 +3429,8 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
                                       wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src);
+                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
 
@@ -3482,8 +3501,10 @@ struct wuffs_zlib__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst, wuffs_base__io_reader a_src) {
-    return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src);
+  decode_io_writer(wuffs_base__io_writer a_dst,
+                   wuffs_base__io_reader a_src,
+                   wuffs_base__slice_u8 a_workbuf) {
+    return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
 
 #if (__cplusplus >= 201103L) && !defined(WUFFS_IMPLEMENTATION)
@@ -5922,7 +5943,8 @@ sizeof__wuffs_deflate__decoder() {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
                                          wuffs_base__io_writer a_dst,
-                                         wuffs_base__io_reader a_src) {
+                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -7705,7 +7727,8 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
                                      wuffs_base__io_writer a_dst,
-                                     wuffs_base__io_reader a_src) {
+                                     wuffs_base__io_reader a_src,
+                                     wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10138,7 +10161,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
                 &self->private_impl.f_lzw,
                 wuffs_base__utility__null_io_writer(&self->private_impl.f_util),
-                v_r);
+                v_r,
+                wuffs_base__utility__null_slice_u8(&self->private_impl.f_util));
             iop_v_r = u_r.data.ptr + u_r.meta.ri;
             v_lzw_status = t_1;
           }
@@ -10423,7 +10447,8 @@ wuffs_gzip__decoder__set_ignore_checksum(wuffs_gzip__decoder* self, bool a_ic) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
                                       wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src) {
+                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10657,7 +10682,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
         wuffs_base__status t_7 = wuffs_deflate__decoder__decode_io_writer(
-            &self->private_impl.f_flate, a_dst, a_src);
+            &self->private_impl.f_flate, a_dst, a_src, a_workbuf);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
                       a_dst.private_impl.buf->meta.wi;
@@ -10871,7 +10896,8 @@ wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic) {
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
                                       wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src) {
+                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10990,7 +11016,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
         wuffs_base__status t_1 = wuffs_deflate__decoder__decode_io_writer(
-            &self->private_impl.f_flate, a_dst, a_src);
+            &self->private_impl.f_flate, a_dst, a_src, a_workbuf);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
                       a_dst.private_impl.buf->meta.wi;

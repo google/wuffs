@@ -104,8 +104,8 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
       set_reader_limit(&src_reader, rlimit);
     }
 
-    status =
-        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader);
+    status = wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader,
+                                                   global_work_slice);
 
     if ((wlimit && (status == wuffs_base__suspension__short_write)) ||
         (rlimit && (status == wuffs_base__suspension__short_read))) {
@@ -170,8 +170,8 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
                      : NULL;
       }
 
-      const char* got_z =
-          wuffs_zlib__decoder__decode_io_writer(&dec, got_writer, src_reader);
+      const char* got_z = wuffs_zlib__decoder__decode_io_writer(
+          &dec, got_writer, src_reader, global_work_slice);
       if (got_z != want_z) {
         RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
                     want_z);
