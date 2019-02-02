@@ -43,7 +43,7 @@ for a C compiler $CC, such as clang or gcc.
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
 #ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE (1024 * 1024)
+#define DST_BUFFER_SIZE (128 * 1024)
 #endif
 
 // lgtm_ptr and lgtm_len hold a deflate-encoded "LGTM" message.
