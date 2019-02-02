@@ -139,3 +139,18 @@ wuffs_base__io_buffer__struct::writer_io_position() {
 }
 
 #endif  // __cplusplus
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_public() {
+  (void)(wuffs_base__io_buffer__compact);
+  (void)(wuffs_base__io_buffer__reader);
+  (void)(wuffs_base__io_buffer__reader_io_position);
+  (void)(wuffs_base__io_buffer__writer);
+  (void)(wuffs_base__io_buffer__writer_io_position);
+}

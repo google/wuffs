@@ -373,6 +373,40 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return ((wuffs_base__slice_u8){});
 }
 
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__core_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__core_public() {
+  (void)(wuffs_base__slice_u8__subslice_i);
+  (void)(wuffs_base__slice_u8__subslice_ij);
+  (void)(wuffs_base__slice_u8__subslice_j);
+  (void)(wuffs_base__status__is_complete);
+  (void)(wuffs_base__status__is_error);
+  (void)(wuffs_base__status__is_ok);
+  (void)(wuffs_base__status__is_suspension);
+  (void)(wuffs_base__status__is_warning);
+  (void)(wuffs_base__u16__max);
+  (void)(wuffs_base__u16__min);
+  (void)(wuffs_base__u16__sat_add);
+  (void)(wuffs_base__u16__sat_sub);
+  (void)(wuffs_base__u32__max);
+  (void)(wuffs_base__u32__min);
+  (void)(wuffs_base__u32__sat_add);
+  (void)(wuffs_base__u32__sat_sub);
+  (void)(wuffs_base__u64__max);
+  (void)(wuffs_base__u64__min);
+  (void)(wuffs_base__u64__sat_add);
+  (void)(wuffs_base__u64__sat_sub);
+  (void)(wuffs_base__u8__max);
+  (void)(wuffs_base__u8__min);
+  (void)(wuffs_base__u8__sat_add);
+  (void)(wuffs_base__u8__sat_sub);
+}
+
 // ---------------- Ranges and Rects
 
 // Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
@@ -440,20 +474,18 @@ wuffs_base__range_ii_u32__contains(wuffs_base__range_ii_u32* r, uint32_t x) {
   return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline  //
-    wuffs_base__range_ii_u32
-    wuffs_base__range_ii_u32__intersect(wuffs_base__range_ii_u32* r,
-                                        wuffs_base__range_ii_u32 s) {
+static inline wuffs_base__range_ii_u32  //
+wuffs_base__range_ii_u32__intersect(wuffs_base__range_ii_u32* r,
+                                    wuffs_base__range_ii_u32 s) {
   wuffs_base__range_ii_u32 t;
   t.min_incl = wuffs_base__u32__max(r->min_incl, s.min_incl);
   t.max_incl = wuffs_base__u32__min(r->max_incl, s.max_incl);
   return t;
 }
 
-static inline  //
-    wuffs_base__range_ii_u32
-    wuffs_base__range_ii_u32__unite(wuffs_base__range_ii_u32* r,
-                                    wuffs_base__range_ii_u32 s) {
+static inline wuffs_base__range_ii_u32  //
+wuffs_base__range_ii_u32__unite(wuffs_base__range_ii_u32* r,
+                                wuffs_base__range_ii_u32 s) {
   if (wuffs_base__range_ii_u32__is_empty(r)) {
     return s;
   }
@@ -1023,6 +1055,50 @@ wuffs_base__rect_ie_u32::height() {
 
 #endif  // __cplusplus
 
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_public() {
+  (void)(wuffs_base__range_ie_u32__contains);
+  (void)(wuffs_base__range_ie_u32__equals);
+  (void)(wuffs_base__range_ie_u32__intersect);
+  (void)(wuffs_base__range_ie_u32__is_empty);
+  (void)(wuffs_base__range_ie_u32__length);
+  (void)(wuffs_base__range_ie_u32__unite);
+  (void)(wuffs_base__range_ie_u64__contains);
+  (void)(wuffs_base__range_ie_u64__equals);
+  (void)(wuffs_base__range_ie_u64__intersect);
+  (void)(wuffs_base__range_ie_u64__is_empty);
+  (void)(wuffs_base__range_ie_u64__length);
+  (void)(wuffs_base__range_ie_u64__unite);
+  (void)(wuffs_base__range_ii_u32__contains);
+  (void)(wuffs_base__range_ii_u32__equals);
+  (void)(wuffs_base__range_ii_u32__intersect);
+  (void)(wuffs_base__range_ii_u32__is_empty);
+  (void)(wuffs_base__range_ii_u32__unite);
+  (void)(wuffs_base__range_ii_u64__contains);
+  (void)(wuffs_base__range_ii_u64__equals);
+  (void)(wuffs_base__range_ii_u64__intersect);
+  (void)(wuffs_base__range_ii_u64__is_empty);
+  (void)(wuffs_base__range_ii_u64__unite);
+  (void)(wuffs_base__rect_ie_u32__contains);
+  (void)(wuffs_base__rect_ie_u32__equals);
+  (void)(wuffs_base__rect_ie_u32__height);
+  (void)(wuffs_base__rect_ie_u32__intersect);
+  (void)(wuffs_base__rect_ie_u32__is_empty);
+  (void)(wuffs_base__rect_ie_u32__unite);
+  (void)(wuffs_base__rect_ie_u32__width);
+  (void)(wuffs_base__rect_ii_u32__contains);
+  (void)(wuffs_base__rect_ii_u32__equals);
+  (void)(wuffs_base__rect_ii_u32__intersect);
+  (void)(wuffs_base__rect_ii_u32__is_empty);
+  (void)(wuffs_base__rect_ii_u32__unite);
+}
+
 // ---------------- I/O
 
 struct wuffs_base__io_buffer__struct;
@@ -1149,6 +1225,21 @@ wuffs_base__io_buffer__struct::writer_io_position() {
 
 #endif  // __cplusplus
 
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_public() {
+  (void)(wuffs_base__io_buffer__compact);
+  (void)(wuffs_base__io_buffer__reader);
+  (void)(wuffs_base__io_buffer__reader_io_position);
+  (void)(wuffs_base__io_buffer__writer);
+  (void)(wuffs_base__io_buffer__writer_io_position);
+}
+
 // ---------------- Memory Allocation
 
 // The memory allocation related functions in this section aren't used by Wuffs
@@ -1218,6 +1309,20 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
     }
   }
   return ((wuffs_base__slice_u64){});
+}
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__memory_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__memory_public() {
+  (void)(wuffs_base__malloc_slice_u16);
+  (void)(wuffs_base__malloc_slice_u32);
+  (void)(wuffs_base__malloc_slice_u64);
+  (void)(wuffs_base__malloc_slice_u8);
 }
 
 // ---------------- Images
@@ -2234,6 +2339,55 @@ wuffs_base__pixel_swizzler::swizzle_packed(wuffs_base__slice_u8 dst,
 }
 
 #endif  // __cplusplus
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__image_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__image_public() {
+  (void)(wuffs_base__frame_config__blend);
+  (void)(wuffs_base__frame_config__bounds);
+  (void)(wuffs_base__frame_config__disposal);
+  (void)(wuffs_base__frame_config__duration);
+  (void)(wuffs_base__frame_config__height);
+  (void)(wuffs_base__frame_config__index);
+  (void)(wuffs_base__frame_config__io_position);
+  (void)(wuffs_base__frame_config__update);
+  (void)(wuffs_base__frame_config__width);
+  (void)(wuffs_base__image_config__first_frame_io_position);
+  (void)(wuffs_base__image_config__first_frame_is_opaque);
+  (void)(wuffs_base__image_config__invalidate);
+  (void)(wuffs_base__image_config__is_valid);
+  (void)(wuffs_base__image_config__set);
+  (void)(wuffs_base__pixel_buffer__palette);
+  (void)(wuffs_base__pixel_buffer__pixel_format);
+  (void)(wuffs_base__pixel_buffer__plane);
+  (void)(wuffs_base__pixel_buffer__set_from_slice);
+  (void)(wuffs_base__pixel_config__bounds);
+  (void)(wuffs_base__pixel_config__height);
+  (void)(wuffs_base__pixel_config__invalidate);
+  (void)(wuffs_base__pixel_config__is_valid);
+  (void)(wuffs_base__pixel_config__pixbuf_len);
+  (void)(wuffs_base__pixel_config__pixel_format);
+  (void)(wuffs_base__pixel_config__pixel_subsampling);
+  (void)(wuffs_base__pixel_config__set);
+  (void)(wuffs_base__pixel_config__width);
+  (void)(wuffs_base__pixel_format__bits_per_pixel);
+  (void)(wuffs_base__pixel_format__is_indexed);
+  (void)(wuffs_base__pixel_format__is_packed);
+  (void)(wuffs_base__pixel_format__is_planar);
+  (void)(wuffs_base__pixel_format__is_valid);
+  (void)(wuffs_base__pixel_format__num_planes);
+  (void)(wuffs_base__pixel_subsampling__bias_x);
+  (void)(wuffs_base__pixel_subsampling__bias_y);
+  (void)(wuffs_base__pixel_subsampling__shift_x);
+  (void)(wuffs_base__pixel_subsampling__shift_y);
+  (void)(wuffs_base__pixel_swizzler__prepare);
+  (void)(wuffs_base__pixel_swizzler__swizzle_packed);
+}
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -3765,6 +3919,59 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   return ((wuffs_base__slice_u8){});
 }
 
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__core_private()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__core_private() {
+  (void)(wuffs_base__load_u16be);
+  (void)(wuffs_base__load_u16le);
+  (void)(wuffs_base__load_u24be);
+  (void)(wuffs_base__load_u24le);
+  (void)(wuffs_base__load_u32be);
+  (void)(wuffs_base__load_u32le);
+  (void)(wuffs_base__load_u40be);
+  (void)(wuffs_base__load_u40le);
+  (void)(wuffs_base__load_u48be);
+  (void)(wuffs_base__load_u48le);
+  (void)(wuffs_base__load_u56be);
+  (void)(wuffs_base__load_u56le);
+  (void)(wuffs_base__load_u64be);
+  (void)(wuffs_base__load_u64le);
+  (void)(wuffs_base__load_u8be);
+  (void)(wuffs_base__return_empty_struct);
+  (void)(wuffs_base__slice_u8__copy_from_slice);
+  (void)(wuffs_base__slice_u8__prefix);
+  (void)(wuffs_base__slice_u8__suffix);
+  (void)(wuffs_base__store_u16be);
+  (void)(wuffs_base__store_u16le);
+  (void)(wuffs_base__store_u24be);
+  (void)(wuffs_base__store_u24le);
+  (void)(wuffs_base__store_u32be);
+  (void)(wuffs_base__store_u32le);
+  (void)(wuffs_base__store_u40be);
+  (void)(wuffs_base__store_u40le);
+  (void)(wuffs_base__store_u48be);
+  (void)(wuffs_base__store_u48le);
+  (void)(wuffs_base__store_u56be);
+  (void)(wuffs_base__store_u56le);
+  (void)(wuffs_base__store_u64be);
+  (void)(wuffs_base__store_u64le);
+  (void)(wuffs_base__store_u8be);
+  (void)(wuffs_base__table_u8__row);
+  (void)(wuffs_base__u16__sat_add_indirect);
+  (void)(wuffs_base__u16__sat_sub_indirect);
+  (void)(wuffs_base__u32__sat_add_indirect);
+  (void)(wuffs_base__u32__sat_sub_indirect);
+  (void)(wuffs_base__u64__sat_add_indirect);
+  (void)(wuffs_base__u64__sat_sub_indirect);
+  (void)(wuffs_base__u8__sat_add_indirect);
+  (void)(wuffs_base__u8__sat_sub_indirect);
+}
+
 // ---------------- Ranges and Rects
 
 static inline uint32_t  //
@@ -3875,6 +4082,30 @@ wuffs_base__utility__make_rect_ie_u32(const wuffs_base__utility* ignored,
       .max_excl_x = max_excl_x,
       .max_excl_y = max_excl_y,
   });
+}
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_private()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_private() {
+  (void)(wuffs_base__range_ie_u32__get_max_excl);
+  (void)(wuffs_base__range_ie_u32__get_min_incl);
+  (void)(wuffs_base__range_ie_u64__get_max_excl);
+  (void)(wuffs_base__range_ie_u64__get_min_incl);
+  (void)(wuffs_base__range_ii_u32__get_max_incl);
+  (void)(wuffs_base__range_ii_u32__get_min_incl);
+  (void)(wuffs_base__range_ii_u64__get_max_incl);
+  (void)(wuffs_base__range_ii_u64__get_min_incl);
+  (void)(wuffs_base__utility__make_range_ie_u32);
+  (void)(wuffs_base__utility__make_range_ie_u64);
+  (void)(wuffs_base__utility__make_range_ii_u32);
+  (void)(wuffs_base__utility__make_range_ii_u64);
+  (void)(wuffs_base__utility__make_rect_ie_u32);
+  (void)(wuffs_base__utility__make_rect_ii_u32);
 }
 
 // ---------------- I/O
@@ -4136,6 +4367,33 @@ wuffs_base__utility__null_io_reader(const wuffs_base__utility* ignored) {
 static inline wuffs_base__io_writer  //
 wuffs_base__utility__null_io_writer(const wuffs_base__utility* ignored) {
   return ((wuffs_base__io_writer){});
+}
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_private()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__io_private() {
+  (void)(wuffs_base__io_buffer__is_valid);
+  (void)(wuffs_base__io_reader__is_eof);
+  (void)(wuffs_base__io_reader__is_valid);
+  (void)(wuffs_base__io_reader__set);
+  (void)(wuffs_base__io_reader__set_limit);
+  (void)(wuffs_base__io_reader__set_mark);
+  (void)(wuffs_base__io_reader__take);
+  (void)(wuffs_base__io_writer__copy_from_slice);
+  (void)(wuffs_base__io_writer__copy_n_from_history);
+  (void)(wuffs_base__io_writer__copy_n_from_history_fast);
+  (void)(wuffs_base__io_writer__copy_n_from_reader);
+  (void)(wuffs_base__io_writer__copy_n_from_slice);
+  (void)(wuffs_base__io_writer__is_valid);
+  (void)(wuffs_base__io_writer__set);
+  (void)(wuffs_base__io_writer__set_mark);
+  (void)(wuffs_base__utility__null_io_reader);
+  (void)(wuffs_base__utility__null_io_writer);
 }
 
   // ---------------- Memory Allocation

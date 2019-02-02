@@ -81,20 +81,18 @@ wuffs_base__range_ii_u32__contains(wuffs_base__range_ii_u32* r, uint32_t x) {
   return (r->min_incl <= x) && (x <= r->max_incl);
 }
 
-static inline  //
-    wuffs_base__range_ii_u32
-    wuffs_base__range_ii_u32__intersect(wuffs_base__range_ii_u32* r,
-                                        wuffs_base__range_ii_u32 s) {
+static inline wuffs_base__range_ii_u32  //
+wuffs_base__range_ii_u32__intersect(wuffs_base__range_ii_u32* r,
+                                    wuffs_base__range_ii_u32 s) {
   wuffs_base__range_ii_u32 t;
   t.min_incl = wuffs_base__u32__max(r->min_incl, s.min_incl);
   t.max_incl = wuffs_base__u32__min(r->max_incl, s.max_incl);
   return t;
 }
 
-static inline  //
-    wuffs_base__range_ii_u32
-    wuffs_base__range_ii_u32__unite(wuffs_base__range_ii_u32* r,
-                                    wuffs_base__range_ii_u32 s) {
+static inline wuffs_base__range_ii_u32  //
+wuffs_base__range_ii_u32__unite(wuffs_base__range_ii_u32* r,
+                                wuffs_base__range_ii_u32 s) {
   if (wuffs_base__range_ii_u32__is_empty(r)) {
     return s;
   }
@@ -663,3 +661,47 @@ wuffs_base__rect_ie_u32::height() {
 }
 
 #endif  // __cplusplus
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_public() {
+  (void)(wuffs_base__range_ie_u32__contains);
+  (void)(wuffs_base__range_ie_u32__equals);
+  (void)(wuffs_base__range_ie_u32__intersect);
+  (void)(wuffs_base__range_ie_u32__is_empty);
+  (void)(wuffs_base__range_ie_u32__length);
+  (void)(wuffs_base__range_ie_u32__unite);
+  (void)(wuffs_base__range_ie_u64__contains);
+  (void)(wuffs_base__range_ie_u64__equals);
+  (void)(wuffs_base__range_ie_u64__intersect);
+  (void)(wuffs_base__range_ie_u64__is_empty);
+  (void)(wuffs_base__range_ie_u64__length);
+  (void)(wuffs_base__range_ie_u64__unite);
+  (void)(wuffs_base__range_ii_u32__contains);
+  (void)(wuffs_base__range_ii_u32__equals);
+  (void)(wuffs_base__range_ii_u32__intersect);
+  (void)(wuffs_base__range_ii_u32__is_empty);
+  (void)(wuffs_base__range_ii_u32__unite);
+  (void)(wuffs_base__range_ii_u64__contains);
+  (void)(wuffs_base__range_ii_u64__equals);
+  (void)(wuffs_base__range_ii_u64__intersect);
+  (void)(wuffs_base__range_ii_u64__is_empty);
+  (void)(wuffs_base__range_ii_u64__unite);
+  (void)(wuffs_base__rect_ie_u32__contains);
+  (void)(wuffs_base__rect_ie_u32__equals);
+  (void)(wuffs_base__rect_ie_u32__height);
+  (void)(wuffs_base__rect_ie_u32__intersect);
+  (void)(wuffs_base__rect_ie_u32__is_empty);
+  (void)(wuffs_base__rect_ie_u32__unite);
+  (void)(wuffs_base__rect_ie_u32__width);
+  (void)(wuffs_base__rect_ii_u32__contains);
+  (void)(wuffs_base__rect_ii_u32__equals);
+  (void)(wuffs_base__rect_ii_u32__intersect);
+  (void)(wuffs_base__rect_ii_u32__is_empty);
+  (void)(wuffs_base__rect_ii_u32__unite);
+}

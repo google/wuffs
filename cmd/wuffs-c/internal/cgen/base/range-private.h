@@ -125,3 +125,27 @@ wuffs_base__utility__make_rect_ie_u32(const wuffs_base__utility* ignored,
       .max_excl_y = max_excl_y,
   });
 }
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_private()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__range_private() {
+  (void)(wuffs_base__range_ie_u32__get_max_excl);
+  (void)(wuffs_base__range_ie_u32__get_min_incl);
+  (void)(wuffs_base__range_ie_u64__get_max_excl);
+  (void)(wuffs_base__range_ie_u64__get_min_incl);
+  (void)(wuffs_base__range_ii_u32__get_max_incl);
+  (void)(wuffs_base__range_ii_u32__get_min_incl);
+  (void)(wuffs_base__range_ii_u64__get_max_incl);
+  (void)(wuffs_base__range_ii_u64__get_min_incl);
+  (void)(wuffs_base__utility__make_range_ie_u32);
+  (void)(wuffs_base__utility__make_range_ie_u64);
+  (void)(wuffs_base__utility__make_range_ii_u32);
+  (void)(wuffs_base__utility__make_range_ii_u64);
+  (void)(wuffs_base__utility__make_rect_ie_u32);
+  (void)(wuffs_base__utility__make_rect_ii_u32);
+}

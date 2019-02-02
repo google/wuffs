@@ -1028,3 +1028,52 @@ wuffs_base__pixel_swizzler::swizzle_packed(wuffs_base__slice_u8 dst,
 }
 
 #endif  // __cplusplus
+
+// ---------------- Bureaucracy re -Wunused-function
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__image_public()
+    WUFFS_BASE__POTENTIALLY_UNUSED;
+
+static inline void
+wuffs_base__acknowledge_potentially_unused_functions__image_public() {
+  (void)(wuffs_base__frame_config__blend);
+  (void)(wuffs_base__frame_config__bounds);
+  (void)(wuffs_base__frame_config__disposal);
+  (void)(wuffs_base__frame_config__duration);
+  (void)(wuffs_base__frame_config__height);
+  (void)(wuffs_base__frame_config__index);
+  (void)(wuffs_base__frame_config__io_position);
+  (void)(wuffs_base__frame_config__update);
+  (void)(wuffs_base__frame_config__width);
+  (void)(wuffs_base__image_config__first_frame_io_position);
+  (void)(wuffs_base__image_config__first_frame_is_opaque);
+  (void)(wuffs_base__image_config__invalidate);
+  (void)(wuffs_base__image_config__is_valid);
+  (void)(wuffs_base__image_config__set);
+  (void)(wuffs_base__pixel_buffer__palette);
+  (void)(wuffs_base__pixel_buffer__pixel_format);
+  (void)(wuffs_base__pixel_buffer__plane);
+  (void)(wuffs_base__pixel_buffer__set_from_slice);
+  (void)(wuffs_base__pixel_config__bounds);
+  (void)(wuffs_base__pixel_config__height);
+  (void)(wuffs_base__pixel_config__invalidate);
+  (void)(wuffs_base__pixel_config__is_valid);
+  (void)(wuffs_base__pixel_config__pixbuf_len);
+  (void)(wuffs_base__pixel_config__pixel_format);
+  (void)(wuffs_base__pixel_config__pixel_subsampling);
+  (void)(wuffs_base__pixel_config__set);
+  (void)(wuffs_base__pixel_config__width);
+  (void)(wuffs_base__pixel_format__bits_per_pixel);
+  (void)(wuffs_base__pixel_format__is_indexed);
+  (void)(wuffs_base__pixel_format__is_packed);
+  (void)(wuffs_base__pixel_format__is_planar);
+  (void)(wuffs_base__pixel_format__is_valid);
+  (void)(wuffs_base__pixel_format__num_planes);
+  (void)(wuffs_base__pixel_subsampling__bias_x);
+  (void)(wuffs_base__pixel_subsampling__bias_y);
+  (void)(wuffs_base__pixel_subsampling__shift_x);
+  (void)(wuffs_base__pixel_subsampling__shift_y);
+  (void)(wuffs_base__pixel_swizzler__prepare);
+  (void)(wuffs_base__pixel_swizzler__swizzle_packed);
+}
