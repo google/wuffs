@@ -15,6 +15,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifndef WUFFS_INCLUDE_GUARD
 #error "Wuffs' .h files need to be included before this file"
@@ -53,7 +54,13 @@ static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
           .closed = true,
       }),
   });
-  return fuzz(wuffs_base__io_buffer__reader(&src), hash);
+
+  const char* msg = fuzz(wuffs_base__io_buffer__reader(&src), hash);
+  if (msg && strstr(msg, "internal error:")) {
+    fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n", msg);
+    intentional_segfault();
+  }
+  return msg;
 }
 
 #ifdef __cplusplus

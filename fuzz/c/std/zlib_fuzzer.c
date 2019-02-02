@@ -79,7 +79,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       break;
     }
     if (dst.meta.wi == 0) {
-      fprintf(stderr, "wuffs_zlib__decoder__decode made no progress\n");
+      fprintf(stderr,
+              "wuffs_zlib__decoder__decode_io_writer made no progress\n");
       intentional_segfault();
     }
   }
