@@ -2647,8 +2647,9 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Public Consts
 
-WUFFS_BASE__MAYBE_STATIC const uint64_t wuffs_deflate__max_incl_workbuf_len
-    WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+WUFFS_BASE__MAYBE_STATIC const uint64_t  //
+    wuffs_deflate__max_incl_workbuf_len  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
 
@@ -2817,8 +2818,9 @@ extern const char* wuffs_lzw__error__bad_code;
 
 // ---------------- Public Consts
 
-WUFFS_BASE__MAYBE_STATIC const uint64_t wuffs_lzw__max_incl_workbuf_len
-    WUFFS_BASE__POTENTIALLY_UNUSED = 0;
+WUFFS_BASE__MAYBE_STATIC const uint64_t  //
+    wuffs_lzw__max_incl_workbuf_len      //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 0;
 
 // ---------------- Struct Declarations
 
@@ -2980,8 +2982,9 @@ extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
-WUFFS_BASE__MAYBE_STATIC const uint64_t wuffs_gif__max_incl_workbuf_len
-    WUFFS_BASE__POTENTIALLY_UNUSED = 65535;
+WUFFS_BASE__MAYBE_STATIC const uint64_t  //
+    wuffs_gif__max_incl_workbuf_len      //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 65535;
 
 // ---------------- Struct Declarations
 
@@ -3273,8 +3276,9 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Public Consts
 
-WUFFS_BASE__MAYBE_STATIC const uint64_t wuffs_gzip__max_incl_workbuf_len
-    WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+WUFFS_BASE__MAYBE_STATIC const uint64_t  //
+    wuffs_gzip__max_incl_workbuf_len     //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
 
@@ -3414,8 +3418,9 @@ extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Public Consts
 
-WUFFS_BASE__MAYBE_STATIC const uint64_t wuffs_zlib__max_incl_workbuf_len
-    WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+WUFFS_BASE__MAYBE_STATIC const uint64_t  //
+    wuffs_zlib__max_incl_workbuf_len     //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
 
@@ -4789,8 +4794,9 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 // ---------------- Private Consts
 
-static const uint32_t
-    wuffs_crc32__ieee_table[16][256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint32_t                 //
+    wuffs_crc32__ieee_table[16][256]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         {
             0,          1996959894, 3993919788, 2567524794, 124634137,
             1886057615, 3915621685, 2657392035, 249268274,  2044508324,
@@ -5834,13 +5840,15 @@ const char* wuffs_deflate__error__internal_error_inconsistent_n_bits =
 
 // ---------------- Private Consts
 
-static const uint8_t
-    wuffs_deflate__code_order[19] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t               //
+    wuffs_deflate__code_order[19]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 };
 
-static const uint8_t
-    wuffs_deflate__reverse8[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t              //
+    wuffs_deflate__reverse8[256]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         0,   128, 64,  192, 32,  160, 96,  224, 16,  144, 80,  208, 48,  176,
         112, 240, 8,   136, 72,  200, 40,  168, 104, 232, 24,  152, 88,  216,
         56,  184, 120, 248, 4,   132, 68,  196, 36,  164, 100, 228, 20,  148,
@@ -5862,8 +5870,9 @@ static const uint8_t
         63,  191, 127, 255,
 };
 
-static const uint32_t
-    wuffs_deflate__lcode_magic_numbers[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint32_t                       //
+    wuffs_deflate__lcode_magic_numbers[32]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         1073741824, 1073742080, 1073742336, 1073742592, 1073742848, 1073743104,
         1073743360, 1073743616, 1073743888, 1073744400, 1073744912, 1073745424,
         1073745952, 1073746976, 1073748000, 1073749024, 1073750064, 1073752112,
@@ -5872,8 +5881,9 @@ static const uint32_t
         134217728,  134217728,
 };
 
-static const uint32_t
-    wuffs_deflate__dcode_magic_numbers[32] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint32_t                       //
+    wuffs_deflate__dcode_magic_numbers[32]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         1073741824, 1073742080, 1073742336, 1073742592, 1073742864, 1073743376,
         1073743904, 1073744928, 1073745968, 1073748016, 1073750080, 1073754176,
         1073758288, 1073766480, 1073774688, 1073791072, 1073807472, 1073840240,
@@ -5882,8 +5892,9 @@ static const uint32_t
         134217728,  134217728,
 };
 
-static const uint32_t wuffs_deflate__huffs_table_size
-    WUFFS_BASE__POTENTIALLY_UNUSED = 1024;
+static const uint32_t                //
+    wuffs_deflate__huffs_table_size  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1024;
 
 // ---------------- Private Initializer Prototypes
 
@@ -8156,23 +8167,27 @@ const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
 
 // ---------------- Private Consts
 
-static const uint32_t
-    wuffs_gif__interlace_start[5] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint32_t              //
+    wuffs_gif__interlace_start[5]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         4294967295, 1, 2, 4, 0,
 };
 
-static const uint8_t
-    wuffs_gif__interlace_delta[5] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t               //
+    wuffs_gif__interlace_delta[5]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         1, 2, 4, 8, 8,
 };
 
-static const uint8_t
-    wuffs_gif__animexts1dot0[11] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t              //
+    wuffs_gif__animexts1dot0[11]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         65, 78, 73, 77, 69, 88, 84, 83, 49, 46, 48,
 };
 
-static const uint8_t
-    wuffs_gif__netscape2dot0[11] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t              //
+    wuffs_gif__netscape2dot0[11]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
         78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48,
 };
 
