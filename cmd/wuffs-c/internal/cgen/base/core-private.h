@@ -14,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(x) (void)(x)
-
 static inline void wuffs_base__ignore_check_wuffs_version_status(
     wuffs_base__status z) {}
 

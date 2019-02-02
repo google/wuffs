@@ -690,7 +690,7 @@ func (g *gen) writeConst(b *buffer, n *a.Const) error {
 	if err := g.writeCTypeName(b, n.XType(), g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
 		return err
 	}
-	b.writes(" = ")
+	b.writes(" WUFFS_BASE__POTENTIALLY_UNUSED = ")
 	if err := g.writeConstList(b, n.Value()); err != nil {
 		return err
 	}

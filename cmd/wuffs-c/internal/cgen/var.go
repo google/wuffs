@@ -102,10 +102,8 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	if header {
 		b.printf("uint8_t* %s%s = NULL;", iopPrefix, preName)
-		b.printf("uint8_t* %s%s = NULL;", io0Prefix, preName)
-		b.printf("uint8_t* %s%s = NULL;", io1Prefix, preName)
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);", io0Prefix, preName)
-		b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);", io1Prefix, preName)
+		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io0Prefix, preName)
+		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io1Prefix, preName)
 	}
 
 	b.printf("if (%s.private_impl.buf) {", preName)
@@ -296,14 +294,11 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		}
 
 		if typ.IsIOType() {
-			b.printf("wuffs_base__io_buffer %s%s = {};\n", uPrefix, name)
+			b.printf("wuffs_base__io_buffer %s%s WUFFS_BASE__POTENTIALLY_UNUSED = {};\n", uPrefix, name)
 			preName := vPrefix + name
 			// TODO: io0_etc variables?
-			b.printf("uint8_t* %s%s = NULL;\n", iopPrefix, preName)
-			b.printf("uint8_t* %s%s = NULL;\n", io1Prefix, preName)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", uPrefix, name)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", iopPrefix, preName)
-			b.printf("WUFFS_BASE__IGNORE_POTENTIALLY_UNUSED_VARIABLE(%s%s);\n", io1Prefix, preName)
+			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)
+			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, preName)
 		}
 	}
 	return nil

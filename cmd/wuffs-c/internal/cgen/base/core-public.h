@@ -59,8 +59,10 @@
 
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
+#define WUFFS_BASE__POTENTIALLY_UNUSED __attribute__((unused))
 #define WUFFS_BASE__WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
+#define WUFFS_BASE__POTENTIALLY_UNUSED
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
