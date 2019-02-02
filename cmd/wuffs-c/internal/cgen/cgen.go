@@ -681,12 +681,7 @@ func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
-	if n.Public() {
-		b.writes("WUFFS_BASE__MAYBE_STATIC ")
-	} else {
-		b.writes("static ")
-	}
-	b.writes("const ")
+	b.writes("static const ")
 	if err := g.writeCTypeName(b, n.XType(), "//\n"+g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
 		return err
 	}
