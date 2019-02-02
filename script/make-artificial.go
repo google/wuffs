@@ -308,6 +308,16 @@ func stateDeflateFixedHuffman(line string) (stateFunc, error) {
 		return stateDeflateFixedHuffman, nil
 	}
 
+	if line == "len 3 distCode 31" {
+		lCode, lExtra, lNExtra := deflateEncodeLength(3)
+		g.stream.writeLCode(lCode)
+		g.stream.writeBits(lExtra, lNExtra)
+		dCode, dExtra, dNExtra := uint32(31), uint32(0), uint32(0)
+		g.stream.writeBits(reverse(dCode, 5), 5)
+		g.stream.writeBits(dExtra, dNExtra)
+		return stateDeflateFixedHuffman, nil
+	}
+
 	if l, d, ok := deflateParseLenDist(line); ok {
 		lCode, lExtra, lNExtra := deflateEncodeLength(l)
 		g.stream.writeLCode(lCode)

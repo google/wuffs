@@ -202,6 +202,9 @@ const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
 
     if (i_err == Z_STREAM_END) {
       break;
+    } else if (i_err == Z_DATA_ERROR) {
+      ret = "inflate failed (data error)";
+      goto cleanup1;
     } else if (i_err != Z_OK) {
       ret = "inflate failed";
       goto cleanup1;

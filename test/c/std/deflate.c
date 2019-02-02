@@ -100,6 +100,13 @@ golden_test deflate_deflate_distance_32768_gt = {
         "deflate-distance-32768.deflate",
 };
 
+golden_test deflate_deflate_distance_code_31_gt = {
+    .want_filename = "test/data/artificial/0.bytes",
+    .src_filename =
+        "test/data/artificial/"
+        "deflate-distance-code-31.deflate",
+};
+
 golden_test deflate_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",    //
     .src_filename = "test/data/midsummer.txt.gz",  //
@@ -175,6 +182,17 @@ const char* test_wuffs_deflate_decode_deflate_distance_32768() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
                             &deflate_deflate_distance_32768_gt, 0, 0);
+}
+
+const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
+  CHECK_FOCUS(__func__);
+  const char* got = do_test_io_buffers(
+      wuffs_deflate_decode, &deflate_deflate_distance_code_31_gt, 0, 0);
+  if (got != wuffs_deflate__error__bad_huffman_code) {
+    RETURN_FAIL("got \"%s\", want \"%s\"", got,
+                wuffs_deflate__error__bad_huffman_code);
+  }
+  return NULL;
 }
 
 const char* test_wuffs_deflate_decode_midsummer() {
@@ -613,6 +631,17 @@ const char* test_mimic_deflate_decode_deflate_distance_32768() {
                             &deflate_deflate_distance_32768_gt, 0, 0);
 }
 
+const char* test_mimic_deflate_decode_deflate_distance_code_31() {
+  CHECK_FOCUS(__func__);
+  const char* got = do_test_io_buffers(
+      mimic_deflate_decode, &deflate_deflate_distance_code_31_gt, 0, 0);
+  const char* want = "inflate failed (data error)";
+  if ((got != want) && ((got == NULL) || (want == NULL) || strcmp(got, want))) {
+    RETURN_FAIL("got \"%s\", want \"%s\"", got, want);
+  }
+  return NULL;
+}
+
 const char* test_mimic_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt, 0, 0);
@@ -705,6 +734,7 @@ proc tests[] = {
     test_wuffs_deflate_decode_256_bytes,                       //
     test_wuffs_deflate_decode_deflate_backref_crosses_blocks,  //
     test_wuffs_deflate_decode_deflate_distance_32768,          //
+    test_wuffs_deflate_decode_deflate_distance_code_31,        //
     test_wuffs_deflate_decode_midsummer,                       //
     test_wuffs_deflate_decode_pi_just_one_read,                //
     test_wuffs_deflate_decode_pi_many_big_reads,               //
@@ -722,6 +752,7 @@ proc tests[] = {
     test_mimic_deflate_decode_256_bytes,                       //
     test_mimic_deflate_decode_deflate_backref_crosses_blocks,  //
     test_mimic_deflate_decode_deflate_distance_32768,          //
+    test_mimic_deflate_decode_deflate_distance_code_31,        //
     test_mimic_deflate_decode_midsummer,                       //
     test_mimic_deflate_decode_pi_just_one_read,                //
     test_mimic_deflate_decode_pi_many_big_reads,               //

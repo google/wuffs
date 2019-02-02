@@ -19,9 +19,7 @@ so the overall decoding is "abcdcdc".
     000009  0x0009  .       0x03    0b_...._.011  Fixed Huffman block, final
     000009  0x0009  .       0x03    0b_0000_0...  lcode:  257  length:        3
     000010  0x000A  B       0x42    0b_...._..10
-
     000010  0x000A  B       0x42    0b_.100_00..  dcode:    1  distance:      2
-
     000010  0x000A  B       0x42    0b_0..._....  lcode:  256  end of block
     000011  0x000B  .       0x00    0b_..00_0000
 
