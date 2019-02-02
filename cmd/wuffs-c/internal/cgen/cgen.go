@@ -736,6 +736,9 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 
 	for _, o := range n.Fields() {
 		o := o.AsField()
+		if o.XType().Eq(typeExprUtility) {
+			continue
+		}
 		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
 			return err
 		}

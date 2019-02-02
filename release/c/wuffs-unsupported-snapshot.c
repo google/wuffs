@@ -2705,7 +2705,6 @@ struct wuffs_deflate__decoder__struct {
     uint32_t f_history_index;
     uint8_t f_code_lengths[320];
     bool f_end_of_block;
-    wuffs_base__utility f_util;
 
     struct {
       uint32_t coro_susp_point;
@@ -2901,7 +2900,6 @@ struct wuffs_lzw__decoder__struct {
     uint16_t f_prefixes[4096];
     uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
-    wuffs_base__utility f_util;
 
     struct {
       uint32_t coro_susp_point;
@@ -3113,7 +3111,6 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_palettes[2][1024];
     uint8_t f_dst_palette[1024];
     wuffs_base__pixel_swizzler f_swizzler;
-    wuffs_base__utility f_util;
     wuffs_lzw__decoder f_lzw;
 
     struct {
@@ -3356,7 +3353,6 @@ struct wuffs_gzip__decoder__struct {
     wuffs_deflate__decoder f_flate;
     wuffs_crc32__ieee_hasher f_checksum;
     bool f_ignore_checksum;
-    wuffs_base__utility f_util;
 
     struct {
       uint32_t coro_susp_point;
@@ -3509,7 +3505,6 @@ struct wuffs_zlib__decoder__struct {
     wuffs_deflate__decoder f_flate;
     wuffs_adler32__hasher f_checksum;
     bool f_ignore_checksum;
-    wuffs_base__utility f_util;
 
     struct {
       uint32_t coro_susp_point;
