@@ -55,16 +55,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 // We should be able to do:
 //
 // #include <sys/memfd.h>
 //
-// but for some reason, this hits "No such file or directory" on Ubuntu 18.04
-// (linux 4.15, glibc 2.27). Instead, we explicitly declare this function
-// signature, copy/pasted from "man memfd_create".
-int memfd_create(const char* name, unsigned int flags);
+// to get the memfd_create function signature, but memfd_create is relatively
+// recent. For some reason, this #include hits "No such file or directory" on
+// Ubuntu 18.04 (linux 4.15, glibc 2.27), and there's also been problems on
+// Debian systems. Instead, we explicitly define our own memfd_create.
+static int my_memfd_create(const char* name, unsigned int flags) {
+  return syscall(__NR_memfd_create, name, flags);
+}
 
 #define N (128 * 1024)
 
@@ -74,7 +78,7 @@ void* make_ring_buffer() {
     return NULL;
   }
 
-  int memfd = memfd_create("ring", 0);
+  int memfd = my_memfd_create("ring", 0);
   if (memfd == -1) {
     return NULL;
   }
