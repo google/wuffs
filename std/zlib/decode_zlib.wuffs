@@ -22,6 +22,9 @@ pub status "?bad parity check"
 
 pri status "?TODO: unsupported preset dictionary"
 
+// TODO: reference deflate.max_incl_workbuf_len.
+pub const max_incl_workbuf_len base.u64 = 32768 + 512
+
 pub struct decoder?(
 	flate           deflate.decoder,
 	checksum        adler32.hasher,

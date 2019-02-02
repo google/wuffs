@@ -31,6 +31,8 @@ pri status "?internal error: inconsistent I/O"
 pri status "?internal error: inconsistent distance"
 pri status "?internal error: inconsistent n_bits"
 
+pub const max_incl_workbuf_len base.u64 = 32768 + 512
+
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //
 // The u32 values' meanings are the same as the decoder.huffs u32 values. In

@@ -220,7 +220,9 @@ func (c *Checker) checkUse(node *a.Node) error {
 
 		switch n.Kind() {
 		case a.KConst:
-			return fmt.Errorf("TODO: type-check a used-package const")
+			if err := c.checkConst(n); err != nil {
+				return err
+			}
 		case a.KFunc:
 			if err := c.checkFuncSignature(n); err != nil {
 				return err

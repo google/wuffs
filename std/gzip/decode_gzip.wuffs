@@ -20,6 +20,9 @@ pub status "?bad compression method"
 pub status "?bad encoding flags"
 pub status "?bad header"
 
+// TODO: reference deflate.max_incl_workbuf_len.
+pub const max_incl_workbuf_len base.u64 = 32768 + 512
+
 pub struct decoder?(
 	flate           deflate.decoder,
 	checksum        crc32.ieee_hasher,

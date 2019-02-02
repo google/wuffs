@@ -24,6 +24,9 @@ pub status "?too much pixel data"
 
 pri status "?internal error: inconsistent ri/wi"
 
+// TODO: reference lzw.max_incl_workbuf_len.
+pub const max_incl_workbuf_len base.u64 = 0xFFFF
+
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
 // stages are complete. Otherwise, the four interlace stages are elements 4, 3,

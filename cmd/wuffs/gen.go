@@ -264,7 +264,8 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 				if !n.Public() {
 					continue
 				}
-				return fmt.Errorf("TODO: genWuffs for consts")
+				fmt.Fprintf(out, "pub const %s %s = %v\n",
+					n.QID().Str(&h.tm), n.XType().Str(&h.tm), n.Value().Str(&h.tm))
 
 			case a.KFunc:
 				n := n.AsFunc()
