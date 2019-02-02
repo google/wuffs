@@ -373,13 +373,6 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
   return ((wuffs_base__slice_u8){});
 }
 
-// ---------------- Slices and Tables (Utility)
-
-static inline wuffs_base__slice_u8  //
-wuffs_base__utility__null_slice_u8() {
-  return ((wuffs_base__slice_u8){});
-}
-
 // ---------------- Bureaucracy re -Wunused-function
 
 static inline void
@@ -412,7 +405,6 @@ wuffs_base__acknowledge_potentially_unused_functions__core_public() {
   (void)(wuffs_base__u8__min);
   (void)(wuffs_base__u8__sat_add);
   (void)(wuffs_base__u8__sat_sub);
-  (void)(wuffs_base__utility__null_slice_u8);
 }
 
 // ---------------- Ranges and Rects
@@ -4006,6 +3998,13 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   return ((wuffs_base__slice_u8){});
 }
 
+// ---------------- Slices and Tables (Utility)
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__utility__null_slice_u8() {
+  return ((wuffs_base__slice_u8){});
+}
+
 // ---------------- Bureaucracy re -Wunused-function
 
 static inline void
@@ -4057,6 +4056,7 @@ wuffs_base__acknowledge_potentially_unused_functions__core_private() {
   (void)(wuffs_base__u64__sat_sub_indirect);
   (void)(wuffs_base__u8__sat_add_indirect);
   (void)(wuffs_base__u8__sat_sub_indirect);
+  (void)(wuffs_base__utility__null_slice_u8);
 }
 
 // ---------------- Ranges and Rects
