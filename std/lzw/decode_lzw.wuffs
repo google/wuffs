@@ -18,7 +18,7 @@ pri status "?internal error: inconsistent I/O"
 
 // TODO: move bulk data buffers like decoder.suffixes or decoder.output into
 // the workbuf?
-pub const max_incl_workbuf_len base.u64 = 0
+pub const decoder_workbuf_len_max_incl base.u64 = 0
 
 pub struct decoder?(
 	// The value passed to set_literal_width. This lw field is copied to the

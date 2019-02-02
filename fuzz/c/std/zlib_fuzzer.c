@@ -48,7 +48,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
-#define WORK_BUFFER_SIZE WUFFS_ZLIB__MAX_INCL_WORKBUF_LEN
+#define WORK_BUFFER_SIZE WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL
 uint8_t work_buffer[WORK_BUFFER_SIZE];
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {

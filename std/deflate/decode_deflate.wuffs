@@ -31,7 +31,7 @@ pri status "?internal error: inconsistent I/O"
 pri status "?internal error: inconsistent distance"
 pri status "?internal error: inconsistent n_bits"
 
-pub const max_incl_workbuf_len base.u64 = 32768 + 512
+pub const decoder_workbuf_len_max_incl base.u64 = 32768 + 512
 
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //
