@@ -121,7 +121,15 @@ pub struct decoder?(
 	//
 	// TODO: can decode_huffman_xxx signal this in band instead of out of band?
 	end_of_block base.bool,
+
+	util base.utility,
 )
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.make_range_ii_u64(
+		min_incl:decoder_workbuf_len_max_incl,
+		max_incl:decoder_workbuf_len_max_incl)
+}
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
 	var status       base.status

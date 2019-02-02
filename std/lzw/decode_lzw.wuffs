@@ -56,10 +56,16 @@ pub struct decoder?(
 	// output[output_ri:output_wi] is the buffered output, connecting read_from
 	// with write_to and flush.
 	output array[8192 + 7] base.u8,
+
+	util base.utility,
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
 	this.lw = args.lw
+}
+
+pub func decoder.workbuf_len() base.range_ii_u64 {
+	return this.util.make_range_ii_u64(min_incl:0, max_incl:0)
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
