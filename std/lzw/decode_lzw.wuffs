@@ -17,7 +17,13 @@ pub status "?bad code"
 pri status "?internal error: inconsistent I/O"
 
 // TODO: move bulk data buffers like decoder.suffixes or decoder.output into
-// the workbuf?
+// the workbuf? The first attempt at this was a performance regression for
+// decoding all but the smallest GIFs. See these git commits for numbers:
+//  - 49627b4 Flatten the lzw.decoder.suffixes array
+//  - f877fb2 Use the workbuf instead of lzw.decoder.suffixes
+//  - 85be5b9 Delete the obsolete lzw.decoder.suffixes array
+// and the roll back has combined numbers:
+//  - 3056a84 Roll back 3 recent lzw.decoder.suffixes commits
 pub const decoder_workbuf_len_max_incl base.u64 = 0
 
 pub struct decoder?(
