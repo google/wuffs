@@ -24,8 +24,8 @@ pub status "?too much pixel data"
 
 pri status "?internal error: inconsistent ri/wi"
 
-// TODO: reference lzw.decoder_workbuf_len_max_incl.
-pub const decoder_workbuf_len_max_incl base.u64 = 0xFFFF
+// TODO: reference lzw.decoder_workbuf_len_max_incl_worst_case.
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0xFFFF
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace

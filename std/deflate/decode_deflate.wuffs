@@ -31,7 +31,7 @@ pri status "?internal error: inconsistent I/O"
 pri status "?internal error: inconsistent distance"
 pri status "?internal error: inconsistent n_bits"
 
-pub const decoder_workbuf_len_max_incl base.u64 = 32768 + 512
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 32768 + 512
 
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //
@@ -127,8 +127,8 @@ pub struct decoder?(
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:decoder_workbuf_len_max_incl,
-		max_incl:decoder_workbuf_len_max_incl)
+		min_incl:decoder_workbuf_len_max_incl_worst_case,
+		max_incl:decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {

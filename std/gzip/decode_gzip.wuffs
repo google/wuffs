@@ -20,8 +20,8 @@ pub status "?bad compression method"
 pub status "?bad encoding flags"
 pub status "?bad header"
 
-// TODO: reference deflate.decoder_workbuf_len_max_incl.
-pub const decoder_workbuf_len_max_incl base.u64 = 32768 + 512
+// TODO: reference deflate.decoder_workbuf_len_max_incl_worst_case.
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 32768 + 512
 
 pub struct decoder?(
 	flate           deflate.decoder,
@@ -36,8 +36,8 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:decoder_workbuf_len_max_incl,
-		max_incl:decoder_workbuf_len_max_incl)
+		min_incl:decoder_workbuf_len_max_incl_worst_case,
+		max_incl:decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {

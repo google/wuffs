@@ -2639,10 +2639,10 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Public Consts
 
-#define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL 33280
+#define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
 
-static const uint64_t                            //
-    wuffs_deflate__decoder_workbuf_len_max_incl  //
+static const uint64_t                                       //
+    wuffs_deflate__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
@@ -2820,10 +2820,10 @@ extern const char* wuffs_lzw__error__bad_code;
 
 // ---------------- Public Consts
 
-#define WUFFS_LZW__DECODER_WORKBUF_LEN_MAX_INCL 0
+#define WUFFS_LZW__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
 
-static const uint64_t                        //
-    wuffs_lzw__decoder_workbuf_len_max_incl  //
+static const uint64_t                                   //
+    wuffs_lzw__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 0;
 
 // ---------------- Struct Declarations
@@ -2994,10 +2994,10 @@ extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
-#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL 65535
+#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 65535
 
-static const uint64_t                        //
-    wuffs_gif__decoder_workbuf_len_max_incl  //
+static const uint64_t                                   //
+    wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 65535;
 
 // ---------------- Struct Declarations
@@ -3289,10 +3289,10 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Public Consts
 
-#define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL 33280
+#define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
 
-static const uint64_t                         //
-    wuffs_gzip__decoder_workbuf_len_max_incl  //
+static const uint64_t                                    //
+    wuffs_gzip__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
@@ -3441,10 +3441,10 @@ extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Public Consts
 
-#define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL 33280
+#define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
 
-static const uint64_t                         //
-    wuffs_zlib__decoder_workbuf_len_max_incl  //
+static const uint64_t                                    //
+    wuffs_zlib__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
 
 // ---------------- Struct Declarations
