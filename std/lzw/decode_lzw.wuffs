@@ -16,8 +16,9 @@ pub status "?bad code"
 
 pri status "?internal error: inconsistent I/O"
 
-// The suffixes table is 8 bytes per code, so 4096 * 8 = 32768 bytes.
-pub const decoder_workbuf_len_max_incl base.u64 = 32768
+// TODO: move bulk data buffers like decoder.suffixes or decoder.output into
+// the workbuf?
+pub const decoder_workbuf_len_max_incl base.u64 = 0
 
 pub struct decoder?(
 	// The value passed to set_literal_width. This lw field is copied to the
@@ -46,6 +47,7 @@ pub struct decoder?(
 	read_from_return_value base.u32,
 
 	// read_from per-code state.
+	suffixes array[4096] array[8] base.u8,
 	prefixes array[4096] base.u16[..4095],
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.
@@ -83,25 +85,16 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	this.n_bits = 0
 	this.output_ri = 0
 	this.output_wi = 0
-
-	if args.workbuf.length() < 32768 {
-		return base."?bad workbuf length"
-	}
 	i = 0
-	while i < this.clear_code,
-		inv args.workbuf.length() >= 32768,
-	{
+	while i < this.clear_code {
 		assert i < 256 via "a < b: a < c; c <= b"(c:this.clear_code)
 		this.lm1s[i] = 0
-		args.workbuf[((8 * i) + 0) as base.u64] = i as base.u8
+		this.suffixes[i][0] = i as base.u8
 		i += 1
 	}
 
 	while true {
-		if args.workbuf.length() < 32768 {
-			return base."?bad workbuf length"
-		}
-		this.read_from!(src:args.src, workbuf:args.workbuf)
+		this.read_from!(src:args.src)
 
 		if this.output_wi > 0 {
 			this.write_to?(dst:args.dst)
@@ -121,7 +114,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 }
 
-pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
+pri func decoder.read_from!(src base.io_reader) {
 	var clear_code base.u32[..256]
 	var end_code   base.u32[..257]
 
@@ -140,10 +133,6 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 	var lm1_b      base.u16[..4095]
 	var lm1_a      base.u16[..4095]
 
-	if args.workbuf.length() < 32768 {
-		return nothing
-	}
-
 	clear_code = this.clear_code
 	end_code = this.end_code
 
@@ -154,9 +143,7 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 	n_bits = this.n_bits
 	output_wi = this.output_wi
 
-	while true,
-		inv args.workbuf.length() >= 32768,
-	{
+	while true {
 		if n_bits < width {
 			assert n_bits < 12 via "a < b: a < c; c <= b"(c:width)
 			if args.src.available() >= 4 {
@@ -209,15 +196,12 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 				this.lm1s[save_code] = lm1_a
 
 				if (lm1_a % 8) != 0 {
-					assert (8 * save_code) <= ((8 * save_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
-					assert (8 * prev_code) <= ((8 * prev_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
 					this.prefixes[save_code] = this.prefixes[prev_code]
-					args.workbuf[(8 * save_code):(8 * save_code) + 8].copy_from_slice!(
-						s:args.workbuf[(8 * prev_code):(8 * prev_code) + 8])
-					args.workbuf[(8 * save_code) + ((lm1_a % 8) as base.u32)] = code as base.u8
+					this.suffixes[save_code] = this.suffixes[prev_code]
+					this.suffixes[save_code][lm1_a % 8] = code as base.u8
 				} else {
 					this.prefixes[save_code] = prev_code as base.u16
-					args.workbuf[(8 * save_code) + 0] = code as base.u8
+					this.suffixes[save_code][0] = code as base.u8
 				}
 
 				save_code += 1
@@ -255,17 +239,13 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 			output_wi = (output_wi + 1 + (this.lm1s[c] as base.u32)) & 8191
 
 			steps = (this.lm1s[c] as base.u32) >> 3
-			while true,
-				inv args.workbuf.length() >= 32768,
-			{
+			while true {
 				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
-				assert (8 * c) <= ((8 * c) + 8) via "a <= (a + b): 0 <= b"(b:8)
-				assert ((8 * c) + 8) <= 32768
 
 				// The final "8" is redundant semantically, but helps the
 				// wuffs-c code generator recognize that both slices have the
 				// same constant length, and hence produce efficient C code.
-				this.output[o:o + 8].copy_from_slice!(s:args.workbuf[(8 * c):(8 * c) + 8])
+				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][:8])
 
 				if steps <= 0 {
 					break
@@ -277,7 +257,7 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 				o = (o ~mod- 8) & 8191
 				c = this.prefixes[c] as base.u32
 			}
-			first_byte = args.workbuf[(8 * c) + 0]
+			first_byte = this.suffixes[c][0]
 
 			if code == save_code {
 				this.output[output_wi] = first_byte
@@ -289,15 +269,12 @@ pri func decoder.read_from!(src base.io_reader, workbuf slice base.u8) {
 				this.lm1s[save_code] = lm1_b
 
 				if (lm1_b % 8) != 0 {
-					assert (8 * save_code) <= ((8 * save_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
-					assert (8 * prev_code) <= ((8 * prev_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
 					this.prefixes[save_code] = this.prefixes[prev_code]
-					args.workbuf[(8 * save_code):(8 * save_code) + 8].copy_from_slice!(
-						s:args.workbuf[(8 * prev_code):(8 * prev_code) + 8])
-					args.workbuf[(8 * save_code) + ((lm1_b % 8) as base.u32)] = first_byte
+					this.suffixes[save_code] = this.suffixes[prev_code]
+					this.suffixes[save_code][lm1_b % 8] = first_byte
 				} else {
 					this.prefixes[save_code] = prev_code as base.u16
-					args.workbuf[(8 * save_code) + 0] = first_byte as base.u8
+					this.suffixes[save_code][0] = first_byte as base.u8
 				}
 
 				save_code += 1
