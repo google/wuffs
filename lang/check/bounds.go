@@ -308,7 +308,7 @@ func (q *checker) bcheckStatement(n *a.Node) error {
 		if q.astFunc.Effect().Coroutine() {
 			lTyp = typeExprStatus
 		} else if lTyp == nil {
-			return fmt.Errorf("TODO: allow returning nothing")
+			lTyp = typeExprEmptyStruct
 		}
 		if _, err := q.bcheckAssignment1(nil, lTyp, t.IDEq, n.Value()); err != nil {
 			return err

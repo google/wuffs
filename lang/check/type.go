@@ -173,7 +173,7 @@ func (q *checker) tcheckStatement(n *a.Node) error {
 		if q.astFunc.Effect().Coroutine() {
 			lTyp = typeExprStatus
 		} else if lTyp == nil {
-			return fmt.Errorf("TODO: allow returning nothing")
+			lTyp = typeExprEmptyStruct
 		}
 		value := n.Value()
 		if err := q.tcheckExpr(value, 0); err != nil {
@@ -389,6 +389,11 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		case t.IDTrue:
 			n.SetConstValue(one)
 			n.SetMType(typeExprBool)
+			return nil
+
+		case t.IDNothing:
+			n.SetConstValue(zero)
+			n.SetMType(typeExprEmptyStruct)
 			return nil
 
 		case t.IDNullptr:

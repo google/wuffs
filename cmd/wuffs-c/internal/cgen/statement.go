@@ -446,7 +446,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 
 	b.writes("return ")
 	if g.currFunk.astFunc.Out() == nil {
-		return fmt.Errorf("TODO: allow empty return type (when not suspendible)")
+		b.writes("((wuffs_base__empty_struct){})")
 	} else if err := g.writeExpr(b, retExpr, depth); err != nil {
 		return err
 	}

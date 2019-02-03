@@ -382,8 +382,9 @@ const (
 
 	IDFalse   = ID(0xB0)
 	IDTrue    = ID(0xB1)
-	IDNullptr = ID(0xB2)
-	IDOk      = ID(0xB3)
+	IDNothing = ID(0xB2)
+	IDNullptr = ID(0xB3)
+	IDOk      = ID(0xB4)
 
 	ID0   = ID(0xC0)
 	ID1   = ID(0xC1)
@@ -702,6 +703,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDFalse:   "false",
 	IDTrue:    "true",
+	IDNothing: "nothing",
 	IDNullptr: "nullptr",
 	IDOk:      "ok",
 
