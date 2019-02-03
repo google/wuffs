@@ -348,3 +348,22 @@ func proveReasonRequirement(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error
 	}
 	return nil
 }
+
+func proveReasonRequirementForRHSLength(q *checker, op t.ID, lhs *a.Expr, rhs *a.Expr) error {
+	if err := proveReasonRequirement(q, op, lhs, rhs); err != nil {
+		if (op == t.IDXBinaryLessThan) || (op == t.IDXBinaryLessEq) {
+			for _, x := range q.facts {
+				// Try to prove "lhs op rhs" by proving "lhs op const", given a
+				// fact x of the form "rhs >= const".
+				if (x.Operator() == t.IDXBinaryGreaterEq) && x.LHS().AsExpr().Eq(rhs) &&
+					(x.RHS().AsExpr().ConstValue() != nil) &&
+					(proveReasonRequirement(q, op, lhs, x.RHS().AsExpr()) == nil) {
+
+					return nil
+				}
+			}
+		}
+		return err
+	}
+	return nil
+}

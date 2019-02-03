@@ -25,7 +25,7 @@ pub status "?too much pixel data"
 pri status "?internal error: inconsistent ri/wi"
 
 // TODO: reference lzw.decoder_workbuf_len_max_incl.
-pub const decoder_workbuf_len_max_incl base.u64 = 0xFFFF
+pub const decoder_workbuf_len_max_incl base.u64 = 32768 + 0xFFFF
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
@@ -184,8 +184,8 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:this.width as base.u64,
-		max_incl:this.width as base.u64)
+		min_incl:32768 + (this.width as base.u64),
+		max_incl:32768 + (this.width as base.u64))
 }
 
 pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
@@ -707,9 +707,9 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			args.src.skip_fast!(actual:1, worst_case:1)
 		}
 
-		if (this.width as base.u64) < args.workbuf.length() {
-			args.workbuf = args.workbuf[:this.width as base.u64]
-		} else if (this.width as base.u64) > args.workbuf.length() {
+		if (32768 + (this.width as base.u64)) < args.workbuf.length() {
+			args.workbuf = args.workbuf[:32768 + (this.width as base.u64)]
+		} else if (32768 + (this.width as base.u64)) > args.workbuf.length() {
 			return base."?bad workbuf length"
 		}
 
@@ -719,7 +719,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			}
 			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
 				lzw_status =? this.lzw.decode_io_writer?(
-					dst:this.util.null_io_writer(), src:r, workbuf:this.util.null_slice_u8())
+					dst:this.util.null_io_writer(), src:r, workbuf:args.workbuf)
 				this.compressed_ri ~sat+= r.since_mark().length()
 			}
 

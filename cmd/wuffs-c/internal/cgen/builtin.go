@@ -443,6 +443,9 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	if err := g.writeExpr(b, foo, depth); err != nil {
 		return err
 	}
+	if foo.MType().IsSliceType() {
+		b.writes(".ptr")
+	}
 	if fIndex != nil {
 		b.writes(")+(")
 		if err := g.writeExpr(b, fIndex, depth); err != nil {
@@ -452,6 +455,9 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	b.writes("),(")
 	if err := g.writeExpr(b, bar, depth); err != nil {
 		return err
+	}
+	if bar.MType().IsSliceType() {
+		b.writes(".ptr")
 	}
 	if bIndex != nil {
 		b.writes(")+(")

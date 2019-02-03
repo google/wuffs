@@ -866,7 +866,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 		if err := proveReasonRequirement(q, t.IDXBinaryLessEq, zeroExpr, rhs); err != nil {
 			return bounds{}, err
 		}
-		if err := proveReasonRequirement(q, t.IDXBinaryLessThan, rhs, lengthExpr); err != nil {
+		if err := proveReasonRequirementForRHSLength(q, t.IDXBinaryLessThan, rhs, lengthExpr); err != nil {
 			return bounds{}, err
 		}
 
@@ -915,7 +915,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 			return bounds{}, err
 		}
 		if rhs != lengthExpr {
-			if err := proveReasonRequirement(q, t.IDXBinaryLessEq, rhs, lengthExpr); err != nil {
+			if err := proveReasonRequirementForRHSLength(q, t.IDXBinaryLessEq, rhs, lengthExpr); err != nil {
 				return bounds{}, err
 			}
 		}
