@@ -46,7 +46,6 @@ pub struct decoder?(
 	read_from_return_value base.u32,
 
 	// read_from per-code state.
-	suffixes array[4096 * 8] base.u8,
 	prefixes array[4096] base.u16[..4095],
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.

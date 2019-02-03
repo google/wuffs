@@ -2896,7 +2896,6 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_output_ri;
     uint32_t f_output_wi;
     uint32_t f_read_from_return_value;
-    uint8_t f_suffixes[32768];
     uint16_t f_prefixes[4096];
     uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
