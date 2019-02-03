@@ -2896,7 +2896,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_output_ri;
     uint32_t f_output_wi;
     uint32_t f_read_from_return_value;
-    uint8_t f_suffixes[4096][8];
+    uint8_t f_suffixes[32768];
     uint16_t f_prefixes[4096];
     uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
@@ -7856,7 +7856,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
     v_i = 0;
     while (v_i < self->private_impl.f_clear_code) {
       self->private_impl.f_lm1s[v_i] = 0;
-      self->private_impl.f_suffixes[v_i][0] = ((uint8_t)(v_i));
+      self->private_impl.f_suffixes[((8 * v_i) + 0)] = ((uint8_t)(v_i));
       v_i += 1;
     }
   label_0_continue:;
@@ -7991,15 +7991,16 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         if ((v_lm1_a % 8) != 0) {
           self->private_impl.f_prefixes[v_save_code] =
               self->private_impl.f_prefixes[v_prev_code];
-          memcpy(self->private_impl.f_suffixes[v_save_code],
-                 self->private_impl.f_suffixes[v_prev_code],
-                 sizeof(self->private_impl.f_suffixes[v_save_code]));
-          self->private_impl.f_suffixes[v_save_code][(v_lm1_a % 8)] =
+          memcpy((self->private_impl.f_suffixes) + ((8 * v_save_code)),
+                 (self->private_impl.f_suffixes) + ((8 * v_prev_code)), 8);
+          self->private_impl
+              .f_suffixes[((8 * v_save_code) + ((uint32_t)((v_lm1_a % 8))))] =
               ((uint8_t)(v_code));
         } else {
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
-          self->private_impl.f_suffixes[v_save_code][0] = ((uint8_t)(v_code));
+          self->private_impl.f_suffixes[((8 * v_save_code) + 0)] =
+              ((uint8_t)(v_code));
         }
         v_save_code += 1;
         if (v_width < 12) {
@@ -8029,7 +8030,7 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
       v_steps = (((uint32_t)(self->private_impl.f_lm1s[v_c])) >> 3);
       while (true) {
         memcpy((self->private_impl.f_output) + (v_o),
-               (self->private_impl.f_suffixes[v_c]), 8);
+               (self->private_impl.f_suffixes) + ((8 * v_c)), 8);
         if (v_steps <= 0) {
           goto label_1_break;
         }
@@ -8038,7 +8039,7 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
       }
     label_1_break:;
-      v_first_byte = self->private_impl.f_suffixes[v_c][0];
+      v_first_byte = self->private_impl.f_suffixes[((8 * v_c) + 0)];
       if (v_code == v_save_code) {
         self->private_impl.f_output[v_output_wi] = v_first_byte;
         v_output_wi = ((v_output_wi + 1) & 8191);
@@ -8049,15 +8050,15 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         if ((v_lm1_b % 8) != 0) {
           self->private_impl.f_prefixes[v_save_code] =
               self->private_impl.f_prefixes[v_prev_code];
-          memcpy(self->private_impl.f_suffixes[v_save_code],
-                 self->private_impl.f_suffixes[v_prev_code],
-                 sizeof(self->private_impl.f_suffixes[v_save_code]));
-          self->private_impl.f_suffixes[v_save_code][(v_lm1_b % 8)] =
+          memcpy((self->private_impl.f_suffixes) + ((8 * v_save_code)),
+                 (self->private_impl.f_suffixes) + ((8 * v_prev_code)), 8);
+          self->private_impl
+              .f_suffixes[((8 * v_save_code) + ((uint32_t)((v_lm1_b % 8))))] =
               v_first_byte;
         } else {
           self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
-          self->private_impl.f_suffixes[v_save_code][0] =
+          self->private_impl.f_suffixes[((8 * v_save_code) + 0)] =
               ((uint8_t)(v_first_byte));
         }
         v_save_code += 1;

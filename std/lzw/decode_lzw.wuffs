@@ -47,7 +47,7 @@ pub struct decoder?(
 	read_from_return_value base.u32,
 
 	// read_from per-code state.
-	suffixes array[4096] array[8] base.u8,
+	suffixes array[4096 * 8] base.u8,
 	prefixes array[4096] base.u16[..4095],
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.
@@ -89,7 +89,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	while i < this.clear_code {
 		assert i < 256 via "a < b: a < c; c <= b"(c:this.clear_code)
 		this.lm1s[i] = 0
-		this.suffixes[i][0] = i as base.u8
+		this.suffixes[(8 * i) + 0] = i as base.u8
 		i += 1
 	}
 
@@ -196,12 +196,15 @@ pri func decoder.read_from!(src base.io_reader) {
 				this.lm1s[save_code] = lm1_a
 
 				if (lm1_a % 8) != 0 {
+					assert (8 * save_code) <= ((8 * save_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
+					assert (8 * prev_code) <= ((8 * prev_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
 					this.prefixes[save_code] = this.prefixes[prev_code]
-					this.suffixes[save_code] = this.suffixes[prev_code]
-					this.suffixes[save_code][lm1_a % 8] = code as base.u8
+					this.suffixes[(8 * save_code):(8 * save_code) + 8].copy_from_slice!(
+						s:this.suffixes[(8 * prev_code):(8 * prev_code) + 8])
+					this.suffixes[(8 * save_code) + ((lm1_a % 8) as base.u32)] = code as base.u8
 				} else {
 					this.prefixes[save_code] = prev_code as base.u16
-					this.suffixes[save_code][0] = code as base.u8
+					this.suffixes[(8 * save_code) + 0] = code as base.u8
 				}
 
 				save_code += 1
@@ -241,11 +244,12 @@ pri func decoder.read_from!(src base.io_reader) {
 			steps = (this.lm1s[c] as base.u32) >> 3
 			while true {
 				assert o <= (o + 8) via "a <= (a + b): 0 <= b"(b:8)
+				assert (8 * c) <= ((8 * c) + 8) via "a <= (a + b): 0 <= b"(b:8)
 
 				// The final "8" is redundant semantically, but helps the
 				// wuffs-c code generator recognize that both slices have the
 				// same constant length, and hence produce efficient C code.
-				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][:8])
+				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[(8 * c):(8 * c) + 8])
 
 				if steps <= 0 {
 					break
@@ -257,7 +261,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				o = (o ~mod- 8) & 8191
 				c = this.prefixes[c] as base.u32
 			}
-			first_byte = this.suffixes[c][0]
+			first_byte = this.suffixes[(8 * c) + 0]
 
 			if code == save_code {
 				this.output[output_wi] = first_byte
@@ -269,12 +273,15 @@ pri func decoder.read_from!(src base.io_reader) {
 				this.lm1s[save_code] = lm1_b
 
 				if (lm1_b % 8) != 0 {
+					assert (8 * save_code) <= ((8 * save_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
+					assert (8 * prev_code) <= ((8 * prev_code) + 8) via "a <= (a + b): 0 <= b"(b:8)
 					this.prefixes[save_code] = this.prefixes[prev_code]
-					this.suffixes[save_code] = this.suffixes[prev_code]
-					this.suffixes[save_code][lm1_b % 8] = first_byte
+					this.suffixes[(8 * save_code):(8 * save_code) + 8].copy_from_slice!(
+						s:this.suffixes[(8 * prev_code):(8 * prev_code) + 8])
+					this.suffixes[(8 * save_code) + ((lm1_b % 8) as base.u32)] = first_byte
 				} else {
 					this.prefixes[save_code] = prev_code as base.u16
-					this.suffixes[save_code][0] = first_byte as base.u8
+					this.suffixes[(8 * save_code) + 0] = first_byte as base.u8
 				}
 
 				save_code += 1
