@@ -12,17 +12,17 @@ images. The 16 byte header:
 - 4 bytes of version-and-configuration: \[0xFF, 0x62 or 0x72, 0x6E or 0x70,
   0x34 or 0x38\].
   - The first byte denotes the overall NIE/NII/NIA format version. 0xFF (which
-	is not valid UTF-8) denotes version 1. There are no other valid versions at
-	this time.
+    is not valid UTF-8) denotes version 1. There are no other valid versions at
+    this time.
   - The second byte, either an ASCII 'b' or an ASCII 'r', denotes whether the
-	pixel's data is in BGRA or RGBA order (in memory order, independent of CPU
-	endianness).
+    pixel's data is in BGRA or RGBA order (in memory order, independent of CPU
+    endianness).
   - The third byte, either an ASCII 'n' or an ASCII 'p', denotes whether the
-	payload contains non-premultiplied or premultiplied alpha.
+    payload contains non-premultiplied or premultiplied alpha.
   - The fourth byte, either an ASCII '4' or an ASCII '8', denotes whether there
-	are 4 or 8 bytes per pixel.
+    are 4 or 8 bytes per pixel.
   - Future format versions may allow other byte values, but in version 1, it
-	must be '\xFF', then 'b' or 'r', then 'n' or 'p', then '4' or '8'.
+    must be '\xFF', then 'b' or 'r', then 'n' or 'p', then '4' or '8'.
 - 4 bytes little-endian `uint32` width.
 - 4 bytes little-endian `uint32` height.
 
@@ -33,6 +33,18 @@ The payload:
   little-endian. For example, with BGRA order and 8 bytes per pixel, those
   bytes are \[B₀, B₁, G₀, G₁, R₀, R₁, A₀, A₁\]. The ₀ and ₁ subscripts denote
   the low and high bytes of the `uint16`.
+
+That's it.
+
+
+### Example NIE File
+
+This still image is 3 pixels wide and 2 pixels high. It is a crude
+approximation to the French flag, being three columns: blue, white and red.
+
+    00000000: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
+    00000010: ff00 00ff ffff ffff 0000 ffff ff00 00ff  ................
+    00000020: ffff ffff 0000 ffff                      ........
 
 
 ## NII: Animated Images, Timing Index Only, Out-of-Band Frames
@@ -129,6 +141,19 @@ CDD value. Animations lasting longer than `((1<<63)-1)` flicks, more than 400
 years, are not representable in the NII format.
 
 
+### Example NII File
+
+This animated image is 3 pixels wide and 2 pixels high. It consists of 20
+frames, being 10 loops of 2 frames. The total animation time of a single loop
+is 3 seconds, so the 10 loops will take 30 seconds. The first frame is shown
+for 1 second. The next frame is shown for (3 - 1) seconds (i.e., 2 seconds).
+The actual pixel data per frame is stored elsewhere.
+
+    00000000: 6ec3 af49 ffff ffff 0300 0000 0200 0000  n..I............
+    00000010: 0a00 0000 0200 0000 ff31 d481 ffff ffff  .........1......
+    00000020: 009a 0e2a 0000 0000 ff31 d481 ffff ffff  ...*.....1......
+
+
 ## NIA: Animated Images, In-band Frames
 
 NIA is like an NII file where the per-frame still images are NIE files
@@ -151,6 +176,25 @@ The payload is a sequence of 0 or more frames. Each frame is:
   odd. A C programming language expression for its presence is
   `((bytes_per_pixel == 4) && (width & height & 1))`.
 - 8 bytes little-endian int64 TValue, the same meaning and constraints as NII.
+
+
+### Example NIA File
+
+This animated image is 3 pixels wide and 2 pixels high. It consists of 20
+frames, being 10 loops of 2 frames. The total animation time of a single loop
+is 3 seconds, so the 10 loops will take 30 seconds. The first frame is a crude
+approximation to the French flag (blue, white and red) and is shown for 1
+second. The next frame is a crude approximation to the Italian flag (green,
+white and red) and is shown for (3 - 1) seconds (i.e., 2 seconds).
+
+    00000000: 6ec3 af41 ff62 6e34 0300 0000 0200 0000  n..A.bn4........
+    00000010: 0a00 0000 0200 0000 ff31 d481 ffff ffff  .........1......
+    00000020: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
+    00000030: ff00 00ff ffff ffff 0000 ffff ff00 00ff  ................
+    00000040: ffff ffff 0000 ffff 009a 0e2a 0000 0000  ...........*....
+    00000050: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
+    00000060: 00ff 00ff ffff ffff 0000 ffff 00ff 00ff  ................
+    00000070: ffff ffff 0000 ffff ff31 d481 ffff ffff  .........1......
 
 
 # Commentary
@@ -391,4 +435,4 @@ security vulnerabilities.
 
 ---
 
-Updated on December 2018.
+Updated on February 2019.

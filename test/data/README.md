@@ -28,6 +28,9 @@ animated-red-blue.gif is an original animation by Nigel Tao
 bricks-\* are various encodings of an original photo by Nigel Tao
 <nigeltao@golang.org>.
 
+crude-flag.\* is an original animation by Nigel Tao
+<nigeltao@golang.org>. See the `lib/nie` documentation.
+
 gifplayer-muybridge.gif is an original animation by Nigel Tao
 <nigeltao@golang.org>.
 
