@@ -64,6 +64,14 @@ pub struct decoder?(
 	bits   base.u32,
 	n_bits base.u32,
 
+	// history_index indexes the history array, defined below.
+	history_index base.u32,
+
+	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
+	//
+	// TODO: can decode_huffman_xxx signal this in band instead of out of band?
+	end_of_block base.bool,
+
 	// huffs and n_huffs_bits are the lookup tables for Huffman decodings.
 	//
 	// There are up to 2 Huffman decoders active at any one time. As per this
@@ -108,19 +116,13 @@ pub struct decoder?(
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history       array[0x8000] base.u8,  // 32 KiB.
-	history_index base.u32,
+	history array[0x8000] base.u8,  // 32 KiB.
 
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
 	// code_lengths[args.n_codes0 + i] holds the number of bits in the i'th
 	// code.
 	code_lengths array[320] base.u8[..15],
-
-	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
-	//
-	// TODO: can decode_huffman_xxx signal this in band instead of out of band?
-	end_of_block base.bool,
 
 	util base.utility,
 )

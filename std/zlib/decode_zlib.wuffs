@@ -26,10 +26,12 @@ pri status "?TODO: unsupported preset dictionary"
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 32768 + 512
 
 pub struct decoder?(
-	flate           deflate.decoder,
-	checksum        adler32.hasher,
 	ignore_checksum base.bool,
-	util            base.utility,
+	checksum        adler32.hasher,
+
+	flate deflate.decoder,
+
+	util base.utility,
 )
 
 pub func decoder.set_ignore_checksum!(ic base.bool) {

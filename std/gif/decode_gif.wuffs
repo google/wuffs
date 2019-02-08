@@ -110,18 +110,20 @@ pub struct decoder?(
 	dst_y   base.u32,
 	dirty_y base.range_ie_u32,
 
+	// Indexes into the compressed array, defined below.
 	compressed_ri base.u64,
 	compressed_wi base.u64,
-	compressed    array[4096] base.u8,
+
+	swizzler base.pixel_swizzler,
+	util     base.utility,
+	lzw      lzw.decoder,
+
+	compressed array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
 	palettes array[2] array[4 * 256] base.u8,
 	// dst_palette is the swizzled color table.
 	dst_palette array[4 * 256] base.u8,
-
-	swizzler base.pixel_swizzler,
-	util     base.utility,
-	lzw      lzw.decoder,
 )
 
 pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {

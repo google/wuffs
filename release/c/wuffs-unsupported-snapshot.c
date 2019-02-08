@@ -2699,12 +2699,12 @@ struct wuffs_deflate__decoder__struct {
 
     uint32_t f_bits;
     uint32_t f_n_bits;
+    uint32_t f_history_index;
+    bool f_end_of_block;
     uint32_t f_huffs[2][1024];
     uint32_t f_n_huffs_bits[2];
     uint8_t f_history[32768];
-    uint32_t f_history_index;
     uint8_t f_code_lengths[320];
-    bool f_end_of_block;
 
     struct {
       uint32_t coro_susp_point;
@@ -3107,11 +3107,11 @@ struct wuffs_gif__decoder__struct {
     wuffs_base__range_ie_u32 f_dirty_y;
     uint64_t f_compressed_ri;
     uint64_t f_compressed_wi;
+    wuffs_base__pixel_swizzler f_swizzler;
+    wuffs_lzw__decoder f_lzw;
     uint8_t f_compressed[4096];
     uint8_t f_palettes[2][1024];
     uint8_t f_dst_palette[1024];
-    wuffs_base__pixel_swizzler f_swizzler;
-    wuffs_lzw__decoder f_lzw;
 
     struct {
       uint32_t coro_susp_point;
@@ -3350,9 +3350,9 @@ struct wuffs_gzip__decoder__struct {
     uint32_t magic;
     uint32_t active_coroutine;
 
-    wuffs_deflate__decoder f_flate;
-    wuffs_crc32__ieee_hasher f_checksum;
     bool f_ignore_checksum;
+    wuffs_crc32__ieee_hasher f_checksum;
+    wuffs_deflate__decoder f_flate;
 
     struct {
       uint32_t coro_susp_point;
@@ -3502,9 +3502,9 @@ struct wuffs_zlib__decoder__struct {
     uint32_t magic;
     uint32_t active_coroutine;
 
-    wuffs_deflate__decoder f_flate;
-    wuffs_adler32__hasher f_checksum;
     bool f_ignore_checksum;
+    wuffs_adler32__hasher f_checksum;
+    wuffs_deflate__decoder f_flate;
 
     struct {
       uint32_t coro_susp_point;
@@ -10488,16 +10488,16 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
-        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
+    wuffs_base__status z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
         WUFFS_VERSION);
     if (z) {
       return z;
     }
   }
   {
-    wuffs_base__status z = wuffs_crc32__ieee_hasher__check_wuffs_version(
-        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
+    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
         WUFFS_VERSION);
     if (z) {
       return z;
@@ -10951,16 +10951,16 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
-        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
+    wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
         WUFFS_VERSION);
     if (z) {
       return z;
     }
   }
   {
-    wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
-        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
+    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
         WUFFS_VERSION);
     if (z) {
       return z;
