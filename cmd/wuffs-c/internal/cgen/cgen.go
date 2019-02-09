@@ -726,12 +726,15 @@ func (g *gen) writeConstList(b *buffer, n *a.Expr) error {
 }
 
 func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
-	b.writes("// Do not access the private_impl's fields directly. There is no API/ABI\n")
-	b.writes("// compatibility or safety guarantee if you do so. Instead, use the\n")
-	b.writes("// wuffs_foo__bar__baz functions.\n")
+	// TODO: allow max depth > 1 for recursive coroutines.
+	const maxDepth = 1
+
+	b.writes("// Do not access the private_impl's or private_data's fields directly. There\n")
+	b.writes("// is no API/ABI compatibility or safety guarantee if you do so. Instead, use\n")
+	b.writes("// the wuffs_foo__bar__baz functions.\n")
 	b.writes("//\n")
-	b.writes("// It is a struct, not a struct*, so that the outermost wuffs_foo__bar\n")
-	b.writes("// struct can be stack allocated when WUFFS_IMPLEMENTATION is defined.\n")
+	b.writes("// It is a struct, not a struct*, so that the outermost wuffs_foo__bar struct\n")
+	b.writes("// can be stack allocated when WUFFS_IMPLEMENTATION is defined.\n\n")
 
 	b.writes("struct {\n")
 	if n.Classy() {
@@ -752,9 +755,6 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	}
 
 	if n.Classy() {
-		// TODO: allow max depth > 1 for recursive coroutines.
-		const maxDepth = 1
-
 		b.writeb('\n')
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
@@ -774,7 +774,14 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 			}
 		}
 
-		b.writeb('\n')
+	}
+	b.writes("} private_impl;\n\n")
+
+	{
+		oldOuterLenB0 := len(*b)
+		b.writes("struct {\n")
+		oldOuterLenB1 := len(*b)
+
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
 				if tld.Kind() != a.KFunc {
@@ -789,9 +796,9 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 					continue
 				}
 
-				oldLenB0 := len(*b)
+				oldInnerLenB0 := len(*b)
 				b.writes("struct {\n")
-				oldLenB1 := len(*b)
+				oldInnerLenB1 := len(*b)
 				if k.coroSuspPoint != 0 {
 					if err := g.writeVars(b, &k, true); err != nil {
 						return err
@@ -800,15 +807,21 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 				if k.usesScratch {
 					b.writes("uint64_t scratch;\n")
 				}
-				if oldLenB1 != len(*b) {
+				if oldInnerLenB1 != len(*b) {
 					b.printf("} %s%s[%d];\n", sPrefix, o.FuncName().Str(g.tm), maxDepth)
 				} else {
-					*b = (*b)[:oldLenB0]
+					*b = (*b)[:oldInnerLenB0]
 				}
 			}
 		}
+
+		if oldOuterLenB1 != len(*b) {
+			b.writes("} private_data;\n\n")
+		} else {
+			*b = (*b)[:oldOuterLenB0]
+		}
 	}
-	b.writes("} private_impl;\n\n")
+
 	return nil
 }
 
