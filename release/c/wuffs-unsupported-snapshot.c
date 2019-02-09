@@ -82,6 +82,14 @@ extern "C" {
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
+// Flags for wuffs_foo__bar__initialize functions.
+
+// WUFFS_INITIALIZE__ALREADY_ZEROED means that the "self" receiver struct value
+// has already been set to all zeroes.
+#define WUFFS_INITIALIZE__ALREADY_ZEROED ((uint32_t)0x00000001)
+
+// --------
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".
@@ -2422,11 +2430,20 @@ typedef struct wuffs_adler32__hasher__struct wuffs_adler32__hasher;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_adler32__hasher__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_adler32__hasher__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
+                                  size_t sizeof_star_self,
+                                  uint64_t wuffs_version,
+                                  uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
                                            size_t sizeof_star_self,
@@ -2493,9 +2510,18 @@ struct wuffs_adler32__hasher__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_adler32__hasher__initialize(this, sizeof_star_self,
+                                             wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_adler32__hasher__check_wuffs_version(this, sizeof_star_self,
-                                                      wuffs_version);
+    return wuffs_adler32__hasher__initialize(this, sizeof_star_self,
+                                             wuffs_version,
+                                             WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline uint32_t  //
@@ -2534,11 +2560,20 @@ typedef struct wuffs_crc32__ieee_hasher__struct wuffs_crc32__ieee_hasher;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_crc32__ieee_hasher__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_crc32__ieee_hasher__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
+                                     size_t sizeof_star_self,
+                                     uint64_t wuffs_version,
+                                     uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
                                               size_t sizeof_star_self,
@@ -2604,9 +2639,18 @@ struct wuffs_crc32__ieee_hasher__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_crc32__ieee_hasher__initialize(
+        this, sizeof_star_self, wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_crc32__ieee_hasher__check_wuffs_version(this, sizeof_star_self,
-                                                         wuffs_version);
+    return wuffs_crc32__ieee_hasher__initialize(
+        this, sizeof_star_self, wuffs_version,
+        WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline uint32_t  //
@@ -2666,11 +2710,20 @@ typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_deflate__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_deflate__decoder__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
+                                   size_t sizeof_star_self,
+                                   uint64_t wuffs_version,
+                                   uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
                                             size_t sizeof_star_self,
@@ -2788,9 +2841,18 @@ struct wuffs_deflate__decoder__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_deflate__decoder__initialize(this, sizeof_star_self,
+                                              wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_deflate__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                       wuffs_version);
+    return wuffs_deflate__decoder__initialize(this, sizeof_star_self,
+                                              wuffs_version,
+                                              WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -2846,11 +2908,20 @@ typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_lzw__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_lzw__decoder__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
+                               size_t sizeof_star_self,
+                               uint64_t wuffs_version,
+                               uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
                                         size_t sizeof_star_self,
@@ -2945,9 +3016,17 @@ struct wuffs_lzw__decoder__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_lzw__decoder__initialize(this, sizeof_star_self, wuffs_version,
+                                          initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_lzw__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                   wuffs_version);
+    return wuffs_lzw__decoder__initialize(this, sizeof_star_self, wuffs_version,
+                                          WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__empty_struct  //
@@ -3017,11 +3096,20 @@ typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gif__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_gif__decoder__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
+                               size_t sizeof_star_self,
+                               uint64_t wuffs_version,
+                               uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
                                         size_t sizeof_star_self,
@@ -3205,9 +3293,17 @@ struct wuffs_gif__decoder__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
+                                          initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_gif__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                   wuffs_version);
+    return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
+                                          WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__status  //
@@ -3303,11 +3399,20 @@ typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_gzip__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_gzip__decoder__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
                                          size_t sizeof_star_self,
@@ -3392,9 +3497,18 @@ struct wuffs_gzip__decoder__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_gzip__decoder__initialize(this, sizeof_star_self,
+                                           wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_gzip__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                    wuffs_version);
+    return wuffs_gzip__decoder__initialize(this, sizeof_star_self,
+                                           wuffs_version,
+                                           WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__empty_struct  //
@@ -3456,11 +3570,20 @@ typedef struct wuffs_zlib__decoder__struct wuffs_zlib__decoder;
 
 // ---------------- Public Initializer Prototypes
 
-// wuffs_zlib__decoder__check_wuffs_version is an initializer function.
-//
-// It should be called before any other wuffs_zlib__decoder__* function.
+// For any given "wuffs_foo__bar* self", "wuffs_foo__bar__initialize(self,
+// etc)" should be called before any other "wuffs_foo__bar__xxx(self, etc)".
 //
 // Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.
+// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags);
+
+// Deprecated: use wuffs_foo__bar__initialize instead of
+// wuffs_foo__bar__check_wuffs_version.
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
 wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
                                          size_t sizeof_star_self,
@@ -3542,9 +3665,18 @@ struct wuffs_zlib__decoder__struct {
 #ifdef __cplusplus
 
   inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+  initialize(size_t sizeof_star_self,
+             uint64_t wuffs_version,
+             uint32_t initialize_flags) {
+    return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
+                                           wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
   check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_zlib__decoder__check_wuffs_version(this, sizeof_star_self,
-                                                    wuffs_version);
+    return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
+                                           wuffs_version,
+                                           WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__empty_struct  //
@@ -3588,8 +3720,8 @@ struct wuffs_zlib__decoder__struct {
 extern "C" {
 #endif
 
-static inline void wuffs_base__ignore_check_wuffs_version_status(
-    wuffs_base__status z) {}
+static inline void  //
+wuffs_base__ignore_status(wuffs_base__status z) {}
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,
@@ -4012,6 +4144,7 @@ wuffs_base__acknowledge_potentially_unused_functions__core_private()
 
 static inline void
 wuffs_base__acknowledge_potentially_unused_functions__core_private() {
+  (void)(wuffs_base__ignore_status);
   (void)(wuffs_base__load_u16be);
   (void)(wuffs_base__load_u16le);
   (void)(wuffs_base__load_u24be);
@@ -4717,9 +4850,10 @@ wuffs_base__pixel_swizzler__swizzle_packed(wuffs_base__pixel_swizzler* p,
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
-                                           size_t sizeof_star_self,
-                                           uint64_t wuffs_version) {
+wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
+                                  size_t sizeof_star_self,
+                                  uint64_t wuffs_version,
+                                  uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -4735,6 +4869,14 @@ wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
+                                           size_t sizeof_star_self,
+                                           uint64_t wuffs_version) {
+  return wuffs_adler32__hasher__initialize(
+      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -5705,9 +5847,10 @@ static const uint32_t                 //
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
-                                              size_t sizeof_star_self,
-                                              uint64_t wuffs_version) {
+wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
+                                     size_t sizeof_star_self,
+                                     uint64_t wuffs_version,
+                                     uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -5723,6 +5866,14 @@ wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
+                                              size_t sizeof_star_self,
+                                              uint64_t wuffs_version) {
+  return wuffs_crc32__ieee_hasher__initialize(
+      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -5972,9 +6123,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                            size_t sizeof_star_self,
-                                            uint64_t wuffs_version) {
+wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
+                                   size_t sizeof_star_self,
+                                   uint64_t wuffs_version,
+                                   uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -5990,6 +6142,14 @@ wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
+                                            size_t sizeof_star_self,
+                                            uint64_t wuffs_version) {
+  return wuffs_deflate__decoder__initialize(
+      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -7744,9 +7904,10 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
+wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
+                               size_t sizeof_star_self,
+                               uint64_t wuffs_version,
+                               uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -7762,6 +7923,14 @@ wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
+                                        size_t sizeof_star_self,
+                                        uint64_t wuffs_version) {
+  return wuffs_lzw__decoder__initialize(self, sizeof_star_self, wuffs_version,
+                                        WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -8308,9 +8477,10 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
+wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
+                               size_t sizeof_star_self,
+                               uint64_t wuffs_version,
+                               uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -8325,15 +8495,23 @@ wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
-    wuffs_base__status z = wuffs_lzw__decoder__check_wuffs_version(
+    wuffs_base__status z = wuffs_lzw__decoder__initialize(
         &self->private_impl.f_lzw, sizeof(self->private_impl.f_lzw),
-        WUFFS_VERSION);
+        WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
+                                        size_t sizeof_star_self,
+                                        uint64_t wuffs_version) {
+  return wuffs_gif__decoder__initialize(self, sizeof_star_self, wuffs_version,
+                                        WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -10050,10 +10228,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         }));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
-       wuffs_base__ignore_check_wuffs_version_status(
-           wuffs_lzw__decoder__check_wuffs_version(
-               &self->private_impl.f_lzw, sizeof((wuffs_lzw__decoder){}),
-               WUFFS_VERSION)),
+       wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
+           &self->private_impl.f_lzw, sizeof((wuffs_lzw__decoder){}),
+           WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED)),
        wuffs_base__return_empty_struct());
     }
     {
@@ -10456,9 +10633,10 @@ const char* wuffs_gzip__error__bad_header = "?gzip: bad header";
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
+wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10473,23 +10651,31 @@ wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
-    wuffs_base__status z = wuffs_crc32__ieee_hasher__check_wuffs_version(
+    wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
         &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
-        WUFFS_VERSION);
+        WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
     }
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+    wuffs_base__status z = wuffs_deflate__decoder__initialize(
         &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
-        WUFFS_VERSION);
+        WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
+                                         size_t sizeof_star_self,
+                                         uint64_t wuffs_version) {
+  return wuffs_gzip__decoder__initialize(self, sizeof_star_self, wuffs_version,
+                                         WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -10918,9 +11104,10 @@ const char* wuffs_zlib__error__todo_unsupported_preset_dictionary =
 // ---------------- Initializer Implementations
 
 wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
+wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
+                                size_t sizeof_star_self,
+                                uint64_t wuffs_version,
+                                uint32_t initialize_flags) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -10935,23 +11122,31 @@ wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
-    wuffs_base__status z = wuffs_adler32__hasher__check_wuffs_version(
+    wuffs_base__status z = wuffs_adler32__hasher__initialize(
         &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
-        WUFFS_VERSION);
+        WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
     }
   }
   {
-    wuffs_base__status z = wuffs_deflate__decoder__check_wuffs_version(
+    wuffs_base__status z = wuffs_deflate__decoder__initialize(
         &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
-        WUFFS_VERSION);
+        WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
     }
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
+}
+
+wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
+wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
+                                         size_t sizeof_star_self,
+                                         uint64_t wuffs_version) {
+  return wuffs_zlib__decoder__initialize(self, sizeof_star_self, wuffs_version,
+                                         WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //

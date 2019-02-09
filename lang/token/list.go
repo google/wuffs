@@ -578,9 +578,10 @@ const (
 
 	// -------- 0x200 block.
 
-	IDReset  = ID(0x200)
-	IDSet    = ID(0x201)
-	IDUnroll = ID(0x202)
+	IDInitialize = ID(0x200)
+	IDReset      = ID(0x201)
+	IDSet        = ID(0x202)
+	IDUnroll     = ID(0x203)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -906,9 +907,10 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	// -------- 0x200 block.
 
-	IDReset:  "reset",
-	IDSet:    "set",
-	IDUnroll: "unroll",
+	IDInitialize: "initialize",
+	IDReset:      "reset",
+	IDSet:        "set",
+	IDUnroll:     "unroll",
 
 	IDHighBits: "high_bits",
 	IDLowBits:  "low_bits",

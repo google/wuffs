@@ -90,7 +90,7 @@ func checkPackageName(s string) string {
 	// Blacklist certain package names.
 	switch s {
 	case "base", "base_private", "base_private_header", "base_public", "base_public_header",
-		"config", "implementation", "include_guard", "version":
+		"config", "implementation", "include_guard", "initialize", "version":
 		return ""
 	}
 	return s

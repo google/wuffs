@@ -66,6 +66,14 @@
 #define WUFFS_BASE__WARN_UNUSED_RESULT
 #endif
 
+// Flags for wuffs_foo__bar__initialize functions.
+
+// WUFFS_INITIALIZE__ALREADY_ZEROED means that the "self" receiver struct value
+// has already been set to all zeroes.
+#define WUFFS_INITIALIZE__ALREADY_ZEROED ((uint32_t)0x00000001)
+
+// --------
+
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
 // struct. In C, if a function f returns void, you can't say "x = f()", but in
 // Wuffs, if a function g returns empty, you can say "y = g()".

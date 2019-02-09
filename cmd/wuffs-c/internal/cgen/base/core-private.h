@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-static inline void wuffs_base__ignore_check_wuffs_version_status(
-    wuffs_base__status z) {}
+static inline void  //
+wuffs_base__ignore_status(wuffs_base__status z) {}
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,
@@ -438,6 +438,7 @@ wuffs_base__acknowledge_potentially_unused_functions__core_private()
 
 static inline void
 wuffs_base__acknowledge_potentially_unused_functions__core_private() {
+  (void)(wuffs_base__ignore_status);
   (void)(wuffs_base__load_u16be);
   (void)(wuffs_base__load_u16le);
   (void)(wuffs_base__load_u24be);

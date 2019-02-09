@@ -116,6 +116,8 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			// The middle part, the check_wuffs_version call, is optional, for
 			// some built-in types.
 
+			// TODO: drop the memset and the WUFFS_INITIALIZE__ALREADY_ZEROED.
+
 			b.printf("(memset(%s", addr)
 			// TODO: ensure that the recv expression is idempotent.
 			if err := g.writeExpr(b, recv, depth); err != nil {
@@ -124,14 +126,16 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			b.printf(", 0, sizeof ((%s%s){}))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
 			if !isBaseRangeType(qid) {
-				b.printf(", wuffs_base__ignore_check_wuffs_version_status("+
-					"%s%s__check_wuffs_version(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
+				b.printf(", wuffs_base__ignore_status("+
+					"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
-				b.printf(", sizeof ((%s%s){}), WUFFS_VERSION))", g.packagePrefix(qid), qid[1].Str(g.tm))
+				b.printf(", sizeof ((%s%s){}), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED))",
+					g.packagePrefix(qid), qid[1].Str(g.tm))
 			}
 
+			// TODO: wuffs_base__ignore_status could return an empty_struct.
 			b.writes(", wuffs_base__return_empty_struct())")
 			return nil
 		}

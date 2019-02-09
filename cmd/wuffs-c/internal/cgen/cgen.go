@@ -470,6 +470,11 @@ func (g *gen) genHeader(b *buffer) error {
 	}
 
 	b.writes("// ---------------- Public Initializer Prototypes\n\n")
+	b.writes("// For any given \"wuffs_foo__bar* self\", \"wuffs_foo__bar__initialize(self,\n")
+	b.writes("// etc)\" should be called before any other \"wuffs_foo__bar__xxx(self, etc)\".\n")
+	b.writes("//\n")
+	b.writes("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
+	b.writes("// Pass 0 (or some combination of WUFFS_INITIALIZE__XXX) for initialize_flags.\n\n")
 	for _, n := range g.structList {
 		if n.Public() {
 			if err := g.writeInitializerPrototype(b, n); err != nil {
@@ -854,8 +859,15 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	// The empty // comment makes clang-format place the function name
 	// at the start of a line.
 	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
+		"initialize(size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags) {\n")
+	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
+		g.pkgPrefix, structName)
+
+	// Deprecated: use wuffs_foo__bar__initialize instead of
+	// wuffs_foo__bar__check_wuffs_version.
+	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
 		"check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n")
-	b.printf("return %s%s__check_wuffs_version(this, sizeof_star_self, wuffs_version);\n}\n\n",
+	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);\n}\n\n",
 		g.pkgPrefix, structName)
 
 	structID := n.QID()[1]
@@ -904,15 +916,8 @@ var (
 
 func (g *gen) writeInitializerSignature(b *buffer, n *a.Struct, public bool) error {
 	structName := n.QID().Str(g.tm)
-	if public {
-		b.printf("// %s%s__check_wuffs_version is an initializer function.\n", g.pkgPrefix, structName)
-		b.printf("//\n")
-		b.printf("// It should be called before any other %s%s__* function.\n", g.pkgPrefix, structName)
-		b.printf("//\n")
-		b.printf("// Pass sizeof(*self) and WUFFS_VERSION for sizeof_star_self and wuffs_version.\n")
-	}
 	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
-		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version)",
+		"%s%s__initialize(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version, uint32_t initialize_flags)",
 		g.pkgPrefix, structName, g.pkgPrefix, structName)
 	return nil
 }
@@ -930,6 +935,13 @@ func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes(";\n\n")
+
+	b.writes("// Deprecated: use wuffs_foo__bar__initialize instead of\n")
+	b.writes("// wuffs_foo__bar__check_wuffs_version.\n")
+	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
+		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version);\n\n",
+		g.pkgPrefix, n.QID().Str(g.tm), g.pkgPrefix, n.QID().Str(g.tm))
+
 	if n.Public() {
 		if err := g.writeSizeofSignature(b, n); err != nil {
 			return err
@@ -960,6 +972,8 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("return wuffs_base__error__check_wuffs_version_not_applicable;\n")
 	b.writes("}\n")
 
+	// TODO: examine (initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED).
+
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {
 		f := f.AsField()
@@ -983,8 +997,8 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		}
 
 		b.printf("{\n")
-		b.printf("wuffs_base__status z = %s%s__check_wuffs_version("+
-			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION);\n",
+		b.printf("wuffs_base__status z = %s%s__initialize("+
+			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION, initialize_flags);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 		b.printf("if (z) { return z; }\n")
 		b.printf("}\n")
@@ -992,6 +1006,15 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 	b.writes("return NULL;\n")
+	b.writes("}\n\n")
+
+	// Deprecated: use wuffs_foo__bar__initialize instead of
+	// wuffs_foo__bar__check_wuffs_version.
+	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
+		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version) {",
+		g.pkgPrefix, n.QID().Str(g.tm), g.pkgPrefix, n.QID().Str(g.tm))
+	b.printf("return %s%s__initialize(self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);\n",
+		g.pkgPrefix, n.QID().Str(g.tm))
 	b.writes("}\n\n")
 
 	if n.Public() {

@@ -24,6 +24,7 @@ import (
 )
 
 type Options struct {
+	AllowBuiltInNames          bool
 	AllowDoubleUnderscoreNames bool
 }
 
@@ -155,6 +156,13 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			id0, id1, err := p.parseQualifiedIdent()
 			if err != nil {
 				return nil, err
+			}
+			if !p.opts.AllowBuiltInNames {
+				switch id1 {
+				case t.IDInitialize, t.IDReset:
+					return nil, fmt.Errorf(`parse: cannot have a method named %q at %s:%d`,
+						id1.Str(p.tm), p.filename, p.line())
+				}
 			}
 			// TODO: should we require id0 != 0? In other words, always methods
 			// (attached to receivers) and never free standing functions?

@@ -138,7 +138,9 @@ func (c *Checker) parseBuiltInFuncs(ss []string, generic bool) (map[t.QQID]*a.Fu
 				}
 			}
 		}
-		file, err := parse.Parse(c.tm, filename, tokens, nil)
+		file, err := parse.Parse(c.tm, filename, tokens, &parse.Options{
+			AllowBuiltInNames: true,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("check: parsing %q: could not parse built-in funcs: %v", s, err)
 		}
