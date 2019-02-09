@@ -3053,7 +3053,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t magic;
     uint32_t active_coroutine;
 
-    uint32_t f_lw;
+    uint32_t f_set_literal_width_arg;
     uint32_t f_literal_width;
     uint32_t f_clear_code;
     uint32_t f_end_code;
@@ -8039,7 +8039,7 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
     return ((wuffs_base__empty_struct){});
   }
 
-  self->private_impl.f_lw = a_lw;
+  self->private_impl.f_set_literal_width_arg = a_lw;
   return ((wuffs_base__empty_struct){});
 }
 
@@ -8089,8 +8089,9 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_literal_width = 8;
-    if (self->private_impl.f_lw >= 2) {
-      self->private_impl.f_literal_width = self->private_impl.f_lw;
+    if (self->private_impl.f_set_literal_width_arg >= 2) {
+      self->private_impl.f_literal_width =
+          self->private_impl.f_set_literal_width_arg;
     }
     self->private_impl.f_clear_code =
         (((uint32_t)(1)) << self->private_impl.f_literal_width);

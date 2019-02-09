@@ -27,10 +27,11 @@ pri status "?internal error: inconsistent I/O"
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0
 
 pub struct decoder?(
-	// The value passed to set_literal_width. This lw field is copied to the
-	// literal_width field at the start of the decode method. During that
-	// method, calling set_literal_width will change lw but not literal_width.
-	lw base.u32[..8],
+	// set_literal_width_arg is the saved argument passed to set_literal_width.
+	// This field is copied to the literal_width field at the start of
+	// decode_io_writer. During that method, calling set_literal_width will
+	// change set_literal_width_arg but not literal_width.
+	set_literal_width_arg base.u32[..8],
 
 	// read_from state that does not change during a decode call.
 	literal_width base.u32[..8],
@@ -67,7 +68,7 @@ pub struct decoder?(
 )
 
 pub func decoder.set_literal_width!(lw base.u32[2..8]) {
-	this.lw = args.lw
+	this.set_literal_width_arg = args.lw
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -79,8 +80,8 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	// Initialize read_from state.
 	this.literal_width = 8
-	if this.lw >= 2 {
-		this.literal_width = this.lw
+	if this.set_literal_width_arg >= 2 {
+		this.literal_width = this.set_literal_width_arg
 	}
 	this.clear_code = (1 as base.u32) << this.literal_width
 	this.end_code = this.clear_code + 1
