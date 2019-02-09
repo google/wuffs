@@ -4948,7 +4948,9 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -5945,7 +5947,9 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6221,7 +6225,9 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8002,7 +8008,9 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8576,7 +8584,9 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
@@ -10734,7 +10744,9 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {
@@ -11205,7 +11217,9 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if (self->private_impl.magic != 0) {
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+    memset(self, 0, sizeof_star_self);
+  } else if (self->private_impl.magic != 0) {
     return wuffs_base__error__check_wuffs_version_not_applicable;
   }
   {

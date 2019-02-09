@@ -968,11 +968,11 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		"(((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {\n")
 	b.writes("return wuffs_base__error__bad_wuffs_version;\n")
 	b.writes("}\n")
-	b.writes("if (self->private_impl.magic != 0) {\n")
+	b.writes("if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {\n")
+	b.writes("memset(self, 0, sizeof_star_self);\n")
+	b.writes("} else if (self->private_impl.magic != 0) {\n")
 	b.writes("return wuffs_base__error__check_wuffs_version_not_applicable;\n")
 	b.writes("}\n")
-
-	// TODO: examine (initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED).
 
 	// Call any ctors on sub-structs.
 	for _, f := range n.Fields() {
