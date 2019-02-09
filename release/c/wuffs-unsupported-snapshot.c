@@ -8639,9 +8639,6 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
-    (memset(&self->private_impl.f_dirty_y, 0,
-            sizeof((wuffs_base__range_ie_u32){})),
-     wuffs_base__return_empty_struct());
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
     status = wuffs_gif__decoder__decode_header(self, a_src);
     if (status) {
@@ -8747,9 +8744,11 @@ wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
   }
 
   return wuffs_base__utility__make_rect_ie_u32(
-      self->private_impl.f_frame_rect_x0,
+      wuffs_base__u32__min(self->private_impl.f_frame_rect_x0,
+                           self->private_impl.f_width),
       wuffs_base__range_ie_u32__get_min_incl(&self->private_impl.f_dirty_y),
-      self->private_impl.f_frame_rect_x1,
+      wuffs_base__u32__min(self->private_impl.f_frame_rect_x1,
+                           self->private_impl.f_width),
       wuffs_base__range_ie_u32__get_max_excl(&self->private_impl.f_dirty_y));
 }
 
@@ -8826,6 +8825,9 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
+    (memset(&self->private_impl.f_dirty_y, 0,
+            sizeof((wuffs_base__range_ie_u32){})),
+     wuffs_base__return_empty_struct());
     if (!self->private_impl.f_end_of_data) {
       if (self->private_impl.f_call_sequence == 0) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);

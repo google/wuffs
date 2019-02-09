@@ -611,6 +611,13 @@ const char* do_test_wuffs_gif_decode_animated(
     if (status) {
       RETURN_FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i, status);
     }
+
+    wuffs_base__rect_ie_u32 frame_rect = wuffs_base__frame_config__bounds(&fc);
+    wuffs_base__rect_ie_u32 dirty_rect =
+        wuffs_gif__decoder__frame_dirty_rect(&dec);
+    if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
+      RETURN_FAIL("internal error: frame_rect does not contain dirty_rect");
+    }
   }
 
   // There should be no more frames, no matter how many times we call
@@ -730,8 +737,8 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
 
   uint32_t i;
   for (i = 0; true; i++) {
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     {
-      wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
       status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
       if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_frame_config_bounds)) {
         if (status != wuffs_base__warning__end_of_data) {
@@ -769,6 +776,14 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
                                                 global_work_slice, NULL);
       if (status) {
         RETURN_FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i, status);
+      }
+
+      wuffs_base__rect_ie_u32 frame_rect =
+          wuffs_base__frame_config__bounds(&fc);
+      wuffs_base__rect_ie_u32 dirty_rect =
+          wuffs_gif__decoder__frame_dirty_rect(&dec);
+      if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
+        RETURN_FAIL("internal error: frame_rect does not contain dirty_rect");
       }
 
       char got[(width * height) + 1];
