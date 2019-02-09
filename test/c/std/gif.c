@@ -106,15 +106,15 @@ const char* test_basic_bad_wuffs_version() {
   return NULL;
 }
 
-const char* test_basic_check_wuffs_version_not_called() {
+const char* test_basic_initialize_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__io_reader src = ((wuffs_base__io_reader){});
   const char* status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src);
-  if (status != wuffs_base__error__check_wuffs_version_missing) {
+  if (status != wuffs_base__error__initialize_not_called) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
-                wuffs_base__error__check_wuffs_version_missing);
+                wuffs_base__error__initialize_not_called);
   }
   return NULL;
 }
@@ -1589,14 +1589,14 @@ proc tests[] = {
     // These basic tests are really testing the Wuffs compiler. They aren't
     // specific to the std/gif code, but putting them here is as good as any
     // other place.
-    test_basic_bad_receiver,                    //
-    test_basic_bad_sizeof_receiver,             //
-    test_basic_bad_wuffs_version,               //
-    test_basic_check_wuffs_version_not_called,  //
-    test_basic_status_is_error,                 //
-    test_basic_status_strings,                  //
-    test_basic_status_used_package,             //
-    test_basic_sub_struct_initializer,          //
+    test_basic_bad_receiver,            //
+    test_basic_bad_sizeof_receiver,     //
+    test_basic_bad_wuffs_version,       //
+    test_basic_initialize_not_called,   //
+    test_basic_status_is_error,         //
+    test_basic_status_strings,          //
+    test_basic_status_used_package,     //
+    test_basic_sub_struct_initializer,  //
 
     test_wuffs_gif_call_interleaved,                         //
     test_wuffs_gif_call_sequence,                            //

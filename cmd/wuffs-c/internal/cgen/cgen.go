@@ -971,7 +971,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {\n")
 	b.writes("memset(self, 0, sizeof_star_self);\n")
 	b.writes("} else if (self->private_impl.magic != 0) {\n")
-	b.writes("return wuffs_base__error__check_wuffs_version_not_applicable;\n")
+	b.writes("return wuffs_base__error__initialize_falsely_claimed_already_zeroed;\n")
 	b.writes("}\n")
 
 	// Call any ctors on sub-structs.

@@ -37,9 +37,9 @@ var Statuses = [...]string{
 	`"?bad workbuf length"`,
 	`"?bad wuffs version"`,
 	`"?cannot return a suspension"`,
-	`"?check_wuffs_version not applicable"`,
-	`"?check_wuffs_version missing"`,
 	`"?disabled by previous error"`,
+	`"?initialize falsely claimed already zeroed"`,
+	`"?initialize not called"`,
 	`"?interleaved coroutine calls"`,
 }
 

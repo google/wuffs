@@ -248,7 +248,7 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		if g.currFunk.returnsStatus {
 			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +
-				": wuffs_base__error__check_wuffs_version_missing")
+				": wuffs_base__error__initialize_not_called")
 		} else if err := g.writeOutParamZeroValue(b, out); err != nil {
 			return err
 		}

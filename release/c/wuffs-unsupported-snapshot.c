@@ -155,9 +155,9 @@ extern const char* wuffs_base__error__bad_sizeof_receiver;
 extern const char* wuffs_base__error__bad_workbuf_length;
 extern const char* wuffs_base__error__bad_wuffs_version;
 extern const char* wuffs_base__error__cannot_return_a_suspension;
-extern const char* wuffs_base__error__check_wuffs_version_not_applicable;
-extern const char* wuffs_base__error__check_wuffs_version_missing;
 extern const char* wuffs_base__error__disabled_by_previous_error;
+extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
 
 static inline bool  //
@@ -4753,12 +4753,12 @@ const char* wuffs_base__error__bad_workbuf_length = "?base: bad workbuf length";
 const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
 const char* wuffs_base__error__cannot_return_a_suspension =
     "?base: cannot return a suspension";
-const char* wuffs_base__error__check_wuffs_version_not_applicable =
-    "?base: check_wuffs_version not applicable";
-const char* wuffs_base__error__check_wuffs_version_missing =
-    "?base: check_wuffs_version missing";
 const char* wuffs_base__error__disabled_by_previous_error =
     "?base: disabled by previous error";
+const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed =
+    "?base: initialize falsely claimed already zeroed";
+const char* wuffs_base__error__initialize_not_called =
+    "?base: initialize not called";
 const char* wuffs_base__error__interleaved_coroutine_calls =
     "?base: interleaved coroutine calls";
 
@@ -4951,7 +4951,7 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -5950,7 +5950,7 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -6228,7 +6228,7 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -6276,7 +6276,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
@@ -8011,7 +8011,7 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
@@ -8078,7 +8078,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
@@ -8587,7 +8587,7 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   {
     wuffs_base__status z = wuffs_lzw__decoder__initialize(
@@ -8628,7 +8628,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
@@ -8791,7 +8791,7 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
 
   if (self->private_impl.f_call_sequence == 0) {
@@ -8818,7 +8818,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 2)) {
@@ -9018,7 +9018,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if (!a_dst) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
@@ -10747,7 +10747,7 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   {
     wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
@@ -10826,7 +10826,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
@@ -11220,7 +11220,7 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
     memset(self, 0, sizeof_star_self);
   } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__check_wuffs_version_not_applicable;
+    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
   }
   {
     wuffs_base__status z = wuffs_adler32__hasher__initialize(
@@ -11299,7 +11299,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
-               : wuffs_base__error__check_wuffs_version_missing;
+               : wuffs_base__error__initialize_not_called;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
