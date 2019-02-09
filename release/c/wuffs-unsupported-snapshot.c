@@ -1642,6 +1642,12 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
+  // TODO: deprecated. This is for transitioning pre-v0.2 code.
+  inline void initialize(wuffs_base__pixel_format pixfmt,
+                         wuffs_base__pixel_subsampling pixsub,
+                         uint32_t width,
+                         uint32_t height);
+
   inline void set(wuffs_base__pixel_format pixfmt,
                   wuffs_base__pixel_subsampling pixsub,
                   uint32_t width,
@@ -1763,6 +1769,15 @@ wuffs_base__pixel_config__pixbuf_len(wuffs_base__pixel_config* c) {
 }
 
 #ifdef __cplusplus
+
+// TODO: deprecated. This is for transitioning pre-v0.2 code.
+inline void  //
+wuffs_base__pixel_config::initialize(wuffs_base__pixel_format pixfmt,
+                                     wuffs_base__pixel_subsampling pixsub,
+                                     uint32_t width,
+                                     uint32_t height) {
+  wuffs_base__pixel_config__set(this, pixfmt, pixsub, width, height);
+}
 
 inline void  //
 wuffs_base__pixel_config::set(wuffs_base__pixel_format pixfmt,
