@@ -747,6 +747,28 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 	}
 
 	if n.Classy() {
+		// TODO: allow max depth > 1 for recursive coroutines.
+		const maxDepth = 1
+
+		b.writeb('\n')
+		for _, file := range g.files {
+			for _, tld := range file.TopLevelDecls() {
+				if tld.Kind() != a.KFunc {
+					continue
+				}
+				o := tld.AsFunc()
+				if o.Receiver() != n.QID() || !o.Effect().Coroutine() {
+					continue
+				}
+				k := g.funks[o.QQID()]
+				if k.coroSuspPoint == 0 {
+					continue
+				}
+
+				b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
+			}
+		}
+
 		b.writeb('\n')
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
@@ -760,13 +782,6 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 				k := g.funks[o.QQID()]
 				if k.coroSuspPoint == 0 && !k.usesScratch {
 					continue
-				}
-
-				// TODO: allow max depth > 1 for recursive coroutines.
-				const maxDepth = 1
-
-				if k.coroSuspPoint != 0 {
-					b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
 				}
 
 				oldLenB0 := len(*b)

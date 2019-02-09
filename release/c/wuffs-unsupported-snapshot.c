@@ -2708,15 +2708,17 @@ struct wuffs_deflate__decoder__struct {
 
     uint32_t p_decode_io_writer[1];
     uint32_t p_decode_blocks[1];
+    uint32_t p_decode_uncompressed[1];
+    uint32_t p_init_dynamic_huffman[1];
+    uint32_t p_decode_huffman_slow[1];
+
     struct {
       uint32_t v_final;
     } s_decode_blocks[1];
-    uint32_t p_decode_uncompressed[1];
     struct {
       uint32_t v_length;
       uint64_t scratch;
     } s_decode_uncompressed[1];
-    uint32_t p_init_dynamic_huffman[1];
     struct {
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -2730,7 +2732,6 @@ struct wuffs_deflate__decoder__struct {
       uint8_t v_rep_symbol;
       uint32_t v_rep_count;
     } s_init_dynamic_huffman[1];
-    uint32_t p_decode_huffman_slow[1];
     struct {
       uint32_t v_bits;
       uint32_t v_n_bits;
@@ -2901,6 +2902,7 @@ struct wuffs_lzw__decoder__struct {
 
     uint32_t p_decode_io_writer[1];
     uint32_t p_write_to[1];
+
   } private_impl;
 
 #else  // WUFFS_IMPLEMENTATION
@@ -3110,50 +3112,51 @@ struct wuffs_gif__decoder__struct {
     uint32_t p_decode_image_config[1];
     uint32_t p_decode_frame_config[1];
     uint32_t p_skip_frame[1];
-    struct {
-      uint64_t scratch;
-    } s_skip_frame[1];
     uint32_t p_decode_frame[1];
     uint32_t p_decode_up_to_id_part1[1];
     uint32_t p_decode_header[1];
+    uint32_t p_decode_lsd[1];
+    uint32_t p_decode_extension[1];
+    uint32_t p_skip_blocks[1];
+    uint32_t p_decode_ae[1];
+    uint32_t p_decode_gc[1];
+    uint32_t p_decode_id_part0[1];
+    uint32_t p_decode_id_part1[1];
+    uint32_t p_decode_id_part2[1];
+
+    struct {
+      uint64_t scratch;
+    } s_skip_frame[1];
     struct {
       uint8_t v_c[6];
       uint32_t v_i;
     } s_decode_header[1];
-    uint32_t p_decode_lsd[1];
     struct {
       uint8_t v_flags;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint64_t scratch;
     } s_decode_lsd[1];
-    uint32_t p_decode_extension[1];
-    uint32_t p_skip_blocks[1];
     struct {
       uint64_t scratch;
     } s_skip_blocks[1];
-    uint32_t p_decode_ae[1];
     struct {
       uint8_t v_block_size;
       bool v_not_animexts;
       bool v_not_netscape;
       uint64_t scratch;
     } s_decode_ae[1];
-    uint32_t p_decode_gc[1];
     struct {
       uint64_t scratch;
     } s_decode_gc[1];
-    uint32_t p_decode_id_part0[1];
     struct {
       uint64_t scratch;
     } s_decode_id_part0[1];
-    uint32_t p_decode_id_part1[1];
     struct {
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint64_t scratch;
     } s_decode_id_part1[1];
-    uint32_t p_decode_id_part2[1];
     struct {
       uint64_t v_block_size;
       bool v_need_block_size;
@@ -3339,6 +3342,7 @@ struct wuffs_gzip__decoder__struct {
     wuffs_deflate__decoder f_flate;
 
     uint32_t p_decode_io_writer[1];
+
     struct {
       uint8_t v_flags;
       uint32_t v_checksum_got;
@@ -3491,6 +3495,7 @@ struct wuffs_zlib__decoder__struct {
     wuffs_deflate__decoder f_flate;
 
     uint32_t p_decode_io_writer[1];
+
     struct {
       uint32_t v_checksum_got;
       uint64_t scratch;
