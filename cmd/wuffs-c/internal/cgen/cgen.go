@@ -52,10 +52,11 @@ var (
 // "double" being a valid Wuffs variable name but not a valid C one.
 const (
 	aPrefix = "a_" // Function argument.
-	cPrefix = "c_" // Coroutine state.
 	fPrefix = "f_" // Struct field.
 	iPrefix = "i_" // Iterate variable.
 	oPrefix = "o_" // Temporary io_bind variable.
+	pPrefix = "p_" // Coroutine suspension point (program counter).
+	sPrefix = "s_" // Coroutine stack (saved local variables).
 	tPrefix = "t_" // Temporary local variable.
 	uPrefix = "u_" // Derived from a local variable.
 	vPrefix = "v_" // Local variable.
@@ -760,11 +761,18 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 				if k.coroSuspPoint == 0 && !k.usesScratch {
 					continue
 				}
+
 				// TODO: allow max depth > 1 for recursive coroutines.
 				const maxDepth = 1
-				b.writes("struct {\n")
+
 				if k.coroSuspPoint != 0 {
-					b.writes("uint32_t coro_susp_point;\n")
+					b.printf("uint32_t %s%s[%d];\n", pPrefix, o.FuncName().Str(g.tm), maxDepth)
+				}
+
+				oldLenB0 := len(*b)
+				b.writes("struct {\n")
+				oldLenB1 := len(*b)
+				if k.coroSuspPoint != 0 {
 					if err := g.writeVars(b, &k, true); err != nil {
 						return err
 					}
@@ -772,7 +780,11 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 				if k.usesScratch {
 					b.writes("uint64_t scratch;\n")
 				}
-				b.printf("} %s%s[%d];\n", cPrefix, o.FuncName().Str(g.tm), maxDepth)
+				if oldLenB1 != len(*b) {
+					b.printf("} %s%s[%d];\n", sPrefix, o.FuncName().Str(g.tm), maxDepth)
+				} else {
+					*b = (*b)[:oldLenB0]
+				}
 			}
 		}
 	}
