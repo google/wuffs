@@ -129,11 +129,11 @@ const char* test_wuffs_adler32_golden() {
 
     int j;
     for (j = 0; j < 2; j++) {
-      wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-      status = wuffs_adler32__hasher__check_wuffs_version(
-          &checksum, sizeof checksum, WUFFS_VERSION);
+      wuffs_adler32__hasher checksum;
+      status = wuffs_adler32__hasher__initialize(&checksum, sizeof checksum,
+                                                 WUFFS_VERSION, 0);
       if (status) {
-        RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+        RETURN_FAIL("initialize: \"%s\"", status);
       }
 
       uint32_t got = 0;
@@ -191,11 +191,11 @@ const char* test_wuffs_adler32_pi() {
 
   int i;
   for (i = 0; i < 64; i++) {
-    wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-    const char* status = wuffs_adler32__hasher__check_wuffs_version(
-        &checksum, sizeof checksum, WUFFS_VERSION);
+    wuffs_adler32__hasher checksum;
+    const char* status = wuffs_adler32__hasher__initialize(
+        &checksum, sizeof checksum, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
     uint32_t got =
         wuffs_adler32__hasher__update(&checksum, ((wuffs_base__slice_u8){
@@ -222,9 +222,9 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   if (rlimit) {
     len = wuffs_base__u64__min(len, rlimit);
   }
-  wuffs_adler32__hasher checksum = ((wuffs_adler32__hasher){});
-  const char* status = wuffs_adler32__hasher__check_wuffs_version(
-      &checksum, sizeof checksum, WUFFS_VERSION);
+  wuffs_adler32__hasher checksum;
+  const char* status = wuffs_adler32__hasher__initialize(
+      &checksum, sizeof checksum, WUFFS_VERSION, 0);
   if (status) {
     return status;
   }

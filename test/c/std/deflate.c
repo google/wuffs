@@ -139,11 +139,11 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
-  wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  const char* status = wuffs_deflate__decoder__check_wuffs_version(
-      &dec, sizeof dec, WUFFS_VERSION);
+  wuffs_deflate__decoder dec;
+  const char* status =
+      wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
 
   while (true) {
@@ -266,11 +266,11 @@ const char* test_wuffs_deflate_decode_split_src() {
     }
     got.meta.wi = 0;
 
-    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                         WUFFS_VERSION);
+    wuffs_deflate__decoder dec;
+    status =
+        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
 
     src.meta.closed = false;
@@ -361,11 +361,11 @@ const char* test_wuffs_deflate_history_full() {
   const int full_history_size = 0x8000;
   int i;
   for (i = -2; i <= +2; i++) {
-    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                         WUFFS_VERSION);
+    wuffs_deflate__decoder dec;
+    status =
+        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
 
     status = do_test_wuffs_deflate_history(
@@ -439,11 +439,11 @@ const char* test_wuffs_deflate_history_partial() {
     const char* fragment = "3.14";
     const uint32_t fragment_length = 4;
 
-    wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-    status = wuffs_deflate__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                         WUFFS_VERSION);
+    wuffs_deflate__decoder dec;
+    status =
+        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
 
     status = do_test_wuffs_deflate_history(
@@ -526,11 +526,11 @@ const char* test_wuffs_deflate_table_redirect() {
   // 1st is the key in the first level table (9 bits).
   // 2nd is the key in the second level table (variable bits).
 
-  wuffs_deflate__decoder dec = ((wuffs_deflate__decoder){});
-  const char* status = wuffs_deflate__decoder__check_wuffs_version(
-      &dec, sizeof dec, WUFFS_VERSION);
+  wuffs_deflate__decoder dec;
+  const char* status =
+      wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
 
   int i;

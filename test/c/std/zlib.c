@@ -87,9 +87,9 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
+  wuffs_zlib__decoder dec;
   const char* status =
-      wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
     return status;
   }
@@ -138,11 +138,11 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
 
   int end_limit;
   for (end_limit = 0; end_limit < 10; end_limit++) {
-    wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-    status = wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                      WUFFS_VERSION);
+    wuffs_zlib__decoder dec;
+    status =
+        wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;

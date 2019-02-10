@@ -107,11 +107,10 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
                 (int)(want_size));
   }
 
-  wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-  status =
-      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  wuffs_lzw__decoder dec;
+  status = wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, literal_width);
   int num_iters = 0;
@@ -224,11 +223,11 @@ const char* test_wuffs_lzw_decode_output_bad() {
   src.data.ptr[2] = 0x43;
   src.data.ptr[3] = 0xFF;
 
-  wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
+  wuffs_lzw__decoder dec;
   const char* status =
-      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 7);
 
@@ -268,11 +267,11 @@ const char* test_wuffs_lzw_decode_output_empty() {
   src.data.ptr[0] = 0x01;
   src.data.ptr[1] = 0x01;
 
-  wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
+  wuffs_lzw__decoder dec;
   const char* status =
-      wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
-    RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 8);
 
@@ -325,11 +324,10 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
-    wuffs_lzw__decoder dec = ((wuffs_lzw__decoder){});
-    status = wuffs_lzw__decoder__check_wuffs_version(&dec, sizeof dec,
-                                                     WUFFS_VERSION);
+    wuffs_lzw__decoder dec;
+    status = wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
-      RETURN_FAIL("check_wuffs_version: \"%s\"", status);
+      RETURN_FAIL("initialize: \"%s\"", status);
     }
     status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
                                                   global_work_slice);
