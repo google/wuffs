@@ -247,6 +247,13 @@ func (p *parser) parseTopLevelDecl() (*a.Node, error) {
 			if err != nil {
 				return nil, err
 			}
+			if x := p.peek1(); x == t.IDOpenParen {
+				extraFields, err := p.parseList(t.IDCloseParen, (*parser).parseExtraFieldNode)
+				if err != nil {
+					return nil, err
+				}
+				fields = append(fields, extraFields...)
+			}
 			if x := p.peek1(); x != t.IDSemicolon {
 				got := p.tm.ByID(x)
 				return nil, fmt.Errorf(`parse: expected (implicit) ";", got %q at %s:%d`, got, p.filename, p.line())
@@ -331,6 +338,14 @@ func (p *parser) parseList(stop t.ID, parseElem func(*parser) (*a.Node, error)) 
 }
 
 func (p *parser) parseFieldNode() (*a.Node, error) {
+	return p.parseFieldNode1(0)
+}
+
+func (p *parser) parseExtraFieldNode() (*a.Node, error) {
+	return p.parseFieldNode1(a.FlagsPrivateData)
+}
+
+func (p *parser) parseFieldNode1(flags a.Flags) (*a.Node, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, err
@@ -339,7 +354,6 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	flags := a.Flags(0)
 	if pkg := typ.Innermost().QID()[0]; (pkg != 0) && (pkg != t.IDBase) {
 		flags |= a.FlagsPrivateData
 	}

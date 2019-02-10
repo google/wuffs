@@ -386,7 +386,7 @@ const char* test_wuffs_deflate_history_full() {
 
     wuffs_base__io_buffer history_got = ((wuffs_base__io_buffer){
         .data = ((wuffs_base__slice_u8){
-            .ptr = dec.private_impl.f_history,
+            .ptr = dec.private_data.f_history,
             .len = full_history_size,
         }),
     });
@@ -440,6 +440,8 @@ const char* test_wuffs_deflate_history_partial() {
     const uint32_t fragment_length = 4;
 
     wuffs_deflate__decoder dec;
+    memset(&(dec.private_data.f_history), 0,
+           sizeof(dec.private_data.f_history));
     status =
         wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
     if (status) {
@@ -468,7 +470,7 @@ const char* test_wuffs_deflate_history_partial() {
     int j;
     for (j = -2; j < (int)(fragment_length) + 2; j++) {
       uint32_t index = (starting_history_index + j) & 0x7FFF;
-      uint8_t got = dec.private_impl.f_history[index];
+      uint8_t got = dec.private_data.f_history[index];
       uint8_t want = (0 <= j && j < fragment_length) ? fragment[j] : 0;
       if (got != want) {
         RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
@@ -532,23 +534,24 @@ const char* test_wuffs_deflate_table_redirect() {
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
+  memset(&(dec.private_data.f_huffs), 0, sizeof(dec.private_data.f_huffs));
 
   int i;
   int n = 0;
-  dec.private_impl.f_code_lengths[n++] = 1;
-  dec.private_impl.f_code_lengths[n++] = 2;
-  dec.private_impl.f_code_lengths[n++] = 3;
-  dec.private_impl.f_code_lengths[n++] = 4;
-  dec.private_impl.f_code_lengths[n++] = 5;
-  dec.private_impl.f_code_lengths[n++] = 6;
-  dec.private_impl.f_code_lengths[n++] = 7;
-  dec.private_impl.f_code_lengths[n++] = 9;
-  dec.private_impl.f_code_lengths[n++] = 10;
+  dec.private_data.f_code_lengths[n++] = 1;
+  dec.private_data.f_code_lengths[n++] = 2;
+  dec.private_data.f_code_lengths[n++] = 3;
+  dec.private_data.f_code_lengths[n++] = 4;
+  dec.private_data.f_code_lengths[n++] = 5;
+  dec.private_data.f_code_lengths[n++] = 6;
+  dec.private_data.f_code_lengths[n++] = 7;
+  dec.private_data.f_code_lengths[n++] = 9;
+  dec.private_data.f_code_lengths[n++] = 10;
   for (i = 0; i < 19; i++) {
-    dec.private_impl.f_code_lengths[n++] = 12;
+    dec.private_data.f_code_lengths[n++] = 12;
   }
-  dec.private_impl.f_code_lengths[n++] = 13;
-  dec.private_impl.f_code_lengths[n++] = 13;
+  dec.private_data.f_code_lengths[n++] = 13;
+  dec.private_data.f_code_lengths[n++] = 13;
 
   status = wuffs_deflate__decoder__init_huff(&dec, 0, 0, n, 257);
   if (status) {
@@ -558,10 +561,10 @@ const char* test_wuffs_deflate_table_redirect() {
   // There is one 1st-level table (9 bits), and three 2nd-level tables (3, 3
   // and 4 bits). f_huffs[0]'s elements should be non-zero for those tables and
   // should be zero outside of those tables.
-  const int n_f_huffs = sizeof(dec.private_impl.f_huffs[0]) /
-                        sizeof(dec.private_impl.f_huffs[0][0]);
+  const int n_f_huffs = sizeof(dec.private_data.f_huffs[0]) /
+                        sizeof(dec.private_data.f_huffs[0][0]);
   for (i = 0; i < n_f_huffs; i++) {
-    bool got = dec.private_impl.f_huffs[0][i] == 0;
+    bool got = dec.private_data.f_huffs[0][i] == 0;
     bool want = i >= (1 << 9) + (1 << 3) + (1 << 3) + (1 << 4);
     if (got != want) {
       RETURN_FAIL("huffs[0][%d] == 0: got %d, want %d", i, got, want);
@@ -574,19 +577,19 @@ const char* test_wuffs_deflate_table_redirect() {
   //  - 0b111111111 (0x01FF) to the table offset 528 (0x0210), a 4-bit table.
   uint32_t got;
   uint32_t want;
-  got = dec.private_impl.f_huffs[0][0x017F];
+  got = dec.private_data.f_huffs[0][0x017F];
   want = 0x10020039;
   if (got != want) {
     RETURN_FAIL("huffs[0][0x017F]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
                 want);
   }
-  got = dec.private_impl.f_huffs[0][0x00FF];
+  got = dec.private_data.f_huffs[0][0x00FF];
   want = 0x10020839;
   if (got != want) {
     RETURN_FAIL("huffs[0][0x00FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
                 want);
   }
-  got = dec.private_impl.f_huffs[0][0x01FF];
+  got = dec.private_data.f_huffs[0][0x01FF];
   want = 0x10021049;
   if (got != want) {
     RETURN_FAIL("huffs[0][0x01FF]: got 0x%08" PRIX32 ", want 0x%08" PRIX32, got,
@@ -599,7 +602,7 @@ const char* test_wuffs_deflate_table_redirect() {
       0x80000801, 0x80000A03, 0x80000801, 0x80000C03,
   };
   for (i = 0; i < 8; i++) {
-    got = dec.private_impl.f_huffs[0][0x0200 + i];
+    got = dec.private_data.f_huffs[0][0x0200 + i];
     want = wants[i];
     if (got != want) {
       RETURN_FAIL("huffs[0][0x%04" PRIX32 "]: got 0x%08" PRIX32
