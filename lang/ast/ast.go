@@ -102,6 +102,7 @@ const (
 	FlagsClassy           = Flags(0x00001000)
 	FlagsSubExprHasEffect = Flags(0x00002000)
 	FlagsRetsError        = Flags(0x00004000)
+	FlagsPrivateData      = Flags(0x00008000)
 )
 
 func (f Flags) AsEffect() Effect { return Effect(f) }
@@ -453,19 +454,22 @@ func NewVar(name t.ID, xType *TypeExpr) *Var {
 }
 
 // Field is a "name type" struct field:
+//  - FlagsPrivateData is the initializer need not explicitly memset to zero.
 //  - ID2:   name
 //  - LHS:   <TypeExpr>
 type Field Node
 
-func (n *Field) AsNode() *Node    { return (*Node)(n) }
-func (n *Field) Name() t.ID       { return n.id2 }
-func (n *Field) XType() *TypeExpr { return n.lhs.AsTypeExpr() }
+func (n *Field) AsNode() *Node     { return (*Node)(n) }
+func (n *Field) PrivateData() bool { return n.flags&FlagsPrivateData != 0 }
+func (n *Field) Name() t.ID        { return n.id2 }
+func (n *Field) XType() *TypeExpr  { return n.lhs.AsTypeExpr() }
 
-func NewField(name t.ID, xType *TypeExpr) *Field {
+func NewField(flags Flags, name t.ID, xType *TypeExpr) *Field {
 	return &Field{
-		kind: KField,
-		id2:  name,
-		lhs:  xType.AsNode(),
+		kind:  KField,
+		flags: flags,
+		id2:   name,
+		lhs:   xType.AsNode(),
 	}
 }
 

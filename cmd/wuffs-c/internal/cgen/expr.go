@@ -217,11 +217,27 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		} else {
 			b.writes(".")
 		}
-		b.writes("private_impl." + fPrefix)
+
+		b.writes(g.privateImplData(lhs.MType(), n.Ident()))
+		b.writeb('.')
+		b.writes(fPrefix)
 		b.writes(n.Ident().Str(g.tm))
 		return nil
 	}
 	return fmt.Errorf("unrecognized token (0x%X) for writeExprOther", n.Operator())
+}
+
+func (g *gen) privateImplData(typ *a.TypeExpr, fieldName t.ID) string {
+	if p := typ.Decorator(); p == t.IDNptr || p == t.IDPtr {
+		typ = typ.Inner()
+	}
+	if s := g.structMap[typ.QID()]; s != nil {
+		qid := s.QID()
+		if _, ok := g.privateDataFields[t.QQID{qid[0], qid[1], fieldName}]; ok {
+			return "private_data"
+		}
+	}
+	return "private_impl"
 }
 
 func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {

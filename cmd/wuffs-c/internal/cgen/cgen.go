@@ -321,11 +321,12 @@ type gen struct {
 	// generated C code (due to line numbers changing) when editing Wuffs code.
 	genlinenum bool
 
-	scalarConstsMap map[t.QID]*a.Const
-	statusList      []status
-	statusMap       map[t.QID]status
-	structList      []*a.Struct
-	structMap       map[t.QID]*a.Struct
+	privateDataFields map[t.QQID]struct{}
+	scalarConstsMap   map[t.QID]*a.Const
+	statusList        []status
+	statusMap         map[t.QID]status
+	structList        []*a.Struct
+	structMap         map[t.QID]*a.Struct
 
 	currFunk funk
 	funks    map[t.QQID]funk
@@ -374,8 +375,16 @@ func (g *gen) generate() ([]byte, error) {
 		return nil, fmt.Errorf("cyclical struct definitions")
 	}
 	g.structMap = map[t.QID]*a.Struct{}
+	g.privateDataFields = map[t.QQID]struct{}{}
 	for _, n := range g.structList {
-		g.structMap[n.QID()] = n
+		qid := n.QID()
+		g.structMap[qid] = n
+		for _, f := range n.Fields() {
+			f := f.AsField()
+			if f.PrivateData() {
+				g.privateDataFields[t.QQID{qid[0], qid[1], f.Name()}] = struct{}{}
+			}
+		}
 	}
 
 	g.funks = map[t.QQID]funk{}
@@ -745,7 +754,7 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 
 	for _, o := range n.Fields() {
 		o := o.AsField()
-		if o.XType().Eq(typeExprUtility) {
+		if o.PrivateData() || o.XType().Eq(typeExprUtility) {
 			continue
 		}
 		if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
@@ -781,6 +790,20 @@ func (g *gen) writeStructPrivateImpl(b *buffer, n *a.Struct) error {
 		oldOuterLenB0 := len(*b)
 		b.writes("struct {\n")
 		oldOuterLenB1 := len(*b)
+
+		for _, o := range n.Fields() {
+			o := o.AsField()
+			if !o.PrivateData() || o.XType().Eq(typeExprUtility) {
+				continue
+			}
+			if err := g.writeCTypeName(b, o.XType(), fPrefix, o.Name().Str(g.tm)); err != nil {
+				return err
+			}
+			b.writes(";\n")
+		}
+		if oldOuterLenB1 != len(*b) {
+			b.writeb('\n')
+		}
 
 		for _, file := range g.files {
 			for _, tld := range file.TopLevelDecls() {
@@ -1011,7 +1034,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 		b.printf("{\n")
 		b.printf("wuffs_base__status z = %s%s__initialize("+
-			"&self->private_impl.%s%s, sizeof(self->private_impl.%s%s), WUFFS_VERSION, initialize_flags);\n",
+			"&self->private_data.%s%s, sizeof(self->private_data.%s%s), WUFFS_VERSION, initialize_flags);\n",
 			prefix, qid[1].Str(g.tm), fPrefix, f.Name().Str(g.tm), fPrefix, f.Name().Str(g.tm))
 		b.printf("if (z) { return z; }\n")
 		b.printf("}\n")

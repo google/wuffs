@@ -3297,7 +3297,6 @@ struct wuffs_gif__decoder__struct {
     uint64_t f_compressed_ri;
     uint64_t f_compressed_wi;
     wuffs_base__pixel_swizzler f_swizzler;
-    wuffs_lzw__decoder f_lzw;
     uint8_t f_compressed[4096];
     uint8_t f_palettes[2][1024];
     uint8_t f_dst_palette[1024];
@@ -3319,6 +3318,8 @@ struct wuffs_gif__decoder__struct {
   } private_impl;
 
   struct {
+    wuffs_lzw__decoder f_lzw;
+
     struct {
       uint64_t scratch;
     } s_skip_frame[1];
@@ -3551,13 +3552,14 @@ struct wuffs_gzip__decoder__struct {
     uint32_t active_coroutine;
 
     bool f_ignore_checksum;
-    wuffs_crc32__ieee_hasher f_checksum;
-    wuffs_deflate__decoder f_flate;
 
     uint32_t p_decode_io_writer[1];
   } private_impl;
 
   struct {
+    wuffs_crc32__ieee_hasher f_checksum;
+    wuffs_deflate__decoder f_flate;
+
     struct {
       uint8_t v_flags;
       uint32_t v_checksum_got;
@@ -3725,13 +3727,14 @@ struct wuffs_zlib__decoder__struct {
     uint32_t active_coroutine;
 
     bool f_ignore_checksum;
-    wuffs_adler32__hasher f_checksum;
-    wuffs_deflate__decoder f_flate;
 
     uint32_t p_decode_io_writer[1];
   } private_impl;
 
   struct {
+    wuffs_adler32__hasher f_checksum;
+    wuffs_deflate__decoder f_flate;
+
     struct {
       uint32_t v_checksum_got;
       uint64_t scratch;
@@ -8605,7 +8608,7 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
   }
   {
     wuffs_base__status z = wuffs_lzw__decoder__initialize(
-        &self->private_impl.f_lzw, sizeof(self->private_impl.f_lzw),
+        &self->private_data.f_lzw, sizeof(self->private_data.f_lzw),
         WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
@@ -10338,9 +10341,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
             .len = 1024,
         }));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
-      (memset(&self->private_impl.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
+      (memset(&self->private_data.f_lzw, 0, sizeof((wuffs_lzw__decoder){})),
        wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
-           &self->private_impl.f_lzw, sizeof((wuffs_lzw__decoder){}),
+           &self->private_data.f_lzw, sizeof((wuffs_lzw__decoder){}),
            WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED)),
        wuffs_base__return_empty_struct());
     }
@@ -10357,7 +10360,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       status = wuffs_gif__error__bad_literal_width;
       goto exit;
     }
-    wuffs_lzw__decoder__set_literal_width(&self->private_impl.f_lzw,
+    wuffs_lzw__decoder__set_literal_width(&self->private_data.f_lzw,
                                           ((uint32_t)(v_lw)));
     self->private_impl.f_previous_lzw_decode_ended_abruptly = true;
 
@@ -10520,7 +10523,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           {
             u_r.meta.ri = iop_v_r - u_r.data.ptr;
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
-                &self->private_impl.f_lzw,
+                &self->private_data.f_lzw,
                 wuffs_base__utility__null_io_writer(), v_r,
                 wuffs_base__utility__null_slice_u8());
             iop_v_r = u_r.data.ptr + u_r.meta.ri;
@@ -10533,7 +10536,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           iop_v_r = o_0_iop_v_r;
           io1_v_r = o_0_io1_v_r;
         }
-        v_uncompressed = wuffs_lzw__decoder__flush(&self->private_impl.f_lzw);
+        v_uncompressed = wuffs_lzw__decoder__flush(&self->private_data.f_lzw);
         if (((uint64_t)(v_uncompressed.len)) > 0) {
           v_copy_status = wuffs_gif__decoder__copy_to_image_buffer(
               self, a_dst, v_uncompressed);
@@ -10765,7 +10768,7 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   }
   {
     wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
-        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum),
         WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
@@ -10773,7 +10776,7 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__initialize(
-        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate),
         WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
@@ -11066,7 +11069,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
         wuffs_base__status t_7 = wuffs_deflate__decoder__decode_io_writer(
-            &self->private_impl.f_flate, a_dst, a_src, a_workbuf);
+            &self->private_data.f_flate, a_dst, a_src, a_workbuf);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
                       a_dst.private_impl.buf->meta.wi;
@@ -11079,7 +11082,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       }
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_crc32__ieee_hasher__update(
-            &self->private_impl.f_checksum,
+            &self->private_data.f_checksum,
             ((wuffs_base__slice_u8){
                 .ptr = a_dst.private_impl.mark,
                 .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),
@@ -11238,7 +11241,7 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   }
   {
     wuffs_base__status z = wuffs_adler32__hasher__initialize(
-        &self->private_impl.f_checksum, sizeof(self->private_impl.f_checksum),
+        &self->private_data.f_checksum, sizeof(self->private_data.f_checksum),
         WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
@@ -11246,7 +11249,7 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   }
   {
     wuffs_base__status z = wuffs_deflate__decoder__initialize(
-        &self->private_impl.f_flate, sizeof(self->private_impl.f_flate),
+        &self->private_data.f_flate, sizeof(self->private_data.f_flate),
         WUFFS_VERSION, initialize_flags);
     if (z) {
       return z;
@@ -11424,7 +11427,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
               iop_a_src - a_src.private_impl.buf->data.ptr;
         }
         wuffs_base__status t_1 = wuffs_deflate__decoder__decode_io_writer(
-            &self->private_impl.f_flate, a_dst, a_src, a_workbuf);
+            &self->private_data.f_flate, a_dst, a_src, a_workbuf);
         if (a_dst.private_impl.buf) {
           iop_a_dst = a_dst.private_impl.buf->data.ptr +
                       a_dst.private_impl.buf->meta.wi;
@@ -11437,7 +11440,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       }
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_adler32__hasher__update(
-            &self->private_impl.f_checksum,
+            &self->private_data.f_checksum,
             ((wuffs_base__slice_u8){
                 .ptr = a_dst.private_impl.mark,
                 .len = (size_t)(iop_a_dst - a_dst.private_impl.mark),

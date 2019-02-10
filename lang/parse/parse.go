@@ -339,7 +339,11 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return a.NewField(name, typ).AsNode(), nil
+	flags := a.Flags(0)
+	if pkg := typ.Innermost().QID()[0]; (pkg != 0) && (pkg != t.IDBase) {
+		flags |= a.FlagsPrivateData
+	}
+	return a.NewField(flags, name, typ).AsNode(), nil
 }
 
 func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {

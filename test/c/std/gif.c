@@ -180,9 +180,9 @@ const char* test_basic_sub_struct_initializer() {
     RETURN_FAIL("outer magic: got %" PRIu32 ", want %" PRIu32 "",
                 dec.private_impl.magic, WUFFS_BASE__MAGIC);
   }
-  if (dec.private_impl.f_lzw.private_impl.magic != WUFFS_BASE__MAGIC) {
+  if (dec.private_data.f_lzw.private_impl.magic != WUFFS_BASE__MAGIC) {
     RETURN_FAIL("inner magic: got %" PRIu32 ", want %" PRIu32,
-                dec.private_impl.f_lzw.private_impl.magic, WUFFS_BASE__MAGIC);
+                dec.private_data.f_lzw.private_impl.magic, WUFFS_BASE__MAGIC);
   }
   return NULL;
 }
