@@ -205,7 +205,7 @@ wuffs_base__io_reader__set(wuffs_base__io_reader* o,
   o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_r = data.ptr;
   *ptr_io1_r = data.ptr + data.len;
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 static inline wuffs_base__empty_struct  //
@@ -215,13 +215,13 @@ wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
   if (o && (((size_t)(o->private_impl.limit - iop_r)) > limit)) {
     o->private_impl.limit = iop_r + limit;
   }
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
   o->private_impl.mark = mark;
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 static inline wuffs_base__slice_u8  //
@@ -234,7 +234,7 @@ wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io1_r, uint64_t n) {
         .len = n,
     });
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 static inline wuffs_base__empty_struct  //
@@ -254,25 +254,25 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_w = data.ptr;
   *ptr_io1_w = data.ptr + data.len;
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   o->private_impl.mark = mark;
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 // ---------------- I/O (Utility)
 
 static inline wuffs_base__io_reader  //
 wuffs_base__utility__null_io_reader() {
-  return ((wuffs_base__io_reader){});
+  return ((wuffs_base__io_reader){.private_impl = {0}});
 }
 
 static inline wuffs_base__io_writer  //
 wuffs_base__utility__null_io_writer() {
-  return ((wuffs_base__io_writer){});
+  return ((wuffs_base__io_writer){.private_impl = {0}});
 }
 
 // ---------------- Bureaucracy re -Wunused-function

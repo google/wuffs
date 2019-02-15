@@ -40,7 +40,7 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
       });
     }
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 static inline wuffs_base__slice_u16  //
@@ -54,7 +54,7 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
       });
     }
   }
-  return ((wuffs_base__slice_u16){});
+  return ((wuffs_base__slice_u16){0});
 }
 
 static inline wuffs_base__slice_u32  //
@@ -68,7 +68,7 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
       });
     }
   }
-  return ((wuffs_base__slice_u32){});
+  return ((wuffs_base__slice_u32){0});
 }
 
 static inline wuffs_base__slice_u64  //
@@ -82,7 +82,7 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
       });
     }
   }
-  return ((wuffs_base__slice_u64){});
+  return ((wuffs_base__slice_u64){0});
 }
 
 // ---------------- Bureaucracy re -Wunused-function

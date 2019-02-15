@@ -83,7 +83,7 @@ wuffs_base__ignore_status(wuffs_base__status z) {}
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__return_empty_struct() {
-  return ((wuffs_base__empty_struct){});
+  return ((wuffs_base__empty_struct){0});
 }
 
 // ---------------- Numeric Types
@@ -420,14 +420,14 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
         .len = t.width,
     });
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 // ---------------- Slices and Tables (Utility)
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__utility__null_slice_u8() {
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 // ---------------- Bureaucracy re -Wunused-function

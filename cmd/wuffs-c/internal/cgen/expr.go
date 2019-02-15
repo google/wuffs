@@ -123,7 +123,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			if err := g.writeExpr(b, recv, depth); err != nil {
 				return err
 			}
-			b.printf(", 0, sizeof ((%s%s){}))", g.packagePrefix(qid), qid[1].Str(g.tm))
+			b.printf(", 0, sizeof (%s%s))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
 			if !isBaseRangeType(qid) {
 				b.printf(", wuffs_base__ignore_status("+
@@ -131,7 +131,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
-				b.printf(", sizeof ((%s%s){}), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED))",
+				b.printf(", sizeof (%s%s), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED))",
 					g.packagePrefix(qid), qid[1].Str(g.tm))
 			}
 

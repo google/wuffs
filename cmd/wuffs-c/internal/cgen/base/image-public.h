@@ -374,13 +374,17 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
       return;
     }
   }
-  *c = ((wuffs_base__pixel_config){});
+  *c = ((wuffs_base__pixel_config){
+      .private_impl = {0},
+  });
 }
 
 static inline void  //
 wuffs_base__pixel_config__invalidate(wuffs_base__pixel_config* c) {
   if (c) {
-    *c = ((wuffs_base__pixel_config){});
+    *c = ((wuffs_base__pixel_config){
+        .private_impl = {0},
+    });
   }
 }
 
@@ -407,7 +411,7 @@ wuffs_base__pixel_config__bounds(wuffs_base__pixel_config* c) {
                  .max_excl_x = c->private_impl.width,
                  .max_excl_y = c->private_impl.height,
              })
-           : ((wuffs_base__rect_ie_u32){});
+           : ((wuffs_base__rect_ie_u32){0});
 }
 
 static inline uint32_t  //
@@ -566,13 +570,19 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
     return;
   }
-  *c = ((wuffs_base__image_config){});
+  *c = ((wuffs_base__image_config){
+      .pixcfg = {.private_impl = {0}},
+      .private_impl = {0},
+  });
 }
 
 static inline void  //
 wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
   if (c) {
-    *c = ((wuffs_base__image_config){});
+    *c = ((wuffs_base__image_config){
+        .pixcfg = {.private_impl = {0}},
+        .private_impl = {0},
+    });
   }
 }
 
@@ -719,7 +729,7 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
 
 static inline wuffs_base__rect_ie_u32  //
 wuffs_base__frame_config__bounds(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds : ((wuffs_base__rect_ie_u32){});
+  return c ? c->private_impl.bounds : ((wuffs_base__rect_ie_u32){0});
 }
 
 static inline uint32_t  //
@@ -851,7 +861,7 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   if (!b) {
     return wuffs_base__error__bad_receiver;
   }
-  *b = ((wuffs_base__pixel_buffer){});
+  memset(b, 0, sizeof(*b));
   if (!pixcfg) {
     return wuffs_base__error__bad_argument;
   }
@@ -923,7 +933,7 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
       });
     }
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 static inline wuffs_base__pixel_format  //
@@ -938,7 +948,7 @@ static inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
   return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
              ? b->private_impl.planes[p]
-             : ((wuffs_base__table_u8){});
+             : ((wuffs_base__table_u8){0});
 }
 
 #ifdef __cplusplus

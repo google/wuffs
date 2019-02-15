@@ -1057,7 +1057,7 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 		if err := g.writeSizeofSignature(b, n); err != nil {
 			return err
 		}
-		b.printf("{ return sizeof((%s%s){}); }\n\n", g.pkgPrefix, n.QID().Str(g.tm))
+		b.printf("{ return sizeof (%s%s); }\n\n", g.pkgPrefix, n.QID().Str(g.tm))
 	}
 	return nil
 }

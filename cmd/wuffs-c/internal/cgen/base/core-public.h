@@ -317,7 +317,7 @@ wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
         .len = s.len - i,
     });
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 // wuffs_base__slice_u8__subslice_j returns s[:j].
@@ -331,7 +331,7 @@ wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
         .len = j,
     });
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 // wuffs_base__slice_u8__subslice_ij returns s[i:j].
@@ -347,7 +347,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
         .len = j - i,
     });
   }
-  return ((wuffs_base__slice_u8){});
+  return ((wuffs_base__slice_u8){0});
 }
 
 // ---------------- Bureaucracy re -Wunused-function

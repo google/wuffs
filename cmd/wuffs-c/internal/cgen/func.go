@@ -218,7 +218,7 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 
 func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 	if typ == nil {
-		b.writes("((wuffs_base__empty_struct){})")
+		b.writes("((wuffs_base__empty_struct){0})")
 	} else if typ.IsNumType() {
 		b.writes("0")
 	} else {
@@ -226,7 +226,7 @@ func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 		if err := g.writeCTypeName(b, typ, "", ""); err != nil {
 			return err
 		}
-		b.writes("){})")
+		b.writes("){0})")
 	}
 	return nil
 }
@@ -379,7 +379,7 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		}
 		b.writes("return status;\n")
 	} else if g.currFunk.astFunc.Out() == nil {
-		b.writes("return ((wuffs_base__empty_struct){});\n")
+		b.writes("return ((wuffs_base__empty_struct){0});\n")
 	}
 	return nil
 }
@@ -448,7 +448,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 		b.writes("return wuffs_base__error__bad_argument;\n\n")
 	} else {
 		// TODO: don't assume that the return type is empty.
-		b.printf("return ((wuffs_base__empty_struct){});\n")
+		b.printf("return ((wuffs_base__empty_struct){0});\n")
 	}
 	b.writes("}\n")
 	return nil
