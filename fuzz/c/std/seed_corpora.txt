@@ -11,6 +11,6 @@
 # This file is not used by Wuffs per se, but it is used by the "projects/wuffs"
 # directory in the https://github.com/google/oss-fuzz repository.
 
-gif:    test/data/*.gif
-gzip:   test/data/*.gz
+gif:    test/data/*.gif   test/data/artificial/*.gif
+gzip:   test/data/*.gz    test/data/artificial/*.gz
 zlib:   test/data/*.zlib
