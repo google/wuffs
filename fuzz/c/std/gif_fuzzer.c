@@ -75,15 +75,19 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       goto exit;
     }
 
+    // Wuffs allows either statically or dynamically allocated work buffers.
+    // This program exercises dynamic allocation.
     uint64_t n = wuffs_gif__decoder__workbuf_len(&dec).max_incl;
     if (n > 64 * 1024 * 1024) {  // Don't allocate more than 64 MiB.
       ret = "image too large";
       goto exit;
     }
-    workbuf = wuffs_base__malloc_slice_u8(malloc, n);
-    if (!workbuf.ptr) {
-      ret = "out of memory";
-      goto exit;
+    if (n > 0) {
+      workbuf = wuffs_base__malloc_slice_u8(malloc, n);
+      if (!workbuf.ptr) {
+        ret = "out of memory";
+        goto exit;
+      }
     }
 
     n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
@@ -91,10 +95,12 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       ret = "image too large";
       goto exit;
     }
-    pixbuf = wuffs_base__malloc_slice_u8(malloc, n);
-    if (!pixbuf.ptr) {
-      ret = "out of memory";
-      goto exit;
+    if (n > 0) {
+      pixbuf = wuffs_base__malloc_slice_u8(malloc, n);
+      if (!pixbuf.ptr) {
+        ret = "out of memory";
+        goto exit;
+      }
     }
 
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
