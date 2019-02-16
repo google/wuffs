@@ -46,15 +46,31 @@ for a C compiler $CC, such as clang or gcc.
 #define DST_BUFFER_SIZE (128 * 1024)
 #endif
 
-// lgtm_ptr and lgtm_len hold a deflate-encoded "LGTM" message.
-uint8_t lgtm_ptr[] = {
-    0xf3, 0xc9, 0xcf, 0xcf, 0x2e, 0x56, 0x48, 0xcf, 0xcf, 0x4f,
-    0x51, 0x28, 0xc9, 0x57, 0xc8, 0x4d, 0xd5, 0xe3, 0x02, 0x00,
+// hello_ptr and hello_len hold a gzip-encoded "Hello Wuffs."
+//
+// $ echo "Hello Wuffs." | gzip --no-name | xxd
+// 00000000: 1f8b 0800 0000 0000 0003 f348 cdc9 c957  ...........H...W
+// 00000010: 082f 4d4b 2bd6 e302 003c 8475 bb0d 0000  ./MK+....<.u....
+// 00000020: 00                                       .
+//
+// Passing --no-name to the gzip command line also means to skip the timestamp,
+// which means that its output is deterministic.
+uint8_t hello_ptr[] = {
+    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,  // 00..07
+    0x00, 0x03, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x57,  // 08..0F
+    0x08, 0x2f, 0x4d, 0x4b, 0x2b, 0xd6, 0xe3, 0x02,  // 10..17
+    0x00, 0x3c, 0x84, 0x75, 0xbb, 0x0d, 0x00, 0x00,  // 18..1F
+    0x00,                                            // 20..20
 };
-size_t lgtm_len = 20;
+size_t hello_len = 0x21;
 
-#define WORK_BUFFER_SIZE WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#define WORK_BUFFER_SIZE WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_SIZE > 0
 uint8_t work_buffer[WORK_BUFFER_SIZE];
+#else
+// Not all C/C++ compilers support 0-length arrays.
+uint8_t work_buffer[1];
+#endif
 
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
@@ -69,11 +85,11 @@ static const char* decode() {
   });
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = ((wuffs_base__slice_u8){
-          .ptr = lgtm_ptr,
-          .len = lgtm_len,
+          .ptr = hello_ptr,
+          .len = hello_len,
       }),
       .meta = ((wuffs_base__io_buffer_meta){
-          .wi = lgtm_len,
+          .wi = hello_len,
           .ri = 0,
           .pos = 0,
           .closed = true,
@@ -82,22 +98,22 @@ static const char* decode() {
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_deflate__decoder* dec = calloc(sizeof__wuffs_deflate__decoder(), 1);
+  wuffs_gzip__decoder* dec = calloc(sizeof__wuffs_gzip__decoder(), 1);
   if (!dec) {
     return "out of memory";
   }
-  const char* status = wuffs_deflate__decoder__initialize(
-      dec, sizeof__wuffs_deflate__decoder(), WUFFS_VERSION,
+  const char* status = wuffs_gzip__decoder__initialize(
+      dec, sizeof__wuffs_gzip__decoder(), WUFFS_VERSION,
       WUFFS_INITIALIZE__ALREADY_ZEROED);
   if (status) {
     free(dec);
     return status;
   }
-  status = wuffs_deflate__decoder__decode_io_writer(dec, dst_writer, src_reader,
-                                                    ((wuffs_base__slice_u8){
-                                                        .ptr = work_buffer,
-                                                        .len = WORK_BUFFER_SIZE,
-                                                    }));
+  status = wuffs_gzip__decoder__decode_io_writer(dec, dst_writer, src_reader,
+                                                 ((wuffs_base__slice_u8){
+                                                     .ptr = work_buffer,
+                                                     .len = WORK_BUFFER_SIZE,
+                                                 }));
   if (status) {
     free(dec);
     return status;
