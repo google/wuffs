@@ -288,9 +288,9 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
 }
 
 const char* play() {
-  wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
+  wuffs_gif__decoder dec;
   wuffs_base__status status =
-      wuffs_gif__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
     return status;
   }

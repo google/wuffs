@@ -61,9 +61,10 @@ uint8_t work_buffer[1];
 #endif
 
 const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
-  wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
-  const char* status =
-      wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+  wuffs_zlib__decoder dec;
+  const char* status = wuffs_zlib__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED : 0);
   if (status) {
     return status;
   }
@@ -71,7 +72,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   // Ignore the checksum for 99.99%-ish of all input. When fuzzers generate
   // random input, the checkum is very unlikely to match. Still, it's useful to
   // verify that checksumming does not lead to e.g. buffer overflows.
-  wuffs_zlib__decoder__set_ignore_checksum(&dec, hash & 0xFFFF);
+  wuffs_zlib__decoder__set_ignore_checksum(&dec, hash & 0xFFFE);
 
   uint8_t dst_buffer[DST_BUFFER_SIZE];
   wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){

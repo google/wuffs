@@ -79,9 +79,9 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
-  wuffs_gzip__decoder dec = ((wuffs_gzip__decoder){});
+  wuffs_gzip__decoder dec;
   const char* status =
-      wuffs_gzip__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_gzip__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
     return status;
   }

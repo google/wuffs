@@ -112,6 +112,14 @@ uint8_t idat_buffer[SRC_BUFFER_SIZE] = {0};
 size_t idat_splits[MAX_IDAT_CHUNKS + 1] = {0};
 uint32_t num_idat_chunks = 0;
 
+#define WORK_BUFFER_SIZE WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
+#if WORK_BUFFER_SIZE > 0
+uint8_t work_buffer[WORK_BUFFER_SIZE];
+#else
+// Not all C/C++ compilers support 0-length arrays.
+uint8_t work_buffer[1];
+#endif
+
 uint32_t width = 0;
 uint32_t height = 0;
 uint64_t bytes_per_pixel = 0;
@@ -218,9 +226,9 @@ const char* process_png_chunks(uint8_t* p, size_t n) {
 }
 
 const char* decode_once(bool frag_dst, bool frag_idat) {
-  wuffs_zlib__decoder dec = ((wuffs_zlib__decoder){});
+  wuffs_zlib__decoder dec;
   const char* status =
-      wuffs_zlib__decoder__check_wuffs_version(&dec, sizeof dec, WUFFS_VERSION);
+      wuffs_zlib__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
   if (status) {
     return status;
   }
@@ -259,7 +267,11 @@ const char* decode_once(bool frag_dst, bool frag_idat) {
 
   while (true) {
     status =
-        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, idat_reader);
+        wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, idat_reader,
+                                              ((wuffs_base__slice_u8){
+                                                  .ptr = work_buffer,
+                                                  .len = WORK_BUFFER_SIZE,
+                                              }));
 
     if (!status) {
       break;

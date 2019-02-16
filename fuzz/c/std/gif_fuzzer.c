@@ -56,9 +56,11 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
   // Use a {} code block so that "goto exit" doesn't trigger "jump bypasses
   // variable initialization" warnings.
   {
-    wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
-    const char* status = wuffs_gif__decoder__check_wuffs_version(
-        &dec, sizeof dec, WUFFS_VERSION);
+    wuffs_gif__decoder dec;
+    const char* status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        (hash & 1) ? WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED
+                   : 0);
     if (status) {
       ret = status;
       goto exit;

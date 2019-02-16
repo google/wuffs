@@ -86,8 +86,9 @@ static const char* decode() {
   if (!dec) {
     return "out of memory";
   }
-  const char* status = wuffs_deflate__decoder__check_wuffs_version(
-      dec, sizeof__wuffs_deflate__decoder(), WUFFS_VERSION);
+  const char* status = wuffs_deflate__decoder__initialize(
+      dec, sizeof__wuffs_deflate__decoder(), WUFFS_VERSION,
+      WUFFS_INITIALIZE__ALREADY_ZEROED);
   if (status) {
     free(dec);
     return status;
