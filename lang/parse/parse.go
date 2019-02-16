@@ -342,7 +342,21 @@ func (p *parser) parseFieldNode() (*a.Node, error) {
 }
 
 func (p *parser) parseExtraFieldNode() (*a.Node, error) {
-	return p.parseFieldNode1(a.FlagsPrivateData)
+	n, err := p.parseFieldNode1(a.FlagsPrivateData)
+	if err != nil {
+		return nil, err
+	}
+	typ := n.AsField().XType()
+	for typ.Decorator() == t.IDArray {
+		typ = typ.Inner()
+	}
+	if (typ.Decorator() != 0) ||
+		(typ.QID()[0] == t.IDBase) && (!typ.IsNumType() || typ.IsRefined()) {
+
+		return nil, fmt.Errorf(`parse: invalid extra-field type %q at %s:%d`,
+			n.AsField().XType().Str(p.tm), p.filename, p.line())
+	}
+	return n, nil
 }
 
 func (p *parser) parseFieldNode1(flags a.Flags) (*a.Node, error) {

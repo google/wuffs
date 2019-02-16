@@ -45,8 +45,8 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	bits = this.bits
 	n_bits = this.n_bits
 
-	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
-	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
+	lmask = ((1 as base.u32) << this.n_huffs_bits[0].min(x:9)) - 1
+	dmask = ((1 as base.u32) << this.n_huffs_bits[1].min(x:9)) - 1
 
 	while:loop not coroutine_resumed {
 		// Decode an lcode symbol from H-L.

@@ -107,7 +107,7 @@ pub struct decoder?(
 	//
 	// Exactly one of the eight bits 31-24 should be set.
 	huffs        array[2] array[huffs_table_size] base.u32,
-	n_huffs_bits array[2] base.u32[..9],
+	n_huffs_bits array[2] base.u32,
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
 	// was incomplete (e.g. due to a short read or write). RFC 1951 (DEFLATE)
@@ -126,7 +126,7 @@ pub struct decoder?(
 	//
 	// code_lengths[args.n_codes0 + i] holds the number of bits in the i'th
 	// code.
-	code_lengths array[320] base.u8[..15],
+	code_lengths array[320] base.u8,
 )
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -389,7 +389,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	}
 
 	// Decode the code lengths for the next two Huffman tables.
-	mask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
+	mask = ((1 as base.u32) << (this.n_huffs_bits[0].min(x:9))) - 1
 	i = 0
 	while i < (n_lit + n_dist) {
 		assert i < (288 + 32) via "a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"(b0:n_lit, c0:n_dist)
@@ -433,7 +433,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 			if i <= 0 {
 				return "?bad Huffman code length repetition"
 			}
-			rep_symbol = this.code_lengths[i - 1]
+			rep_symbol = this.code_lengths[i - 1] & 15
 			rep_count = 3
 			assert rep_count <= 11
 		} else if table_entry == 17 {
@@ -561,10 +561,10 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		assert i < 320 via "a < b: a < c; c <= b"(c:args.n_codes1)
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
-		if counts[this.code_lengths[i]] >= 320 {
+		if counts[this.code_lengths[i] & 15] >= 320 {
 			return "?internal error: inconsistent Huffman decoder state"
 		}
-		counts[this.code_lengths[i]] += 1
+		counts[this.code_lengths[i] & 15] += 1
 		i += 1
 	}
 	if ((counts[0] as base.u32) + args.n_codes0) == args.n_codes1 {
@@ -648,11 +648,11 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			return "?internal error: inconsistent Huffman decoder state"
 		}
 		if this.code_lengths[i] != 0 {
-			if offsets[this.code_lengths[i]] >= 320 {
+			if offsets[this.code_lengths[i] & 15] >= 320 {
 				return "?internal error: inconsistent Huffman decoder state"
 			}
-			symbols[offsets[this.code_lengths[i]]] = (i - args.n_codes0) as base.u16
-			offsets[this.code_lengths[i]] += 1
+			symbols[offsets[this.code_lengths[i] & 15]] = (i - args.n_codes0) as base.u16
+			offsets[this.code_lengths[i] & 15] += 1
 		}
 		i += 1
 	}
@@ -718,7 +718,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	if max_cl < 9 {
 		initial_high_bits = (1 as base.u32) << max_cl
 	}
-	prev_cl = this.code_lengths[args.n_codes0 + (symbols[0] as base.u32)] as base.u32
+	prev_cl = (this.code_lengths[args.n_codes0 + (symbols[0] as base.u32)] & 15) as base.u32
 	prev_redirect_key = 0xFFFFFFFF
 	top = 0
 	next_top = 512
@@ -733,7 +733,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		if (args.n_codes0 + (symbols[i] as base.u32)) >= 320 {
 			return "?internal error: inconsistent Huffman decoder state"
 		}
-		cl = this.code_lengths[args.n_codes0 + (symbols[i] as base.u32)] as base.u32
+		cl = (this.code_lengths[args.n_codes0 + (symbols[i] as base.u32)] & 15) as base.u32
 		if cl > prev_cl {
 			code <<= cl - prev_cl
 			if code >= (1 << 15) {

@@ -6930,7 +6930,9 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
       status = v_status;
       goto exit;
     }
-    v_mask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
+    v_mask = ((((uint32_t)(1)) << wuffs_base__u32__min(
+                   self->private_data.f_n_huffs_bits[0], 9)) -
+              1);
     v_i = 0;
   label_0_continue:;
     while (v_i < (v_n_lit + v_n_dist)) {
@@ -6975,7 +6977,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
           status = wuffs_deflate__error__bad_huffman_code_length_repetition;
           goto exit;
         }
-        v_rep_symbol = self->private_data.f_code_lengths[(v_i - 1)];
+        v_rep_symbol = (self->private_data.f_code_lengths[(v_i - 1)] & 15);
         v_rep_count = 3;
       } else if (v_table_entry == 17) {
         v_n_extra_bits = 3;
@@ -7104,10 +7106,10 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
 
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
-    if (v_counts[self->private_data.f_code_lengths[v_i]] >= 320) {
+    if (v_counts[(self->private_data.f_code_lengths[v_i] & 15)] >= 320) {
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
-    v_counts[self->private_data.f_code_lengths[v_i]] += 1;
+    v_counts[(self->private_data.f_code_lengths[v_i] & 15)] += 1;
     v_i += 1;
   }
   if ((((uint32_t)(v_counts[0])) + a_n_codes0) == a_n_codes1) {
@@ -7148,12 +7150,12 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
     if (self->private_data.f_code_lengths[v_i] != 0) {
-      if (v_offsets[self->private_data.f_code_lengths[v_i]] >= 320) {
+      if (v_offsets[(self->private_data.f_code_lengths[v_i] & 15)] >= 320) {
         return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
       }
-      v_symbols[v_offsets[self->private_data.f_code_lengths[v_i]]] =
+      v_symbols[v_offsets[(self->private_data.f_code_lengths[v_i] & 15)]] =
           ((uint16_t)((v_i - a_n_codes0)));
-      v_offsets[self->private_data.f_code_lengths[v_i]] += 1;
+      v_offsets[(self->private_data.f_code_lengths[v_i] & 15)] += 1;
     }
     v_i += 1;
   }
@@ -7196,8 +7198,9 @@ label_1_break:;
   if (v_max_cl < 9) {
     v_initial_high_bits = (((uint32_t)(1)) << v_max_cl);
   }
-  v_prev_cl = ((uint32_t)(self->private_data.f_code_lengths[(
-      a_n_codes0 + ((uint32_t)(v_symbols[0])))]));
+  v_prev_cl = ((uint32_t)((self->private_data.f_code_lengths[(
+                               a_n_codes0 + ((uint32_t)(v_symbols[0])))] &
+                           15)));
   v_prev_redirect_key = 4294967295;
   v_top = 0;
   v_next_top = 512;
@@ -7208,8 +7211,9 @@ label_1_break:;
     if ((a_n_codes0 + ((uint32_t)(v_symbols[v_i]))) >= 320) {
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
-    v_cl = ((uint32_t)(self->private_data.f_code_lengths[(
-        a_n_codes0 + ((uint32_t)(v_symbols[v_i])))]));
+    v_cl = ((uint32_t)((self->private_data.f_code_lengths[(
+                            a_n_codes0 + ((uint32_t)(v_symbols[v_i])))] &
+                        15)));
     if (v_cl > v_prev_cl) {
       v_code <<= (v_cl - v_prev_cl);
       if (v_code >= 32768) {
@@ -7362,8 +7366,12 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   }
   v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
-  v_lmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
-  v_dmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[1]) - 1);
+  v_lmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
+                  self->private_data.f_n_huffs_bits[0], 9)) -
+             1);
+  v_dmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
+                  self->private_data.f_n_huffs_bits[1], 9)) -
+             1);
 label_0_continue:;
   while ((((uint64_t)(io1_a_dst - iop_a_dst)) >= 258) &&
          (((uint64_t)(io1_a_src - iop_a_src)) >= 12)) {
@@ -7699,8 +7707,12 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
-    v_lmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
-    v_dmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[1]) - 1);
+    v_lmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
+                    self->private_data.f_n_huffs_bits[0], 9)) -
+               1);
+    v_dmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
+                    self->private_data.f_n_huffs_bits[1], 9)) -
+               1);
   label_0_continue:;
     while (!(self->private_impl.p_decode_huffman_slow[0] != 0)) {
       while (true) {
@@ -8370,7 +8382,7 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         }
         v_steps -= 1;
         v_o = ((v_o - 8) & 8191);
-        v_c = ((uint32_t)(self->private_data.f_prefixes[v_c]));
+        v_c = (((uint32_t)(self->private_data.f_prefixes[v_c])) & 4095);
       }
     label_1_break:;
       v_first_byte = self->private_data.f_suffixes[v_c][0];
