@@ -73,7 +73,12 @@ for a C compiler $CC, such as clang or gcc.
 
 uint8_t dst_buffer[DST_BUFFER_SIZE];
 uint8_t src_buffer[SRC_BUFFER_SIZE];
+#if WORK_BUFFER_SIZE > 0
 uint8_t work_buffer[WORK_BUFFER_SIZE];
+#else
+// Not all C/C++ compilers support 0-length arrays.
+uint8_t work_buffer[1];
+#endif
 
 // ignore_return_value suppresses errors from -Wall -Werror.
 static void ignore_return_value(int ignored) {}
