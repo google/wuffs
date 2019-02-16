@@ -2779,11 +2779,11 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 // ---------------- Public Consts
 
-#define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
+#define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
 static const uint64_t                                       //
     wuffs_deflate__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -3173,11 +3173,11 @@ extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
-#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 65535
+#define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
 static const uint64_t                                   //
     wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 65535;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -3480,11 +3480,11 @@ extern const char* wuffs_gzip__error__bad_header;
 
 // ---------------- Public Consts
 
-#define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
+#define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
 static const uint64_t                                    //
     wuffs_gzip__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -3655,11 +3655,11 @@ extern const char* wuffs_zlib__error__bad_parity_check;
 
 // ---------------- Public Consts
 
-#define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 33280
+#define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
 static const uint64_t                                    //
     wuffs_zlib__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 33280;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -6277,7 +6277,7 @@ wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
-  return wuffs_base__utility__make_range_ii_u64(33280, 33280);
+  return wuffs_base__utility__make_range_ii_u64(1, 1);
 }
 
 // -------- func deflate.decoder.decode_io_writer
@@ -8791,9 +8791,7 @@ wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
-  return wuffs_base__utility__make_range_ii_u64(
-      ((uint64_t)(self->private_impl.f_width)),
-      ((uint64_t)(self->private_impl.f_width)));
+  return wuffs_base__utility__make_range_ii_u64(1, 1);
 }
 
 // -------- func gif.decoder.restart_frame
@@ -10492,12 +10490,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         (iop_a_src += 1, wuffs_base__return_empty_struct());
       }
     label_1_break:;
-      if (((uint64_t)(self->private_impl.f_width)) <
-          ((uint64_t)(a_workbuf.len))) {
-        a_workbuf = wuffs_base__slice_u8__subslice_j(
-            a_workbuf, ((uint64_t)(self->private_impl.f_width)));
-      } else if (((uint64_t)(self->private_impl.f_width)) >
-                 ((uint64_t)(a_workbuf.len))) {
+      if (1 > ((uint64_t)(a_workbuf.len))) {
         status = wuffs_base__error__bad_workbuf_length;
         goto exit;
       }
@@ -10829,7 +10822,7 @@ wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
-  return wuffs_base__utility__make_range_ii_u64(33280, 33280);
+  return wuffs_base__utility__make_range_ii_u64(1, 1);
 }
 
 // -------- func gzip.decoder.decode_io_writer
@@ -11302,7 +11295,7 @@ wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
-  return wuffs_base__utility__make_range_ii_u64(33280, 33280);
+  return wuffs_base__utility__make_range_ii_u64(1, 1);
 }
 
 // -------- func zlib.decoder.decode_io_writer

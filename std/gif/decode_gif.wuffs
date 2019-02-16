@@ -24,8 +24,10 @@ pub status "?too much pixel data"
 
 pri status "?internal error: inconsistent ri/wi"
 
-// TODO: reference lzw.decoder_workbuf_len_max_incl_worst_case.
-pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 0xFFFF
+// TODO: replace the placeholder 1 value with either 0 or 0xFFFF (plus
+// lzw.decoder_workbuf_len_max_incl_worst_case), depending on whether we'll
+// need a per-pixel-row workbuf.
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
@@ -192,8 +194,8 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:this.width as base.u64,
-		max_incl:this.width as base.u64)
+		min_incl:decoder_workbuf_len_max_incl_worst_case,
+		max_incl:decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
@@ -717,9 +719,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			args.src.skip_fast!(actual:1, worst_case:1)
 		}
 
-		if (this.width as base.u64) < args.workbuf.length() {
-			args.workbuf = args.workbuf[:this.width as base.u64]
-		} else if (this.width as base.u64) > args.workbuf.length() {
+		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
 			return base."?bad workbuf length"
 		}
 

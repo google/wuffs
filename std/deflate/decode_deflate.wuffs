@@ -31,7 +31,9 @@ pri status "?internal error: inconsistent I/O"
 pri status "?internal error: inconsistent distance"
 pri status "?internal error: inconsistent n_bits"
 
-pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 32768 + 512
+// TODO: replace the placeholder 1 value with either 0 or (32768 + 512),
+// depending on whether we'll move decoder.history into the workbuf.
+pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
 // The next two tables were created by script/print-deflate-magic-numbers.go.
 //
