@@ -3847,8 +3847,10 @@ struct wuffs_zlib__decoder__struct {
 extern "C" {
 #endif
 
-static inline void  //
-wuffs_base__ignore_status(wuffs_base__status z) {}
+static inline wuffs_base__empty_struct  //
+wuffs_base__ignore_status(wuffs_base__status z) {
+  return ((wuffs_base__empty_struct){0});
+}
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,
@@ -10407,8 +10409,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       (memset(&self->private_data.f_lzw, 0, sizeof(wuffs_lzw__decoder)),
        wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
            &self->private_data.f_lzw, sizeof(wuffs_lzw__decoder), WUFFS_VERSION,
-           WUFFS_INITIALIZE__ALREADY_ZEROED)),
-       wuffs_base__return_empty_struct());
+           WUFFS_INITIALIZE__ALREADY_ZEROED)));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);

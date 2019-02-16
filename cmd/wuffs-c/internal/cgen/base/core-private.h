@@ -14,8 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-static inline void  //
-wuffs_base__ignore_status(wuffs_base__status z) {}
+static inline wuffs_base__empty_struct  //
+wuffs_base__ignore_status(wuffs_base__status z) {
+  return ((wuffs_base__empty_struct){0});
+}
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
 // It's not foolproof, given C doesn't automatically zero memory before use,

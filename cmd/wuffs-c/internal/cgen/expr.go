@@ -125,18 +125,18 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			}
 			b.printf(", 0, sizeof (%s%s))", g.packagePrefix(qid), qid[1].Str(g.tm))
 
-			if !isBaseRangeType(qid) {
+			if isBaseRangeType(qid) {
+				b.writes(", wuffs_base__return_empty_struct())")
+			} else {
 				b.printf(", wuffs_base__ignore_status("+
 					"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
-				b.printf(", sizeof (%s%s), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED))",
+				b.printf(", sizeof (%s%s), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED)))",
 					g.packagePrefix(qid), qid[1].Str(g.tm))
 			}
 
-			// TODO: wuffs_base__ignore_status could return an empty_struct.
-			b.writes(", wuffs_base__return_empty_struct())")
 			return nil
 		}
 
