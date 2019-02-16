@@ -116,8 +116,8 @@ pub struct decoder?(
 	compressed_ri base.u64,
 	compressed_wi base.u64,
 
-	swizzler   base.pixel_swizzler,
-	util       base.utility,
+	swizzler base.pixel_swizzler,
+	util     base.utility,
 )(
 	compressed array[4096] base.u8,
 

@@ -262,7 +262,12 @@ func measureVarNameLength(tm *t.Map, lineTokens []t.Token, remaining []t.Token) 
 
 	line := lineTokens[0].Line
 	length := len(tm.ByID(lineTokens[x].ID))
-	for (len(remaining) > x) && ((x == 0) || (remaining[0].ID == t.IDVar)) && (remaining[0].Line == line+1) {
+	for (len(remaining) > x) &&
+		((x == 0) || (remaining[0].ID == t.IDVar)) &&
+		(remaining[0].Line == line+1) &&
+		(remaining[x].Line == line+1) &&
+		(remaining[x].ID.IsIdent(tm)) {
+
 		line = remaining[0].Line
 		length = max(length, len(tm.ByID(remaining[x].ID)))
 
