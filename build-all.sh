@@ -67,3 +67,7 @@ wuffs bench  -skipgen -mimic -reps=1 -iterscale=1
 
 ./build-example.sh
 ./build-fuzz.sh
+for f in gen/bin/fuzz-*; do
+  echo "Running $f"
+  $f test/data > /dev/null
+done

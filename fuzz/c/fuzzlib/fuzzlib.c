@@ -78,58 +78,170 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
 #ifdef WUFFS_CONFIG__FUZZLIB_MAIN
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-int main(int argc, char** argv) {
-  int i;
-  for (i = 1; i < argc; i++) {
-    printf("%-50s", argv[i]);
+static int num_files_processed;
 
-    struct stat z;
-    int fd = open(argv[i], O_RDONLY, 0);
-    if (fd == -1) {
-      printf("\n");
-      fprintf(stderr, "FAIL: open: %s\n", strerror(errno));
-      return 1;
+static struct {
+  char buf[PATH_MAX];
+  size_t len;
+} relative_cwd;
+
+static int visit(char* filename);
+
+static int visit_dir(int fd) {
+  int cwd_fd = open(".", O_RDONLY, 0);
+  if (fchdir(fd)) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: fchdir: %s\n", strerror(errno));
+    return 1;
+  }
+
+  DIR* d = fdopendir(fd);
+  if (!d) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: fdopendir: %s\n", strerror(errno));
+    return 1;
+  }
+
+  printf("+dir\n");
+  while (true) {
+    struct dirent* e = readdir(d);
+    if (!e) {
+      break;
     }
-    if (fstat(fd, &z)) {
-      printf("\n");
-      fprintf(stderr, "FAIL: fstat: %s\n", strerror(errno));
-      return 1;
+    if ((e->d_name[0] == '\x00') || (e->d_name[0] == '.')) {
+      continue;
     }
-    if ((z.st_size < 0) || (0x7FFFFFFF < z.st_size)) {
-      printf("\n");
-      fprintf(stderr, "FAIL: file size out of bounds");
-      return 1;
+    int v = visit(e->d_name);
+    if (v) {
+      return v;
     }
-    size_t n = z.st_size;
-    void* data = mmap(NULL, n, PROT_READ, MAP_SHARED, fd, 0);
+  }
+
+  if (closedir(d)) {
+    fprintf(stderr, "FAIL: closedir: %s\n", strerror(errno));
+    return 1;
+  }
+  if (fchdir(cwd_fd)) {
+    fprintf(stderr, "FAIL: fchdir: %s\n", strerror(errno));
+    return 1;
+  }
+  if (close(cwd_fd)) {
+    fprintf(stderr, "FAIL: close: %s\n", strerror(errno));
+    return 1;
+  }
+  return 0;
+}
+
+static int visit_reg(int fd, off_t size) {
+  if ((size < 0) || (0x7FFFFFFF < size)) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: file size out of bounds");
+    return 1;
+  }
+
+  void* data = NULL;
+  if (size > 0) {
+    data = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
     if (data == MAP_FAILED) {
-      printf("\n");
+      printf("failed\n");
       fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
-      return 1;
-    }
-
-    const char* msg = llvmFuzzerTestOneInput((const uint8_t*)(data), n);
-    if (!msg) {
-      msg = "(null)";
-    }
-    printf(" %s\n", msg);
-
-    if (munmap(data, n)) {
-      fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
-      return 1;
-    }
-    if (close(fd)) {
-      fprintf(stderr, "FAIL: close: %s\n", strerror(errno));
       return 1;
     }
   }
-  printf("PASS: %d files processed\n", argc > 1 ? argc - 1 : 0);
+
+  const char* msg = llvmFuzzerTestOneInput((const uint8_t*)(data), size);
+  if (!msg) {
+    msg = "+ok";
+  }
+  printf("%s\n", msg);
+
+  if ((size > 0) && munmap(data, size)) {
+    fprintf(stderr, "FAIL: mmap: %s\n", strerror(errno));
+    return 1;
+  }
+  if (close(fd)) {
+    fprintf(stderr, "FAIL: close: %s\n", strerror(errno));
+    return 1;
+  }
+  return 0;
+}
+
+static int visit(char* filename) {
+  num_files_processed++;
+  if (!filename || (filename[0] == '\x00')) {
+    fprintf(stderr, "FAIL: invalid filename\n");
+    return 1;
+  }
+  int n = printf("- %s%s", relative_cwd.buf, filename);
+  printf("%*s", (60 > n) ? (60 - n) : 1, "");
+
+  struct stat z;
+  int fd = open(filename, O_RDONLY, 0);
+  if (fd == -1) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: open: %s\n", strerror(errno));
+    return 1;
+  }
+  if (fstat(fd, &z)) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: fstat: %s\n", strerror(errno));
+    return 1;
+  }
+
+  if (S_ISREG(z.st_mode)) {
+    return visit_reg(fd, z.st_size);
+  } else if (!S_ISDIR(z.st_mode)) {
+    printf("skipped\n");
+    return 0;
+  }
+
+  size_t old_len = relative_cwd.len;
+  size_t filename_len = strlen(filename);
+  size_t new_len = old_len + strlen(filename);
+  bool slash = filename[filename_len - 1] != '/';
+  if (slash) {
+    new_len++;
+  }
+  if ((filename_len >= PATH_MAX) || (new_len >= PATH_MAX)) {
+    printf("failed\n");
+    fprintf(stderr, "FAIL: path is too long\n");
+    return 1;
+  }
+  memcpy(relative_cwd.buf + old_len, filename, filename_len);
+
+  if (slash) {
+    relative_cwd.buf[new_len - 1] = '/';
+  }
+  relative_cwd.buf[new_len] = '\x00';
+  relative_cwd.len = new_len;
+
+  int v = visit_dir(fd);
+
+  relative_cwd.buf[old_len] = '\x00';
+  relative_cwd.len = old_len;
+  return v;
+}
+
+int main(int argc, char** argv) {
+  num_files_processed = 0;
+  relative_cwd.len = 0;
+
+  int i;
+  for (i = 1; i < argc; i++) {
+    int v = visit(argv[i]);
+    if (v) {
+      return v;
+    }
+  }
+  printf("PASS: %d files processed\n", num_files_processed);
   return 0;
 }
 
