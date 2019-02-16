@@ -130,8 +130,9 @@ const char* test_wuffs_adler32_golden() {
     int j;
     for (j = 0; j < 2; j++) {
       wuffs_adler32__hasher checksum;
-      status = wuffs_adler32__hasher__initialize(&checksum, sizeof checksum,
-                                                 WUFFS_VERSION, 0);
+      status = wuffs_adler32__hasher__initialize(
+          &checksum, sizeof checksum, WUFFS_VERSION,
+          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
       if (status) {
         RETURN_FAIL("initialize: \"%s\"", status);
       }
@@ -193,7 +194,8 @@ const char* test_wuffs_adler32_pi() {
   for (i = 0; i < 64; i++) {
     wuffs_adler32__hasher checksum;
     const char* status = wuffs_adler32__hasher__initialize(
-        &checksum, sizeof checksum, WUFFS_VERSION, 0);
+        &checksum, sizeof checksum, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
@@ -224,7 +226,8 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   }
   wuffs_adler32__hasher checksum;
   const char* status = wuffs_adler32__hasher__initialize(
-      &checksum, sizeof checksum, WUFFS_VERSION, 0);
+      &checksum, sizeof checksum, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     return status;
   }

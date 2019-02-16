@@ -88,6 +88,32 @@ extern "C" {
 // has already been set to all zeroes.
 #define WUFFS_INITIALIZE__ALREADY_ZEROED ((uint32_t)0x00000001)
 
+// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED means that, absent
+// WUFFS_INITIALIZE__ALREADY_ZEROED, only some of the "self" receiver struct
+// value will be set to all zeroes. Internal buffers, which tend to be a large
+// proportion of the struct's size, will be left uninitialized. Internal means
+// that the buffer is contained by the receiver struct, as opposed to being
+// passed as a separately allocated "work buffer".
+//
+// With or without this bit set, the Wuffs compiler still enforces that no
+// reads or writes will overflow internal buffers' bounds. Even with this bit
+// set, the Wuffs standard library also considers reading from an uninitialized
+// buffer to be a bug, and strives to never do so, but unlike buffer overflows,
+// it is not a bug class that the Wuffs compiler eliminates.
+//
+// For those paranoid about security, leave this bit unset, so that
+// wuffs_foo__bar__initialize will initialize the entire struct value to zeroes
+// (unless WUFFS_INITIALIZE__ALREADY_ZEROED is set).
+//
+// Setting this bit gives a small absolute improvement on micro-benchmarks, but
+// this can be a large relative effect, up to 2x faster, when the actual work
+// to be done is also small, such as decompressing small input. See git commit
+// 438fc105 "Move some struct fields to private_data" for some numbers and a
+// discussion, noting that its commit message was written before this
+// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED option was defined.
+#define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
+  ((uint32_t)0x00000002)
+
 // --------
 
 // wuffs_base__empty_struct is used when a Wuffs function returns an empty
@@ -4965,11 +4991,19 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
 }
@@ -5964,11 +5998,19 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
 }
@@ -6242,11 +6284,19 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
 }
@@ -8025,11 +8075,19 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
 }
@@ -8601,11 +8659,19 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   {
     wuffs_base__status z = wuffs_lzw__decoder__initialize(
         &self->private_data.f_lzw, sizeof(self->private_data.f_lzw),
@@ -10756,11 +10822,19 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   {
     wuffs_base__status z = wuffs_crc32__ieee_hasher__initialize(
         &self->private_data.f_checksum, sizeof(self->private_data.f_checksum),
@@ -11229,11 +11303,19 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
       (((wuffs_version >> 16) & 0xFFFF) > WUFFS_VERSION_MINOR)) {
     return wuffs_base__error__bad_wuffs_version;
   }
-  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) == 0) {
+
+  if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+    if (self->private_impl.magic != 0) {
+      return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+    }
+  } else if ((initialize_flags &
+              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
     memset(&(self->private_impl), 0, sizeof(self->private_impl));
-  } else if (self->private_impl.magic != 0) {
-    return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
+  } else {
+    memset(self, 0, sizeof(*self));
+    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
   }
+
   {
     wuffs_base__status z = wuffs_adler32__hasher__initialize(
         &self->private_data.f_checksum, sizeof(self->private_data.f_checksum),

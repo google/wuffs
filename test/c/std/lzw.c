@@ -108,7 +108,9 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   }
 
   wuffs_lzw__decoder dec;
-  status = wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_lzw__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -224,8 +226,9 @@ const char* test_wuffs_lzw_decode_output_bad() {
   src.data.ptr[3] = 0xFF;
 
   wuffs_lzw__decoder dec;
-  const char* status =
-      wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_lzw__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -268,8 +271,9 @@ const char* test_wuffs_lzw_decode_output_empty() {
   src.data.ptr[1] = 0x01;
 
   wuffs_lzw__decoder dec;
-  const char* status =
-      wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_lzw__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -325,7 +329,9 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
     got.meta.wi = 0;
     src.meta.ri = 1;  // Skip the literal width.
     wuffs_lzw__decoder dec;
-    status = wuffs_lzw__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+    status = wuffs_lzw__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }

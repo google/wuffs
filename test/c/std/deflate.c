@@ -140,8 +140,9 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   wuffs_deflate__decoder dec;
-  const char* status =
-      wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_deflate__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -267,8 +268,9 @@ const char* test_wuffs_deflate_decode_split_src() {
     got.meta.wi = 0;
 
     wuffs_deflate__decoder dec;
-    status =
-        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+    status = wuffs_deflate__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
@@ -362,8 +364,9 @@ const char* test_wuffs_deflate_history_full() {
   int i;
   for (i = -2; i <= +2; i++) {
     wuffs_deflate__decoder dec;
-    status =
-        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+    status = wuffs_deflate__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
@@ -442,8 +445,9 @@ const char* test_wuffs_deflate_history_partial() {
     wuffs_deflate__decoder dec;
     memset(&(dec.private_data.f_history), 0,
            sizeof(dec.private_data.f_history));
-    status =
-        wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+    status = wuffs_deflate__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
@@ -529,8 +533,9 @@ const char* test_wuffs_deflate_table_redirect() {
   // 2nd is the key in the second level table (variable bits).
 
   wuffs_deflate__decoder dec;
-  const char* status =
-      wuffs_deflate__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_deflate__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }

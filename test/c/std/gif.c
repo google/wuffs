@@ -85,8 +85,9 @@ const char* test_basic_bad_receiver() {
 const char* test_basic_bad_sizeof_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
-  const char* status =
-      wuffs_gif__decoder__initialize(&dec, 0, WUFFS_VERSION, 0);
+  const char* status = wuffs_gif__decoder__initialize(
+      &dec, 0, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status != wuffs_base__error__bad_sizeof_receiver) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
                 wuffs_base__error__bad_sizeof_receiver);
@@ -98,7 +99,8 @@ const char* test_basic_bad_wuffs_version() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
   const char* status = wuffs_gif__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION ^ 0x123456789ABC, 0);
+      &dec, sizeof dec, WUFFS_VERSION ^ 0x123456789ABC,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status != wuffs_base__error__bad_wuffs_version) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
                 wuffs_base__error__bad_wuffs_version);
@@ -171,8 +173,9 @@ const char* test_basic_status_used_package() {
 const char* test_basic_sub_struct_initializer() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec;
-  const char* status =
-      wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -193,8 +196,9 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
                              wuffs_base__pixel_format pixfmt,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
-  const char* status =
-      wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  const char* status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     return status;
   }
@@ -260,7 +264,9 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -474,7 +480,9 @@ const char* test_wuffs_gif_call_interleaved() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -520,7 +528,9 @@ const char* test_wuffs_gif_call_sequence() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -555,7 +565,9 @@ const char* do_test_wuffs_gif_decode_animated(
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -678,7 +690,9 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -857,7 +871,9 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -891,7 +907,9 @@ const char* test_wuffs_gif_decode_missing_two_src_bytes() {
   src.meta.wi -= 2;
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -938,7 +956,9 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -1004,7 +1024,9 @@ const char* test_wuffs_gif_frame_dirty_rect() {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -1067,7 +1089,9 @@ const char* do_test_wuffs_gif_num_decoded(bool frame_config) {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -1147,7 +1171,9 @@ const char* do_test_wuffs_gif_io_position(bool chunked) {
   }
 
   wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(&dec, sizeof dec, WUFFS_VERSION, 0);
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
