@@ -107,34 +107,24 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 			}
 			qid := recvTyp.QID()
 
-			// Generate a 2 or 3 part expression using the comma operator:
-			// "(memset call, check_wuffs_version call, return_empty_struct
-			// call)". The final part is a function call (to a static inline
-			// function) instead of a struct literal, to avoid a "expression
-			// result unused" compiler error.
-			//
-			// The middle part, the check_wuffs_version call, is optional, for
-			// some built-in types.
-
-			// TODO: drop the memset and the WUFFS_INITIALIZE__ALREADY_ZEROED.
-
-			b.printf("(memset(%s", addr)
-			// TODO: ensure that the recv expression is idempotent.
-			if err := g.writeExpr(b, recv, depth); err != nil {
-				return err
-			}
-			b.printf(", 0, sizeof (%s%s))", g.packagePrefix(qid), qid[1].Str(g.tm))
-
 			if isBaseRangeType(qid) {
-				b.writes(", wuffs_base__return_empty_struct())")
+				// Generate a 2 part expression using the comma operator: "(memset
+				// call, return_empty_struct call)". The final part is a function
+				// call (to a static inline function) instead of a struct literal,
+				// to avoid a "expression result unused" compiler error.
+				b.printf("(memset(%s", addr)
+				if err := g.writeExpr(b, recv, depth); err != nil {
+					return err
+				}
+				b.printf(", 0, sizeof (%s%s)), wuffs_base__return_empty_struct())",
+					g.packagePrefix(qid), qid[1].Str(g.tm))
 			} else {
-				b.printf(", wuffs_base__ignore_status("+
+				b.printf("wuffs_base__ignore_status("+
 					"%s%s__initialize(%s", g.packagePrefix(qid), qid[1].Str(g.tm), addr)
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
-				b.printf(", sizeof (%s%s), WUFFS_VERSION, WUFFS_INITIALIZE__ALREADY_ZEROED)))",
-					g.packagePrefix(qid), qid[1].Str(g.tm))
+				b.printf(", sizeof (%s%s), WUFFS_VERSION, 0))", g.packagePrefix(qid), qid[1].Str(g.tm))
 			}
 
 			return nil

@@ -10406,10 +10406,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
             .len = 1024,
         }));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
-      (memset(&self->private_data.f_lzw, 0, sizeof(wuffs_lzw__decoder)),
-       wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
-           &self->private_data.f_lzw, sizeof(wuffs_lzw__decoder), WUFFS_VERSION,
-           WUFFS_INITIALIZE__ALREADY_ZEROED)));
+      wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
+          &self->private_data.f_lzw, sizeof(wuffs_lzw__decoder), WUFFS_VERSION,
+          0));
     }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
