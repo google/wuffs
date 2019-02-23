@@ -19,8 +19,6 @@ pub status "?bad extension label"
 pub status "?bad graphic control"
 pub status "?bad header"
 pub status "?bad literal width"
-pub status "?not enough pixel data"
-pub status "?too much pixel data"
 
 pri status "?internal error: inconsistent ri/wi"
 
@@ -797,7 +795,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		src = args.src[src_ri:]
 
 		if this.dst_y >= this.frame_rect_y1 {
-			return "?too much pixel data"
+			return base."?too much data"
 		}
 
 		// First, copy from src to that part of the frame rect that is inside

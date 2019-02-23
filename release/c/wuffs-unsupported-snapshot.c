@@ -186,6 +186,7 @@ extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
 extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
 extern const char* wuffs_base__error__not_enough_data;
+extern const char* wuffs_base__error__too_much_data;
 
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
@@ -3195,8 +3196,6 @@ extern const char* wuffs_gif__error__bad_extension_label;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
-extern const char* wuffs_gif__error__not_enough_pixel_data;
-extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
@@ -4808,6 +4807,7 @@ const char* wuffs_base__error__initialize_not_called =
 const char* wuffs_base__error__interleaved_coroutine_calls =
     "?base: interleaved coroutine calls";
 const char* wuffs_base__error__not_enough_data = "?base: not enough data";
+const char* wuffs_base__error__too_much_data = "?base: too much data";
 
 // ---------------- Images
 
@@ -8583,9 +8583,6 @@ const char* wuffs_gif__error__bad_extension_label = "?gif: bad extension label";
 const char* wuffs_gif__error__bad_graphic_control = "?gif: bad graphic control";
 const char* wuffs_gif__error__bad_header = "?gif: bad header";
 const char* wuffs_gif__error__bad_literal_width = "?gif: bad literal width";
-const char* wuffs_gif__error__not_enough_pixel_data =
-    "?gif: not enough pixel data";
-const char* wuffs_gif__error__too_much_pixel_data = "?gif: too much pixel data";
 const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
     "?gif: internal error: inconsistent ri/wi";
 
@@ -10748,7 +10745,7 @@ label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
     if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
-      return wuffs_gif__error__too_much_pixel_data;
+      return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) *

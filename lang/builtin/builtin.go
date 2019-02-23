@@ -42,6 +42,7 @@ var Statuses = [...]string{
 	`"?initialize not called"`,
 	`"?interleaved coroutine calls"`,
 	`"?not enough data"`,
+	`"?too much data"`,
 }
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,

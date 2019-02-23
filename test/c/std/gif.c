@@ -1058,7 +1058,7 @@ const char* test_wuffs_gif_decode_too_much_data() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_gif__error__too_much_pixel_data, true);
+      src, wuffs_base__error__too_much_data, true);
 }
 
 const char* test_wuffs_gif_frame_dirty_rect() {
