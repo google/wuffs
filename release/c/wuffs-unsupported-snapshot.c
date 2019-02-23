@@ -185,6 +185,7 @@ extern const char* wuffs_base__error__disabled_by_previous_error;
 extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
 extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
+extern const char* wuffs_base__error__not_enough_data;
 
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
@@ -4806,6 +4807,7 @@ const char* wuffs_base__error__initialize_not_called =
     "?base: initialize not called";
 const char* wuffs_base__error__interleaved_coroutine_calls =
     "?base: interleaved coroutine calls";
+const char* wuffs_base__error__not_enough_data = "?base: not enough data";
 
 // ---------------- Images
 
@@ -10686,6 +10688,14 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   label_0_break:;
     self->private_impl.f_compressed_ri = 0;
     self->private_impl.f_compressed_wi = 0;
+    if ((self->private_impl.f_dst_y < self->private_impl.f_frame_rect_y1) &&
+        (self->private_impl.f_frame_rect_x0 !=
+         self->private_impl.f_frame_rect_x1) &&
+        (self->private_impl.f_frame_rect_y0 !=
+         self->private_impl.f_frame_rect_y1)) {
+      status = wuffs_base__error__not_enough_data;
+      goto exit;
+    }
 
     goto ok;
   ok:

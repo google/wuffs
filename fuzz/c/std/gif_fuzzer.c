@@ -125,6 +125,16 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
 
       status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf,
                                                 NULL);
+
+      wuffs_base__rect_ie_u32 frame_rect =
+          wuffs_base__frame_config__bounds(&fc);
+      wuffs_base__rect_ie_u32 dirty_rect =
+          wuffs_gif__decoder__frame_dirty_rect(&dec);
+      if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
+        ret = "internal error: frame_rect does not contain dirty_rect";
+        goto exit;
+      }
+
       if (status) {
         if ((status != wuffs_base__warning__end_of_data) || !seen_ok) {
           ret = status;
@@ -133,12 +143,8 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
       }
       seen_ok = true;
 
-      wuffs_base__rect_ie_u32 frame_rect =
-          wuffs_base__frame_config__bounds(&fc);
-      wuffs_base__rect_ie_u32 dirty_rect =
-          wuffs_gif__decoder__frame_dirty_rect(&dec);
-      if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
-        ret = "internal error: frame_rect does not contain dirty_rect";
+      if (!wuffs_base__rect_ie_u32__equals(&frame_rect, dirty_rect)) {
+        ret = "internal error: frame_rect does not equal dirty_rect";
         goto exit;
       }
     }

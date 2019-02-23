@@ -467,6 +467,48 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   return NULL;
 }
 
+const char* do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
+                                               const char* want_status,
+                                               bool want_dirty_rect_is_empty) {
+  wuffs_gif__decoder dec;
+  const char* status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+  if (status) {
+    RETURN_FAIL("initialize: \"%s\"", status);
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+
+  status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+  if (status) {
+    RETURN_FAIL("decode_image_config: got \"%s\"", status);
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                    global_pixel_slice);
+  if (status) {
+    RETURN_FAIL("set_from_slice: \"%s\"", status);
+  }
+
+  status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
+                                            global_work_slice, NULL);
+  if (status != want_status) {
+    RETURN_FAIL("decode_frame: got \"%s\", want \"%s\"", status, want_status);
+  }
+
+  wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
+  bool dirty_rect_is_empty = wuffs_base__rect_ie_u32__is_empty(&r);
+  if (dirty_rect_is_empty != want_dirty_rect_is_empty) {
+    RETURN_FAIL("dirty_rect.is_empty: got %s, want %s",
+                dirty_rect_is_empty ? "true" : "false",
+                want_dirty_rect_is_empty ? "true" : "false");
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_call_interleaved() {
   CHECK_FOCUS(__func__);
 
@@ -906,42 +948,8 @@ const char* test_wuffs_gif_decode_missing_two_src_bytes() {
   }
   src.meta.wi -= 2;
 
-  wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-  if (status) {
-    RETURN_FAIL("initialize: \"%s\"", status);
-  }
-
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-
-  status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-  if (status) {
-    RETURN_FAIL("decode_image_config: got \"%s\"", status);
-  }
-
-  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-  status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                    global_pixel_slice);
-  if (status) {
-    RETURN_FAIL("set_from_slice: \"%s\"", status);
-  }
-
-  status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
-                                            global_work_slice, NULL);
-  if (status != wuffs_base__suspension__short_read) {
-    RETURN_FAIL("decode_frame: got \"%s\"", status);
-  }
-
-  // Even we though we haven't seen the 0x00 end-of-block, we should still have
-  // some pixel data.
-  wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
-  if (wuffs_base__rect_ie_u32__is_empty(&r)) {
-    RETURN_FAIL("dirty_rect: got empty, want non-empty");
-  }
-  return NULL;
+  return do_test_wuffs_gif_decode_expecting(
+      src, wuffs_base__suspension__short_read, false);
 }
 
 const char* test_wuffs_gif_decode_multiple_loop_counts() {
@@ -1009,6 +1017,48 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
                 i, got, want);
   }
   return NULL;
+}
+
+const char* test_wuffs_gif_decode_not_enough_data() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-not-enough-data.gif");
+  if (status) {
+    return status;
+  }
+
+  // TODO: want_dirty_rect_is_empty should probably be false, not true. It's
+  // true because the error sets the decoder state (specifically, the
+  // private_impl.magic field) to WUFFS_BASE__DISABLED, so that
+  // frame_dirty_rect returns the zero value (an empty rect).
+  //
+  // Perhaps "not enough data" should be a warning, not an error??
+  //
+  // Ditto for the "too much data" test.
+  return do_test_wuffs_gif_decode_expecting(
+      src, wuffs_base__error__not_enough_data, true);
+}
+
+const char* test_wuffs_gif_decode_too_much_data() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-too-much-data.gif");
+  if (status) {
+    return status;
+  }
+
+  return do_test_wuffs_gif_decode_expecting(
+      src, wuffs_gif__error__too_much_pixel_data, true);
 }
 
 const char* test_wuffs_gif_frame_dirty_rect() {
@@ -1627,6 +1677,8 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_png,                    //
     test_wuffs_gif_decode_missing_two_src_bytes,             //
     test_wuffs_gif_decode_multiple_loop_counts,              //
+    test_wuffs_gif_decode_not_enough_data,                   //
+    test_wuffs_gif_decode_too_much_data,                     //
     test_wuffs_gif_frame_dirty_rect,                         //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //

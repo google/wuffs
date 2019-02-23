@@ -41,6 +41,7 @@ var Statuses = [...]string{
 	`"?initialize falsely claimed already zeroed"`,
 	`"?initialize not called"`,
 	`"?interleaved coroutine calls"`,
+	`"?not enough data"`,
 }
 
 // TODO: a collection of forbidden variable names like and, or, not, as, ref,
