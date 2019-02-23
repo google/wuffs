@@ -642,8 +642,14 @@ func (p *parser) parseStatement1() (*a.Node, error) {
 
 	case t.IDReturn, t.IDYield:
 		p.src = p.src[1:]
-		if x == t.IDYield && !p.funcEffect.Coroutine() {
-			return nil, fmt.Errorf(`parse: yield within non-coroutine at %s:%d`, p.filename, p.line())
+		if x == t.IDYield {
+			if !p.funcEffect.Coroutine() {
+				return nil, fmt.Errorf(`parse: yield within non-coroutine at %s:%d`, p.filename, p.line())
+			}
+			if p.peek1() != t.IDQuestion {
+				return nil, fmt.Errorf(`parse: yield not followed by '?' at %s:%d`, p.filename, p.line())
+			}
+			p.src = p.src[1:]
 		}
 		value, err := p.parseExpr()
 		if err != nil {

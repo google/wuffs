@@ -164,6 +164,8 @@ func Render(w io.Writer, tm *t.Map, src []t.Token, comments []string) (err error
 					return errors.New("render: too many \"}\" tokens")
 				}
 				indent--
+			} else if (tok.ID == t.IDQuestion) && (prevID == t.IDYield) {
+				buf = append(buf, ' ')
 			}
 
 			prevIsTightRight = tok.ID.IsTightRight()

@@ -188,7 +188,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 				this.history_index = (this.history_index & 0x7FFF) + ((n_copied & 0x7FFF) as base.u32) + already_full
 			}
 		}
-		yield status
+		yield? status
 	}
 }
 
@@ -275,9 +275,9 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 		}
 		length -= n_copied
 		if args.dst.available() == 0 {
-			yield base."$short write"
+			yield? base."$short write"
 		} else {
-			yield base."$short read"
+			yield? base."$short read"
 		}
 	}
 }

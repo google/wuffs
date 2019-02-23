@@ -74,7 +74,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 		if status.is_ok() {
 			break
 		}
-		yield status
+		yield? status
 	}
 	checksum_want = args.src.read_u32be?()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
