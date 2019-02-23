@@ -149,13 +149,16 @@ typedef struct wuffs_deflate__decoder__struct {
     uint32_t magic;
     uint32_t f_bits;
     uint32_t f_n_bits;
-    uint32_t f_huffs[2][1234];
-    uint32_t f_n_huffs_bits[2];
-    uint8_t f_history[32768];
     uint32_t f_history_index;
-    uint8_t f_code_lengths[320];
     bool f_end_of_block;
   } private_impl;
+  struct {
+    // 1024 is huffs_table_size in std/deflate/decode_deflate.wuffs.
+    uint32_t f_huffs[2][1024];
+    uint32_t f_n_huffs_bits[2];
+    uint8_t f_history[32768];
+    uint8_t f_code_lengths[320];
+  } private_data;
 } wuffs_deflate__decoder;
 
 const char* wuffs_base__error__bad_argument = "?base: bad argument";
@@ -275,8 +278,8 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Initialize other local variables.
   uint8_t* pdst_mark = a_dst.private_impl.mark ? a_dst.private_impl.mark : pdst;
-  uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
-  uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
+  uint32_t lmask = MASK(self->private_data.f_n_huffs_bits[0]);
+  uint32_t dmask = MASK(self->private_data.f_n_huffs_bits[1]);
 
 outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
@@ -310,7 +313,7 @@ outer_loop:
 #endif
 
     // Decode an lcode symbol from H-L.
-    uint32_t table_entry = self->private_impl.f_huffs[0][bits & lmask];
+    uint32_t table_entry = self->private_data.f_huffs[0][bits & lmask];
     while (true) {
       uint32_t n = table_entry & 0x0F;
       bits >>= n;
@@ -336,7 +339,7 @@ outer_loop:
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
       uint32_t mask = MASK((table_entry >> 4) & 0x0F);
-      table_entry = self->private_impl.f_huffs[0][top + (bits & mask)];
+      table_entry = self->private_data.f_huffs[0][top + (bits & mask)];
     }
 
     // length = base_number_minus_3 + 3 + extra_bits.
@@ -367,7 +370,7 @@ outer_loop:
 #endif
 
     // Decode a dcode symbol from H-D.
-    table_entry = self->private_impl.f_huffs[1][bits & dmask];
+    table_entry = self->private_data.f_huffs[1][bits & dmask];
     while (true) {
       uint32_t n = table_entry & 0x0F;
       bits >>= n;
@@ -383,7 +386,7 @@ outer_loop:
       }
       uint32_t top = (table_entry >> 8) & 0xFFFF;
       uint32_t mask = MASK((table_entry >> 4) & 0x0F);
-      table_entry = self->private_impl.f_huffs[1][top + (bits & mask)];
+      table_entry = self->private_data.f_huffs[1][top + (bits & mask)];
     }
 
     // dist_minus_1 = base_number_minus_1 + extra_bits.
@@ -429,13 +432,13 @@ outer_loop:
           (self->private_impl.f_history_index - hdist) & 0x7FFF;
       uint32_t available = 0x8000 - history_index;
       uint32_t n_copied = (hlen < available) ? hlen : available;
-      memmove(pdst, self->private_impl.f_history + history_index, n_copied);
+      memmove(pdst, self->private_data.f_history + history_index, n_copied);
       pdst += n_copied;
 
       // Copy from the left edge of the f_history array.
       if (hlen > n_copied) {
         hlen -= n_copied;
-        memmove(pdst, self->private_impl.f_history, hlen);
+        memmove(pdst, self->private_data.f_history, hlen);
         pdst += hlen;
       }
 
