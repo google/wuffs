@@ -41,8 +41,8 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 	bits = this.bits
 	n_bits = this.n_bits
 
-	lmask = ((1 as base.u32) << this.n_huffs_bits[0].min(x:9)) - 1
-	dmask = ((1 as base.u32) << this.n_huffs_bits[1].min(x:9)) - 1
+	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
+	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
 
 	// Check up front, on each iteration, that we have enough buffer space to
 	// both read (12 bytes) and write (258 bytes) as much as we need to. Doing

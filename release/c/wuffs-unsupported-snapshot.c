@@ -2878,6 +2878,7 @@ struct wuffs_deflate__decoder__struct {
     uint32_t f_bits;
     uint32_t f_n_bits;
     uint32_t f_history_index;
+    uint32_t f_n_huffs_bits[2];
     bool f_end_of_block;
 
     uint32_t p_decode_io_writer[1];
@@ -2889,7 +2890,6 @@ struct wuffs_deflate__decoder__struct {
 
   struct {
     uint32_t f_huffs[2][1024];
-    uint32_t f_n_huffs_bits[2];
     uint8_t f_history[32768];
     uint8_t f_code_lengths[320];
 
@@ -6944,9 +6944,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
       status = v_status;
       goto exit;
     }
-    v_mask = ((((uint32_t)(1)) << wuffs_base__u32__min(
-                   self->private_data.f_n_huffs_bits[0], 9)) -
-              1);
+    v_mask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_i = 0;
   label_0_continue:;
     while (v_i < (v_n_lit + v_n_dist)) {
@@ -7196,9 +7194,9 @@ label_0_break:;
   }
 label_1_break:;
   if (v_max_cl <= 9) {
-    self->private_data.f_n_huffs_bits[a_which] = v_max_cl;
+    self->private_impl.f_n_huffs_bits[a_which] = v_max_cl;
   } else {
-    self->private_data.f_n_huffs_bits[a_which] = 9;
+    self->private_impl.f_n_huffs_bits[a_which] = 9;
   }
   v_i = 0;
   if ((v_n_symbols != ((uint32_t)(v_offsets[v_max_cl]))) ||
@@ -7380,12 +7378,8 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   }
   v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
-  v_lmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
-                  self->private_data.f_n_huffs_bits[0], 9)) -
-             1);
-  v_dmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
-                  self->private_data.f_n_huffs_bits[1], 9)) -
-             1);
+  v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+  v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
 label_0_continue:;
   while ((((uint64_t)(io1_a_dst - iop_a_dst)) >= 258) &&
          (((uint64_t)(io1_a_src - iop_a_src)) >= 12)) {
@@ -7721,12 +7715,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
-    v_lmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
-                    self->private_data.f_n_huffs_bits[0], 9)) -
-               1);
-    v_dmask = ((((uint32_t)(1)) << wuffs_base__u32__min(
-                    self->private_data.f_n_huffs_bits[1], 9)) -
-               1);
+    v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+    v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
     while (!(self->private_impl.p_decode_huffman_slow[0] != 0)) {
       while (true) {

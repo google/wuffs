@@ -150,12 +150,12 @@ typedef struct wuffs_deflate__decoder__struct {
     uint32_t f_bits;
     uint32_t f_n_bits;
     uint32_t f_history_index;
+    uint32_t f_n_huffs_bits[2];
     bool f_end_of_block;
   } private_impl;
   struct {
     // 1024 is huffs_table_size in std/deflate/decode_deflate.wuffs.
     uint32_t f_huffs[2][1024];
-    uint32_t f_n_huffs_bits[2];
     uint8_t f_history[32768];
     uint8_t f_code_lengths[320];
   } private_data;
@@ -278,8 +278,8 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
 
   // Initialize other local variables.
   uint8_t* pdst_mark = a_dst.private_impl.mark ? a_dst.private_impl.mark : pdst;
-  uint32_t lmask = MASK(self->private_data.f_n_huffs_bits[0]);
-  uint32_t dmask = MASK(self->private_data.f_n_huffs_bits[1]);
+  uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
+  uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
 
 outer_loop:
   while ((pdst <= qdst) && (psrc <= qsrc)) {
