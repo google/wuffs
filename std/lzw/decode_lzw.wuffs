@@ -53,11 +53,13 @@ pub struct decoder?(
 	// might as well save it explicitly as a decoder field.
 	read_from_return_value base.u32,
 
+	// read_from per-code state.
+	prefixes array[4096] base.u16[..4095],
+
 	util base.utility,
 )(
 	// read_from per-code state.
 	suffixes array[4096] array[8] base.u8,
-	prefixes array[4096] base.u16,
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.
 	lm1s array[4096] base.u16,
@@ -262,7 +264,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				// This line is essentially "o -= 8". The "& 8191" is a no-op
 				// in practice, but is necessary for the overflow checker.
 				o = (o ~mod- 8) & 8191
-				c = (this.prefixes[c] as base.u32) & 4095
+				c = this.prefixes[c] as base.u32
 			}
 			first_byte = this.suffixes[c][0]
 

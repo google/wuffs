@@ -3093,6 +3093,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_output_ri;
     uint32_t f_output_wi;
     uint32_t f_read_from_return_value;
+    uint16_t f_prefixes[4096];
 
     uint32_t p_decode_io_writer[1];
     uint32_t p_write_to[1];
@@ -3100,7 +3101,6 @@ struct wuffs_lzw__decoder__struct {
 
   struct {
     uint8_t f_suffixes[4096][8];
-    uint16_t f_prefixes[4096];
     uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
 
@@ -8352,15 +8352,15 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         v_lm1_a = ((self->private_data.f_lm1s[v_prev_code] + 1) & 4095);
         self->private_data.f_lm1s[v_save_code] = v_lm1_a;
         if ((v_lm1_a % 8) != 0) {
-          self->private_data.f_prefixes[v_save_code] =
-              self->private_data.f_prefixes[v_prev_code];
+          self->private_impl.f_prefixes[v_save_code] =
+              self->private_impl.f_prefixes[v_prev_code];
           memcpy(self->private_data.f_suffixes[v_save_code],
                  self->private_data.f_suffixes[v_prev_code],
                  sizeof(self->private_data.f_suffixes[v_save_code]));
           self->private_data.f_suffixes[v_save_code][(v_lm1_a % 8)] =
               ((uint8_t)(v_code));
         } else {
-          self->private_data.f_prefixes[v_save_code] =
+          self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
           self->private_data.f_suffixes[v_save_code][0] = ((uint8_t)(v_code));
         }
@@ -8398,7 +8398,7 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         }
         v_steps -= 1;
         v_o = ((v_o - 8) & 8191);
-        v_c = (((uint32_t)(self->private_data.f_prefixes[v_c])) & 4095);
+        v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
       }
     label_1_break:;
       v_first_byte = self->private_data.f_suffixes[v_c][0];
@@ -8410,15 +8410,15 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         v_lm1_b = ((self->private_data.f_lm1s[v_prev_code] + 1) & 4095);
         self->private_data.f_lm1s[v_save_code] = v_lm1_b;
         if ((v_lm1_b % 8) != 0) {
-          self->private_data.f_prefixes[v_save_code] =
-              self->private_data.f_prefixes[v_prev_code];
+          self->private_impl.f_prefixes[v_save_code] =
+              self->private_impl.f_prefixes[v_prev_code];
           memcpy(self->private_data.f_suffixes[v_save_code],
                  self->private_data.f_suffixes[v_prev_code],
                  sizeof(self->private_data.f_suffixes[v_save_code]));
           self->private_data.f_suffixes[v_save_code][(v_lm1_b % 8)] =
               v_first_byte;
         } else {
-          self->private_data.f_prefixes[v_save_code] =
+          self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
           self->private_data.f_suffixes[v_save_code][0] =
               ((uint8_t)(v_first_byte));
