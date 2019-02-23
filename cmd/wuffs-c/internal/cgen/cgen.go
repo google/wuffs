@@ -128,7 +128,7 @@ func Do(args []string) error {
 						pre := "warning"
 						if msg[0] == '$' {
 							pre = "suspension"
-						} else if msg[0] == '?' {
+						} else if msg[0] == '#' {
 							pre = "error"
 						}
 						b.printf("const char* wuffs_base__%s__%s = \"%sbase: %s\";\n",
@@ -190,7 +190,7 @@ type status struct {
 }
 
 func statusMsgIsError(msg string) bool {
-	return (len(msg) != 0) && (msg[0] == '?')
+	return (len(msg) != 0) && (msg[0] == '#')
 }
 
 func statusMsgIsSuspension(msg string) bool {
@@ -198,7 +198,7 @@ func statusMsgIsSuspension(msg string) bool {
 }
 
 func statusMsgIsWarning(msg string) bool {
-	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '?')
+	return (len(msg) == 0) || (msg[0] != '$' && msg[0] != '#')
 }
 
 type buffer []byte
@@ -676,7 +676,7 @@ func (g *gen) addStatus(qid t.QID, msg string, public bool) error {
 	category := "warning__"
 	if msg[0] == '$' {
 		category = "suspension__"
-	} else if msg[0] == '?' {
+	} else if msg[0] == '#' {
 		category = "error__"
 	}
 	z := status{

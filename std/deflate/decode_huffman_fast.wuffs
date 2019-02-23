@@ -35,7 +35,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 	var hdist              base.u32
 
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
-		return "?internal error: inconsistent n_bits"
+		return "#internal error: inconsistent n_bits"
 	}
 
 	bits = this.bits
@@ -131,7 +131,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 			assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
 			table_entry = this.huffs[0][redir_top + (bits & redir_mask)]
@@ -150,20 +150,20 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 				this.end_of_block = true
 				break:loop
 			} else if (table_entry >> 28) != 0 {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			} else if (table_entry >> 27) != 0 {
-				return "?bad Huffman code"
+				return "#bad Huffman code"
 			} else {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 
 			// Once again, redundant but explicit assertions.
 			assert args.src.available() >= 8
 
 		} else if (table_entry >> 27) != 0 {
-			return "?bad Huffman code"
+			return "#bad Huffman code"
 		} else {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 
 		// length = base_number_minus_3 + 3 + extra_bits.
@@ -245,7 +245,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 			assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
 			table_entry = this.huffs[1][redir_top + (bits & redir_mask)]
@@ -259,9 +259,9 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 		// For H-D, all symbols should be base_number + extra_bits.
 		if (table_entry >> 24) != 0x40 {
 			if (table_entry >> 24) == 0x08 {
-				return "?bad Huffman code"
+				return "#bad Huffman code"
 			}
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 
 		// dist_minus_1 = base_number_minus_1 + extra_bits.
@@ -316,7 +316,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 					length = 0
 				}
 				if this.history_index < hdist {
-					return "?bad distance"
+					return "#bad distance"
 				}
 				// Re-purpose the hdist variable as the this.history index to
 				// start copying from.
@@ -354,7 +354,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 				}
 
 				if ((dist_minus_1 + 1) as base.u64) > args.dst.since_mark().length() {
-					return "?internal error: inconsistent distance"
+					return "#internal error: inconsistent distance"
 				}
 			}
 			// Once again, redundant but explicit assertions.
@@ -389,7 +389,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 		if args.src.can_undo_byte() {
 			args.src.undo_byte!()
 		} else {
-			return "?internal error: inconsistent I/O"
+			return "#internal error: inconsistent I/O"
 		}
 	}
 
@@ -397,6 +397,6 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 	this.n_bits = n_bits
 
 	if (this.n_bits >= 8) or ((this.bits >> this.n_bits) != 0) {
-		return "?internal error: inconsistent n_bits"
+		return "#internal error: inconsistent n_bits"
 	}
 }

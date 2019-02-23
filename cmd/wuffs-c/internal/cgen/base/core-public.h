@@ -157,12 +157,12 @@ typedef const char* wuffs_base__status;
 
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
-  return (z == NULL) || ((*z != '$') && (*z != '?'));
+  return (z == NULL) || ((*z != '$') && (*z != '#'));
 }
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z == '?');
+  return z && (*z == '#');
 }
 
 static inline bool  //
@@ -177,7 +177,7 @@ wuffs_base__status__is_suspension(wuffs_base__status z) {
 
 static inline bool  //
 wuffs_base__status__is_warning(wuffs_base__status z) {
-  return z && (*z != '$') && (*z != '?');
+  return z && (*z != '$') && (*z != '#');
 }
 
 // --------

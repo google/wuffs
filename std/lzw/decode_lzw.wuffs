@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub status "?bad code"
+pub status "#bad code"
 
-pri status "?internal error: inconsistent I/O"
+pri status "#internal error: inconsistent I/O"
 
 // TODO: move bulk data buffers like decoder.suffixes or decoder.output into
 // the workbuf? The first attempt at this was a performance regression for
@@ -116,9 +116,9 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 		} else if this.read_from_return_value == 2 {
 			yield base."$short read"
 		} else if this.read_from_return_value == 3 {
-			return "?bad code"
+			return "#bad code"
 		} else {
-			return "?internal error: inconsistent I/O"
+			return "#internal error: inconsistent I/O"
 		}
 	}
 }
@@ -336,7 +336,7 @@ pri func decoder.write_to?(dst base.io_writer) {
 
 	while this.output_wi > 0 {
 		if this.output_ri > this.output_wi {
-			return "?internal error: inconsistent I/O"
+			return "#internal error: inconsistent I/O"
 		}
 		s = this.output[this.output_ri:this.output_wi]
 		n = args.dst.copy_from_slice!(s:s)

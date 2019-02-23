@@ -141,7 +141,7 @@ const char* test_basic_status_is_error() {
 const char* test_basic_status_strings() {
   CHECK_FOCUS(__func__);
   const char* s1 = wuffs_base__error__bad_wuffs_version;
-  const char* t1 = "?base: bad wuffs version";
+  const char* t1 = "#base: bad wuffs version";
   if (strcmp(s1, t1)) {
     RETURN_FAIL("got \"%s\", want \"%s\"", s1, t1);
   }
@@ -151,7 +151,7 @@ const char* test_basic_status_strings() {
     RETURN_FAIL("got \"%s\", want \"%s\"", s2, t2);
   }
   const char* s3 = wuffs_gif__error__bad_header;
-  const char* t3 = "?gif: bad header";
+  const char* t3 = "#gif: bad header";
   if (strcmp(s3, t3)) {
     RETURN_FAIL("got \"%s\", want \"%s\"", s3, t3);
   }
@@ -163,7 +163,7 @@ const char* test_basic_status_used_package() {
   // The function call here is from "std/gif" but the argument is from
   // "std/lzw". The former package depends on the latter.
   const char* s0 = wuffs_lzw__error__bad_code;
-  const char* t0 = "?lzw: bad code";
+  const char* t0 = "#lzw: bad code";
   if (strcmp(s0, t0)) {
     RETURN_FAIL("got \"%s\", want \"%s\"", s0, t0);
   }

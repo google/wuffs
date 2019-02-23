@@ -302,7 +302,7 @@ const MaxExprDepth = 255
 //  - List0: <Arg|Expr> function call args, assoc. op args or list members.
 //
 // A zero ID0 means an identifier or literal in ID2, like `foo`, `42` or a
-// status literal like `"?foo"` or `pkg."$bar"`. For status literals, ID1 is
+// status literal like `"#foo"` or `pkg."$bar"`. For status literals, ID1 is
 // the package.
 //
 // For unary operators, ID0 is the operator and RHS is the operand.

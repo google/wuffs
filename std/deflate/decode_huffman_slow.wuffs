@@ -39,7 +39,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	// correctness and performance.
 
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
-		return "?internal error: inconsistent n_bits"
+		return "#internal error: inconsistent n_bits"
 	}
 
 	bits = this.bits
@@ -80,7 +80,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
 				if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-					return "?internal error: inconsistent Huffman decoder state"
+					return "#internal error: inconsistent Huffman decoder state"
 				}
 				assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
 				table_entry = this.huffs[0][redir_top + (bits & redir_mask)]
@@ -107,17 +107,17 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				this.end_of_block = true
 				break:loop
 			} else if (table_entry >> 28) != 0 {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			} else if (table_entry >> 27) != 0 {
-				return "?bad Huffman code"
+				return "#bad Huffman code"
 			} else {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 
 		} else if (table_entry >> 27) != 0 {
-			return "?bad Huffman code"
+			return "#bad Huffman code"
 		} else {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 
 		// length = base_number_minus_3 + 3 + extra_bits.
@@ -162,7 +162,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
 				if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-					return "?internal error: inconsistent Huffman decoder state"
+					return "#internal error: inconsistent Huffman decoder state"
 				}
 				assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
 				table_entry = this.huffs[1][redir_top + (bits & redir_mask)]
@@ -182,9 +182,9 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 		// For H-D, all symbols should be base_number + extra_bits.
 		if (table_entry >> 24) != 0x40 {
 			if (table_entry >> 24) == 0x08 {
-				return "?bad Huffman code"
+				return "#bad Huffman code"
 			}
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 
 		// dist_minus_1 = base_number_minus_1 + extra_bits.
@@ -226,7 +226,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 					length = 0
 				}
 				if this.history_index < hdist {
-					return "?bad distance"
+					return "#bad distance"
 				}
 				// Re-purpose the hdist variable as the this.history index to
 				// start copying from.
@@ -288,6 +288,6 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	this.n_bits = n_bits
 
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
-		return "?internal error: inconsistent n_bits"
+		return "#internal error: inconsistent n_bits"
 	}
 }

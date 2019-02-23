@@ -15,12 +15,12 @@
 use "std/adler32"
 use "std/deflate"
 
-pub status "?bad checksum"
-pub status "?bad compression method"
-pub status "?bad compression window size"
-pub status "?bad parity check"
+pub status "#bad checksum"
+pub status "#bad compression method"
+pub status "#bad compression window size"
+pub status "#bad parity check"
 
-pri status "?TODO: unsupported preset dictionary"
+pri status "#TODO: unsupported preset dictionary"
 
 // TODO: reference deflate.decoder_workbuf_len_max_incl_worst_case.
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
@@ -52,16 +52,16 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	x = args.src.read_u16be?()
 	if ((x >> 8) & 0x0F) != 0x08 {
-		return "?bad compression method"
+		return "#bad compression method"
 	}
 	if (x >> 12) > 0x07 {
-		return "?bad compression window size"
+		return "#bad compression window size"
 	}
 	if (x & 0x20) != 0 {
-		return "?TODO: unsupported preset dictionary"
+		return "#TODO: unsupported preset dictionary"
 	}
 	if (x % 31) != 0 {
-		return "?bad parity check"
+		return "#bad parity check"
 	}
 
 	// Decode and checksum the DEFLATE-encoded payload.
@@ -78,6 +78,6 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 	checksum_want = args.src.read_u32be?()
 	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
-		return "?bad checksum"
+		return "#bad checksum"
 	}
 }

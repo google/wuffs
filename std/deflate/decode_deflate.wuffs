@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub status "?bad Huffman code (over-subscribed)"
-pub status "?bad Huffman code (under-subscribed)"
-pub status "?bad Huffman code length count"
-pub status "?bad Huffman code length repetition"
-pub status "?bad Huffman code"
-pub status "?bad Huffman minimum code length"
-pub status "?bad block"
-pub status "?bad distance"
-pub status "?bad distance code count"
-pub status "?bad literal/length code count"
-pub status "?inconsistent stored block length"
-pub status "?missing end-of-block code"
-pub status "?no Huffman codes"
+pub status "#bad Huffman code (over-subscribed)"
+pub status "#bad Huffman code (under-subscribed)"
+pub status "#bad Huffman code length count"
+pub status "#bad Huffman code length repetition"
+pub status "#bad Huffman code"
+pub status "#bad Huffman minimum code length"
+pub status "#bad block"
+pub status "#bad distance"
+pub status "#bad distance code count"
+pub status "#bad literal/length code count"
+pub status "#inconsistent stored block length"
+pub status "#missing end-of-block code"
+pub status "#no Huffman codes"
 
-pri status "?internal error: inconsistent Huffman decoder state"
-pri status "?internal error: inconsistent I/O"
-pri status "?internal error: inconsistent distance"
-pri status "?internal error: inconsistent n_bits"
+pri status "#internal error: inconsistent Huffman decoder state"
+pri status "#internal error: inconsistent I/O"
+pri status "#internal error: inconsistent distance"
+pri status "#internal error: inconsistent n_bits"
 
 // TODO: replace the placeholder 1 value with either 0 or (32768 + 512),
 // depending on whether we'll move decoder.history into the workbuf.
@@ -228,7 +228,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 		} else if type == 2 {
 			this.init_dynamic_huffman?(src:args.src)
 		} else {
-			return "?bad block"
+			return "#bad block"
 		}
 
 		this.end_of_block = false
@@ -258,14 +258,14 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
-		return "?internal error: inconsistent n_bits"
+		return "#internal error: inconsistent n_bits"
 	}
 	this.n_bits = 0
 	this.bits = 0
 
 	length = args.src.read_u32le?()
 	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {
-		return "?inconsistent stored block length"
+		return "#inconsistent stored block length"
 	}
 	length = length.low_bits(n:16)
 	while true {
@@ -350,12 +350,12 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	}
 	n_lit = bits.low_bits(n:5) + 257
 	if n_lit > 286 {
-		return "?bad literal/length code count"
+		return "#bad literal/length code count"
 	}
 	bits >>= 5
 	n_dist = bits.low_bits(n:5) + 1
 	if n_dist > 30 {
-		return "?bad distance code count"
+		return "#bad distance code count"
 	}
 	bits >>= 5
 	n_clen = bits.low_bits(n:4) + 4
@@ -413,7 +413,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 		// For H-CL, there should be no redirections and all symbols should be
 		// literals.
 		if (table_entry >> 24) != 0x80 {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		table_entry = (table_entry >> 8) & 0xFF
 
@@ -431,7 +431,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 		if table_entry == 16 {
 			n_extra_bits = 2
 			if i <= 0 {
-				return "?bad Huffman code length repetition"
+				return "#bad Huffman code length repetition"
 			}
 			rep_symbol = this.code_lengths[i - 1] & 15
 			rep_count = 3
@@ -447,7 +447,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 			rep_count = 11
 			assert rep_count <= 11
 		} else {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		while n_bits < n_extra_bits,
 			inv i < 320,
@@ -466,7 +466,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 		while rep_count > 0 {
 			// TODO: hoist this check up one level?
 			if i >= (n_lit + n_dist) {
-				return "?bad Huffman code length count"
+				return "#bad Huffman code length count"
 			}
 			assert i < (288 + 32) via "a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c"(b0:n_lit, c0:n_dist)
 			this.code_lengths[i] = rep_symbol
@@ -476,10 +476,10 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	}
 
 	if i != (n_lit + n_dist) {
-		return "?bad Huffman code length count"
+		return "#bad Huffman code length count"
 	}
 	if this.code_lengths[256] == 0 {
-		return "?missing end-of-block code"
+		return "#missing end-of-block code"
 	}
 
 	status = this.init_huff!(which:0, n_codes0:0, n_codes1:n_lit, base_symbol:257)
@@ -562,13 +562,13 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		// TODO: this if should be unnecessary. Have some way to assert that,
 		// for all j, counts[j] <= i, and thus counts[j]++ will not overflow.
 		if counts[this.code_lengths[i] & 15] >= 320 {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		counts[this.code_lengths[i] & 15] += 1
 		i += 1
 	}
 	if ((counts[0] as base.u32) + args.n_codes0) == args.n_codes1 {
-		return "?no Huffman codes"
+		return "#no Huffman codes"
 	}
 
 	// Check that the Huffman code completely covers all possible input bits.
@@ -576,19 +576,19 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	i = 1
 	while i <= 15 {
 		if remaining > (1 << 30) {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		// Each iteration doubles the number of possible remaining codes.
 		remaining <<= 1
 		if remaining < (counts[i] as base.u32) {
-			return "?bad Huffman code (over-subscribed)"
+			return "#bad Huffman code (over-subscribed)"
 		}
 		remaining -= counts[i] as base.u32
 		i += 1
 	}
 	if remaining != 0 {
 		// TODO: when is a degenerate Huffman table valid?
-		return "?bad Huffman code (under-subscribed)"
+		return "#bad Huffman code (under-subscribed)"
 	}
 
 	// Calculate offsets and n_symbols.
@@ -608,7 +608,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		offsets[i] = n_symbols as base.u16
 		count = counts[i] as base.u32
 		if n_symbols > (320 - count) {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		assert (n_symbols + count) <= 320 via "(a + b) <= c: a <= (c - b)"()
 		// TODO: change this to n_symbols += count, once the proof engine's
@@ -617,7 +617,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		i += 1
 	}
 	if n_symbols > 288 {
-		return "?internal error: inconsistent Huffman decoder state"
+		return "#internal error: inconsistent Huffman decoder state"
 	}
 
 	// Calculate symbols.
@@ -645,11 +645,11 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		assert i < 320 via "a < b: a < c; c <= b"(c:args.n_codes1)
 		// TODO: this if check should be unnecessary.
 		if i < args.n_codes0 {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		if this.code_lengths[i] != 0 {
 			if offsets[this.code_lengths[i] & 15] >= 320 {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 			symbols[offsets[this.code_lengths[i] & 15]] = (i - args.n_codes0) as base.u16
 			offsets[this.code_lengths[i] & 15] += 1
@@ -670,7 +670,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			break
 		}
 		if min_cl >= 9 {
-			return "?bad Huffman minimum code length"
+			return "#bad Huffman minimum code length"
 		}
 		min_cl += 1
 	}
@@ -683,7 +683,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		}
 		if max_cl <= 1 {
 			// TODO: when is a degenerate Huffman table valid?
-			return "?no Huffman codes"
+			return "#no Huffman codes"
 		}
 		max_cl -= 1
 	}
@@ -708,10 +708,10 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	//  - this.huffs[0][0b11111] = 0x80001805 (literal, symbols[9]=0x18, code_length=5)
 	i = 0
 	if (n_symbols != (offsets[max_cl] as base.u32)) or (n_symbols != (offsets[15] as base.u32)) {
-		return "?internal error: inconsistent Huffman decoder state"
+		return "#internal error: inconsistent Huffman decoder state"
 	}
 	if (args.n_codes0 + (symbols[0] as base.u32)) >= 320 {
-		return "?internal error: inconsistent Huffman decoder state"
+		return "#internal error: inconsistent Huffman decoder state"
 	}
 
 	initial_high_bits = 1 << 9
@@ -731,13 +731,13 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		inv n_symbols <= 288,
 	{
 		if (args.n_codes0 + (symbols[i] as base.u32)) >= 320 {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		cl = (this.code_lengths[args.n_codes0 + (symbols[i] as base.u32)] & 15) as base.u32
 		if cl > prev_cl {
 			code <<= cl - prev_cl
 			if code >= (1 << 15) {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 		}
 		// For the remainder of this loop body, prev_cl is the original code
@@ -770,20 +770,20 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 					}
 					remaining -= counts[j] as base.u32
 					if remaining > (1 << 30) {
-						return "?internal error: inconsistent Huffman decoder state"
+						return "#internal error: inconsistent Huffman decoder state"
 					}
 					remaining <<= 1
 					j += 1
 				}
 				if (j <= 9) or (15 < j) {
-					return "?internal error: inconsistent Huffman decoder state"
+					return "#internal error: inconsistent Huffman decoder state"
 				}
 				j -= 9
 				initial_high_bits = (1 as base.u32) << j
 
 				top = next_top
 				if (top + ((1 as base.u32) << j)) > huffs_table_size {
-					return "?internal error: inconsistent Huffman decoder state"
+					return "#internal error: inconsistent Huffman decoder state"
 				}
 				assert (top + ((1 as base.u32) << j)) <= 1024 via "a <= b: a <= c; c <= b"(c:huffs_table_size)
 				next_top = top + ((1 as base.u32) << j)
@@ -793,7 +793,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			}
 		}
 		if (key >= (1 << 9)) or (counts[prev_cl] <= 0) {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 		counts[prev_cl] -= 1
 
@@ -816,7 +816,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 				value = dcode_magic_numbers[symbol & 31] | cl
 			}
 		} else {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 
 		// The table uses log2(initial_high_bits) bits, but reversed_key only
@@ -831,7 +831,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		{
 			high_bits -= delta
 			if (top + ((high_bits | reversed_key) & 511)) >= huffs_table_size {
-				return "?internal error: inconsistent Huffman decoder state"
+				return "#internal error: inconsistent Huffman decoder state"
 			}
 			assert (top + ((high_bits | reversed_key) & 511)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
 			this.huffs[args.which][top + ((high_bits | reversed_key) & 511)] = value
@@ -844,7 +844,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		assert i < 288 via "a < b: a < c; c <= b"(c:n_symbols)
 		code += 1
 		if code >= (1 << 15) {
-			return "?internal error: inconsistent Huffman decoder state"
+			return "#internal error: inconsistent Huffman decoder state"
 		}
 	}
 	return ok

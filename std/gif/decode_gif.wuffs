@@ -14,13 +14,13 @@
 
 use "std/lzw"
 
-pub status "?bad block"
-pub status "?bad extension label"
-pub status "?bad graphic control"
-pub status "?bad header"
-pub status "?bad literal width"
+pub status "#bad block"
+pub status "#bad extension label"
+pub status "#bad graphic control"
+pub status "#bad header"
+pub status "#bad literal width"
 
-pri status "?internal error: inconsistent ri/wi"
+pri status "#internal error: inconsistent ri/wi"
 
 // TODO: replace the placeholder 1 value with either 0 or 0xFFFF (plus
 // lzw.decoder_workbuf_len_max_incl_worst_case), depending on whether we'll
@@ -131,7 +131,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	var ffio base.bool
 
 	if this.call_sequence >= 1 {
-		return base."?bad call sequence"
+		return base."#bad call sequence"
 	}
 
 	this.decode_header?(src:args.src)
@@ -198,7 +198,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 
 pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
 	if this.call_sequence == 0 {
-		return base."?bad call sequence"
+		return base."#bad call sequence"
 	}
 	this.end_of_data = false
 	this.restarted = true
@@ -299,7 +299,7 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	if not this.restarted {
 		this.frame_config_io_position = args.src.position()
 	} else if this.frame_config_io_position != args.src.position() {
-		return base."?bad restart"
+		return base."#bad restart"
 	} else {
 		this.restarted = false
 	}
@@ -315,7 +315,7 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 			this.end_of_data = true
 			break
 		} else {
-			return "?bad block"
+			return "#bad block"
 		}
 	}
 }
@@ -333,7 +333,7 @@ pri func decoder.decode_header?(src base.io_reader) {
 	}
 	if (c[0] != 0x47) or (c[1] != 0x49) or (c[2] != 0x46) or (c[3] != 0x38) or
 		((c[4] != 0x37) and (c[4] != 0x39)) or (c[5] != 0x61) {
-		return "?bad header"
+		return "#bad header"
 	}
 }
 
@@ -502,11 +502,11 @@ pri func decoder.decode_gc?(src base.io_reader) {
 	var gc_duration_centiseconds base.u16
 
 	if this.seen_graphic_control {
-		return "?bad graphic control"
+		return "#bad graphic control"
 	}
 	c = args.src.read_u8?()
 	if c != 4 {
-		return "?bad graphic control"
+		return "#bad graphic control"
 	}
 
 	flags = args.src.read_u8?()
@@ -537,7 +537,7 @@ pri func decoder.decode_gc?(src base.io_reader) {
 
 	c = args.src.read_u8?()
 	if c != 0 {
-		return "?bad graphic control"
+		return "#bad graphic control"
 	}
 	this.seen_graphic_control = true
 }
@@ -663,7 +663,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 
 	lw = args.src.read_u8?()
 	if (lw < 2) or (8 < lw) {
-		return "?bad literal width"
+		return "#bad literal width"
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)
 
@@ -718,12 +718,12 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 		}
 
 		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
-			return base."?bad workbuf length"
+			return base."#bad workbuf length"
 		}
 
 		while:inner true {
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
-				return "?internal error: inconsistent ri/wi"
+				return "#internal error: inconsistent ri/wi"
 			}
 			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
 				lzw_status =? this.lzw.decode_io_writer?(
@@ -764,7 +764,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 	if (this.dst_y < this.frame_rect_y1) and
 		(this.frame_rect_x0 != this.frame_rect_x1) and
 		(this.frame_rect_y0 != this.frame_rect_y1) {
-		return base."?not enough data"
+		return base."#not enough data"
 	}
 }
 
@@ -795,7 +795,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		src = args.src[src_ri:]
 
 		if this.dst_y >= this.frame_rect_y1 {
-			return base."?too much data"
+			return base."#too much data"
 		}
 
 		// First, copy from src to that part of the frame rect that is inside
@@ -833,7 +833,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		if args.src.length() == src_ri {
 			break
 		} else if args.src.length() < src_ri {
-			return "?internal error: inconsistent ri/wi"
+			return "#internal error: inconsistent ri/wi"
 		}
 
 		// Second, skip over src for that part of the frame rect that is
@@ -857,7 +857,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		}
 
 		if src_ri != args.src.length() {
-			return "?internal error: inconsistent ri/wi"
+			return "#internal error: inconsistent ri/wi"
 		}
 		break
 	}

@@ -79,7 +79,7 @@ func init() {
 
 func isErrorStatus(literal t.ID, tm *t.Map) bool {
 	s := literal.Str(tm)
-	return (len(s) >= 2) && (s[0] == '"') && (s[1] == '?')
+	return (len(s) >= 2) && (s[0] == '"') && (s[1] == '#')
 }
 
 func btoi(b bool) *big.Int {

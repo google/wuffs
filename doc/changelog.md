@@ -43,7 +43,7 @@
 - Marked some internal status codes as private.
 - Removed closed-for-read/write built-in status codes.
 - Changed the string messages for built-in status codes.
-- Changed `error "foo"` to `"?foo"` or `base."?bar"`.
+- Changed `error "foo"` to `"#foo"` or `base."#bar"`.
 - Added warnings as another status code category.
 - Made the status type a `const char *`, not an `int32_t`.
 - Disallowed `__double_underscore` prefixed names.
@@ -67,4 +67,4 @@
 
 ---
 
-Updated on December 2018.
+Updated on February 2019.
