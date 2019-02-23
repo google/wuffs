@@ -37,6 +37,7 @@
 - Added `peek_uxx`, `skip_fast` and `write_fast_uxx` methods.
 - Renamed some `read_uxx` methods as `read_uxx_as_uyy`.
 - Added I/O positions.
+- Added extra fields (uninitialized internal buffers) to structs.
 - Tweaked how marks and limits work.
 - Supported animated (not just single frame) and interlaced GIFs.
 - Marked some internal status codes as private.
