@@ -261,6 +261,7 @@ uint32_t global_wuffs_crc32_unused_u32;
 
 const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    wuffs_base__io_buffer* src,
+                                   uint32_t wuffs_initialize_flags,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   uint64_t len = src->meta.wi - src->meta.ri;
@@ -269,8 +270,7 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
   }
   wuffs_crc32__ieee_hasher checksum;
   const char* status = wuffs_crc32__ieee_hasher__initialize(
-      &checksum, sizeof checksum, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      &checksum, sizeof checksum, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
     return status;
   }
@@ -285,14 +285,18 @@ const char* wuffs_bench_crc32_ieee(wuffs_base__io_buffer* dst,
 
 const char* bench_wuffs_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src,
-                             &crc32_midsummer_gt, 0, 0, 1500);
+  return do_bench_io_buffers(
+      wuffs_bench_crc32_ieee,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      &crc32_midsummer_gt, 0, 0, 1500);
 }
 
 const char* bench_wuffs_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
-                             150);
+  return do_bench_io_buffers(
+      wuffs_bench_crc32_ieee,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      &crc32_pi_gt, 0, 0, 150);
 }
 
   // ---------------- Mimic Benches
@@ -301,14 +305,14 @@ const char* bench_wuffs_crc32_ieee_100k() {
 
 const char* bench_mimic_crc32_ieee_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src,
+  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tc_src,
                              &crc32_midsummer_gt, 0, 0, 1500);
 }
 
 const char* bench_mimic_crc32_ieee_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_crc32_ieee, tc_src, &crc32_pi_gt, 0, 0,
-                             150);
+  return do_bench_io_buffers(mimic_bench_crc32_ieee, 0, tc_src, &crc32_pi_gt, 0,
+                             0, 150);
 }
 
 #endif  // WUFFS_MIMIC

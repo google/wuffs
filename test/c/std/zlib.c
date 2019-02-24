@@ -85,12 +85,12 @@ golden_test zlib_pi_gt = {
 
 const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   wuffs_zlib__decoder dec;
   const char* status = wuffs_zlib__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
     return status;
   }
@@ -233,13 +233,16 @@ const char* test_mimic_zlib_decode_pi() {
 
 const char* bench_wuffs_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_midsummer_gt, 0,
-                             0, 300);
+  return do_bench_io_buffers(
+      wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_dst, &zlib_midsummer_gt, 0, 0, 300);
 }
 
 const char* bench_wuffs_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
+  return do_bench_io_buffers(
+      wuffs_zlib_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      tc_dst, &zlib_pi_gt, 0, 0, 30);
 }
 
   // ---------------- Mimic Benches
@@ -248,13 +251,14 @@ const char* bench_wuffs_zlib_decode_100k() {
 
 const char* bench_mimic_zlib_decode_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_midsummer_gt, 0,
-                             0, 300);
+  return do_bench_io_buffers(mimic_zlib_decode, 0, tc_dst, &zlib_midsummer_gt,
+                             0, 0, 300);
 }
 
 const char* bench_mimic_zlib_decode_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_zlib_decode, tc_dst, &zlib_pi_gt, 0, 0, 30);
+  return do_bench_io_buffers(mimic_zlib_decode, 0, tc_dst, &zlib_pi_gt, 0, 0,
+                             30);
 }
 
 #endif  // WUFFS_MIMIC

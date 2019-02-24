@@ -226,6 +226,7 @@ uint32_t global_wuffs_adler32_unused_u32;
 
 const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
                                 wuffs_base__io_buffer* src,
+                                uint32_t wuffs_initialize_flags,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   uint64_t len = src->meta.wi - src->meta.ri;
@@ -234,8 +235,7 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
   }
   wuffs_adler32__hasher checksum;
   const char* status = wuffs_adler32__hasher__initialize(
-      &checksum, sizeof checksum, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      &checksum, sizeof checksum, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
     return status;
   }
@@ -250,14 +250,18 @@ const char* wuffs_bench_adler32(wuffs_base__io_buffer* dst,
 
 const char* bench_wuffs_adler32_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_midsummer_gt,
-                             0, 0, 1500);
+  return do_bench_io_buffers(
+      wuffs_bench_adler32,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      &adler32_midsummer_gt, 0, 0, 1500);
 }
 
 const char* bench_wuffs_adler32_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_bench_adler32, tc_src, &adler32_pi_gt, 0, 0,
-                             150);
+  return do_bench_io_buffers(
+      wuffs_bench_adler32,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_src,
+      &adler32_pi_gt, 0, 0, 150);
 }
 
   // ---------------- Mimic Benches
@@ -266,14 +270,14 @@ const char* bench_wuffs_adler32_100k() {
 
 const char* bench_mimic_adler32_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_midsummer_gt,
-                             0, 0, 1500);
+  return do_bench_io_buffers(mimic_bench_adler32, 0, tc_src,
+                             &adler32_midsummer_gt, 0, 0, 1500);
 }
 
 const char* bench_mimic_adler32_100k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_bench_adler32, tc_src, &adler32_pi_gt, 0, 0,
-                             150);
+  return do_bench_io_buffers(mimic_bench_adler32, 0, tc_src, &adler32_pi_gt, 0,
+                             0, 150);
 }
 
 #endif  // WUFFS_MIMIC

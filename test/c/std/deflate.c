@@ -137,12 +137,12 @@ golden_test deflate_romeo_fixed_gt = {
 
 const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
+                                 uint32_t wuffs_initialize_flags,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   wuffs_deflate__decoder dec;
   const char* status = wuffs_deflate__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
@@ -680,28 +680,50 @@ const char* test_mimic_deflate_decode_romeo_fixed() {
 
 // ---------------- Deflate Benches
 
-const char* bench_wuffs_deflate_decode_1k() {
+const char* bench_wuffs_deflate_decode_1k_full_init() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_romeo_gt, 0,
-                             0, 2000);
+  return do_bench_io_buffers(wuffs_deflate_decode,
+                             WUFFS_INITIALIZE__DEFAULT_OPTIONS, tc_dst,
+                             &deflate_romeo_gt, 0, 0, 2000);
 }
 
-const char* bench_wuffs_deflate_decode_10k() {
+const char* bench_wuffs_deflate_decode_1k_part_init() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_deflate_decode, tc_dst,
+  return do_bench_io_buffers(
+      wuffs_deflate_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
+      &deflate_romeo_gt, 0, 0, 2000);
+}
+
+const char* bench_wuffs_deflate_decode_10k_full_init() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(wuffs_deflate_decode,
+                             WUFFS_INITIALIZE__DEFAULT_OPTIONS, tc_dst,
                              &deflate_midsummer_gt, 0, 0, 300);
+}
+
+const char* bench_wuffs_deflate_decode_10k_part_init() {
+  CHECK_FOCUS(__func__);
+  return do_bench_io_buffers(
+      wuffs_deflate_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
+      &deflate_midsummer_gt, 0, 0, 300);
 }
 
 const char* bench_wuffs_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0,
-                             30);
+  return do_bench_io_buffers(
+      wuffs_deflate_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
+      &deflate_pi_gt, 0, 0, 30);
 }
 
 const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_deflate_decode, tc_dst, &deflate_pi_gt, 0,
-                             4096, 30);
+  return do_bench_io_buffers(
+      wuffs_deflate_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
+      &deflate_pi_gt, 0, 4096, 30);
 }
 
   // ---------------- Mimic Benches
@@ -710,25 +732,25 @@ const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
 
 const char* bench_mimic_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_romeo_gt, 0,
-                             0, 2000);
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_romeo_gt,
+                             0, 0, 2000);
 }
 
 const char* bench_mimic_deflate_decode_10k() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, tc_dst,
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst,
                              &deflate_midsummer_gt, 0, 0, 300);
 }
 
 const char* bench_mimic_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0, 0,
-                             30);
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt, 0,
+                             0, 30);
 }
 
 const char* bench_mimic_deflate_decode_100k_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, tc_dst, &deflate_pi_gt, 0,
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt, 0,
                              4096, 30);
 }
 
@@ -775,8 +797,10 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_deflate_decode_1k,                   //
-    bench_wuffs_deflate_decode_10k,                  //
+    bench_wuffs_deflate_decode_1k_full_init,         //
+    bench_wuffs_deflate_decode_1k_part_init,         //
+    bench_wuffs_deflate_decode_10k_full_init,        //
+    bench_wuffs_deflate_decode_10k_part_init,        //
     bench_wuffs_deflate_decode_100k_just_one_read,   //
     bench_wuffs_deflate_decode_100k_many_big_reads,  //
 

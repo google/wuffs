@@ -193,12 +193,12 @@ const char* test_basic_sub_struct_initializer() {
 // ---------------- GIF Tests
 
 const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
+                             uint32_t wuffs_initialize_flags,
                              wuffs_base__pixel_format pixfmt,
                              wuffs_base__io_buffer* src) {
   wuffs_gif__decoder dec;
   const char* status = wuffs_gif__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
     return status;
   }
@@ -1402,7 +1402,7 @@ const char* do_test_mimic_gif_decode(const char* filename) {
       .data = global_got_slice,
   });
   status = wuffs_gif_decode(
-      &got, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src);
+      &got, 0, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src);
   if (status) {
     return status;
   }
@@ -1412,7 +1412,7 @@ const char* do_test_mimic_gif_decode(const char* filename) {
       .data = global_want_slice,
   });
   status = mimic_gif_decode(
-      &want, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src);
+      &want, 0, WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, &src);
   if (status) {
     return status;
   }
@@ -1499,8 +1499,10 @@ const char* test_mimic_gif_decode_pjw_thumbnail() {
 
 const char* do_bench_gif_decode(
     const char* (*decode_func)(wuffs_base__io_buffer*,
+                               uint32_t wuffs_initialize_flags,
                                wuffs_base__pixel_format,
                                wuffs_base__io_buffer*),
+    uint32_t wuffs_initialize_flags,
     const char* filename,
     wuffs_base__pixel_format pixfmt,
     uint64_t iters_unscaled) {
@@ -1523,7 +1525,7 @@ const char* do_bench_gif_decode(
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = 0;
-    status = decode_func(&got, pixfmt, &src);
+    status = decode_func(&got, wuffs_initialize_flags, pixfmt, &src);
     if (status) {
       return status;
     }
@@ -1535,63 +1537,88 @@ const char* do_bench_gif_decode(
 
 const char* bench_wuffs_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/pjw-thumbnail.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             2000);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/pjw-thumbnail.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 2000);
 }
 
-const char* bench_wuffs_gif_decode_1k_color() {
+const char* bench_wuffs_gif_decode_1k_color_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
-      wuffs_gif_decode, "test/data/hippopotamus.regular.gif",
+      wuffs_gif_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+      "test/data/hippopotamus.regular.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
+}
+
+const char* bench_wuffs_gif_decode_1k_color_part_init() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/hippopotamus.regular.gif",
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
 }
 
 const char* bench_wuffs_gif_decode_10k_bgra() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hat.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL, 100);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/hat.gif", WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL, 100);
 }
 
 const char* bench_wuffs_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hat.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             100);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/hat.gif", WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 100);
 }
 
 const char* bench_wuffs_gif_decode_20k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/bricks-gray.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             50);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/bricks-gray.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 50);
 }
 
 const char* bench_wuffs_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
-      wuffs_gif_decode, "test/data/hibiscus.primitive.gif",
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/hibiscus.primitive.gif",
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 15);
 }
 
 const char* bench_wuffs_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/hibiscus.regular.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             10);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/hibiscus.regular.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 10);
 }
 
-const char* bench_wuffs_gif_decode_1000k() {
+const char* bench_wuffs_gif_decode_1000k_full_init() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode, "test/data/harvesters.gif",
+  return do_bench_gif_decode(wuffs_gif_decode,
+                             WUFFS_INITIALIZE__DEFAULT_OPTIONS,
+                             "test/data/harvesters.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+}
+
+const char* bench_wuffs_gif_decode_1000k_part_init() {
+  CHECK_FOCUS(__func__);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/harvesters.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
 }
 
 const char* bench_wuffs_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(wuffs_gif_decode,
-                             "test/data/gifplayer-muybridge.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
+  return do_bench_gif_decode(
+      wuffs_gif_decode, WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      "test/data/gifplayer-muybridge.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
 }
 
   // ---------------- Mimic Benches
@@ -1600,7 +1627,7 @@ const char* bench_wuffs_gif_decode_anim_screencap() {
 
 const char* bench_mimic_gif_decode_1k_bw() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/pjw-thumbnail.gif",
+  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/pjw-thumbnail.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
                              2000);
 }
@@ -1608,20 +1635,20 @@ const char* bench_mimic_gif_decode_1k_bw() {
 const char* bench_mimic_gif_decode_1k_color() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
-      mimic_gif_decode, "test/data/hippopotamus.regular.gif",
+      mimic_gif_decode, 0, "test/data/hippopotamus.regular.gif",
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1000);
 }
 
 const char* bench_mimic_gif_decode_10k_indexed() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/hat.gif",
+  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/hat.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
                              100);
 }
 
 const char* bench_mimic_gif_decode_20k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/bricks-gray.gif",
+  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/bricks-gray.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
                              50);
 }
@@ -1629,26 +1656,26 @@ const char* bench_mimic_gif_decode_20k() {
 const char* bench_mimic_gif_decode_100k_artificial() {
   CHECK_FOCUS(__func__);
   return do_bench_gif_decode(
-      mimic_gif_decode, "test/data/hibiscus.primitive.gif",
+      mimic_gif_decode, 0, "test/data/hibiscus.primitive.gif",
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 15);
 }
 
 const char* bench_mimic_gif_decode_100k_realistic() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/hibiscus.regular.gif",
-                             WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY,
-                             10);
+  return do_bench_gif_decode(
+      mimic_gif_decode, 0, "test/data/hibiscus.regular.gif",
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 10);
 }
 
 const char* bench_mimic_gif_decode_1000k() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode, "test/data/harvesters.gif",
+  return do_bench_gif_decode(mimic_gif_decode, 0, "test/data/harvesters.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
 }
 
 const char* bench_mimic_gif_decode_anim_screencap() {
   CHECK_FOCUS(__func__);
-  return do_bench_gif_decode(mimic_gif_decode,
+  return do_bench_gif_decode(mimic_gif_decode, 0,
                              "test/data/gifplayer-muybridge.gif",
                              WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY, 1);
 }
@@ -1719,15 +1746,17 @@ proc tests[] = {
 // The empty comments forces clang-format to place one element per line.
 proc benches[] = {
 
-    bench_wuffs_gif_decode_1k_bw,            //
-    bench_wuffs_gif_decode_1k_color,         //
-    bench_wuffs_gif_decode_10k_bgra,         //
-    bench_wuffs_gif_decode_10k_indexed,      //
-    bench_wuffs_gif_decode_20k,              //
-    bench_wuffs_gif_decode_100k_artificial,  //
-    bench_wuffs_gif_decode_100k_realistic,   //
-    bench_wuffs_gif_decode_1000k,            //
-    bench_wuffs_gif_decode_anim_screencap,   //
+    bench_wuffs_gif_decode_1k_bw,               //
+    bench_wuffs_gif_decode_1k_color_full_init,  //
+    bench_wuffs_gif_decode_1k_color_part_init,  //
+    bench_wuffs_gif_decode_10k_bgra,            //
+    bench_wuffs_gif_decode_10k_indexed,         //
+    bench_wuffs_gif_decode_20k,                 //
+    bench_wuffs_gif_decode_100k_artificial,     //
+    bench_wuffs_gif_decode_100k_realistic,      //
+    bench_wuffs_gif_decode_1000k_full_init,     //
+    bench_wuffs_gif_decode_1000k_part_init,     //
+    bench_wuffs_gif_decode_anim_screencap,      //
 
 #ifdef WUFFS_MIMIC
 

@@ -586,8 +586,10 @@ typedef enum {
 
 const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                                                       wuffs_base__io_buffer*,
+                                                      uint32_t,
                                                       uint64_t,
                                                       uint64_t),
+                            uint32_t wuffs_initialize_flags,
                             throughput_counter tc,
                             golden_test* gt,
                             uint64_t wlimit,
@@ -638,7 +640,8 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
   for (i = 0; i < iters; i++) {
     got.meta.wi = 0;
     src.meta.ri = gt->src_offset0;
-    const char* status = codec_func(&got, &src, wlimit, rlimit);
+    const char* status =
+        codec_func(&got, &src, wuffs_initialize_flags, wlimit, rlimit);
     if (status) {
       return status;
     }
@@ -672,25 +675,30 @@ const char* proc_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
 const char* do_bench_io_buffers(
     const char* (*codec_func)(wuffs_base__io_buffer*,
                               wuffs_base__io_buffer*,
+                              uint32_t,
                               uint64_t,
                               uint64_t),
+    uint32_t wuffs_initialize_flags,
     throughput_counter tc,
     golden_test* gt,
     uint64_t wlimit,
     uint64_t rlimit,
     uint64_t iters_unscaled) {
-  return proc_io_buffers(codec_func, tc, gt, wlimit, rlimit,
-                         iters_unscaled * iterscale, true);
+  return proc_io_buffers(codec_func, wuffs_initialize_flags, tc, gt, wlimit,
+                         rlimit, iters_unscaled * iterscale, true);
 }
 
 const char* do_test_io_buffers(const char* (*codec_func)(wuffs_base__io_buffer*,
                                                          wuffs_base__io_buffer*,
+                                                         uint32_t,
                                                          uint64_t,
                                                          uint64_t),
                                golden_test* gt,
                                uint64_t wlimit,
                                uint64_t rlimit) {
-  return proc_io_buffers(codec_func, tc_neither, gt, wlimit, rlimit, 1, false);
+  return proc_io_buffers(codec_func,
+                         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+                         tc_neither, gt, wlimit, rlimit, 1, false);
 }
 
 #endif  // WUFFS_INCLUDE_GUARD

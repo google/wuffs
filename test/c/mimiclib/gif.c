@@ -30,6 +30,7 @@ int mimic_gif_read_func(GifFileType* f, GifByteType* ptr, int len) {
 }
 
 const char* mimic_gif_decode(wuffs_base__io_buffer* dst,
+                             uint32_t wuffs_initialize_flags,
                              wuffs_base__pixel_format pixfmt,
                              wuffs_base__io_buffer* src) {
   const char* ret = NULL;

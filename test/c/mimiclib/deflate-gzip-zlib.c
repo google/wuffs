@@ -22,6 +22,7 @@
 
 const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
                                 wuffs_base__io_buffer* src,
+                                uint32_t wuffs_initialize_flags,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   return "miniz does not independently compute Adler32";
@@ -29,6 +30,7 @@ const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
 
 const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    wuffs_base__io_buffer* src,
+                                   uint32_t wuffs_initialize_flags,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   return "miniz does not implement CRC32/IEEE";
@@ -36,6 +38,7 @@ const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
 
 const char* mimic_deflate_zlib_decode(wuffs_base__io_buffer* dst,
                                       wuffs_base__io_buffer* src,
+                                      uint32_t wuffs_initialize_flags,
                                       uint64_t wlimit,
                                       uint64_t rlimit,
                                       bool deflate_instead_of_zlib) {
@@ -87,6 +90,7 @@ uint32_t global_mimiclib_deflate_unused_u32;
 
 const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
                                 wuffs_base__io_buffer* src,
+                                uint32_t wuffs_initialize_flags,
                                 uint64_t wlimit,
                                 uint64_t rlimit) {
   global_mimiclib_deflate_unused_u32 = 0;
@@ -107,6 +111,7 @@ const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
 
 const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
                                    wuffs_base__io_buffer* src,
+                                   uint32_t wuffs_initialize_flags,
                                    uint64_t wlimit,
                                    uint64_t rlimit) {
   global_mimiclib_deflate_unused_u32 = 0;
@@ -223,6 +228,7 @@ cleanup0:;
 
 const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
+                                 uint32_t wuffs_initialize_flags,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
@@ -231,6 +237,7 @@ const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
 
 const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
@@ -239,6 +246,7 @@ const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
 
 const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,

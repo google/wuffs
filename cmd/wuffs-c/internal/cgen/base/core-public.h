@@ -68,6 +68,8 @@
 
 // Flags for wuffs_foo__bar__initialize functions.
 
+#define WUFFS_INITIALIZE__DEFAULT_OPTIONS ((uint32_t)0x00000000)
+
 // WUFFS_INITIALIZE__ALREADY_ZEROED means that the "self" receiver struct value
 // has already been set to all zeroes.
 #define WUFFS_INITIALIZE__ALREADY_ZEROED ((uint32_t)0x00000001)
