@@ -168,15 +168,17 @@ const char* test_wuffs_adler32_pi() {
   CHECK_FOCUS(__func__);
 
   const char* digits =
-      "3.1415926535897932384626433832795028841971693993751058209749445";
-  if (strlen(digits) != 63) {
-    RETURN_FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
+      "3."
+      "141592653589793238462643383279502884197169399375105820974944592307816406"
+      "2862089986280348253421170";
+  if (strlen(digits) != 99) {
+    RETURN_FAIL("strlen(digits): got %d, want 99", (int)(strlen(digits)));
   }
 
   // The want values are determined by script/checksum.go.
   //
   // wants[i] is the checksum of the first i bytes of the digits string.
-  uint32_t wants[64] = {
+  uint32_t wants[100] = {
       0x00000001, 0x00340034, 0x00960062, 0x01290093, 0x01F000C7, 0x02E800F8,
       0x0415012D, 0x057B0166, 0x07130198, 0x08E101CE, 0x0AE40203, 0x0D1A0236,
       0x0F85026B, 0x122802A3, 0x150402DC, 0x18170313, 0x1B63034C, 0x1EE2037F,
@@ -187,11 +189,17 @@ const char* test_wuffs_adler32_pi() {
       0xB8E508A2, 0xC1BD08D8, 0xCACE0911, 0xD4120944, 0xDD8F097D, 0xE74509B6,
       0xF12E09E9, 0xFB4E0A20, 0x05B20A55, 0x10380A86, 0x1AEE0AB6, 0x25D90AEB,
       0x30FC0B23, 0x3C510B55, 0x47D60B85, 0x53940BBE, 0x5F890BF5, 0x6BB20C29,
-      0x78140C62, 0x84AA0C96, 0x91740CCA, 0x9E730CFF,
+      0x78140C62, 0x84AA0C96, 0x91740CCA, 0x9E730CFF, 0xABAB0D38, 0xB9150D6A,
+      0xC6B20D9D, 0xD47F0DCD, 0xE2830E04, 0xF0BF0E3C, 0xFF2C0E6D, 0x0DDE0EA3,
+      0x1CB50ED7, 0x2BBC0F07, 0x3AF90F3D, 0x4A680F6F, 0x5A0F0FA7, 0x69EC0FDD,
+      0x79FB100F, 0x8A3A103F, 0x9AB11077, 0xAB6110B0, 0xBC4A10E9, 0xCD6B1121,
+      0xDEC21157, 0xF04B1189, 0x021B11C1, 0x140C11F1, 0x26301224, 0x38881258,
+      0x4B181290, 0x5DDA12C2, 0x70D112F7, 0x83FB132A, 0x9759135E, 0xAAE91390,
+      0xBEAA13C1, 0xD29C13F2, 0xE6C51429, 0xFB1E1459,
   };
 
   int i;
-  for (i = 0; i < 64; i++) {
+  for (i = 0; i < 100; i++) {
     wuffs_adler32__hasher checksum;
     const char* status = wuffs_adler32__hasher__initialize(
         &checksum, sizeof checksum, WUFFS_VERSION,

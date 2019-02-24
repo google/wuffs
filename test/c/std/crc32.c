@@ -166,15 +166,17 @@ const char* test_wuffs_crc32_ieee_golden() {
 
 const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
   const char* digits =
-      "3.1415926535897932384626433832795028841971693993751058209749445";
-  if (strlen(digits) != 63) {
-    RETURN_FAIL("strlen(digits): got %d, want 63", (int)(strlen(digits)));
+      "3."
+      "141592653589793238462643383279502884197169399375105820974944592307816406"
+      "2862089986280348253421170";
+  if (strlen(digits) != 99) {
+    RETURN_FAIL("strlen(digits): got %d, want 99", (int)(strlen(digits)));
   }
 
   // The want values are determined by script/checksum.go.
   //
   // wants[i] is the checksum of the first i bytes of the digits string.
-  uint32_t wants[64] = {
+  uint32_t wants[100] = {
       0x00000000, 0x6DD28E9B, 0x69647A00, 0x83B58BCD, 0x16E010BE, 0xAF13912C,
       0xB6C654DC, 0x02D43F2E, 0xC60167FD, 0xDE72F5D2, 0xECB2EAA3, 0x22E1CE23,
       0x26F4BB12, 0x099FD2E0, 0x2D041A2F, 0xC14373C1, 0x61A5D6D0, 0xEB60F999,
@@ -185,11 +187,17 @@ const char* do_test_xxxxx_crc32_ieee_pi(bool mimic) {
       0x63623EDF, 0x0BB7D76F, 0x5001AC9B, 0x0A5FC5FB, 0xA76213D4, 0x0C1E135B,
       0x916718F4, 0xD0FE1B9F, 0xE4D15B60, 0xCE8A5FB4, 0x381922EB, 0xB351097C,
       0xA3003B0D, 0x64C7C28B, 0x8ED5424B, 0x6C872ADF, 0x7CBF02ED, 0x2D713AFF,
-      0xA028F932, 0x3BC16241, 0xF256AB5C, 0xE69E60DA,
+      0xA028F932, 0x3BC16241, 0xF256AB5C, 0xE69E60DA, 0xEBE7C22F, 0xB1EF6496,
+      0x740F578E, 0xFEAF7E51, 0x762D849E, 0xEDC1C4D4, 0x028F38BE, 0x31636BA7,
+      0xBB354E18, 0xE70C7239, 0x425AFE6E, 0xB09DA8AC, 0x25D02578, 0x4343533F,
+      0xACF0D063, 0x20CC1F13, 0x7E9EDAD2, 0xE5A44AA7, 0xC550F584, 0x101040DF,
+      0x0BC4A511, 0x706E5A5A, 0x71CE81A3, 0xBB75E3F2, 0x3EDA6848, 0x8B8F08F2,
+      0xA9384B2B, 0xB6C07F06, 0x6D644EE4, 0xCAD8CCB4, 0x3F70B461, 0x205F9F77,
+      0x4D9D54B7, 0xD69454CC, 0xF8BB504D, 0xFC4E595C,
   };
 
   int i;
-  for (i = 0; i < 64; i++) {
+  for (i = 0; i < 100; i++) {
     uint32_t got;
     wuffs_base__slice_u8 data = ((wuffs_base__slice_u8){
         .ptr = (uint8_t*)(digits),

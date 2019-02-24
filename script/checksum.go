@@ -48,11 +48,11 @@ func main1() error {
 	flag.Parse()
 
 	if *pi {
-		const digits = "3.1415926535897932384626433832795028841971693993751058209749445"
-		if len(digits) != 63 {
+		const digits = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170"
+		if len(digits) != 99 {
 			panic("bad len(digits)")
 		}
-		for i := 0; i < 64; i++ {
+		for i := 0; i < 100; i++ {
 			if err := do(strings.NewReader(digits[:i])); err != nil {
 				return err
 			}
