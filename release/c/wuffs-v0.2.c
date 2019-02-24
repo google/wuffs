@@ -54,15 +54,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// c5538078e4aa401af580bd3e5caf6072c56a779c committed on 2019-02-16.
+// d78101625ec2c4acba5458d370739e780a1170dd committed on 2019-02-24.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.32"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1625
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190216
-#define WUFFS_VERSION_STRING "0.2.0-alpha.32+1625.20190216"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.33"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1640
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190224
+#define WUFFS_VERSION_STRING "0.2.0-alpha.33+1640.20190224"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -186,15 +186,17 @@ extern const char* wuffs_base__error__disabled_by_previous_error;
 extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
 extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
+extern const char* wuffs_base__error__not_enough_data;
+extern const char* wuffs_base__error__too_much_data;
 
 static inline bool  //
 wuffs_base__status__is_complete(wuffs_base__status z) {
-  return (z == NULL) || ((*z != '$') && (*z != '?'));
+  return (z == NULL) || ((*z != '$') && (*z != '#'));
 }
 
 static inline bool  //
 wuffs_base__status__is_error(wuffs_base__status z) {
-  return z && (*z == '?');
+  return z && (*z == '#');
 }
 
 static inline bool  //
@@ -209,7 +211,7 @@ wuffs_base__status__is_suspension(wuffs_base__status z) {
 
 static inline bool  //
 wuffs_base__status__is_warning(wuffs_base__status z) {
-  return z && (*z != '$') && (*z != '?');
+  return z && (*z != '$') && (*z != '#');
 }
 
 // --------
@@ -2877,6 +2879,7 @@ struct wuffs_deflate__decoder__struct {
     uint32_t f_bits;
     uint32_t f_n_bits;
     uint32_t f_history_index;
+    uint32_t f_n_huffs_bits[2];
     bool f_end_of_block;
 
     uint32_t p_decode_io_writer[1];
@@ -2888,7 +2891,6 @@ struct wuffs_deflate__decoder__struct {
 
   struct {
     uint32_t f_huffs[2][1024];
-    uint32_t f_n_huffs_bits[2];
     uint8_t f_history[32768];
     uint8_t f_code_lengths[320];
 
@@ -3094,6 +3096,7 @@ struct wuffs_lzw__decoder__struct {
     uint32_t f_output_ri;
     uint32_t f_output_wi;
     uint32_t f_read_from_return_value;
+    uint16_t f_prefixes[4096];
 
     uint32_t p_decode_io_writer[1];
     uint32_t p_write_to[1];
@@ -3101,7 +3104,6 @@ struct wuffs_lzw__decoder__struct {
 
   struct {
     uint8_t f_suffixes[4096][8];
-    uint16_t f_prefixes[4096];
     uint16_t f_lm1s[4096];
     uint8_t f_output[8199];
 
@@ -3195,8 +3197,6 @@ extern const char* wuffs_gif__error__bad_extension_label;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
-extern const char* wuffs_gif__error__not_enough_pixel_data;
-extern const char* wuffs_gif__error__too_much_pixel_data;
 
 // ---------------- Public Consts
 
@@ -4788,25 +4788,27 @@ const char* wuffs_base__warning__end_of_data = "~base: end of data";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_argument_length_too_short =
-    "?base: bad argument (length too short)";
-const char* wuffs_base__error__bad_argument = "?base: bad argument";
-const char* wuffs_base__error__bad_call_sequence = "?base: bad call sequence";
-const char* wuffs_base__error__bad_receiver = "?base: bad receiver";
-const char* wuffs_base__error__bad_restart = "?base: bad restart";
+    "#base: bad argument (length too short)";
+const char* wuffs_base__error__bad_argument = "#base: bad argument";
+const char* wuffs_base__error__bad_call_sequence = "#base: bad call sequence";
+const char* wuffs_base__error__bad_receiver = "#base: bad receiver";
+const char* wuffs_base__error__bad_restart = "#base: bad restart";
 const char* wuffs_base__error__bad_sizeof_receiver =
-    "?base: bad sizeof receiver";
-const char* wuffs_base__error__bad_workbuf_length = "?base: bad workbuf length";
-const char* wuffs_base__error__bad_wuffs_version = "?base: bad wuffs version";
+    "#base: bad sizeof receiver";
+const char* wuffs_base__error__bad_workbuf_length = "#base: bad workbuf length";
+const char* wuffs_base__error__bad_wuffs_version = "#base: bad wuffs version";
 const char* wuffs_base__error__cannot_return_a_suspension =
-    "?base: cannot return a suspension";
+    "#base: cannot return a suspension";
 const char* wuffs_base__error__disabled_by_previous_error =
-    "?base: disabled by previous error";
+    "#base: disabled by previous error";
 const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed =
-    "?base: initialize falsely claimed already zeroed";
+    "#base: initialize falsely claimed already zeroed";
 const char* wuffs_base__error__initialize_not_called =
-    "?base: initialize not called";
+    "#base: initialize not called";
 const char* wuffs_base__error__interleaved_coroutine_calls =
-    "?base: interleaved coroutine calls";
+    "#base: interleaved coroutine calls";
+const char* wuffs_base__error__not_enough_data = "#base: not enough data";
+const char* wuffs_base__error__too_much_data = "#base: too much data";
 
 // ---------------- Images
 
@@ -4999,12 +5001,16 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6006,12 +6012,16 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6141,38 +6151,38 @@ wuffs_crc32__ieee_hasher__update(wuffs_crc32__ieee_hasher* self,
 // ---------------- Status Codes Implementations
 
 const char* wuffs_deflate__error__bad_huffman_code_over_subscribed =
-    "?deflate: bad Huffman code (over-subscribed)";
+    "#deflate: bad Huffman code (over-subscribed)";
 const char* wuffs_deflate__error__bad_huffman_code_under_subscribed =
-    "?deflate: bad Huffman code (under-subscribed)";
+    "#deflate: bad Huffman code (under-subscribed)";
 const char* wuffs_deflate__error__bad_huffman_code_length_count =
-    "?deflate: bad Huffman code length count";
+    "#deflate: bad Huffman code length count";
 const char* wuffs_deflate__error__bad_huffman_code_length_repetition =
-    "?deflate: bad Huffman code length repetition";
+    "#deflate: bad Huffman code length repetition";
 const char* wuffs_deflate__error__bad_huffman_code =
-    "?deflate: bad Huffman code";
+    "#deflate: bad Huffman code";
 const char* wuffs_deflate__error__bad_huffman_minimum_code_length =
-    "?deflate: bad Huffman minimum code length";
-const char* wuffs_deflate__error__bad_block = "?deflate: bad block";
-const char* wuffs_deflate__error__bad_distance = "?deflate: bad distance";
+    "#deflate: bad Huffman minimum code length";
+const char* wuffs_deflate__error__bad_block = "#deflate: bad block";
+const char* wuffs_deflate__error__bad_distance = "#deflate: bad distance";
 const char* wuffs_deflate__error__bad_distance_code_count =
-    "?deflate: bad distance code count";
+    "#deflate: bad distance code count";
 const char* wuffs_deflate__error__bad_literal_length_code_count =
-    "?deflate: bad literal/length code count";
+    "#deflate: bad literal/length code count";
 const char* wuffs_deflate__error__inconsistent_stored_block_length =
-    "?deflate: inconsistent stored block length";
+    "#deflate: inconsistent stored block length";
 const char* wuffs_deflate__error__missing_end_of_block_code =
-    "?deflate: missing end-of-block code";
+    "#deflate: missing end-of-block code";
 const char* wuffs_deflate__error__no_huffman_codes =
-    "?deflate: no Huffman codes";
+    "#deflate: no Huffman codes";
 const char*
     wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state =
-        "?deflate: internal error: inconsistent Huffman decoder state";
+        "#deflate: internal error: inconsistent Huffman decoder state";
 const char* wuffs_deflate__error__internal_error_inconsistent_i_o =
-    "?deflate: internal error: inconsistent I/O";
+    "#deflate: internal error: inconsistent I/O";
 const char* wuffs_deflate__error__internal_error_inconsistent_distance =
-    "?deflate: internal error: inconsistent distance";
+    "#deflate: internal error: inconsistent distance";
 const char* wuffs_deflate__error__internal_error_inconsistent_n_bits =
-    "?deflate: internal error: inconsistent n_bits";
+    "#deflate: internal error: inconsistent n_bits";
 
 // ---------------- Private Consts
 
@@ -6292,12 +6302,16 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6326,7 +6340,8 @@ wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -6931,7 +6946,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
       status = v_status;
       goto exit;
     }
-    v_mask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
+    v_mask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
     v_i = 0;
   label_0_continue:;
     while (v_i < (v_n_lit + v_n_dist)) {
@@ -6976,7 +6991,7 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
           status = wuffs_deflate__error__bad_huffman_code_length_repetition;
           goto exit;
         }
-        v_rep_symbol = self->private_data.f_code_lengths[(v_i - 1)];
+        v_rep_symbol = (self->private_data.f_code_lengths[(v_i - 1)] & 15);
         v_rep_count = 3;
       } else if (v_table_entry == 17) {
         v_n_extra_bits = 3;
@@ -7105,10 +7120,10 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
 
   v_i = a_n_codes0;
   while (v_i < a_n_codes1) {
-    if (v_counts[self->private_data.f_code_lengths[v_i]] >= 320) {
+    if (v_counts[(self->private_data.f_code_lengths[v_i] & 15)] >= 320) {
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
-    v_counts[self->private_data.f_code_lengths[v_i]] += 1;
+    v_counts[(self->private_data.f_code_lengths[v_i] & 15)] += 1;
     v_i += 1;
   }
   if ((((uint32_t)(v_counts[0])) + a_n_codes0) == a_n_codes1) {
@@ -7149,12 +7164,12 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
     if (self->private_data.f_code_lengths[v_i] != 0) {
-      if (v_offsets[self->private_data.f_code_lengths[v_i]] >= 320) {
+      if (v_offsets[(self->private_data.f_code_lengths[v_i] & 15)] >= 320) {
         return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
       }
-      v_symbols[v_offsets[self->private_data.f_code_lengths[v_i]]] =
+      v_symbols[v_offsets[(self->private_data.f_code_lengths[v_i] & 15)]] =
           ((uint16_t)((v_i - a_n_codes0)));
-      v_offsets[self->private_data.f_code_lengths[v_i]] += 1;
+      v_offsets[(self->private_data.f_code_lengths[v_i] & 15)] += 1;
     }
     v_i += 1;
   }
@@ -7181,9 +7196,9 @@ label_0_break:;
   }
 label_1_break:;
   if (v_max_cl <= 9) {
-    self->private_data.f_n_huffs_bits[a_which] = v_max_cl;
+    self->private_impl.f_n_huffs_bits[a_which] = v_max_cl;
   } else {
-    self->private_data.f_n_huffs_bits[a_which] = 9;
+    self->private_impl.f_n_huffs_bits[a_which] = 9;
   }
   v_i = 0;
   if ((v_n_symbols != ((uint32_t)(v_offsets[v_max_cl]))) ||
@@ -7197,8 +7212,9 @@ label_1_break:;
   if (v_max_cl < 9) {
     v_initial_high_bits = (((uint32_t)(1)) << v_max_cl);
   }
-  v_prev_cl = ((uint32_t)(self->private_data.f_code_lengths[(
-      a_n_codes0 + ((uint32_t)(v_symbols[0])))]));
+  v_prev_cl = ((uint32_t)((self->private_data.f_code_lengths[(
+                               a_n_codes0 + ((uint32_t)(v_symbols[0])))] &
+                           15)));
   v_prev_redirect_key = 4294967295;
   v_top = 0;
   v_next_top = 512;
@@ -7209,8 +7225,9 @@ label_1_break:;
     if ((a_n_codes0 + ((uint32_t)(v_symbols[v_i]))) >= 320) {
       return wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
     }
-    v_cl = ((uint32_t)(self->private_data.f_code_lengths[(
-        a_n_codes0 + ((uint32_t)(v_symbols[v_i])))]));
+    v_cl = ((uint32_t)((self->private_data.f_code_lengths[(
+                            a_n_codes0 + ((uint32_t)(v_symbols[v_i])))] &
+                        15)));
     if (v_cl > v_prev_cl) {
       v_code <<= (v_cl - v_prev_cl);
       if (v_code >= 32768) {
@@ -7363,8 +7380,8 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   }
   v_bits = self->private_impl.f_bits;
   v_n_bits = self->private_impl.f_n_bits;
-  v_lmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
-  v_dmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[1]) - 1);
+  v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+  v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
 label_0_continue:;
   while ((((uint64_t)(io1_a_dst - iop_a_dst)) >= 258) &&
          (((uint64_t)(io1_a_src - iop_a_src)) >= 12)) {
@@ -7700,8 +7717,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
     }
     v_bits = self->private_impl.f_bits;
     v_n_bits = self->private_impl.f_n_bits;
-    v_lmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[0]) - 1);
-    v_dmask = ((((uint32_t)(1)) << self->private_data.f_n_huffs_bits[1]) - 1);
+    v_lmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[0]) - 1);
+    v_dmask = ((((uint32_t)(1)) << self->private_impl.f_n_huffs_bits[1]) - 1);
   label_0_continue:;
     while (!(self->private_impl.p_decode_huffman_slow[0] != 0)) {
       while (true) {
@@ -8043,9 +8060,9 @@ exit:
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_lzw__error__bad_code = "?lzw: bad code";
+const char* wuffs_lzw__error__bad_code = "#lzw: bad code";
 const char* wuffs_lzw__error__internal_error_inconsistent_i_o =
-    "?lzw: internal error: inconsistent I/O";
+    "#lzw: internal error: inconsistent I/O";
 
 // ---------------- Private Consts
 
@@ -8083,12 +8100,16 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8136,7 +8157,8 @@ wuffs_lzw__decoder__workbuf_len(const wuffs_lzw__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -8325,15 +8347,15 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         v_lm1_a = ((self->private_data.f_lm1s[v_prev_code] + 1) & 4095);
         self->private_data.f_lm1s[v_save_code] = v_lm1_a;
         if ((v_lm1_a % 8) != 0) {
-          self->private_data.f_prefixes[v_save_code] =
-              self->private_data.f_prefixes[v_prev_code];
+          self->private_impl.f_prefixes[v_save_code] =
+              self->private_impl.f_prefixes[v_prev_code];
           memcpy(self->private_data.f_suffixes[v_save_code],
                  self->private_data.f_suffixes[v_prev_code],
                  sizeof(self->private_data.f_suffixes[v_save_code]));
           self->private_data.f_suffixes[v_save_code][(v_lm1_a % 8)] =
               ((uint8_t)(v_code));
         } else {
-          self->private_data.f_prefixes[v_save_code] =
+          self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
           self->private_data.f_suffixes[v_save_code][0] = ((uint8_t)(v_code));
         }
@@ -8371,7 +8393,7 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         }
         v_steps -= 1;
         v_o = ((v_o - 8) & 8191);
-        v_c = ((uint32_t)(self->private_data.f_prefixes[v_c]));
+        v_c = ((uint32_t)(self->private_impl.f_prefixes[v_c]));
       }
     label_1_break:;
       v_first_byte = self->private_data.f_suffixes[v_c][0];
@@ -8383,15 +8405,15 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
         v_lm1_b = ((self->private_data.f_lm1s[v_prev_code] + 1) & 4095);
         self->private_data.f_lm1s[v_save_code] = v_lm1_b;
         if ((v_lm1_b % 8) != 0) {
-          self->private_data.f_prefixes[v_save_code] =
-              self->private_data.f_prefixes[v_prev_code];
+          self->private_impl.f_prefixes[v_save_code] =
+              self->private_impl.f_prefixes[v_prev_code];
           memcpy(self->private_data.f_suffixes[v_save_code],
                  self->private_data.f_suffixes[v_prev_code],
                  sizeof(self->private_data.f_suffixes[v_save_code]));
           self->private_data.f_suffixes[v_save_code][(v_lm1_b % 8)] =
               v_first_byte;
         } else {
-          self->private_data.f_prefixes[v_save_code] =
+          self->private_impl.f_prefixes[v_save_code] =
               ((uint16_t)(v_prev_code));
           self->private_data.f_suffixes[v_save_code][0] =
               ((uint8_t)(v_first_byte));
@@ -8549,16 +8571,13 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self) {
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_gif__error__bad_block = "?gif: bad block";
-const char* wuffs_gif__error__bad_extension_label = "?gif: bad extension label";
-const char* wuffs_gif__error__bad_graphic_control = "?gif: bad graphic control";
-const char* wuffs_gif__error__bad_header = "?gif: bad header";
-const char* wuffs_gif__error__bad_literal_width = "?gif: bad literal width";
-const char* wuffs_gif__error__not_enough_pixel_data =
-    "?gif: not enough pixel data";
-const char* wuffs_gif__error__too_much_pixel_data = "?gif: too much pixel data";
+const char* wuffs_gif__error__bad_block = "#gif: bad block";
+const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
+const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
+const char* wuffs_gif__error__bad_header = "#gif: bad header";
+const char* wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
 const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
-    "?gif: internal error: inconsistent ri/wi";
+    "#gif: internal error: inconsistent ri/wi";
 
 // ---------------- Private Consts
 
@@ -8667,12 +8686,16 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   {
@@ -8791,7 +8814,8 @@ wuffs_gif__decoder__num_animation_loops(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8808,7 +8832,8 @@ wuffs_gif__decoder__num_decoded_frame_configs(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8822,7 +8847,8 @@ wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8836,7 +8862,8 @@ wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__rect_ie_u32){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__rect_ie_u32){0});
   }
 
@@ -8856,7 +8883,8 @@ wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -10655,6 +10683,14 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   label_0_break:;
     self->private_impl.f_compressed_ri = 0;
     self->private_impl.f_compressed_wi = 0;
+    if ((self->private_impl.f_dst_y < self->private_impl.f_frame_rect_y1) &&
+        (self->private_impl.f_frame_rect_x0 !=
+         self->private_impl.f_frame_rect_x1) &&
+        (self->private_impl.f_frame_rect_y0 !=
+         self->private_impl.f_frame_rect_y1)) {
+      status = wuffs_base__error__not_enough_data;
+      goto exit;
+    }
 
     goto ok;
   ok:
@@ -10707,7 +10743,7 @@ label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
     if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
-      return wuffs_gif__error__too_much_pixel_data;
+      return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) *
@@ -10794,11 +10830,11 @@ label_0_break:;
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_gzip__error__bad_checksum = "?gzip: bad checksum";
+const char* wuffs_gzip__error__bad_checksum = "#gzip: bad checksum";
 const char* wuffs_gzip__error__bad_compression_method =
-    "?gzip: bad compression method";
-const char* wuffs_gzip__error__bad_encoding_flags = "?gzip: bad encoding flags";
-const char* wuffs_gzip__error__bad_header = "?gzip: bad header";
+    "#gzip: bad compression method";
+const char* wuffs_gzip__error__bad_encoding_flags = "#gzip: bad encoding flags";
+const char* wuffs_gzip__error__bad_header = "#gzip: bad header";
 
 // ---------------- Private Consts
 
@@ -10828,12 +10864,16 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   {
@@ -10893,7 +10933,8 @@ wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -11272,14 +11313,14 @@ exit:
 
 // ---------------- Status Codes Implementations
 
-const char* wuffs_zlib__error__bad_checksum = "?zlib: bad checksum";
+const char* wuffs_zlib__error__bad_checksum = "#zlib: bad checksum";
 const char* wuffs_zlib__error__bad_compression_method =
-    "?zlib: bad compression method";
+    "#zlib: bad compression method";
 const char* wuffs_zlib__error__bad_compression_window_size =
-    "?zlib: bad compression window size";
-const char* wuffs_zlib__error__bad_parity_check = "?zlib: bad parity check";
+    "#zlib: bad compression window size";
+const char* wuffs_zlib__error__bad_parity_check = "#zlib: bad parity check";
 const char* wuffs_zlib__error__todo_unsupported_preset_dictionary =
-    "?zlib: TODO: unsupported preset dictionary";
+    "#zlib: TODO: unsupported preset dictionary";
 
 // ---------------- Private Consts
 
@@ -11309,12 +11350,16 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
-  } else if ((initialize_flags &
-              WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) != 0) {
-    memset(&(self->private_impl), 0, sizeof(self->private_impl));
   } else {
-    memset(self, 0, sizeof(*self));
-    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    void* p = &(self->private_impl);
+    size_t n = sizeof(self->private_impl);
+    if ((initialize_flags &
+         WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
+      p = self;
+      n = sizeof(*self);
+      initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    }
+    memset(p, 0, n);
   }
 
   {
@@ -11374,7 +11419,8 @@ wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
