@@ -4999,9 +4999,18 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -6010,9 +6019,18 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -6300,9 +6318,18 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -8098,9 +8125,18 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -8684,9 +8720,18 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -10862,9 +10907,18 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
@@ -11348,9 +11402,18 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   }
 
   if ((initialize_flags & WUFFS_INITIALIZE__ALREADY_ZEROED) != 0) {
+// The whole point of this if-check is to detect an uninitialized *self.
+// We disable the warning on GCC. Clang-5.0 does not have this warning.
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     if (self->private_impl.magic != 0) {
       return wuffs_base__error__initialize_falsely_claimed_already_zeroed;
     }
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   } else {
     void* p = &(self->private_impl);
     size_t n = sizeof(self->private_impl);
