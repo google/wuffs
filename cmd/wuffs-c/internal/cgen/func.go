@@ -244,7 +244,13 @@ func (g *gen) writeFuncImplPrologue(b *buffer) error {
 		}
 		b.writes(";}")
 
-		b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) { return ")
+		if g.currFunk.astFunc.Effect().Pure() {
+			b.writes("if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&")
+			b.writes("    (self->private_impl.magic != WUFFS_BASE__DISABLED)) {")
+		} else {
+			b.writes("if (self->private_impl.magic != WUFFS_BASE__MAGIC) {")
+		}
+		b.writes("return ")
 		if g.currFunk.returnsStatus {
 			b.writes("(self->private_impl.magic == WUFFS_BASE__DISABLED) " +
 				"? wuffs_base__error__disabled_by_previous_error " +

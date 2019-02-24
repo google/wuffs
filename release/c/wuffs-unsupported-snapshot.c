@@ -6339,7 +6339,8 @@ wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -8155,7 +8156,8 @@ wuffs_lzw__decoder__workbuf_len(const wuffs_lzw__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -8811,7 +8813,8 @@ wuffs_gif__decoder__num_animation_loops(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8828,7 +8831,8 @@ wuffs_gif__decoder__num_decoded_frame_configs(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8842,7 +8846,8 @@ wuffs_gif__decoder__num_decoded_frames(const wuffs_gif__decoder* self) {
   if (!self) {
     return 0;
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return 0;
   }
 
@@ -8856,7 +8861,8 @@ wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__rect_ie_u32){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__rect_ie_u32){0});
   }
 
@@ -8876,7 +8882,8 @@ wuffs_gif__decoder__workbuf_len(const wuffs_gif__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -10925,7 +10932,8 @@ wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 
@@ -11410,7 +11418,8 @@ wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self) {
   if (!self) {
     return ((wuffs_base__range_ii_u64){0});
   }
-  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
     return ((wuffs_base__range_ii_u64){0});
   }
 

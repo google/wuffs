@@ -1032,16 +1032,8 @@ const char* test_wuffs_gif_decode_not_enough_data() {
     return status;
   }
 
-  // TODO: want_dirty_rect_is_empty should probably be false, not true. It's
-  // true because the error sets the decoder state (specifically, the
-  // private_impl.magic field) to WUFFS_BASE__DISABLED, so that
-  // frame_dirty_rect returns the zero value (an empty rect).
-  //
-  // Perhaps "not enough data" should be a warning, not an error??
-  //
-  // Ditto for the "too much data" test.
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__error__not_enough_data, true);
+      src, wuffs_base__error__not_enough_data, false);
 }
 
 const char* test_wuffs_gif_decode_too_much_data() {
@@ -1058,7 +1050,7 @@ const char* test_wuffs_gif_decode_too_much_data() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__error__too_much_data, true);
+      src, wuffs_base__error__too_much_data, false);
 }
 
 const char* test_wuffs_gif_frame_dirty_rect() {
