@@ -1019,6 +1019,23 @@ const char* test_wuffs_gif_decode_multiple_loop_counts() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_pixel_data_none() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-pixel-data-none.gif");
+  if (status) {
+    return status;
+  }
+
+  return do_test_wuffs_gif_decode_expecting(
+      src, wuffs_base__error__not_enough_data, true);
+}
+
 const char* test_wuffs_gif_decode_not_enough_data() {
   CHECK_FOCUS(__func__);
 
@@ -1669,6 +1686,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_png,                    //
     test_wuffs_gif_decode_missing_two_src_bytes,             //
     test_wuffs_gif_decode_multiple_loop_counts,              //
+    test_wuffs_gif_decode_pixel_data_none,                   //
     test_wuffs_gif_decode_not_enough_data,                   //
     test_wuffs_gif_decode_too_much_data,                     //
     test_wuffs_gif_frame_dirty_rect,                         //
