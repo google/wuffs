@@ -204,7 +204,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				lm1_a = (this.lm1s[prev_code] ~mod+ 1) & 4095
 				this.lm1s[save_code] = lm1_a
 
-				if (lm1_a % 8) != 0 {
+				if (lm1_a % 8) <> 0 {
 					this.prefixes[save_code] = this.prefixes[prev_code]
 					this.suffixes[save_code] = this.suffixes[prev_code]
 					this.suffixes[save_code][lm1_a % 8] = code as base.u8
@@ -277,7 +277,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				lm1_b = (this.lm1s[prev_code] ~mod+ 1) & 4095
 				this.lm1s[save_code] = lm1_b
 
-				if (lm1_b % 8) != 0 {
+				if (lm1_b % 8) <> 0 {
 					this.prefixes[save_code] = this.prefixes[prev_code]
 					this.suffixes[save_code] = this.suffixes[prev_code]
 					this.suffixes[save_code][lm1_b % 8] = first_byte
@@ -310,7 +310,7 @@ pri func decoder.read_from!(src base.io_reader) {
 
 	// Rewind args.src, if we're not in "$short read" and we've read too many
 	// bits.
-	if this.read_from_return_value != 2 {
+	if this.read_from_return_value <> 2 {
 		while n_bits >= 8 {
 			n_bits -= 8
 			if args.src.can_undo_byte() {

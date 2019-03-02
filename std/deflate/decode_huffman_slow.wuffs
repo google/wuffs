@@ -38,7 +38,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	// decode_huffman_*.wuffs files as small as possible, while retaining both
 	// correctness and performance.
 
-	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
 		return "#internal error: inconsistent n_bits"
 	}
 
@@ -64,17 +64,17 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			n_bits += 8
 		}
 
-		if (table_entry >> 31) != 0 {
+		if (table_entry >> 31) <> 0 {
 			// Literal.
 			args.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
 			continue:loop
-		} else if (table_entry >> 30) != 0 {
+		} else if (table_entry >> 30) <> 0 {
 			// No-op; code continues past the if-else chain.
-		} else if (table_entry >> 29) != 0 {
+		} else if (table_entry >> 29) <> 0 {
 			// End of block.
 			this.end_of_block = true
 			break:loop
-		} else if (table_entry >> 28) != 0 {
+		} else if (table_entry >> 28) <> 0 {
 			// Redirect.
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
@@ -96,25 +96,25 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 				n_bits += 8
 			}
 
-			if (table_entry >> 31) != 0 {
+			if (table_entry >> 31) <> 0 {
 				// Literal.
 				args.dst.write_u8?(x:((table_entry >> 8) & 0xFF) as base.u8)
 				continue:loop
-			} else if (table_entry >> 30) != 0 {
+			} else if (table_entry >> 30) <> 0 {
 				// No-op; code continues past the if-else chain.
-			} else if (table_entry >> 29) != 0 {
+			} else if (table_entry >> 29) <> 0 {
 				// End of block.
 				this.end_of_block = true
 				break:loop
-			} else if (table_entry >> 28) != 0 {
+			} else if (table_entry >> 28) <> 0 {
 				return "#internal error: inconsistent Huffman decoder state"
-			} else if (table_entry >> 27) != 0 {
+			} else if (table_entry >> 27) <> 0 {
 				return "#bad Huffman code"
 			} else {
 				return "#internal error: inconsistent Huffman decoder state"
 			}
 
-		} else if (table_entry >> 27) != 0 {
+		} else if (table_entry >> 27) <> 0 {
 			return "#bad Huffman code"
 		} else {
 			return "#internal error: inconsistent Huffman decoder state"
@@ -180,7 +180,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 		}
 
 		// For H-D, all symbols should be base_number + extra_bits.
-		if (table_entry >> 24) != 0x40 {
+		if (table_entry >> 24) <> 0x40 {
 			if (table_entry >> 24) == 0x08 {
 				return "#bad Huffman code"
 			}
@@ -287,7 +287,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	this.bits = bits
 	this.n_bits = n_bits
 
-	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
 		return "#internal error: inconsistent n_bits"
 	}
 }

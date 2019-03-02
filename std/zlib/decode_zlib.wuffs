@@ -51,16 +51,16 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	var checksum_want base.u32
 
 	x = args.src.read_u16be?()
-	if ((x >> 8) & 0x0F) != 0x08 {
+	if ((x >> 8) & 0x0F) <> 0x08 {
 		return "#bad compression method"
 	}
 	if (x >> 12) > 0x07 {
 		return "#bad compression window size"
 	}
-	if (x & 0x20) != 0 {
+	if (x & 0x20) <> 0 {
 		return "#TODO: unsupported preset dictionary"
 	}
-	if (x % 31) != 0 {
+	if (x % 31) <> 0 {
 		return "#bad parity check"
 	}
 
@@ -77,7 +77,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 		yield? status
 	}
 	checksum_want = args.src.read_u32be?()
-	if (not this.ignore_checksum) and (checksum_got != checksum_want) {
+	if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
 		return "#bad checksum"
 	}
 }

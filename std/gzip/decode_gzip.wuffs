@@ -54,15 +54,15 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	// Read the header.
 	c = args.src.read_u8?()
-	if c != 0x1F {
+	if c <> 0x1F {
 		return "#bad header"
 	}
 	c = args.src.read_u8?()
-	if c != 0x8B {
+	if c <> 0x8B {
 		return "#bad header"
 	}
 	c = args.src.read_u8?()
-	if c != 0x08 {
+	if c <> 0x08 {
 		return "#bad compression method"
 	}
 	flags = args.src.read_u8?()
@@ -70,7 +70,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	args.src.skip?(n:6)
 
 	// Handle FEXTRA.
-	if (flags & 0x04) != 0 {
+	if (flags & 0x04) <> 0 {
 		xlen = args.src.read_u16le?()
 		args.src.skip?(n:xlen as base.u32)
 	}
@@ -80,7 +80,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	// TODO: API for returning the header's FNAME field. This might require
 	// converting ISO 8859-1 to UTF-8. We may also want to cap the UTF-8
 	// filename length to NAME_MAX, which is 255.
-	if (flags & 0x08) != 0 {
+	if (flags & 0x08) <> 0 {
 		while true {
 			c = args.src.read_u8?()
 			if c == 0 {
@@ -90,7 +90,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 
 	// Handle FCOMMENT.
-	if (flags & 0x10) != 0 {
+	if (flags & 0x10) <> 0 {
 		while true {
 			c = args.src.read_u8?()
 			if c == 0 {
@@ -100,12 +100,12 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 
 	// Handle FHCRC.
-	if (flags & 0x02) != 0 {
+	if (flags & 0x02) <> 0 {
 		args.src.skip?(n:2)
 	}
 
 	// Reserved flags bits must be zero.
-	if (flags & 0xE0) != 0 {
+	if (flags & 0xE0) <> 0 {
 		return "#bad encoding flags"
 	}
 
@@ -125,7 +125,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	checksum_want = args.src.read_u32le?()
 	decoded_length_want = args.src.read_u32le?()
 	if (not this.ignore_checksum) and
-		((checksum_got != checksum_want) or (decoded_length_got != decoded_length_want)) {
+		((checksum_got <> checksum_want) or (decoded_length_got <> decoded_length_want)) {
 		return "#bad checksum"
 	}
 }

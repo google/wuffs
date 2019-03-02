@@ -259,14 +259,14 @@ pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
 	// TODO: make this "if" into a function invariant?
 	//
 	// Ditto for decode_huffman_slow and decode_huffman_fast.
-	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) != 0) {
+	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {
 		return "#internal error: inconsistent n_bits"
 	}
 	this.n_bits = 0
 	this.bits = 0
 
 	length = args.src.read_u32le?()
-	if (length.low_bits(n:16) + length.high_bits(n:16)) != 0xFFFF {
+	if (length.low_bits(n:16) + length.high_bits(n:16)) <> 0xFFFF {
 		return "#inconsistent stored block length"
 	}
 	length = length.low_bits(n:16)
@@ -414,7 +414,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 		}
 		// For H-CL, there should be no redirections and all symbols should be
 		// literals.
-		if (table_entry >> 24) != 0x80 {
+		if (table_entry >> 24) <> 0x80 {
 			return "#internal error: inconsistent Huffman decoder state"
 		}
 		table_entry = (table_entry >> 8) & 0xFF
@@ -477,7 +477,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 		}
 	}
 
-	if i != (n_lit + n_dist) {
+	if i <> (n_lit + n_dist) {
 		return "#bad Huffman code length count"
 	}
 	if this.code_lengths[256] == 0 {
@@ -588,7 +588,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		remaining -= counts[i] as base.u32
 		i += 1
 	}
-	if remaining != 0 {
+	if remaining <> 0 {
 		// TODO: when is a degenerate Huffman table valid?
 		return "#bad Huffman code (under-subscribed)"
 	}
@@ -649,7 +649,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		if i < args.n_codes0 {
 			return "#internal error: inconsistent Huffman decoder state"
 		}
-		if this.code_lengths[i] != 0 {
+		if this.code_lengths[i] <> 0 {
 			if offsets[this.code_lengths[i] & 15] >= 320 {
 				return "#internal error: inconsistent Huffman decoder state"
 			}
@@ -668,7 +668,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	while true,
 		inv n_symbols <= 288,
 	{
-		if counts[min_cl] != 0 {
+		if counts[min_cl] <> 0 {
 			break
 		}
 		if min_cl >= 9 {
@@ -680,7 +680,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	while true,
 		inv n_symbols <= 288,
 	{
-		if counts[max_cl] != 0 {
+		if counts[max_cl] <> 0 {
 			break
 		}
 		if max_cl <= 1 {
@@ -709,7 +709,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 	//  - this.huffs[0][0b01111] = 0x80000305 (literal, symbols[8]=0x03, code_length=5)
 	//  - this.huffs[0][0b11111] = 0x80001805 (literal, symbols[9]=0x18, code_length=5)
 	i = 0
-	if (n_symbols != (offsets[max_cl] as base.u32)) or (n_symbols != (offsets[15] as base.u32)) {
+	if (n_symbols <> (offsets[max_cl] as base.u32)) or (n_symbols <> (offsets[15] as base.u32)) {
 		return "#internal error: inconsistent Huffman decoder state"
 	}
 	if (args.n_codes0 + (symbols[0] as base.u32)) >= 320 {
@@ -753,7 +753,7 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 
 			redirect_key = (key >> cl) & 511
 			key = key.low_bits(n:cl)
-			if prev_redirect_key != redirect_key {
+			if prev_redirect_key <> redirect_key {
 				prev_redirect_key = redirect_key
 
 				// Calculate the number of bits needed for the 2nd level table.

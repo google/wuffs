@@ -86,7 +86,7 @@ func TestCheck(tt *testing.T) {
 			while:label p == q,
 				pre true,
 				inv true,
-				post p != q,
+				post p <> q,
 			{
 				// Redundant, but shows the labeled jump syntax.
 				continue:label
@@ -191,7 +191,7 @@ func TestConstValues(tt *testing.T) {
 		"i = 10  | 3": 11,
 		"i = 10  ^ 3": 9,
 
-		"b = 10 != 3": 1,
+		"b = 10 <> 3": 1,
 		"b = 10  < 3": 0,
 		"b = 10 <= 3": 0,
 		"b = 10 == 3": 0,

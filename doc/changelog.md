@@ -21,6 +21,7 @@
 - Spun `std/zlib` out of `std/flate`.
 - Let the `std/zlib` decoder ignore checksums.
 - Renamed `std/flate` to `std/deflate`.
+- Renamed `!=` to `<>`; `!` is now only for impure functions.
 - Renamed `~+` to `~mod+`; added `~mod-`, `~sat+` and `~sat-`.
 - Removed `&^`.
 - Renamed `$(etc)` to `[etc]`.
@@ -67,4 +68,4 @@
 
 ---
 
-Updated on February 2019.
+Updated on March 2019.

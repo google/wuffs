@@ -659,7 +659,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDTildeSatPlus:   "~sat+",
 	IDTildeSatMinus:  "~sat-",
 
-	IDNotEq:       "!=",
+	IDNotEq:       "<>",
 	IDLessThan:    "<",
 	IDLessEq:      "<=",
 	IDEqEq:        "==",
@@ -954,6 +954,7 @@ var squiggles = [256]ID{
 	'}': IDCloseCurly,
 
 	',': IDComma,
+	'!': IDExclam,
 	'?': IDQuestion,
 	':': IDColon,
 	';': IDSemicolon,
@@ -974,10 +975,6 @@ var lexers = [256][]suffixLexer{
 	'.': {
 		{".", IDDotDot},
 		{"", IDDot},
-	},
-	'!': {
-		{"=", IDNotEq},
-		{"", IDExclam},
 	},
 	'&': {
 		{"=", IDAmpEq},
@@ -1020,6 +1017,7 @@ var lexers = [256][]suffixLexer{
 		{"<=", IDShiftLEq},
 		{"<", IDShiftL},
 		{"=", IDLessEq},
+		{">", IDNotEq},
 		{"", IDLessThan},
 	},
 	'>': {
