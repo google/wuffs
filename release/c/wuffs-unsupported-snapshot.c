@@ -4785,7 +4785,7 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
     0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF,
 };
 
-const char* wuffs_base__warning__end_of_data = "~base: end of data";
+const char* wuffs_base__warning__end_of_data = "@base: end of data";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
 const char* wuffs_base__error__bad_argument_length_too_short =

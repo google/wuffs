@@ -228,7 +228,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	// This is a new "if", not an "else", because the calls above can modify
 	// this.end_of_data.
 	if this.end_of_data {
-		return base."~end of data"
+		return base."@end of data"
 	}
 
 	blend = 0

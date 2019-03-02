@@ -21,7 +21,7 @@ import (
 
 var Statuses = [...]string{
 	// Warnings.
-	`"~end of data"`,
+	`"@end of data"`,
 
 	// Suspensions.
 	`"$short read"`,
