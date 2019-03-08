@@ -34,13 +34,10 @@ wuffs_base__malloc_slice_u8(void* (*malloc_func)(size_t), uint64_t num_u8) {
   if (malloc_func && (num_u8 <= (SIZE_MAX / sizeof(uint8_t)))) {
     void* p = (*malloc_func)(num_u8 * sizeof(uint8_t));
     if (p) {
-      return ((wuffs_base__slice_u8){
-          .ptr = (uint8_t*)(p),
-          .len = num_u8,
-      });
+      return wuffs_base__make_slice_u8((uint8_t*)(p), num_u8);
     }
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 static inline wuffs_base__slice_u16  //
@@ -48,13 +45,10 @@ wuffs_base__malloc_slice_u16(void* (*malloc_func)(size_t), uint64_t num_u16) {
   if (malloc_func && (num_u16 <= (SIZE_MAX / sizeof(uint16_t)))) {
     void* p = (*malloc_func)(num_u16 * sizeof(uint16_t));
     if (p) {
-      return ((wuffs_base__slice_u16){
-          .ptr = (uint16_t*)(p),
-          .len = num_u16,
-      });
+      return wuffs_base__make_slice_u16((uint16_t*)(p), num_u16);
     }
   }
-  return ((wuffs_base__slice_u16){0});
+  return wuffs_base__make_slice_u16(NULL, 0);
 }
 
 static inline wuffs_base__slice_u32  //
@@ -62,13 +56,10 @@ wuffs_base__malloc_slice_u32(void* (*malloc_func)(size_t), uint64_t num_u32) {
   if (malloc_func && (num_u32 <= (SIZE_MAX / sizeof(uint32_t)))) {
     void* p = (*malloc_func)(num_u32 * sizeof(uint32_t));
     if (p) {
-      return ((wuffs_base__slice_u32){
-          .ptr = (uint32_t*)(p),
-          .len = num_u32,
-      });
+      return wuffs_base__make_slice_u32((uint32_t*)(p), num_u32);
     }
   }
-  return ((wuffs_base__slice_u32){0});
+  return wuffs_base__make_slice_u32(NULL, 0);
 }
 
 static inline wuffs_base__slice_u64  //
@@ -76,13 +67,10 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
   if (malloc_func && (num_u64 <= (SIZE_MAX / sizeof(uint64_t)))) {
     void* p = (*malloc_func)(num_u64 * sizeof(uint64_t));
     if (p) {
-      return ((wuffs_base__slice_u64){
-          .ptr = (uint64_t*)(p),
-          .len = num_u64,
-      });
+      return wuffs_base__make_slice_u64((uint64_t*)(p), num_u64);
     }
   }
-  return ((wuffs_base__slice_u64){0});
+  return wuffs_base__make_slice_u64(NULL, 0);
 }
 
 // ---------------- Bureaucracy re -Wunused-function

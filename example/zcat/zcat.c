@@ -91,18 +91,21 @@ static const char* decode() {
     return status;
   }
 
-  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = dst_buffer,
-          .len = DST_BUFFER_SIZE,
-      }),
-  });
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = src_buffer,
-          .len = SRC_BUFFER_SIZE,
-      }),
-  });
+  wuffs_base__io_buffer dst;
+  dst.data.ptr = dst_buffer;
+  dst.data.len = DST_BUFFER_SIZE;
+  dst.meta.wi = 0;
+  dst.meta.ri = 0;
+  dst.meta.pos = 0;
+  dst.meta.closed = false;
+
+  wuffs_base__io_buffer src;
+  src.data.ptr = src_buffer;
+  src.data.len = SRC_BUFFER_SIZE;
+  src.meta.wi = 0;
+  src.meta.ri = 0;
+  src.meta.pos = 0;
+  src.meta.closed = false;
 
   while (true) {
     const int stdin_fd = 0;
@@ -123,10 +126,7 @@ static const char* decode() {
       status = wuffs_gzip__decoder__decode_io_writer(
           &dec, wuffs_base__io_buffer__writer(&dst),
           wuffs_base__io_buffer__reader(&src),
-          ((wuffs_base__slice_u8){
-              .ptr = work_buffer,
-              .len = WORK_BUFFER_SIZE,
-          }));
+          wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
 
       if (dst.meta.wi) {
         // TODO: handle EINTR and other write errors; see "man 2 write".

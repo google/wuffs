@@ -218,17 +218,39 @@ func (g *gen) gatherFuncImpl(_ *buffer, n *a.Func) error {
 
 func (g *gen) writeOutParamZeroValue(b *buffer, typ *a.TypeExpr) error {
 	if typ == nil {
-		b.writes("((wuffs_base__empty_struct){0})")
+		b.writes("wuffs_base__make_empty_struct()")
+		return nil
 	} else if typ.IsNumType() {
 		b.writes("0")
-	} else {
-		b.writes("((")
-		if err := g.writeCTypeName(b, typ, "", ""); err != nil {
-			return err
+		return nil
+	} else if typ.IsSliceType() {
+		if inner := typ.Inner(); (inner.Decorator() == 0) && (inner.QID() == t.QID{t.IDBase, t.IDU8}) {
+			b.writes("wuffs_base__make_slice_u8(NULL, 0)")
+			return nil
 		}
-		b.writes("){0})")
+	} else if (typ.Decorator() == 0) && (typ.QID()[0] == t.IDBase) {
+		switch typ.QID()[1] {
+		case t.IDRangeIEU32:
+			b.writes("wuffs_base__utility__make_range_ie_u32(0, 0)")
+			return nil
+		case t.IDRangeIIU32:
+			b.writes("wuffs_base__utility__make_range_ii_u32(0, 0)")
+			return nil
+		case t.IDRangeIEU64:
+			b.writes("wuffs_base__utility__make_range_ie_u64(0, 0)")
+			return nil
+		case t.IDRangeIIU64:
+			b.writes("wuffs_base__utility__make_range_ii_u64(0, 0)")
+			return nil
+		case t.IDRectIEU32:
+			b.writes("wuffs_base__utility__make_rect_ie_u32(0, 0, 0, 0)")
+			return nil
+		case t.IDRectIIU32:
+			b.writes("wuffs_base__utility__make_rect_ii_u32(0, 0, 0, 0)")
+			return nil
+		}
 	}
-	return nil
+	return fmt.Errorf("internal error: cannot write the zero value of type %q", typ.Str(g.tm))
 }
 
 func (g *gen) writeFuncImplPrologue(b *buffer) error {
@@ -385,7 +407,7 @@ func (g *gen) writeFuncImplEpilogue(b *buffer) error {
 		}
 		b.writes("return status;\n")
 	} else if g.currFunk.astFunc.Out() == nil {
-		b.writes("return ((wuffs_base__empty_struct){0});\n")
+		b.writes("return wuffs_base__make_empty_struct();\n")
 	}
 	return nil
 }
@@ -454,7 +476,7 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 		b.writes("return wuffs_base__error__bad_argument;\n\n")
 	} else {
 		// TODO: don't assume that the return type is empty.
-		b.printf("return ((wuffs_base__empty_struct){0});\n")
+		b.printf("return wuffs_base__make_empty_struct();\n")
 	}
 	b.writes("}\n")
 	return nil

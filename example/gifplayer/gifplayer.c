@@ -42,7 +42,7 @@ support true color: https://gist.github.com/XVilka/8346728
 bool started = false;
 struct timespec start_time;
 
-uint64_t micros_since_start(struct timespec* now) {
+int64_t micros_since_start(struct timespec* now) {
   if (!started) {
     return 0;
   }
@@ -88,13 +88,13 @@ wuffs_base__color_u32_argb_premul* curr_dst_buffer = NULL;
 wuffs_base__color_u32_argb_premul* prev_dst_buffer = NULL;
 size_t dst_len;  // Length in bytes.
 
-wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
-wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){});
-wuffs_base__slice_u8 printbuf = ((wuffs_base__slice_u8){});
+wuffs_base__slice_u8 pixbuf = {0};
+wuffs_base__slice_u8 workbuf = {0};
+wuffs_base__slice_u8 printbuf = {0};
 
 bool first_play = true;
 uint32_t num_loops_remaining = 0;
-wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+wuffs_base__pixel_buffer pb = {0};
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
@@ -273,11 +273,11 @@ const char* allocate(wuffs_gif__decoder* dec, wuffs_base__image_config* ic) {
   const char* status = try_allocate(dec, ic);
   if (status) {
     free(printbuf.ptr);
-    printbuf = ((wuffs_base__slice_u8){});
+    printbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(workbuf.ptr);
-    workbuf = ((wuffs_base__slice_u8){});
+    workbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(pixbuf.ptr);
-    pixbuf = ((wuffs_base__slice_u8){});
+    pixbuf = wuffs_base__make_slice_u8(NULL, 0);
     free(prev_dst_buffer);
     prev_dst_buffer = NULL;
     free(curr_dst_buffer);
@@ -295,22 +295,17 @@ const char* play() {
     return status;
   }
 
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = src_buffer,
-          .len = src_len,
-      }),
-      .meta = ((wuffs_base__io_buffer_meta){
-          .wi = src_len,
-          .ri = 0,
-          .pos = 0,
-          .closed = true,
-      }),
-  });
+  wuffs_base__io_buffer src;
+  src.data.ptr = src_buffer;
+  src.data.len = src_len;
+  src.meta.wi = src_len;
+  src.meta.ri = 0;
+  src.meta.pos = 0;
+  src.meta.closed = true;
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (first_play) {
-    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    wuffs_base__image_config ic = {0};
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
     if (status) {
       return status;
@@ -342,7 +337,7 @@ const char* play() {
   }
 
   while (1) {
-    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+    wuffs_base__frame_config fc = {0};
     wuffs_base__status status =
         wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
     if (status) {
@@ -391,7 +386,7 @@ const char* play() {
       if (clock_gettime(CLOCK_MONOTONIC, &now)) {
         return strerror(errno);
       }
-      uint64_t elapsed_micros = micros_since_start(&now);
+      int64_t elapsed_micros = micros_since_start(&now);
       if (cumulative_delay_micros > elapsed_micros) {
         usleep(cumulative_delay_micros - elapsed_micros);
       }

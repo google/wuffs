@@ -290,16 +290,18 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		} else if typ.IsStatus() {
 			b.writes(" = NULL;\n")
 		} else if typ.IsIOType() {
-			b.writes(" = {.private_impl = {0}};\n")
+			typName := "reader"
+			if typ.QID()[1] == t.IDIOWriter {
+				typName = "writer"
+			}
+			b.printf(" = wuffs_base__utility__null_io_%s();\n", typName)
 		} else {
 			b.writes(" = {0};\n")
 		}
 
 		if typ.IsIOType() {
-			b.printf("wuffs_base__io_buffer %s%s WUFFS_BASE__POTENTIALLY_UNUSED = {"+
-				".data = ((wuffs_base__slice_u8){0}),\n"+
-				".meta = ((wuffs_base__io_buffer_meta){0}),\n"+
-				"};\n", uPrefix, name)
+			b.printf("wuffs_base__io_buffer %s%s WUFFS_BASE__POTENTIALLY_UNUSED = "+
+				"wuffs_base__utility__null_io_buffer();\n", uPrefix, name)
 			preName := vPrefix + name
 			// TODO: io0_etc variables?
 			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)

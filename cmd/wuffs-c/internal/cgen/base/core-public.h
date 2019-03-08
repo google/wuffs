@@ -118,6 +118,13 @@ typedef struct {
   uint8_t private_impl;
 } wuffs_base__empty_struct;
 
+static inline wuffs_base__empty_struct  //
+wuffs_base__make_empty_struct() {
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
+}
+
 // wuffs_base__utility is a placeholder receiver type. It enables what Java
 // calls static methods, as opposed to regular methods.
 typedef struct {
@@ -334,18 +341,47 @@ typedef WUFFS_BASE__TABLE(uint16_t) wuffs_base__table_u16;
 typedef WUFFS_BASE__TABLE(uint32_t) wuffs_base__table_u32;
 typedef WUFFS_BASE__TABLE(uint64_t) wuffs_base__table_u64;
 
+static inline wuffs_base__slice_u8  //
+wuffs_base__make_slice_u8(uint8_t* ptr, size_t len) {
+  wuffs_base__slice_u8 ret;
+  ret.ptr = ptr;
+  ret.len = len;
+  return ret;
+}
+
+static inline wuffs_base__slice_u16  //
+wuffs_base__make_slice_u16(uint16_t* ptr, size_t len) {
+  wuffs_base__slice_u16 ret;
+  ret.ptr = ptr;
+  ret.len = len;
+  return ret;
+}
+
+static inline wuffs_base__slice_u32  //
+wuffs_base__make_slice_u32(uint32_t* ptr, size_t len) {
+  wuffs_base__slice_u32 ret;
+  ret.ptr = ptr;
+  ret.len = len;
+  return ret;
+}
+
+static inline wuffs_base__slice_u64  //
+wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
+  wuffs_base__slice_u64 ret;
+  ret.ptr = ptr;
+  ret.len = len;
+  return ret;
+}
+
 // wuffs_base__slice_u8__subslice_i returns s[i:].
 //
 // It returns an empty slice if i is out of bounds.
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
   if ((i <= SIZE_MAX) && (i <= s.len)) {
-    return ((wuffs_base__slice_u8){
-        .ptr = s.ptr + i,
-        .len = s.len - i,
-    });
+    return wuffs_base__make_slice_u8(s.ptr + i, s.len - i);
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 // wuffs_base__slice_u8__subslice_j returns s[:j].
@@ -354,12 +390,9 @@ wuffs_base__slice_u8__subslice_i(wuffs_base__slice_u8 s, uint64_t i) {
 static inline wuffs_base__slice_u8  //
 wuffs_base__slice_u8__subslice_j(wuffs_base__slice_u8 s, uint64_t j) {
   if ((j <= SIZE_MAX) && (j <= s.len)) {
-    return ((wuffs_base__slice_u8){
-        .ptr = s.ptr,
-        .len = j,
-    });
+    return wuffs_base__make_slice_u8(s.ptr, j);
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 // wuffs_base__slice_u8__subslice_ij returns s[i:j].
@@ -370,12 +403,9 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
                                   uint64_t i,
                                   uint64_t j) {
   if ((i <= j) && (j <= SIZE_MAX) && (j <= s.len)) {
-    return ((wuffs_base__slice_u8){
-        .ptr = s.ptr + i,
-        .len = j - i,
-    });
+    return wuffs_base__make_slice_u8(s.ptr + i, j - i);
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 // ---------------- Bureaucracy re -Wunused-function
@@ -386,6 +416,11 @@ wuffs_base__acknowledge_potentially_unused_functions__core_public()
 
 static inline void
 wuffs_base__acknowledge_potentially_unused_functions__core_public() {
+  (void)(wuffs_base__make_empty_struct);
+  (void)(wuffs_base__make_slice_u16);
+  (void)(wuffs_base__make_slice_u32);
+  (void)(wuffs_base__make_slice_u64);
+  (void)(wuffs_base__make_slice_u8);
   (void)(wuffs_base__slice_u8__subslice_i);
   (void)(wuffs_base__slice_u8__subslice_ij);
   (void)(wuffs_base__slice_u8__subslice_j);

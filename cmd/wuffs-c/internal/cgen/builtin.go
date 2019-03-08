@@ -119,7 +119,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 	// TODO: don't hard-code the recv being a_src.
 	switch method {
 	case t.IDUndoByte:
-		b.writes("(iop_a_src--, wuffs_base__return_empty_struct())")
+		b.writes("(iop_a_src--, wuffs_base__make_empty_struct())")
 		return nil
 
 	case t.IDCanUndoByte:
@@ -147,14 +147,11 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 
 		if method == t.IDSinceMark {
-			b.printf("((wuffs_base__slice_u8){ "+
-				".ptr = %s%s.private_impl.mark, "+
-				".len = (size_t)(",
-				prefix, name)
+			b.printf("wuffs_base__make_slice_u8(%s%s.private_impl.mark, (size_t)(", prefix, name)
 		}
 		b.printf("iop_%s%s - %s%s.private_impl.mark", prefix, name, prefix, name)
 		if method == t.IDSinceMark {
-			b.writes("), })")
+			b.writes("))")
 		}
 		return nil
 
@@ -167,7 +164,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.writes(", wuffs_base__return_empty_struct())")
+		b.writes(", wuffs_base__make_empty_struct())")
 		return nil
 
 	case t.IDTake:
@@ -250,14 +247,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		}
 
 		if method == t.IDSinceMark {
-			b.printf("((wuffs_base__slice_u8){ "+
-				".ptr = %s%s.private_impl.mark, "+
-				".len = (size_t)(",
-				prefix, name)
+			b.printf("wuffs_base__make_slice_u8(%s%s.private_impl.mark, (size_t)(", prefix, name)
 		}
 		b.printf("iop_%s%s - %s%s.private_impl.mark", prefix, name, prefix, name)
 		if method == t.IDSinceMark {
-			b.writes("), })")
+			b.writes("))")
 		}
 		return nil
 	}
@@ -274,7 +268,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 					return err
 				}
-				b.printf("), iop_a_dst += %d, wuffs_base__return_empty_struct())", p.n/8)
+				b.printf("), iop_a_dst += %d, wuffs_base__make_empty_struct())", p.n/8)
 				return nil
 			}
 		}

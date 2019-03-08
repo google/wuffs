@@ -89,15 +89,19 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__io_reader  //
 wuffs_base__io_buffer__reader(wuffs_base__io_buffer* buf) {
-  wuffs_base__io_reader ret = ((wuffs_base__io_reader){.private_impl = {0}});
+  wuffs_base__io_reader ret;
   ret.private_impl.buf = buf;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
   return ret;
 }
 
 static inline wuffs_base__io_writer  //
 wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
-  wuffs_base__io_writer ret = ((wuffs_base__io_writer){.private_impl = {0}});
+  wuffs_base__io_writer ret;
   ret.private_impl.buf = buf;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
   return ret;
 }
 

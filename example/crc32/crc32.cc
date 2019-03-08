@@ -76,10 +76,8 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    uint32_t checksum = h.update((wuffs_base__slice_u8){
-        .ptr = src_buffer,
-        .len = static_cast<size_t>(n),
-    });
+    uint32_t checksum =
+        h.update(wuffs_base__make_slice_u8(src_buffer, static_cast<size_t>(n)));
 
     if (n == 0) {
       printf("%08" PRIx32 "\n", checksum);

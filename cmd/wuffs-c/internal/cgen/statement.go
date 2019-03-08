@@ -446,7 +446,7 @@ func (g *gen) writeStatementRet(b *buffer, n *a.Ret, depth uint32) error {
 
 	b.writes("return ")
 	if g.currFunk.astFunc.Out() == nil {
-		b.writes("((wuffs_base__empty_struct){0})")
+		b.writes("wuffs_base__make_empty_struct()")
 	} else if err := g.writeExpr(b, retExpr, depth); err != nil {
 		return err
 	}

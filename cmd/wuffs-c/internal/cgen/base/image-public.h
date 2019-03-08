@@ -368,17 +368,20 @@ wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
       return;
     }
   }
-  *c = ((wuffs_base__pixel_config){
-      .private_impl = {0},
-  });
+
+  c->private_impl.pixfmt = 0;
+  c->private_impl.pixsub = 0;
+  c->private_impl.width = 0;
+  c->private_impl.height = 0;
 }
 
 static inline void  //
 wuffs_base__pixel_config__invalidate(wuffs_base__pixel_config* c) {
   if (c) {
-    *c = ((wuffs_base__pixel_config){
-        .private_impl = {0},
-    });
+    c->private_impl.pixfmt = 0;
+    c->private_impl.pixsub = 0;
+    c->private_impl.width = 0;
+    c->private_impl.height = 0;
   }
 }
 
@@ -399,13 +402,21 @@ wuffs_base__pixel_config__pixel_subsampling(wuffs_base__pixel_config* c) {
 
 static inline wuffs_base__rect_ie_u32  //
 wuffs_base__pixel_config__bounds(wuffs_base__pixel_config* c) {
-  return c ? ((wuffs_base__rect_ie_u32){
-                 .min_incl_x = 0,
-                 .min_incl_y = 0,
-                 .max_excl_x = c->private_impl.width,
-                 .max_excl_y = c->private_impl.height,
-             })
-           : ((wuffs_base__rect_ie_u32){0});
+  if (c) {
+    wuffs_base__rect_ie_u32 ret;
+    ret.min_incl_x = 0;
+    ret.min_incl_y = 0;
+    ret.max_excl_x = c->private_impl.width;
+    ret.max_excl_y = c->private_impl.height;
+    return ret;
+  }
+
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_excl_x = 0;
+  ret.max_excl_y = 0;
+  return ret;
 }
 
 static inline uint32_t  //
@@ -555,19 +566,24 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
     return;
   }
-  *c = ((wuffs_base__image_config){
-      .pixcfg = {.private_impl = {0}},
-      .private_impl = {0},
-  });
+
+  c->pixcfg.private_impl.pixfmt = 0;
+  c->pixcfg.private_impl.pixsub = 0;
+  c->pixcfg.private_impl.width = 0;
+  c->pixcfg.private_impl.height = 0;
+  c->private_impl.first_frame_io_position = 0;
+  c->private_impl.first_frame_is_opaque = 0;
 }
 
 static inline void  //
 wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
   if (c) {
-    *c = ((wuffs_base__image_config){
-        .pixcfg = {.private_impl = {0}},
-        .private_impl = {0},
-    });
+    c->pixcfg.private_impl.pixfmt = 0;
+    c->pixcfg.private_impl.pixsub = 0;
+    c->pixcfg.private_impl.width = 0;
+    c->pixcfg.private_impl.height = 0;
+    c->private_impl.first_frame_io_position = 0;
+    c->private_impl.first_frame_is_opaque = 0;
   }
 }
 
@@ -714,7 +730,16 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
 
 static inline wuffs_base__rect_ie_u32  //
 wuffs_base__frame_config__bounds(wuffs_base__frame_config* c) {
-  return c ? c->private_impl.bounds : ((wuffs_base__rect_ie_u32){0});
+  if (c) {
+    return c->private_impl.bounds;
+  }
+
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_incl_x = 0;
+  ret.min_incl_y = 0;
+  ret.max_excl_x = 0;
+  ret.max_excl_y = 0;
+  return ret;
 }
 
 static inline uint32_t  //
@@ -912,13 +937,10 @@ wuffs_base__pixel_buffer__palette(wuffs_base__pixel_buffer* b) {
     wuffs_base__table_u8* tab =
         &b->private_impl.planes[WUFFS_BASE__PIXEL_FORMAT__INDEXED__COLOR_PLANE];
     if ((tab->width == 1024) && (tab->height == 1)) {
-      return ((wuffs_base__slice_u8){
-          .ptr = tab->ptr,
-          .len = 1024,
-      });
+      return wuffs_base__make_slice_u8(tab->ptr, 1024);
     }
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 static inline wuffs_base__pixel_format  //
@@ -931,9 +953,16 @@ wuffs_base__pixel_buffer__pixel_format(wuffs_base__pixel_buffer* b) {
 
 static inline wuffs_base__table_u8  //
 wuffs_base__pixel_buffer__plane(wuffs_base__pixel_buffer* b, uint32_t p) {
-  return (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX))
-             ? b->private_impl.planes[p]
-             : ((wuffs_base__table_u8){0});
+  if (b && (p < WUFFS_BASE__PIXEL_FORMAT__NUM_PLANES_MAX)) {
+    return b->private_impl.planes[p];
+  }
+
+  wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
 }
 
 #ifdef __cplusplus

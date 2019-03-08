@@ -60,34 +60,34 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 
 static inline wuffs_base__range_ii_u32  //
 wuffs_base__utility__make_range_ii_u32(uint32_t min_incl, uint32_t max_incl) {
-  return ((wuffs_base__range_ii_u32){
-      .min_incl = min_incl,
-      .max_incl = max_incl,
-  });
+  wuffs_base__range_ii_u32 ret;
+  ret.min_incl = min_incl;
+  ret.max_incl = max_incl;
+  return ret;
 }
 
 static inline wuffs_base__range_ie_u32  //
 wuffs_base__utility__make_range_ie_u32(uint32_t min_incl, uint32_t max_excl) {
-  return ((wuffs_base__range_ie_u32){
-      .min_incl = min_incl,
-      .max_excl = max_excl,
-  });
+  wuffs_base__range_ie_u32 ret;
+  ret.min_incl = min_incl;
+  ret.max_excl = max_excl;
+  return ret;
 }
 
 static inline wuffs_base__range_ii_u64  //
 wuffs_base__utility__make_range_ii_u64(uint64_t min_incl, uint64_t max_incl) {
-  return ((wuffs_base__range_ii_u64){
-      .min_incl = min_incl,
-      .max_incl = max_incl,
-  });
+  wuffs_base__range_ii_u64 ret;
+  ret.min_incl = min_incl;
+  ret.max_incl = max_incl;
+  return ret;
 }
 
 static inline wuffs_base__range_ie_u64  //
 wuffs_base__utility__make_range_ie_u64(uint64_t min_incl, uint64_t max_excl) {
-  return ((wuffs_base__range_ie_u64){
-      .min_incl = min_incl,
-      .max_excl = max_excl,
-  });
+  wuffs_base__range_ie_u64 ret;
+  ret.min_incl = min_incl;
+  ret.max_excl = max_excl;
+  return ret;
 }
 
 static inline wuffs_base__rect_ii_u32  //
@@ -95,12 +95,12 @@ wuffs_base__utility__make_rect_ii_u32(uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_incl_x,
                                       uint32_t max_incl_y) {
-  return ((wuffs_base__rect_ii_u32){
-      .min_incl_x = min_incl_x,
-      .min_incl_y = min_incl_y,
-      .max_incl_x = max_incl_x,
-      .max_incl_y = max_incl_y,
-  });
+  wuffs_base__rect_ii_u32 ret;
+  ret.min_incl_x = min_incl_x;
+  ret.min_incl_y = min_incl_y;
+  ret.max_incl_x = max_incl_x;
+  ret.max_incl_y = max_incl_y;
+  return ret;
 }
 
 static inline wuffs_base__rect_ie_u32  //
@@ -108,12 +108,12 @@ wuffs_base__utility__make_rect_ie_u32(uint32_t min_incl_x,
                                       uint32_t min_incl_y,
                                       uint32_t max_excl_x,
                                       uint32_t max_excl_y) {
-  return ((wuffs_base__rect_ie_u32){
-      .min_incl_x = min_incl_x,
-      .min_incl_y = min_incl_y,
-      .max_excl_x = max_excl_x,
-      .max_excl_y = max_excl_y,
-  });
+  wuffs_base__rect_ie_u32 ret;
+  ret.min_incl_x = min_incl_x;
+  ret.min_incl_y = min_incl_y;
+  ret.max_excl_x = max_excl_x;
+  ret.max_excl_y = max_excl_y;
+  return ret;
 }
 
 // ---------------- Bureaucracy re -Wunused-function

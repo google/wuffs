@@ -43,10 +43,11 @@ for a C compiler $CC, such as clang or gcc.
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
 #ifndef DST_BUFFER_SIZE
-#define DST_BUFFER_SIZE (128 * 1024)
+#define DST_BUFFER_SIZE 1024
 #endif
+uint8_t dst_buffer[DST_BUFFER_SIZE];
 
-// hello_ptr and hello_len hold a gzip-encoded "Hello Wuffs."
+// src_ptr and src_len hold a gzip-encoded "Hello Wuffs."
 //
 // $ echo "Hello Wuffs." | gzip --no-name | xxd
 // 00000000: 1f8b 0800 0000 0000 0003 f348 cdc9 c957  ...........H...W
@@ -55,14 +56,14 @@ for a C compiler $CC, such as clang or gcc.
 //
 // Passing --no-name to the gzip command line also means to skip the timestamp,
 // which means that its output is deterministic.
-uint8_t hello_ptr[] = {
+uint8_t src_ptr[] = {
     0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,  // 00..07
     0x00, 0x03, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x57,  // 08..0F
     0x08, 0x2f, 0x4d, 0x4b, 0x2b, 0xd6, 0xe3, 0x02,  // 10..17
     0x00, 0x3c, 0x84, 0x75, 0xbb, 0x0d, 0x00, 0x00,  // 18..1F
     0x00,                                            // 20..20
 };
-size_t hello_len = 0x21;
+size_t src_len = 0x21;
 
 #define WORK_BUFFER_SIZE WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE
 #if WORK_BUFFER_SIZE > 0
@@ -76,29 +77,27 @@ uint8_t work_buffer[1];
 static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
-  uint8_t dst_buffer[DST_BUFFER_SIZE];
-  wuffs_base__io_buffer dst = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = dst_buffer,
-          .len = DST_BUFFER_SIZE,
-      }),
-  });
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = ((wuffs_base__slice_u8){
-          .ptr = hello_ptr,
-          .len = hello_len,
-      }),
-      .meta = ((wuffs_base__io_buffer_meta){
-          .wi = hello_len,
-          .ri = 0,
-          .pos = 0,
-          .closed = true,
-      }),
-  });
+  wuffs_base__io_buffer dst;
+  dst.data.ptr = dst_buffer;
+  dst.data.len = DST_BUFFER_SIZE;
+  dst.meta.wi = 0;
+  dst.meta.ri = 0;
+  dst.meta.pos = 0;
+  dst.meta.closed = false;
+
+  wuffs_base__io_buffer src;
+  src.data.ptr = src_ptr;
+  src.data.len = src_len;
+  src.meta.wi = src_len;
+  src.meta.ri = 0;
+  src.meta.pos = 0;
+  src.meta.closed = true;
+
   wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
-  wuffs_gzip__decoder* dec = calloc(sizeof__wuffs_gzip__decoder(), 1);
+  wuffs_gzip__decoder* dec =
+      (wuffs_gzip__decoder*)(calloc(sizeof__wuffs_gzip__decoder(), 1));
   if (!dec) {
     return "out of memory";
   }
@@ -109,11 +108,9 @@ static const char* decode() {
     free(dec);
     return status;
   }
-  status = wuffs_gzip__decoder__decode_io_writer(dec, dst_writer, src_reader,
-                                                 ((wuffs_base__slice_u8){
-                                                     .ptr = work_buffer,
-                                                     .len = WORK_BUFFER_SIZE,
-                                                 }));
+  status = wuffs_gzip__decoder__decode_io_writer(
+      dec, dst_writer, src_reader,
+      wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
   if (status) {
     free(dec);
     return status;

@@ -116,7 +116,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 				if err := g.writeExpr(b, recv, depth); err != nil {
 					return err
 				}
-				b.printf(", 0, sizeof (%s%s)), wuffs_base__return_empty_struct())",
+				b.printf(", 0, sizeof (%s%s)), wuffs_base__make_empty_struct())",
 					g.packagePrefix(qid), qid[1].Str(g.tm))
 			} else {
 				b.printf("wuffs_base__ignore_status("+
@@ -165,13 +165,13 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		lhsIsArray := lhs.MType().IsArrayType()
 		if lhsIsArray {
 			// TODO: don't assume that the slice is a slice of base.u8.
-			b.writes("((wuffs_base__slice_u8){.ptr=")
+			b.writes("wuffs_base__make_slice_u8(")
 		}
 		if err := g.writeExpr(b, lhs, depth); err != nil {
 			return err
 		}
 		if lhsIsArray {
-			b.printf(",.len=%v,})", lhs.MType().ArrayLength().ConstValue())
+			b.printf(", %v)", lhs.MType().ArrayLength().ConstValue())
 		}
 
 		if mhs != nil {

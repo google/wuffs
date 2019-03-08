@@ -205,7 +205,10 @@ wuffs_base__io_reader__set(wuffs_base__io_reader* o,
   o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_r = data.ptr;
   *ptr_io1_r = data.ptr + data.len;
-  return ((wuffs_base__empty_struct){0});
+
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
 }
 
 static inline wuffs_base__empty_struct  //
@@ -215,13 +218,19 @@ wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
   if (o && (((size_t)(o->private_impl.limit - iop_r)) > limit)) {
     o->private_impl.limit = iop_r + limit;
   }
-  return ((wuffs_base__empty_struct){0});
+
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
 }
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
   o->private_impl.mark = mark;
-  return ((wuffs_base__empty_struct){0});
+
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
 }
 
 static inline wuffs_base__slice_u8  //
@@ -229,12 +238,9 @@ wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io1_r, uint64_t n) {
   if (n <= ((size_t)(io1_r - *ptr_iop_r))) {
     uint8_t* p = *ptr_iop_r;
     *ptr_iop_r += n;
-    return ((wuffs_base__slice_u8){
-        .ptr = p,
-        .len = n,
-    });
+    return wuffs_base__make_slice_u8(p, n);
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 static inline wuffs_base__empty_struct  //
@@ -254,25 +260,51 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_w = data.ptr;
   *ptr_io1_w = data.ptr + data.len;
-  return ((wuffs_base__empty_struct){0});
+
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
 }
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
   o->private_impl.mark = mark;
-  return ((wuffs_base__empty_struct){0});
+
+  wuffs_base__empty_struct ret;
+  ret.private_impl = 0;
+  return ret;
 }
 
 // ---------------- I/O (Utility)
 
+static inline wuffs_base__io_buffer  //
+wuffs_base__utility__null_io_buffer() {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = NULL;
+  ret.data.len = 0;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
 static inline wuffs_base__io_reader  //
 wuffs_base__utility__null_io_reader() {
-  return ((wuffs_base__io_reader){.private_impl = {0}});
+  wuffs_base__io_reader ret;
+  ret.private_impl.buf = NULL;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
+  return ret;
 }
 
 static inline wuffs_base__io_writer  //
 wuffs_base__utility__null_io_writer() {
-  return ((wuffs_base__io_writer){.private_impl = {0}});
+  wuffs_base__io_writer ret;
+  ret.private_impl.buf = NULL;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
+  return ret;
 }
 
 // ---------------- Bureaucracy re -Wunused-function
@@ -298,6 +330,7 @@ wuffs_base__acknowledge_potentially_unused_functions__io_private() {
   (void)(wuffs_base__io_writer__is_valid);
   (void)(wuffs_base__io_writer__set);
   (void)(wuffs_base__io_writer__set_mark);
+  (void)(wuffs_base__utility__null_io_buffer);
   (void)(wuffs_base__utility__null_io_reader);
   (void)(wuffs_base__utility__null_io_writer);
 }

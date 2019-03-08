@@ -16,7 +16,7 @@
 
 static inline wuffs_base__empty_struct  //
 wuffs_base__ignore_status(wuffs_base__status z) {
-  return ((wuffs_base__empty_struct){0});
+  return wuffs_base__make_empty_struct();
 }
 
 // WUFFS_BASE__MAGIC is a magic number to check that initializers are called.
@@ -82,11 +82,6 @@ wuffs_base__ignore_status(wuffs_base__status z) {
 // They are explicitly marked inline, even if modern compilers don't use the
 // inline attribute to guide optimizations such as inlining, to avoid the
 // -Wunused-function warning, and we like to compile with -Wall -Werror.
-
-static inline wuffs_base__empty_struct  //
-wuffs_base__return_empty_struct() {
-  return ((wuffs_base__empty_struct){0});
-}
 
 // ---------------- Numeric Types
 
@@ -417,19 +412,16 @@ wuffs_base__slice_u8__copy_from_slice(wuffs_base__slice_u8 dst,
 static inline wuffs_base__slice_u8  //
 wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
   if (y < t.height) {
-    return ((wuffs_base__slice_u8){
-        .ptr = t.ptr + (t.stride * y),
-        .len = t.width,
-    });
+    return wuffs_base__make_slice_u8(t.ptr + (t.stride * y), t.width);
   }
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 // ---------------- Slices and Tables (Utility)
 
 static inline wuffs_base__slice_u8  //
 wuffs_base__utility__null_slice_u8() {
-  return ((wuffs_base__slice_u8){0});
+  return wuffs_base__make_slice_u8(NULL, 0);
 }
 
 // ---------------- Bureaucracy re -Wunused-function
@@ -456,7 +448,6 @@ wuffs_base__acknowledge_potentially_unused_functions__core_private() {
   (void)(wuffs_base__load_u64be);
   (void)(wuffs_base__load_u64le);
   (void)(wuffs_base__load_u8be);
-  (void)(wuffs_base__return_empty_struct);
   (void)(wuffs_base__slice_u8__copy_from_slice);
   (void)(wuffs_base__slice_u8__prefix);
   (void)(wuffs_base__slice_u8__suffix);
