@@ -285,6 +285,8 @@ background.
   mentioned above, Wuffs transpiles to C code, and Go is not necessarily
   involved if all you want is to use the C edition of Wuffs.
 - `lib` holds other Go libraries, not specific to the Wuffs language per se.
+- `internal` holds internal implementation details, as per Go's [internal
+  packages](https://golang.org/s/go14internal) convention.
 - `cmd` holds Wuffs' command line tools, also written in Go.
 - `std` holds the Wuffs standard library's code. The initial focus is on
   popular image codecs: BMP, GIF, JPEG, PNG, TIFF and WEBP.

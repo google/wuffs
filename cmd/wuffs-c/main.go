@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/wuffs/cmd/wuffs-c/internal/cgen"
+	"github.com/google/wuffs/internal/cgen"
 )
 
 func main() {
