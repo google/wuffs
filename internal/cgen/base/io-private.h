@@ -277,35 +277,8 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 
 // ---------------- I/O (Utility)
 
-static inline wuffs_base__io_buffer  //
-wuffs_base__utility__null_io_buffer() {
-  wuffs_base__io_buffer ret;
-  ret.data.ptr = NULL;
-  ret.data.len = 0;
-  ret.meta.wi = 0;
-  ret.meta.ri = 0;
-  ret.meta.pos = 0;
-  ret.meta.closed = false;
-  return ret;
-}
-
-static inline wuffs_base__io_reader  //
-wuffs_base__utility__null_io_reader() {
-  wuffs_base__io_reader ret;
-  ret.private_impl.buf = NULL;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
-  return ret;
-}
-
-static inline wuffs_base__io_writer  //
-wuffs_base__utility__null_io_writer() {
-  wuffs_base__io_writer ret;
-  ret.private_impl.buf = NULL;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
-  return ret;
-}
+#define wuffs_base__utility__null_io_reader wuffs_base__null_io_reader
+#define wuffs_base__utility__null_io_writer wuffs_base__null_io_writer
 
 // ---------------- Bureaucracy re -Wunused-function
 
@@ -330,7 +303,4 @@ wuffs_base__acknowledge_potentially_unused_functions__io_private() {
   (void)(wuffs_base__io_writer__is_valid);
   (void)(wuffs_base__io_writer__set);
   (void)(wuffs_base__io_writer__set_mark);
-  (void)(wuffs_base__utility__null_io_buffer);
-  (void)(wuffs_base__utility__null_io_reader);
-  (void)(wuffs_base__utility__null_io_writer);
 }

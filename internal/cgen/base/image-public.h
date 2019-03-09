@@ -347,6 +347,16 @@ typedef struct {
 
 } wuffs_base__pixel_config;
 
+static inline wuffs_base__pixel_config  //
+wuffs_base__null_pixel_config() {
+  wuffs_base__pixel_config ret;
+  ret.private_impl.pixfmt = 0;
+  ret.private_impl.pixsub = 0;
+  ret.private_impl.width = 0;
+  ret.private_impl.height = 0;
+  return ret;
+}
+
 // TODO: Should this function return bool? An error type?
 static inline void  //
 wuffs_base__pixel_config__set(wuffs_base__pixel_config* c,
@@ -545,6 +555,15 @@ typedef struct {
 
 } wuffs_base__image_config;
 
+static inline wuffs_base__image_config  //
+wuffs_base__null_image_config() {
+  wuffs_base__image_config ret;
+  ret.pixcfg = wuffs_base__null_pixel_config();
+  ret.private_impl.first_frame_io_position = 0;
+  ret.private_impl.first_frame_is_opaque = false;
+  return ret;
+}
+
 // TODO: Should this function return bool? An error type?
 static inline void  //
 wuffs_base__image_config__set(wuffs_base__image_config* c,
@@ -708,6 +727,18 @@ typedef struct {
 
 } wuffs_base__frame_config;
 
+static inline wuffs_base__frame_config  //
+wuffs_base__null_frame_config() {
+  wuffs_base__frame_config ret;
+  ret.private_impl.bounds = wuffs_base__make_rect_ie_u32(0, 0, 0, 0);
+  ret.private_impl.duration = 0;
+  ret.private_impl.index = 0;
+  ret.private_impl.io_position = 0;
+  ret.private_impl.blend = 0;
+  ret.private_impl.disposal = 0;
+  return ret;
+}
+
 static inline void  //
 wuffs_base__frame_config__update(wuffs_base__frame_config* c,
                                  wuffs_base__rect_ie_u32 bounds,
@@ -863,6 +894,17 @@ typedef struct {
 #endif  // __cplusplus
 
 } wuffs_base__pixel_buffer;
+
+static inline wuffs_base__pixel_buffer  //
+wuffs_base__null_pixel_buffer() {
+  wuffs_base__pixel_buffer ret;
+  ret.pixcfg = wuffs_base__null_pixel_config();
+  ret.private_impl.planes[0] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[1] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[2] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[3] = wuffs_base__null_table_u8();
+  return ret;
+}
 
 static inline wuffs_base__status  //
 wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
@@ -1090,6 +1132,10 @@ wuffs_base__acknowledge_potentially_unused_functions__image_public() {
   (void)(wuffs_base__image_config__invalidate);
   (void)(wuffs_base__image_config__is_valid);
   (void)(wuffs_base__image_config__set);
+  (void)(wuffs_base__null_frame_config());
+  (void)(wuffs_base__null_image_config());
+  (void)(wuffs_base__null_pixel_buffer());
+  (void)(wuffs_base__null_pixel_config());
   (void)(wuffs_base__pixel_buffer__palette);
   (void)(wuffs_base__pixel_buffer__pixel_format);
   (void)(wuffs_base__pixel_buffer__plane);

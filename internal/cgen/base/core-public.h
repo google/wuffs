@@ -373,6 +373,24 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
   return ret;
 }
 
+static inline wuffs_base__slice_u8  //
+wuffs_base__null_slice_u8() {
+  wuffs_base__slice_u8 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u8  //
+wuffs_base__null_table_u8() {
+  wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
 // wuffs_base__slice_u8__subslice_i returns s[i:].
 //
 // It returns an empty slice if i is out of bounds.
@@ -421,6 +439,8 @@ wuffs_base__acknowledge_potentially_unused_functions__core_public() {
   (void)(wuffs_base__make_slice_u32);
   (void)(wuffs_base__make_slice_u64);
   (void)(wuffs_base__make_slice_u8);
+  (void)(wuffs_base__null_slice_u8);
+  (void)(wuffs_base__null_table_u8);
   (void)(wuffs_base__slice_u8__subslice_i);
   (void)(wuffs_base__slice_u8__subslice_ij);
   (void)(wuffs_base__slice_u8__subslice_j);

@@ -71,6 +71,68 @@ typedef struct wuffs_base__io_buffer__struct {
 
 } wuffs_base__io_buffer;
 
+static inline wuffs_base__io_buffer  //
+wuffs_base__make_io_buffer(wuffs_base__slice_u8 data,
+                           wuffs_base__io_buffer_meta meta) {
+  wuffs_base__io_buffer ret;
+  ret.data = data;
+  ret.meta = meta;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer_meta  //
+wuffs_base__make_io_buffer_meta(size_t wi,
+                                size_t ri,
+                                uint64_t pos,
+                                bool closed) {
+  wuffs_base__io_buffer_meta ret;
+  ret.wi = wi;
+  ret.ri = ri;
+  ret.pos = pos;
+  ret.closed = closed;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer  //
+wuffs_base__null_io_buffer() {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = NULL;
+  ret.data.len = 0;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer_meta  //
+wuffs_base__null_io_buffer_meta() {
+  wuffs_base__io_buffer_meta ret;
+  ret.wi = 0;
+  ret.ri = 0;
+  ret.pos = 0;
+  ret.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_reader  //
+wuffs_base__null_io_reader() {
+  wuffs_base__io_reader ret;
+  ret.private_impl.buf = NULL;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
+  return ret;
+}
+
+static inline wuffs_base__io_writer  //
+wuffs_base__null_io_writer() {
+  wuffs_base__io_writer ret;
+  ret.private_impl.buf = NULL;
+  ret.private_impl.mark = NULL;
+  ret.private_impl.limit = NULL;
+  return ret;
+}
+
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
 // start of the buffer.
 static inline void  //
@@ -157,4 +219,10 @@ wuffs_base__acknowledge_potentially_unused_functions__io_public() {
   (void)(wuffs_base__io_buffer__reader_io_position);
   (void)(wuffs_base__io_buffer__writer);
   (void)(wuffs_base__io_buffer__writer_io_position);
+  (void)(wuffs_base__make_io_buffer);
+  (void)(wuffs_base__make_io_buffer_meta);
+  (void)(wuffs_base__null_io_buffer);
+  (void)(wuffs_base__null_io_buffer_meta);
+  (void)(wuffs_base__null_io_reader);
+  (void)(wuffs_base__null_io_writer);
 }

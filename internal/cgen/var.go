@@ -294,14 +294,14 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 			if typ.QID()[1] == t.IDIOWriter {
 				typName = "writer"
 			}
-			b.printf(" = wuffs_base__utility__null_io_%s();\n", typName)
+			b.printf(" = wuffs_base__null_io_%s();\n", typName)
 		} else {
 			b.writes(" = {0};\n")
 		}
 
 		if typ.IsIOType() {
 			b.printf("wuffs_base__io_buffer %s%s WUFFS_BASE__POTENTIALLY_UNUSED = "+
-				"wuffs_base__utility__null_io_buffer();\n", uPrefix, name)
+				"wuffs_base__null_io_buffer();\n", uPrefix, name)
 			preName := vPrefix + name
 			// TODO: io0_etc variables?
 			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)
