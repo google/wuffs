@@ -40,6 +40,9 @@ for a C compiler $CC, such as clang or gcc.
 //
 // By #include'ing it "as is" without #define'ing WUFFS_IMPLEMENTATION, we use
 // it as a "foo.h"-like header, instead of a "foo.c"-like implementation.
+#if defined(WUFFS_IMPLEMENTATION)
+#error "example/library should not #define WUFFS_IMPLEMENTATION"
+#endif
 #include "wuffs/release/c/wuffs-unsupported-snapshot.c"
 
 #ifndef DST_BUFFER_SIZE
