@@ -2607,13 +2607,6 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
                                   uint64_t wuffs_version,
                                   uint32_t initialize_flags);
 
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
-                                           size_t sizeof_star_self,
-                                           uint64_t wuffs_version);
-
 size_t  //
 sizeof__wuffs_adler32__hasher();
 
@@ -2683,13 +2676,6 @@ struct wuffs_adler32__hasher__struct {
                                              wuffs_version, initialize_flags);
   }
 
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_adler32__hasher__initialize(this, sizeof_star_self,
-                                             wuffs_version,
-                                             WUFFS_INITIALIZE__ALREADY_ZEROED);
-  }
-
   inline uint32_t  //
   update(wuffs_base__slice_u8 a_x) {
     return wuffs_adler32__hasher__update(this, a_x);
@@ -2737,13 +2723,6 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
                                      size_t sizeof_star_self,
                                      uint64_t wuffs_version,
                                      uint32_t initialize_flags);
-
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
-                                              size_t sizeof_star_self,
-                                              uint64_t wuffs_version);
 
 size_t  //
 sizeof__wuffs_crc32__ieee_hasher();
@@ -2811,13 +2790,6 @@ struct wuffs_crc32__ieee_hasher__struct {
              uint32_t initialize_flags) {
     return wuffs_crc32__ieee_hasher__initialize(
         this, sizeof_star_self, wuffs_version, initialize_flags);
-  }
-
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_crc32__ieee_hasher__initialize(
-        this, sizeof_star_self, wuffs_version,
-        WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline uint32_t  //
@@ -2888,13 +2860,6 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
                                    size_t sizeof_star_self,
                                    uint64_t wuffs_version,
                                    uint32_t initialize_flags);
-
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                            size_t sizeof_star_self,
-                                            uint64_t wuffs_version);
 
 size_t  //
 sizeof__wuffs_deflate__decoder();
@@ -3019,13 +2984,6 @@ struct wuffs_deflate__decoder__struct {
                                               wuffs_version, initialize_flags);
   }
 
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_deflate__decoder__initialize(this, sizeof_star_self,
-                                              wuffs_version,
-                                              WUFFS_INITIALIZE__ALREADY_ZEROED);
-  }
-
   inline wuffs_base__range_ii_u64  //
   workbuf_len() const {
     return wuffs_deflate__decoder__workbuf_len(this);
@@ -3090,13 +3048,6 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
                                size_t sizeof_star_self,
                                uint64_t wuffs_version,
                                uint32_t initialize_flags);
-
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version);
 
 size_t  //
 sizeof__wuffs_lzw__decoder();
@@ -3198,12 +3149,6 @@ struct wuffs_lzw__decoder__struct {
                                           initialize_flags);
   }
 
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_lzw__decoder__initialize(this, sizeof_star_self, wuffs_version,
-                                          WUFFS_INITIALIZE__ALREADY_ZEROED);
-  }
-
   inline wuffs_base__empty_struct  //
   set_literal_width(uint32_t a_lw) {
     return wuffs_lzw__decoder__set_literal_width(this, a_lw);
@@ -3280,13 +3225,6 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
                                size_t sizeof_star_self,
                                uint64_t wuffs_version,
                                uint32_t initialize_flags);
-
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version);
 
 size_t  //
 sizeof__wuffs_gif__decoder();
@@ -3477,12 +3415,6 @@ struct wuffs_gif__decoder__struct {
                                           initialize_flags);
   }
 
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
-                                          WUFFS_INITIALIZE__ALREADY_ZEROED);
-  }
-
   inline wuffs_base__status  //
   decode_image_config(wuffs_base__image_config* a_dst,
                       wuffs_base__io_reader a_src) {
@@ -3588,13 +3520,6 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
                                 uint64_t wuffs_version,
                                 uint32_t initialize_flags);
 
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version);
-
 size_t  //
 sizeof__wuffs_gzip__decoder();
 
@@ -3685,13 +3610,6 @@ struct wuffs_gzip__decoder__struct {
                                            wuffs_version, initialize_flags);
   }
 
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_gzip__decoder__initialize(this, sizeof_star_self,
-                                           wuffs_version,
-                                           WUFFS_INITIALIZE__ALREADY_ZEROED);
-  }
-
   inline wuffs_base__empty_struct  //
   set_ignore_checksum(bool a_ic) {
     return wuffs_gzip__decoder__set_ignore_checksum(this, a_ic);
@@ -3762,13 +3680,6 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
                                 size_t sizeof_star_self,
                                 uint64_t wuffs_version,
                                 uint32_t initialize_flags);
-
-// Deprecated: use wuffs_foo__bar__initialize instead of
-// wuffs_foo__bar__check_wuffs_version.
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version);
 
 size_t  //
 sizeof__wuffs_zlib__decoder();
@@ -3855,13 +3766,6 @@ struct wuffs_zlib__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
                                            wuffs_version, initialize_flags);
-  }
-
-  inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-  check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {
-    return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
-                                           wuffs_version,
-                                           WUFFS_INITIALIZE__ALREADY_ZEROED);
   }
 
   inline wuffs_base__empty_struct  //
@@ -5107,14 +5011,6 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
   return NULL;
 }
 
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_adler32__hasher__check_wuffs_version(wuffs_adler32__hasher* self,
-                                           size_t sizeof_star_self,
-                                           uint64_t wuffs_version) {
-  return wuffs_adler32__hasher__initialize(
-      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
-}
-
 size_t  //
 sizeof__wuffs_adler32__hasher() {
   return sizeof(wuffs_adler32__hasher);
@@ -6127,14 +6023,6 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
   return NULL;
 }
 
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_crc32__ieee_hasher__check_wuffs_version(wuffs_crc32__ieee_hasher* self,
-                                              size_t sizeof_star_self,
-                                              uint64_t wuffs_version) {
-  return wuffs_crc32__ieee_hasher__initialize(
-      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
-}
-
 size_t  //
 sizeof__wuffs_crc32__ieee_hasher() {
   return sizeof(wuffs_crc32__ieee_hasher);
@@ -6424,14 +6312,6 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
-}
-
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_deflate__decoder__check_wuffs_version(wuffs_deflate__decoder* self,
-                                            size_t sizeof_star_self,
-                                            uint64_t wuffs_version) {
-  return wuffs_deflate__decoder__initialize(
-      self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -8214,14 +8094,6 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
   return NULL;
 }
 
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_lzw__decoder__check_wuffs_version(wuffs_lzw__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
-  return wuffs_lzw__decoder__initialize(self, sizeof_star_self, wuffs_version,
-                                        WUFFS_INITIALIZE__ALREADY_ZEROED);
-}
-
 size_t  //
 sizeof__wuffs_lzw__decoder() {
   return sizeof(wuffs_lzw__decoder);
@@ -8808,14 +8680,6 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
-}
-
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gif__decoder__check_wuffs_version(wuffs_gif__decoder* self,
-                                        size_t sizeof_star_self,
-                                        uint64_t wuffs_version) {
-  return wuffs_gif__decoder__initialize(self, sizeof_star_self, wuffs_version,
-                                        WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //
@@ -10986,14 +10850,6 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
   return NULL;
 }
 
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_gzip__decoder__check_wuffs_version(wuffs_gzip__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
-  return wuffs_gzip__decoder__initialize(self, sizeof_star_self, wuffs_version,
-                                         WUFFS_INITIALIZE__ALREADY_ZEROED);
-}
-
 size_t  //
 sizeof__wuffs_gzip__decoder() {
   return sizeof(wuffs_gzip__decoder);
@@ -11478,14 +11334,6 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
   }
   self->private_impl.magic = WUFFS_BASE__MAGIC;
   return NULL;
-}
-
-wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT  //
-wuffs_zlib__decoder__check_wuffs_version(wuffs_zlib__decoder* self,
-                                         size_t sizeof_star_self,
-                                         uint64_t wuffs_version) {
-  return wuffs_zlib__decoder__initialize(self, sizeof_star_self, wuffs_version,
-                                         WUFFS_INITIALIZE__ALREADY_ZEROED);
 }
 
 size_t  //

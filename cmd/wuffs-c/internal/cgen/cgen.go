@@ -899,13 +899,6 @@ func (g *gen) writeCppMethods(b *buffer, n *a.Struct) error {
 	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, initialize_flags);\n}\n\n",
 		g.pkgPrefix, structName)
 
-	// Deprecated: use wuffs_foo__bar__initialize instead of
-	// wuffs_foo__bar__check_wuffs_version.
-	b.writes("inline wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n" +
-		"check_wuffs_version(size_t sizeof_star_self, uint64_t wuffs_version) {\n")
-	b.printf("return %s%s__initialize(this, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);\n}\n\n",
-		g.pkgPrefix, structName)
-
 	structID := n.QID()[1]
 	for _, file := range g.files {
 		for _, tld := range file.TopLevelDecls() {
@@ -971,12 +964,6 @@ func (g *gen) writeInitializerPrototype(b *buffer, n *a.Struct) error {
 		return err
 	}
 	b.writes(";\n\n")
-
-	b.writes("// Deprecated: use wuffs_foo__bar__initialize instead of\n")
-	b.writes("// wuffs_foo__bar__check_wuffs_version.\n")
-	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
-		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version);\n\n",
-		g.pkgPrefix, n.QID().Str(g.tm), g.pkgPrefix, n.QID().Str(g.tm))
 
 	if n.Public() {
 		if err := g.writeSizeofSignature(b, n); err != nil {
@@ -1061,15 +1048,6 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 
 	b.writes("self->private_impl.magic = WUFFS_BASE__MAGIC;\n")
 	b.writes("return NULL;\n")
-	b.writes("}\n\n")
-
-	// Deprecated: use wuffs_foo__bar__initialize instead of
-	// wuffs_foo__bar__check_wuffs_version.
-	b.printf("wuffs_base__status WUFFS_BASE__WARN_UNUSED_RESULT //\n"+
-		"%s%s__check_wuffs_version(%s%s *self, size_t sizeof_star_self, uint64_t wuffs_version) {",
-		g.pkgPrefix, n.QID().Str(g.tm), g.pkgPrefix, n.QID().Str(g.tm))
-	b.printf("return %s%s__initialize(self, sizeof_star_self, wuffs_version, WUFFS_INITIALIZE__ALREADY_ZEROED);\n",
-		g.pkgPrefix, n.QID().Str(g.tm))
 	b.writes("}\n\n")
 
 	if n.Public() {
