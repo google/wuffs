@@ -32,15 +32,17 @@ support true color: https://gist.github.com/XVilka/8346728
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
-#ifndef _POSIX_TIMERS
-#error "TODO: timers on non-POSIX systems"
-#else
+// ----------------
+
+#if defined(__unix__) || defined(__MACH__)
+
 #include <time.h>
+#include <unistd.h>
+#define WUFFS_EXAMPLE_USE_TIMERS
 
 bool started = false;
-struct timespec start_time;
+struct timespec start_time = {0};
 
 int64_t micros_since_start(struct timespec* now) {
   if (!started) {
@@ -53,7 +55,12 @@ int64_t micros_since_start(struct timespec* now) {
   }
   return nanos / 1000;
 }
+
+#else
+#warning "TODO: timers on non-POSIX systems"
 #endif
+
+// ----------------
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -98,21 +105,15 @@ wuffs_base__pixel_buffer pb = {0};
 
 wuffs_base__flicks cumulative_delay_micros = 0;
 
-// ignore_return_value suppresses errors from -Wall -Werror.
-static void ignore_return_value(int ignored) {}
-
 const char* read_stdin() {
   while (src_len < SRC_BUFFER_SIZE) {
-    const int stdin_fd = 0;
-    ssize_t n = read(stdin_fd, src_buffer + src_len, SRC_BUFFER_SIZE - src_len);
-    if (n > 0) {
-      src_len += n;
-    } else if (n == 0) {
+    size_t n = fread(src_buffer + src_len, sizeof(uint8_t),
+                     SRC_BUFFER_SIZE - src_len, stdin);
+    src_len += n;
+    if (feof(stdin)) {
       return NULL;
-    } else if (errno == EINTR) {
-      // No-op.
-    } else {
-      return strerror(errno);
+    } else if (ferror(stdin)) {
+      return "read error";
     }
   }
   return "input is too large";
@@ -380,7 +381,7 @@ const char* play() {
       }
     }
 
-#ifdef _POSIX_TIMERS
+#if defined(WUFFS_EXAMPLE_USE_TIMERS)
     if (started) {
       struct timespec now;
       if (clock_gettime(CLOCK_MONOTONIC, &now)) {
@@ -399,7 +400,7 @@ const char* play() {
     }
 #endif
 
-    ignore_return_value(write(stdout_fd, printbuf.ptr, n));
+    fwrite(printbuf.ptr, sizeof(uint8_t), n, stdout);
 
     cumulative_delay_micros +=
         (1000 * wuffs_base__frame_config__duration(&fc)) /
@@ -416,13 +417,6 @@ const char* play() {
   return NULL;
 }
 
-int fail(const char* msg) {
-  const int stderr_fd = 2;
-  ignore_return_value(write(stderr_fd, msg, strnlen(msg, 4095)));
-  ignore_return_value(write(stderr_fd, "\n", 1));
-  return 1;
-}
-
 int main(int argc, char** argv) {
   int i;
   for (i = 1; i < argc; i++) {
@@ -431,14 +425,17 @@ int main(int argc, char** argv) {
     }
   }
 
-  const char* msg = read_stdin();
-  if (msg) {
-    return fail(msg);
+  const char* status = read_stdin();
+  if (status) {
+    fprintf(stderr, "%s\n", status);
+    return 1;
   }
+
   while (true) {
-    msg = play();
-    if (msg) {
-      return fail(msg);
+    status = play();
+    if (status) {
+      fprintf(stderr, "%s\n", status);
+      return 1;
     }
     if (num_loops_remaining == 0) {
       continue;

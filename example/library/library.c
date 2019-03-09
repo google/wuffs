@@ -32,8 +32,8 @@ rm -f a.out
 for a C compiler $CC, such as clang or gcc.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -72,9 +72,6 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 // Not all C/C++ compilers support 0-length arrays.
 uint8_t work_buffer[1];
 #endif
-
-// ignore_return_value suppresses errors from -Wall -Werror.
-static void ignore_return_value(int ignored) {}
 
 static const char* decode() {
   wuffs_base__io_buffer dst;
@@ -115,18 +112,16 @@ static const char* decode() {
     free(dec);
     return status;
   }
-  ignore_return_value(write(1, dst.data.ptr, dst.meta.wi));
+  fwrite(dst.data.ptr, sizeof(uint8_t), dst.meta.wi, stdout);
   free(dec);
   return NULL;
 }
 
 int main(int argc, char** argv) {
-  const char* status_msg = decode();
-  int status = 0;
-  if (status_msg) {
-    status = 1;
-    ignore_return_value(write(2, status_msg, strnlen(status_msg, 4095)));
-    ignore_return_value(write(2, "\n", 1));
+  const char* status = decode();
+  if (status) {
+    fprintf(stderr, "%s\n", status);
+    return 1;
   }
-  return status;
+  return 0;
 }

@@ -53,7 +53,7 @@ for a C compiler $CC, such as clang or gcc.
 // program to generate a stand-alone C file.
 #include "../../release/c/wuffs-unsupported-snapshot.c"
 
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/prctl.h>
 #include <linux/seccomp.h>
 #include <sys/prctl.h>
@@ -160,17 +160,17 @@ int fail(const char* msg) {
 }
 
 int main(int argc, char** argv) {
-#ifdef WUFFS_EXAMPLE_USE_SECCOMP
+#if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);
 #endif
 
-  const char* msg = decode();
-  int status = msg ? fail(msg) : 0;
+  const char* status = decode();
+  int status_code = status ? fail(status) : 0;
 
-#ifdef WUFFS_EXAMPLE_USE_SECCOMP
+#if defined(WUFFS_EXAMPLE_USE_SECCOMP)
   // Call SYS_exit explicitly instead of SYS_exit_group implicitly.
   // SECCOMP_MODE_STRICT allows only the former.
-  syscall(SYS_exit, status);
+  syscall(SYS_exit, status_code);
 #endif
-  return status;
+  return status_code;
 }

@@ -30,7 +30,6 @@ for a C++ compiler $CXX, such as clang++ or g++.
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <unistd.h>
 
 // Wuffs ships as a "single file C library" or "header file library" as per
 // https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
@@ -66,22 +65,14 @@ int main(int argc, char** argv) {
   }
 
   while (true) {
-    const int stdin_fd = 0;
-    ssize_t n = read(stdin_fd, src_buffer, SRC_BUFFER_SIZE);
-    if (n < 0) {
-      if (errno != EINTR) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        return 1;
-      }
-      continue;
-    }
-
-    uint32_t checksum =
-        h.update(wuffs_base__make_slice_u8(src_buffer, static_cast<size_t>(n)));
-
-    if (n == 0) {
+    size_t n = fread(src_buffer, sizeof(uint8_t), SRC_BUFFER_SIZE, stdin);
+    uint32_t checksum = h.update(wuffs_base__make_slice_u8(src_buffer, n));
+    if (feof(stdin)) {
       printf("%08" PRIx32 "\n", checksum);
       return 0;
+    } else if (ferror(stdin)) {
+      fprintf(stderr, "read error\n");
+      return 1;
     }
   }
 }
