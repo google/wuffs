@@ -6336,6 +6336,10 @@ static const uint32_t                //
     wuffs_deflate__huffs_table_size  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1024;
 
+static const uint32_t                //
+    wuffs_deflate__huffs_table_mask  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1023;
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
@@ -7504,13 +7508,9 @@ label_0_continue:;
       }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
-        status =
-            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-        goto exit;
-      }
-      v_table_entry = self->private_data
-                          .f_huffs[0][(v_redir_top + (v_bits & v_redir_mask))];
+      v_table_entry =
+          self->private_data
+              .f_huffs[0][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -7589,13 +7589,9 @@ label_0_continue:;
       }
       v_redir_top = ((v_table_entry >> 8) & 65535);
       v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
-      if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
-        status =
-            wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-        goto exit;
-      }
-      v_table_entry = self->private_data
-                          .f_huffs[1][(v_redir_top + (v_bits & v_redir_mask))];
+      v_table_entry =
+          self->private_data
+              .f_huffs[1][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
       v_table_entry_n_bits = (v_table_entry & 15);
       v_bits >>= v_table_entry_n_bits;
       v_n_bits -= v_table_entry_n_bits;
@@ -7838,14 +7834,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
-          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
-            status =
-                wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-            goto exit;
-          }
           v_table_entry =
               self->private_data
-                  .f_huffs[0][(v_redir_top + (v_bits & v_redir_mask))];
+                  .f_huffs[0][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
           v_table_entry_n_bits = (v_table_entry & 15);
           if (v_n_bits >= v_table_entry_n_bits) {
             v_bits >>= v_table_entry_n_bits;
@@ -7946,14 +7937,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
         v_redir_top = ((v_table_entry >> 8) & 65535);
         v_redir_mask = ((((uint32_t)(1)) << ((v_table_entry >> 4) & 15)) - 1);
         while (true) {
-          if ((v_redir_top + (v_bits & v_redir_mask)) >= 1024) {
-            status =
-                wuffs_deflate__error__internal_error_inconsistent_huffman_decoder_state;
-            goto exit;
-          }
           v_table_entry =
               self->private_data
-                  .f_huffs[1][(v_redir_top + (v_bits & v_redir_mask))];
+                  .f_huffs[1][((v_redir_top + (v_bits & v_redir_mask)) & 1023)];
           v_table_entry_n_bits = (v_table_entry & 15);
           if (v_n_bits >= v_table_entry_n_bits) {
             v_bits >>= v_table_entry_n_bits;

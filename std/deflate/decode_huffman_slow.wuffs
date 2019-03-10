@@ -79,11 +79,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
-				if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-					return "#internal error: inconsistent Huffman decoder state"
-				}
-				assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
-				table_entry = this.huffs[0][redir_top + (bits & redir_mask)]
+				table_entry = this.huffs[0][(redir_top + (bits & redir_mask)) & huffs_table_mask]
 				table_entry_n_bits = table_entry & 0x0F
 				if n_bits >= table_entry_n_bits {
 					bits >>= table_entry_n_bits
@@ -161,11 +157,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			redir_top = (table_entry >> 8) & 0xFFFF
 			redir_mask = ((1 as base.u32) << ((table_entry >> 4) & 0x0F)) - 1
 			while true {
-				if (redir_top + (bits & redir_mask)) >= huffs_table_size {
-					return "#internal error: inconsistent Huffman decoder state"
-				}
-				assert (redir_top + (bits & redir_mask)) < 1024 via "a < b: a < c; c <= b"(c:huffs_table_size)
-				table_entry = this.huffs[1][redir_top + (bits & redir_mask)]
+				table_entry = this.huffs[1][(redir_top + (bits & redir_mask)) & huffs_table_mask]
 				table_entry_n_bits = table_entry & 0x0F
 				if n_bits >= table_entry_n_bits {
 					bits >>= table_entry_n_bits

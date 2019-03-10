@@ -60,6 +60,7 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 // TODO: replace the magic "big enough" 1024 with something more principled,
 // perhaps discovered via an exhaustive search.
 pri const huffs_table_size base.u32 = 1024
+pri const huffs_table_mask base.u32 = 1023
 
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
