@@ -468,8 +468,9 @@ is stored big-endian, like Zlib's other checksums, and its 4 byte value must
 match the `DICTID` (in RFC 1950 terminology) given in the `Primary CRange`'s
 Zlib-formatted data.
 
-The `Tertiary CRange` and `Leaf TTag` values are ignored. The `Leaf STag` value
-is also ignored, other than deriving the `Secondary CRange`.
+The `Leaf TTag` must be `0xFF`. All other `Leaf TTag` values (below `0xC0`) are
+reserved. The empty `Tertiary CRange` is ignored. The `Leaf STag` value is also
+ignored, other than deriving the `Secondary CRange`.
 
 
 ## RAC + Brotli
