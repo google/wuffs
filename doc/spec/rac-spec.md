@@ -89,9 +89,7 @@ visited for any given request `[di .. dj)`.
 
 `Range` is a pair of byte offsets `[i .. j)`, in either `CSpace` or `DSpace`.
 It is half-open, containing every byte offset `x` such that `(i <= x)` and `(x
-< j)`. The size of a `Range` equals `(j - i)` if `(j > i)`, otherwise it equals
-zero. Having `(j <= i)` is valid, and means an empty `Range`: one with zero
-size. There are many valid `[i .. j)` pairs that mean an empty range.
+< j)`. It is invalid to have `(i > j)`. The size of a `Range` equals `(j - i)`.
 
 All bytes are 8 bits and unless explicitly specified otherwise, all fixed-size
 unsigned integers (e.g. `uint32_t`, `uint64_t`) are encoded little-endian.
@@ -99,7 +97,7 @@ Within those unsigned integers, bit 0 is the least significant bit and e.g. bit
 31 is the most significant bit of a `uint32_t`.
 
 The maximum supported `CFileSize` and the maximum supported `DFileSize` are the
-same number: `0xFFFFFFFFFFFFFF`, which is `((1 << 56) - 1)`.
+same number: `0xFF_FFFF_FFFF_FFFF`, which is `((1 << 56) - 1)`.
 
 
 ## File Structure
@@ -229,23 +227,22 @@ half-open range `[0xC0 .. 0xFE)` is reserved. Otherwise, the child is a `Leaf
 Node`.
 
 A child `Branch Node`'s `SubBranch COffset` is defined to be `COff[a]`. Its
-`COff[a+1]` value is ignored. Its `SubBranch DBias` and `SubBranch DOffMax` are
-defined to be `DOff[a]` and `DOff[a+1].
+`SubBranch DBias` and `SubBranch DOffMax` are defined to be `DOff[a]` and
+`DOff[a+1].
 
   - When `(STag[a] < Arity)`, it is a `CBiasing Branch Node`. The `SubBranch
-    CBias` is defined to be `(Branch_CBias + CPtr[STag[a]])`.
+    CBias` is defined to be `(Branch_CBias + CPtr[STag[a]])`. This expression
+    is equivalent to `COff[STag[a]]`.
   - When `(STag[a] >= Arity)`, it is a `CNeutral Branch Node`. The `SubBranch
     CBias` is defined to be `(Branch_CBias)`.
 
 A child `Leaf Node`'s `STag[a]` and `TTag[a]` values are also called its `Leaf
 STag` and `Leaf TTag`. It also has:
 
-  - A `Primary CRange`, equal to `[COff[a] .. COff[a+1])`. Recall that it is
-    valid for a `Range`'s upper bound to be less than its lower bound, meaning
-    an empty `Range`.
-  - A `Secondary CRange`, equal to `[COff[STag[a]] .. COff[STag[a]+1])` when
+  - A `Primary CRange`, equal to `[COff[a] .. COffMax)`.
+  - A `Secondary CRange`, equal to `[COff[STag[a]] .. COffMax)` when
     `(STag[a] < Arity)`. If `(STag[a] >= Arity)` then the `Secondary CRange` is
-    the canonical empty range `[0 .. 0)`.
+    the empty range `[COffMax .. COffMax)`.
   - A `Tertiary CRange`, similar to the `Secondary CRange`, but using `TTag[a]`
     instead of `STag[a]`.
 
