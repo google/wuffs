@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ----------------
+
 // Package base38 converts a 4-byte string, each byte in [ 0-9?a-z], to a base
 // 38 number.
 package base38
