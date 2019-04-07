@@ -3865,7 +3865,7 @@ wuffs_base__ignore_status(wuffs_base__status z) {
 // Denote intentional fallthroughs for -Wimplicit-fallthrough.
 //
 // The order matters here. Clang also defines "__GNUC__".
-#if defined(__clang__) && __cplusplus >= 201103L
+#if defined(__clang__) && defined(__cplusplus) && (__cplusplus >= 201103L)
 #define WUFFS_BASE__FALLTHROUGH [[clang::fallthrough]]
 #elif !defined(__clang__) && defined(__GNUC__) && (__GNUC__ >= 7)
 #define WUFFS_BASE__FALLTHROUGH __attribute__((fallthrough))

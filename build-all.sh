@@ -49,21 +49,21 @@ go install github.com/google/wuffs/cmd/...
 go test    github.com/google/wuffs/...
 wuffs gen
 
+# Compiler warning flags are discussed at
+# http://fastcompression.blogspot.com/2019/01/compiler-warnings.html
+WARNING_FLAGS="-Wall -Werror -Wpedantic -Wcast-qual -Wcast-align -Wpointer-arith -Wfloat-equal -Wundef -Wvla -Wconversion"
+
 echo "Checking snapshot compiles cleanly (as C)"
-$CC -c \
-    -Wall -Werror -Wpedantic -Wconversion -std=c99 \
+$CC -c $WARNING_FLAGS                        -std=c99 -Wc++-compat \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
-$CC -c -DWUFFS_IMPLEMENTATION \
-    -Wall -Werror -Wpedantic -Wconversion -std=c99 \
+$CC -c $WARNING_FLAGS -DWUFFS_IMPLEMENTATION -std=c99 -Wc++-compat \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 echo "Checking snapshot compiles cleanly (as C++)"
-$CXX -c \
-    -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
-    -x c++ release/c/wuffs-unsupported-snapshot.c -o /dev/null
-$CXX -c -DWUFFS_IMPLEMENTATION \
-    -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
-    -x c++ release/c/wuffs-unsupported-snapshot.c -o /dev/null
+$CXX -c $WARNING_FLAGS                        -std=c++11 -x c++ \
+    release/c/wuffs-unsupported-snapshot.c -o /dev/null
+$CXX -c $WARNING_FLAGS -DWUFFS_IMPLEMENTATION -std=c++11 -x c++ \
+    release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen
 wuffs test   -skipgen -mimic
