@@ -289,57 +289,57 @@ wuffs_base__u64__max(uint64_t x, uint64_t y) {
 
 static inline uint8_t  //
 wuffs_base__u8__sat_add(uint8_t x, uint8_t y) {
-  uint8_t res = x + y;
-  res |= -(res < x);
+  uint8_t res = (uint8_t)(x + y);
+  res |= (uint8_t)(-(res < x));
   return res;
 }
 
 static inline uint8_t  //
 wuffs_base__u8__sat_sub(uint8_t x, uint8_t y) {
-  uint8_t res = x - y;
-  res &= -(res <= x);
+  uint8_t res = (uint8_t)(x - y);
+  res &= (uint8_t)(-(res <= x));
   return res;
 }
 
 static inline uint16_t  //
 wuffs_base__u16__sat_add(uint16_t x, uint16_t y) {
-  uint16_t res = x + y;
-  res |= -(res < x);
+  uint16_t res = (uint16_t)(x + y);
+  res |= (uint16_t)(-(res < x));
   return res;
 }
 
 static inline uint16_t  //
 wuffs_base__u16__sat_sub(uint16_t x, uint16_t y) {
-  uint16_t res = x - y;
-  res &= -(res <= x);
+  uint16_t res = (uint16_t)(x - y);
+  res &= (uint16_t)(-(res <= x));
   return res;
 }
 
 static inline uint32_t  //
 wuffs_base__u32__sat_add(uint32_t x, uint32_t y) {
-  uint32_t res = x + y;
-  res |= -(res < x);
+  uint32_t res = (uint32_t)(x + y);
+  res |= (uint32_t)(-(res < x));
   return res;
 }
 
 static inline uint32_t  //
 wuffs_base__u32__sat_sub(uint32_t x, uint32_t y) {
-  uint32_t res = x - y;
-  res &= -(res <= x);
+  uint32_t res = (uint32_t)(x - y);
+  res &= (uint32_t)(-(res <= x));
   return res;
 }
 
 static inline uint64_t  //
 wuffs_base__u64__sat_add(uint64_t x, uint64_t y) {
-  uint64_t res = x + y;
-  res |= -(res < x);
+  uint64_t res = (uint64_t)(x + y);
+  res |= (uint64_t)(-(res < x));
   return res;
 }
 
 static inline uint64_t  //
 wuffs_base__u64__sat_sub(uint64_t x, uint64_t y) {
-  uint64_t res = x - y;
-  res &= -(res <= x);
+  uint64_t res = (uint64_t)(x - y);
+  res &= (uint64_t)(-(res <= x));
   return res;
 }
 

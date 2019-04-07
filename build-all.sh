@@ -50,15 +50,19 @@ go test    github.com/google/wuffs/...
 wuffs gen
 
 echo "Checking snapshot compiles cleanly (as C)"
-$CC  -c -Wall -Werror -Wpedantic                        -std=c99 \
+$CC -c \
+    -Wall -Werror -Wpedantic -Wconversion -std=c99 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
-$CC  -c -Wall -Werror -Wpedantic -DWUFFS_IMPLEMENTATION -std=c99 \
+$CC -c -DWUFFS_IMPLEMENTATION \
+    -Wall -Werror -Wpedantic              -std=c99 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 echo "Checking snapshot compiles cleanly (as C++)"
-$CXX -c -Wall -Werror -Wpedantic                        -std=c++11 \
+$CXX -c \
+    -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
-$CXX -c -Wall -Werror -Wpedantic -DWUFFS_IMPLEMENTATION -std=c++11 \
+$CXX -c -DWUFFS_IMPLEMENTATION \
+    -Wall -Werror -Wpedantic              -std=c++11 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen
