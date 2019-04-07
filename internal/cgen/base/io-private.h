@@ -279,28 +279,3 @@ wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
 
 #define wuffs_base__utility__null_io_reader wuffs_base__null_io_reader
 #define wuffs_base__utility__null_io_writer wuffs_base__null_io_writer
-
-// ---------------- Bureaucracy re -Wunused-function
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__io_private()
-    WUFFS_BASE__POTENTIALLY_UNUSED;
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__io_private() {
-  (void)(wuffs_base__io_buffer__is_valid);
-  (void)(wuffs_base__io_reader__is_eof);
-  (void)(wuffs_base__io_reader__is_valid);
-  (void)(wuffs_base__io_reader__set);
-  (void)(wuffs_base__io_reader__set_limit);
-  (void)(wuffs_base__io_reader__set_mark);
-  (void)(wuffs_base__io_reader__take);
-  (void)(wuffs_base__io_writer__copy_from_slice);
-  (void)(wuffs_base__io_writer__copy_n_from_history);
-  (void)(wuffs_base__io_writer__copy_n_from_history_fast);
-  (void)(wuffs_base__io_writer__copy_n_from_reader);
-  (void)(wuffs_base__io_writer__copy_n_from_slice);
-  (void)(wuffs_base__io_writer__is_valid);
-  (void)(wuffs_base__io_writer__set);
-  (void)(wuffs_base__io_writer__set_mark);
-}

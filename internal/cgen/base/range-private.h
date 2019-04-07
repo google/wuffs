@@ -65,20 +65,3 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 #define wuffs_base__utility__make_rect_ii_u32 wuffs_base__make_rect_ii_u32
 #define wuffs_base__utility__make_rect_ie_u32 wuffs_base__make_rect_ie_u32
 
-// ---------------- Bureaucracy re -Wunused-function
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__range_private()
-    WUFFS_BASE__POTENTIALLY_UNUSED;
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__range_private() {
-  (void)(wuffs_base__range_ie_u32__get_max_excl);
-  (void)(wuffs_base__range_ie_u32__get_min_incl);
-  (void)(wuffs_base__range_ie_u64__get_max_excl);
-  (void)(wuffs_base__range_ie_u64__get_min_incl);
-  (void)(wuffs_base__range_ii_u32__get_max_incl);
-  (void)(wuffs_base__range_ii_u32__get_min_incl);
-  (void)(wuffs_base__range_ii_u64__get_max_incl);
-  (void)(wuffs_base__range_ii_u64__get_min_incl);
-}

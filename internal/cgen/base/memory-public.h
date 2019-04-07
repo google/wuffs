@@ -72,17 +72,3 @@ wuffs_base__malloc_slice_u64(void* (*malloc_func)(size_t), uint64_t num_u64) {
   }
   return wuffs_base__make_slice_u64(NULL, 0);
 }
-
-// ---------------- Bureaucracy re -Wunused-function
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__memory_public()
-    WUFFS_BASE__POTENTIALLY_UNUSED;
-
-static inline void
-wuffs_base__acknowledge_potentially_unused_functions__memory_public() {
-  (void)(wuffs_base__malloc_slice_u16);
-  (void)(wuffs_base__malloc_slice_u32);
-  (void)(wuffs_base__malloc_slice_u64);
-  (void)(wuffs_base__malloc_slice_u8);
-}
