@@ -34,12 +34,6 @@ import (
 //
 // See the RAC specification for an explanation of the file format.
 func ExampleILAEnd() {
-	buf := &bytes.Buffer{}
-	w := &rac.Writer{
-		Writer: buf,
-		Codec:  rac.CodecZlib,
-	}
-
 	// Manually construct a zlib encoding of "More!\n", one that uses a literal
 	// block (that's easy to see in a hex dump) instead of a more compressible
 	// Huffman block.
@@ -72,6 +66,11 @@ func ExampleILAEnd() {
 		}
 	}
 
+	buf := &bytes.Buffer{}
+	w := &rac.Writer{
+		Writer: buf,
+		Codec:  rac.CodecZlib,
+	}
 	if err := w.AddChunk(uint64(len(src)), enc, 0, 0); err != nil {
 		log.Fatalf("AddChunk: %v", err)
 	}
@@ -84,9 +83,9 @@ func ExampleILAEnd() {
 	// Output:
 	// RAC file:
 	// 00000000  72 c3 63 00 78 9c 01 06  00 f9 ff 4d 6f 72 65 21  |r.c.x......More!|
-	// 00000010  0a 07 42 01 bf 72 c3 63  01 49 44 01 ff 06 00 00  |..B..r.c.ID.....|
-	// 00000020  00 00 00 00 01 04 00 00  00 00 00 00 ff 35 00 00  |.............5..|
-	// 00000030  00 00 00 00 01                                    |.....|
+	// 00000010  0a 07 42 01 bf 72 c3 63  01 65 a9 00 ff 06 00 00  |..B..r.c.e......|
+	// 00000020  00 00 00 00 01 04 00 00  00 00 00 01 ff 35 00 00  |.............5..|
+	// 00000030  00 00 00 01 01                                    |.....|
 }
 
 // ExampleILAStart demonstrates using the low level "rac" package to encode and
@@ -157,6 +156,12 @@ func ExampleILAStart() {
 	// TODO: decode the encoded bytes (the RAC-formatted bytes) to recover the
 	// original "One sheep.\nTwo sheep\.Three sheep.\n" source.
 
+	// Note that these exact bytes depends on the zlib encoder's algorithm, but
+	// there is more than one valid zlib encoding of any given input. This
+	// "compare to golden output" test is admittedly brittle, as the standard
+	// library's zlib package's output isn't necessarily stable across Go
+	// releases.
+
 	// Output:
 	// Encoded dictionary resource:
 	// 00000000  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e        |.. sheep.....n|
@@ -174,14 +179,15 @@ func ExampleILAStart() {
 	// 00000010  00 ff ff 21 6e 04 66                              |...!n.f|
 	//
 	// RAC file:
-	// 00000000  72 c3 63 04 4e 72 01 ff  00 00 00 00 00 00 00 ff  |r.c.Nr..........|
+	// 00000000  72 c3 63 04 71 b5 00 ff  00 00 00 00 00 00 00 ff  |r.c.q...........|
 	// 00000010  0b 00 00 00 00 00 00 ff  16 00 00 00 00 00 00 ff  |................|
-	// 00000020  23 00 00 00 00 00 00 01  50 00 00 00 00 00 00 ff  |#.......P.......|
-	// 00000030  5e 00 00 00 00 00 00 00  73 00 00 00 00 00 00 00  |^.......s.......|
-	// 00000040  88 00 00 00 00 00 00 00  9f 00 00 00 00 00 00 04  |................|
+	// 00000020  23 00 00 00 00 00 00 01  50 00 00 00 00 00 01 ff  |#.......P.......|
+	// 00000030  5e 00 00 00 00 00 01 00  73 00 00 00 00 00 01 00  |^.......s.......|
+	// 00000040  88 00 00 00 00 00 01 00  9f 00 00 00 00 00 01 04  |................|
 	// 00000050  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e 78 f9  |.. sheep.....nx.|
 	// 00000060  0b e0 02 6e f2 cf 4b 85  31 01 01 00 00 ff ff 17  |...n..K.1.......|
 	// 00000070  21 03 90 78 f9 0b e0 02  6e 0a 29 cf 87 31 01 01  |!..x....n.)..1..|
 	// 00000080  00 00 ff ff 18 0c 03 a8  78 f9 0b e0 02 6e 0a c9  |........x....n..|
 	// 00000090  28 4a 4d 85 71 00 01 00  00 ff ff 21 6e 04 66     |(JM.q......!n.f|
+
 }

@@ -190,18 +190,21 @@ func (w *Writer) AddResource(resource []byte) (OptResource, error) {
 		w.resourcesCOffsets = make([]uint64, 1, 8)
 	}
 	id := OptResource(len(w.resourcesCOffsets))
-	w.resourcesCOffsets = append(w.resourcesCOffsets, w.dataSize)
+	cLength := calcCLength(len(resource))
+	w.resourcesCOffsets = append(w.resourcesCOffsets, w.dataSize|(cLength<<48))
 	if err := w.write(resource); err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
-// AddChunk adds a chunk of compressed data (the [primary, secondary, tertiary]
-// tuple) to the RAC file. Decompressing that chunk should produce dRangeSize
-// bytes, although the rac.Writer does not attempt to verify that.
+// AddChunk adds a chunk of compressed data - the (primary, secondary,
+// tertiary) tuple - to the RAC file. Decompressing that chunk should produce
+// dRangeSize bytes, although the rac.Writer does not attempt to verify that.
 //
-// The OptResource arguments may be zero, meaning that no resource is used.
+// The OptResource arguments may be zero, meaning that no resource is used. In
+// that case, the corresponding STag or TTag (see the RAC specification for
+// further discussion) will be 0xFF.
 //
 // The caller may modify primary's contents after this method returns.
 func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResource, tertiary OptResource) error {
@@ -217,10 +220,11 @@ func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResour
 		w.err = errors.New("rac: dRangeSize is too large")
 		return w.err
 	}
+	cLength := calcCLength(len(primary))
 	w.dFileSize += dRangeSize
 	w.leafNodes = append(w.leafNodes, node{
 		dRangeSize: dRangeSize,
-		cOffset:    w.dataSize,
+		cOffset:    w.dataSize | (cLength << 48),
 		secondary:  secondary,
 		tertiary:   tertiary,
 	})
@@ -313,11 +317,14 @@ type node struct {
 //
 // As a side effect, it also sets n.cOffset for branch nodes.
 func (n *node) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
-	if len(n.children)+len(n.resources) == 0 {
+	arity := len(n.children) + len(n.resources)
+	if arity == 0 {
 		return accumulator
 	}
-	n.cOffset = accumulator
-	accumulator += (uint64(len(n.children)+len(n.resources)) * 16) + 16
+	size := (arity * 16) + 16
+	cLength := calcCLength(size)
+	n.cOffset = accumulator | (cLength << 48)
+	accumulator += uint64(size)
 	for i := range n.children {
 		accumulator = n.children[i].calcEncodedSize(accumulator)
 	}
@@ -386,16 +393,16 @@ func (w *nodeWriter) writeIndex(n *node) error {
 	buf = buf[8*len(n.children):]
 
 	// CPtrMax.
-	putU64LE(buf, w.cFileSize|(arity<<56))
+	const version = 0x01
+	putU64LE(buf, w.cFileSize|(version<<48)|(arity<<56))
 
-	// Magic, Arity, (Checksum is skipped), Version.
+	// Magic and Arity.
 	w.buffer[0] = 0x72
 	w.buffer[1] = 0xC3
 	w.buffer[2] = 0x63
 	w.buffer[3] = uint8(arity)
-	w.buffer[6] = 0x01
 
-	// Checksum (which depends on the Version).
+	// Checksum.
 	size := (arity * 16) + 16
 	checksum := crc32.ChecksumIEEE(w.buffer[6:size])
 	checksum ^= checksum >> 16
@@ -404,6 +411,20 @@ func (w *nodeWriter) writeIndex(n *node) error {
 
 	_, err := w.w.Write(w.buffer[:size])
 	return err
+}
+
+func calcCLength(primarySize int) uint64 {
+	if primarySize <= 0 {
+		return 1
+	}
+
+	// Divide by 1024, rounding up.
+	primarySize = ((primarySize - 1) >> 10) + 1
+
+	if primarySize > 255 {
+		return 0
+	}
+	return uint64(primarySize)
 }
 
 func resourceToTag(resources []int, r OptResource) uint64 {

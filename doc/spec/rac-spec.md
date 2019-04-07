@@ -135,7 +135,7 @@ Within those unsigned integers, bit 0 is the least significant bit and e.g. bit
 31 is the most significant bit of a `uint32_t`.
 
 The maximum supported `CFileSize` and the maximum supported `DFileSize` are the
-same number: `0xFF_FFFF_FFFF_FFFF`, which is `((1 << 56) - 1)`.
+same number: `0x0000_FFFF_FFFF_FFFF`, which is `((1 << 48) - 1)`.
 
 
 ## File Structure
@@ -171,24 +171,25 @@ COffset`:
     +-+-+-+-+-+-+-+-+
     |0|1|2|3|4|5|6|7|
     +-+-+-+-+-+-+-+-+
-    |Magic|A|Che|V|T|  Magic, Arity, Checksum, Version, TTag[0]
-    |  DPtr[1]    |T|  DPtr[1],                         TTag[1]
-    |  DPtr[2]    |T|  DPtr[2],                         TTag[2]
-    |  ...        |.|  ...,                             ...
-    |  DPtr[A-2]  |T|  DPtr[Arity-2],                   TTag[Arity-2]
-    |  DPtr[A-1]  |T|  DPtr[Arity-1],                   TTag[Arity-1]
-    |  DPtr[A]    |C|  DPtr[Arity] a.k.a. DPtrMax,      Codec
-    |  CPtr[0]    |S|  CPtr[0],                         STag[0]
-    |  CPtr[1]    |S|  CPtr[1],                         STag[1]
-    |  CPtr[2]    |S|  CPtr[2],                         STag[2]
-    |  ...        |.|  ...,                             ...
-    |  CPtr[A-2]  |S|  CPtr[Arity-2],                   STag[Arity-2]
-    |  CPtr[A-1]  |S|  CPtr[Arity-1],                   STag[Arity-1]
-    |  CPtr[A]    |A|  CPtr[Arity] a.k.a. CPtrMax,      Arity
+    |Magic|A|Che|0|T|  Magic, Arity, Checksum,     Reserved (0),  TTag[0]
+    | DPtr[1]   |0|T|  DPtr[1],                    Reserved (0),  TTag[1]
+    | DPtr[2]   |0|T|  DPtr[2],                    Reserved (0),  TTag[2]
+    | ...       |0|.|  ...,                        Reserved (0),  ...
+    | DPtr[A-2] |0|T|  DPtr[Arity-2],              Reserved (0),  TTag[Arity-2]
+    | DPtr[A-1] |0|T|  DPtr[Arity-1],              Reserved (0),  TTag[Arity-1]
+    | DPtr[A]   |0|C|  DPtr[Arity] a.k.a. DPtrMax, Reserved (0),  Codec
+    | CPtr[0]   |L|S|  CPtr[0],                    CLen[0],       STag[0]
+    | CPtr[1]   |L|S|  CPtr[1],                    CLen[1],       STag[1]
+    | CPtr[2]   |L|S|  CPtr[2],                    CLen[2],       STag[2]
+    | ...       |L|.|  ...,                        ...,           ...
+    | CPtr[A-2] |L|S|  CPtr[Arity-2],              CLen[Arity-2], STag[Arity-2]
+    | CPtr[A-1] |L|S|  CPtr[Arity-1],              CLen[Arity-2], STag[Arity-1]
+    | CPtr[A]   |V|A|  CPtr[Arity] a.k.a. CPtrMax, Version,       Arity
     +-+-+-+-+-+-+-+-+
 
-For the `(XPtr | Other)` 8 byte fields, the `XPtr` occupies the low 56 bits (as
-a little-endian `uint64_t`) and the `Other` occupies the high 8 bits.
+For the `(XPtr | Other6 | Other7)` 8 byte fields, the `XPtr` occupies the low
+48 bits (as a little-endian `uint64_t`) and the `Other` fields occupy the high
+16 bits.
 
 The `CPtr` and `DPtr` values are what is explicitly written in the `CFile`'s
 bytes. These are added to a `Branch Node`'s implicit `Branch CBias` and `Branch
@@ -248,9 +249,9 @@ the high 16 bits of the `uint32_t` CRC-32 IEEE checksum of the `((Arity * 16) +
 the `Arity` byte near the start is replicated by the `Arity` byte at the end.
 
 
-### Version
+### Reserved (0)
 
-`Version` must have the value `0x01`, indicating version 1 of the RAC format.
+The `Reserved (0)` bytes must have the value `0x00`.
 
 
 ### COffs and DOffs, STags and TTags
@@ -277,12 +278,22 @@ A child `Branch Node`'s `SubBranch COffset` is defined to be `COff[a]`. Its
 A child `Leaf Node`'s `STag[a]` and `TTag[a]` values are also called its `Leaf
 STag` and `Leaf TTag`. It also has:
 
-  - A `Primary CRange`, equal to `[COff[a] .. COffMax)`.
-  - A `Secondary CRange`, equal to `[COff[STag[a]] .. COffMax)` when
-    `(STag[a] < Arity)`. If `(STag[a] >= Arity)` then the `Secondary CRange` is
-    the empty range `[COffMax .. COffMax)`.
-  - A `Tertiary CRange`, similar to the `Secondary CRange`, but using `TTag[a]`
-    instead of `STag[a]`.
+  - A `Primary CRange`, equal to `MakeCRange(a)`.
+  - A `Secondary CRange`, equal to `MakeCRange(STag[a])`.
+  - A `Tertiary CRange`, equal to `MakeCRange(TTag[a])`.
+
+The `MakeCRange(i)` function defines a `CRange`. If `(i >= Arity)` then that
+`CRange` is the empty range `[COffMax .. COffMax)`. Otherwise, the lower bound
+is `COff[i]` and the upper bound is:
+
+  - `COffMax` when `CLen[i]` is zero.
+  - The minimum of `COffMax` and `(COff[i] + (CLen[i] * 1024))` when `CLen[i]`
+    is non-zero.
+
+In other words, the `COffMax` value clamps the `CRange` upper bound. The `CLen`
+value, if non-zero, combines with the `COff` value to apply another clamp. The
+`CLen` is given in units of 1024 bytes, but the `(COff[i] + (CLen[i] * 1024))`
+value is not necessarily quantized to 1024 byte boundaries.
 
 Note that, since `Arity` is at most 255, an `STag[a]` of `0xFF` always results
 in a `CNeutral Branch Node` or an empty `Secondary CRange`. Likewise, a
@@ -307,6 +318,11 @@ bytes are an obsolete `Root Node` (but still a valid `Branch Node`). The new
 Concatenating RAC files (concatenating in `DSpace`) involves concatenating the
 RAC files in `CSpace` and then appending a new `Root Node` with `CBiasing
 Branch Node`s pointing to each source RAC file's `Root Node`.
+
+
+### Version
+
+`Version` must have the value `0x01`, indicating version 1 of the RAC format.
 
 
 ### Codec
@@ -531,4 +547,4 @@ review.
 
 ---
 
-Updated on March 2019.
+Updated on April 2019.
