@@ -370,6 +370,23 @@ func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResour
 	return nil
 }
 
+func writeEmpty(w io.Writer, codec Codec) error {
+	buf := [32]byte{
+		0x72, 0xC3, 0x63, 0x01, 0x00, 0x00, 0x00, 0xFF,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, uint8(codec),
+		0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xFF,
+		0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+	}
+
+	checksum := crc32.ChecksumIEEE(buf[6:])
+	checksum ^= checksum >> 16
+	buf[4] = uint8(checksum >> 0)
+	buf[5] = uint8(checksum >> 8)
+
+	_, err := w.Write(buf[:])
+	return err
+}
+
 // Close writes the RAC index to w.Writer and marks that w accepts no further
 // method calls.
 //
@@ -394,12 +411,10 @@ func (w *Writer) Close() error {
 		}
 	}
 
-	rootNode := node{}
 	if len(w.leafNodes) == 0 {
-		rootNode.children = []node{{}}
-	} else {
-		rootNode = gather(w.leafNodes)
+		return writeEmpty(w.Writer, w.Codec)
 	}
+	rootNode := gather(w.leafNodes)
 	indexSize := rootNode.calcEncodedSize(0)
 
 	nw := &nodeWriter{

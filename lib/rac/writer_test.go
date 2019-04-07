@@ -30,6 +30,10 @@ import (
 // to golden output" test is admittedly brittle, as the standard library's zlib
 // package's output isn't necessarily stable across Go releases.
 
+const writerWantEmpty = "" +
+	"00000000  72 c3 63 01 30 14 00 ff  00 00 00 00 00 00 00 ee  |r.c.0...........|\n" +
+	"00000010  20 00 00 00 00 00 01 ff  20 00 00 00 00 00 01 01  | ....... .......|\n"
+
 const writerWantILAEnd = "" +
 	"00000000  72 c3 63 00 52 72 72 53  73 41 61 61 42 62 62 62  |r.c.RrrSsAaaBbbb|\n" +
 	"00000010  43 63 63 63 63 63 63 63  63 63 31 32 72 c3 63 05  |Cccccccccc12r.c.|\n" +
@@ -82,15 +86,28 @@ const writerWantILAStartCPageSize128 = "" +
 	"00000080  52 72 72 53 73 41 61 61  42 62 62 62 43 63 63 63  |RrrSsAaaBbbbCccc|\n" +
 	"00000090  63 63 63 63 63 63 31 32                           |cccccc12|\n"
 
+func TestWriterILAEndEmpty(t *testing.T) {
+	if err := testWriter(IndexLocationAtEnd, nil, 0, true); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWriterILAStartEmpty(t *testing.T) {
+	tempFile := &bytes.Buffer{}
+	if err := testWriter(IndexLocationAtStart, tempFile, 0, true); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWriterILAEndNoTempFile(t *testing.T) {
-	if err := testWriter(IndexLocationAtEnd, nil, 0); err != nil {
+	if err := testWriter(IndexLocationAtEnd, nil, 0, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestWriterILAEndMemTempFile(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtEnd, tempFile, 0); err == nil {
+	if err := testWriter(IndexLocationAtEnd, tempFile, 0, false); err == nil {
 		t.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtEnd requires") {
 		t.Fatal(err)
@@ -98,7 +115,7 @@ func TestWriterILAEndMemTempFile(t *testing.T) {
 }
 
 func TestWriterILAStartNoTempFile(t *testing.T) {
-	if err := testWriter(IndexLocationAtStart, nil, 0); err == nil {
+	if err := testWriter(IndexLocationAtStart, nil, 0, false); err == nil {
 		t.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtStart requires") {
 		t.Fatal(err)
@@ -107,7 +124,7 @@ func TestWriterILAStartNoTempFile(t *testing.T) {
 
 func TestWriterILAStartMemTempFile(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtStart, tempFile, 0); err != nil {
+	if err := testWriter(IndexLocationAtStart, tempFile, 0, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -120,32 +137,32 @@ func TestWriterILAStartRealTempFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	if err := testWriter(IndexLocationAtStart, f, 0); err != nil {
+	if err := testWriter(IndexLocationAtStart, f, 0, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestWriterILAEndCPageSize8(t *testing.T) {
-	if err := testWriter(IndexLocationAtEnd, nil, 8); err != nil {
+	if err := testWriter(IndexLocationAtEnd, nil, 8, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestWriterILAStartCPageSize4(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtStart, tempFile, 4); err != nil {
+	if err := testWriter(IndexLocationAtStart, tempFile, 4, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestWriterILAStartCPageSize128(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtStart, tempFile, 128); err != nil {
+	if err := testWriter(IndexLocationAtStart, tempFile, 128, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64) error {
+func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, empty bool) error {
 	buf := &bytes.Buffer{}
 	const fakeCodec = Codec(0xEE)
 	w := &Writer{
@@ -156,13 +173,16 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64) er
 		CPageSize:     cPageSize,
 	}
 
-	// We ignore errors (assigning them to _) from the AddXxx calls. Any
-	// non-nil errors are sticky, and should be returned by Close.
-	res0, _ := w.AddResource([]byte("Rrr"))
-	res1, _ := w.AddResource([]byte("Ss"))
-	_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0)
-	_ = w.AddChunk(0x22, []byte("Bbbb"), res0, 0)
-	_ = w.AddChunk(0x44, []byte("Cccccccccc12"), res0, res1)
+	if !empty {
+		// We ignore errors (assigning them to _) from the AddXxx calls. Any
+		// non-nil errors are sticky, and should be returned by Close.
+		res0, _ := w.AddResource([]byte("Rrr"))
+		res1, _ := w.AddResource([]byte("Ss"))
+		_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0)
+		_ = w.AddChunk(0x22, []byte("Bbbb"), res0, 0)
+		_ = w.AddChunk(0x44, []byte("Cccccccccc12"), res0, res1)
+	}
+
 	if err := w.Close(); err != nil {
 		return err
 	}
@@ -170,6 +190,8 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64) er
 
 	want := ""
 	switch {
+	case empty:
+		want = writerWantEmpty
 	case (iloc == IndexLocationAtEnd) && (cPageSize == 0):
 		want = writerWantILAEnd
 	case (iloc == IndexLocationAtEnd) && (cPageSize == 8):
