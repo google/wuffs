@@ -137,12 +137,13 @@ type Writer struct {
 	// sum of all the dRangeSize arguments passed to AddChunk.
 	dFileSize uint64
 
-	// resourcesCOffsets is the file offsets of each shared resource. Those
-	// offsets are for the compressed file (what the RAC spec calls CSpace).
+	// resourcesCOffCLens is the COffset and CLength values for each shared
+	// resource. Those values are for the compressed file (what the RAC spec
+	// calls CSpace).
 	//
 	// The first element (if it exists) is an unused placeholder, as a zero
 	// OptResource means unused.
-	resourcesCOffsets []uint64
+	resourcesCOffCLens []uint64
 
 	// leafNodes are the non-resource leaf nodes of the hierarchical index.
 	leafNodes []node
@@ -306,7 +307,7 @@ func (w *Writer) roundUpToCPageBoundary(x uint64) uint64 {
 //
 // The caller may modify resource's contents after this method returns.
 func (w *Writer) AddResource(resource []byte) (OptResource, error) {
-	if len(w.resourcesCOffsets) >= (1 << 30) {
+	if len(w.resourcesCOffCLens) >= (1 << 30) {
 		w.err = errors.New("rac: too many resources")
 		return 0, w.err
 	}
@@ -318,13 +319,13 @@ func (w *Writer) AddResource(resource []byte) (OptResource, error) {
 		return 0, err
 	}
 
-	if len(w.resourcesCOffsets) == 0 {
-		w.resourcesCOffsets = make([]uint64, 1, 8)
+	if len(w.resourcesCOffCLens) == 0 {
+		w.resourcesCOffCLens = make([]uint64, 1, 8)
 	}
-	id := OptResource(len(w.resourcesCOffsets))
+	id := OptResource(len(w.resourcesCOffCLens))
 	cOffset := w.dataSize - uint64(len(resource))
 	cLength := calcCLength(len(resource))
-	w.resourcesCOffsets = append(w.resourcesCOffsets, cOffset|(cLength<<48))
+	w.resourcesCOffCLens = append(w.resourcesCOffCLens, cOffset|(cLength<<48))
 	return id, nil
 }
 
@@ -361,10 +362,10 @@ func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResour
 	cLength := calcCLength(len(primary))
 	w.dFileSize += dRangeSize
 	w.leafNodes = append(w.leafNodes, node{
-		dRangeSize: dRangeSize,
-		cOffset:    cOffset | (cLength << 48),
-		secondary:  secondary,
-		tertiary:   tertiary,
+		dRangeSize:     dRangeSize,
+		cOffsetCLength: cOffset | (cLength << 48),
+		secondary:      secondary,
+		tertiary:       tertiary,
 	})
 	return nil
 }
@@ -402,9 +403,9 @@ func (w *Writer) Close() error {
 	indexSize := rootNode.calcEncodedSize(0)
 
 	nw := &nodeWriter{
-		w:                 w.Writer,
-		resourcesCOffsets: w.resourcesCOffsets,
-		codec:             w.Codec,
+		w:                  w.Writer,
+		resourcesCOffCLens: w.resourcesCOffCLens,
+		codec:              w.Codec,
 	}
 
 	if w.IndexLocation == IndexLocationAtEnd {
@@ -475,15 +476,15 @@ type node struct {
 	children  []node // Excludes resource-node chidren.
 	resources []int
 
-	cOffset   uint64
-	secondary OptResource
-	tertiary  OptResource
+	cOffsetCLength uint64
+	secondary      OptResource
+	tertiary       OptResource
 }
 
 // calcEncodedSize accumulates the encoded size of n and its children,
 // traversing the nodes in depth-first order.
 //
-// As a side effect, it also sets n.cOffset for branch nodes.
+// As a side effect, it also sets n.cOffsetCLength for branch nodes.
 func (n *node) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
 	arity := len(n.children) + len(n.resources)
 	if arity == 0 {
@@ -491,7 +492,7 @@ func (n *node) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
 	}
 	size := (arity * 16) + 16
 	cLength := calcCLength(size)
-	n.cOffset = accumulator | (cLength << 48)
+	n.cOffsetCLength = accumulator | (cLength << 48)
 	accumulator += uint64(size)
 	for i := range n.children {
 		accumulator = n.children[i].calcEncodedSize(accumulator)
@@ -502,10 +503,10 @@ func (n *node) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
 type nodeWriter struct {
 	w io.Writer
 
-	cFileSize         uint64
-	dataCOffset       uint64
-	indexCOffset      uint64
-	resourcesCOffsets []uint64
+	cFileSize          uint64
+	dataCOffset        uint64
+	indexCOffset       uint64
+	resourcesCOffCLens []uint64
 
 	codec Codec
 
@@ -545,18 +546,18 @@ func (w *nodeWriter) writeIndex(n *node) error {
 	// CPtr's. While the RAC format allows otherwise, this Writer always keeps
 	// the CBias at zero, so that a CPtr equals a COffset.
 	for i, res := range n.resources {
-		cOffset := w.resourcesCOffsets[res] + w.dataCOffset
-		putU64LE(buf[8*i:], cOffset|tagFF)
+		cOffsetCLength := w.resourcesCOffCLens[res] + w.dataCOffset
+		putU64LE(buf[8*i:], cOffsetCLength|tagFF)
 	}
 	buf = buf[8*len(n.resources):]
 	for i, o := range n.children {
-		cOffset := o.cOffset
+		cOffsetCLength := o.cOffsetCLength
 		if len(o.children) == 0 {
-			cOffset += w.dataCOffset
+			cOffsetCLength += w.dataCOffset
 		} else {
-			cOffset += w.indexCOffset
+			cOffsetCLength += w.indexCOffset
 		}
-		putU64LE(buf[8*i:], cOffset|resourceToTag(n.resources, o.secondary))
+		putU64LE(buf[8*i:], cOffsetCLength|resourceToTag(n.resources, o.secondary))
 	}
 	buf = buf[8*len(n.children):]
 
@@ -675,9 +676,9 @@ func makeBranch(children []node, resMap map[OptResource]bool) node {
 	}
 
 	return node{
-		dRangeSize: dRangeSize,
-		children:   children,
-		resources:  resList,
-		cOffset:    invalidCOffset,
+		dRangeSize:     dRangeSize,
+		children:       children,
+		resources:      resList,
+		cOffsetCLength: invalidCOffsetCLength,
 	}
 }

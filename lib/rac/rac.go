@@ -29,8 +29,8 @@ const (
 	// MaxCSize is the maximum RAC file size (in both CSpace and DSpace).
 	MaxSize = (1 << 48) - 1
 
-	// invalidCOffset is ((1 << 64) - 1).
-	invalidCOffset = 0xFFFFFFFFFFFFFFFF
+	// invalidCOffsetCLength is ((1 << 64) - 1).
+	invalidCOffsetCLength = 0xFFFFFFFFFFFFFFFF
 )
 
 // Codec is the compression codec for the RAC file.
