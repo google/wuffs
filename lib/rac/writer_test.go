@@ -40,6 +40,16 @@ const writerWantILAEnd = "" +
 	"00000060  00 00 01 ff 0c 00 00 00  00 00 01 00 10 00 00 00  |................|\n" +
 	"00000070  00 00 01 00 7c 00 00 00  00 00 01 05              |....|.......|\n"
 
+const writerWantILAEndCPageSize8 = "" +
+	"00000000  72 c3 63 00 52 72 72 00  53 73 41 61 61 00 00 00  |r.c.Rrr.SsAaa...|\n" +
+	"00000010  42 62 62 62 43 63 63 63  63 63 63 63 63 63 31 32  |BbbbCccccccccc12|\n" +
+	"00000020  72 c3 63 05 90 5e 00 ff  00 00 00 00 00 00 00 ff  |r.c..^..........|\n" +
+	"00000030  00 00 00 00 00 00 00 ff  11 00 00 00 00 00 00 ff  |................|\n" +
+	"00000040  33 00 00 00 00 00 00 01  77 00 00 00 00 00 00 ee  |3.......w.......|\n" +
+	"00000050  04 00 00 00 00 00 01 ff  08 00 00 00 00 00 01 ff  |................|\n" +
+	"00000060  0a 00 00 00 00 00 01 ff  10 00 00 00 00 00 01 00  |................|\n" +
+	"00000070  14 00 00 00 00 00 01 00  80 00 00 00 00 00 01 05  |................|\n"
+
 const writerWantILAStart = "" +
 	"00000000  72 c3 63 05 bc dc 00 ff  00 00 00 00 00 00 00 ff  |r.c.............|\n" +
 	"00000010  00 00 00 00 00 00 00 ff  11 00 00 00 00 00 00 ff  |................|\n" +
@@ -50,15 +60,37 @@ const writerWantILAStart = "" +
 	"00000060  52 72 72 53 73 41 61 61  42 62 62 62 43 63 63 63  |RrrSsAaaBbbbCccc|\n" +
 	"00000070  63 63 63 63 63 63 31 32                           |cccccc12|\n"
 
+const writerWantILAStartCPageSize4 = "" +
+	"00000000  72 c3 63 05 fc 4c 00 ff  00 00 00 00 00 00 00 ff  |r.c..L..........|\n" +
+	"00000010  00 00 00 00 00 00 00 ff  11 00 00 00 00 00 00 ff  |................|\n" +
+	"00000020  33 00 00 00 00 00 00 01  77 00 00 00 00 00 00 ee  |3.......w.......|\n" +
+	"00000030  60 00 00 00 00 00 01 ff  64 00 00 00 00 00 01 ff  |`.......d.......|\n" +
+	"00000040  68 00 00 00 00 00 01 ff  6c 00 00 00 00 00 01 00  |h.......l.......|\n" +
+	"00000050  70 00 00 00 00 00 01 00  7c 00 00 00 00 00 01 05  |p.......|.......|\n" +
+	"00000060  52 72 72 00 53 73 00 00  41 61 61 00 42 62 62 62  |Rrr.Ss..Aaa.Bbbb|\n" +
+	"00000070  43 63 63 63 63 63 63 63  63 63 31 32              |Cccccccccc12|\n"
+
+const writerWantILAStartCPageSize128 = "" +
+	"00000000  72 c3 63 05 d8 df 00 ff  00 00 00 00 00 00 00 ff  |r.c.............|\n" +
+	"00000010  00 00 00 00 00 00 00 ff  11 00 00 00 00 00 00 ff  |................|\n" +
+	"00000020  33 00 00 00 00 00 00 01  77 00 00 00 00 00 00 ee  |3.......w.......|\n" +
+	"00000030  80 00 00 00 00 00 01 ff  83 00 00 00 00 00 01 ff  |................|\n" +
+	"00000040  85 00 00 00 00 00 01 ff  88 00 00 00 00 00 01 00  |................|\n" +
+	"00000050  8c 00 00 00 00 00 01 00  98 00 00 00 00 00 01 05  |................|\n" +
+	"00000060  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|\n" +
+	"00000070  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|\n" +
+	"00000080  52 72 72 53 73 41 61 61  42 62 62 62 43 63 63 63  |RrrSsAaaBbbbCccc|\n" +
+	"00000090  63 63 63 63 63 63 31 32                           |cccccc12|\n"
+
 func TestWriterILAEndNoTempFile(t *testing.T) {
-	if err := testWriter(IndexLocationAtEnd, nil); err != nil {
+	if err := testWriter(IndexLocationAtEnd, nil, 0); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestWriterILAEndMemTempFile(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtEnd, tempFile); err == nil {
+	if err := testWriter(IndexLocationAtEnd, tempFile, 0); err == nil {
 		t.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtEnd requires") {
 		t.Fatal(err)
@@ -66,7 +98,7 @@ func TestWriterILAEndMemTempFile(t *testing.T) {
 }
 
 func TestWriterILAStartNoTempFile(t *testing.T) {
-	if err := testWriter(IndexLocationAtStart, nil); err == nil {
+	if err := testWriter(IndexLocationAtStart, nil, 0); err == nil {
 		t.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtStart requires") {
 		t.Fatal(err)
@@ -75,7 +107,7 @@ func TestWriterILAStartNoTempFile(t *testing.T) {
 
 func TestWriterILAStartMemTempFile(t *testing.T) {
 	tempFile := &bytes.Buffer{}
-	if err := testWriter(IndexLocationAtStart, tempFile); err != nil {
+	if err := testWriter(IndexLocationAtStart, tempFile, 0); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -88,12 +120,32 @@ func TestWriterILAStartRealTempFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	if err := testWriter(IndexLocationAtStart, f); err != nil {
+	if err := testWriter(IndexLocationAtStart, f, 0); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func testWriter(iloc IndexLocation, tempFile io.ReadWriter) error {
+func TestWriterILAEndCPageSize8(t *testing.T) {
+	if err := testWriter(IndexLocationAtEnd, nil, 8); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWriterILAStartCPageSize4(t *testing.T) {
+	tempFile := &bytes.Buffer{}
+	if err := testWriter(IndexLocationAtStart, tempFile, 4); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWriterILAStartCPageSize128(t *testing.T) {
+	tempFile := &bytes.Buffer{}
+	if err := testWriter(IndexLocationAtStart, tempFile, 128); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64) error {
 	buf := &bytes.Buffer{}
 	const fakeCodec = Codec(0xEE)
 	w := &Writer{
@@ -101,6 +153,7 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter) error {
 		Codec:         fakeCodec,
 		IndexLocation: iloc,
 		TempFile:      tempFile,
+		CPageSize:     cPageSize,
 	}
 
 	// We ignore errors (assigning them to _) from the AddXxx calls. Any
@@ -115,9 +168,20 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter) error {
 	}
 	got := hex.Dump(buf.Bytes())
 
-	want := writerWantILAEnd
-	if iloc == IndexLocationAtStart {
+	want := ""
+	switch {
+	case (iloc == IndexLocationAtEnd) && (cPageSize == 0):
+		want = writerWantILAEnd
+	case (iloc == IndexLocationAtEnd) && (cPageSize == 8):
+		want = writerWantILAEndCPageSize8
+	case (iloc == IndexLocationAtStart) && (cPageSize == 0):
 		want = writerWantILAStart
+	case (iloc == IndexLocationAtStart) && (cPageSize == 4):
+		want = writerWantILAStartCPageSize4
+	case (iloc == IndexLocationAtStart) && (cPageSize == 128):
+		want = writerWantILAStartCPageSize128
+	default:
+		return fmt.Errorf("unsupported iloc/cPageSize combination")
 	}
 
 	if got != want {

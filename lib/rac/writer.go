@@ -21,6 +21,10 @@ import (
 	"sort"
 )
 
+func isZeroOrAPowerOf2(x uint64) bool {
+	return (x & (x - 1)) == 0
+}
+
 func putU64LE(b []byte, v uint64) {
 	_ = b[7] // Early bounds check to guarantee safety of writes below.
 	b[0] = byte(v)
@@ -85,6 +89,37 @@ type Writer struct {
 	// responsibility of the rac.Writer caller, not the rac.Writer itself.
 	TempFile io.ReadWriter
 
+	// CPageSize guides padding the output to minimize the number of pages that
+	// each chunk occupies (in what the RAC spec calls CSpace).
+	//
+	// It must either be zero (which means no padding is inserted) or a power
+	// of 2, and no larger than MaxSize.
+	//
+	// For example, suppose that CSpace is partitioned into 1024-byte pages,
+	// that 1000 bytes have already been written to the output, and the next
+	// chunk is 1500 bytes long.
+	//
+	//   - With no padding (i.e. with CPageSize set to 0), this chunk will
+	//     occupy the half-open range [1000, 2500) in CSpace, which straddles
+	//     three 1024-byte pages: the page [0, 1024), the page [1024, 2048) and
+	//     the page [2048, 3072). Call those pages p0, p1 and p2.
+	//
+	//   - With padding (i.e. with CPageSize set to 1024), 24 bytes of zeroes
+	//     are first inserted so that this chunk occupies the half-open range
+	//     [1024, 2524) in CSpace, which straddles only two pages (p1 and p2).
+	//
+	// This concept is similar, but not identical, to alignment. Even with a
+	// non-zero CPageSize, chunk start offsets are not necessarily aligned to
+	// page boundaries. For example, suppose that the chunk size was only 1040
+	// bytes, not 1500 bytes. No padding will be inserted, as both [1000, 2040)
+	// and [1024, 2064) straddle two pages: either pages p0 and p1, or pages p1
+	// and p2.
+	//
+	// Nonetheless, if all chunks (or all but the final chunk) have a size
+	// equal to (or just under) a multiple of the page size, then in practice,
+	// each chunk's starting offset will be aligned to a page boundary.
+	CPageSize uint64
+
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
 	err error
@@ -111,6 +146,32 @@ type Writer struct {
 
 	// leafNodes are the non-resource leaf nodes of the hierarchical index.
 	leafNodes []node
+
+	// log2CPageSize is the base-2 logarithm of CPageSize, or zero if CPageSize
+	// is zero.
+	log2CPageSize uint32
+
+	// padding is a slice of zeroes to pad output to CPageSize boundaries.
+	padding []byte
+}
+
+func (w *Writer) checkParameters() error {
+	if w.Writer == nil {
+		w.err = errors.New("rac: invalid Writer")
+		return w.err
+	}
+	if w.Codec == 0 {
+		w.err = errors.New("rac: invalid Codec")
+		return w.err
+	}
+	if !isZeroOrAPowerOf2(w.CPageSize) || (w.CPageSize > MaxSize) {
+		w.err = errors.New("rac: invalid CPageSize")
+		return w.err
+	} else if w.CPageSize > 0 {
+		for w.log2CPageSize = 1; w.CPageSize != (1 << w.log2CPageSize); w.log2CPageSize++ {
+		}
+	}
+	return nil
 }
 
 func (w *Writer) initialize() error {
@@ -122,13 +183,8 @@ func (w *Writer) initialize() error {
 	}
 	w.initialized = true
 
-	if w.Writer == nil {
-		w.err = errors.New("rac: invalid Writer")
-		return w.err
-	}
-	if w.Codec == 0 {
-		w.err = errors.New("rac: invalid Codec")
-		return w.err
+	if err := w.checkParameters(); err != nil {
+		return err
 	}
 
 	if s, ok := w.TempFile.(io.Seeker); ok {
@@ -167,6 +223,11 @@ func (w *Writer) write(data []byte) error {
 		w.err = errors.New("rac: too much input")
 		return w.err
 	}
+	if w.CPageSize > 0 {
+		if err := w.writePadding(ioWriter, uint64(len(data))); err != nil {
+			return err
+		}
+	}
 	if _, err := ioWriter.Write(data); err != nil {
 		w.err = err
 		return err
@@ -179,6 +240,65 @@ func (w *Writer) write(data []byte) error {
 	return nil
 }
 
+func (w *Writer) writePadding(ioWriter io.Writer, lenData uint64) error {
+	if lenData == 0 {
+		return nil
+	}
+
+	offset0 := w.dataSize & (w.CPageSize - 1)
+	offset1WithPadding := (0 * offset0) + lenData
+	offset1SansPadding := (1 * offset0) + lenData
+	numPagesWithPadding := (offset1WithPadding + (w.CPageSize - 1)) >> w.log2CPageSize
+	numPagesSansPadding := (offset1SansPadding + (w.CPageSize - 1)) >> w.log2CPageSize
+
+	if numPagesSansPadding == numPagesWithPadding {
+		return nil
+	}
+	return w.padToPageSize(ioWriter, w.dataSize)
+}
+
+func (w *Writer) padToPageSize(ioWriter io.Writer, offset uint64) error {
+	offset &= w.CPageSize - 1
+	if (offset == 0) || (w.CPageSize == 0) {
+		return nil
+	}
+
+	if w.padding == nil {
+		n := w.CPageSize
+		if n > 4096 {
+			n = 4096
+		}
+		w.padding = make([]byte, n)
+	}
+
+	for remaining := w.CPageSize - offset; remaining > 0; {
+		padding := w.padding
+		if remaining < uint64(len(padding)) {
+			padding = padding[:remaining]
+		}
+
+		n, err := ioWriter.Write(padding)
+		if err != nil {
+			w.err = err
+			return err
+		}
+		remaining -= uint64(n)
+		w.dataSize += uint64(n)
+		if w.dataSize > MaxSize {
+			w.err = errors.New("rac: too much input")
+			return w.err
+		}
+	}
+	return nil
+}
+
+func (w *Writer) roundUpToCPageBoundary(x uint64) uint64 {
+	if w.CPageSize == 0 {
+		return x
+	}
+	return (x + w.CPageSize - 1) &^ (w.CPageSize - 1)
+}
+
 // AddResource adds a shared resource to the RAC file. It returns a non-zero
 // OptResource that identifies the resource's bytes. Future calls to AddChunk
 // can pass these identifiers to indicate that decompressing a chunk depends on
@@ -186,23 +306,25 @@ func (w *Writer) write(data []byte) error {
 //
 // The caller may modify resource's contents after this method returns.
 func (w *Writer) AddResource(resource []byte) (OptResource, error) {
-	if err := w.initialize(); err != nil {
-		return 0, err
-	}
-
 	if len(w.resourcesCOffsets) >= (1 << 30) {
 		w.err = errors.New("rac: too many resources")
 		return 0, w.err
 	}
+
+	if err := w.initialize(); err != nil {
+		return 0, err
+	}
+	if err := w.write(resource); err != nil {
+		return 0, err
+	}
+
 	if len(w.resourcesCOffsets) == 0 {
 		w.resourcesCOffsets = make([]uint64, 1, 8)
 	}
 	id := OptResource(len(w.resourcesCOffsets))
+	cOffset := w.dataSize - uint64(len(resource))
 	cLength := calcCLength(len(resource))
-	w.resourcesCOffsets = append(w.resourcesCOffsets, w.dataSize|(cLength<<48))
-	if err := w.write(resource); err != nil {
-		return 0, err
-	}
+	w.resourcesCOffsets = append(w.resourcesCOffsets, cOffset|(cLength<<48))
 	return id, nil
 }
 
@@ -231,16 +353,20 @@ func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResour
 	if err := w.initialize(); err != nil {
 		return err
 	}
+	if err := w.write(primary); err != nil {
+		return err
+	}
 
+	cOffset := w.dataSize - uint64(len(primary))
 	cLength := calcCLength(len(primary))
 	w.dFileSize += dRangeSize
 	w.leafNodes = append(w.leafNodes, node{
 		dRangeSize: dRangeSize,
-		cOffset:    w.dataSize | (cLength << 48),
+		cOffset:    cOffset | (cLength << 48),
 		secondary:  secondary,
 		tertiary:   tertiary,
 	})
-	return w.write(primary)
+	return nil
 }
 
 // Close writes the RAC index to w.Writer and marks that w accepts no further
@@ -261,6 +387,11 @@ func (w *Writer) Close() error {
 	if w.err != nil {
 		return w.err
 	}
+	if !w.initialized {
+		if err := w.checkParameters(); err != nil {
+			return err
+		}
+	}
 
 	rootNode := node{}
 	if len(w.leafNodes) == 0 {
@@ -270,31 +401,52 @@ func (w *Writer) Close() error {
 	}
 	indexSize := rootNode.calcEncodedSize(0)
 
-	if (indexSize + w.dataSize) > MaxSize {
-		w.err = errors.New("rac: too much input")
-		return w.err
-	}
 	nw := &nodeWriter{
 		w:                 w.Writer,
 		resourcesCOffsets: w.resourcesCOffsets,
-		cFileSize:         indexSize + w.dataSize,
 		codec:             w.Codec,
 	}
 
 	if w.IndexLocation == IndexLocationAtEnd {
+		nw.indexCOffset = w.roundUpToCPageBoundary(w.dataSize)
+		nw.cFileSize = nw.indexCOffset + indexSize
+	} else {
+		nw.dataCOffset = w.roundUpToCPageBoundary(indexSize)
+		nw.cFileSize = nw.dataCOffset + w.dataSize
+	}
+	if nw.cFileSize > MaxSize {
+		w.err = errors.New("rac: too much input")
+		return w.err
+	}
+
+	if w.IndexLocation == IndexLocationAtEnd {
+		// Write the align-to-CPageSize padding.
+		if w.CPageSize > 0 {
+			if err := w.padToPageSize(w.Writer, w.dataSize); err != nil {
+				return err
+			}
+		}
+
 		// Write the index. The compressed data has already been written.
-		nw.indexCOffset = w.dataSize
 		if err := nw.writeIndex(&rootNode); err != nil {
 			w.err = err
 			return err
 		}
 
 	} else {
+		expectedTempFileSize := w.dataSize
+
 		// Write the index.
-		nw.dataCOffset = indexSize
 		if err := nw.writeIndex(&rootNode); err != nil {
 			w.err = err
 			return err
+		}
+
+		// Write the align-to-CPageSize padding.
+		if w.CPageSize > 0 {
+			if err := w.padToPageSize(w.Writer, indexSize); err != nil {
+				return err
+			}
 		}
 
 		// Write the compressed data.
@@ -307,7 +459,7 @@ func (w *Writer) Close() error {
 		if n, err := io.Copy(w.Writer, w.TempFile); err != nil {
 			w.err = err
 			return err
-		} else if uint64(n) != w.dataSize {
+		} else if uint64(n) != expectedTempFileSize {
 			w.err = errors.New("rac: inconsistent compressed data size")
 			return w.err
 		}
