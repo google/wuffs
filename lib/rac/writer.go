@@ -163,11 +163,19 @@ func (w *Writer) write(data []byte) error {
 		ioWriter = w.TempFile
 	}
 
+	if uint64(len(data)) > MaxSize {
+		w.err = errors.New("rac: too much input")
+		return w.err
+	}
 	if _, err := ioWriter.Write(data); err != nil {
 		w.err = err
 		return err
 	}
 	w.dataSize += uint64(len(data))
+	if w.dataSize > MaxSize {
+		w.err = errors.New("rac: too much input")
+		return w.err
+	}
 	return nil
 }
 
@@ -183,7 +191,7 @@ func (w *Writer) AddResource(resource []byte) (OptResource, error) {
 	}
 
 	if len(w.resourcesCOffsets) >= (1 << 30) {
-		w.err = errors.New("rac: too many shared resources")
+		w.err = errors.New("rac: too many resources")
 		return 0, w.err
 	}
 	if len(w.resourcesCOffsets) == 0 {
@@ -208,18 +216,22 @@ func (w *Writer) AddResource(resource []byte) (OptResource, error) {
 //
 // The caller may modify primary's contents after this method returns.
 func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResource, tertiary OptResource) error {
+	if dRangeSize == 0 {
+		return nil
+	}
+	if (dRangeSize > MaxSize) || ((w.dFileSize + dRangeSize) > MaxSize) {
+		w.err = errors.New("rac: too much input")
+		return w.err
+	}
+	if len(w.leafNodes) >= (1 << 30) {
+		w.err = errors.New("rac: too many chunks")
+		return w.err
+	}
+
 	if err := w.initialize(); err != nil {
 		return err
 	}
 
-	if dRangeSize == 0 {
-		w.err = errors.New("rac: dRangeSize is too small")
-		return w.err
-	}
-	if (dRangeSize > MaxSize) || ((w.dFileSize + dRangeSize) > MaxSize) {
-		w.err = errors.New("rac: dRangeSize is too large")
-		return w.err
-	}
 	cLength := calcCLength(len(primary))
 	w.dFileSize += dRangeSize
 	w.leafNodes = append(w.leafNodes, node{
@@ -258,6 +270,10 @@ func (w *Writer) Close() error {
 	}
 	indexSize := rootNode.calcEncodedSize(0)
 
+	if (indexSize + w.dataSize) > MaxSize {
+		w.err = errors.New("rac: too much input")
+		return w.err
+	}
 	nw := &nodeWriter{
 		w:                 w.Writer,
 		resourcesCOffsets: w.resourcesCOffsets,
