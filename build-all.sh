@@ -54,7 +54,7 @@ $CC -c \
     -Wall -Werror -Wpedantic -Wconversion -std=c99 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 $CC -c -DWUFFS_IMPLEMENTATION \
-    -Wall -Werror -Wpedantic              -std=c99 \
+    -Wall -Werror -Wpedantic -Wconversion -std=c99 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 echo "Checking snapshot compiles cleanly (as C++)"
@@ -62,7 +62,7 @@ $CXX -c \
     -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 $CXX -c -DWUFFS_IMPLEMENTATION \
-    -Wall -Werror -Wpedantic              -std=c++11 \
+    -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
     release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen

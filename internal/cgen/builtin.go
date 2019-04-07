@@ -40,21 +40,39 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 	switch recvTyp.Decorator() {
 	case 0:
 		// No-op.
+
 	case t.IDNptr, t.IDPtr:
-		// TODO: don't hard-code set.
-		if method.Ident() != t.IDSet {
+		u64ToFlicksIndex := -1
+
+		// TODO: don't hard-code these, or a_dst.
+		switch meth := method.Ident(); {
+		case (meth == t.IDSet) && (recvTyp.Inner().QID() == t.QID{t.IDBase, t.IDImageConfig}):
+			b.writes("wuffs_base__image_config__set(a_dst")
+		case (meth == t.IDUpdate) && (recvTyp.Inner().QID() == t.QID{t.IDBase, t.IDFrameConfig}):
+			b.writes("wuffs_base__frame_config__update(a_dst")
+			u64ToFlicksIndex = 1
+		default:
 			return errNoSuchBuiltin
 		}
-		// TODO: don't hard-code a_dst.
-		b.printf("wuffs_base__image_config__set(a_dst")
-		for _, o := range n.Args() {
+
+		for i, o := range n.Args() {
 			b.writeb(',')
+			if i == u64ToFlicksIndex {
+				if o.AsArg().Name().Str(g.tm) != "duration" {
+					return errors.New("cgen: internal error: inconsistent frame_config.update argument")
+				}
+				b.writes("((wuffs_base__flicks)(")
+			}
 			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
 				return err
 			}
+			if i == u64ToFlicksIndex {
+				b.writes("))")
+			}
 		}
-		b.printf(")")
+		b.writeb(')')
 		return nil
+
 	case t.IDSlice:
 		return g.writeBuiltinSlice(b, recv, method.Ident(), n.Args(), depth)
 	case t.IDTable:
@@ -128,7 +146,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDPosition:
 		b.printf("(a_src.private_impl.buf ? wuffs_base__u64__sat_add(" +
-			"a_src.private_impl.buf->meta.pos, iop_a_src - a_src.private_impl.buf->data.ptr) : 0)")
+			"a_src.private_impl.buf->meta.pos, ((uint64_t)(iop_a_src - a_src.private_impl.buf->data.ptr))) : 0)")
 		return nil
 
 	case t.IDSetLimit:
@@ -600,7 +618,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			}
 
 			b.printf("if (%s > ((uint64_t)(io1_a_src - iop_a_src))) {\n", scratchName)
-			b.printf("%s -= io1_a_src - iop_a_src;\n", scratchName)
+			b.printf("%s -= ((uint64_t)(io1_a_src - iop_a_src));\n", scratchName)
 			b.printf("iop_a_src = io1_a_src;\n")
 
 			b.writes("status = wuffs_base__suspension__short_read; goto suspend; }\n")
@@ -686,32 +704,26 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 		preName, preName)
 
 	b.printf("uint64_t *scratch = &%s;", scratchName)
-	b.printf("uint32_t num_bits_%d = *scratch", temp)
+	b.printf("uint32_t num_bits_%d = ((uint32_t)(*scratch", temp)
 	switch endianness {
 	case 'b':
-		b.writes("& 0xFF; *scratch >>= 8; *scratch <<= 8;")
+		b.writes("& 0xFF)); *scratch >>= 8; *scratch <<= 8;")
 		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << (56 - num_bits_%d);",
 			iopPrefix, preName, temp)
 	case 'l':
-		b.writes(">> 56; *scratch <<= 8; *scratch >>= 8;")
+		b.writes(">> 56)); *scratch <<= 8; *scratch >>= 8;")
 		b.printf("*scratch |= ((uint64_t)(*%s%s++)) << num_bits_%d;",
 			iopPrefix, preName, temp)
 	}
 
-	b.printf("if (num_bits_%d == %d) { %s%d =", temp, xx-8, tPrefix, temp)
-	if xx != yy {
-		b.printf("((uint%d_t)(", yy)
-	}
+	b.printf("if (num_bits_%d == %d) { %s%d = ((uint%d_t)(", temp, xx-8, tPrefix, temp, yy)
 	switch endianness {
 	case 'b':
-		b.printf("*scratch >> %d", 64-xx)
+		b.printf("*scratch >> %d));", 64-xx)
 	case 'l':
-		b.printf("*scratch")
+		b.printf("*scratch));")
 	}
-	if xx != yy {
-		b.writes("))")
-	}
-	b.printf("; break;")
+	b.printf("break;")
 	b.printf("}")
 
 	b.printf("num_bits_%d += 8;", temp)

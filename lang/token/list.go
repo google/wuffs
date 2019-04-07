@@ -582,6 +582,7 @@ const (
 	IDReset      = ID(0x201)
 	IDSet        = ID(0x202)
 	IDUnroll     = ID(0x203)
+	IDUpdate     = ID(0x204)
 
 	// TODO: range/rect methods like intersection and contains?
 
@@ -911,6 +912,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDReset:      "reset",
 	IDSet:        "set",
 	IDUnroll:     "unroll",
+	IDUpdate:     "update",
 
 	IDHighBits: "high_bits",
 	IDLowBits:  "low_bits",

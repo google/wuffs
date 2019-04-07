@@ -59,7 +59,7 @@ wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
 
     s += 1 * N;
     d += 4 * N;
-    n -= 1 * N;
+    n -= (size_t)(1 * N);
   }
 
   while (n >= 1) {
@@ -69,7 +69,7 @@ wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
 
     s += 1 * 1;
     d += 4 * 1;
-    n -= 1 * 1;
+    n -= (size_t)(1 * 1);
   }
 
   return len;

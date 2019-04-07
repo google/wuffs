@@ -92,12 +92,12 @@ wuffs_base__load_u8be(uint8_t* p) {
 
 static inline uint16_t  //
 wuffs_base__load_u16be(uint8_t* p) {
-  return ((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0);
+  return (uint16_t)(((uint16_t)(p[0]) << 8) | ((uint16_t)(p[1]) << 0));
 }
 
 static inline uint16_t  //
 wuffs_base__load_u16le(uint8_t* p) {
-  return ((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8);
+  return (uint16_t)(((uint16_t)(p[0]) << 0) | ((uint16_t)(p[1]) << 8));
 }
 
 static inline uint32_t  //
@@ -193,128 +193,128 @@ wuffs_base__store_u8be(uint8_t* p, uint8_t x) {
 
 static inline void  //
 wuffs_base__store_u16be(uint8_t* p, uint16_t x) {
-  p[0] = x >> 8;
-  p[1] = x >> 0;
+  p[0] = (uint8_t)(x >> 8);
+  p[1] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u16le(uint8_t* p, uint16_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
 }
 
 static inline void  //
 wuffs_base__store_u24be(uint8_t* p, uint32_t x) {
-  p[0] = x >> 16;
-  p[1] = x >> 8;
-  p[2] = x >> 0;
+  p[0] = (uint8_t)(x >> 16);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u24le(uint8_t* p, uint32_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
 }
 
 static inline void  //
 wuffs_base__store_u32be(uint8_t* p, uint32_t x) {
-  p[0] = x >> 24;
-  p[1] = x >> 16;
-  p[2] = x >> 8;
-  p[3] = x >> 0;
+  p[0] = (uint8_t)(x >> 24);
+  p[1] = (uint8_t)(x >> 16);
+  p[2] = (uint8_t)(x >> 8);
+  p[3] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u32le(uint8_t* p, uint32_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
-  p[3] = x >> 24;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
 }
 
 static inline void  //
 wuffs_base__store_u40be(uint8_t* p, uint64_t x) {
-  p[0] = x >> 32;
-  p[1] = x >> 24;
-  p[2] = x >> 16;
-  p[3] = x >> 8;
-  p[4] = x >> 0;
+  p[0] = (uint8_t)(x >> 32);
+  p[1] = (uint8_t)(x >> 24);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 8);
+  p[4] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u40le(uint8_t* p, uint64_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
-  p[3] = x >> 24;
-  p[4] = x >> 32;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
 }
 
 static inline void  //
 wuffs_base__store_u48be(uint8_t* p, uint64_t x) {
-  p[0] = x >> 40;
-  p[1] = x >> 32;
-  p[2] = x >> 24;
-  p[3] = x >> 16;
-  p[4] = x >> 8;
-  p[5] = x >> 0;
+  p[0] = (uint8_t)(x >> 40);
+  p[1] = (uint8_t)(x >> 32);
+  p[2] = (uint8_t)(x >> 24);
+  p[3] = (uint8_t)(x >> 16);
+  p[4] = (uint8_t)(x >> 8);
+  p[5] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u48le(uint8_t* p, uint64_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
-  p[3] = x >> 24;
-  p[4] = x >> 32;
-  p[5] = x >> 40;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
 }
 
 static inline void  //
 wuffs_base__store_u56be(uint8_t* p, uint64_t x) {
-  p[0] = x >> 48;
-  p[1] = x >> 40;
-  p[2] = x >> 32;
-  p[3] = x >> 24;
-  p[4] = x >> 16;
-  p[5] = x >> 8;
-  p[6] = x >> 0;
+  p[0] = (uint8_t)(x >> 48);
+  p[1] = (uint8_t)(x >> 40);
+  p[2] = (uint8_t)(x >> 32);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 16);
+  p[5] = (uint8_t)(x >> 8);
+  p[6] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u56le(uint8_t* p, uint64_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
-  p[3] = x >> 24;
-  p[4] = x >> 32;
-  p[5] = x >> 40;
-  p[6] = x >> 48;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
+  p[6] = (uint8_t)(x >> 48);
 }
 
 static inline void  //
 wuffs_base__store_u64be(uint8_t* p, uint64_t x) {
-  p[0] = x >> 56;
-  p[1] = x >> 48;
-  p[2] = x >> 40;
-  p[3] = x >> 32;
-  p[4] = x >> 24;
-  p[5] = x >> 16;
-  p[6] = x >> 8;
-  p[7] = x >> 0;
+  p[0] = (uint8_t)(x >> 56);
+  p[1] = (uint8_t)(x >> 48);
+  p[2] = (uint8_t)(x >> 40);
+  p[3] = (uint8_t)(x >> 32);
+  p[4] = (uint8_t)(x >> 24);
+  p[5] = (uint8_t)(x >> 16);
+  p[6] = (uint8_t)(x >> 8);
+  p[7] = (uint8_t)(x >> 0);
 }
 
 static inline void  //
 wuffs_base__store_u64le(uint8_t* p, uint64_t x) {
-  p[0] = x >> 0;
-  p[1] = x >> 8;
-  p[2] = x >> 16;
-  p[3] = x >> 24;
-  p[4] = x >> 32;
-  p[5] = x >> 40;
-  p[6] = x >> 48;
-  p[7] = x >> 56;
+  p[0] = (uint8_t)(x >> 0);
+  p[1] = (uint8_t)(x >> 8);
+  p[2] = (uint8_t)(x >> 16);
+  p[3] = (uint8_t)(x >> 24);
+  p[4] = (uint8_t)(x >> 32);
+  p[5] = (uint8_t)(x >> 40);
+  p[6] = (uint8_t)(x >> 48);
+  p[7] = (uint8_t)(x >> 56);
 }
 
 // --------

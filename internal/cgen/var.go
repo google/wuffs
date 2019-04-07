@@ -140,10 +140,10 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 	// TODO: also remove this hack.
 	if hack == "w" {
-		b.printf("%sw.meta.wi = %s%sw - %sw.data.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
+		b.printf("%sw.meta.wi = ((size_t)(%s%sw - %sw.data.ptr));\n", uPrefix, iopPrefix, vPrefix, uPrefix)
 		return nil
 	} else if hack == "r" {
-		b.printf("%sr.meta.ri = %s%sr - %sr.data.ptr;\n", uPrefix, iopPrefix, vPrefix, uPrefix)
+		b.printf("%sr.meta.ri = ((size_t)(%s%sr - %sr.data.ptr));\n", uPrefix, iopPrefix, vPrefix, uPrefix)
 		return nil
 	}
 
@@ -164,7 +164,7 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	b.printf("if (%s.private_impl.buf) {", preName)
-	b.printf("%s.private_impl.buf->meta.%s = %s%s - %s.private_impl.buf->data.ptr;",
+	b.printf("%s.private_impl.buf->meta.%s = ((size_t)(%s%s - %s.private_impl.buf->data.ptr));",
 		preName, i0, iopPrefix, preName, preName)
 	b.printf("}\n")
 	return nil

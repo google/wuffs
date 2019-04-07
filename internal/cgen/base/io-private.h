@@ -74,11 +74,11 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
     return 0;
   }
   uint8_t* q = p - distance;
-  size_t n = io1_w - p;
+  size_t n = (size_t)(io1_w - p);
   if ((size_t)(length) > n) {
-    length = n;
+    length = (uint32_t)(n);
   } else {
-    n = length;
+    n = (size_t)(length);
   }
   // TODO: unrolling by 3 seems best for the std/deflate benchmarks, but that
   // is mostly because 3 is the minimum length for the deflate format. This
@@ -138,18 +138,18 @@ wuffs_base__io_writer__copy_n_from_reader(uint8_t** ptr_iop_w,
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = length;
   if (n > ((size_t)(io1_w - iop_w))) {
-    n = io1_w - iop_w;
+    n = (size_t)(io1_w - iop_w);
   }
   uint8_t* iop_r = *ptr_iop_r;
   if (n > ((size_t)(io1_r - iop_r))) {
-    n = io1_r - iop_r;
+    n = (size_t)(io1_r - iop_r);
   }
   if (n > 0) {
     memmove(iop_w, iop_r, n);
     *ptr_iop_w += n;
     *ptr_iop_r += n;
   }
-  return n;
+  return (uint32_t)(n);
 }
 
 static inline uint64_t  //
@@ -159,13 +159,13 @@ wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = src.len;
   if (n > ((size_t)(io1_w - iop_w))) {
-    n = io1_w - iop_w;
+    n = (size_t)(io1_w - iop_w);
   }
   if (n > 0) {
     memmove(iop_w, src.ptr, n);
     *ptr_iop_w += n;
   }
-  return n;
+  return (uint64_t)(n);
 }
 
 static inline uint32_t  //
@@ -179,13 +179,13 @@ wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
     n = length;
   }
   if (n > ((size_t)(io1_w - iop_w))) {
-    n = io1_w - iop_w;
+    n = (size_t)(io1_w - iop_w);
   }
   if (n > 0) {
     memmove(iop_w, src.ptr, n);
     *ptr_iop_w += n;
   }
-  return n;
+  return (uint32_t)(n);
 }
 
 static inline wuffs_base__empty_struct  //

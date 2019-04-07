@@ -175,7 +175,7 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 		return err
 	}
 
-	opName, closer := "", ""
+	opName, closer, disableWconversion := "", "", false
 	if lTyp := lhs.MType(); lTyp.IsArrayType() {
 		b.writes("memcpy(")
 		opName, closer = ",", fmt.Sprintf(", sizeof(%s))", lhsBuf)
@@ -194,12 +194,30 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 			b.printf("wuffs_base__u%d__sat_%s_indirect(&", uBits, uOp)
 			opName, closer = ",", ")"
 
+		case t.IDPlusEq, t.IDMinusEq:
+			if lTyp.IsNumType() {
+				if u := lTyp.QID()[1]; u == t.IDU8 || u == t.IDU16 {
+					disableWconversion = true
+				}
+			}
+			fallthrough
+
 		default:
 			opName = cOpName(op)
 			if opName == "" {
 				return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 			}
 		}
+	}
+
+	// "x += 1" triggers -Wconversion, if x is smaller than an int (i.e. a
+	// uint8_t or a uint16_t). This is arguably a clang/gcc bug, but in any
+	// case, we work around it in Wuffs.
+	if disableWconversion {
+		b.writes("#if defined(__GNUC__)\n")
+		b.writes("#pragma GCC diagnostic push\n")
+		b.writes("#pragma GCC diagnostic ignored \"-Wconversion\"\n")
+		b.writes("#endif\n")
 	}
 
 	b.writex(lhsBuf)
@@ -215,6 +233,12 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 	}
 	b.writes(closer)
 	b.writes(";\n")
+
+	if disableWconversion {
+		b.writes("#if defined(__GNUC__)\n")
+		b.writes("#pragma GCC diagnostic pop\n")
+		b.writes("#endif\n")
+	}
 
 	return nil
 }
