@@ -79,6 +79,12 @@ extern "C" {
 #define WUFFS_BASE__MAYBE_STATIC
 #endif
 
+#if defined(__clang__)
+#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD __attribute__((unused))
+#else
+#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD
+#endif
+
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
 #define WUFFS_BASE__POTENTIALLY_UNUSED __attribute__((unused))
@@ -2683,7 +2689,7 @@ struct wuffs_adler32__hasher__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -2799,7 +2805,7 @@ struct wuffs_crc32__ieee_hasher__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -2991,7 +2997,7 @@ struct wuffs_deflate__decoder__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -3156,7 +3162,7 @@ struct wuffs_lzw__decoder__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -3422,7 +3428,7 @@ struct wuffs_gif__decoder__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -3617,7 +3623,7 @@ struct wuffs_gzip__decoder__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 
@@ -3775,7 +3781,7 @@ struct wuffs_zlib__decoder__struct {
   union {
     uint32_t align_as_per_magic_field;
     uint8_t placeholder[1073741824];  // 1 GiB.
-  } private_impl;
+  } private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;
 
  public:
 

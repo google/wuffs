@@ -873,7 +873,7 @@ func (g *gen) writeStruct(b *buffer, n *a.Struct) error {
 	b.writes("union {\n")
 	b.writes("uint32_t align_as_per_magic_field;\n")
 	b.writes("uint8_t placeholder[1073741824];  // 1 GiB.\n")
-	b.writes("} private_impl;\n\n")
+	b.writes("} private_impl WUFFS_BASE__POTENTIALLY_UNUSED_FIELD;\n\n")
 	b.writes("public:\n")
 	b.writex(wiEnd)
 

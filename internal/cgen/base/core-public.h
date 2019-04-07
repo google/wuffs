@@ -57,6 +57,12 @@
 #define WUFFS_BASE__MAYBE_STATIC
 #endif
 
+#if defined(__clang__)
+#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD __attribute__((unused))
+#else
+#define WUFFS_BASE__POTENTIALLY_UNUSED_FIELD
+#endif
+
 // Clang also defines "__GNUC__".
 #if defined(__GNUC__)
 #define WUFFS_BASE__POTENTIALLY_UNUSED __attribute__((unused))

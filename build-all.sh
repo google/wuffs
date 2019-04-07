@@ -60,10 +60,10 @@ $CC -c -DWUFFS_IMPLEMENTATION \
 echo "Checking snapshot compiles cleanly (as C++)"
 $CXX -c \
     -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
-    release/c/wuffs-unsupported-snapshot.c -o /dev/null
+    -x c++ release/c/wuffs-unsupported-snapshot.c -o /dev/null
 $CXX -c -DWUFFS_IMPLEMENTATION \
     -Wall -Werror -Wpedantic -Wconversion -std=c++11 \
-    release/c/wuffs-unsupported-snapshot.c -o /dev/null
+    -x c++ release/c/wuffs-unsupported-snapshot.c -o /dev/null
 
 wuffs genlib -skipgen
 wuffs test   -skipgen -mimic
