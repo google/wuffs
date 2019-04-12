@@ -25,6 +25,10 @@ import (
 	"testing"
 )
 
+const bytesPerHexDumpLine = 79
+
+const fakeCodec = Codec(0xEE)
+
 // Note that these exact bytes depends on the zlib encoder's algorithm, but
 // there is more than one valid zlib encoding of any given input. This "compare
 // to golden output" test is admittedly brittle, as the standard library's zlib
@@ -164,7 +168,6 @@ func TestWriterILAStartCPageSize128(t *testing.T) {
 
 func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, empty bool) error {
 	buf := &bytes.Buffer{}
-	const fakeCodec = Codec(0xEE)
 	w := &Writer{
 		Writer:        buf,
 		Codec:         fakeCodec,
@@ -210,4 +213,109 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 		return fmt.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
 	}
 	return nil
+}
+
+func TestWriterMultiLevelIndex(t *testing.T) {
+	buf := &bytes.Buffer{}
+	w := &Writer{
+		Writer:        buf,
+		Codec:         fakeCodec,
+		IndexLocation: IndexLocationAtStart,
+		TempFile:      &bytes.Buffer{},
+	}
+
+	// Write 260 chunks with 3 resources. With the current "func gather"
+	// algorithm, this results in a root node with two children, both of which
+	// are branch nodes. The first branch contains 252 chunks and refers to 3
+	// resources (so that its arity is 255). The second branch contains 8
+	// chunks and refers to 1 resource (so that its arity is 9).
+	xRes := OptResource(0)
+	yRes := OptResource(0)
+	zRes := OptResource(0)
+	for i := 0; i < 260; i++ {
+		secondary := OptResource(0)
+		tertiary := OptResource(0)
+
+		switch i {
+		case 3:
+			xRes, _ = w.AddResource([]byte("XX"))
+			yRes, _ = w.AddResource([]byte("YY"))
+			secondary = xRes
+			tertiary = yRes
+
+		case 4:
+			zRes, _ = w.AddResource([]byte("ZZ"))
+			secondary = yRes
+			tertiary = zRes
+
+		case 259:
+			secondary = yRes
+		}
+
+		primary := []byte(fmt.Sprintf("p%02x", i&0xFF))
+		_ = w.AddChunk(0x10000, primary, secondary, tertiary)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	encoded := buf.Bytes()
+	if got, want := len(encoded), 0x13E2; got != want {
+		t.Fatalf("len(encoded): got 0x%X, want 0x%X", got, want)
+	}
+
+	got := hex.Dump(encoded)
+	got = "" +
+		got[0x000*bytesPerHexDumpLine:0x008*bytesPerHexDumpLine] +
+		"...\n" +
+		got[0x080*bytesPerHexDumpLine:0x088*bytesPerHexDumpLine] +
+		"...\n" +
+		got[0x100*bytesPerHexDumpLine:0x110*bytesPerHexDumpLine] +
+		"...\n" +
+		got[0x13C*bytesPerHexDumpLine:]
+
+	const want = "" +
+		"00000000  72 c3 63 02 a0 24 00 ff  00 00 fc 00 00 00 00 ff  |r.c..$..........|\n" +
+		"00000010  00 00 04 01 00 00 00 ee  30 00 00 00 00 00 04 ff  |........0.......|\n" +
+		"00000020  30 10 00 00 00 00 01 ff  e2 13 00 00 00 00 01 02  |0...............|\n" +
+		"00000030  72 c3 63 ff 4c be 00 ff  00 00 00 00 00 00 00 ff  |r.c.L...........|\n" +
+		"00000040  00 00 00 00 00 00 00 ff  00 00 00 00 00 00 00 ff  |................|\n" +
+		"00000050  00 00 01 00 00 00 00 ff  00 00 02 00 00 00 00 ff  |................|\n" +
+		"00000060  00 00 03 00 00 00 00 01  00 00 04 00 00 00 00 02  |................|\n" +
+		"00000070  00 00 05 00 00 00 00 ff  00 00 06 00 00 00 00 ff  |................|\n" +
+		"...\n" +
+		"00000800  00 00 f7 00 00 00 00 ff  00 00 f8 00 00 00 00 ff  |................|\n" +
+		"00000810  00 00 f9 00 00 00 00 ff  00 00 fa 00 00 00 00 ff  |................|\n" +
+		"00000820  00 00 fb 00 00 00 00 ff  00 00 fc 00 00 00 00 ee  |................|\n" +
+		"00000830  d9 10 00 00 00 00 01 ff  db 10 00 00 00 00 01 ff  |................|\n" +
+		"00000840  e0 10 00 00 00 00 01 ff  d0 10 00 00 00 00 01 ff  |................|\n" +
+		"00000850  d3 10 00 00 00 00 01 ff  d6 10 00 00 00 00 01 ff  |................|\n" +
+		"00000860  dd 10 00 00 00 00 01 00  e2 10 00 00 00 00 01 01  |................|\n" +
+		"00000870  e5 10 00 00 00 00 01 ff  e8 10 00 00 00 00 01 ff  |................|\n" +
+		"...\n" +
+		"00001000  bb 13 00 00 00 00 01 ff  be 13 00 00 00 00 01 ff  |................|\n" +
+		"00001010  c1 13 00 00 00 00 01 ff  c4 13 00 00 00 00 01 ff  |................|\n" +
+		"00001020  c7 13 00 00 00 00 01 ff  e2 13 00 00 00 00 01 ff  |................|\n" +
+		"00001030  72 c3 63 09 f0 09 00 ff  00 00 00 00 00 00 00 ff  |r.c.............|\n" +
+		"00001040  00 00 01 00 00 00 00 ff  00 00 02 00 00 00 00 ff  |................|\n" +
+		"00001050  00 00 03 00 00 00 00 ff  00 00 04 00 00 00 00 ff  |................|\n" +
+		"00001060  00 00 05 00 00 00 00 ff  00 00 06 00 00 00 00 ff  |................|\n" +
+		"00001070  00 00 07 00 00 00 00 ff  00 00 08 00 00 00 00 ee  |................|\n" +
+		"00001080  db 10 00 00 00 00 01 ff  ca 13 00 00 00 00 01 ff  |................|\n" +
+		"00001090  cd 13 00 00 00 00 01 ff  d0 13 00 00 00 00 01 ff  |................|\n" +
+		"000010a0  d3 13 00 00 00 00 01 ff  d6 13 00 00 00 00 01 ff  |................|\n" +
+		"000010b0  d9 13 00 00 00 00 01 ff  dc 13 00 00 00 00 01 ff  |................|\n" +
+		"000010c0  df 13 00 00 00 00 01 00  e2 13 00 00 00 00 01 09  |................|\n" +
+		"000010d0  70 30 30 70 30 31 70 30  32 58 58 59 59 70 30 33  |p00p01p02XXYYp03|\n" +
+		"000010e0  5a 5a 70 30 34 70 30 35  70 30 36 70 30 37 70 30  |ZZp04p05p06p07p0|\n" +
+		"000010f0  38 70 30 39 70 30 61 70  30 62 70 30 63 70 30 64  |8p09p0ap0bp0cp0d|\n" +
+		"...\n" +
+		"000013c0  38 70 66 39 70 66 61 70  66 62 70 66 63 70 66 64  |8pf9pfapfbpfcpfd|\n" +
+		"000013d0  70 66 65 70 66 66 70 30  30 70 30 31 70 30 32 70  |pfepffp00p01p02p|\n" +
+		"000013e0  30 33                                             |03|\n"
+
+	if got != want {
+		t.Fatalf("\ngot:\n%s\nwant:\n%s", got, want)
+	}
 }

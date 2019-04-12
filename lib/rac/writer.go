@@ -593,8 +593,18 @@ func (w *nodeWriter) writeIndex(n *node) error {
 	w.buffer[4] = uint8(checksum >> 0)
 	w.buffer[5] = uint8(checksum >> 8)
 
-	_, err := w.w.Write(w.buffer[:size])
-	return err
+	if _, err := w.w.Write(w.buffer[:size]); err != nil {
+		return err
+	}
+
+	for i, o := range n.children {
+		if len(o.children) != 0 {
+			if err := w.writeIndex(&n.children[i]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func calcCLength(primarySize int) uint64 {
@@ -640,10 +650,9 @@ func gather(nodes []node) node {
 	}
 
 	resources := map[OptResource]bool{}
-	arity := 0
 
 	for {
-		i, j, newNodes := 0, 0, []node(nil)
+		i, j, arity, newNodes := 0, 0, 0, []node(nil)
 		for ; j < len(nodes); j++ {
 			o := &nodes[j]
 
@@ -661,16 +670,23 @@ func gather(nodes []node) node {
 			}
 
 			newNodes = append(newNodes, makeBranch(nodes[i:j], resources))
-			i = j
-			arity = 0
 			if len(resources) != 0 {
 				resources = map[OptResource]bool{}
 			}
+
+			i = j
+			arity = 0
 		}
 
 		if i == 0 {
 			return makeBranch(nodes, resources)
 		}
+
+		newNodes = append(newNodes, makeBranch(nodes[i:], resources))
+		if len(resources) != 0 {
+			resources = map[OptResource]bool{}
+		}
+
 		nodes, newNodes = newNodes, nil
 	}
 }
