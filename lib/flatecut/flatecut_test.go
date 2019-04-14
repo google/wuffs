@@ -39,3 +39,72 @@ func BenchmarkCut(b *testing.B) {
 func newReader(r io.Reader) (io.ReadCloser, error) {
 	return flate.NewReader(r), nil
 }
+
+func TestHuffmanDecode(t *testing.T) {
+	// This exercises the "ABCDEFGH" example from RFC 1951 section 3.2.2,
+	// discussed in the "type huffman" doc comment.
+
+	const src = "HEADFACE"
+	codes := []string{
+		'A': " 010",
+		'B': " 011",
+		'C': " 100",
+		'D': " 101",
+		'E': " 110",
+		'F': "  00",
+		'G': "1110",
+		'H': "1111",
+	}
+
+	encoded := []byte(nil)
+	encBits := uint32(0)
+	encNBits := uint32(0)
+	for _, s := range src {
+		for _, c := range codes[s] {
+			if c == ' ' {
+				continue
+			}
+
+			if c == '1' {
+				encBits |= 1 << encNBits
+			}
+			encNBits++
+
+			if encNBits == 8 {
+				encoded = append(encoded, uint8(encBits))
+				encBits = 0
+				encNBits = 0
+			}
+		}
+	}
+	if encNBits > 0 {
+		encoded = append(encoded, uint8(encBits))
+	}
+
+	h := huffman{
+		counts: [maxCodeBits + 1]uint32{
+			2: 1, 3: 5, 4: 2,
+		},
+		symbols: [maxNumCodes]int32{
+			0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
+		},
+	}
+
+	b := &bitstream{
+		bytes: encoded,
+	}
+
+	decoded := []byte(nil)
+	for _ = range src {
+		c := h.decode(b)
+		if c < 0 {
+			decoded = append(decoded, '!')
+			break
+		}
+		decoded = append(decoded, uint8(c))
+	}
+
+	if got, want := string(decoded), src; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}

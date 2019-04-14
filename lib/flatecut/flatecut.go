@@ -125,10 +125,10 @@ func (b *bitstream) take(nBits uint32) int32 {
 // which results in:
 //
 // huffman{
-//   counts: []uint32{
+//   counts: [maxCodeBits + 1]uint32{
 //     2: 1, 3: 5, 4: 2,
 //   },
-//   symbols: []int32{
+//   symbols: [maxNumCodes]int32{
 //     0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
 //   },
 // }
