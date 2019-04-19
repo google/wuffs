@@ -84,9 +84,11 @@ const (
 	mostNegativeInt32 = -0x80000000
 )
 
-func loadU32LE(b []byte) uint32 {
-	_ = b[3] // bounds check hint to compiler; see golang.org/issue/14808
-	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+func loadU64LE(b []byte) uint64 {
+	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
+		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
+
 }
 
 type bitstream struct {
@@ -96,7 +98,7 @@ type bitstream struct {
 
 	// The low nBits bits of the 'bits' field hold the next bits (in LSB-first
 	// order).
-	bits  uint32
+	bits  uint64
 	nBits uint32
 }
 
@@ -105,13 +107,13 @@ func (b *bitstream) take(nBits uint32) int32 {
 		if b.index >= len(b.bytes) {
 			return mostNegativeInt32
 		}
-		b.bits |= uint32(b.bytes[b.index]) << b.nBits
+		b.bits |= uint64(b.bytes[b.index]) << b.nBits
 		b.nBits += 8
 		b.index++
 	}
 
 	mask := ((uint32(1)) << nBits) - 1
-	ret := b.bits & mask
+	ret := uint32(b.bits) & mask
 	b.bits >>= nBits
 	b.nBits -= nBits
 	return int32(ret)
@@ -162,15 +164,15 @@ type huffman struct {
 func (h *huffman) decode(b *bitstream) int32 {
 	if b.nBits >= 8 {
 		// No-op.
-	} else if b.index < (len(b.bytes) - 4) {
+	} else if b.index < (len(b.bytes) - 8) {
 		// This is "Variant 4" of
 		// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
-		u := loadU32LE(b.bytes[b.index:])
+		u := loadU64LE(b.bytes[b.index:])
 		b.bits |= u << b.nBits
-		b.index += int((31 - b.nBits) >> 3)
-		b.nBits |= 24
+		b.index += int((63 - b.nBits) >> 3)
+		b.nBits |= 56
 	} else if b.index < len(b.bytes) {
-		b.bits |= uint32(b.bytes[b.index]) << b.nBits
+		b.bits |= uint64(b.bytes[b.index]) << b.nBits
 		b.nBits += 8
 		b.index++
 	} else {
@@ -202,12 +204,12 @@ func (h *huffman) slowDecode(b *bitstream) int32 {
 			if b.index >= len(b.bytes) {
 				return mostNegativeInt32
 			}
-			b.bits = uint32(b.bytes[b.index])
+			b.bits = uint64(b.bytes[b.index])
 			b.nBits = 8
 			b.index++
 		}
 
-		code |= b.bits & 1
+		code |= uint32(b.bits & 1)
 		b.bits >>= 1
 		b.nBits -= 1
 
