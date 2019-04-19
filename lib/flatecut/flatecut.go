@@ -156,26 +156,23 @@ type huffman struct {
 
 func (h *huffman) decode(b *bitstream) int32 {
 	if b.nBits >= 8 {
-		if x := h.lookUpTable[b.bits&0xFF]; x != 0 {
-			n := x >> 16
-			b.bits >>= n
-			b.nBits -= n
-			return int32(x & 0xFFFF)
-		}
-	}
-
-	if b.index < len(b.bytes) {
+		// No-op.
+	} else if b.index < len(b.bytes) {
 		b.bits |= uint32(b.bytes[b.index]) << b.nBits
 		b.nBits += 8
 		b.index++
-		if x := h.lookUpTable[b.bits&0xFF]; x != 0 {
-			n := x >> 16
-			b.bits >>= n
-			b.nBits -= n
-			return int32(x & 0xFFFF)
-		}
+	} else {
+		goto slow
 	}
 
+	if x := h.lookUpTable[b.bits&0xFF]; x != 0 {
+		n := x >> 16
+		b.bits >>= n
+		b.nBits -= n
+		return int32(x & 0xFFFF)
+	}
+
+slow:
 	return h.slowDecode(b)
 }
 
