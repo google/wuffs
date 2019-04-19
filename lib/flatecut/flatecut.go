@@ -131,6 +131,9 @@ func (b *bitstream) take(nBits uint32) int32 {
 //   symbols: [maxNumCodes]int32{
 //     0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
 //   },
+//   lookUpTable: [256]uint32{
+//     etc,
+//   },
 // }
 //
 // Continuing the example from the RFC, decoding "1110" from the bitstream will
@@ -138,9 +141,43 @@ func (b *bitstream) take(nBits uint32) int32 {
 type huffman struct {
 	counts  [maxCodeBits + 1]uint32
 	symbols [maxNumCodes]int32
+
+	// lookUpTable holds cached results of the slowDecode method.
+	//
+	// The uint8 key is the next 8 bits of input.
+	//
+	// The uint32 value's low 16 bits are the symbol, the high 16 bits are the
+	// number of bits used to encode that symbol.
+	//
+	// Zero means that the entry is invalid. For example, the encoded symbol
+	// might be longer than 8 bits.
+	lookUpTable [256]uint32
 }
 
 func (h *huffman) decode(b *bitstream) int32 {
+	if b.index < len(b.bytes) {
+		b.bits |= uint32(b.bytes[b.index]) << b.nBits
+		b.nBits += 8
+		b.index++
+		if x := h.lookUpTable[b.bits&0xFF]; x != 0 {
+			n := x >> 16
+			b.bits >>= n
+			b.nBits -= n
+			if b.nBits >= 8 {
+				b.index--
+				b.nBits -= 8
+				b.bits &= (uint32(1) << b.nBits) - 1
+			}
+			return int32(x & 0xFFFF)
+		}
+		b.index--
+		b.nBits -= 8
+		b.bits &= (uint32(1) << b.nBits) - 1
+	}
+	return h.slowDecode(b)
+}
+
+func (h *huffman) slowDecode(b *bitstream) int32 {
 	code := uint32(0)     // The i bits from the bitstream.
 	first := uint32(0)    // The first Huffman code of length i.
 	symIndex := uint32(0) // How many elements of h.symbols we've gone past.
@@ -244,7 +281,25 @@ func (h *huffman) construct(lengths []uint32) (endCodeBits uint32, endCodeNBits 
 			offsets[length]++
 		}
 	}
+	h.constructLookUpTable()
 	return endCodeBits, endCodeNBits, nil
+}
+
+func (h *huffman) constructLookUpTable() {
+	b := bitstream{
+		bytes: []byte{0x00},
+	}
+	for i := range h.lookUpTable {
+		b.bytes[0] = uint8(i)
+		b.index = 0
+		b.bits = 0
+		b.nBits = 0
+		if x := h.slowDecode(&b); x >= 0 {
+			h.lookUpTable[i] = ((8 - b.nBits) << 16) | uint32(x)
+		} else {
+			h.lookUpTable[i] = 0
+		}
+	}
 }
 
 // cutEmpty sets encoding[:2] to contain valid DEFLATE-encoded data. Decoding

@@ -89,6 +89,7 @@ func TestHuffmanDecode(t *testing.T) {
 			0: 'F', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'G', 7: 'H',
 		},
 	}
+	h.constructLookUpTable()
 
 	b := &bitstream{
 		bytes: encoded,
