@@ -155,6 +155,15 @@ type huffman struct {
 }
 
 func (h *huffman) decode(b *bitstream) int32 {
+	if b.nBits >= 8 {
+		if x := h.lookUpTable[b.bits&0xFF]; x != 0 {
+			n := x >> 16
+			b.bits >>= n
+			b.nBits -= n
+			return int32(x & 0xFFFF)
+		}
+	}
+
 	if b.index < len(b.bytes) {
 		b.bits |= uint32(b.bytes[b.index]) << b.nBits
 		b.nBits += 8
@@ -163,17 +172,10 @@ func (h *huffman) decode(b *bitstream) int32 {
 			n := x >> 16
 			b.bits >>= n
 			b.nBits -= n
-			if b.nBits >= 8 {
-				b.index--
-				b.nBits -= 8
-				b.bits &= (uint32(1) << b.nBits) - 1
-			}
 			return int32(x & 0xFFFF)
 		}
-		b.index--
-		b.nBits -= 8
-		b.bits &= (uint32(1) << b.nBits) - 1
 	}
+
 	return h.slowDecode(b)
 }
 
@@ -375,6 +377,10 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 
 		finalBlockIndex := c.bits.index
 		finalBlockNBits := c.bits.nBits
+		for finalBlockNBits >= 8 {
+			finalBlockIndex--
+			finalBlockNBits -= 8
+		}
 
 		blockType := c.bits.take(2)
 		if blockType < 0 {
@@ -393,6 +399,11 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 			return 0, 0, errInvalidBadBlockType
 		}
 
+		for c.bits.nBits >= 8 {
+			c.bits.index--
+			c.bits.nBits -= 8
+		}
+
 		switch err {
 		case nil:
 			if finalBlock == 0 {
@@ -409,9 +420,9 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 			// Un-read to just before the finalBlock bit.
 			c.bits.index = finalBlockIndex
 			c.bits.nBits = finalBlockNBits + 1
-			if c.bits.nBits == 8 {
+			for c.bits.nBits >= 8 {
 				c.bits.index--
-				c.bits.nBits = 0
+				c.bits.nBits -= 8
 			}
 
 			finalBlockIndex = prevFinalBlockIndex
@@ -442,9 +453,14 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 }
 
 func (c *cutter) doStored() error {
-	if (c.maxEncodedLen - c.bits.index) < 4 {
+	for c.bits.nBits >= 8 {
+		c.bits.index--
+		c.bits.nBits -= 8
+	}
+	if (c.maxEncodedLen < c.bits.index) || ((c.maxEncodedLen - c.bits.index) < 4) {
 		return errInternalNoProgress
 	}
+
 	length := uint32(c.bits.bytes[c.bits.index+0]) | uint32(c.bits.bytes[c.bits.index+1])<<8
 	invLen := uint32(c.bits.bytes[c.bits.index+2]) | uint32(c.bits.bytes[c.bits.index+3])<<8
 	if length+invLen != 0xFFFF {
@@ -597,6 +613,10 @@ func (c *cutter) doHuffman(lLengths []uint32, dLengths []uint32) error {
 		return err
 	}
 
+	for c.bits.nBits >= 8 {
+		c.bits.index--
+		c.bits.nBits -= 8
+	}
 	if c.bits.index > c.maxEncodedLen {
 		return errInternalNoProgress
 	}
@@ -666,6 +686,10 @@ func (c *cutter) doHuffman(lLengths []uint32, dLengths []uint32) error {
 	}
 	c.bits.index = checkpointIndex
 	c.bits.nBits = checkpointNBits
+	for c.bits.nBits >= 8 {
+		c.bits.index--
+		c.bits.nBits -= 8
+	}
 	c.writeEndCode()
 	return errInternalSomeProgress
 }
