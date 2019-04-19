@@ -84,6 +84,11 @@ const (
 	mostNegativeInt32 = -0x80000000
 )
 
+func loadU32LE(b []byte) uint32 {
+	_ = b[3] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+}
+
 type bitstream struct {
 	// bytes[index] is the next byte to load into the 'bits' field.
 	bytes []byte
@@ -157,6 +162,13 @@ type huffman struct {
 func (h *huffman) decode(b *bitstream) int32 {
 	if b.nBits >= 8 {
 		// No-op.
+	} else if b.index < (len(b.bytes) - 4) {
+		// This is "Variant 4" of
+		// https://fgiesen.wordpress.com/2018/02/20/reading-bits-in-far-too-many-ways-part-2/
+		u := loadU32LE(b.bytes[b.index:])
+		b.bits |= u << b.nBits
+		b.index += int((31 - b.nBits) >> 3)
+		b.nBits |= 24
 	} else if b.index < len(b.bytes) {
 		b.bits |= uint32(b.bytes[b.index]) << b.nBits
 		b.nBits += 8
