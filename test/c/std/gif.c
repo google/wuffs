@@ -987,7 +987,7 @@ const char* test_wuffs_gif_decode_metadata() {
 
         switch (wuffs_gif__decoder__metadata_fourcc(&dec)) {
           case WUFFS_BASE__FOURCC__ICCP:
-            // TODO: want = "etc";
+            want = "\x16\x26\x36\x46\x56\x76\x86\x96";
             seen_iccp = true;
             break;
           case WUFFS_BASE__FOURCC__XMP:
@@ -1040,7 +1040,8 @@ const char* test_wuffs_gif_decode_metadata() {
       }
 
       if (iccp != seen_iccp) {
-        // TODO.
+        RETURN_FAIL("seen_iccp (iccp=%d, xmp=%d): got %d, want %d", iccp, xmp,
+                    seen_iccp, iccp);
       }
 
       if (xmp != seen_xmp) {

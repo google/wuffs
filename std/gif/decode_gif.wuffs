@@ -85,6 +85,7 @@ pub struct decoder?(
 	call_sequence base.u8,
 
 	ignore_metadata             base.bool,
+	report_metadata_iccp        base.bool,
 	report_metadata_xmp         base.bool,
 	metadata_fourcc_value       base.u32,
 	metadata_chunk_length_value base.u64,
@@ -190,7 +191,9 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 }
 
 pub func decoder.set_report_metadata!(fourcc base.u32, report base.bool) {
-	if args.fourcc == 0x584D5020 {  // "XMP "
+	if args.fourcc == 0x49434350 {  // "ICCP"
+		this.report_metadata_iccp = args.report
+	} else if args.fourcc == 0x584D5020 {  // "XMP "
 		this.report_metadata_xmp = args.report
 	}
 }
@@ -207,13 +210,24 @@ pub func decoder.ack_metadata_chunk?(src base.io_reader) {
 	{
 		yield? base."$short read"
 	}
-	// The +1 is because XMP metadata's encoding includes each block's leading
-	// byte (the block size) as part of the metadata passed to the caller.
-	this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
-	if this.metadata_chunk_length_value > 1 {
-		this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
-		return base."@metadata reported"
+
+	if this.metadata_fourcc_value == 0x584D5020 {  // "XMP "
+		// The +1 is because XMP metadata's encoding includes each block's leading
+		// byte (the block size) as part of the metadata passed to the caller.
+		this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
+		if this.metadata_chunk_length_value > 1 {
+			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+			return base."@metadata reported"
+		}
+	} else {
+		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
+		if this.metadata_chunk_length_value > 0 {
+			args.src.skip_fast!(actual:1, worst_case:1)
+			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+			return base."@metadata reported"
+		}
 	}
+
 	args.src.skip_fast!(actual:1, worst_case:1)
 	this.call_sequence = 2
 	this.metadata_fourcc_value = 0
@@ -521,6 +535,11 @@ pri const netscape2dot0 array[11] base.u8 = [
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
 ]
 
+// iccrgbg1012 is "ICCRGBG1012" as bytes.
+pri const iccrgbg1012 array[11] base.u8 = [
+	0x49, 0x43, 0x43, 0x52, 0x47, 0x42, 0x47, 0x31, 0x30, 0x31, 0x32,
+]
+
 // xmpdataxmp is "XMP DataXMP" as bytes.
 pri const xmpdataxmp array[11] base.u8 = [
 	0x58, 0x4D, 0x50, 0x20, 0x44, 0x61, 0x74, 0x61, 0x58, 0x4D, 0x50,
@@ -532,6 +551,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 	var block_size  base.u8
 	var is_animexts base.bool
 	var is_netscape base.bool
+	var is_iccp     base.bool
 	var is_xmp      base.bool
 
 	// This "while true" always executes exactly once, as it ends with a
@@ -554,12 +574,14 @@ pri func decoder.decode_ae?(src base.io_reader) {
 		}
 		is_animexts = true
 		is_netscape = true
+		is_iccp = true
 		is_xmp = true
 		block_size = 0  // Re-purpose the block_size variable as a counter.
 		while block_size < 11 {
 			c = args.src.read_u8?()
 			is_animexts = is_animexts and (c == animexts1dot0[block_size])
 			is_netscape = is_netscape and (c == netscape2dot0[block_size])
+			is_iccp = is_iccp and (c == iccrgbg1012[block_size])
 			is_xmp = is_xmp and (c == xmpdataxmp[block_size])
 			block_size += 1
 		}
@@ -596,6 +618,19 @@ pri func decoder.decode_ae?(src base.io_reader) {
 
 		} else if this.ignore_metadata {
 			// No-op.
+
+		} else if is_iccp and this.report_metadata_iccp {
+			while args.src.available() <= 0,
+				post args.src.available() > 0,
+			{
+				yield? base."$short read"
+			}
+			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
+			args.src.skip_fast!(actual:1, worst_case:1)
+			this.metadata_fourcc_value = 0x49434350  // "ICCP"
+			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+			this.call_sequence = 1
+			return base."@metadata reported"
 
 		} else if is_xmp and this.report_metadata_xmp {
 			while args.src.available() <= 0,
