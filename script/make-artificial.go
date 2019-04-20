@@ -512,6 +512,7 @@ var gifGlobals struct {
 
 func stateGif(line string) (stateFunc, error) {
 	const (
+		cmdB  = "bytes "
 		cmdL  = "lzw "
 		cmdLC = "loopCount "
 	)
@@ -530,6 +531,18 @@ outer:
 
 	case line == "trailer":
 		out = append(out, 0x3B)
+		return stateGif, nil
+
+	case strings.HasPrefix(line, cmdB):
+		s := line[len(cmdB):]
+		for s != "" {
+			x, ok := uint32(0), false
+			x, s, ok = parseHex(s)
+			if !ok {
+				break outer
+			}
+			out = append(out, uint8(x))
+		}
 		return stateGif, nil
 
 	case strings.HasPrefix(line, cmdL):

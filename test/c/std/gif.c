@@ -930,6 +930,165 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_metadata() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status = read_file(&src, "test/data/artificial/gif-metadata.gif");
+  if (status) {
+    return status;
+  }
+
+  int iccp;
+  for (iccp = 0; iccp < 2; iccp++) {
+    int xmp;
+    for (xmp = 0; xmp < 2; xmp++) {
+      bool seen_iccp = false;
+      bool seen_xmp = false;
+
+      wuffs_gif__decoder dec;
+      status = wuffs_gif__decoder__initialize(
+          &dec, sizeof dec, WUFFS_VERSION,
+          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+      if (status) {
+        RETURN_FAIL("initialize: \"%s\"", status);
+      }
+
+      if (iccp) {
+        wuffs_gif__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__ICCP,
+                                                true);
+      }
+      if (xmp) {
+        wuffs_gif__decoder__set_report_metadata(&dec, WUFFS_BASE__FOURCC__XMP,
+                                                true);
+      }
+
+      wuffs_base__image_config ic = ((wuffs_base__image_config){});
+      src.meta.ri = 0;
+
+      while (true) {
+        status = wuffs_gif__decoder__decode_image_config(
+            &dec, &ic, wuffs_base__io_buffer__reader(&src));
+        if (!status) {
+          break;
+        } else if (status != wuffs_base__warning__metadata_reported) {
+          RETURN_FAIL(
+              "decode_image_config (iccp=%d, xmp=%d): got \"%s\", want \"%s\"",
+              iccp, xmp, status, wuffs_base__warning__metadata_reported);
+        }
+
+        const char* want = "";
+        char got_buffer[100];
+        int got_length = 0;
+        uint32_t got_fourcc = wuffs_gif__decoder__metadata_fourcc(&dec);
+
+        switch (wuffs_gif__decoder__metadata_fourcc(&dec)) {
+          case WUFFS_BASE__FOURCC__ICCP:
+            // TODO: want = "etc";
+            seen_iccp = true;
+            break;
+          case WUFFS_BASE__FOURCC__XMP:
+            want = "\x05\x17\x27\x37\x47\x57\x03\x77\x87\x97";
+            seen_xmp = true;
+            break;
+          default:
+            RETURN_FAIL(
+                "metadata_fourcc (iccp=%d, xmp=%d): unexpected FourCC "
+                "0x%08" PRIX32,
+                iccp, xmp, got_fourcc);
+        }
+
+        while (true) {
+          uint64_t n = wuffs_gif__decoder__metadata_chunk_length(&dec);
+          if ((n > 100) || (n + got_length > 100)) {
+            RETURN_FAIL(
+                "metadata_chunk_length (iccp=%d, xmp=%d): too much "
+                "metadata (vs buffer size)",
+                iccp, xmp);
+          }
+          if (n > wuffs_base__io_buffer__reader_available(&src)) {
+            RETURN_FAIL(
+                "metadata_chunk_length (iccp=%d, xmp=%d): too much "
+                "metadata (vs available)",
+                iccp, xmp);
+          }
+          memcpy(got_buffer + got_length, src.data.ptr + src.meta.ri, n);
+          got_length += n;
+          src.meta.ri += n;
+
+          status = wuffs_gif__decoder__ack_metadata_chunk(
+              &dec, wuffs_base__io_buffer__reader(&src));
+          if (!status) {
+            break;
+          } else if (status != wuffs_base__warning__metadata_reported) {
+            RETURN_FAIL(
+                "ack_metadata_chunk (iccp=%d, xmp=%d): got \"%s\", want \"%s\"",
+                iccp, xmp, status, wuffs_base__warning__metadata_reported);
+          }
+        }
+
+        int want_length = strlen(want);
+        if ((got_length != want_length) ||
+            strncmp(got_buffer, want, want_length)) {
+          RETURN_FAIL("metadata (iccp=%d, xmp=%d): fourcc=0x%08" PRIX32
+                      ": values differed",
+                      iccp, xmp, got_fourcc);
+        }
+      }
+
+      if (iccp != seen_iccp) {
+        // TODO.
+      }
+
+      if (xmp != seen_xmp) {
+        RETURN_FAIL("seen_xmp (iccp=%d, xmp=%d): got %d, want %d", iccp, xmp,
+                    seen_xmp, xmp);
+      }
+
+      {
+        uint64_t got = wuffs_base__image_config__first_frame_io_position(&ic);
+        uint64_t want = 25;
+        if (got != want) {
+          RETURN_FAIL("first_frame_io_position: got %" PRIu64 ", want %" PRIu64,
+                      got, want);
+        }
+      }
+
+      {
+        uint32_t got = wuffs_gif__decoder__num_animation_loops(&dec);
+        uint32_t want = 2001;
+        if (got != want) {
+          RETURN_FAIL("num_animation_loops: got %" PRIu32 ", want %" PRIu32,
+                      got, want);
+        }
+      }
+
+      {
+        wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+        status = wuffs_gif__decoder__decode_frame_config(
+            &dec, &fc, wuffs_base__io_buffer__reader(&src));
+        if (status) {
+          RETURN_FAIL("decode_frame_config (iccp=%d, xmp=%d): %s", iccp, xmp,
+                      status);
+        }
+        uint32_t got = wuffs_base__frame_config__width(&fc);
+        uint32_t want = 1;
+        if (got != want) {
+          RETURN_FAIL(
+              "decode_frame_config (iccp=%d, xmp=%d): width: got %" PRIu32
+              ", want %" PRIu32,
+              iccp, xmp, got, want);
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_missing_two_src_bytes() {
   CHECK_FOCUS(__func__);
 
@@ -1711,6 +1870,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
+    test_wuffs_gif_decode_metadata,                          //
     test_wuffs_gif_decode_missing_two_src_bytes,             //
     test_wuffs_gif_decode_multiple_loop_counts,              //
     test_wuffs_gif_decode_pixel_data_none,                   //

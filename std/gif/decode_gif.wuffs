@@ -49,6 +49,8 @@ pub struct decoder?(
 
 	// Call sequence states:
 	//  - 0: initial state.
+	//  - 1: metadata reported; image config decode is in progress.
+	//  - 2: metadata finished; image config decode is in progress.
 	//  - 3: image config decoded, including the first frame's bounds, but not
 	//       the first frame's pixels.
 	//  - 4: frame config decoded.
@@ -56,9 +58,15 @@ pub struct decoder?(
 	//
 	// State transitions:
 	//
-	//  - 0 -> 3: via IC
+	//  - 0 -> 1: via IC (metadata reported)
+	//  - 0 -> 3: via IC (metadata not reported)
 	//  - 0 -> 4: via FC with implicit IC
 	//  - 0 -> 5: via F  with implicit IC and FC
+	//
+	//  - 1 -> 2: via AMC
+	//
+	//  - 2 -> 1: via IC (metadata reported)
+	//  - 2 -> 3: via IC (metadata not reported)
 	//
 	//  - 3 -> 4: via FC
 	//  - 3 -> 5: via F  with implicit FC
@@ -70,10 +78,17 @@ pub struct decoder?(
 	//  - 5 -> 5: via F  with implicit FC
 	//
 	// Where:
-	//  - F  is decode_frame,        implicit means skip_frame
-	//  - FC is decode_frame_config, implicit means nullptr args.dst
-	//  - IC is decode_image_config, implicit means nullptr args.dst
+	//  - AMC is ack_metadata_chunk
+	//  - F   is decode_frame,        implicit means skip_frame
+	//  - FC  is decode_frame_config, implicit means nullptr args.dst
+	//  - IC  is decode_image_config, implicit means nullptr args.dst
 	call_sequence base.u8,
+
+	ignore_metadata             base.bool,
+	report_metadata_xmp         base.bool,
+	metadata_fourcc_value       base.u32,
+	metadata_chunk_length_value base.u64,
+	metadata_io_position        base.u64,
 
 	end_of_data                        base.bool,
 	restarted                          base.bool,
@@ -128,15 +143,28 @@ pub struct decoder?(
 )
 
 pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
-	var ffio base.bool
+	var ffio   base.bool
+	var status base.status  // TODO: this shouldn't be necessary.
 
-	if this.call_sequence >= 3 {
+	if this.call_sequence == 0 {
+		this.decode_header?(src:args.src)
+		this.decode_lsd?(src:args.src)
+	} else if this.call_sequence <> 2 {
 		return base."#bad call sequence"
 	}
 
-	this.decode_header?(src:args.src)
-	this.decode_lsd?(src:args.src)
-	this.decode_up_to_id_part1?(src:args.src)
+	// TODO: this should be just "this.decode_up_to_id_part1?(src:args.src)".
+	while true {
+		status =? this.decode_up_to_id_part1?(src:args.src)
+		if status.is_suspension() {
+			yield? status
+			continue
+		}
+		if status.is_ok() {
+			break
+		}
+		return status
+	}
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
@@ -159,6 +187,46 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	}
 
 	this.call_sequence = 3
+}
+
+pub func decoder.set_report_metadata!(fourcc base.u32, report base.bool) {
+	if args.fourcc == 0x584D5020 {  // "XMP "
+		this.report_metadata_xmp = args.report
+	}
+}
+
+pub func decoder.ack_metadata_chunk?(src base.io_reader) {
+	if this.call_sequence <> 1 {
+		return base."#bad call sequence"
+	}
+	if args.src.position() <> this.metadata_io_position {
+		return base."#bad I/O position"
+	}
+	while args.src.available() <= 0,
+		post args.src.available() > 0,
+	{
+		yield? base."$short read"
+	}
+	// The +1 is because XMP metadata's encoding includes each block's leading
+	// byte (the block size) as part of the metadata passed to the caller.
+	this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
+	if this.metadata_chunk_length_value > 1 {
+		this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+		return base."@metadata reported"
+	}
+	args.src.skip_fast!(actual:1, worst_case:1)
+	this.call_sequence = 2
+	this.metadata_fourcc_value = 0
+	this.metadata_io_position = 0
+	return ok
+}
+
+pub func decoder.metadata_fourcc() base.u32 {
+	return this.metadata_fourcc_value
+}
+
+pub func decoder.metadata_chunk_length() base.u64 {
+	return this.metadata_chunk_length_value
 }
 
 pub func decoder.num_animation_loops() base.u32 {
@@ -212,6 +280,7 @@ pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.statu
 pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader) {
 	var blend base.u8
 
+	this.ignore_metadata = true
 	this.dirty_y.reset!()
 
 	if not this.end_of_data {
@@ -272,6 +341,7 @@ pri func decoder.skip_frame?(src base.io_reader) {
 
 // TODO: honor args.opts.
 pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
+	this.ignore_metadata = true
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst:nullptr, src:args.src)
 	}
@@ -295,9 +365,12 @@ pri func decoder.reset_gc!() {
 
 pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	var block_type base.u8
+	var status     base.status  // TODO: this shouldn't be necessary.
 
 	if not this.restarted {
-		this.frame_config_io_position = args.src.position()
+		if this.call_sequence <> 2 {
+			this.frame_config_io_position = args.src.position()
+		}
 	} else if this.frame_config_io_position <> args.src.position() {
 		return base."#bad restart"
 	} else {
@@ -307,7 +380,18 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	while true {
 		block_type = args.src.read_u8?()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
-			this.decode_extension?(src:args.src)
+			// TODO: this should be just "this.decode_extension?(src:args.src)".
+			while true {
+				status =? this.decode_extension?(src:args.src)
+				if status.is_suspension() {
+					yield? status
+					continue
+				}
+				if status.is_ok() {
+					break
+				}
+				return status
+			}
 		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
 			this.decode_id_part0?(src:args.src)
 			break
@@ -388,14 +472,26 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
 pri func decoder.decode_extension?(src base.io_reader) {
-	var label base.u8
+	var label  base.u8
+	var status base.status  // TODO: this shouldn't be necessary.
 
 	label = args.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		this.decode_gc?(src:args.src)
 		return ok
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
-		this.decode_ae?(src:args.src)
+		// TODO: this should be just "this.decode_ae?(src:args.src)".
+		while true {
+			status =? this.decode_ae?(src:args.src)
+			if status.is_suspension() {
+				yield? status
+				continue
+			}
+			if status.is_ok() {
+				break
+			}
+			return status
+		}
 		return ok
 	}
 	// We skip over all other extensions, including 0x01 "Plain Text Label" and
@@ -425,12 +521,18 @@ pri const netscape2dot0 array[11] base.u8 = [
 	0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30,
 ]
 
+// xmpdataxmp is "XMP DataXMP" as bytes.
+pri const xmpdataxmp array[11] base.u8 = [
+	0x58, 0x4D, 0x50, 0x20, 0x44, 0x61, 0x74, 0x61, 0x58, 0x4D, 0x50,
+]
+
 // decode_ae reads an Application Extension.
 pri func decoder.decode_ae?(src base.io_reader) {
-	var c            base.u8
-	var block_size   base.u8
-	var not_animexts base.bool
-	var not_netscape base.bool
+	var c           base.u8
+	var block_size  base.u8
+	var is_animexts base.bool
+	var is_netscape base.bool
+	var is_xmp      base.bool
 
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
@@ -440,54 +542,75 @@ pri func decoder.decode_ae?(src base.io_reader) {
 			return ok
 		}
 
-		// Look only for an 11 byte "ANIMEXTS1.0" or "NETSCAPE2.0" extension,
-		// as per:
+		// Look only for an 11 byte "ANIMEXTS1.0", "NETSCAPE2.0" or other
+		// extension, as per:
 		//  - http://www.vurdalakov.net/misc/gif/animexts-looping-application-extension
 		//  - http://www.vurdalakov.net/misc/gif/netscape-looping-application-extension
+		//
+		// Other extensions include XMP metadata.
 		if block_size <> 11 {
 			args.src.skip?(n:block_size as base.u32)
 			break
 		}
-		not_animexts = false
-		not_netscape = false
+		is_animexts = true
+		is_netscape = true
+		is_xmp = true
 		block_size = 0  // Re-purpose the block_size variable as a counter.
 		while block_size < 11 {
 			c = args.src.read_u8?()
-			not_animexts = not_animexts or (c <> animexts1dot0[block_size])
-			not_netscape = not_netscape or (c <> netscape2dot0[block_size])
+			is_animexts = is_animexts and (c == animexts1dot0[block_size])
+			is_netscape = is_netscape and (c == netscape2dot0[block_size])
+			is_xmp = is_xmp and (c == xmpdataxmp[block_size])
 			block_size += 1
 		}
-		if not_animexts and not_netscape {
-			break
-		}
 
-		// Those 11 bytes should be followed by 0x03, 0x01 and then the loop
-		// count.
-		block_size = args.src.read_u8?()
-		if block_size <> 3 {
-			args.src.skip?(n:block_size as base.u32)
-			break
-		}
-		c = args.src.read_u8?()
-		if c <> 0x01 {
-			args.src.skip?(n:2)
-			break
-		}
-		this.num_loops = args.src.read_u16le_as_u32?()
-		this.seen_num_loops = true
+		if is_animexts or is_netscape {
+			// Those 11 bytes should be followed by 0x03, 0x01 and then the loop
+			// count.
+			block_size = args.src.read_u8?()
+			if block_size <> 3 {
+				args.src.skip?(n:block_size as base.u32)
+				break
+			}
+			c = args.src.read_u8?()
+			if c <> 0x01 {
+				args.src.skip?(n:2)
+				break
+			}
+			this.num_loops = args.src.read_u16le_as_u32?()
+			this.seen_num_loops = true
 
-		// A loop count of N, in the wire format, actually means "repeat N
-		// times after the first play", if N is positive. A zero N means to
-		// loop forever. Playing the frames exactly once is denoted by the
-		// *absence* of this NETSCAPE2.0 application extension.
-		//
-		// For example, if there are four frames: A, B, C, D, and N is 2, then
-		// each frame is actually played N+1 or 3 times: ABCDABCDABCD.
-		//
-		// Thus, we increment N if it is positive. The comparison against
-		// 0xFFFF will never fail, but is necessary for the overflow checker.
-		if (0 < this.num_loops) and (this.num_loops <= 0xFFFF) {
-			this.num_loops += 1
+			// A loop count of N, in the wire format, actually means "repeat N
+			// times after the first play", if N is positive. A zero N means to
+			// loop forever. Playing the frames exactly once is denoted by the
+			// *absence* of this NETSCAPE2.0 application extension.
+			//
+			// For example, if there are four frames: A, B, C, D, and N is 2, then
+			// each frame is actually played N+1 or 3 times: ABCDABCDABCD.
+			//
+			// Thus, we increment N if it is positive. The comparison against
+			// 0xFFFF will never fail, but is necessary for the overflow checker.
+			if (0 < this.num_loops) and (this.num_loops <= 0xFFFF) {
+				this.num_loops += 1
+			}
+
+		} else if this.ignore_metadata {
+			// No-op.
+
+		} else if is_xmp and this.report_metadata_xmp {
+			while args.src.available() <= 0,
+				post args.src.available() > 0,
+			{
+				yield? base."$short read"
+			}
+			// The +1 is because XMP metadata's encoding includes each block's
+			// leading byte (the block size) as part of the metadata passed to
+			// the caller.
+			this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
+			this.metadata_fourcc_value = 0x584D5020  // "XMP "
+			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+			this.call_sequence = 1
+			return base."@metadata reported"
 		}
 
 		break

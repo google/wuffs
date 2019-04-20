@@ -37,6 +37,7 @@
 - Added a `reset` method.
 - Added `peek_uxx`, `skip_fast` and `write_fast_uxx` methods.
 - Renamed some `read_uxx` methods as `read_uxx_as_uyy`.
+- Report image metadata such as ICCP and XMP.
 - Added I/O positions.
 - Added extra fields (uninitialized internal buffers) to structs.
 - Tweaked how marks and limits work.
@@ -68,4 +69,4 @@
 
 ---
 
-Updated on March 2019.
+Updated on April 2019.
