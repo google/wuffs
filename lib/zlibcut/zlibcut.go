@@ -23,8 +23,6 @@
 package zlibcut
 
 import (
-	"bytes"
-	"compress/flate"
 	"errors"
 	"hash/adler32"
 	"io"
@@ -52,11 +50,16 @@ const (
 // zlib-compressed data, assuming that encoded starts off containing valid
 // zlib-compressed data.
 //
+// If a nil error is returned, then encodedLen <= maxEncodedLen will hold.
+//
 // Decompressing that modified, shorter byte slice produces a prefix (of length
 // decodedLen) of the decompression of the original, longer byte slice.
 //
+// If w is non-nil, that prefix is also written to w. If a non-nil error is
+// returned, incomplete data might still be written to w.
+//
 // It does not necessarily return the largest possible decodedLen.
-func Cut(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
+func Cut(w io.Writer, encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
 	if len(encoded) < 2 {
 		return 0, 0, errInvalidNotEnoughData
 	}
@@ -85,7 +88,15 @@ func Cut(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, ret
 		return 0, 0, errMaxEncodedLenTooSmall
 	}
 
+	hasher := adler32.New()
+	if w == nil {
+		w = hasher
+	} else {
+		w = io.MultiWriter(w, hasher)
+	}
+
 	encodedLen, decodedLen, err := flatecut.Cut(
+		w,
 		encoded[payloadStart:len(encoded)-4],
 		maxEncodedLen-payloadStart-4,
 	)
@@ -93,15 +104,7 @@ func Cut(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, ret
 		return 0, 0, err
 	}
 
-	w := adler32.New()
-	r := bytes.NewReader(encoded[payloadStart : payloadStart+encodedLen])
-	if n, err := io.Copy(w, flate.NewReader(r)); err != nil {
-		return 0, 0, err
-	} else if n != int64(decodedLen) {
-		return 0, 0, errInternalInconsistentDecodedLen
-	}
-
-	hash := w.Sum32()
+	hash := hasher.Sum32()
 	hashBytes := encoded[payloadStart+encodedLen : payloadStart+encodedLen+4]
 	hashBytes[0] = uint8(hash >> 24)
 	hashBytes[1] = uint8(hash >> 16)

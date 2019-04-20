@@ -43,7 +43,7 @@ func clone(b []byte) []byte {
 
 func Test(t *testing.T,
 	smallestValidMaxEncodedLen int,
-	cut func([]byte, int) (int, int, error),
+	cut func(io.Writer, []byte, int) (int, int, error),
 	newReader func(io.Reader) (io.ReadCloser, error),
 	filenames []string) {
 
@@ -90,8 +90,9 @@ func Test(t *testing.T,
 			if maxEncodedLen < smallestValidMaxEncodedLen {
 				continue
 			}
+			w0 := &bytes.Buffer{}
 			encoded := clone(full)
-			encLen, decLen, err := cut(encoded, maxEncodedLen)
+			encLen, decLen, err := cut(w0, encoded, maxEncodedLen)
 			if err != nil {
 				t.Errorf("f=%q, mEL=%d: cut: %v", filename, maxEncodedLen, err)
 				continue
@@ -107,18 +108,23 @@ func Test(t *testing.T,
 				continue
 			}
 
-			w := &bytes.Buffer{}
+			w1 := &bytes.Buffer{}
 			r, err := newReader(bytes.NewReader(encoded[:encLen]))
 			if err != nil {
 				t.Errorf("f=%q, mEL=%d: newReader: %v", filename, maxEncodedLen, err)
 				continue
 			}
-			if n, err := io.Copy(w, r); err != nil {
+			if n, err := io.Copy(w1, r); err != nil {
 				t.Errorf("f=%q, mEL=%d: io.Copy: %v", filename, maxEncodedLen, err)
 				continue
 			} else if n != int64(decLen) {
 				t.Errorf("f=%q, mEL=%d: io.Copy: got %d, want %d",
 					filename, maxEncodedLen, n, decLen)
+				continue
+			}
+
+			if !bytes.Equal(w0.Bytes(), w1.Bytes()) {
+				t.Errorf("f=%q, mEL=%d: decoded bytes were not equal", filename, maxEncodedLen)
 				continue
 			}
 
@@ -138,7 +144,7 @@ func Test(t *testing.T,
 
 func Benchmark(b *testing.B,
 	smallestValidMaxEncodedLen int,
-	cut func([]byte, int) (int, int, error),
+	cut func(io.Writer, []byte, int) (int, int, error),
 	newReader func(io.Reader) (io.ReadCloser, error),
 	filename string,
 	trimPrefix int,
@@ -168,7 +174,7 @@ func Benchmark(b *testing.B,
 				continue
 			}
 			encoded := clone(full)
-			if _, _, err := cut(encoded, maxEncodedLen); err != nil {
+			if _, _, err := cut(nil, encoded, maxEncodedLen); err != nil {
 				b.Fatalf("cut: %v", err)
 			}
 			if maxEncodedLen >= len(full) {

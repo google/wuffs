@@ -23,14 +23,18 @@
 package flatecut
 
 import (
+	"bytes"
+	"compress/flate"
 	"errors"
+	"io"
 )
 
 var (
 	errMaxEncodedLenTooSmall = errors.New("flatecut: maxEncodedLen is too small")
 
-	errInternalNoProgress   = errors.New("flatecut: internal: no progress")
-	errInternalSomeProgress = errors.New("flatecut: internal: some progress")
+	errInternalInconsistentDecodedLen = errors.New("flatecut: internal: inconsistent decodedLen")
+	errInternalNoProgress             = errors.New("flatecut: internal: no progress")
+	errInternalSomeProgress           = errors.New("flatecut: internal: some progress")
 
 	errInvalidBadBlockLength = errors.New("flatecut: invalid input: bad block length")
 	errInvalidBadBlockType   = errors.New("flatecut: invalid input: bad block type")
@@ -335,11 +339,16 @@ func cutEmpty(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int
 // DEFLATE-compressed data, assuming that encoded starts off containing valid
 // DEFLATE-compressed data.
 //
+// If a nil error is returned, then encodedLen <= maxEncodedLen will hold.
+//
 // Decompressing that modified, shorter byte slice produces a prefix (of length
 // decodedLen) of the decompression of the original, longer byte slice.
 //
+// If w is non-nil, that prefix is also written to w. If a non-nil error is
+// returned, incomplete data might still be written to w.
+//
 // It does not necessarily return the largest possible decodedLen.
-func Cut(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
+func Cut(w io.Writer, encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
 	if maxEncodedLen < SmallestValidMaxEncodedLen {
 		return 0, 0, errMaxEncodedLenTooSmall
 	}
@@ -360,7 +369,28 @@ func Cut(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, ret
 		},
 		maxEncodedLen: maxEncodedLen,
 	}
-	return c.cut()
+	encodedLen, decodedLen, err := c.cut()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if w != nil {
+		// TODO: writing to w directly, in cutter's doStored and doHuffman,
+		// might be faster than re-walking the bitstream with compress/flate.
+		r := flate.NewReader(bytes.NewReader(encoded[:encodedLen]))
+		if n, err := io.Copy(w, r); err != nil {
+			r.Close()
+			return 0, 0, err
+		} else if n != int64(decodedLen) {
+			r.Close()
+			return 0, 0, errInternalInconsistentDecodedLen
+		}
+		if err := r.Close(); err != nil {
+			return 0, 0, err
+		}
+	}
+
+	return encodedLen, decodedLen, nil
 }
 
 type cutter struct {
