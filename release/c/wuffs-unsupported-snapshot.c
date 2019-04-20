@@ -191,8 +191,10 @@ typedef struct {
 typedef const char* wuffs_base__status;
 
 extern const char* wuffs_base__warning__end_of_data;
+extern const char* wuffs_base__warning__metadata_reported;
 extern const char* wuffs_base__suspension__short_read;
 extern const char* wuffs_base__suspension__short_write;
+extern const char* wuffs_base__error__bad_i_o_position;
 extern const char* wuffs_base__error__bad_argument_length_too_short;
 extern const char* wuffs_base__error__bad_argument;
 extern const char* wuffs_base__error__bad_call_sequence;
@@ -4656,8 +4658,10 @@ const uint64_t wuffs_base__low_bits_mask__u64[65] = {
 };
 
 const char* wuffs_base__warning__end_of_data = "@base: end of data";
+const char* wuffs_base__warning__metadata_reported = "@base: metadata reported";
 const char* wuffs_base__suspension__short_read = "$base: short read";
 const char* wuffs_base__suspension__short_write = "$base: short write";
+const char* wuffs_base__error__bad_i_o_position = "#base: bad I/O position";
 const char* wuffs_base__error__bad_argument_length_too_short =
     "#base: bad argument (length too short)";
 const char* wuffs_base__error__bad_argument = "#base: bad argument";

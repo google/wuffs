@@ -27,12 +27,14 @@ var FourCCs = [...][2]string{
 var Statuses = [...]string{
 	// Warnings.
 	`"@end of data"`,
+	`"@metadata reported"`,
 
 	// Suspensions.
 	`"$short read"`,
 	`"$short write"`,
 
 	// Errors.
+	`"#bad I/O position"`,
 	`"#bad argument (length too short)"`,
 	`"#bad argument"`,
 	`"#bad call sequence"`,
