@@ -65,7 +65,9 @@ typedef struct wuffs_base__io_buffer__struct {
   inline void compact();
   inline wuffs_base__io_reader reader();
   inline wuffs_base__io_writer writer();
+  inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
+  inline uint64_t writer_available() const;
   inline uint64_t writer_io_position() const;
 #endif  // __cplusplus
 
@@ -168,8 +170,18 @@ wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
 }
 
 static inline uint64_t  //
+wuffs_base__io_buffer__reader_available(const wuffs_base__io_buffer* buf) {
+  return buf ? buf->meta.wi - buf->meta.ri : 0;
+}
+
+static inline uint64_t  //
 wuffs_base__io_buffer__reader_io_position(const wuffs_base__io_buffer* buf) {
   return buf ? wuffs_base__u64__sat_add(buf->meta.pos, buf->meta.ri) : 0;
+}
+
+static inline uint64_t  //
+wuffs_base__io_buffer__writer_available(const wuffs_base__io_buffer* buf) {
+  return buf ? buf->data.len - buf->meta.wi : 0;
 }
 
 static inline uint64_t  //
@@ -195,8 +207,18 @@ wuffs_base__io_buffer__struct::writer() {
 }
 
 inline uint64_t  //
+wuffs_base__io_buffer__struct::reader_available() const {
+  return wuffs_base__io_buffer__reader_available(this);
+}
+
+inline uint64_t  //
 wuffs_base__io_buffer__struct::reader_io_position() const {
   return wuffs_base__io_buffer__reader_io_position(this);
+}
+
+inline uint64_t  //
+wuffs_base__io_buffer__struct::writer_available() const {
+  return wuffs_base__io_buffer__writer_available(this);
 }
 
 inline uint64_t  //
