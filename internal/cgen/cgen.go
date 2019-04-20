@@ -263,6 +263,19 @@ func insertBaseAllPrivateH(buf *buffer) error {
 
 func insertBaseAllPublicH(buf *buffer) error {
 	if err := expandBangBangInsert(buf, baseCorePublicH, map[string]func(*buffer) error{
+		"// !! INSERT FourCCs.\n": func(b *buffer) error {
+			for _, z := range builtin.FourCCs {
+				b.printf("// %s.\n#define WUFFS_BASE__FOURCC__%s 0x%02X%02X%02X%02X\n\n",
+					z[1],
+					strings.ToUpper(strings.TrimSpace(z[0])),
+					z[0][0],
+					z[0][1],
+					z[0][2],
+					z[0][3],
+				)
+			}
+			return nil
+		},
 		"// !! INSERT wuffs_base__status names.\n": func(b *buffer) error {
 			for _, z := range builtin.Statuses {
 				msg, _ := t.Unescape(z)

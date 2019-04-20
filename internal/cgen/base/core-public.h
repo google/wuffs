@@ -197,6 +197,12 @@ wuffs_base__status__is_warning(wuffs_base__status z) {
 
 // --------
 
+// FourCC constants.
+
+// !! INSERT FourCCs.
+
+// --------
+
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
 typedef int64_t wuffs_base__flicks;

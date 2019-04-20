@@ -19,6 +19,11 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
+var FourCCs = [...][2]string{
+	{"ICCP", "International Color Consortium Profile"},
+	{"XMP ", "Extensible Metadata Platform"},
+}
+
 var Statuses = [...]string{
 	// Warnings.
 	`"@end of data"`,

@@ -236,6 +236,16 @@ wuffs_base__status__is_warning(wuffs_base__status z) {
 
 // --------
 
+// FourCC constants.
+
+// International Color Consortium Profile.
+#define WUFFS_BASE__FOURCC__ICCP 0x49434350
+
+// Extensible Metadata Platform.
+#define WUFFS_BASE__FOURCC__XMP 0x584D5020
+
+// --------
+
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
 // second. See https://github.com/OculusVR/Flicks
 typedef int64_t wuffs_base__flicks;
