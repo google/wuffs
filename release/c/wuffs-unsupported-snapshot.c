@@ -8620,7 +8620,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence >= 1) {
+    if (self->private_impl.f_call_sequence >= 3) {
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
@@ -8651,7 +8651,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
           self->private_impl.f_height,
           self->private_impl.f_frame_config_io_position, v_ffio);
     }
-    self->private_impl.f_call_sequence = 1;
+    self->private_impl.f_call_sequence = 3;
 
     goto ok;
   ok:
@@ -8822,8 +8822,8 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-      } else if (self->private_impl.f_call_sequence != 1) {
-        if (self->private_impl.f_call_sequence == 2) {
+      } else if (self->private_impl.f_call_sequence != 3) {
+        if (self->private_impl.f_call_sequence == 4) {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
           status = wuffs_gif__decoder__skip_frame(self, a_src);
           if (status) {
@@ -8864,7 +8864,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     }
     wuffs_base__u64__sat_add_indirect(
         &self->private_impl.f_num_decoded_frame_configs_value, 1);
-    self->private_impl.f_call_sequence = 2;
+    self->private_impl.f_call_sequence = 4;
 
     goto ok;
   ok:
@@ -9015,7 +9015,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_call_sequence != 2) {
+    if (self->private_impl.f_call_sequence != 4) {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       status = wuffs_gif__decoder__decode_frame_config(self, NULL, a_src);
       if (status) {
@@ -9059,7 +9059,7 @@ exit:
 
 static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
-  self->private_impl.f_call_sequence = 3;
+  self->private_impl.f_call_sequence = 5;
   self->private_impl.f_seen_graphic_control = false;
   self->private_impl.f_gc_has_transparent_index = false;
   self->private_impl.f_gc_transparent_index = 0;

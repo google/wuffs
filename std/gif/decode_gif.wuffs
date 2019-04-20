@@ -49,25 +49,25 @@ pub struct decoder?(
 
 	// Call sequence states:
 	//  - 0: initial state.
-	//  - 1: image config decoded, including the first frame's bounds, but not
+	//  - 3: image config decoded, including the first frame's bounds, but not
 	//       the first frame's pixels.
-	//  - 2: frame config decoded.
-	//  - 3: frame decoded.
+	//  - 4: frame config decoded.
+	//  - 5: frame decoded.
 	//
 	// State transitions:
 	//
-	//  - 0 -> 1: via IC
-	//  - 0 -> 2: via FC with implicit IC
-	//  - 0 -> 3: via F  with implicit IC and FC
+	//  - 0 -> 3: via IC
+	//  - 0 -> 4: via FC with implicit IC
+	//  - 0 -> 5: via F  with implicit IC and FC
 	//
-	//  - 1 -> 2: via FC
-	//  - 1 -> 3: via F  with implicit FC
+	//  - 3 -> 4: via FC
+	//  - 3 -> 5: via F  with implicit FC
 	//
-	//  - 2 -> 2: via FC with implicit F
-	//  - 2 -> 3: via F
+	//  - 4 -> 4: via FC with implicit F
+	//  - 4 -> 5: via F
 	//
-	//  - 3 -> 2: via FC
-	//  - 3 -> 3: via F  with implicit FC
+	//  - 5 -> 4: via FC
+	//  - 5 -> 5: via F  with implicit FC
 	//
 	// Where:
 	//  - F  is decode_frame,        implicit means skip_frame
@@ -130,7 +130,7 @@ pub struct decoder?(
 pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
 	var ffio base.bool
 
-	if this.call_sequence >= 1 {
+	if this.call_sequence >= 3 {
 		return base."#bad call sequence"
 	}
 
@@ -158,7 +158,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 			first_frame_is_opaque:ffio)
 	}
 
-	this.call_sequence = 1
+	this.call_sequence = 3
 }
 
 pub func decoder.num_animation_loops() base.u32 {
@@ -217,8 +217,8 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
 			this.decode_image_config?(dst:nullptr, src:args.src)
-		} else if this.call_sequence <> 1 {
-			if this.call_sequence == 2 {
+		} else if this.call_sequence <> 3 {
+			if this.call_sequence == 4 {
 				this.skip_frame?(src:args.src)
 			}
 			this.decode_up_to_id_part1?(src:args.src)
@@ -250,7 +250,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1
-	this.call_sequence = 2
+	this.call_sequence = 4
 }
 
 pri func decoder.skip_frame?(src base.io_reader) {
@@ -272,7 +272,7 @@ pri func decoder.skip_frame?(src base.io_reader) {
 
 // TODO: honor args.opts.
 pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
-	if this.call_sequence <> 2 {
+	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst:nullptr, src:args.src)
 	}
 	this.decode_id_part1?(dst:args.dst, src:args.src)
@@ -283,7 +283,7 @@ pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, wo
 }
 
 pri func decoder.reset_gc!() {
-	this.call_sequence = 3
+	this.call_sequence = 5
 	// The Image Descriptor is mandatory, but the Graphic Control extension is
 	// optional. Reset the GC related fields for the next decode_frame call.
 	this.seen_graphic_control = false
