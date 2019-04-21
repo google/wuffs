@@ -368,10 +368,12 @@ func (g *gen) writeFuncImplBodySuspend(b *buffer) error {
 
 		b.writes("goto suspend;suspend:") // The goto avoids the "unused label" warning.
 
-		b.printf("self->private_impl.%s%s[0] = coro_susp_point;\n",
+		b.printf("self->private_impl.%s%s[0] = "+
+			"wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;\n",
 			pPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 		if g.currFunk.astFunc.Public() {
-			b.printf("self->private_impl.active_coroutine = %d;\n", g.currFunk.coroID)
+			b.printf("self->private_impl.active_coroutine = "+
+				"wuffs_base__status__is_suspension(status) ? %d : 0;\n", g.currFunk.coroID)
 		}
 		if err := g.writeResumeSuspend(b, &g.currFunk, true); err != nil {
 			return err

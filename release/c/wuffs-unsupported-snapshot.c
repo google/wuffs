@@ -6408,8 +6408,10 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
 
   goto exit;
 exit:
@@ -6571,7 +6573,8 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_blocks[0] = coro_susp_point;
+  self->private_impl.p_decode_blocks[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_blocks[0].v_final = v_final;
 
   goto exit;
@@ -6702,7 +6705,8 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_uncompressed[0] = coro_susp_point;
+  self->private_impl.p_decode_uncompressed[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_uncompressed[0].v_length = v_length;
 
   goto exit;
@@ -6991,7 +6995,8 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_init_dynamic_huffman[0] = coro_susp_point;
+  self->private_impl.p_init_dynamic_huffman[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_init_dynamic_huffman[0].v_bits = v_bits;
   self->private_data.s_init_dynamic_huffman[0].v_n_bits = v_n_bits;
   self->private_data.s_init_dynamic_huffman[0].v_n_lit = v_n_lit;
@@ -7947,7 +7952,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_huffman_slow[0] = coro_susp_point;
+  self->private_impl.p_decode_huffman_slow[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_huffman_slow[0].v_bits = v_bits;
   self->private_data.s_decode_huffman_slow[0].v_n_bits = v_n_bits;
   self->private_data.s_decode_huffman_slow[0].v_table_entry = v_table_entry;
@@ -8176,8 +8182,10 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
 
   goto exit;
 exit:
@@ -8447,7 +8455,8 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_write_to[0] = coro_susp_point;
+  self->private_impl.p_write_to[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -8749,8 +8758,10 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_image_config[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_image_config[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
   self->private_data.s_decode_image_config[0].v_status = v_status;
 
   goto exit;
@@ -8886,8 +8897,10 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_ack_metadata_chunk[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 2;
+  self->private_impl.p_ack_metadata_chunk[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 2 : 0;
 
   goto exit;
 exit:
@@ -9135,8 +9148,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_frame_config[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 3;
+  self->private_impl.p_decode_frame_config[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 3 : 0;
 
   goto exit;
 exit:
@@ -9230,7 +9245,8 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_skip_frame[0] = coro_susp_point;
+  self->private_impl.p_skip_frame[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -9306,8 +9322,10 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_frame[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 4;
+  self->private_impl.p_decode_frame[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 4 : 0;
 
   goto exit;
 exit:
@@ -9461,7 +9479,8 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_up_to_id_part1[0] = coro_susp_point;
+  self->private_impl.p_decode_up_to_id_part1[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_up_to_id_part1[0].v_status = v_status;
 
   goto exit;
@@ -9533,7 +9552,8 @@ wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_header[0] = coro_susp_point;
+  self->private_impl.p_decode_header[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   memcpy(self->private_data.s_decode_header[0].v_c, v_c, sizeof(v_c));
   self->private_data.s_decode_header[0].v_i = v_i;
 
@@ -9723,7 +9743,8 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_lsd[0] = coro_susp_point;
+  self->private_impl.p_decode_lsd[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_lsd[0].v_flags = v_flags;
   self->private_data.s_decode_lsd[0].v_num_palette_entries =
       v_num_palette_entries;
@@ -9854,7 +9875,8 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_extension[0] = coro_susp_point;
+  self->private_impl.p_decode_extension[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_extension[0].v_status = v_status;
 
   goto exit;
@@ -9932,7 +9954,8 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_skip_blocks[0] = coro_susp_point;
+  self->private_impl.p_skip_blocks[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10191,7 +10214,8 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_ae[0] = coro_susp_point;
+  self->private_impl.p_decode_ae[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_ae[0].v_block_size = v_block_size;
   self->private_data.s_decode_ae[0].v_is_animexts = v_is_animexts;
   self->private_data.s_decode_ae[0].v_is_netscape = v_is_netscape;
@@ -10338,7 +10362,8 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_gc[0] = coro_susp_point;
+  self->private_impl.p_decode_gc[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10513,7 +10538,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part0[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part0[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10694,7 +10720,8 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part1[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part1[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_id_part1[0].v_num_palette_entries =
       v_num_palette_entries;
   self->private_data.s_decode_id_part1[0].v_i = v_i;
@@ -10924,7 +10951,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part2[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part2[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_id_part2[0].v_block_size = v_block_size;
   self->private_data.s_decode_id_part2[0].v_need_block_size = v_need_block_size;
   self->private_data.s_decode_id_part2[0].v_lzw_status = v_lzw_status;
@@ -11517,8 +11545,10 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
   self->private_data.s_decode_io_writer[0].v_flags = v_flags;
   self->private_data.s_decode_io_writer[0].v_checksum_got = v_checksum_got;
   self->private_data.s_decode_io_writer[0].v_decoded_length_got =
@@ -11856,8 +11886,10 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
   self->private_data.s_decode_io_writer[0].v_checksum_got = v_checksum_got;
 
   goto exit;
