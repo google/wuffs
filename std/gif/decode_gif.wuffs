@@ -144,8 +144,7 @@ pub struct decoder?(
 )
 
 pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
-	var ffio   base.bool
-	var status base.status  // TODO: this shouldn't be necessary.
+	var ffio base.bool
 
 	if this.call_sequence == 0 {
 		this.decode_header?(src:args.src)
@@ -154,18 +153,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 		return base."#bad call sequence"
 	}
 
-	// TODO: this should be just "this.decode_up_to_id_part1?(src:args.src)".
-	while true {
-		status =? this.decode_up_to_id_part1?(src:args.src)
-		if status.is_suspension() {
-			yield? status
-			continue
-		}
-		if status.is_ok() {
-			break
-		}
-		return status
-	}
+	this.decode_up_to_id_part1?(src:args.src)
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
@@ -379,7 +367,6 @@ pri func decoder.reset_gc!() {
 
 pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	var block_type base.u8
-	var status     base.status  // TODO: this shouldn't be necessary.
 
 	if not this.restarted {
 		if this.call_sequence <> 2 {
@@ -394,18 +381,7 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	while true {
 		block_type = args.src.read_u8?()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
-			// TODO: this should be just "this.decode_extension?(src:args.src)".
-			while true {
-				status =? this.decode_extension?(src:args.src)
-				if status.is_suspension() {
-					yield? status
-					continue
-				}
-				if status.is_ok() {
-					break
-				}
-				return status
-			}
+			this.decode_extension?(src:args.src)
 		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
 			this.decode_id_part0?(src:args.src)
 			break
@@ -486,26 +462,14 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
 pri func decoder.decode_extension?(src base.io_reader) {
-	var label  base.u8
-	var status base.status  // TODO: this shouldn't be necessary.
+	var label base.u8
 
 	label = args.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
 		this.decode_gc?(src:args.src)
 		return ok
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
-		// TODO: this should be just "this.decode_ae?(src:args.src)".
-		while true {
-			status =? this.decode_ae?(src:args.src)
-			if status.is_suspension() {
-				yield? status
-				continue
-			}
-			if status.is_ok() {
-				break
-			}
-			return status
-		}
+		this.decode_ae?(src:args.src)
 		return ok
 	}
 	// We skip over all other extensions, including 0x01 "Plain Text Label" and

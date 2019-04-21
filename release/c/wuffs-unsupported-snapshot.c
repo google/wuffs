@@ -3434,14 +3434,8 @@ struct wuffs_gif__decoder__struct {
     wuffs_lzw__decoder f_lzw;
 
     struct {
-      wuffs_base__status v_status;
-    } s_decode_image_config[1];
-    struct {
       uint64_t scratch;
     } s_skip_frame[1];
-    struct {
-      wuffs_base__status v_status;
-    } s_decode_up_to_id_part1[1];
     struct {
       uint8_t v_c[6];
       uint32_t v_i;
@@ -3452,9 +3446,6 @@ struct wuffs_gif__decoder__struct {
       uint32_t v_i;
       uint64_t scratch;
     } s_decode_lsd[1];
-    struct {
-      wuffs_base__status v_status;
-    } s_decode_extension[1];
     struct {
       uint64_t scratch;
     } s_skip_blocks[1];
@@ -8687,11 +8678,9 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   bool v_ffio = false;
-  wuffs_base__status v_status = NULL;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_image_config[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_image_config[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -8711,31 +8700,11 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
-  label_0_continue:;
-    while (true) {
-      {
-        wuffs_base__status t_0 =
-            wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
-        v_status = t_0;
-      }
-      if (wuffs_base__status__is_suspension(v_status)) {
-        status = v_status;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-        goto label_0_continue;
-      }
-      if (wuffs_base__status__is_ok(v_status)) {
-        goto label_0_break;
-      }
-      status = v_status;
-      if (wuffs_base__status__is_error(status)) {
-        goto exit;
-      } else if (wuffs_base__status__is_suspension(status)) {
-        status = wuffs_base__error__cannot_return_a_suspension;
-        goto exit;
-      }
-      goto ok;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+    status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
+    if (status) {
+      goto suspend;
     }
-  label_0_break:;
     v_ffio =
         (!self->private_impl.f_gc_has_transparent_index &&
          (self->private_impl.f_frame_rect_x0 == 0) &&
@@ -8762,7 +8731,6 @@ suspend:
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(status) ? 1 : 0;
-  self->private_data.s_decode_image_config[0].v_status = v_status;
 
   goto exit;
 exit:
@@ -9356,7 +9324,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_block_type = 0;
-  wuffs_base__status v_status = NULL;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9375,7 +9342,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_up_to_id_part1[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9413,39 +9379,19 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         v_block_type = t_0;
       }
       if (v_block_type == 33) {
-      label_0_continue:;
-        while (true) {
-          {
-            if (a_src.private_impl.buf) {
-              a_src.private_impl.buf->meta.ri =
-                  ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
-            }
-            wuffs_base__status t_1 =
-                wuffs_gif__decoder__decode_extension(self, a_src);
-            if (a_src.private_impl.buf) {
-              iop_a_src = a_src.private_impl.buf->data.ptr +
-                          a_src.private_impl.buf->meta.ri;
-            }
-            v_status = t_1;
-          }
-          if (wuffs_base__status__is_suspension(v_status)) {
-            status = v_status;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
-            goto label_0_continue;
-          }
-          if (wuffs_base__status__is_ok(v_status)) {
-            goto label_0_break;
-          }
-          status = v_status;
-          if (wuffs_base__status__is_error(status)) {
-            goto exit;
-          } else if (wuffs_base__status__is_suspension(status)) {
-            status = wuffs_base__error__cannot_return_a_suspension;
-            goto exit;
-          }
-          goto ok;
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
         }
-      label_0_break:;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        status = wuffs_gif__decoder__decode_extension(self, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (status) {
+          goto suspend;
+        }
       } else if (v_block_type == 44) {
         if (a_src.private_impl.buf) {
           a_src.private_impl.buf->meta.ri =
@@ -9460,16 +9406,16 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-        goto label_1_break;
+        goto label_0_break;
       } else if (v_block_type == 59) {
         self->private_impl.f_end_of_data = true;
-        goto label_1_break;
+        goto label_0_break;
       } else {
         status = wuffs_gif__error__bad_block;
         goto exit;
       }
     }
-  label_1_break:;
+  label_0_break:;
 
     goto ok;
   ok:
@@ -9481,7 +9427,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
 suspend:
   self->private_impl.p_decode_up_to_id_part1[0] =
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
-  self->private_data.s_decode_up_to_id_part1[0].v_status = v_status;
 
   goto exit;
 exit:
@@ -9768,7 +9713,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_label = 0;
-  wuffs_base__status v_status = NULL;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9787,7 +9731,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_extension[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9818,38 +9761,19 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
       status = NULL;
       goto ok;
     } else if (v_label == 255) {
-    label_0_continue:;
-      while (true) {
-        {
-          if (a_src.private_impl.buf) {
-            a_src.private_impl.buf->meta.ri =
-                ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
-          }
-          wuffs_base__status t_1 = wuffs_gif__decoder__decode_ae(self, a_src);
-          if (a_src.private_impl.buf) {
-            iop_a_src = a_src.private_impl.buf->data.ptr +
-                        a_src.private_impl.buf->meta.ri;
-          }
-          v_status = t_1;
-        }
-        if (wuffs_base__status__is_suspension(v_status)) {
-          status = v_status;
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-          goto label_0_continue;
-        }
-        if (wuffs_base__status__is_ok(v_status)) {
-          goto label_0_break;
-        }
-        status = v_status;
-        if (wuffs_base__status__is_error(status)) {
-          goto exit;
-        } else if (wuffs_base__status__is_suspension(status)) {
-          status = wuffs_base__error__cannot_return_a_suspension;
-          goto exit;
-        }
-        goto ok;
+      if (a_src.private_impl.buf) {
+        a_src.private_impl.buf->meta.ri =
+            ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
       }
-    label_0_break:;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      status = wuffs_gif__decoder__decode_ae(self, a_src);
+      if (a_src.private_impl.buf) {
+        iop_a_src =
+            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+      }
+      if (status) {
+        goto suspend;
+      }
       status = NULL;
       goto ok;
     }
@@ -9877,7 +9801,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
 suspend:
   self->private_impl.p_decode_extension[0] =
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
-  self->private_data.s_decode_extension[0].v_status = v_status;
 
   goto exit;
 exit:
