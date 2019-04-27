@@ -319,3 +319,22 @@ func TestWriterMultiLevelIndex(t *testing.T) {
 		t.Fatalf("\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
+
+func TestWriter1000Chunks(t *testing.T) {
+	w := &Writer{
+		Writer: ioutil.Discard,
+		Codec:  fakeCodec,
+	}
+	data := make([]byte, 1)
+	res, _ := w.AddResource(data)
+	for i := 0; i < 1000; i++ {
+		if i == 2*255 {
+			_ = w.AddChunk(1, data, res, 0)
+		} else {
+			_ = w.AddChunk(1, data, 0, 0)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}

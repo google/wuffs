@@ -21,6 +21,13 @@ import (
 	"sort"
 )
 
+func btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func isZeroOrAPowerOf2(x uint64) bool {
 	return (x & (x - 1)) == 0
 }
@@ -656,16 +663,16 @@ func gather(nodes []node) node {
 		for ; j < len(nodes); j++ {
 			o := &nodes[j]
 
-			arity++
-			if (o.secondary != 0) && !resources[o.secondary] {
-				resources[o.secondary] = true
-				arity++
-			}
-			if (o.tertiary != 0) && !resources[o.tertiary] {
-				resources[o.tertiary] = true
-				arity++
-			}
+			new2 := (o.secondary != 0) && !resources[o.secondary]
+			new3 := (o.tertiary != 0) && !resources[o.tertiary]
+			arity += 1 + btoi(new2) + btoi(new3)
 			if arity <= 0xFF {
+				if new2 {
+					resources[o.secondary] = true
+				}
+				if new3 {
+					resources[o.tertiary] = true
+				}
 				continue
 			}
 
@@ -675,7 +682,15 @@ func gather(nodes []node) node {
 			}
 
 			i = j
-			arity = 0
+			arity = 1
+			if o.secondary != 0 {
+				resources[o.secondary] = true
+				arity++
+			}
+			if o.tertiary != 0 {
+				resources[o.tertiary] = true
+				arity++
+			}
 		}
 
 		if i == 0 {
