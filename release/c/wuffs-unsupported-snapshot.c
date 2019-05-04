@@ -10509,7 +10509,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     self->private_impl.f_frame_rect_y1 += self->private_impl.f_frame_rect_y0;
     self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
     self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
-    if (self->private_impl.f_call_sequence == 0) {
+    if ((self->private_impl.f_call_sequence == 0) &&
+        !self->private_impl.f_quirk_enabled_image_bounds_are_strict) {
       self->private_impl.f_width = wuffs_base__u32__max(
           self->private_impl.f_width, self->private_impl.f_frame_rect_x1);
       self->private_impl.f_height = wuffs_base__u32__max(

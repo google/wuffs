@@ -743,7 +743,7 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	// and the bottom right extent of the first frame. See
 	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
 	// more discussion.
-	if this.call_sequence == 0 {
+	if (this.call_sequence == 0) and (not this.quirk_enabled_image_bounds_are_strict) {
 		this.width = this.width.max(x:this.frame_rect_x1)
 		this.height = this.height.max(x:this.frame_rect_y1)
 	}

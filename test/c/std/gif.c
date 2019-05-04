@@ -731,125 +731,139 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
     return status;
   }
 
-  wuffs_gif__decoder dec;
-  status = wuffs_gif__decoder__initialize(
-      &dec, sizeof dec, WUFFS_VERSION,
-      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
-  if (status) {
-    RETURN_FAIL("initialize: \"%s\"", status);
-  }
-  wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-  status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
-  if (status) {
-    RETURN_FAIL("decode_image_config: \"%s\"", status);
-  }
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
 
-  // The nominal width and height for the overall image is 2×2, but its first
-  // frame extends those bounds to 4×2. See
-  // test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
-  // more discussion.
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_image_bounds_are_strict, q);
 
-  const uint32_t width = 4;
-  const uint32_t height = 2;
-
-  if (wuffs_base__pixel_config__width(&ic.pixcfg) != width) {
-    RETURN_FAIL("width: got %" PRIu32 ", want %" PRIu32,
-                wuffs_base__pixel_config__width(&ic.pixcfg), width);
-  }
-  if (wuffs_base__pixel_config__height(&ic.pixcfg) != height) {
-    RETURN_FAIL("height: got %" PRIu32 ", want %" PRIu32,
-                wuffs_base__pixel_config__height(&ic.pixcfg), height);
-  }
-
-  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-  status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
-                                                    global_pixel_slice);
-  if (status) {
-    RETURN_FAIL("set_from_slice: \"%s\"", status);
-  }
-
-  // See test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
-  // for the want_frame_config_bounds and want_pixel_indexes source.
-
-  wuffs_base__rect_ie_u32 want_frame_config_bounds[4] = {
-      make_rect_ie_u32(1, 0, 4, 1),
-      make_rect_ie_u32(0, 1, 2, 2),
-      make_rect_ie_u32(0, 2, 1, 2),
-      make_rect_ie_u32(2, 0, 4, 2),
-  };
-
-  const char* want_pixel_indexes[4] = {
-      ".123....",
-      "....89..",
-      "........",
-      "..45..89",
-  };
-
-  uint32_t i;
-  for (i = 0; true; i++) {
-    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-    {
-      status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
-      if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_frame_config_bounds)) {
-        if (status != wuffs_base__warning__end_of_data) {
-          RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i,
-                      status);
-        }
-        break;
-      }
-      if (status) {
-        RETURN_FAIL("decode_frame_config #%" PRIu32 ": got \"%s\"", i, status);
-      }
-
-      wuffs_base__rect_ie_u32 got = wuffs_base__frame_config__bounds(&fc);
-      wuffs_base__rect_ie_u32 want = want_frame_config_bounds[i];
-      if (!wuffs_base__rect_ie_u32__equals(&got, want)) {
-        RETURN_FAIL("decode_frame_config #%" PRIu32 ": bounds: got (%" PRIu32
-                    ", %" PRIu32 ")-(%" PRIu32 ", %" PRIu32 "), want (%" PRIu32
-                    ", %" PRIu32 ")-(%" PRIu32 ", %" PRIu32 ")",
-                    i, got.min_incl_x, got.min_incl_y, got.max_excl_x,
-                    got.max_excl_y, want.min_incl_x, want.min_incl_y,
-                    want.max_excl_x, want.max_excl_y);
-      }
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    if (status) {
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
     }
 
-    {
-      wuffs_base__table_u8 p = wuffs_base__pixel_buffer__plane(&pb, 0);
-      uint32_t y, x;
-      for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-          p.ptr[(y * p.stride) + x] = 0;
+    // The nominal width and height for the overall image is 2×2, but its first
+    // frame extends those bounds to 4×2. See
+    // test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
+    // more discussion.
+
+    const uint32_t width = q ? 2 : 4;
+    const uint32_t height = 2;
+
+    if (wuffs_base__pixel_config__width(&ic.pixcfg) != width) {
+      RETURN_FAIL("q=%d: width: got %" PRIu32 ", want %" PRIu32, q,
+                  wuffs_base__pixel_config__width(&ic.pixcfg), width);
+    }
+    if (wuffs_base__pixel_config__height(&ic.pixcfg) != height) {
+      RETURN_FAIL("q=%d: height: got %" PRIu32 ", want %" PRIu32, q,
+                  wuffs_base__pixel_config__height(&ic.pixcfg), height);
+    }
+
+    wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                      global_pixel_slice);
+    if (status) {
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
+    }
+
+    // See test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
+    // for the want_frame_config_bounds and want_pixel_indexes source.
+
+    wuffs_base__rect_ie_u32 want_frame_config_bounds[4] = {
+        q ? make_rect_ie_u32(1, 0, 2, 1) : make_rect_ie_u32(1, 0, 4, 1),
+        q ? make_rect_ie_u32(0, 1, 2, 2) : make_rect_ie_u32(0, 1, 2, 2),
+        q ? make_rect_ie_u32(0, 2, 1, 2) : make_rect_ie_u32(0, 2, 1, 2),
+        q ? make_rect_ie_u32(2, 0, 2, 2) : make_rect_ie_u32(2, 0, 4, 2),
+    };
+
+    const char* want_pixel_indexes[4] = {
+        q ? ".1.." : ".123....",
+        q ? "..89" : "....89..",
+        q ? "...." : "........",
+        q ? "...." : "..45..89",
+    };
+
+    uint32_t i;
+    for (i = 0; true; i++) {
+      wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
+      {
+        status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+        if (i == WUFFS_TESTLIB_ARRAY_SIZE(want_frame_config_bounds)) {
+          if (status != wuffs_base__warning__end_of_data) {
+            RETURN_FAIL("q=%d: decode_frame_config #%" PRIu32 ": got \"%s\"", q,
+                        i, status);
+          }
+          break;
+        }
+        if (status) {
+          RETURN_FAIL("q=%d: decode_frame_config #%" PRIu32 ": got \"%s\"", q,
+                      i, status);
+        }
+
+        wuffs_base__rect_ie_u32 got = wuffs_base__frame_config__bounds(&fc);
+        wuffs_base__rect_ie_u32 want = want_frame_config_bounds[i];
+        if (!wuffs_base__rect_ie_u32__equals(&got, want)) {
+          RETURN_FAIL("q=%d: decode_frame_config #%" PRIu32
+                      ": bounds: got (%" PRIu32 ", %" PRIu32 ")-(%" PRIu32
+                      ", %" PRIu32 "), want (%" PRIu32 ", %" PRIu32
+                      ")-(%" PRIu32 ", %" PRIu32 ")",
+                      q, i, got.min_incl_x, got.min_incl_y, got.max_excl_x,
+                      got.max_excl_y, want.min_incl_x, want.min_incl_y,
+                      want.max_excl_x, want.max_excl_y);
         }
       }
 
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
-                                                global_work_slice, NULL);
-      if (status) {
-        RETURN_FAIL("decode_frame #%" PRIu32 ": got \"%s\"", i, status);
-      }
-
-      wuffs_base__rect_ie_u32 frame_rect =
-          wuffs_base__frame_config__bounds(&fc);
-      wuffs_base__rect_ie_u32 dirty_rect =
-          wuffs_gif__decoder__frame_dirty_rect(&dec);
-      if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
-        RETURN_FAIL("internal error: frame_rect does not contain dirty_rect");
-      }
-
-      char got[(width * height) + 1];
-      for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-          uint8_t index = 0x0F & p.ptr[(y * p.stride) + x];
-          got[(y * width) + x] = index ? ('0' + index) : '.';
+      {
+        wuffs_base__table_u8 p = wuffs_base__pixel_buffer__plane(&pb, 0);
+        uint32_t y, x;
+        for (y = 0; y < height; y++) {
+          for (x = 0; x < width; x++) {
+            p.ptr[(y * p.stride) + x] = 0;
+          }
         }
-      }
-      got[width * height] = 0;
 
-      const char* want = want_pixel_indexes[i];
-      if (memcmp(got, want, width * height)) {
-        RETURN_FAIL("decode_frame #%" PRIu32 ": got \"%s\", want \"%s\"", i,
-                    got, want);
+        status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
+                                                  global_work_slice, NULL);
+        if (status) {
+          RETURN_FAIL("q=%d: decode_frame #%" PRIu32 ": got \"%s\"", q, i,
+                      status);
+        }
+
+        wuffs_base__rect_ie_u32 frame_rect =
+            wuffs_base__frame_config__bounds(&fc);
+        wuffs_base__rect_ie_u32 dirty_rect =
+            wuffs_gif__decoder__frame_dirty_rect(&dec);
+        if (!wuffs_base__rect_ie_u32__contains_rect(&frame_rect, dirty_rect)) {
+          RETURN_FAIL(
+              "q=%d: internal error: frame_rect does not contain dirty_rect",
+              q);
+        }
+
+        char got[(width * height) + 1];
+        for (y = 0; y < height; y++) {
+          for (x = 0; x < width; x++) {
+            uint8_t index = 0x0F & p.ptr[(y * p.stride) + x];
+            got[(y * width) + x] = index ? ('0' + index) : '.';
+          }
+        }
+        got[width * height] = 0;
+
+        const char* want = want_pixel_indexes[i];
+        if (memcmp(got, want, width * height)) {
+          RETURN_FAIL("q=%d: decode_frame #%" PRIu32
+                      ": got \"%s\", want \"%s\"",
+                      q, i, got, want);
+        }
       }
     }
   }

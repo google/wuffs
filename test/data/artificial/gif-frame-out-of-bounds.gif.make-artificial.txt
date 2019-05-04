@@ -47,7 +47,8 @@
 #  - giflib enforces no particular policy. It provides image and frame bounds
 #    as encoded in the file and leaves it up to the caller how to respond.
 #
-# Wuffs chooses policy 4, the same as Chromium.
+# Wuffs chooses policy 4 by default, the same as Chromium. Wuffs can be
+# configured to choose policy 1, by enabling a 'quirk'.
 
 make gif
 
