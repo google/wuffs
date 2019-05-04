@@ -209,11 +209,14 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
-	ffio = (not this.gc_has_transparent_index) and
-		(this.frame_rect_x0 == 0) and
-		(this.frame_rect_y0 == 0) and
-		(this.frame_rect_x1 == this.width) and
-		(this.frame_rect_y1 == this.height)
+	ffio = not this.gc_has_transparent_index
+	if not this.quirk_enabled_initial_background_is_opaque {
+		ffio = ffio and
+			(this.frame_rect_x0 == 0) and
+			(this.frame_rect_y0 == 0) and
+			(this.frame_rect_x1 == this.width) and
+			(this.frame_rect_y1 == this.height)
+	}
 
 	if args.dst <> nullptr {
 		// TODO: a Wuffs (not just C) name for the

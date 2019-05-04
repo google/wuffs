@@ -720,6 +720,48 @@ const char* test_wuffs_gif_decode_animated_small() {
       want_frame_config_bounds);
 }
 
+const char* test_wuffs_gif_decode_first_frame_is_opaque() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-frame-out-of-bounds.gif");
+  if (status) {
+    return status;
+  }
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
+
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_initial_background_is_opaque, q);
+
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    if (status) {
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
+    }
+
+    bool got = wuffs_base__image_config__first_frame_is_opaque(&ic);
+    bool want = q;
+
+    if (got != want) {
+      RETURN_FAIL("q=%d: got %s, want %s", q, got ? "true" : "false",
+                  want ? "true" : "false");
+    }
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_frame_out_of_bounds() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -1879,6 +1921,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_medium,                   //
     test_wuffs_gif_decode_animated_small,                    //
     test_wuffs_gif_decode_bgra_nonpremul,                    //
+    test_wuffs_gif_decode_first_frame_is_opaque,             //
     test_wuffs_gif_decode_frame_out_of_bounds,               //
     test_wuffs_gif_decode_input_is_a_gif_just_one_read,      //
     test_wuffs_gif_decode_input_is_a_gif_many_big_reads,     //

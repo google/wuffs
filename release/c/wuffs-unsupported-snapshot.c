@@ -8768,12 +8768,14 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
     if (status) {
       goto suspend;
     }
-    v_ffio =
-        (!self->private_impl.f_gc_has_transparent_index &&
-         (self->private_impl.f_frame_rect_x0 == 0) &&
-         (self->private_impl.f_frame_rect_y0 == 0) &&
-         (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
-         (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
+    v_ffio = !self->private_impl.f_gc_has_transparent_index;
+    if (!self->private_impl.f_quirk_enabled_initial_background_is_opaque) {
+      v_ffio =
+          (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
+           (self->private_impl.f_frame_rect_y0 == 0) &&
+           (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
+           (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
+    }
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
