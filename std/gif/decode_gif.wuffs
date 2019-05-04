@@ -137,7 +137,6 @@ pub struct decoder?(
 	previous_lzw_decode_ended_abruptly base.bool,
 
 	has_global_palette base.bool,
-	which_palette      base.u8[..1],
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
 	interlace base.u8[..4],
@@ -758,6 +757,7 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 
 pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader) {
 	var flags               base.u8
+	var which_palette       base.u8[..1]
 	var num_palette_entries base.u32[..256]
 	var i                   base.u32
 	var argb                base.u32
@@ -772,7 +772,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	}
 
 	// Read the optional Local Color Table.
-	this.which_palette = 1
+	which_palette = 1
 	if (flags & 0x80) <> 0 {
 		num_palette_entries = (1 as base.u32) << (1 + (flags & 0x07))
 		i = 0
@@ -801,7 +801,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	} else if this.gc_has_transparent_index {
 		this.palettes[1][:].copy_from_slice!(s:this.palettes[0][:])
 	} else {
-		this.which_palette = 0
+		which_palette = 0
 	}
 
 	// Set the gc_transparent_index palette entry to transparent black.
@@ -823,7 +823,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 		dst_pixfmt:args.dst.pixel_format(),
 		dst_palette:dst_palette,
 		src_pixfmt:0x47040008,
-		src_palette:this.palettes[this.which_palette][:])
+		src_palette:this.palettes[which_palette][:])
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file
