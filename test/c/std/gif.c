@@ -468,6 +468,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
 }
 
 const char* do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
+                                               uint32_t quirk,
                                                const char* want_status,
                                                bool want_dirty_rect_is_empty) {
   wuffs_gif__decoder dec;
@@ -476,6 +477,9 @@ const char* do_test_wuffs_gif_decode_expecting(wuffs_base__io_buffer src,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
+  }
+  if (quirk) {
+    wuffs_gif__decoder__set_quirk_enabled(&dec, quirk, true);
   }
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
@@ -1238,7 +1242,7 @@ const char* test_wuffs_gif_decode_missing_two_src_bytes() {
   src.meta.wi -= 2;
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__suspension__short_read, false);
+      src, 0, wuffs_base__suspension__short_read, false);
 }
 
 const char* test_wuffs_gif_decode_multiple_loop_counts() {
@@ -1322,7 +1326,7 @@ const char* test_wuffs_gif_decode_pixel_data_none() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__error__not_enough_data, true);
+      src, 0, wuffs_base__error__not_enough_data, true);
 }
 
 const char* test_wuffs_gif_decode_pixel_data_not_enough() {
@@ -1339,10 +1343,10 @@ const char* test_wuffs_gif_decode_pixel_data_not_enough() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__error__not_enough_data, false);
+      src, 0, wuffs_base__error__not_enough_data, false);
 }
 
-const char* test_wuffs_gif_decode_pixel_data_too_much() {
+const char* test_wuffs_gif_decode_pixel_data_too_much_sans_quirk() {
   CHECK_FOCUS(__func__);
 
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -1356,7 +1360,24 @@ const char* test_wuffs_gif_decode_pixel_data_too_much() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_base__error__too_much_data, false);
+      src, 0, wuffs_base__error__too_much_data, false);
+}
+
+const char* test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-pixel-data-too-much.gif");
+  if (status) {
+    return status;
+  }
+
+  return do_test_wuffs_gif_decode_expecting(
+      src, wuffs_gif__quirk_ignore_too_much_pixel_data, NULL, false);
 }
 
 const char* test_wuffs_gif_frame_dirty_rect() {
@@ -2007,7 +2028,8 @@ proc tests[] = {
     test_wuffs_gif_decode_multiple_loop_counts,              //
     test_wuffs_gif_decode_pixel_data_none,                   //
     test_wuffs_gif_decode_pixel_data_not_enough,             //
-    test_wuffs_gif_decode_pixel_data_too_much,               //
+    test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,    //
+    test_wuffs_gif_decode_pixel_data_too_much_with_quirk,    //
     test_wuffs_gif_frame_dirty_rect,                         //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //

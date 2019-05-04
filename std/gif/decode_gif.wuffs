@@ -977,7 +977,8 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	while src_ri < args.src.length() {
 		src = args.src[src_ri:]
 
-		if this.dst_y >= this.frame_rect_y1 {
+		if (this.dst_y >= this.frame_rect_y1) and
+			(not this.quirk_enabled_ignore_too_much_pixel_data) {
 			return base."#too much data"
 		}
 
