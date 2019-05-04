@@ -3277,6 +3277,30 @@ static const uint64_t                                   //
     wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635329
+
+static const uint32_t                            //
+    wuffs_gif__quirk_ignore_too_much_pixel_data  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635330
+
+static const uint32_t                         //
+    wuffs_gif__quirk_image_bounds_are_strict  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
+
+#define WUFFS_GIF__QUIRK_INITIAL_BACKGROUND_IS_OPAQUE 1041635331
+
+static const uint32_t                              //
+    wuffs_gif__quirk_initial_background_is_opaque  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
+
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
+
+static const uint32_t                      //
+    wuffs_gif__quirk_reject_empty_palette  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+
 // ---------------- Struct Declarations
 
 typedef struct wuffs_gif__decoder__struct wuffs_gif__decoder;
@@ -3299,6 +3323,11 @@ size_t  //
 sizeof__wuffs_gif__decoder();
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
@@ -3384,6 +3413,10 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_metadata_fourcc_value;
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
+    bool f_quirk_enabled_ignore_too_much_pixel_data;
+    bool f_quirk_enabled_image_bounds_are_strict;
+    bool f_quirk_enabled_initial_background_is_opaque;
+    bool f_quirk_enabled_reject_empty_palette;
     bool f_end_of_data;
     bool f_restarted;
     bool f_previous_lzw_decode_ended_abruptly;
@@ -3506,6 +3539,11 @@ struct wuffs_gif__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
                                           initialize_flags);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_gif__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
   }
 
   inline wuffs_base__status  //
@@ -8654,6 +8692,31 @@ sizeof__wuffs_gif__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func gif.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1041635329) {
+    self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+  } else if (a_quirk == 1041635330) {
+    self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+  } else if (a_quirk == 1041635331) {
+    self->private_impl.f_quirk_enabled_initial_background_is_opaque = a_enabled;
+  } else if (a_quirk == 1041635332) {
+    self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  }
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func gif.decoder.decode_image_config
 

@@ -27,6 +27,41 @@ pri status "#internal error: inconsistent ri/wi"
 // need a per-pixel-row workbuf.
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
+// --------
+
+// Quirks.
+//
+// A base38 (github.com/google/wuffs/lib/base38) value can fit in 21 bits.
+// Leaving the high bit of a uint32 reserved, the low 10 bits can be used for
+// package-specific quirk constants: the base38 value acts as a namespace.
+
+// The base38 encoding of "gif " is 0xF8586.
+
+// When this quirk is enabled, silently ignore e.g. a frame that reports a
+// width and height of 6 pixels each, followed by 50 pixel values. In that
+// case, we process the first 36 pixel values and discard the excess 14.
+pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF8586 << 10) | 1
+
+// When this quirk is enabled, if the initial frame bounds extends beyond the
+// image bounds, then the image bounds stay unchanged. By default (with this
+// quirk disabled), the image bounds are adjusted to always contain the first
+// frame's bounds (but not necessarily subsequent frame's bounds).
+//
+// For more discussion, see
+// https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
+pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
+
+// When this quirk is enabled, if the initial frame bounds is smaller than the
+// image bounds, those pixels outside the initial frame bounds are assumed to
+// start as opaque black instead of transparent black.
+pub const quirk_initial_background_is_opaque base.u32 = (0xF8586 << 10) | 3
+
+// When this quirk is enabled, a frame with no explicit palette is rejected,
+// instead of implicitly having a palette with every entry being opaque black.
+pub const quirk_reject_empty_palette base.u32 = (0xF8586 << 10) | 4
+
+// --------
+
 // See the spec appendix E "Interlaced Images" on page 29. The first element
 // represents either that the frame was non-interlaced, or that all interlace
 // stages are complete. Otherwise, the four interlace stages are elements 4, 3,
@@ -91,6 +126,11 @@ pub struct decoder?(
 	metadata_chunk_length_value base.u64,
 	metadata_io_position        base.u64,
 
+	quirk_enabled_ignore_too_much_pixel_data   base.bool,
+	quirk_enabled_image_bounds_are_strict      base.bool,
+	quirk_enabled_initial_background_is_opaque base.bool,
+	quirk_enabled_reject_empty_palette         base.bool,
+
 	end_of_data                        base.bool,
 	restarted                          base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
@@ -142,6 +182,18 @@ pub struct decoder?(
 
 	lzw lzw.decoder,
 )
+
+pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
+	if args.quirk == quirk_ignore_too_much_pixel_data {
+		this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
+	} else if args.quirk == quirk_image_bounds_are_strict {
+		this.quirk_enabled_image_bounds_are_strict = args.enabled
+	} else if args.quirk == quirk_initial_background_is_opaque {
+		this.quirk_enabled_initial_background_is_opaque = args.enabled
+	} else if args.quirk == quirk_reject_empty_palette {
+		this.quirk_enabled_reject_empty_palette = args.enabled
+	}
+}
 
 pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
 	var ffio base.bool
