@@ -720,6 +720,79 @@ const char* test_wuffs_gif_decode_animated_small() {
       want_frame_config_bounds);
 }
 
+const char* test_wuffs_gif_decode_empty_palette() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-empty-palette.gif");
+  if (status) {
+    return status;
+  }
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
+
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_reject_empty_palette, q);
+
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    status = wuffs_gif__decoder__decode_image_config(
+        &dec, &ic, wuffs_base__io_buffer__reader(&src));
+    if (status) {
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
+    }
+
+    wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                      global_pixel_slice);
+    if (status) {
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
+    }
+
+    int i;
+    for (i = 0; i < 2; i++) {
+      status = wuffs_gif__decoder__decode_frame(
+          &dec, &pb, wuffs_base__io_buffer__reader(&src), global_work_slice,
+          NULL);
+      if ((q == 1) && (i == 1)) {
+        if (status != wuffs_gif__error__bad_palette) {
+          RETURN_FAIL("q=%d: i=%d: decode_frame: got \"%s\", want \"%s\"", q, i,
+                      status, wuffs_gif__error__bad_palette);
+        }
+        break;
+      }
+      if (status) {
+        RETURN_FAIL("q=%d: i=%d: decode_frame: \"%s\"", q, i, status);
+      }
+
+      wuffs_base__slice_u8 pal = wuffs_base__pixel_buffer__palette(&pb);
+      if (pal.len < 4) {
+        RETURN_FAIL("q=%d: i=%d: palette length: got %d, want >= 4", q, i,
+                    (int)(pal.len));
+      }
+      uint8_t* p = pal.ptr;
+      int blue = i ? 0x00 : 0xFF;
+      if ((p[0] != blue) || (p[1] != 0x00) || (p[2] != 0x00) ||
+          (p[3] != 0xFF)) {
+        RETURN_FAIL(
+            "q=%d: i=%d: palette[0] BGRA: got (0x%02X, 0x%02X, 0x%02X, "
+            "0x%02X), want (0x%02X, 0x00, 0x00, 0xFF)",
+            q, i, (int)(p[0]), (int)(p[1]), (int)(p[2]), (int)(p[3]), blue);
+      }
+    }
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_first_frame_is_opaque() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -1921,6 +1994,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_medium,                   //
     test_wuffs_gif_decode_animated_small,                    //
     test_wuffs_gif_decode_bgra_nonpremul,                    //
+    test_wuffs_gif_decode_empty_palette,                     //
     test_wuffs_gif_decode_first_frame_is_opaque,             //
     test_wuffs_gif_decode_frame_out_of_bounds,               //
     test_wuffs_gif_decode_input_is_a_gif_just_one_read,      //

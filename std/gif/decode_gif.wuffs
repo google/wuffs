@@ -19,6 +19,7 @@ pub status "#bad extension label"
 pub status "#bad graphic control"
 pub status "#bad header"
 pub status "#bad literal width"
+pub status "#bad palette"
 
 pri status "#internal error: inconsistent ri/wi"
 
@@ -135,7 +136,8 @@ pub struct decoder?(
 	restarted                          base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
 
-	which_palette base.u8[..1],
+	has_global_palette base.bool,
+	which_palette      base.u8[..1],
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
 	interlace base.u8[..4],
@@ -482,9 +484,10 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 	args.src.skip?(n:2)
 
 	// Read the optional Global Color Table.
-	if (flags & 0x80) <> 0 {
+	i = 0
+	this.has_global_palette = (flags & 0x80) <> 0
+	if this.has_global_palette {
 		num_palette_entries = (1 as base.u32) << (1 + (flags & 0x07))
-		i = 0
 		while i < num_palette_entries {
 			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
@@ -497,14 +500,15 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 			this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
 		}
-		// Set the remaining palette entries to opaque black.
-		while i < 256 {
-			this.palettes[0][(4 * i) + 0] = 0x00
-			this.palettes[0][(4 * i) + 1] = 0x00
-			this.palettes[0][(4 * i) + 2] = 0x00
-			this.palettes[0][(4 * i) + 3] = 0xFF
-			i += 1
-		}
+	}
+
+	// Set the remaining palette entries to opaque black.
+	while i < 256 {
+		this.palettes[0][(4 * i) + 0] = 0x00
+		this.palettes[0][(4 * i) + 1] = 0x00
+		this.palettes[0][(4 * i) + 2] = 0x00
+		this.palettes[0][(4 * i) + 3] = 0xFF
+		i += 1
 	}
 }
 
@@ -792,6 +796,8 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 			this.palettes[1][(4 * i) + 3] = 0xFF
 			i += 1
 		}
+	} else if this.quirk_enabled_reject_empty_palette and (not this.has_global_palette) {
+		return "#bad palette"
 	} else if this.gc_has_transparent_index {
 		this.palettes[1][:].copy_from_slice!(s:this.palettes[0][:])
 	} else {

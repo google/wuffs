@@ -3268,6 +3268,7 @@ extern const char* wuffs_gif__error__bad_extension_label;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
+extern const char* wuffs_gif__error__bad_palette;
 
 // ---------------- Public Consts
 
@@ -3420,6 +3421,7 @@ struct wuffs_gif__decoder__struct {
     bool f_end_of_data;
     bool f_restarted;
     bool f_previous_lzw_decode_ended_abruptly;
+    bool f_has_global_palette;
     uint8_t f_which_palette;
     uint8_t f_interlace;
     bool f_seen_num_loops;
@@ -8531,6 +8533,7 @@ const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
 const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
 const char* wuffs_gif__error__bad_header = "#gif: bad header";
 const char* wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
+const char* wuffs_gif__error__bad_palette = "#gif: bad palette";
 const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
     "#gif: internal error: inconsistent ri/wi";
 
@@ -9692,9 +9695,10 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       goto suspend;
     }
     iop_a_src += self->private_data.s_decode_lsd[0].scratch;
-    if ((v_flags & 128) != 0) {
+    v_i = 0;
+    self->private_impl.f_has_global_palette = ((v_flags & 128) != 0);
+    if (self->private_impl.f_has_global_palette) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
-      v_i = 0;
       while (v_i < v_num_palette_entries) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -9736,13 +9740,13 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      while (v_i < 256) {
-        self->private_data.f_palettes[0][((4 * v_i) + 0)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 1)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 2)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 3)] = 255;
-        v_i += 1;
-      }
+    }
+    while (v_i < 256) {
+      self->private_data.f_palettes[0][((4 * v_i) + 0)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 1)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 2)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 3)] = 255;
+      v_i += 1;
     }
 
     goto ok;
@@ -10646,6 +10650,10 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         self->private_data.f_palettes[1][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
+    } else if (self->private_impl.f_quirk_enabled_reject_empty_palette &&
+               !self->private_impl.f_has_global_palette) {
+      status = wuffs_gif__error__bad_palette;
+      goto exit;
     } else if (self->private_impl.f_gc_has_transparent_index) {
       wuffs_base__slice_u8__copy_from_slice(
           wuffs_base__make_slice_u8(self->private_data.f_palettes[1], 1024),

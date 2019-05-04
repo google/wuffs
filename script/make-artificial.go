@@ -508,6 +508,7 @@ var gifGlobals struct {
 	frameHeight uint32
 
 	globalPalette [][4]uint8
+	localPalette  [][4]uint8
 }
 
 func stateGif(line string) (stateFunc, error) {
@@ -519,6 +520,7 @@ func stateGif(line string) (stateFunc, error) {
 outer:
 	switch {
 	case line == "frame {":
+		gifGlobals.localPalette = nil
 		out = append(out, 0x2C)
 		return stateGifFrame, nil
 
@@ -661,12 +663,22 @@ func stateGifFrame(line string) (stateFunc, error) {
 		out = appendU16LE(out, uint16(g.frameTop))
 		out = appendU16LE(out, uint16(g.frameWidth))
 		out = appendU16LE(out, uint16(g.frameHeight))
-		out = append(out, 0x00) // TODO: flags.
+		if g.localPalette == nil {
+			out = append(out, 0x00)
+		} else if n := log2(uint32(len(g.localPalette))); n < 2 || 8 < n {
+			return nil, fmt.Errorf("bad len(g.localPalette): %d", len(g.localPalette))
+		} else {
+			out = append(out, 0x80|uint8(n-1))
+		}
+		for _, x := range g.localPalette {
+			out = append(out, x[0], x[1], x[2])
+		}
 		return stateGif, nil
 	}
 
 	const (
 		cmdFLTWH = "frameLeftTopWidthHeight "
+		cmdP     = "palette {"
 	)
 	switch {
 	case strings.HasPrefix(line, cmdFLTWH):
@@ -684,6 +696,9 @@ func stateGifFrame(line string) (stateFunc, error) {
 				}
 			}
 		}
+
+	case strings.HasPrefix(line, cmdP):
+		return stateGifFramePalette, nil
 	}
 
 	return nil, fmt.Errorf("bad stateGifFrame command: %q", line)
@@ -707,4 +722,24 @@ func stateGifImagePalette(line string) (stateFunc, error) {
 	}
 
 	return nil, fmt.Errorf("bad stateGifImagePalette command: %q", line)
+}
+
+func stateGifFramePalette(line string) (stateFunc, error) {
+	g := &gifGlobals
+	if line == "}" {
+		return stateGifFrame, nil
+	}
+
+	s := line
+	if rgb0, s, ok := parseHex(s); ok {
+		if rgb1, s, ok := parseHex(s); ok {
+			if rgb2, _, ok := parseHex(s); ok {
+				g.localPalette = append(g.localPalette,
+					[4]uint8{uint8(rgb0), uint8(rgb1), uint8(rgb2), 0xFF})
+				return stateGifFramePalette, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("bad stateGifFramePalette command: %q", line)
 }
