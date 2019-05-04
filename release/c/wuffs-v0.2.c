@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 842500d51c011a0ada0d0b7e82c2143cd56c7cd1 committed on 2019-04-20.
+// 24a2f12c30616e821810b442e721b95077ed8d74 committed on 2019-05-04.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.37"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1691
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190420
-#define WUFFS_VERSION_STRING "0.2.0-alpha.37+1691.20190420"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.38"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1701
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190504
+#define WUFFS_VERSION_STRING "0.2.0-alpha.38+1701.20190504"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -3269,6 +3269,7 @@ extern const char* wuffs_gif__error__bad_extension_label;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
+extern const char* wuffs_gif__error__bad_palette;
 
 // ---------------- Public Consts
 
@@ -3277,6 +3278,30 @@ extern const char* wuffs_gif__error__bad_literal_width;
 static const uint64_t                                   //
     wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1;
+
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635329
+
+static const uint32_t                            //
+    wuffs_gif__quirk_ignore_too_much_pixel_data  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635330
+
+static const uint32_t                         //
+    wuffs_gif__quirk_image_bounds_are_strict  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
+
+#define WUFFS_GIF__QUIRK_INITIAL_BACKGROUND_IS_OPAQUE 1041635331
+
+static const uint32_t                              //
+    wuffs_gif__quirk_initial_background_is_opaque  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
+
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
+
+static const uint32_t                      //
+    wuffs_gif__quirk_reject_empty_palette  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
 // ---------------- Struct Declarations
 
@@ -3300,6 +3325,11 @@ size_t  //
 sizeof__wuffs_gif__decoder();
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
@@ -3385,10 +3415,14 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_metadata_fourcc_value;
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
+    bool f_quirk_enabled_ignore_too_much_pixel_data;
+    bool f_quirk_enabled_image_bounds_are_strict;
+    bool f_quirk_enabled_initial_background_is_opaque;
+    bool f_quirk_enabled_reject_empty_palette;
     bool f_end_of_data;
     bool f_restarted;
     bool f_previous_lzw_decode_ended_abruptly;
-    uint8_t f_which_palette;
+    bool f_has_global_palette;
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
@@ -3435,14 +3469,8 @@ struct wuffs_gif__decoder__struct {
     wuffs_lzw__decoder f_lzw;
 
     struct {
-      wuffs_base__status v_status;
-    } s_decode_image_config[1];
-    struct {
       uint64_t scratch;
     } s_skip_frame[1];
-    struct {
-      wuffs_base__status v_status;
-    } s_decode_up_to_id_part1[1];
     struct {
       uint8_t v_c[6];
       uint32_t v_i;
@@ -3453,9 +3481,6 @@ struct wuffs_gif__decoder__struct {
       uint32_t v_i;
       uint64_t scratch;
     } s_decode_lsd[1];
-    struct {
-      wuffs_base__status v_status;
-    } s_decode_extension[1];
     struct {
       uint64_t scratch;
     } s_skip_blocks[1];
@@ -3474,6 +3499,7 @@ struct wuffs_gif__decoder__struct {
       uint64_t scratch;
     } s_decode_id_part0[1];
     struct {
+      uint8_t v_which_palette;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint64_t scratch;
@@ -3516,6 +3542,11 @@ struct wuffs_gif__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_gif__decoder__initialize(this, sizeof_star_self, wuffs_version,
                                           initialize_flags);
+  }
+
+  inline wuffs_base__empty_struct  //
+  set_quirk_enabled(uint32_t a_quirk, bool a_enabled) {
+    return wuffs_gif__decoder__set_quirk_enabled(this, a_quirk, a_enabled);
   }
 
   inline wuffs_base__status  //
@@ -6409,8 +6440,10 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
 
   goto exit;
 exit:
@@ -6572,7 +6605,8 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_blocks[0] = coro_susp_point;
+  self->private_impl.p_decode_blocks[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_blocks[0].v_final = v_final;
 
   goto exit;
@@ -6703,7 +6737,8 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_uncompressed[0] = coro_susp_point;
+  self->private_impl.p_decode_uncompressed[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_uncompressed[0].v_length = v_length;
 
   goto exit;
@@ -6992,7 +7027,8 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_init_dynamic_huffman[0] = coro_susp_point;
+  self->private_impl.p_init_dynamic_huffman[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_init_dynamic_huffman[0].v_bits = v_bits;
   self->private_data.s_init_dynamic_huffman[0].v_n_bits = v_n_bits;
   self->private_data.s_init_dynamic_huffman[0].v_n_lit = v_n_lit;
@@ -7948,7 +7984,8 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_huffman_slow[0] = coro_susp_point;
+  self->private_impl.p_decode_huffman_slow[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_huffman_slow[0].v_bits = v_bits;
   self->private_data.s_decode_huffman_slow[0].v_n_bits = v_n_bits;
   self->private_data.s_decode_huffman_slow[0].v_table_entry = v_table_entry;
@@ -8177,8 +8214,10 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
 
   goto exit;
 exit:
@@ -8448,7 +8487,8 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_write_to[0] = coro_susp_point;
+  self->private_impl.p_write_to[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -8494,6 +8534,7 @@ const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
 const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
 const char* wuffs_gif__error__bad_header = "#gif: bad header";
 const char* wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
+const char* wuffs_gif__error__bad_palette = "#gif: bad palette";
 const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
     "#gif: internal error: inconsistent ri/wi";
 
@@ -8656,6 +8697,31 @@ sizeof__wuffs_gif__decoder() {
 
 // ---------------- Function Implementations
 
+// -------- func gif.decoder.set_quirk_enabled
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
+                                      uint32_t a_quirk,
+                                      bool a_enabled) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (a_quirk == 1041635329) {
+    self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+  } else if (a_quirk == 1041635330) {
+    self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+  } else if (a_quirk == 1041635331) {
+    self->private_impl.f_quirk_enabled_initial_background_is_opaque = a_enabled;
+  } else if (a_quirk == 1041635332) {
+    self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
 // -------- func gif.decoder.decode_image_config
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
@@ -8679,11 +8745,9 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   bool v_ffio = false;
-  wuffs_base__status v_status = NULL;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_image_config[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_image_config[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -8703,37 +8767,19 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
-  label_0_continue:;
-    while (true) {
-      {
-        wuffs_base__status t_0 =
-            wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
-        v_status = t_0;
-      }
-      if (wuffs_base__status__is_suspension(v_status)) {
-        status = v_status;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-        goto label_0_continue;
-      }
-      if (wuffs_base__status__is_ok(v_status)) {
-        goto label_0_break;
-      }
-      status = v_status;
-      if (wuffs_base__status__is_error(status)) {
-        goto exit;
-      } else if (wuffs_base__status__is_suspension(status)) {
-        status = wuffs_base__error__cannot_return_a_suspension;
-        goto exit;
-      }
-      goto ok;
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+    status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
+    if (status) {
+      goto suspend;
     }
-  label_0_break:;
-    v_ffio =
-        (!self->private_impl.f_gc_has_transparent_index &&
-         (self->private_impl.f_frame_rect_x0 == 0) &&
-         (self->private_impl.f_frame_rect_y0 == 0) &&
-         (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
-         (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
+    v_ffio = !self->private_impl.f_gc_has_transparent_index;
+    if (!self->private_impl.f_quirk_enabled_initial_background_is_opaque) {
+      v_ffio =
+          (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
+           (self->private_impl.f_frame_rect_y0 == 0) &&
+           (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
+           (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
+    }
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
@@ -8750,9 +8796,10 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_image_config[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
-  self->private_data.s_decode_image_config[0].v_status = v_status;
+  self->private_impl.p_decode_image_config[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
 
   goto exit;
 exit:
@@ -8887,8 +8934,10 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_ack_metadata_chunk[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 2;
+  self->private_impl.p_ack_metadata_chunk[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 2 : 0;
 
   goto exit;
 exit:
@@ -9136,8 +9185,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_frame_config[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 3;
+  self->private_impl.p_decode_frame_config[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 3 : 0;
 
   goto exit;
 exit:
@@ -9231,7 +9282,8 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_skip_frame[0] = coro_susp_point;
+  self->private_impl.p_skip_frame[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -9307,8 +9359,10 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_frame[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 4;
+  self->private_impl.p_decode_frame[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 4 : 0;
 
   goto exit;
 exit:
@@ -9339,7 +9393,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_block_type = 0;
-  wuffs_base__status v_status = NULL;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9358,7 +9411,6 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_up_to_id_part1[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9396,39 +9448,19 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         v_block_type = t_0;
       }
       if (v_block_type == 33) {
-      label_0_continue:;
-        while (true) {
-          {
-            if (a_src.private_impl.buf) {
-              a_src.private_impl.buf->meta.ri =
-                  ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
-            }
-            wuffs_base__status t_1 =
-                wuffs_gif__decoder__decode_extension(self, a_src);
-            if (a_src.private_impl.buf) {
-              iop_a_src = a_src.private_impl.buf->data.ptr +
-                          a_src.private_impl.buf->meta.ri;
-            }
-            v_status = t_1;
-          }
-          if (wuffs_base__status__is_suspension(v_status)) {
-            status = v_status;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
-            goto label_0_continue;
-          }
-          if (wuffs_base__status__is_ok(v_status)) {
-            goto label_0_break;
-          }
-          status = v_status;
-          if (wuffs_base__status__is_error(status)) {
-            goto exit;
-          } else if (wuffs_base__status__is_suspension(status)) {
-            status = wuffs_base__error__cannot_return_a_suspension;
-            goto exit;
-          }
-          goto ok;
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
         }
-      label_0_break:;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+        status = wuffs_gif__decoder__decode_extension(self, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
+        if (status) {
+          goto suspend;
+        }
       } else if (v_block_type == 44) {
         if (a_src.private_impl.buf) {
           a_src.private_impl.buf->meta.ri =
@@ -9443,16 +9475,16 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         if (status) {
           goto suspend;
         }
-        goto label_1_break;
+        goto label_0_break;
       } else if (v_block_type == 59) {
         self->private_impl.f_end_of_data = true;
-        goto label_1_break;
+        goto label_0_break;
       } else {
         status = wuffs_gif__error__bad_block;
         goto exit;
       }
     }
-  label_1_break:;
+  label_0_break:;
 
     goto ok;
   ok:
@@ -9462,8 +9494,8 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_up_to_id_part1[0] = coro_susp_point;
-  self->private_data.s_decode_up_to_id_part1[0].v_status = v_status;
+  self->private_impl.p_decode_up_to_id_part1[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -9534,7 +9566,8 @@ wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_header[0] = coro_susp_point;
+  self->private_impl.p_decode_header[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   memcpy(self->private_data.s_decode_header[0].v_c, v_c, sizeof(v_c));
   self->private_data.s_decode_header[0].v_i = v_i;
 
@@ -9663,9 +9696,10 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       goto suspend;
     }
     iop_a_src += self->private_data.s_decode_lsd[0].scratch;
-    if ((v_flags & 128) != 0) {
+    v_i = 0;
+    self->private_impl.f_has_global_palette = ((v_flags & 128) != 0);
+    if (self->private_impl.f_has_global_palette) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
-      v_i = 0;
       while (v_i < v_num_palette_entries) {
         {
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
@@ -9707,13 +9741,13 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      while (v_i < 256) {
-        self->private_data.f_palettes[0][((4 * v_i) + 0)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 1)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 2)] = 0;
-        self->private_data.f_palettes[0][((4 * v_i) + 3)] = 255;
-        v_i += 1;
-      }
+    }
+    while (v_i < 256) {
+      self->private_data.f_palettes[0][((4 * v_i) + 0)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 1)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 2)] = 0;
+      self->private_data.f_palettes[0][((4 * v_i) + 3)] = 255;
+      v_i += 1;
     }
 
     goto ok;
@@ -9724,7 +9758,8 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_lsd[0] = coro_susp_point;
+  self->private_impl.p_decode_lsd[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_lsd[0].v_flags = v_flags;
   self->private_data.s_decode_lsd[0].v_num_palette_entries =
       v_num_palette_entries;
@@ -9748,7 +9783,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_label = 0;
-  wuffs_base__status v_status = NULL;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9767,7 +9801,6 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
   if (coro_susp_point) {
-    v_status = self->private_data.s_decode_extension[0].v_status;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9798,38 +9831,19 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
       status = NULL;
       goto ok;
     } else if (v_label == 255) {
-    label_0_continue:;
-      while (true) {
-        {
-          if (a_src.private_impl.buf) {
-            a_src.private_impl.buf->meta.ri =
-                ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
-          }
-          wuffs_base__status t_1 = wuffs_gif__decoder__decode_ae(self, a_src);
-          if (a_src.private_impl.buf) {
-            iop_a_src = a_src.private_impl.buf->data.ptr +
-                        a_src.private_impl.buf->meta.ri;
-          }
-          v_status = t_1;
-        }
-        if (wuffs_base__status__is_suspension(v_status)) {
-          status = v_status;
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
-          goto label_0_continue;
-        }
-        if (wuffs_base__status__is_ok(v_status)) {
-          goto label_0_break;
-        }
-        status = v_status;
-        if (wuffs_base__status__is_error(status)) {
-          goto exit;
-        } else if (wuffs_base__status__is_suspension(status)) {
-          status = wuffs_base__error__cannot_return_a_suspension;
-          goto exit;
-        }
-        goto ok;
+      if (a_src.private_impl.buf) {
+        a_src.private_impl.buf->meta.ri =
+            ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
       }
-    label_0_break:;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      status = wuffs_gif__decoder__decode_ae(self, a_src);
+      if (a_src.private_impl.buf) {
+        iop_a_src =
+            a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+      }
+      if (status) {
+        goto suspend;
+      }
       status = NULL;
       goto ok;
     }
@@ -9855,8 +9869,8 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_extension[0] = coro_susp_point;
-  self->private_data.s_decode_extension[0].v_status = v_status;
+  self->private_impl.p_decode_extension[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -9933,7 +9947,8 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_skip_blocks[0] = coro_susp_point;
+  self->private_impl.p_skip_blocks[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10192,7 +10207,8 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_ae[0] = coro_susp_point;
+  self->private_impl.p_decode_ae[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_ae[0].v_block_size = v_block_size;
   self->private_data.s_decode_ae[0].v_is_animexts = v_is_animexts;
   self->private_data.s_decode_ae[0].v_is_netscape = v_is_netscape;
@@ -10339,7 +10355,8 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_gc[0] = coro_susp_point;
+  self->private_impl.p_decode_gc[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10499,7 +10516,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     self->private_impl.f_frame_rect_y1 += self->private_impl.f_frame_rect_y0;
     self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
     self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
-    if (self->private_impl.f_call_sequence == 0) {
+    if ((self->private_impl.f_call_sequence == 0) &&
+        !self->private_impl.f_quirk_enabled_image_bounds_are_strict) {
       self->private_impl.f_width = wuffs_base__u32__max(
           self->private_impl.f_width, self->private_impl.f_frame_rect_x1);
       self->private_impl.f_height = wuffs_base__u32__max(
@@ -10514,7 +10532,8 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part0[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part0[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
 
   goto exit;
 exit:
@@ -10535,6 +10554,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
+  uint8_t v_which_palette = 0;
   uint32_t v_num_palette_entries = 0;
   uint32_t v_i = 0;
   uint32_t v_argb = 0;
@@ -10558,6 +10578,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part1[0];
   if (coro_susp_point) {
+    v_which_palette = self->private_data.s_decode_id_part1[0].v_which_palette;
     v_num_palette_entries =
         self->private_data.s_decode_id_part1[0].v_num_palette_entries;
     v_i = self->private_data.s_decode_id_part1[0].v_i;
@@ -10579,7 +10600,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
     } else {
       self->private_impl.f_interlace = 0;
     }
-    self->private_impl.f_which_palette = 1;
+    v_which_palette = 1;
     if ((v_flags & 128) != 0) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
       v_i = 0;
@@ -10632,12 +10653,16 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         self->private_data.f_palettes[1][((4 * v_i) + 3)] = 255;
         v_i += 1;
       }
+    } else if (self->private_impl.f_quirk_enabled_reject_empty_palette &&
+               !self->private_impl.f_has_global_palette) {
+      status = wuffs_gif__error__bad_palette;
+      goto exit;
     } else if (self->private_impl.f_gc_has_transparent_index) {
       wuffs_base__slice_u8__copy_from_slice(
           wuffs_base__make_slice_u8(self->private_data.f_palettes[1], 1024),
           wuffs_base__make_slice_u8(self->private_data.f_palettes[0], 1024));
     } else {
-      self->private_impl.f_which_palette = 0;
+      v_which_palette = 0;
     }
     if (self->private_impl.f_gc_has_transparent_index) {
       self->private_data.f_palettes[1][(
@@ -10663,8 +10688,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
         1191444488,
         wuffs_base__make_slice_u8(
-            self->private_data.f_palettes[self->private_impl.f_which_palette],
-            1024));
+            self->private_data.f_palettes[v_which_palette], 1024));
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
           &self->private_data.f_lzw, sizeof(wuffs_lzw__decoder), WUFFS_VERSION,
@@ -10695,7 +10719,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part1[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part1[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_data.s_decode_id_part1[0].v_which_palette = v_which_palette;
   self->private_data.s_decode_id_part1[0].v_num_palette_entries =
       v_num_palette_entries;
   self->private_data.s_decode_id_part1[0].v_i = v_i;
@@ -10925,7 +10951,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_id_part2[0] = coro_susp_point;
+  self->private_impl.p_decode_id_part2[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_id_part2[0].v_block_size = v_block_size;
   self->private_data.s_decode_id_part2[0].v_need_block_size = v_need_block_size;
   self->private_data.s_decode_id_part2[0].v_lzw_status = v_lzw_status;
@@ -10967,7 +10994,8 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
-    if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
+    if ((self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) &&
+        !self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
       return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
@@ -11518,8 +11546,10 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
   self->private_data.s_decode_io_writer[0].v_flags = v_flags;
   self->private_data.s_decode_io_writer[0].v_checksum_got = v_checksum_got;
   self->private_data.s_decode_io_writer[0].v_decoded_length_got =
@@ -11857,8 +11887,10 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
 
   goto suspend;
 suspend:
-  self->private_impl.p_decode_io_writer[0] = coro_susp_point;
-  self->private_impl.active_coroutine = 1;
+  self->private_impl.p_decode_io_writer[0] =
+      wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
+  self->private_impl.active_coroutine =
+      wuffs_base__status__is_suspension(status) ? 1 : 0;
   self->private_data.s_decode_io_writer[0].v_checksum_got = v_checksum_got;
 
   goto exit;
