@@ -8102,7 +8102,7 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return wuffs_base__make_empty_struct();
   }
-  if (a_lw < 2 || a_lw > 8) {
+  if (a_lw < 1 || a_lw > 8) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__make_empty_struct();
   }
@@ -8158,7 +8158,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_literal_width = 8;
-    if (self->private_impl.f_set_literal_width_arg >= 2) {
+    if (self->private_impl.f_set_literal_width_arg > 0) {
       self->private_impl.f_literal_width =
           self->private_impl.f_set_literal_width_arg;
     }
@@ -10702,7 +10702,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_lw = t_2;
     }
-    if ((v_lw < 2) || (8 < v_lw)) {
+    if ((v_lw < 1) || (8 < v_lw)) {
       status = wuffs_gif__error__bad_literal_width;
       goto exit;
     }

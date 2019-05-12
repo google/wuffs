@@ -844,8 +844,11 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 		this.lzw.reset!()
 	}
 
+	// Process the LZW literal width. The spec says that "images which have one
+	// color bit must be indicated as having a code size [i.e. literal width]
+	// of 2", but in practice, some encoders use a literal width of 1.
 	lw = args.src.read_u8?()
-	if (lw < 2) or (8 < lw) {
+	if (lw < 1) or (8 < lw) {
 		return "#bad literal width"
 	}
 	this.lzw.set_literal_width!(lw:lw as base.u32)

@@ -69,7 +69,7 @@ pub struct decoder?(
 	output array[8192 + 7] base.u8,
 )
 
-pub func decoder.set_literal_width!(lw base.u32[2..8]) {
+pub func decoder.set_literal_width!(lw base.u32[1..8]) {
 	this.set_literal_width_arg = args.lw
 }
 
@@ -82,7 +82,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	// Initialize read_from state.
 	this.literal_width = 8
-	if this.set_literal_width_arg >= 2 {
+	if this.set_literal_width_arg > 0 {
 		this.literal_width = this.set_literal_width_arg
 	}
 	this.clear_code = (1 as base.u32) << this.literal_width
