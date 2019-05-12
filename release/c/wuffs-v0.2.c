@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 24a2f12c30616e821810b442e721b95077ed8d74 committed on 2019-05-04.
+// b1ff27fdedb85ed03b5f6d31119eb28db8303d3f committed on 2019-05-12.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.38"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1701
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190504
-#define WUFFS_VERSION_STRING "0.2.0-alpha.38+1701.20190504"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.39"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1705
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190512
+#define WUFFS_VERSION_STRING "0.2.0-alpha.39+1705.20190512"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -3426,7 +3426,6 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
-    bool f_seen_graphic_control;
     bool f_gc_has_transparent_index;
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
@@ -8103,7 +8102,7 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return wuffs_base__make_empty_struct();
   }
-  if (a_lw < 2 || a_lw > 8) {
+  if (a_lw < 1 || a_lw > 8) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__make_empty_struct();
   }
@@ -8159,7 +8158,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_literal_width = 8;
-    if (self->private_impl.f_set_literal_width_arg >= 2) {
+    if (self->private_impl.f_set_literal_width_arg > 0) {
       self->private_impl.f_literal_width =
           self->private_impl.f_set_literal_width_arg;
     }
@@ -9377,7 +9376,6 @@ exit:
 static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
   self->private_impl.f_call_sequence = 5;
-  self->private_impl.f_seen_graphic_control = false;
   self->private_impl.f_gc_has_transparent_index = false;
   self->private_impl.f_gc_transparent_index = 0;
   self->private_impl.f_gc_disposal = 0;
@@ -10257,10 +10255,6 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_seen_graphic_control) {
-      status = wuffs_gif__error__bad_graphic_control;
-      goto exit;
-    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
@@ -10345,7 +10339,6 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
       status = wuffs_gif__error__bad_graphic_control;
       goto exit;
     }
-    self->private_impl.f_seen_graphic_control = true;
 
     goto ok;
   ok:
@@ -10703,7 +10696,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_lw = t_2;
     }
-    if ((v_lw < 2) || (8 < v_lw)) {
+    if ((v_lw < 1) || (8 < v_lw)) {
       status = wuffs_gif__error__bad_literal_width;
       goto exit;
     }
