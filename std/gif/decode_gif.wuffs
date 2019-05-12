@@ -146,7 +146,6 @@ pub struct decoder?(
 	seen_num_loops base.bool,
 	num_loops      base.u32,
 
-	seen_graphic_control     base.bool,
 	gc_has_transparent_index base.bool,
 	gc_transparent_index     base.u8,
 	gc_disposal              base.u8,
@@ -414,7 +413,6 @@ pri func decoder.reset_gc!() {
 	this.call_sequence = 5
 	// The Image Descriptor is mandatory, but the Graphic Control extension is
 	// optional. Reset the GC related fields for the next decode_frame call.
-	this.seen_graphic_control = false
 	this.gc_has_transparent_index = false
 	this.gc_transparent_index = 0
 	this.gc_disposal = 0
@@ -681,9 +679,6 @@ pri func decoder.decode_gc?(src base.io_reader) {
 	var flags                    base.u8
 	var gc_duration_centiseconds base.u16
 
-	if this.seen_graphic_control {
-		return "#bad graphic control"
-	}
 	c = args.src.read_u8?()
 	if c <> 4 {
 		return "#bad graphic control"
@@ -719,7 +714,6 @@ pri func decoder.decode_gc?(src base.io_reader) {
 	if c <> 0 {
 		return "#bad graphic control"
 	}
-	this.seen_graphic_control = true
 }
 
 // decode_id_partX reads an Image Descriptor. The Image Separator byte has

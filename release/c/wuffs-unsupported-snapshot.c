@@ -3425,7 +3425,6 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
-    bool f_seen_graphic_control;
     bool f_gc_has_transparent_index;
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
@@ -9376,7 +9375,6 @@ exit:
 static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
   self->private_impl.f_call_sequence = 5;
-  self->private_impl.f_seen_graphic_control = false;
   self->private_impl.f_gc_has_transparent_index = false;
   self->private_impl.f_gc_transparent_index = 0;
   self->private_impl.f_gc_disposal = 0;
@@ -10256,10 +10254,6 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    if (self->private_impl.f_seen_graphic_control) {
-      status = wuffs_gif__error__bad_graphic_control;
-      goto exit;
-    }
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
@@ -10344,7 +10338,6 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
       status = wuffs_gif__error__bad_graphic_control;
       goto exit;
     }
-    self->private_impl.f_seen_graphic_control = true;
 
     goto ok;
   ok:
