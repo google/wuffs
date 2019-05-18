@@ -312,7 +312,7 @@ var Funcs = []string{
 	// ---- image_config
 
 	"image_config.set!(pixfmt u32, pixsub u32, width u32, height u32, " +
-		"first_frame_io_position u64, first_frame_is_opaque bool)",
+		"first_frame_io_position u64, first_frame_is_opaque bool, background_color u32)",
 
 	// ---- pixel_buffer
 

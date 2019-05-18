@@ -100,6 +100,7 @@ wuffs_base__slice_u8 workbuf = {0};
 wuffs_base__slice_u8 printbuf = {0};
 
 bool first_play = true;
+wuffs_base__color_u32_argb_premul background_color = 0;
 uint32_t num_loops_remaining = 0;
 wuffs_base__pixel_buffer pb = {0};
 
@@ -130,6 +131,7 @@ const char* read_stdin() {
 const char* reset_color = "\x1B[0m";
 
 bool color_flag = false;
+bool quirk_background_is_opaque_flag = false;
 const int stdout_fd = 1;
 
 static inline uint32_t load_u32le(uint8_t* p) {
@@ -146,7 +148,7 @@ void restore_background(wuffs_base__pixel_buffer* pb,
     wuffs_base__color_u32_argb_premul* d =
         curr_dst_buffer + (y * width) + bounds.min_incl_x;
     for (x = bounds.min_incl_x; x < bounds.max_excl_x; x++) {
-      *d++ = 0;
+      *d++ = background_color;
     }
   }
 }
@@ -296,6 +298,11 @@ const char* play() {
     return status;
   }
 
+  if (quirk_background_is_opaque_flag) {
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_background_is_opaque, true);
+  }
+
   wuffs_base__io_buffer src;
   src.data.ptr = src_buffer;
   src.data.len = src_len;
@@ -316,6 +323,7 @@ const char* play() {
     }
     uint32_t width = wuffs_base__pixel_config__width(&ic.pixcfg);
     uint32_t height = wuffs_base__pixel_config__height(&ic.pixcfg);
+    background_color = wuffs_base__image_config__background_color(&ic);
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
@@ -334,7 +342,14 @@ const char* play() {
       return status;
     }
     memset(pixbuf.ptr, 0, pixbuf.len);
-    memset(curr_dst_buffer, 0, dst_len);
+  }
+
+  {
+    size_t i;
+    size_t n = dst_len / sizeof(wuffs_base__color_u32_argb_premul);
+    for (i = 0; i < n; i++) {
+      curr_dst_buffer[i] = background_color;
+    }
   }
 
   while (1) {
@@ -422,6 +437,9 @@ int main(int argc, char** argv) {
   for (i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-color")) {
       color_flag = true;
+    }
+    if (!strcmp(argv[i], "-quirk_background_is_opaque")) {
+      quirk_background_is_opaque_flag = true;
     }
   }
 

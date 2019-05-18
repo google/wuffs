@@ -538,6 +538,7 @@ typedef struct {
   struct {
     uint64_t first_frame_io_position;
     bool first_frame_is_opaque;
+    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -546,11 +547,13 @@ typedef struct {
                   uint32_t width,
                   uint32_t height,
                   uint64_t first_frame_io_position,
-                  bool first_frame_is_opaque);
+                  bool first_frame_is_opaque,
+                  wuffs_base__color_u32_argb_premul background_color);
   inline void invalidate();
   inline bool is_valid() const;
   inline uint64_t first_frame_io_position() const;
   inline bool first_frame_is_opaque() const;
+  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__image_config;
@@ -566,13 +569,15 @@ wuffs_base__null_image_config() {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__image_config__set(wuffs_base__image_config* c,
-                              wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config__set(
+    wuffs_base__image_config* c,
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
   }
@@ -583,6 +588,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     c->pixcfg.private_impl.height = height;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
+    c->private_impl.background_color = background_color;
     return;
   }
 
@@ -592,6 +598,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   c->pixcfg.private_impl.height = 0;
   c->private_impl.first_frame_io_position = 0;
   c->private_impl.first_frame_is_opaque = 0;
+  c->private_impl.background_color = 0;
 }
 
 static inline void  //
@@ -603,6 +610,7 @@ wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
     c->pixcfg.private_impl.height = 0;
     c->private_impl.first_frame_io_position = 0;
     c->private_impl.first_frame_is_opaque = 0;
+    c->private_impl.background_color = 0;
   }
 }
 
@@ -623,17 +631,25 @@ wuffs_base__image_config__first_frame_is_opaque(
   return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config__background_color(const wuffs_base__image_config* c) {
+  return c ? c->private_impl.background_color : 0;
+}
+
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config::set(
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
-                                first_frame_io_position, first_frame_is_opaque);
+                                first_frame_io_position, first_frame_is_opaque,
+                                background_color);
 }
 
 inline void  //
@@ -654,6 +670,11 @@ wuffs_base__image_config::first_frame_io_position() const {
 inline bool  //
 wuffs_base__image_config::first_frame_is_opaque() const {
   return wuffs_base__image_config__first_frame_is_opaque(this);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config::background_color() const {
+  return wuffs_base__image_config__background_color(this);
 }
 
 #endif  // __cplusplus

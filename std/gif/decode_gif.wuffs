@@ -52,10 +52,18 @@ pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF8586 << 10) | 1
 // https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
 pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
 
-// When this quirk is enabled, if the initial frame bounds is smaller than the
-// image bounds, those pixels outside the initial frame bounds are assumed to
-// start as opaque black instead of transparent black.
-pub const quirk_initial_background_is_opaque base.u32 = (0xF8586 << 10) | 3
+// When this quirk is enabled, the background color is opaque instead of always
+// being transparent black. If the background color index in the GIF header is
+// non-zero but less than the global palette's size, the background color is
+// that global palette's entry. Otherwise, it is opaque black.
+//
+// Specifically, if the initial frame bounds is smaller than the image bounds,
+// those pixels outside the initial frame bounds are assumed to start as that
+// opaque background color. The same color should be used when processing
+// WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND. In both cases, the
+// caller of Wuffs, not Wuffs itself, is responsible for filling the pixel
+// buffer with that color.
+pub const quirk_background_is_opaque base.u32 = (0xF8586 << 10) | 3
 
 // When this quirk is enabled, a frame with no explicit palette is rejected,
 // instead of implicitly having a palette with every entry being opaque black.
@@ -127,10 +135,10 @@ pub struct decoder?(
 	metadata_chunk_length_value base.u64,
 	metadata_io_position        base.u64,
 
-	quirk_enabled_ignore_too_much_pixel_data   base.bool,
-	quirk_enabled_image_bounds_are_strict      base.bool,
-	quirk_enabled_initial_background_is_opaque base.bool,
-	quirk_enabled_reject_empty_palette         base.bool,
+	quirk_enabled_ignore_too_much_pixel_data base.bool,
+	quirk_enabled_image_bounds_are_strict    base.bool,
+	quirk_enabled_background_is_opaque       base.bool,
+	quirk_enabled_reject_empty_palette       base.bool,
 
 	end_of_data                        base.bool,
 	restarted                          base.bool,
@@ -145,6 +153,8 @@ pub struct decoder?(
 	// animation loops is 1.
 	seen_num_loops base.bool,
 	num_loops      base.u32,
+
+	background_color_u32_argb_premul base.u32,
 
 	gc_has_transparent_index base.bool,
 	gc_transparent_index     base.u8,
@@ -188,8 +198,8 @@ pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
 		this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
 	} else if args.quirk == quirk_image_bounds_are_strict {
 		this.quirk_enabled_image_bounds_are_strict = args.enabled
-	} else if args.quirk == quirk_initial_background_is_opaque {
-		this.quirk_enabled_initial_background_is_opaque = args.enabled
+	} else if args.quirk == quirk_background_is_opaque {
+		this.quirk_enabled_background_is_opaque = args.enabled
 	} else if args.quirk == quirk_reject_empty_palette {
 		this.quirk_enabled_reject_empty_palette = args.enabled
 	}
@@ -210,7 +220,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
 	ffio = not this.gc_has_transparent_index
-	if not this.quirk_enabled_initial_background_is_opaque {
+	if not this.quirk_enabled_background_is_opaque {
 		ffio = ffio and
 			(this.frame_rect_x0 == 0) and
 			(this.frame_rect_y0 == 0) and
@@ -227,7 +237,8 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 			width:this.width,
 			height:this.height,
 			first_frame_io_position:this.frame_config_io_position,
-			first_frame_is_opaque:ffio)
+			first_frame_is_opaque:ffio,
+			background_color:this.background_color_u32_argb_premul)
 	}
 
 	this.call_sequence = 3
@@ -469,16 +480,19 @@ pri func decoder.decode_header?(src base.io_reader) {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd?(src base.io_reader) {
-	var flags               base.u8
-	var num_palette_entries base.u32[..256]
-	var i                   base.u32
-	var argb                base.u32
+	var flags                  base.u8
+	var background_color_index base.u8
+	var num_palette_entries    base.u32[..256]
+	var i                      base.u32
+	var j                      base.u32[..1020]
+	var argb                   base.u32
 
 	this.width = args.src.read_u16le_as_u32?()
 	this.height = args.src.read_u16le_as_u32?()
 	flags = args.src.read_u8?()
-	// Ignore the Background Color Index and Pixel Aspect Ratio bytes.
-	args.src.skip?(n:2)
+	background_color_index = args.src.read_u8?()
+	// Ignore the Pixel Aspect Ratio byte.
+	args.src.skip?(n:1)
 
 	// Read the optional Global Color Table.
 	i = 0
@@ -496,6 +510,21 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 			this.palettes[0][(4 * i) + 2] = ((argb >> 16) & 0xFF) as base.u8
 			this.palettes[0][(4 * i) + 3] = ((argb >> 24) & 0xFF) as base.u8
 			i += 1
+		}
+
+		if this.quirk_enabled_background_is_opaque {
+			if (background_color_index <> 0) and
+				((background_color_index as base.u32) < num_palette_entries) {
+
+				j = 4 * (background_color_index as base.u32)
+				this.background_color_u32_argb_premul =
+					((this.palettes[0][j + 0] as base.u32) << 0) |
+					((this.palettes[0][j + 1] as base.u32) << 8) |
+					((this.palettes[0][j + 2] as base.u32) << 16) |
+					((this.palettes[0][j + 3] as base.u32) << 24)
+			} else {
+				this.background_color_u32_argb_premul = 0xFF000000
+			}
 		}
 	}
 

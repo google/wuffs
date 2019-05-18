@@ -2068,6 +2068,7 @@ typedef struct {
   struct {
     uint64_t first_frame_io_position;
     bool first_frame_is_opaque;
+    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -2076,11 +2077,13 @@ typedef struct {
                   uint32_t width,
                   uint32_t height,
                   uint64_t first_frame_io_position,
-                  bool first_frame_is_opaque);
+                  bool first_frame_is_opaque,
+                  wuffs_base__color_u32_argb_premul background_color);
   inline void invalidate();
   inline bool is_valid() const;
   inline uint64_t first_frame_io_position() const;
   inline bool first_frame_is_opaque() const;
+  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__image_config;
@@ -2096,13 +2099,15 @@ wuffs_base__null_image_config() {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__image_config__set(wuffs_base__image_config* c,
-                              wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config__set(
+    wuffs_base__image_config* c,
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
   }
@@ -2113,6 +2118,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     c->pixcfg.private_impl.height = height;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
+    c->private_impl.background_color = background_color;
     return;
   }
 
@@ -2122,6 +2128,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   c->pixcfg.private_impl.height = 0;
   c->private_impl.first_frame_io_position = 0;
   c->private_impl.first_frame_is_opaque = 0;
+  c->private_impl.background_color = 0;
 }
 
 static inline void  //
@@ -2133,6 +2140,7 @@ wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
     c->pixcfg.private_impl.height = 0;
     c->private_impl.first_frame_io_position = 0;
     c->private_impl.first_frame_is_opaque = 0;
+    c->private_impl.background_color = 0;
   }
 }
 
@@ -2153,17 +2161,25 @@ wuffs_base__image_config__first_frame_is_opaque(
   return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config__background_color(const wuffs_base__image_config* c) {
+  return c ? c->private_impl.background_color : 0;
+}
+
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config::set(
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
-                                first_frame_io_position, first_frame_is_opaque);
+                                first_frame_io_position, first_frame_is_opaque,
+                                background_color);
 }
 
 inline void  //
@@ -2184,6 +2200,11 @@ wuffs_base__image_config::first_frame_io_position() const {
 inline bool  //
 wuffs_base__image_config::first_frame_is_opaque() const {
   return wuffs_base__image_config__first_frame_is_opaque(this);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config::background_color() const {
+  return wuffs_base__image_config__background_color(this);
 }
 
 #endif  // __cplusplus
@@ -3290,10 +3311,10 @@ static const uint32_t                         //
     wuffs_gif__quirk_image_bounds_are_strict  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
-#define WUFFS_GIF__QUIRK_INITIAL_BACKGROUND_IS_OPAQUE 1041635331
+#define WUFFS_GIF__QUIRK_BACKGROUND_IS_OPAQUE 1041635331
 
-static const uint32_t                              //
-    wuffs_gif__quirk_initial_background_is_opaque  //
+static const uint32_t                      //
+    wuffs_gif__quirk_background_is_opaque  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
@@ -3416,7 +3437,7 @@ struct wuffs_gif__decoder__struct {
     uint64_t f_metadata_io_position;
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_initial_background_is_opaque;
+    bool f_quirk_enabled_background_is_opaque;
     bool f_quirk_enabled_reject_empty_palette;
     bool f_end_of_data;
     bool f_restarted;
@@ -3425,6 +3446,7 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
+    uint32_t f_background_color_u32_argb_premul;
     bool f_gc_has_transparent_index;
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
@@ -3475,6 +3497,7 @@ struct wuffs_gif__decoder__struct {
     } s_decode_header[1];
     struct {
       uint8_t v_flags;
+      uint8_t v_background_color_index;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint64_t scratch;
@@ -8713,7 +8736,7 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
   } else if (a_quirk == 1041635330) {
     self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
   } else if (a_quirk == 1041635331) {
-    self->private_impl.f_quirk_enabled_initial_background_is_opaque = a_enabled;
+    self->private_impl.f_quirk_enabled_background_is_opaque = a_enabled;
   } else if (a_quirk == 1041635332) {
     self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
   }
@@ -8771,7 +8794,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       goto suspend;
     }
     v_ffio = !self->private_impl.f_gc_has_transparent_index;
-    if (!self->private_impl.f_quirk_enabled_initial_background_is_opaque) {
+    if (!self->private_impl.f_quirk_enabled_background_is_opaque) {
       v_ffio =
           (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
            (self->private_impl.f_frame_rect_y0 == 0) &&
@@ -8782,7 +8805,8 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
           self->private_impl.f_height,
-          self->private_impl.f_frame_config_io_position, v_ffio);
+          self->private_impl.f_frame_config_io_position, v_ffio,
+          self->private_impl.f_background_color_u32_argb_premul);
     }
     self->private_impl.f_call_sequence = 3;
 
@@ -9586,8 +9610,10 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
+  uint8_t v_background_color_index = 0;
   uint32_t v_num_palette_entries = 0;
   uint32_t v_i = 0;
+  uint32_t v_j = 0;
   uint32_t v_argb = 0;
 
   uint8_t* iop_a_src = NULL;
@@ -9608,6 +9634,8 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   uint32_t coro_susp_point = self->private_impl.p_decode_lsd[0];
   if (coro_susp_point) {
     v_flags = self->private_data.s_decode_lsd[0].v_flags;
+    v_background_color_index =
+        self->private_data.s_decode_lsd[0].v_background_color_index;
     v_num_palette_entries =
         self->private_data.s_decode_lsd[0].v_num_palette_entries;
     v_i = self->private_data.s_decode_lsd[0].v_i;
@@ -9682,50 +9710,54 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_flags = t_2;
     }
-    self->private_data.s_decode_lsd[0].scratch = 2;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (self->private_data.s_decode_lsd[0].scratch >
-        ((uint64_t)(io1_a_src - iop_a_src))) {
-      self->private_data.s_decode_lsd[0].scratch -=
-          ((uint64_t)(io1_a_src - iop_a_src));
-      iop_a_src = io1_a_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+        status = wuffs_base__suspension__short_read;
+        goto suspend;
+      }
+      uint8_t t_3 = *iop_a_src++;
+      v_background_color_index = t_3;
+    }
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+    if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
       status = wuffs_base__suspension__short_read;
       goto suspend;
     }
-    iop_a_src += self->private_data.s_decode_lsd[0].scratch;
+    iop_a_src++;
     v_i = 0;
     self->private_impl.f_has_global_palette = ((v_flags & 128) != 0);
     if (self->private_impl.f_has_global_palette) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
       while (v_i < v_num_palette_entries) {
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-          uint32_t t_3;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          uint32_t t_4;
           if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 3)) {
-            t_3 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
+            t_4 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
             iop_a_src += 3;
           } else {
             self->private_data.s_decode_lsd[0].scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
                 status = wuffs_base__suspension__short_read;
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_lsd[0].scratch;
-              uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
               *scratch >>= 8;
               *scratch <<= 8;
-              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
-              if (num_bits_3 == 16) {
-                t_3 = ((uint32_t)(*scratch >> 40));
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
+              if (num_bits_4 == 16) {
+                t_4 = ((uint32_t)(*scratch >> 40));
                 break;
               }
-              num_bits_3 += 8;
-              *scratch |= ((uint64_t)(num_bits_3));
+              num_bits_4 += 8;
+              *scratch |= ((uint64_t)(num_bits_4));
             }
           }
-          v_argb = t_3;
+          v_argb = t_4;
         }
         v_argb |= 4278190080;
         self->private_data.f_palettes[0][((4 * v_i) + 0)] =
@@ -9737,6 +9769,23 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
         self->private_data.f_palettes[0][((4 * v_i) + 3)] =
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
+      }
+      if (self->private_impl.f_quirk_enabled_background_is_opaque) {
+        if ((v_background_color_index != 0) &&
+            (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
+          v_j = (4 * ((uint32_t)(v_background_color_index)));
+          self->private_impl.f_background_color_u32_argb_premul =
+              ((((uint32_t)(self->private_data.f_palettes[0][(v_j + 0)]))
+                << 0) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 1)]))
+                << 8) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 2)]))
+                << 16) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 3)]))
+                << 24));
+        } else {
+          self->private_impl.f_background_color_u32_argb_premul = 4278190080;
+        }
       }
     }
     while (v_i < 256) {
@@ -9758,6 +9807,8 @@ suspend:
   self->private_impl.p_decode_lsd[0] =
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_lsd[0].v_flags = v_flags;
+  self->private_data.s_decode_lsd[0].v_background_color_index =
+      v_background_color_index;
   self->private_data.s_decode_lsd[0].v_num_palette_entries =
       v_num_palette_entries;
   self->private_data.s_decode_lsd[0].v_i = v_i;

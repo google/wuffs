@@ -499,8 +499,9 @@ func init() {
 }
 
 var gifGlobals struct {
-	imageWidth  uint32
-	imageHeight uint32
+	imageWidth                uint32
+	imageHeight               uint32
+	imageBackgroundColorIndex uint32
 
 	frameLeft   uint32
 	frameTop    uint32
@@ -646,7 +647,7 @@ func stateGifImage(line string) (stateFunc, error) {
 		} else {
 			out = append(out, 0x80|uint8(n-1))
 		}
-		out = append(out, 0x00) // TODO: background index.
+		out = append(out, uint8(g.imageBackgroundColorIndex))
 		out = append(out, 0x00)
 		for _, x := range g.globalPalette {
 			out = append(out, x[0], x[1], x[2])
@@ -655,10 +656,18 @@ func stateGifImage(line string) (stateFunc, error) {
 	}
 
 	const (
+		cmdBCI = "backgroundColorIndex "
 		cmdIWH = "imageWidthHeight "
 		cmdP   = "palette {"
 	)
 	switch {
+	case strings.HasPrefix(line, cmdBCI):
+		s := line[len(cmdBCI):]
+		if i, _, ok := parseNum(s); ok {
+			g.imageBackgroundColorIndex = i
+		}
+		return stateGifImage, nil
+
 	case strings.HasPrefix(line, cmdIWH):
 		s := line[len(cmdIWH):]
 		if w, s, ok := parseNum(s); ok {

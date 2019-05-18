@@ -797,6 +797,48 @@ const char* test_wuffs_gif_decode_empty_palette() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_background_color() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-background-color.gif");
+  if (status) {
+    return status;
+  }
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
+
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_background_is_opaque, q);
+
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    if (status) {
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
+    }
+
+    wuffs_base__color_u32_argb_premul got =
+        wuffs_base__image_config__background_color(&ic);
+    wuffs_base__color_u32_argb_premul want = q ? 0xFF80C3C3 : 0x00000000;
+
+    if (got != want) {
+      RETURN_FAIL("q=%d: got 0x%08" PRIX32 ", want 0x%08" PRIX32, q, got, want);
+    }
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_first_frame_is_opaque() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -819,7 +861,7 @@ const char* test_wuffs_gif_decode_first_frame_is_opaque() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_initial_background_is_opaque, q);
+        &dec, wuffs_gif__quirk_background_is_opaque, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -2048,6 +2090,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_big,                      //
     test_wuffs_gif_decode_animated_medium,                   //
     test_wuffs_gif_decode_animated_small,                    //
+    test_wuffs_gif_decode_background_color,                  //
     test_wuffs_gif_decode_bgra_nonpremul,                    //
     test_wuffs_gif_decode_empty_palette,                     //
     test_wuffs_gif_decode_first_frame_is_opaque,             //
