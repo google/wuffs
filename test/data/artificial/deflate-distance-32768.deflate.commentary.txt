@@ -18,7 +18,7 @@ commentary:
     000019  0x0013  .       0xE9    0b_...._...1
     000019  0x0013  .       0xE9    0b_..10_100.  dcode:    5  base:          7
     000019  0x0013  .       0xE9    0b_.1.._....  extra:    1  distance:      8
-	etc
+    etc
     000236  0x00EC  .       0xE9    0b_1..._....  lcode:  284  base:        227
     000237  0x00ED  .       0x91    0b_.001_0001
     000237  0x00ED  .       0x91    0b_1..._....  extra:   17  length:      244

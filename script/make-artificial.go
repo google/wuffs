@@ -232,6 +232,7 @@ var deflateGlobals struct {
 func stateDeflate(line string) (stateFunc, error) {
 	g := &deflateGlobals
 	const (
+		cmdB   = "bytes "
 		cmdBNC = "blockNoCompression "
 		cmdBFH = "blockFixedHuffman "
 	)
@@ -240,6 +241,18 @@ func stateDeflate(line string) (stateFunc, error) {
 
 	retState := stateFunc(nil)
 	switch {
+	case strings.HasPrefix(line, cmdB):
+		s := line[len(cmdB):]
+		for s != "" {
+			x, ok := uint32(0), false
+			x, s, ok = parseHex(s)
+			if !ok {
+				return nil, fmt.Errorf("bad stateDeflate command: %q", line)
+			}
+			out = append(out, uint8(x))
+		}
+		return stateDeflate, nil
+
 	case strings.HasPrefix(line, cmdBNC):
 		s = line[len(cmdBNC):]
 		retState = stateDeflateNoCompression

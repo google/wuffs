@@ -15,8 +15,10 @@
 package flatecut
 
 import (
+	"bytes"
 	"compress/flate"
 	"io"
+	"io/ioutil"
 	"testing"
 
 	"github.com/google/wuffs/internal/testcut"
@@ -108,4 +110,40 @@ func TestHuffmanDecode(t *testing.T) {
 	if got, want := string(decoded), src; got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
+}
+
+func TestDegenerateHuffmanUnused(t *testing.T) {
+	decode := func(src []byte) string {
+		dst, err := ioutil.ReadAll(
+			flate.NewReader(bytes.NewReader(src)))
+		if err != nil {
+			return err.Error()
+		}
+		return string(dst)
+	}
+
+	full, err := ioutil.ReadFile("../../test/data/artificial/deflate-degenerate-huffman-unused.deflate")
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if len(full) != 15 {
+		t.Fatalf("len(full): got %d, want %d", len(full), 15)
+	}
+
+	if got, want := decode(full), "foo"; got != want {
+		t.Fatalf("before Cut: got %q, want %q", got, want)
+	}
+
+	if encLen, decLen, err := Cut(nil, full, 14); err != nil {
+		t.Fatalf("Cut: %v", err)
+	} else if encLen != 14 {
+		t.Fatalf("encLen: got %d, want %d", encLen, 14)
+	} else if decLen != 2 {
+		t.Fatalf("decLen: got %d, want %d", decLen, 2)
+	}
+
+	if got, want := decode(full[:14]), "fo"; got != want {
+		t.Fatalf("after Cut: got %q, want %q", got, want)
+	}
+
 }

@@ -253,7 +253,7 @@ func (h *huffman) construct(lengths []uint32) (endCodeBits uint32, endCodeNBits 
 	for _, x := range lengths {
 		h.counts[x]++
 	}
-	if h.counts[0] == uint32(len(lengths)) {
+	if h.counts[0] >= uint32(len(lengths)) {
 		return 0, 0, errInvalidBadHuffmanTree
 	}
 
@@ -284,7 +284,12 @@ func (h *huffman) construct(lengths []uint32) (endCodeBits uint32, endCodeNBits 
 		}
 	}
 	if remaining != 0 {
-		return 0, 0, errInvalidBadHuffmanTree
+		if ((h.counts[0] + 1) == uint32(len(lengths))) && (h.counts[1] == 1) {
+			// No-op. We allow a degenerate Huffman tree with only one code (of
+			// length 1 bit).
+		} else {
+			return 0, 0, errInvalidBadHuffmanTree
+		}
 	}
 
 	offsets := [maxCodeBits + 1]uint32{}
