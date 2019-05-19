@@ -26,7 +26,7 @@
 package rac
 
 const (
-	// MaxCSize is the maximum RAC file size (in both CSpace and DSpace).
+	// MaxSize is the maximum RAC file size (in both CSpace and DSpace).
 	MaxSize = (1 << 48) - 1
 
 	// invalidCOffsetCLength is ((1 << 64) - 1).
