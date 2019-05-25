@@ -17,16 +17,14 @@ image {
 
 loopCount 1
 
-# TODO: graphicControl animationDisposalRestoreBackground 100ms
-bytes 0x21 0xF9 0x04 0x08 0x0A 0x00 0x00 0x00
+graphicControl animationDisposalRestoreBackground 100ms
 
 frame {
 	frameLeftTopWidthHeight 0 0 2 1
 }
 lzw 2 0x00 0x01
 
-# TODO: graphicControl animationDisposalRestoreBackground 200ms
-bytes 0x21 0xF9 0x04 0x08 0x14 0x00 0x00 0x00
+graphicControl animationDisposalRestoreBackground 200ms
 
 frame {
 	frameLeftTopWidthHeight 2 0 1 1

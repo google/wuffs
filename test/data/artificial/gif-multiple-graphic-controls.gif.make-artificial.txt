@@ -20,8 +20,8 @@ image {
 	}
 }
 
-graphicControlDuration 200ms
-graphicControlDuration 300ms
+graphicControl animationDisposalNone 200ms
+graphicControl animationDisposalNone 300ms
 
 frame {
 	frameLeftTopWidthHeight 0 0 1 1

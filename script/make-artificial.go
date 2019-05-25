@@ -527,10 +527,10 @@ var gifGlobals struct {
 
 func stateGif(line string) (stateFunc, error) {
 	const (
-		cmdB   = "bytes "
-		cmdGCD = "graphicControlDuration "
-		cmdL   = "lzw "
-		cmdLC  = "loopCount "
+		cmdB  = "bytes "
+		cmdGC = "graphicControl "
+		cmdL  = "lzw "
+		cmdLC = "loopCount "
 	)
 outer:
 	switch {
@@ -562,8 +562,26 @@ outer:
 		}
 		return stateGif, nil
 
-	case strings.HasPrefix(line, cmdGCD):
-		s := line[len(cmdGCD):]
+	case strings.HasPrefix(line, cmdGC):
+		s := line[len(cmdGC):]
+
+		flags := uint8(0)
+		if i := strings.IndexByte(s, ' '); i < 0 {
+			break
+		} else {
+			switch s[:i] {
+			case "animationDisposalNone":
+				flags |= 0x00
+			case "animationDisposalRestoreBackground":
+				flags |= 0x08
+			case "animationDisposalRestorePrevious":
+				flags |= 0x0C
+			default:
+				break outer
+			}
+			s = s[i+1:]
+		}
+
 		if !strings.HasSuffix(s, "ms") {
 			break
 		}
@@ -573,11 +591,16 @@ outer:
 			break
 		}
 		duration /= 10 // GIF's unit of time is 10ms.
+
+		transparentIndex := uint8(0)
+
 		out = append(out,
-			0x21, 0xF9, 0x04, 0x00,
+			0x21, 0xF9, 0x04,
+			flags,
 			uint8(duration>>0),
 			uint8(duration>>8),
-			0x00, 0x00,
+			transparentIndex,
+			0x00,
 		)
 		return stateGif, nil
 
