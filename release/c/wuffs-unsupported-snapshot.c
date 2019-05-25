@@ -9228,6 +9228,7 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
+  uint8_t v_lw = 0;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9273,12 +9274,19 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
       }
       iop_a_src += self->private_data.s_skip_frame[0].scratch;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
-      status = wuffs_base__suspension__short_read;
-      goto suspend;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+        status = wuffs_base__suspension__short_read;
+        goto suspend;
+      }
+      uint8_t t_1 = *iop_a_src++;
+      v_lw = t_1;
     }
-    iop_a_src++;
+    if ((v_lw < 1) || (8 < v_lw)) {
+      status = wuffs_gif__error__bad_literal_width;
+      goto exit;
+    }
     if (a_src.private_impl.buf) {
       a_src.private_impl.buf->meta.ri =
           ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));

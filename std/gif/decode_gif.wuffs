@@ -392,14 +392,20 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 
 pri func decoder.skip_frame?(src base.io_reader) {
 	var flags base.u8
+	var lw    base.u8
 
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
 	if (flags & 0x80) <> 0 {
 		args.src.skip?(n:(3 as base.u32) << (1 + (flags & 0x07)))
 	}
-	// Skip the literal width.
-	args.src.skip?(n:1)
+
+	// Process the LZW literal width.
+	lw = args.src.read_u8?()
+	if (lw < 1) or (8 < lw) {
+		return "#bad literal width"
+	}
+
 	// Skip the blocks of LZW-compressed data.
 	this.skip_blocks?(src:args.src)
 
