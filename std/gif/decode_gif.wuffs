@@ -38,6 +38,22 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
 // The base38 encoding of "gif " is 0xF8586.
 
+// When this quirk is enabled, when skipping over frames, the number of frames
+// visited isn't incremented when the last byte of the N'th frame is seen.
+// Instead, it is incremented when the first byte of the N+1'th frame's header
+// is seen. There may be zero or more GIF extensions between the N'th frame's
+// payload and the N+1'th frame's header.
+//
+// For a well-formed GIF, this won't have much effect. For a malformed GIF,
+// this can affect the number of valid frames, if there is an error detected in
+// the extensions between one frame's payload and the next frame's header.
+//
+// Some other GIF decoders don't register the N'th frame as complete until they
+// see the N+1'th frame's header (or the end-of-animation terminator), so that
+// e.g. the API for visiting the N'th frame can also return whether it's the
+// final frame. Enabling this quirk allows for matching that behavior.
+pub const quirk_delay_num_decoded_frames base.u32 = (0xF8586 << 10) | 0
+
 // When this quirk is enabled, silently ignore e.g. a frame that reports a
 // width and height of 6 pixels each, followed by 50 pixel values. In that
 // case, we process the first 36 pixel values and discard the excess 14.
@@ -135,11 +151,13 @@ pub struct decoder?(
 	metadata_chunk_length_value base.u64,
 	metadata_io_position        base.u64,
 
+	quirk_enabled_delay_num_decoded_frames   base.bool,
 	quirk_enabled_ignore_too_much_pixel_data base.bool,
 	quirk_enabled_image_bounds_are_strict    base.bool,
 	quirk_enabled_background_is_opaque       base.bool,
 	quirk_enabled_reject_empty_palette       base.bool,
 
+	delayed_num_decoded_frames         base.bool,
 	end_of_data                        base.bool,
 	restarted                          base.bool,
 	previous_lzw_decode_ended_abruptly base.bool,
@@ -194,7 +212,9 @@ pub struct decoder?(
 )
 
 pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
-	if args.quirk == quirk_ignore_too_much_pixel_data {
+	if args.quirk == quirk_delay_num_decoded_frames {
+		this.quirk_enabled_delay_num_decoded_frames = args.enabled
+	} else if args.quirk == quirk_ignore_too_much_pixel_data {
 		this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
 	} else if args.quirk == quirk_image_bounds_are_strict {
 		this.quirk_enabled_image_bounds_are_strict = args.enabled
@@ -336,6 +356,7 @@ pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.statu
 	if this.call_sequence == 0 {
 		return base."#bad call sequence"
 	}
+	this.delayed_num_decoded_frames = false
 	this.end_of_data = false
 	this.restarted = true
 	this.frame_config_io_position = args.io_position
@@ -409,7 +430,11 @@ pri func decoder.skip_frame?(src base.io_reader) {
 	// Skip the blocks of LZW-compressed data.
 	this.skip_blocks?(src:args.src)
 
-	this.num_decoded_frames_value ~sat+= 1
+	if this.quirk_enabled_delay_num_decoded_frames {
+		this.delayed_num_decoded_frames = true
+	} else {
+		this.num_decoded_frames_value ~sat+= 1
+	}
 	this.reset_gc!()
 }
 
@@ -454,9 +479,17 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
 			this.decode_extension?(src:args.src)
 		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
+			if this.delayed_num_decoded_frames {
+				this.delayed_num_decoded_frames = false
+				this.num_decoded_frames_value ~sat+= 1
+			}
 			this.decode_id_part0?(src:args.src)
 			break
 		} else if block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
+			if this.delayed_num_decoded_frames {
+				this.delayed_num_decoded_frames = false
+				this.num_decoded_frames_value ~sat+= 1
+			}
 			this.end_of_data = true
 			break
 		} else {

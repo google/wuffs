@@ -724,6 +724,60 @@ const char* test_wuffs_gif_decode_animated_small() {
       want_frame_config_bounds);
 }
 
+const char* test_wuffs_gif_decode_delay_num_frames_decoded() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* status = read_file(&src, "test/data/animated-red-blue.gif");
+  if (status) {
+    return status;
+  }
+  if (src.meta.wi < 1) {
+    return "src file is too short";
+  }
+
+  // A GIF image should end with the 0x3B Trailer byte.
+  if (src.data.ptr[src.meta.wi - 1] != 0x3B) {
+    RETURN_FAIL("final byte: got 0x%02X, want 0x%02X",
+                src.data.ptr[src.meta.wi - 1], 0x3B);
+  }
+  // Replace that final byte with something invalid: neither 0x21 (Extension
+  // Introducer), 0x2C (Image Separator) or 0x3B (Trailer).
+  src.data.ptr[src.meta.wi - 1] = 0x99;
+
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
+
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_delay_num_decoded_frames, q);
+
+    while (true) {
+      status = wuffs_gif__decoder__decode_frame_config(
+          &dec, NULL, wuffs_base__io_buffer__reader(&src));
+      if (status) {
+        break;
+      }
+    }
+
+    uint64_t got = wuffs_gif__decoder__num_decoded_frames(&dec);
+    uint64_t want = q ? 3 : 4;
+    if (got != want) {
+      RETURN_FAIL("q=%d: num_decoded_frames: got %" PRIu64 ", want %" PRIu64, q,
+                  got, want);
+    }
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_empty_palette() {
   CHECK_FOCUS(__func__);
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
@@ -2141,6 +2195,7 @@ proc tests[] = {
     test_wuffs_gif_decode_animated_small,                    //
     test_wuffs_gif_decode_background_color,                  //
     test_wuffs_gif_decode_bgra_nonpremul,                    //
+    test_wuffs_gif_decode_delay_num_frames_decoded,          //
     test_wuffs_gif_decode_empty_palette,                     //
     test_wuffs_gif_decode_first_frame_is_opaque,             //
     test_wuffs_gif_decode_frame_out_of_bounds,               //
