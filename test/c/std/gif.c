@@ -1031,6 +1031,55 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_zero_width_frame() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-zero-width-frame.gif");
+  if (status) {
+    return status;
+  }
+  int q;
+  for (q = 0; q < 2; q++) {
+    src.meta.ri = 0;
+
+    wuffs_gif__decoder dec;
+    status = wuffs_gif__decoder__initialize(
+        &dec, sizeof dec, WUFFS_VERSION,
+        WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+    if (status) {
+      RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
+    }
+    wuffs_gif__decoder__set_quirk_enabled(
+        &dec, wuffs_gif__quirk_ignore_too_much_pixel_data, q);
+
+    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    status = wuffs_gif__decoder__decode_image_config(
+        &dec, &ic, wuffs_base__io_buffer__reader(&src));
+    if (status) {
+      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
+    }
+
+    wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                      global_pixel_slice);
+    if (status) {
+      RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
+    }
+
+    const char* got = wuffs_gif__decoder__decode_frame(
+        &dec, &pb, wuffs_base__io_buffer__reader(&src), global_work_slice,
+        NULL);
+    const char* want = q ? NULL : wuffs_base__error__too_much_data;
+    if (got != want) {
+      RETURN_FAIL("q=%d: decode_frame: got \"%s\", want \"%s\"", q, got, want);
+    }
+  }
+  return NULL;
+}
+
 const char* test_wuffs_gif_decode_bgra_nonpremul() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
@@ -2108,6 +2157,7 @@ proc tests[] = {
     test_wuffs_gif_decode_pixel_data_not_enough,             //
     test_wuffs_gif_decode_pixel_data_too_much_sans_quirk,    //
     test_wuffs_gif_decode_pixel_data_too_much_with_quirk,    //
+    test_wuffs_gif_decode_zero_width_frame,                  //
     test_wuffs_gif_frame_dirty_rect,                         //
     test_wuffs_gif_num_decoded_frame_configs,                //
     test_wuffs_gif_num_decoded_frames,                       //

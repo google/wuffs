@@ -11045,8 +11045,10 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
-    if ((self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) &&
-        !self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
+    if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
+      if (self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
+        return NULL;
+      }
       return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
