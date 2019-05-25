@@ -34,6 +34,7 @@ var (
 
 	errInternalInconsistentDecodedLen = errors.New("flatecut: internal: inconsistent decodedLen")
 	errInternalNoProgress             = errors.New("flatecut: internal: no progress")
+	errInternalReplaceWithSingleBlock = errors.New("flatecut: internal: replace with single block")
 	errInternalSomeProgress           = errors.New("flatecut: internal: some progress")
 
 	errInvalidBadBlockLength = errors.New("flatecut: invalid input: bad block length")
@@ -324,15 +325,47 @@ func (h *huffman) constructLookUpTable() {
 	}
 }
 
-// cutEmpty sets encoding[:2] to contain valid DEFLATE-encoded data. Decoding
-// that data produces zero bytes.
-func cutEmpty(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
+// cutSingleBlock is an implementation of Cut whose output consists of a single
+// DEFLATE block.
+//
+// If maxEncodedLen is sufficiently large, this will be a Stored block (i.e. a
+// header followed by literal bytes). Otherwise, it will set encoding[:2] so
+// that decoding produces zero bytes.
+//
+// A precondition is that maxEncodedLen >= SmallestValidMaxEncodedLen.
+func cutSingleBlock(encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
 	if maxEncodedLen < SmallestValidMaxEncodedLen {
 		panic("unreachable")
 	}
+
+	// Try re-encoding as a single Stored block: up to 0xFFFF literal bytes,
+	// with a 5 byte prefix.
+	if maxEncodedLen > 5 {
+		n := maxEncodedLen - 5
+		if n > 0xFFFF {
+			n = 0xFFFF
+		}
+
+		buf := make([]byte, n)
+		n, err := io.ReadFull(flate.NewReader(bytes.NewReader(encoded)), buf)
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+			return 0, 0, err
+		}
+
+		if n > 0 {
+			encoded[0] = 0x01 // finalBlock = true, blockType = 0 (Stored).
+			encoded[1] = uint8(n >> 0)
+			encoded[2] = uint8(n >> 8)
+			encoded[3] = ^encoded[1]
+			encoded[4] = ^encoded[2]
+			copy(encoded[5:], buf[:n])
+			return n + 5, n, nil
+		}
+	}
+
 	// Set encoded[:2] to hold:
 	//  - 1 bit   ...._...._...._...1  finalBlock   = true.
-	//  - 2 bits  ...._...._...._.01.  blockType    = 1 (static Huffman).
+	//  - 2 bits  ...._...._...._.01.  blockType    = 1 (Static Huffman).
 	//  - 7 bits  ...._..00_0000_0...  litLenSymbol = 256 (end-of-block).
 	//  - 6 bits  0000_00.._...._....  padding.
 	encoded[0] = 0x03
@@ -438,9 +471,9 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 		case 0:
 			err = c.doStored()
 		case 1:
-			err = c.doStaticHuffman()
+			err = c.doStaticHuffman(prevFinalBlockIndex < 0)
 		case 2:
-			err = c.doDynamicHuffman()
+			err = c.doDynamicHuffman(prevFinalBlockIndex < 0)
 		case 3:
 			return 0, 0, errInvalidBadBlockType
 		}
@@ -460,7 +493,7 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 
 		case errInternalNoProgress:
 			if prevFinalBlockIndex < 0 {
-				return cutEmpty(c.bits.bytes, c.maxEncodedLen)
+				return cutSingleBlock(c.bits.bytes, c.maxEncodedLen)
 			}
 
 			// Un-read to just before the finalBlock bit.
@@ -481,6 +514,9 @@ func (c *cutter) cut() (encodedLen int, decodedLen int, retErr error) {
 			n := 7 - finalBlockNBits
 			mask := uint32(1) << n
 			c.bits.bytes[finalBlockIndex-1] |= uint8(mask)
+
+		case errInternalReplaceWithSingleBlock:
+			return cutSingleBlock(c.bits.bytes, c.maxEncodedLen)
 
 		default:
 			return 0, 0, err
@@ -543,7 +579,7 @@ func (c *cutter) doStored() error {
 	return errInternalSomeProgress
 }
 
-func (c *cutter) doStaticHuffman() error {
+func (c *cutter) doStaticHuffman(isFirstBlock bool) error {
 	const (
 		numLCodes = 288
 		numDCodes = 32
@@ -568,10 +604,10 @@ func (c *cutter) doStaticHuffman() error {
 		lengths[i] = 5
 	}
 
-	return c.doHuffman(lengths[:numLCodes], lengths[numLCodes:])
+	return c.doHuffman(isFirstBlock, lengths[:numLCodes], lengths[numLCodes:])
 }
 
-func (c *cutter) doDynamicHuffman() error {
+func (c *cutter) doDynamicHuffman(isFirstBlock bool) error {
 	numLCodes := 257 + c.bits.take(5)
 	if numLCodes < 0 {
 		return errInvalidNotEnoughData
@@ -644,10 +680,10 @@ func (c *cutter) doDynamicHuffman() error {
 		}
 	}
 
-	return c.doHuffman(lengths[:numLCodes], lengths[numLCodes:])
+	return c.doHuffman(isFirstBlock, lengths[:numLCodes], lengths[numLCodes:])
 }
 
-func (c *cutter) doHuffman(lLengths []uint32, dLengths []uint32) error {
+func (c *cutter) doHuffman(isFirstBlock bool, lLengths []uint32, dLengths []uint32) error {
 	err := error(nil)
 	if c.endCodeBits, c.endCodeNBits, err = c.lHuff.construct(lLengths); err != nil {
 		return err
@@ -730,6 +766,19 @@ func (c *cutter) doHuffman(lLengths []uint32, dLengths []uint32) error {
 	if checkpointIndex < 0 {
 		return errInternalNoProgress
 	}
+
+	// If we're the first block in the DEFLATE stream, check if we would be
+	// better off replacing the Huffman block with a Stored block.
+	if isFirstBlock && (c.maxEncodedLen > 5) {
+		n := c.maxEncodedLen - 5
+		if n > 0xFFFF {
+			n = 0xFFFF
+		}
+		if c.decodedLen < int32(n) {
+			return errInternalReplaceWithSingleBlock
+		}
+	}
+
 	c.bits.index = checkpointIndex
 	c.bits.nBits = checkpointNBits
 	for c.bits.nBits >= 8 {
