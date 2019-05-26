@@ -74,20 +74,6 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 // final frame. Enabling this quirk allows for matching that behavior.
 pub const quirk_delay_num_decoded_frames base.u32 = (0xF8586 << 10) | 0
 
-// When this quirk is enabled, silently ignore e.g. a frame that reports a
-// width and height of 6 pixels each, followed by 50 pixel values. In that
-// case, we process the first 36 pixel values and discard the excess 14.
-pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF8586 << 10) | 1
-
-// When this quirk is enabled, if the initial frame bounds extends beyond the
-// image bounds, then the image bounds stay unchanged. By default (with this
-// quirk disabled), the image bounds are adjusted to always contain the first
-// frame's bounds (but not necessarily subsequent frame's bounds).
-//
-// For more discussion, see
-// https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
-pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
-
 // When this quirk is enabled, the background color is taken from the GIF
 // instead of always being transparent black. If the background color index in
 // the GIF header is non-zero but less than the global palette's size, the
@@ -102,15 +88,29 @@ pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
 // processing WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND. In both
 // cases, the caller of Wuffs, not Wuffs itself, is responsible for filling the
 // pixel buffer with that color.
-pub const quirk_honor_background_color base.u32 = (0xF8586 << 10) | 3
+pub const quirk_honor_background_color base.u32 = (0xF8586 << 10) | 1
+
+// When this quirk is enabled, silently ignore e.g. a frame that reports a
+// width and height of 6 pixels each, followed by 50 pixel values. In that
+// case, we process the first 36 pixel values and discard the excess 14.
+pub const quirk_ignore_too_much_pixel_data base.u32 = (0xF8586 << 10) | 2
+
+// When this quirk is enabled, if the initial frame bounds extends beyond the
+// image bounds, then the image bounds stay unchanged. By default (with this
+// quirk disabled), the image bounds are adjusted to always contain the first
+// frame's bounds (but not necessarily subsequent frame's bounds).
+//
+// For more discussion, see
+// https://github.com/google/wuffs/blob/master/test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt
+pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 3
 
 // When this quirk is enabled, a frame with zero width or height is rejected
 // during decode_frame (but accepted during decode_frame_config).
-pub const quirk_reject_empty_frame base.u32 = (0xF8586 << 10) | 5
+pub const quirk_reject_empty_frame base.u32 = (0xF8586 << 10) | 4
 
 // When this quirk is enabled, a frame with no explicit palette is rejected,
 // instead of implicitly having a palette with every entry being opaque black.
-pub const quirk_reject_empty_palette base.u32 = (0xF8586 << 10) | 4
+pub const quirk_reject_empty_palette base.u32 = (0xF8586 << 10) | 5
 
 // --------
 
@@ -179,9 +179,9 @@ pub struct decoder?(
 	metadata_io_position        base.u64,
 
 	quirk_enabled_delay_num_decoded_frames   base.bool,
+	quirk_enabled_honor_background_color     base.bool,
 	quirk_enabled_ignore_too_much_pixel_data base.bool,
 	quirk_enabled_image_bounds_are_strict    base.bool,
-	quirk_enabled_honor_background_color     base.bool,
 	quirk_enabled_reject_empty_frame         base.bool,
 	quirk_enabled_reject_empty_palette       base.bool,
 
@@ -243,12 +243,12 @@ pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
 	if this.call_sequence == 0 {
 		if args.quirk == quirk_delay_num_decoded_frames {
 			this.quirk_enabled_delay_num_decoded_frames = args.enabled
+		} else if args.quirk == quirk_honor_background_color {
+			this.quirk_enabled_honor_background_color = args.enabled
 		} else if args.quirk == quirk_ignore_too_much_pixel_data {
 			this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
 		} else if args.quirk == quirk_image_bounds_are_strict {
 			this.quirk_enabled_image_bounds_are_strict = args.enabled
-		} else if args.quirk == quirk_honor_background_color {
-			this.quirk_enabled_honor_background_color = args.enabled
 		} else if args.quirk == quirk_reject_empty_frame {
 			this.quirk_enabled_reject_empty_frame = args.enabled
 		} else if args.quirk == quirk_reject_empty_palette {

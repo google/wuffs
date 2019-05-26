@@ -3324,35 +3324,35 @@ static const uint32_t                          //
     wuffs_gif__quirk_delay_num_decoded_frames  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
 
-#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635329
-
-static const uint32_t                            //
-    wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
-
-#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635330
-
-static const uint32_t                         //
-    wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
-
-#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635331
+#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635329
 
 static const uint32_t                        //
     wuffs_gif__quirk_honor_background_color  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635330
+
+static const uint32_t                            //
+    wuffs_gif__quirk_ignore_too_much_pixel_data  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
+
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635331
+
+static const uint32_t                         //
+    wuffs_gif__quirk_image_bounds_are_strict  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635332
 
 static const uint32_t                    //
     wuffs_gif__quirk_reject_empty_frame  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635333
 
 static const uint32_t                      //
     wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
 
 // ---------------- Struct Declarations
 
@@ -3467,9 +3467,9 @@ struct wuffs_gif__decoder__struct {
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
     bool f_quirk_enabled_delay_num_decoded_frames;
+    bool f_quirk_enabled_honor_background_color;
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_honor_background_color;
     bool f_quirk_enabled_reject_empty_frame;
     bool f_quirk_enabled_reject_empty_palette;
     bool f_delayed_num_decoded_frames;
@@ -8770,14 +8770,14 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     if (a_quirk == 1041635328) {
       self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
     } else if (a_quirk == 1041635329) {
-      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
-    } else if (a_quirk == 1041635330) {
-      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
-    } else if (a_quirk == 1041635331) {
       self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
-    } else if (a_quirk == 1041635333) {
-      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635330) {
+      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+    } else if (a_quirk == 1041635331) {
+      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
     } else if (a_quirk == 1041635332) {
+      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635333) {
       self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
     }
   }
