@@ -307,7 +307,7 @@ var Funcs = []string{
 	"frame_config.io_position() u64",
 
 	"frame_config.update!(bounds rect_ie_u32, duration u64[..0x7FFFFFFFFFFFFFFF], " +
-		"index u64, io_position u64, blend u8, disposal u8)",
+		"index u64, io_position u64, blend u8, disposal u8, background_color u32)",
 
 	// ---- image_config
 

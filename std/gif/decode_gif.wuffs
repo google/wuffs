@@ -396,7 +396,8 @@ pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.statu
 }
 
 pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader) {
-	var blend base.u8
+	var blend            base.u8
+	var background_color base.u32
 
 	this.ignore_metadata = true
 	this.dirty_y.reset!()
@@ -419,8 +420,10 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	}
 
 	blend = 0
+	background_color = 0
 	if not this.gc_has_transparent_index {
 		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
+		background_color = this.background_color_u32_argb_premul
 	}
 
 	if args.dst <> nullptr {
@@ -433,7 +436,8 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 			index:this.num_decoded_frame_configs_value,
 			io_position:this.frame_config_io_position,
 			blend:blend,
-			disposal:this.gc_disposal)
+			disposal:this.gc_disposal,
+			background_color:background_color)
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1

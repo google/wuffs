@@ -729,6 +729,7 @@ typedef struct {
     uint64_t io_position;
     wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
+    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -737,7 +738,8 @@ typedef struct {
                      uint64_t index,
                      uint64_t io_position,
                      wuffs_base__animation_blend blend,
-                     wuffs_base__animation_disposal disposal);
+                     wuffs_base__animation_disposal disposal,
+                     wuffs_base__color_u32_argb_premul background_color);
   inline wuffs_base__rect_ie_u32 bounds() const;
   inline uint32_t width() const;
   inline uint32_t height() const;
@@ -746,6 +748,7 @@ typedef struct {
   inline uint64_t io_position() const;
   inline wuffs_base__animation_blend blend() const;
   inline wuffs_base__animation_disposal disposal() const;
+  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__frame_config;
@@ -763,13 +766,15 @@ wuffs_base__null_frame_config() {
 }
 
 static inline void  //
-wuffs_base__frame_config__update(wuffs_base__frame_config* c,
-                                 wuffs_base__rect_ie_u32 bounds,
-                                 wuffs_base__flicks duration,
-                                 uint64_t index,
-                                 uint64_t io_position,
-                                 wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal) {
+wuffs_base__frame_config__update(
+    wuffs_base__frame_config* c,
+    wuffs_base__rect_ie_u32 bounds,
+    wuffs_base__flicks duration,
+    uint64_t index,
+    uint64_t io_position,
+    wuffs_base__animation_blend blend,
+    wuffs_base__animation_disposal disposal,
+    wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
   }
@@ -780,6 +785,7 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
   c->private_impl.io_position = io_position;
   c->private_impl.blend = blend;
   c->private_impl.disposal = disposal;
+  c->private_impl.background_color = background_color;
 }
 
 static inline wuffs_base__rect_ie_u32  //
@@ -841,17 +847,24 @@ wuffs_base__frame_config__disposal(const wuffs_base__frame_config* c) {
   return c ? c->private_impl.disposal : 0;
 }
 
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__frame_config__background_color(const wuffs_base__frame_config* c) {
+  return c ? c->private_impl.background_color : 0;
+}
+
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
-                                 wuffs_base__flicks duration,
-                                 uint64_t index,
-                                 uint64_t io_position,
-                                 wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal) {
+wuffs_base__frame_config::update(
+    wuffs_base__rect_ie_u32 bounds,
+    wuffs_base__flicks duration,
+    uint64_t index,
+    uint64_t io_position,
+    wuffs_base__animation_blend blend,
+    wuffs_base__animation_disposal disposal,
+    wuffs_base__color_u32_argb_premul background_color) {
   wuffs_base__frame_config__update(this, bounds, duration, index, io_position,
-                                   blend, disposal);
+                                   blend, disposal, background_color);
 }
 
 inline wuffs_base__rect_ie_u32  //
@@ -892,6 +905,11 @@ wuffs_base__frame_config::blend() const {
 inline wuffs_base__animation_disposal  //
 wuffs_base__frame_config::disposal() const {
   return wuffs_base__frame_config__disposal(this);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__frame_config::background_color() const {
+  return wuffs_base__frame_config__background_color(this);
 }
 
 #endif  // __cplusplus
