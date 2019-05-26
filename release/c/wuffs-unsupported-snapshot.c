@@ -3336,10 +3336,10 @@ static const uint32_t                         //
     wuffs_gif__quirk_image_bounds_are_strict  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
-#define WUFFS_GIF__QUIRK_BACKGROUND_IS_OPAQUE 1041635331
+#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635331
 
-static const uint32_t                      //
-    wuffs_gif__quirk_background_is_opaque  //
+static const uint32_t                        //
+    wuffs_gif__quirk_honor_background_color  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
@@ -3469,7 +3469,7 @@ struct wuffs_gif__decoder__struct {
     bool f_quirk_enabled_delay_num_decoded_frames;
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_background_is_opaque;
+    bool f_quirk_enabled_honor_background_color;
     bool f_quirk_enabled_reject_empty_frame;
     bool f_quirk_enabled_reject_empty_palette;
     bool f_delayed_num_decoded_frames;
@@ -8774,7 +8774,7 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     } else if (a_quirk == 1041635330) {
       self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
     } else if (a_quirk == 1041635331) {
-      self->private_impl.f_quirk_enabled_background_is_opaque = a_enabled;
+      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
     } else if (a_quirk == 1041635333) {
       self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
     } else if (a_quirk == 1041635332) {
@@ -8835,7 +8835,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       goto suspend;
     }
     v_ffio = !self->private_impl.f_gc_has_transparent_index;
-    if (!self->private_impl.f_quirk_enabled_background_is_opaque) {
+    if (!self->private_impl.f_quirk_enabled_honor_background_color) {
       v_ffio =
           (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
            (self->private_impl.f_frame_rect_y0 == 0) &&
@@ -9846,7 +9846,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
       }
-      if (self->private_impl.f_quirk_enabled_background_is_opaque) {
+      if (self->private_impl.f_quirk_enabled_honor_background_color) {
         if ((v_background_color_index != 0) &&
             (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
           v_j = (4 * ((uint32_t)(v_background_color_index)));

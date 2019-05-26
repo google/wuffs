@@ -873,7 +873,7 @@ const char* test_wuffs_gif_decode_background_color() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_background_is_opaque, q);
+        &dec, wuffs_gif__quirk_honor_background_color, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
@@ -915,7 +915,7 @@ const char* test_wuffs_gif_decode_first_frame_is_opaque() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_background_is_opaque, q);
+        &dec, wuffs_gif__quirk_honor_background_color, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
