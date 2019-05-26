@@ -131,7 +131,7 @@ const char* read_stdin() {
 const char* reset_color = "\x1B[0m";
 
 bool color_flag = false;
-bool quirk_background_is_opaque_flag = false;
+bool quirk_honor_background_color_flag = false;
 const int stdout_fd = 1;
 
 static inline uint32_t load_u32le(uint8_t* p) {
@@ -298,9 +298,9 @@ const char* play() {
     return status;
   }
 
-  if (quirk_background_is_opaque_flag) {
+  if (quirk_honor_background_color_flag) {
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_background_is_opaque, true);
+        &dec, wuffs_gif__quirk_honor_background_color, true);
   }
 
   wuffs_base__io_buffer src;
@@ -438,8 +438,8 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[i], "-color")) {
       color_flag = true;
     }
-    if (!strcmp(argv[i], "-quirk_background_is_opaque")) {
-      quirk_background_is_opaque_flag = true;
+    if (!strcmp(argv[i], "-quirk_honor_background_color")) {
+      quirk_honor_background_color_flag = true;
     }
   }
 
