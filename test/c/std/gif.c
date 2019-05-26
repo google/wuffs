@@ -1128,13 +1128,6 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
     status = wuffs_gif__decoder__decode_image_config(
         &dec, &ic, wuffs_base__io_buffer__reader(&src));
     if (status) {
-      if (q == 2) {
-        if (status != want) {
-          RETURN_FAIL("q=%d: decode_image_config: got \"%s\", want \"%s\"", q,
-                      status, want);
-        }
-        continue;
-      }
       RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
     }
 
@@ -1145,12 +1138,11 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
     }
 
-    status = wuffs_gif__decoder__decode_frame(
+    const char* got = wuffs_gif__decoder__decode_frame(
         &dec, &pb, wuffs_base__io_buffer__reader(&src), global_work_slice,
         NULL);
-    if (status != want) {
-      RETURN_FAIL("q=%d: decode_frame: got \"%s\", want \"%s\"", q, status,
-                  want);
+    if (got != want) {
+      RETURN_FAIL("q=%d: decode_frame: got \"%s\", want \"%s\"", q, got, want);
     }
   }
   return NULL;

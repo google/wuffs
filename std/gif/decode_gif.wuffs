@@ -101,7 +101,8 @@ pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
 // buffer with that color.
 pub const quirk_background_is_opaque base.u32 = (0xF8586 << 10) | 3
 
-// When this quirk is enabled, a frame with zero width or height is rejected.
+// When this quirk is enabled, a frame with zero width or height is rejected
+// during decode_frame (but accepted during decode_frame_config).
 pub const quirk_reject_empty_frame base.u32 = (0xF8586 << 10) | 5
 
 // When this quirk is enabled, a frame with no explicit palette is rejected,
@@ -472,6 +473,10 @@ pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, wo
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst:nullptr, src:args.src)
 	}
+	if this.quirk_enabled_reject_empty_frame and
+		((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
+		return "#bad frame size"
+	}
 	this.decode_id_part1?(dst:args.dst, src:args.src)
 	this.decode_id_part2?(dst:args.dst, src:args.src, workbuf:args.workbuf)
 
@@ -833,12 +838,6 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	this.frame_rect_y1 ~mod+= this.frame_rect_y0
 	this.dst_x = this.frame_rect_x0
 	this.dst_y = this.frame_rect_y0
-
-	if this.quirk_enabled_reject_empty_frame and
-		((this.frame_rect_x0 == this.frame_rect_x1) or
-		(this.frame_rect_y0 == this.frame_rect_y1)) {
-		return "#bad frame size"
-	}
 
 	// Set the image's overall width and height to be the maximum of the
 	// nominal image width and height (given in the Logical Screen Descriptor)
