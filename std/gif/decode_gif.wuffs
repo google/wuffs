@@ -16,6 +16,7 @@ use "std/lzw"
 
 pub status "#bad block"
 pub status "#bad extension label"
+pub status "#bad frame size"
 pub status "#bad graphic control"
 pub status "#bad header"
 pub status "#bad literal width"
@@ -100,6 +101,9 @@ pub const quirk_image_bounds_are_strict base.u32 = (0xF8586 << 10) | 2
 // buffer with that color.
 pub const quirk_background_is_opaque base.u32 = (0xF8586 << 10) | 3
 
+// When this quirk is enabled, a frame with zero width or height is rejected.
+pub const quirk_reject_empty_frame base.u32 = (0xF8586 << 10) | 5
+
 // When this quirk is enabled, a frame with no explicit palette is rejected,
 // instead of implicitly having a palette with every entry being opaque black.
 pub const quirk_reject_empty_palette base.u32 = (0xF8586 << 10) | 4
@@ -174,6 +178,7 @@ pub struct decoder?(
 	quirk_enabled_ignore_too_much_pixel_data base.bool,
 	quirk_enabled_image_bounds_are_strict    base.bool,
 	quirk_enabled_background_is_opaque       base.bool,
+	quirk_enabled_reject_empty_frame         base.bool,
 	quirk_enabled_reject_empty_palette       base.bool,
 
 	delayed_num_decoded_frames         base.bool,
@@ -239,6 +244,8 @@ pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
 		this.quirk_enabled_image_bounds_are_strict = args.enabled
 	} else if args.quirk == quirk_background_is_opaque {
 		this.quirk_enabled_background_is_opaque = args.enabled
+	} else if args.quirk == quirk_reject_empty_frame {
+		this.quirk_enabled_reject_empty_frame = args.enabled
 	} else if args.quirk == quirk_reject_empty_palette {
 		this.quirk_enabled_reject_empty_palette = args.enabled
 	}
@@ -824,6 +831,12 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	this.frame_rect_y1 ~mod+= this.frame_rect_y0
 	this.dst_x = this.frame_rect_x0
 	this.dst_y = this.frame_rect_y0
+
+	if this.quirk_enabled_reject_empty_frame and
+		((this.frame_rect_x0 == this.frame_rect_x1) or
+		(this.frame_rect_y0 == this.frame_rect_y1)) {
+		return "#bad frame size"
+	}
 
 	// Set the image's overall width and height to be the maximum of the
 	// nominal image width and height (given in the Logical Screen Descriptor)

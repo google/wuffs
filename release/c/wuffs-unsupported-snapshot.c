@@ -3286,6 +3286,7 @@ extern "C" {
 
 extern const char* wuffs_gif__error__bad_block;
 extern const char* wuffs_gif__error__bad_extension_label;
+extern const char* wuffs_gif__error__bad_frame_size;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
@@ -3322,6 +3323,12 @@ static const uint32_t                         //
 static const uint32_t                      //
     wuffs_gif__quirk_background_is_opaque  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
+
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
+
+static const uint32_t                    //
+    wuffs_gif__quirk_reject_empty_frame  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
 
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
 
@@ -3445,6 +3452,7 @@ struct wuffs_gif__decoder__struct {
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
     bool f_quirk_enabled_background_is_opaque;
+    bool f_quirk_enabled_reject_empty_frame;
     bool f_quirk_enabled_reject_empty_palette;
     bool f_delayed_num_decoded_frames;
     bool f_end_of_data;
@@ -8560,6 +8568,7 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self) {
 
 const char* wuffs_gif__error__bad_block = "#gif: bad block";
 const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
+const char* wuffs_gif__error__bad_frame_size = "#gif: bad frame size";
 const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
 const char* wuffs_gif__error__bad_header = "#gif: bad header";
 const char* wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
@@ -8747,6 +8756,8 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
   } else if (a_quirk == 1041635331) {
     self->private_impl.f_quirk_enabled_background_is_opaque = a_enabled;
+  } else if (a_quirk == 1041635333) {
+    self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
   } else if (a_quirk == 1041635332) {
     self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
   }
@@ -10592,6 +10603,14 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
     self->private_impl.f_frame_rect_y1 += self->private_impl.f_frame_rect_y0;
     self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
     self->private_impl.f_dst_y = self->private_impl.f_frame_rect_y0;
+    if (self->private_impl.f_quirk_enabled_reject_empty_frame &&
+        ((self->private_impl.f_frame_rect_x0 ==
+          self->private_impl.f_frame_rect_x1) ||
+         (self->private_impl.f_frame_rect_y0 ==
+          self->private_impl.f_frame_rect_y1))) {
+      status = wuffs_gif__error__bad_frame_size;
+      goto exit;
+    }
     if ((self->private_impl.f_call_sequence == 0) &&
         !self->private_impl.f_quirk_enabled_image_bounds_are_strict) {
       self->private_impl.f_width = wuffs_base__u32__max(

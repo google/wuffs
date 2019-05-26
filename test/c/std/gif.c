@@ -1096,7 +1096,7 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
     return status;
   }
   int q;
-  for (q = 0; q < 2; q++) {
+  for (q = 0; q < 3; q++) {
     src.meta.ri = 0;
 
     wuffs_gif__decoder dec;
@@ -1106,13 +1106,35 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
     if (status) {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
-    wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_ignore_too_much_pixel_data, q);
+
+    const char* want = NULL;
+    switch (q) {
+      case 0:
+        want = wuffs_base__error__too_much_data;
+        break;
+      case 1:
+        want = NULL;
+        wuffs_gif__decoder__set_quirk_enabled(
+            &dec, wuffs_gif__quirk_ignore_too_much_pixel_data, true);
+        break;
+      case 2:
+        want = wuffs_gif__error__bad_frame_size;
+        wuffs_gif__decoder__set_quirk_enabled(
+            &dec, wuffs_gif__quirk_reject_empty_frame, true);
+        break;
+    }
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     status = wuffs_gif__decoder__decode_image_config(
         &dec, &ic, wuffs_base__io_buffer__reader(&src));
     if (status) {
+      if (q == 2) {
+        if (status != want) {
+          RETURN_FAIL("q=%d: decode_image_config: got \"%s\", want \"%s\"", q,
+                      status, want);
+        }
+        continue;
+      }
       RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
     }
 
@@ -1123,12 +1145,12 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
     }
 
-    const char* got = wuffs_gif__decoder__decode_frame(
+    status = wuffs_gif__decoder__decode_frame(
         &dec, &pb, wuffs_base__io_buffer__reader(&src), global_work_slice,
         NULL);
-    const char* want = q ? NULL : wuffs_base__error__too_much_data;
-    if (got != want) {
-      RETURN_FAIL("q=%d: decode_frame: got \"%s\", want \"%s\"", q, got, want);
+    if (status != want) {
+      RETURN_FAIL("q=%d: decode_frame: got \"%s\", want \"%s\"", q, status,
+                  want);
     }
   }
   return NULL;
