@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// b1ff27fdedb85ed03b5f6d31119eb28db8303d3f committed on 2019-05-12.
+// 929d36d8779c5af900256db7313c0c87f4f704ee committed on 2019-05-26.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.39"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1705
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190512
-#define WUFFS_VERSION_STRING "0.2.0-alpha.39+1705.20190512"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.40"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1723
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190526
+#define WUFFS_VERSION_STRING "0.2.0-alpha.40+1723.20190526"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -2069,6 +2069,7 @@ typedef struct {
   struct {
     uint64_t first_frame_io_position;
     bool first_frame_is_opaque;
+    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -2077,11 +2078,13 @@ typedef struct {
                   uint32_t width,
                   uint32_t height,
                   uint64_t first_frame_io_position,
-                  bool first_frame_is_opaque);
+                  bool first_frame_is_opaque,
+                  wuffs_base__color_u32_argb_premul background_color);
   inline void invalidate();
   inline bool is_valid() const;
   inline uint64_t first_frame_io_position() const;
   inline bool first_frame_is_opaque() const;
+  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__image_config;
@@ -2097,13 +2100,15 @@ wuffs_base__null_image_config() {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__image_config__set(wuffs_base__image_config* c,
-                              wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config__set(
+    wuffs_base__image_config* c,
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
   }
@@ -2114,6 +2119,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
     c->pixcfg.private_impl.height = height;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
+    c->private_impl.background_color = background_color;
     return;
   }
 
@@ -2123,6 +2129,7 @@ wuffs_base__image_config__set(wuffs_base__image_config* c,
   c->pixcfg.private_impl.height = 0;
   c->private_impl.first_frame_io_position = 0;
   c->private_impl.first_frame_is_opaque = 0;
+  c->private_impl.background_color = 0;
 }
 
 static inline void  //
@@ -2134,6 +2141,7 @@ wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
     c->pixcfg.private_impl.height = 0;
     c->private_impl.first_frame_io_position = 0;
     c->private_impl.first_frame_is_opaque = 0;
+    c->private_impl.background_color = 0;
   }
 }
 
@@ -2154,17 +2162,25 @@ wuffs_base__image_config__first_frame_is_opaque(
   return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config__background_color(const wuffs_base__image_config* c) {
+  return c ? c->private_impl.background_color : 0;
+}
+
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
-                              wuffs_base__pixel_subsampling pixsub,
-                              uint32_t width,
-                              uint32_t height,
-                              uint64_t first_frame_io_position,
-                              bool first_frame_is_opaque) {
+wuffs_base__image_config::set(
+    wuffs_base__pixel_format pixfmt,
+    wuffs_base__pixel_subsampling pixsub,
+    uint32_t width,
+    uint32_t height,
+    uint64_t first_frame_io_position,
+    bool first_frame_is_opaque,
+    wuffs_base__color_u32_argb_premul background_color) {
   wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
-                                first_frame_io_position, first_frame_is_opaque);
+                                first_frame_io_position, first_frame_is_opaque,
+                                background_color);
 }
 
 inline void  //
@@ -2185,6 +2201,11 @@ wuffs_base__image_config::first_frame_io_position() const {
 inline bool  //
 wuffs_base__image_config::first_frame_is_opaque() const {
   return wuffs_base__image_config__first_frame_is_opaque(this);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__image_config::background_color() const {
+  return wuffs_base__image_config__background_color(this);
 }
 
 #endif  // __cplusplus
@@ -2239,6 +2260,7 @@ typedef struct {
     uint64_t io_position;
     wuffs_base__animation_blend blend;
     wuffs_base__animation_disposal disposal;
+    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -2247,7 +2269,8 @@ typedef struct {
                      uint64_t index,
                      uint64_t io_position,
                      wuffs_base__animation_blend blend,
-                     wuffs_base__animation_disposal disposal);
+                     wuffs_base__animation_disposal disposal,
+                     wuffs_base__color_u32_argb_premul background_color);
   inline wuffs_base__rect_ie_u32 bounds() const;
   inline uint32_t width() const;
   inline uint32_t height() const;
@@ -2256,6 +2279,7 @@ typedef struct {
   inline uint64_t io_position() const;
   inline wuffs_base__animation_blend blend() const;
   inline wuffs_base__animation_disposal disposal() const;
+  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__frame_config;
@@ -2273,13 +2297,15 @@ wuffs_base__null_frame_config() {
 }
 
 static inline void  //
-wuffs_base__frame_config__update(wuffs_base__frame_config* c,
-                                 wuffs_base__rect_ie_u32 bounds,
-                                 wuffs_base__flicks duration,
-                                 uint64_t index,
-                                 uint64_t io_position,
-                                 wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal) {
+wuffs_base__frame_config__update(
+    wuffs_base__frame_config* c,
+    wuffs_base__rect_ie_u32 bounds,
+    wuffs_base__flicks duration,
+    uint64_t index,
+    uint64_t io_position,
+    wuffs_base__animation_blend blend,
+    wuffs_base__animation_disposal disposal,
+    wuffs_base__color_u32_argb_premul background_color) {
   if (!c) {
     return;
   }
@@ -2290,6 +2316,7 @@ wuffs_base__frame_config__update(wuffs_base__frame_config* c,
   c->private_impl.io_position = io_position;
   c->private_impl.blend = blend;
   c->private_impl.disposal = disposal;
+  c->private_impl.background_color = background_color;
 }
 
 static inline wuffs_base__rect_ie_u32  //
@@ -2351,17 +2378,24 @@ wuffs_base__frame_config__disposal(const wuffs_base__frame_config* c) {
   return c ? c->private_impl.disposal : 0;
 }
 
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__frame_config__background_color(const wuffs_base__frame_config* c) {
+  return c ? c->private_impl.background_color : 0;
+}
+
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__frame_config::update(wuffs_base__rect_ie_u32 bounds,
-                                 wuffs_base__flicks duration,
-                                 uint64_t index,
-                                 uint64_t io_position,
-                                 wuffs_base__animation_blend blend,
-                                 wuffs_base__animation_disposal disposal) {
+wuffs_base__frame_config::update(
+    wuffs_base__rect_ie_u32 bounds,
+    wuffs_base__flicks duration,
+    uint64_t index,
+    uint64_t io_position,
+    wuffs_base__animation_blend blend,
+    wuffs_base__animation_disposal disposal,
+    wuffs_base__color_u32_argb_premul background_color) {
   wuffs_base__frame_config__update(this, bounds, duration, index, io_position,
-                                   blend, disposal);
+                                   blend, disposal, background_color);
 }
 
 inline wuffs_base__rect_ie_u32  //
@@ -2402,6 +2436,11 @@ wuffs_base__frame_config::blend() const {
 inline wuffs_base__animation_disposal  //
 wuffs_base__frame_config::disposal() const {
   return wuffs_base__frame_config__disposal(this);
+}
+
+inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__frame_config::background_color() const {
+  return wuffs_base__frame_config__background_color(this);
 }
 
 #endif  // __cplusplus
@@ -3266,6 +3305,7 @@ extern "C" {
 
 extern const char* wuffs_gif__error__bad_block;
 extern const char* wuffs_gif__error__bad_extension_label;
+extern const char* wuffs_gif__error__bad_frame_size;
 extern const char* wuffs_gif__error__bad_graphic_control;
 extern const char* wuffs_gif__error__bad_header;
 extern const char* wuffs_gif__error__bad_literal_width;
@@ -3279,29 +3319,41 @@ static const uint64_t                                   //
     wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
-#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635329
+#define WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES 1041635328
+
+static const uint32_t                          //
+    wuffs_gif__quirk_delay_num_decoded_frames  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
+
+#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635329
+
+static const uint32_t                        //
+    wuffs_gif__quirk_honor_background_color  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635330
 
 static const uint32_t                            //
     wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
-#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635330
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635331
 
 static const uint32_t                         //
     wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
-
-#define WUFFS_GIF__QUIRK_INITIAL_BACKGROUND_IS_OPAQUE 1041635331
-
-static const uint32_t                              //
-    wuffs_gif__quirk_initial_background_is_opaque  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635332
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635332
+
+static const uint32_t                    //
+    wuffs_gif__quirk_reject_empty_frame  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635333
 
 static const uint32_t                      //
     wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
 
 // ---------------- Struct Declarations
 
@@ -3415,10 +3467,13 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_metadata_fourcc_value;
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
+    bool f_quirk_enabled_delay_num_decoded_frames;
+    bool f_quirk_enabled_honor_background_color;
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
-    bool f_quirk_enabled_initial_background_is_opaque;
+    bool f_quirk_enabled_reject_empty_frame;
     bool f_quirk_enabled_reject_empty_palette;
+    bool f_delayed_num_decoded_frames;
     bool f_end_of_data;
     bool f_restarted;
     bool f_previous_lzw_decode_ended_abruptly;
@@ -3426,6 +3481,7 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_interlace;
     bool f_seen_num_loops;
     uint32_t f_num_loops;
+    uint32_t f_background_color_u32_argb_premul;
     bool f_gc_has_transparent_index;
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
@@ -3476,6 +3532,7 @@ struct wuffs_gif__decoder__struct {
     } s_decode_header[1];
     struct {
       uint8_t v_flags;
+      uint8_t v_background_color_index;
       uint32_t v_num_palette_entries;
       uint32_t v_i;
       uint64_t scratch;
@@ -8102,12 +8159,12 @@ wuffs_lzw__decoder__set_literal_width(wuffs_lzw__decoder* self, uint32_t a_lw) {
   if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
     return wuffs_base__make_empty_struct();
   }
-  if (a_lw < 1 || a_lw > 8) {
+  if (a_lw > 8) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__make_empty_struct();
   }
 
-  self->private_impl.f_set_literal_width_arg = a_lw;
+  self->private_impl.f_set_literal_width_arg = (a_lw + 1);
   return wuffs_base__make_empty_struct();
 }
 
@@ -8160,7 +8217,7 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
     self->private_impl.f_literal_width = 8;
     if (self->private_impl.f_set_literal_width_arg > 0) {
       self->private_impl.f_literal_width =
-          self->private_impl.f_set_literal_width_arg;
+          (self->private_impl.f_set_literal_width_arg - 1);
     }
     self->private_impl.f_clear_code =
         (((uint32_t)(1)) << self->private_impl.f_literal_width);
@@ -8530,6 +8587,7 @@ wuffs_lzw__decoder__flush(wuffs_lzw__decoder* self) {
 
 const char* wuffs_gif__error__bad_block = "#gif: bad block";
 const char* wuffs_gif__error__bad_extension_label = "#gif: bad extension label";
+const char* wuffs_gif__error__bad_frame_size = "#gif: bad frame size";
 const char* wuffs_gif__error__bad_graphic_control = "#gif: bad graphic control";
 const char* wuffs_gif__error__bad_header = "#gif: bad header";
 const char* wuffs_gif__error__bad_literal_width = "#gif: bad literal width";
@@ -8709,14 +8767,20 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1041635329) {
-    self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
-  } else if (a_quirk == 1041635330) {
-    self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
-  } else if (a_quirk == 1041635331) {
-    self->private_impl.f_quirk_enabled_initial_background_is_opaque = a_enabled;
-  } else if (a_quirk == 1041635332) {
-    self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  if (self->private_impl.f_call_sequence == 0) {
+    if (a_quirk == 1041635328) {
+      self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
+    } else if (a_quirk == 1041635329) {
+      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
+    } else if (a_quirk == 1041635330) {
+      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+    } else if (a_quirk == 1041635331) {
+      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+    } else if (a_quirk == 1041635332) {
+      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635333) {
+      self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+    }
   }
   return wuffs_base__make_empty_struct();
 }
@@ -8772,7 +8836,7 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       goto suspend;
     }
     v_ffio = !self->private_impl.f_gc_has_transparent_index;
-    if (!self->private_impl.f_quirk_enabled_initial_background_is_opaque) {
+    if (!self->private_impl.f_quirk_enabled_honor_background_color) {
       v_ffio =
           (v_ffio && (self->private_impl.f_frame_rect_x0 == 0) &&
            (self->private_impl.f_frame_rect_y0 == 0) &&
@@ -8783,7 +8847,8 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
       wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
           self->private_impl.f_height,
-          self->private_impl.f_frame_config_io_position, v_ffio);
+          self->private_impl.f_frame_config_io_position, v_ffio,
+          self->private_impl.f_background_color_u32_argb_premul);
     }
     self->private_impl.f_call_sequence = 3;
 
@@ -9083,6 +9148,7 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
   if (self->private_impl.f_call_sequence == 0) {
     return wuffs_base__error__bad_call_sequence;
   }
+  self->private_impl.f_delayed_num_decoded_frames = false;
   self->private_impl.f_end_of_data = false;
   self->private_impl.f_restarted = true;
   self->private_impl.f_frame_config_io_position = a_io_position;
@@ -9115,6 +9181,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_blend = 0;
+  uint32_t v_background_color = 0;
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
   if (coro_susp_point) {
@@ -9152,8 +9219,11 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       goto ok;
     }
     v_blend = 0;
+    v_background_color = 0;
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_blend = 2;
+      v_background_color =
+          self->private_impl.f_background_color_u32_argb_premul;
     }
     if (a_dst != NULL) {
       wuffs_base__frame_config__update(
@@ -9170,7 +9240,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
           ((wuffs_base__flicks)(self->private_impl.f_gc_duration)),
           self->private_impl.f_num_decoded_frame_configs_value,
           self->private_impl.f_frame_config_io_position, v_blend,
-          self->private_impl.f_gc_disposal);
+          self->private_impl.f_gc_disposal, v_background_color);
     }
     wuffs_base__u64__sat_add_indirect(
         &self->private_impl.f_num_decoded_frame_configs_value, 1);
@@ -9205,6 +9275,7 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
+  uint8_t v_lw = 0;
 
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -9250,12 +9321,19 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
       }
       iop_a_src += self->private_data.s_skip_frame[0].scratch;
     }
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-    if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
-      status = wuffs_base__suspension__short_read;
-      goto suspend;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+        status = wuffs_base__suspension__short_read;
+        goto suspend;
+      }
+      uint8_t t_1 = *iop_a_src++;
+      v_lw = t_1;
     }
-    iop_a_src++;
+    if (v_lw > 8) {
+      status = wuffs_gif__error__bad_literal_width;
+      goto exit;
+    }
     if (a_src.private_impl.buf) {
       a_src.private_impl.buf->meta.ri =
           ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
@@ -9269,8 +9347,12 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
     if (status) {
       goto suspend;
     }
-    wuffs_base__u64__sat_add_indirect(
-        &self->private_impl.f_num_decoded_frames_value, 1);
+    if (self->private_impl.f_quirk_enabled_delay_num_decoded_frames) {
+      self->private_impl.f_delayed_num_decoded_frames = true;
+    } else {
+      wuffs_base__u64__sat_add_indirect(
+          &self->private_impl.f_num_decoded_frames_value, 1);
+    }
     wuffs_gif__decoder__reset_gc(self);
 
     goto ok;
@@ -9335,6 +9417,14 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
       if (status) {
         goto suspend;
       }
+    }
+    if (self->private_impl.f_quirk_enabled_reject_empty_frame &&
+        ((self->private_impl.f_frame_rect_x0 ==
+          self->private_impl.f_frame_rect_x1) ||
+         (self->private_impl.f_frame_rect_y0 ==
+          self->private_impl.f_frame_rect_y1))) {
+      status = wuffs_gif__error__bad_frame_size;
+      goto exit;
     }
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
     status = wuffs_gif__decoder__decode_id_part1(self, a_dst, a_src);
@@ -9460,6 +9550,11 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
           goto suspend;
         }
       } else if (v_block_type == 44) {
+        if (self->private_impl.f_delayed_num_decoded_frames) {
+          self->private_impl.f_delayed_num_decoded_frames = false;
+          wuffs_base__u64__sat_add_indirect(
+              &self->private_impl.f_num_decoded_frames_value, 1);
+        }
         if (a_src.private_impl.buf) {
           a_src.private_impl.buf->meta.ri =
               ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
@@ -9475,6 +9570,11 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
         }
         goto label_0_break;
       } else if (v_block_type == 59) {
+        if (self->private_impl.f_delayed_num_decoded_frames) {
+          self->private_impl.f_delayed_num_decoded_frames = false;
+          wuffs_base__u64__sat_add_indirect(
+              &self->private_impl.f_num_decoded_frames_value, 1);
+        }
         self->private_impl.f_end_of_data = true;
         goto label_0_break;
       } else {
@@ -9587,8 +9687,10 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
+  uint8_t v_background_color_index = 0;
   uint32_t v_num_palette_entries = 0;
   uint32_t v_i = 0;
+  uint32_t v_j = 0;
   uint32_t v_argb = 0;
 
   uint8_t* iop_a_src = NULL;
@@ -9609,6 +9711,8 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   uint32_t coro_susp_point = self->private_impl.p_decode_lsd[0];
   if (coro_susp_point) {
     v_flags = self->private_data.s_decode_lsd[0].v_flags;
+    v_background_color_index =
+        self->private_data.s_decode_lsd[0].v_background_color_index;
     v_num_palette_entries =
         self->private_data.s_decode_lsd[0].v_num_palette_entries;
     v_i = self->private_data.s_decode_lsd[0].v_i;
@@ -9683,50 +9787,54 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_flags = t_2;
     }
-    self->private_data.s_decode_lsd[0].scratch = 2;
-    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
-    if (self->private_data.s_decode_lsd[0].scratch >
-        ((uint64_t)(io1_a_src - iop_a_src))) {
-      self->private_data.s_decode_lsd[0].scratch -=
-          ((uint64_t)(io1_a_src - iop_a_src));
-      iop_a_src = io1_a_src;
+    {
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
+        status = wuffs_base__suspension__short_read;
+        goto suspend;
+      }
+      uint8_t t_3 = *iop_a_src++;
+      v_background_color_index = t_3;
+    }
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
+    if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
       status = wuffs_base__suspension__short_read;
       goto suspend;
     }
-    iop_a_src += self->private_data.s_decode_lsd[0].scratch;
+    iop_a_src++;
     v_i = 0;
     self->private_impl.f_has_global_palette = ((v_flags & 128) != 0);
     if (self->private_impl.f_has_global_palette) {
       v_num_palette_entries = (((uint32_t)(1)) << (1 + (v_flags & 7)));
       while (v_i < v_num_palette_entries) {
         {
-          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
-          uint32_t t_3;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+          uint32_t t_4;
           if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= 3)) {
-            t_3 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
+            t_4 = ((uint32_t)(wuffs_base__load_u24be(iop_a_src)));
             iop_a_src += 3;
           } else {
             self->private_data.s_decode_lsd[0].scratch = 0;
-            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(9);
             while (true) {
               if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {
                 status = wuffs_base__suspension__short_read;
                 goto suspend;
               }
               uint64_t* scratch = &self->private_data.s_decode_lsd[0].scratch;
-              uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
+              uint32_t num_bits_4 = ((uint32_t)(*scratch & 0xFF));
               *scratch >>= 8;
               *scratch <<= 8;
-              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
-              if (num_bits_3 == 16) {
-                t_3 = ((uint32_t)(*scratch >> 40));
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_4);
+              if (num_bits_4 == 16) {
+                t_4 = ((uint32_t)(*scratch >> 40));
                 break;
               }
-              num_bits_3 += 8;
-              *scratch |= ((uint64_t)(num_bits_3));
+              num_bits_4 += 8;
+              *scratch |= ((uint64_t)(num_bits_4));
             }
           }
-          v_argb = t_3;
+          v_argb = t_4;
         }
         v_argb |= 4278190080;
         self->private_data.f_palettes[0][((4 * v_i) + 0)] =
@@ -9738,6 +9846,23 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
         self->private_data.f_palettes[0][((4 * v_i) + 3)] =
             ((uint8_t)(((v_argb >> 24) & 255)));
         v_i += 1;
+      }
+      if (self->private_impl.f_quirk_enabled_honor_background_color) {
+        if ((v_background_color_index != 0) &&
+            (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
+          v_j = (4 * ((uint32_t)(v_background_color_index)));
+          self->private_impl.f_background_color_u32_argb_premul =
+              ((((uint32_t)(self->private_data.f_palettes[0][(v_j + 0)]))
+                << 0) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 1)]))
+                << 8) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 2)]))
+                << 16) |
+               (((uint32_t)(self->private_data.f_palettes[0][(v_j + 3)]))
+                << 24));
+        } else {
+          self->private_impl.f_background_color_u32_argb_premul = 4278190080;
+        }
       }
     }
     while (v_i < 256) {
@@ -9759,6 +9884,8 @@ suspend:
   self->private_impl.p_decode_lsd[0] =
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_data.s_decode_lsd[0].v_flags = v_flags;
+  self->private_data.s_decode_lsd[0].v_background_color_index =
+      v_background_color_index;
   self->private_data.s_decode_lsd[0].v_num_palette_entries =
       v_num_palette_entries;
   self->private_data.s_decode_lsd[0].v_i = v_i;
@@ -10696,7 +10823,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       uint8_t t_2 = *iop_a_src++;
       v_lw = t_2;
     }
-    if ((v_lw < 1) || (8 < v_lw)) {
+    if (v_lw > 8) {
       status = wuffs_gif__error__bad_literal_width;
       goto exit;
     }
@@ -10987,8 +11114,10 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
 label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
     v_src = wuffs_base__slice_u8__subslice_i(a_src, v_src_ri);
-    if ((self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) &&
-        !self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
+    if (self->private_impl.f_dst_y >= self->private_impl.f_frame_rect_y1) {
+      if (self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data) {
+        return NULL;
+      }
       return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
