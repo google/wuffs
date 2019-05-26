@@ -8748,18 +8748,20 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     return wuffs_base__make_empty_struct();
   }
 
-  if (a_quirk == 1041635328) {
-    self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
-  } else if (a_quirk == 1041635329) {
-    self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
-  } else if (a_quirk == 1041635330) {
-    self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
-  } else if (a_quirk == 1041635331) {
-    self->private_impl.f_quirk_enabled_background_is_opaque = a_enabled;
-  } else if (a_quirk == 1041635333) {
-    self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
-  } else if (a_quirk == 1041635332) {
-    self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+  if (self->private_impl.f_call_sequence == 0) {
+    if (a_quirk == 1041635328) {
+      self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
+    } else if (a_quirk == 1041635329) {
+      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+    } else if (a_quirk == 1041635330) {
+      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+    } else if (a_quirk == 1041635331) {
+      self->private_impl.f_quirk_enabled_background_is_opaque = a_enabled;
+    } else if (a_quirk == 1041635333) {
+      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635332) {
+      self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
+    }
   }
   return wuffs_base__make_empty_struct();
 }

@@ -236,18 +236,20 @@ pub struct decoder?(
 )
 
 pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
-	if args.quirk == quirk_delay_num_decoded_frames {
-		this.quirk_enabled_delay_num_decoded_frames = args.enabled
-	} else if args.quirk == quirk_ignore_too_much_pixel_data {
-		this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
-	} else if args.quirk == quirk_image_bounds_are_strict {
-		this.quirk_enabled_image_bounds_are_strict = args.enabled
-	} else if args.quirk == quirk_background_is_opaque {
-		this.quirk_enabled_background_is_opaque = args.enabled
-	} else if args.quirk == quirk_reject_empty_frame {
-		this.quirk_enabled_reject_empty_frame = args.enabled
-	} else if args.quirk == quirk_reject_empty_palette {
-		this.quirk_enabled_reject_empty_palette = args.enabled
+	if this.call_sequence == 0 {
+		if args.quirk == quirk_delay_num_decoded_frames {
+			this.quirk_enabled_delay_num_decoded_frames = args.enabled
+		} else if args.quirk == quirk_ignore_too_much_pixel_data {
+			this.quirk_enabled_ignore_too_much_pixel_data = args.enabled
+		} else if args.quirk == quirk_image_bounds_are_strict {
+			this.quirk_enabled_image_bounds_are_strict = args.enabled
+		} else if args.quirk == quirk_background_is_opaque {
+			this.quirk_enabled_background_is_opaque = args.enabled
+		} else if args.quirk == quirk_reject_empty_frame {
+			this.quirk_enabled_reject_empty_frame = args.enabled
+		} else if args.quirk == quirk_reject_empty_palette {
+			this.quirk_enabled_reject_empty_palette = args.enabled
+		}
 	}
 }
 
