@@ -3325,41 +3325,41 @@ static const uint32_t                          //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
 
 #define WUFFS_GIF__QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND \
-  1041635334
+  1041635329
 
 static const uint32_t                                                  //
     wuffs_gif__quirk_first_frame_local_palette_means_black_background  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635334;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
 
-#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635329
+#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635330
 
 static const uint32_t                        //
     wuffs_gif__quirk_honor_background_color  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
-#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635330
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635331
 
 static const uint32_t                            //
     wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
-#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635331
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635332
 
 static const uint32_t                         //
     wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635332
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
 
 static const uint32_t                    //
     wuffs_gif__quirk_reject_empty_frame  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635333
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635334
 
 static const uint32_t                      //
     wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635334;
 
 // ---------------- Struct Declarations
 
@@ -8782,19 +8782,19 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
   if (self->private_impl.f_call_sequence == 0) {
     if (a_quirk == 1041635328) {
       self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
-    } else if (a_quirk == 1041635334) {
+    } else if (a_quirk == 1041635329) {
       self->private_impl
           .f_quirk_enabled_first_frame_local_palette_means_black_background =
           a_enabled;
-    } else if (a_quirk == 1041635329) {
-      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
     } else if (a_quirk == 1041635330) {
-      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
     } else if (a_quirk == 1041635331) {
-      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
     } else if (a_quirk == 1041635332) {
-      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
     } else if (a_quirk == 1041635333) {
+      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635334) {
       self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
     }
   }
