@@ -100,7 +100,6 @@ wuffs_base__slice_u8 workbuf = {0};
 wuffs_base__slice_u8 printbuf = {0};
 
 bool first_play = true;
-wuffs_base__color_u32_argb_premul background_color = 0;
 uint32_t num_loops_remaining = 0;
 wuffs_base__pixel_buffer pb = {0};
 
@@ -140,7 +139,8 @@ static inline uint32_t load_u32le(uint8_t* p) {
 }
 
 void restore_background(wuffs_base__pixel_buffer* pb,
-                        wuffs_base__rect_ie_u32 bounds) {
+                        wuffs_base__rect_ie_u32 bounds,
+                        wuffs_base__color_u32_argb_premul background_color) {
   size_t width = wuffs_base__pixel_config__width(&pb->pixcfg);
   size_t y;
   for (y = bounds.min_incl_y; y < bounds.max_excl_y; y++) {
@@ -323,7 +323,6 @@ const char* play() {
     }
     uint32_t width = wuffs_base__pixel_config__width(&ic.pixcfg);
     uint32_t height = wuffs_base__pixel_config__height(&ic.pixcfg);
-    background_color = wuffs_base__image_config__background_color(&ic);
     if ((width > MAX_DIMENSION) || (height > MAX_DIMENSION)) {
       return "image dimensions are too large";
     }
@@ -344,14 +343,6 @@ const char* play() {
     memset(pixbuf.ptr, 0, pixbuf.len);
   }
 
-  {
-    size_t i;
-    size_t n = dst_len / sizeof(wuffs_base__color_u32_argb_premul);
-    for (i = 0; i < n; i++) {
-      curr_dst_buffer[i] = background_color;
-    }
-  }
-
   while (1) {
     wuffs_base__frame_config fc = {0};
     wuffs_base__status status =
@@ -361,6 +352,16 @@ const char* play() {
         break;
       }
       return status;
+    }
+
+    if (wuffs_base__frame_config__index(&fc) == 0) {
+      wuffs_base__color_u32_argb_premul background_color =
+          wuffs_base__frame_config__background_color(&fc);
+      size_t i;
+      size_t n = dst_len / sizeof(wuffs_base__color_u32_argb_premul);
+      for (i = 0; i < n; i++) {
+        curr_dst_buffer[i] = background_color;
+      }
     }
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
@@ -385,7 +386,8 @@ const char* play() {
 
     switch (wuffs_base__frame_config__disposal(&fc)) {
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_BACKGROUND: {
-        restore_background(&pb, wuffs_base__frame_config__bounds(&fc));
+        restore_background(&pb, wuffs_base__frame_config__bounds(&fc),
+                           wuffs_base__frame_config__background_color(&fc));
         break;
       }
       case WUFFS_BASE__ANIMATION_DISPOSAL__RESTORE_PREVIOUS: {
