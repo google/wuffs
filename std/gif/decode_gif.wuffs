@@ -312,8 +312,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 			width:this.width,
 			height:this.height,
 			first_frame_io_position:this.frame_config_io_position,
-			first_frame_is_opaque:ffio,
-			background_color:this.background_color_u32_argb_premul)
+			first_frame_is_opaque:ffio)
 	}
 
 	this.call_sequence = 3
