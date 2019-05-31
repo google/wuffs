@@ -875,15 +875,15 @@ const char* test_wuffs_gif_decode_background_color() {
     wuffs_gif__decoder__set_quirk_enabled(
         &dec, wuffs_gif__quirk_honor_background_color, q);
 
-    wuffs_base__image_config ic = ((wuffs_base__image_config){});
+    wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
     if (status) {
-      RETURN_FAIL("q=%d: decode_image_config: \"%s\"", q, status);
+      RETURN_FAIL("q=%d: decode_frame_config: \"%s\"", q, status);
     }
 
     wuffs_base__color_u32_argb_premul got =
-        wuffs_base__image_config__background_color(&ic);
+        wuffs_base__frame_config__background_color(&fc);
     wuffs_base__color_u32_argb_premul want = q ? 0xFF80C3C3 : 0x00000000;
 
     if (got != want) {
