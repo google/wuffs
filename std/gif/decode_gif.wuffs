@@ -74,6 +74,18 @@ pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 // final frame. Enabling this quirk allows for matching that behavior.
 pub const quirk_delay_num_decoded_frames base.u32 = (0xF8586 << 10) | 0
 
+// When this quirk is enabled, the background color of the first frame is set
+// to black whenever that first frame has a local (frame-specific) palette.
+// That black can be either opaque black or transparent black, depending on
+// whether or not that first frame is opaque: whether that local palette
+// contains a transparent color.
+//
+// This has no effect unless quirk_honor_background_color is also enabled.
+//
+// There isn't really much of a rationale for this, other than it matches the
+// behavior of another GIF implementation.
+pub const quirk_first_frame_local_palette_means_black_background base.u32 = (0xF8586 << 10) | 6
+
 // When this quirk is enabled, the background color is taken from the GIF
 // instead of always being transparent black. If the background color index in
 // the GIF header is non-zero but less than the global palette's size, the
@@ -178,12 +190,13 @@ pub struct decoder?(
 	metadata_chunk_length_value base.u64,
 	metadata_io_position        base.u64,
 
-	quirk_enabled_delay_num_decoded_frames   base.bool,
-	quirk_enabled_honor_background_color     base.bool,
-	quirk_enabled_ignore_too_much_pixel_data base.bool,
-	quirk_enabled_image_bounds_are_strict    base.bool,
-	quirk_enabled_reject_empty_frame         base.bool,
-	quirk_enabled_reject_empty_palette       base.bool,
+	quirk_enabled_delay_num_decoded_frames                         base.bool,
+	quirk_enabled_first_frame_local_palette_means_black_background base.bool,
+	quirk_enabled_honor_background_color                           base.bool,
+	quirk_enabled_ignore_too_much_pixel_data                       base.bool,
+	quirk_enabled_image_bounds_are_strict                          base.bool,
+	quirk_enabled_reject_empty_frame                               base.bool,
+	quirk_enabled_reject_empty_palette                             base.bool,
 
 	delayed_num_decoded_frames         base.bool,
 	end_of_data                        base.bool,
@@ -201,6 +214,7 @@ pub struct decoder?(
 	num_loops      base.u32,
 
 	background_color_u32_argb_premul base.u32,
+	black_color_u32_argb_premul      base.u32,
 
 	gc_has_transparent_index base.bool,
 	gc_transparent_index     base.u8,
@@ -243,6 +257,8 @@ pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
 	if this.call_sequence == 0 {
 		if args.quirk == quirk_delay_num_decoded_frames {
 			this.quirk_enabled_delay_num_decoded_frames = args.enabled
+		} else if args.quirk == quirk_first_frame_local_palette_means_black_background {
+			this.quirk_enabled_first_frame_local_palette_means_black_background = args.enabled
 		} else if args.quirk == quirk_honor_background_color {
 			this.quirk_enabled_honor_background_color = args.enabled
 		} else if args.quirk == quirk_ignore_too_much_pixel_data {
@@ -278,6 +294,13 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 			(this.frame_rect_y0 == 0) and
 			(this.frame_rect_x1 == this.width) and
 			(this.frame_rect_y1 == this.height)
+	} else if ffio {
+		// Use opaque black, not transparent black.
+		this.black_color_u32_argb_premul = 0xFF000000
+	}
+
+	if this.background_color_u32_argb_premul == 77 {
+		this.background_color_u32_argb_premul = this.black_color_u32_argb_premul
 	}
 
 	if args.dst <> nullptr {
@@ -401,6 +424,7 @@ pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.statu
 pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader) {
 	var blend            base.u8
 	var background_color base.u32
+	var flags            base.u8
 
 	this.ignore_metadata = true
 	this.dirty_y.reset!()
@@ -423,10 +447,26 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	}
 
 	blend = 0
-	background_color = 0
+	background_color = this.black_color_u32_argb_premul
 	if not this.gc_has_transparent_index {
 		blend = 2  // 2 is WUFFS_BASE__ANIMATION_BLEND__OPAQUE.
 		background_color = this.background_color_u32_argb_premul
+
+		// If the quirk is enabled and the first frame has a local color
+		// palette, its background color is black.
+		if this.quirk_enabled_first_frame_local_palette_means_black_background and
+			(this.num_decoded_frame_configs_value == 0) {
+
+			while args.src.available() <= 0,
+				post args.src.available() > 0,
+			{
+				yield? base."$short read"
+			}
+			flags = args.src.peek_u8()
+			if (flags & 0x80) <> 0 {
+				background_color = this.black_color_u32_argb_premul
+			}
+		}
 	}
 
 	if args.dst <> nullptr {
@@ -602,7 +642,11 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 					((this.palettes[0][j + 2] as base.u32) << 16) |
 					((this.palettes[0][j + 3] as base.u32) << 24)
 			} else {
-				this.background_color_u32_argb_premul = 0xFF000000
+				// The background color is either opaque black or transparent
+				// black. We set it to an arbitrary nonsense value (77) for
+				// now, and set it to its real value later, once we know
+				// whether the first frame is opaque (the ffio value).
+				this.background_color_u32_argb_premul = 77
 			}
 		}
 	}
