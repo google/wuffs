@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 929d36d8779c5af900256db7313c0c87f4f704ee committed on 2019-05-26.
+// abaab57cfdb4ff6f98c01bfea0d45bc00bcf2e56 committed on 2019-05-31.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.40"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1723
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190526
-#define WUFFS_VERSION_STRING "0.2.0-alpha.40+1723.20190526"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.41"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1729
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190531
+#define WUFFS_VERSION_STRING "0.2.0-alpha.41+1729.20190531"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -2069,7 +2069,6 @@ typedef struct {
   struct {
     uint64_t first_frame_io_position;
     bool first_frame_is_opaque;
-    wuffs_base__color_u32_argb_premul background_color;
   } private_impl;
 
 #ifdef __cplusplus
@@ -2078,13 +2077,11 @@ typedef struct {
                   uint32_t width,
                   uint32_t height,
                   uint64_t first_frame_io_position,
-                  bool first_frame_is_opaque,
-                  wuffs_base__color_u32_argb_premul background_color);
+                  bool first_frame_is_opaque);
   inline void invalidate();
   inline bool is_valid() const;
   inline uint64_t first_frame_io_position() const;
   inline bool first_frame_is_opaque() const;
-  inline wuffs_base__color_u32_argb_premul background_color() const;
 #endif  // __cplusplus
 
 } wuffs_base__image_config;
@@ -2100,15 +2097,13 @@ wuffs_base__null_image_config() {
 
 // TODO: Should this function return bool? An error type?
 static inline void  //
-wuffs_base__image_config__set(
-    wuffs_base__image_config* c,
-    wuffs_base__pixel_format pixfmt,
-    wuffs_base__pixel_subsampling pixsub,
-    uint32_t width,
-    uint32_t height,
-    uint64_t first_frame_io_position,
-    bool first_frame_is_opaque,
-    wuffs_base__color_u32_argb_premul background_color) {
+wuffs_base__image_config__set(wuffs_base__image_config* c,
+                              wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height,
+                              uint64_t first_frame_io_position,
+                              bool first_frame_is_opaque) {
   if (!c) {
     return;
   }
@@ -2119,7 +2114,6 @@ wuffs_base__image_config__set(
     c->pixcfg.private_impl.height = height;
     c->private_impl.first_frame_io_position = first_frame_io_position;
     c->private_impl.first_frame_is_opaque = first_frame_is_opaque;
-    c->private_impl.background_color = background_color;
     return;
   }
 
@@ -2129,7 +2123,6 @@ wuffs_base__image_config__set(
   c->pixcfg.private_impl.height = 0;
   c->private_impl.first_frame_io_position = 0;
   c->private_impl.first_frame_is_opaque = 0;
-  c->private_impl.background_color = 0;
 }
 
 static inline void  //
@@ -2141,7 +2134,6 @@ wuffs_base__image_config__invalidate(wuffs_base__image_config* c) {
     c->pixcfg.private_impl.height = 0;
     c->private_impl.first_frame_io_position = 0;
     c->private_impl.first_frame_is_opaque = 0;
-    c->private_impl.background_color = 0;
   }
 }
 
@@ -2162,25 +2154,17 @@ wuffs_base__image_config__first_frame_is_opaque(
   return c ? c->private_impl.first_frame_is_opaque : false;
 }
 
-static inline wuffs_base__color_u32_argb_premul  //
-wuffs_base__image_config__background_color(const wuffs_base__image_config* c) {
-  return c ? c->private_impl.background_color : 0;
-}
-
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__image_config::set(
-    wuffs_base__pixel_format pixfmt,
-    wuffs_base__pixel_subsampling pixsub,
-    uint32_t width,
-    uint32_t height,
-    uint64_t first_frame_io_position,
-    bool first_frame_is_opaque,
-    wuffs_base__color_u32_argb_premul background_color) {
+wuffs_base__image_config::set(wuffs_base__pixel_format pixfmt,
+                              wuffs_base__pixel_subsampling pixsub,
+                              uint32_t width,
+                              uint32_t height,
+                              uint64_t first_frame_io_position,
+                              bool first_frame_is_opaque) {
   wuffs_base__image_config__set(this, pixfmt, pixsub, width, height,
-                                first_frame_io_position, first_frame_is_opaque,
-                                background_color);
+                                first_frame_io_position, first_frame_is_opaque);
 }
 
 inline void  //
@@ -2201,11 +2185,6 @@ wuffs_base__image_config::first_frame_io_position() const {
 inline bool  //
 wuffs_base__image_config::first_frame_is_opaque() const {
   return wuffs_base__image_config__first_frame_is_opaque(this);
-}
-
-inline wuffs_base__color_u32_argb_premul  //
-wuffs_base__image_config::background_color() const {
-  return wuffs_base__image_config__background_color(this);
 }
 
 #endif  // __cplusplus
@@ -3325,35 +3304,42 @@ static const uint32_t                          //
     wuffs_gif__quirk_delay_num_decoded_frames  //
         WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
 
-#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635329
+#define WUFFS_GIF__QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND \
+  1041635329
+
+static const uint32_t                                                  //
+    wuffs_gif__quirk_first_frame_local_palette_means_black_background  //
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+
+#define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635330
 
 static const uint32_t                        //
     wuffs_gif__quirk_honor_background_color  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
-#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635330
+#define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635331
 
 static const uint32_t                            //
     wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
 
-#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635331
+#define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635332
 
 static const uint32_t                         //
     wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635332
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
 
 static const uint32_t                    //
     wuffs_gif__quirk_reject_empty_frame  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
 
-#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635333
+#define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635334
 
 static const uint32_t                      //
     wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
+        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635334;
 
 // ---------------- Struct Declarations
 
@@ -3468,6 +3454,7 @@ struct wuffs_gif__decoder__struct {
     uint64_t f_metadata_chunk_length_value;
     uint64_t f_metadata_io_position;
     bool f_quirk_enabled_delay_num_decoded_frames;
+    bool f_quirk_enabled_first_frame_local_palette_means_black_background;
     bool f_quirk_enabled_honor_background_color;
     bool f_quirk_enabled_ignore_too_much_pixel_data;
     bool f_quirk_enabled_image_bounds_are_strict;
@@ -3482,6 +3469,7 @@ struct wuffs_gif__decoder__struct {
     bool f_seen_num_loops;
     uint32_t f_num_loops;
     uint32_t f_background_color_u32_argb_premul;
+    uint32_t f_black_color_u32_argb_premul;
     bool f_gc_has_transparent_index;
     uint8_t f_gc_transparent_index;
     uint8_t f_gc_disposal;
@@ -3523,6 +3511,10 @@ struct wuffs_gif__decoder__struct {
     uint8_t f_dst_palette[1024];
     wuffs_lzw__decoder f_lzw;
 
+    struct {
+      uint8_t v_blend;
+      uint32_t v_background_color;
+    } s_decode_frame_config[1];
     struct {
       uint64_t scratch;
     } s_skip_frame[1];
@@ -8771,14 +8763,18 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
     if (a_quirk == 1041635328) {
       self->private_impl.f_quirk_enabled_delay_num_decoded_frames = a_enabled;
     } else if (a_quirk == 1041635329) {
-      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
+      self->private_impl
+          .f_quirk_enabled_first_frame_local_palette_means_black_background =
+          a_enabled;
     } else if (a_quirk == 1041635330) {
-      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
+      self->private_impl.f_quirk_enabled_honor_background_color = a_enabled;
     } else if (a_quirk == 1041635331) {
-      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
+      self->private_impl.f_quirk_enabled_ignore_too_much_pixel_data = a_enabled;
     } else if (a_quirk == 1041635332) {
-      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+      self->private_impl.f_quirk_enabled_image_bounds_are_strict = a_enabled;
     } else if (a_quirk == 1041635333) {
+      self->private_impl.f_quirk_enabled_reject_empty_frame = a_enabled;
+    } else if (a_quirk == 1041635334) {
       self->private_impl.f_quirk_enabled_reject_empty_palette = a_enabled;
     }
   }
@@ -8842,13 +8838,18 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
            (self->private_impl.f_frame_rect_y0 == 0) &&
            (self->private_impl.f_frame_rect_x1 == self->private_impl.f_width) &&
            (self->private_impl.f_frame_rect_y1 == self->private_impl.f_height));
+    } else if (v_ffio) {
+      self->private_impl.f_black_color_u32_argb_premul = 4278190080;
+    }
+    if (self->private_impl.f_background_color_u32_argb_premul == 77) {
+      self->private_impl.f_background_color_u32_argb_premul =
+          self->private_impl.f_black_color_u32_argb_premul;
     }
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
           a_dst, 1191444488, 0, self->private_impl.f_width,
           self->private_impl.f_height,
-          self->private_impl.f_frame_config_io_position, v_ffio,
-          self->private_impl.f_background_color_u32_argb_premul);
+          self->private_impl.f_frame_config_io_position, v_ffio);
     }
     self->private_impl.f_call_sequence = 3;
 
@@ -9182,9 +9183,28 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
 
   uint8_t v_blend = 0;
   uint32_t v_background_color = 0;
+  uint8_t v_flags = 0;
+
+  uint8_t* iop_a_src = NULL;
+  uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src.private_impl.buf) {
+    iop_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
+    if (!a_src.private_impl.mark) {
+      a_src.private_impl.mark = iop_a_src;
+      a_src.private_impl.limit =
+          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
+    }
+    io0_a_src = a_src.private_impl.mark;
+    io1_a_src = a_src.private_impl.limit;
+  }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
   if (coro_susp_point) {
+    v_blend = self->private_data.s_decode_frame_config[0].v_blend;
+    v_background_color =
+        self->private_data.s_decode_frame_config[0].v_background_color;
   }
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
@@ -9194,21 +9214,45 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
      wuffs_base__make_empty_struct());
     if (!self->private_impl.f_end_of_data) {
       if (self->private_impl.f_call_sequence == 0) {
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
+        }
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
         status = wuffs_gif__decoder__decode_image_config(self, NULL, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
         if (status) {
           goto suspend;
         }
       } else if (self->private_impl.f_call_sequence != 3) {
         if (self->private_impl.f_call_sequence == 4) {
+          if (a_src.private_impl.buf) {
+            a_src.private_impl.buf->meta.ri =
+                ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
+          }
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
           status = wuffs_gif__decoder__skip_frame(self, a_src);
+          if (a_src.private_impl.buf) {
+            iop_a_src = a_src.private_impl.buf->data.ptr +
+                        a_src.private_impl.buf->meta.ri;
+          }
           if (status) {
             goto suspend;
           }
         }
+        if (a_src.private_impl.buf) {
+          a_src.private_impl.buf->meta.ri =
+              ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
+        }
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
         status = wuffs_gif__decoder__decode_up_to_id_part1(self, a_src);
+        if (a_src.private_impl.buf) {
+          iop_a_src = a_src.private_impl.buf->data.ptr +
+                      a_src.private_impl.buf->meta.ri;
+        }
         if (status) {
           goto suspend;
         }
@@ -9219,11 +9263,23 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
       goto ok;
     }
     v_blend = 0;
-    v_background_color = 0;
+    v_background_color = self->private_impl.f_black_color_u32_argb_premul;
     if (!self->private_impl.f_gc_has_transparent_index) {
       v_blend = 2;
       v_background_color =
           self->private_impl.f_background_color_u32_argb_premul;
+      if (self->private_impl
+              .f_quirk_enabled_first_frame_local_palette_means_black_background &&
+          (self->private_impl.f_num_decoded_frame_configs_value == 0)) {
+        while (((uint64_t)(io1_a_src - iop_a_src)) <= 0) {
+          status = wuffs_base__suspension__short_read;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(4);
+        }
+        v_flags = wuffs_base__load_u8be(iop_a_src);
+        if ((v_flags & 128) != 0) {
+          v_background_color = self->private_impl.f_black_color_u32_argb_premul;
+        }
+      }
     }
     if (a_dst != NULL) {
       wuffs_base__frame_config__update(
@@ -9258,9 +9314,17 @@ suspend:
       wuffs_base__status__is_suspension(status) ? coro_susp_point : 0;
   self->private_impl.active_coroutine =
       wuffs_base__status__is_suspension(status) ? 3 : 0;
+  self->private_data.s_decode_frame_config[0].v_blend = v_blend;
+  self->private_data.s_decode_frame_config[0].v_background_color =
+      v_background_color;
 
   goto exit;
 exit:
+  if (a_src.private_impl.buf) {
+    a_src.private_impl.buf->meta.ri =
+        ((size_t)(iop_a_src - a_src.private_impl.buf->data.ptr));
+  }
+
   if (wuffs_base__status__is_error(status)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
   }
@@ -9861,7 +9925,7 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
                (((uint32_t)(self->private_data.f_palettes[0][(v_j + 3)]))
                 << 24));
         } else {
-          self->private_impl.f_background_color_u32_argb_premul = 4278190080;
+          self->private_impl.f_background_color_u32_argb_premul = 77;
         }
       }
     }
