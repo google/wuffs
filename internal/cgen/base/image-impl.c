@@ -29,6 +29,61 @@ wuffs_base__pixel_swizzler__copy_1_1(wuffs_base__slice_u8 dst,
 }
 
 static uint64_t  //
+wuffs_base__pixel_swizzler__copy_3_1(wuffs_base__slice_u8 dst,
+                                     wuffs_base__slice_u8 dst_palette,
+                                     wuffs_base__slice_u8 src) {
+  if (dst_palette.len != 1024) {
+    return 0;
+  }
+  size_t dst_len3 = dst.len / 3;
+  size_t len = dst_len3 < src.len ? dst_len3 : src.len;
+  uint8_t* d = dst.ptr;
+  uint8_t* s = src.ptr;
+  size_t n = len;
+
+  // N is the loop unroll count.
+  const int N = 4;
+
+  // The comparison in the while condition is ">", not ">=", because with ">=",
+  // the last 4-byte store could write past the end of the dst slice.
+  //
+  // Each 4-byte store writes one too many bytes, but a subsequent store will
+  // overwrite that with the correct byte. There is always another store,
+  // whether a 4-byte store in this loop or a 1-byte store in the next loop.
+  while (n > N) {
+    wuffs_base__store_u32le(
+        d + (0 * 3),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4)));
+    wuffs_base__store_u32le(
+        d + (1 * 3),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[1]) * 4)));
+    wuffs_base__store_u32le(
+        d + (2 * 3),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[2]) * 4)));
+    wuffs_base__store_u32le(
+        d + (3 * 3),
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[3]) * 4)));
+
+    s += 1 * N;
+    d += 3 * N;
+    n -= (size_t)(1 * N);
+  }
+
+  while (n >= 1) {
+    uint32_t color =
+        wuffs_base__load_u32le(dst_palette.ptr + ((uint32_t)(s[0]) * 4));
+    d[0] = (uint8_t)(color >> 0);
+    d[1] = (uint8_t)(color >> 8);
+    d[2] = (uint8_t)(color >> 16);
+
+    s += 1 * 1;
+    d += 3 * 1;
+    n -= (size_t)(1 * 1);
+  }
+
+  return len;
+}
+static uint64_t  //
 wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
                                      wuffs_base__slice_u8 dst_palette,
                                      wuffs_base__slice_u8 src) {
@@ -39,8 +94,9 @@ wuffs_base__pixel_swizzler__copy_4_1(wuffs_base__slice_u8 dst,
   size_t len = dst_len4 < src.len ? dst_len4 : src.len;
   uint8_t* d = dst.ptr;
   uint8_t* s = src.ptr;
-
   size_t n = len;
+
+  // N is the loop unroll count.
   const int N = 4;
 
   while (n >= N) {
@@ -125,6 +181,13 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
           }
           func = wuffs_base__pixel_swizzler__copy_1_1;
           break;
+        case WUFFS_BASE__PIXEL_FORMAT__BGR:
+          if (wuffs_base__slice_u8__copy_from_slice(dst_palette, src_palette) !=
+              1024) {
+            break;
+          }
+          func = wuffs_base__pixel_swizzler__copy_3_1;
+          break;
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__BGRA_BINARY:
@@ -133,6 +196,13 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
             break;
           }
           func = wuffs_base__pixel_swizzler__copy_4_1;
+          break;
+        case WUFFS_BASE__PIXEL_FORMAT__RGB:
+          if (wuffs_base__pixel_swizzler__swap_rgbx_bgrx(dst_palette,
+                                                         src_palette) != 1024) {
+            break;
+          }
+          func = wuffs_base__pixel_swizzler__copy_3_1;
           break;
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
         case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
