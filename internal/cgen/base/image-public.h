@@ -1094,8 +1094,6 @@ typedef struct {
 
 } wuffs_base__pixel_swizzler;
 
-// TODO: should prepare (both the C and C++ methods) return a status?
-
 wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
