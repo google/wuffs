@@ -907,6 +907,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	var i                   base.u32
 	var argb                base.u32
 	var dst_palette         slice base.u8
+	var status              base.status
 	var lw                  base.u8
 
 	flags = args.src.read_u8?()
@@ -964,11 +965,14 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 
 	// TODO: a Wuffs (not just C) name for the
 	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
-	this.swizzler.prepare!(
+	status = this.swizzler.prepare!(
 		dst_pixfmt:args.dst.pixel_format(),
 		dst_palette:dst_palette,
 		src_pixfmt:0x47040008,
 		src_palette:this.palettes[which_palette][:])
+	if not status.is_ok() {
+		return status
+	}
 
 	// Other GIF implementations accept GIF files that aren't completely spec
 	// compliant. For example, the test/data/gifplayer-muybridge.gif file

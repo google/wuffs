@@ -98,14 +98,14 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
   return len4 * 4;
 }
 
-void  //
+wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette) {
   if (!p) {
-    return;
+    return wuffs_base__error__bad_receiver;
   }
 
   // TODO: support many more formats.
@@ -153,6 +153,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   p->private_impl.func = func;
+  return func ? NULL : wuffs_base__error__unsupported_option;
 }
 
 uint64_t  //

@@ -1083,10 +1083,10 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void prepare(wuffs_base__pixel_format dst_format,
-                      wuffs_base__slice_u8 dst_palette,
-                      wuffs_base__pixel_format src_format,
-                      wuffs_base__slice_u8 src_palette);
+  inline wuffs_base__status prepare(wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette);
   inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 dst_palette,
                                  wuffs_base__slice_u8 src) const;
@@ -1096,7 +1096,7 @@ typedef struct {
 
 // TODO: should prepare (both the C and C++ methods) return a status?
 
-void  //
+wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -1111,13 +1111,13 @@ wuffs_base__pixel_swizzler__swizzle_packed(const wuffs_base__pixel_swizzler* p,
 
 #ifdef __cplusplus
 
-inline void  //
+inline wuffs_base__status  //
 wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette) {
-  wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette, src_format,
-                                      src_palette);
+  return wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette,
+                                             src_format, src_palette);
 }
 
 uint64_t  //

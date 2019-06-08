@@ -49,6 +49,7 @@ var Statuses = [...]string{
 	`"#initialize not called"`,
 	`"#interleaved coroutine calls"`,
 	`"#not enough data"`,
+	`"#unsupported option"`,
 	`"#too much data"`,
 }
 
@@ -322,7 +323,7 @@ var Funcs = []string{
 
 	// ---- pixel_swizzler
 
-	"pixel_swizzler.prepare!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8)",
+	"pixel_swizzler.prepare!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8) status",
 	"pixel_swizzler.swizzle_packed!(dst slice u8, dst_palette slice u8, src slice u8) u64",
 }
 

@@ -209,6 +209,7 @@ extern const char* wuffs_base__error__initialize_falsely_claimed_already_zeroed;
 extern const char* wuffs_base__error__initialize_not_called;
 extern const char* wuffs_base__error__interleaved_coroutine_calls;
 extern const char* wuffs_base__error__not_enough_data;
+extern const char* wuffs_base__error__unsupported_option;
 extern const char* wuffs_base__error__too_much_data;
 
 static inline bool  //
@@ -2613,10 +2614,10 @@ typedef struct {
   } private_impl;
 
 #ifdef __cplusplus
-  inline void prepare(wuffs_base__pixel_format dst_format,
-                      wuffs_base__slice_u8 dst_palette,
-                      wuffs_base__pixel_format src_format,
-                      wuffs_base__slice_u8 src_palette);
+  inline wuffs_base__status prepare(wuffs_base__pixel_format dst_format,
+                                    wuffs_base__slice_u8 dst_palette,
+                                    wuffs_base__pixel_format src_format,
+                                    wuffs_base__slice_u8 src_palette);
   inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
                                  wuffs_base__slice_u8 dst_palette,
                                  wuffs_base__slice_u8 src) const;
@@ -2626,7 +2627,7 @@ typedef struct {
 
 // TODO: should prepare (both the C and C++ methods) return a status?
 
-void  //
+wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
@@ -2641,13 +2642,13 @@ wuffs_base__pixel_swizzler__swizzle_packed(const wuffs_base__pixel_swizzler* p,
 
 #ifdef __cplusplus
 
-inline void  //
+inline wuffs_base__status  //
 wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette) {
-  wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette, src_format,
-                                      src_palette);
+  return wuffs_base__pixel_swizzler__prepare(this, dst_format, dst_palette,
+                                             src_format, src_palette);
 }
 
 uint64_t  //
@@ -4815,6 +4816,7 @@ const char* wuffs_base__error__initialize_not_called =
 const char* wuffs_base__error__interleaved_coroutine_calls =
     "#base: interleaved coroutine calls";
 const char* wuffs_base__error__not_enough_data = "#base: not enough data";
+const char* wuffs_base__error__unsupported_option = "#base: unsupported option";
 const char* wuffs_base__error__too_much_data = "#base: too much data";
 
 // ---------------- Images
@@ -4901,14 +4903,14 @@ wuffs_base__pixel_swizzler__swap_rgbx_bgrx(wuffs_base__slice_u8 dst,
   return len4 * 4;
 }
 
-void  //
+wuffs_base__status  //
 wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__pixel_format dst_format,
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette) {
   if (!p) {
-    return;
+    return wuffs_base__error__bad_receiver;
   }
 
   // TODO: support many more formats.
@@ -4956,6 +4958,7 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
   }
 
   p->private_impl.func = func;
+  return func ? NULL : wuffs_base__error__unsupported_option;
 }
 
 uint64_t  //
@@ -10742,6 +10745,7 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   uint32_t v_i = 0;
   uint32_t v_argb = 0;
   wuffs_base__slice_u8 v_dst_palette = {0};
+  wuffs_base__status v_status = NULL;
   uint8_t v_lw = 0;
 
   uint8_t* iop_a_src = NULL;
@@ -10866,12 +10870,22 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
       v_dst_palette =
           wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024);
     }
-    wuffs_base__pixel_swizzler__prepare(
+    v_status = wuffs_base__pixel_swizzler__prepare(
         &self->private_impl.f_swizzler,
         wuffs_base__pixel_buffer__pixel_format(a_dst), v_dst_palette,
         1191444488,
         wuffs_base__make_slice_u8(
             self->private_data.f_palettes[v_which_palette], 1024));
+    if (!wuffs_base__status__is_ok(v_status)) {
+      status = v_status;
+      if (wuffs_base__status__is_error(status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(status)) {
+        status = wuffs_base__error__cannot_return_a_suspension;
+        goto exit;
+      }
+      goto ok;
+    }
     if (self->private_impl.f_previous_lzw_decode_ended_abruptly) {
       wuffs_base__ignore_status(wuffs_lzw__decoder__initialize(
           &self->private_data.f_lzw, sizeof(wuffs_lzw__decoder), WUFFS_VERSION,
