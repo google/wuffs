@@ -2470,12 +2470,13 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   }
   if (wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
     // TODO: support planar pixel formats, concious of pixel subsampling.
-    return wuffs_base__error__bad_argument;
+    return wuffs_base__error__unsupported_option;
   }
   uint32_t bits_per_pixel =
       wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
   if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
-    return wuffs_base__error__bad_argument;
+    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
+    return wuffs_base__error__unsupported_option;
   }
   uint64_t bytes_per_pixel = bits_per_pixel / 8;
 
