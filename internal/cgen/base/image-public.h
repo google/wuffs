@@ -908,6 +908,8 @@ typedef struct {
 #ifdef __cplusplus
   inline wuffs_base__status set_from_slice(wuffs_base__pixel_config* pixcfg,
                                            wuffs_base__slice_u8 pixbuf_memory);
+  inline wuffs_base__status set_from_table(wuffs_base__pixel_config* pixcfg,
+                                           wuffs_base__table_u8 pixbuf_memory);
   inline wuffs_base__slice_u8 palette();
   inline wuffs_base__pixel_format pixel_format() const;
   inline wuffs_base__table_u8 plane(uint32_t p);
@@ -991,6 +993,38 @@ wuffs_base__pixel_buffer__set_from_slice(wuffs_base__pixel_buffer* b,
   return NULL;
 }
 
+static inline wuffs_base__status  //
+wuffs_base__pixel_buffer__set_from_table(wuffs_base__pixel_buffer* b,
+                                         wuffs_base__pixel_config* pixcfg,
+                                         wuffs_base__table_u8 pixbuf_memory) {
+  if (!b) {
+    return wuffs_base__error__bad_receiver;
+  }
+  memset(b, 0, sizeof(*b));
+  if (!pixcfg ||
+      wuffs_base__pixel_format__is_planar(pixcfg->private_impl.pixfmt)) {
+    return wuffs_base__error__bad_argument;
+  }
+  uint32_t bits_per_pixel =
+      wuffs_base__pixel_format__bits_per_pixel(pixcfg->private_impl.pixfmt);
+  if ((bits_per_pixel == 0) || ((bits_per_pixel % 8) != 0)) {
+    // TODO: support fraction-of-byte pixels, e.g. 1 bit per pixel?
+    return wuffs_base__error__unsupported_option;
+  }
+  uint64_t bytes_per_pixel = bits_per_pixel / 8;
+
+  uint64_t width_in_bytes =
+      ((uint64_t)pixcfg->private_impl.width) * bytes_per_pixel;
+  if ((width_in_bytes > pixbuf_memory.width) ||
+      (pixcfg->private_impl.height > pixbuf_memory.height)) {
+    return wuffs_base__error__bad_argument;
+  }
+
+  b->pixcfg = *pixcfg;
+  b->private_impl.planes[0] = pixbuf_memory;
+  return NULL;
+}
+
 // wuffs_base__pixel_buffer__palette returns the palette color data. If
 // non-empty, it will have length 1024.
 static inline wuffs_base__slice_u8  //
@@ -1034,6 +1068,12 @@ inline wuffs_base__status  //
 wuffs_base__pixel_buffer::set_from_slice(wuffs_base__pixel_config* pixcfg,
                                          wuffs_base__slice_u8 pixbuf_memory) {
   return wuffs_base__pixel_buffer__set_from_slice(this, pixcfg, pixbuf_memory);
+}
+
+inline wuffs_base__status  //
+wuffs_base__pixel_buffer::set_from_table(wuffs_base__pixel_config* pixcfg,
+                                         wuffs_base__table_u8 pixbuf_memory) {
+  return wuffs_base__pixel_buffer__set_from_table(this, pixcfg, pixbuf_memory);
 }
 
 inline wuffs_base__slice_u8  //
