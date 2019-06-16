@@ -1104,7 +1104,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 }
 
 pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.u8) base.status {
-	// TODO: don't assume a packed pixel format.
+	// TODO: don't assume an interleaved pixel format.
 	var dst             slice base.u8
 	var src             slice base.u8
 	var n               base.u64
@@ -1151,7 +1151,8 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 			} else {
 				dst = dst[i:]
 			}
-			n = this.swizzler.swizzle_packed!(dst:dst, dst_palette:this.dst_palette[:], src:src)
+			n = this.swizzler.swizzle_interleaved!(
+				dst:dst, dst_palette:this.dst_palette[:], src:src)
 
 			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32

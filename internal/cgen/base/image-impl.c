@@ -227,10 +227,11 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 }
 
 uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_packed(const wuffs_base__pixel_swizzler* p,
-                                           wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 dst_palette,
-                                           wuffs_base__slice_u8 src) {
+wuffs_base__pixel_swizzler__swizzle_interleaved(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
   if (p && p->private_impl.func) {
     return (*(p->private_impl.func))(dst, dst_palette, src);
   }

@@ -324,7 +324,7 @@ var Funcs = []string{
 	// ---- pixel_swizzler
 
 	"pixel_swizzler.prepare!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8) status",
-	"pixel_swizzler.swizzle_packed!(dst slice u8, dst_palette slice u8, src slice u8) u64",
+	"pixel_swizzler.swizzle_interleaved!(dst slice u8, dst_palette slice u8, src slice u8) u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or

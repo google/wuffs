@@ -1564,9 +1564,9 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 //  - bit        20 indicates big-endian/MSB-first (as opposed to little/LSB).
 //  - bit        19 indicates floating point (as opposed to integer).
 //  - bit        18 indicates palette-indexed. The number-of-planes (the next
-//                  field) will be zero, as the format is considered packed,
+//                  field) will be 0, as the format is considered interleaved,
 //                  but the 8-bit N-BGRA color data is stored in plane 3.
-//  - bits 17 .. 16 are the number of planes, minus 1. Zero means packed.
+//  - bits 17 .. 16 are the number of planes, minus 1. Zero means interleaved.
 //  - bits 15 .. 12 encodes the number of bits (depth) in the 3rd channel.
 //  - bits 11 ..  8 encodes the number of bits (depth) in the 2nd channel.
 //  - bits  7 ..  4 encodes the number of bits (depth) in the 1st channel.
@@ -1583,14 +1583,14 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 // channels: cyan, magenta, yellow, black).
 //
 // For direct formats with N > 1 channels, those channels can be laid out in
-// either 1 (packed) or N (planar) planes. For example, RGBA data is usually
-// packed, but YCbCr data is usually planar, due to chroma subsampling (for
-// details, see the wuffs_base__pixel_subsampling type).
+// either 1 (interleaved) or N (planar) planes. For example, RGBA data is
+// usually interleaved, but YCbCr data is usually planar, due to chroma
+// subsampling (for details, see the wuffs_base__pixel_subsampling type).
 //
 // For indexed formats, the palette (always 256 × 4 bytes) holds 8 bits per
 // channel non-alpha-premultiplied BGRA color data. There is only 1 plane (for
-// the index), as the format is considered packed. Plane 0 holds the per-pixel
-// indices. Plane 3 is re-purposed to hold the per-index colors.
+// the index), as the format is considered interleaved. Plane 0 holds the
+// per-pixel indices. Plane 3 is re-purposed to hold the per-index colors.
 //
 // The color field is encoded in 3 bits:
 //  - 0 means                   A (Alpha).
@@ -1604,8 +1604,8 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 //
 // In Wuffs, channels are given in memory order (also known as byte order),
 // regardless of endianness, since the C type for the pixel data is an array of
-// bytes, not an array of uint32_t. For example, packed BGRA with 8 bits per
-// channel means that the bytes in memory are always Blue, Green, Red then
+// bytes, not an array of uint32_t. For example, interleaved BGRA with 8 bits
+// per channel means that the bytes in memory are always Blue, Green, Red then
 // Alpha. On big-endian systems, that is the uint32_t 0xBBGGRRAA. On
 // little-endian, 0xAARRGGBB.
 //
@@ -1638,15 +1638,15 @@ typedef uint32_t wuffs_base__color_u32_argb_premul;
 //
 // For example, wuffs_base__pixel_format 0x5510BBBB is a natural format for
 // decoding a PNG image - network byte order (also known as big-endian),
-// packed, non-premultiplied alpha - that happens to be 16-bit-depth truecolor
-// with alpha (RGBA). In memory order:
+// interleaved, non-premultiplied alpha - that happens to be 16-bit-depth
+// truecolor with alpha (RGBA). In memory order:
 //
 //  ptr+0  ptr+1  ptr+2  ptr+3  ptr+4  ptr+5  ptr+6  ptr+7
 //  Rhi    Rlo    Ghi    Glo    Bhi    Blo    Ahi    Alo
 //
 // For example, the value wuffs_base__pixel_format 0x40000565 means BGR with no
-// alpha or padding, 5/6/5 bits for blue/green/red, packed 2 bytes per pixel,
-// laid out LSB-first in memory order:
+// alpha or padding, 5/6/5 bits for blue/green/red, interleaved 2 bytes per
+// pixel, laid out LSB-first in memory order:
 //
 //  ptr+0...........  ptr+1...........
 //  MSB          LSB  MSB          LSB
@@ -1731,8 +1731,8 @@ wuffs_base__pixel_format__is_valid(wuffs_base__pixel_format f) {
   return f != 0;
 }
 
-// wuffs_base__pixel_format__bits_per_pixel returns, for packed pixel formats,
-// the number of bits per pixel. It returns 0 for planar pixel formats.
+// wuffs_base__pixel_format__bits_per_pixel returns the number of bits per
+// pixel for interleaved pixel formats, and returns 0 for planar pixel formats.
 static inline uint32_t  //
 wuffs_base__pixel_format__bits_per_pixel(wuffs_base__pixel_format f) {
   if (((f >> 16) & 0x03) != 0) {
@@ -1750,7 +1750,7 @@ wuffs_base__pixel_format__is_indexed(wuffs_base__pixel_format f) {
 }
 
 static inline bool  //
-wuffs_base__pixel_format__is_packed(wuffs_base__pixel_format f) {
+wuffs_base__pixel_format__is_interleaved(wuffs_base__pixel_format f) {
   return ((f >> 16) & 0x03) == 0;
 }
 
@@ -1776,7 +1776,7 @@ wuffs_base__pixel_format__num_planes(wuffs_base__pixel_format f) {
 // plane p. For a depth of 8 bits (1 byte), the p'th plane's sample starts at
 // (planes[p].ptr + (j * planes[p].stride) + i).
 //
-// For packed pixel formats, the mapping is trivial: i = x and j = y. For
+// For interleaved pixel formats, the mapping is trivial: i = x and j = y. For
 // planar pixel formats, the mapping can differ due to chroma subsampling. For
 // example, consider a three plane YCbCr pixel format with 4:2:2 subsampling.
 // For the luma (Y) channel, there is one sample for every pixel, but for the
@@ -1970,9 +1970,9 @@ wuffs_base__pixel_config__height(const wuffs_base__pixel_config* c) {
   return c ? c->private_impl.height : 0;
 }
 
-// TODO: this is the right API for planar (not packed) pixbufs? Should it allow
-// decoding into a color model different from the format's intrinsic one? For
-// example, decoding a JPEG image straight to RGBA instead of to YCbCr?
+// TODO: this is the right API for planar (not interleaved) pixbufs? Should it
+// allow decoding into a color model different from the format's intrinsic one?
+// For example, decoding a JPEG image straight to RGBA instead of to YCbCr?
 static inline uint64_t  //
 wuffs_base__pixel_config__pixbuf_len(const wuffs_base__pixel_config* c) {
   if (!c) {
@@ -2659,9 +2659,9 @@ typedef struct {
                                     wuffs_base__slice_u8 dst_palette,
                                     wuffs_base__pixel_format src_format,
                                     wuffs_base__slice_u8 src_palette);
-  inline uint64_t swizzle_packed(wuffs_base__slice_u8 dst,
-                                 wuffs_base__slice_u8 dst_palette,
-                                 wuffs_base__slice_u8 src) const;
+  inline uint64_t swizzle_interleaved(wuffs_base__slice_u8 dst,
+                                      wuffs_base__slice_u8 dst_palette,
+                                      wuffs_base__slice_u8 src) const;
 #endif  // __cplusplus
 
 } wuffs_base__pixel_swizzler;
@@ -2674,10 +2674,11 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
                                     wuffs_base__slice_u8 src_palette);
 
 uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_packed(const wuffs_base__pixel_swizzler* p,
-                                           wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 dst_palette,
-                                           wuffs_base__slice_u8 src);
+wuffs_base__pixel_swizzler__swizzle_interleaved(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src);
 
 #ifdef __cplusplus
 
@@ -2691,11 +2692,12 @@ wuffs_base__pixel_swizzler::prepare(wuffs_base__pixel_format dst_format,
 }
 
 uint64_t  //
-wuffs_base__pixel_swizzler::swizzle_packed(wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 dst_palette,
-                                           wuffs_base__slice_u8 src) const {
-  return wuffs_base__pixel_swizzler__swizzle_packed(this, dst, dst_palette,
-                                                    src);
+wuffs_base__pixel_swizzler::swizzle_interleaved(
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) const {
+  return wuffs_base__pixel_swizzler__swizzle_interleaved(this, dst, dst_palette,
+                                                         src);
 }
 
 #endif  // __cplusplus
@@ -5071,10 +5073,11 @@ wuffs_base__pixel_swizzler__prepare(wuffs_base__pixel_swizzler* p,
 }
 
 uint64_t  //
-wuffs_base__pixel_swizzler__swizzle_packed(const wuffs_base__pixel_swizzler* p,
-                                           wuffs_base__slice_u8 dst,
-                                           wuffs_base__slice_u8 dst_palette,
-                                           wuffs_base__slice_u8 src) {
+wuffs_base__pixel_swizzler__swizzle_interleaved(
+    const wuffs_base__pixel_swizzler* p,
+    wuffs_base__slice_u8 dst,
+    wuffs_base__slice_u8 dst_palette,
+    wuffs_base__slice_u8 src) {
   if (p && p->private_impl.func) {
     return (*(p->private_impl.func))(dst, dst_palette, src);
   }
@@ -11320,7 +11323,7 @@ label_0_continue:;
       } else {
         v_dst = wuffs_base__slice_u8__subslice_i(v_dst, v_i);
       }
-      v_n = wuffs_base__pixel_swizzler__swizzle_packed(
+      v_n = wuffs_base__pixel_swizzler__swizzle_interleaved(
           &self->private_impl.f_swizzler, v_dst,
           wuffs_base__make_slice_u8(self->private_data.f_dst_palette, 1024),
           v_src);
