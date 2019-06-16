@@ -2,6 +2,30 @@
 
 make deflate
 
-# TODO: blockDynamicHuffman
-# See deflate-degenerate-huffman.deflate.commentary.txt for details.
-bytes 0x05 0xC0 0x21 0x01 0x00 0x00 0x00 0x80 0xA0 0xB7 0x56 0xFE 0x37 0x89 0x01
+blockDynamicHuffman (final) {
+	numLCodes 257
+	numDCodes 1
+	numCLCodeLengths 18
+
+	huffman CodeLength {
+		1  00
+		2  01
+		17 10
+		18 11
+	}
+
+	huffman Length/Literal {
+		# 102='f', 111='o', 256=EOB
+		111 0
+		102 10
+		256 11
+	}
+
+	huffman Distance {
+		# Incomplete. There is no key/value pair whose value starts with "1".
+		0 0
+	}
+
+	literal "foo"
+	endOfBlock
+}

@@ -118,6 +118,15 @@ func main1() error {
 		}
 	}
 
+	if state == nil {
+		return fmt.Errorf("no 'make' line")
+	} else {
+		state, err = state("")
+		if err != nil {
+			return err
+		}
+	}
+
 	_, err = os.Stdout.Write(out)
 	return err
 }
@@ -224,23 +233,177 @@ func init() {
 	formats["deflate"] = stateDeflate
 }
 
+var deflateCodeOrder = [19]uint32{
+	16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
+}
+
+type deflateHuffmanTable map[uint32]string
+
 var deflateGlobals struct {
 	bncData []byte
 	stream  deflateBitStream
+
+	// Dynamic Huffman state.
+	numLCodes        uint32
+	numDCodes        uint32
+	numCLCodeLengths uint32
+	whichHuffman     uint32
+	// 0=Unused, 1=CodeLength, 2=Length/Literal, 3=Distance.
+	huffmans [4]deflateHuffmanTable
+}
+
+func deflateGlobalsClearDynamicHuffmanState() {
+	deflateGlobals.numLCodes = 0
+	deflateGlobals.numDCodes = 0
+	deflateGlobals.numCLCodeLengths = 0
+	deflateGlobals.whichHuffman = 0
+	deflateGlobals.huffmans = [4]deflateHuffmanTable{}
+}
+
+func deflateGlobalsWriteDynamicHuffmanTables() error {
+	g := &deflateGlobals
+	if (g.numLCodes < 257) || (257+31 < g.numLCodes) {
+		return fmt.Errorf("bad numLCodes: %d", g.numLCodes)
+	}
+	g.stream.writeBits(g.numLCodes-257, 5)
+	if (g.numDCodes < 1) || (1+31 < g.numDCodes) {
+		return fmt.Errorf("bad numDCodes: %d", g.numDCodes)
+	}
+	g.stream.writeBits(g.numDCodes-1, 5)
+	if (g.numCLCodeLengths < 4) || (4+15 < g.numCLCodeLengths) {
+		return fmt.Errorf("bad numCLCodeLengths: %d", g.numCLCodeLengths)
+	}
+	g.stream.writeBits(g.numCLCodeLengths-4, 4)
+
+	// Write the Huffman table for CodeLength.
+	{
+		for i := uint32(0); i < g.numCLCodeLengths; i++ {
+			n := len(g.huffmans[1][deflateCodeOrder[i]])
+			g.stream.writeBits(uint32(n), 3)
+		}
+		for i := g.numCLCodeLengths; i < uint32(len(deflateCodeOrder)); i++ {
+			n := len(g.huffmans[1][deflateCodeOrder[i]])
+			if n > 0 {
+				return fmt.Errorf("short numCLCodeLengths: %d", g.numCLCodeLengths)
+			}
+		}
+	}
+
+	// Write the Huffman tables for Length/Literal and Distance.
+	{
+		numZeroes := uint32(0)
+		for i := uint32(0); i < g.numLCodes+g.numDCodes; i++ {
+			s := ""
+			if i < g.numLCodes {
+				s = g.huffmans[2][i]
+			} else {
+				s = g.huffmans[3][i-g.numLCodes]
+			}
+			if s == "" {
+				numZeroes++
+				continue
+			}
+
+			if err := deflateGlobalsWriteDynamicHuffmanZeroes(numZeroes); err != nil {
+				return err
+			}
+			numZeroes = 0
+
+			deflateGlobalsWriteDynamicHuffmanBits(g.huffmans[1][uint32(len(s))])
+		}
+		if err := deflateGlobalsWriteDynamicHuffmanZeroes(numZeroes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func deflateGlobalsWriteDynamicHuffmanZeroes(numZeroes uint32) error {
+	g := &deflateGlobals
+	if numZeroes == 0 {
+		return nil
+	}
+
+	if s := g.huffmans[1][18]; s != "" {
+		for numZeroes >= 11 {
+			extra := numZeroes - 11
+			if extra > 127 {
+				extra = 127
+			}
+			deflateGlobalsWriteDynamicHuffmanBits(s)
+			g.stream.writeBits(extra, 7)
+			numZeroes -= 11 + extra
+		}
+	}
+
+	if s := g.huffmans[1][17]; s != "" {
+		for numZeroes >= 3 {
+			extra := numZeroes - 3
+			if extra > 7 {
+				extra = 7
+			}
+			deflateGlobalsWriteDynamicHuffmanBits(s)
+			g.stream.writeBits(extra, 3)
+			numZeroes -= 3 + extra
+		}
+	}
+
+	if s := g.huffmans[1][0]; s != "" {
+		for ; numZeroes > 0; numZeroes-- {
+			deflateGlobalsWriteDynamicHuffmanBits(s)
+		}
+	}
+
+	if numZeroes > 0 {
+		return fmt.Errorf("could not write a run of zero-valued code lengths")
+	}
+	return nil
+}
+
+func deflateGlobalsWriteDynamicHuffmanBits(s string) {
+	g := &deflateGlobals
+	for i := 0; i < len(s); i++ {
+		g.stream.writeBits(uint32(s[i]&1), 1)
+	}
+}
+
+func parseDeflateWhichHuffman(s string) (num uint32, remaining string, ok bool) {
+	if i := strings.IndexByte(s, ' '); i >= 0 {
+		s, remaining = s[:i], s[i+1:]
+		for len(remaining) > 0 && remaining[0] == ' ' {
+			remaining = remaining[1:]
+		}
+	}
+
+	switch s {
+	case "CodeLength":
+		return 1, remaining, true
+	case "Length/Literal":
+		return 2, remaining, true
+	case "Distance":
+		return 3, remaining, true
+	}
+	return 0, "", false
 }
 
 func stateDeflate(line string) (stateFunc, error) {
 	g := &deflateGlobals
 	const (
 		cmdB   = "bytes "
-		cmdBNC = "blockNoCompression "
+		cmdBDH = "blockDynamicHuffman "
 		cmdBFH = "blockFixedHuffman "
+		cmdBNC = "blockNoCompression "
 	)
 	bits := uint32(0)
 	s := ""
 
 	retState := stateFunc(nil)
 	switch {
+	case line == "":
+		g.stream.flush()
+		return stateDeflate, nil
+
 	case strings.HasPrefix(line, cmdB):
 		s := line[len(cmdB):]
 		for s != "" {
@@ -261,6 +424,10 @@ func stateDeflate(line string) (stateFunc, error) {
 		s = line[len(cmdBFH):]
 		retState = stateDeflateFixedHuffman
 		bits |= 1 << 1
+	case strings.HasPrefix(line, cmdBDH):
+		s = line[len(cmdBDH):]
+		retState = stateDeflateDynamicHuffman
+		bits |= 2 << 1
 	default:
 		return nil, fmt.Errorf("bad stateDeflate command: %q", line)
 	}
@@ -304,7 +471,6 @@ func stateDeflateNoCompression(line string) (stateFunc, error) {
 func stateDeflateFixedHuffman(line string) (stateFunc, error) {
 	g := &deflateGlobals
 	if line == "}" {
-		g.stream.flush()
 		return stateDeflate, nil
 	}
 
@@ -314,16 +480,15 @@ func stateDeflateFixedHuffman(line string) (stateFunc, error) {
 	}
 
 	if lit, ok := deflateParseLiteral(line); ok {
-		// TODO: support "\xAB" escape codes in the script?
 		for i := 0; i < len(lit); i++ {
-			g.stream.writeLCode(uint32(lit[i]))
+			g.stream.writeFixedHuffmanLCode(uint32(lit[i]))
 		}
 		return stateDeflateFixedHuffman, nil
 	}
 
 	if line == "len 3 distCode 31" {
 		lCode, lExtra, lNExtra := deflateEncodeLength(3)
-		g.stream.writeLCode(lCode)
+		g.stream.writeFixedHuffmanLCode(lCode)
 		g.stream.writeBits(lExtra, lNExtra)
 		dCode, dExtra, dNExtra := uint32(31), uint32(0), uint32(0)
 		g.stream.writeBits(reverse(dCode, 5), 5)
@@ -333,7 +498,7 @@ func stateDeflateFixedHuffman(line string) (stateFunc, error) {
 
 	if l, d, ok := deflateParseLenDist(line); ok {
 		lCode, lExtra, lNExtra := deflateEncodeLength(l)
-		g.stream.writeLCode(lCode)
+		g.stream.writeFixedHuffmanLCode(lCode)
 		g.stream.writeBits(lExtra, lNExtra)
 		dCode, dExtra, dNExtra := deflateEncodeDistance(d)
 		g.stream.writeBits(reverse(dCode, 5), 5)
@@ -342,6 +507,120 @@ func stateDeflateFixedHuffman(line string) (stateFunc, error) {
 	}
 
 	return nil, fmt.Errorf("bad stateDeflateFixedHuffman command: %q", line)
+}
+
+func stateDeflateDynamicHuffman(line string) (stateFunc, error) {
+	g := &deflateGlobals
+	const (
+		cmdH     = "huffman "
+		cmdNCLCL = "numCLCodeLengths "
+		cmdNDC   = "numDCodes "
+		cmdNLC   = "numLCodes "
+	)
+	switch {
+	case line == "}":
+		deflateGlobalsClearDynamicHuffmanState()
+		return stateDeflate, nil
+
+	case strings.HasPrefix(line, cmdH):
+		s := line[len(cmdH):]
+		n, s, ok := parseDeflateWhichHuffman(s)
+		if !ok {
+			break
+		}
+		g.whichHuffman = n
+		return stateDeflateDynamicHuffmanHuffman, nil
+
+	case strings.HasPrefix(line, cmdNLC):
+		s := line[len(cmdNLC):]
+		n, s, ok := parseNum(s)
+		if !ok {
+			break
+		}
+		g.numLCodes = n
+		return stateDeflateDynamicHuffman, nil
+
+	case strings.HasPrefix(line, cmdNDC):
+		s := line[len(cmdNDC):]
+		n, s, ok := parseNum(s)
+		if !ok {
+			break
+		}
+		g.numDCodes = n
+		return stateDeflateDynamicHuffman, nil
+
+	case strings.HasPrefix(line, cmdNCLCL):
+		s := line[len(cmdNCLCL):]
+		n, s, ok := parseNum(s)
+		if !ok {
+			break
+		}
+		g.numCLCodeLengths = n
+		return stateDeflateDynamicHuffman, nil
+	}
+
+	if lit, ok := deflateParseLiteral(line); ok {
+		for i := 0; i < len(lit); i++ {
+			s := g.huffmans[2][uint32(lit[i])]
+			if s == "" {
+				return nil, fmt.Errorf("no code for literal %q (%d)", lit[i:i+1], lit[i])
+			}
+			deflateGlobalsWriteDynamicHuffmanBits(s)
+		}
+		return stateDeflateDynamicHuffman, nil
+	} else if line == "endOfBlock" {
+		s := g.huffmans[2][256]
+		if s == "" {
+			return nil, fmt.Errorf("no code for end-of-block (256)")
+		}
+		deflateGlobalsWriteDynamicHuffmanBits(s)
+		return stateDeflateDynamicHuffman, nil
+	}
+
+	return nil, fmt.Errorf("bad stateDeflateDynamicHuffman command: %q", line)
+}
+
+func stateDeflateDynamicHuffmanHuffman(line string) (stateFunc, error) {
+	g := &deflateGlobals
+outer:
+	switch {
+	case line == "}":
+		g.whichHuffman = 0
+
+		// If we have all three Huffman tables, write them.
+		for i := 1; ; i++ {
+			if i == 4 {
+				if err := deflateGlobalsWriteDynamicHuffmanTables(); err != nil {
+					return nil, err
+				}
+				break
+			}
+			if g.huffmans[i] == nil {
+				break
+			}
+		}
+
+		return stateDeflateDynamicHuffman, nil
+
+	default:
+		s := line
+		n, s, ok := parseNum(s)
+		if !ok || s == "" {
+			break
+		}
+		for i := 0; i < len(s); i++ {
+			if c := s[i]; c != '0' && c != '1' {
+				break outer
+			}
+		}
+		if g.huffmans[g.whichHuffman] == nil {
+			g.huffmans[g.whichHuffman] = deflateHuffmanTable{}
+		}
+		g.huffmans[g.whichHuffman][n] = s
+		return stateDeflateDynamicHuffmanHuffman, nil
+	}
+
+	return nil, fmt.Errorf("bad stateDeflateDynamicHuffmanHuffman command: %q", line)
 }
 
 type deflateBitStream struct {
@@ -368,7 +647,7 @@ func (z *deflateBitStream) writeBytes(b []byte) {
 	out = append(out, b...)
 }
 
-func (z *deflateBitStream) writeLCode(lCode uint32) {
+func (z *deflateBitStream) writeFixedHuffmanLCode(lCode uint32) {
 	switch {
 	case lCode < 144: // 0b._0011_0000 through 0b._1011_1111
 		lCode += 0x030
@@ -472,6 +751,7 @@ func deflateEncodeDistance(d uint32) (code uint32, extra uint32, nExtra uint32) 
 }
 
 func deflateParseLiteral(s string) (lit string, ok bool) {
+	// TODO: support "\xAB" escape codes in the script?
 	const (
 		prefix = `literal "`
 		suffix = `"`
@@ -534,6 +814,9 @@ func stateGif(line string) (stateFunc, error) {
 	)
 outer:
 	switch {
+	case line == "":
+		return stateGif, nil
+
 	case line == "frame {":
 		gifGlobals.localPalette = nil
 		out = append(out, 0x2C)
