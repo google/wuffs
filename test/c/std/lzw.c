@@ -295,31 +295,9 @@ const char* test_wuffs_lzw_decode_output_empty() {
   return NULL;
 }
 
-const char* test_wuffs_lzw_decode_width_1() {
-  CHECK_FOCUS(__func__);
-
-  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
-      .data = global_got_slice,
-  });
-  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
-      .data = global_src_slice,
-  });
-
-  got.data.ptr[0] = 0xFF;
-  got.data.ptr[1] = 0xFF;
-  got.data.ptr[2] = 0xFF;
-  got.data.ptr[3] = 0xFF;
-
-  // Set src to be:
-  // 0b...._...._...._..10  0x010 Clear code.
-  // 0b...._...._...._00..  0x000 Literal "0".
-  // 0b...._...._.001_....  0x001 Literal "1".
-  // 0b...._..10_0..._....  0x100 Back-ref "01".
-  // 0b...0_11.._...._....  0x011 End code.
-  src.meta.wi = 2;
-  src.data.ptr[0] = 0x12;
-  src.data.ptr[1] = 0x0E;
-
+const char* do_test_wuffs_lzw_decode_width(uint32_t width,
+                                           wuffs_base__io_buffer src,
+                                           wuffs_base__io_buffer want) {
   wuffs_lzw__decoder dec;
   const char* status = wuffs_lzw__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
@@ -327,8 +305,11 @@ const char* test_wuffs_lzw_decode_width_1() {
   if (status) {
     RETURN_FAIL("initialize: \"%s\"", status);
   }
-  wuffs_lzw__decoder__set_literal_width(&dec, 1);
+  wuffs_lzw__decoder__set_literal_width(&dec, width);
 
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
   status = wuffs_lzw__decoder__decode_io_writer(
       &dec, wuffs_base__io_buffer__writer(&got),
       wuffs_base__io_buffer__reader(&src), global_work_slice);
@@ -336,16 +317,70 @@ const char* test_wuffs_lzw_decode_width_1() {
     RETURN_FAIL("decode: \"%s\"", status);
   }
 
-  if (got.meta.wi != 4) {
-    RETURN_FAIL("got.meta.wi: got %d, want 4", (int)(got.meta.wi));
-  }
-  uint8_t* g = got.data.ptr;
-  if ((g[0] != 0x00) || (g[1] != 0x01) || (g[2] != 0x00) || (g[3] != 0x01)) {
-    RETURN_FAIL(
-        "got {0x%02x, 0x%02x, 0x%02x, 0x%02x}, want {0x00, 0x01, 0x00, 0x01}",
-        (int)(g[0]), (int)(g[1]), (int)(g[2]), (int)(g[3]));
-  }
-  return NULL;
+  return check_io_buffers_equal("", &got, &want);
+}
+
+// A zero literal width isn't very practical: the output bytes can only be 0x00
+// and it isn't possible to encode the empty string, as the End code requires
+// two bits but the first non-Clear code after a Clear code has only one bit,
+// so it must be the literal 0x00. Nonetheless, the giflib C library accepts a
+// zero literal width (it only rejects literal widths above 8), so we do too.
+const char* test_wuffs_lzw_decode_width_0() {
+  CHECK_FOCUS(__func__);
+
+  // 0b...._...._...._...1  0x001 Clear code.
+  // 0b...._...._...._..0.  0x000 Literal "0".
+  // 0b...._...._...._11..  0x011 Back-ref "00"
+  // 0b...._...._.100_....  0x100 Back-ref "000".
+  // 0b...._..00_0..._....  0x000 Literal "0".
+  // 0b...0_10.._...._....  0x010 End code.
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  src.meta.wi = 2;
+  src.data.ptr[0] = 0x4D;
+  src.data.ptr[1] = 0x08;
+
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
+  want.meta.wi = 7;
+  want.data.ptr[0] = 0x00;
+  want.data.ptr[1] = 0x00;
+  want.data.ptr[2] = 0x00;
+  want.data.ptr[3] = 0x00;
+  want.data.ptr[4] = 0x00;
+  want.data.ptr[5] = 0x00;
+  want.data.ptr[6] = 0x00;
+
+  return do_test_wuffs_lzw_decode_width(0, src, want);
+}
+
+const char* test_wuffs_lzw_decode_width_1() {
+  CHECK_FOCUS(__func__);
+
+  // 0b...._...._...._..10  0x010 Clear code.
+  // 0b...._...._...._00..  0x000 Literal "0".
+  // 0b...._...._.001_....  0x001 Literal "1".
+  // 0b...._..10_0..._....  0x100 Back-ref "01".
+  // 0b...0_11.._...._....  0x011 End code.
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  src.meta.wi = 2;
+  src.data.ptr[0] = 0x12;
+  src.data.ptr[1] = 0x0E;
+
+  wuffs_base__io_buffer want = ((wuffs_base__io_buffer){
+      .data = global_want_slice,
+  });
+  want.meta.wi = 4;
+  want.data.ptr[0] = 0x00;
+  want.data.ptr[1] = 0x01;
+  want.data.ptr[2] = 0x00;
+  want.data.ptr[3] = 0x01;
+
+  return do_test_wuffs_lzw_decode_width(1, src, want);
 }
 
 // ---------------- LZW Benches
@@ -421,6 +456,7 @@ proc tests[] = {
     test_wuffs_lzw_decode_output_bad,               //
     test_wuffs_lzw_decode_output_empty,             //
     test_wuffs_lzw_decode_pi,                       //
+    test_wuffs_lzw_decode_width_0,                  //
     test_wuffs_lzw_decode_width_1,                  //
 
     NULL,
