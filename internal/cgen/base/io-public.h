@@ -15,6 +15,8 @@
 // limitations under the License.
 
 // ---------------- I/O
+//
+// See (/doc/note/io-input-output.md).
 
 struct wuffs_base__io_buffer__struct;
 

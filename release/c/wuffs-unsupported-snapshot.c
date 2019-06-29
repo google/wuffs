@@ -1273,6 +1273,8 @@ wuffs_base__rect_ie_u32::height() const {
 #endif  // __cplusplus
 
 // ---------------- I/O
+//
+// See (/doc/note/io-input-output.md).
 
 struct wuffs_base__io_buffer__struct;
 
