@@ -144,6 +144,18 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		b.writes("(iop_a_src > io0_a_src)")
 		return nil
 
+	case t.IDCountSince:
+		b.printf("(a_src.private_impl.buf ? wuffs_base__io__count_since(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.printf(", iop_a_src - a_src.private_impl.buf->data.ptr) : 0)")
+		return nil
+
+	case t.IDMark:
+		b.printf("(a_src.private_impl.buf ? ((uint64_t)(iop_a_src - a_src.private_impl.buf->data.ptr)) : 0)")
+		return nil
+
 	case t.IDPosition:
 		b.printf("(a_src.private_impl.buf ? wuffs_base__u64__sat_add(" +
 			"a_src.private_impl.buf->meta.pos, ((uint64_t)(iop_a_src - a_src.private_impl.buf->data.ptr))) : 0)")
@@ -156,6 +168,14 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 	case t.IDSetMark:
 		b.printf("wuffs_base__io_reader__set_mark(&%ssrc, iop_a_src)", aPrefix)
+		return nil
+
+	case t.IDSince:
+		b.printf("(a_src.private_impl.buf ? wuffs_base__io__since(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.printf(", iop_a_src - a_src.private_impl.buf->data.ptr, a_src.private_impl.buf->data.ptr) : wuffs_base__make_slice_u8(NULL, 0))")
 		return nil
 
 	case t.IDSinceMark, t.IDSinceMarkLength:
@@ -245,6 +265,18 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io1_a_dst,")
 		return g.writeArgs(b, args, depth)
 
+	case t.IDCountSince:
+		b.printf("(a_dst.private_impl.buf ? wuffs_base__io__count_since(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.printf(", iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
+		return nil
+
+	case t.IDMark:
+		b.printf("(a_dst.private_impl.buf ? ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)) : 0)")
+		return nil
+
 	case t.IDPosition:
 		b.printf("(a_dst.private_impl.buf ? wuffs_base__u64__sat_add(" +
 			"a_dst.private_impl.buf->meta.pos, iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
@@ -256,6 +288,14 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		// (io_writer)? Do we still want to have that mark live outside of
 		// the function scope?
 		b.printf("wuffs_base__io_writer__set_mark(&%sdst, iop_a_dst)", aPrefix)
+		return nil
+
+	case t.IDSince:
+		b.printf("(a_dst.private_impl.buf ? wuffs_base__io__since(")
+		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
+			return err
+		}
+		b.printf(", iop_a_dst - a_dst.private_impl.buf->data.ptr, a_dst.private_impl.buf->data.ptr) : wuffs_base__make_slice_u8(NULL, 0))")
 		return nil
 
 	case t.IDSinceMark, t.IDSinceMarkLength:

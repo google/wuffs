@@ -4526,6 +4526,22 @@ wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
          (buf.data.len >= buf.meta.wi) && (buf.meta.wi >= buf.meta.ri);
 }
 
+static inline uint64_t  //
+wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
+  if (index >= mark) {
+    return index - mark;
+  }
+  return 0;
+}
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
+  if (index >= mark) {
+    return wuffs_base__make_slice_u8(ptr + mark, index - mark);
+  }
+  return wuffs_base__make_slice_u8(NULL, 0);
+}
+
 // TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
 // it might be handy to programs that use Wuffs. Either delete it, or promote
 // it to the public API.
@@ -6506,6 +6522,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = NULL;
 
+  uint64_t v_mark = 0;
   wuffs_base__status v_status = NULL;
   wuffs_base__slice_u8 v_written = {0};
   uint64_t v_n_copied = 0;
@@ -6536,7 +6553,9 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
-      wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
+      v_mark = (a_dst.private_impl.buf
+                    ? ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))
+                    : 0);
       {
         if (a_dst.private_impl.buf) {
           a_dst.private_impl.buf->meta.wi =
@@ -6560,9 +6579,12 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
         }
         goto ok;
       }
-      v_written = wuffs_base__make_slice_u8(
-          a_dst.private_impl.mark,
-          (size_t)(iop_a_dst - a_dst.private_impl.mark));
+      v_written =
+          (a_dst.private_impl.buf
+               ? wuffs_base__io__since(
+                     v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                     a_dst.private_impl.buf->data.ptr)
+               : wuffs_base__make_slice_u8(NULL, 0));
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
         wuffs_base__slice_u8__copy_from_slice(
@@ -11548,6 +11570,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   uint8_t v_c = 0;
   uint8_t v_flags = 0;
   uint16_t v_xlen = 0;
+  uint64_t v_mark = 0;
   uint32_t v_checksum_got = 0;
   uint32_t v_decoded_length_got = 0;
   wuffs_base__status v_status = NULL;
@@ -11751,7 +11774,9 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       goto exit;
     }
     while (true) {
-      wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
+      v_mark = (a_dst.private_impl.buf
+                    ? ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))
+                    : 0);
       {
         if (a_dst.private_impl.buf) {
           a_dst.private_impl.buf->meta.wi =
@@ -11776,11 +11801,17 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_crc32__ieee_hasher__update(
             &self->private_data.f_checksum,
-            wuffs_base__make_slice_u8(
-                a_dst.private_impl.mark,
-                (size_t)(iop_a_dst - a_dst.private_impl.mark)));
+            (a_dst.private_impl.buf
+                 ? wuffs_base__io__since(
+                       v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                       a_dst.private_impl.buf->data.ptr)
+                 : wuffs_base__make_slice_u8(NULL, 0)));
         v_decoded_length_got += ((uint32_t)(
-            (((uint64_t)(iop_a_dst - a_dst.private_impl.mark)) & 4294967295)));
+            ((a_dst.private_impl.buf
+                  ? wuffs_base__io__count_since(
+                        v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr)
+                  : 0) &
+             4294967295)));
       }
       if (wuffs_base__status__is_ok(v_status)) {
         goto label_2_break;
@@ -12038,6 +12069,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   uint32_t v_checksum_got = 0;
   wuffs_base__status v_status = NULL;
   uint32_t v_checksum_want = 0;
+  uint64_t v_mark = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -12124,7 +12156,9 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       goto exit;
     }
     while (true) {
-      wuffs_base__io_writer__set_mark(&a_dst, iop_a_dst);
+      v_mark = (a_dst.private_impl.buf
+                    ? ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))
+                    : 0);
       {
         if (a_dst.private_impl.buf) {
           a_dst.private_impl.buf->meta.wi =
@@ -12149,9 +12183,11 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_adler32__hasher__update(
             &self->private_data.f_checksum,
-            wuffs_base__make_slice_u8(
-                a_dst.private_impl.mark,
-                (size_t)(iop_a_dst - a_dst.private_impl.mark)));
+            (a_dst.private_impl.buf
+                 ? wuffs_base__io__since(
+                       v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                       a_dst.private_impl.buf->data.ptr)
+                 : wuffs_base__make_slice_u8(NULL, 0)));
       }
       if (wuffs_base__status__is_ok(v_status)) {
         goto label_0_break;

@@ -236,8 +236,14 @@ loop:
 }
 
 func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint32) error {
-	if err := h.doExpr(r, n.RHS()); err != nil {
-		return err
+	if n.Operator() == t.IDEqQuestion {
+		if err := h.doExpr1(r, n.RHS(), subExprFilterNone, 0); err != nil {
+			return err
+		}
+	} else {
+		if err := h.doExpr(r, n.RHS()); err != nil {
+			return err
+		}
 	}
 
 	if n.LHS() == nil {
@@ -302,12 +308,14 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 				}
 				return nil
 			}
+			panic("TODO: unreachable; delete")
 			processOnlySubExprs = true
 
 		case subExprFilterAfterCoroutine:
 			if n.Effect().Coroutine() {
 				return nil
 			}
+			panic("TODO: unreachable; delete")
 		}
 	}
 

@@ -49,6 +49,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	var checksum_got  base.u32
 	var status        base.status
 	var checksum_want base.u32
+	var mark          base.u64
 
 	x = args.src.read_u16be?()
 	if ((x >> 8) & 0x0F) <> 0x08 {
@@ -66,10 +67,10 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
-		args.dst.set_mark!()
+		mark = args.dst.mark()
 		status =? this.flate.decode_io_writer?(dst:args.dst, src:args.src, workbuf:args.workbuf)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x:args.dst.since_mark())
+			checksum_got = this.checksum.update!(x:args.dst.since(mark:mark))
 		}
 		if status.is_ok() {
 			break

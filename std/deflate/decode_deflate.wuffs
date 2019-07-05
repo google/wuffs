@@ -139,21 +139,22 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
+	var mark         base.u64
 	var status       base.status
 	var written      slice base.u8
 	var n_copied     base.u64
 	var already_full base.u32[..0x8000]
 
 	while true {
-		args.dst.set_mark!()
+		mark = args.dst.mark()
 		status =? this.decode_blocks?(dst:args.dst, src:args.src)
 		if not status.is_suspension() {
 			return status
 		}
-		// TODO: should "since_mark" be "since_mark!", as the return value lets
-		// you modify the state of args.dst, so future mutations (via the
-		// slice) can change the veracity of any args.dst assertions?
-		written = args.dst.since_mark()
+		// TODO: should "since" be "since!", as the return value lets you
+		// modify the state of args.dst, so future mutations (via the slice)
+		// can change the veracity of any args.dst assertions?
+		written = args.dst.since(mark:mark)
 		// Append written, the decoded output, to the history ringbuffer.
 		if written.length() >= 0x8000 {
 			// If written is longer than the ringbuffer, we can ignore the

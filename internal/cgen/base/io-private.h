@@ -22,6 +22,22 @@ wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
          (buf.data.len >= buf.meta.wi) && (buf.meta.wi >= buf.meta.ri);
 }
 
+static inline uint64_t  //
+wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
+  if (index >= mark) {
+    return index - mark;
+  }
+  return 0;
+}
+
+static inline wuffs_base__slice_u8  //
+wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
+  if (index >= mark) {
+    return wuffs_base__make_slice_u8(ptr + mark, index - mark);
+  }
+  return wuffs_base__make_slice_u8(NULL, 0);
+}
+
 // TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
 // it might be handy to programs that use Wuffs. Either delete it, or promote
 // it to the public API.
