@@ -96,17 +96,18 @@ const char* wuffs_gzip_decode(wuffs_base__io_buffer* dst,
   }
 
   while (true) {
-    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
-    if (wlimit < UINT64_MAX) {
-      set_writer_limit(&dst_writer, wlimit);
-    }
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
-    if (rlimit < UINT64_MAX) {
-      set_reader_limit(&src_reader, rlimit);
-    }
+    wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
+    wuffs_base__io_writer dst_writer =
+        wuffs_base__io_buffer__writer(&limited_dst);
+    wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
 
     status = wuffs_gzip__decoder__decode_io_writer(&dec, dst_writer, src_reader,
                                                    global_work_slice);
+
+    dst->meta.wi += limited_dst.meta.wi;
+    src->meta.ri += limited_src.meta.ri;
 
     if (((wlimit < UINT64_MAX) &&
          (status == wuffs_base__suspension__short_write)) ||
@@ -158,7 +159,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
     // or isn't zero.
     int i;
     for (i = 0; i < 2; i++) {
-      wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
+      uint64_t rlimit = UINT64_MAX;
       const char* want_z = NULL;
       if (i == 0) {
         if (end_limit == 0) {
@@ -167,7 +168,7 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
         if (src.meta.wi < end_limit) {
           RETURN_FAIL("end_limit=%d: not enough source data", end_limit);
         }
-        set_reader_limit(&src_reader, src.meta.wi - (uint64_t)(end_limit));
+        rlimit = src.meta.wi - (uint64_t)(end_limit);
         want_z = wuffs_base__suspension__short_read;
       } else {
         want_z = (bad_checksum && !ignore_checksum)
@@ -175,8 +176,13 @@ const char* do_test_wuffs_gzip_checksum(bool ignore_checksum,
                      : NULL;
       }
 
+      wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
+      wuffs_base__io_reader src_reader =
+          wuffs_base__io_buffer__reader(&limited_src);
+
       const char* got_z = wuffs_gzip__decoder__decode_io_writer(
           &dec, got_writer, src_reader, global_work_slice);
+      src.meta.ri += limited_src.meta.ri;
       if (got_z != want_z) {
         RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,
                     want_z);

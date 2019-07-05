@@ -366,32 +366,40 @@ wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
   return ret;
 }
 
-void set_reader_limit(wuffs_base__io_reader* o, uint64_t limit) {
-  if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.ri;
-    uint8_t* q = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.wi;
-    if (!o->private_impl.mark) {
-      o->private_impl.mark = p;
-      o->private_impl.limit = q;
-    }
-    if ((o->private_impl.limit - p) > limit) {
-      o->private_impl.limit = p + limit;
-    }
+wuffs_base__io_buffer make_limited_reader(wuffs_base__io_buffer b,
+                                          uint64_t limit) {
+  uint64_t n = b.meta.wi - b.meta.ri;
+  bool closed = b.meta.closed;
+  if (n > limit) {
+    n = limit;
+    closed = false;
   }
+
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = b.data.ptr + b.meta.ri;
+  ret.data.len = n;
+  ret.meta.wi = n;
+  ret.meta.ri = 0;
+  ret.meta.pos = wuffs_base__u64__sat_add(b.meta.pos, b.meta.ri);
+  ret.meta.closed = closed;
+  return ret;
 }
 
-void set_writer_limit(wuffs_base__io_writer* o, uint64_t limit) {
-  if (o && o->private_impl.buf) {
-    uint8_t* p = o->private_impl.buf->data.ptr + o->private_impl.buf->meta.wi;
-    uint8_t* q = o->private_impl.buf->data.ptr + o->private_impl.buf->data.len;
-    if (!o->private_impl.mark) {
-      o->private_impl.mark = p;
-      o->private_impl.limit = q;
-    }
-    if ((o->private_impl.limit - p) > limit) {
-      o->private_impl.limit = p + limit;
-    }
+wuffs_base__io_buffer make_limited_writer(wuffs_base__io_buffer b,
+                                          uint64_t limit) {
+  uint64_t n = b.data.len - b.meta.wi;
+  if (n > limit) {
+    n = limit;
   }
+
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = b.data.ptr + b.meta.wi;
+  ret.data.len = n;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = wuffs_base__u64__sat_add(b.meta.pos, b.meta.wi);
+  ret.meta.closed = b.meta.closed;
+  return ret;
 }
 
 // TODO: we shouldn't need to pass the rect. Instead, pass a subset pixbuf.

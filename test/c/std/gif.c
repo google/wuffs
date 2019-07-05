@@ -324,13 +324,13 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit < UINT64_MAX) {
-      set_reader_limit(&src_reader, rlimit);
-    }
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
     size_t old_ri = src.meta.ri;
 
     status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+    src.meta.ri += limited_src.meta.ri;
 
     if (!status) {
       break;
@@ -350,14 +350,14 @@ const char* do_test_wuffs_gif_decode(const char* filename,
 
   while (true) {
     num_iters++;
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit < UINT64_MAX) {
-      set_reader_limit(&src_reader, rlimit);
-    }
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
     size_t old_ri = src.meta.ri;
 
     const char* status = wuffs_gif__decoder__decode_frame(
         &dec, &pb, src_reader, global_work_slice, NULL);
+    src.meta.ri += limited_src.meta.ri;
 
     if (!status) {
       break;
@@ -568,10 +568,12 @@ const char* test_wuffs_gif_call_interleaved() {
   }
 
   {
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    set_reader_limit(&src_reader, 700);
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, 700);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
 
     status = wuffs_gif__decoder__decode_frame_config(&dec, NULL, src_reader);
+    src.meta.ri += limited_src.meta.ri;
     if (status != wuffs_base__suspension__short_read) {
       RETURN_FAIL("decode_frame_config: got \"%s\", want \"%s\"", status,
                   wuffs_base__suspension__short_read);
@@ -1674,10 +1676,13 @@ const char* test_wuffs_gif_frame_dirty_rect() {
   int i = 0;
 
   while (true) {
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    set_reader_limit(&src_reader, 1);
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, 1);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
+
     status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader,
                                               global_work_slice, NULL);
+    src.meta.ri += limited_src.meta.ri;
 
     wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
     if ((i < WUFFS_TESTLIB_ARRAY_SIZE(wants)) && (wants[i] == r.max_excl_y)) {

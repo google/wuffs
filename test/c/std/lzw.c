@@ -118,19 +118,19 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   int num_iters = 0;
   while (true) {
     num_iters++;
-    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
-    if (wlimit < UINT64_MAX) {
-      set_writer_limit(&got_writer, wlimit);
-    }
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit < UINT64_MAX) {
-      set_reader_limit(&src_reader, rlimit);
-    }
+    wuffs_base__io_buffer limited_got = make_limited_writer(got, wlimit);
+    wuffs_base__io_writer got_writer =
+        wuffs_base__io_buffer__writer(&limited_got);
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
     size_t old_wi = got.meta.wi;
     size_t old_ri = src.meta.ri;
 
     status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
                                                   global_work_slice);
+    got.meta.wi += limited_got.meta.wi;
+    src.meta.ri += limited_src.meta.ri;
     if (!status) {
       if (src.meta.ri != src.meta.wi) {
         RETURN_FAIL("decode returned \"ok\" but src was not exhausted");

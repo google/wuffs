@@ -148,17 +148,18 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
   }
 
   while (true) {
-    wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
-    if (wlimit < UINT64_MAX) {
-      set_writer_limit(&dst_writer, wlimit);
-    }
-    wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
-    if (rlimit < UINT64_MAX) {
-      set_reader_limit(&src_reader, rlimit);
-    }
+    wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
+    wuffs_base__io_writer dst_writer =
+        wuffs_base__io_buffer__writer(&limited_dst);
+    wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
+    wuffs_base__io_reader src_reader =
+        wuffs_base__io_buffer__reader(&limited_src);
 
     status = wuffs_deflate__decoder__decode_io_writer(
         &dec, dst_writer, src_reader, global_work_slice);
+
+    dst->meta.wi += limited_dst.meta.wi;
+    src->meta.ri += limited_src.meta.ri;
 
     if (((wlimit < UINT64_MAX) &&
          (status == wuffs_base__suspension__short_write)) ||
@@ -330,15 +331,16 @@ const char* do_test_wuffs_deflate_history(int i,
   got->meta.ri = 0;
   got->meta.wi = 0;
 
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(got);
+  wuffs_base__io_buffer limited_got = make_limited_writer(*got, wlimit);
+  wuffs_base__io_writer dst_writer =
+      wuffs_base__io_buffer__writer(&limited_got);
   wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  set_writer_limit(&dst_writer, wlimit);
-
   const char* got_z = wuffs_deflate__decoder__decode_io_writer(
       dec, dst_writer, src_reader, global_work_slice);
+  got->meta.wi += limited_got.meta.wi;
   if (got_z != want_z) {
     RETURN_FAIL("i=%d: starting_history_index=0x%04" PRIX32
                 ": decode status: got \"%s\", want \"%s\"",
