@@ -325,7 +325,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   while (true) {
     num_iters++;
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit) {
+    if (rlimit < UINT64_MAX) {
       set_reader_limit(&src_reader, rlimit);
     }
     size_t old_ri = src.meta.ri;
@@ -351,7 +351,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
   while (true) {
     num_iters++;
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit) {
+    if (rlimit < UINT64_MAX) {
       set_reader_limit(&src_reader, rlimit);
     }
     size_t old_ri = src.meta.ri;
@@ -381,7 +381,7 @@ const char* do_test_wuffs_gif_decode(const char* filename,
     return status;
   }
 
-  if (rlimit) {
+  if (rlimit < UINT64_MAX) {
     if (num_iters <= 2) {
       RETURN_FAIL("num_iters: got %d, want > 2", num_iters);
     }
@@ -1184,31 +1184,33 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
 
 const char* test_wuffs_gif_decode_pixfmt_bgr() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode(
-      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
-      "test/data/bricks-dither.indexes", 0, WUFFS_BASE__PIXEL_FORMAT__BGR);
+  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
+                                  "test/data/bricks-dither.palette",
+                                  "test/data/bricks-dither.indexes", UINT64_MAX,
+                                  WUFFS_BASE__PIXEL_FORMAT__BGR);
 }
 
 const char* test_wuffs_gif_decode_pixfmt_bgra_nonpremul() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
                                   "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", 0,
+                                  "test/data/bricks-dither.indexes", UINT64_MAX,
                                   WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL);
 }
 
 const char* test_wuffs_gif_decode_pixfmt_rgb() {
   CHECK_FOCUS(__func__);
-  return do_test_wuffs_gif_decode(
-      "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
-      "test/data/bricks-dither.indexes", 0, WUFFS_BASE__PIXEL_FORMAT__RGB);
+  return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
+                                  "test/data/bricks-dither.palette",
+                                  "test/data/bricks-dither.indexes", UINT64_MAX,
+                                  WUFFS_BASE__PIXEL_FORMAT__RGB);
 }
 
 const char* test_wuffs_gif_decode_pixfmt_rgba_nonpremul() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode("test/data/bricks-dither.gif",
                                   "test/data/bricks-dither.palette",
-                                  "test/data/bricks-dither.indexes", 0,
+                                  "test/data/bricks-dither.indexes", UINT64_MAX,
                                   WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL);
 }
 
@@ -1216,7 +1218,7 @@ const char* test_wuffs_gif_decode_input_is_a_gif_just_one_read() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_gif_decode(
       "test/data/bricks-dither.gif", "test/data/bricks-dither.palette",
-      "test/data/bricks-dither.indexes", 0,
+      "test/data/bricks-dither.indexes", UINT64_MAX,
       WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
 }
 

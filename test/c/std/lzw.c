@@ -119,11 +119,11 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   while (true) {
     num_iters++;
     wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
-    if (wlimit) {
+    if (wlimit < UINT64_MAX) {
       set_writer_limit(&got_writer, wlimit);
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-    if (rlimit) {
+    if (rlimit < UINT64_MAX) {
       set_reader_limit(&src_reader, rlimit);
     }
     size_t old_wi = got.meta.wi;
@@ -155,7 +155,7 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
     }
   }
 
-  if (wlimit || rlimit) {
+  if ((wlimit < UINT64_MAX) || (rlimit < UINT64_MAX)) {
     if (num_iters <= 1) {
       RETURN_FAIL("num_iters: got %d, want > 1", num_iters);
     }
@@ -172,21 +172,21 @@ const char* test_wuffs_lzw_decode_bricks_dither() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-dither.indexes.giflzw",
                                   14923, "test/data/bricks-dither.indexes",
-                                  19200, 0, 0);
+                                  19200, UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_lzw_decode_bricks_nodither() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-nodither.indexes.giflzw",
                                   13382, "test/data/bricks-nodither.indexes",
-                                  19200, 0, 0);
+                                  19200, UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_lzw_decode_many_big_reads() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/bricks-gray.indexes.giflzw", 14731,
-                                  "test/data/bricks-gray.indexes", 19200, 0,
-                                  4096);
+                                  "test/data/bricks-gray.indexes", 19200,
+                                  UINT64_MAX, 4096);
 }
 
 const char* test_wuffs_lzw_decode_many_small_writes_reads() {
@@ -199,7 +199,8 @@ const char* test_wuffs_lzw_decode_many_small_writes_reads() {
 const char* test_wuffs_lzw_decode_pi() {
   CHECK_FOCUS(__func__);
   return do_test_wuffs_lzw_decode("test/data/pi.txt.giflzw", 50550,
-                                  "test/data/pi.txt", 100003, 0, 0);
+                                  "test/data/pi.txt", 100003, UINT64_MAX,
+                                  UINT64_MAX);
 }
 
 const char* test_wuffs_lzw_decode_output_bad() {

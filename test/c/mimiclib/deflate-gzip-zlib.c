@@ -42,7 +42,7 @@ const char* mimic_deflate_zlib_decode(wuffs_base__io_buffer* dst,
                                       uint64_t wlimit,
                                       uint64_t rlimit,
                                       bool deflate_instead_of_zlib) {
-  if (wlimit || rlimit) {
+  if ((wlimit < UINT64_MAX) || (rlimit < UINT64_MAX)) {
     // Supporting this would probably mean using tinfl_decompress instead of
     // the simpler tinfl_decompress_mem_to_mem function.
     return "unsupported I/O limit";
@@ -99,7 +99,7 @@ const char* mimic_bench_adler32(wuffs_base__io_buffer* dst,
     size_t len = src->meta.wi - src->meta.ri;
     if (len > 0x7FFFFFFF) {
       return "src length is too large";
-    } else if ((len > rlimit) && (rlimit > 0)) {
+    } else if (len > rlimit) {
       len = rlimit;
     }
     global_mimiclib_deflate_unused_u32 =
@@ -120,7 +120,7 @@ const char* mimic_bench_crc32_ieee(wuffs_base__io_buffer* dst,
     size_t len = src->meta.wi - src->meta.ri;
     if (len > 0x7FFFFFFF) {
       return "src length is too large";
-    } else if ((len > rlimit) && (rlimit > 0)) {
+    } else if (len > rlimit) {
       len = rlimit;
     }
     global_mimiclib_deflate_unused_u32 =
@@ -178,14 +178,14 @@ const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
   while (true) {
     z.next_in = src->data.ptr + src->meta.ri;
     z.avail_in = src->meta.wi - src->meta.ri;
-    if ((z.avail_in > rlimit) && (rlimit > 0)) {
+    if (z.avail_in > rlimit) {
       z.avail_in = rlimit;
     }
     uInt initial_avail_in = z.avail_in;
 
     z.next_out = dst->data.ptr + dst->meta.wi;
     z.avail_out = dst->data.len - dst->meta.wi;
-    if ((z.avail_out > wlimit) && (wlimit > 0)) {
+    if (z.avail_out > wlimit) {
       z.avail_out = wlimit;
     }
     uInt initial_avail_out = z.avail_out;

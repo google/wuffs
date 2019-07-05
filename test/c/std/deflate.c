@@ -149,19 +149,21 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
 
   while (true) {
     wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(dst);
-    if (wlimit) {
+    if (wlimit < UINT64_MAX) {
       set_writer_limit(&dst_writer, wlimit);
     }
     wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(src);
-    if (rlimit) {
+    if (rlimit < UINT64_MAX) {
       set_reader_limit(&src_reader, rlimit);
     }
 
     status = wuffs_deflate__decoder__decode_io_writer(
         &dec, dst_writer, src_reader, global_work_slice);
 
-    if ((wlimit && (status == wuffs_base__suspension__short_write)) ||
-        (rlimit && (status == wuffs_base__suspension__short_read))) {
+    if (((wlimit < UINT64_MAX) &&
+         (status == wuffs_base__suspension__short_write)) ||
+        ((rlimit < UINT64_MAX) &&
+         (status == wuffs_base__suspension__short_read))) {
       continue;
     }
     return status;
@@ -170,25 +172,29 @@ const char* wuffs_deflate_decode(wuffs_base__io_buffer* dst,
 
 const char* test_wuffs_deflate_decode_256_bytes() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_256_bytes_gt, 0, 0);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_256_bytes_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &deflate_deflate_backref_crosses_blocks_gt, 0, 0);
+                            &deflate_deflate_backref_crosses_blocks_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_deflate_distance_32768() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(wuffs_deflate_decode,
-                            &deflate_deflate_distance_32768_gt, 0, 0);
+                            &deflate_deflate_distance_32768_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
-  const char* got = do_test_io_buffers(
-      wuffs_deflate_decode, &deflate_deflate_distance_code_31_gt, 0, 0);
+  const char* got = do_test_io_buffers(wuffs_deflate_decode,
+                                       &deflate_deflate_distance_code_31_gt,
+                                       UINT64_MAX, UINT64_MAX);
   if (got != wuffs_deflate__error__bad_huffman_code) {
     RETURN_FAIL("got \"%s\", want \"%s\"", got,
                 wuffs_deflate__error__bad_huffman_code);
@@ -198,22 +204,26 @@ const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
 
 const char* test_wuffs_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_midsummer_gt, 0, 0);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_midsummer_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, 0, 0);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_pi_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, 0, 4096);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+                            4096);
 }
 
 const char* test_wuffs_deflate_decode_pi_many_medium_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, 0, 599);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+                            599);
 }
 
 const char* test_wuffs_deflate_decode_pi_many_small_writes_reads() {
@@ -223,13 +233,14 @@ const char* test_wuffs_deflate_decode_pi_many_small_writes_reads() {
 
 const char* test_wuffs_deflate_decode_romeo() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_gt, 0, 0);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_romeo_fixed() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_fixed_gt, 0,
-                            0);
+  return do_test_io_buffers(wuffs_deflate_decode, &deflate_romeo_fixed_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_wuffs_deflate_decode_split_src() {
@@ -312,7 +323,7 @@ const char* do_test_wuffs_deflate_history(int i,
                                           wuffs_base__io_buffer* got,
                                           wuffs_deflate__decoder* dec,
                                           uint32_t starting_history_index,
-                                          uint64_t limit,
+                                          uint64_t wlimit,
                                           const char* want_z) {
   src->meta.ri = gt->src_offset0;
   src->meta.wi = gt->src_offset1;
@@ -324,7 +335,7 @@ const char* do_test_wuffs_deflate_history(int i,
 
   dec->private_impl.f_history_index = starting_history_index;
 
-  set_writer_limit(&dst_writer, limit);
+  set_writer_limit(&dst_writer, wlimit);
 
   const char* got_z = wuffs_deflate__decoder__decode_io_writer(
       dec, dst_writer, src_reader, global_work_slice);
@@ -624,25 +635,29 @@ const char* test_wuffs_deflate_table_redirect() {
 
 const char* test_mimic_deflate_decode_256_bytes() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_256_bytes_gt, 0, 0);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_256_bytes_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_deflate_backref_crosses_blocks() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_backref_crosses_blocks_gt, 0, 0);
+                            &deflate_deflate_backref_crosses_blocks_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_deflate_distance_32768() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode,
-                            &deflate_deflate_distance_32768_gt, 0, 0);
+                            &deflate_deflate_distance_32768_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_deflate_distance_code_31() {
   CHECK_FOCUS(__func__);
-  const char* got = do_test_io_buffers(
-      mimic_deflate_decode, &deflate_deflate_distance_code_31_gt, 0, 0);
+  const char* got = do_test_io_buffers(mimic_deflate_decode,
+                                       &deflate_deflate_distance_code_31_gt,
+                                       UINT64_MAX, UINT64_MAX);
   const char* want = "inflate failed (data error)";
   if ((got != want) && ((got == NULL) || (want == NULL) || strcmp(got, want))) {
     RETURN_FAIL("got \"%s\", want \"%s\"", got, want);
@@ -652,28 +667,32 @@ const char* test_mimic_deflate_decode_deflate_distance_code_31() {
 
 const char* test_mimic_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt, 0, 0);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_pi_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, 0, 0);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_pi_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, 0, 4096);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_pi_gt, UINT64_MAX,
+                            4096);
 }
 
 const char* test_mimic_deflate_decode_romeo() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_gt, 0, 0);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_gt, UINT64_MAX,
+                            UINT64_MAX);
 }
 
 const char* test_mimic_deflate_decode_romeo_fixed() {
   CHECK_FOCUS(__func__);
-  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_fixed_gt, 0,
-                            0);
+  return do_test_io_buffers(mimic_deflate_decode, &deflate_romeo_fixed_gt,
+                            UINT64_MAX, UINT64_MAX);
 }
 
 #endif  // WUFFS_MIMIC
@@ -684,7 +703,7 @@ const char* bench_wuffs_deflate_decode_1k_full_init() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(wuffs_deflate_decode,
                              WUFFS_INITIALIZE__DEFAULT_OPTIONS, tc_dst,
-                             &deflate_romeo_gt, 0, 0, 2000);
+                             &deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char* bench_wuffs_deflate_decode_1k_part_init() {
@@ -692,14 +711,14 @@ const char* bench_wuffs_deflate_decode_1k_part_init() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
-      &deflate_romeo_gt, 0, 0, 2000);
+      &deflate_romeo_gt, UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char* bench_wuffs_deflate_decode_10k_full_init() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(wuffs_deflate_decode,
-                             WUFFS_INITIALIZE__DEFAULT_OPTIONS, tc_dst,
-                             &deflate_midsummer_gt, 0, 0, 300);
+  return do_bench_io_buffers(
+      wuffs_deflate_decode, WUFFS_INITIALIZE__DEFAULT_OPTIONS, tc_dst,
+      &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char* bench_wuffs_deflate_decode_10k_part_init() {
@@ -707,7 +726,7 @@ const char* bench_wuffs_deflate_decode_10k_part_init() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
-      &deflate_midsummer_gt, 0, 0, 300);
+      &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX, 300);
 }
 
 const char* bench_wuffs_deflate_decode_100k_just_one_read() {
@@ -715,7 +734,7 @@ const char* bench_wuffs_deflate_decode_100k_just_one_read() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
-      &deflate_pi_gt, 0, 0, 30);
+      &deflate_pi_gt, UINT64_MAX, UINT64_MAX, 30);
 }
 
 const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
@@ -723,7 +742,7 @@ const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
   return do_bench_io_buffers(
       wuffs_deflate_decode,
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED, tc_dst,
-      &deflate_pi_gt, 0, 4096, 30);
+      &deflate_pi_gt, UINT64_MAX, 4096, 30);
 }
 
   // ---------------- Mimic Benches
@@ -733,25 +752,26 @@ const char* bench_wuffs_deflate_decode_100k_many_big_reads() {
 const char* bench_mimic_deflate_decode_1k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_romeo_gt,
-                             0, 0, 2000);
+                             UINT64_MAX, UINT64_MAX, 2000);
 }
 
 const char* bench_mimic_deflate_decode_10k() {
   CHECK_FOCUS(__func__);
   return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst,
-                             &deflate_midsummer_gt, 0, 0, 300);
+                             &deflate_midsummer_gt, UINT64_MAX, UINT64_MAX,
+                             300);
 }
 
 const char* bench_mimic_deflate_decode_100k_just_one_read() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt, 0,
-                             0, 30);
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt,
+                             UINT64_MAX, UINT64_MAX, 30);
 }
 
 const char* bench_mimic_deflate_decode_100k_many_big_reads() {
   CHECK_FOCUS(__func__);
-  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt, 0,
-                             4096, 30);
+  return do_bench_io_buffers(mimic_deflate_decode, 0, tc_dst, &deflate_pi_gt,
+                             UINT64_MAX, 4096, 30);
 }
 
 #endif  // WUFFS_MIMIC
