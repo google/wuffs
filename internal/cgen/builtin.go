@@ -163,9 +163,9 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_%s%s - %s%s->data.ptr)), %s%s->data.ptr)"+
+		b.printf(", ((uint64_t)(iop_%s%s - %s%s)), %s%s)"+
 			": wuffs_base__make_slice_u8(NULL, 0))",
-			prefix, name, prefix, name, prefix, name)
+			prefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDSkipFast:
@@ -270,7 +270,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - a_dst->data.ptr)), a_dst->data.ptr)" +
+		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)" +
 			": wuffs_base__make_slice_u8(NULL, 0))")
 		return nil
 	}

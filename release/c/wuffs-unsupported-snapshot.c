@@ -6440,8 +6440,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
       }
       v_written =
           (a_dst ? wuffs_base__io__since(
-                       v_mark, ((uint64_t)(iop_a_dst - a_dst->data.ptr)),
-                       a_dst->data.ptr)
+                       v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
                  : wuffs_base__make_slice_u8(NULL, 0));
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
@@ -11488,8 +11487,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
         v_checksum_got = wuffs_crc32__ieee_hasher__update(
             &self->private_data.f_checksum,
             (a_dst ? wuffs_base__io__since(
-                         v_mark, ((uint64_t)(iop_a_dst - a_dst->data.ptr)),
-                         a_dst->data.ptr)
+                         v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
                    : wuffs_base__make_slice_u8(NULL, 0)));
         v_decoded_length_got += ((uint32_t)(
             ((a_dst ? wuffs_base__io__count_since(
@@ -11852,8 +11850,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
         v_checksum_got = wuffs_adler32__hasher__update(
             &self->private_data.f_checksum,
             (a_dst ? wuffs_base__io__since(
-                         v_mark, ((uint64_t)(iop_a_dst - a_dst->data.ptr)),
-                         a_dst->data.ptr)
+                         v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
                    : wuffs_base__make_slice_u8(NULL, 0)));
       }
       if (wuffs_base__status__is_ok(v_status)) {
