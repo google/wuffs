@@ -95,9 +95,9 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	preName := prefix + name.Str(g.tm)
-	i0, i1 := "meta.ri", "meta.wi"
+	i1, i2 := "meta.ri", "meta.wi"
 	if typ.QID()[1] == t.IDIOWriter {
-		i0, i1 = "meta.wi", "data.len"
+		i1, i2 = "meta.wi", "data.len"
 	}
 
 	if header {
@@ -109,12 +109,12 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	b.printf("if (%s) {", preName)
 
 	b.printf("%s%s = %s->data.ptr + %s->%s;",
-		iopPrefix, preName, preName, preName, i0)
+		iopPrefix, preName, preName, preName, i1)
 
 	if header {
 		b.printf("%s%s = %s%s;", io1Prefix, preName, iopPrefix, preName)
 		b.printf("%s%s = %s->data.ptr + %s->%s;",
-			io2Prefix, preName, preName, preName, i1)
+			io2Prefix, preName, preName, preName, i2)
 
 		if typ.QID()[1] == t.IDIOWriter {
 			b.printf("if (%s->meta.closed) {", preName)
@@ -153,13 +153,13 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 	}
 
 	preName := prefix + name.Str(g.tm)
-	i0 := "ri"
+	index := "ri"
 	if typ.QID()[1] == t.IDIOWriter {
-		i0 = "wi"
+		index = "wi"
 	}
 
 	b.printf("if (%s) { %s->meta.%s = ((size_t)(%s%s - %s->data.ptr)); }\n",
-		preName, preName, i0, iopPrefix, preName, preName)
+		preName, preName, index, iopPrefix, preName, preName)
 	return nil
 }
 

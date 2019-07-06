@@ -102,23 +102,23 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
 	case t.IDAvailable:
-		p0, p1 := "", ""
+		p, q := "", ""
 		// TODO: don't hard-code these.
 		switch recv.Str(g.tm) {
 		case "args.dst":
-			p0 = "io2_a_dst"
-			p1 = "iop_a_dst"
+			p = "io2_a_dst"
+			q = "iop_a_dst"
 		case "args.src":
-			p0 = "io2_a_src"
-			p1 = "iop_a_src"
+			p = "io2_a_src"
+			q = "iop_a_src"
 		case "w":
-			p0 = "io2_v_w"
-			p1 = "iop_v_w"
+			p = "io2_v_w"
+			q = "iop_v_w"
 		}
-		if p0 == "" {
+		if p == "" {
 			return fmt.Errorf(`TODO: cgen a "foo.available" expression`)
 		}
-		b.printf("((uint64_t)(%s - %s))", p0, p1)
+		b.printf("((uint64_t)(%s - %s))", p, q)
 		return nil
 	}
 	return errNoSuchBuiltin
