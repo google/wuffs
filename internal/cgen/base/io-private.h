@@ -172,7 +172,7 @@ wuffs_base__io_reader__set(wuffs_base__io_reader* o,
   b->meta.pos = 0;
   b->meta.closed = false;
 
-  o->private_impl.buf = b;
+  *o = b;
   *ptr_iop_r = data.ptr;
   *ptr_io1_r = data.ptr + data.len;
 
@@ -203,7 +203,7 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   b->meta.pos = 0;
   b->meta.closed = false;
 
-  o->private_impl.buf = b;
+  *o = b;
   *ptr_iop_w = data.ptr;
   *ptr_io1_w = data.ptr + data.len;
 

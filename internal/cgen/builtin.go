@@ -141,29 +141,29 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCountSince:
-		b.printf("(%s%s.private_impl.buf ? wuffs_base__io__count_since(", prefix, name)
+		b.printf("(%s%s ? wuffs_base__io__count_since(", prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr))) : 0)", prefix, name, prefix, name)
+		b.printf(", ((uint64_t)(iop_%s%s - %s%s->data.ptr))) : 0)", prefix, name, prefix, name)
 		return nil
 
 	case t.IDMark:
-		b.printf("(%s%s.private_impl.buf ? ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr)) : 0)",
+		b.printf("(%s%s ? ((uint64_t)(iop_%s%s - %s%s->data.ptr)) : 0)",
 			prefix, name, prefix, name, prefix, name)
 		return nil
 
 	case t.IDPosition:
-		b.printf("(a_src.private_impl.buf ? wuffs_base__u64__sat_add(" +
-			"a_src.private_impl.buf->meta.pos, ((uint64_t)(iop_a_src - a_src.private_impl.buf->data.ptr))) : 0)")
+		b.printf("(a_src ? wuffs_base__u64__sat_add(" +
+			"a_src->meta.pos, ((uint64_t)(iop_a_src - a_src->data.ptr))) : 0)")
 		return nil
 
 	case t.IDSince:
-		b.printf("(%s%s.private_impl.buf ? wuffs_base__io__since(", prefix, name)
+		b.printf("(%s%s ? wuffs_base__io__since(", prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr)), %s%s.private_impl.buf->data.ptr)"+
+		b.printf(", ((uint64_t)(iop_%s%s - %s%s->data.ptr)), %s%s->data.ptr)"+
 			": wuffs_base__make_slice_u8(NULL, 0))",
 			prefix, name, prefix, name, prefix, name)
 		return nil
@@ -217,7 +217,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
-			"&iop_a_dst, %sdst.private_impl.buf->data.ptr, io1_a_dst",
+			"&iop_a_dst, %sdst->data.ptr, io1_a_dst",
 			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
@@ -246,32 +246,31 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
-		b.printf("(a_dst.private_impl.buf ? wuffs_base__io__count_since(")
+		b.printf("(a_dst ? wuffs_base__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))) : 0)")
+		b.printf(", ((uint64_t)(iop_a_dst - a_dst->data.ptr))) : 0)")
 		return nil
 
 	case t.IDHistoryAvailable:
-		b.printf("((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr))", prefix, name, prefix, name)
+		b.printf("((uint64_t)(iop_%s%s - %s%s->data.ptr))", prefix, name, prefix, name)
 		return nil
 
 	case t.IDMark:
-		b.printf("(a_dst.private_impl.buf ? ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)) : 0)")
+		b.printf("(a_dst ? ((uint64_t)(iop_a_dst - a_dst->data.ptr)) : 0)")
 		return nil
 
 	case t.IDPosition:
-		b.printf("(a_dst.private_impl.buf ? wuffs_base__u64__sat_add(" +
-			"a_dst.private_impl.buf->meta.pos, iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
+		b.printf("(a_dst ? wuffs_base__u64__sat_add(a_dst->meta.pos, iop_a_dst - a_dst->data.ptr) : 0)")
 		return nil
 
 	case t.IDSince:
-		b.printf("(a_dst.private_impl.buf ? wuffs_base__io__since(")
+		b.printf("(a_dst ? wuffs_base__io__since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)), a_dst.private_impl.buf->data.ptr)" +
+		b.printf(", ((uint64_t)(iop_a_dst - a_dst->data.ptr)), a_dst->data.ptr)" +
 			": wuffs_base__make_slice_u8(NULL, 0))")
 		return nil
 	}

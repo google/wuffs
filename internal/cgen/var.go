@@ -106,18 +106,18 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io1Prefix, preName)
 	}
 
-	b.printf("if (%s.private_impl.buf) {", preName)
+	b.printf("if (%s) {", preName)
 
-	b.printf("%s%s = %s.private_impl.buf->data.ptr + %s.private_impl.buf->%s;",
+	b.printf("%s%s = %s->data.ptr + %s->%s;",
 		iopPrefix, preName, preName, preName, i0)
 
 	if header {
 		b.printf("%s%s = %s%s;", io0Prefix, preName, iopPrefix, preName)
-		b.printf("%s%s = %s.private_impl.buf->data.ptr + %s.private_impl.buf->%s;",
+		b.printf("%s%s = %s->data.ptr + %s->%s;",
 			io1Prefix, preName, preName, preName, i1)
 
 		if typ.QID()[1] == t.IDIOWriter {
-			b.printf("if (%s.private_impl.buf->meta.closed) {", preName)
+			b.printf("if (%s->meta.closed) {", preName)
 			b.printf("%s%s = %s%s;", io1Prefix, preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
@@ -158,10 +158,8 @@ func (g *gen) writeSaveDerivedVar(b *buffer, hack string, prefix string, name t.
 		i0 = "wi"
 	}
 
-	b.printf("if (%s.private_impl.buf) {", preName)
-	b.printf("%s.private_impl.buf->meta.%s = ((size_t)(%s%s - %s.private_impl.buf->data.ptr));",
-		preName, i0, iopPrefix, preName, preName)
-	b.printf("}\n")
+	b.printf("if (%s) { %s->meta.%s = ((size_t)(%s%s - %s->data.ptr)); }\n",
+		preName, preName, i0, iopPrefix, preName, preName)
 	return nil
 }
 

@@ -73,8 +73,7 @@ the first "./a.out" with "./a.out -bench". Combine these changes with the
 const char* test_basic_bad_receiver() {
   CHECK_FOCUS(__func__);
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
-  const char* status = wuffs_gif__decoder__decode_image_config(NULL, &ic, src);
+  const char* status = wuffs_gif__decoder__decode_image_config(NULL, &ic, NULL);
   if (status != wuffs_base__error__bad_receiver) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
                 wuffs_base__error__bad_receiver);
@@ -112,8 +111,7 @@ const char* test_basic_initialize_not_called() {
   CHECK_FOCUS(__func__);
   wuffs_gif__decoder dec = ((wuffs_gif__decoder){});
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
-  wuffs_base__io_reader src = ((wuffs_base__io_reader){});
-  const char* status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src);
+  const char* status = wuffs_gif__decoder__decode_image_config(&dec, &ic, NULL);
   if (status != wuffs_base__error__initialize_not_called) {
     RETURN_FAIL("decode_image_config: got \"%s\", want \"%s\"", status,
                 wuffs_base__error__initialize_not_called);

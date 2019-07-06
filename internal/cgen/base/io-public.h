@@ -20,21 +20,8 @@
 
 struct wuffs_base__io_buffer__struct;
 
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so.
-  struct {
-    struct wuffs_base__io_buffer__struct* buf;
-  } private_impl;
-} wuffs_base__io_reader;
-
-typedef struct {
-  // Do not access the private_impl's fields directly. There is no API/ABI
-  // compatibility or safety guarantee if you do so.
-  struct {
-    struct wuffs_base__io_buffer__struct* buf;
-  } private_impl;
-} wuffs_base__io_writer;
+typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_reader;
+typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_writer;
 
 // wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
 // data.
@@ -111,16 +98,12 @@ wuffs_base__null_io_buffer_meta() {
 
 static inline wuffs_base__io_reader  //
 wuffs_base__null_io_reader() {
-  wuffs_base__io_reader ret;
-  ret.private_impl.buf = NULL;
-  return ret;
+  return NULL;
 }
 
 static inline wuffs_base__io_writer  //
 wuffs_base__null_io_writer() {
-  wuffs_base__io_writer ret;
-  ret.private_impl.buf = NULL;
-  return ret;
+  return NULL;
 }
 
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
@@ -141,16 +124,12 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
 
 static inline wuffs_base__io_reader  //
 wuffs_base__io_buffer__reader(wuffs_base__io_buffer* buf) {
-  wuffs_base__io_reader ret;
-  ret.private_impl.buf = buf;
-  return ret;
+  return buf;
 }
 
 static inline wuffs_base__io_writer  //
 wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
-  wuffs_base__io_writer ret;
-  ret.private_impl.buf = buf;
-  return ret;
+  return buf;
 }
 
 static inline uint64_t  //
