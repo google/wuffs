@@ -109,20 +109,19 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	b.printf("if (%s) {", preName)
 
-	b.printf("%s%s = %s->data.ptr + %s->%s;",
-		iopPrefix, preName, preName, preName, i1)
-
 	if header {
 		b.printf("%s%s = %s->data.ptr;", io0Prefix, preName, preName)
-		b.printf("%s%s = %s%s;", io1Prefix, preName, iopPrefix, preName)
-		b.printf("%s%s = %s->data.ptr + %s->%s;",
-			io2Prefix, preName, preName, preName, i2)
+		b.printf("%s%s = %s%s + %s->%s;", io1Prefix, preName, io0Prefix, preName, preName, i1)
+		b.printf("%s%s = %s%s;", iopPrefix, preName, io1Prefix, preName)
+		b.printf("%s%s = %s%s + %s->%s;", io2Prefix, preName, io0Prefix, preName, preName, i2)
 
 		if typ.QID()[1] == t.IDIOWriter {
 			b.printf("if (%s->meta.closed) {", preName)
 			b.printf("%s%s = %s%s;", io2Prefix, preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
+	} else {
+		b.printf("%s%s = %s->data.ptr + %s->%s;", iopPrefix, preName, preName, preName, i1)
 	}
 
 	b.printf("}\n")

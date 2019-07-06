@@ -6400,10 +6400,10 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -6519,10 +6519,10 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_blocks[0];
@@ -6665,10 +6665,10 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -6678,10 +6678,10 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_uncompressed[0];
@@ -6843,10 +6843,10 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_init_dynamic_huffman[0];
@@ -7348,10 +7348,10 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -7361,10 +7361,10 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   if ((self->private_impl.f_n_bits >= 8) ||
@@ -7641,10 +7641,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -7654,10 +7654,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_huffman_slow[0];
@@ -8246,10 +8246,10 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   v_clear_code = self->private_impl.f_clear_code;
@@ -8426,10 +8426,10 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -8856,10 +8856,10 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_ack_metadata_chunk[0];
@@ -9114,10 +9114,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
@@ -9259,10 +9259,10 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
@@ -9457,10 +9457,10 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
@@ -9577,10 +9577,10 @@ wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_header[0];
@@ -9650,10 +9650,10 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_lsd[0];
@@ -9861,10 +9861,10 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
@@ -9957,10 +9957,10 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_blocks[0];
@@ -10035,10 +10035,10 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_ae[0];
@@ -10286,10 +10286,10 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_gc[0];
@@ -10415,10 +10415,10 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part0[0];
@@ -10597,10 +10597,10 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part1[0];
@@ -10800,10 +10800,10 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
@@ -11282,10 +11282,10 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -11295,10 +11295,10 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_io_writer[0];
@@ -11758,10 +11758,10 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   uint8_t* io1_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_dst) {
-    iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
     io0_a_dst = a_dst->data.ptr;
-    io1_a_dst = iop_a_dst;
-    io2_a_dst = a_dst->data.ptr + a_dst->data.len;
+    io1_a_dst = io0_a_dst + a_dst->meta.wi;
+    iop_a_dst = io1_a_dst;
+    io2_a_dst = io0_a_dst + a_dst->data.len;
     if (a_dst->meta.closed) {
       io2_a_dst = iop_a_dst;
     }
@@ -11771,10 +11771,10 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   if (a_src) {
-    iop_a_src = a_src->data.ptr + a_src->meta.ri;
     io0_a_src = a_src->data.ptr;
-    io1_a_src = iop_a_src;
-    io2_a_src = a_src->data.ptr + a_src->meta.wi;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_io_writer[0];
