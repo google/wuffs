@@ -245,7 +245,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
-			"&iop_a_dst, %sdst.private_impl.mark, io1_a_dst",
+			"&iop_a_dst, %sdst.private_impl.buf->data.ptr, io1_a_dst",
 			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
@@ -279,6 +279,10 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			return err
 		}
 		b.printf(", iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
+		return nil
+
+	case t.IDHistoryAvailable:
+		b.printf("((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr))", prefix, name, prefix, name)
 		return nil
 
 	case t.IDMark:

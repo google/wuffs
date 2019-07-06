@@ -276,6 +276,7 @@ var Funcs = []string{
 
 	"io_writer.available() u64",
 	"io_writer.count_since(mark u64) u64",
+	"io_writer.history_available() u64",
 	"io_writer.mark() u64",
 	"io_writer.position() u64",
 	"io_writer.set!(s slice u8)",  // TODO: remove, as it's no longer used?

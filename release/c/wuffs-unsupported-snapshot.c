@@ -7753,7 +7753,7 @@ label_0_continue:;
         }
       }
       wuffs_base__io_writer__copy_n_from_history_fast(
-          &iop_a_dst, a_dst.private_impl.mark, io1_a_dst, v_length,
+          &iop_a_dst, a_dst.private_impl.buf->data.ptr, io1_a_dst, v_length,
           (v_dist_minus_1 + 1));
       goto label_2_break;
     }
@@ -8078,10 +8078,10 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
       }
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
-          v_hdist =
-              ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
-                           ((uint64_t)(iop_a_dst - a_dst.private_impl.mark)))));
+            ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))) {
+          v_hdist = ((uint32_t)(
+              (((uint64_t)((v_dist_minus_1 + 1))) -
+               ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;
@@ -8140,7 +8140,7 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
           }
         }
         v_n_copied = wuffs_base__io_writer__copy_n_from_history(
-            &iop_a_dst, a_dst.private_impl.mark, io1_a_dst, v_length,
+            &iop_a_dst, a_dst.private_impl.buf->data.ptr, io1_a_dst, v_length,
             (v_dist_minus_1 + 1));
         if (v_length <= v_n_copied) {
           v_length = 0;
