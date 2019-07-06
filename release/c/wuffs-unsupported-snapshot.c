@@ -6503,16 +6503,12 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_io_writer[0];
@@ -6632,13 +6628,9 @@ wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_blocks[0];
@@ -6791,16 +6783,12 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -6808,13 +6796,9 @@ wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_uncompressed[0];
@@ -6979,13 +6963,9 @@ wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_init_dynamic_huffman[0];
@@ -7489,16 +7469,12 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -7506,13 +7482,9 @@ wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   if ((self->private_impl.f_n_bits >= 8) ||
@@ -7793,16 +7765,12 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -7810,13 +7778,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_huffman_slow[0];
@@ -8409,13 +8373,9 @@ wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   v_clear_code = self->private_impl.f_clear_code;
@@ -8594,16 +8554,12 @@ wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_write_to[0];
@@ -9029,13 +8985,9 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_ack_metadata_chunk[0];
@@ -9298,13 +9250,9 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame_config[0];
@@ -9454,13 +9402,9 @@ wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_frame[0];
@@ -9659,13 +9603,9 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_up_to_id_part1[0];
@@ -9792,13 +9732,9 @@ wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_header[0];
@@ -9870,13 +9806,9 @@ wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_lsd[0];
@@ -10086,13 +10018,9 @@ wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_extension[0];
@@ -10193,13 +10121,9 @@ wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_skip_blocks[0];
@@ -10276,13 +10200,9 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_ae[0];
@@ -10538,13 +10458,9 @@ wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_gc[0];
@@ -10672,13 +10588,9 @@ wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part0[0];
@@ -10859,13 +10771,9 @@ wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part1[0];
@@ -11067,13 +10975,9 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
@@ -11559,16 +11463,12 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -11576,13 +11476,9 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_io_writer[0];
@@ -12053,16 +11949,12 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   if (a_dst.private_impl.buf) {
     iop_a_dst =
         a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-    if (!a_dst.private_impl.mark) {
-      a_dst.private_impl.mark = iop_a_dst;
-      a_dst.private_impl.limit =
-          a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-    }
+    io0_a_dst = iop_a_dst;
+    io1_a_dst =
+        a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
     if (a_dst.private_impl.buf->meta.closed) {
-      a_dst.private_impl.limit = iop_a_dst;
+      io1_a_dst = iop_a_dst;
     }
-    io0_a_dst = a_dst.private_impl.mark;
-    io1_a_dst = a_dst.private_impl.limit;
   }
   uint8_t* iop_a_src = NULL;
   uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -12070,13 +11962,9 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   if (a_src.private_impl.buf) {
     iop_a_src =
         a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-    if (!a_src.private_impl.mark) {
-      a_src.private_impl.mark = iop_a_src;
-      a_src.private_impl.limit =
-          a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-    }
-    io0_a_src = a_src.private_impl.mark;
-    io1_a_src = a_src.private_impl.limit;
+    io0_a_src = iop_a_src;
+    io1_a_src =
+        a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
   }
 
   uint32_t coro_susp_point = self->private_impl.p_decode_io_writer[0];
