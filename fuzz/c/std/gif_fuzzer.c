@@ -48,7 +48,7 @@ It should print "PASS", amongst other information, and exit(0).
 #include "../../../release/c/wuffs-unsupported-snapshot.c"
 #include "../fuzzlib/fuzzlib.c"
 
-const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   const char* ret = NULL;
   wuffs_base__slice_u8 pixbuf = ((wuffs_base__slice_u8){});
   wuffs_base__slice_u8 workbuf = ((wuffs_base__slice_u8){});
@@ -67,7 +67,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     }
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
-    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src);
     if (status) {
       ret = status;
       goto exit;
@@ -115,7 +115,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
     bool seen_ok = false;
     while (true) {
       wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
-      status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+      status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, src);
       if (status) {
         if ((status != wuffs_base__warning__end_of_data) || !seen_ok) {
           ret = status;
@@ -123,8 +123,7 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
         goto exit;
       }
 
-      status = wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf,
-                                                NULL);
+      status = wuffs_gif__decoder__decode_frame(&dec, &pb, src, workbuf, NULL);
 
       wuffs_base__rect_ie_u32 frame_rect =
           wuffs_base__frame_config__bounds(&fc);

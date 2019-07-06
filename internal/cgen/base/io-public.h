@@ -18,11 +18,6 @@
 //
 // See (/doc/note/io-input-output.md).
 
-struct wuffs_base__io_buffer__struct;
-
-typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_reader;
-typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_writer;
-
 // wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
 // data.
 typedef struct {
@@ -42,8 +37,8 @@ typedef struct wuffs_base__io_buffer__struct {
 
 #ifdef __cplusplus
   inline void compact();
-  inline wuffs_base__io_reader reader();
-  inline wuffs_base__io_writer writer();
+  inline wuffs_base__io_buffer__struct* reader();  // Deprecated.
+  inline wuffs_base__io_buffer__struct* writer();  // Deprecated.
   inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
   inline uint64_t writer_available() const;
@@ -96,12 +91,12 @@ wuffs_base__null_io_buffer_meta() {
   return ret;
 }
 
-static inline wuffs_base__io_reader  //
+static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_reader() {
   return NULL;
 }
 
-static inline wuffs_base__io_writer  //
+static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_writer() {
   return NULL;
 }
@@ -120,16 +115,6 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   }
   buf->meta.wi = n;
   buf->meta.ri = 0;
-}
-
-static inline wuffs_base__io_reader  //
-wuffs_base__io_buffer__reader(wuffs_base__io_buffer* buf) {
-  return buf;
-}
-
-static inline wuffs_base__io_writer  //
-wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
-  return buf;
 }
 
 static inline uint64_t  //
@@ -159,14 +144,14 @@ wuffs_base__io_buffer__struct::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
-inline wuffs_base__io_reader  //
+inline wuffs_base__io_buffer*  //
 wuffs_base__io_buffer__struct::reader() {
-  return wuffs_base__io_buffer__reader(this);
+  return this;
 }
 
-inline wuffs_base__io_writer  //
+inline wuffs_base__io_buffer*  //
 wuffs_base__io_buffer__struct::writer() {
-  return wuffs_base__io_buffer__writer(this);
+  return this;
 }
 
 inline uint64_t  //

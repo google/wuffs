@@ -1276,11 +1276,6 @@ wuffs_base__rect_ie_u32::height() const {
 //
 // See (/doc/note/io-input-output.md).
 
-struct wuffs_base__io_buffer__struct;
-
-typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_reader;
-typedef struct wuffs_base__io_buffer__struct* wuffs_base__io_writer;
-
 // wuffs_base__io_buffer_meta is the metadata for a wuffs_base__io_buffer's
 // data.
 typedef struct {
@@ -1300,8 +1295,8 @@ typedef struct wuffs_base__io_buffer__struct {
 
 #ifdef __cplusplus
   inline void compact();
-  inline wuffs_base__io_reader reader();
-  inline wuffs_base__io_writer writer();
+  inline wuffs_base__io_buffer__struct* reader();  // Deprecated.
+  inline wuffs_base__io_buffer__struct* writer();  // Deprecated.
   inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
   inline uint64_t writer_available() const;
@@ -1354,12 +1349,12 @@ wuffs_base__null_io_buffer_meta() {
   return ret;
 }
 
-static inline wuffs_base__io_reader  //
+static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_reader() {
   return NULL;
 }
 
-static inline wuffs_base__io_writer  //
+static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_writer() {
   return NULL;
 }
@@ -1378,16 +1373,6 @@ wuffs_base__io_buffer__compact(wuffs_base__io_buffer* buf) {
   }
   buf->meta.wi = n;
   buf->meta.ri = 0;
-}
-
-static inline wuffs_base__io_reader  //
-wuffs_base__io_buffer__reader(wuffs_base__io_buffer* buf) {
-  return buf;
-}
-
-static inline wuffs_base__io_writer  //
-wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
-  return buf;
 }
 
 static inline uint64_t  //
@@ -1417,14 +1402,14 @@ wuffs_base__io_buffer__struct::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
-inline wuffs_base__io_reader  //
+inline wuffs_base__io_buffer*  //
 wuffs_base__io_buffer__struct::reader() {
-  return wuffs_base__io_buffer__reader(this);
+  return this;
 }
 
-inline wuffs_base__io_writer  //
+inline wuffs_base__io_buffer*  //
 wuffs_base__io_buffer__struct::writer() {
-  return wuffs_base__io_buffer__writer(this);
+  return this;
 }
 
 inline uint64_t  //
@@ -2963,8 +2948,8 @@ wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
-                                         wuffs_base__io_writer a_dst,
-                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__io_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
                                          wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
@@ -3082,8 +3067,8 @@ struct wuffs_deflate__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst,
-                   wuffs_base__io_reader a_src,
+  decode_io_writer(wuffs_base__io_buffer* a_dst,
+                   wuffs_base__io_buffer* a_src,
                    wuffs_base__slice_u8 a_workbuf) {
     return wuffs_deflate__decoder__decode_io_writer(this, a_dst, a_src,
                                                     a_workbuf);
@@ -3154,8 +3139,8 @@ wuffs_lzw__decoder__workbuf_len(const wuffs_lzw__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
-                                     wuffs_base__io_writer a_dst,
-                                     wuffs_base__io_reader a_src,
+                                     wuffs_base__io_buffer* a_dst,
+                                     wuffs_base__io_buffer* a_src,
                                      wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__slice_u8  //
@@ -3252,8 +3237,8 @@ struct wuffs_lzw__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst,
-                   wuffs_base__io_reader a_src,
+  decode_io_writer(wuffs_base__io_buffer* a_dst,
+                   wuffs_base__io_buffer* a_src,
                    wuffs_base__slice_u8 a_workbuf) {
     return wuffs_lzw__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
@@ -3376,7 +3361,7 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__image_config* a_dst,
-                                        wuffs_base__io_reader a_src);
+                                        wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_gif__decoder__set_report_metadata(wuffs_gif__decoder* self,
@@ -3385,7 +3370,7 @@ wuffs_gif__decoder__set_report_metadata(wuffs_gif__decoder* self,
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
-                                       wuffs_base__io_reader a_src);
+                                       wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__MAYBE_STATIC uint32_t  //
 wuffs_gif__decoder__metadata_fourcc(const wuffs_gif__decoder* self);
@@ -3416,12 +3401,12 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
                                         wuffs_base__frame_config* a_dst,
-                                        wuffs_base__io_reader a_src);
+                                        wuffs_base__io_buffer* a_src);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__io_buffer* a_src,
                                  wuffs_base__slice_u8 a_workbuf,
                                  wuffs_base__decode_frame_options* a_opts);
 
@@ -3603,7 +3588,7 @@ struct wuffs_gif__decoder__struct {
 
   inline wuffs_base__status  //
   decode_image_config(wuffs_base__image_config* a_dst,
-                      wuffs_base__io_reader a_src) {
+                      wuffs_base__io_buffer* a_src) {
     return wuffs_gif__decoder__decode_image_config(this, a_dst, a_src);
   }
 
@@ -3613,7 +3598,7 @@ struct wuffs_gif__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  ack_metadata_chunk(wuffs_base__io_reader a_src) {
+  ack_metadata_chunk(wuffs_base__io_buffer* a_src) {
     return wuffs_gif__decoder__ack_metadata_chunk(this, a_src);
   }
 
@@ -3659,13 +3644,13 @@ struct wuffs_gif__decoder__struct {
 
   inline wuffs_base__status  //
   decode_frame_config(wuffs_base__frame_config* a_dst,
-                      wuffs_base__io_reader a_src) {
+                      wuffs_base__io_buffer* a_src) {
     return wuffs_gif__decoder__decode_frame_config(this, a_dst, a_src);
   }
 
   inline wuffs_base__status  //
   decode_frame(wuffs_base__pixel_buffer* a_dst,
-               wuffs_base__io_reader a_src,
+               wuffs_base__io_buffer* a_src,
                wuffs_base__slice_u8 a_workbuf,
                wuffs_base__decode_frame_options* a_opts) {
     return wuffs_gif__decoder__decode_frame(this, a_dst, a_src, a_workbuf,
@@ -3739,8 +3724,8 @@ wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src,
                                       wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
@@ -3827,8 +3812,8 @@ struct wuffs_gzip__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst,
-                   wuffs_base__io_reader a_src,
+  decode_io_writer(wuffs_base__io_buffer* a_dst,
+                   wuffs_base__io_buffer* a_src,
                    wuffs_base__slice_u8 a_workbuf) {
     return wuffs_gzip__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
@@ -3900,8 +3885,8 @@ wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src,
                                       wuffs_base__slice_u8 a_workbuf);
 
 // ---------------- Struct Definitions
@@ -3985,8 +3970,8 @@ struct wuffs_zlib__decoder__struct {
   }
 
   inline wuffs_base__status  //
-  decode_io_writer(wuffs_base__io_writer a_dst,
-                   wuffs_base__io_reader a_src,
+  decode_io_writer(wuffs_base__io_buffer* a_dst,
+                   wuffs_base__io_buffer* a_src,
                    wuffs_base__slice_u8 a_workbuf) {
     return wuffs_zlib__decoder__decode_io_writer(this, a_dst, a_src, a_workbuf);
   }
@@ -4626,7 +4611,7 @@ wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
 }
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__io_reader__set(wuffs_base__io_reader* o,
+wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,
                            uint8_t** ptr_io1_r,
@@ -4657,7 +4642,7 @@ wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io1_r, uint64_t n) {
 }
 
 static inline wuffs_base__empty_struct  //
-wuffs_base__io_writer__set(wuffs_base__io_writer* o,
+wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_w,
                            uint8_t** ptr_io1_w,
@@ -6280,20 +6265,20 @@ static const uint32_t                //
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src);
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src);
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self);
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
-                                             wuffs_base__io_reader a_src);
+                                             wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
@@ -6304,13 +6289,13 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src);
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src);
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src);
 
 // ---------------- Initializer Implementations
 
@@ -6385,8 +6370,8 @@ wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self) {
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
-                                         wuffs_base__io_writer a_dst,
-                                         wuffs_base__io_reader a_src,
+                                         wuffs_base__io_buffer* a_dst,
+                                         wuffs_base__io_buffer* a_src,
                                          wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
@@ -6518,8 +6503,8 @@ exit:
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_blocks(wuffs_deflate__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src) {
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint32_t v_final = 0;
@@ -6664,8 +6649,8 @@ exit:
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_uncompressed(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src) {
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint32_t v_length = 0;
@@ -6824,7 +6809,7 @@ wuffs_deflate__decoder__init_fixed_huffman(wuffs_deflate__decoder* self) {
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__init_dynamic_huffman(wuffs_deflate__decoder* self,
-                                             wuffs_base__io_reader a_src) {
+                                             wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint32_t v_bits = 0;
@@ -7330,8 +7315,8 @@ label_3_break:;
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_huffman_fast(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src) {
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint32_t v_bits = 0;
@@ -7613,8 +7598,8 @@ exit:
 
 static wuffs_base__status  //
 wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
-                                            wuffs_base__io_writer a_dst,
-                                            wuffs_base__io_reader a_src) {
+                                            wuffs_base__io_buffer* a_dst,
+                                            wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint32_t v_bits = 0;
@@ -8023,11 +8008,11 @@ const char* wuffs_lzw__error__internal_error_inconsistent_i_o =
 
 static wuffs_base__empty_struct  //
 wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
-                              wuffs_base__io_reader a_src);
+                              wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
-                             wuffs_base__io_writer a_dst);
+                             wuffs_base__io_buffer* a_dst);
 
 // ---------------- Initializer Implementations
 
@@ -8121,8 +8106,8 @@ wuffs_lzw__decoder__workbuf_len(const wuffs_lzw__decoder* self) {
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
-                                     wuffs_base__io_writer a_dst,
-                                     wuffs_base__io_reader a_src,
+                                     wuffs_base__io_buffer* a_dst,
+                                     wuffs_base__io_buffer* a_src,
                                      wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
@@ -8221,7 +8206,7 @@ exit:
 
 static wuffs_base__empty_struct  //
 wuffs_lzw__decoder__read_from(wuffs_lzw__decoder* self,
-                              wuffs_base__io_reader a_src) {
+                              wuffs_base__io_buffer* a_src) {
   uint32_t v_clear_code = 0;
   uint32_t v_end_code = 0;
   uint32_t v_save_code = 0;
@@ -8410,7 +8395,7 @@ label_0_break:;
 
 static wuffs_base__status  //
 wuffs_lzw__decoder__write_to(wuffs_lzw__decoder* self,
-                             wuffs_base__io_writer a_dst) {
+                             wuffs_base__io_buffer* a_dst) {
   wuffs_base__status status = NULL;
 
   wuffs_base__slice_u8 v_s = {0};
@@ -8559,52 +8544,52 @@ static const uint8_t           //
 
 static wuffs_base__status  //
 wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
-                               wuffs_base__io_reader a_src);
+                               wuffs_base__io_buffer* a_src);
 
 static wuffs_base__empty_struct  //
 wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
-                                          wuffs_base__io_reader a_src);
+                                          wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
-                                  wuffs_base__io_reader a_src);
+                                  wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
-                               wuffs_base__io_reader a_src);
+                               wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
-                                     wuffs_base__io_reader a_src);
+                                     wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
-                                wuffs_base__io_reader a_src);
+                                wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
-                              wuffs_base__io_reader a_src);
+                              wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
-                              wuffs_base__io_reader a_src);
+                              wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
-                                    wuffs_base__io_reader a_src);
+                                    wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src);
+                                    wuffs_base__io_buffer* a_src);
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src,
+                                    wuffs_base__io_buffer* a_src,
                                     wuffs_base__slice_u8 a_workbuf);
 
 static wuffs_base__status  //
@@ -8714,7 +8699,7 @@ wuffs_gif__decoder__set_quirk_enabled(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                                         wuffs_base__image_config* a_dst,
-                                        wuffs_base__io_reader a_src) {
+                                        wuffs_base__io_buffer* a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -8827,7 +8812,7 @@ wuffs_gif__decoder__set_report_metadata(wuffs_gif__decoder* self,
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
-                                       wuffs_base__io_reader a_src) {
+                                       wuffs_base__io_buffer* a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -9079,7 +9064,7 @@ wuffs_gif__decoder__restart_frame(wuffs_gif__decoder* self,
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
                                         wuffs_base__frame_config* a_dst,
-                                        wuffs_base__io_reader a_src) {
+                                        wuffs_base__io_buffer* a_src) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
   }
@@ -9237,7 +9222,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__skip_frame(wuffs_gif__decoder* self,
-                               wuffs_base__io_reader a_src) {
+                               wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
@@ -9338,7 +9323,7 @@ exit:
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                                  wuffs_base__pixel_buffer* a_dst,
-                                 wuffs_base__io_reader a_src,
+                                 wuffs_base__io_buffer* a_src,
                                  wuffs_base__slice_u8 a_workbuf,
                                  wuffs_base__decode_frame_options* a_opts) {
   if (!self) {
@@ -9434,7 +9419,7 @@ wuffs_gif__decoder__reset_gc(wuffs_gif__decoder* self) {
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
-                                          wuffs_base__io_reader a_src) {
+                                          wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_block_type = 0;
@@ -9551,7 +9536,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_header(wuffs_gif__decoder* self,
-                                  wuffs_base__io_reader a_src) {
+                                  wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_c[6] = {0};
@@ -9618,7 +9603,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_lsd(wuffs_gif__decoder* self,
-                               wuffs_base__io_reader a_src) {
+                               wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
@@ -9832,7 +9817,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_extension(wuffs_gif__decoder* self,
-                                     wuffs_base__io_reader a_src) {
+                                     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_label = 0;
@@ -9926,7 +9911,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__skip_blocks(wuffs_gif__decoder* self,
-                                wuffs_base__io_reader a_src) {
+                                wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_block_size = 0;
@@ -9997,7 +9982,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
-                              wuffs_base__io_reader a_src) {
+                              wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_c = 0;
@@ -10249,7 +10234,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_gc(wuffs_gif__decoder* self,
-                              wuffs_base__io_reader a_src) {
+                              wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_c = 0;
@@ -10380,7 +10365,7 @@ exit:
 
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part0(wuffs_gif__decoder* self,
-                                    wuffs_base__io_reader a_src) {
+                                    wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t* iop_a_src = NULL;
@@ -10551,7 +10536,7 @@ exit:
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part1(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src) {
+                                    wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = NULL;
 
   uint8_t v_flags = 0;
@@ -10746,7 +10731,7 @@ exit:
 static wuffs_base__status  //
 wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                                     wuffs_base__pixel_buffer* a_dst,
-                                    wuffs_base__io_reader a_src,
+                                    wuffs_base__io_buffer* a_src,
                                     wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status status = NULL;
 
@@ -10754,7 +10739,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   bool v_need_block_size = false;
   uint64_t v_n_compressed = 0;
   wuffs_base__slice_u8 v_compressed = {0};
-  wuffs_base__io_reader v_r = wuffs_base__null_io_reader();
+  wuffs_base__io_buffer* v_r = wuffs_base__null_io_reader();
   wuffs_base__io_buffer u_r WUFFS_BASE__POTENTIALLY_UNUSED =
       wuffs_base__null_io_buffer();
   uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -10851,7 +10836,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           goto exit;
         }
         {
-          wuffs_base__io_reader o_0_v_r = v_r;
+          wuffs_base__io_buffer* o_0_v_r = v_r;
           uint8_t* o_0_iop_v_r = iop_v_r;
           uint8_t* o_0_io1_v_r = io1_v_r;
           wuffs_base__io_reader__set(
@@ -11215,8 +11200,8 @@ wuffs_gzip__decoder__workbuf_len(const wuffs_gzip__decoder* self) {
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src,
                                       wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;
@@ -11691,8 +11676,8 @@ wuffs_zlib__decoder__workbuf_len(const wuffs_zlib__decoder* self) {
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__status  //
 wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
-                                      wuffs_base__io_writer a_dst,
-                                      wuffs_base__io_reader a_src,
+                                      wuffs_base__io_buffer* a_dst,
+                                      wuffs_base__io_buffer* a_src,
                                       wuffs_base__slice_u8 a_workbuf) {
   if (!self) {
     return wuffs_base__error__bad_receiver;

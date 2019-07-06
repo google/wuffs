@@ -93,9 +93,6 @@ static const char* decode() {
   src.meta.pos = 0;
   src.meta.closed = true;
 
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
-
   wuffs_gzip__decoder* dec =
       (wuffs_gzip__decoder*)(calloc(sizeof__wuffs_gzip__decoder(), 1));
   if (!dec) {
@@ -109,7 +106,7 @@ static const char* decode() {
     return status;
   }
   status = wuffs_gzip__decoder__decode_io_writer(
-      dec, dst_writer, src_reader,
+      dec, &dst, &src,
       wuffs_base__make_slice_u8(work_buffer, WORK_BUFFER_SIZE));
   if (status) {
     free(dec);

@@ -267,8 +267,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			cTyp = "writer"
 		}
 		name := e.Ident().Str(g.tm)
-		b.printf("wuffs_base__io_%s %s%d_%s%s = %s%s;\n",
-			cTyp, oPrefix, ioBindNum, prefix, name, prefix, name)
+		b.printf("wuffs_base__io_buffer* %s%d_%s%s = %s%s;\n",
+			oPrefix, ioBindNum, prefix, name, prefix, name)
 
 		// TODO: save / restore all iop vars, not just for local IO vars? How
 		// does this work if the io_bind body advances these pointers, either

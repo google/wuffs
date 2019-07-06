@@ -119,16 +119,12 @@ const char* do_test_wuffs_lzw_decode(const char* src_filename,
   while (true) {
     num_iters++;
     wuffs_base__io_buffer limited_got = make_limited_writer(got, wlimit);
-    wuffs_base__io_writer got_writer =
-        wuffs_base__io_buffer__writer(&limited_got);
     wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
-    wuffs_base__io_reader src_reader =
-        wuffs_base__io_buffer__reader(&limited_src);
     size_t old_wi = got.meta.wi;
     size_t old_ri = src.meta.ri;
 
-    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
-                                                  global_work_slice);
+    status = wuffs_lzw__decoder__decode_io_writer(
+        &dec, &limited_got, &limited_src, global_work_slice);
     got.meta.wi += limited_got.meta.wi;
     src.meta.ri += limited_src.meta.ri;
     if (!status) {
@@ -235,9 +231,8 @@ const char* test_wuffs_lzw_decode_output_bad() {
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 7);
 
-  status = wuffs_lzw__decoder__decode_io_writer(
-      &dec, wuffs_base__io_buffer__writer(&got),
-      wuffs_base__io_buffer__reader(&src), global_work_slice);
+  status =
+      wuffs_lzw__decoder__decode_io_writer(&dec, &got, &src, global_work_slice);
   if (status != wuffs_lzw__error__bad_code) {
     RETURN_FAIL("decode: \"%s\"", status);
   }
@@ -280,9 +275,8 @@ const char* test_wuffs_lzw_decode_output_empty() {
   }
   wuffs_lzw__decoder__set_literal_width(&dec, 8);
 
-  status = wuffs_lzw__decoder__decode_io_writer(
-      &dec, wuffs_base__io_buffer__writer(&got),
-      wuffs_base__io_buffer__reader(&src), global_work_slice);
+  status =
+      wuffs_lzw__decoder__decode_io_writer(&dec, &got, &src, global_work_slice);
   if (status) {
     RETURN_FAIL("decode: \"%s\"", status);
   }
@@ -311,9 +305,8 @@ const char* do_test_wuffs_lzw_decode_width(uint32_t width,
   wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
       .data = global_got_slice,
   });
-  status = wuffs_lzw__decoder__decode_io_writer(
-      &dec, wuffs_base__io_buffer__writer(&got),
-      wuffs_base__io_buffer__reader(&src), global_work_slice);
+  status =
+      wuffs_lzw__decoder__decode_io_writer(&dec, &got, &src, global_work_slice);
   if (status) {
     RETURN_FAIL("decode: \"%s\"", status);
   }
@@ -394,8 +387,6 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
-  wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   const char* status = read_file(&src, filename);
   if (status) {
@@ -424,7 +415,7 @@ const char* do_bench_wuffs_lzw_decode(const char* filename,
     if (status) {
       RETURN_FAIL("initialize: \"%s\"", status);
     }
-    status = wuffs_lzw__decoder__decode_io_writer(&dec, got_writer, src_reader,
+    status = wuffs_lzw__decoder__decode_io_writer(&dec, &got, &src,
                                                   global_work_slice);
     if (status) {
       RETURN_FAIL("decode: \"%s\"", status);

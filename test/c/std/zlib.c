@@ -97,14 +97,10 @@ const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
 
   while (true) {
     wuffs_base__io_buffer limited_dst = make_limited_writer(*dst, wlimit);
-    wuffs_base__io_writer dst_writer =
-        wuffs_base__io_buffer__writer(&limited_dst);
     wuffs_base__io_buffer limited_src = make_limited_reader(*src, rlimit);
-    wuffs_base__io_reader src_reader =
-        wuffs_base__io_buffer__reader(&limited_src);
 
-    status = wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader,
-                                                   global_work_slice);
+    status = wuffs_zlib__decoder__decode_io_writer(
+        &dec, &limited_dst, &limited_src, global_work_slice);
 
     dst->meta.wi += limited_dst.meta.wi;
     src->meta.ri += limited_src.meta.ri;
@@ -151,7 +147,6 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
     }
     wuffs_zlib__decoder__set_ignore_checksum(&dec, ignore_checksum);
     got.meta.wi = 0;
-    wuffs_base__io_writer got_writer = wuffs_base__io_buffer__writer(&got);
     src.meta.ri = 0;
 
     // Decode the src data in 1 or 2 chunks, depending on whether end_limit is
@@ -176,11 +171,9 @@ const char* do_test_wuffs_zlib_checksum(bool ignore_checksum,
       }
 
       wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
-      wuffs_base__io_reader src_reader =
-          wuffs_base__io_buffer__reader(&limited_src);
 
       const char* got_z = wuffs_zlib__decoder__decode_io_writer(
-          &dec, got_writer, src_reader, global_work_slice);
+          &dec, &got, &limited_src, global_work_slice);
       src.meta.ri += limited_src.meta.ri;
       if (got_z != want_z) {
         RETURN_FAIL("end_limit=%d: got \"%s\", want \"%s\"", end_limit, got_z,

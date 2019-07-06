@@ -60,7 +60,7 @@ uint8_t work_buffer[WORK_BUFFER_SIZE];
 uint8_t work_buffer[1];
 #endif
 
-const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
+const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash) {
   wuffs_zlib__decoder dec;
   const char* status = wuffs_zlib__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION,
@@ -81,11 +81,10 @@ const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash) {
           .len = DST_BUFFER_SIZE,
       }),
   });
-  wuffs_base__io_writer dst_writer = wuffs_base__io_buffer__writer(&dst);
 
   while (true) {
     dst.meta.wi = 0;
-    status = wuffs_zlib__decoder__decode_io_writer(&dec, dst_writer, src_reader,
+    status = wuffs_zlib__decoder__decode_io_writer(&dec, &dst, src,
                                                    ((wuffs_base__slice_u8){
                                                        .ptr = work_buffer,
                                                        .len = WORK_BUFFER_SIZE,

@@ -27,7 +27,7 @@ void intentional_segfault() {
   *intentional_segfault_ptr = 0;
 }
 
-const char* fuzz(wuffs_base__io_reader src_reader, uint32_t hash);
+const char* fuzz(wuffs_base__io_buffer* src, uint32_t hash);
 
 static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Hash input as per https://en.wikipedia.org/wiki/Jenkins_hash_function
@@ -55,7 +55,7 @@ static const char* llvmFuzzerTestOneInput(const uint8_t* data, size_t size) {
       }),
   });
 
-  const char* msg = fuzz(wuffs_base__io_buffer__reader(&src), hash);
+  const char* msg = fuzz(&src, hash);
   if (msg && strstr(msg, "internal error:")) {
     fprintf(stderr, "internal errors shouldn't occur: \"%s\"\n", msg);
     intentional_segfault();

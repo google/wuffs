@@ -461,8 +461,8 @@ var cTypeNames = [...]string{
 	t.IDU32:      "uint32_t",
 	t.IDU64:      "uint64_t",
 	t.IDBool:     "bool",
-	t.IDIOReader: "wuffs_base__io_reader",
-	t.IDIOWriter: "wuffs_base__io_writer",
+	t.IDIOReader: "wuffs_base__io_buffer*",
+	t.IDIOWriter: "wuffs_base__io_buffer*",
 }
 
 const noSuchCOperator = " no_such_C_operator "

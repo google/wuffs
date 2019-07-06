@@ -310,11 +310,10 @@ const char* play() {
   src.meta.ri = 0;
   src.meta.pos = 0;
   src.meta.closed = true;
-  wuffs_base__io_reader src_reader = wuffs_base__io_buffer__reader(&src);
 
   if (first_play) {
     wuffs_base__image_config ic = {0};
-    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src_reader);
+    status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
     if (status) {
       return status;
     }
@@ -346,7 +345,7 @@ const char* play() {
   while (1) {
     wuffs_base__frame_config fc = {0};
     wuffs_base__status status =
-        wuffs_gif__decoder__decode_frame_config(&dec, &fc, src_reader);
+        wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
     if (status) {
       if (status == wuffs_base__warning__end_of_data) {
         break;
@@ -371,8 +370,7 @@ const char* play() {
       }
     }
 
-    status =
-        wuffs_gif__decoder__decode_frame(&dec, &pb, src_reader, workbuf, NULL);
+    status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
     if (status) {
       if (status == wuffs_base__warning__end_of_data) {
         break;
