@@ -464,14 +464,10 @@ const (
 	IDHistoryAvailable = ID(0x162)
 	IDMark             = ID(0x163)
 	IDPosition         = ID(0x164)
-	IDSetLimit         = ID(0x165)
-	IDSetMark          = ID(0x166)
-	IDSince            = ID(0x167)
-	IDSinceMark        = ID(0x168)
-	IDSinceMarkLength  = ID(0x169)
-	IDSkip             = ID(0x16A)
-	IDSkipFast         = ID(0x16B)
-	IDTake             = ID(0x16C)
+	IDSince            = ID(0x165)
+	IDSkip             = ID(0x166)
+	IDSkipFast         = ID(0x167)
+	IDTake             = ID(0x168)
 
 	IDCopyFromSlice        = ID(0x170)
 	IDCopyNFromHistory     = ID(0x171)
@@ -800,11 +796,7 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDHistoryAvailable: "history_available",
 	IDMark:             "mark",
 	IDPosition:         "position",
-	IDSetLimit:         "set_limit",
-	IDSetMark:          "set_mark",
 	IDSince:            "since",
-	IDSinceMark:        "since_mark",
-	IDSinceMarkLength:  "since_mark_length",
 	IDSkip:             "skip",
 	IDSkipFast:         "skip_fast",
 	IDTake:             "take",

@@ -220,11 +220,7 @@ var Funcs = []string{
 	"io_reader.count_since(mark u64) u64",
 	"io_reader.mark() u64",
 	"io_reader.position() u64",
-	"io_reader.set!(s slice u8, closed bool)", // TODO: remove, as it's no longer used?
-	"io_reader.set_limit!(l u64)",             // TODO: remove, as it's no longer used?
-	"io_reader.set_mark!()",
 	"io_reader.since(mark u64) slice u8",
-	"io_reader.since_mark() slice u8",
 	"io_reader.take!(n u64) slice u8",
 
 	"io_reader.skip?(n u32)",
@@ -279,11 +275,7 @@ var Funcs = []string{
 	"io_writer.history_available() u64",
 	"io_writer.mark() u64",
 	"io_writer.position() u64",
-	"io_writer.set!(s slice u8)",  // TODO: remove, as it's no longer used?
-	"io_writer.set_limit!(l u64)", // TODO: remove, as it's no longer used?
-	"io_writer.set_mark!()",
 	"io_writer.since(mark u64) slice u8",
-	"io_writer.since_mark() slice u8",
 
 	"io_writer.copy_from_slice!(s slice u8) u64",
 	"io_writer.copy_n_from_history!(n u32, distance u32) u32",

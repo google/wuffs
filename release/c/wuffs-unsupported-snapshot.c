@@ -4731,28 +4731,6 @@ wuffs_base__io_reader__set(wuffs_base__io_reader* o,
   return ret;
 }
 
-static inline wuffs_base__empty_struct  //
-wuffs_base__io_reader__set_limit(wuffs_base__io_reader* o,
-                                 uint8_t* iop_r,
-                                 uint64_t limit) {
-  if (o && (((size_t)(o->private_impl.limit - iop_r)) > limit)) {
-    o->private_impl.limit = iop_r + limit;
-  }
-
-  wuffs_base__empty_struct ret;
-  ret.private_impl = 0;
-  return ret;
-}
-
-static inline wuffs_base__empty_struct  //
-wuffs_base__io_reader__set_mark(wuffs_base__io_reader* o, uint8_t* mark) {
-  o->private_impl.mark = mark;
-
-  wuffs_base__empty_struct ret;
-  ret.private_impl = 0;
-  return ret;
-}
-
 static inline wuffs_base__slice_u8  //
 wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io1_r, uint64_t n) {
   if (n <= ((size_t)(io1_r - *ptr_iop_r))) {
@@ -4780,15 +4758,6 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_w = data.ptr;
   *ptr_io1_w = data.ptr + data.len;
-
-  wuffs_base__empty_struct ret;
-  ret.private_impl = 0;
-  return ret;
-}
-
-static inline wuffs_base__empty_struct  //
-wuffs_base__io_writer__set_mark(wuffs_base__io_writer* o, uint8_t* mark) {
-  o->private_impl.mark = mark;
 
   wuffs_base__empty_struct ret;
   ret.private_impl = 0;
