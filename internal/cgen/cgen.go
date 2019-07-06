@@ -74,18 +74,14 @@ const (
 // pointer retreats, undoing a read or write, it cannot retreat past io0_etc.
 //
 // At the start of a function, these pointers are initialized from an
-// io_buffer's fields (ptr, ri, wi, len), or possibly a limit field. For an
-// io_reader:
+// io_buffer's fields (ptr, ri, wi, len). For an io_reader:
 //  - io0_etc = ptr + ri
 //  - iop_etc = ptr + ri
-//  - io1_etc = ptr + wi   or  limit
+//  - io1_etc = ptr + wi
 // and for an io_writer:
 //  - io0_etc = ptr + wi
 //  - iop_etc = ptr + wi
-//  - io1_etc = ptr + len  or  limit
-//
-// TODO: discuss marks and limits, and how (if at all) auxilliary pointers can
-// change over a function's lifetime.
+//  - io1_etc = ptr + len
 const (
 	io0Prefix = "io0_" // Lower bound.
 	io1Prefix = "io1_" // Upper bound.
