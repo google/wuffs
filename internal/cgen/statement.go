@@ -277,12 +277,12 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
 				oPrefix, ioBindNum, iopPrefix, prefix, name, iopPrefix, prefix, name)
 			b.printf("uint8_t *%s%d_%s%s%s = %s%s%s;\n",
-				oPrefix, ioBindNum, io1Prefix, prefix, name, io1Prefix, prefix, name)
+				oPrefix, ioBindNum, io2Prefix, prefix, name, io2Prefix, prefix, name)
 		}
 
 		if n.Keyword() == t.IDIOBind {
-			b.printf("wuffs_base__io_%s__set(&%s%s, &u_%s, &iop_%s%s, &io1_%s%s,",
-				cTyp, prefix, name, name, prefix, name, prefix, name)
+			b.printf("wuffs_base__io_%s__set(&%s%s, &%s%s, &%s%s%s, &%s%s%s,",
+				cTyp, prefix, name, uPrefix, name, iopPrefix, prefix, name, io2Prefix, prefix, name)
 			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
 				return err
 			}
@@ -318,7 +318,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
 				iopPrefix, prefix, name, oPrefix, ioBindNum, iopPrefix, prefix, name)
 			b.printf("%s%s%s = %s%d_%s%s%s;\n",
-				io1Prefix, prefix, name, oPrefix, ioBindNum, io1Prefix, prefix, name)
+				io2Prefix, prefix, name, oPrefix, ioBindNum, io2Prefix, prefix, name)
 		}
 	}
 	b.writes("}\n")

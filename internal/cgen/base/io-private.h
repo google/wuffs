@@ -35,7 +35,7 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
                                            uint8_t* io0_w,
-                                           uint8_t* io1_w,
+                                           uint8_t* io2_w,
                                            uint32_t length,
                                            uint32_t distance) {
   if (!distance) {
@@ -46,7 +46,7 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
     return 0;
   }
   uint8_t* q = p - distance;
-  size_t n = (size_t)(io1_w - p);
+  size_t n = (size_t)(io2_w - p);
   if ((size_t)(length) > n) {
     length = (uint32_t)(n);
   } else {
@@ -79,11 +79,11 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
 // pre-conditions. The caller needs to prove that:
 //  - distance >  0
 //  - distance <= (*ptr_iop_w - io0_w)
-//  - length   <= (io1_w      - *ptr_iop_w)
+//  - length   <= (io2_w      - *ptr_iop_w)
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
                                                 uint8_t* io0_w,
-                                                uint8_t* io1_w,
+                                                uint8_t* io2_w,
                                                 uint32_t length,
                                                 uint32_t distance) {
   uint8_t* p = *ptr_iop_w;
@@ -103,18 +103,18 @@ wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
 
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_reader(uint8_t** ptr_iop_w,
-                                          uint8_t* io1_w,
+                                          uint8_t* io2_w,
                                           uint32_t length,
                                           uint8_t** ptr_iop_r,
-                                          uint8_t* io1_r) {
+                                          uint8_t* io2_r) {
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = length;
-  if (n > ((size_t)(io1_w - iop_w))) {
-    n = (size_t)(io1_w - iop_w);
+  if (n > ((size_t)(io2_w - iop_w))) {
+    n = (size_t)(io2_w - iop_w);
   }
   uint8_t* iop_r = *ptr_iop_r;
-  if (n > ((size_t)(io1_r - iop_r))) {
-    n = (size_t)(io1_r - iop_r);
+  if (n > ((size_t)(io2_r - iop_r))) {
+    n = (size_t)(io2_r - iop_r);
   }
   if (n > 0) {
     memmove(iop_w, iop_r, n);
@@ -126,12 +126,12 @@ wuffs_base__io_writer__copy_n_from_reader(uint8_t** ptr_iop_w,
 
 static inline uint64_t  //
 wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
-                                       uint8_t* io1_w,
+                                       uint8_t* io2_w,
                                        wuffs_base__slice_u8 src) {
   uint8_t* iop_w = *ptr_iop_w;
   size_t n = src.len;
-  if (n > ((size_t)(io1_w - iop_w))) {
-    n = (size_t)(io1_w - iop_w);
+  if (n > ((size_t)(io2_w - iop_w))) {
+    n = (size_t)(io2_w - iop_w);
   }
   if (n > 0) {
     memmove(iop_w, src.ptr, n);
@@ -142,7 +142,7 @@ wuffs_base__io_writer__copy_from_slice(uint8_t** ptr_iop_w,
 
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
-                                         uint8_t* io1_w,
+                                         uint8_t* io2_w,
                                          uint32_t length,
                                          wuffs_base__slice_u8 src) {
   uint8_t* iop_w = *ptr_iop_w;
@@ -150,8 +150,8 @@ wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
   if (n > length) {
     n = length;
   }
-  if (n > ((size_t)(io1_w - iop_w))) {
-    n = (size_t)(io1_w - iop_w);
+  if (n > ((size_t)(io2_w - iop_w))) {
+    n = (size_t)(io2_w - iop_w);
   }
   if (n > 0) {
     memmove(iop_w, src.ptr, n);
@@ -164,7 +164,7 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,
-                           uint8_t** ptr_io1_r,
+                           uint8_t** ptr_io2_r,
                            wuffs_base__slice_u8 data) {
   b->data = data;
   b->meta.wi = data.len;
@@ -174,7 +174,7 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_r = data.ptr;
-  *ptr_io1_r = data.ptr + data.len;
+  *ptr_io2_r = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
   ret.private_impl = 0;
@@ -182,8 +182,8 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
 }
 
 static inline wuffs_base__slice_u8  //
-wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io1_r, uint64_t n) {
-  if (n <= ((size_t)(io1_r - *ptr_iop_r))) {
+wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io2_r, uint64_t n) {
+  if (n <= ((size_t)(io2_r - *ptr_iop_r))) {
     uint8_t* p = *ptr_iop_r;
     *ptr_iop_r += n;
     return wuffs_base__make_slice_u8(p, n);
@@ -195,7 +195,7 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_w,
-                           uint8_t** ptr_io1_w,
+                           uint8_t** ptr_io2_w,
                            wuffs_base__slice_u8 data) {
   b->data = data;
   b->meta.wi = 0;
@@ -205,7 +205,7 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_w = data.ptr;
-  *ptr_io1_w = data.ptr + data.len;
+  *ptr_io2_w = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
   ret.private_impl = 0;

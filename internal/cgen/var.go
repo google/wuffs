@@ -103,7 +103,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	if header {
 		b.printf("uint8_t* %s%s = NULL;", iopPrefix, preName)
 		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io0Prefix, preName)
-		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io1Prefix, preName)
+		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io2Prefix, preName)
 	}
 
 	b.printf("if (%s) {", preName)
@@ -114,11 +114,11 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 	if header {
 		b.printf("%s%s = %s%s;", io0Prefix, preName, iopPrefix, preName)
 		b.printf("%s%s = %s->data.ptr + %s->%s;",
-			io1Prefix, preName, preName, preName, i1)
+			io2Prefix, preName, preName, preName, i1)
 
 		if typ.QID()[1] == t.IDIOWriter {
 			b.printf("if (%s->meta.closed) {", preName)
-			b.printf("%s%s = %s%s;", io1Prefix, preName, iopPrefix, preName)
+			b.printf("%s%s = %s%s;", io2Prefix, preName, iopPrefix, preName)
 			b.printf("}\n")
 		}
 	}
@@ -298,7 +298,7 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 			preName := vPrefix + name
 			// TODO: io0_etc variables?
 			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)
-			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, preName)
+			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io2Prefix, preName)
 		}
 	}
 	return nil

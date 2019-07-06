@@ -106,13 +106,13 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 		// TODO: don't hard-code these.
 		switch recv.Str(g.tm) {
 		case "args.dst":
-			p0 = "io1_a_dst"
+			p0 = "io2_a_dst"
 			p1 = "iop_a_dst"
 		case "args.src":
-			p0 = "io1_a_src"
+			p0 = "io2_a_src"
 			p1 = "iop_a_src"
 		case "w":
-			p0 = "io1_v_w"
+			p0 = "io2_v_w"
 			p1 = "iop_v_w"
 		}
 		if p0 == "" {
@@ -181,7 +181,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDTake:
-		b.printf("wuffs_base__io_reader__take(&iop_a_src, io1_a_src,")
+		b.printf("wuffs_base__io_reader__take(&iop_a_src, io2_a_src,")
 		return g.writeArgs(b, args, depth)
 	}
 
@@ -217,7 +217,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 			suffix = "_fast"
 		}
 		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
-			"&iop_a_dst, %sdst->data.ptr, io1_a_dst",
+			"&iop_a_dst, %sdst->data.ptr, io2_a_dst",
 			suffix, aPrefix)
 		for _, o := range args {
 			b.writeb(',')
@@ -229,20 +229,20 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCopyNFromReader:
-		b.printf("wuffs_base__io_writer__copy_n_from_reader(&iop_a_dst, io1_a_dst,")
+		b.printf("wuffs_base__io_writer__copy_n_from_reader(&iop_a_dst, io2_a_dst,")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
 		// TODO: don't assume that the last argument is "args.src".
-		b.printf(", &iop_a_src, io1_a_src)")
+		b.printf(", &iop_a_src, io2_a_src)")
 		return nil
 
 	case t.IDCopyFromSlice:
-		b.printf("wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io1_a_dst,")
+		b.printf("wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io2_a_dst,")
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCopyNFromSlice:
-		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io1_a_dst,")
+		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io2_a_dst,")
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
@@ -561,7 +561,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			temp := g.currFunk.tempW
 			g.currFunk.tempW++
 
-			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {" +
+			b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
 				"status = wuffs_base__suspension__short_read; goto suspend; }")
 
 			// TODO: watch for passing an array type to writeCTypeName? In C, an
@@ -578,7 +578,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				if err := g.writeCoroSuspPoint(b, false); err != nil {
 					return err
 				}
-				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io1_a_src)) {" +
+				b.printf("if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {" +
 					"status = wuffs_base__suspension__short_read; goto suspend; }")
 				b.printf("iop_a_src++;\n")
 				return nil
@@ -599,9 +599,9 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 				return err
 			}
 
-			b.printf("if (%s > ((uint64_t)(io1_a_src - iop_a_src))) {\n", scratchName)
-			b.printf("%s -= ((uint64_t)(io1_a_src - iop_a_src));\n", scratchName)
-			b.printf("iop_a_src = io1_a_src;\n")
+			b.printf("if (%s > ((uint64_t)(io2_a_src - iop_a_src))) {\n", scratchName)
+			b.printf("%s -= ((uint64_t)(io2_a_src - iop_a_src));\n", scratchName)
+			b.printf("iop_a_src = io2_a_src;\n")
 
 			b.writes("status = wuffs_base__suspension__short_read; goto suspend; }\n")
 			b.printf("iop_a_src += %s;\n", scratchName)
@@ -625,7 +625,7 @@ func (g *gen) writeBuiltinQuestionCall(b *buffer, n *a.Expr, depth uint32) error
 			if err := g.writeCoroSuspPoint(b, false); err != nil {
 				return err
 			}
-			b.writes("if (iop_a_dst == io1_a_dst) {\n" +
+			b.writes("if (iop_a_dst == io2_a_dst) {\n" +
 				"status = wuffs_base__suspension__short_write; goto suspend; }\n" +
 				"*iop_a_dst++ = ")
 			x := n.Args()[0].AsArg().Value()
@@ -663,7 +663,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	scratchName := fmt.Sprintf("self->private_data.%s%s[0].scratch",
 		sPrefix, g.currFunk.astFunc.FuncName().Str(g.tm))
 
-	b.printf("if (WUFFS_BASE__LIKELY(io1_a_src - iop_a_src >= %d)) {", xx/8)
+	b.printf("if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= %d)) {", xx/8)
 	b.printf("%s%d =", tPrefix, temp)
 	if xx != yy {
 		b.printf("((uint%d_t)(", yy)
@@ -681,7 +681,7 @@ func (g *gen) writeReadUxxAsUyy(b *buffer, n *a.Expr, preName string, xx uint8, 
 	}
 	b.printf("while (true) {")
 
-	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io1_%s)) {"+
+	b.printf("if (WUFFS_BASE__UNLIKELY(iop_%s == io2_%s)) {"+
 		"status = wuffs_base__suspension__short_read; goto suspend; }",
 		preName, preName)
 
