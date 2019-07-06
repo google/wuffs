@@ -145,7 +145,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_%s%s - %s%s.private_impl.buf->data.ptr) : 0)", prefix, name, prefix, name)
+		b.printf(", ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr))) : 0)", prefix, name, prefix, name)
 		return nil
 
 	case t.IDMark:
@@ -163,7 +163,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_%s%s - %s%s.private_impl.buf->data.ptr, %s%s.private_impl.buf->data.ptr)"+
+		b.printf(", ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr)), %s%s.private_impl.buf->data.ptr)"+
 			": wuffs_base__make_slice_u8(NULL, 0))",
 			prefix, name, prefix, name, prefix, name)
 		return nil
@@ -250,7 +250,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_a_dst - a_dst.private_impl.buf->data.ptr) : 0)")
+		b.printf(", ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))) : 0)")
 		return nil
 
 	case t.IDHistoryAvailable:
@@ -271,7 +271,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_a_dst - a_dst.private_impl.buf->data.ptr, a_dst.private_impl.buf->data.ptr) : wuffs_base__make_slice_u8(NULL, 0))")
+		b.printf(", ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)), a_dst.private_impl.buf->data.ptr)" +
+			": wuffs_base__make_slice_u8(NULL, 0))")
 		return nil
 	}
 

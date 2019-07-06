@@ -6481,7 +6481,8 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
       v_written =
           (a_dst.private_impl.buf
                ? wuffs_base__io__since(
-                     v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                     v_mark,
+                     ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)),
                      a_dst.private_impl.buf->data.ptr)
                : wuffs_base__make_slice_u8(NULL, 0));
       if (((uint64_t)(v_written.len)) >= 32768) {
@@ -11018,7 +11019,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
               &self->private_impl.f_compressed_ri,
               (v_r.private_impl.buf
                    ? wuffs_base__io__count_since(
-                         v_mark, iop_v_r - v_r.private_impl.buf->data.ptr)
+                         v_mark,
+                         ((uint64_t)(iop_v_r - v_r.private_impl.buf->data.ptr)))
                    : 0));
           v_r = o_0_v_r;
           iop_v_r = o_0_iop_v_r;
@@ -11609,13 +11611,16 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
             &self->private_data.f_checksum,
             (a_dst.private_impl.buf
                  ? wuffs_base__io__since(
-                       v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                       v_mark,
+                       ((uint64_t)(iop_a_dst -
+                                   a_dst.private_impl.buf->data.ptr)),
                        a_dst.private_impl.buf->data.ptr)
                  : wuffs_base__make_slice_u8(NULL, 0)));
         v_decoded_length_got += ((uint32_t)(
             ((a_dst.private_impl.buf
                   ? wuffs_base__io__count_since(
-                        v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr)
+                        v_mark, ((uint64_t)(iop_a_dst -
+                                            a_dst.private_impl.buf->data.ptr)))
                   : 0) &
              4294967295)));
       }
@@ -11983,7 +11988,9 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
             &self->private_data.f_checksum,
             (a_dst.private_impl.buf
                  ? wuffs_base__io__since(
-                       v_mark, iop_a_dst - a_dst.private_impl.buf->data.ptr,
+                       v_mark,
+                       ((uint64_t)(iop_a_dst -
+                                   a_dst.private_impl.buf->data.ptr)),
                        a_dst.private_impl.buf->data.ptr)
                  : wuffs_base__make_slice_u8(NULL, 0)));
       }
