@@ -1283,11 +1283,6 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     struct wuffs_base__io_buffer__struct* buf;
-    // The bounds values are typically NULL, when created by the Wuffs public
-    // API. NULL means that the callee substitutes the implicit bounds derived
-    // from buf.
-    uint8_t* mark;
-    uint8_t* limit;
   } private_impl;
 } wuffs_base__io_reader;
 
@@ -1296,11 +1291,6 @@ typedef struct {
   // compatibility or safety guarantee if you do so.
   struct {
     struct wuffs_base__io_buffer__struct* buf;
-    // The bounds values are typically NULL, when created by the Wuffs public
-    // API. NULL means that the callee substitutes the implicit bounds derived
-    // from buf.
-    uint8_t* mark;
-    uint8_t* limit;
   } private_impl;
 } wuffs_base__io_writer;
 
@@ -1381,8 +1371,6 @@ static inline wuffs_base__io_reader  //
 wuffs_base__null_io_reader() {
   wuffs_base__io_reader ret;
   ret.private_impl.buf = NULL;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
   return ret;
 }
 
@@ -1390,8 +1378,6 @@ static inline wuffs_base__io_writer  //
 wuffs_base__null_io_writer() {
   wuffs_base__io_writer ret;
   ret.private_impl.buf = NULL;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
   return ret;
 }
 
@@ -1415,8 +1401,6 @@ static inline wuffs_base__io_reader  //
 wuffs_base__io_buffer__reader(wuffs_base__io_buffer* buf) {
   wuffs_base__io_reader ret;
   ret.private_impl.buf = buf;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
   return ret;
 }
 
@@ -1424,8 +1408,6 @@ static inline wuffs_base__io_writer  //
 wuffs_base__io_buffer__writer(wuffs_base__io_buffer* buf) {
   wuffs_base__io_writer ret;
   ret.private_impl.buf = buf;
-  ret.private_impl.mark = NULL;
-  ret.private_impl.limit = NULL;
   return ret;
 }
 
@@ -4536,20 +4518,6 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
-// TODO: wuffs_base__io_reader__is_eof is no longer used by Wuffs per se, but
-// it might be handy to programs that use Wuffs. Either delete it, or promote
-// it to the public API.
-//
-// If making this function public (i.e. moving it to base-header.h), it also
-// needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
-
-static inline bool  //
-wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
-  wuffs_base__io_buffer* buf = o.private_impl.buf;
-  return buf && buf->meta.closed &&
-         (buf->data.ptr + buf->meta.wi == o.private_impl.limit);
-}
-
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
                                            uint8_t* io0_w,
@@ -4691,8 +4659,6 @@ wuffs_base__io_reader__set(wuffs_base__io_reader* o,
   b->meta.closed = false;
 
   o->private_impl.buf = b;
-  o->private_impl.mark = data.ptr;
-  o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_r = data.ptr;
   *ptr_io1_r = data.ptr + data.len;
 
@@ -4724,8 +4690,6 @@ wuffs_base__io_writer__set(wuffs_base__io_writer* o,
   b->meta.closed = false;
 
   o->private_impl.buf = b;
-  o->private_impl.mark = data.ptr;
-  o->private_impl.limit = data.ptr + data.len;
   *ptr_iop_w = data.ptr;
   *ptr_io1_w = data.ptr + data.len;
 
