@@ -16,12 +16,6 @@
 
 // ---------------- I/O
 
-static inline bool  //
-wuffs_base__io_buffer__is_valid(wuffs_base__io_buffer buf) {
-  return (buf.data.ptr || (buf.data.len == 0)) &&
-         (buf.data.len >= buf.meta.wi) && (buf.meta.wi >= buf.meta.ri);
-}
-
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
   if (index >= mark) {
@@ -50,30 +44,6 @@ wuffs_base__io_reader__is_eof(wuffs_base__io_reader o) {
   wuffs_base__io_buffer* buf = o.private_impl.buf;
   return buf && buf->meta.closed &&
          (buf->data.ptr + buf->meta.wi == o.private_impl.limit);
-}
-
-static inline bool  //
-wuffs_base__io_reader__is_valid(wuffs_base__io_reader o) {
-  wuffs_base__io_buffer* buf = o.private_impl.buf;
-  // Note: if making this function public (i.e. moving it to base-header.h), it
-  // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
-  return buf ? ((buf->data.ptr <= o.private_impl.mark) &&
-                (o.private_impl.mark <= o.private_impl.limit) &&
-                (o.private_impl.limit <= buf->data.ptr + buf->data.len))
-             : ((o.private_impl.mark == NULL) &&
-                (o.private_impl.limit == NULL));
-}
-
-static inline bool  //
-wuffs_base__io_writer__is_valid(wuffs_base__io_writer o) {
-  wuffs_base__io_buffer* buf = o.private_impl.buf;
-  // Note: if making this function public (i.e. moving it to base-header.h), it
-  // also needs to allow NULL (i.e. implicit, callee-calculated) mark/limit.
-  return buf ? ((buf->data.ptr <= o.private_impl.mark) &&
-                (o.private_impl.mark <= o.private_impl.limit) &&
-                (o.private_impl.limit <= buf->data.ptr + buf->data.len))
-             : ((o.private_impl.mark == NULL) &&
-                (o.private_impl.limit == NULL));
 }
 
 static inline uint32_t  //
