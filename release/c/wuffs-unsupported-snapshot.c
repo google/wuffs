@@ -7709,11 +7709,11 @@ label_0_continue:;
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)((v_dist_minus_1 + 1))) >
-          ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
+          ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))) {
         v_hlen = 0;
-        v_hdist =
-            ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
-                         ((uint64_t)(iop_a_dst - a_dst.private_impl.mark)))));
+        v_hdist = ((uint32_t)(
+            (((uint64_t)((v_dist_minus_1 + 1))) -
+             ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr)))));
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
@@ -7747,7 +7747,7 @@ label_0_continue:;
           goto label_0_continue;
         }
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(iop_a_dst - a_dst.private_impl.mark))) {
+            ((uint64_t)(iop_a_dst - a_dst.private_impl.buf->data.ptr))) {
           status = wuffs_deflate__error__internal_error_inconsistent_distance;
           goto exit;
         }

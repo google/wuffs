@@ -1113,10 +1113,10 @@ func (q *checker) canUndoByte(recv *a.Expr) error {
 }
 
 func (q *checker) canCopyNFromHistoryFast(recv *a.Expr, args []*a.Node) error {
-	// As per cgen's base-private.h, there are three pre-conditions:
+	// As per cgen's io-private.h, there are three pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0
-	//  - distance <= this.since_mark().length()
+	//  - distance <= this.history_available()
 
 	if len(args) != 2 {
 		return fmt.Errorf("check: internal error: inconsistent copy_n_from_history_fast arguments")
@@ -1174,7 +1174,7 @@ check1:
 		return fmt.Errorf("check: could not prove distance > 0")
 	}
 
-	// Check "distance <= this.since_mark().length()".
+	// Check "distance <= this.history_available()".
 check2:
 	for {
 		for _, x := range q.facts {
@@ -1192,22 +1192,18 @@ check2:
 				continue
 			}
 
-			// Check that the RHS is "recv.since_mark().length()".
+			// Check that the RHS is "recv.history_available()".
 			y, method, yArgs := splitReceiverMethodArgs(x.RHS().AsExpr())
-			if method != t.IDLength || len(yArgs) != 0 {
+			if method != t.IDHistoryAvailable || len(yArgs) != 0 {
 				continue
 			}
-			z, method, zArgs := splitReceiverMethodArgs(y)
-			if method != t.IDSinceMark || len(zArgs) != 0 {
-				continue
-			}
-			if !z.Eq(recv) {
+			if !y.Eq(recv) {
 				continue
 			}
 
 			break check2
 		}
-		return fmt.Errorf("check: could not prove distance <= %s.since_mark().length()", recv.Str(q.tm))
+		return fmt.Errorf("check: could not prove distance <= %s.history_available()", recv.Str(q.tm))
 	}
 
 	return nil
