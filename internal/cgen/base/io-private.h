@@ -34,7 +34,7 @@ wuffs_base__io__since(uint64_t mark, uint64_t index, uint8_t* ptr) {
 
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
-                                           uint8_t* io0_w,
+                                           uint8_t* io1_w,
                                            uint8_t* io2_w,
                                            uint32_t length,
                                            uint32_t distance) {
@@ -42,7 +42,7 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
     return 0;
   }
   uint8_t* p = *ptr_iop_w;
-  if ((size_t)(p - io0_w) < (size_t)(distance)) {
+  if ((size_t)(p - io1_w) < (size_t)(distance)) {
     return 0;
   }
   uint8_t* q = p - distance;
@@ -78,11 +78,11 @@ wuffs_base__io_writer__copy_n_from_history(uint8_t** ptr_iop_w,
 // wuffs_base__io_writer__copy_n_from_history function above, but has stronger
 // pre-conditions. The caller needs to prove that:
 //  - distance >  0
-//  - distance <= (*ptr_iop_w - io0_w)
+//  - distance <= (*ptr_iop_w - io1_w)
 //  - length   <= (io2_w      - *ptr_iop_w)
 static inline uint32_t  //
 wuffs_base__io_writer__copy_n_from_history_fast(uint8_t** ptr_iop_w,
-                                                uint8_t* io0_w,
+                                                uint8_t* io1_w,
                                                 uint8_t* io2_w,
                                                 uint32_t length,
                                                 uint32_t distance) {

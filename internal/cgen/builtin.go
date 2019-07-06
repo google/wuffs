@@ -137,7 +137,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCanUndoByte:
-		b.writes("(iop_a_src > io0_a_src)")
+		b.writes("(iop_a_src > io1_a_src)")
 		return nil
 
 	case t.IDCountSince:
