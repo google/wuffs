@@ -135,6 +135,11 @@ func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Nod
 
 func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	// TODO: don't hard-code the recv being a_src.
+	prefix, name := aPrefix, "src"
+	if recv.Operator() == 0 {
+		prefix, name = vPrefix, recv.Ident().Str(g.tm)
+	}
+
 	switch method {
 	case t.IDUndoByte:
 		b.writes("(iop_a_src--, wuffs_base__make_empty_struct())")
@@ -145,15 +150,16 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCountSince:
-		b.printf("(a_src.private_impl.buf ? wuffs_base__io__count_since(")
+		b.printf("(%s%s.private_impl.buf ? wuffs_base__io__count_since(", prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_a_src - a_src.private_impl.buf->data.ptr) : 0)")
+		b.printf(", iop_%s%s - %s%s.private_impl.buf->data.ptr) : 0)", prefix, name, prefix, name)
 		return nil
 
 	case t.IDMark:
-		b.printf("(a_src.private_impl.buf ? ((uint64_t)(iop_a_src - a_src.private_impl.buf->data.ptr)) : 0)")
+		b.printf("(%s%s.private_impl.buf ? ((uint64_t)(iop_%s%s - %s%s.private_impl.buf->data.ptr)) : 0)",
+			prefix, name, prefix, name, prefix, name)
 		return nil
 
 	case t.IDPosition:
@@ -171,19 +177,16 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSince:
-		b.printf("(a_src.private_impl.buf ? wuffs_base__io__since(")
+		b.printf("(%s%s.private_impl.buf ? wuffs_base__io__since(", prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", iop_a_src - a_src.private_impl.buf->data.ptr, a_src.private_impl.buf->data.ptr) : wuffs_base__make_slice_u8(NULL, 0))")
+		b.printf(", iop_%s%s - %s%s.private_impl.buf->data.ptr, %s%s.private_impl.buf->data.ptr)"+
+			": wuffs_base__make_slice_u8(NULL, 0))",
+			prefix, name, prefix, name, prefix, name)
 		return nil
 
 	case t.IDSinceMark, t.IDSinceMarkLength:
-		prefix, name := aPrefix, "src"
-		if recv.Operator() == 0 {
-			prefix, name = vPrefix, recv.Ident().Str(g.tm)
-		}
-
 		if method == t.IDSinceMark {
 			b.printf("wuffs_base__make_slice_u8(%s%s.private_impl.mark, (size_t)(", prefix, name)
 		}
@@ -230,6 +233,11 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 
 func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	// TODO: don't hard-code the recv being a_dst or w.
+	prefix, name := aPrefix, "dst"
+	if recv.Operator() == 0 {
+		prefix, name = vPrefix, recv.Ident().Str(g.tm)
+	}
+
 	switch method {
 	case t.IDCopyNFromHistory, t.IDCopyNFromHistoryFast:
 		suffix := ""
@@ -299,11 +307,6 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSinceMark, t.IDSinceMarkLength:
-		prefix, name := aPrefix, "dst"
-		if recv.Operator() == 0 {
-			prefix, name = vPrefix, recv.Ident().Str(g.tm)
-		}
-
 		if method == t.IDSinceMark {
 			b.printf("wuffs_base__make_slice_u8(%s%s.private_impl.mark, (size_t)(", prefix, name)
 		}

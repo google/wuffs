@@ -11087,6 +11087,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
       wuffs_base__null_io_buffer();
   uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint64_t v_mark = 0;
   wuffs_base__status v_lzw_status = NULL;
   wuffs_base__status v_copy_status = NULL;
   wuffs_base__slice_u8 v_uncompressed = {0};
@@ -11194,6 +11195,9 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                                             4096),
                   self->private_impl.f_compressed_ri,
                   self->private_impl.f_compressed_wi));
+          v_mark = (v_r.private_impl.buf
+                        ? ((uint64_t)(iop_v_r - v_r.private_impl.buf->data.ptr))
+                        : 0);
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
@@ -11205,7 +11209,10 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           }
           wuffs_base__u64__sat_add_indirect(
               &self->private_impl.f_compressed_ri,
-              ((uint64_t)(iop_v_r - v_r.private_impl.mark)));
+              (v_r.private_impl.buf
+                   ? wuffs_base__io__count_since(
+                         v_mark, iop_v_r - v_r.private_impl.buf->data.ptr)
+                   : 0));
           v_r = o_0_v_r;
           iop_v_r = o_0_iop_v_r;
           io1_v_r = o_0_io1_v_r;
