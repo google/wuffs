@@ -73,16 +73,22 @@ const (
 // advances, it cannot advance past io2_etc. In the rarer case that an iop_etc
 // pointer retreats, undoing a read or write, it cannot retreat past io1_etc.
 //
+// The iop_etc pointer can change over the lifetime of a function. The ioN_etc
+// pointers, for numeric N, cannot.
+//
 // At the start of a function, these pointers are initialized from an
 // io_buffer's fields (ptr, ri, wi, len). For an io_reader:
+//  - io0_etc = ptr
 //  - io1_etc = ptr + ri
 //  - iop_etc = ptr + ri
 //  - io2_etc = ptr + wi
 // and for an io_writer:
+//  - io0_etc = ptr
 //  - io1_etc = ptr + wi
 //  - iop_etc = ptr + wi
 //  - io2_etc = ptr + len
 const (
+	io0Prefix = "io0_" // Base.
 	io1Prefix = "io1_" // Lower bound.
 	io2Prefix = "io2_" // Upper bound.
 	iopPrefix = "iop_" // Pointer.

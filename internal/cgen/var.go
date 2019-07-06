@@ -102,6 +102,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 
 	if header {
 		b.printf("uint8_t* %s%s = NULL;", iopPrefix, preName)
+		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io0Prefix, preName)
 		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io1Prefix, preName)
 		b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;", io2Prefix, preName)
 	}
@@ -112,6 +113,7 @@ func (g *gen) writeLoadDerivedVar(b *buffer, hack string, prefix string, name t.
 		iopPrefix, preName, preName, preName, i1)
 
 	if header {
+		b.printf("%s%s = %s->data.ptr;", io0Prefix, preName, preName)
 		b.printf("%s%s = %s%s;", io1Prefix, preName, iopPrefix, preName)
 		b.printf("%s%s = %s->data.ptr + %s->%s;",
 			io2Prefix, preName, preName, preName, i2)
