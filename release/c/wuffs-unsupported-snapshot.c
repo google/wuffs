@@ -6384,6 +6384,10 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
   }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
+  }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
@@ -8135,6 +8139,10 @@ wuffs_lzw__decoder__decode_io_writer(wuffs_lzw__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
   }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
+  }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
@@ -8730,6 +8738,10 @@ wuffs_gif__decoder__decode_image_config(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
   }
+  if (!a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
+  }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
@@ -8842,6 +8854,10 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
+  }
+  if (!a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 2)) {
@@ -9096,6 +9112,10 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
+  }
+  if (!a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 3)) {
@@ -9362,7 +9382,7 @@ wuffs_gif__decoder__decode_frame(wuffs_gif__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
   }
-  if (!a_dst) {
+  if (!a_dst || !a_src) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
     return wuffs_base__error__bad_argument;
   }
@@ -11263,6 +11283,10 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
   }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
+  }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {
     self->private_impl.magic = WUFFS_BASE__DISABLED;
@@ -11739,6 +11763,10 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
     return (self->private_impl.magic == WUFFS_BASE__DISABLED)
                ? wuffs_base__error__disabled_by_previous_error
                : wuffs_base__error__initialize_not_called;
+  }
+  if (!a_dst || !a_src) {
+    self->private_impl.magic = WUFFS_BASE__DISABLED;
+    return wuffs_base__error__bad_argument;
   }
   if ((self->private_impl.active_coroutine != 0) &&
       (self->private_impl.active_coroutine != 1)) {

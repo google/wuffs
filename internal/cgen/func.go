@@ -420,13 +420,10 @@ func (g *gen) writeFuncImplArgChecks(b *buffer, n *a.Func) error {
 	for _, o := range n.In().Fields() {
 		o := o.AsField()
 		oTyp := o.XType()
-		if oTyp.Decorator() != t.IDPtr && !oTyp.IsRefined() {
-			// TODO: Also check elements, for array-typed arguments.
-			continue
-		}
 
+		// TODO: Also check elements, for array-typed arguments.
 		switch {
-		case oTyp.Decorator() == t.IDPtr:
+		case oTyp.IsIOType() || (oTyp.Decorator() == t.IDPtr):
 			checks = append(checks, fmt.Sprintf("!%s%s", aPrefix, o.Name().Str(g.tm)))
 
 		case oTyp.IsRefined():
