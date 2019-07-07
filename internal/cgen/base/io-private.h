@@ -16,14 +16,17 @@
 
 // ---------------- I/O
 
+// "Null" as in "/dev/null", not as in "nullptr".
+static wuffs_base__io_buffer wuffs_base__global__null_io_buffer = {};
+
 static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_reader() {
-  return NULL;
+  return &wuffs_base__global__null_io_buffer;
 }
 
 static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_writer() {
-  return NULL;
+  return &wuffs_base__global__null_io_buffer;
 }
 
 static inline uint64_t  //
