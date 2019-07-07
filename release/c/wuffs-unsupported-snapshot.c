@@ -6424,7 +6424,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
+      v_mark = ((uint64_t)(iop_a_dst - io0_a_dst));
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
@@ -6446,10 +6446,8 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
         }
         goto ok;
       }
-      v_written =
-          (a_dst ? wuffs_base__io__since(
-                       v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
-                 : wuffs_base__make_slice_u8(NULL, 0));
+      v_written = wuffs_base__io__since(
+          v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst);
       if (((uint64_t)(v_written.len)) >= 32768) {
         v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
         wuffs_base__slice_u8__copy_from_slice(
@@ -10905,7 +10903,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                                             4096),
                   self->private_impl.f_compressed_ri,
                   self->private_impl.f_compressed_wi));
-          v_mark = (v_r ? ((uint64_t)(iop_v_r - io0_v_r)) : 0);
+          v_mark = ((uint64_t)(iop_v_r - io0_v_r));
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
@@ -10917,9 +10915,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           }
           wuffs_base__u64__sat_add_indirect(
               &self->private_impl.f_compressed_ri,
-              (v_r ? wuffs_base__io__count_since(
-                         v_mark, ((uint64_t)(iop_v_r - io0_v_r)))
-                   : 0));
+              wuffs_base__io__count_since(v_mark,
+                                          ((uint64_t)(iop_v_r - io0_v_r))));
           v_r = o_0_v_r;
           iop_v_r = o_0_iop_v_r;
           io0_v_r = o_0_io0_v_r;
@@ -11479,7 +11476,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       goto exit;
     }
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
+      v_mark = ((uint64_t)(iop_a_dst - io0_a_dst));
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
@@ -11500,14 +11497,12 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_crc32__ieee_hasher__update(
             &self->private_data.f_checksum,
-            (a_dst ? wuffs_base__io__since(
-                         v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
-                   : wuffs_base__make_slice_u8(NULL, 0)));
-        v_decoded_length_got += ((uint32_t)(
-            ((a_dst ? wuffs_base__io__count_since(
-                          v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)))
-                    : 0) &
-             4294967295)));
+            wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)),
+                                  io0_a_dst));
+        v_decoded_length_got +=
+            ((uint32_t)((wuffs_base__io__count_since(
+                             v_mark, ((uint64_t)(iop_a_dst - io0_a_dst))) &
+                         4294967295)));
       }
       if (wuffs_base__status__is_ok(v_status)) {
         goto label_2_break;
@@ -11842,7 +11837,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       goto exit;
     }
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
+      v_mark = ((uint64_t)(iop_a_dst - io0_a_dst));
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
@@ -11863,9 +11858,8 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_adler32__hasher__update(
             &self->private_data.f_checksum,
-            (a_dst ? wuffs_base__io__since(
-                         v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)
-                   : wuffs_base__make_slice_u8(NULL, 0)));
+            wuffs_base__io__since(v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)),
+                                  io0_a_dst));
       }
       if (wuffs_base__status__is_ok(v_status)) {
         goto label_0_break;

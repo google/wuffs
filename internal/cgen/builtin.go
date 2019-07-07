@@ -141,16 +141,15 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCountSince:
-		b.printf("(%s%s ? wuffs_base__io__count_since(", prefix, name)
+		b.printf("wuffs_base__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(%s%s%s - %s%s%s))) : 0)", iopPrefix, prefix, name, io0Prefix, prefix, name)
+		b.printf(", ((uint64_t)(%s%s%s - %s%s%s)))", iopPrefix, prefix, name, io0Prefix, prefix, name)
 		return nil
 
 	case t.IDMark:
-		b.printf("(%s%s ? ((uint64_t)(%s%s%s - %s%s%s)) : 0)",
-			prefix, name, iopPrefix, prefix, name, io0Prefix, prefix, name)
+		b.printf("((uint64_t)(%s%s%s - %s%s%s))", iopPrefix, prefix, name, io0Prefix, prefix, name)
 		return nil
 
 	case t.IDPosition:
@@ -159,13 +158,12 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSince:
-		b.printf("(%s%s ? wuffs_base__io__since(", prefix, name)
+		b.printf("wuffs_base__io__since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_%s%s - %s%s)), %s%s)"+
-			": wuffs_base__make_slice_u8(NULL, 0))",
-			prefix, name, io0Prefix, name, io0Prefix, name)
+		b.printf(", ((uint64_t)(%s%s%s - %s%s%s)), %s%s%s)",
+			iopPrefix, prefix, name, io0Prefix, prefix, name, io0Prefix, prefix, name)
 		return nil
 
 	case t.IDSkipFast:
@@ -246,11 +244,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
-		b.printf("(a_dst ? wuffs_base__io__count_since(")
+		b.printf("wuffs_base__io__count_since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst))) : 0)")
+		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)))")
 		return nil
 
 	case t.IDHistoryAvailable:
@@ -258,7 +256,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDMark:
-		b.printf("(a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0)")
+		b.printf("((uint64_t)(iop_a_dst - io0_a_dst))")
 		return nil
 
 	case t.IDPosition:
@@ -266,12 +264,11 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDSince:
-		b.printf("(a_dst ? wuffs_base__io__since(")
+		b.printf("wuffs_base__io__since(")
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)" +
-			": wuffs_base__make_slice_u8(NULL, 0))")
+		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)")
 		return nil
 	}
 
