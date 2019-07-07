@@ -145,7 +145,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_%s%s - %s%s->data.ptr))) : 0)", prefix, name, prefix, name)
+		b.printf(", ((uint64_t)(%s%s%s - %s%s%s))) : 0)", iopPrefix, prefix, name, io0Prefix, prefix, name)
 		return nil
 
 	case t.IDMark:
@@ -250,7 +250,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - a_dst->data.ptr))) : 0)")
+		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst))) : 0)")
 		return nil
 
 	case t.IDHistoryAvailable:

@@ -10918,7 +10918,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           wuffs_base__u64__sat_add_indirect(
               &self->private_impl.f_compressed_ri,
               (v_r ? wuffs_base__io__count_since(
-                         v_mark, ((uint64_t)(iop_v_r - v_r->data.ptr)))
+                         v_mark, ((uint64_t)(iop_v_r - io0_v_r)))
                    : 0));
           v_r = o_0_v_r;
           iop_v_r = o_0_iop_v_r;
@@ -11505,7 +11505,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
                    : wuffs_base__make_slice_u8(NULL, 0)));
         v_decoded_length_got += ((uint32_t)(
             ((a_dst ? wuffs_base__io__count_since(
-                          v_mark, ((uint64_t)(iop_a_dst - a_dst->data.ptr)))
+                          v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)))
                     : 0) &
              4294967295)));
       }
