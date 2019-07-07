@@ -17,7 +17,9 @@
 // ---------------- I/O
 
 // "Null" as in "/dev/null", not as in "nullptr".
-static wuffs_base__io_buffer wuffs_base__global__null_io_buffer = {};
+//
+// TODO: ensure that this is zero-initialized.
+static wuffs_base__io_buffer wuffs_base__global__null_io_buffer;
 
 static inline wuffs_base__io_buffer*  //
 wuffs_base__null_io_reader() {
