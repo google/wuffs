@@ -4614,6 +4614,8 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,
+                           uint8_t** ptr_io0_r,
+                           uint8_t** ptr_io1_r,
                            uint8_t** ptr_io2_r,
                            wuffs_base__slice_u8 data) {
   b->data = data;
@@ -4624,6 +4626,8 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_r = data.ptr;
+  *ptr_io0_r = data.ptr;
+  *ptr_io1_r = data.ptr;
   *ptr_io2_r = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
@@ -4645,6 +4649,8 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_w,
+                           uint8_t** ptr_io0_w,
+                           uint8_t** ptr_io1_w,
                            uint8_t** ptr_io2_w,
                            wuffs_base__slice_u8 data) {
   b->data = data;
@@ -4655,6 +4661,8 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_w = data.ptr;
+  *ptr_io0_w = data.ptr;
+  *ptr_io1_w = data.ptr;
   *ptr_io2_w = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
@@ -6416,7 +6424,7 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - a_dst->data.ptr)) : 0);
+      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
@@ -10788,6 +10796,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   wuffs_base__io_buffer u_r WUFFS_BASE__POTENTIALLY_UNUSED =
       wuffs_base__null_io_buffer();
   uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io0_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  uint8_t* io1_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io2_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint64_t v_mark = 0;
   wuffs_base__status v_lzw_status = NULL;
@@ -10885,15 +10895,17 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
         {
           wuffs_base__io_buffer* o_0_v_r = v_r;
           uint8_t* o_0_iop_v_r = iop_v_r;
+          uint8_t* o_0_io0_v_r = io0_v_r;
+          uint8_t* o_0_io1_v_r = io1_v_r;
           uint8_t* o_0_io2_v_r = io2_v_r;
           wuffs_base__io_reader__set(
-              &v_r, &u_r, &iop_v_r, &io2_v_r,
+              &v_r, &u_r, &iop_v_r, &io0_v_r, &io1_v_r, &io2_v_r,
               wuffs_base__slice_u8__subslice_ij(
                   wuffs_base__make_slice_u8(self->private_data.f_compressed,
                                             4096),
                   self->private_impl.f_compressed_ri,
                   self->private_impl.f_compressed_wi));
-          v_mark = (v_r ? ((uint64_t)(iop_v_r - v_r->data.ptr)) : 0);
+          v_mark = (v_r ? ((uint64_t)(iop_v_r - io0_v_r)) : 0);
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
@@ -10910,6 +10922,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
                    : 0));
           v_r = o_0_v_r;
           iop_v_r = o_0_iop_v_r;
+          io0_v_r = o_0_io0_v_r;
+          io1_v_r = o_0_io1_v_r;
           io2_v_r = o_0_io2_v_r;
         }
         v_uncompressed = wuffs_lzw__decoder__flush(&self->private_data.f_lzw);
@@ -11465,7 +11479,7 @@ wuffs_gzip__decoder__decode_io_writer(wuffs_gzip__decoder* self,
       goto exit;
     }
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - a_dst->data.ptr)) : 0);
+      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));
@@ -11828,7 +11842,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
       goto exit;
     }
     while (true) {
-      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - a_dst->data.ptr)) : 0);
+      v_mark = (a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0);
       {
         if (a_dst) {
           a_dst->meta.wi = ((size_t)(iop_a_dst - a_dst->data.ptr));

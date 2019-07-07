@@ -149,8 +149,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDMark:
-		b.printf("(%s%s ? ((uint64_t)(iop_%s%s - %s%s->data.ptr)) : 0)",
-			prefix, name, prefix, name, prefix, name)
+		b.printf("(%s%s ? ((uint64_t)(%s%s%s - %s%s%s)) : 0)",
+			prefix, name, iopPrefix, prefix, name, io0Prefix, prefix, name)
 		return nil
 
 	case t.IDPosition:
@@ -258,7 +258,7 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDMark:
-		b.printf("(a_dst ? ((uint64_t)(iop_a_dst - a_dst->data.ptr)) : 0)")
+		b.printf("(a_dst ? ((uint64_t)(iop_a_dst - io0_a_dst)) : 0)")
 		return nil
 
 	case t.IDPosition:

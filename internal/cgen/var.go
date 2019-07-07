@@ -299,6 +299,8 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 			preName := vPrefix + name
 			// TODO: io1_etc variables?
 			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)
+			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io0Prefix, preName)
+			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, preName)
 			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io2Prefix, preName)
 		}
 	}

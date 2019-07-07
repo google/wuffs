@@ -164,6 +164,8 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,
+                           uint8_t** ptr_io0_r,
+                           uint8_t** ptr_io1_r,
                            uint8_t** ptr_io2_r,
                            wuffs_base__slice_u8 data) {
   b->data = data;
@@ -174,6 +176,8 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_r = data.ptr;
+  *ptr_io0_r = data.ptr;
+  *ptr_io1_r = data.ptr;
   *ptr_io2_r = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
@@ -195,6 +199,8 @@ static inline wuffs_base__empty_struct  //
 wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
                            wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_w,
+                           uint8_t** ptr_io0_w,
+                           uint8_t** ptr_io1_w,
                            uint8_t** ptr_io2_w,
                            wuffs_base__slice_u8 data) {
   b->data = data;
@@ -205,6 +211,8 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
 
   *o = b;
   *ptr_iop_w = data.ptr;
+  *ptr_io0_w = data.ptr;
+  *ptr_io1_w = data.ptr;
   *ptr_io2_w = data.ptr + data.len;
 
   wuffs_base__empty_struct ret;
