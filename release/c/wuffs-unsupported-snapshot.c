@@ -1349,16 +1349,6 @@ wuffs_base__null_io_buffer_meta() {
   return ret;
 }
 
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_reader() {
-  return NULL;
-}
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_writer() {
-  return NULL;
-}
-
 // wuffs_base__io_buffer__compact moves any written but unread bytes to the
 // start of the buffer.
 static inline void  //
@@ -4465,6 +4455,16 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 #define wuffs_base__utility__make_rect_ie_u32 wuffs_base__make_rect_ie_u32
 
 // ---------------- I/O
+
+static inline wuffs_base__io_buffer*  //
+wuffs_base__null_io_reader() {
+  return NULL;
+}
+
+static inline wuffs_base__io_buffer*  //
+wuffs_base__null_io_writer() {
+  return NULL;
+}
 
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {

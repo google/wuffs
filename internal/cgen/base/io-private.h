@@ -16,6 +16,16 @@
 
 // ---------------- I/O
 
+static inline wuffs_base__io_buffer*  //
+wuffs_base__null_io_reader() {
+  return NULL;
+}
+
+static inline wuffs_base__io_buffer*  //
+wuffs_base__null_io_writer() {
+  return NULL;
+}
+
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
   if (index >= mark) {
