@@ -294,13 +294,7 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 			b.writes(");\n")
 
 		} else {
-			// TODO: restrict (in the type checker or parser) that e is
-			// args.foo?
-			b.printf("wuffs_base__io_%s__set_limit(&%s%s, iop_%s%s,\n", cTyp, prefix, name, prefix, name)
-			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
-				return err
-			}
-			b.writes(");\n")
+			return fmt.Errorf("TODO: implement io_limit (or remove it from the parser)")
 		}
 	}
 
