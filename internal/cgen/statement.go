@@ -285,8 +285,8 @@ func (g *gen) writeStatementIOBind(b *buffer, n *a.IOBind, depth uint32) error {
 		}
 
 		if n.Keyword() == t.IDIOBind {
-			b.printf("wuffs_base__io_%s__set(&%s%s, &%s%s, &%s%s%s, &%s%s%s, &%s%s%s, &%s%s%s,",
-				cTyp, prefix, name, uPrefix, name, iopPrefix, prefix, name,
+			b.printf("%s%s = wuffs_base__io_%s__set(&%s%s, &%s%s%s, &%s%s%s, &%s%s%s, &%s%s%s,",
+				prefix, name, cTyp, uPrefix, name, iopPrefix, prefix, name,
 				io0Prefix, prefix, name, io1Prefix, prefix, name, io2Prefix, prefix, name)
 			if err := g.writeExpr(b, n.Arg1(), 0); err != nil {
 				return err

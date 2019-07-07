@@ -160,9 +160,8 @@ wuffs_base__io_writer__copy_n_from_slice(uint8_t** ptr_iop_w,
   return (uint32_t)(n);
 }
 
-static inline wuffs_base__empty_struct  //
-wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
-                           wuffs_base__io_buffer* b,
+static inline wuffs_base__io_buffer*  //
+wuffs_base__io_reader__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_r,
                            uint8_t** ptr_io0_r,
                            uint8_t** ptr_io1_r,
@@ -174,15 +173,12 @@ wuffs_base__io_reader__set(wuffs_base__io_buffer** o,
   b->meta.pos = 0;
   b->meta.closed = false;
 
-  *o = b;
   *ptr_iop_r = data.ptr;
   *ptr_io0_r = data.ptr;
   *ptr_io1_r = data.ptr;
   *ptr_io2_r = data.ptr + data.len;
 
-  wuffs_base__empty_struct ret;
-  ret.private_impl = 0;
-  return ret;
+  return b;
 }
 
 static inline wuffs_base__slice_u8  //
@@ -195,9 +191,8 @@ wuffs_base__io_reader__take(uint8_t** ptr_iop_r, uint8_t* io2_r, uint64_t n) {
   return wuffs_base__make_slice_u8(NULL, 0);
 }
 
-static inline wuffs_base__empty_struct  //
-wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
-                           wuffs_base__io_buffer* b,
+static inline wuffs_base__io_buffer*  //
+wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
                            uint8_t** ptr_iop_w,
                            uint8_t** ptr_io0_w,
                            uint8_t** ptr_io1_w,
@@ -209,15 +204,12 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer** o,
   b->meta.pos = 0;
   b->meta.closed = false;
 
-  *o = b;
   *ptr_iop_w = data.ptr;
   *ptr_io0_w = data.ptr;
   *ptr_io1_w = data.ptr;
   *ptr_io2_w = data.ptr + data.len;
 
-  wuffs_base__empty_struct ret;
-  ret.private_impl = 0;
-  return ret;
+  return b;
 }
 
 // ---------------- I/O (Utility)
