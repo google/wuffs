@@ -272,6 +272,11 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		}
 
 		name := n.Name().Str(g.tm)
+
+		if typ.IsIOType() {
+			b.printf("wuffs_base__io_buffer %s%s = wuffs_base__null_io_buffer();\n", uPrefix, name)
+		}
+
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {
 			return err
 		}
@@ -284,24 +289,16 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		} else if typ.IsStatus() {
 			b.writes(" = NULL;\n")
 		} else if typ.IsIOType() {
-			typName := "reader"
-			if typ.QID()[1] == t.IDIOWriter {
-				typName = "writer"
-			}
-			b.printf(" = wuffs_base__null_io_%s();\n", typName)
+			b.printf(" = &%s%s;\n", uPrefix, name)
 		} else {
 			b.writes(" = {0};\n")
 		}
 
 		if typ.IsIOType() {
-			b.printf("wuffs_base__io_buffer %s%s WUFFS_BASE__POTENTIALLY_UNUSED = "+
-				"wuffs_base__null_io_buffer();\n", uPrefix, name)
-			preName := vPrefix + name
-			// TODO: io1_etc variables?
-			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, preName)
-			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io0Prefix, preName)
-			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, preName)
-			b.printf("uint8_t* %s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io2Prefix, preName)
+			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", iopPrefix, vPrefix, name)
+			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io0Prefix, vPrefix, name)
+			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io1Prefix, vPrefix, name)
+			b.printf("uint8_t* %s%s%s WUFFS_BASE__POTENTIALLY_UNUSED = NULL;\n", io2Prefix, vPrefix, name)
 		}
 	}
 	return nil
