@@ -34,16 +34,17 @@ type funk struct {
 	coroID        uint32
 	returnsStatus bool
 
-	varList       []*a.Var
-	varResumables map[t.ID]bool
-	derivedVars   map[t.ID]struct{}
-	jumpTargets   map[a.Loop]uint32
-	coroSuspPoint uint32
-	ioBinds       uint32
-	tempW         uint32
-	tempR         uint32
-	usesScratch   bool
-	hasGotoOK     bool
+	varList           []*a.Var
+	varResumables     map[t.ID]bool
+	derivedVars       map[t.ID]struct{}
+	jumpTargets       map[a.Loop]uint32
+	coroSuspPoint     uint32
+	ioBinds           uint32
+	tempW             uint32
+	tempR             uint32
+	usesEmptyIOBuffer bool
+	usesScratch       bool
+	hasGotoOK         bool
 }
 
 func (k *funk) jumpTarget(n a.Loop) (uint32, error) {

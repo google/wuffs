@@ -4456,21 +4456,6 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 
 // ---------------- I/O
 
-// "Null" as in "/dev/null", not as in "nullptr".
-//
-// TODO: ensure that this is zero-initialized.
-static wuffs_base__io_buffer wuffs_base__global__null_io_buffer;
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_reader() {
-  return &wuffs_base__global__null_io_buffer;
-}
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_writer() {
-  return &wuffs_base__global__null_io_buffer;
-}
-
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
   if (index >= mark) {
@@ -10815,6 +10800,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
+  wuffs_base__io_buffer empty_io_buffer = wuffs_base__null_io_buffer();
+
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
   if (coro_susp_point) {
     v_block_size = self->private_data.s_decode_id_part2[0].v_block_size;
@@ -10909,8 +10896,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
-                &self->private_data.f_lzw,
-                wuffs_base__utility__null_io_writer(), v_r,
+                &self->private_data.f_lzw, &empty_io_buffer, v_r,
                 wuffs_base__utility__null_slice_u8());
             iop_v_r = u_r.data.ptr + u_r.meta.ri;
             v_lzw_status = t_1;

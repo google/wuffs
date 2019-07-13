@@ -16,21 +16,6 @@
 
 // ---------------- I/O
 
-// "Null" as in "/dev/null", not as in "nullptr".
-//
-// TODO: ensure that this is zero-initialized.
-static wuffs_base__io_buffer wuffs_base__global__null_io_buffer;
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_reader() {
-  return &wuffs_base__global__null_io_buffer;
-}
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_writer() {
-  return &wuffs_base__global__null_io_buffer;
-}
-
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
   if (index >= mark) {
