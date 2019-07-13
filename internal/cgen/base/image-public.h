@@ -921,10 +921,10 @@ static inline wuffs_base__pixel_buffer  //
 wuffs_base__null_pixel_buffer() {
   wuffs_base__pixel_buffer ret;
   ret.pixcfg = wuffs_base__null_pixel_config();
-  ret.private_impl.planes[0] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[1] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[2] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[3] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[0] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[1] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[2] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[3] = wuffs_base__empty_table_u8();
   return ret;
 }
 

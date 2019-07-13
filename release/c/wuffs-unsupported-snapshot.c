@@ -432,6 +432,25 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
 }
 
 static inline wuffs_base__slice_u8  //
+wuffs_base__empty_slice_u8() {
+  wuffs_base__slice_u8 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u8  //
+wuffs_base__empty_table_u8() {
+  wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_slice_u8.
+static inline wuffs_base__slice_u8  //
 wuffs_base__null_slice_u8() {
   wuffs_base__slice_u8 ret;
   ret.ptr = NULL;
@@ -439,6 +458,7 @@ wuffs_base__null_slice_u8() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_table_u8.
 static inline wuffs_base__table_u8  //
 wuffs_base__null_table_u8() {
   wuffs_base__table_u8 ret;
@@ -1328,6 +1348,29 @@ wuffs_base__make_io_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__io_buffer  //
+wuffs_base__empty_io_buffer() {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = NULL;
+  ret.data.len = 0;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer_meta  //
+wuffs_base__empty_io_buffer_meta() {
+  wuffs_base__io_buffer_meta ret;
+  ret.wi = 0;
+  ret.ri = 0;
+  ret.pos = 0;
+  ret.closed = false;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_io_buffer.
+static inline wuffs_base__io_buffer  //
 wuffs_base__null_io_buffer() {
   wuffs_base__io_buffer ret;
   ret.data.ptr = NULL;
@@ -1339,6 +1382,7 @@ wuffs_base__null_io_buffer() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_io_buffer_meta.
 static inline wuffs_base__io_buffer_meta  //
 wuffs_base__null_io_buffer_meta() {
   wuffs_base__io_buffer_meta ret;
@@ -2390,10 +2434,10 @@ static inline wuffs_base__pixel_buffer  //
 wuffs_base__null_pixel_buffer() {
   wuffs_base__pixel_buffer ret;
   ret.pixcfg = wuffs_base__null_pixel_config();
-  ret.private_impl.planes[0] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[1] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[2] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[3] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[0] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[1] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[2] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[3] = wuffs_base__empty_table_u8();
   return ret;
 }
 
@@ -4401,7 +4445,7 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
 
   // ---------------- Slices and Tables (Utility)
 
-#define wuffs_base__utility__null_slice_u8 wuffs_base__null_slice_u8
+#define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8
 
 // ---------------- Ranges and Rects
 
@@ -4654,8 +4698,8 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
 
   // ---------------- I/O (Utility)
 
-#define wuffs_base__utility__null_io_reader wuffs_base__null_io_reader
-#define wuffs_base__utility__null_io_writer wuffs_base__null_io_writer
+#define wuffs_base__utility__empty_io_reader wuffs_base__empty_io_reader
+#define wuffs_base__utility__empty_io_writer wuffs_base__empty_io_writer
 
   // ---------------- Memory Allocation
 
@@ -10897,7 +10941,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
                 &self->private_data.f_lzw, &empty_io_buffer, v_r,
-                wuffs_base__utility__null_slice_u8());
+                wuffs_base__utility__empty_slice_u8());
             iop_v_r = u_r.data.ptr + u_r.meta.ri;
             v_lzw_status = t_1;
           }

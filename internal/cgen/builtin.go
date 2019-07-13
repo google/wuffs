@@ -96,7 +96,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 			return g.writeBuiltinIOWriter(b, recv, method.Ident(), n.Args(), depth)
 		case t.IDUtility:
 			switch method.Ident() {
-			case t.IDNullIOReader, t.IDNullIOWriter:
+			case t.IDEmptyIOReader, t.IDEmptyIOWriter:
 				if !g.currFunk.usesEmptyIOBuffer {
 					g.currFunk.usesEmptyIOBuffer = true
 					g.currFunk.bPrologue.writes("wuffs_base__io_buffer empty_io_buffer = " +

@@ -436,15 +436,15 @@ const (
 	IDU32 = ID(0x116)
 	IDU64 = ID(0x117)
 
-	IDBase         = ID(0x120)
-	IDBool         = ID(0x121)
-	IDNullIOReader = ID(0x122)
-	IDNullIOWriter = ID(0x123)
-	IDEmptyStruct  = ID(0x124)
-	IDIOReader     = ID(0x125)
-	IDIOWriter     = ID(0x126)
-	IDStatus       = ID(0x127)
-	IDUtility      = ID(0x128)
+	IDBase          = ID(0x120)
+	IDBool          = ID(0x121)
+	IDEmptyIOReader = ID(0x122)
+	IDEmptyIOWriter = ID(0x123)
+	IDEmptyStruct   = ID(0x124)
+	IDIOReader      = ID(0x125)
+	IDIOWriter      = ID(0x126)
+	IDStatus        = ID(0x127)
+	IDUtility       = ID(0x128)
 
 	IDRangeIEU32 = ID(0x130)
 	IDRangeIIU32 = ID(0x131)
@@ -770,15 +770,15 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDU32: "u32",
 	IDU64: "u64",
 
-	IDBase:         "base",
-	IDBool:         "bool",
-	IDNullIOReader: "null_io_reader",
-	IDNullIOWriter: "null_io_writer",
-	IDEmptyStruct:  "empty_struct",
-	IDIOReader:     "io_reader",
-	IDIOWriter:     "io_writer",
-	IDStatus:       "status",
-	IDUtility:      "utility",
+	IDBase:          "base",
+	IDBool:          "bool",
+	IDEmptyIOReader: "empty_io_reader",
+	IDEmptyIOWriter: "empty_io_writer",
+	IDEmptyStruct:   "empty_struct",
+	IDIOReader:      "io_reader",
+	IDIOWriter:      "io_writer",
+	IDStatus:        "status",
+	IDUtility:       "utility",
 
 	IDRangeIEU32: "range_ie_u32",
 	IDRangeIIU32: "range_ii_u32",

@@ -419,4 +419,4 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
 
 // ---------------- Slices and Tables (Utility)
 
-#define wuffs_base__utility__null_slice_u8 wuffs_base__null_slice_u8
+#define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8

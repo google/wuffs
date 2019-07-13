@@ -386,6 +386,25 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
 }
 
 static inline wuffs_base__slice_u8  //
+wuffs_base__empty_slice_u8() {
+  wuffs_base__slice_u8 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u8  //
+wuffs_base__empty_table_u8() {
+  wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_slice_u8.
+static inline wuffs_base__slice_u8  //
 wuffs_base__null_slice_u8() {
   wuffs_base__slice_u8 ret;
   ret.ptr = NULL;
@@ -393,6 +412,7 @@ wuffs_base__null_slice_u8() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_table_u8.
 static inline wuffs_base__table_u8  //
 wuffs_base__null_table_u8() {
   wuffs_base__table_u8 ret;

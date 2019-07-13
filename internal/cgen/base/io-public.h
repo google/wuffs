@@ -70,6 +70,29 @@ wuffs_base__make_io_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__io_buffer  //
+wuffs_base__empty_io_buffer() {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = NULL;
+  ret.data.len = 0;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer_meta  //
+wuffs_base__empty_io_buffer_meta() {
+  wuffs_base__io_buffer_meta ret;
+  ret.wi = 0;
+  ret.ri = 0;
+  ret.pos = 0;
+  ret.closed = false;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_io_buffer.
+static inline wuffs_base__io_buffer  //
 wuffs_base__null_io_buffer() {
   wuffs_base__io_buffer ret;
   ret.data.ptr = NULL;
@@ -81,6 +104,7 @@ wuffs_base__null_io_buffer() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_io_buffer_meta.
 static inline wuffs_base__io_buffer_meta  //
 wuffs_base__null_io_buffer_meta() {
   wuffs_base__io_buffer_meta ret;
