@@ -16,9 +16,10 @@ decompressed bytes to a destination buffer.
 
 ## I/O Buffers
 
-An `io_buffer` is a [slice](/doc/note/slices-and-tables.md) of bytes (the data,
-a `ptr` and `len`) with additional fields (the metadata): a read index (`ri`),
-a write index (`wi`), a position (`pos`) and whether or not it is `closed`.
+An `io_buffer` is a [slice](/doc/note/slices-arrays-and-tables.md) of bytes
+(the data, a `ptr` and `len`) with additional fields (the metadata): a read
+index (`ri`), a write index (`wi`), a position (`pos`) and whether or not it is
+`closed`.
 
 
 ## Read Index and Write Index
