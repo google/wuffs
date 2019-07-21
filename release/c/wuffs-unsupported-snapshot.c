@@ -1309,7 +1309,7 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct wuffs_base__io_buffer__struct {
+typedef struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 
@@ -1430,27 +1430,27 @@ wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__io_buffer__struct::compact() {
+wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::reader_available() const {
+wuffs_base__io_buffer::reader_available() const {
   return wuffs_base__io_buffer__reader_available(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::reader_io_position() const {
+wuffs_base__io_buffer::reader_io_position() const {
   return wuffs_base__io_buffer__reader_io_position(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::writer_available() const {
+wuffs_base__io_buffer::writer_available() const {
   return wuffs_base__io_buffer__writer_available(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::writer_io_position() const {
+wuffs_base__io_buffer::writer_io_position() const {
   return wuffs_base__io_buffer__writer_io_position(this);
 }
 
