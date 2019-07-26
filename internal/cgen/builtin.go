@@ -110,45 +110,44 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 	return errNoSuchBuiltin
 }
 
+func (g *gen) ioRecvName(recv *a.Expr) (string, error) {
+	switch recv.Operator() {
+	case 0:
+		return vPrefix + recv.Ident().Str(g.tm), nil
+	case t.IDDot:
+		if lhs := recv.LHS().AsExpr(); lhs.Operator() == 0 && lhs.Ident() == t.IDArgs {
+			return aPrefix + recv.Ident().Str(g.tm), nil
+		}
+	}
+	return "", fmt.Errorf("ioRecvName: cannot cgen a %q expression", recv.Str(g.tm))
+}
+
 func (g *gen) writeBuiltinIO(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	switch method {
 	case t.IDAvailable:
-		p, q := "", ""
-		// TODO: don't hard-code these.
-		switch recv.Str(g.tm) {
-		case "args.dst":
-			p = "io2_a_dst"
-			q = "iop_a_dst"
-		case "args.src":
-			p = "io2_a_src"
-			q = "iop_a_src"
-		case "w":
-			p = "io2_v_w"
-			q = "iop_v_w"
+		name, err := g.ioRecvName(recv)
+		if err != nil {
+			return err
 		}
-		if p == "" {
-			return fmt.Errorf(`TODO: cgen a "foo.available" expression`)
-		}
-		b.printf("((uint64_t)(%s - %s))", p, q)
+		b.printf("((uint64_t)(%s%s - %s%s))", io2Prefix, name, iopPrefix, name)
 		return nil
 	}
 	return errNoSuchBuiltin
 }
 
 func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
-	// TODO: don't hard-code the recv being a_src.
-	prefix, name := aPrefix, "src"
-	if recv.Operator() == 0 {
-		prefix, name = vPrefix, recv.Ident().Str(g.tm)
+	name, err := g.ioRecvName(recv)
+	if err != nil {
+		return err
 	}
 
 	switch method {
 	case t.IDUndoByte:
-		b.writes("(iop_a_src--, wuffs_base__make_empty_struct())")
+		b.printf("(%s%s--, wuffs_base__make_empty_struct())", iopPrefix, name)
 		return nil
 
 	case t.IDCanUndoByte:
-		b.writes("(iop_a_src > io1_a_src)")
+		b.printf("(%s%s > %s%s)", iopPrefix, name, io1Prefix, name)
 		return nil
 
 	case t.IDCountSince:
@@ -156,15 +155,16 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(%s%s%s - %s%s%s)))", iopPrefix, prefix, name, io0Prefix, prefix, name)
+		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDMark:
-		b.printf("((uint64_t)(%s%s%s - %s%s%s))", iopPrefix, prefix, name, io0Prefix, prefix, name)
+		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDPosition:
-		b.printf("wuffs_base__u64__sat_add(a_src->meta.pos, ((uint64_t)(iop_a_src - io0_a_src)))")
+		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
+			name, iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDSince:
@@ -172,8 +172,8 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(%s%s%s - %s%s%s)), %s%s%s)",
-			iopPrefix, prefix, name, io0Prefix, prefix, name, io0Prefix, prefix, name)
+		b.printf(", ((uint64_t)(%s%s - %s%s)), %s%s)",
+			iopPrefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDSkipFast:
@@ -181,7 +181,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		// increment, return_empty_struct call)". The final part is a function
 		// call (to a static inline function) instead of a struct literal, to
 		// avoid a "expression result unused" compiler error.
-		b.writes("(iop_a_src += ")
+		b.printf("(%s%s += ", iopPrefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDTake:
-		b.printf("wuffs_base__io_reader__take(&iop_a_src, io2_a_src,")
+		b.printf("wuffs_base__io_reader__take(&%s%s, %s%s,", iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 	}
 
@@ -199,7 +199,7 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 				if p.size != p.n {
 					b.printf("((uint%d_t)(", p.size)
 				}
-				b.printf("wuffs_base__load_u%d%ce(iop_a_src)", p.n, p.endianness)
+				b.printf("wuffs_base__load_u%d%ce(%s%s)", p.n, p.endianness, iopPrefix, name)
 				if p.size != p.n {
 					b.writes("))")
 				}
@@ -212,10 +212,9 @@ func (g *gen) writeBuiltinIOReader(b *buffer, recv *a.Expr, method t.ID, args []
 }
 
 func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
-	// TODO: don't hard-code the recv being a_dst or w.
-	prefix, name := aPrefix, "dst"
-	if recv.Operator() == 0 {
-		prefix, name = vPrefix, recv.Ident().Str(g.tm)
+	name, err := g.ioRecvName(recv)
+	if err != nil {
+		return err
 	}
 
 	switch method {
@@ -224,8 +223,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if method == t.IDCopyNFromHistoryFast {
 			suffix = "_fast"
 		}
-		b.printf("wuffs_base__io_writer__copy_n_from_history%s("+
-			"&iop_a_dst, io0_a_dst, io2_a_dst", suffix)
+		b.printf("wuffs_base__io_writer__copy_n_from_history%s(&%s%s, %s%s, %s%s",
+			suffix, iopPrefix, name, io0Prefix, name, io2Prefix, name)
 		for _, o := range args {
 			b.writeb(',')
 			if err := g.writeExpr(b, o.AsArg().Value(), depth); err != nil {
@@ -236,20 +235,27 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		return nil
 
 	case t.IDCopyNFromReader:
-		b.printf("wuffs_base__io_writer__copy_n_from_reader(&iop_a_dst, io2_a_dst,")
+		readerName, err := g.ioRecvName(args[1].AsArg().Value())
+		if err != nil {
+			return err
+		}
+
+		b.printf("wuffs_base__io_writer__copy_n_from_reader(&%s%s, %s%s,",
+			iopPrefix, name, io2Prefix, name)
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		// TODO: don't assume that the last argument is "args.src".
-		b.printf(", &iop_a_src, io2_a_src)")
+		b.printf(", &%s%s, %s%s)", iopPrefix, readerName, io2Prefix, readerName)
 		return nil
 
 	case t.IDCopyFromSlice:
-		b.printf("wuffs_base__io_writer__copy_from_slice(&iop_a_dst, io2_a_dst,")
+		b.printf("wuffs_base__io_writer__copy_from_slice(&%s%s, %s%s,",
+			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCopyNFromSlice:
-		b.printf("wuffs_base__io_writer__copy_n_from_slice(&iop_a_dst, io2_a_dst,")
+		b.printf("wuffs_base__io_writer__copy_n_from_slice(&%s%s, %s%s,",
+			iopPrefix, name, io2Prefix, name)
 		return g.writeArgs(b, args, depth)
 
 	case t.IDCountSince:
@@ -257,15 +263,16 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)))")
+		b.printf(", ((uint64_t)(%s%s - %s%s)))", iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDHistoryAvailable, t.IDMark:
-		b.printf("((uint64_t)(iop_%s%s - io0_%s%s))", prefix, name, prefix, name)
+		b.printf("((uint64_t)(%s%s - %s%s))", iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDPosition:
-		b.printf("wuffs_base__u64__sat_add(a_dst->meta.pos, ((uint64_t)(iop_a_dst - io0_a_dst)))")
+		b.printf("wuffs_base__u64__sat_add(%s->meta.pos, ((uint64_t)(%s%s - %s%s)))",
+			name, iopPrefix, name, io0Prefix, name)
 		return nil
 
 	case t.IDSince:
@@ -273,7 +280,8 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 		if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 			return err
 		}
-		b.printf(", ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst)")
+		b.printf(", ((uint64_t)(%s%s - %s%s)), %s%s)",
+			iopPrefix, name, io0Prefix, name, io0Prefix, name)
 		return nil
 	}
 
@@ -285,11 +293,12 @@ func (g *gen) writeBuiltinIOWriter(b *buffer, recv *a.Expr, method t.ID, args []
 				// final part is a function call (to a static inline function)
 				// instead of a struct literal, to avoid a "expression result
 				// unused" compiler error.
-				b.printf("(wuffs_base__store_u%d%ce(iop_a_dst,", p.n, p.endianness)
+				b.printf("(wuffs_base__store_u%d%ce(%s%s,", p.n, p.endianness, iopPrefix, name)
 				if err := g.writeExpr(b, args[0].AsArg().Value(), depth); err != nil {
 					return err
 				}
-				b.printf("), iop_a_dst += %d, wuffs_base__make_empty_struct())", p.n/8)
+				b.printf("), %s%s += %d, wuffs_base__make_empty_struct())",
+					iopPrefix, name, p.n/8)
 				return nil
 			}
 		}
