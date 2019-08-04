@@ -247,6 +247,15 @@ func (b *rNode) valid() bool {
 type Reader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
+	// It may also implement io.ReaderAt, in which case its ReadAt method will
+	// be preferred over combining Read and Seek, as the former is presumably
+	// more efficient. This is optional: io.ReaderAt is a stronger contract
+	// than io.ReadSeeker, as multiple concurrent ReadAt calls must not
+	// interfere with each other.
+	//
+	// For example, this type itself only implements io.ReadSeeker, not
+	// io.ReaderAt, as it is not safe for concurrent use.
+	//
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
 
