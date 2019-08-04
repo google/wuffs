@@ -29,10 +29,35 @@ const bytesPerHexDumpLine = 79
 
 const fakeCodec = Codec(0xEE)
 
-// Note that these exact bytes depends on the zlib encoder's algorithm, but
-// there is more than one valid zlib encoding of any given input. This "compare
-// to golden output" test is admittedly brittle, as the standard library's zlib
-// package's output isn't necessarily stable across Go releases.
+var unhex = [256]uint8{
+	'0': 0x00, '1': 0x01, '2': 0x02, '3': 0x03, '4': 0x04,
+	'5': 0x05, '6': 0x06, '7': 0x07, '8': 0x08, '9': 0x09,
+	'A': 0x0A, 'B': 0x0B, 'C': 0x0C, 'D': 0x0D, 'E': 0x0E, 'F': 0x0F,
+	'a': 0x0A, 'b': 0x0B, 'c': 0x0C, 'd': 0x0D, 'e': 0x0E, 'f': 0x0F,
+}
+
+func undoHexDump(s string) (ret []byte) {
+	for s != "" {
+		for i := 0; i < 16; i++ {
+			pos := 10 + 3*i
+			if i > 7 {
+				pos++
+			}
+			c0 := s[pos+0]
+			c1 := s[pos+1]
+			if c0 == ' ' {
+				break
+			}
+			ret = append(ret, (unhex[c0]<<4)|unhex[c1])
+		}
+		if n := strings.IndexByte(s, '\n'); n >= 0 {
+			s = s[n+1:]
+		} else {
+			break
+		}
+	}
+	return ret
+}
 
 const writerWantEmpty = "" +
 	"00000000  72 c3 63 01 30 14 00 ff  00 00 00 00 00 00 00 ee  |r.c.0...........|\n" +
@@ -179,6 +204,8 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 	if !empty {
 		// We ignore errors (assigning them to _) from the AddXxx calls. Any
 		// non-nil errors are sticky, and should be returned by Close.
+		//
+		// These {Aa,Bb,Cc} chunks are also used in the reader test.
 		res0, _ := w.AddResource([]byte("Rrr"))
 		res1, _ := w.AddResource([]byte("Ss"))
 		_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0)
@@ -215,7 +242,7 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 	return nil
 }
 
-func TestWriterMultiLevelIndex(t *testing.T) {
+func TestMultiLevelIndex(t *testing.T) {
 	buf := &bytes.Buffer{}
 	w := &Writer{
 		Writer:        buf,
@@ -232,6 +259,7 @@ func TestWriterMultiLevelIndex(t *testing.T) {
 	xRes := OptResource(0)
 	yRes := OptResource(0)
 	zRes := OptResource(0)
+	primaries := []byte(nil)
 	for i := 0; i < 260; i++ {
 		secondary := OptResource(0)
 		tertiary := OptResource(0)
@@ -253,6 +281,7 @@ func TestWriterMultiLevelIndex(t *testing.T) {
 		}
 
 		primary := []byte(fmt.Sprintf("p%02x", i&0xFF))
+		primaries = append(primaries, primary...)
 		_ = w.AddChunk(0x10000, primary, secondary, tertiary)
 	}
 
@@ -265,17 +294,17 @@ func TestWriterMultiLevelIndex(t *testing.T) {
 		t.Fatalf("len(encoded): got 0x%X, want 0x%X", got, want)
 	}
 
-	got := hex.Dump(encoded)
-	got = "" +
-		got[0x000*bytesPerHexDumpLine:0x008*bytesPerHexDumpLine] +
+	gotHexDump := hex.Dump(encoded)
+	gotHexDump = "" +
+		gotHexDump[0x000*bytesPerHexDumpLine:0x008*bytesPerHexDumpLine] +
 		"...\n" +
-		got[0x080*bytesPerHexDumpLine:0x088*bytesPerHexDumpLine] +
+		gotHexDump[0x080*bytesPerHexDumpLine:0x088*bytesPerHexDumpLine] +
 		"...\n" +
-		got[0x100*bytesPerHexDumpLine:0x110*bytesPerHexDumpLine] +
+		gotHexDump[0x100*bytesPerHexDumpLine:0x110*bytesPerHexDumpLine] +
 		"...\n" +
-		got[0x13C*bytesPerHexDumpLine:]
+		gotHexDump[0x13C*bytesPerHexDumpLine:]
 
-	const want = "" +
+	const wantHexDump = "" +
 		"00000000  72 c3 63 02 17 fa 00 fe  00 00 fc 00 00 00 00 fe  |r.c.............|\n" +
 		"00000010  00 00 04 01 00 00 00 ee  30 00 00 00 00 00 04 ff  |........0.......|\n" +
 		"00000020  30 10 00 00 00 00 01 ff  e2 13 00 00 00 00 01 02  |0...............|\n" +
@@ -315,8 +344,33 @@ func TestWriterMultiLevelIndex(t *testing.T) {
 		"000013d0  70 66 65 70 66 66 70 30  30 70 30 31 70 30 32 70  |pfepffp00p01p02p|\n" +
 		"000013e0  30 33                                             |03|\n"
 
-	if got != want {
-		t.Fatalf("\ngot:\n%s\nwant:\n%s", got, want)
+	if gotHexDump != wantHexDump {
+		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
+	}
+
+	r := &Reader{
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
+	}
+	gotPrimaries := []byte(nil)
+	for {
+		c, err := r.NextChunk()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			t.Fatalf("NextChunk: %v", err)
+		}
+		p0, p1 := c.CPrimary[0], c.CPrimary[1]
+		if (0 <= p0) && (p0 <= p1) && (p1 <= int64(len(encoded))) {
+			primary := encoded[p0:p1]
+			if len(primary) > 3 {
+				primary = primary[:3]
+			}
+			gotPrimaries = append(gotPrimaries, primary...)
+		}
+	}
+	if !bytes.Equal(gotPrimaries, primaries) {
+		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotPrimaries, primaries)
 	}
 }
 
@@ -336,5 +390,136 @@ func TestWriter1000Chunks(t *testing.T) {
 	}
 	if err := w.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
+	}
+}
+
+func printChunks(chunks []Chunk) string {
+	ss := make([]string, len(chunks))
+	for i, c := range chunks {
+		ss[i] = fmt.Sprintf("D:%#x, C0:%#x, C1:%#x, C2:%#x, S:%#x, T:%#x, C:%#x",
+			c.DRange, c.CPrimary, c.CSecondary, c.CTertiary, c.STag, c.TTag, c.Codec)
+	}
+	return strings.Join(ss, "\n")
+}
+
+func TestReader(t *testing.T) {
+	makeChunk := func() Chunk {
+		return Chunk{}
+	}
+	_ = makeChunk
+
+	testCases := []struct {
+		name       string
+		compressed []byte
+	}{
+		{"Empty", undoHexDump(writerWantEmpty)},
+		{"ILAEnd", undoHexDump(writerWantILAEnd)},
+		{"ILAEndCPageSize8", undoHexDump(writerWantILAEndCPageSize8)},
+		{"ILAStart", undoHexDump(writerWantILAStart)},
+		{"ILAStartCPageSize4", undoHexDump(writerWantILAStartCPageSize4)},
+		{"ILAStartCPageSize128", undoHexDump(writerWantILAStartCPageSize128)},
+	}
+
+loop:
+	for _, tc := range testCases {
+		snippet := func(r Range) string {
+			if r.Empty() {
+				return ""
+			}
+			if r[1] > int64(len(tc.compressed)) {
+				return "CRange goes beyond COffMax"
+			}
+			s := tc.compressed[r[0]:r[1]]
+			if len(s) > 2 {
+				return string(s[:2]) + "..."
+			}
+			return string(s)
+		}
+
+		wantDecompressedSize := int64(0)
+		wantDescription := ""
+		if tc.name != "Empty" {
+			// These {Aa,Bb,Cc} chunks are also used in the writer test.
+			wantDecompressedSize = 0x11 + 0x22 + 0x44
+			wantDescription = `` +
+				`DRangeSize:0x11, C0:"Aa...", C1:"", C2:""` + "\n" +
+				`DRangeSize:0x22, C0:"Bb...", C1:"Rr...", C2:""` + "\n" +
+				`DRangeSize:0x44, C0:"Cc...", C1:"Rr...", C2:"Ss..."`
+		}
+
+		r := &Reader{
+			ReadSeeker:     bytes.NewReader(tc.compressed),
+			CompressedSize: int64(len(tc.compressed)),
+		}
+
+		if gotDecompressedSize, err := r.DecompressedSize(); err != nil {
+			t.Errorf("%q test case: %v", tc.name, err)
+			continue loop
+		} else if gotDecompressedSize != wantDecompressedSize {
+			t.Errorf("%q test case: DecompressedSize: got %d, want %d",
+				tc.name, gotDecompressedSize, wantDecompressedSize)
+			continue loop
+		}
+
+		gotChunks := []Chunk(nil)
+		description := &bytes.Buffer{}
+		prevDRange1 := int64(0)
+		for {
+			c, err := r.NextChunk()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				t.Errorf("%q test case: NextChunk: %v", tc.name, err)
+				continue loop
+			}
+
+			if c.DRange[0] != prevDRange1 {
+				t.Errorf("%q test case: NextChunk: DRange[0]: got %d, want %d",
+					tc.name, c.DRange[0], prevDRange1)
+				continue loop
+			}
+			prevDRange1 = c.DRange[1]
+
+			gotChunks = append(gotChunks, c)
+			if description.Len() > 0 {
+				description.WriteByte('\n')
+			}
+			fmt.Fprintf(description, "DRangeSize:0x%X, C0:%q, C1:%q, C2:%q",
+				c.DRange.Size(), snippet(c.CPrimary), snippet(c.CSecondary), snippet(c.CTertiary))
+		}
+
+		if tc.name == "Empty" {
+			if len(gotChunks) != 0 {
+				t.Errorf("%q test case: NextChunk: got non-empty, want empty", tc.name)
+			}
+			continue loop
+		}
+
+		gotDescription := description.String()
+		if gotDescription != wantDescription {
+			t.Errorf("%q test case: NextChunk:\n    got\n%s\n    which is\n%s\n    want\n%s",
+				tc.name, printChunks(gotChunks), gotDescription, wantDescription)
+			continue loop
+		}
+
+		// NextChunk should return io.EOF.
+		if _, err := r.NextChunk(); err != io.EOF {
+			t.Errorf("%q test case: NextChunk: got %v, want io.EOF", tc.name, err)
+			continue loop
+		}
+
+		if err := r.SeekToChunkContaining(0x30); err != nil {
+			t.Errorf("%q test case: SeekToChunkContaining: %v", tc.name, err)
+			continue loop
+		}
+
+		// NextChunk should return the "Bb..." chunk.
+		if c, err := r.NextChunk(); err != nil {
+			t.Errorf("%q test case: NextChunk: %v", tc.name, err)
+			continue loop
+		} else if got, want := snippet(c.CPrimary), "Bb..."; got != want {
+			t.Errorf("%q test case: NextChunk: got %q, want %q", tc.name, got, want)
+			continue loop
+		}
 	}
 }

@@ -65,9 +65,6 @@ type Writer struct {
 	// Zero is an invalid value.
 	Codec Codec
 
-	// initialized is set true after the first AddXxx call.
-	initialized bool
-
 	// IndexLocation is whether the index is at the start or end of the RAC
 	// file.
 	//
@@ -126,6 +123,9 @@ type Writer struct {
 	// equal to (or just under) a multiple of the page size, then in practice,
 	// each chunk's starting offset will be aligned to a page boundary.
 	CPageSize uint64
+
+	// initialized is set true after the first AddXxx call.
+	initialized bool
 
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.

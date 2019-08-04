@@ -49,6 +49,8 @@ const (
 // See the RAC specification for further discussion.
 type IndexLocation uint8
 
+const magic = "\x72\xC3\x63"
+
 const (
 	IndexLocationAtEnd   = IndexLocation(0)
 	IndexLocationAtStart = IndexLocation(1)

@@ -17,11 +17,13 @@ package rac_test
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"hash/adler32"
 	"io"
 	"log"
+	"os"
 
 	"github.com/google/wuffs/lib/rac"
 )
@@ -29,8 +31,8 @@ import (
 // ExampleILAEnd demonstrates using the low level "rac" package to encode a
 // RAC+Zlib formatted file with IndexLocationAtEnd.
 //
-// The sibling "raczlib" package (TODO) provides a higher level API that is
-// easier to use.
+// The sibling "raczlib" package provides a higher level API that is easier to
+// use.
 //
 // See the RAC specification for an explanation of the file format.
 func ExampleILAEnd() {
@@ -91,8 +93,8 @@ func ExampleILAEnd() {
 // ExampleILAStart demonstrates using the low level "rac" package to encode and
 // then decode a RAC+Zlib formatted file with IndexLocationAtStart.
 //
-// The sibling "raczlib" package (TODO) provides a higher level API that is
-// easier to use.
+// The sibling "raczlib" package provides a higher level API that is easier to
+// use.
 //
 // See the RAC specification for an explanation of the file format.
 func ExampleILAStart() {
@@ -151,10 +153,67 @@ func ExampleILAStart() {
 		log.Fatalf("Close: %v", err)
 	}
 
-	fmt.Printf("RAC file:\n%s", hex.Dump(buf.Bytes()))
+	encoded := buf.Bytes()
+	fmt.Printf("RAC file:\n%s\n", hex.Dump(encoded))
 
-	// TODO: decode the encoded bytes (the RAC-formatted bytes) to recover the
+	// Decode the encoded bytes (the RAC-formatted bytes) to recover the
 	// original "One sheep.\nTwo sheep\.Three sheep.\n" source.
+
+	fmt.Printf("Decoded:\n")
+	r := &rac.Reader{
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
+	}
+	zr := io.ReadCloser(nil)
+	for {
+		chunk, err := r.NextChunk()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatalf("NextChunk: %v", err)
+		}
+		if chunk.Codec != rac.CodecZlib {
+			log.Fatalf("unexpected chunk codec")
+		}
+		fmt.Printf("[%2d, %2d): ", chunk.DRange[0], chunk.DRange[1])
+
+		// Parse the RAC+Zlib secondary data. For details, see
+		// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
+		dict := []byte(nil)
+		if secondary := encoded[chunk.CSecondary[0]:chunk.CSecondary[1]]; len(secondary) > 0 {
+			if len(secondary) < 6 {
+				log.Fatalf("invalid secondary data")
+			}
+			dictLen := int(binary.LittleEndian.Uint16(secondary))
+			secondary = secondary[2:]
+			if (dictLen + 4) > len(secondary) {
+				log.Fatalf("invalid secondary data")
+			}
+			checksum := binary.BigEndian.Uint32(secondary[dictLen:])
+			dict = secondary[:dictLen]
+			if checksum != adler32.Checksum(dict) {
+				log.Fatalf("invalid checksum")
+			}
+		}
+
+		// Decompress the Zlib-encoded primary payload.
+		primary := encoded[chunk.CPrimary[0]:chunk.CPrimary[1]]
+		if zr == nil {
+			if zr, err = zlib.NewReaderDict(bytes.NewReader(primary), dict); err != nil {
+				log.Fatalf("zlib.NewReader: %v", err)
+			}
+		} else if err := zr.(zlib.Resetter).Reset(bytes.NewReader(primary), dict); err != nil {
+			log.Fatalf("zlib.Reader.Reset: %v", err)
+		}
+		if n, err := io.Copy(os.Stdout, zr); err != nil {
+			log.Fatalf("io.Copy: %v", err)
+		} else if n != chunk.DRange.Size() {
+			log.Fatalf("inconsistent DRange size")
+		}
+		if err := zr.Close(); err != nil {
+			log.Fatalf("zlib.Reader.Close: %v", err)
+		}
+	}
 
 	// Note that these exact bytes depends on the zlib encoder's algorithm, but
 	// there is more than one valid zlib encoding of any given input. This
@@ -189,5 +248,9 @@ func ExampleILAStart() {
 	// 00000070  21 03 90 78 f9 0b e0 02  6e 0a 29 cf 87 31 01 01  |!..x....n.)..1..|
 	// 00000080  00 00 ff ff 18 0c 03 a8  78 f9 0b e0 02 6e 0a c9  |........x....n..|
 	// 00000090  28 4a 4d 85 71 00 01 00  00 ff ff 21 6e 04 66     |(JM.q......!n.f|
-
+	//
+	// Decoded:
+	// [ 0, 11): One sheep.
+	// [11, 22): Two sheep.
+	// [22, 35): Three sheep.
 }
