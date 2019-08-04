@@ -281,6 +281,9 @@ func TestMultiLevelIndex(t *testing.T) {
 		}
 
 		primary := []byte(fmt.Sprintf("p%02x", i&0xFF))
+		if i > 255 {
+			primary[0] = 'q'
+		}
 		primaries = append(primaries, primary...)
 		_ = w.AddChunk(0x10000, primary, secondary, tertiary)
 	}
@@ -341,7 +344,7 @@ func TestMultiLevelIndex(t *testing.T) {
 		"000010f0  38 70 30 39 70 30 61 70  30 62 70 30 63 70 30 64  |8p09p0ap0bp0cp0d|\n" +
 		"...\n" +
 		"000013c0  38 70 66 39 70 66 61 70  66 62 70 66 63 70 66 64  |8pf9pfapfbpfcpfd|\n" +
-		"000013d0  70 66 65 70 66 66 70 30  30 70 30 31 70 30 32 70  |pfepffp00p01p02p|\n" +
+		"000013d0  70 66 65 70 66 66 71 30  30 71 30 31 71 30 32 71  |pfepffq00q01q02q|\n" +
 		"000013e0  30 33                                             |03|\n"
 
 	if gotHexDump != wantHexDump {
