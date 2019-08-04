@@ -267,7 +267,7 @@ Node`.
 
 A child `Branch Node`'s `SubBranch COffset` is defined to be `COff[a]`. Its
 `SubBranch DBias` and `SubBranch DOffMax` are defined to be `DOff[a]` and
-`DOff[a+1].
+`DOff[a+1]`.
 
   - When `(STag[a] < Arity)`, it is a `CBiasing Branch Node`. The `SubBranch
     CBias` is defined to be `(Branch_CBias + CPtr[STag[a]])`. This expression
@@ -547,4 +547,4 @@ review.
 
 ---
 
-Updated on April 2019.
+Updated on August 2019.
