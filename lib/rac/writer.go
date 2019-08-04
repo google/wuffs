@@ -153,7 +153,7 @@ type Writer struct {
 	resourcesCOffCLens []uint64
 
 	// leafNodes are the non-resource leaf nodes of the hierarchical index.
-	leafNodes []node
+	leafNodes []wNode
 
 	// log2CPageSize is the base-2 logarithm of CPageSize, or zero if CPageSize
 	// is zero.
@@ -368,7 +368,7 @@ func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResour
 	cOffset := w.dataSize - uint64(len(primary))
 	cLength := calcCLength(len(primary))
 	w.dFileSize += dRangeSize
-	w.leafNodes = append(w.leafNodes, node{
+	w.leafNodes = append(w.leafNodes, wNode{
 		dRangeSize:     dRangeSize,
 		cOffsetCLength: cOffset | (cLength << 48),
 		secondary:      secondary,
@@ -492,10 +492,11 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-type node struct {
+// wNode is the Writer's representation of a node.
+type wNode struct {
 	dRangeSize uint64
 
-	children  []node // Excludes resource-node chidren.
+	children  []wNode // Excludes resource-node chidren.
 	resources []int
 
 	cOffsetCLength uint64
@@ -507,7 +508,7 @@ type node struct {
 // traversing the nodes in depth-first order.
 //
 // As a side effect, it also sets n.cOffsetCLength for branch nodes.
-func (n *node) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
+func (n *wNode) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
 	arity := len(n.children) + len(n.resources)
 	if arity == 0 {
 		return accumulator
@@ -532,12 +533,12 @@ type nodeWriter struct {
 
 	codec Codec
 
-	// A node's maximum arity is 255, so a node's maximum size in bytes is
+	// A wNode's maximum arity is 255, so a wNode's maximum size in bytes is
 	// ((255 * 16) + 16), which is 4096.
 	buffer [4096]byte
 }
 
-func (w *nodeWriter) writeIndex(n *node) error {
+func (w *nodeWriter) writeIndex(n *wNode) error {
 	const tagFF = 0xFF << 56
 
 	buf, dPtr := w.buffer[:], uint64(0)
@@ -655,7 +656,7 @@ func resourceToTag(resources []int, r OptResource) uint64 {
 // that the root node always directly contains the first and last leaf nodes as
 // children, as those leaves presumably contain the most commonly accessed
 // parts of the decompressed file.
-func gather(nodes []node) node {
+func gather(nodes []wNode) wNode {
 	if len(nodes) == 0 {
 		panic("gather: no nodes")
 	}
@@ -663,7 +664,7 @@ func gather(nodes []node) node {
 	resources := map[OptResource]bool{}
 
 	for {
-		i, j, arity, newNodes := 0, 0, 0, []node(nil)
+		i, j, arity, newNodes := 0, 0, 0, []wNode(nil)
 		for ; j < len(nodes); j++ {
 			o := &nodes[j]
 
@@ -710,7 +711,7 @@ func gather(nodes []node) node {
 	}
 }
 
-func makeBranch(children []node, resMap map[OptResource]bool) node {
+func makeBranch(children []wNode, resMap map[OptResource]bool) wNode {
 	dRangeSize := uint64(0)
 	for _, c := range children {
 		dRangeSize += c.dRangeSize
@@ -725,7 +726,7 @@ func makeBranch(children []node, resMap map[OptResource]bool) node {
 		sort.Ints(resList)
 	}
 
-	return node{
+	return wNode{
 		dRangeSize:     dRangeSize,
 		children:       children,
 		resources:      resList,
