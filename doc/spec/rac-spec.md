@@ -323,6 +323,8 @@ Branch Node`s pointing to each source RAC file's `Root Node`.
 ### Version
 
 `Version` must have the value `0x01`, indicating version 1 of the RAC format.
+The `0x00` value is reserved, although future editions may use other positive
+values.
 
 
 ### Codec
@@ -365,10 +367,11 @@ parsing a `CFile` requires knowing the `CFileSize`, and also that a `Root
 Node`'s `Branch CBias` is zero, so its `COffMax` equals its `CPtrMax`.
 
 For a child `Branch Node`, its `Codec` bits must be a subset of its parent's
-`Codec` bits, its `COffMax` must be less than or equal to its parent's
-`COffMax`, and its `DOffMax` must equal its parent's `SubBranch DOffMax`. The
-`DOffMax` condition is equivalent to checking that the parent and child agree
-on the child's size in `DSpace`. The parent states that it is its `(DPtr[a+1] -
+`Codec` bits, its `Version` must be less than or equal to its parent's
+`Version`, its `COffMax` must be less than or equal to its parent's `COffMax`,
+and its `DOffMax` must equal its parent's `SubBranch DOffMax`. The `DOffMax`
+condition is equivalent to checking that the parent and child agree on the
+child's size in `DSpace`. The parent states that it is its `(DPtr[a+1] -
 DPtr[a])` and the child states that it is its `DPtrMax`.
 
 One conservative way to check `Branch Node`s' validity on first visit is to
@@ -467,7 +470,9 @@ Repeat this "Search Within a Branch Node" section with the child `Branch Node`.
 ### Decompressing a Leaf Node
 
 If a `Leaf Node`'s `DRange` is empty, decompression is a no-op and skip the
-rest of this section.
+rest of this section. Specifically, a low-level library that iterates over a
+RAC file's chunks, without actually performing decompression, should skip over
+empty chunks instead of yielding them to its caller.
 
 Otherwise, decompression combines the `Primary CRange`, `Secondary CRange` and
 `Tertiary CRange` slices of the `CFile`, and the `Leaf STag` and `Leaf TTag`
