@@ -556,7 +556,11 @@ func (w *nodeWriter) writeIndex(n *node) error {
 	}
 	buf = buf[8*len(n.resources):]
 	for i, o := range n.children {
-		putU64LE(buf[8*i:], dPtr|resourceToTag(n.resources, o.tertiary))
+		tag := uint64(0xFE << 56)
+		if len(o.children) == 0 {
+			tag = resourceToTag(n.resources, o.tertiary)
+		}
+		putU64LE(buf[8*i:], dPtr|tag)
 		dPtr += o.dRangeSize
 	}
 	buf = buf[8*len(n.children):]
