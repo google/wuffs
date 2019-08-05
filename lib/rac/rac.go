@@ -19,7 +19,7 @@
 // RAC is just a container format, and this package ("rac") is a relatively
 // low-level. Users will typically want to process a particular compression
 // format wrapped in RAC, such as (RAC + Zlib). For that, look at e.g. the
-// sibling "raczlib" package (TODO).
+// sibling "raczlib" package.
 //
 // The RAC specification is at
 // https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
