@@ -28,14 +28,14 @@ import (
 	"github.com/google/wuffs/lib/rac"
 )
 
-// ExampleILAEnd demonstrates using the low level "rac" package to encode a
-// RAC+Zlib formatted file with IndexLocationAtEnd.
+// Example_indexLocationAtEnd demonstrates using the low level "rac" package to
+// encode a RAC+Zlib formatted file with IndexLocationAtEnd.
 //
 // The sibling "raczlib" package provides a higher level API that is easier to
 // use.
 //
 // See the RAC specification for an explanation of the file format.
-func ExampleILAEnd() {
+func Example_indexLocationAtEnd() {
 	// Manually construct a zlib encoding of "More!\n", one that uses a literal
 	// block (that's easy to see in a hex dump) instead of a more compressible
 	// Huffman block.
@@ -90,14 +90,15 @@ func ExampleILAEnd() {
 	// 00000030  00 00 00 01 01                                    |.....|
 }
 
-// ExampleILAStart demonstrates using the low level "rac" package to encode and
-// then decode a RAC+Zlib formatted file with IndexLocationAtStart.
+// Example_indexLocationAtStart demonstrates using the low level "rac" package
+// to encode and then decode a RAC+Zlib formatted file with
+// IndexLocationAtStart.
 //
 // The sibling "raczlib" package provides a higher level API that is easier to
 // use.
 //
 // See the RAC specification for an explanation of the file format.
-func ExampleILAStart() {
+func Example_indexLocationAtStart() {
 	buf := &bytes.Buffer{}
 	w := &rac.Writer{
 		Writer:        buf,
