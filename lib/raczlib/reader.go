@@ -17,6 +17,7 @@ package raczlib
 import (
 	"compress/zlib"
 	"errors"
+	"hash/adler32"
 	"io"
 
 	"github.com/google/wuffs/lib/rac"
@@ -27,10 +28,34 @@ var (
 	errInvalidChunk          = errors.New("raczlib: invalid chunk")
 	errInvalidChunkTooLarge  = errors.New("raczlib: invalid chunk (too large)")
 	errInvalidChunkTruncated = errors.New("raczlib: invalid chunk (truncated)")
+	errInvalidDictionary     = errors.New("raczlib: invalid dictionary")
 	errInvalidReadSeeker     = errors.New("raczlib: invalid ReadSeeker")
 
 	errInternalInconsistentPosition = errors.New("raczlib: internal error: inconsistent position")
 )
+
+func u32BE(b []byte) uint32 {
+	_ = b[3] // Early bounds check to guarantee safety of reads below.
+	return (uint32(b[0]) << 24) | (uint32(b[1]) << 16) | (uint32(b[2]) << 8) | (uint32(b[3]))
+}
+
+// readAt calls ReadAt if it is available, otherwise it falls back to calling
+// Seek and then ReadFull. Calling ReadAt is presumably slightly more
+// efficient, e.g. one syscall instead of two.
+func readAt(r io.ReadSeeker, p []byte, offset int64) error {
+	if a, ok := r.(io.ReaderAt); ok && false {
+		n, err := a.ReadAt(p, offset)
+		if (n == len(p)) && (err == io.EOF) {
+			err = nil
+		}
+		return err
+	}
+	if _, err := r.Seek(offset, io.SeekStart); err != nil {
+		return err
+	}
+	_, err := io.ReadFull(r, p)
+	return err
+}
 
 // Reader reads a RAC file.
 //
@@ -84,6 +109,9 @@ type Reader struct {
 	zlibReader       io.ReadCloser
 	inImplicitZeroes bool
 
+	// buf is a scratch buffer.
+	buf [2]byte
+
 	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
 	// when decompressing multiple chunks.
 	cachedZlibReader zlib.Resetter
@@ -116,6 +144,10 @@ type Reader struct {
 	// In "State A", the dRange is empty and unused, other than trivially
 	// maintaining the invariant.
 	dRange rac.Range
+
+	// These fields contain the most recently used shared dictionary.
+	cachedDictionary       []byte
+	cachedDictionaryCRange rac.Range
 }
 
 func (r *Reader) initialize() error {
@@ -284,7 +316,9 @@ func (r *Reader) nextChunk() error {
 
 	dict := []byte(nil)
 	if !chunk.CSecondary.Empty() {
-		panic("TODO: dictionary support")
+		if dict, err = r.loadDictionary(chunk.CSecondary); err != nil {
+			return err
+		}
 	}
 
 	if _, err := r.ReadSeeker.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
@@ -318,6 +352,64 @@ func (r *Reader) nextChunk() error {
 		r.cachedZlibReader = r.zlibReader.(zlib.Resetter)
 	}
 	return nil
+}
+
+// loadDictionary loads a dictionary given a chunk's CSecondary range.
+//
+// For a description of the RAC+Zlib secondary-data format, see
+// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
+func (r *Reader) loadDictionary(cRange rac.Range) ([]byte, error) {
+	// Load from the MRU cache, if it was loaded from the same cRange.
+	if (cRange == r.cachedDictionaryCRange) && !cRange.Empty() {
+		return r.cachedDictionary, nil
+	}
+	r.cachedDictionaryCRange = rac.Range{}
+
+	// Check the cRange size.
+	if (cRange.Size() < 6) || (cRange[1] > r.CompressedSize) {
+		r.err = errInvalidDictionary
+		return nil, r.err
+	}
+
+	// Read the dictionary size.
+	if err := readAt(r.ReadSeeker, r.buf[:2], cRange[0]); err != nil {
+		r.err = err
+		return nil, r.err
+	}
+	dictSize := int64(r.buf[0]) | (int64(r.buf[1]) << 8)
+
+	// Check the size. The +6 is for the 2 byte prefix (dictionary size) and
+	// the 4 byte suffix (checksum).
+	if (dictSize + 6) > cRange.Size() {
+		r.err = errInvalidDictionary
+		return nil, r.err
+	}
+
+	// Allocate or re-use the cachedDictionary buffer.
+	if n := dictSize + 4; int64(cap(r.cachedDictionary)) >= n {
+		r.cachedDictionary = r.cachedDictionary[:n]
+	} else {
+		r.cachedDictionary = make([]byte, n)
+	}
+
+	// Read the dictionary and checksum.
+	if err := readAt(r.ReadSeeker, r.cachedDictionary, cRange[0]+2); err != nil {
+		r.err = err
+		return nil, r.err
+	}
+
+	// Verify the checksum and trim the cachedDictionary buffer.
+	checksum := r.cachedDictionary[dictSize:]
+	r.cachedDictionary = r.cachedDictionary[:dictSize]
+	if u32BE(checksum) != adler32.Checksum(r.cachedDictionary) {
+		r.err = errInvalidDictionary
+		return nil, r.err
+	}
+
+	// Save to the MRU cache and return.
+	r.cachedDictionary = r.cachedDictionary
+	r.cachedDictionaryCRange = cRange
+	return r.cachedDictionary, nil
 }
 
 // Seek implements io.Seeker.
