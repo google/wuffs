@@ -541,7 +541,110 @@ TODO.
 
 # Examples
 
-TODO (zlib).
+These examples display RAC files in the format of the `hexdump -C` command line
+tool. They are deliberately very short, for ease of understanding, and
+therefore exhibit unusually bad compression ratios.
+
+
+## Zlib Example (Root Node at End)
+
+The first example is relatively simple. The root node (located at the CFile
+end) only has one child: a leaf node whose compressed contents starts at
+position `0x04`. Decompressing that chunk produces the 6 bytes
+[https://play.golang.org/p/ZSYmQLgv1RR]("More!\n").
+
+    00000000  72 c3 63 00 78 9c 01 06  00 f9 ff 4d 6f 72 65 21  |r.c.x......More!|
+    00000010  0a 07 42 01 bf 72 c3 63  01 65 a9 00 ff 06 00 00  |..B..r.c.e......|
+    00000020  00 00 00 00 01 04 00 00  00 00 00 01 ff 35 00 00  |.............5..|
+    00000030  00 00 00 01 01                                    |.....|
+
+
+## Zlib Example (Root Node at Start)
+
+The second example consists of a root node with four children: one metadata
+node (a shared dictionary) and three data nodes. The shared dictionary,
+"\x20sheep\n" is `0x0008` bytes long and its Adler-32 checksum is `0x0BE0026E`.
+The third child's (the second data node)'s compressed contents starts at
+position `0x73`. Decompressing that chunk, together with that shared
+dictionary, produces the 11 bytes [https://play.golang.org/p/Jh9Wyp6PLID]("Two
+sheep.\n"). The complete decoding of all three data chunks is "One sheep.\nTwo
+sheep.\nThree sheep.\n".
+
+    00000000  72 c3 63 04 71 b5 00 ff  00 00 00 00 00 00 00 ff  |r.c.q...........|
+    00000010  0b 00 00 00 00 00 00 ff  16 00 00 00 00 00 00 ff  |................|
+    00000020  23 00 00 00 00 00 00 01  50 00 00 00 00 00 01 ff  |#.......P.......|
+    00000030  5e 00 00 00 00 00 01 00  73 00 00 00 00 00 01 00  |^.......s.......|
+    00000040  88 00 00 00 00 00 01 00  9f 00 00 00 00 00 01 04  |................|
+    00000050  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e 78 f9  |.. sheep.....nx.|
+    00000060  0b e0 02 6e f2 cf 4b 85  31 01 01 00 00 ff ff 17  |...n..K.1.......|
+    00000070  21 03 90 78 f9 0b e0 02  6e 0a 29 cf 87 31 01 01  |!..x....n.)..1..|
+    00000080  00 00 ff ff 18 0c 03 a8  78 f9 0b e0 02 6e 0a c9  |........x....n..|
+    00000090  28 4a 4d 85 71 00 01 00  00 ff ff 21 6e 04 66     |(JM.q......!n.f|
+
+
+## Zlib Example (Concatenation)
+
+The third example demonstrates concatenating two RAC files: the two examples
+above. The decompressed form of the resultant RAC file is the concatenation of
+the two decompressed forms: "One sheep.\nTwo sheep.\nThree sheep.\nMore!\n".
+
+The compressed form (what's shown in `hexdump -C` format below) is the
+concatenation of the two compressed forms, plus a new root node (64 bytes
+starting at position `0xD4`). Even though the overall RAC file starts with the
+"sheep" RAC file, whose root node was at its start, those opening bytes are no
+longer a valid root node for the larger file.
+
+That new root node has 3 children: 1 metadata node and 2 branch nodes. The
+metadata node (one whose `DRange` is empty) is required because one of the
+original RAC files' root node is not located at its start. Walking to that
+child branch node needs two `COffset` values: one for the embedded RAC file's
+start and one for the embedded RAC file's root node.
+
+    00000000  72 c3 63 04 71 b5 00 ff  00 00 00 00 00 00 00 ff  |r.c.q...........|
+    00000010  0b 00 00 00 00 00 00 ff  16 00 00 00 00 00 00 ff  |................|
+    00000020  23 00 00 00 00 00 00 01  50 00 00 00 00 00 01 ff  |#.......P.......|
+    00000030  5e 00 00 00 00 00 01 00  73 00 00 00 00 00 01 00  |^.......s.......|
+    00000040  88 00 00 00 00 00 01 00  9f 00 00 00 00 00 01 04  |................|
+    00000050  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e 78 f9  |.. sheep.....nx.|
+    00000060  0b e0 02 6e f2 cf 4b 85  31 01 01 00 00 ff ff 17  |...n..K.1.......|
+    00000070  21 03 90 78 f9 0b e0 02  6e 0a 29 cf 87 31 01 01  |!..x....n.)..1..|
+    00000080  00 00 ff ff 18 0c 03 a8  78 f9 0b e0 02 6e 0a c9  |........x....n..|
+    00000090  28 4a 4d 85 71 00 01 00  00 ff ff 21 6e 04 66 72  |(JM.q......!n.fr|
+    000000a0  c3 63 00 78 9c 01 06 00  f9 ff 4d 6f 72 65 21 0a  |.c.x......More!.|
+    000000b0  07 42 01 bf 72 c3 63 01  65 a9 00 ff 06 00 00 00  |.B..r.c.e.......|
+    000000c0  00 00 00 01 04 00 00 00  00 00 01 ff 35 00 00 00  |............5...|
+    000000d0  00 00 01 01 72 c3 63 03  f8 ec 00 ff 00 00 00 00  |....r.c.........|
+    000000e0  00 00 00 fe 23 00 00 00  00 00 00 fe 29 00 00 00  |....#.......)...|
+    000000f0  00 00 00 01 9f 00 00 00  00 00 00 ff 00 00 00 00  |................|
+    00000100  00 00 04 01 b4 00 00 00  00 00 04 00 14 01 00 00  |................|
+    00000110  00 00 01 03                                       |....|
+
+Focusing on that new root node:
+
+    000000d0              72 c3 63 03  f8 ec 00 ff 00 00 00 00
+    000000e0  00 00 00 fe 23 00 00 00  00 00 00 fe 29 00 00 00
+    000000f0  00 00 00 01 9f 00 00 00  00 00 00 ff 00 00 00 00
+    00000100  00 00 04 01 b4 00 00 00  00 00 04 00 14 01 00 00
+    00000110  00 00 01 03
+
+Re-formatting to highlight the multiple-of-8-bytes structure:
+
+    000000d4  72 c3 63 03 f8 ec 00 ff
+    000000dc  00 00 00 00 00 00 00 fe
+    000000e4  23 00 00 00 00 00 00 fe
+    000000ec  29 00 00 00 00 00 00 01
+    --------
+    000000f4  9f 00 00 00 00 00 00 ff
+    000000fc  00 00 00 00 00 00 04 01
+    00000104  b4 00 00 00 00 00 04 00
+    0000010c  14 01 00 00 00 00 01 03
+
+Its `Codec` is `0x01`, "RAC + Zlib", its Version is `0x01` and its `Arity` is
+`0x03`. The `DPtr` values are `0x0000` (implicit), `0x0000`, `0x0023` and
+`0x0029`. The `CPtr` values are `0x009F`, `0x0000`, `0x00B4` and `0x0114` (the
+size of the whole RAC file). Note that the `CPtr` values are not sorted. The
+two branch nodes' `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
+and `0x00`, which means that they are both `CBiasing Branch Node`s.
 
 
 # Acknowledgements

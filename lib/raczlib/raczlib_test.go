@@ -26,6 +26,8 @@ import (
 )
 
 // These example RAC files come from "../rac/example_test.go".
+//
+// They are also presented in the RAC specification.
 const (
 	decodedMore = "" +
 		"More!\n"
