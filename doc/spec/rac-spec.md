@@ -518,7 +518,7 @@ Otherwise, the `Secondary CRange` must be at least 6 bytes long:
   - 4 byte big-endian `uint32_t` `Dictionary Checksum`.
   - Padding (ignored).
 
-The `Dictionary Checksum` is Zlib's Adler32 checksum over the `Dictionary`'s
+The `Dictionary Checksum` is Zlib's Adler-32 checksum over the `Dictionary`'s
 bytes (excluding the initial 2 bytes for the `Dictionary Length`). The checksum
 is stored big-endian, like Zlib's other checksums, and its 4 byte value must
 match the `DICTID` (in RFC 1950 terminology) given in the `Primary CRange`'s
@@ -551,7 +551,7 @@ therefore exhibit unusually bad compression ratios.
 The first example is relatively simple. The root node (located at the CFile
 end) only has one child: a leaf node whose compressed contents starts at
 position `0x04`. Decompressing that chunk produces the 6 bytes
-[https://play.golang.org/p/ZSYmQLgv1RR]("More!\n").
+["More!\n"](https://play.golang.org/p/ZSYmQLgv1RR).
 
     00000000  72 c3 63 00 78 9c 01 06  00 f9 ff 4d 6f 72 65 21  |r.c.x......More!|
     00000010  0a 07 42 01 bf 72 c3 63  01 65 a9 00 ff 06 00 00  |..B..r.c.e......|
@@ -566,9 +566,9 @@ node (a shared dictionary) and three data nodes. The shared dictionary,
 "\x20sheep\n" is `0x0008` bytes long and its Adler-32 checksum is `0x0BE0026E`.
 The third child's (the second data node)'s compressed contents starts at
 position `0x73`. Decompressing that chunk, together with that shared
-dictionary, produces the 11 bytes [https://play.golang.org/p/Jh9Wyp6PLID]("Two
-sheep.\n"). The complete decoding of all three data chunks is "One sheep.\nTwo
-sheep.\nThree sheep.\n".
+dictionary, produces the 11 bytes ["Two
+sheep.\n"](https://play.golang.org/p/Jh9Wyp6PLID). The complete decoding of all
+three data chunks is "One sheep.\nTwo sheep.\nThree sheep.\n".
 
     00000000  72 c3 63 04 71 b5 00 ff  00 00 00 00 00 00 00 ff  |r.c.q...........|
     00000010  0b 00 00 00 00 00 00 ff  16 00 00 00 00 00 00 ff  |................|
