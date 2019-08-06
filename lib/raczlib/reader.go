@@ -85,7 +85,7 @@ type Reader struct {
 	err error
 
 	// racReader is the low-level (Codec-agnostic) RAC reader.
-	racReader rac.Reader
+	racReader rac.Parser
 
 	// These two fields combine for a 3-state state machine:
 	//

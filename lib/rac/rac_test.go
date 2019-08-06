@@ -351,13 +351,13 @@ func TestMultiLevelIndex(t *testing.T) {
 		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
 	}
 
-	r := &Reader{
+	p := &Parser{
 		ReadSeeker:     bytes.NewReader(encoded),
 		CompressedSize: int64(len(encoded)),
 	}
 	gotPrimaries := []byte(nil)
 	for {
-		c, err := r.NextChunk()
+		c, err := p.NextChunk()
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -450,12 +450,12 @@ loop:
 				`DRangeSize:0x44, C0:"Cc...", C1:"Rr...", C2:"Ss..."`
 		}
 
-		r := &Reader{
+		p := &Parser{
 			ReadSeeker:     bytes.NewReader(tc.compressed),
 			CompressedSize: int64(len(tc.compressed)),
 		}
 
-		if gotDecompressedSize, err := r.DecompressedSize(); err != nil {
+		if gotDecompressedSize, err := p.DecompressedSize(); err != nil {
 			t.Errorf("%q test case: %v", tc.name, err)
 			continue loop
 		} else if gotDecompressedSize != wantDecompressedSize {
@@ -468,7 +468,7 @@ loop:
 		description := &bytes.Buffer{}
 		prevDRange1 := int64(0)
 		for {
-			c, err := r.NextChunk()
+			c, err := p.NextChunk()
 			if err == io.EOF {
 				break
 			} else if err != nil {
@@ -506,18 +506,18 @@ loop:
 		}
 
 		// NextChunk should return io.EOF.
-		if _, err := r.NextChunk(); err != io.EOF {
+		if _, err := p.NextChunk(); err != io.EOF {
 			t.Errorf("%q test case: NextChunk: got %v, want io.EOF", tc.name, err)
 			continue loop
 		}
 
-		if err := r.SeekToChunkContaining(0x30); err != nil {
+		if err := p.SeekToChunkContaining(0x30); err != nil {
 			t.Errorf("%q test case: SeekToChunkContaining: %v", tc.name, err)
 			continue loop
 		}
 
 		// NextChunk should return the "Bb..." chunk.
-		if c, err := r.NextChunk(); err != nil {
+		if c, err := p.NextChunk(); err != nil {
 			t.Errorf("%q test case: NextChunk: %v", tc.name, err)
 			continue loop
 		} else if got, want := snippet(c.CPrimary), "Bb..."; got != want {

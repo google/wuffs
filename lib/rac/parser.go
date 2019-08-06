@@ -61,7 +61,7 @@ type Range [2]int64
 func (r *Range) Empty() bool { return r[0] == r[1] }
 func (r *Range) Size() int64 { return r[1] - r[0] }
 
-// Chunk is a compressed chunk returned by a Reader.
+// Chunk is a compressed chunk returned by a Parser.
 //
 // See the RAC specification for further discussion.
 type Chunk struct {
@@ -80,29 +80,29 @@ func nodeSize(arity uint8) int {
 	return (16 * int(arity)) + 16
 }
 
-// rNode is the Reader's representation of a node.
+// pNode is the Parser's representation of a node.
 //
 // None of its methods, other than valid, should be called unless valid returns
 // true.
-type rNode [4096]byte
+type pNode [4096]byte
 
-func (b *rNode) arity() int     { return int(b[3]) }
-func (b *rNode) codec() Codec   { return Codec(b[(8*int(b[3]))+7]) }
-func (b *rNode) cPtrMax() int64 { return u48LE(b[(16*int(b[3]))+8:]) }
-func (b *rNode) dPtrMax() int64 { return u48LE(b[8*int(b[3]):]) }
-func (b *rNode) version() uint8 { return b[(16*int(b[3]))+14] }
+func (b *pNode) arity() int     { return int(b[3]) }
+func (b *pNode) codec() Codec   { return Codec(b[(8*int(b[3]))+7]) }
+func (b *pNode) cPtrMax() int64 { return u48LE(b[(16*int(b[3]))+8:]) }
+func (b *pNode) dPtrMax() int64 { return u48LE(b[8*int(b[3]):]) }
+func (b *pNode) version() uint8 { return b[(16*int(b[3]))+14] }
 
-func (b *rNode) cLen(i int) uint8 {
+func (b *pNode) cLen(i int) uint8 {
 	base := (8 * int(b[3])) + 14
 	return b[(8*i)+base]
 }
 
-func (b *rNode) cOff(i int, cBias int64) int64 {
+func (b *pNode) cOff(i int, cBias int64) int64 {
 	base := (8 * int(b[3])) + 8
 	return cBias + u48LE(b[(8*i)+base:])
 }
 
-func (b *rNode) cOffRange(i int, cBias int64) Range {
+func (b *pNode) cOffRange(i int, cBias int64) Range {
 	m := cBias + b.cPtrMax()
 	if i >= b.arity() {
 		return Range{m, m}
@@ -116,18 +116,18 @@ func (b *rNode) cOffRange(i int, cBias int64) Range {
 	return Range{cOff, m}
 }
 
-func (b *rNode) dOff(i int, dBias int64) int64 {
+func (b *pNode) dOff(i int, dBias int64) int64 {
 	if i == 0 {
 		return dBias
 	}
 	return dBias + u48LE(b[8*i:])
 }
 
-func (b *rNode) dOffRange(i int, dBias int64) Range {
+func (b *pNode) dOffRange(i int, dBias int64) Range {
 	return Range{b.dOff(i, dBias), b.dOff(i+1, dBias)}
 }
 
-func (b *rNode) dSize(i int) int64 {
+func (b *pNode) dSize(i int) int64 {
 	x := int64(0)
 	if i > 0 {
 		x = u48LE(b[8*i:])
@@ -135,20 +135,20 @@ func (b *rNode) dSize(i int) int64 {
 	return u48LE(b[(8*i)+8:]) - x
 }
 
-func (b *rNode) sTag(i int) uint8 {
+func (b *pNode) sTag(i int) uint8 {
 	base := (8 * int(b[3])) + 15
 	return b[(8*i)+base]
 }
 
-func (b *rNode) tTag(i int) uint8 {
+func (b *pNode) tTag(i int) uint8 {
 	return b[(8*i)+7]
 }
 
-func (b *rNode) isLeaf(i int) bool {
+func (b *pNode) isLeaf(i int) bool {
 	return b[(8*i)+7] != 0xFE
 }
 
-func (b *rNode) findChunkContaining(dOff int64, dBias int64) int {
+func (b *pNode) findChunkContaining(dOff int64, dBias int64) int {
 	// TODO: binary search instead of linear search.
 	for i, n := 0, b.arity(); i < n; i++ {
 		if dOff < b.dOff(i+1, dBias) {
@@ -160,7 +160,7 @@ func (b *rNode) findChunkContaining(dOff int64, dBias int64) int {
 	panic("rac: internal error: could not find containing chunk")
 }
 
-func (b *rNode) chunk(i int, cBias int64, dBias int64) Chunk {
+func (b *pNode) chunk(i int, cBias int64, dBias int64) Chunk {
 	sTag := b.sTag(i)
 	tTag := b.tTag(i)
 	return Chunk{
@@ -174,7 +174,7 @@ func (b *rNode) chunk(i int, cBias int64, dBias int64) Chunk {
 	}
 }
 
-func (b *rNode) valid() bool {
+func (b *pNode) valid() bool {
 	// Check the magic and arity.
 	if (b[0] != magic[0]) || (b[1] != magic[1]) || (b[2] != magic[2]) || (b[3] == 0) {
 		return false
@@ -241,10 +241,10 @@ func (b *rNode) valid() bool {
 	return true
 }
 
-// Reader reads a RAC file.
+// Parser parses a RAC file.
 //
 // Do not modify its exported fields after calling any of its methods.
-type Reader struct {
+type Parser struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
 	// It may also implement io.ReaderAt, in which case its ReadAt method will
@@ -264,7 +264,7 @@ type Reader struct {
 	// Zero is an invalid value, as an empty file is not a valid RAC file.
 	CompressedSize int64
 
-	// initialized is set true after the first call on this Reader.
+	// initialized is set true after the first call on this Parser.
 	initialized bool
 
 	// rootNodeArity is the root node's arity.
@@ -299,10 +299,10 @@ type Reader struct {
 	currNodeDBias int64
 
 	// currNode is the 4096 byte buffer to hold the current node.
-	currNode rNode
+	currNode pNode
 }
 
-func (r *Reader) checkParameters() error {
+func (r *Parser) checkParameters() error {
 	if r.ReadSeeker == nil {
 		r.err = errors.New("rac: invalid ReadSeeker")
 		return r.err
@@ -314,7 +314,7 @@ func (r *Reader) checkParameters() error {
 	return nil
 }
 
-func (r *Reader) initialize() error {
+func (r *Parser) initialize() error {
 	if r.err != nil {
 		return r.err
 	}
@@ -337,7 +337,7 @@ func (r *Reader) initialize() error {
 	return nil
 }
 
-func (r *Reader) findRootNode() error {
+func (r *Parser) findRootNode() error {
 	// Look at the start of the compressed file.
 	if err := readAt(r.ReadSeeker, r.currNode[:4], 0); err != nil {
 		r.err = err
@@ -369,7 +369,7 @@ func (r *Reader) findRootNode() error {
 	return errors.New("rac: invalid input: missing index root node")
 }
 
-func (r *Reader) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error) {
+func (r *Parser) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error) {
 	if arity == 0 {
 		return false, nil
 	}
@@ -400,7 +400,7 @@ func (r *Reader) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error
 // load loads a node from the RAC file into r.currNode. It does not check that
 // the result is valid, and the caller should do so if it doesn't already know
 // that it is valid.
-func (r *Reader) load(cOffset int64, arity uint8) error {
+func (r *Parser) load(cOffset int64, arity uint8) error {
 	if arity == 0 {
 		r.err = errors.New("rac: internal error: inconsistent arity")
 		return r.err
@@ -413,7 +413,7 @@ func (r *Reader) load(cOffset int64, arity uint8) error {
 	return nil
 }
 
-func (r *Reader) loadAndValidate(cOffset int64,
+func (r *Parser) loadAndValidate(cOffset int64,
 	parentCodec Codec, parentVersion uint8, parentCOffMax int64,
 	childCBias int64, childDSize int64) error {
 
@@ -457,7 +457,7 @@ func (r *Reader) loadAndValidate(cOffset int64,
 }
 
 // DecompressedSize returns the total size of the decompressed data.
-func (r *Reader) DecompressedSize() (int64, error) {
+func (r *Parser) DecompressedSize() (int64, error) {
 	if err := r.initialize(); err != nil {
 		return 0, err
 	}
@@ -468,7 +468,7 @@ func (r *Reader) DecompressedSize() (int64, error) {
 // dSpaceOffset. That chunk does not necessarily start at dSpaceOffset.
 //
 // It is an error to seek to a negative value.
-func (r *Reader) SeekToChunkContaining(dSpaceOffset int64) error {
+func (r *Parser) SeekToChunkContaining(dSpaceOffset int64) error {
 	if err := r.initialize(); err != nil {
 		return err
 	}
@@ -486,7 +486,7 @@ func (r *Reader) SeekToChunkContaining(dSpaceOffset int64) error {
 //
 // Empty chunks (those that contain no decompressed data, only metadata) are
 // skipped.
-func (r *Reader) NextChunk() (Chunk, error) {
+func (r *Parser) NextChunk() (Chunk, error) {
 	if err := r.initialize(); err != nil {
 		return Chunk{}, err
 	}
@@ -512,7 +512,7 @@ func (r *Reader) NextChunk() (Chunk, error) {
 	}
 }
 
-func (r *Reader) resolveSeekPosition() error {
+func (r *Parser) resolveSeekPosition() error {
 	// Load the root node. It has already been validated, during initialize.
 	if err := r.load(r.rootNodeCOffset, r.rootNodeArity); err != nil {
 		return err
