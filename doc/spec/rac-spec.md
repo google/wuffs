@@ -187,6 +187,9 @@ COffset`:
     | CPtr[A]   |V|A|  CPtr[Arity] a.k.a. CPtrMax, Version,       Arity
     +-+-+-+-+-+-+-+-+
 
+See the "Examples" section below for example RAC files and, in particular,
+example `Branch Node`s.
+
 For the `(XPtr | Other6 | Other7)` 8 byte fields, the `XPtr` occupies the low
 48 bits (as a little-endian `uint64_t`) and the `Other` fields occupy the high
 16 bits.
@@ -542,8 +545,9 @@ TODO.
 # Examples
 
 These examples display RAC files in the format of the `hexdump -C` command line
-tool. They are deliberately very short, for ease of understanding, and
-therefore exhibit unusually bad compression ratios.
+tool. They are deliberately very short, for ease of understanding. Realistic
+RAC files, with larger chunk sizes, would typically exhibit much better
+compression ratios.
 
 
 ## Zlib Example (Root Node at End)
@@ -587,6 +591,9 @@ three data chunks is "One sheep.\nTwo sheep.\nThree sheep.\n".
 The third example demonstrates concatenating two RAC files: the two examples
 above. The decompressed form of the resultant RAC file is the concatenation of
 the two decompressed forms: "One sheep.\nTwo sheep.\nThree sheep.\nMore!\n".
+Its 41 decompressed bytes consists of the "sheep" RAC file's 35 bytes and then
+the "more" RAC file's 6 bytes. In hexadecimal, `0x29 = 0x23 + 0x06`, and the
+`0x29` and `0x23` numbers can be seen in the compressed form's bytes.
 
 The compressed form (what's shown in `hexdump -C` format below) is the
 concatenation of the two compressed forms, plus a new root node (64 bytes
@@ -627,24 +634,32 @@ Focusing on that new root node:
     00000100  00 00 04 01 b4 00 00 00  00 00 04 00 14 01 00 00
     00000110  00 00 01 03
 
-Re-formatting to highlight the multiple-of-8-bytes structure:
+Re-formatting to highlight the groups-of-8-bytes structure and reprise the
+"Branch Nodes" section's diagram:
 
-    000000d4  72 c3 63 03 f8 ec 00 ff
-    000000dc  00 00 00 00 00 00 00 fe
-    000000e4  23 00 00 00 00 00 00 fe
-    000000ec  29 00 00 00 00 00 00 01
-    --------
-    000000f4  9f 00 00 00 00 00 00 ff
-    000000fc  00 00 00 00 00 00 04 01
-    00000104  b4 00 00 00 00 00 04 00
-    0000010c  14 01 00 00 00 00 01 03
+    000000d4    72 c3 63 03 f8 ec 00 ff    |Magic|A|Che|0|T|
+    000000dc    00 00 00 00 00 00 00 fe    | DPtr[1]   |0|T|
+    000000e4    23 00 00 00 00 00 00 fe    | DPtr[2]   |0|T|
+    000000ec    29 00 00 00 00 00 00 01    | DPtr[A]   |0|C|
+    000000f4    9f 00 00 00 00 00 00 ff    | CPtr[0]   |L|S|
+    000000fc    00 00 00 00 00 00 04 01    | CPtr[1]   |L|S|
+    00000104    b4 00 00 00 00 00 04 00    | CPtr[2]   |L|S|
+    0000010c    14 01 00 00 00 00 01 03    | CPtr[A]   |V|A|
 
 Its `Codec` is `0x01`, "RAC + Zlib", its Version is `0x01` and its `Arity` is
 `0x03`. The `DPtr` values are `0x0000` (implicit), `0x0000`, `0x0023` and
 `0x0029`. The `CPtr` values are `0x009F`, `0x0000`, `0x00B4` and `0x0114` (the
 size of the whole RAC file). Note that the `CPtr` values are not sorted. The
-two branch nodes' `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
+last two children' `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
 and `0x00`, which means that they are both `CBiasing Branch Node`s.
+
+
+# Reference Implementation
+
+In the Go programming language:
+
+  - [RAC](https://godoc.org/github.com/google/wuffs/lib/rac)
+  - [RAC + Zlib](https://godoc.org/github.com/google/wuffs/lib/raczlib)
 
 
 # Acknowledgements
