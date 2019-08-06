@@ -316,7 +316,7 @@ func (r *Reader) nextChunk() error {
 
 	dict := []byte(nil)
 	if !chunk.CSecondary.Empty() {
-		if dict, err = r.loadDictionary(chunk.CSecondary); err != nil {
+		if dict, err = r.loadDictionary(chunk.CSecondary, chunk.TTag); err != nil {
 			return err
 		}
 	}
@@ -358,15 +358,15 @@ func (r *Reader) nextChunk() error {
 //
 // For a description of the RAC+Zlib secondary-data format, see
 // https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
-func (r *Reader) loadDictionary(cRange rac.Range) ([]byte, error) {
+func (r *Reader) loadDictionary(cRange rac.Range, tTag uint8) ([]byte, error) {
 	// Load from the MRU cache, if it was loaded from the same cRange.
 	if (cRange == r.cachedDictionaryCRange) && !cRange.Empty() {
 		return r.cachedDictionary, nil
 	}
 	r.cachedDictionaryCRange = rac.Range{}
 
-	// Check the cRange size.
-	if (cRange.Size() < 6) || (cRange[1] > r.CompressedSize) {
+	// Check the cRange size and the tTag.
+	if (cRange.Size() < 6) || (cRange[1] > r.CompressedSize) || (tTag != 0xFF) {
 		r.err = errInvalidDictionary
 		return nil, r.err
 	}
