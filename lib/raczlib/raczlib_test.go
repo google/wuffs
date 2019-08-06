@@ -147,3 +147,44 @@ func TestReaderConcatenation(t *testing.T) {
 		encodedSheep+encodedMore+string(buf[:]),
 	)
 }
+
+func TestZeroedBytes(t *testing.T) {
+	original := []byte("abcde\x00\x00\x00\x00j")
+	cBuf := &bytes.Buffer{}
+	w := &Writer{
+		Writer:     cBuf,
+		DChunkSize: 8,
+	}
+	if _, err := w.Write(original); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	compressed := cBuf.Bytes()
+
+	r := &Reader{
+		ReadSeeker:     bytes.NewReader(compressed),
+		CompressedSize: int64(len(compressed)),
+	}
+	for i := 0; i <= len(original); i++ {
+		want := original[i:]
+		got := make([]byte, len(want))
+		for j := range got {
+			got[j] = '?'
+		}
+
+		if _, err := r.Seek(int64(i), io.SeekStart); err != nil {
+			t.Errorf("i=%d: Seek: %v", i, err)
+			continue
+		}
+		if _, err := io.ReadFull(r, got); err != nil {
+			t.Errorf("i=%d: ReadFull: %v", i, err)
+			continue
+		}
+		if !bytes.Equal(got, want) {
+			t.Errorf("i=%d: got\n% 02x\nwant\n% 02x", i, got, want)
+			continue
+		}
+	}
+}

@@ -209,7 +209,7 @@ func (r *Reader) readExplicitData(p []byte) (int, error) {
 		n, err := r.decompressor.Read(discardBuffer)
 		r.dRange[0] += int64(n)
 		if err == io.EOF {
-			return n, r.transitionFromStateBToStateC()
+			return 0, r.transitionFromStateBToStateC()
 		}
 		if err != nil {
 			r.err = err
