@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/google/wuffs/lib/raczlib"
@@ -48,8 +49,6 @@ If no input_filename is given, stdin is used. Either way, output is written to
 stdout.
 
 The flags should include exactly one of -decode or -encode.
-
-Decoding is not yet implemented.
 
 When encoding, the input is partitioned into chunks and each chunk is
 compressed independently. You can specify the target chunk size in terms of
@@ -84,7 +83,7 @@ func main1() error {
 	flag.Usage = usage
 	flag.Parse()
 
-	r := io.Reader(os.Stdin)
+	r, usingStdin := io.Reader(os.Stdin), true
 	switch flag.NArg() {
 	case 0:
 		// No-op.
@@ -94,13 +93,13 @@ func main1() error {
 			return err
 		}
 		defer f.Close()
-		r = f
+		r, usingStdin = f, false
 	default:
 		return errors.New("too many filenames; the maximum is one")
 	}
 
 	if *decodeFlag && !*encodeFlag {
-		return decode(r)
+		return decode(r, usingStdin)
 	}
 	if *encodeFlag && !*decodeFlag {
 		return encode(r)
@@ -108,8 +107,39 @@ func main1() error {
 	return errors.New("must specify exactly one of -decode or -encode")
 }
 
-func decode(r io.Reader) error {
-	return errors.New("TODO: implement a decoder")
+func decode(r io.Reader, usingStdin bool) error {
+	rs, ok := r.(io.ReadSeeker)
+	if !ok {
+		return fmt.Errorf("input is not seekable")
+	}
+
+	// Even if the os.File type is a ReadSeeker, it might not actually support
+	// seeking. Instead, read all of stdin into memory.
+	if usingStdin {
+		if input, err := ioutil.ReadAll(r); err != nil {
+			return err
+		} else {
+			rs = bytes.NewReader(input)
+		}
+	}
+
+	compressedSize, err := rs.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+	if _, err := rs.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	switch *codecFlag {
+	case "zlib":
+		_, err := io.Copy(os.Stdout, &raczlib.Reader{
+			ReadSeeker:     rs,
+			CompressedSize: compressedSize,
+		})
+		return err
+	}
+	return errors.New("unsupported -codec")
 }
 
 func encode(r io.Reader) error {
