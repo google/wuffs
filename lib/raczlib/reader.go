@@ -106,7 +106,7 @@ type Reader struct {
 	// Calling Seek may reset the state machine to "State A".
 	//
 	// The initial state is "State A".
-	zlibReader       io.ReadCloser
+	zlibReader       io.Reader
 	inImplicitZeroes bool
 
 	// buf is a scratch buffer.
@@ -249,12 +249,14 @@ func (r *Reader) readExplicitData(p []byte) (int, error) {
 }
 
 func (r *Reader) transitionFromStateBToStateC() error {
-	if err := r.zlibReader.Close(); err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
+	if c, ok := r.zlibReader.(io.Closer); ok {
+		if err := c.Close(); err != nil {
+			if err == io.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			r.err = err
+			return r.err
 		}
-		r.err = err
-		return r.err
 	}
 	r.zlibReader = nil
 	r.inImplicitZeroes = true
