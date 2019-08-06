@@ -183,7 +183,7 @@ COffset`:
     | CPtr[2]   |L|S|  CPtr[2],                    CLen[2],       STag[2]
     | ...       |L|.|  ...,                        ...,           ...
     | CPtr[A-2] |L|S|  CPtr[Arity-2],              CLen[Arity-2], STag[Arity-2]
-    | CPtr[A-1] |L|S|  CPtr[Arity-1],              CLen[Arity-2], STag[Arity-1]
+    | CPtr[A-1] |L|S|  CPtr[Arity-1],              CLen[Arity-1], STag[Arity-1]
     | CPtr[A]   |V|A|  CPtr[Arity] a.k.a. CPtrMax, Version,       Arity
     +-+-+-+-+-+-+-+-+
 
