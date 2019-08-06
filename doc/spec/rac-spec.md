@@ -1,6 +1,6 @@
 # Random Access Compression: RAC
 
-Status: Draft (as of March 2019). There is no compatibility guarantee yet.
+Status: Draft (as of August 2019). There is no compatibility guarantee yet.
 
 
 ## Overview
