@@ -378,21 +378,49 @@ func TestMultiLevelIndex(t *testing.T) {
 }
 
 func TestWriter1000Chunks(t *testing.T) {
-	w := &Writer{
-		Writer: ioutil.Discard,
-		Codec:  fakeCodec,
-	}
-	data := make([]byte, 1)
-	res, _ := w.AddResource(data)
-	for i := 0; i < 1000; i++ {
-		if i == 2*255 {
-			_ = w.AddChunk(1, data, res, 0)
-		} else {
-			_ = w.AddChunk(1, data, 0, 0)
+loop:
+	for i := 0; i < 2; i++ {
+		buf := &bytes.Buffer{}
+		w := &Writer{
+			Writer: buf,
+			Codec:  fakeCodec,
 		}
-	}
-	if err := w.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
+		if i > 0 {
+			w.IndexLocation = IndexLocationAtStart
+			w.TempFile = &bytes.Buffer{}
+		}
+
+		data := make([]byte, 1)
+		res, _ := w.AddResource(data)
+		for i := 0; i < 1000; i++ {
+			if i == 2*255 {
+				_ = w.AddChunk(1, data, res, 0)
+			} else {
+				_ = w.AddChunk(1, data, 0, 0)
+			}
+		}
+		if err := w.Close(); err != nil {
+			t.Errorf("i=%d: Close: %v", i, err)
+			continue loop
+		}
+
+		encoded := buf.Bytes()
+		p := &Parser{
+			ReadSeeker:     bytes.NewReader(encoded),
+			CompressedSize: int64(len(encoded)),
+		}
+		for n := 0; ; n++ {
+			if _, err := p.NextChunk(); err == io.EOF {
+				if n != 1000 {
+					t.Errorf("i=%d: number of chunks: got %d, want %d", i, n, 1000)
+					continue loop
+				}
+				break
+			} else if err != nil {
+				t.Errorf("i=%d: NextChunk: %v", i, err)
+				continue loop
+			}
+		}
 	}
 }
 

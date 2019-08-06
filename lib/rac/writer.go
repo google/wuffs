@@ -422,7 +422,7 @@ func (w *Writer) Close() error {
 		return writeEmpty(w.Writer, w.Codec)
 	}
 	rootNode := gather(w.leafNodes)
-	indexSize := rootNode.calcEncodedSize(0)
+	indexSize := rootNode.calcEncodedSize(0, w.IndexLocation == IndexLocationAtEnd)
 
 	nw := &nodeWriter{
 		w:                  w.Writer,
@@ -451,7 +451,7 @@ func (w *Writer) Close() error {
 		}
 
 		// Write the index. The compressed data has already been written.
-		if err := nw.writeIndex(&rootNode); err != nil {
+		if err := nw.writeIndex(&rootNode, true); err != nil {
 			w.err = err
 			return err
 		}
@@ -460,7 +460,7 @@ func (w *Writer) Close() error {
 		expectedTempFileSize := w.dataSize
 
 		// Write the index.
-		if err := nw.writeIndex(&rootNode); err != nil {
+		if err := nw.writeIndex(&rootNode, false); err != nil {
 			w.err = err
 			return err
 		}
@@ -508,18 +508,29 @@ type wNode struct {
 // traversing the nodes in depth-first order.
 //
 // As a side effect, it also sets n.cOffsetCLength for branch nodes.
-func (n *wNode) calcEncodedSize(accumulator uint64) (newAccumulator uint64) {
+func (n *wNode) calcEncodedSize(accumulator uint64, rootAndIsAtEnd bool) (newAccumulator uint64) {
 	arity := len(n.children) + len(n.resources)
 	if arity == 0 {
 		return accumulator
 	}
 	size := (arity * 16) + 16
 	cLength := calcCLength(size)
+
+	if rootAndIsAtEnd {
+		for i := range n.children {
+			accumulator = n.children[i].calcEncodedSize(accumulator, false)
+		}
+	}
+
 	n.cOffsetCLength = accumulator | (cLength << 48)
 	accumulator += uint64(size)
-	for i := range n.children {
-		accumulator = n.children[i].calcEncodedSize(accumulator)
+
+	if !rootAndIsAtEnd {
+		for i := range n.children {
+			accumulator = n.children[i].calcEncodedSize(accumulator, false)
+		}
 	}
+
 	return accumulator
 }
 
@@ -538,8 +549,18 @@ type nodeWriter struct {
 	buffer [4096]byte
 }
 
-func (w *nodeWriter) writeIndex(n *wNode) error {
+func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 	const tagFF = 0xFF << 56
+
+	if rootAndIsAtEnd {
+		for i, o := range n.children {
+			if len(o.children) != 0 {
+				if err := w.writeIndex(&n.children[i], false); err != nil {
+					return err
+				}
+			}
+		}
+	}
 
 	buf, dPtr := w.buffer[:], uint64(0)
 	arity := uint64(len(n.children) + len(n.resources))
@@ -609,13 +630,16 @@ func (w *nodeWriter) writeIndex(n *wNode) error {
 		return err
 	}
 
-	for i, o := range n.children {
-		if len(o.children) != 0 {
-			if err := w.writeIndex(&n.children[i]); err != nil {
-				return err
+	if !rootAndIsAtEnd {
+		for i, o := range n.children {
+			if len(o.children) != 0 {
+				if err := w.writeIndex(&n.children[i], false); err != nil {
+					return err
+				}
 			}
 		}
 	}
+
 	return nil
 }
 
