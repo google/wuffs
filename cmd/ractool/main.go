@@ -25,6 +25,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/google/wuffs/lib/raczlib"
 )
@@ -35,6 +37,11 @@ var (
 	decodeFlag = flag.Bool("decode", false, "whether to decode the input")
 	encodeFlag = flag.Bool("encode", false, "whether to encode the input")
 
+	// Decode-related flags.
+	drangeFlag = flag.String("drange", ":",
+		"when decoding, the \"i:j\" range to decompress, \":8\" means the first 8 bytes")
+
+	// Encode-related flags.
 	codecFlag         = flag.String("codec", "zlib", "when encoding, the compression codec")
 	cpagesizeFlag     = flag.Uint64("cpagesize", 0, "when encoding, the page size (in CSpace)")
 	cchunksizeFlag    = flag.Uint64("cchunksize", 0, "when encoding, the chunk size (in CSpace)")
@@ -107,7 +114,40 @@ func main1() error {
 	return errors.New("must specify exactly one of -decode or -encode")
 }
 
+// parseRange parses a string like "1:23", returning i=1 and j=23. Either or
+// both numbers can be missing, in which case i and/or j will be negative, and
+// it is up to the caller to interpret that placeholder value meaningfully.
+func parseRange(s string) (i int64, j int64, ok bool) {
+	n := strings.IndexByte(s, ':')
+	if n < 0 {
+		return 0, 0, false
+	}
+	var err error
+
+	if n == 0 {
+		i = -1
+	} else if i, err = strconv.ParseInt(s[:n], 0, 64); (err != nil) || (i < 0) {
+		return 0, 0, false
+	}
+
+	if n+1 >= len(s) {
+		j = -1
+	} else if j, err = strconv.ParseInt(s[n+1:], 0, 64); (err != nil) || (j < 0) {
+		return 0, 0, false
+	}
+
+	if (i >= 0) && (j >= 0) && (i > j) {
+		return 0, 0, false
+	}
+	return i, j, true
+}
+
 func decode(r io.Reader, usingStdin bool) error {
+	i, j, ok := parseRange(*drangeFlag)
+	if !ok {
+		return fmt.Errorf("invalid -drange")
+	}
+
 	rs, ok := r.(io.ReadSeeker)
 	if !ok {
 		return fmt.Errorf("input is not seekable")
@@ -131,15 +171,40 @@ func decode(r io.Reader, usingStdin bool) error {
 		return err
 	}
 
+	racReader := io.ReadSeeker(nil)
 	switch *codecFlag {
 	case "zlib":
-		_, err := io.Copy(os.Stdout, &raczlib.Reader{
+		racReader = &raczlib.Reader{
 			ReadSeeker:     rs,
 			CompressedSize: compressedSize,
-		})
+		}
+	}
+	if racReader == nil {
+		return errors.New("unsupported -codec")
+	}
+
+	decompressedSize, err := racReader.Seek(0, io.SeekEnd)
+	if err != nil {
 		return err
 	}
-	return errors.New("unsupported -codec")
+	if i < 0 {
+		i = 0
+	}
+	if (j < 0) || (j > decompressedSize) {
+		j = decompressedSize
+	}
+	if i >= j {
+		return nil
+	}
+	if _, err := racReader.Seek(i, io.SeekStart); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, &io.LimitedReader{
+		R: racReader,
+		N: j - i,
+	})
+	return err
 }
 
 func encode(r io.Reader) error {
