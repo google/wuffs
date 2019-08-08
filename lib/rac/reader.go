@@ -16,15 +16,15 @@ package rac
 
 import (
 	"errors"
+	"fmt"
 	"io"
 )
 
 var (
-	errInvalidChunk           = errors.New("rac: invalid chunk")
-	errInvalidChunkTooLarge   = errors.New("rac: invalid chunk (too large)")
-	errInvalidChunkTruncated  = errors.New("rac: invalid chunk (truncated)")
-	errInvalidMakeXxxFunction = errors.New("rac: invalid MakeXxx function")
-	errInvalidReadSeeker      = errors.New("rac: invalid ReadSeeker")
+	errInvalidChunk          = errors.New("rac: invalid chunk")
+	errInvalidChunkTooLarge  = errors.New("rac: invalid chunk (too large)")
+	errInvalidChunkTruncated = errors.New("rac: invalid chunk (truncated)")
+	errInvalidReadSeeker     = errors.New("rac: invalid ReadSeeker")
 
 	errInternalInconsistentPosition = errors.New("rac: internal error: inconsistent position")
 )
@@ -40,10 +40,22 @@ type ReaderContext struct {
 	Extra     interface{}
 }
 
+// CodecReader specializes a Reader to decode a specific compression codec.
+type CodecReader interface {
+	// Accepts returns whether this CodecReader can decode a Codec.
+	Accepts(c Codec) bool
+
+	// MakeDecompressor returns the Codec-specific io.Reader for a chunk.
+	//
+	// The returned io.Reader may optionally implement the io.Closer interface,
+	// in which case this Reader will call Close when has finished the chunk.
+	MakeDecompressor(r io.Reader, rctx ReaderContext) (io.Reader, error)
+
+	// MakeReaderContext returns the Codec-specific ReaderContext for a chunk.
+	MakeReaderContext(r io.ReadSeeker, compressedSize int64, c Chunk) (ReaderContext, error)
+}
+
 // Reader reads a RAC file.
-//
-// Users typically do not refer to this type directly. Instead, they use higher
-// level packages like the sibling "raczlib" package.
 //
 // Do not modify its exported fields after calling any of its methods.
 type Reader struct {
@@ -66,14 +78,7 @@ type Reader struct {
 	// Zero is an invalid value, as an empty file is not a valid RAC file.
 	CompressedSize int64
 
-	// MakeDecompressor returns the Codec-specific Decompressor for a chunk.
-	//
-	// The returned io.Reader may optionally implement the io.Closer interface,
-	// in which case this Reader will call Close when has finished the chunk.
-	MakeDecompressor func(io.Reader, ReaderContext) (io.Reader, error)
-
-	// MakeReaderContext returns the Codec-specific ReaderContext for a chunk.
-	MakeReaderContext func(Chunk) (ReaderContext, error)
+	CodecReaders []CodecReader
 
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
@@ -144,10 +149,6 @@ func (r *Reader) initialize() error {
 	}
 	if r.ReadSeeker == nil {
 		r.err = errInvalidReadSeeker
-		return r.err
-	}
-	if (r.MakeDecompressor == nil) || (r.MakeReaderContext == nil) {
-		r.err = errInvalidMakeXxxFunction
 		return r.err
 	}
 
@@ -300,7 +301,19 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	rctx, err := r.MakeReaderContext(chunk)
+	codecReader := CodecReader(nil)
+	for _, cr := range r.CodecReaders {
+		if cr.Accepts(chunk.Codec) {
+			codecReader = cr
+			break
+		}
+	}
+	if codecReader == nil {
+		r.err = fmt.Errorf("rac: no matching CodecReader for Codec 0x%02X", chunk.Codec)
+		return r.err
+	}
+
+	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.CompressedSize, chunk)
 	if err != nil {
 		r.err = err
 		return r.err
@@ -316,7 +329,7 @@ func (r *Reader) nextChunk() error {
 	r.currChunk.N = chunk.CPrimary.Size()
 	r.dRange = chunk.DRange
 
-	decompressor, err := r.MakeDecompressor(&r.currChunk, rctx)
+	decompressor, err := codecReader.MakeDecompressor(&r.currChunk, rctx)
 	if err != nil {
 		r.err = err
 		return r.err

@@ -20,12 +20,14 @@ import (
 	"io"
 	"log"
 
+	"github.com/google/wuffs/lib/rac"
 	"github.com/google/wuffs/lib/raczlib"
 )
 
 // Example_roundTrip demonstrates compressing (using a raczlib.Writer) and
-// decompressing (using a raczlib.Reader). This includes decompressing an
-// excerpt of the original data, exercising the "random access" part of RAC.
+// decompressing (using a rac.Reader configured with a raczlib.CodecReader).
+// This includes decompressing an excerpt of the original data, exercising the
+// "random access" part of RAC.
 func Example_roundTrip() {
 	// Create some test data.
 	oBuf := &bytes.Buffer{}
@@ -67,9 +69,10 @@ func Example_roundTrip() {
 	}
 
 	// Prepare to decompress.
-	r := &raczlib.Reader{
+	r := &rac.Reader{
 		ReadSeeker:     bytes.NewReader(compressed),
 		CompressedSize: int64(len(compressed)),
+		CodecReaders:   []rac.CodecReader{&raczlib.CodecReader{}},
 	}
 
 	// Read the whole file.

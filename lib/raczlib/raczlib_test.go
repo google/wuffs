@@ -58,9 +58,10 @@ const (
 
 func testReader(t *testing.T, decoded string, encoded string) {
 	buf := &bytes.Buffer{}
-	r := &Reader{
+	r := &rac.Reader{
 		ReadSeeker:     strings.NewReader(encoded),
 		CompressedSize: int64(len(encoded)),
+		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
 	if _, err := io.Copy(buf, r); err != nil {
 		t.Fatalf("Copy: %v", err)
@@ -163,9 +164,10 @@ func TestZeroedBytes(t *testing.T) {
 	}
 	compressed := cBuf.Bytes()
 
-	r := &Reader{
+	r := &rac.Reader{
 		ReadSeeker:     bytes.NewReader(compressed),
 		CompressedSize: int64(len(compressed)),
+		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
 	for i := 0; i <= len(original); i++ {
 		want := original[i:]

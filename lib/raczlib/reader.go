@@ -24,8 +24,6 @@ import (
 )
 
 var (
-	errInvalidCodec      = errors.New("raczlib: invalid Codec (expected rac.CodecZlib)")
-	errInvalidReadSeeker = errors.New("raczlib: invalid ReadSeeker")
 	errInvalidDictionary = errors.New("raczlib: invalid dictionary")
 )
 
@@ -52,39 +50,8 @@ func readAt(r io.ReadSeeker, p []byte, offset int64) error {
 	return err
 }
 
-// Reader reads a RAC file.
-//
-// Do not modify its exported fields after calling any of its methods.
-type Reader struct {
-	// ReadSeeker is where the RAC-encoded data is read from.
-	//
-	// It may also implement io.ReaderAt, in which case its ReadAt method will
-	// be preferred over combining Read and Seek, as the former is presumably
-	// more efficient. This is optional: io.ReaderAt is a stronger contract
-	// than io.ReadSeeker, as multiple concurrent ReadAt calls must not
-	// interfere with each other.
-	//
-	// For example, this type itself only implements io.ReadSeeker, not
-	// io.ReaderAt, as it is not safe for concurrent use.
-	//
-	// Nil is an invalid value.
-	ReadSeeker io.ReadSeeker
-
-	// CompressedSize is the size of the RAC file.
-	//
-	// Zero is an invalid value, as an empty file is not a valid RAC file.
-	CompressedSize int64
-
-	// err is the first error encountered. It is sticky: once a non-nil error
-	// occurs, all public methods will return that error.
-	err error
-
-	// reader is the low-level (Codec-agnostic) RAC reader.
-	racReader rac.Reader
-
-	// buf is a scratch buffer.
-	buf [2]byte
-
+// CodecReader specializes a rac.Reader to decode Zlib-compressed chunks.
+type CodecReader struct {
 	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
 	// when decompressing multiple chunks.
 	cachedZlibReader zlib.Resetter
@@ -92,60 +59,26 @@ type Reader struct {
 	// These fields contain the most recently used shared dictionary.
 	cachedDictionary       []byte
 	cachedDictionaryCRange rac.Range
+
+	// buf is a scratch buffer.
+	buf [2]byte
 }
 
-func (r *Reader) initialize() error {
-	if r.err != nil {
-		return r.err
-	}
-	if r.racReader.ReadSeeker != nil {
-		// We're already initialized.
-		return nil
-	}
-	if r.ReadSeeker == nil {
-		r.err = errInvalidReadSeeker
-		return r.err
-	}
-
-	r.racReader.ReadSeeker = r.ReadSeeker
-	r.racReader.CompressedSize = r.CompressedSize
-	r.racReader.MakeDecompressor = r.makeDecompressor
-	r.racReader.MakeReaderContext = r.makeReaderContext
-	return nil
+// Accepts implements rac.CodecReader.
+func (r *CodecReader) Accepts(c rac.Codec) bool {
+	return c == rac.CodecZlib
 }
 
-// Read implements io.Reader.
-func (r *Reader) Read(p []byte) (int, error) {
-	if err := r.initialize(); err != nil {
-		return 0, err
-	}
-	n, err := r.racReader.Read(p)
-	if (err != nil) && (err != io.EOF) {
-		r.err = err
-	}
-	return n, err
-}
+// MakeDecompressor implements rac.CodecReader.
+func (r *CodecReader) MakeDecompressor(
+	compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
 
-// Seek implements io.Seeker.
-func (r *Reader) Seek(offset int64, whence int) (int64, error) {
-	if err := r.initialize(); err != nil {
-		return 0, err
-	}
-	n, err := r.racReader.Seek(offset, whence)
-	if (err != nil) && (err != io.EOF) {
-		r.err = err
-	}
-	return n, err
-}
-
-func (r *Reader) makeDecompressor(compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
 	if r.cachedZlibReader != nil {
 		if err := r.cachedZlibReader.Reset(compressed, rctx.Secondary); err != nil {
 			if err == io.EOF {
 				err = io.ErrUnexpectedEOF
 			}
-			r.err = err
-			return nil, r.err
+			return nil, err
 		}
 		return r.cachedZlibReader.(io.Reader), nil
 	}
@@ -155,24 +88,21 @@ func (r *Reader) makeDecompressor(compressed io.Reader, rctx rac.ReaderContext) 
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
 		}
-		r.err = err
-		return nil, r.err
+		return nil, err
 	}
 	r.cachedZlibReader = zlibReader.(zlib.Resetter)
 	return zlibReader, nil
 }
 
-func (r *Reader) makeReaderContext(chunk rac.Chunk) (rac.ReaderContext, error) {
+// MakeReaderContext implements rac.CodecReader.
+func (r *CodecReader) MakeReaderContext(
+	rs io.ReadSeeker, compressedSize int64, chunk rac.Chunk) (rac.ReaderContext, error) {
+
 	// For a description of the RAC+Zlib secondary-data format, see
 	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
 
-	if chunk.Codec != rac.CodecZlib {
-		r.err = errInvalidCodec
-		return rac.ReaderContext{}, r.err
-	}
 	if !chunk.CTertiary.Empty() {
-		r.err = errInvalidDictionary
-		return rac.ReaderContext{}, r.err
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 	if chunk.CSecondary.Empty() {
 		return rac.ReaderContext{}, nil
@@ -185,23 +115,20 @@ func (r *Reader) makeReaderContext(chunk rac.Chunk) (rac.ReaderContext, error) {
 	}
 
 	// Check the cRange size and the tTag.
-	if (cRange.Size() < 6) || (cRange[1] > r.CompressedSize) || (chunk.TTag != 0xFF) {
-		r.err = errInvalidDictionary
-		return rac.ReaderContext{}, r.err
+	if (cRange.Size() < 6) || (cRange[1] > compressedSize) || (chunk.TTag != 0xFF) {
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 
 	// Read the dictionary size.
-	if err := readAt(r.ReadSeeker, r.buf[:2], cRange[0]); err != nil {
-		r.err = err
-		return rac.ReaderContext{}, r.err
+	if err := readAt(rs, r.buf[:2], cRange[0]); err != nil {
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 	dictSize := int64(r.buf[0]) | (int64(r.buf[1]) << 8)
 
 	// Check the size. The +6 is for the 2 byte prefix (dictionary size) and
 	// the 4 byte suffix (checksum).
 	if (dictSize + 6) > cRange.Size() {
-		r.err = errInvalidDictionary
-		return rac.ReaderContext{}, r.err
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 
 	// Allocate or re-use the cachedDictionary buffer.
@@ -213,16 +140,14 @@ func (r *Reader) makeReaderContext(chunk rac.Chunk) (rac.ReaderContext, error) {
 	}
 
 	// Read the dictionary and checksum.
-	if err := readAt(r.ReadSeeker, buffer, cRange[0]+2); err != nil {
-		r.err = err
-		return rac.ReaderContext{}, r.err
+	if err := readAt(rs, buffer, cRange[0]+2); err != nil {
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 
 	// Verify the checksum.
 	dict, checksum := buffer[:dictSize], buffer[dictSize:]
 	if u32BE(checksum) != adler32.Checksum(dict) {
-		r.err = errInvalidDictionary
-		return rac.ReaderContext{}, r.err
+		return rac.ReaderContext{}, errInvalidDictionary
 	}
 
 	// Save to the MRU cache and return.
