@@ -58,13 +58,6 @@ type ChunkWriter struct {
 	// Nil is an invalid value.
 	Writer io.Writer
 
-	// Codec is the compression codec for the RAC file.
-	//
-	// See the RAC specification for further discussion.
-	//
-	// Zero is an invalid value.
-	Codec Codec
-
 	// IndexLocation is whether the index is at the start or end of the RAC
 	// file.
 	//
@@ -127,6 +120,9 @@ type ChunkWriter struct {
 	// initialized is set true after the first AddXxx call.
 	initialized bool
 
+	// codec is the compression codec for the RAC file.
+	codec Codec
+
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
 	err error
@@ -166,10 +162,6 @@ type ChunkWriter struct {
 func (w *ChunkWriter) checkParameters() error {
 	if w.Writer == nil {
 		w.err = errors.New("rac: invalid Writer")
-		return w.err
-	}
-	if w.Codec == 0 {
-		w.err = errors.New("rac: invalid Codec")
 		return w.err
 	}
 	if !isZeroOrAPowerOf2(w.CPageSize) || (w.CPageSize > MaxSize) {
@@ -346,7 +338,8 @@ func (w *ChunkWriter) AddResource(resource []byte) (OptResource, error) {
 //
 // The caller may modify primary's contents after this method returns.
 func (w *ChunkWriter) AddChunk(
-	dRangeSize uint64, primary []byte, secondary OptResource, tertiary OptResource) error {
+	dRangeSize uint64, primary []byte,
+	secondary OptResource, tertiary OptResource, codec Codec) error {
 
 	if dRangeSize == 0 {
 		return nil
@@ -357,6 +350,10 @@ func (w *ChunkWriter) AddChunk(
 	}
 	if len(w.leafNodes) >= (1 << 30) {
 		w.err = errors.New("rac: too many chunks")
+		return w.err
+	}
+	if codec == 0 {
+		w.err = errors.New("rac: invalid Codec")
 		return w.err
 	}
 
@@ -375,25 +372,16 @@ func (w *ChunkWriter) AddChunk(
 		cOffsetCLength: cOffset | (cLength << 48),
 		secondary:      secondary,
 		tertiary:       tertiary,
+		codec:          codec,
 	})
 	return nil
 }
 
-func writeEmpty(w io.Writer, codec Codec) error {
-	buf := [32]byte{
-		0x72, 0xC3, 0x63, 0x01, 0x00, 0x00, 0x00, 0xFF,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, uint8(codec),
-		0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xFF,
-		0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
-	}
-
-	checksum := crc32.ChecksumIEEE(buf[6:])
-	checksum ^= checksum >> 16
-	buf[4] = uint8(checksum >> 0)
-	buf[5] = uint8(checksum >> 8)
-
-	_, err := w.Write(buf[:])
-	return err
+var emptyRACFile = [32]byte{
+	0x72, 0xC3, 0x63, 0x01, 0xE8, 0xB4, 0x00, 0xFF,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xFF,
+	0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
 }
 
 // Close writes the RAC index to w.Writer and marks that w accepts no further
@@ -421,7 +409,8 @@ func (w *ChunkWriter) Close() error {
 	}
 
 	if len(w.leafNodes) == 0 {
-		return writeEmpty(w.Writer, w.Codec)
+		_, err := w.Writer.Write(emptyRACFile[:])
+		return err
 	}
 	rootNode := gather(w.leafNodes)
 	indexSize := rootNode.calcEncodedSize(0, w.IndexLocation == IndexLocationAtEnd)
@@ -429,7 +418,6 @@ func (w *ChunkWriter) Close() error {
 	nw := &nodeWriter{
 		w:                  w.Writer,
 		resourcesCOffCLens: w.resourcesCOffCLens,
-		codec:              w.Codec,
 	}
 
 	if w.IndexLocation == IndexLocationAtEnd {
@@ -504,6 +492,7 @@ type wNode struct {
 	cOffsetCLength uint64
 	secondary      OptResource
 	tertiary       OptResource
+	codec          Codec
 }
 
 // calcEncodedSize accumulates the encoded size of n and its children,
@@ -543,8 +532,6 @@ type nodeWriter struct {
 	dataCOffset        uint64
 	indexCOffset       uint64
 	resourcesCOffCLens []uint64
-
-	codec Codec
 
 	// A wNode's maximum arity is 255, so a wNode's maximum size in bytes is
 	// ((255 * 16) + 16), which is 4096.
@@ -590,7 +577,7 @@ func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 	buf = buf[8*len(n.children):]
 
 	// DPtrMax.
-	putU64LE(buf, dPtr|(uint64(w.codec)<<56))
+	putU64LE(buf, dPtr|(uint64(n.codec)<<56))
 	buf = buf[8:]
 
 	// CPtr's. While the RAC format allows otherwise, this nodeWriter always
@@ -738,9 +725,10 @@ func gather(nodes []wNode) wNode {
 }
 
 func makeBranch(children []wNode, resMap map[OptResource]bool) wNode {
-	dRangeSize := uint64(0)
+	dRangeSize, codec := uint64(0), Codec(0)
 	for _, c := range children {
 		dRangeSize += c.dRangeSize
+		codec |= c.codec
 	}
 
 	resList := []int(nil)
@@ -757,5 +745,6 @@ func makeBranch(children []wNode, resMap map[OptResource]bool) wNode {
 		children:       children,
 		resources:      resList,
 		cOffsetCLength: invalidCOffsetCLength,
+		codec:          codec,
 	}
 }

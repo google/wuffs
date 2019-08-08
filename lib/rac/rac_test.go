@@ -60,7 +60,7 @@ func undoHexDump(s string) (ret []byte) {
 }
 
 const writerWantEmpty = "" +
-	"00000000  72 c3 63 01 30 14 00 ff  00 00 00 00 00 00 00 ee  |r.c.0...........|\n" +
+	"00000000  72 c3 63 01 e8 b4 00 ff  00 00 00 00 00 00 00 01  |r.c.............|\n" +
 	"00000010  20 00 00 00 00 00 01 ff  20 00 00 00 00 00 01 01  | ....... .......|\n"
 
 const writerWantILAEnd = "" +
@@ -195,7 +195,6 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 	buf := &bytes.Buffer{}
 	w := &ChunkWriter{
 		Writer:        buf,
-		Codec:         fakeCodec,
 		IndexLocation: iloc,
 		TempFile:      tempFile,
 		CPageSize:     cPageSize,
@@ -208,9 +207,9 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 		// These {Aa,Bb,Cc} chunks are also used in the reader test.
 		res0, _ := w.AddResource([]byte("Rrr"))
 		res1, _ := w.AddResource([]byte("Ss"))
-		_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0)
-		_ = w.AddChunk(0x22, []byte("Bbbb"), res0, 0)
-		_ = w.AddChunk(0x44, []byte("Cccccccccc12"), res0, res1)
+		_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0, fakeCodec)
+		_ = w.AddChunk(0x22, []byte("Bbbb"), res0, 0, fakeCodec)
+		_ = w.AddChunk(0x44, []byte("Cccccccccc12"), res0, res1, fakeCodec)
 	}
 
 	if err := w.Close(); err != nil {
@@ -246,7 +245,6 @@ func TestMultiLevelIndex(t *testing.T) {
 	buf := &bytes.Buffer{}
 	w := &ChunkWriter{
 		Writer:        buf,
-		Codec:         fakeCodec,
 		IndexLocation: IndexLocationAtStart,
 		TempFile:      &bytes.Buffer{},
 	}
@@ -285,7 +283,7 @@ func TestMultiLevelIndex(t *testing.T) {
 			primary[0] = 'q'
 		}
 		primaries = append(primaries, primary...)
-		_ = w.AddChunk(0x10000, primary, secondary, tertiary)
+		_ = w.AddChunk(0x10000, primary, secondary, tertiary, fakeCodec)
 	}
 
 	if err := w.Close(); err != nil {
@@ -383,7 +381,6 @@ loop:
 		buf := &bytes.Buffer{}
 		w := &ChunkWriter{
 			Writer: buf,
-			Codec:  fakeCodec,
 		}
 		if i > 0 {
 			w.IndexLocation = IndexLocationAtStart
@@ -394,9 +391,9 @@ loop:
 		res, _ := w.AddResource(data)
 		for i := 0; i < 1000; i++ {
 			if i == 2*255 {
-				_ = w.AddChunk(1, data, res, 0)
+				_ = w.AddChunk(1, data, res, 0, fakeCodec)
 			} else {
-				_ = w.AddChunk(1, data, 0, 0)
+				_ = w.AddChunk(1, data, 0, 0, fakeCodec)
 			}
 		}
 		if err := w.Close(); err != nil {

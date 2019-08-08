@@ -276,7 +276,6 @@ func (w *Writer) initialize() error {
 	}
 
 	w.racWriter.Writer = w.Writer
-	w.racWriter.Codec = rac.CodecZlib
 	w.racWriter.IndexLocation = w.IndexLocation
 	w.racWriter.TempFile = w.TempFile
 	w.racWriter.CPageSize = w.CPageSize
@@ -348,7 +347,7 @@ func (w *Writer) writeDChunks(eof bool) error {
 			return err
 		}
 
-		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0); err != nil {
+		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0, rac.CodecZlib); err != nil {
 			w.err = err
 			return err
 		}
@@ -415,7 +414,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		}
 		fallthrough
 	case uint64(len(cBytes)) == w.cChunkSize:
-		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0); err != nil {
+		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0, rac.CodecZlib); err != nil {
 			w.err = err
 			return err
 		}
@@ -432,7 +431,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		w.err = errCChunkSizeIsTooSmall
 		return w.err
 	}
-	if err := w.racWriter.AddChunk(uint64(dLen), cBytes[:eLen], 0, 0); err != nil {
+	if err := w.racWriter.AddChunk(uint64(dLen), cBytes[:eLen], 0, 0, rac.CodecZlib); err != nil {
 		w.err = err
 		return err
 	}

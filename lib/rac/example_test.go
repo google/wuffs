@@ -71,9 +71,8 @@ func Example_indexLocationAtEnd() {
 	buf := &bytes.Buffer{}
 	w := &rac.ChunkWriter{
 		Writer: buf,
-		Codec:  rac.CodecZlib,
 	}
-	if err := w.AddChunk(uint64(len(src)), enc, 0, 0); err != nil {
+	if err := w.AddChunk(uint64(len(src)), enc, 0, 0, rac.CodecZlib); err != nil {
 		log.Fatalf("AddChunk: %v", err)
 	}
 	if err := w.Close(); err != nil {
@@ -102,7 +101,6 @@ func Example_indexLocationAtStart() {
 	buf := &bytes.Buffer{}
 	w := &rac.ChunkWriter{
 		Writer:        buf,
-		Codec:         rac.CodecZlib,
 		IndexLocation: rac.IndexLocationAtStart,
 		TempFile:      &bytes.Buffer{},
 	}
@@ -143,7 +141,7 @@ func Example_indexLocationAtStart() {
 		}
 		encodedChunk := b.Bytes()
 
-		if err := w.AddChunk(uint64(len(chunk)), encodedChunk, dictResource, 0); err != nil {
+		if err := w.AddChunk(uint64(len(chunk)), encodedChunk, dictResource, 0, rac.CodecZlib); err != nil {
 			log.Fatalf("AddChunk: %v", err)
 		}
 
