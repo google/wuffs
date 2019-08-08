@@ -14,6 +14,8 @@
 
 // ----------------
 
+//go:generate go run gen.go
+
 /*
 ractool manipulates Random Access Compression (RAC) files.
 
@@ -109,7 +111,7 @@ var (
 )
 
 func usage() {
-	// TODO: fmt.Fprintf(os.Stderr, usageStr)
+	os.Stderr.WriteString(usageStr)
 }
 
 func main() {
