@@ -20,22 +20,3 @@
 // The RAC specification is at
 // https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
 package raczlib
-
-import (
-	"github.com/google/wuffs/lib/rac"
-)
-
-const (
-	// MaxSize is the maximum RAC file size (in both CSpace and DSpace).
-	MaxSize = rac.MaxSize
-)
-
-// IndexLocation is whether the index is at the start or end of the RAC file.
-//
-// See the RAC specification for further discussion.
-type IndexLocation = rac.IndexLocation
-
-const (
-	IndexLocationAtEnd   = rac.IndexLocationAtEnd
-	IndexLocationAtStart = rac.IndexLocationAtStart
-)

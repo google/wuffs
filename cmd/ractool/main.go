@@ -287,12 +287,12 @@ func decode(r io.Reader, usingStdin bool) error {
 }
 
 func encode(r io.Reader) error {
-	indexLocation := raczlib.IndexLocation(0)
+	indexLocation := rac.IndexLocation(0)
 	switch *indexlocationFlag {
 	case "start":
-		indexLocation = raczlib.IndexLocationAtStart
+		indexLocation = rac.IndexLocationAtStart
 	case "end":
-		indexLocation = raczlib.IndexLocationAtEnd
+		indexLocation = rac.IndexLocationAtEnd
 	default:
 		return errors.New("invalid -indexlocation")
 	}
