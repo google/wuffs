@@ -273,8 +273,8 @@ type Writer struct {
 	// occurs, all public methods will return that error.
 	err error
 
-	// racWriter is the low-level RAC writer.
-	racWriter ChunkWriter
+	// chunkWriter is the low-level chunk writer.
+	chunkWriter ChunkWriter
 
 	// uncompressed are the uncompressed bytes that have been given to this
 	// (via the Write method) but not yet compressed as a chunk.
@@ -285,7 +285,7 @@ func (w *Writer) initialize() error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.racWriter.Writer != nil {
+	if w.chunkWriter.Writer != nil {
 		// We're already initialized.
 		return nil
 	}
@@ -309,10 +309,10 @@ func (w *Writer) initialize() error {
 		w.dChunkSize = defaultDChunkSize
 	}
 
-	w.racWriter.Writer = w.Writer
-	w.racWriter.IndexLocation = w.IndexLocation
-	w.racWriter.TempFile = w.TempFile
-	w.racWriter.CPageSize = w.CPageSize
+	w.chunkWriter.Writer = w.Writer
+	w.chunkWriter.IndexLocation = w.IndexLocation
+	w.chunkWriter.TempFile = w.TempFile
+	w.chunkWriter.CPageSize = w.CPageSize
 	return nil
 }
 
@@ -357,7 +357,7 @@ func (w *Writer) writeDChunks(eof bool) error {
 			return err
 		}
 
-		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
 			w.err = err
 			return err
 		}
@@ -424,7 +424,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		}
 		fallthrough
 	case uint64(len(cBytes)) == w.cChunkSize:
-		if err := w.racWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
 			w.err = err
 			return err
 		}
@@ -441,7 +441,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		w.err = errCChunkSizeIsTooSmall
 		return w.err
 	}
-	if err := w.racWriter.AddChunk(uint64(dLen), cBytes[:eLen], 0, 0, codec); err != nil {
+	if err := w.chunkWriter.AddChunk(uint64(dLen), cBytes[:eLen], 0, 0, codec); err != nil {
 		w.err = err
 		return err
 	}
@@ -470,7 +470,7 @@ func (w *Writer) Close() error {
 	if err := w.write(true); err != nil {
 		return err
 	}
-	if err := w.racWriter.Close(); err != nil {
+	if err := w.chunkWriter.Close(); err != nil {
 		w.err = err
 		return err
 	}
