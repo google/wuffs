@@ -364,9 +364,15 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
-	// TODO: intersect this with the frame_rect? In theory, that should be
-	// unnecessary, and could hide bugs, but it'd be a cheap way to ensure that
-	// the dirty_rect is inside the frame_rect.
+	// The "foo.min(x:this.width_or_height)" calls clip the nominal frame_rect
+	// to the image_rect. The "x" argument name doesn't necessarily mean "the x
+	// direction". It's just that, in Wuffs, every function call argument needs
+	// a name, and for the min function, "x" is as good a name as any other.
+	//
+	// TODO: explicitly intersect this with the frame_rect (in the y
+	// direction)? In theory, that should be unnecessary, and could hide bugs,
+	// but it'd be a cheap way to ensure that the dirty_rect is inside the
+	// frame_rect.
 	//
 	// Note that this method is pure, so it cannot set a sticky error bit if
 	// the dirty_rect is too big.
@@ -446,6 +452,11 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	}
 
 	if args.dst <> nullptr {
+		// The "foo.min(x:this.width_or_height)" calls clip the nominal
+		// frame_rect to the image_rect. The "x" argument name doesn't
+		// necessarily mean "the x direction". It's just that, in Wuffs, every
+		// function call argument needs a name, and for the min function, "x"
+		// is as good a name as any other.
 		args.dst.update!(bounds:this.util.make_rect_ie_u32(
 			min_incl_x:this.frame_rect_x0.min(x:this.width),
 			min_incl_y:this.frame_rect_y0.min(x:this.height),
