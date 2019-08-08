@@ -40,8 +40,9 @@ func Example_roundTrip() {
 
 	// Create the RAC file.
 	cBuf := &bytes.Buffer{}
-	w := &raczlib.Writer{
-		Writer: cBuf,
+	w := &rac.Writer{
+		Writer:      cBuf,
+		CodecWriter: &raczlib.CodecWriter{},
 		// It's not necessary to explicitly declare the DChunkSize. The zero
 		// value implies a reasonable default. Nonetheless, using a 1 KiB
 		// DChunkSize (which is relatively small) makes for a more interesting

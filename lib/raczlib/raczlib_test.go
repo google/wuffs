@@ -152,9 +152,10 @@ func TestReaderConcatenation(t *testing.T) {
 func TestZeroedBytes(t *testing.T) {
 	original := []byte("abcde\x00\x00\x00\x00j")
 	cBuf := &bytes.Buffer{}
-	w := &Writer{
-		Writer:     cBuf,
-		DChunkSize: 8,
+	w := &rac.Writer{
+		Writer:      cBuf,
+		CodecWriter: &CodecWriter{},
+		DChunkSize:  8,
 	}
 	if _, err := w.Write(original); err != nil {
 		t.Fatalf("Write: %v", err)

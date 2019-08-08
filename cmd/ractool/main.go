@@ -100,6 +100,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/wuffs/lib/rac"
 	"github.com/google/wuffs/lib/raczlib"
 )
 
@@ -250,15 +251,14 @@ func decode(r io.Reader, usingStdin bool) error {
 		return err
 	}
 
-	racReader := io.ReadSeeker(nil)
+	racReader := &rac.Reader{
+		ReadSeeker:     rs,
+		CompressedSize: compressedSize,
+	}
 	switch *codecFlag {
 	case "zlib":
-		racReader = &raczlib.Reader{
-			ReadSeeker:     rs,
-			CompressedSize: compressedSize,
-		}
-	}
-	if racReader == nil {
+		racReader.CodecReaders = []rac.CodecReader{&raczlib.CodecReader{}}
+	default:
 		return errors.New("unsupported -codec")
 	}
 
@@ -316,20 +316,23 @@ func encode(r io.Reader) error {
 		dchunksize = 65536 // 64 KiB.
 	}
 
+	w := &rac.Writer{
+		Writer:        os.Stdout,
+		IndexLocation: indexLocation,
+		TempFile:      &bytes.Buffer{},
+		CPageSize:     uint64(cpagesize),
+		CChunkSize:    uint64(cchunksize),
+		DChunkSize:    uint64(dchunksize),
+	}
 	switch *codecFlag {
 	case "zlib":
-		w := &raczlib.Writer{
-			Writer:        os.Stdout,
-			IndexLocation: indexLocation,
-			TempFile:      &bytes.Buffer{},
-			CPageSize:     uint64(cpagesize),
-			CChunkSize:    uint64(cchunksize),
-			DChunkSize:    uint64(dchunksize),
-		}
-		if _, err := io.Copy(w, r); err != nil {
-			return err
-		}
-		return w.Close()
+		w.CodecWriter = &raczlib.CodecWriter{}
+	default:
+		return errors.New("unsupported -codec")
 	}
-	return errors.New("unsupported -codec")
+
+	if _, err := io.Copy(w, r); err != nil {
+		return err
+	}
+	return w.Close()
 }
