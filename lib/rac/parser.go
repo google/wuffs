@@ -15,13 +15,8 @@
 package rac
 
 import (
-	"errors"
 	"hash/crc32"
 	"io"
-)
-
-var (
-	errInvalidIndexNode = errors.New("rac: invalid index node")
 )
 
 func u48LE(b []byte) int64 {
@@ -304,11 +299,11 @@ type Parser struct {
 
 func (r *Parser) checkParameters() error {
 	if r.ReadSeeker == nil {
-		r.err = errors.New("rac: invalid ReadSeeker")
+		r.err = errInvalidReadSeeker
 		return r.err
 	}
 	if r.CompressedSize < 32 {
-		r.err = errors.New("rac: invalid CompressedSize")
+		r.err = errInvalidCompressedSize
 		return r.err
 	}
 	return nil
@@ -331,7 +326,7 @@ func (r *Parser) initialize() error {
 		return err
 	}
 	if r.currNode.version() != 1 {
-		r.err = errors.New("rac: unsupported RAC file version")
+		r.err = errUnsupportedRACFileVersion
 		return r.err
 	}
 	return nil
@@ -346,7 +341,7 @@ func (r *Parser) findRootNode() error {
 	if (r.currNode[0] != magic[0]) ||
 		(r.currNode[1] != magic[1]) ||
 		(r.currNode[2] != magic[2]) {
-		r.err = errors.New("rac: invalid input: missing magic bytes at the start of file")
+		r.err = errInvalidInputMissingMagicBytes
 		return r.err
 	}
 	if found, err := r.tryRootNode(r.currNode[3], false); err != nil {
@@ -366,7 +361,7 @@ func (r *Parser) findRootNode() error {
 		return nil
 	}
 
-	return errors.New("rac: invalid input: missing index root node")
+	return errInvalidInputMissingRootNode
 }
 
 func (r *Parser) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error) {
@@ -402,7 +397,7 @@ func (r *Parser) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error
 // that it is valid.
 func (r *Parser) load(cOffset int64, arity uint8) error {
 	if arity == 0 {
-		r.err = errors.New("rac: internal error: inconsistent arity")
+		r.err = errInternalInconsistentArity
 		return r.err
 	}
 	size := nodeSize(arity)
@@ -473,7 +468,7 @@ func (r *Parser) SeekToChunkContaining(dSpaceOffset int64) error {
 		return err
 	}
 	if dSpaceOffset < 0 {
-		r.err = errors.New("rac: seek: negative position")
+		r.err = errSeekToNegativePosition
 		return r.err
 	}
 	r.needToResolveSeekPosition = true

@@ -17,7 +17,6 @@ package rac
 // TODO: API for shared dictionaries.
 
 import (
-	"errors"
 	"io"
 )
 
@@ -26,15 +25,6 @@ const (
 
 	maxCChunkSize       = 1 << 30 // 1 GiB.
 	maxTargetDChunkSize = 1 << 31 // 2 GiB.
-)
-
-var (
-	errCChunkSizeIsTooSmall = errors.New("rac: CChunkSize is too small")
-	errInvalidCodecWriter   = errors.New("rac: invalid CodecWriter")
-	errInvalidWriter        = errors.New("rac: invalid Writer")
-	errWriterIsClosed       = errors.New("rac: Writer is closed")
-
-	errInternalShortCSize = errors.New("rac: internal error: short CSize")
 )
 
 func startingTargetDChunkSize(cChunkSize uint64) uint64 { return 2 * cChunkSize }

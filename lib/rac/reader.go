@@ -15,18 +15,8 @@
 package rac
 
 import (
-	"errors"
 	"fmt"
 	"io"
-)
-
-var (
-	errInvalidChunk          = errors.New("rac: invalid chunk")
-	errInvalidChunkTooLarge  = errors.New("rac: invalid chunk (too large)")
-	errInvalidChunkTruncated = errors.New("rac: invalid chunk (truncated)")
-	errInvalidReadSeeker     = errors.New("rac: invalid ReadSeeker")
-
-	errInternalInconsistentPosition = errors.New("rac: internal error: inconsistent position")
 )
 
 // ReaderContext contains the decoded Codec-specific metadata (non-primary
@@ -377,12 +367,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		}
 		pos = end + offset
 	default:
-		return 0, errors.New("rac.Reader.Seek: invalid whence")
+		return 0, errSeekToInvalidWhence
 	}
 
 	if r.pos != pos {
 		if pos < 0 {
-			r.err = errors.New("rac.Reader.Seek: negative position")
+			r.err = errSeekToNegativePosition
 			return 0, r.err
 		}
 		if err := r.parser.SeekToChunkContaining(pos); err != nil {

@@ -15,7 +15,6 @@
 package rac
 
 import (
-	"errors"
 	"hash/crc32"
 	"io"
 	"sort"
@@ -161,11 +160,11 @@ type ChunkWriter struct {
 
 func (w *ChunkWriter) checkParameters() error {
 	if w.Writer == nil {
-		w.err = errors.New("rac: invalid Writer")
+		w.err = errInvalidWriter
 		return w.err
 	}
 	if !isZeroOrAPowerOf2(w.CPageSize) || (w.CPageSize > MaxSize) {
-		w.err = errors.New("rac: invalid CPageSize")
+		w.err = errInvalidCPageSize
 		return w.err
 	} else if w.CPageSize > 0 {
 		for w.log2CPageSize = 1; w.CPageSize != (1 << w.log2CPageSize); w.log2CPageSize++ {
@@ -199,14 +198,14 @@ func (w *ChunkWriter) initialize() error {
 	switch w.IndexLocation {
 	case IndexLocationAtEnd:
 		if w.TempFile != nil {
-			w.err = errors.New("rac: IndexLocationAtEnd requires a nil TempFile")
+			w.err = errILAEndTempFile
 			return w.err
 		}
 		return w.write(indexLocationAtEndMagic)
 
 	case IndexLocationAtStart:
 		if w.TempFile == nil {
-			w.err = errors.New("rac: IndexLocationAtStart requires a non-nil TempFile")
+			w.err = errILAStartTempFile
 			return w.err
 		}
 	}
@@ -220,7 +219,7 @@ func (w *ChunkWriter) write(data []byte) error {
 	}
 
 	if uint64(len(data)) > MaxSize {
-		w.err = errors.New("rac: too much input")
+		w.err = errTooMuchInput
 		return w.err
 	}
 	if w.CPageSize > 0 {
@@ -234,7 +233,7 @@ func (w *ChunkWriter) write(data []byte) error {
 	}
 	w.dataSize += uint64(len(data))
 	if w.dataSize > MaxSize {
-		w.err = errors.New("rac: too much input")
+		w.err = errTooMuchInput
 		return w.err
 	}
 	return nil
@@ -285,7 +284,7 @@ func (w *ChunkWriter) padToPageSize(ioWriter io.Writer, offset uint64) error {
 		remaining -= uint64(n)
 		w.dataSize += uint64(n)
 		if w.dataSize > MaxSize {
-			w.err = errors.New("rac: too much input")
+			w.err = errTooMuchInput
 			return w.err
 		}
 	}
@@ -307,7 +306,7 @@ func (w *ChunkWriter) roundUpToCPageBoundary(x uint64) uint64 {
 // The caller may modify resource's contents after this method returns.
 func (w *ChunkWriter) AddResource(resource []byte) (OptResource, error) {
 	if len(w.resourcesCOffCLens) >= (1 << 30) {
-		w.err = errors.New("rac: too many resources")
+		w.err = errTooManyResources
 		return 0, w.err
 	}
 
@@ -345,15 +344,15 @@ func (w *ChunkWriter) AddChunk(
 		return nil
 	}
 	if (dRangeSize > MaxSize) || ((w.dFileSize + dRangeSize) > MaxSize) {
-		w.err = errors.New("rac: too much input")
+		w.err = errTooMuchInput
 		return w.err
 	}
 	if len(w.leafNodes) >= (1 << 30) {
-		w.err = errors.New("rac: too many chunks")
+		w.err = errTooManyChunks
 		return w.err
 	}
 	if codec == 0 {
-		w.err = errors.New("rac: invalid Codec")
+		w.err = errInvalidCodec
 		return w.err
 	}
 
@@ -428,7 +427,7 @@ func (w *ChunkWriter) Close() error {
 		nw.cFileSize = nw.dataCOffset + w.dataSize
 	}
 	if nw.cFileSize > MaxSize {
-		w.err = errors.New("rac: too much input")
+		w.err = errTooMuchInput
 		return w.err
 	}
 
@@ -473,12 +472,12 @@ func (w *ChunkWriter) Close() error {
 			w.err = err
 			return err
 		} else if uint64(n) != expectedTempFileSize {
-			w.err = errors.New("rac: inconsistent compressed data size")
+			w.err = errInconsistentCompressedSize
 			return w.err
 		}
 	}
 
-	w.err = errors.New("rac: Writer is closed")
+	w.err = errWriterIsClosed
 	return nil
 }
 
@@ -554,7 +553,7 @@ func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 	buf, dPtr := w.buffer[:], uint64(0)
 	arity := uint64(len(n.children) + len(n.resources))
 	if arity > 0xFF {
-		return errors.New("rac: internal error: arity is too large")
+		return errInternalArityIsTooLarge
 	}
 
 	// DPtr's. We write resources before regular children (non-resources), so

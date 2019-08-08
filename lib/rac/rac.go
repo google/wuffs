@@ -25,6 +25,10 @@
 // https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
 package rac
 
+import (
+	"errors"
+)
+
 const (
 	// MaxSize is the maximum RAC file size (in both CSpace and DSpace).
 	MaxSize = (1 << 48) - 1
@@ -63,3 +67,34 @@ var indexLocationAtEndMagic = []byte("\x72\xC3\x63\x00")
 //
 // Zero means that the option is not taken: no shared resource is used.
 type OptResource uint32
+
+var (
+	errCChunkSizeIsTooSmall          = errors.New("rac: CChunkSize is too small")
+	errILAEndTempFile                = errors.New("rac: IndexLocationAtEnd requires a nil TempFile")
+	errILAStartTempFile              = errors.New("rac: IndexLocationAtStart requires a non-nil TempFile")
+	errInconsistentCompressedSize    = errors.New("rac: inconsistent compressed size")
+	errInvalidCPageSize              = errors.New("rac: invalid CPageSize")
+	errInvalidChunk                  = errors.New("rac: invalid chunk")
+	errInvalidChunkTooLarge          = errors.New("rac: invalid chunk (too large)")
+	errInvalidChunkTruncated         = errors.New("rac: invalid chunk (truncated)")
+	errInvalidCodec                  = errors.New("rac: invalid Codec")
+	errInvalidCodecWriter            = errors.New("rac: invalid CodecWriter")
+	errInvalidCompressedSize         = errors.New("rac: invalid CompressedSize")
+	errInvalidIndexNode              = errors.New("rac: invalid index node")
+	errInvalidInputMissingMagicBytes = errors.New("rac: invalid input: missing magic bytes")
+	errInvalidInputMissingRootNode   = errors.New("rac: invalid input: missing root node")
+	errInvalidReadSeeker             = errors.New("rac: invalid ReadSeeker")
+	errInvalidWriter                 = errors.New("rac: invalid Writer")
+	errSeekToInvalidWhence           = errors.New("rac: seek to invalid whence")
+	errSeekToNegativePosition        = errors.New("rac: seek to negative position")
+	errTooManyChunks                 = errors.New("rac: too many chunks")
+	errTooManyResources              = errors.New("rac: too many resources")
+	errTooMuchInput                  = errors.New("rac: too much input")
+	errUnsupportedRACFileVersion     = errors.New("rac: unsupported RAC file version")
+	errWriterIsClosed                = errors.New("rac: Writer is closed")
+
+	errInternalArityIsTooLarge      = errors.New("rac: internal error: arity is too large")
+	errInternalInconsistentArity    = errors.New("rac: internal error: inconsistent arity")
+	errInternalInconsistentPosition = errors.New("rac: internal error: inconsistent position")
+	errInternalShortCSize           = errors.New("rac: internal error: short CSize")
+)
