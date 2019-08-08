@@ -75,9 +75,6 @@ func (r *CodecReader) MakeDecompressor(
 
 	if r.cachedZlibReader != nil {
 		if err := r.cachedZlibReader.Reset(compressed, rctx.Secondary); err != nil {
-			if err == io.EOF {
-				err = io.ErrUnexpectedEOF
-			}
 			return nil, err
 		}
 		return r.cachedZlibReader.(io.Reader), nil
@@ -85,9 +82,6 @@ func (r *CodecReader) MakeDecompressor(
 
 	zlibReader, err := zlib.NewReaderDict(compressed, rctx.Secondary)
 	if err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
 		return nil, err
 	}
 	r.cachedZlibReader = zlibReader.(zlib.Resetter)

@@ -290,9 +290,10 @@ func (r *Reader) readImplicitZeroes(p []byte) (int, error) {
 // r.err "sticky error" field stays nil.
 func (r *Reader) nextChunk() error {
 	chunk, err := r.parser.NextChunk()
-	if err == io.EOF {
-		return io.EOF
-	} else if err != nil {
+	if err != nil {
+		if err == io.EOF {
+			return io.EOF
+		}
 		r.err = err
 		return r.err
 	}
@@ -315,6 +316,9 @@ func (r *Reader) nextChunk() error {
 
 	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.CompressedSize, chunk)
 	if err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
 		r.err = err
 		return r.err
 	}
@@ -331,6 +335,9 @@ func (r *Reader) nextChunk() error {
 
 	decompressor, err := codecReader.MakeDecompressor(&r.currChunk, rctx)
 	if err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
 		r.err = err
 		return r.err
 	}
