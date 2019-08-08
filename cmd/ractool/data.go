@@ -39,15 +39,22 @@ https://godoc.org/github.com/google/wuffs/lib/rac
 A RAC file consists of an index and the chunks. The index may be either at the
 start or at the end of the file. At the start results in slightly smaller and
 slightly more efficient RAC files, but the encoding process needs more memory
-or temporary disk space. See the RAC specification for more details:
-https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
+or temporary disk space.
 
 Examples:
 
   ractool -decode foo.rac | sha256sum
   ractool -decode -drange=400:500 foo.rac
   ractool -encode foo.dat > foo.rac
-  ractool -encode -codec=zlib -dchunksize=256 foo.dat > foo.raczlib
+  ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.raczlib
+
+The "400:500" flag value means the 100 bytes ranging from a DSpace offset
+(offset in terms of decompressed bytes, not compressed bytes) of 400
+(inclusive) to 500 (exclusive). Either or both bounds may be omitted, similar
+to Go slice syntax. A "400:" flag value would mean ranging from 400 (inclusive)
+to the end of the decompressed file.
+
+The "256k" flag value means 256 kibibytes (262144 bytes).
 
 General Flags:
 

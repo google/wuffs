@@ -19,6 +19,9 @@
 /*
 ractool manipulates Random Access Compression (RAC) files.
 
+See the RAC specification for more details:
+https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
+
 Usage:
 
 ractool [flags] [input_filename]
@@ -42,15 +45,22 @@ https://godoc.org/github.com/google/wuffs/lib/rac
 A RAC file consists of an index and the chunks. The index may be either at the
 start or at the end of the file. At the start results in slightly smaller and
 slightly more efficient RAC files, but the encoding process needs more memory
-or temporary disk space. See the RAC specification for more details:
-https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
+or temporary disk space.
 
 Examples:
 
   ractool -decode foo.rac | sha256sum
   ractool -decode -drange=400:500 foo.rac
   ractool -encode foo.dat > foo.rac
-  ractool -encode -codec=zlib -dchunksize=256 foo.dat > foo.raczlib
+  ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.raczlib
+
+The "400:500" flag value means the 100 bytes ranging from a DSpace offset
+(offset in terms of decompressed bytes, not compressed bytes) of 400
+(inclusive) to 500 (exclusive). Either or both bounds may be omitted, similar
+to Go slice syntax. A "400:" flag value would mean ranging from 400 (inclusive)
+to the end of the decompressed file.
+
+The "256k" flag value means 256 kibibytes (262144 bytes).
 
 General Flags:
 
@@ -105,9 +115,9 @@ var (
 
 	// Encode-related flags.
 	codecFlag         = flag.String("codec", "zlib", "the compression codec")
-	cpagesizeFlag     = flag.Uint64("cpagesize", 0, "the page size (in CSpace)")
-	cchunksizeFlag    = flag.Uint64("cchunksize", 0, "the chunk size (in CSpace)")
-	dchunksizeFlag    = flag.Uint64("dchunksize", 0, "the chunk size (in DSpace)")
+	cpagesizeFlag     = flag.String("cpagesize", "0", "the page size (in CSpace)")
+	cchunksizeFlag    = flag.String("cchunksize", "0", "the chunk size (in CSpace)")
+	dchunksizeFlag    = flag.String("dchunksize", "0", "the chunk size (in DSpace)")
 	indexlocationFlag = flag.String("indexlocation", "start",
 		"the index location, \"start\" or \"end\"")
 )
@@ -151,6 +161,39 @@ func main1() error {
 	return errors.New("must specify exactly one of -decode or -encode")
 }
 
+// parseNumber converts strings like "3", "4k" and "0x50" to the integers 3,
+// 4096 and 48. It returns a negative value if and only if an error is
+// encountered.
+func parseNumber(s string) int64 {
+	if s == "" {
+		return -1
+	}
+	shift := uint32(0)
+	switch n := len(s) - 1; s[n] {
+	case 'k', 'K':
+		shift, s = 10, s[:n]
+	case 'm', 'M':
+		shift, s = 20, s[:n]
+	case 'g', 'G':
+		shift, s = 30, s[:n]
+	case 't', 'T':
+		shift, s = 40, s[:n]
+	case 'p', 'P':
+		shift, s = 50, s[:n]
+	case 'e', 'E':
+		shift, s = 60, s[:n]
+	}
+	i, err := strconv.ParseInt(s, 0, 64)
+	if (err != nil) || (i < 0) {
+		return -1
+	}
+	const int64Max = (1 << 63) - 1
+	if i > (int64Max >> shift) {
+		return -1
+	}
+	return i << shift
+}
+
 // parseRange parses a string like "1:23", returning i=1 and j=23. Either or
 // both numbers can be missing, in which case i and/or j will be negative, and
 // it is up to the caller to interpret that placeholder value meaningfully.
@@ -159,17 +202,16 @@ func parseRange(s string) (i int64, j int64, ok bool) {
 	if n < 0 {
 		return 0, 0, false
 	}
-	var err error
 
 	if n == 0 {
 		i = -1
-	} else if i, err = strconv.ParseInt(s[:n], 0, 64); (err != nil) || (i < 0) {
+	} else if i = parseNumber(s[:n]); i < 0 {
 		return 0, 0, false
 	}
 
 	if n+1 >= len(s) {
 		j = -1
-	} else if j, err = strconv.ParseInt(s[n+1:], 0, 64); (err != nil) || (j < 0) {
+	} else if j = parseNumber(s[n+1:]); j < 0 {
 		return 0, 0, false
 	}
 
@@ -255,10 +297,23 @@ func encode(r io.Reader) error {
 		return errors.New("invalid -indexlocation")
 	}
 
-	if (*cchunksizeFlag != 0) && (*dchunksizeFlag != 0) {
+	cchunksize := parseNumber(*cchunksizeFlag)
+	if cchunksize < 0 {
+		return errors.New("invalid -cchunksize")
+	}
+	cpagesize := parseNumber(*cpagesizeFlag)
+	if cpagesize < 0 {
+		return errors.New("invalid -cpagesize")
+	}
+	dchunksize := parseNumber(*dchunksizeFlag)
+	if dchunksize < 0 {
+		return errors.New("invalid -dchunksize")
+	}
+
+	if (cchunksize != 0) && (dchunksize != 0) {
 		return errors.New("must specify none or one of -cchunksize or -dchunksize")
-	} else if (*cchunksizeFlag == 0) && (*dchunksizeFlag == 0) {
-		*dchunksizeFlag = 65536 // 64 KiB.
+	} else if (cchunksize == 0) && (dchunksize == 0) {
+		dchunksize = 65536 // 64 KiB.
 	}
 
 	switch *codecFlag {
@@ -267,9 +322,9 @@ func encode(r io.Reader) error {
 			Writer:        os.Stdout,
 			IndexLocation: indexLocation,
 			TempFile:      &bytes.Buffer{},
-			CPageSize:     *cpagesizeFlag,
-			CChunkSize:    *cchunksizeFlag,
-			DChunkSize:    *dchunksizeFlag,
+			CPageSize:     uint64(cpagesize),
+			CChunkSize:    uint64(cchunksize),
+			DChunkSize:    uint64(dchunksize),
 		}
 		if _, err := io.Copy(w, r); err != nil {
 			return err
