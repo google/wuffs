@@ -149,10 +149,9 @@ same number: `0x0000_FFFF_FFFF_FFFF`, which is `((1 << 48) - 1)`.
 
 ## File Structure
 
-A RAC file (the `CFile`) must be at least 4 bytes long, and start with the 3
+A RAC file (the `CFile`) must be at least 32 bytes long, and start with the 3
 byte `Magic` (see below), so that no valid RAC file can also be e.g. a valid
-JPEG file. The fourth byte is examined in the process described by the "Root
-Node at the CFile Start" section, below.
+JPEG file.
 
 The `CFile` contains a tree of `Node`s. Each `Node` is either a `Branch Node`
 (pointing to between 1 and 255 child `Node`s) or a `Leaf Node`. There must be
