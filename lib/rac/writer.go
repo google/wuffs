@@ -44,15 +44,15 @@ func putU64LE(b []byte, v uint64) {
 	b[7] = byte(v >> 56)
 }
 
-// Writer provides a relatively simple way to write a RAC file - one that is
-// created starting from nothing, as opposed to incrementally modifying an
+// ChunkWriter provides a relatively simple way to write a RAC file - one that
+// is created starting from nothing, as opposed to incrementally modifying an
 // existing RAC file.
 //
 // Other packages may provide a more flexible (and more complicated) way to
 // write or append to RAC files, but that is out of scope of this package.
 //
 // Do not modify its exported fields after calling any of its methods.
-type Writer struct {
+type ChunkWriter struct {
 	// Writer is where the RAC-encoded data is written to.
 	//
 	// Nil is an invalid value.
@@ -83,14 +83,14 @@ type Writer struct {
 	// It does not need to implement io.Seeker, if it supports separate read
 	// and write positions (e.g. it is a bytes.Buffer). If it does implement
 	// io.Seeker (e.g. it is an os.File), its current position will be noted
-	// (via SeekCurrent), then it will be written to (via the rac.Writer.AddXxx
-	// methods), then its position will be reset (via SeekSet), then it will be
-	// read from (via the rac.Writer.Close method).
+	// (via SeekCurrent), then it will be written to (via the
+	// ChunkWriter.AddXxx methods), then its position will be reset (via
+	// SeekSet), then it will be read from (via the ChunkWriter.Close method).
 	//
-	// The rac.Writer does not call TempFile.Close even if that method exists
+	// The ChunkWriter does not call TempFile.Close even if that method exists
 	// (e.g. the TempFile is an os.File). In that case, closing the temporary
-	// file (and deleting it) after the rac.Writer is closed is the
-	// responsibility of the rac.Writer caller, not the rac.Writer itself.
+	// file (and deleting it) after the ChunkWriter is closed is the
+	// responsibility of the ChunkWriter caller, not the ChunkWriter itself.
 	TempFile io.ReadWriter
 
 	// CPageSize guides padding the output to minimize the number of pages that
@@ -163,7 +163,7 @@ type Writer struct {
 	padding []byte
 }
 
-func (w *Writer) checkParameters() error {
+func (w *ChunkWriter) checkParameters() error {
 	if w.Writer == nil {
 		w.err = errors.New("rac: invalid Writer")
 		return w.err
@@ -182,7 +182,7 @@ func (w *Writer) checkParameters() error {
 	return nil
 }
 
-func (w *Writer) initialize() error {
+func (w *ChunkWriter) initialize() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -221,7 +221,7 @@ func (w *Writer) initialize() error {
 	return nil
 }
 
-func (w *Writer) write(data []byte) error {
+func (w *ChunkWriter) write(data []byte) error {
 	ioWriter := w.Writer
 	if w.TempFile != nil {
 		ioWriter = w.TempFile
@@ -248,7 +248,7 @@ func (w *Writer) write(data []byte) error {
 	return nil
 }
 
-func (w *Writer) writePadding(ioWriter io.Writer, lenData uint64) error {
+func (w *ChunkWriter) writePadding(ioWriter io.Writer, lenData uint64) error {
 	if lenData == 0 {
 		return nil
 	}
@@ -265,7 +265,7 @@ func (w *Writer) writePadding(ioWriter io.Writer, lenData uint64) error {
 	return w.padToPageSize(ioWriter, w.dataSize)
 }
 
-func (w *Writer) padToPageSize(ioWriter io.Writer, offset uint64) error {
+func (w *ChunkWriter) padToPageSize(ioWriter io.Writer, offset uint64) error {
 	offset &= w.CPageSize - 1
 	if (offset == 0) || (w.CPageSize == 0) {
 		return nil
@@ -300,7 +300,7 @@ func (w *Writer) padToPageSize(ioWriter io.Writer, offset uint64) error {
 	return nil
 }
 
-func (w *Writer) roundUpToCPageBoundary(x uint64) uint64 {
+func (w *ChunkWriter) roundUpToCPageBoundary(x uint64) uint64 {
 	if w.CPageSize == 0 {
 		return x
 	}
@@ -313,7 +313,7 @@ func (w *Writer) roundUpToCPageBoundary(x uint64) uint64 {
 // up to two shared resources.
 //
 // The caller may modify resource's contents after this method returns.
-func (w *Writer) AddResource(resource []byte) (OptResource, error) {
+func (w *ChunkWriter) AddResource(resource []byte) (OptResource, error) {
 	if len(w.resourcesCOffCLens) >= (1 << 30) {
 		w.err = errors.New("rac: too many resources")
 		return 0, w.err
@@ -338,14 +338,16 @@ func (w *Writer) AddResource(resource []byte) (OptResource, error) {
 
 // AddChunk adds a chunk of compressed data - the (primary, secondary,
 // tertiary) tuple - to the RAC file. Decompressing that chunk should produce
-// dRangeSize bytes, although the rac.Writer does not attempt to verify that.
+// dRangeSize bytes, although the ChunkWriter does not attempt to verify that.
 //
 // The OptResource arguments may be zero, meaning that no resource is used. In
 // that case, the corresponding STag or TTag (see the RAC specification for
 // further discussion) will be 0xFF.
 //
 // The caller may modify primary's contents after this method returns.
-func (w *Writer) AddChunk(dRangeSize uint64, primary []byte, secondary OptResource, tertiary OptResource) error {
+func (w *ChunkWriter) AddChunk(
+	dRangeSize uint64, primary []byte, secondary OptResource, tertiary OptResource) error {
+
 	if dRangeSize == 0 {
 		return nil
 	}
@@ -403,12 +405,12 @@ func writeEmpty(w io.Writer, codec Codec) error {
 // w.Writer constitutes a valid RAC file.
 //
 // Closing the underlying w.Writer, w.TempFile or both is the responsibility of
-// the rac.Writer caller, not the rac.Writer itself.
+// the ChunkWriter caller, not the ChunkWriter itself.
 //
 // It is not necessary to call Close, e.g. if an earlier AddXxx call returned a
-// non-nil error. Unlike an os.File, failing to call rac.Writer.Close will not
+// non-nil error. Unlike an os.File, failing to call ChunkWriter.Close will not
 // leak resources such as file descriptors.
-func (w *Writer) Close() error {
+func (w *ChunkWriter) Close() error {
 	if w.err != nil {
 		return w.err
 	}
@@ -492,7 +494,7 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-// wNode is the Writer's representation of a node.
+// wNode is the ChunkWriter's representation of a node.
 type wNode struct {
 	dRangeSize uint64
 
@@ -591,8 +593,8 @@ func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 	putU64LE(buf, dPtr|(uint64(w.codec)<<56))
 	buf = buf[8:]
 
-	// CPtr's. While the RAC format allows otherwise, this Writer always keeps
-	// the CBias at zero, so that a CPtr equals a COffset.
+	// CPtr's. While the RAC format allows otherwise, this nodeWriter always
+	// keeps the CBias at zero, so that a CPtr equals a COffset.
 	for i, res := range n.resources {
 		cOffsetCLength := w.resourcesCOffCLens[res] + w.dataCOffset
 		putU64LE(buf[8*i:], cOffsetCLength|tagFF)

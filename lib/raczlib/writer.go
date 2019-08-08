@@ -244,7 +244,7 @@ type Writer struct {
 	// occurs, all public methods will return that error.
 	err error
 
-	racWriter  rac.Writer
+	racWriter  rac.ChunkWriter
 	zlibWriter *zlib.Writer
 
 	compressed   bytes.Buffer

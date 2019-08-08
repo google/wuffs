@@ -69,7 +69,7 @@ func Example_indexLocationAtEnd() {
 	}
 
 	buf := &bytes.Buffer{}
-	w := &rac.Writer{
+	w := &rac.ChunkWriter{
 		Writer: buf,
 		Codec:  rac.CodecZlib,
 	}
@@ -100,7 +100,7 @@ func Example_indexLocationAtEnd() {
 // See the RAC specification for an explanation of the file format.
 func Example_indexLocationAtStart() {
 	buf := &bytes.Buffer{}
-	w := &rac.Writer{
+	w := &rac.ChunkWriter{
 		Writer:        buf,
 		Codec:         rac.CodecZlib,
 		IndexLocation: rac.IndexLocationAtStart,

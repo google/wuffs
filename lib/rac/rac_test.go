@@ -193,7 +193,7 @@ func TestWriterILAStartCPageSize128(t *testing.T) {
 
 func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, empty bool) error {
 	buf := &bytes.Buffer{}
-	w := &Writer{
+	w := &ChunkWriter{
 		Writer:        buf,
 		Codec:         fakeCodec,
 		IndexLocation: iloc,
@@ -244,7 +244,7 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 
 func TestMultiLevelIndex(t *testing.T) {
 	buf := &bytes.Buffer{}
-	w := &Writer{
+	w := &ChunkWriter{
 		Writer:        buf,
 		Codec:         fakeCodec,
 		IndexLocation: IndexLocationAtStart,
@@ -381,7 +381,7 @@ func TestWriter1000Chunks(t *testing.T) {
 loop:
 	for i := 0; i < 2; i++ {
 		buf := &bytes.Buffer{}
-		w := &Writer{
+		w := &ChunkWriter{
 			Writer: buf,
 			Codec:  fakeCodec,
 		}
