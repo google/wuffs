@@ -31,9 +31,6 @@ var (
 
 // ReaderContext contains the decoded Codec-specific metadata (non-primary
 // data) associated with a RAC chunk.
-//
-// Like the Reader type, users typically do not refer to this type directly.
-// Instead, they use higher level packages like the sibling "raczlib" package.
 type ReaderContext struct {
 	Secondary []byte
 	Tertiary  []byte
