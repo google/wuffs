@@ -19,6 +19,7 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
 	"github.com/google/wuffs/lib/zlibcut"
@@ -42,8 +43,7 @@ func ExampleCut() {
 		"So long lives this, and this gives life to thee.\n"
 
 	if n := len(sonnet18); n != 632 {
-		fmt.Printf("len(sonnet18): got %d, want 632", n)
-		return
+		log.Fatalf("len(sonnet18): got %d, want 632", n)
 	}
 
 	// Compress the input text, sonnet18.
@@ -58,22 +58,19 @@ func ExampleCut() {
 	// the Go standard library. Nonetheless, for a 632 byte input, we expect
 	// the compressed form to be between 300 and 500 bytes.
 	if n := len(compressed); (n < 300) || (500 < n) {
-		fmt.Printf("len(compressed): got %d, want something in [300, 500]", n)
-		return
+		log.Fatalf("len(compressed): got %d, want something in [300, 500]", n)
 	}
 
 	// Cut the 300-or-more bytes to be 200.
 	encodedLen, decodedLen, err := zlibcut.Cut(nil, compressed, 200)
 	if err != nil {
-		fmt.Printf("Cut: %v", err)
-		return
+		log.Fatalf("Cut: %v", err)
 	}
 
 	// The encodedLen should be equal to or just under the requested 200.
 	cut := compressed[:encodedLen]
 	if n := len(cut); (n < 190) || (200 < n) {
-		fmt.Printf("len(cut): got %d, want something in [190, 200]", n)
-		return
+		log.Fatalf("len(cut): got %d, want something in [190, 200]", n)
 	}
 
 	// At this point, a real program would write that cut slice somewhere. The
@@ -84,18 +81,15 @@ func ExampleCut() {
 	// no errors should be encountered.
 	r, err := zlib.NewReader(bytes.NewReader(cut))
 	if err != nil {
-		fmt.Printf("NewReader: %v", err)
-		return
+		log.Fatalf("NewReader: %v", err)
 	}
 	uncompressed, err := ioutil.ReadAll(r)
 	if err != nil {
-		fmt.Printf("ReadAll: %v", err)
-		return
+		log.Fatalf("ReadAll: %v", err)
 	}
 	err = r.Close()
 	if err != nil {
-		fmt.Printf("Close: %v", err)
-		return
+		log.Fatalf("Close: %v", err)
 	}
 
 	// The uncompressed form of the cut data should be a prefix (of length
@@ -103,14 +97,11 @@ func ExampleCut() {
 	// depends on the zlib compression algorithm, but uncompressing 200 or so
 	// bytes should give between 250 and 400 bytes.
 	if n := len(uncompressed); n != decodedLen {
-		fmt.Printf("len(uncompressed): got %d, want %d", n, decodedLen)
-		return
+		log.Fatalf("len(uncompressed): got %d, want %d", n, decodedLen)
 	} else if (n < 250) || (400 < n) {
-		fmt.Printf("len(uncompressed): got %d, want something in [250, 400]", n)
-		return
+		log.Fatalf("len(uncompressed): got %d, want something in [250, 400]", n)
 	} else if !strings.HasPrefix(sonnet18, string(uncompressed)) {
-		fmt.Printf("uncompressed was not a prefix of the original input")
-		return
+		log.Fatalf("uncompressed was not a prefix of the original input")
 	}
 
 	// The first two lines of the sonnet take 83 bytes.
