@@ -37,7 +37,9 @@ the "package rac" documentation for more details:
 https://godoc.org/github.com/google/wuffs/lib/rac
 
 A RAC file consists of an index and the chunks. The index may be either at the
-start or at the end of the file. See the RAC specification for more details:
+start or at the end of the file. At the start results in slightly smaller and
+slightly more efficient RAC files, but the encoding process needs more memory
+or temporary disk space. See the RAC specification for more details:
 https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
 
 Examples:
