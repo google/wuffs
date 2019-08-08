@@ -135,6 +135,8 @@ func (r *CodecReader) MakeReaderContext(
 	buffer := []byte(nil)
 	if n := dictSize + 4; int64(cap(r.cachedDictionary)) >= n {
 		buffer = r.cachedDictionary[:n]
+		// Invalidate the cached dictionary, as we are re-using its memory.
+		r.cachedDictionaryCRange = rac.Range{}
 	} else {
 		buffer = make([]byte, n)
 	}
