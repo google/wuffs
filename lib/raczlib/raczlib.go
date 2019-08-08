@@ -60,6 +60,18 @@ func readAt(r io.ReadSeeker, p []byte, offset int64) error {
 	return err
 }
 
+// suffix32K returns the last 32 KiB of b, or if b is shorter than that, it
+// returns just b.
+//
+// The Zlib format only supports up to 32 KiB of history or shared dictionary.
+func suffix32K(b []byte) []byte {
+	const n = 32 * 1024
+	if len(b) > n {
+		return b[len(b)-n:]
+	}
+	return b
+}
+
 // CodecReader specializes a rac.Reader to decode Zlib-compressed chunks.
 type CodecReader struct {
 	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
@@ -164,38 +176,99 @@ func (r *CodecReader) MakeReaderContext(
 
 // CodecWriter specializes a rac.Writer to encode Zlib-compressed chunks.
 type CodecWriter struct {
+	// These fields help reduce memory allocation by re-using previous byte
+	// buffers or the zlib.Writer.
 	compressed bytes.Buffer
 	zlibWriter *zlib.Writer
+	stash      []byte
 }
 
 // Compress implements rac.CodecWriter.
-func (w *CodecWriter) Compress(p []byte, q []byte) (rac.Codec, []byte, error) {
-	w.compressed.Reset()
+func (w *CodecWriter) Compress(p []byte, q []byte, resourcesData [][]byte) (
+	codec rac.Codec, compressed []byte, secondaryResource int, tertiaryResource int, retErr error) {
 
-	if w.zlibWriter == nil {
-		zw, err := zlib.NewWriterLevel(&w.compressed, zlib.BestCompression)
+	secondaryResource = rac.NoResourceUsed
+
+	// Compress p+q without any shared dictionary.
+	baseline, err := w.compress(p, q, nil)
+	if err != nil {
+		return 0, nil, 0, 0, err
+	}
+	// If there aren't any potential shared dictionaries, or if the baseline
+	// compressed form is small, just return the baseline.
+	const minBaselineSizeToConsiderDictionaries = 256
+	if (len(resourcesData) == 0) || (len(baseline) < minBaselineSizeToConsiderDictionaries) {
+		return rac.CodecZlib, baseline, secondaryResource, rac.NoResourceUsed, nil
+	}
+
+	// w.stash keeps a copy of the best compression so far. Every call to
+	// w.compress can clobber the bytes previously returned by w.compress.
+	w.stash = append(w.stash[:0], baseline...)
+	compressed = w.stash
+
+	// Only use a shared dictionary if it results in something smaller than
+	// 98.4375% (an arbitrary heuristic threshold) of the baseline. Otherwise,
+	// it's arguably not worth the additional complexity.
+	threshold := (len(baseline) / 64) * 63
+
+	for i, data := range resourcesData {
+		candidate, err := w.compress(p, q, suffix32K(data))
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, 0, 0, err
+		}
+		if n := len(candidate); (n >= threshold) || (n >= len(compressed)) {
+			continue
+		}
+		secondaryResource = i
+
+		// As an optimization, if the final candidate is the winner, we don't
+		// have to copy its contents to w.stash.
+		if i == len(resourcesData)-1 {
+			compressed = candidate
+		} else {
+			w.stash = append(w.stash[:0], candidate...)
+			compressed = w.stash
+		}
+	}
+	return rac.CodecZlib, compressed, secondaryResource, rac.NoResourceUsed, nil
+}
+
+func (w *CodecWriter) compress(p []byte, q []byte, dict []byte) ([]byte, error) {
+	w.compressed.Reset()
+	zw, err := (*zlib.Writer)(nil), error(nil)
+	if len(dict) != 0 {
+		// A zlib.Writer doesn't have a Reset(etc, dict) method, so we have to
+		// allocate a new zlib.Writer.
+		zw, err = zlib.NewWriterLevelDict(&w.compressed, zlib.BestCompression, dict)
+		if err != nil {
+			return nil, err
+		}
+	} else if w.zlibWriter == nil {
+		zw, err = zlib.NewWriterLevelDict(&w.compressed, zlib.BestCompression, nil)
+		if err != nil {
+			return nil, err
 		}
 		w.zlibWriter = zw
 	} else {
-		w.zlibWriter.Reset(&w.compressed)
+		zw = w.zlibWriter
+		zw.Reset(&w.compressed)
 	}
 
 	if len(p) > 0 {
-		if _, err := w.zlibWriter.Write(p); err != nil {
-			return 0, nil, err
+		if _, err := zw.Write(p); err != nil {
+			return nil, err
 		}
 	}
 	if len(q) > 0 {
-		if _, err := w.zlibWriter.Write(q); err != nil {
-			return 0, nil, err
+		if _, err := zw.Write(q); err != nil {
+			return nil, err
 		}
 	}
-	if err := w.zlibWriter.Close(); err != nil {
-		return 0, nil, err
+
+	if err := zw.Close(); err != nil {
+		return nil, err
 	}
-	return rac.CodecZlib, w.compressed.Bytes(), nil
+	return w.compressed.Bytes(), nil
 }
 
 // Cut implements rac.CodecWriter.
@@ -204,4 +277,21 @@ func (w *CodecWriter) Cut(codec rac.Codec, encoded []byte, maxEncodedLen int) (e
 		return 0, 0, errInvalidCodec
 	}
 	return zlibcut.Cut(nil, encoded, maxEncodedLen)
+}
+
+// WrapResource implements rac.CodecWriter.
+func (w *CodecWriter) WrapResource(raw []byte) ([]byte, error) {
+	// For a description of the RAC+Zlib secondary-data format, see
+	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
+	raw = suffix32K(raw)
+	wrapped := make([]byte, len(raw)+6)
+	wrapped[0] = uint8(len(raw) >> 0)
+	wrapped[1] = uint8(len(raw) >> 8)
+	copy(wrapped[2:], raw)
+	a := adler32.Checksum(raw)
+	wrapped[len(wrapped)-4] = uint8(a >> 24)
+	wrapped[len(wrapped)-3] = uint8(a >> 16)
+	wrapped[len(wrapped)-2] = uint8(a >> 8)
+	wrapped[len(wrapped)-1] = uint8(a >> 0)
+	return wrapped, nil
 }

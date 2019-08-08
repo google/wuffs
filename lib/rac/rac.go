@@ -62,12 +62,6 @@ const (
 
 var indexLocationAtEndMagic = []byte("\x72\xC3\x63\x00")
 
-// OptResource is an option type, optionally holding a Writer-specific
-// identifier for a shared resource.
-//
-// Zero means that the option is not taken: no shared resource is used.
-type OptResource uint32
-
 var (
 	errCChunkSizeIsTooSmall          = errors.New("rac: CChunkSize is too small")
 	errILAEndTempFile                = errors.New("rac: IndexLocationAtEnd requires a nil TempFile")

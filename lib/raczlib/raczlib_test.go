@@ -17,9 +17,9 @@ package raczlib
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 	"io"
-	"strings"
 	"testing"
 
 	"github.com/google/wuffs/lib/rac"
@@ -56,17 +56,42 @@ const (
 		"\x28\x4A\x4D\x85\x71\x00\x01\x00\x00\xFF\xFF\x21\x6E\x04\x66"
 )
 
-func testReader(t *testing.T, decoded string, encoded string) {
+func racCompress(original []byte, dChunkSize uint64, resourcesData [][]byte) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	w := &rac.Writer{
+		Writer:        buf,
+		CodecWriter:   &CodecWriter{},
+		DChunkSize:    dChunkSize,
+		ResourcesData: resourcesData,
+	}
+	if _, err := w.Write(original); err != nil {
+		return nil, fmt.Errorf("Write: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		return nil, fmt.Errorf("Close: %v", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func racDecompress(compressed []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
-		ReadSeeker:     strings.NewReader(encoded),
-		CompressedSize: int64(len(encoded)),
+		ReadSeeker:     bytes.NewReader(compressed),
+		CompressedSize: int64(len(compressed)),
 		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
 	if _, err := io.Copy(buf, r); err != nil {
-		t.Fatalf("Copy: %v", err)
+		return nil, err
 	}
-	if got, want := buf.String(), decoded; got != want {
+	return buf.Bytes(), nil
+}
+
+func testReader(t *testing.T, decoded string, encoded string) {
+	g, err := racDecompress([]byte(encoded))
+	if err != nil {
+		t.Fatalf("racDecompress: %v", err)
+	}
+	if got, want := string(g), decoded; got != want {
 		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
@@ -151,19 +176,10 @@ func TestReaderConcatenation(t *testing.T) {
 
 func TestZeroedBytes(t *testing.T) {
 	original := []byte("abcde\x00\x00\x00\x00j")
-	cBuf := &bytes.Buffer{}
-	w := &rac.Writer{
-		Writer:      cBuf,
-		CodecWriter: &CodecWriter{},
-		DChunkSize:  8,
+	compressed, err := racCompress(original, 8, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := w.Write(original); err != nil {
-		t.Fatalf("Write: %v", err)
-	}
-	if err := w.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
-	}
-	compressed := cBuf.Bytes()
 
 	r := &rac.Reader{
 		ReadSeeker:     bytes.NewReader(compressed),
@@ -189,5 +205,57 @@ func TestZeroedBytes(t *testing.T) {
 			t.Errorf("i=%d: got\n% 02x\nwant\n% 02x", i, got, want)
 			continue
 		}
+	}
+}
+
+func TestSharedDictionary(t *testing.T) {
+	// Make some "dictionary" data that, as an independent chunk, does not
+	// compress very well.
+	const n = 256
+	dictionary := make([]byte, n)
+	for i := range dictionary {
+		dictionary[i] = uint8(i)
+	}
+
+	// Replicate it 32 times.
+	original := make([]byte, 0, 32*n)
+	for len(original) < 32*n {
+		original = append(original, dictionary...)
+	}
+
+	// Measure the RAC-compressed form of that replicated data, without and
+	// with a shared dictionary.
+	compressedLengths := [2]int{}
+	for i := range compressedLengths {
+		resourcesData := [][]byte{}
+		if i > 0 {
+			resourcesData = [][]byte{dictionary}
+		}
+
+		// Compress.
+		compressed, err := racCompress(original, n, resourcesData)
+		if err != nil {
+			t.Fatalf("i=%d: racCompress: %v", i, err)
+		}
+		if len(compressed) == 0 {
+			t.Fatalf("i=%d: compressed form is empty", i)
+		}
+		compressedLengths[i] = len(compressed)
+
+		// Decompress.
+		decompressed, err := racDecompress(compressed)
+		if err != nil {
+			t.Fatalf("i=%d: racDecompress: %v", i, err)
+		}
+		if !bytes.Equal(decompressed, original) {
+			t.Fatalf("i=%d: racDecompress: round trip did not match original", i)
+		}
+	}
+
+	// Using a shared dictionary should improve the compression ratio. The
+	// exact value depends on the Zlib compression algorithm, but we should
+	// expect at least a 4x improvement.
+	if ratio := compressedLengths[0] / compressedLengths[1]; ratio < 4 {
+		t.Fatalf("ratio: got %dx, want at least 4x", ratio)
 	}
 }

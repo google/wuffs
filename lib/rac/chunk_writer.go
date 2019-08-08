@@ -43,6 +43,12 @@ func putU64LE(b []byte, v uint64) {
 	b[7] = byte(v >> 56)
 }
 
+// OptResource is an option type, optionally holding a ChunkWriter-specific
+// identifier for a shared resource.
+//
+// Zero means that the option is not taken: no shared resource is used.
+type OptResource uint32
+
 // ChunkWriter provides a relatively simple way to write a RAC file - one that
 // is created starting from nothing, as opposed to incrementally modifying an
 // existing RAC file.

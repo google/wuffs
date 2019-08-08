@@ -127,6 +127,10 @@ func (b *writeBuffer) compact() {
 	b.curr = nil
 }
 
+// NoResourceUsed is returned by CodecWriter.Compress to indicate that no
+// secondary or tertiary resource was used in the compression.
+const NoResourceUsed int = -1
+
 // CodecWriter specializes a Writer to encode a specific compression codec.
 type CodecWriter interface {
 	// Compress returns the codec-specific compressed form of the concatenation
@@ -135,12 +139,19 @@ type CodecWriter interface {
 	// The source bytes are conceptually one continuous data stream, but is
 	// presented in two slices to avoid unnecessary copying in the code that
 	// calls Compress. One or both of p and q may be an empty slice. A
-	// Compress(p, q) is equivalent to, but often more efficient than:
+	// Compress(p, q, etc) is equivalent to, but often more efficient than:
 	//   combined := []byte(nil)
 	//   combined = append(combined, p...)
 	//   combined = append(combined, q...)
-	//   Compress(combined, nil)
-	Compress(p []byte, q []byte) (Codec, []byte, error)
+	//   Compress(combined, nil, etc)
+	//
+	// Returning a secondaryResource or tertiaryResource within the range ((0
+	// <= i) && (i < len(resourcesData))) indicates that resourcesData[i] was
+	// used in the compression. A value outside of that range means that no
+	// resource was used in the secondary and/or tertiary slot. The
+	// NoResourceUsed constant (-1) is always outside that range.
+	Compress(p []byte, q []byte, resourcesData [][]byte) (
+		codec Codec, compressed []byte, secondaryResource int, tertiaryResource int, retErr error)
 
 	// Cut modifies encoded's contents such that encoded[:encodedLen] is valid
 	// codec-compressed data, assuming that encoded starts off containing valid
@@ -151,7 +162,13 @@ type CodecWriter interface {
 	// Decompressing that modified, shorter byte slice produces a prefix (of
 	// length decodedLen) of the decompression of the original, longer byte
 	// slice.
-	Cut(codec Codec, encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error)
+	Cut(codec Codec, encoded []byte, maxEncodedLen int) (
+		encodedLen int, decodedLen int, retErr error)
+
+	// WrapResource returns the Codec-specific encoding of the raw resource.
+	// For example, if raw is the bytes of a shared LZ77-style dictionary,
+	// WrapResource may prepend or append length and checksum data.
+	WrapResource(raw []byte) ([]byte, error)
 }
 
 // Writer provides a relatively simple way to write a RAC file - one that is
@@ -253,6 +270,22 @@ type Writer struct {
 	// will be used.
 	DChunkSize uint64
 
+	// ResourcesData is a list of resources that can be shared across otherwise
+	// independently compressed chunks.
+	//
+	// The exact semantics for a resource depends on the codec. For example,
+	// the Zlib codec interprets them as shared LZ77-style dictionaries.
+	//
+	// One way to generate shared dictionaries from sub-slices of a single
+	// source file is the command line tool at
+	// https://github.com/google/brotli/blob/master/research/dictionary_generator.cc
+	ResourcesData [][]byte
+
+	// resourcesIDs is the OptResource for each ResourcesData element. Zero
+	// means that corresponding resource is not yet used (and not yet written
+	// to the RAC file).
+	resourcesIDs []OptResource
+
 	// cChunkSize and dChunkSize are copies of CChunkSize and DChunkSize,
 	// validated during the initialize method. For example, if both CChunkSize
 	// and DChunkSize are zero, dChunkSize will be defaultDChunkSize.
@@ -287,6 +320,7 @@ func (w *Writer) initialize() error {
 		w.err = errInvalidCodecWriter
 		return w.err
 	}
+	w.resourcesIDs = make([]OptResource, len(w.ResourcesData))
 
 	if w.DChunkSize > 0 {
 		w.dChunkSize = w.DChunkSize
@@ -304,6 +338,32 @@ func (w *Writer) initialize() error {
 	w.chunkWriter.TempFile = w.TempFile
 	w.chunkWriter.CPageSize = w.CPageSize
 	return nil
+}
+
+// useResource marks a shared resource as used, if it wasn't already marked.
+//
+// i is the index into both the w.ResourcesData and w.resourcesIDs slices. It
+// is valid to pass an i outside the range [0, len(w.resourcesIDs)), in which
+// case the call is a no-op.
+func (w *Writer) useResource(i int) (OptResource, error) {
+	if (i < 0) || (len(w.resourcesIDs) < i) {
+		return 0, nil
+	}
+	if id := w.resourcesIDs[i]; id != 0 {
+		return id, nil
+	}
+	wrapped, err := w.CodecWriter.WrapResource(w.ResourcesData[i])
+	if err != nil {
+		w.err = err
+		return 0, err
+	}
+	id, err := w.chunkWriter.AddResource(wrapped)
+	if err != nil {
+		w.err = err
+		return 0, err
+	}
+	w.resourcesIDs[i] = id
+	return id, nil
 }
 
 // Write implements io.Writer.
@@ -342,12 +402,22 @@ func (w *Writer) writeDChunks(eof bool) error {
 		if len(peek1) == 0 {
 			peek0 = stripTrailingZeroes(peek0)
 		}
-		codec, cBytes, err := w.CodecWriter.Compress(peek0, peek1)
+
+		codec, cBytes, index2, index3, err :=
+			w.CodecWriter.Compress(peek0, peek1, w.ResourcesData)
+		if err != nil {
+			return err
+		}
+		res2, err := w.useResource(index2)
+		if err != nil {
+			return err
+		}
+		res3, err := w.useResource(index3)
 		if err != nil {
 			return err
 		}
 
-		if err := w.chunkWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
 			w.err = err
 			return err
 		}
@@ -402,7 +472,17 @@ outer:
 func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 	peek0, peek1 := w.uncompressed.peek(targetDChunkSize)
 	dSize := uint64(len(peek0)) + uint64(len(peek1))
-	codec, cBytes, err := w.CodecWriter.Compress(peek0, peek1)
+
+	codec, cBytes, index2, index3, err :=
+		w.CodecWriter.Compress(peek0, peek1, w.ResourcesData)
+	if err != nil {
+		return err
+	}
+	res2, err := w.useResource(index2)
+	if err != nil {
+		return err
+	}
+	res3, err := w.useResource(index3)
 	if err != nil {
 		return err
 	}
@@ -414,7 +494,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		}
 		fallthrough
 	case uint64(len(cBytes)) == w.cChunkSize:
-		if err := w.chunkWriter.AddChunk(dSize, cBytes, 0, 0, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
 			w.err = err
 			return err
 		}
@@ -431,7 +511,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		w.err = errCChunkSizeIsTooSmall
 		return w.err
 	}
-	if err := w.chunkWriter.AddChunk(uint64(dLen), cBytes[:eLen], 0, 0, codec); err != nil {
+	if err := w.chunkWriter.AddChunk(uint64(dLen), cBytes[:eLen], res2, res3, codec); err != nil {
 		w.err = err
 		return err
 	}
