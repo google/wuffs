@@ -28,7 +28,7 @@ The flags should include exactly one of -decode or -encode.
 When encoding, the input is partitioned into chunks and each chunk is
 compressed independently. You can specify the target chunk size in terms of
 either its compressed size or decompressed size. By default (if both
--cchunksize and -dchunksize are zero), a 64KiB -cchunksize is used.
+-cchunksize and -dchunksize are zero), a 64KiB -dchunksize is used.
 
 You can also specify a -cpagesize, which is similar to but not exactly the same
 concept as alignment. If non-zero, padding is inserted into the output to
