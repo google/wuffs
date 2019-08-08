@@ -5,10 +5,19 @@ Status: Draft (as of August 2019). There is no compatibility guarantee yet.
 
 ## Overview
 
-The goal of the RAC file format is to compress a source file (the "decompressed
-file") such that, starting from the compressed file, it is possible to
-reconstruct the half-open byte range `[di .. dj)` of the decompressed file
-without always having to first decompress all of `[0 .. di)`.
+RAC is a *compressed* file format that allows *random access* (not just
+sequential access) to the decompressed contents. In comparison to some other
+popular compression formats, all three of the
+[Zlib](https://tools.ietf.org/html/rfc1950),
+[Brotli](https://tools.ietf.org/html/rfc7932) and
+[Zstandard](https://tools.ietf.org/html/rfc8478) specifications explicitly
+contain the identical phrase: "the data format defined by this specification
+does not attempt to allow random access to compressed data".
+
+Compression means that the derived file is typically smaller than the original
+file. Random access means that, starting from the compressed file, it is
+possible to reconstruct the half-open byte range `[di .. dj)` of the
+decompressed file without always having to first decompress all of `[0 .. di)`.
 
 Conceptually, the decompressed file is partitioned into non-overlapping chunks.
 Each compressed chunk can be decompressed independently (although possibly
@@ -655,6 +664,11 @@ and `0x00`, which means that they are both `CBiasing Branch Node`s.
 
 
 # Reference Implementation
+
+C programming language libraries:
+
+  - TODO. Follow [this GitHub issue](https://github.com/google/wuffs/issues/22)
+    for updates.
 
 Go programming language libraries:
 
