@@ -52,7 +52,7 @@ Examples:
   ractool -decode foo.rac | sha256sum
   ractool -decode -drange=400:500 foo.rac
   ractool -encode foo.dat > foo.rac
-  ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.raczlib
+  ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.rac
 
 The "400:500" flag value means the 100 bytes ranging from a DSpace offset
 (offset in terms of decompressed bytes, not compressed bytes) of 400
