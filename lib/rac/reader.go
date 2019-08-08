@@ -310,7 +310,16 @@ func (r *Reader) nextChunk() error {
 		}
 	}
 	if codecReader == nil {
-		r.err = fmt.Errorf("rac: no matching CodecReader for Codec 0x%02X", chunk.Codec)
+		name := ""
+		switch chunk.Codec {
+		case CodecZlib:
+			name = " (Zlib)"
+		case CodecBrotli:
+			name = " (Brotli)"
+		case CodecZstandard:
+			name = " (Zstandard)"
+		}
+		r.err = fmt.Errorf("rac: no matching CodecReader for Codec 0x%02X%s", chunk.Codec, name)
 		return r.err
 	}
 
