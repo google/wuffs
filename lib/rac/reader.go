@@ -55,6 +55,8 @@ type CodecReader interface {
 // Reader reads a RAC file.
 //
 // Do not modify its exported fields after calling any of its methods.
+//
+// Reader implements the io.ReadSeeker interface.
 type Reader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
@@ -75,6 +77,10 @@ type Reader struct {
 	// Zero is an invalid value, as an empty file is not a valid RAC file.
 	CompressedSize int64
 
+	// CodecReaders are the compression codecs that this Reader can decompress.
+	//
+	// For example, use a raczlib.CodecReader from the sibilng "raczlib"
+	// package.
 	CodecReaders []CodecReader
 
 	// err is the first error encountered. It is sticky: once a non-nil error
