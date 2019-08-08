@@ -656,10 +656,15 @@ and `0x00`, which means that they are both `CBiasing Branch Node`s.
 
 # Reference Implementation
 
-In the Go programming language:
+Go programming language libraries:
 
   - [RAC](https://godoc.org/github.com/google/wuffs/lib/rac)
   - [RAC + Zlib](https://godoc.org/github.com/google/wuffs/lib/raczlib)
+
+Command line tool, installable via `go get
+github.com/google/wuffs/cmd/ractool`:
+
+  - [ractool](https://godoc.org/github.com/google/wuffs/cmd/ractool)
 
 
 # Acknowledgements
