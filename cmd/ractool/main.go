@@ -49,10 +49,10 @@ or temporary disk space.
 
 Examples:
 
-  ractool -decode foo.rac | sha256sum
-  ractool -decode -drange=400:500 foo.rac
-  ractool -encode foo.dat > foo.rac
-  ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.rac
+    ractool -decode foo.rac | sha256sum
+    ractool -decode -drange=400:500 foo.rac
+    ractool -encode foo.dat > foo.rac
+    ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.rac
 
 The "400:500" flag value means the 100 bytes ranging from a DSpace offset
 (offset in terms of decompressed bytes, not compressed bytes) of 400
@@ -89,6 +89,56 @@ Encode-Related Flags:
     the index location, "start" or "end" (default "start")
 -resources
     comma-separated list of resource files, such as shared dictionaries
+
+Extended Example:
+
+    --------
+    $ # Fetch and unzip the enwik8 test file, a sample of Wikipedia.
+    $ wget http://mattmahoney.net/dc/enwik8.zip
+    $ unzip enwik8.zip
+
+    $ # Create a shared dictionary. The dictionary_generator program
+    $ # comes from https://github.com/google/brotli
+    $ dictionary_generator --chunk_len=64k dict.dat enwik8
+
+    $ # RAC-encode it twice, with and without that shared dictionary.
+    $ ractool -encode -resources=dict.dat enwik8 > shared.rac
+    $ ractool -encode                     enwik8 > vanilla.rac
+
+    $ # The size overhead (compared to the .zip) is about 2.4% or 4.8%,
+    $ # depending on whether we used a shared dictionary.
+    $ ls -l
+    total 207012
+    -rw-r--r-- 1 tao tao     16384 Aug  9 19:12 dict.dat
+    -rw-r--r-- 1 tao tao 100000000 Jun  2  2011 enwik8
+    -rw-r--r-- 1 tao tao  36445475 Sep  2  2011 enwik8.zip
+    -rw-r--r-- 1 tao tao  37320896 Aug  9 19:16 shared.rac
+    -rw-r--r-- 1 tao tao  38185178 Aug  9 19:17 vanilla.rac
+
+    $ # Check that the decompressed forms all match.
+    $ cat enwik8                  | sha256sum
+    2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
+    $ unzip -p enwik8.zip         | sha256sum
+    2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
+    $ ractool -decode shared.rac  | sha256sum
+    2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
+    $ ractool -decode vanilla.rac | sha256sum
+    2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
+
+    $ # Compare how long it takes to produce 8 bytes from the middle of
+    $ # the decompressed file, which happens to be the word "Business".
+    $ time unzip -p enwik8.zip | dd if=/dev/stdin status=none \
+    >     iflag=skip_bytes,count_bytes skip=50000000 count=8
+    Business
+    real    0m0.621s
+    user    0m0.623s
+    sys     0m0.105s
+    $ time ractool -decode -drange=50000000:50000008 shared.rac
+    Business
+    real    0m0.007s
+    user    0m0.004s
+    sys     0m0.004s
+    --------
 */
 package main
 
