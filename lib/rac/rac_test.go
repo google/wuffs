@@ -428,12 +428,7 @@ func printChunks(chunks []Chunk) string {
 	return strings.Join(ss, "\n")
 }
 
-func TestReader(t *testing.T) {
-	makeChunk := func() Chunk {
-		return Chunk{}
-	}
-	_ = makeChunk
-
+func TestParser(t *testing.T) {
 	testCases := []struct {
 		name       string
 		compressed []byte
