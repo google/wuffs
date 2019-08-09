@@ -87,6 +87,8 @@ Encode-Related Flags:
     the chunk size (in DSpace)
 -indexlocation
     the index location, "start" or "end" (default "start")
+-resources
+    comma-separated list of resource files, such as shared dictionaries
 */
 package main
 
@@ -122,6 +124,8 @@ var (
 	dchunksizeFlag    = flag.String("dchunksize", "0", "the chunk size (in DSpace)")
 	indexlocationFlag = flag.String("indexlocation", "start",
 		"the index location, \"start\" or \"end\"")
+	resourcesFlag = flag.String("resources", "",
+		"comma-separated list of resource files, such as shared dictionaries")
 )
 
 func usage() {
@@ -321,6 +325,16 @@ func encode(r io.Reader) error {
 		w.CodecWriter = &raczlib.CodecWriter{}
 	default:
 		return errors.New("unsupported -codec")
+	}
+
+	if *resourcesFlag != "" {
+		for _, filename := range strings.Split(*resourcesFlag, ",") {
+			resource, err := ioutil.ReadFile(filename)
+			if err != nil {
+				return err
+			}
+			w.ResourcesData = append(w.ResourcesData, resource)
+		}
 	}
 
 	if _, err := io.Copy(w, r); err != nil {

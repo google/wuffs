@@ -81,4 +81,6 @@ Encode-Related Flags:
     the chunk size (in DSpace)
 -indexlocation
     the index location, "start" or "end" (default "start")
+-resources
+    comma-separated list of resource files, such as shared dictionaries
 `
