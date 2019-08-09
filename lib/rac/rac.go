@@ -43,6 +43,7 @@ const (
 type Codec uint8
 
 const (
+	CodecZeroes    = Codec(0x00)
 	CodecZlib      = Codec(0x01)
 	CodecBrotli    = Codec(0x02)
 	CodecZstandard = Codec(0x04)

@@ -346,7 +346,7 @@ file, even if it is a valid RAC file. Recall that RAC is just a container, and
 not tied to any particular compression codec. For the `Codec` byte in a `Branch
 Node`:
 
-  - `0x00` is reserved.
+  - `0x00` means "RAC + Zeroes".
   - `0x01` means "RAC + Zlib".
   - `0x02` means "RAC + Brotli".
   - `0x04` means "RAC + ZStandard".
@@ -515,6 +515,12 @@ if they are `Branch Node`s.
 # Specific Codecs
 
 
+## RAC + Zeroes
+
+The `CRange`s are ignored. The `DRange` is filled with NUL bytes (`memset` to
+zero).
+
+
 ## RAC + Zlib
 
 The `CFile` data in the `Leaf Node`'s `Primary CRange` is decompressed as Zlib
@@ -567,8 +573,8 @@ As per the RFC section 3.1.1.1.2, the Zstandard format allows for a window size
 up to 3.75 TiB, which is more than the maximum `uint32_t` value. The
 `Dictionary Length` field here is therefore 8 bytes, not 4. However, the RFC
 acknowledges that "a decoder is allowed to reject a compressed frame that
-requests a memory size beyond decoder's authorized range", and likewise, a RAC
-+ Zstandard decoder is allowed to reject a `Dictionary Length` that it
+requests a memory size beyond decoder's authorized range", and likewise, a
+RAC + Zstandard decoder is allowed to reject a `Dictionary Length` that it
 considers too large. The RFC goes on to say "it's recommended for decoders to
 support values of Window Size up to 8 MiB and for encoders not to generate
 frames requiring a Window Size larger than 8 MiB", and that recommendation

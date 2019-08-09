@@ -194,11 +194,6 @@ func (b *pNode) valid() bool {
 		return false
 	}
 
-	// Check that the Codec is non-zero.
-	if b[(8*arity)+7] == 0 {
-		return false
-	}
-
 	// Check that the DPtr values are non-decreasing. The first DPtr value is
 	// implicitly zero.
 	prev := u48LE(b[8*1:])

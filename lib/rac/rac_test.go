@@ -60,7 +60,7 @@ func undoHexDump(s string) (ret []byte) {
 }
 
 const writerWantEmpty = "" +
-	"00000000  72 c3 63 01 e8 b4 00 ff  00 00 00 00 00 00 00 01  |r.c.............|\n" +
+	"00000000  72 c3 63 01 0d f8 00 ff  00 00 00 00 00 00 00 00  |r.c.............|\n" +
 	"00000010  20 00 00 00 00 00 01 ff  20 00 00 00 00 00 01 01  | ....... .......|\n"
 
 const writerWantILAEnd = "" +
@@ -546,5 +546,41 @@ loop:
 			t.Errorf("%q test case: NextChunk: got %q, want %q", tc.name, got, want)
 			continue loop
 		}
+	}
+}
+
+func TestReaderEmpty(t *testing.T) {
+	got, err := ioutil.ReadAll(&Reader{
+		ReadSeeker: bytes.NewReader(undoHexDump(writerWantEmpty)),
+	})
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("got %q, want %q", got, []byte(nil))
+	}
+}
+
+func TestReaderZeroes(t *testing.T) {
+	const dSize = 7
+	buf := &bytes.Buffer{}
+	w := &ChunkWriter{
+		Writer: buf,
+	}
+	if err := w.AddChunk(dSize, CodecZeroes, nil, 0, 0); err != nil {
+		t.Fatalf("AddChunk: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	got, err := ioutil.ReadAll(&Reader{
+		ReadSeeker: bytes.NewReader(buf.Bytes()),
+	})
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+	want := make([]byte, dSize)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }

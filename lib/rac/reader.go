@@ -19,6 +19,24 @@ import (
 	"io"
 )
 
+// zeroesReader is an io.Reader that serves up a finite number of '\x00' bytes.
+type zeroesReader int64
+
+// Read implements io.Reader.
+func (z *zeroesReader) Read(p []byte) (int, error) {
+	if int64(len(p)) > int64(*z) {
+		p = p[:*z]
+	}
+	for i := range p {
+		p[i] = 0
+	}
+	*z -= zeroesReader(len(p))
+	if *z == 0 {
+		return len(p), io.EOF
+	}
+	return len(p), nil
+}
+
 // ReaderContext contains the decoded Codec-specific metadata (non-primary
 // data) associated with a RAC chunk.
 type ReaderContext struct {
@@ -125,6 +143,9 @@ type Reader struct {
 	// In "State A", the dRange is empty and unused, other than trivially
 	// maintaining the invariant.
 	dRange Range
+
+	// zeroes serves the Zeroes Codec.
+	zeroes zeroesReader
 }
 
 func (r *Reader) initialize() error {
@@ -297,6 +318,14 @@ func (r *Reader) nextChunk() error {
 	if chunk.DRange.Empty() {
 		r.err = errInvalidChunk
 		return r.err
+	}
+
+	if chunk.Codec == 0 {
+		r.currChunk.N = 0
+		r.dRange = chunk.DRange
+		r.zeroes = zeroesReader(r.dRange.Size())
+		r.decompressor = &r.zeroes
+		return nil
 	}
 
 	codecReader := CodecReader(nil)
