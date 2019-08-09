@@ -547,7 +547,36 @@ TODO.
 
 ## RAC + Zstandard
 
-TODO.
+The `CFile` data in the `Leaf Node`'s `Primary CRange` is decompressed as
+Zstandard (RFC 8478), possibly referencing a LZ77 prefix dictionary.
+
+If a `Leaf Node`'s `Secondary CRange` is empty then there is no dictionary.
+Otherwise, the `Secondary CRange` must be at least 12 bytes long:
+
+  - 4 byte little-endian `uint32_t` `Dictionary ID`.
+  - 8 byte little-endian `uint64_t` `Dictionary Length`.
+  - `Dictionary Length` bytes `Dictionary`.
+  - Padding (ignored).
+
+The `Dictionary ID` is per section 3.1.1.1.3 in the RFC, although in RAC it
+always occupies 4 bytes, even if Zstandard itself could represent it in fewer
+bytes. In the terminology of the RFC section 5, the `Dictionary` bytes are "raw
+content" dictionaries.
+
+As per the RFC section 3.1.1.1.2, the Zstandard format allows for a window size
+up to 3.75 TiB, which is more than the maximum `uint32_t` value. The
+`Dictionary Length` field here is therefore 8 bytes, not 4. However, the RFC
+acknowledges that "a decoder is allowed to reject a compressed frame that
+requests a memory size beyond decoder's authorized range", and likewise, a RAC
++ Zstandard decoder is allowed to reject a `Dictionary Length` that it
+considers too large. The RFC goes on to say "it's recommended for decoders to
+support values of Window Size up to 8 MiB and for encoders not to generate
+frames requiring a Window Size larger than 8 MiB", and that recommendation
+similarly applies to RAC + Zstandard.
+
+The `Leaf TTag` must be `0xFF`. All other `Leaf TTag` values (below `0xC0`) are
+reserved. The empty `Tertiary CRange` is ignored. The `Leaf STag` value is also
+ignored, other than deriving the `Secondary CRange`.
 
 
 # Examples
