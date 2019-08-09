@@ -160,8 +160,7 @@ func Example_indexLocationAtStart() {
 
 	fmt.Printf("Decoded:\n")
 	p := &rac.Parser{
-		ReadSeeker:     bytes.NewReader(encoded),
-		CompressedSize: int64(len(encoded)),
+		ReadSeeker: bytes.NewReader(encoded),
 	}
 	zr := io.ReadCloser(nil)
 	for {

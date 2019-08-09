@@ -62,11 +62,6 @@ type Reader struct {
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
 
-	// CompressedSize is the size of the RAC file.
-	//
-	// Zero is an invalid value, as an empty file is not a valid RAC file.
-	CompressedSize int64
-
 	// CodecReaders are the compression codecs that this Reader can decompress.
 	//
 	// For example, use a raczlib.CodecReader from the sibilng "raczlib"
@@ -144,9 +139,18 @@ func (r *Reader) initialize() error {
 		r.err = errInvalidReadSeeker
 		return r.err
 	}
+	if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
+		r.err = err
+		return r.err
+	} else {
+		r.parser.compressedSize = size
+	}
+	if _, err := r.ReadSeeker.Seek(0, io.SeekStart); err != nil {
+		r.err = err
+		return r.err
+	}
 
 	r.parser.ReadSeeker = r.ReadSeeker
-	r.parser.CompressedSize = r.CompressedSize
 	r.currChunk.R = r.ReadSeeker
 	return nil
 }
@@ -316,7 +320,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.CompressedSize, chunk)
+	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.parser.compressedSize, chunk)
 	if err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF

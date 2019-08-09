@@ -71,9 +71,8 @@ func Example_roundTrip() {
 
 	// Prepare to decompress.
 	r := &rac.Reader{
-		ReadSeeker:     bytes.NewReader(compressed),
-		CompressedSize: int64(len(compressed)),
-		CodecReaders:   []rac.CodecReader{&raczlib.CodecReader{}},
+		ReadSeeker:   bytes.NewReader(compressed),
+		CodecReaders: []rac.CodecReader{&raczlib.CodecReader{}},
 	}
 
 	// Read the whole file.

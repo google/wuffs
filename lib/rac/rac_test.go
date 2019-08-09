@@ -350,8 +350,7 @@ func TestMultiLevelIndex(t *testing.T) {
 	}
 
 	p := &Parser{
-		ReadSeeker:     bytes.NewReader(encoded),
-		CompressedSize: int64(len(encoded)),
+		ReadSeeker: bytes.NewReader(encoded),
 	}
 	gotPrimaries := []byte(nil)
 	for {
@@ -403,8 +402,7 @@ loop:
 
 		encoded := buf.Bytes()
 		p := &Parser{
-			ReadSeeker:     bytes.NewReader(encoded),
-			CompressedSize: int64(len(encoded)),
+			ReadSeeker: bytes.NewReader(encoded),
 		}
 		for n := 0; ; n++ {
 			if _, err := p.NextChunk(); err == io.EOF {
@@ -476,8 +474,7 @@ loop:
 		}
 
 		p := &Parser{
-			ReadSeeker:     bytes.NewReader(tc.compressed),
-			CompressedSize: int64(len(tc.compressed)),
+			ReadSeeker: bytes.NewReader(tc.compressed),
 		}
 
 		if gotDecompressedSize, err := p.DecompressedSize(); err != nil {

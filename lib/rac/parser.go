@@ -254,11 +254,6 @@ type Parser struct {
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
 
-	// CompressedSize is the size of the RAC file.
-	//
-	// Zero is an invalid value, as an empty file is not a valid RAC file.
-	CompressedSize int64
-
 	// initialized is set true after the first call on this Parser.
 	initialized bool
 
@@ -272,6 +267,9 @@ type Parser struct {
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
 	err error
+
+	// compressedSize is the size of the RAC file in CSpace.
+	compressedSize int64
 
 	// decompressedSize is the size of the RAC file in DSpace.
 	decompressedSize int64
@@ -302,10 +300,6 @@ func (r *Parser) checkParameters() error {
 		r.err = errInvalidReadSeeker
 		return r.err
 	}
-	if r.CompressedSize < 32 {
-		r.err = errInvalidCompressedSize
-		return r.err
-	}
 	return nil
 }
 
@@ -320,6 +314,23 @@ func (r *Parser) initialize() error {
 
 	if err := r.checkParameters(); err != nil {
 		return err
+	}
+
+	if r.compressedSize == 0 {
+		if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
+			r.err = err
+			return r.err
+		} else {
+			r.compressedSize = size
+		}
+		if _, err := r.ReadSeeker.Seek(0, io.SeekStart); err != nil {
+			r.err = err
+			return r.err
+		}
+	}
+	if r.compressedSize < 32 {
+		r.err = errInvalidCompressedSize
+		return r.err
 	}
 
 	if err := r.findRootNode(); err != nil {
@@ -351,7 +362,7 @@ func (r *Parser) findRootNode() error {
 	}
 
 	// Look at the end of the compressed file.
-	if err := readAt(r.ReadSeeker, r.currNode[:1], r.CompressedSize-1); err != nil {
+	if err := readAt(r.ReadSeeker, r.currNode[:1], r.compressedSize-1); err != nil {
 		r.err = err
 		return r.err
 	}
@@ -369,12 +380,12 @@ func (r *Parser) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error
 		return false, nil
 	}
 	size := int64(nodeSize(arity))
-	if r.CompressedSize < size {
+	if r.compressedSize < size {
 		return false, nil
 	}
 	cOffset := int64(0)
 	if fromEnd {
-		cOffset = r.CompressedSize - size
+		cOffset = r.compressedSize - size
 	}
 	if err := r.load(cOffset, arity); err != nil {
 		return false, err
@@ -382,7 +393,7 @@ func (r *Parser) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr error
 	if !r.currNode.valid() {
 		return false, nil
 	}
-	if r.currNode.cPtrMax() != r.CompressedSize {
+	if r.currNode.cPtrMax() != r.compressedSize {
 		return false, nil
 	}
 	r.needToResolveSeekPosition = true
@@ -412,7 +423,7 @@ func (r *Parser) loadAndValidate(cOffset int64,
 	parentCodec Codec, parentVersion uint8, parentCOffMax int64,
 	childCBias int64, childDSize int64) error {
 
-	if (cOffset < 0) || ((r.CompressedSize - 4) < cOffset) {
+	if (cOffset < 0) || ((r.compressedSize - 4) < cOffset) {
 		r.err = errInvalidIndexNode
 		return r.err
 	}
@@ -426,7 +437,7 @@ func (r *Parser) loadAndValidate(cOffset int64,
 		return r.err
 	}
 	size := int64(nodeSize(arity))
-	if (r.CompressedSize < size) || ((r.CompressedSize - size) < cOffset) {
+	if (r.compressedSize < size) || ((r.compressedSize - size) < cOffset) {
 		r.err = errInvalidIndexNode
 		return r.err
 	}

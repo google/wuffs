@@ -77,9 +77,8 @@ func racCompress(original []byte, cChunkSize uint64, dChunkSize uint64, resource
 func racDecompress(compressed []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
-		ReadSeeker:     bytes.NewReader(compressed),
-		CompressedSize: int64(len(compressed)),
-		CodecReaders:   []rac.CodecReader{&CodecReader{}},
+		ReadSeeker:   bytes.NewReader(compressed),
+		CodecReaders: []rac.CodecReader{&CodecReader{}},
 	}
 	if _, err := io.Copy(buf, r); err != nil {
 		return nil, err
@@ -197,9 +196,8 @@ func TestZeroedBytes(t *testing.T) {
 		}
 
 		r := &rac.Reader{
-			ReadSeeker:     bytes.NewReader(compressed),
-			CompressedSize: int64(len(compressed)),
-			CodecReaders:   []rac.CodecReader{&CodecReader{}},
+			ReadSeeker:   bytes.NewReader(compressed),
+			CodecReaders: []rac.CodecReader{&CodecReader{}},
 		}
 		for j := 0; j <= len(original); j++ {
 			want := original[j:]
