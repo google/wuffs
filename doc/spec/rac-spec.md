@@ -693,7 +693,7 @@ Its `Codec` is `0x01`, "RAC + Zlib", its Version is `0x01` and its `Arity` is
 `0x03`. The `DPtr` values are `0x0000` (implicit), `0x0000`, `0x0023` and
 `0x0029`. The `CPtr` values are `0x009F`, `0x0000`, `0x00B4` and `0x0114` (the
 size of the whole RAC file). Note that the `CPtr` values are not sorted. The
-last two children' `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
+last two children's `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
 and `0x00`, which means that they are both `CBiasing Branch Node`s.
 
 
