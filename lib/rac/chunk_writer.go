@@ -343,8 +343,8 @@ func (w *ChunkWriter) AddResource(resource []byte) (OptResource, error) {
 //
 // The caller may modify primary's contents after this method returns.
 func (w *ChunkWriter) AddChunk(
-	dRangeSize uint64, primary []byte,
-	secondary OptResource, tertiary OptResource, codec Codec) error {
+	dRangeSize uint64, codec Codec, primary []byte,
+	secondary OptResource, tertiary OptResource) error {
 
 	if dRangeSize == 0 {
 		return nil

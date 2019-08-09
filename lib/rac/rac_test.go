@@ -207,9 +207,9 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 		// These {Aa,Bb,Cc} chunks are also used in the reader test.
 		res0, _ := w.AddResource([]byte("Rrr"))
 		res1, _ := w.AddResource([]byte("Ss"))
-		_ = w.AddChunk(0x11, []byte("Aaa"), 0, 0, fakeCodec)
-		_ = w.AddChunk(0x22, []byte("Bbbb"), res0, 0, fakeCodec)
-		_ = w.AddChunk(0x44, []byte("Cccccccccc12"), res0, res1, fakeCodec)
+		_ = w.AddChunk(0x11, fakeCodec, []byte("Aaa"), 0, 0)
+		_ = w.AddChunk(0x22, fakeCodec, []byte("Bbbb"), res0, 0)
+		_ = w.AddChunk(0x44, fakeCodec, []byte("Cccccccccc12"), res0, res1)
 	}
 
 	if err := w.Close(); err != nil {
@@ -283,7 +283,7 @@ func TestMultiLevelIndex(t *testing.T) {
 			primary[0] = 'q'
 		}
 		primaries = append(primaries, primary...)
-		_ = w.AddChunk(0x10000, primary, secondary, tertiary, fakeCodec)
+		_ = w.AddChunk(0x10000, fakeCodec, primary, secondary, tertiary)
 	}
 
 	if err := w.Close(); err != nil {
@@ -391,9 +391,9 @@ loop:
 		res, _ := w.AddResource(data)
 		for i := 0; i < 1000; i++ {
 			if i == 2*255 {
-				_ = w.AddChunk(1, data, res, 0, fakeCodec)
+				_ = w.AddChunk(1, fakeCodec, data, res, 0)
 			} else {
-				_ = w.AddChunk(1, data, 0, 0, fakeCodec)
+				_ = w.AddChunk(1, fakeCodec, data, 0, 0)
 			}
 		}
 		if err := w.Close(); err != nil {

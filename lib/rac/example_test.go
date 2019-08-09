@@ -72,7 +72,7 @@ func Example_indexLocationAtEnd() {
 	w := &rac.ChunkWriter{
 		Writer: buf,
 	}
-	if err := w.AddChunk(uint64(len(src)), enc, 0, 0, rac.CodecZlib); err != nil {
+	if err := w.AddChunk(uint64(len(src)), rac.CodecZlib, enc, 0, 0); err != nil {
 		log.Fatalf("AddChunk: %v", err)
 	}
 	if err := w.Close(); err != nil {
@@ -141,7 +141,7 @@ func Example_indexLocationAtStart() {
 		}
 		encodedChunk := b.Bytes()
 
-		if err := w.AddChunk(uint64(len(chunk)), encodedChunk, dictResource, 0, rac.CodecZlib); err != nil {
+		if err := w.AddChunk(uint64(len(chunk)), rac.CodecZlib, encodedChunk, dictResource, 0); err != nil {
 			log.Fatalf("AddChunk: %v", err)
 		}
 

@@ -442,7 +442,7 @@ func (w *Writer) writeDChunks(eof bool) error {
 			return err
 		}
 
-		if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, codec, cBytes, res2, res3); err != nil {
 			w.err = err
 			return err
 		}
@@ -521,7 +521,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 	case uint64(len(cBytes)) == w.cChunkSize:
 		w.uncompressed.advance(dSize)
 		dSize += w.uncompressed.advancePastLeadingZeroes()
-		if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
+		if err := w.chunkWriter.AddChunk(dSize, codec, cBytes, res2, res3); err != nil {
 			w.err = err
 			return err
 		}
@@ -540,7 +540,7 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 	dSize, cBytes = uint64(dLen), cBytes[:eLen]
 	w.uncompressed.advance(dSize)
 	dSize += w.uncompressed.advancePastLeadingZeroes()
-	if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
+	if err := w.chunkWriter.AddChunk(dSize, codec, cBytes, res2, res3); err != nil {
 		w.err = err
 		return err
 	}
