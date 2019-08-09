@@ -56,11 +56,12 @@ const (
 		"\x28\x4A\x4D\x85\x71\x00\x01\x00\x00\xFF\xFF\x21\x6E\x04\x66"
 )
 
-func racCompress(original []byte, dChunkSize uint64, resourcesData [][]byte) ([]byte, error) {
+func racCompress(original []byte, cChunkSize uint64, dChunkSize uint64, resourcesData [][]byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	w := &rac.Writer{
 		Writer:        buf,
 		CodecWriter:   &CodecWriter{},
+		CChunkSize:    cChunkSize,
 		DChunkSize:    dChunkSize,
 		ResourcesData: resourcesData,
 	}
@@ -175,35 +176,50 @@ func TestReaderConcatenation(t *testing.T) {
 }
 
 func TestZeroedBytes(t *testing.T) {
-	original := []byte("abcde\x00\x00\x00\x00j")
-	compressed, err := racCompress(original, 8, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	original := make([]byte, 32)
+	original[0] = 'a'
+	original[1] = 'b'
+	original[2] = 'c'
+	original[20] = 'm'
+	original[31] = 'z'
 
-	r := &rac.Reader{
-		ReadSeeker:     bytes.NewReader(compressed),
-		CompressedSize: int64(len(compressed)),
-		CodecReaders:   []rac.CodecReader{&CodecReader{}},
-	}
-	for i := 0; i <= len(original); i++ {
-		want := original[i:]
-		got := make([]byte, len(want))
-		for j := range got {
-			got[j] = '?'
+	for i := 0; i < 2; i++ {
+		cChunkSize, dChunkSize := uint64(0), uint64(0)
+		if i == 0 {
+			cChunkSize = 10
+		} else {
+			dChunkSize = 8
 		}
 
-		if _, err := r.Seek(int64(i), io.SeekStart); err != nil {
-			t.Errorf("i=%d: Seek: %v", i, err)
-			continue
+		compressed, err := racCompress(original, cChunkSize, dChunkSize, nil)
+		if err != nil {
+			t.Fatalf("i=%d: racCompress: %v", i, err)
 		}
-		if _, err := io.ReadFull(r, got); err != nil {
-			t.Errorf("i=%d: ReadFull: %v", i, err)
-			continue
+
+		r := &rac.Reader{
+			ReadSeeker:     bytes.NewReader(compressed),
+			CompressedSize: int64(len(compressed)),
+			CodecReaders:   []rac.CodecReader{&CodecReader{}},
 		}
-		if !bytes.Equal(got, want) {
-			t.Errorf("i=%d: got\n% 02x\nwant\n% 02x", i, got, want)
-			continue
+		for j := 0; j <= len(original); j++ {
+			want := original[j:]
+			got := make([]byte, len(want))
+			for j := range got {
+				got[j] = '?'
+			}
+
+			if _, err := r.Seek(int64(j), io.SeekStart); err != nil {
+				t.Errorf("i=%d, j=%d: Seek: %v", i, j, err)
+				continue
+			}
+			if _, err := io.ReadFull(r, got); err != nil {
+				t.Errorf("i=%d, j=%d: ReadFull: %v", i, j, err)
+				continue
+			}
+			if !bytes.Equal(got, want) {
+				t.Errorf("i=%d, j=%d: got\n% 02x\nwant\n% 02x", i, j, got, want)
+				continue
+			}
 		}
 	}
 }
@@ -233,7 +249,7 @@ func TestSharedDictionary(t *testing.T) {
 		}
 
 		// Compress.
-		compressed, err := racCompress(original, n, resourcesData)
+		compressed, err := racCompress(original, 0, n, resourcesData)
 		if err != nil {
 			t.Fatalf("i=%d: racCompress: %v", i, err)
 		}

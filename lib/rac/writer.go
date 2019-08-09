@@ -115,6 +115,27 @@ func (b *writeBuffer) advance(n uint64) {
 	b.p = len(b.prev)
 }
 
+// advancePastLeadingZeroes consumes the next n bytes, all of which are '\x00'.
+func (b *writeBuffer) advancePastLeadingZeroes() (n uint64) {
+	// Consume zeroes from b.prev.
+	i := b.p
+	for ; (i < len(b.prev)) && (b.prev[i] == '\x00'); i++ {
+	}
+	if i == b.p {
+		return 0
+	}
+	n = uint64(i - b.p)
+	b.p = i
+
+	// Consume zeroes from b.curr.
+	i = 0
+	for ; (i < len(b.curr)) && (b.curr[i] == '\x00'); i++ {
+	}
+	n += uint64(i)
+	b.curr = b.curr[i:]
+	return n
+}
+
 // compact moves and copies any unprocessed bytes in b.prev and b.curr to be at
 // the start of b.prev.
 func (b *writeBuffer) compact() {
@@ -371,6 +392,10 @@ func (w *Writer) Write(p []byte) (int, error) {
 	if err := w.initialize(); err != nil {
 		return 0, err
 	}
+	if n := uint64(len(p)); (n > MaxSize) || (w.uncompressed.length() > (MaxSize - n)) {
+		w.err = errTooMuchInput
+		return 0, w.err
+	}
 	w.uncompressed.extend(p)
 	n, err := len(p), w.write(false)
 	w.uncompressed.compact()
@@ -494,11 +519,12 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		}
 		fallthrough
 	case uint64(len(cBytes)) == w.cChunkSize:
+		w.uncompressed.advance(dSize)
+		dSize += w.uncompressed.advancePastLeadingZeroes()
 		if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
 			w.err = err
 			return err
 		}
-		w.uncompressed.advance(dSize)
 		return nil
 	}
 
@@ -511,11 +537,13 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 		w.err = errCChunkSizeIsTooSmall
 		return w.err
 	}
-	if err := w.chunkWriter.AddChunk(uint64(dLen), cBytes[:eLen], res2, res3, codec); err != nil {
+	dSize, cBytes = uint64(dLen), cBytes[:eLen]
+	w.uncompressed.advance(dSize)
+	dSize += w.uncompressed.advancePastLeadingZeroes()
+	if err := w.chunkWriter.AddChunk(dSize, cBytes, res2, res3, codec); err != nil {
 		w.err = err
 		return err
 	}
-	w.uncompressed.advance(uint64(dLen))
 	return nil
 }
 
