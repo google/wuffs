@@ -18,7 +18,7 @@ package main
 
 const usageStr = `Usage:
 
-ractool [flags] [input_filename]
+    ractool [flags] [input_filename]
 
 If no input_filename is given, stdin is used. Either way, output is written to
 stdout.
@@ -59,30 +59,36 @@ The "256k" flag value means 256 kibibytes (262144 bytes). Similarly, "1m" and
 
 General Flags:
 
--decode
-    whether to decode the input
--encode
-    whether to encode the input
+    -decode
+        whether to decode the input
+    -encode
+        whether to encode the input
 
 Decode-Related Flags:
 
--drange
-    the "i:j" range to decompress, ":8" means the first 8 bytes
+    -drange
+        the "i:j" range to decompress, ":8" means the first 8 bytes
 
 Encode-Related Flags:
 
--cchunksize
-    the chunk size (in CSpace)
--codec
-    the compression codec (default "zlib")
--cpagesize
-    the page size (in CSpace)
--dchunksize
-    the chunk size (in DSpace)
--indexlocation
-    the index location, "start" or "end" (default "start")
--resources
-    comma-separated list of resource files, such as shared dictionaries
+    -cchunksize
+        the chunk size (in CSpace)
+    -codec
+        the compression codec (default "zlib")
+    -cpagesize
+        the page size (in CSpace)
+    -dchunksize
+        the chunk size (in DSpace)
+    -indexlocation
+        the index location, "start" or "end" (default "start")
+    -resources
+        comma-separated list of resource files, such as shared dictionaries
+
+Installation:
+
+Like any other implemented-in-Go program, to install the ractool program:
+
+    go get github.com/google/wuffs/cmd/ractool
 
 Extended Example:
 
