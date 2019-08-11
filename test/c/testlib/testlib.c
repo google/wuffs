@@ -354,6 +354,19 @@ int test_main(int argc, char** argv, proc* tests, proc* benches) {
 // WUFFS_INCLUDE_GUARD is where wuffs_base__foo_bar are defined.
 #ifdef WUFFS_INCLUDE_GUARD
 
+wuffs_base__io_buffer make_io_buffer_from_string(const char* ptr, size_t len) {
+  return ((wuffs_base__io_buffer){
+      .data = ((wuffs_base__slice_u8){
+          .ptr = ((uint8_t*)(ptr)),
+          .len = len,
+      }),
+      .meta = ((wuffs_base__io_buffer_meta){
+          .wi = len,
+          .closed = true,
+      }),
+  });
+}
+
 wuffs_base__rect_ie_u32 make_rect_ie_u32(uint32_t x0,
                                          uint32_t y0,
                                          uint32_t x1,

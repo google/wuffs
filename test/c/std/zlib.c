@@ -81,6 +81,17 @@ golden_test zlib_pi_gt = {
     .src_filename = "test/data/pi.txt.zlib",  //
 };
 
+// This dictionary-using zlib-encoded data comes from
+// https://play.golang.org/p/Jh9Wyp6PLID, also mentioned in the RAC spec.
+const char* zlib_sheep_src_ptr =
+    "\x78\xf9\x0b\xe0\x02\x6e\x0a\x29\xcf\x87\x31\x01\x01\x00\x00\xff\xff\x18"
+    "\x0c\x03\xa8";
+const size_t zlib_sheep_src_len = 21;
+const char* zlib_sheep_dict_ptr = " sheep.\n";
+const size_t zlib_sheep_dict_len = 8;
+const char* zlib_sheep_want_ptr = "Two sheep.\n";
+const size_t zlib_sheep_want_len = 11;
+
 // ---------------- Zlib Tests
 
 const char* wuffs_zlib_decode(wuffs_base__io_buffer* dst,
@@ -232,6 +243,26 @@ const char* test_mimic_zlib_decode_pi() {
                             UINT64_MAX);
 }
 
+const char* test_mimic_zlib_decode_sheep() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src =
+      make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
+  wuffs_base__slice_u8 dict = ((wuffs_base__slice_u8){
+      .ptr = ((uint8_t*)(zlib_sheep_dict_ptr)),
+      .len = zlib_sheep_dict_len,
+  });
+  const char* status = mimic_zlib_decode_with_dictionary(&got, &src, dict);
+  if (status) {
+    return status;
+  }
+  wuffs_base__io_buffer want =
+      make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);
+  return check_io_buffers_equal("", &got, &want);
+}
+
 #endif  // WUFFS_MIMIC
 
 // ---------------- Zlib Benches
@@ -284,6 +315,7 @@ proc tests[] = {
 
     test_mimic_zlib_decode_midsummer,  //
     test_mimic_zlib_decode_pi,         //
+    test_mimic_zlib_decode_sheep,      //
 
 #endif  // WUFFS_MIMIC
 

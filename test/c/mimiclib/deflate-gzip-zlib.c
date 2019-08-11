@@ -83,6 +83,12 @@ const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
   return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, false);
 }
 
+const char* mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* got,
+                                              wuffs_base__io_buffer* src,
+                                              wuffs_base__slice_u8 dictionary) {
+  return "miniz does not implement zlib dictionaries";
+}
+
 #else  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
 #include "zlib.h"
 
@@ -138,6 +144,7 @@ typedef enum {
 
 const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
                                            wuffs_base__io_buffer* src,
+                                           wuffs_base__slice_u8* dictionary,
                                            uint64_t wlimit,
                                            uint64_t rlimit,
                                            zlib_flavor flavor) {
@@ -207,6 +214,19 @@ const char* mimic_deflate_gzip_zlib_decode(wuffs_base__io_buffer* dst,
 
     if (i_err == Z_STREAM_END) {
       break;
+    } else if (i_err == Z_NEED_DICT) {
+      if (dictionary) {
+        int isd_err =
+            inflateSetDictionary(&z, dictionary->ptr, dictionary->len);
+        if (isd_err != Z_OK) {
+          ret = "inflateSetDictionary failed";
+          goto cleanup1;
+        }
+        dictionary = NULL;
+        continue;
+      }
+      ret = "inflate failed (need dict)";
+      goto cleanup1;
     } else if (i_err == Z_DATA_ERROR) {
       ret = "inflate failed (data error)";
       goto cleanup1;
@@ -231,7 +251,7 @@ const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
                                  uint32_t wuffs_initialize_flags,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
-  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+  return mimic_deflate_gzip_zlib_decode(dst, src, NULL, wlimit, rlimit,
                                         zlib_flavor_raw);
 }
 
@@ -240,7 +260,7 @@ const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
                               uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+  return mimic_deflate_gzip_zlib_decode(dst, src, NULL, wlimit, rlimit,
                                         zlib_flavor_gzip);
 }
 
@@ -249,8 +269,15 @@ const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
                               uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  return mimic_deflate_gzip_zlib_decode(dst, src, wlimit, rlimit,
+  return mimic_deflate_gzip_zlib_decode(dst, src, NULL, wlimit, rlimit,
                                         zlib_flavor_zlib);
+}
+
+const char* mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* dst,
+                                              wuffs_base__io_buffer* src,
+                                              wuffs_base__slice_u8 dictionary) {
+  return mimic_deflate_gzip_zlib_decode(dst, src, &dictionary, UINT64_MAX,
+                                        UINT64_MAX, zlib_flavor_zlib);
 }
 
 #endif  // WUFFS_MIMICLIB_USE_MINIZ_INSTEAD_OF_ZLIB
