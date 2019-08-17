@@ -349,12 +349,12 @@ func TestMultiLevelIndex(t *testing.T) {
 		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
 	}
 
-	p := &Parser{
+	r := &ChunkReader{
 		ReadSeeker: bytes.NewReader(encoded),
 	}
 	gotPrimaries := []byte(nil)
 	for {
-		c, err := p.NextChunk()
+		c, err := r.NextChunk()
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -401,11 +401,11 @@ loop:
 		}
 
 		encoded := buf.Bytes()
-		p := &Parser{
+		r := &ChunkReader{
 			ReadSeeker: bytes.NewReader(encoded),
 		}
 		for n := 0; ; n++ {
-			if _, err := p.NextChunk(); err == io.EOF {
+			if _, err := r.NextChunk(); err == io.EOF {
 				if n != 1000 {
 					t.Errorf("i=%d: number of chunks: got %d, want %d", i, n, 1000)
 					continue loop
@@ -428,7 +428,7 @@ func printChunks(chunks []Chunk) string {
 	return strings.Join(ss, "\n")
 }
 
-func TestParser(t *testing.T) {
+func TestChunkReader(t *testing.T) {
 	testCases := []struct {
 		name       string
 		compressed []byte
@@ -468,11 +468,11 @@ loop:
 				`DRangeSize:0x44, C0:"Cc...", C1:"Rr...", C2:"Ss..."`
 		}
 
-		p := &Parser{
+		r := &ChunkReader{
 			ReadSeeker: bytes.NewReader(tc.compressed),
 		}
 
-		if gotDecompressedSize, err := p.DecompressedSize(); err != nil {
+		if gotDecompressedSize, err := r.DecompressedSize(); err != nil {
 			t.Errorf("%q test case: %v", tc.name, err)
 			continue loop
 		} else if gotDecompressedSize != wantDecompressedSize {
@@ -485,7 +485,7 @@ loop:
 		description := &bytes.Buffer{}
 		prevDRange1 := int64(0)
 		for {
-			c, err := p.NextChunk()
+			c, err := r.NextChunk()
 			if err == io.EOF {
 				break
 			} else if err != nil {
@@ -523,18 +523,18 @@ loop:
 		}
 
 		// NextChunk should return io.EOF.
-		if _, err := p.NextChunk(); err != io.EOF {
+		if _, err := r.NextChunk(); err != io.EOF {
 			t.Errorf("%q test case: NextChunk: got %v, want io.EOF", tc.name, err)
 			continue loop
 		}
 
-		if err := p.SeekToChunkContaining(0x30); err != nil {
+		if err := r.SeekToChunkContaining(0x30); err != nil {
 			t.Errorf("%q test case: SeekToChunkContaining: %v", tc.name, err)
 			continue loop
 		}
 
 		// NextChunk should return the "Bb..." chunk.
-		if c, err := p.NextChunk(); err != nil {
+		if c, err := r.NextChunk(); err != nil {
 			t.Errorf("%q test case: NextChunk: %v", tc.name, err)
 			continue loop
 		} else if got, want := snippet(c.CPrimary), "Bb..."; got != want {

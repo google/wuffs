@@ -159,12 +159,12 @@ func Example_indexLocationAtStart() {
 	// original "One sheep.\nTwo sheep\.Three sheep.\n" source.
 
 	fmt.Printf("Decoded:\n")
-	p := &rac.Parser{
+	r := &rac.ChunkReader{
 		ReadSeeker: bytes.NewReader(encoded),
 	}
 	zr := io.ReadCloser(nil)
 	for {
-		chunk, err := p.NextChunk()
+		chunk, err := r.NextChunk()
 		if err == io.EOF {
 			break
 		} else if err != nil {

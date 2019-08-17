@@ -90,8 +90,8 @@ type Reader struct {
 	// occurs, all public methods will return that error.
 	err error
 
-	// parser is the low-level RAC parser.
-	parser Parser
+	// chunkReader is the low-level RAC chunk reader.
+	chunkReader ChunkReader
 
 	// These two fields combine for a 3-state state machine:
 	//
@@ -152,7 +152,7 @@ func (r *Reader) initialize() error {
 	if r.err != nil {
 		return r.err
 	}
-	if r.parser.ReadSeeker != nil {
+	if r.chunkReader.ReadSeeker != nil {
 		// We're already initialized.
 		return nil
 	}
@@ -164,14 +164,14 @@ func (r *Reader) initialize() error {
 		r.err = err
 		return r.err
 	} else {
-		r.parser.compressedSize = size
+		r.chunkReader.compressedSize = size
 	}
 	if _, err := r.ReadSeeker.Seek(0, io.SeekStart); err != nil {
 		r.err = err
 		return r.err
 	}
 
-	r.parser.ReadSeeker = r.ReadSeeker
+	r.chunkReader.ReadSeeker = r.ReadSeeker
 	r.currChunk.R = r.ReadSeeker
 	return nil
 }
@@ -307,7 +307,7 @@ func (r *Reader) readImplicitZeroes(p []byte) (int, error) {
 // It may return io.EOF, in which case the Reader stays in "State A", and the
 // r.err "sticky error" field stays nil.
 func (r *Reader) nextChunk() error {
-	chunk, err := r.parser.NextChunk()
+	chunk, err := r.chunkReader.NextChunk()
 	if err != nil {
 		if err == io.EOF {
 			return io.EOF
@@ -349,7 +349,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.parser.compressedSize, chunk)
+	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.chunkReader.compressedSize, chunk)
 	if err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
@@ -393,7 +393,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		pos += offset
 	case io.SeekEnd:
-		end, err := r.parser.DecompressedSize()
+		end, err := r.chunkReader.DecompressedSize()
 		if err != nil {
 			r.err = err
 			return 0, r.err
@@ -408,7 +408,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 			r.err = errSeekToNegativePosition
 			return 0, r.err
 		}
-		if err := r.parser.SeekToChunkContaining(pos); err != nil {
+		if err := r.chunkReader.SeekToChunkContaining(pos); err != nil {
 			r.err = err
 			return 0, r.err
 		}
