@@ -1,6 +1,6 @@
 # Naïve Image Formats: NIE, NII, NIA
 
-Status: Draft (as of December 2018). There is no compatibility guarantee yet.
+Status: Draft (as of August 2019). There is no compatibility guarantee yet.
 
 
 ## NIE: Still Images
@@ -60,63 +60,42 @@ may be static files (possibly with systematic filenames such as
 `frame000000.png`, `frame000001.png`, etc.) or dynamically generated. That is
 for each application to decide, and out of scope of this specification.
 
+A NII file consists of a 24 byte header, a variable sized payload and an 8 byte
+footer.
+
 
 ### NII Header
 
-The 32 byte NII header:
+The 24 byte NII header:
 
 - 4 bytes of 'magic': \[0x6E, 0xC3, 0xAF, 0x49\]. The final byte differs from
   NIE: an ASCII 'I' instead of an ASCII 'E'.
 - 4 bytes of version-and-padding, all 0xFF.
 - 4 bytes little-endian `uint32` width.
 - 4 bytes little-endian `uint32` height.
-- 4 bytes little-endian `uint32` LCValue. See below.
-- 4 bytes little-endian `uint32` NFValue. See below.
-- 8 bytes little-endian `int64` Overall-TValue. See below.
+- 1 byte, either 0x00 or 0x01. 0x01 means that the animation has no frames.
+- 7 bytes all 0x00.
 
-A zero LCValue means that the animation loops forever. Non-zero means a loop
-count: the animation is played LCValue times. This is the
-[APNG](https://wiki.mozilla.org/APNG_Specification) meaning, not the
-[GIF](https://www.w3.org/Graphics/GIF/spec-gif89a.txt) meaning (the number of
-times to repeat the loop _after_ the first play). The two meanings differ by 1.
-
-The Overall-TValue must not be positive. If it is zero, the NFValue must also
-be zero. If it is negative, it must equal the final frame's TValue (the final 8
-bytes of the NII file, see the NII Payload section below), or if there are no
-frames, it must equal -1.
-
-A negative Overall-TValue means the overall animation length, both in terms of
-time and in terms of number of frames, is known at the time the 32 byte NII
-header was written. The overall time is the OCDD (see the NII Payload section
-below). The overall number of frames is the NFValue. Animations lasting longer
-than `((1<<32)-1)` frames, more than 4 billion frames, are not representable in
-the NII format.
-
-A zero Overall-TValue means that the animation has at least one frame, but the
-overall animation length is not known until the end of the NII file is reached.
-For example, a one-pass GIF to NII converter might not know the total duration
-or the total number of frames until the entire GIF file is processed, at which
-point the NII header may already have been written.
-
-To repeat, if an animation has no frames, its NFValue and Overall-TValue must
-be 0 and -1 respectively. If an animation has at least one frame, its NFValue
-and Overall-TValue pair must be either (zero, zero) or (positive, negative).
+The final 8 bytes represent that the start of the animation has a CDD (see
+below) of zero. For example, performing a binary search for the frame to show
+at a given point in time does not have to make an exception for the first or
+last frame, as every frame's start and end times are explicitly written in the
+file format.
 
 
 ### NII Payload
 
-The payload is a sequence of 0 or more frames, exactly 8 bytes per frame:
+The payload is a sequence of 0 or more frames, exactly 8 bytes (a little-endian
+`uint64`) per frame:
 
-- 8 bytes little-endian `int64` timing value (TValue).
+- The least significant bit is 1 if and only if this frame is the final frame.
+- The second least significant bit must be zero.
+- The high 62 bits are the cumulative display duration (CDD). This is the
+  amount of time, relative to the start of the animation, at which display
+  should proceed to the next frame.
 
-Every TValue must be non-negative, except for the final TValue, which must be
-negative. A frame's CDD (cumulative display duration) equals its TValue for all
-but the final frame, and equals the bitwise-complement (or equivalently, "xor
-with -1") of the TValue for that final frame. CDD values must therefore be
-non-negative int64 values.
-
-The OCDD (overall cumulative display duration) is the final frame's CDD. If the
-animation contains no frames, then the OCDD is 0 and the Overall-TValue is -1.
+Every frame's CDD must be greater than or equal to the previous frame's CDD (or
+for the first frame, greater than or equal to zero, which will always be true).
 
 For example, if an animation has four frames, to be displayed for 1 second, 2
 seconds, 0 seconds and finally 4.5 seconds, then the CDD's are 1s, 3s, 3s and
@@ -129,16 +108,34 @@ the CDDs (in decimal and then hexadecimal) are:
 - 705\_600\_000 × 3.0 = 2\_116\_800\_000 = 0x0000\_0000\_7E2B\_CE00.
 - 705\_600\_000 × 7.5 = 5\_292\_000\_000 = 0x0000\_0001\_3B6D\_8300.
 
-The TValue bytes (little-endian `int64` encoded) are therefore:
+Shifting each of these left by two bits, and setting the least significant bit
+of the final value to 1, gives the overall `uint64` values, written
+little-endian:
 
-- 0x00 0x9A 0x0E 0x2A 0x00 0x00 0x00 0x00
-- 0x00 0xCE 0x2B 0x7E 0x00 0x00 0x00 0x00
-- 0x00 0xCE 0x2B 0x7E 0x00 0x00 0x00 0x00
-- 0xFF 0x7C 0x92 0xC4 0xFE 0xFF 0xFF 0xFF
+- 0x0000\_0000\_A83A\_6800.
+- 0x0000\_0001\_F8AF\_3800.
+- 0x0000\_0001\_F8AF\_3800.
+- 0x0000\_0004\_EDB6\_0C01.
 
-It is invalid for one frame's CDD value to be less than the previous frame's
-CDD value. Animations lasting longer than `((1<<63)-1)` flicks, more than 400
-years, are not representable in the NII format.
+Animations lasting `(1<<62)` or more flicks, more than 200 years, are not
+representable in the NII format.
+
+
+### NII Footer
+
+The 8 byte NII footer:
+
+- 4 bytes of 'magic': \[0x6E, 0xC3, 0xAF, 0x5A\], the UTF-8 encoding of "nïZ".
+- 4 bytes little-endian `uint32` LoopCount.
+
+The second least significant bit of the first byte (`0x6E`) is one, so that the
+8 byte footer is never a valid payload value.
+
+A zero LoopCount means that the animation loops forever. Non-zero means that
+the animation is played LoopCount times and then stops. This is the
+[APNG](https://wiki.mozilla.org/APNG_Specification) meaning, not the
+[GIF](https://www.w3.org/Graphics/GIF/spec-gif89a.txt) meaning (the number of
+times to repeat the loop _after_ the first play). The two meanings differ by 1.
 
 
 ### Example NII File
@@ -150,20 +147,22 @@ for 1 second. The next frame is shown for (3 - 1) seconds (i.e., 2 seconds).
 The actual pixel data per frame is stored elsewhere.
 
     00000000: 6ec3 af49 ffff ffff 0300 0000 0200 0000  n..I............
-    00000010: 0a00 0000 0200 0000 ff31 d481 ffff ffff  .........1......
-    00000020: 009a 0e2a 0000 0000 ff31 d481 ffff ffff  ...*.....1......
+    00000010: 0000 0000 0000 0000 0068 3aa8 0000 0000  .........h:.....
+    00000020: 0138 aff8 0100 0000 6ec3 af5a 0a00 0000  .8......n..Z....
 
 
 ## NIA: Animated Images, In-band Frames
 
-NIA is like an NII file where the per-frame still images are NIE files
-interleaved between the NII TValues.
+NIA is like a NII file where the per-frame still images are NIE files
+interleaved between the NII payload values.
 
-The NIA header is the same as the 32 byte NII header, except that the 4 byte
+The NIA header is the same as the 24 byte NII header, except that the 4 byte
 'magic' ends in an ASCII 'A' instead of an ASCII 'I', and the 5th to 8th bytes
 are version-and-configuration (the same as for NIE), instead of NII's
 version-and-padding. The range of valid version-and-configuration bytes is the
 same for NIA as it is for NIE.
+
+The NIA footer is the same as the 8 byte NII footer.
 
 The payload is a sequence of 0 or more frames. Each frame is:
 
@@ -171,11 +170,12 @@ The payload is a sequence of 0 or more frames. Each frame is:
   must have the same 12 bytes of version-and-configuration, width and height.
 - Either 0 or 4 bytes of padding. If present, it must be all zeroes. The
   padding ensures that the size of the padded NIE image a multiple of 8 bytes,
-  so that every TValue field is 8 byte aligned. The padding size is 4 if and
-  only if there are 4 (not 8) bytes per pixel and both the width and height are
-  odd. A C programming language expression for its presence is
-  `((bytes_per_pixel == 4) && (width & height & 1))`.
-- 8 bytes little-endian int64 TValue, the same meaning and constraints as NII.
+  so that every CDD field is 8 byte aligned. The padding size is 4 if and only
+  if there are 4 (not 8) bytes per pixel and both the width and height are odd.
+  A C programming language expression for its presence is `((bytes_per_pixel ==
+  4) && (width & height & 1))`.
+- 8 bytes little-endian `uint64` value, the same meaning and constraints as a
+  NII payload value.
 
 
 ### Example NIA File
@@ -188,13 +188,13 @@ second. The next frame is a crude approximation to the Italian flag (green,
 white and red) and is shown for (3 - 1) seconds (i.e., 2 seconds).
 
     00000000: 6ec3 af41 ff62 6e34 0300 0000 0200 0000  n..A.bn4........
-    00000010: 0a00 0000 0200 0000 ff31 d481 ffff ffff  .........1......
-    00000020: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
-    00000030: ff00 00ff ffff ffff 0000 ffff ff00 00ff  ................
-    00000040: ffff ffff 0000 ffff 009a 0e2a 0000 0000  ...........*....
-    00000050: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
-    00000060: 00ff 00ff ffff ffff 0000 ffff 00ff 00ff  ................
-    00000070: ffff ffff 0000 ffff ff31 d481 ffff ffff  .........1......
+    00000010: 0000 0000 0000 0000 6ec3 af45 ff62 6e34  ........n..E.bn4
+    00000020: 0300 0000 0200 0000 ff00 00ff ffff ffff  ................
+    00000030: 0000 ffff ff00 00ff ffff ffff 0000 ffff  ................
+    00000040: 0068 3aa8 0000 0000 6ec3 af45 ff62 6e34  .h:.....n..E.bn4
+    00000050: 0300 0000 0200 0000 00ff 00ff ffff ffff  ................
+    00000060: 0000 ffff 00ff 00ff ffff ffff 0000 ffff  ................
+    00000070: 0138 aff8 0100 0000 6ec3 af5a 0a00 0000  .8......n..Z....
 
 
 # Commentary
@@ -248,7 +248,7 @@ offset and length of the _i_'th frame's NIE data within that NIA is a simple
 computation (but remember to check for overflow):
 
 - length = roundup8(_B_ × _W_ × _H_) + 16
-- offset = ((length + 8) × _i_) + 32
+- offset = ((length + 8) × _i_) + 24
 
 The roundup8 function rounds its argument up to the nearest multiple of 8.
 
@@ -270,14 +270,14 @@ access by frame index.
 Suppose we are given a time _t_ ≥ 0 and want to find the frame to show at that
 time. First, there may be no such frame, if the animation contains no frames.
 
-Otherwise, let _o_ be the OCDD, so that _o_ ≥ 0. If _o_ is zero, the frame to
-show is the final frame of the animation, and no further computation is
-necessary.
+Otherwise, let _o_ be the final frame's CDD, so that _o_ ≥ 0. If _o_ is zero,
+the frame to show is the final frame of the animation, and no further
+computation is necessary.
 
 Otherwise, calculate the number of loops that would complete by time t: _n_ =
-_t_ / _o_, rounding down to the nearest integer. If the LCValue is non-zero (as
-zero means loop forever) and _n_ ≥ LCValue then the frame to show is the final
-frame.
+_t_ / _o_, rounding down to the nearest integer. If the LoopCount is non-zero
+(as zero means loop forever) and _n_ ≥ LoopCount then the frame to show is the
+final frame.
 
 Otherwise, calculate _t′_ = _t_ - (_n_ × _o_), the time 'modulo' _o_. Binary
 search to find the smallest _i_ ≥ 0 such that both CDD(_i_) > _t′_ and the
@@ -355,8 +355,7 @@ process, although JPEG and WebP Lossy are lossy formats to begin with.
 ## Bytes versus Octets
 
 It was not always the case, historically, but in this specification, `byte` is
-synonymous with `octet` and `uint8`. Similarly, signed integers are assumed to
-use two's complement representation.
+synonymous with `octet` and `uint8`.
 
 
 # Filename Extensions and MIME Types
@@ -435,4 +434,4 @@ security vulnerabilities.
 
 ---
 
-Updated on February 2019.
+Updated on August 2019.
