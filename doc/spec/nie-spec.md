@@ -42,9 +42,9 @@ That's it.
 This still image is 3 pixels wide and 2 pixels high. It is a crude
 approximation to the French flag, being three columns: blue, white and red.
 
-    00000000: 6ec3 af45 ff62 6e34 0300 0000 0200 0000  n..E.bn4........
-    00000010: ff00 00ff ffff ffff 0000 ffff ff00 00ff  ................
-    00000020: ffff ffff 0000 ffff                      ........
+    00000000  6e c3 af 45 ff 62 6e 34  03 00 00 00 02 00 00 00  |n..E.bn4........|
+    00000010  ff 00 00 ff ff ff ff ff  00 00 ff ff ff 00 00 ff  |................|
+    00000020  ff ff ff ff 00 00 ff ff                           |........|
 
 
 ## NII: Animated Images, Timing Index Only, Out-of-Band Frames
@@ -146,9 +146,9 @@ is 3 seconds, so the 10 loops will take 30 seconds. The first frame is shown
 for 1 second. The next frame is shown for (3 - 1) seconds (i.e., 2 seconds).
 The actual pixel data per frame is stored elsewhere.
 
-    00000000: 6ec3 af49 ffff ffff 0300 0000 0200 0000  n..I............
-    00000010: 0000 0000 0000 0000 0068 3aa8 0000 0000  .........h:.....
-    00000020: 0138 aff8 0100 0000 6ec3 af5a 0a00 0000  .8......n..Z....
+    00000000  6e c3 af 49 ff ff ff ff  03 00 00 00 02 00 00 00  |n..I............|
+    00000010  00 00 00 00 00 00 00 00  00 68 3a a8 00 00 00 00  |.........h:.....|
+    00000020  01 38 af f8 01 00 00 00  6e c3 af 5a 0a 00 00 00  |.8......n..Z....|
 
 
 ## NIA: Animated Images, In-band Frames
@@ -187,14 +187,14 @@ approximation to the French flag (blue, white and red) and is shown for 1
 second. The next frame is a crude approximation to the Italian flag (green,
 white and red) and is shown for (3 - 1) seconds (i.e., 2 seconds).
 
-    00000000: 6ec3 af41 ff62 6e34 0300 0000 0200 0000  n..A.bn4........
-    00000010: 0000 0000 0000 0000 6ec3 af45 ff62 6e34  ........n..E.bn4
-    00000020: 0300 0000 0200 0000 ff00 00ff ffff ffff  ................
-    00000030: 0000 ffff ff00 00ff ffff ffff 0000 ffff  ................
-    00000040: 0068 3aa8 0000 0000 6ec3 af45 ff62 6e34  .h:.....n..E.bn4
-    00000050: 0300 0000 0200 0000 00ff 00ff ffff ffff  ................
-    00000060: 0000 ffff 00ff 00ff ffff ffff 0000 ffff  ................
-    00000070: 0138 aff8 0100 0000 6ec3 af5a 0a00 0000  .8......n..Z....
+    00000000  6e c3 af 41 ff 62 6e 34  03 00 00 00 02 00 00 00  |n..A.bn4........|
+    00000010  00 00 00 00 00 00 00 00  6e c3 af 45 ff 62 6e 34  |........n..E.bn4|
+    00000020  03 00 00 00 02 00 00 00  ff 00 00 ff ff ff ff ff  |................|
+    00000030  00 00 ff ff ff 00 00 ff  ff ff ff ff 00 00 ff ff  |................|
+    00000040  00 68 3a a8 00 00 00 00  6e c3 af 45 ff 62 6e 34  |.h:.....n..E.bn4|
+    00000050  03 00 00 00 02 00 00 00  00 ff 00 ff ff ff ff ff  |................|
+    00000060  00 00 ff ff 00 ff 00 ff  ff ff ff ff 00 00 ff ff  |................|
+    00000070  01 38 af f8 01 00 00 00  6e c3 af 5a 0a 00 00 00  |.8......n..Z....|
 
 
 # Commentary
