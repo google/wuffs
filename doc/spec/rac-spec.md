@@ -34,8 +34,8 @@ Non-goals for version 1 include:
 
 There is the capability (see reserved `TTag`s, below) but no promise to address
 these in a future RAC version. There might not be a need to, as other designs
-such as EROFS ([Extendable Read-Only File
-System](https://lkml.org/lkml/2018/5/31/306)) already exist.
+such as [SquashFS](http://squashfs.sourceforge.net/) and EROFS ([Extendable
+Read-Only File System](https://lkml.org/lkml/2018/5/31/306)) already exist.
 
 Non-goals in general include:
 
