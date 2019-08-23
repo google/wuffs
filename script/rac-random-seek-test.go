@@ -47,9 +47,10 @@ func main1() error {
 	}
 	buf := &bytes.Buffer{}
 	const dChunkSize = 256
-	w := &raczlib.Writer{
-		Writer:     buf,
-		DChunkSize: dChunkSize,
+	w := &rac.Writer{
+		Writer:      buf,
+		CodecWriter: &raczlib.CodecWriter{},
+		DChunkSize:  dChunkSize,
 	}
 	if _, err := w.Write(input); err != nil {
 		return err
@@ -58,9 +59,9 @@ func main1() error {
 		return err
 	}
 	compressed := buf.Bytes()
-	r := &raczlib.Reader{
-		ReadSeeker:     bytes.NewReader(compressed),
-		CompressedSize: int64(len(compressed)),
+	r := &rac.Reader{
+		ReadSeeker:   bytes.NewReader(compressed),
+		CodecReaders: []rac.CodecReader{&raczlib.CodecReader{}},
 	}
 	numChunks, err := countRACChunks(compressed)
 	if err != nil {
@@ -108,12 +109,11 @@ func main1() error {
 }
 
 func countRACChunks(compressed []byte) (int, error) {
-	p := &rac.Parser{
-		ReadSeeker:     bytes.NewReader(compressed),
-		CompressedSize: int64(len(compressed)),
+	r := &rac.ChunkReader{
+		ReadSeeker: bytes.NewReader(compressed),
 	}
 	for n := 0; ; n++ {
-		if _, err := p.NextChunk(); err == io.EOF {
+		if _, err := r.NextChunk(); err == io.EOF {
 			return n, nil
 		} else if err != nil {
 			return 0, err
