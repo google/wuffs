@@ -42,24 +42,6 @@ func u32BE(b []byte) uint32 {
 	return (uint32(b[0]) << 24) | (uint32(b[1]) << 16) | (uint32(b[2]) << 8) | (uint32(b[3]))
 }
 
-// readAt calls ReadAt if it is available, otherwise it falls back to calling
-// Seek and then ReadFull. Calling ReadAt is presumably slightly more
-// efficient, e.g. one syscall instead of two.
-func readAt(r io.ReadSeeker, p []byte, offset int64) error {
-	if a, ok := r.(io.ReaderAt); ok {
-		n, err := a.ReadAt(p, offset)
-		if (n == len(p)) && (err == io.EOF) {
-			err = nil
-		}
-		return err
-	}
-	if _, err := r.Seek(offset, io.SeekStart); err != nil {
-		return err
-	}
-	_, err := io.ReadFull(r, p)
-	return err
-}
-
 // suffix32K returns the last 32 KiB of b, or if b is shorter than that, it
 // returns just b.
 //
@@ -111,9 +93,7 @@ func (r *CodecReader) MakeDecompressor(
 }
 
 // MakeReaderContext implements rac.CodecReader.
-func (r *CodecReader) MakeReaderContext(
-	rs io.ReadSeeker, compressedSize int64, chunk rac.Chunk) (rac.ReaderContext, error) {
-
+func (r *CodecReader) MakeReaderContext(rs io.ReadSeeker, chunk rac.Chunk) (rac.ReaderContext, error) {
 	// For a description of the RAC+Zlib secondary-data format, see
 	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
 
@@ -131,12 +111,15 @@ func (r *CodecReader) MakeReaderContext(
 	}
 
 	// Check the cRange size and the tTag.
-	if (cRange.Size() < 6) || (cRange[1] > compressedSize) || (chunk.TTag != 0xFF) {
+	if (cRange.Size() < 6) || (chunk.TTag != 0xFF) {
 		return rac.ReaderContext{}, errInvalidDictionary
 	}
 
 	// Read the dictionary size.
-	if err := readAt(rs, r.buf[:2], cRange[0]); err != nil {
+	if _, err := rs.Seek(cRange[0], io.SeekStart); err != nil {
+		return rac.ReaderContext{}, errInvalidDictionary
+	}
+	if _, err := io.ReadFull(rs, r.buf[:2]); err != nil {
 		return rac.ReaderContext{}, errInvalidDictionary
 	}
 	dictSize := int64(r.buf[0]) | (int64(r.buf[1]) << 8)
@@ -158,7 +141,7 @@ func (r *CodecReader) MakeReaderContext(
 	}
 
 	// Read the dictionary and checksum.
-	if err := readAt(rs, buffer, cRange[0]+2); err != nil {
+	if _, err := io.ReadFull(rs, buffer); err != nil {
 		return rac.ReaderContext{}, errInvalidDictionary
 	}
 

@@ -17,6 +17,8 @@ package rac
 import (
 	"hash/crc32"
 	"io"
+
+	"github.com/google/wuffs/lib/readerat"
 )
 
 func u48LE(b []byte) int64 {
@@ -24,24 +26,6 @@ func u48LE(b []byte) int64 {
 	u := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
 		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
 	return int64(u & 0xFFFFFFFFFFFF)
-}
-
-// readAt calls ReadAt if it is available, otherwise it falls back to calling
-// Seek and then ReadFull. Calling ReadAt is presumably slightly more
-// efficient, e.g. one syscall instead of two.
-func readAt(r io.ReadSeeker, p []byte, offset int64) error {
-	if a, ok := r.(io.ReaderAt); ok {
-		n, err := a.ReadAt(p, offset)
-		if (n == len(p)) && (err == io.EOF) {
-			err = nil
-		}
-		return err
-	}
-	if _, err := r.Seek(offset, io.SeekStart); err != nil {
-		return err
-	}
-	_, err := io.ReadFull(r, p)
-	return err
 }
 
 // bitwiseSubset returns whether every 1-bit in inner is also set in outer.
@@ -237,14 +221,18 @@ func (b *rNode) valid() bool {
 type ChunkReader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
-	// It may also implement io.ReaderAt, in which case its ReadAt method will
-	// be preferred over combining Read and Seek, as the former is presumably
-	// more efficient. This is optional: io.ReaderAt is a stronger contract
-	// than io.ReadSeeker, as multiple concurrent ReadAt calls must not
-	// interfere with each other.
+	// It may optionally implement io.ReaderAt, in which case its ReadAt method
+	// will be preferred and its Read and Seek methods will never be called,
+	// other than Seek'ing to the end of the data to determine the compressed
+	// size. The ReadAt method is safe to use concurrently, so that multiple
+	// rac.Reader's can concurrently use the same source provided that the
+	// source (this field, nominally an io.ReadSeeker) implements io.ReaderAt.
 	//
-	// For example, this type itself only implements io.ReadSeeker, not
-	// io.ReaderAt, as it is not safe for concurrent use.
+	// In particular, if the source is a bytes.Reader or an os.File, multiple
+	// rac.ChunkReader's can work in parallel, which can speed up decoding.
+	//
+	// This type itself only implements io.ReadSeeker, not io.ReaderAt, as it
+	// is not safe for concurrent use.
 	//
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
@@ -258,6 +246,11 @@ type ChunkReader struct {
 	// needToResolveSeekPosition is whether NextChunk will need to resolve
 	// seekPosition.
 	needToResolveSeekPosition bool
+
+	// readSeeker is either the same as the ReadSeeker field value, or it is
+	// that field value wrapped by a readerat.ReadSeeker to be safe to use
+	// concurrently.
+	readSeeker io.ReadSeeker
 
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
@@ -311,21 +304,24 @@ func (r *ChunkReader) initialize() error {
 		return err
 	}
 
-	if r.compressedSize == 0 {
-		if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
-			r.err = err
-			return r.err
-		} else {
-			r.compressedSize = size
-		}
-		if _, err := r.ReadSeeker.Seek(0, io.SeekStart); err != nil {
-			r.err = err
-			return r.err
-		}
+	if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
+		r.err = err
+		return r.err
+	} else {
+		r.compressedSize = size
 	}
 	if r.compressedSize < 32 {
 		r.err = errInvalidCompressedSize
 		return r.err
+	}
+
+	if ra, ok := r.ReadSeeker.(io.ReaderAt); ok {
+		r.readSeeker = &readerat.ReadSeeker{
+			ReaderAt: ra,
+			Size:     r.compressedSize,
+		}
+	} else {
+		r.readSeeker = r.ReadSeeker
 	}
 
 	if err := r.findRootNode(); err != nil {
@@ -340,9 +336,13 @@ func (r *ChunkReader) initialize() error {
 
 func (r *ChunkReader) findRootNode() error {
 	// Look at the start of the compressed file.
-	if err := readAt(r.ReadSeeker, r.currNode[:4], 0); err != nil {
+	if _, err := r.readSeeker.Seek(0, io.SeekStart); err != nil {
 		r.err = err
-		return r.err
+		return err
+	}
+	if _, err := io.ReadFull(r.readSeeker, r.currNode[:4]); err != nil {
+		r.err = err
+		return err
 	}
 	if (r.currNode[0] != magic[0]) ||
 		(r.currNode[1] != magic[1]) ||
@@ -357,9 +357,13 @@ func (r *ChunkReader) findRootNode() error {
 	}
 
 	// Look at the end of the compressed file.
-	if err := readAt(r.ReadSeeker, r.currNode[:1], r.compressedSize-1); err != nil {
+	if _, err := r.readSeeker.Seek(r.compressedSize-1, io.SeekStart); err != nil {
 		r.err = err
-		return r.err
+		return err
+	}
+	if _, err := io.ReadFull(r.readSeeker, r.currNode[:1]); err != nil {
+		r.err = err
+		return err
 	}
 	if found, err := r.tryRootNode(r.currNode[0], true); err != nil {
 		return err
@@ -407,9 +411,13 @@ func (r *ChunkReader) load(cOffset int64, arity uint8) error {
 		return r.err
 	}
 	size := nodeSize(arity)
-	if err := readAt(r.ReadSeeker, r.currNode[:size], cOffset); err != nil {
+	if _, err := r.readSeeker.Seek(cOffset, io.SeekStart); err != nil {
 		r.err = err
-		return r.err
+		return err
+	}
+	if _, err := io.ReadFull(r.readSeeker, r.currNode[:size]); err != nil {
+		r.err = err
+		return err
 	}
 	return nil
 }
@@ -422,9 +430,13 @@ func (r *ChunkReader) loadAndValidate(cOffset int64,
 		r.err = errInvalidIndexNode
 		return r.err
 	}
-	if err := readAt(r.ReadSeeker, r.currNode[:4], cOffset); err != nil {
+	if _, err := r.readSeeker.Seek(cOffset, io.SeekStart); err != nil {
 		r.err = err
-		return r.err
+		return err
+	}
+	if _, err := io.ReadFull(r.readSeeker, r.currNode[:4]); err != nil {
+		r.err = err
+		return err
 	}
 	arity := r.currNode[3]
 	if arity == 0 {

@@ -57,7 +57,7 @@ type CodecReader interface {
 	MakeDecompressor(r io.Reader, rctx ReaderContext) (io.Reader, error)
 
 	// MakeReaderContext returns the Codec-specific ReaderContext for a chunk.
-	MakeReaderContext(r io.ReadSeeker, compressedSize int64, c Chunk) (ReaderContext, error)
+	MakeReaderContext(r io.ReadSeeker, c Chunk) (ReaderContext, error)
 }
 
 // Reader reads a RAC file.
@@ -68,14 +68,18 @@ type CodecReader interface {
 type Reader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
-	// It may also implement io.ReaderAt, in which case its ReadAt method will
-	// be preferred over combining Read and Seek, as the former is presumably
-	// more efficient. This is optional: io.ReaderAt is a stronger contract
-	// than io.ReadSeeker, as multiple concurrent ReadAt calls must not
-	// interfere with each other.
+	// It may optionally implement io.ReaderAt, in which case its ReadAt method
+	// will be preferred and its Read and Seek methods will never be called,
+	// other than Seek'ing to the end of the data to determine the compressed
+	// size. The ReadAt method is safe to use concurrently, so that multiple
+	// rac.Reader's can concurrently use the same source provided that the
+	// source (this field, nominally an io.ReadSeeker) implements io.ReaderAt.
 	//
-	// For example, this type itself only implements io.ReadSeeker, not
-	// io.ReaderAt, as it is not safe for concurrent use.
+	// In particular, if the source is a bytes.Reader or an os.File, multiple
+	// rac.Reader's can work in parallel, which can speed up decoding.
+	//
+	// This type itself only implements io.ReadSeeker, not io.ReaderAt, as it
+	// is not safe for concurrent use.
 	//
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
@@ -152,27 +156,15 @@ func (r *Reader) initialize() error {
 	if r.err != nil {
 		return r.err
 	}
-	if r.chunkReader.ReadSeeker != nil {
-		// We're already initialized.
+	if r.chunkReader.initialized {
 		return nil
 	}
-	if r.ReadSeeker == nil {
-		r.err = errInvalidReadSeeker
-		return r.err
-	}
-	if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
-		r.err = err
-		return r.err
-	} else {
-		r.chunkReader.compressedSize = size
-	}
-	if _, err := r.ReadSeeker.Seek(0, io.SeekStart); err != nil {
-		r.err = err
-		return r.err
-	}
-
 	r.chunkReader.ReadSeeker = r.ReadSeeker
-	r.currChunk.R = r.ReadSeeker
+	if err := r.chunkReader.initialize(); err != nil {
+		r.err = err
+		return r.err
+	}
+	r.currChunk.R = r.chunkReader.readSeeker
 	return nil
 }
 
@@ -349,7 +341,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	rctx, err := codecReader.MakeReaderContext(r.ReadSeeker, r.chunkReader.compressedSize, chunk)
+	rctx, err := codecReader.MakeReaderContext(r.chunkReader.readSeeker, chunk)
 	if err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
@@ -358,7 +350,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	if _, err := r.ReadSeeker.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
+	if _, err := r.chunkReader.readSeeker.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
 		}
