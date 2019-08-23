@@ -208,14 +208,6 @@ type Writer struct {
 	// Nil is an invalid value.
 	Writer io.Writer
 
-	// IndexLocation is whether the index is at the start or end of the RAC
-	// file.
-	//
-	// See the RAC specification for further discussion.
-	//
-	// The zero value of this field is IndexLocationAtEnd: a one pass encoding.
-	IndexLocation IndexLocation
-
 	// CodecWriter is the compression codec that this Writer can compress to.
 	//
 	// For example, use a raczlib.CodecWriter from the sibilng "raczlib"
@@ -223,6 +215,14 @@ type Writer struct {
 	//
 	// Nil is an invalid value.
 	CodecWriter CodecWriter
+
+	// IndexLocation is whether the index is at the start or end of the RAC
+	// file.
+	//
+	// See the RAC specification for further discussion.
+	//
+	// The zero value of this field is IndexLocationAtEnd: a one pass encoding.
+	IndexLocation IndexLocation
 
 	// TempFile is a temporary file to use for a two pass encoding. The field
 	// name says "file" but it need not be a real file, in the operating system
