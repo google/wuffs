@@ -46,7 +46,7 @@ func u32BE(b []byte) uint32 {
 // Seek and then ReadFull. Calling ReadAt is presumably slightly more
 // efficient, e.g. one syscall instead of two.
 func readAt(r io.ReadSeeker, p []byte, offset int64) error {
-	if a, ok := r.(io.ReaderAt); ok && false {
+	if a, ok := r.(io.ReaderAt); ok {
 		n, err := a.ReadAt(p, offset)
 		if (n == len(p)) && (err == io.EOF) {
 			err = nil
