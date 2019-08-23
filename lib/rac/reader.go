@@ -69,9 +69,8 @@ type Reader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
 	// It may optionally implement io.ReaderAt, in which case its ReadAt method
-	// will be preferred and its Read and Seek methods will never be called,
-	// other than Seek'ing to the end of the data to determine the compressed
-	// size. The ReadAt method is safe to use concurrently, so that multiple
+	// will be preferred and its Read and Seek methods will never be called.
+	// The ReadAt method is safe to use concurrently, so that multiple
 	// rac.Reader's can concurrently use the same source provided that the
 	// source (this field, nominally an io.ReadSeeker) implements io.ReaderAt.
 	//
@@ -83,6 +82,11 @@ type Reader struct {
 	//
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
+
+	// CompressedSize is the size of the RAC file in CSpace.
+	//
+	// Zero is an invalid value. The smallest valid RAC file is 32 bytes long.
+	CompressedSize int64
 
 	// CodecReaders are the compression codecs that this Reader can decompress.
 	//
@@ -160,6 +164,7 @@ func (r *Reader) initialize() error {
 		return nil
 	}
 	r.chunkReader.ReadSeeker = r.ReadSeeker
+	r.chunkReader.CompressedSize = r.CompressedSize
 	if err := r.chunkReader.initialize(); err != nil {
 		r.err = err
 		return r.err

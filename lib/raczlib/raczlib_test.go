@@ -78,8 +78,9 @@ func racCompress(original []byte, cChunkSize uint64, dChunkSize uint64, resource
 func racDecompress(compressed []byte) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
-		ReadSeeker:   bytes.NewReader(compressed),
-		CodecReaders: []rac.CodecReader{&CodecReader{}},
+		ReadSeeker:     bytes.NewReader(compressed),
+		CompressedSize: int64(len(compressed)),
+		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
 	if _, err := io.Copy(buf, r); err != nil {
 		return nil, err
@@ -197,8 +198,9 @@ func TestZeroedBytes(t *testing.T) {
 		}
 
 		r := &rac.Reader{
-			ReadSeeker:   bytes.NewReader(compressed),
-			CodecReaders: []rac.CodecReader{&CodecReader{}},
+			ReadSeeker:     bytes.NewReader(compressed),
+			CompressedSize: int64(len(compressed)),
+			CodecReaders:   []rac.CodecReader{&CodecReader{}},
 		}
 		for j := 0; j <= len(original); j++ {
 			want := original[j:]
@@ -285,28 +287,24 @@ func (r *rsSansReadAt) Seek(o int64, w int) (int64, error) { return r.r.Seek(o, 
 
 // rsWithReadAt wraps a strings.Reader to have Read, Seek and ReadAt methods.
 // Technically, it satisfies the io.ReadSeeker interface, but calling Read or
-// Seek will panic, other than Seek'ing to the end of the data.
+// Seek will panic.
 type rsWithReadAt struct {
 	r *strings.Reader
 }
 
-func (r *rsWithReadAt) Read(p []byte) (int, error) { panic("unimplemented") }
-func (r *rsWithReadAt) Seek(o int64, w int) (int64, error) {
-	if (o == 0) && (w == io.SeekEnd) {
-		return r.r.Seek(o, w)
-	}
-	panic("unimplemented")
-}
+func (r *rsWithReadAt) Read(p []byte) (int, error)            { panic("unimplemented") }
+func (r *rsWithReadAt) Seek(o int64, w int) (int64, error)    { panic("unimplemented") }
 func (r *rsWithReadAt) ReadAt(p []byte, o int64) (int, error) { return r.r.ReadAt(p, o) }
 
 // testReadSeeker tests that decoding from rs works, regardless of whether rs
 // implements the optional ReadAt method. If rs does implement io.ReaderAt then
-// its Read method should never be called.
+// its Read and Seek methods should never be called.
 func testReadSeeker(t *testing.T, rs io.ReadSeeker) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
-		ReadSeeker:   rs,
-		CodecReaders: []rac.CodecReader{&CodecReader{}},
+		ReadSeeker:     rs,
+		CompressedSize: int64(len(encodedSheep)),
+		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
 	if _, err := io.Copy(buf, r); err != nil {
 		t.Fatalf("io.Copy: %v", err)

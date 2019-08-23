@@ -222,9 +222,8 @@ type ChunkReader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
 	// It may optionally implement io.ReaderAt, in which case its ReadAt method
-	// will be preferred and its Read and Seek methods will never be called,
-	// other than Seek'ing to the end of the data to determine the compressed
-	// size. The ReadAt method is safe to use concurrently, so that multiple
+	// will be preferred and its Read and Seek methods will never be called.
+	// The ReadAt method is safe to use concurrently, so that multiple
 	// rac.Reader's can concurrently use the same source provided that the
 	// source (this field, nominally an io.ReadSeeker) implements io.ReaderAt.
 	//
@@ -236,6 +235,11 @@ type ChunkReader struct {
 	//
 	// Nil is an invalid value.
 	ReadSeeker io.ReadSeeker
+
+	// CompressedSize is the size of the RAC file in CSpace.
+	//
+	// Zero is an invalid value. The smallest valid RAC file is 32 bytes long.
+	CompressedSize int64
 
 	// initialized is set true after the first call on this ChunkReader.
 	initialized bool
@@ -255,9 +259,6 @@ type ChunkReader struct {
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
 	err error
-
-	// compressedSize is the size of the RAC file in CSpace.
-	compressedSize int64
 
 	// decompressedSize is the size of the RAC file in DSpace.
 	decompressedSize int64
@@ -288,6 +289,11 @@ func (r *ChunkReader) checkParameters() error {
 		r.err = errInvalidReadSeeker
 		return r.err
 	}
+	// The smallest valid RAC file is 32 bytes long.
+	if r.CompressedSize < 32 {
+		r.err = errInvalidCompressedSize
+		return r.err
+	}
 	return nil
 }
 
@@ -304,21 +310,10 @@ func (r *ChunkReader) initialize() error {
 		return err
 	}
 
-	if size, err := r.ReadSeeker.Seek(0, io.SeekEnd); err != nil {
-		r.err = err
-		return r.err
-	} else {
-		r.compressedSize = size
-	}
-	if r.compressedSize < 32 {
-		r.err = errInvalidCompressedSize
-		return r.err
-	}
-
 	if ra, ok := r.ReadSeeker.(io.ReaderAt); ok {
 		r.readSeeker = &readerat.ReadSeeker{
 			ReaderAt: ra,
-			Size:     r.compressedSize,
+			Size:     r.CompressedSize,
 		}
 	} else {
 		r.readSeeker = r.ReadSeeker
@@ -357,7 +352,7 @@ func (r *ChunkReader) findRootNode() error {
 	}
 
 	// Look at the end of the compressed file.
-	if _, err := r.readSeeker.Seek(r.compressedSize-1, io.SeekStart); err != nil {
+	if _, err := r.readSeeker.Seek(r.CompressedSize-1, io.SeekStart); err != nil {
 		r.err = err
 		return err
 	}
@@ -379,12 +374,12 @@ func (r *ChunkReader) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr 
 		return false, nil
 	}
 	size := int64(nodeSize(arity))
-	if r.compressedSize < size {
+	if r.CompressedSize < size {
 		return false, nil
 	}
 	cOffset := int64(0)
 	if fromEnd {
-		cOffset = r.compressedSize - size
+		cOffset = r.CompressedSize - size
 	}
 	if err := r.load(cOffset, arity); err != nil {
 		return false, err
@@ -392,7 +387,7 @@ func (r *ChunkReader) tryRootNode(arity uint8, fromEnd bool) (found bool, ioErr 
 	if !r.currNode.valid() {
 		return false, nil
 	}
-	if r.currNode.cPtrMax() != r.compressedSize {
+	if r.currNode.cPtrMax() != r.CompressedSize {
 		return false, nil
 	}
 	r.needToResolveSeekPosition = true
@@ -426,7 +421,7 @@ func (r *ChunkReader) loadAndValidate(cOffset int64,
 	parentCodec Codec, parentVersion uint8, parentCOffMax int64,
 	childCBias int64, childDSize int64) error {
 
-	if (cOffset < 0) || ((r.compressedSize - 4) < cOffset) {
+	if (cOffset < 0) || ((r.CompressedSize - 4) < cOffset) {
 		r.err = errInvalidIndexNode
 		return r.err
 	}
@@ -444,7 +439,7 @@ func (r *ChunkReader) loadAndValidate(cOffset int64,
 		return r.err
 	}
 	size := int64(nodeSize(arity))
-	if (r.compressedSize < size) || ((r.compressedSize - size) < cOffset) {
+	if (r.CompressedSize < size) || ((r.CompressedSize - size) < cOffset) {
 		r.err = errInvalidIndexNode
 		return r.err
 	}

@@ -350,7 +350,8 @@ func TestMultiLevelIndex(t *testing.T) {
 	}
 
 	r := &ChunkReader{
-		ReadSeeker: bytes.NewReader(encoded),
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
 	}
 	gotPrimaries := []byte(nil)
 	for {
@@ -402,7 +403,8 @@ loop:
 
 		encoded := buf.Bytes()
 		r := &ChunkReader{
-			ReadSeeker: bytes.NewReader(encoded),
+			ReadSeeker:     bytes.NewReader(encoded),
+			CompressedSize: int64(len(encoded)),
 		}
 		for n := 0; ; n++ {
 			if _, err := r.NextChunk(); err == io.EOF {
@@ -469,7 +471,8 @@ loop:
 		}
 
 		r := &ChunkReader{
-			ReadSeeker: bytes.NewReader(tc.compressed),
+			ReadSeeker:     bytes.NewReader(tc.compressed),
+			CompressedSize: int64(len(tc.compressed)),
 		}
 
 		if gotDecompressedSize, err := r.DecompressedSize(); err != nil {
@@ -545,8 +548,10 @@ loop:
 }
 
 func TestReaderEmpty(t *testing.T) {
+	encoded := undoHexDump(writerWantEmpty)
 	got, err := ioutil.ReadAll(&Reader{
-		ReadSeeker: bytes.NewReader(undoHexDump(writerWantEmpty)),
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
 	})
 	if err != nil {
 		t.Fatalf("ReadAll: %v", err)
@@ -568,8 +573,10 @@ func TestReaderZeroes(t *testing.T) {
 	if err := w.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
+	encoded := buf.Bytes()
 	got, err := ioutil.ReadAll(&Reader{
-		ReadSeeker: bytes.NewReader(buf.Bytes()),
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
 	})
 	if err != nil {
 		t.Fatalf("ReadAll: %v", err)

@@ -304,8 +304,13 @@ func decode(r io.Reader, usingStdin bool) error {
 		}
 	}
 
+	compressedSize, err := rs.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
 	racReader := &rac.Reader{
-		ReadSeeker: rs,
+		ReadSeeker:     rs,
+		CompressedSize: compressedSize,
 	}
 	switch *codecFlag {
 	case "zlib":
