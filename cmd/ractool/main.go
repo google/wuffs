@@ -251,7 +251,7 @@ func main1() error {
 	if *encodeFlag && !*decodeFlag {
 		return encode(inFile)
 	}
-	return errors.New("must specify exactly one of -decode or -encode")
+	return errors.New("must specify exactly one of -decode, -encode or -help")
 }
 
 // parseNumber converts strings like "3", "4k" and "0x50" to the integers 3,
