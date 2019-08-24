@@ -25,6 +25,11 @@ stdout.
 
 The flags should include exactly one of -decode or -encode.
 
+By default, a RAC file's chunks are decoded in parallel, using more total CPU
+time to substantially reduce the real (wall clock) time taken. Batch (instead
+of interactive) processing of many RAC files may want to pass -singlethreaded
+to prefer minimizing total CPU time.
+
 When encoding, the input is partitioned into chunks and each chunk is
 compressed independently. You can specify the target chunk size in terms of
 either its compressed size or decompressed size. By default (if both
@@ -68,6 +73,8 @@ Decode-Related Flags:
 
     -drange
         the "i:j" range to decompress, ":8" means the first 8 bytes
+    -singlethreaded
+        whether to decode on a single execution thread
 
 Encode-Related Flags:
 
@@ -130,13 +137,25 @@ Extended Example:
     $ time unzip -p enwik8.zip | dd if=/dev/stdin status=none \
     >     iflag=skip_bytes,count_bytes skip=50000000 count=8
     Business
-    real    0m0.621s
-    user    0m0.623s
-    sys     0m0.105s
+    real    0m0.392s
+    user    0m0.407s
+    sys     0m0.118s
     $ time ractool -decode -drange=50000000:50000008 shared.rac
     Business
-    real    0m0.007s
+    real    0m0.003s
     user    0m0.004s
-    sys     0m0.004s
+    sys     0m0.000s
+
+    $ # A RAC file's chunks can be decoded in parallel, unlike ZIP,
+    $ # substantially reducing the real (wall clock) time taken even
+    $ # though both of these files use DEFLATE (RFC 1951) compression.
+    $ time unzip -p enwik8.zip        > /dev/null
+    real    0m0.737s
+    user    0m0.713s
+    sys     0m0.025s
+    $ time ractool -decode shared.rac > /dev/null
+    real    0m0.095s
+    user    0m1.316s
+    sys     0m0.069s
     --------
 `

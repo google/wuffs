@@ -37,8 +37,21 @@ func bitwiseSubset(outer Codec, inner Codec) bool {
 // greater than high.
 type Range [2]int64
 
-func (r *Range) Empty() bool { return r[0] == r[1] }
-func (r *Range) Size() int64 { return r[1] - r[0] }
+func (r Range) Empty() bool { return r[0] == r[1] }
+func (r Range) Size() int64 { return r[1] - r[0] }
+
+func (r Range) Intersect(s Range) Range {
+	if r[0] < s[0] {
+		r[0] = s[0]
+	}
+	if r[1] > s[1] {
+		r[1] = s[1]
+	}
+	if r[0] > r[1] {
+		return Range{}
+	}
+	return r
+}
 
 // Chunk is a compressed chunk returned by a ChunkReader.
 //
