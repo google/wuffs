@@ -74,8 +74,8 @@ The "400:500" flag value means the 100 bytes ranging from a DSpace offset
 to Go slice syntax. A "400:" flag value would mean ranging from 400 (inclusive)
 to the end of the decompressed file.
 
-The "256k" flag value means 256 kibibytes (262144 bytes). Similarly, "1m" and
-"1M" both mean 1 mebibyte (1048576 bytes).
+The "256k" flag value means 256 kibibytes (262144 bytes), as does "256K".
+Similarly, "1m" and "1M" both mean 1 mebibyte (1048576 bytes).
 
 General Flags:
 
