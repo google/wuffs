@@ -19,6 +19,15 @@
 /*
 ractool manipulates Random Access Compression (RAC) files.
 
+Random access means that it is possible to reconstruct part of the decompressed
+file, starting at a given offset into the decompressed file, without always
+having to first decompress all of the preceding data.
+
+In comparison to some other popular compression formats, all three of the Zlib,
+Brotli and Zstandard specifications (RFCs 1950, 7932 and 8478) explicitly
+contain the identical phrase: "the data format defined by this specification
+does not attempt to allow random access to compressed data".
+
 See the RAC specification for more details:
 https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md
 

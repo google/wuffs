@@ -41,13 +41,13 @@ func main1() error {
 		return err
 	}
 
-	if i := bytes.Index(src, []byte("Usage:\n\n")); i < 0 {
-		return fmt.Errorf(`couldn't find "Usage" sub-string`)
+	if i := bytes.Index(src, []byte("ractool manipulates ")); i < 0 {
+		return fmt.Errorf(`couldn't find documentation sub-string`)
 	} else {
 		src = src[i:]
 	}
 	if j := bytes.Index(src, []byte("*/")); j < 0 {
-		return fmt.Errorf(`couldn't find "Usage" sub-string`)
+		return fmt.Errorf(`couldn't find documentation sub-string`)
 	} else {
 		src = src[:j]
 	}
