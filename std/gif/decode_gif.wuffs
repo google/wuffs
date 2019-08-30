@@ -310,30 +310,33 @@ pub func decoder.ack_metadata_chunk?(src base.io_reader) {
 	if args.src.position() <> this.metadata_io_position {
 		return base."#bad I/O position"
 	}
-	while args.src.available() <= 0,
-		post args.src.available() > 0,
-	{
-		yield? base."$short read"
-	}
 
-	if this.metadata_fourcc_value == 0x584D5020 {  // "XMP "
-		// The +1 is because XMP metadata's encoding includes each block's leading
-		// byte (the block size) as part of the metadata passed to the caller.
-		this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
-		if this.metadata_chunk_length_value > 1 {
-			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
-			return base."@metadata reported"
+	if this.metadata_chunk_length_value > 0 {
+		while args.src.available() <= 0,
+			post args.src.available() > 0,
+		{
+			yield? base."$short read"
 		}
-	} else {
+
 		this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
 		if this.metadata_chunk_length_value > 0 {
-			args.src.skip_fast!(actual:1, worst_case:1)
-			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
+			if this.metadata_fourcc_value == 0x584D5020 {  // "XMP "
+				// The +1 is because XMP metadata's encoding includes each
+				// block's leading byte (the block size) as part of the
+				// metadata passed to the caller.
+				this.metadata_chunk_length_value += 1
+			} else {
+				args.src.skip_fast!(actual:1, worst_case:1)
+			}
+			this.metadata_io_position =
+				args.src.position() ~sat+ this.metadata_chunk_length_value
 			return base."@metadata reported"
 		}
+
+		// Consume the '\x00' that means a zero-length block.
+		args.src.skip_fast!(actual:1, worst_case:1)
 	}
 
-	args.src.skip_fast!(actual:1, worst_case:1)
 	this.call_sequence = 2
 	this.metadata_fourcc_value = 0
 	this.metadata_io_position = 0
@@ -797,10 +800,15 @@ pri func decoder.decode_ae?(src base.io_reader) {
 			{
 				yield? base."$short read"
 			}
-			// The +1 is because XMP metadata's encoding includes each block's
-			// leading byte (the block size) as part of the metadata passed to
-			// the caller.
-			this.metadata_chunk_length_value = args.src.peek_u8_as_u64() + 1
+			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
+			if this.metadata_chunk_length_value > 0 {
+				// The +1 is because XMP metadata's encoding includes each
+				// block's leading byte (the block size) as part of the
+				// metadata passed to the caller.
+				this.metadata_chunk_length_value += 1
+			} else {
+				args.src.skip_fast!(actual:1, worst_case:1)
+			}
 			this.metadata_fourcc_value = 0x584D5020  // "XMP "
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1

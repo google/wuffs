@@ -1255,14 +1255,14 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   return NULL;
 }
 
-const char* test_wuffs_gif_decode_metadata() {
-  CHECK_FOCUS(__func__);
-
+const char* do_test_wuffs_gif_decode_metadata(bool full) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
   });
 
-  const char* status = read_file(&src, "test/data/artificial/gif-metadata.gif");
+  const char* status =
+      read_file(&src, full ? "test/data/artificial/gif-metadata-full.gif"
+                           : "test/data/artificial/gif-metadata-empty.gif");
   if (status) {
     return status;
   }
@@ -1311,11 +1311,11 @@ const char* test_wuffs_gif_decode_metadata() {
 
         switch (wuffs_gif__decoder__metadata_fourcc(&dec)) {
           case WUFFS_BASE__FOURCC__ICCP:
-            want = "\x16\x26\x36\x46\x56\x76\x86\x96";
+            want = full ? "\x16\x26\x36\x46\x56\x76\x86\x96" : "";
             seen_iccp = true;
             break;
           case WUFFS_BASE__FOURCC__XMP:
-            want = "\x05\x17\x27\x37\x47\x57\x03\x77\x87\x97";
+            want = full ? "\x05\x17\x27\x37\x47\x57\x03\x77\x87\x97" : "";
             seen_xmp = true;
             break;
           default:
@@ -1410,6 +1410,16 @@ const char* test_wuffs_gif_decode_metadata() {
   }
 
   return NULL;
+}
+
+const char* test_wuffs_gif_decode_metadata_empty() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_gif_decode_metadata(false);
+}
+
+const char* test_wuffs_gif_decode_metadata_full() {
+  CHECK_FOCUS(__func__);
+  return do_test_wuffs_gif_decode_metadata(true);
 }
 
 const char* test_wuffs_gif_decode_missing_two_src_bytes() {
@@ -2242,7 +2252,8 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
-    test_wuffs_gif_decode_metadata,                          //
+    test_wuffs_gif_decode_metadata_empty,                    //
+    test_wuffs_gif_decode_metadata_full,                     //
     test_wuffs_gif_decode_missing_two_src_bytes,             //
     test_wuffs_gif_decode_multiple_graphic_controls,         //
     test_wuffs_gif_decode_multiple_loop_counts,              //

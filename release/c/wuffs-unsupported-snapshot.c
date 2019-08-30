@@ -8911,26 +8911,19 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_i_o_position;
       goto exit;
     }
-    while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-      status = wuffs_base__suspension__short_read;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
-    }
-    if (self->private_impl.f_metadata_fourcc_value == 1481461792) {
-      self->private_impl.f_metadata_chunk_length_value =
-          (((uint64_t)(wuffs_base__load_u8be(iop_a_src))) + 1);
-      if (self->private_impl.f_metadata_chunk_length_value > 1) {
-        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
-            wuffs_base__u64__sat_add(a_src->meta.pos,
-                                     ((uint64_t)(iop_a_src - io0_a_src))),
-            self->private_impl.f_metadata_chunk_length_value);
-        status = wuffs_base__warning__metadata_reported;
-        goto ok;
+    if (self->private_impl.f_metadata_chunk_length_value > 0) {
+      while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+        status = wuffs_base__suspension__short_read;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
       }
-    } else {
       self->private_impl.f_metadata_chunk_length_value =
           ((uint64_t)(wuffs_base__load_u8be(iop_a_src)));
       if (self->private_impl.f_metadata_chunk_length_value > 0) {
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
+        if (self->private_impl.f_metadata_fourcc_value == 1481461792) {
+          self->private_impl.f_metadata_chunk_length_value += 1;
+        } else {
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+        }
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
             wuffs_base__u64__sat_add(a_src->meta.pos,
                                      ((uint64_t)(iop_a_src - io0_a_src))),
@@ -8938,8 +8931,8 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
         status = wuffs_base__warning__metadata_reported;
         goto ok;
       }
+      (iop_a_src += 1, wuffs_base__make_empty_struct());
     }
-    (iop_a_src += 1, wuffs_base__make_empty_struct());
     self->private_impl.f_call_sequence = 2;
     self->private_impl.f_metadata_fourcc_value = 0;
     self->private_impl.f_metadata_io_position = 0;
@@ -10245,7 +10238,12 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
         }
         self->private_impl.f_metadata_chunk_length_value =
-            (((uint64_t)(wuffs_base__load_u8be(iop_a_src))) + 1);
+            ((uint64_t)(wuffs_base__load_u8be(iop_a_src)));
+        if (self->private_impl.f_metadata_chunk_length_value > 0) {
+          self->private_impl.f_metadata_chunk_length_value += 1;
+        } else {
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+        }
         self->private_impl.f_metadata_fourcc_value = 1481461792;
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
             wuffs_base__u64__sat_add(a_src->meta.pos,
