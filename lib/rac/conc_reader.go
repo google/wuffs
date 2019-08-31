@@ -35,6 +35,7 @@ type stopWork struct {
 	keepWorking bool
 }
 
+// concReader co-ordinates multiple goroutines serving a Reader.
 type concReader struct {
 	// Channels between the concReader, the Manager and multiple Workers.
 	//
@@ -88,6 +89,11 @@ type concReader struct {
 	// is called with io.SeekCurrent.
 	pos int64
 
+	// posLimit is an upper limit on pos. pos can go higher than it (e.g.
+	// seeking past the end of the file in DSpace), but after doing so, Read
+	// will always return (0, io.EOF).
+	posLimit int64
+
 	// decompressedSize is the size of the RAC file in DSpace.
 	decompressedSize int64
 }
@@ -103,6 +109,7 @@ func (c *concReader) initialize(racReader *Reader) {
 
 	// Set up other state.
 	c.completedWorks = map[int64]rWork{}
+	c.posLimit = racReader.chunkReader.decompressedSize
 	c.decompressedSize = racReader.chunkReader.decompressedSize
 
 	// Set up re-usable buffers to hold decoded bytes. The number of buffers is
@@ -152,7 +159,7 @@ func (c *concReader) CloseWithoutWaiting() error {
 	return nil
 }
 
-func (c *concReader) Seek(offset int64, whence int) (int64, error) {
+func (c *concReader) seek(offset int64, whence int, limit int64) (int64, error) {
 	pos := c.pos
 	switch whence {
 	case io.SeekStart:
@@ -172,11 +179,17 @@ func (c *concReader) Seek(offset int64, whence int) (int64, error) {
 		c.pos = pos
 		c.seekResolved = false
 	}
+
+	if limit > c.decompressedSize {
+		limit = c.decompressedSize
+	}
+	c.posLimit = limit
+
 	return pos, nil
 }
 
 func (c *concReader) Read(p []byte) (int, error) {
-	if c.pos >= c.decompressedSize {
+	if c.pos >= c.posLimit {
 		return 0, io.EOF
 	}
 
@@ -186,11 +199,11 @@ func (c *concReader) Read(p []byte) (int, error) {
 			c.stopAnyWorkInProgress(true)
 		}
 		c.seenRead = true
-		c.roic <- Range{c.pos, c.decompressedSize}
+		c.roic <- Range{c.pos, c.posLimit}
 	}
 
 	for numRead := 0; ; {
-		if c.pos >= c.decompressedSize {
+		if c.pos >= c.posLimit {
 			return numRead, io.EOF
 		}
 		if len(p) == 0 {
@@ -293,7 +306,6 @@ func (c *concReader) recycleBuffers() {
 func runRWorker(stopc <-chan stopWork, resc chan<- rWork, reqc <-chan rWork, racReader *Reader) {
 	input, output := reqc, (chan<- rWork)(nil)
 	work := rWork{}
-	limitedReader := io.LimitedReader{}
 
 loop:
 	for {
@@ -312,14 +324,10 @@ loop:
 		case work = <-input:
 			input, output = nil, resc
 			if work.err == nil {
-				_, work.err = racReader.Seek(work.dRange[0], io.SeekStart)
+				work.err = racReader.SeekRange(work.dRange[0], work.dRange[1])
 			}
 			if work.err == nil {
-				limitedReader = io.LimitedReader{
-					R: racReader,
-					N: work.dRange.Size(),
-				}
-				_, work.err = io.Copy(work.buf, &limitedReader)
+				_, work.err = io.Copy(work.buf, racReader)
 			}
 			if work.err == io.EOF {
 				work.err = io.ErrUnexpectedEOF
@@ -380,11 +388,12 @@ loop:
 				continue loop
 			}
 
-			dr := chunk.DRange.Intersect(roi)
-			if dr[0] >= roi[1] {
+			if chunk.DRange[0] >= roi[1] {
 				input, output = roic, nil
 				continue loop
-			} else if dr.Empty() {
+			}
+			dr := chunk.DRange.Intersect(roi)
+			if dr.Empty() {
 				continue
 			}
 

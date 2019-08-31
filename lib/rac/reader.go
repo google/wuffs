@@ -144,6 +144,11 @@ type Reader struct {
 	// is called with io.SeekCurrent.
 	pos int64
 
+	// posLimit is an upper limit on pos. pos can go higher than it (e.g.
+	// seeking past the end of the file in DSpace), but after doing so, Read
+	// will always return (0, io.EOF).
+	posLimit int64
+
 	// dRange is, in "State B" and "State C", what part (in DSpace) of the
 	// current chunk has not yet been passed on (via this type's Read method).
 	//
@@ -185,6 +190,7 @@ func (r *Reader) initialize() error {
 		return r.err
 	}
 	r.currChunk.R = r.chunkReader.readSeeker
+	r.posLimit = r.chunkReader.decompressedSize
 	r.concReader.initialize(r)
 	return nil
 }
@@ -212,9 +218,21 @@ func (r *Reader) Read(p []byte) (int, error) {
 		r.err = err
 		return n, err
 	}
-	numRead := 0
 
-	for len(p) > 0 {
+	if r.pos >= r.posLimit {
+		return 0, io.EOF
+	}
+	if n := r.posLimit - r.pos; int64(len(p)) > n {
+		p = p[:n]
+	}
+
+	for numRead := 0; ; {
+		if r.pos >= r.posLimit {
+			return numRead, io.EOF
+		}
+		if len(p) == 0 {
+			return numRead, nil
+		}
 		if (r.pos < r.dRange[0]) || (r.dRange[1] < r.pos) {
 			r.err = errInternalInconsistentPosition
 			return numRead, r.err
@@ -242,7 +260,6 @@ func (r *Reader) Read(p []byte) (int, error) {
 			return numRead, err
 		}
 	}
-	return numRead, nil
 }
 
 // readExplicitData serves the zlib-compressed data in a chunk.
@@ -416,8 +433,36 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	if err := r.initialize(); err != nil {
 		return 0, err
 	}
+	const maxInt64 = (1 << 63) - 1
+	return r.seek(offset, whence, maxInt64)
+}
+
+// SeekRange restricts r to the half-open range [low, high).
+//
+// It is more efficient than but conceptually equivalent to calling Seek(low,
+// io.SeekStart) and wrapping r in an io.LimitedReader whose N is (high - low).
+//
+// Multiple SeekRange calls apply the most recent high limit, not the minimum
+// of the high limits.
+//
+// Any Seek call, such as Seek(0, io.SeekCurrent), will remove the high limit.
+//
+// It returns an error if low > high.
+func (r *Reader) SeekRange(low int64, high int64) error {
+	if err := r.initialize(); err != nil {
+		return err
+	}
+	if low > high {
+		r.err = errSeekToNegativeRange
+		return r.err
+	}
+	_, err := r.seek(low, io.SeekStart, high)
+	return err
+}
+
+func (r *Reader) seek(offset int64, whence int, limit int64) (int64, error) {
 	if r.concReader.ready() {
-		n, err := r.concReader.Seek(offset, whence)
+		n, err := r.concReader.seek(offset, whence, limit)
 		r.err = r.err
 		return n, err
 	}
@@ -453,6 +498,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		r.decompressor = nil
 		r.inImplicitZeroes = false
 	}
+
+	if limit > r.chunkReader.decompressedSize {
+		limit = r.chunkReader.decompressedSize
+	}
+	r.posLimit = limit
+
 	return r.pos, nil
 }
 

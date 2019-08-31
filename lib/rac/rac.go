@@ -83,6 +83,7 @@ var (
 	errInvalidWriter                 = errors.New("rac: invalid Writer")
 	errSeekToInvalidWhence           = errors.New("rac: seek to invalid whence")
 	errSeekToNegativePosition        = errors.New("rac: seek to negative position")
+	errSeekToNegativeRange           = errors.New("rac: seek to negative range")
 	errTooManyChunks                 = errors.New("rac: too many chunks")
 	errTooManyResources              = errors.New("rac: too many resources")
 	errTooMuchInput                  = errors.New("rac: too much input")

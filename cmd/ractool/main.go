@@ -380,13 +380,10 @@ func decode(inFile *os.File) error {
 		}
 		r.Concurrency = n
 	}
-	if _, err := r.Seek(i, io.SeekStart); err != nil {
+	if err := r.SeekRange(i, j); err != nil {
 		return err
 	}
-	_, err = io.Copy(os.Stdout, &io.LimitedReader{
-		R: r,
-		N: j - i,
-	})
+	_, err = io.Copy(os.Stdout, r)
 	return err
 }
 
