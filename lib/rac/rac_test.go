@@ -549,10 +549,12 @@ loop:
 
 func TestReaderEmpty(t *testing.T) {
 	encoded := undoHexDump(writerWantEmpty)
-	got, err := ioutil.ReadAll(&Reader{
+	r := &Reader{
 		ReadSeeker:     bytes.NewReader(encoded),
 		CompressedSize: int64(len(encoded)),
-	})
+	}
+	defer r.Close()
+	got, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatalf("ReadAll: %v", err)
 	}
@@ -574,10 +576,12 @@ func TestReaderZeroes(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 	encoded := buf.Bytes()
-	got, err := ioutil.ReadAll(&Reader{
+	r := &Reader{
 		ReadSeeker:     bytes.NewReader(encoded),
 		CompressedSize: int64(len(encoded)),
-	})
+	}
+	defer r.Close()
+	got, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatalf("ReadAll: %v", err)
 	}

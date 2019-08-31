@@ -75,6 +75,7 @@ func Example_roundTrip() {
 		CompressedSize: int64(len(compressed)),
 		CodecReaders:   []rac.CodecReader{&raczlib.CodecReader{}},
 	}
+	defer r.Close()
 
 	// Read the whole file.
 	wBuf := &bytes.Buffer{}

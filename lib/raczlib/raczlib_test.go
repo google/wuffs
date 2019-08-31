@@ -82,6 +82,7 @@ func racDecompress(compressed []byte) ([]byte, error) {
 		CompressedSize: int64(len(compressed)),
 		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
+	defer r.Close()
 	if _, err := io.Copy(buf, r); err != nil {
 		return nil, err
 	}
@@ -202,6 +203,7 @@ func TestZeroedBytes(t *testing.T) {
 			CompressedSize: int64(len(compressed)),
 			CodecReaders:   []rac.CodecReader{&CodecReader{}},
 		}
+		defer r.Close()
 		for j := 0; j <= len(original); j++ {
 			want := original[j:]
 			got := make([]byte, len(want))
@@ -306,6 +308,7 @@ func testReadSeeker(t *testing.T, rs io.ReadSeeker) {
 		CompressedSize: int64(len(encodedSheep)),
 		CodecReaders:   []rac.CodecReader{&CodecReader{}},
 	}
+	defer r.Close()
 	if _, err := io.Copy(buf, r); err != nil {
 		t.Fatalf("io.Copy: %v", err)
 	}

@@ -64,7 +64,7 @@ type CodecReader interface {
 //
 // Do not modify its exported fields after calling any of its methods.
 //
-// Reader implements the io.ReadSeeker interface.
+// Reader implements the io.ReadSeeker and io.Closer interfaces.
 type Reader struct {
 	// ReadSeeker is where the RAC-encoded data is read from.
 	//
@@ -420,4 +420,9 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		r.inImplicitZeroes = false
 	}
 	return r.pos, nil
+}
+
+// Close implements io.Closer.
+func (r *Reader) Close() error {
+	return nil
 }
