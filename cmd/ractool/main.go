@@ -290,6 +290,9 @@ func parseNumber(s string) int64 {
 // parseRange parses a string like "1..23", returning i=1 and j=23. Either or
 // both numbers can be missing, in which case i and/or j will be negative, and
 // it is up to the caller to interpret that placeholder value meaningfully.
+//
+// Like Rust range syntax, it also accepts "i..=j", not just "i..j", in which
+// case the upper bound is inclusive, not exclusive.
 func parseRange(s string) (i int64, j int64, ok bool) {
 	n := strings.Index(s, "..")
 	if n < 0 {
@@ -302,10 +305,24 @@ func parseRange(s string) (i int64, j int64, ok bool) {
 		return 0, 0, false
 	}
 
-	if n+2 >= len(s) {
+	// Look for "i..j" versus "i..=j".
+	eq := 0
+	if (n+2 < len(s)) && (s[n+2] == '=') {
+		eq = 1
+	}
+
+	if n+2+eq >= len(s) {
+		if eq > 0 {
+			return 0, 0, false
+		}
 		j = -1
-	} else if j = parseNumber(s[n+2:]); j < 0 {
+	} else if j = parseNumber(s[n+2+eq:]); j < 0 {
 		return 0, 0, false
+	} else {
+		j += int64(eq)
+		if j < 0 {
+			return 0, 0, false
+		}
 	}
 
 	if (i >= 0) && (j >= 0) && (i > j) {
