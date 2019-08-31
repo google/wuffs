@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 3037f1e389b54f9721161cc92c9b00372254cafc committed on 2019-07-07.
+// 7753d147b743dd2da7beb486afb6b1b0f0647b1a committed on 2019-08-31.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.44"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1776
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190707
-#define WUFFS_VERSION_STRING "0.2.0-alpha.44+1776.20190707"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.45"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1873
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190831
+#define WUFFS_VERSION_STRING "0.2.0-alpha.45+1873.20190831"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -433,6 +433,25 @@ wuffs_base__make_slice_u64(uint64_t* ptr, size_t len) {
 }
 
 static inline wuffs_base__slice_u8  //
+wuffs_base__empty_slice_u8() {
+  wuffs_base__slice_u8 ret;
+  ret.ptr = NULL;
+  ret.len = 0;
+  return ret;
+}
+
+static inline wuffs_base__table_u8  //
+wuffs_base__empty_table_u8() {
+  wuffs_base__table_u8 ret;
+  ret.ptr = NULL;
+  ret.width = 0;
+  ret.height = 0;
+  ret.stride = 0;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_slice_u8.
+static inline wuffs_base__slice_u8  //
 wuffs_base__null_slice_u8() {
   wuffs_base__slice_u8 ret;
   ret.ptr = NULL;
@@ -440,6 +459,7 @@ wuffs_base__null_slice_u8() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_table_u8.
 static inline wuffs_base__table_u8  //
 wuffs_base__null_table_u8() {
   wuffs_base__table_u8 ret;
@@ -1290,14 +1310,12 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct wuffs_base__io_buffer__struct {
+typedef struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 
 #ifdef __cplusplus
   inline void compact();
-  inline wuffs_base__io_buffer__struct* reader();  // Deprecated.
-  inline wuffs_base__io_buffer__struct* writer();  // Deprecated.
   inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
   inline uint64_t writer_available() const;
@@ -1329,6 +1347,29 @@ wuffs_base__make_io_buffer_meta(size_t wi,
 }
 
 static inline wuffs_base__io_buffer  //
+wuffs_base__empty_io_buffer() {
+  wuffs_base__io_buffer ret;
+  ret.data.ptr = NULL;
+  ret.data.len = 0;
+  ret.meta.wi = 0;
+  ret.meta.ri = 0;
+  ret.meta.pos = 0;
+  ret.meta.closed = false;
+  return ret;
+}
+
+static inline wuffs_base__io_buffer_meta  //
+wuffs_base__empty_io_buffer_meta() {
+  wuffs_base__io_buffer_meta ret;
+  ret.wi = 0;
+  ret.ri = 0;
+  ret.pos = 0;
+  ret.closed = false;
+  return ret;
+}
+
+// Deprecated: use wuffs_base__empty_io_buffer.
+static inline wuffs_base__io_buffer  //
 wuffs_base__null_io_buffer() {
   wuffs_base__io_buffer ret;
   ret.data.ptr = NULL;
@@ -1340,6 +1381,7 @@ wuffs_base__null_io_buffer() {
   return ret;
 }
 
+// Deprecated: use wuffs_base__empty_io_buffer_meta.
 static inline wuffs_base__io_buffer_meta  //
 wuffs_base__null_io_buffer_meta() {
   wuffs_base__io_buffer_meta ret;
@@ -1389,37 +1431,27 @@ wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
 #ifdef __cplusplus
 
 inline void  //
-wuffs_base__io_buffer__struct::compact() {
+wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
 }
 
-inline wuffs_base__io_buffer*  //
-wuffs_base__io_buffer__struct::reader() {
-  return this;
-}
-
-inline wuffs_base__io_buffer*  //
-wuffs_base__io_buffer__struct::writer() {
-  return this;
-}
-
 inline uint64_t  //
-wuffs_base__io_buffer__struct::reader_available() const {
+wuffs_base__io_buffer::reader_available() const {
   return wuffs_base__io_buffer__reader_available(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::reader_io_position() const {
+wuffs_base__io_buffer::reader_io_position() const {
   return wuffs_base__io_buffer__reader_io_position(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::writer_available() const {
+wuffs_base__io_buffer::writer_available() const {
   return wuffs_base__io_buffer__writer_available(this);
 }
 
 inline uint64_t  //
-wuffs_base__io_buffer__struct::writer_io_position() const {
+wuffs_base__io_buffer::writer_io_position() const {
   return wuffs_base__io_buffer__writer_io_position(this);
 }
 
@@ -2391,10 +2423,10 @@ static inline wuffs_base__pixel_buffer  //
 wuffs_base__null_pixel_buffer() {
   wuffs_base__pixel_buffer ret;
   ret.pixcfg = wuffs_base__null_pixel_config();
-  ret.private_impl.planes[0] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[1] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[2] = wuffs_base__null_table_u8();
-  ret.private_impl.planes[3] = wuffs_base__null_table_u8();
+  ret.private_impl.planes[0] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[1] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[2] = wuffs_base__empty_table_u8();
+  ret.private_impl.planes[3] = wuffs_base__empty_table_u8();
   return ret;
 }
 
@@ -4402,7 +4434,7 @@ wuffs_base__table_u8__row(wuffs_base__table_u8 t, uint32_t y) {
 
   // ---------------- Slices and Tables (Utility)
 
-#define wuffs_base__utility__null_slice_u8 wuffs_base__null_slice_u8
+#define wuffs_base__utility__empty_slice_u8 wuffs_base__empty_slice_u8
 
 // ---------------- Ranges and Rects
 
@@ -4456,21 +4488,6 @@ wuffs_base__range_ie_u64__get_max_excl(const wuffs_base__range_ie_u64* r) {
 #define wuffs_base__utility__make_rect_ie_u32 wuffs_base__make_rect_ie_u32
 
 // ---------------- I/O
-
-// "Null" as in "/dev/null", not as in "nullptr".
-//
-// TODO: ensure that this is zero-initialized.
-static wuffs_base__io_buffer wuffs_base__global__null_io_buffer;
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_reader() {
-  return &wuffs_base__global__null_io_buffer;
-}
-
-static inline wuffs_base__io_buffer*  //
-wuffs_base__null_io_writer() {
-  return &wuffs_base__global__null_io_buffer;
-}
 
 static inline uint64_t  //
 wuffs_base__io__count_since(uint64_t mark, uint64_t index) {
@@ -4670,8 +4687,8 @@ wuffs_base__io_writer__set(wuffs_base__io_buffer* b,
 
   // ---------------- I/O (Utility)
 
-#define wuffs_base__utility__null_io_reader wuffs_base__null_io_reader
-#define wuffs_base__utility__null_io_writer wuffs_base__null_io_writer
+#define wuffs_base__utility__empty_io_reader wuffs_base__empty_io_reader
+#define wuffs_base__utility__empty_io_writer wuffs_base__empty_io_writer
 
   // ---------------- Memory Allocation
 
@@ -7537,10 +7554,10 @@ label_0_continue:;
     v_n_copied = 0;
     while (true) {
       if (((uint64_t)((v_dist_minus_1 + 1))) >
-          ((uint64_t)(iop_a_dst - a_dst->data.ptr))) {
+          ((uint64_t)(iop_a_dst - io0_a_dst))) {
         v_hlen = 0;
         v_hdist = ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
-                               ((uint64_t)(iop_a_dst - a_dst->data.ptr)))));
+                               ((uint64_t)(iop_a_dst - io0_a_dst)))));
         if (v_length > v_hdist) {
           v_length -= v_hdist;
           v_hlen = v_hdist;
@@ -7574,14 +7591,13 @@ label_0_continue:;
           goto label_0_continue;
         }
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(iop_a_dst - a_dst->data.ptr))) {
+            ((uint64_t)(iop_a_dst - io0_a_dst))) {
           status = wuffs_deflate__error__internal_error_inconsistent_distance;
           goto exit;
         }
       }
       wuffs_base__io_writer__copy_n_from_history_fast(
-          &iop_a_dst, a_dst->data.ptr, io2_a_dst, v_length,
-          (v_dist_minus_1 + 1));
+          &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
       goto label_2_break;
     }
   label_2_break:;
@@ -7895,9 +7911,9 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
       }
       while (true) {
         if (((uint64_t)((v_dist_minus_1 + 1))) >
-            ((uint64_t)(iop_a_dst - a_dst->data.ptr))) {
+            ((uint64_t)(iop_a_dst - io0_a_dst))) {
           v_hdist = ((uint32_t)((((uint64_t)((v_dist_minus_1 + 1))) -
-                                 ((uint64_t)(iop_a_dst - a_dst->data.ptr)))));
+                                 ((uint64_t)(iop_a_dst - io0_a_dst)))));
           if (v_length > v_hdist) {
             v_length -= v_hdist;
             v_hlen = v_hdist;
@@ -7956,8 +7972,7 @@ wuffs_deflate__decoder__decode_huffman_slow(wuffs_deflate__decoder* self,
           }
         }
         v_n_copied = wuffs_base__io_writer__copy_n_from_history(
-            &iop_a_dst, a_dst->data.ptr, io2_a_dst, v_length,
-            (v_dist_minus_1 + 1));
+            &iop_a_dst, io0_a_dst, io2_a_dst, v_length, (v_dist_minus_1 + 1));
         if (v_length <= v_n_copied) {
           v_length = 0;
           goto label_7_break;
@@ -8891,45 +8906,34 @@ wuffs_gif__decoder__ack_metadata_chunk(wuffs_gif__decoder* self,
       status = wuffs_base__error__bad_call_sequence;
       goto exit;
     }
-    if ((a_src ? wuffs_base__u64__sat_add(
-                     a_src->meta.pos, ((uint64_t)(iop_a_src - a_src->data.ptr)))
-               : 0) != self->private_impl.f_metadata_io_position) {
+    if (wuffs_base__u64__sat_add(a_src->meta.pos,
+                                 ((uint64_t)(iop_a_src - io0_a_src))) !=
+        self->private_impl.f_metadata_io_position) {
       status = wuffs_base__error__bad_i_o_position;
       goto exit;
     }
-    while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
-      status = wuffs_base__suspension__short_read;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
-    }
-    if (self->private_impl.f_metadata_fourcc_value == 1481461792) {
-      self->private_impl.f_metadata_chunk_length_value =
-          (((uint64_t)(wuffs_base__load_u8be(iop_a_src))) + 1);
-      if (self->private_impl.f_metadata_chunk_length_value > 1) {
-        self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
-            (a_src ? wuffs_base__u64__sat_add(
-                         a_src->meta.pos,
-                         ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                   : 0),
-            self->private_impl.f_metadata_chunk_length_value);
-        status = wuffs_base__warning__metadata_reported;
-        goto ok;
+    if (self->private_impl.f_metadata_chunk_length_value > 0) {
+      while (((uint64_t)(io2_a_src - iop_a_src)) <= 0) {
+        status = wuffs_base__suspension__short_read;
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
       }
-    } else {
       self->private_impl.f_metadata_chunk_length_value =
           ((uint64_t)(wuffs_base__load_u8be(iop_a_src)));
       if (self->private_impl.f_metadata_chunk_length_value > 0) {
-        (iop_a_src += 1, wuffs_base__make_empty_struct());
+        if (self->private_impl.f_metadata_fourcc_value == 1481461792) {
+          self->private_impl.f_metadata_chunk_length_value += 1;
+        } else {
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+        }
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
-            (a_src ? wuffs_base__u64__sat_add(
-                         a_src->meta.pos,
-                         ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                   : 0),
+            wuffs_base__u64__sat_add(a_src->meta.pos,
+                                     ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
         status = wuffs_base__warning__metadata_reported;
         goto ok;
       }
+      (iop_a_src += 1, wuffs_base__make_empty_struct());
     }
-    (iop_a_src += 1, wuffs_base__make_empty_struct());
     self->private_impl.f_call_sequence = 2;
     self->private_impl.f_metadata_fourcc_value = 0;
     self->private_impl.f_metadata_io_position = 0;
@@ -9495,16 +9499,12 @@ wuffs_gif__decoder__decode_up_to_id_part1(wuffs_gif__decoder* self,
     if (!self->private_impl.f_restarted) {
       if (self->private_impl.f_call_sequence != 2) {
         self->private_impl.f_frame_config_io_position =
-            (a_src ? wuffs_base__u64__sat_add(
-                         a_src->meta.pos,
-                         ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                   : 0);
+            wuffs_base__u64__sat_add(a_src->meta.pos,
+                                     ((uint64_t)(iop_a_src - io0_a_src)));
       }
     } else if (self->private_impl.f_frame_config_io_position !=
-               (a_src ? wuffs_base__u64__sat_add(
-                            a_src->meta.pos,
-                            ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                      : 0)) {
+               wuffs_base__u64__sat_add(a_src->meta.pos,
+                                        ((uint64_t)(iop_a_src - io0_a_src)))) {
       status = wuffs_base__error__bad_restart;
       goto exit;
     } else {
@@ -10227,10 +10227,8 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
         (iop_a_src += 1, wuffs_base__make_empty_struct());
         self->private_impl.f_metadata_fourcc_value = 1229144912;
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
-            (a_src ? wuffs_base__u64__sat_add(
-                         a_src->meta.pos,
-                         ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                   : 0),
+            wuffs_base__u64__sat_add(a_src->meta.pos,
+                                     ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
         self->private_impl.f_call_sequence = 1;
         status = wuffs_base__warning__metadata_reported;
@@ -10241,13 +10239,16 @@ wuffs_gif__decoder__decode_ae(wuffs_gif__decoder* self,
           WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(11);
         }
         self->private_impl.f_metadata_chunk_length_value =
-            (((uint64_t)(wuffs_base__load_u8be(iop_a_src))) + 1);
+            ((uint64_t)(wuffs_base__load_u8be(iop_a_src)));
+        if (self->private_impl.f_metadata_chunk_length_value > 0) {
+          self->private_impl.f_metadata_chunk_length_value += 1;
+        } else {
+          (iop_a_src += 1, wuffs_base__make_empty_struct());
+        }
         self->private_impl.f_metadata_fourcc_value = 1481461792;
         self->private_impl.f_metadata_io_position = wuffs_base__u64__sat_add(
-            (a_src ? wuffs_base__u64__sat_add(
-                         a_src->meta.pos,
-                         ((uint64_t)(iop_a_src - a_src->data.ptr)))
-                   : 0),
+            wuffs_base__u64__sat_add(a_src->meta.pos,
+                                     ((uint64_t)(iop_a_src - io0_a_src))),
             self->private_impl.f_metadata_chunk_length_value);
         self->private_impl.f_call_sequence = 1;
         status = wuffs_base__warning__metadata_reported;
@@ -10830,6 +10831,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
+  wuffs_base__io_buffer empty_io_buffer = wuffs_base__null_io_buffer();
+
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
   if (coro_susp_point) {
     v_block_size = self->private_data.s_decode_id_part2[0].v_block_size;
@@ -10924,9 +10927,8 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
           {
             u_r.meta.ri = ((size_t)(iop_v_r - u_r.data.ptr));
             wuffs_base__status t_1 = wuffs_lzw__decoder__decode_io_writer(
-                &self->private_data.f_lzw,
-                wuffs_base__utility__null_io_writer(), v_r,
-                wuffs_base__utility__null_slice_u8());
+                &self->private_data.f_lzw, &empty_io_buffer, v_r,
+                wuffs_base__utility__empty_slice_u8());
             iop_v_r = u_r.data.ptr + u_r.meta.ri;
             v_lzw_status = t_1;
           }
