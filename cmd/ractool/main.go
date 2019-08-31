@@ -64,15 +64,15 @@ or temporary disk space.
 Examples:
 
     ractool -decode foo.rac | sha256sum
-    ractool -decode -drange=400:500 foo.rac
+    ractool -decode -drange=400..500 foo.rac
     ractool -encode foo.dat > foo.rac
     ractool -encode -codec=zlib -dchunksize=256k foo.dat > foo.rac
 
-The "400:500" flag value means the 100 bytes ranging from a DSpace offset
+The "400..500" flag value means the 100 bytes ranging from a DSpace offset
 (offset in terms of decompressed bytes, not compressed bytes) of 400
 (inclusive) to 500 (exclusive). Either or both bounds may be omitted, similar
-to Go slice syntax. A "400:" flag value would mean ranging from 400 (inclusive)
-to the end of the decompressed file.
+to Rust slice syntax. A "400.." flag value would mean ranging from 400
+(inclusive) to the end of the decompressed file.
 
 The "256k" flag value means 256 kibibytes (262144 bytes), as does "256K".
 Similarly, "1m" and "1M" both mean 1 mebibyte (1048576 bytes).
@@ -87,7 +87,7 @@ General Flags:
 Decode-Related Flags:
 
     -drange
-        the "i:j" range to decompress, ":8" means the first 8 bytes
+        the "i..j" range to decompress, "..8" means the first 8 bytes
     -singlethreaded
         whether to decode on a single execution thread
 
@@ -155,7 +155,7 @@ Extended Example:
     real    0m0.392s
     user    0m0.407s
     sys     0m0.118s
-    $ time ractool -decode -drange=50000000:50000008 shared.rac
+    $ time ractool -decode -drange=50000000..50000008 shared.rac
     Business
     real    0m0.003s
     user    0m0.004s
@@ -199,8 +199,8 @@ var (
 	encodeFlag = flag.Bool("encode", false, "whether to encode the input")
 
 	// Decode-related flags.
-	drangeFlag = flag.String("drange", ":",
-		"the \"i:j\" range to decompress, \":8\" means the first 8 bytes")
+	drangeFlag = flag.String("drange", "..",
+		"the \"i..j\" range to decompress, \"..8\" means the first 8 bytes")
 	singlethreadedFlag = flag.Bool("singlethreaded", false,
 		"whether to decode on a single execution thread")
 
@@ -287,11 +287,11 @@ func parseNumber(s string) int64 {
 	return i << shift
 }
 
-// parseRange parses a string like "1:23", returning i=1 and j=23. Either or
+// parseRange parses a string like "1..23", returning i=1 and j=23. Either or
 // both numbers can be missing, in which case i and/or j will be negative, and
 // it is up to the caller to interpret that placeholder value meaningfully.
 func parseRange(s string) (i int64, j int64, ok bool) {
-	n := strings.IndexByte(s, ':')
+	n := strings.Index(s, "..")
 	if n < 0 {
 		return 0, 0, false
 	}
@@ -302,9 +302,9 @@ func parseRange(s string) (i int64, j int64, ok bool) {
 		return 0, 0, false
 	}
 
-	if n+1 >= len(s) {
+	if n+2 >= len(s) {
 		j = -1
-	} else if j = parseNumber(s[n+1:]); j < 0 {
+	} else if j = parseNumber(s[n+2:]); j < 0 {
 		return 0, 0, false
 	}
 
