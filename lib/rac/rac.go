@@ -64,6 +64,7 @@ const (
 var indexLocationAtEndMagic = []byte("\x72\xC3\x63\x00")
 
 var (
+	errAlreadyClosed                 = errors.New("rac: already closed")
 	errCChunkSizeIsTooSmall          = errors.New("rac: CChunkSize is too small")
 	errILAEndTempFile                = errors.New("rac: IndexLocationAtEnd requires a nil TempFile")
 	errILAStartTempFile              = errors.New("rac: IndexLocationAtStart requires a non-nil TempFile")
@@ -86,8 +87,8 @@ var (
 	errTooManyResources              = errors.New("rac: too many resources")
 	errTooMuchInput                  = errors.New("rac: too much input")
 	errUnsupportedRACFileVersion     = errors.New("rac: unsupported RAC file version")
-	errWriterIsClosed                = errors.New("rac: Writer is closed")
 
+	errInternalAllWorkersIdle       = errors.New("rac: internal error: all workers idle")
 	errInternalArityIsTooLarge      = errors.New("rac: internal error: arity is too large")
 	errInternalInconsistentArity    = errors.New("rac: internal error: inconsistent arity")
 	errInternalInconsistentPosition = errors.New("rac: internal error: inconsistent position")

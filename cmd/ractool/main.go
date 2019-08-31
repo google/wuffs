@@ -315,12 +315,6 @@ func parseRange(s string) (i int64, j int64, ok bool) {
 }
 
 func decode(inFile *os.File) error {
-	switch *codecFlag {
-	case "zlib":
-		// No-op.
-	default:
-		return errors.New("unsupported -codec")
-	}
 	i, j, ok := parseRange(*drangeFlag)
 	if !ok {
 		return fmt.Errorf("invalid -drange")
@@ -357,152 +351,6 @@ func decode(inFile *os.File) error {
 		return nil
 	}
 
-	if *singlethreadedFlag {
-		racReader := mustMakeRACReader(rs, compressedSize)
-		return decodeSingleThreaded(os.Stdout, rac.Range{i, j}, racReader)
-	}
-	return decodeMultiThreaded(os.Stdout, rac.Range{i, j}, rs, compressedSize)
-}
-
-func decodeMultiThreaded(dst io.Writer, overallDRange rac.Range, rs io.ReadSeeker, compressedSize int64) error {
-	numWorkers := runtime.NumCPU()
-	// After 16 workers, we seem to hit diminishing returns.
-	if numWorkers > 16 {
-		numWorkers = 16
-	}
-
-	// Set up re-usable buffers to hold decoded bytes. The number of buffers is
-	// arbitrary, but is larger than the number of workers because individual
-	// pieces of work (the decodeWork type) may complete in a different order
-	// than they need to be written to dst. Having spare buffers means fewer
-	// idle workers.
-	bufc := make(chan *bytes.Buffer, 2*numWorkers)
-	for i := 0; i < cap(bufc); i++ {
-		bufc <- &bytes.Buffer{}
-	}
-
-	// Set up the workers, fed incomplete decodeWork's by issueDecodeWork.
-	reqc := make(chan decodeWork, numWorkers)
-	resc := make(chan decodeWork, numWorkers)
-	go issueDecodeWork(reqc, bufc, overallDRange, rs, compressedSize)
-	for i := 0; i < numWorkers; i++ {
-		go decodeWorker(resc, reqc, mustMakeRACReader(rs, compressedSize))
-	}
-
-	// m holds completed decodeWork's, which may arrive out of order. The next
-	// (in ascending DRange order) decodeWork starts at nextDRange0.
-	m := map[int64]*bytes.Buffer{}
-	nextDRange0 := overallDRange[0]
-
-	// Handle completed decodeWork's.
-	for work := range resc {
-		// Add the next arrival to m (if non-empty), then pop all of m's
-		// entries that are next in ascending DRange order, returning any used
-		// buffers to bufc to be recycled.
-		if work.buf == nil {
-			// No-op.
-		} else if work.buf.Len() == 0 {
-			bufc <- work.buf
-		} else {
-			m[work.dRange[0]] = work.buf
-			for {
-				buf, ok := m[nextDRange0]
-				if !ok {
-					break
-				}
-				delete(m, nextDRange0)
-				n, err := dst.Write(buf.Bytes())
-				if err != nil {
-					return err
-				}
-				nextDRange0 += int64(n)
-				bufc <- buf
-			}
-		}
-
-		if work.err == errEndOfWork {
-			numWorkers--
-			if numWorkers != 0 {
-				continue
-			}
-			return nil
-		} else if work.err != nil {
-			return work.err
-		}
-
-		// This shouldn't happen, but if it does, print a specific error
-		// message instead of the more general "deadlock" message.
-		if len(m) == cap(bufc) {
-			return errors.New("internal error: all workers idle but the next chunk is not found")
-		}
-	}
-	panic("unreachable")
-}
-
-var errEndOfWork = errors.New("end of work")
-
-// decodeWork is a unit of work for multi-threaded decoding. Workers receive
-// empty buffers and send filled buffers.
-type decodeWork struct {
-	dRange rac.Range
-	buf    *bytes.Buffer
-	err    error
-}
-
-func decodeWorker(resc chan<- decodeWork, reqc <-chan decodeWork, racReader *rac.Reader) {
-	for work := range reqc {
-		if work.err == nil {
-			work.err = decodeSingleThreaded(work.buf, work.dRange, racReader)
-		}
-		resc <- work
-		if work.err != nil {
-			break
-		}
-	}
-	resc <- decodeWork{err: errEndOfWork}
-}
-
-func issueDecodeWork(reqc chan<- decodeWork, bufc <-chan *bytes.Buffer, overallDRange rac.Range, rs io.ReadSeeker, compressedSize int64) {
-	defer close(reqc)
-	chunkReader := &rac.ChunkReader{
-		ReadSeeker:     rs,
-		CompressedSize: compressedSize,
-	}
-	if err := chunkReader.SeekToChunkContaining(overallDRange[0]); err != nil {
-		reqc <- decodeWork{err: err}
-		return
-	}
-	for {
-		chunk, err := chunkReader.NextChunk()
-		if err == io.EOF {
-			return
-		} else if err != nil {
-			reqc <- decodeWork{err: err}
-			return
-		}
-		if dr := chunk.DRange.Intersect(overallDRange); !dr.Empty() {
-			buf := <-bufc
-			buf.Reset()
-			reqc <- decodeWork{dRange: dr, buf: buf}
-		}
-		if chunk.DRange[1] >= overallDRange[1] {
-			return
-		}
-	}
-}
-
-func decodeSingleThreaded(dst io.Writer, dRange rac.Range, racReader *rac.Reader) error {
-	if _, err := racReader.Seek(dRange[0], io.SeekStart); err != nil {
-		return err
-	}
-	_, err := io.Copy(dst, &io.LimitedReader{
-		R: racReader,
-		N: dRange.Size(),
-	})
-	return err
-}
-
-func mustMakeRACReader(rs io.ReadSeeker, compressedSize int64) *rac.Reader {
 	r := &rac.Reader{
 		ReadSeeker:     rs,
 		CompressedSize: compressedSize,
@@ -511,9 +359,35 @@ func mustMakeRACReader(rs io.ReadSeeker, compressedSize int64) *rac.Reader {
 	case "zlib":
 		r.CodecReaders = []rac.CodecReader{&raczlib.CodecReader{}}
 	default:
-		panic("unreachable")
+		return errors.New("unsupported -codec")
 	}
-	return r
+
+	// The r.Close method might need to wait for its goroutines to shut down
+	// cleanly, to guarantee that the underlying io.ReadSeeker won't be used
+	// after r.Close returns.
+	//
+	// But here, we're a program ("package main"), not a library. After this
+	// function (decode) returns, we'll exit the program. There's no need to
+	// hold that up, so we call CloseWithoutWaiting instead of Close.
+	defer r.CloseWithoutWaiting()
+
+	if !*singlethreadedFlag {
+		n := runtime.NumCPU()
+		// After 16 workers, we seem to hit diminishing speed returns, but
+		// still face increasing memory costs.
+		if n > 16 {
+			n = 16
+		}
+		r.Concurrency = n
+	}
+	if _, err := r.Seek(i, io.SeekStart); err != nil {
+		return err
+	}
+	_, err = io.Copy(os.Stdout, &io.LimitedReader{
+		R: r,
+		N: j - i,
+	})
+	return err
 }
 
 func encode(r io.Reader) error {

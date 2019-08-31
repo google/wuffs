@@ -153,7 +153,12 @@ func (b *writeBuffer) compact() {
 const NoResourceUsed int = -1
 
 // CodecWriter specializes a Writer to encode a specific compression codec.
+//
+// Instances are not required to support concurrent use.
 type CodecWriter interface {
+	// Clone duplicates this. The clone and the original can run concurrently.
+	Clone() CodecWriter
+
 	// Compress returns the codec-specific compressed form of the concatenation
 	// of p and q.
 	//
@@ -572,6 +577,6 @@ func (w *Writer) Close() error {
 		w.err = err
 		return err
 	}
-	w.err = errWriterIsClosed
+	w.err = errAlreadyClosed
 	return nil
 }

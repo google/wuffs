@@ -73,6 +73,11 @@ func (r *CodecReader) Accepts(c rac.Codec) bool {
 	return c == rac.CodecZlib
 }
 
+// Clone implements rac.CodecReader.
+func (r *CodecReader) Clone() rac.CodecReader {
+	return &CodecReader{}
+}
+
 // MakeDecompressor implements rac.CodecReader.
 func (r *CodecReader) MakeDecompressor(
 	compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
@@ -164,6 +169,11 @@ type CodecWriter struct {
 	compressed bytes.Buffer
 	zlibWriter *zlib.Writer
 	stash      []byte
+}
+
+// Clone implements rac.CodecWriter.
+func (r *CodecWriter) Clone() rac.CodecWriter {
+	return &CodecWriter{}
 }
 
 // Compress implements rac.CodecWriter.

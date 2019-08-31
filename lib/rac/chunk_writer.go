@@ -479,7 +479,7 @@ func (w *ChunkWriter) Close() error {
 		}
 	}
 
-	w.err = errWriterIsClosed
+	w.err = errAlreadyClosed
 	return nil
 }
 

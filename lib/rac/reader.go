@@ -46,9 +46,14 @@ type ReaderContext struct {
 }
 
 // CodecReader specializes a Reader to decode a specific compression codec.
+//
+// Instances are not required to support concurrent use.
 type CodecReader interface {
 	// Accepts returns whether this CodecReader can decode a Codec.
 	Accepts(c Codec) bool
+
+	// Clone duplicates this. The clone and the original can run concurrently.
+	Clone() CodecReader
 
 	// MakeDecompressor returns the Codec-specific io.Reader for a chunk.
 	//
@@ -93,6 +98,13 @@ type Reader struct {
 	// For example, use a raczlib.CodecReader from the sibilng "raczlib"
 	// package.
 	CodecReaders []CodecReader
+
+	// Concurrency is how many worker goroutines are used to decode RAC chunks.
+	// Bigger values often lead to faster throughput, up to a
+	// hardware-dependent point, but also larger memory requirements.
+	//
+	// Zero means a non-concurrent (single-goroutine) reader.
+	Concurrency int
 
 	// err is the first error encountered. It is sticky: once a non-nil error
 	// occurs, all public methods will return that error.
@@ -154,6 +166,9 @@ type Reader struct {
 
 	// zeroes serves the Zeroes Codec.
 	zeroes zeroesReader
+
+	// concReader decodes the RAC-compressed data concurrently.
+	concReader concReader
 }
 
 func (r *Reader) initialize() error {
@@ -170,13 +185,32 @@ func (r *Reader) initialize() error {
 		return r.err
 	}
 	r.currChunk.R = r.chunkReader.readSeeker
+	r.concReader.initialize(r)
 	return nil
+}
+
+func (r *Reader) clone() *Reader {
+	c := &Reader{
+		ReadSeeker:     r.ReadSeeker,
+		CompressedSize: r.CompressedSize,
+		CodecReaders:   make([]CodecReader, len(r.CodecReaders)),
+		Concurrency:    r.Concurrency,
+	}
+	for i := range c.CodecReaders {
+		c.CodecReaders[i] = r.CodecReaders[i].Clone()
+	}
+	return c
 }
 
 // Read implements io.Reader.
 func (r *Reader) Read(p []byte) (int, error) {
 	if err := r.initialize(); err != nil {
 		return 0, err
+	}
+	if r.concReader.ready() {
+		n, err := r.concReader.Read(p)
+		r.err = err
+		return n, err
 	}
 	numRead := 0
 
@@ -382,6 +416,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	if err := r.initialize(); err != nil {
 		return 0, err
 	}
+	if r.concReader.ready() {
+		n, err := r.concReader.Seek(offset, whence)
+		r.err = r.err
+		return n, err
+	}
 
 	pos := r.pos
 	switch whence {
@@ -390,12 +429,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		pos += offset
 	case io.SeekEnd:
-		end, err := r.chunkReader.DecompressedSize()
-		if err != nil {
-			r.err = err
-			return 0, r.err
-		}
-		pos = end + offset
+		pos = r.chunkReader.decompressedSize + offset
 	default:
 		return 0, errSeekToInvalidWhence
 	}
@@ -423,6 +457,26 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Close implements io.Closer.
+//
+// r.ReadSeeker will not be accessed after Close returns. If r.Concurrency is
+// non-zero, this may involve waiting for various goroutines to shut down,
+// which may take some time. If the caller does not care about waiting until it
+// is safe to close or otherwise release the r.ReadSeeker's resources, call
+// CloseWithoutWaiting instead.
 func (r *Reader) Close() error {
-	return nil
+	if err := r.initialize(); err != nil {
+		r.concReader.Close()
+		return err
+	}
+	r.err = errAlreadyClosed
+	return r.concReader.Close()
+}
+
+func (r *Reader) CloseWithoutWaiting() error {
+	if err := r.initialize(); err != nil {
+		r.concReader.CloseWithoutWaiting()
+		return err
+	}
+	r.err = errAlreadyClosed
+	return r.concReader.CloseWithoutWaiting()
 }
