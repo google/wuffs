@@ -230,28 +230,21 @@ func (c *concReader) Read(p []byte) (int, error) {
 		if len(p) == 0 {
 			return numRead, nil
 		}
-
-		// Fill p from c.currWork.
-		if c.currWork.i < c.currWork.j {
-			n := copy(p, c.currWork.buffer[c.currWork.i:c.currWork.j])
-			p = p[n:]
-			numRead += n
-			c.pos += int64(n)
-			c.currWork.i += uint32(n)
+		if c.currWork.i >= c.currWork.j {
 			err := c.currWork.err
-
-			// Recycle c.currWork if we're done with it.
-			if c.currWork.i >= c.currWork.j {
-				c.currWork.recycle()
-			}
-
+			c.currWork.recycle()
 			if err != nil {
 				return numRead, err
 			}
-			continue
+			c.currWork = c.nextWork()
 		}
 
-		c.currWork = c.nextWork()
+		// Fill p from c.currWork.
+		n := copy(p, c.currWork.buffer[c.currWork.i:c.currWork.j])
+		p = p[n:]
+		numRead += n
+		c.pos += int64(n)
+		c.currWork.i += uint32(n)
 	}
 }
 
