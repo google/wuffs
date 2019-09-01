@@ -251,19 +251,15 @@ func (c *concReader) Read(p []byte) (int, error) {
 			continue
 		}
 
-		work, err := c.nextWork()
-		if err != nil {
-			return numRead, err
-		}
-		c.currWork = work
+		c.currWork = c.nextWork()
 	}
 }
 
-func (c *concReader) nextWork() (rWork, error) {
+func (c *concReader) nextWork() rWork {
 	for {
 		if work, ok := c.completedWorks[c.pos]; ok {
 			delete(c.completedWorks, c.pos)
-			return work, nil
+			return work
 		}
 		work := <-c.resc
 		c.completedWorks[work.dRange[0]] = work
