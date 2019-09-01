@@ -539,9 +539,9 @@ position `0x04`. Decompressing that chunk produces the 6 bytes
 
 The second example consists of a root node with four children: one metadata
 node (a shared dictionary) and three data nodes. The shared dictionary,
-"\x20sheep\n" is `0x0008` bytes long and its Adler-32 checksum is `0x0BE0026E`.
-The third child's (the second data node)'s compressed contents starts at
-position `0x73`. Decompressing that chunk, together with that shared
+"\x20sheep.\n" is `0x0008` bytes long and its Adler-32 checksum is
+`0x0BE0026E`. The third child's (the second data node)'s compressed contents
+starts at position `0x73`. Decompressing that chunk, together with that shared
 dictionary, produces the 11 bytes ["Two
 sheep.\n"](https://play.golang.org/p/Jh9Wyp6PLID). The complete decoding of all
 three data chunks is "One sheep.\nTwo sheep.\nThree sheep.\n".
