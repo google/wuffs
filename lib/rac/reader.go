@@ -514,6 +514,9 @@ func (r *Reader) seek(offset int64, whence int, limit int64) (int64, error) {
 // which may take some time. If the caller does not care about waiting until it
 // is safe to close or otherwise release the r.ReadSeeker's resources, call
 // CloseWithoutWaiting instead.
+//
+// It is not safe to call Close from a separate goroutine while another method
+// call like Read or Seek is in progress.
 func (r *Reader) Close() error {
 	if err := r.initialize(); err != nil {
 		r.concReader.Close()

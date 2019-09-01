@@ -15,27 +15,62 @@
 package rac
 
 import (
-	"bytes"
 	"io"
 )
 
-// rWork is a unit of work for concurrent reading. The Manager sends empty
-// buffers. Workers receive empty buffers and send filled buffers.
+const (
+	numRBuffersPerWorker = 2
+	rBufferSize          = 65536
+)
+
+type rBuffer [rBufferSize]byte
+
+// rWork is a unit of work for concurrent reading. The Manager sends dRanges
+// for Workers to read. Workers send filled buffers to the concReader.
 type rWork struct {
+	err error
+
+	// dRange is set by the Manager goroutine, for a Worker's incoming work.
+	// That Worker may slice that dRange into smaller pieces of outgoing work.
+	// Each outgoing piece has a dRange.Size() of at most rBufferSize.
 	dRange Range
-	buf    *bytes.Buffer
-	err    error
+
+	// buffer[i:j] holds bytes decompressed from the underlying RAC file but
+	// not yet served onwards to concReader.Read's caller.
+	//
+	// j should equal dRange.Size().
+	//
+	// When the buffer is done with (e.g. if i == j, or if we've canceled a
+	// read-in-progress), the buffer is returned to its owning Worker
+	// goroutine via recyclec.
+	//
+	// These fields are not used by the Manager goroutine.
+	buffer   *rBuffer
+	i, j     uint32
+	recyclec chan<- *rBuffer
 }
 
-// stopWork is a cancel (non-permanent) or close (permanent) notice to the
-// Manager and Workers. The recipient needs to acknowledge the request by
-// receiving from ackc (if non-nil).
+func (r *rWork) recycle() {
+	if (r.recyclec != nil) && (r.buffer != nil) {
+		r.recyclec <- r.buffer
+		r.recyclec = nil
+		r.buffer = nil
+		r.i = 0
+		r.j = 0
+	}
+}
+
+// stopWork is a cancel (non-permanent, keepWorking = true) or close
+// (permanent, keepWorking = false) notice to the Manager and Workers. The
+// recipient needs to acknowledge the request by receiving from ackc (if
+// non-nil).
 type stopWork struct {
 	ackc        <-chan struct{}
 	keepWorking bool
 }
 
-// concReader co-ordinates multiple goroutines serving a Reader.
+// concReader co-ordinates multiple goroutines (1 Manager, multiple Workers)
+// serving a Reader.
 type concReader struct {
 	// Channels between the concReader, the Manager and multiple Workers.
 	//
@@ -45,9 +80,6 @@ type concReader struct {
 	roic chan Range // Region of Interest channel.
 	reqc chan rWork // Work-Request       channel.
 	resc chan rWork // Work-Response      channel.
-
-	// bufc holds re-usable buffers.
-	bufc chan *bytes.Buffer
 
 	// stopc and ackc are used to synchronize the concReader, Manager and
 	// Workers, either canceling work-in-progress or closing everything down.
@@ -60,12 +92,7 @@ type concReader struct {
 	// currWork holds the unit of work currently being processed by Read. It
 	// will be recycled after Read is done with it, or if a Seek causes us to
 	// cancel the work-in-progress.
-	//
-	// currBytes is currWork's buffer's bytes. currBytes[:currIndex] has
-	// already been sent out via Read. currBytes[currIndex:] has not.
-	currWork  rWork
-	currBytes []byte
-	currIndex int
+	currWork rWork
 
 	// completedWorks hold completed units of work that are not the next unit
 	// to be sent out via Read. Works may arrive out of order.
@@ -112,28 +139,22 @@ func (c *concReader) initialize(racReader *Reader) {
 	c.posLimit = racReader.chunkReader.decompressedSize
 	c.decompressedSize = racReader.chunkReader.decompressedSize
 
-	// Set up re-usable buffers to hold decoded bytes. The number of buffers is
-	// arbitrary, but is larger than the number of Workers because individual
-	// pieces of work (the rWork type) may complete in a different order than
-	// they need to be written to dst. Having spare buffers means fewer idle
-	// Workers.
-	c.bufc = make(chan *bytes.Buffer, 2*c.numWorkers)
-	for i := 0; i < cap(c.bufc); i++ {
-		c.bufc <- &bytes.Buffer{}
-	}
-
 	// Set up the Manager and the Workers.
-	c.roic = make(chan Range, 1)
+	c.roic = make(chan Range)
 	c.reqc = make(chan rWork, c.numWorkers)
-	c.resc = make(chan rWork, c.numWorkers)
-	c.ackc = make(chan struct{})
+	c.resc = make(chan rWork, c.numWorkers*numRBuffersPerWorker)
+
+	// Set up the channels used in stopAnyWorkInProgress. It is important that
+	// these are unbuffered, so that communication is also synchronization.
 	c.stopc = make(chan stopWork)
+	c.ackc = make(chan struct{})
+
 	for i := 0; i < c.numWorkers; i++ {
 		rr := racReader.clone()
 		rr.Concurrency = 0
 		go runRWorker(c.stopc, c.resc, c.reqc, rr)
 	}
-	go runRManager(c.stopc, c.roic, c.bufc, c.reqc, &racReader.chunkReader)
+	go runRManager(c.stopc, c.roic, c.reqc, &racReader.chunkReader)
 }
 
 func (c *concReader) ready() bool {
@@ -211,20 +232,17 @@ func (c *concReader) Read(p []byte) (int, error) {
 		}
 
 		// Fill p from c.currWork.
-		if c.currWork.buf != nil {
-			n := copy(p, c.currBytes[c.currIndex:])
+		if c.currWork.i < c.currWork.j {
+			n := copy(p, c.currWork.buffer[c.currWork.i:c.currWork.j])
 			p = p[n:]
 			numRead += n
 			c.pos += int64(n)
-			c.currIndex += n
+			c.currWork.i += uint32(n)
 			err := c.currWork.err
 
 			// Recycle c.currWork if we're done with it.
-			if c.currIndex == len(c.currBytes) {
-				c.bufc <- c.currWork.buf
-				c.currWork = rWork{}
-				c.currBytes = nil
-				c.currIndex = 0
+			if c.currWork.i >= c.currWork.j {
+				c.currWork.recycle()
 			}
 
 			if err != nil {
@@ -238,8 +256,6 @@ func (c *concReader) Read(p []byte) (int, error) {
 			return numRead, err
 		}
 		c.currWork = work
-		c.currBytes = work.buf.Bytes()
-		c.currIndex = 0
 	}
 }
 
@@ -249,13 +265,6 @@ func (c *concReader) nextWork() (rWork, error) {
 			delete(c.completedWorks, c.pos)
 			return work, nil
 		}
-
-		// This shouldn't happen, but if it does, print a specific error
-		// message instead of the more general "deadlock" message.
-		if len(c.completedWorks) == cap(c.bufc) {
-			return rWork{}, errInternalAllWorkersIdle
-		}
-
 		work := <-c.resc
 		c.completedWorks[work.dRange[0]] = work
 	}
@@ -281,22 +290,23 @@ func (c *concReader) stopAnyWorkInProgress(keepWorking bool) {
 }
 
 func (c *concReader) recycleBuffers() {
-	if c.currWork.buf != nil {
-		c.bufc <- c.currWork.buf
-		c.currWork = rWork{}
-		c.currBytes = nil
-		c.currIndex = 0
-	}
+	c.currWork.recycle()
 
 	for k, work := range c.completedWorks {
-		c.bufc <- work.buf
+		work.recycle()
 		delete(c.completedWorks, k)
 	}
 
+	// Drain c's buffered channels.
+	drainWorkChan(c.reqc)
+	drainWorkChan(c.resc)
+}
+
+func drainWorkChan(c chan rWork) {
 	for {
 		select {
-		case work := <-c.resc:
-			c.bufc <- work.buf
+		case work := <-c:
+			work.recycle()
 		default:
 			return
 		}
@@ -305,7 +315,17 @@ func (c *concReader) recycleBuffers() {
 
 func runRWorker(stopc <-chan stopWork, resc chan<- rWork, reqc <-chan rWork, racReader *Reader) {
 	input, output := reqc, (chan<- rWork)(nil)
-	work := rWork{}
+	outWork := rWork{}
+
+	// dRange is what part of incoming work remains to be read from the
+	// racReader.
+	dRange := Range{}
+
+	// Each worker owns up to numRBuffersPerWorker buffers, some of which may
+	// be temporarily loaned to the concReader goroutine.
+	buffers := [numRBuffersPerWorker]*rBuffer{}
+	recyclec := make(chan *rBuffer, numRBuffersPerWorker)
+	canAlloc := numRBuffersPerWorker
 
 loop:
 	for {
@@ -321,26 +341,93 @@ loop:
 			}
 			continue loop
 
-		case work = <-input:
-			input, output = nil, resc
-			if work.err == nil {
-				work.err = racReader.SeekRange(work.dRange[0], work.dRange[1])
+		case inWork := <-input:
+			input = nil
+			if inWork.err == nil {
+				dRange = inWork.dRange
+				if dRange.Empty() {
+					inWork.err = errInternalEmptyDRange
+				} else {
+					inWork.err = racReader.SeekRange(dRange[0], dRange[1])
+				}
+				if inWork.err == io.EOF {
+					inWork.err = io.ErrUnexpectedEOF
+				}
 			}
-			if work.err == nil {
-				_, work.err = io.Copy(work.buf, racReader)
-			}
-			if work.err == io.EOF {
-				work.err = io.ErrUnexpectedEOF
+			if inWork.err != nil {
+				output, outWork = resc, inWork
+				continue loop
 			}
 
-		case output <- work:
-			input, output = reqc, nil
-			work = rWork{}
+		case output <- outWork:
+			output, outWork = nil, rWork{}
+
+		case recycledBuffer := <-recyclec:
+			for i := range buffers {
+				if buffers[i] == nil {
+					buffers[i], recycledBuffer = recycledBuffer, nil
+					break
+				}
+			}
+			if recycledBuffer != nil {
+				panic("unreachable")
+			}
+		}
+
+		// If there's existing outWork, sending it trumps making new outWork.
+		if output != nil {
+			continue loop
+		}
+
+		// If dRange was completely processsed, get new inWork.
+		if dRange.Empty() {
+			input = reqc
+			continue loop
+		}
+
+		// Find a new or recycled buffer.
+		buffer := (*rBuffer)(nil)
+		{
+			b := -1
+			if buffers[0] != nil {
+				b = 0
+			} else if buffers[1] != nil {
+				b = 1
+			}
+
+			if b >= 0 {
+				buffer, buffers[b] = buffers[b], nil
+			} else if canAlloc == 0 {
+				// Wait until we receive a recycled buffer.
+				continue loop
+			} else {
+				canAlloc--
+				buffer = &rBuffer{}
+			}
+		}
+
+		// Make a new outWork, shrinking dRange to be whatever's left over.
+		{
+			n, err := racReader.Read(buffer[:])
+			if err == io.EOF {
+				err = nil
+			}
+			oldDPos := dRange[0]
+			newDPos := dRange[0] + int64(n)
+			dRange[0] = newDPos
+			output, outWork = resc, rWork{
+				err:      err,
+				dRange:   Range{oldDPos, newDPos},
+				buffer:   buffer,
+				i:        0,
+				j:        uint32(n),
+				recyclec: recyclec,
+			}
 		}
 	}
 }
 
-func runRManager(stopc <-chan stopWork, roic <-chan Range, bufc <-chan *bytes.Buffer, reqc chan<- rWork, chunkReader *ChunkReader) {
+func runRManager(stopc <-chan stopWork, roic <-chan Range, reqc chan<- rWork, chunkReader *ChunkReader) {
 	input, output := roic, (chan<- rWork)(nil)
 	roi := Range{}
 	work := rWork{}
@@ -392,26 +479,8 @@ loop:
 				input, output = roic, nil
 				continue loop
 			}
-			dr := chunk.DRange.Intersect(roi)
-			if dr.Empty() {
-				continue
-			}
-
-			select {
-			case stop := <-stopc:
-				if stop.ackc != nil {
-					<-stop.ackc
-				} else {
-					// No need to ack. This is CloseWithoutWaiting.
-				}
-				if !stop.keepWorking {
-					return
-				}
-				continue loop
-
-			case buf := <-bufc:
-				buf.Reset()
-				work = rWork{dRange: dr, buf: buf}
+			if dr := chunk.DRange.Intersect(roi); !dr.Empty() {
+				work = rWork{dRange: dr}
 				continue loop
 			}
 		}

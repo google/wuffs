@@ -89,8 +89,8 @@ var (
 	errTooMuchInput                  = errors.New("rac: too much input")
 	errUnsupportedRACFileVersion     = errors.New("rac: unsupported RAC file version")
 
-	errInternalAllWorkersIdle       = errors.New("rac: internal error: all workers idle")
 	errInternalArityIsTooLarge      = errors.New("rac: internal error: arity is too large")
+	errInternalEmptyDRange          = errors.New("rac: internal error: empty DRange")
 	errInternalInconsistentArity    = errors.New("rac: internal error: inconsistent arity")
 	errInternalInconsistentPosition = errors.New("rac: internal error: inconsistent position")
 	errInternalShortCSize           = errors.New("rac: internal error: short CSize")
