@@ -179,6 +179,9 @@ type CodecWriter interface {
 	Compress(p []byte, q []byte, resourcesData [][]byte) (
 		codec Codec, compressed []byte, secondaryResource int, tertiaryResource int, retErr error)
 
+	// CanCut returns whether the CodecWriter supports the optional Cut method.
+	CanCut() bool
+
 	// Cut modifies encoded's contents such that encoded[:encodedLen] is valid
 	// codec-compressed data, assuming that encoded starts off containing valid
 	// codec-compressed data.
@@ -351,6 +354,10 @@ func (w *Writer) initialize() error {
 	if w.DChunkSize > 0 {
 		w.dChunkSize = w.DChunkSize
 	} else if w.CChunkSize > 0 {
+		if !w.CodecWriter.CanCut() {
+			w.err = ErrCodecWriterDoesNotSupportCChunkSize
+			return w.err
+		}
 		w.cChunkSize = w.CChunkSize
 		if w.cChunkSize > maxCChunkSize {
 			w.cChunkSize = maxCChunkSize

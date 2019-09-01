@@ -64,6 +64,8 @@ const (
 var indexLocationAtEndMagic = []byte("\x72\xC3\x63\x00")
 
 var (
+	ErrCodecWriterDoesNotSupportCChunkSize = errors.New("rac: CodecWriter does not support CChunkSize")
+
 	errAlreadyClosed                 = errors.New("rac: already closed")
 	errCChunkSizeIsTooSmall          = errors.New("rac: CChunkSize is too small")
 	errILAEndTempFile                = errors.New("rac: IndexLocationAtEnd requires a nil TempFile")

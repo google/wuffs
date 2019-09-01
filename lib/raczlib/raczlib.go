@@ -264,6 +264,11 @@ func (w *CodecWriter) compress(p []byte, q []byte, dict []byte) ([]byte, error) 
 	return w.compressed.Bytes(), nil
 }
 
+// CanCut implements rac.CodecWriter.
+func (w *CodecWriter) CanCut() bool {
+	return true
+}
+
 // Cut implements rac.CodecWriter.
 func (w *CodecWriter) Cut(codec rac.Codec, encoded []byte, maxEncodedLen int) (encodedLen int, decodedLen int, retErr error) {
 	if codec != rac.CodecZlib {
