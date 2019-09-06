@@ -161,7 +161,7 @@ func TestReaderConcatenation(t *testing.T) {
 	buf[0x37] = 0x00 // CBiasing with COff[0], which is encLen0.
 
 	// Codec and Version.
-	buf[0x1F] = byte(rac.CodecZlib)
+	buf[0x1F] = byte(rac.CodecZlib >> 56)
 	buf[0x3E] = 0x01
 
 	// Checksum.

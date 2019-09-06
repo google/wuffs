@@ -368,7 +368,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	if chunk.Codec == 0 {
+	if (chunk.Codec == CodecZeroes) || (chunk.Codec == codecLongZeroes) {
 		r.currChunk.N = 0
 		r.dRange = chunk.DRange
 		r.zeroes = zeroesReader(r.dRange.Size())
@@ -384,16 +384,12 @@ func (r *Reader) nextChunk() error {
 		}
 	}
 	if codecReader == nil {
-		name := ""
-		switch chunk.Codec {
-		case CodecZlib:
-			name = " (Zlib)"
-		case CodecBrotli:
-			name = " (Brotli)"
-		case CodecZstandard:
-			name = " (Zstandard)"
+		name0, name1, name2 := "", chunk.Codec.name(), ""
+		if name1 != "" {
+			name0, name2 = " (", ")"
 		}
-		r.err = fmt.Errorf("rac: no matching CodecReader for Codec 0x%02X%s", chunk.Codec, name)
+		r.err = fmt.Errorf("rac: no matching CodecReader for Codec 0x%X%s%s%s",
+			chunk.Codec, name0, name1, name2)
 		return r.err
 	}
 

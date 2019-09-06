@@ -25,12 +25,14 @@ func u48LE(b []byte) int64 {
 	_ = b[7] // Early bounds check to guarantee safety of reads below.
 	u := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
 		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
-	return int64(u & 0xFFFFFFFFFFFF)
+	const mask = (1 << 48) - 1
+	return int64(u & mask)
 }
 
-// bitwiseSubset returns whether every 1-bit in inner is also set in outer.
-func bitwiseSubset(outer Codec, inner Codec) bool {
-	return outer == (outer | inner)
+func u64LE(b []byte) uint64 {
+	_ = b[7] // Early bounds check to guarantee safety of reads below.
+	return uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
+		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
 }
 
 // Range is the half-open range [low, high). It is invalid for low to be
@@ -78,11 +80,40 @@ func nodeSize(arity uint8) int {
 // true.
 type rNode [4096]byte
 
-func (b *rNode) arity() int     { return int(b[3]) }
-func (b *rNode) codec() Codec   { return Codec(b[(8*int(b[3]))+7]) }
-func (b *rNode) cPtrMax() int64 { return u48LE(b[(16*int(b[3]))+8:]) }
-func (b *rNode) dPtrMax() int64 { return u48LE(b[8*int(b[3]):]) }
-func (b *rNode) version() uint8 { return b[(16*int(b[3]))+14] }
+func (b *rNode) arity() int           { return int(b[3]) }
+func (b *rNode) codecHasMixBit() bool { return b[(8*int(b[3]))+7]&0x40 != 0 }
+func (b *rNode) cPtrMax() int64       { return u48LE(b[(16*int(b[3]))+8:]) }
+func (b *rNode) dPtrMax() int64       { return u48LE(b[8*int(b[3]):]) }
+func (b *rNode) version() uint8       { return b[(16*int(b[3]))+14] }
+
+// codec returns the 1-byte (short) or 7-byte (long) codec as a valid Codec, or
+// CodecInvalid.
+//
+// The (uint64) Codec value returned does not have the Mix Bit (the 62nd bit)
+// set, regardless of whether it's set in the rNode's bytes.
+func (b *rNode) codec() Codec {
+	arity := int(b[3])
+	cByte := b[(8*arity)+7]
+
+	// Look for a short codec.
+	if (cByte & 0x80) == 0 {
+		return Codec(cByte&0x3F) << 56
+	}
+	cByte &= 0x3F
+
+	// Look for a long codec.
+	const highBit, low56Bits = 0x8000000000000000, 0x00FFFFFFFFFFFFFF
+	for j := uint8(0); j < 4; j++ {
+		i := int(cByte | (j << 6))
+		if (i < arity) && (b.tTag(i) == 0xFD) {
+			base := (8 * arity) + 8
+			codec := Codec(u64LE(b[(8*i)+base:]))
+			return (codec & low56Bits) | highBit
+		}
+	}
+
+	return CodecInvalid
+}
 
 func (b *rNode) cLen(i int) uint8 {
 	base := (8 * int(b[3])) + 14
@@ -178,37 +209,49 @@ func (b *rNode) valid() bool {
 	}
 
 	// Check that the "Reserved (0)" bytes are zero and that the TTag values
-	// aren't in the reserved range [0xC0, 0xFE).
+	// aren't in the reserved range [0xC0, 0xFD).
+	hasChildren := false
 	for i := 0; i < arity; i++ {
 		if b[(8*i)+6] != 0 {
 			return false
 		}
-		if tTag := b[(8*i)+7]; (0xC0 <= tTag) && (tTag < 0xFE) {
+		if tTag := b[(8*i)+7]; (0xC0 <= tTag) && (tTag < 0xFD) {
 			return false
+		} else if tTag != 0xFD {
+			hasChildren = true
 		}
 	}
-	if b[(8*arity)+6] != 0 {
+	if !hasChildren || (b[(8*arity)+6] != 0) {
 		return false
 	}
 
 	// Check that the DPtr values are non-decreasing. The first DPtr value is
 	// implicitly zero.
-	prev := u48LE(b[8*1:])
-	for i := 2; i <= arity; i++ {
+	prev := int64(0)
+	for i := 1; i <= arity; i++ {
 		curr := u48LE(b[8*i:])
 		if curr < prev {
 			return false
+		} else if curr != prev {
+			if tTag := b[(8*i)+7]; tTag == 0xFD {
+				return false
+			}
 		}
 		prev = curr
 	}
 
-	// Check that no CPtr value exceeds CPtrMax (the final CPtr value).
+	// Check that no CPtr value exceeds CPtrMax (the final CPtr value), other
+	// than 0xFD Codec Entries.
 	base := (8 * arity) + 8
 	cPtrMax := u48LE(b[size-8:])
 	for i := 0; i < arity; i++ {
-		if cPtr := u48LE(b[(8*i)+base:]); cPtr > cPtrMax {
-			return false
+		if cPtr := u48LE(b[(8*i)+base:]); cPtr <= cPtrMax {
+			continue
 		}
+		if tTag := b[(8*i)+7]; tTag == 0xFD {
+			continue
+		}
+		return false
 	}
 
 	// Check the the version is non-zero.
@@ -225,7 +268,8 @@ func (b *rNode) valid() bool {
 
 	// Further checking of the codec, version, COffMax and DOffMax requires
 	// more context, and is done in loadAndValidate.
-	return true
+
+	return b.codec().Valid()
 }
 
 // ChunkReader parses a RAC file.
@@ -431,7 +475,7 @@ func (r *ChunkReader) load(cOffset int64, arity uint8) error {
 }
 
 func (r *ChunkReader) loadAndValidate(cOffset int64,
-	parentCodec Codec, parentVersion uint8, parentCOffMax int64,
+	parentCodec Codec, parentCodecHasMixBit bool, parentVersion uint8, parentCOffMax int64,
 	childCBias int64, childDSize int64) error {
 
 	if (cOffset < 0) || ((r.CompressedSize - 4) < cOffset) {
@@ -467,7 +511,7 @@ func (r *ChunkReader) loadAndValidate(cOffset int64,
 
 	// Validate the parent and child codec, version, COffMax and DOffMax.
 	childVersion := r.currNode.version()
-	if !bitwiseSubset(parentCodec, r.currNode.codec()) ||
+	if !parentChildCodecsValid(parentCodec, r.currNode.codec(), parentCodecHasMixBit) ||
 		(parentVersion < childVersion) ||
 		(parentCOffMax < (childCBias + r.currNode.cPtrMax())) ||
 		(childDSize != r.currNode.dPtrMax()) {
@@ -553,6 +597,7 @@ func (r *ChunkReader) resolveSeekPosition() error {
 		}
 
 		parentCodec := r.currNode.codec()
+		parentCodecHasMixBit := r.currNode.codecHasMixBit()
 		parentVersion := r.currNode.version()
 		parentCOffMax := cBias + r.currNode.cPtrMax()
 		childCOffset := r.currNode.cOff(i, cBias)
@@ -564,7 +609,7 @@ func (r *ChunkReader) resolveSeekPosition() error {
 		childDSize := r.currNode.dSize(i)
 
 		if err := r.loadAndValidate(childCOffset,
-			parentCodec, parentVersion, parentCOffMax,
+			parentCodec, parentCodecHasMixBit, parentVersion, parentCOffMax,
 			childCBias, childDSize); err != nil {
 			return err
 		}

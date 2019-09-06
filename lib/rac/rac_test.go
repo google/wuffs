@@ -594,3 +594,53 @@ func TestReaderZeroes(t *testing.T) {
 		t.Fatalf("got %q, want %q", got, want)
 	}
 }
+
+func TestLongCodec(t *testing.T) {
+	const codec = Codec(0x80000000326F646D) // "mdo2" backwards, with a high bit.
+	buf := &bytes.Buffer{}
+	w := &ChunkWriter{
+		Writer:        buf,
+		IndexLocation: IndexLocationAtStart,
+		TempFile:      &bytes.Buffer{},
+	}
+	if err := w.AddChunk(0x66, codec, []byte{0xAA, 0xBB}, 0, 0); err != nil {
+		t.Fatalf("AddChunk: %v", err)
+	}
+	if err := w.AddChunk(0x77, codec, []byte{0xCC}, 0, 0); err != nil {
+		t.Fatalf("AddChunk: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	encoded := buf.Bytes()
+	gotHexDump := hex.Dump(encoded)
+
+	const wantHexDump = "" +
+		"00000000  72 c3 63 03 3d c9 00 fd  00 00 00 00 00 00 00 ff  |r.c.=...........|\n" +
+		"00000010  66 00 00 00 00 00 00 ff  dd 00 00 00 00 00 00 80  |f...............|\n" +
+		"00000020  6d 64 6f 32 00 00 00 00  40 00 00 00 00 00 01 ff  |mdo2....@.......|\n" +
+		"00000030  42 00 00 00 00 00 01 ff  43 00 00 00 00 00 01 03  |B.......C.......|\n" +
+		"00000040  aa bb cc                                          |...|\n"
+
+	if gotHexDump != wantHexDump {
+		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
+	}
+
+	r := &ChunkReader{
+		ReadSeeker:     bytes.NewReader(encoded),
+		CompressedSize: int64(len(encoded)),
+	}
+	for i := 0; i < 2; i++ {
+		c, err := r.NextChunk()
+		if err != nil {
+			t.Fatalf("i=%d: %v", i, err)
+		}
+		if got, want := c.Codec, codec; got != want {
+			t.Fatalf("i=%d: Codec: got 0x%X, want 0x%X", i, got, want)
+		}
+	}
+	if _, err := r.NextChunk(); err != io.EOF {
+		t.Fatalf("got %v, want %v", err, io.EOF)
+	}
+}

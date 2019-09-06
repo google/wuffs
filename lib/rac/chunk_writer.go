@@ -15,6 +15,7 @@
 package rac
 
 import (
+	"errors"
 	"hash/crc32"
 	"io"
 	"sort"
@@ -346,6 +347,9 @@ func (w *ChunkWriter) AddChunk(
 	dRangeSize uint64, codec Codec, primary []byte,
 	secondary OptResource, tertiary OptResource) error {
 
+	if w.err != nil {
+		return w.err
+	}
 	if dRangeSize == 0 {
 		return nil
 	}
@@ -360,6 +364,15 @@ func (w *ChunkWriter) AddChunk(
 
 	if err := w.initialize(); err != nil {
 		return err
+	}
+	if len(w.leafNodes) == 0 {
+		if !codec.Valid() {
+			return errInvalidCodec
+		}
+		w.codec = codec
+	} else if w.codec != codec {
+		w.err = errors.New("rac: TODO: support writing multiple Codecs")
+		return w.err
 	}
 	if err := w.write(primary); err != nil {
 		return err
@@ -413,7 +426,7 @@ func (w *ChunkWriter) Close() error {
 		_, err := w.Writer.Write(emptyRACFile[:])
 		return err
 	}
-	rootNode := gather(w.leafNodes)
+	rootNode := gather(w.leafNodes, w.codec.isLong())
 	indexSize := rootNode.calcEncodedSize(0, w.IndexLocation == IndexLocationAtEnd)
 
 	nw := &nodeWriter{
@@ -505,6 +518,9 @@ func (n *wNode) calcEncodedSize(accumulator uint64, rootAndIsAtEnd bool) (newAcc
 	if arity == 0 {
 		return accumulator
 	}
+	if n.codec.isLong() {
+		arity++
+	}
 	size := (arity * 16) + 16
 	cLength := calcCLength(size)
 
@@ -552,10 +568,23 @@ func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 		}
 	}
 
+	if !n.codec.Valid() {
+		return errors.New("rac: TODO: support writing multiple Codecs")
+	}
+
 	buf, dPtr := w.buffer[:], uint64(0)
 	arity := uint64(len(n.children) + len(n.resources))
+	if n.codec.isLong() {
+		arity++
+	}
 	if arity > 0xFF {
 		return errInternalArityIsTooLarge
+	}
+
+	// Codec Element 'DPtr|Reserved0|TTag', if present.
+	if n.codec.isLong() {
+		putU64LE(buf, 0xFD00000000000000)
+		buf = buf[8:]
 	}
 
 	// DPtr's. We write resources before regular children (non-resources), so
@@ -577,9 +606,17 @@ func (w *nodeWriter) writeIndex(n *wNode, rootAndIsAtEnd bool) error {
 	}
 	buf = buf[8*len(n.children):]
 
-	// DPtrMax.
-	putU64LE(buf, dPtr|(uint64(n.codec)<<56))
+	// DPtrMax and the CodecByte. By construction, a Long Codec's 'c64' value
+	// is always 0, as the Codec Element is always in position 0.
+	codecHighByte := uint64(n.codec) & 0xFF00000000000000
+	putU64LE(buf, dPtr|codecHighByte)
 	buf = buf[8:]
+
+	// Codec Element 'CPtr|CLen|STag', if present.
+	if n.codec.isLong() {
+		putU64LE(buf, uint64(n.codec)&0x00FFFFFFFFFFFFFF)
+		buf = buf[8:]
+	}
 
 	// CPtr's. While the RAC format allows otherwise, this nodeWriter always
 	// keeps the CBias at zero, so that a CPtr equals a COffset.
@@ -670,12 +707,21 @@ func resourceToTag(resources []int, r OptResource) uint64 {
 // that the root node always directly contains the first and last leaf nodes as
 // children, as those leaves presumably contain the most commonly accessed
 // parts of the decompressed file.
-func gather(nodes []wNode) wNode {
+//
+// If doing this TODO, we'd also have to change the "codec = codecMixBit |
+// CodecZeroes" line below, as it assumes that no branch nodes have both branch
+// node children and leaf node children.
+func gather(nodes []wNode, codecIsLong bool) wNode {
 	if len(nodes) == 0 {
 		panic("gather: no nodes")
 	}
 
 	resources := map[OptResource]bool{}
+
+	arityBudget := 0xFF
+	if codecIsLong {
+		arityBudget = 0xFE
+	}
 
 	for {
 		i, j, arity, newNodes := 0, 0, 0, []wNode(nil)
@@ -685,7 +731,7 @@ func gather(nodes []wNode) wNode {
 			new2 := (o.secondary != 0) && !resources[o.secondary]
 			new3 := (o.tertiary != 0) && !resources[o.tertiary]
 			arity += 1 + btoi(new2) + btoi(new3)
-			if arity <= 0xFF {
+			if arity <= arityBudget {
 				if new2 {
 					resources[o.secondary] = true
 				}
@@ -727,9 +773,19 @@ func gather(nodes []wNode) wNode {
 
 func makeBranch(children []wNode, resMap map[OptResource]bool) wNode {
 	dRangeSize, codec := uint64(0), Codec(0)
-	for _, c := range children {
+	for i, c := range children {
 		dRangeSize += c.dRangeSize
-		codec |= c.codec
+		if i == 0 {
+			codec = c.codec
+		} else if codec != c.codec {
+			// We construct the node tree so that a branch node's children are
+			// either all branch nodes or all leaf nodes. If they are all leaf
+			// nodes (with the same Codec), or all branch nodes with the same
+			// Codec, the parent uses the same Codec. If they are all branch
+			// nodes, with different Codecs, we set the Mix bit and since it
+			// has no leaf nodes, we might as well use CodecZeroes.
+			codec = codecMixBit | CodecZeroes
+		}
 	}
 
 	resList := []int(nil)

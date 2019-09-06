@@ -39,14 +39,71 @@ const (
 
 // Codec is the compression codec for the RAC file.
 //
+// For leaf nodes, there are two categories of valid Codecs: Short and Long. A
+// Short Codec's uint64 value's high 2 bits and low 56 bits must be zero. A
+// Long Codec's uint64 value's high 8 bits must be one and then 7 zeroes.
+// Symbolically, Short and Long match:
+//   - 0b00??????_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+//   - 0b10000000_????????_????????_????????_????????_????????_????????_????????
+//
+// In terms of the RAC file format, a Short Codec fits in a single byte: the
+// Codec Byte in the middle of a branch node. A Long Codec uses that Codec Byte
+// to locate 7 other bytes, a location which would otherwise form a "CPtr|CLen"
+// value. When converting from the 7 bytes in the wire format to this Go type
+// (a uint64 value), they are read little-endian: the "CPtr" bytes are the low
+// 6 bytes, the "CLen" is the second-highest byte and the highest byte is
+// hard-coded to 0x80.
+//
+// For example, the 7 bytes "mdo2\x00\x00\x00" would correspond to a Codec
+// value of 0x8000_0000_326F_646D.
+//
+// The Mix Bit is not part of the uint64 representation. Neither is a Long
+// Codec's 'c64' index. This package's exported API deals with leaf nodes.
+// Branch nodes' wire formats are internal implementation details.
+//
 // See the RAC specification for further discussion.
-type Codec uint8
+type Codec uint64
+
+func (c Codec) isLong() bool  { return int64(c) < 0 }
+func (c Codec) isShort() bool { return int64(c) >= 0 }
+
+// Valid returns whether c matches the Short or Long pattern.
+func (c Codec) Valid() bool {
+	if (c >> 63) == 0 {
+		return ((c << 8) == 0) && ((c >> 62) == 0)
+	}
+	return (c >> 56) == 0x80
+}
+
+func (c Codec) name() string {
+	if c.isShort() && c.Valid() {
+		switch c >> 56 {
+		case 0:
+			return "Zeroes"
+		case 1:
+			return "Zlib"
+		case 2:
+			return "Brotli"
+		case 4:
+			return "Zstandard"
+		}
+	}
+	return ""
+}
+
+func parentChildCodecsValid(parent Codec, child Codec, parentHasMixBit bool) bool {
+	return (parent == child) || parentHasMixBit
+}
 
 const (
-	CodecZeroes    = Codec(0x00)
-	CodecZlib      = Codec(0x01)
-	CodecBrotli    = Codec(0x02)
-	CodecZstandard = Codec(0x04)
+	CodecZeroes    = Codec(0x00 << 56)
+	CodecZlib      = Codec(0x01 << 56)
+	CodecBrotli    = Codec(0x02 << 56)
+	CodecZstandard = Codec(0x04 << 56)
+
+	codecMixBit     = Codec(1 << 62)
+	codecLongZeroes = Codec(1 << 63)
+	CodecInvalid    = Codec((1 << 64) - 1)
 )
 
 // IndexLocation is whether the index is at the start or end of the RAC file.

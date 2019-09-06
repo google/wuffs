@@ -1,6 +1,6 @@
 # Random Access Compression: RAC
 
-Status: Draft (as of August 2019). There is no compatibility guarantee yet.
+Status: Draft (as of September 2019). There is no compatibility guarantee yet.
 
 
 ## Overview
@@ -32,10 +32,11 @@ Non-goals for version 1 include:
   - Filesystem metadata like file names, file sizes and modification times.
   - Multiple source files.
 
-There is the capability (see reserved `TTag`s, below) but no promise to address
-these in a future RAC version. There might not be a need to, as other designs
-such as [SquashFS](http://squashfs.sourceforge.net/) and EROFS ([Extendable
-Read-Only File System](https://lkml.org/lkml/2018/5/31/306)) already exist.
+There is the capability (see attributes and reserved `TTag`s, below) but no
+promise to address these in a future RAC version. There might not be a need to,
+as other designs such as [SquashFS](http://squashfs.sourceforge.net/) and EROFS
+([Extendable Read-Only File System](https://lkml.org/lkml/2018/5/31/306))
+already exist.
 
 Non-goals in general include:
 
@@ -88,8 +89,10 @@ at least one `Branch Node`, called the `Root Node`. Parsing a `CFile` requires
 knowing the `CFileSize` in order to identify the `Root Node`, which is either
 at the start or the end of the `CFile`.
 
-Each `Node` has a `DRange`. An empty `DRange` means that the `Node` contains
-metadata or other decompression context such as a shared dictionary.
+Each `Node` has a `DRange`, which can be empty. `Branch Node`s can also have
+attributes: elements that aren't child `Node`s, which must have an empty
+`DRange`. Empty elements contain metadata or other decompression context such
+as a shared dictionary.
 
 Each `Leaf Node` also has 3 `CRange`s (`Primary`, `Secondary` and `Tertiary`),
 any or all of which may be empty. The contents of the `CFile`, within those
@@ -114,7 +117,7 @@ COffset`:
     | ...       |0|.|  ...,                        Reserved (0),  ...
     | DPtr[A-2] |0|T|  DPtr[Arity-2],              Reserved (0),  TTag[Arity-2]
     | DPtr[A-1] |0|T|  DPtr[Arity-1],              Reserved (0),  TTag[Arity-1]
-    | DPtr[A]   |0|C|  DPtr[Arity] a.k.a. DPtrMax, Reserved (0),  Codec
+    | DPtr[A]   |0|C|  DPtr[Arity] a.k.a. DPtrMax, Reserved (0),  CodecByte
     | CPtr[0]   |L|S|  CPtr[0],                    CLen[0],       STag[0]
     | CPtr[1]   |L|S|  CPtr[1],                    CLen[1],       STag[1]
     | CPtr[2]   |L|S|  CPtr[2],                    CLen[2],       STag[2]
@@ -164,7 +167,8 @@ Node` positioned at the start of the `CFile`.
 
 ### Arity
 
-`Arity` is the `Branch Node`'s number of children. Zero is invalid.
+`Arity` is the `Branch Node`'s number of elements: the number of child `Node`s
+plus the number of attributes. Having zero children is invalid.
 
 The `Arity` byte is given twice: the fourth byte and the final byte of the
 `Branch Node`. The two values must match.
@@ -196,14 +200,19 @@ The `Reserved (0)` bytes must have the value `0x00`.
 
 ### COffs and DOffs, STags and TTags
 
-For every `a` in the half-open range `[0 .. Arity)`, the `a`'th child `Node`
-has two tags, `STag[a]` and `TTag[a]`, and a `DRange` of `[DOff[a] ..
-DOff[a+1])`. The `DOff` values must be non-decreasing: see the "Branch Node
-Validation" section below.
+For every `a` in the half-open range `[0 .. Arity)`, the `a`'th element has two
+tags, `STag[a]` and `TTag[a]`, and a `DRange` of `[DOff[a] .. DOff[a+1])`. The
+`DOff` values must be non-decreasing: see the "Branch Node Validation" section
+below.
 
-A `TTag[a]` of `0xFE` means that child is a `Branch Node`. A `TTag[a]` in the
-half-open range `[0xC0 .. 0xFE)` is reserved. Otherwise, the child is a `Leaf
-Node`.
+A `TTag[a]` of `0xFE` means that that element is a `Branch Node` child.
+
+A `TTag[a]` of `0xFD` means that there is no child, but is instead a `Codec
+Element` attribute, whose `DRange` must be empty, and the rest of this section
+does not apply: the `STag` is ignored.
+
+A `TTag[a]` in the half-open range `[0xC0 .. 0xFD)` is reserved. Otherwise, the
+element is a `Leaf Node` child.
 
 A child `Branch Node`'s `SubBranch COffset` is defined to be `COff[a]`. Its
 `SubBranch DBias` and `SubBranch DOffMax` are defined to be `DOff[a]` and
@@ -272,47 +281,78 @@ values.
 `Codec`s define specializations of RAC, such as "RAC + Zlib" or "RAC + Brotli".
 It is valid for a "RAC + Zstandard" only decoder to reject a "RAC + Brotli"
 file, even if it is a valid RAC file. Recall that RAC is just a container, and
-not tied to any particular compression codec. For the `Codec` byte in a `Branch
-Node`:
+not tied to any particular compression codec.
+
+There are two categories of `Codec`s: the high `0x80` bit of the `Codec Byte`
+being `0` or `1` denotes a `Short` or `Long` codec respectively. `Short Codec`s
+are represented by a single byte (the `Codec Byte`). `Long Codec`s use that
+`Codec Byte` to locate 7 additional bytes: a `Codec Element`.
+
+For both `Short Codec`s and `Long Codec`s, the second-highest `0x40` bit of the
+`Codec Byte` is the `Mix Bit`. A `Mix Bit` of `0` means that all of the
+`Node`'s descendents have exactly the same `Codec` (not just the same `Codec
+Byte`; `Short Codec`s and `Long Codec`s are not considered exactly the same
+even if they represent the same compression algorithm). A `Mix Bit` of `1`
+means that descendents may have a different `Codec`.
+
+For `Short Codec`s, the remaining low 6 bits correspond to a specific
+compression algorithm:
 
   - `0x00` means "RAC + Zeroes".
   - `0x01` means "RAC + Zlib".
   - `0x02` means "RAC + Brotli".
   - `0x04` means "RAC + ZStandard".
-  - Any other value less than 0x08 means that all of this `Branch Node`'s
-    children must be `Branch Node`s and not `Leaf Node`s and that no child's
-    `Codec` byte can have a bit set that is not set in this `Codec` byte.
-  - All other values, 0x08 or greater, are reserved.
+  - All other values are reserved.
+
+For `Long Codec`s, the remaining low 6 bits of the `Codec Byte` define a number
+`c64`. The lowest index `i` out of `(c64 + (64 * 0))`, `(c64 + (64 * 1))`,
+`(c64 + (64 * 2))` and `(c64 + (64 * 3))` such that `TTag[i]` is `0xFD` locates
+the 7 bytes that identifies the `Codec`. The location is what would otherwise
+occupy the `i`th element's `CPtr | CLen` space. It is invalid for no such `i`
+to exist.
+
+`Long Codec` values are not reserved by this specification, other than 7 NUL
+bytes also means "RAC + Zeroes". Users may define their own values for
+arbitrary compression algorithms. Maintaining a centralized registry mapping
+values to algorithms is out of scope of this specification, although we suggest
+a convention that the 7 bytes form a human-readable (ASCII) string, padded with
+trailing NUL bytes. For example, a hypothetical "Middle Out version 2"
+compression algorithm that typically used the ".mdo2" file extension might be
+represented by the 7 bytes `"mdo2\x00\x00\x00"`.
 
 
 ### Branch Node Validation
 
 The first time that a RAC reader visits any particular `Branch Node`, it must
 check that the `Magic` matches, the two `Arity` values match and are non-zero,
-the computed checksum matches the listed `Checksum` and that the RAC reader
-accepts the `Version` and the `Codec`.
+there is at least one child `Node` (not just non-`Node` attributes), the
+computed checksum matches the listed `Checksum` and that the RAC reader accepts
+the `Version`. For `Long Codec`s, there must exist an `0xFD` `TTag` as per the
+previous section.
 
 It must also check that all of its `DOff` values are sorted: `(DOff[a] <=
 DOff[a+1])` for every `a` in the half-open range `[0 .. Arity)`. By induction,
 this means that all of its `DOff` values do not exceed `DOffMax`, and again by
 induction, therefore do not exceed `DFileSize`.
 
-It must also check that all of its `COff` values do not exceed `COffMax` (and
-again by induction, therefore do not exceed `CFileSize`). Other than that,
-`COff` values do not have to be sorted: successive `Node`s (in `DSpace`) can be
-out of order (in `CSpace`), allowing for incrementally modified RAC files.
+It must also check that, other than `Codec Element` attributes, all of its
+`COff` values do not exceed `COffMax` (and again by induction, therefore do not
+exceed `CFileSize`). Other than that, `COff` values do not have to be sorted:
+successive `Node`s (in `DSpace`) can be out of order (in `CSpace`), allowing
+for incrementally modified RAC files.
 
 For the `Root Node`, its `COffMax` must equal the `CFileSize`. Recall that
 parsing a `CFile` requires knowing the `CFileSize`, and also that a `Root
 Node`'s `Branch CBias` is zero, so its `COffMax` equals its `CPtrMax`.
 
-For a child `Branch Node`, its `Codec` bits must be a subset of its parent's
-`Codec` bits, its `Version` must be less than or equal to its parent's
-`Version`, its `COffMax` must be less than or equal to its parent's `COffMax`,
-and its `DOffMax` must equal its parent's `SubBranch DOffMax`. The `DOffMax`
-condition is equivalent to checking that the parent and child agree on the
-child's size in `DSpace`. The parent states that it is its `(DPtr[a+1] -
-DPtr[a])` and the child states that it is its `DPtrMax`.
+For a child `Branch Node`, if the parent's `Codec` does not have the `Mix Bit`
+set then the child's `Codec` must equal its parent's. Furthermore, its
+`Version` must be less than or equal to its parent's `Version`, its `COffMax`
+must be less than or equal to its parent's `COffMax`, and its `DOffMax` must
+equal its parent's `SubBranch DOffMax`. The `DOffMax` condition is equivalent
+to checking that the parent and child agree on the child's size in `DSpace`.
+The parent states that it is its `(DPtr[a+1] - DPtr[a])` and the child states
+that it is its `DPtrMax`.
 
 One conservative way to check `Branch Node`s' validity on first visit is to
 check them on every visit, as validating any particular `Branch Node` is
@@ -618,12 +658,13 @@ Re-formatting to highlight the groups-of-8-bytes structure and reprise the
     00000104    b4 00 00 00 00 00 04 00    | CPtr[2]   |L|S|
     0000010c    14 01 00 00 00 00 01 03    | CPtr[A]   |V|A|
 
-Its `Codec` is `0x01`, "RAC + Zlib", its Version is `0x01` and its `Arity` is
-`0x03`. The `DPtr` values are `0x0000` (implicit), `0x0000`, `0x0023` and
-`0x0029`. The `CPtr` values are `0x009F`, `0x0000`, `0x00B4` and `0x0114` (the
-size of the whole RAC file). Note that the `CPtr` values are not sorted. The
-last two children's `TTag`s are `0xFE` and `0xFE` and their `STag`s are `0x01`
-and `0x00`, which means that they are both `CBiasing Branch Node`s.
+Its `CodecByte` (and therefore its `Codec`) is `0x01`, "RAC + Zlib", its
+Version is `0x01` and its `Arity` is `0x03`. The `DPtr` values are `0x0000`
+(implicit), `0x0000`, `0x0023` and `0x0029`. The `CPtr` values are `0x009F`,
+`0x0000`, `0x00B4` and `0x0114` (the size of the whole RAC file). Note that the
+`CPtr` values are not sorted. The last two children's `TTag`s are `0xFE` and
+`0xFE` and their `STag`s are `0x01` and `0x00`, which means that they are both
+`CBiasing Branch Node`s.
 
 
 # Reference Implementation
@@ -652,4 +693,4 @@ review.
 
 ---
 
-Updated on August 2019.
+Updated on September 2019.
