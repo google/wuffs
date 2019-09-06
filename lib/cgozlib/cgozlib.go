@@ -74,6 +74,8 @@ import (
 	"unsafe"
 )
 
+const cgoEnabled = true
+
 var (
 	errMissingResetCall = errors.New("cgozlib: missing Reset call")
 	errNilIOReader      = errors.New("cgozlib: nil io.Reader")

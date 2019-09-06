@@ -49,6 +49,9 @@ func makePure() resetReadCloser {
 
 func testReadAll(t *testing.T, r resetReadCloser, src io.Reader, dict []byte, want string) {
 	t.Helper()
+	if !cgoEnabled {
+		t.Skip("cgo is not enabled")
+	}
 
 	if err := r.Reset(src, dict); err != nil {
 		t.Fatalf("Reset: %v", err)
@@ -79,6 +82,10 @@ func TestCgo(t *testing.T)  { testReader(t, &Reader{}) }
 func TestPure(t *testing.T) { testReader(t, makePure()) }
 
 func benchmarkReader(b *testing.B, r resetReadCloser) {
+	if !cgoEnabled {
+		b.Skip("cgo is not enabled")
+	}
+
 	src := bytes.NewReader(nil)
 	srcBytes, err := ioutil.ReadFile("../../test/data/pi.txt.zlib")
 	if err != nil {
