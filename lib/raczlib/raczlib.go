@@ -54,11 +54,22 @@ func suffix32K(b []byte) []byte {
 	return b
 }
 
+type resetReadCloser interface {
+	// Reset is the zlib.Resetter interface's sole method.
+	//
+	// We explicitly spell out the method signature, instead of just saying
+	// "zlib.Resetter". It may be possible for a future version of this package
+	// to not depend on the standard library's "compress/zlib" package at all.
+	Reset(r io.Reader, dict []byte) error
+
+	io.ReadCloser
+}
+
 // CodecReader specializes a rac.Reader to decode Zlib-compressed chunks.
 type CodecReader struct {
 	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
 	// when decompressing multiple chunks.
-	cachedZlibReader zlib.Resetter
+	cachedZlibReader resetReadCloser
 
 	// These fields contain the most recently used shared dictionary.
 	cachedDictionary       []byte
@@ -76,25 +87,6 @@ func (r *CodecReader) Accepts(c rac.Codec) bool {
 // Clone implements rac.CodecReader.
 func (r *CodecReader) Clone() rac.CodecReader {
 	return &CodecReader{}
-}
-
-// MakeDecompressor implements rac.CodecReader.
-func (r *CodecReader) MakeDecompressor(
-	compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
-
-	if r.cachedZlibReader != nil {
-		if err := r.cachedZlibReader.Reset(compressed, rctx.Secondary); err != nil {
-			return nil, err
-		}
-		return r.cachedZlibReader.(io.Reader), nil
-	}
-
-	zlibReader, err := zlib.NewReaderDict(compressed, rctx.Secondary)
-	if err != nil {
-		return nil, err
-	}
-	r.cachedZlibReader = zlibReader.(zlib.Resetter)
-	return zlibReader, nil
 }
 
 // MakeReaderContext implements rac.CodecReader.

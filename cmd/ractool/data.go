@@ -156,9 +156,9 @@ Extended Example:
     sys     0m0.118s
     $ time ractool -decode -drange=50000000..50000008 shared.rac
     Business
-    real    0m0.003s
-    user    0m0.004s
-    sys     0m0.000s
+    real    0m0.006s
+    user    0m0.003s
+    sys     0m0.003s
 
     $ # A RAC file's chunks can be decoded in parallel, unlike ZIP,
     $ # substantially reducing the real (wall clock) time taken even
@@ -168,12 +168,12 @@ Extended Example:
     user    0m0.713s
     sys     0m0.025s
     $ time ractool -decode -singlethreaded shared.rac > /dev/null
-    real    0m0.959s
-    user    0m0.920s
-    sys     0m0.044s
+    real    0m0.523s
+    user    0m0.508s
+    sys     0m0.028s
     $ time ractool -decode                 shared.rac > /dev/null
-    real    0m0.095s
-    user    0m1.316s
-    sys     0m0.069s
+    real    0m0.052s
+    user    0m0.657s
+    sys     0m0.049s
     --------
 `
