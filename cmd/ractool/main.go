@@ -164,11 +164,15 @@ Extended Example:
     $ # A RAC file's chunks can be decoded in parallel, unlike ZIP,
     $ # substantially reducing the real (wall clock) time taken even
     $ # though both of these files use DEFLATE (RFC 1951) compression.
-    $ time unzip -p enwik8.zip        > /dev/null
+    $ time unzip -p enwik8.zip                        > /dev/null
     real    0m0.737s
     user    0m0.713s
     sys     0m0.025s
-    $ time ractool -decode shared.rac > /dev/null
+    $ time ractool -decode -singlethreaded shared.rac > /dev/null
+    real    0m0.959s
+    user    0m0.920s
+    sys     0m0.044s
+    $ time ractool -decode                 shared.rac > /dev/null
     real    0m0.095s
     user    0m1.316s
     sys     0m0.069s
