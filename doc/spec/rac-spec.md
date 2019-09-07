@@ -303,7 +303,7 @@ compression algorithm:
   - `0x00` means "RAC + Zeroes".
   - `0x01` means "RAC + Zlib".
   - `0x02` means "RAC + LZ4".
-  - `0x04` means "RAC + ZStandard".
+  - `0x03` means "RAC + Zstandard".
   - All other values are reserved.
 
 For `Long Codec`s, the remaining low 6 bits of the `Codec Byte` define a number
