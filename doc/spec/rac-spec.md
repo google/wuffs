@@ -7,9 +7,10 @@ Status: Draft (as of September 2019). There is no compatibility guarantee yet.
 
 RAC is a *compressed* file format that allows *random access* (not just
 sequential access) to the decompressed contents. In comparison to some other
-popular compression formats, all three of the
+popular compression formats, all four of the
 [Zlib](https://tools.ietf.org/html/rfc1950),
-[Brotli](https://tools.ietf.org/html/rfc7932) and
+[Brotli](https://tools.ietf.org/html/rfc7932),
+[LZ4](https://github.com/lz4/lz4/blob/master/doc/lz4_Frame_format.md) and
 [Zstandard](https://tools.ietf.org/html/rfc8478) specifications explicitly
 contain the identical phrase: "the data format defined by this specification
 does not attempt to allow random access to compressed data".
@@ -25,7 +26,8 @@ sharing additional context, such as a LZ77 prefix dictionary). A RAC file also
 contains a hierarchical index of those chunks.
 
 RAC is a container format, and while it supports common compression codecs like
-Zlib, Brotli and Zstandard, it is not tied to any particular compression codec.
+Zlib, Brotli, LZ4 and Zstandard, it is not tied to any particular compression
+codec.
 
 Non-goals for version 1 include:
 
@@ -300,7 +302,7 @@ compression algorithm:
 
   - `0x00` means "RAC + Zeroes".
   - `0x01` means "RAC + Zlib".
-  - `0x02` means "RAC + Brotli".
+  - `0x02` means "RAC + LZ4".
   - `0x04` means "RAC + ZStandard".
   - All other values are reserved.
 
@@ -515,7 +517,7 @@ reserved. The empty `Tertiary CRange` is ignored. The `Leaf STag` value is also
 ignored, other than deriving the `Secondary CRange`.
 
 
-## RAC + Brotli
+## RAC + LZ4
 
 TODO.
 

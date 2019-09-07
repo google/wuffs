@@ -83,7 +83,7 @@ func (c Codec) name() string {
 		case 1:
 			return "Zlib"
 		case 2:
-			return "Brotli"
+			return "LZ4"
 		case 4:
 			return "Zstandard"
 		}
@@ -98,7 +98,7 @@ func parentChildCodecsValid(parent Codec, child Codec, parentHasMixBit bool) boo
 const (
 	CodecZeroes    = Codec(0x00 << 56)
 	CodecZlib      = Codec(0x01 << 56)
-	CodecBrotli    = Codec(0x02 << 56)
+	CodecLZ4       = Codec(0x02 << 56)
 	CodecZstandard = Codec(0x04 << 56)
 
 	codecMixBit     = Codec(1 << 62)
