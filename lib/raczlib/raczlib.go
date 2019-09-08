@@ -79,6 +79,11 @@ type CodecReader struct {
 	buf [2]byte
 }
 
+// Close implements rac.CodecReader.
+func (r *CodecReader) Close() error {
+	return nil
+}
+
 // Accepts implements rac.CodecReader.
 func (r *CodecReader) Accepts(c rac.Codec) bool {
 	return c == rac.CodecZlib
@@ -163,8 +168,13 @@ type CodecWriter struct {
 	stash      []byte
 }
 
+// Close implements rac.CodecWriter.
+func (w *CodecWriter) Close() error {
+	return nil
+}
+
 // Clone implements rac.CodecWriter.
-func (r *CodecWriter) Clone() rac.CodecWriter {
+func (w *CodecWriter) Clone() rac.CodecWriter {
 	return &CodecWriter{}
 }
 

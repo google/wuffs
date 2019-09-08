@@ -156,6 +156,9 @@ const NoResourceUsed int = -1
 //
 // Instances are not required to support concurrent use.
 type CodecWriter interface {
+	// Close tells the CodecWriter that no further calls will be made.
+	Close() error
+
 	// Clone duplicates this. The clone and the original can run concurrently.
 	Clone() CodecWriter
 
@@ -331,6 +334,9 @@ type Writer struct {
 	// uncompressed are the uncompressed bytes that have been given to this
 	// (via the Write method) but not yet compressed as a chunk.
 	uncompressed writeBuffer
+
+	// closed is whether this Writer is closed.
+	closed bool
 }
 
 func (w *Writer) initialize() error {
@@ -562,6 +568,8 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 // Close writes the RAC index to w.Writer and marks that w accepts no further
 // method calls.
 //
+// Calling Close will call Close on w's CodecWriter.
+//
 // For a one pass encoding, no further action is taken. For a two pass encoding
 // (i.e. IndexLocationAtStart), it then copies w.TempFile to w.Writer. Either
 // way, if this method returns nil error, the entirety of what was written to
@@ -569,21 +577,28 @@ func (w *Writer) tryCChunk(targetDChunkSize uint64, force bool) error {
 //
 // Closing the underlying w.Writer, w.TempFile or both is the responsibility of
 // the rac.Writer caller, not the rac.Writer itself.
-//
-// It is not necessary to call Close, e.g. if an earlier Write call returned a
-// non-nil error. Unlike an os.File, failing to call rac.Writer.Close will not
-// leak resources such as file descriptors.
 func (w *Writer) Close() error {
-	if err := w.initialize(); err != nil {
-		return err
+	if w.closed {
+		return w.err
 	}
-	if err := w.write(true); err != nil {
-		return err
-	}
-	if err := w.chunkWriter.Close(); err != nil {
+	w.closed = true
+
+	if err := w.initialize(); w.err == nil {
 		w.err = err
-		return err
 	}
-	w.err = errAlreadyClosed
-	return nil
+	if w.err == nil {
+		w.err = w.write(true)
+	}
+	if w.err == nil {
+		w.err = w.chunkWriter.Close()
+	}
+	if err := w.CodecWriter.Close(); w.err == nil {
+		w.err = err
+	}
+
+	if w.err == nil {
+		w.err = errAlreadyClosed
+		return nil
+	}
+	return w.err
 }

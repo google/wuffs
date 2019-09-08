@@ -49,6 +49,9 @@ type ReaderContext struct {
 //
 // Instances are not required to support concurrent use.
 type CodecReader interface {
+	// Close tells the CodecReader that no further calls will be made.
+	Close() error
+
 	// Accepts returns whether this CodecReader can decode a Codec.
 	Accepts(c Codec) bool
 
@@ -134,6 +137,9 @@ type Reader struct {
 	// The initial state is "State A".
 	decompressor     io.Reader
 	inImplicitZeroes bool
+
+	// closed is whether this Reader is closed.
+	closed bool
 
 	// currChunk is an io.Reader for the current chunk, used while in "State
 	// B". It serves zlib-compressed data, which the (non-nil) decompressor
@@ -505,6 +511,8 @@ func (r *Reader) seek(offset int64, whence int, limit int64) (int64, error) {
 
 // Close implements io.Closer.
 //
+// Calling Close will call Close on all of r's CodecReaders.
+//
 // r.ReadSeeker will not be accessed after Close returns. If r.Concurrency is
 // non-zero, this may involve waiting for various goroutines to shut down,
 // which may take some time. If the caller does not care about waiting until it
@@ -514,19 +522,44 @@ func (r *Reader) seek(offset int64, whence int, limit int64) (int64, error) {
 // It is not safe to call Close from a separate goroutine while another method
 // call like Read or Seek is in progress.
 func (r *Reader) Close() error {
-	if err := r.initialize(); err != nil {
-		r.concReader.Close()
-		return err
-	}
-	r.err = errAlreadyClosed
-	return r.concReader.Close()
+	return r.close(false)
 }
 
+// CloseWithoutWaiting is like Close but does not wait until it is safe to
+// close or otherwise release the r.ReadSeeker's resources.
 func (r *Reader) CloseWithoutWaiting() error {
-	if err := r.initialize(); err != nil {
-		r.concReader.CloseWithoutWaiting()
-		return err
+	return r.close(true)
+}
+
+func (r *Reader) close(withoutWaiting bool) error {
+	if r.closed {
+		return r.err
 	}
-	r.err = errAlreadyClosed
-	return r.concReader.CloseWithoutWaiting()
+	r.closed = true
+
+	if err := r.initialize(); r.err == nil {
+		r.err = err
+	}
+
+	for _, c := range r.CodecReaders {
+		if err := c.Close(); r.err == nil {
+			r.err = err
+		}
+	}
+
+	if withoutWaiting {
+		if err := r.concReader.CloseWithoutWaiting(); r.err == nil {
+			r.err = err
+		}
+	} else {
+		if err := r.concReader.Close(); r.err == nil {
+			r.err = err
+		}
+	}
+
+	if r.err == nil {
+		r.err = errAlreadyClosed
+		return nil
+	}
+	return r.err
 }
