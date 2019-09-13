@@ -370,12 +370,10 @@ const char* play() {
       }
     }
 
-    status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
-    if (status) {
-      if (status == wuffs_base__warning__end_of_data) {
-        break;
-      }
-      return status;
+    wuffs_base__status decode_frame_status =
+        wuffs_gif__decoder__decode_frame(&dec, &pb, &src, workbuf, NULL);
+    if (decode_frame_status == wuffs_base__warning__end_of_data) {
+      break;
     }
 
     compose(&pb, wuffs_base__frame_config__bounds(&fc));
@@ -416,12 +414,17 @@ const char* play() {
 #endif
 
     fwrite(printbuf.ptr, sizeof(uint8_t), n, stdout);
+    fflush(stdout);
 
     cumulative_delay_micros +=
         (1000 * wuffs_base__frame_config__duration(&fc)) /
         WUFFS_BASE__FLICKS_PER_MILLISECOND;
 
     // TODO: should a zero duration mean to show this frame forever?
+
+    if (decode_frame_status) {
+      return decode_frame_status;
+    }
   }
 
   if (first_play) {
