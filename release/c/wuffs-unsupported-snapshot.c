@@ -8561,6 +8561,12 @@ static const uint8_t               //
         1, 2, 4, 8, 8,
 };
 
+static const uint8_t               //
+    wuffs_gif__interlace_count[5]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
+        0, 0, 1, 3, 7,
+};
+
 static const uint8_t              //
     wuffs_gif__animexts1dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -11043,6 +11049,9 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   wuffs_base__table_u8 v_tab = {0};
   uint64_t v_i = 0;
   uint64_t v_j = 0;
+  uint32_t v_replicate_count = 0;
+  wuffs_base__slice_u8 v_replicate_dst = {0};
+  wuffs_base__slice_u8 v_replicate_src = {0};
 
   v_pixfmt_channels = (wuffs_base__pixel_buffer__pixel_format(a_pb) & 65535);
   if (v_pixfmt_channels == 34952) {
@@ -11090,6 +11099,26 @@ label_0_continue:;
     }
     if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
       self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
+      if (self->private_impl.f_interlace == 0) {
+        wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_y, 1);
+        goto label_0_continue;
+      }
+      if ((self->private_impl.f_num_decoded_frames_value == 0) &&
+          !self->private_impl.f_gc_has_transparent_index &&
+          (self->private_impl.f_interlace > 1)) {
+        v_replicate_count = ((uint32_t)(
+            wuffs_gif__interlace_count[self->private_impl.f_interlace]));
+        v_replicate_src =
+            wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+        while (v_replicate_count > 0) {
+          v_replicate_dst = wuffs_base__table_u8__row(
+              v_tab, wuffs_base__u32__sat_add(self->private_impl.f_dst_y,
+                                              v_replicate_count));
+          wuffs_base__slice_u8__copy_from_slice(v_replicate_dst,
+                                                v_replicate_src);
+          v_replicate_count -= 1;
+        }
+      }
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
           ((uint32_t)(

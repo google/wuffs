@@ -1255,6 +1255,78 @@ const char* test_wuffs_gif_decode_input_is_a_png() {
   return NULL;
 }
 
+const char* test_wuffs_gif_decode_interlaced_truncated() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/hippopotamus.interlaced.truncated.gif");
+  if (status) {
+    return status;
+  }
+
+  wuffs_gif__decoder dec;
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+  if (status) {
+    RETURN_FAIL("initialize: \"%s\"", status);
+  }
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+
+  status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
+  if (status) {
+    RETURN_FAIL("decode_image_config: \"%s\"", status);
+  }
+  if (wuffs_base__pixel_config__width(&ic.pixcfg) != 36) {
+    RETURN_FAIL("width: got %" PRIu32 ", want 36",
+                wuffs_base__pixel_config__width(&ic.pixcfg));
+  }
+  if (wuffs_base__pixel_config__height(&ic.pixcfg) != 28) {
+    RETURN_FAIL("height: got %" PRIu32 ", want 28",
+                wuffs_base__pixel_config__height(&ic.pixcfg));
+  }
+  if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg) !=
+      WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY) {
+    RETURN_FAIL("pixel_format: got 0x%08" PRIX32 ", want 0x%08" PRIX32,
+                wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
+                WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY);
+  }
+  const int num_pixel_indexes = 36 * 28 * 1;
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                    global_pixel_slice);
+  if (status) {
+    return status;
+  }
+  uint8_t* pixel_ptr = wuffs_base__pixel_buffer__plane(&pb, 0).ptr;
+  memset(pixel_ptr, 0xEE, num_pixel_indexes);
+
+  if (pixel_ptr[num_pixel_indexes - 1] != 0xEE) {
+    RETURN_FAIL("final pixel index, before: got 0x%02X, want 0x%02X",
+                pixel_ptr[num_pixel_indexes - 1], 0xEE);
+  }
+
+  status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src, global_work_slice,
+                                            NULL);
+  if (status != wuffs_base__suspension__short_read) {
+    RETURN_FAIL("decode_frame: got \"%s\", want \"%s\"", status,
+                wuffs_base__suspension__short_read);
+  }
+
+  // Even though the source GIF data was truncated, replicating the interlaced
+  // rows should have set the bottom right pixel.
+  if (pixel_ptr[num_pixel_indexes - 1] == 0xEE) {
+    RETURN_FAIL("final pixel index, after: got 0x%02X, want not 0x%02X",
+                pixel_ptr[num_pixel_indexes - 1], 0xEE);
+  }
+  return NULL;
+}
+
 const char* do_test_wuffs_gif_decode_metadata(bool full) {
   wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
       .data = global_src_slice,
@@ -2252,6 +2324,7 @@ proc tests[] = {
     test_wuffs_gif_decode_input_is_a_gif_many_medium_reads,  //
     test_wuffs_gif_decode_input_is_a_gif_many_small_reads,   //
     test_wuffs_gif_decode_input_is_a_png,                    //
+    test_wuffs_gif_decode_interlaced_truncated,              //
     test_wuffs_gif_decode_metadata_empty,                    //
     test_wuffs_gif_decode_metadata_full,                     //
     test_wuffs_gif_decode_missing_two_src_bytes,             //
