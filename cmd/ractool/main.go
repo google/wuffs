@@ -194,6 +194,7 @@ import (
 
 	"github.com/google/wuffs/lib/rac"
 	"github.com/google/wuffs/lib/raczlib"
+	"github.com/google/wuffs/lib/raczstd"
 )
 
 // TODO: a flag to use a disk-backed (not memory-backed) TempFile.
@@ -375,12 +376,10 @@ func decode(inFile *os.File) error {
 	r := &rac.Reader{
 		ReadSeeker:     rs,
 		CompressedSize: compressedSize,
-	}
-	switch *codecFlag {
-	case "zlib":
-		r.CodecReaders = []rac.CodecReader{&raczlib.CodecReader{}}
-	default:
-		return errors.New("unsupported -codec")
+		CodecReaders: []rac.CodecReader{
+			&raczlib.CodecReader{},
+			&raczstd.CodecReader{},
+		},
 	}
 
 	// The r.Close method might need to wait for its goroutines to shut down
@@ -449,6 +448,8 @@ func encode(r io.Reader) error {
 	switch *codecFlag {
 	case "zlib":
 		w.CodecWriter = &raczlib.CodecWriter{}
+	case "zstd":
+		w.CodecWriter = &raczstd.CodecWriter{}
 	default:
 		return errors.New("unsupported -codec")
 	}
