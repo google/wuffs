@@ -10814,7 +10814,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   bool v_need_block_size = false;
   uint64_t v_n_compressed = 0;
   wuffs_base__slice_u8 v_compressed = {0};
-  wuffs_base__io_buffer u_r = wuffs_base__null_io_buffer();
+  wuffs_base__io_buffer u_r = wuffs_base__empty_io_buffer();
   wuffs_base__io_buffer* v_r = &u_r;
   uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io0_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -10836,7 +10836,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  wuffs_base__io_buffer empty_io_buffer = wuffs_base__null_io_buffer();
+  wuffs_base__io_buffer empty_io_buffer = wuffs_base__empty_io_buffer();
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
   if (coro_susp_point) {

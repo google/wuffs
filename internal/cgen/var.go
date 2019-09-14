@@ -274,7 +274,7 @@ func (g *gen) writeVars(b *buffer, f *funk, inStructDecl bool) error {
 		name := n.Name().Str(g.tm)
 
 		if typ.IsIOType() {
-			b.printf("wuffs_base__io_buffer %s%s = wuffs_base__null_io_buffer();\n", uPrefix, name)
+			b.printf("wuffs_base__io_buffer %s%s = wuffs_base__empty_io_buffer();\n", uPrefix, name)
 		}
 
 		if err := g.writeCTypeName(b, typ, vPrefix, name); err != nil {

@@ -100,7 +100,7 @@ func (g *gen) writeBuiltinCall(b *buffer, n *a.Expr, depth uint32) error {
 				if !g.currFunk.usesEmptyIOBuffer {
 					g.currFunk.usesEmptyIOBuffer = true
 					g.currFunk.bPrologue.writes("wuffs_base__io_buffer empty_io_buffer = " +
-						"wuffs_base__null_io_buffer();\n\n")
+						"wuffs_base__empty_io_buffer();\n\n")
 				}
 				b.writes("&empty_io_buffer")
 				return nil
