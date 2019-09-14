@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// 7753d147b743dd2da7beb486afb6b1b0f0647b1a committed on 2019-08-31.
+// b4191d48a1b69dfd7df6ab20a9b27703926f1056 committed on 2019-09-14.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.45"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1873
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190831
-#define WUFFS_VERSION_STRING "0.2.0-alpha.45+1873.20190831"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.46"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1897
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190914
+#define WUFFS_VERSION_STRING "0.2.0-alpha.46+1897.20190914"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -8562,6 +8562,12 @@ static const uint8_t               //
         1, 2, 4, 8, 8,
 };
 
+static const uint8_t               //
+    wuffs_gif__interlace_count[5]  //
+    WUFFS_BASE__POTENTIALLY_UNUSED = {
+        0, 0, 1, 3, 7,
+};
+
 static const uint8_t              //
     wuffs_gif__animexts1dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -11044,6 +11050,9 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   wuffs_base__table_u8 v_tab = {0};
   uint64_t v_i = 0;
   uint64_t v_j = 0;
+  uint32_t v_replicate_count = 0;
+  wuffs_base__slice_u8 v_replicate_dst = {0};
+  wuffs_base__slice_u8 v_replicate_src = {0};
 
   v_pixfmt_channels = (wuffs_base__pixel_buffer__pixel_format(a_pb) & 65535);
   if (v_pixfmt_channels == 34952) {
@@ -11091,6 +11100,26 @@ label_0_continue:;
     }
     if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
       self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
+      if (self->private_impl.f_interlace == 0) {
+        wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_y, 1);
+        goto label_0_continue;
+      }
+      if ((self->private_impl.f_num_decoded_frames_value == 0) &&
+          !self->private_impl.f_gc_has_transparent_index &&
+          (self->private_impl.f_interlace > 1)) {
+        v_replicate_count = ((uint32_t)(
+            wuffs_gif__interlace_count[self->private_impl.f_interlace]));
+        v_replicate_src =
+            wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+        while (v_replicate_count > 0) {
+          v_replicate_dst = wuffs_base__table_u8__row(
+              v_tab, wuffs_base__u32__sat_add(self->private_impl.f_dst_y,
+                                              v_replicate_count));
+          wuffs_base__slice_u8__copy_from_slice(v_replicate_dst,
+                                                v_replicate_src);
+          v_replicate_count -= 1;
+        }
+      }
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
           ((uint32_t)(
