@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// b4191d48a1b69dfd7df6ab20a9b27703926f1056 committed on 2019-09-14.
+// ea3dbc5f2d9552d62b41290cc583f830c5f2cfeb committed on 2019-09-14.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.46"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1897
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "alpha.47"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1903
 #define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20190914
-#define WUFFS_VERSION_STRING "0.2.0-alpha.46+1897.20190914"
+#define WUFFS_VERSION_STRING "0.2.0-alpha.47+1903.20190914"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -1310,12 +1310,13 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__io_buffer__struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 
 #ifdef __cplusplus
   inline void compact();
+  inline wuffs_base__io_buffer__struct* reader();  // Deprecated.
   inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
   inline uint64_t writer_available() const;
@@ -1433,6 +1434,11 @@ wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
 inline void  //
 wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
+}
+
+inline wuffs_base__io_buffer*  //
+wuffs_base__io_buffer::reader() {
+  return this;
 }
 
 inline uint64_t  //
@@ -10815,7 +10821,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
   bool v_need_block_size = false;
   uint64_t v_n_compressed = 0;
   wuffs_base__slice_u8 v_compressed = {0};
-  wuffs_base__io_buffer u_r = wuffs_base__null_io_buffer();
+  wuffs_base__io_buffer u_r = wuffs_base__empty_io_buffer();
   wuffs_base__io_buffer* v_r = &u_r;
   uint8_t* iop_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   uint8_t* io0_v_r WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -10837,7 +10843,7 @@ wuffs_gif__decoder__decode_id_part2(wuffs_gif__decoder* self,
     io2_a_src = io0_a_src + a_src->meta.wi;
   }
 
-  wuffs_base__io_buffer empty_io_buffer = wuffs_base__null_io_buffer();
+  wuffs_base__io_buffer empty_io_buffer = wuffs_base__empty_io_buffer();
 
   uint32_t coro_susp_point = self->private_impl.p_decode_id_part2[0];
   if (coro_susp_point) {
