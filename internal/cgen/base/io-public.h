@@ -31,12 +31,13 @@ typedef struct {
 // additional metadata.
 //
 // A value with all fields zero is a valid, empty buffer.
-typedef struct {
+typedef struct wuffs_base__io_buffer__struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 
 #ifdef __cplusplus
   inline void compact();
+  inline wuffs_base__io_buffer__struct* reader();  // Deprecated.
   inline uint64_t reader_available() const;
   inline uint64_t reader_io_position() const;
   inline uint64_t writer_available() const;
@@ -154,6 +155,11 @@ wuffs_base__io_buffer__writer_io_position(const wuffs_base__io_buffer* buf) {
 inline void  //
 wuffs_base__io_buffer::compact() {
   wuffs_base__io_buffer__compact(this);
+}
+
+inline wuffs_base__io_buffer*  //
+wuffs_base__io_buffer::reader() {
+  return this;
 }
 
 inline uint64_t  //
