@@ -25,11 +25,11 @@ import (
 
 // MakeDecompressor implements rac.CodecReader.
 func (r *CodecReader) MakeDecompressor(compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
-	if r.cachedZlibReader == nil {
-		r.cachedZlibReader = &cgozlib.Reader{}
+	if r.cachedReader == nil {
+		r.cachedReader = &cgozlib.Reader{}
 	}
-	if err := r.cachedZlibReader.Reset(compressed, rctx.Secondary); err != nil {
+	if err := r.cachedReader.Reset(compressed, rctx.Secondary); err != nil {
 		return nil, err
 	}
-	return r.cachedZlibReader, nil
+	return r.cachedReader, nil
 }

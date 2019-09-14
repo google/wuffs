@@ -57,9 +57,9 @@ func suffix32K(b []byte) []byte {
 
 // CodecReader specializes a rac.Reader to decode Zlib-compressed chunks.
 type CodecReader struct {
-	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
-	// when decompressing multiple chunks.
-	cachedZlibReader compression.Reader
+	// cachedReader lets us re-use the memory allocated for a zlib reader, when
+	// decompressing multiple chunks.
+	cachedReader compression.Reader
 
 	// These fields contain the most recently used shared dictionary.
 	cachedDictionary       []byte
@@ -153,9 +153,9 @@ func (r *CodecReader) MakeReaderContext(rs io.ReadSeeker, chunk rac.Chunk) (rac.
 type CodecWriter struct {
 	// These fields help reduce memory allocation by re-using previous byte
 	// buffers or the zlib.Writer.
-	compressed bytes.Buffer
-	zlibWriter *zlib.Writer
-	stash      []byte
+	compressed   bytes.Buffer
+	cachedWriter *zlib.Writer
+	stash        []byte
 }
 
 // Close implements rac.CodecWriter.
@@ -228,24 +228,26 @@ func (w *CodecWriter) compress(p []byte, q []byte, dict []byte) ([]byte, error) 
 		if err != nil {
 			return nil, err
 		}
-	} else if w.zlibWriter == nil {
+	} else if w.cachedWriter == nil {
 		zw, err = zlib.NewWriterLevelDict(&w.compressed, zlib.BestCompression, nil)
 		if err != nil {
 			return nil, err
 		}
-		w.zlibWriter = zw
+		w.cachedWriter = zw
 	} else {
-		zw = w.zlibWriter
+		zw = w.cachedWriter
 		zw.Reset(&w.compressed)
 	}
 
 	if len(p) > 0 {
 		if _, err := zw.Write(p); err != nil {
+			zw.Close()
 			return nil, err
 		}
 	}
 	if len(q) > 0 {
 		if _, err := zw.Write(q); err != nil {
+			zw.Close()
 			return nil, err
 		}
 	}
