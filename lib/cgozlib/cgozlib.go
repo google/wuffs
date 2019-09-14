@@ -39,7 +39,7 @@ int cgozlib_inflateSetDictionary(z_stream* z,
 }
 
 int cgozlib_inflate(z_stream* z,
-		advances *a,
+		advances* a,
 		Bytef* next_out,
 		uInt avail_out,
 		Bytef* next_in,
@@ -134,11 +134,11 @@ func (r *Reader) Reset(reader io.Reader, dictionary []byte) error {
 	if r == nil {
 		return errNilReceiver
 	}
-	if reader == nil {
-		return errNilIOReader
-	}
 	if err := r.Close(); err != nil {
 		return err
+	}
+	if reader == nil {
+		return errNilIOReader
 	}
 
 	if e := C.cgozlib_inflateInit(&r.z); e != 0 {
