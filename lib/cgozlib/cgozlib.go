@@ -129,7 +129,7 @@ type Reader struct {
 	a C.advances
 }
 
-// Reset implements zlib.Resetter.
+// Reset implements compression.Reader.
 func (r *Reader) Reset(reader io.Reader, dictionary []byte) error {
 	if r == nil {
 		return errNilReceiver
@@ -153,7 +153,7 @@ func (r *Reader) Reset(reader io.Reader, dictionary []byte) error {
 	return nil
 }
 
-// Close implements io.Closer.
+// Close implements compression.Reader.
 func (r *Reader) Close() error {
 	if r == nil {
 		return errNilReceiver
@@ -173,7 +173,7 @@ func (r *Reader) Close() error {
 	return nil
 }
 
-// Read implements io.Reader.
+// Read implements compression.Reader.
 func (r *Reader) Read(p []byte) (int, error) {
 	if r == nil {
 		return 0, errNilReceiver

@@ -20,6 +20,7 @@ import (
 	"compress/zlib"
 	"io"
 
+	"github.com/google/wuffs/lib/compression"
 	"github.com/google/wuffs/lib/rac"
 )
 
@@ -36,6 +37,6 @@ func (r *CodecReader) MakeDecompressor(compressed io.Reader, rctx rac.ReaderCont
 	if err != nil {
 		return nil, err
 	}
-	r.cachedZlibReader = zlibReader.(resetReadCloser)
+	r.cachedZlibReader = zlibReader.(compression.Reader)
 	return zlibReader, nil
 }

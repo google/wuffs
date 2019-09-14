@@ -28,6 +28,7 @@ import (
 	"hash/adler32"
 	"io"
 
+	"github.com/google/wuffs/lib/compression"
 	"github.com/google/wuffs/lib/rac"
 	"github.com/google/wuffs/lib/zlibcut"
 )
@@ -54,22 +55,11 @@ func suffix32K(b []byte) []byte {
 	return b
 }
 
-type resetReadCloser interface {
-	// Reset is the zlib.Resetter interface's sole method.
-	//
-	// We explicitly spell out the method signature, instead of just saying
-	// "zlib.Resetter". It may be possible for a future version of this package
-	// to not depend on the standard library's "compress/zlib" package at all.
-	Reset(r io.Reader, dict []byte) error
-
-	io.ReadCloser
-}
-
 // CodecReader specializes a rac.Reader to decode Zlib-compressed chunks.
 type CodecReader struct {
 	// cachedZlibReader lets us re-use the memory allocated for a zlib reader,
 	// when decompressing multiple chunks.
-	cachedZlibReader resetReadCloser
+	cachedZlibReader compression.Reader
 
 	// These fields contain the most recently used shared dictionary.
 	cachedDictionary       []byte
