@@ -42,9 +42,9 @@ const (
 	uncompressedMore = "More!\n"
 )
 
-func TestRoundTrip(t *testing.T) {
+func TestRoundTrip(tt *testing.T) {
 	if !cgoEnabled {
-		t.Skip("cgo is not enabled")
+		tt.Skip("cgo is not enabled")
 	}
 
 	wr := &WriterRecycler{}
@@ -65,16 +65,16 @@ func TestRoundTrip(t *testing.T) {
 			w.Reset(buf, nil, 0)
 			if _, err := w.Write([]byte(uncompressedMore)); err != nil {
 				w.Close()
-				t.Fatalf("i=%d: Write: %v", i, err)
+				tt.Fatalf("i=%d: Write: %v", i, err)
 			}
 			if err := w.Close(); err != nil {
-				t.Fatalf("i=%d: Close: %v", i, err)
+				tt.Fatalf("i=%d: Close: %v", i, err)
 			}
 		}
 
 		compressed := buf.String()
 		if (compressed != compressedMore0) && (compressed != compressedMore1) {
-			t.Fatalf("i=%d: compressed\ngot  % 02x\nwant % 02x\nor   % 02x",
+			tt.Fatalf("i=%d: compressed\ngot  % 02x\nwant % 02x\nor   % 02x",
 				i, compressed, compressedMore0, compressedMore1)
 		}
 
@@ -84,14 +84,14 @@ func TestRoundTrip(t *testing.T) {
 			gotBytes, err := ioutil.ReadAll(r)
 			if err != nil {
 				r.Close()
-				t.Fatalf("i=%d: ReadAll: %v", i, err)
+				tt.Fatalf("i=%d: ReadAll: %v", i, err)
 			}
 			if got, want := string(gotBytes), uncompressedMore; got != want {
 				r.Close()
-				t.Fatalf("i=%d:\ngot  %q\nwant %q", i, got, want)
+				tt.Fatalf("i=%d:\ngot  %q\nwant %q", i, got, want)
 			}
 			if err := r.Close(); err != nil {
-				t.Fatalf("i=%d: Close: %v", i, err)
+				tt.Fatalf("i=%d: Close: %v", i, err)
 			}
 		}
 	}

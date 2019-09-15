@@ -21,8 +21,8 @@ import (
 	"github.com/google/wuffs/internal/testcut"
 )
 
-func TestCut(t *testing.T) {
-	testcut.Test(t, SmallestValidMaxEncodedLen, Cut, zlib.NewReader, []string{
+func TestCut(tt *testing.T) {
+	testcut.Test(tt, SmallestValidMaxEncodedLen, Cut, zlib.NewReader, []string{
 		"midsummer.txt.zlib",
 		"pi.txt.zlib",
 		"romeo.txt.zlib",

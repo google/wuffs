@@ -89,20 +89,20 @@ func racDecompress(compressed []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func testReader(t *testing.T, decoded string, encoded string) {
+func testReader(tt *testing.T, decoded string, encoded string) {
 	g, err := racDecompress([]byte(encoded))
 	if err != nil {
-		t.Fatalf("racDecompress: %v", err)
+		tt.Fatalf("racDecompress: %v", err)
 	}
 	if got, want := string(g), decoded; got != want {
-		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+		tt.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
 
-func TestReaderSansDictionary(t *testing.T) { testReader(t, decodedMore, encodedMore) }
-func TestReaderWithDictionary(t *testing.T) { testReader(t, decodedSheep, encodedSheep) }
+func TestReaderSansDictionary(tt *testing.T) { testReader(tt, decodedMore, encodedMore) }
+func TestReaderWithDictionary(tt *testing.T) { testReader(tt, decodedSheep, encodedSheep) }
 
-func TestReaderConcatenation(t *testing.T) {
+func TestReaderConcatenation(tt *testing.T) {
 	// Create a RAC file whose decoding is the concatenation of two other RAC
 	// file's decoding. The resultant RAC file's contents (the encoded form) is
 	// the concatenation of the two RAC files, plus a new root node.
@@ -171,13 +171,13 @@ func TestReaderConcatenation(t *testing.T) {
 	buf[0x05] = byte(checksum >> 8)
 
 	// Test the concatenation.
-	testReader(t,
+	testReader(tt,
 		decodedSheep+decodedMore,
 		encodedSheep+encodedMore+string(buf[:]),
 	)
 }
 
-func TestZeroedBytes(t *testing.T) {
+func TestZeroedBytes(tt *testing.T) {
 	original := make([]byte, 32)
 	original[0] = 'a'
 	original[1] = 'b'
@@ -195,7 +195,7 @@ func TestZeroedBytes(t *testing.T) {
 
 		compressed, err := racCompress(original, cChunkSize, dChunkSize, nil)
 		if err != nil {
-			t.Fatalf("i=%d: racCompress: %v", i, err)
+			tt.Fatalf("i=%d: racCompress: %v", i, err)
 		}
 
 		r := &rac.Reader{
@@ -212,22 +212,22 @@ func TestZeroedBytes(t *testing.T) {
 			}
 
 			if _, err := r.Seek(int64(j), io.SeekStart); err != nil {
-				t.Errorf("i=%d, j=%d: Seek: %v", i, j, err)
+				tt.Errorf("i=%d, j=%d: Seek: %v", i, j, err)
 				continue
 			}
 			if _, err := io.ReadFull(r, got); err != nil {
-				t.Errorf("i=%d, j=%d: ReadFull: %v", i, j, err)
+				tt.Errorf("i=%d, j=%d: ReadFull: %v", i, j, err)
 				continue
 			}
 			if !bytes.Equal(got, want) {
-				t.Errorf("i=%d, j=%d: got\n% 02x\nwant\n% 02x", i, j, got, want)
+				tt.Errorf("i=%d, j=%d: got\n% 02x\nwant\n% 02x", i, j, got, want)
 				continue
 			}
 		}
 	}
 }
 
-func TestSharedDictionary(t *testing.T) {
+func TestSharedDictionary(tt *testing.T) {
 	// Make some "dictionary" data that, as an independent chunk, does not
 	// compress very well.
 	const n = 256
@@ -254,20 +254,20 @@ func TestSharedDictionary(t *testing.T) {
 		// Compress.
 		compressed, err := racCompress(original, 0, n, resourcesData)
 		if err != nil {
-			t.Fatalf("i=%d: racCompress: %v", i, err)
+			tt.Fatalf("i=%d: racCompress: %v", i, err)
 		}
 		if len(compressed) == 0 {
-			t.Fatalf("i=%d: compressed form is empty", i)
+			tt.Fatalf("i=%d: compressed form is empty", i)
 		}
 		compressedLengths[i] = len(compressed)
 
 		// Decompress.
 		decompressed, err := racDecompress(compressed)
 		if err != nil {
-			t.Fatalf("i=%d: racDecompress: %v", i, err)
+			tt.Fatalf("i=%d: racDecompress: %v", i, err)
 		}
 		if !bytes.Equal(decompressed, original) {
-			t.Fatalf("i=%d: racDecompress: round trip did not match original", i)
+			tt.Fatalf("i=%d: racDecompress: round trip did not match original", i)
 		}
 	}
 
@@ -275,7 +275,7 @@ func TestSharedDictionary(t *testing.T) {
 	// exact value depends on the Zlib compression algorithm, but we should
 	// expect at least a 4x improvement.
 	if ratio := compressedLengths[0] / compressedLengths[1]; ratio < 4 {
-		t.Fatalf("ratio: got %dx, want at least 4x", ratio)
+		tt.Fatalf("ratio: got %dx, want at least 4x", ratio)
 	}
 }
 
@@ -301,7 +301,7 @@ func (r *rsWithReadAt) ReadAt(p []byte, o int64) (int, error) { return r.r.ReadA
 // testReadSeeker tests that decoding from rs works, regardless of whether rs
 // implements the optional ReadAt method. If rs does implement io.ReaderAt then
 // its Read and Seek methods should never be called.
-func testReadSeeker(t *testing.T, rs io.ReadSeeker) {
+func testReadSeeker(tt *testing.T, rs io.ReadSeeker) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
 		ReadSeeker:     rs,
@@ -310,17 +310,17 @@ func testReadSeeker(t *testing.T, rs io.ReadSeeker) {
 	}
 	defer r.Close()
 	if _, err := io.Copy(buf, r); err != nil {
-		t.Fatalf("io.Copy: %v", err)
+		tt.Fatalf("io.Copy: %v", err)
 	}
 	if got, want := buf.String(), decodedSheep; got != want {
-		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+		tt.Fatalf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
 
-func TestReadSeekerSansReadAt(t *testing.T) {
-	testReadSeeker(t, &rsSansReadAt{strings.NewReader(encodedSheep)})
+func TestReadSeekerSansReadAt(tt *testing.T) {
+	testReadSeeker(tt, &rsSansReadAt{strings.NewReader(encodedSheep)})
 }
 
-func TestReadSeekerWithReadAt(t *testing.T) {
-	testReadSeeker(t, &rsWithReadAt{strings.NewReader(encodedSheep)})
+func TestReadSeekerWithReadAt(tt *testing.T) {
+	testReadSeeker(tt, &rsWithReadAt{strings.NewReader(encodedSheep)})
 }

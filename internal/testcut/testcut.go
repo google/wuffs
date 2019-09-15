@@ -41,7 +41,7 @@ func clone(b []byte) []byte {
 	return append([]byte(nil), b...)
 }
 
-func Test(t *testing.T,
+func Test(tt *testing.T,
 	smallestValidMaxEncodedLen int,
 	cut func(io.Writer, []byte, int) (int, int, error),
 	newReader func(io.Reader) (io.ReadCloser, error),
@@ -50,12 +50,12 @@ func Test(t *testing.T,
 	for _, filename := range filenames {
 		full, err := ioutil.ReadFile("../../test/data/" + filename)
 		if err != nil {
-			t.Errorf("f=%q: ReadFile: %v", filename, err)
+			tt.Errorf("f=%q: ReadFile: %v", filename, err)
 			continue
 		}
 		fullDecodedLen, err := calculateDecodedLen(full, newReader)
 		if err != nil {
-			t.Errorf("f=%q: calculateDecodedLen: %v", filename, err)
+			tt.Errorf("f=%q: calculateDecodedLen: %v", filename, err)
 			continue
 		}
 
@@ -94,16 +94,16 @@ func Test(t *testing.T,
 			encoded := clone(full)
 			encLen, decLen, err := cut(w0, encoded, maxEncodedLen)
 			if err != nil {
-				t.Errorf("f=%q, mEL=%d: cut: %v", filename, maxEncodedLen, err)
+				tt.Errorf("f=%q, mEL=%d: cut: %v", filename, maxEncodedLen, err)
 				continue
 			}
 			if encLen > maxEncodedLen {
-				t.Errorf("f=%q, mEL=%d: encLen vs max: got %d, want <= %d",
+				tt.Errorf("f=%q, mEL=%d: encLen vs max: got %d, want <= %d",
 					filename, maxEncodedLen, encLen, maxEncodedLen)
 				continue
 			}
 			if encLen > len(encoded) {
-				t.Errorf("f=%q, mEL=%d: encLen vs len: got %d, want <= %d",
+				tt.Errorf("f=%q, mEL=%d: encLen vs len: got %d, want <= %d",
 					filename, maxEncodedLen, encLen, len(encoded))
 				continue
 			}
@@ -111,31 +111,31 @@ func Test(t *testing.T,
 			w1 := &bytes.Buffer{}
 			r, err := newReader(bytes.NewReader(encoded[:encLen]))
 			if err != nil {
-				t.Errorf("f=%q, mEL=%d: newReader: %v", filename, maxEncodedLen, err)
+				tt.Errorf("f=%q, mEL=%d: newReader: %v", filename, maxEncodedLen, err)
 				continue
 			}
 			if n, err := io.Copy(w1, r); err != nil {
-				t.Errorf("f=%q, mEL=%d: io.Copy: %v", filename, maxEncodedLen, err)
+				tt.Errorf("f=%q, mEL=%d: io.Copy: %v", filename, maxEncodedLen, err)
 				continue
 			} else if n != int64(decLen) {
-				t.Errorf("f=%q, mEL=%d: io.Copy: got %d, want %d",
+				tt.Errorf("f=%q, mEL=%d: io.Copy: got %d, want %d",
 					filename, maxEncodedLen, n, decLen)
 				continue
 			}
 
 			if !bytes.Equal(w0.Bytes(), w1.Bytes()) {
-				t.Errorf("f=%q, mEL=%d: decoded bytes were not equal", filename, maxEncodedLen)
+				tt.Errorf("f=%q, mEL=%d: decoded bytes were not equal", filename, maxEncodedLen)
 				continue
 			}
 
 			if (maxEncodedLen == len(encoded)) && (int64(decLen) != fullDecodedLen) {
-				t.Errorf("f=%q, mEL=%d: full decode: got %d, want %d",
+				tt.Errorf("f=%q, mEL=%d: full decode: got %d, want %d",
 					filename, maxEncodedLen, decLen, fullDecodedLen)
 				continue
 			}
 
 			if err := r.Close(); err != nil {
-				t.Errorf("f=%q, mEL=%d: r.Close: %v", filename, maxEncodedLen, err)
+				tt.Errorf("f=%q, mEL=%d: r.Close: %v", filename, maxEncodedLen, err)
 				continue
 			}
 		}

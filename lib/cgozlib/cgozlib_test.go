@@ -47,39 +47,39 @@ func makePure() resetReadCloser {
 	return r.(resetReadCloser)
 }
 
-func testReadAll(t *testing.T, r resetReadCloser, src io.Reader, dict []byte, want string) {
-	t.Helper()
+func testReadAll(tt *testing.T, r resetReadCloser, src io.Reader, dict []byte, want string) {
+	tt.Helper()
 	if !cgoEnabled {
-		t.Skip("cgo is not enabled")
+		tt.Skip("cgo is not enabled")
 	}
 
 	if err := r.Reset(src, dict); err != nil {
-		t.Fatalf("Reset: %v", err)
+		tt.Fatalf("Reset: %v", err)
 	}
 
 	got, err := ioutil.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ReadAll: %v", err)
+		tt.Fatalf("ReadAll: %v", err)
 	}
 
 	if err := r.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
+		tt.Fatalf("Close: %v", err)
 	}
 
 	if string(got) != want {
-		t.Fatalf("got %q, want %q", got, want)
+		tt.Fatalf("got %q, want %q", got, want)
 	}
 }
 
-func testReader(t *testing.T, r resetReadCloser) {
-	testReadAll(t, r, strings.NewReader(compressedMore), nil, "More!\n")
-	testReadAll(t, r, strings.NewReader(compressedSheep), dictSheep, "Two sheep.\n")
-	testReadAll(t, r, strings.NewReader(compressedMore), nil, "More!\n")
-	testReadAll(t, r, strings.NewReader(compressedSheep), dictSheep, "Two sheep.\n")
+func testReader(tt *testing.T, r resetReadCloser) {
+	testReadAll(tt, r, strings.NewReader(compressedMore), nil, "More!\n")
+	testReadAll(tt, r, strings.NewReader(compressedSheep), dictSheep, "Two sheep.\n")
+	testReadAll(tt, r, strings.NewReader(compressedMore), nil, "More!\n")
+	testReadAll(tt, r, strings.NewReader(compressedSheep), dictSheep, "Two sheep.\n")
 }
 
-func TestCgo(t *testing.T)  { testReader(t, &Reader{}) }
-func TestPure(t *testing.T) { testReader(t, makePure()) }
+func TestCgo(tt *testing.T)  { testReader(tt, &Reader{}) }
+func TestPure(tt *testing.T) { testReader(tt, makePure()) }
 
 func benchmarkReader(b *testing.B, r resetReadCloser) {
 	if !cgoEnabled {

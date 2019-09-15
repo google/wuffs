@@ -24,8 +24,8 @@ import (
 	"github.com/google/wuffs/internal/testcut"
 )
 
-func TestCut(t *testing.T) {
-	testcut.Test(t, SmallestValidMaxEncodedLen, Cut, newReader, []string{
+func TestCut(tt *testing.T) {
+	testcut.Test(tt, SmallestValidMaxEncodedLen, Cut, newReader, []string{
 		"artificial/deflate-backref-crosses-blocks.deflate",
 		"artificial/deflate-distance-32768.deflate",
 		"romeo.txt.deflate",
@@ -50,7 +50,7 @@ func decodeFlate(src []byte) string {
 	return string(dst)
 }
 
-func TestHuffmanDecode(t *testing.T) {
+func TestHuffmanDecode(tt *testing.T) {
 	// This exercises the "ABCDEFGH" example from RFC 1951 section 3.2.2,
 	// discussed in the "type huffman" doc comment.
 
@@ -116,7 +116,7 @@ func TestHuffmanDecode(t *testing.T) {
 	}
 
 	if got, want := string(decoded), src; got != want {
-		t.Fatalf("got %q, want %q", got, want)
+		tt.Fatalf("got %q, want %q", got, want)
 	}
 }
 
@@ -140,28 +140,28 @@ const (
 		"\x4e\x4c\xef\x37\xf5\x44\x63\x9f\xdc\xfe\x00"
 )
 
-func TestReplaceHuffmanWithStored(t *testing.T) {
+func TestReplaceHuffmanWithStored(tt *testing.T) {
 	const dec = degenerateHuffmanDec
 	const enc = degenerateHuffmanEnc
 	if (len(dec) != 64) || (len(enc) != 59) {
 		panic("inconsistent const string lengths")
 	}
 	if got, want := decodeFlate([]byte(enc)), dec; got != want {
-		t.Fatalf("before Cut: got %q, want %q", got, want)
+		tt.Fatalf("before Cut: got %q, want %q", got, want)
 	}
 
 	for i := 4; i <= 59; i += 5 {
 		b := []byte(enc)
 		encLen, decLen, err := Cut(nil, b, i)
 		if err != nil {
-			t.Errorf("i=%d: %v", i, err)
+			tt.Errorf("i=%d: %v", i, err)
 			continue
 		}
 		if encLen < 1 {
-			t.Errorf("i=%d: encLen: got %d, want >= 1", i, encLen)
+			tt.Errorf("i=%d: encLen: got %d, want >= 1", i, encLen)
 			continue
 		} else if encLen > len(enc) {
-			t.Errorf("i=%d: encLen: got %d, want <= %d", i, encLen, len(enc))
+			tt.Errorf("i=%d: encLen: got %d, want <= %d", i, encLen, len(enc))
 			continue
 		}
 		// If we can make some progress (decLen > 0), even if the input uses a
@@ -170,15 +170,15 @@ func TestReplaceHuffmanWithStored(t *testing.T) {
 		// Regardless of whether the cut form uses a Huffman or Stored block,
 		// we should be able to produce at least i-5 bytes of decoded output.
 		if (decLen > 0) && (i > 5) && (decLen < i-5) {
-			t.Errorf("i=%d: decLen: got %d, want >= %d", i, decLen, i-5)
+			tt.Errorf("i=%d: decLen: got %d, want >= %d", i, decLen, i-5)
 			continue
 		} else if decLen > len(dec) {
-			t.Errorf("i=%d: decLen: got %d, want <= %d", i, decLen, len(dec))
+			tt.Errorf("i=%d: decLen: got %d, want <= %d", i, decLen, len(dec))
 			continue
 		}
 
 		if got, want := decodeFlate(b[:encLen]), dec[:decLen]; got != want {
-			t.Errorf("i=%d: after Cut: got %q, want %q", i, got, want)
+			tt.Errorf("i=%d: after Cut: got %q, want %q", i, got, want)
 			continue
 		}
 
@@ -199,13 +199,13 @@ func TestReplaceHuffmanWithStored(t *testing.T) {
 			}
 
 			if got != want {
-				t.Errorf("i=%d: block type: got %d, want %d", i, got, want)
+				tt.Errorf("i=%d: block type: got %d, want %d", i, got, want)
 			}
 		}
 	}
 }
 
-func TestDegenerateHuffmanUnused(t *testing.T) {
+func TestDegenerateHuffmanUnused(tt *testing.T) {
 	const dec = degenerateHuffmanDec
 	const enc = degenerateHuffmanEnc
 
@@ -218,14 +218,14 @@ func TestDegenerateHuffmanUnused(t *testing.T) {
 	b := []byte(enc)
 	encLen, decLen, err := Cut(nil, b, len(enc)-1)
 	if err != nil {
-		t.Fatalf("Cut: %v", err)
+		tt.Fatalf("Cut: %v", err)
 	} else if encLen != len(enc)-1 {
-		t.Fatalf("encLen: got %d, want %d", encLen, len(enc)-1)
+		tt.Fatalf("encLen: got %d, want %d", encLen, len(enc)-1)
 	} else if decLen != len(dec)-n {
-		t.Fatalf("decLen: got %d, want %d", decLen, len(dec)-n)
+		tt.Fatalf("decLen: got %d, want %d", decLen, len(dec)-n)
 	}
 
 	if got, want := decodeFlate(b[:encLen]), dec[:decLen]; got != want {
-		t.Fatalf("after Cut: got %q, want %q", got, want)
+		tt.Fatalf("after Cut: got %q, want %q", got, want)
 	}
 }

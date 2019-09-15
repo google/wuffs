@@ -121,79 +121,79 @@ const writerWantILAStartCPageSize128 = "" +
 	"00000080  52 72 72 53 73 41 61 61  42 62 62 62 43 63 63 63  |RrrSsAaaBbbbCccc|\n" +
 	"00000090  63 63 63 63 63 63 31 32                           |cccccc12|\n"
 
-func TestWriterILAEndEmpty(t *testing.T) {
+func TestWriterILAEndEmpty(tt *testing.T) {
 	if err := testWriter(IndexLocationAtEnd, nil, 0, true); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartEmpty(t *testing.T) {
+func TestWriterILAStartEmpty(tt *testing.T) {
 	tempFile := &bytes.Buffer{}
 	if err := testWriter(IndexLocationAtStart, tempFile, 0, true); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAEndNoTempFile(t *testing.T) {
+func TestWriterILAEndNoTempFile(tt *testing.T) {
 	if err := testWriter(IndexLocationAtEnd, nil, 0, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAEndMemTempFile(t *testing.T) {
+func TestWriterILAEndMemTempFile(tt *testing.T) {
 	tempFile := &bytes.Buffer{}
 	if err := testWriter(IndexLocationAtEnd, tempFile, 0, false); err == nil {
-		t.Fatal("err: got nil, want non-nil")
+		tt.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtEnd requires") {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartNoTempFile(t *testing.T) {
+func TestWriterILAStartNoTempFile(tt *testing.T) {
 	if err := testWriter(IndexLocationAtStart, nil, 0, false); err == nil {
-		t.Fatal("err: got nil, want non-nil")
+		tt.Fatal("err: got nil, want non-nil")
 	} else if !strings.HasPrefix(err.Error(), "rac: IndexLocationAtStart requires") {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartMemTempFile(t *testing.T) {
+func TestWriterILAStartMemTempFile(tt *testing.T) {
 	tempFile := &bytes.Buffer{}
 	if err := testWriter(IndexLocationAtStart, tempFile, 0, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartRealTempFile(t *testing.T) {
+func TestWriterILAStartRealTempFile(tt *testing.T) {
 	f, err := ioutil.TempFile("", "rac_test")
 	if err != nil {
-		t.Fatalf("TempFile: %v", err)
+		tt.Fatalf("TempFile: %v", err)
 	}
 	defer os.Remove(f.Name())
 	defer f.Close()
 
 	if err := testWriter(IndexLocationAtStart, f, 0, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAEndCPageSize8(t *testing.T) {
+func TestWriterILAEndCPageSize8(tt *testing.T) {
 	if err := testWriter(IndexLocationAtEnd, nil, 8, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartCPageSize4(t *testing.T) {
+func TestWriterILAStartCPageSize4(tt *testing.T) {
 	tempFile := &bytes.Buffer{}
 	if err := testWriter(IndexLocationAtStart, tempFile, 4, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
-func TestWriterILAStartCPageSize128(t *testing.T) {
+func TestWriterILAStartCPageSize128(tt *testing.T) {
 	tempFile := &bytes.Buffer{}
 	if err := testWriter(IndexLocationAtStart, tempFile, 128, false); err != nil {
-		t.Fatal(err)
+		tt.Fatal(err)
 	}
 }
 
@@ -247,7 +247,7 @@ func testWriter(iloc IndexLocation, tempFile io.ReadWriter, cPageSize uint64, em
 	return nil
 }
 
-func TestMultiLevelIndex(t *testing.T) {
+func TestMultiLevelIndex(tt *testing.T) {
 	buf := &bytes.Buffer{}
 	w := &ChunkWriter{
 		Writer:        buf,
@@ -293,12 +293,12 @@ func TestMultiLevelIndex(t *testing.T) {
 	}
 
 	if err := w.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
+		tt.Fatalf("Close: %v", err)
 	}
 
 	encoded := buf.Bytes()
 	if got, want := len(encoded), 0x13E2; got != want {
-		t.Fatalf("len(encoded): got 0x%X, want 0x%X", got, want)
+		tt.Fatalf("len(encoded): got 0x%X, want 0x%X", got, want)
 	}
 
 	gotHexDump := hex.Dump(encoded)
@@ -352,7 +352,7 @@ func TestMultiLevelIndex(t *testing.T) {
 		"000013e0  30 33                                             |03|\n"
 
 	if gotHexDump != wantHexDump {
-		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
+		tt.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
 	}
 
 	r := &ChunkReader{
@@ -365,7 +365,7 @@ func TestMultiLevelIndex(t *testing.T) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			t.Fatalf("NextChunk: %v", err)
+			tt.Fatalf("NextChunk: %v", err)
 		}
 		p0, p1 := c.CPrimary[0], c.CPrimary[1]
 		if (0 <= p0) && (p0 <= p1) && (p1 <= int64(len(encoded))) {
@@ -377,11 +377,11 @@ func TestMultiLevelIndex(t *testing.T) {
 		}
 	}
 	if !bytes.Equal(gotPrimaries, primaries) {
-		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotPrimaries, primaries)
+		tt.Fatalf("\ngot:\n%s\nwant:\n%s", gotPrimaries, primaries)
 	}
 }
 
-func TestWriter1000Chunks(t *testing.T) {
+func TestWriter1000Chunks(tt *testing.T) {
 loop:
 	for i := 0; i < 2; i++ {
 		buf := &bytes.Buffer{}
@@ -403,7 +403,7 @@ loop:
 			}
 		}
 		if err := w.Close(); err != nil {
-			t.Errorf("i=%d: Close: %v", i, err)
+			tt.Errorf("i=%d: Close: %v", i, err)
 			continue loop
 		}
 
@@ -415,12 +415,12 @@ loop:
 		for n := 0; ; n++ {
 			if _, err := r.NextChunk(); err == io.EOF {
 				if n != 1000 {
-					t.Errorf("i=%d: number of chunks: got %d, want %d", i, n, 1000)
+					tt.Errorf("i=%d: number of chunks: got %d, want %d", i, n, 1000)
 					continue loop
 				}
 				break
 			} else if err != nil {
-				t.Errorf("i=%d: NextChunk: %v", i, err)
+				tt.Errorf("i=%d: NextChunk: %v", i, err)
 				continue loop
 			}
 		}
@@ -436,7 +436,7 @@ func printChunks(chunks []Chunk) string {
 	return strings.Join(ss, "\n")
 }
 
-func TestChunkReader(t *testing.T) {
+func TestChunkReader(tt *testing.T) {
 	testCases := []struct {
 		name       string
 		compressed []byte
@@ -482,10 +482,10 @@ loop:
 		}
 
 		if gotDecompressedSize, err := r.DecompressedSize(); err != nil {
-			t.Errorf("%q test case: %v", tc.name, err)
+			tt.Errorf("%q test case: %v", tc.name, err)
 			continue loop
 		} else if gotDecompressedSize != wantDecompressedSize {
-			t.Errorf("%q test case: DecompressedSize: got %d, want %d",
+			tt.Errorf("%q test case: DecompressedSize: got %d, want %d",
 				tc.name, gotDecompressedSize, wantDecompressedSize)
 			continue loop
 		}
@@ -498,12 +498,12 @@ loop:
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				t.Errorf("%q test case: NextChunk: %v", tc.name, err)
+				tt.Errorf("%q test case: NextChunk: %v", tc.name, err)
 				continue loop
 			}
 
 			if c.DRange[0] != prevDRange1 {
-				t.Errorf("%q test case: NextChunk: DRange[0]: got %d, want %d",
+				tt.Errorf("%q test case: NextChunk: DRange[0]: got %d, want %d",
 					tc.name, c.DRange[0], prevDRange1)
 				continue loop
 			}
@@ -519,41 +519,41 @@ loop:
 
 		if tc.name == "Empty" {
 			if len(gotChunks) != 0 {
-				t.Errorf("%q test case: NextChunk: got non-empty, want empty", tc.name)
+				tt.Errorf("%q test case: NextChunk: got non-empty, want empty", tc.name)
 			}
 			continue loop
 		}
 
 		gotDescription := description.String()
 		if gotDescription != wantDescription {
-			t.Errorf("%q test case: NextChunk:\n    got\n%s\n    which is\n%s\n    want\n%s",
+			tt.Errorf("%q test case: NextChunk:\n    got\n%s\n    which is\n%s\n    want\n%s",
 				tc.name, printChunks(gotChunks), gotDescription, wantDescription)
 			continue loop
 		}
 
 		// NextChunk should return io.EOF.
 		if _, err := r.NextChunk(); err != io.EOF {
-			t.Errorf("%q test case: NextChunk: got %v, want io.EOF", tc.name, err)
+			tt.Errorf("%q test case: NextChunk: got %v, want io.EOF", tc.name, err)
 			continue loop
 		}
 
 		if err := r.SeekToChunkContaining(0x30); err != nil {
-			t.Errorf("%q test case: SeekToChunkContaining: %v", tc.name, err)
+			tt.Errorf("%q test case: SeekToChunkContaining: %v", tc.name, err)
 			continue loop
 		}
 
 		// NextChunk should return the "Bb..." chunk.
 		if c, err := r.NextChunk(); err != nil {
-			t.Errorf("%q test case: NextChunk: %v", tc.name, err)
+			tt.Errorf("%q test case: NextChunk: %v", tc.name, err)
 			continue loop
 		} else if got, want := snippet(c.CPrimary), "Bb..."; got != want {
-			t.Errorf("%q test case: NextChunk: got %q, want %q", tc.name, got, want)
+			tt.Errorf("%q test case: NextChunk: got %q, want %q", tc.name, got, want)
 			continue loop
 		}
 	}
 }
 
-func TestReaderEmpty(t *testing.T) {
+func TestReaderEmpty(tt *testing.T) {
 	encoded := undoHexDump(writerWantEmpty)
 	r := &Reader{
 		ReadSeeker:     bytes.NewReader(encoded),
@@ -562,24 +562,24 @@ func TestReaderEmpty(t *testing.T) {
 	defer r.Close()
 	got, err := ioutil.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ReadAll: %v", err)
+		tt.Fatalf("ReadAll: %v", err)
 	}
 	if len(got) != 0 {
-		t.Fatalf("got %q, want %q", got, []byte(nil))
+		tt.Fatalf("got %q, want %q", got, []byte(nil))
 	}
 }
 
-func TestReaderZeroes(t *testing.T) {
+func TestReaderZeroes(tt *testing.T) {
 	const dSize = 7
 	buf := &bytes.Buffer{}
 	w := &ChunkWriter{
 		Writer: buf,
 	}
 	if err := w.AddChunk(dSize, CodecZeroes, nil, 0, 0); err != nil {
-		t.Fatalf("AddChunk: %v", err)
+		tt.Fatalf("AddChunk: %v", err)
 	}
 	if err := w.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
+		tt.Fatalf("Close: %v", err)
 	}
 	encoded := buf.Bytes()
 	r := &Reader{
@@ -589,15 +589,15 @@ func TestReaderZeroes(t *testing.T) {
 	defer r.Close()
 	got, err := ioutil.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ReadAll: %v", err)
+		tt.Fatalf("ReadAll: %v", err)
 	}
 	want := make([]byte, dSize)
 	if !bytes.Equal(got, want) {
-		t.Fatalf("got %q, want %q", got, want)
+		tt.Fatalf("got %q, want %q", got, want)
 	}
 }
 
-func TestLongCodec(t *testing.T) {
+func TestLongCodec(tt *testing.T) {
 	const codec = Codec(0x80000000326F646D) // "mdo2" backwards, with a high bit.
 	buf := &bytes.Buffer{}
 	w := &ChunkWriter{
@@ -606,13 +606,13 @@ func TestLongCodec(t *testing.T) {
 		TempFile:      &bytes.Buffer{},
 	}
 	if err := w.AddChunk(0x66, codec, []byte{0xAA, 0xBB}, 0, 0); err != nil {
-		t.Fatalf("AddChunk: %v", err)
+		tt.Fatalf("AddChunk: %v", err)
 	}
 	if err := w.AddChunk(0x77, codec, []byte{0xCC}, 0, 0); err != nil {
-		t.Fatalf("AddChunk: %v", err)
+		tt.Fatalf("AddChunk: %v", err)
 	}
 	if err := w.Close(); err != nil {
-		t.Fatalf("Close: %v", err)
+		tt.Fatalf("Close: %v", err)
 	}
 
 	encoded := buf.Bytes()
@@ -626,7 +626,7 @@ func TestLongCodec(t *testing.T) {
 		"00000040  aa bb cc                                          |...|\n"
 
 	if gotHexDump != wantHexDump {
-		t.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
+		tt.Fatalf("\ngot:\n%s\nwant:\n%s", gotHexDump, wantHexDump)
 	}
 
 	r := &ChunkReader{
@@ -636,18 +636,18 @@ func TestLongCodec(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		c, err := r.NextChunk()
 		if err != nil {
-			t.Fatalf("i=%d: %v", i, err)
+			tt.Fatalf("i=%d: %v", i, err)
 		}
 		if got, want := c.Codec, codec; got != want {
-			t.Fatalf("i=%d: Codec: got 0x%X, want 0x%X", i, got, want)
+			tt.Fatalf("i=%d: Codec: got 0x%X, want 0x%X", i, got, want)
 		}
 	}
 	if _, err := r.NextChunk(); err != io.EOF {
-		t.Fatalf("got %v, want %v", err, io.EOF)
+		tt.Fatalf("got %v, want %v", err, io.EOF)
 	}
 }
 
-func TestFindChunkContaining(t *testing.T) {
+func TestFindChunkContaining(tt *testing.T) {
 	rng := rand.New(rand.NewSource(1))
 	arity, dptrs := 0, [256]int64{}
 
@@ -694,7 +694,7 @@ func TestFindChunkContaining(t *testing.T) {
 		node[5] = uint8(checksum >> 8)
 
 		if !node.valid() {
-			t.Fatalf("i=%d: invalid node", i)
+			tt.Fatalf("i=%d: invalid node", i)
 		}
 
 		for k := 0; k < 100; k++ {
@@ -702,7 +702,7 @@ func TestFindChunkContaining(t *testing.T) {
 			got := node.findChunkContaining(dptr, 0)
 			want := simpleFCC(dptr)
 			if got != want {
-				t.Fatalf("i=%d, k=%d: got %d, want %d", i, k, got, want)
+				tt.Fatalf("i=%d, k=%d: got %d, want %d", i, k, got, want)
 			}
 		}
 	}
