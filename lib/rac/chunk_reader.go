@@ -174,17 +174,32 @@ func (b *rNode) isLeaf(i int) bool {
 // findChunkContaining returns the largest i < arity such that the i'th DOff is
 // less than or equal to the dOff argument.
 //
-// The dOff argument must be less than DOffMax.
+// The dOff argument must be non-negative and less than DOffMax.
 func (b *rNode) findChunkContaining(dOff int64, dBias int64) int {
-	// TODO: binary search instead of linear search.
-	for i, n := 0, b.arity(); i < n; i++ {
-		if dOff < b.dOff(i+1, dBias) {
-			return i
+	// Define f(x) to be whether the x'th DOff is greater than dOff, so that
+	// f(-1) is false and f(arity) is true. The DOff values are non-decreasing
+	// so that f(x) true implies f(x+1) true.
+	//
+	// Binary search with the invariant that f(lo-1) is false and f(hi) is true.
+	// This finds the smallest x such that f(x) is true.
+	lo, hi := 0, b.arity()
+	for lo < hi {
+		mid := int(uint(lo+hi) >> 1) // Avoid overflow when computing mid.
+		// lo ≤ mid < hi
+		if b.dOff(mid, dBias) <= dOff {
+			lo = mid + 1 // Preserves f(lo-1) == false.
+		} else {
+			hi = mid // Preserves f(hi) == true.
 		}
+
 	}
-	// We shouldn't get here, since we validate each node, and don't call this
-	// function for a DOff greater than or equal to DOffMax.
-	panic("rac: internal error: could not find containing chunk")
+	// lo == hi, f(lo-1) == false, and f(hi) (= f(lo)) == true. Therefore lo is
+	// the smallest x such that f(x) is true, so lo-1 is the largest x such
+	// that f(x) is false.
+	if lo <= 0 {
+		panic("rac: internal error: could not find containing chunk")
+	}
+	return lo - 1
 }
 
 func (b *rNode) chunk(i int, cBias int64, dBias int64) Chunk {
