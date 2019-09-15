@@ -22,15 +22,22 @@ import (
 )
 
 const (
-	// compressedMore is 15 bytes of zstd frame:
+	// compressedMoreN is 15 bytes of zstd frame:
+	//
+	// There are two forms, depending on the zstd-the-library version used for
+	// compression. They differ only in the WD byte.
+	//
+	// \x28\xb5\x2f\xfd \x00 \x50 \x31\x00\x00 \x4d\x6f\x72\x65\x21\x0a
 	// \x28\xb5\x2f\xfd \x00 \x58 \x31\x00\x00 \x4d\x6f\x72\x65\x21\x0a
 	// Magic----------- FHD- WD-- BH---------- BlockData---------------
 	//
 	// Frame Header Descriptor: no flags set.
-	// Window Descriptor: Exponent=11, Mantissa=0, Window_Size=2MiB.
+	// Window Descriptor: Exponent=10, Mantissa=0, Window_Size=1MiB.
+	//                or: Exponent=11, Mantissa=0, Window_Size=2MiB.
 	// Block Header: Last_Block=1, Block_Type=0 (Raw_Block), Block_Size=6.
 	// Block Data: the literal bytes "More!\n".
-	compressedMore = "\x28\xb5\x2f\xfd\x00\x58\x31\x00\x00\x4d\x6f\x72\x65\x21\x0a"
+	compressedMore0 = "\x28\xb5\x2f\xfd\x00\x50\x31\x00\x00\x4d\x6f\x72\x65\x21\x0a"
+	compressedMore1 = "\x28\xb5\x2f\xfd\x00\x58\x31\x00\x00\x4d\x6f\x72\x65\x21\x0a"
 
 	uncompressedMore = "More!\n"
 )
@@ -66,8 +73,9 @@ func TestRoundTrip(t *testing.T) {
 		}
 
 		compressed := buf.String()
-		if compressed != compressedMore {
-			t.Fatalf("i=%d: compressed\ngot  % 02x\nwant % 02x", i, compressed, compressedMore)
+		if (compressed != compressedMore0) && (compressed != compressedMore1) {
+			t.Fatalf("i=%d: compressed\ngot  % 02x\nwant % 02x\nor   % 02x",
+				i, compressed, compressedMore0, compressedMore1)
 		}
 
 		// Uncompress.
