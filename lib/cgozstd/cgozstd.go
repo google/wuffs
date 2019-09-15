@@ -161,7 +161,7 @@ func (c *ReaderRecycler) Close() error {
 //
 // The zero value is not usable until Reset is called.
 type Reader struct {
-	buf  [4096]byte
+	buf  [65536]byte
 	i, j uint32
 	r    io.Reader
 
@@ -315,7 +315,7 @@ func (c *WriterRecycler) Close() error {
 //
 // The zero value is not usable until Reset is called.
 type Writer struct {
-	buf   [4096]byte
+	buf   [65536]byte
 	j     uint32
 	w     io.Writer
 	level compression.Level
