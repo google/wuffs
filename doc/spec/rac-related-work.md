@@ -113,6 +113,17 @@ KiB of history, per seek point. For coarse grained seek points (e.g. once every
 1 MiB), that overhead can be acceptable, but for fine grained seek points (e.g.
 once every 16 KiB), that overhead is prohibitive.
 
+The
+[`examples/dictionaryRandomAccess.c`](https://github.com/lz4/lz4/blob/master/examples/dictionaryRandomAccess.c)
+program in the lz4-the-library source code repository is much closer in spirit
+to RAC, and unlike the zlib example, does not require saving decompressor
+state: its chunks are independently compressed. It supports dictionaries, but
+they have to be supplied out-of-band, separate from the compressed file. It is
+also tied to the LZ4 compression format, hard-codes what RAC would call the
+chunk DRange size to a fixed value, and the file format is endian-dependent.
+This is a proof of concept (the implementation's maximum DFileSize is 1MiB),
+not a production quality file format.
+
 RAC differs from the [LevelDB
 Table](https://github.com/google/leveldb/blob/master/doc/table_format.md)
 format, even if the LevelDB Table string keys are re-purposed to encode both
