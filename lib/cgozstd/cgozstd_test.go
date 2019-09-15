@@ -23,13 +23,13 @@ import (
 
 const (
 	// compressedMore is 15 bytes of zstd frame:
-	// \x28\xb5\x2f\xfd \x00 \x58 \x31\x00\x00 \x4d\x6f\x72\x65\x21\x0a"
-	// Magic----------- FHD- WD-- BH---------- BlockData----------------
+	// \x28\xb5\x2f\xfd \x00 \x58 \x31\x00\x00 \x4d\x6f\x72\x65\x21\x0a
+	// Magic----------- FHD- WD-- BH---------- BlockData---------------
 	//
-	// Frame Header Descriptor 0x00 means no flags set.
+	// Frame Header Descriptor: no flags set.
 	// Window Descriptor: Exponent=11, Mantissa=0, Window_Size=2MiB.
 	// Block Header: Last_Block=1, Block_Type=0 (Raw_Block), Block_Size=6.
-	// BlockData is the literal bytes "More!\n".
+	// Block Data: the literal bytes "More!\n".
 	compressedMore = "\x28\xb5\x2f\xfd\x00\x58\x31\x00\x00\x4d\x6f\x72\x65\x21\x0a"
 
 	uncompressedMore = "More!\n"
