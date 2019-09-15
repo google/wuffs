@@ -24,10 +24,10 @@ import (
 	"github.com/google/wuffs/lib/raczstd"
 )
 
-// Example_roundTrip demonstrates compressing (using a raczstd.Writer) and
-// decompressing (using a rac.Reader configured with a raczstd.CodecReader).
-// This includes decompressing an excerpt of the original data, exercising the
-// "random access" part of RAC.
+// Example_roundTrip demonstrates compressing (using a rac.Writer and a
+// raczstd.CodecWriter) and decompressing (using a rac.Reader and a
+// raczstd.CodecReader). This includes decompressing an excerpt of the original
+// data, exercising the "random access" part of RAC.
 func Example_roundTrip() {
 	// Create some test data.
 	oBuf := &bytes.Buffer{}
