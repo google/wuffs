@@ -129,6 +129,9 @@ Extended Example:
     $ wget http://mattmahoney.net/dc/enwik8.zip
     $ unzip enwik8.zip
 
+    $ # Also zstd-encode it, as a reference point.
+    $ zstd enwik8
+
     $ # Create a shared dictionary. The dictionary_generator program
     $ # comes from https://github.com/google/brotli
     $ dictionary_generator --chunk_len=64k dict.dat enwik8
@@ -138,9 +141,6 @@ Extended Example:
     $ ractool -encode -codec=zlib                     enwik8 > zlib.sansdict.rac
     $ ractool -encode -codec=zstd                     enwik8 > zstd.sansdict.rac
     $ ractool -encode -codec=lz4                      enwik8 > lz4.sansdict.rac
-
-    $ # Also zstd-encode it, as a reference point.
-    $ zstd enwik8 -o enwik8.zstd
 
     $ # The size overhead (comparing RAC+Zlib to zip) is about 2.4% or 4.8%,
     $ # depending on whether we used a shared dictionary.
