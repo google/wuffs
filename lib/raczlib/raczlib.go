@@ -61,6 +61,9 @@ type CodecReader struct {
 	// decompressing multiple chunks.
 	cachedReader compression.Reader
 
+	// lim provides a limited view of a RAC file.
+	lim io.LimitedReader
+
 	// These fields contain the most recently used shared dictionary.
 	cachedDictionary       []byte
 	cachedDictionaryCRange rac.Range
@@ -84,42 +87,55 @@ func (r *CodecReader) Clone() rac.CodecReader {
 	return &CodecReader{}
 }
 
-// MakeReaderContext implements rac.CodecReader.
-func (r *CodecReader) MakeReaderContext(rs io.ReadSeeker, chunk rac.Chunk) (rac.ReaderContext, error) {
+// MakeDecompressor implements rac.CodecReader.
+func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (io.Reader, error) {
+	dict, err := r.loadDictionary(racFile, chunk)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := racFile.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
+		return nil, err
+	}
+	r.lim.R = racFile
+	r.lim.N = chunk.CPrimary.Size()
+	return r.makeDecompressor(&r.lim, dict)
+}
+
+func (r *CodecReader) loadDictionary(rs io.ReadSeeker, chunk rac.Chunk) ([]byte, error) {
 	// For a description of the RAC+Zlib secondary-data format, see
 	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
 
 	if !chunk.CTertiary.Empty() {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 	if chunk.CSecondary.Empty() {
-		return rac.ReaderContext{}, nil
+		return nil, nil
 	}
 	cRange := chunk.CSecondary
 
 	// Load from the MRU cache, if it was loaded from the same cRange.
 	if (cRange == r.cachedDictionaryCRange) && !cRange.Empty() {
-		return rac.ReaderContext{Secondary: r.cachedDictionary}, nil
+		return r.cachedDictionary, nil
 	}
 
 	// Check the cRange size and the tTag.
 	if (cRange.Size() < 6) || (chunk.TTag != 0xFF) {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 
 	// Read the dictionary size.
 	if _, err := rs.Seek(cRange[0], io.SeekStart); err != nil {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 	if _, err := io.ReadFull(rs, r.buf[:2]); err != nil {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 	dictSize := int64(r.buf[0]) | (int64(r.buf[1]) << 8)
 
 	// Check the size. The +6 is for the 2 byte prefix (dictionary size) and
 	// the 4 byte suffix (checksum).
 	if (dictSize + 6) > cRange.Size() {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 
 	// Allocate or re-use the cachedDictionary buffer.
@@ -134,19 +150,19 @@ func (r *CodecReader) MakeReaderContext(rs io.ReadSeeker, chunk rac.Chunk) (rac.
 
 	// Read the dictionary and checksum.
 	if _, err := io.ReadFull(rs, buffer); err != nil {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 
 	// Verify the checksum.
 	dict, checksum := buffer[:dictSize], buffer[dictSize:]
 	if u32BE(checksum) != adler32.Checksum(dict) {
-		return rac.ReaderContext{}, errInvalidDictionary
+		return nil, errInvalidDictionary
 	}
 
 	// Save to the MRU cache and return.
 	r.cachedDictionary = dict
 	r.cachedDictionaryCRange = cRange
-	return rac.ReaderContext{Secondary: dict}, nil
+	return dict, nil
 }
 
 // CodecWriter specializes a rac.Writer to encode Zlib-compressed chunks.

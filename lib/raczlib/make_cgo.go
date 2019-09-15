@@ -20,15 +20,13 @@ import (
 	"io"
 
 	"github.com/google/wuffs/lib/cgozlib"
-	"github.com/google/wuffs/lib/rac"
 )
 
-// MakeDecompressor implements rac.CodecReader.
-func (r *CodecReader) MakeDecompressor(compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
+func (r *CodecReader) makeDecompressor(compressed io.Reader, dict []byte) (io.Reader, error) {
 	if r.cachedReader == nil {
 		r.cachedReader = &cgozlib.Reader{}
 	}
-	if err := r.cachedReader.Reset(compressed, rctx.Secondary); err != nil {
+	if err := r.cachedReader.Reset(compressed, dict); err != nil {
 		return nil, err
 	}
 	return r.cachedReader, nil

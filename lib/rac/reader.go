@@ -37,14 +37,6 @@ func (z *zeroesReader) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// ReaderContext contains the decoded Codec-specific metadata (non-primary
-// data) associated with a RAC chunk.
-type ReaderContext struct {
-	Secondary []byte
-	Tertiary  []byte
-	Extra     interface{}
-}
-
 // CodecReader specializes a Reader to decode a specific compression codec.
 //
 // Instances are not required to support concurrent use.
@@ -62,10 +54,7 @@ type CodecReader interface {
 	//
 	// The returned io.Reader may optionally implement the io.Closer interface,
 	// in which case this Reader will call Close when has finished the chunk.
-	MakeDecompressor(r io.Reader, rctx ReaderContext) (io.Reader, error)
-
-	// MakeReaderContext returns the Codec-specific ReaderContext for a chunk.
-	MakeReaderContext(r io.ReadSeeker, c Chunk) (ReaderContext, error)
+	MakeDecompressor(racFile io.ReadSeeker, c Chunk) (io.Reader, error)
 }
 
 // Reader reads a RAC file.
@@ -121,7 +110,7 @@ type Reader struct {
 	//  - "State A" (both fields are zero): no RAC chunk is loaded.
 	//
 	//  - "State B" (decompressor is non-zero, inImplicitZeroes is zero): a RAC
-	//    chunk is loaded, but not fully exhausted: decompressing the zlib
+	//    chunk is loaded, but not fully exhausted: decompressing the e.g. zlib
 	//    stream has not hit io.EOF yet.
 	//
 	//  - "State C" (decompressor is zero, inImplicitZeroes is non-zero): a RAC
@@ -140,11 +129,6 @@ type Reader struct {
 
 	// closed is whether this Reader is closed.
 	closed bool
-
-	// currChunk is an io.Reader for the current chunk, used while in "State
-	// B". It serves zlib-compressed data, which the (non-nil) decompressor
-	// turns into decompressed data.
-	currChunk io.LimitedReader
 
 	// pos is the current position, in DSpace. It is the base value when Seek
 	// is called with io.SeekCurrent.
@@ -195,7 +179,6 @@ func (r *Reader) initialize() error {
 		r.err = err
 		return r.err
 	}
-	r.currChunk.R = r.chunkReader.readSeeker
 	r.posLimit = r.chunkReader.decompressedSize
 	r.concReader.initialize(r)
 	return nil
@@ -268,7 +251,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 	}
 }
 
-// readExplicitData serves the zlib-compressed data in a chunk.
+// readExplicitData serves the compressed data in a chunk.
 func (r *Reader) readExplicitData(p []byte) (int, error) {
 	// If the chunk started before r.pos, discard the opening bytes of the
 	// chunk's decompressed data.
@@ -375,7 +358,6 @@ func (r *Reader) nextChunk() error {
 	}
 
 	if (chunk.Codec == CodecZeroes) || (chunk.Codec == codecLongZeroes) {
-		r.currChunk.N = 0
 		r.dRange = chunk.DRange
 		r.zeroes = zeroesReader(r.dRange.Size())
 		r.decompressor = &r.zeroes
@@ -399,26 +381,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 
-	rctx, err := codecReader.MakeReaderContext(r.chunkReader.readSeeker, chunk)
-	if err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-		r.err = err
-		return r.err
-	}
-
-	if _, err := r.chunkReader.readSeeker.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-		r.err = err
-		return r.err
-	}
-	r.currChunk.N = chunk.CPrimary.Size()
-	r.dRange = chunk.DRange
-
-	decompressor, err := codecReader.MakeDecompressor(&r.currChunk, rctx)
+	decompressor, err := codecReader.MakeDecompressor(r.chunkReader.readSeeker, chunk)
 	if err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
@@ -427,6 +390,7 @@ func (r *Reader) nextChunk() error {
 		return r.err
 	}
 	r.decompressor = decompressor
+	r.dRange = chunk.DRange
 	return nil
 }
 

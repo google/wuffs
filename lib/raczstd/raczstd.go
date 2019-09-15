@@ -40,6 +40,7 @@ var (
 type CodecReader struct {
 	cachedReader compression.Reader
 	recycler     cgozstd.ReaderRecycler
+	lim          io.LimitedReader
 }
 
 // Close implements rac.CodecReader.
@@ -58,21 +59,22 @@ func (r *CodecReader) Clone() rac.CodecReader {
 }
 
 // MakeDecompressor implements rac.CodecReader.
-func (r *CodecReader) MakeDecompressor(compressed io.Reader, rctx rac.ReaderContext) (io.Reader, error) {
+func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (io.Reader, error) {
+	if _, err := racFile.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
+		return nil, err
+	}
+	r.lim.R = racFile
+	r.lim.N = chunk.CPrimary.Size()
+
 	if r.cachedReader == nil {
 		zr := &cgozstd.Reader{}
 		r.cachedReader = zr
 		r.recycler.Bind(zr)
 	}
-	if err := r.cachedReader.Reset(compressed, rctx.Secondary); err != nil {
+	if err := r.cachedReader.Reset(&r.lim, nil); err != nil {
 		return nil, err
 	}
 	return r.cachedReader, nil
-}
-
-// MakeReaderContext implements rac.CodecReader.
-func (r *CodecReader) MakeReaderContext(rs io.ReadSeeker, chunk rac.Chunk) (rac.ReaderContext, error) {
-	return rac.ReaderContext{}, nil
 }
 
 // CodecWriter specializes a rac.Writer to encode Zstd-compressed chunks.
