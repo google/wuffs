@@ -193,6 +193,7 @@ import (
 	"strings"
 
 	"github.com/google/wuffs/lib/rac"
+	"github.com/google/wuffs/lib/raclz4"
 	"github.com/google/wuffs/lib/raczlib"
 	"github.com/google/wuffs/lib/raczstd"
 )
@@ -377,6 +378,7 @@ func decode(inFile *os.File) error {
 		ReadSeeker:     rs,
 		CompressedSize: compressedSize,
 		CodecReaders: []rac.CodecReader{
+			&raclz4.CodecReader{},
 			&raczlib.CodecReader{},
 			&raczstd.CodecReader{},
 		},
@@ -446,6 +448,8 @@ func encode(r io.Reader) error {
 		DChunkSize:    uint64(dchunksize),
 	}
 	switch *codecFlag {
+	case "lz4":
+		w.CodecWriter = &raclz4.CodecWriter{}
 	case "zlib":
 		w.CodecWriter = &raczlib.CodecWriter{}
 	case "zstd":
