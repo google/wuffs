@@ -259,12 +259,12 @@ func (r *Reader) Read(p []byte) (int, error) {
 			continue
 		}
 
-		e := C.cgozstd_decompress(r.z, &r.a,
+		e := errCode(C.cgozstd_decompress(r.z, &r.a,
 			(*C.uint8_t)(unsafe.Pointer(&p[0])),
 			(C.uint32_t)(len(p)),
 			(*C.uint8_t)(unsafe.Pointer(&r.buf[r.i])),
 			(C.uint32_t)(r.j-r.i),
-		)
+		))
 
 		numRead += int(r.a.ndst)
 		p = p[int(r.a.ndst):]
@@ -277,7 +277,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 			}
 			r.zstdErr = io.EOF
 		} else {
-			r.zstdErr = errCode(e)
+			r.zstdErr = e
 		}
 		return numRead, r.zstdErr
 	}
@@ -447,15 +447,15 @@ func (w *Writer) write(p []byte, final bool) error {
 			}
 		}
 
-		e := int32(0)
+		e := errCode(0)
 		if final {
-			e = int32(C.cgozstd_compress_end(w.z, &w.a,
+			e = errCode(C.cgozstd_compress_end(w.z, &w.a,
 				(*C.uint8_t)(unsafe.Pointer(&w.buf[w.j])),
 				(C.uint32_t)(uint32(len(w.buf))-w.j),
 			))
 			final = w.a.eof == 0
 		} else {
-			e = int32(C.cgozstd_compress(w.z, &w.a,
+			e = errCode(C.cgozstd_compress(w.z, &w.a,
 				(*C.uint8_t)(unsafe.Pointer(&w.buf[w.j])),
 				(C.uint32_t)(uint32(len(w.buf))-w.j),
 				(*C.uint8_t)(unsafe.Pointer(&p[0])),
@@ -467,7 +467,7 @@ func (w *Writer) write(p []byte, final bool) error {
 		p = p[uint32(w.a.nsrc):]
 
 		if e != 0 {
-			w.writeErr = errCode(e)
+			w.writeErr = e
 			return w.writeErr
 		}
 	}
