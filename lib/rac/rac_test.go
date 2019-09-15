@@ -18,8 +18,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -642,5 +644,66 @@ func TestLongCodec(t *testing.T) {
 	}
 	if _, err := r.NextChunk(); err != io.EOF {
 		t.Fatalf("got %v, want %v", err, io.EOF)
+	}
+}
+
+func TestFindChunkContaining(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	arity, dptrs := 0, [256]int64{}
+
+	// simpleFCC is a simple implementation (linear search) of
+	// findChunkContaining.
+	simpleFCC := func(dptr int64) int {
+		if dptrs[0] != 0 {
+			panic("unreachable")
+		}
+		for i, n := 0, arity; i < n; i++ {
+			if dptr < dptrs[i+1] {
+				return i
+			}
+		}
+		panic("unreachable")
+	}
+
+	for i := 0; i < 100; i++ {
+		arity = rng.Intn(255) + 1
+		size := (16 * arity) + 16
+
+		node := rNode{}
+
+		dptrMax := 0
+		for j := 1; j <= arity; j++ {
+			dptrMax += rng.Intn(5)
+			dptrs[j] = int64(dptrMax)
+			putU64LE(node[8*j:], uint64(dptrMax))
+		}
+		if dptrMax == 0 {
+			continue
+		}
+
+		node[0] = magic[0]
+		node[1] = magic[1]
+		node[2] = magic[2]
+		node[3] = uint8(arity)
+		node[size-2] = 0x01 // Version.
+		node[size-1] = uint8(arity)
+
+		checksum := crc32.ChecksumIEEE(node[6:size])
+		checksum ^= checksum >> 16
+		node[4] = uint8(checksum >> 0)
+		node[5] = uint8(checksum >> 8)
+
+		if !node.valid() {
+			t.Fatalf("i=%d: invalid node", i)
+		}
+
+		for k := 0; k < 100; k++ {
+			dptr := int64(rng.Intn(dptrMax))
+			got := node.findChunkContaining(dptr, 0)
+			want := simpleFCC(dptr)
+			if got != want {
+				t.Fatalf("i=%d, k=%d: got %d, want %d", i, k, got, want)
+			}
+		}
 	}
 }

@@ -171,6 +171,10 @@ func (b *rNode) isLeaf(i int) bool {
 	return b[(8*i)+7] != 0xFE
 }
 
+// findChunkContaining returns the largest i < arity such that the i'th DOff is
+// less than or equal to the dOff argument.
+//
+// The dOff argument must be less than DOffMax.
 func (b *rNode) findChunkContaining(dOff int64, dBias int64) int {
 	// TODO: binary search instead of linear search.
 	for i, n := 0, b.arity(); i < n; i++ {
@@ -179,7 +183,7 @@ func (b *rNode) findChunkContaining(dOff int64, dBias int64) int {
 		}
 	}
 	// We shouldn't get here, since we validate each node, and don't call this
-	// function for a DOff greater or equal to DOffMax.
+	// function for a DOff greater than or equal to DOffMax.
 	panic("rac: internal error: could not find containing chunk")
 }
 
