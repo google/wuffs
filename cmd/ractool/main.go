@@ -106,6 +106,17 @@ Encode-Related Flags:
     -resources
         comma-separated list of resource files, such as shared dictionaries
 
+Codecs:
+
+    lz4
+    zlib
+    zstd
+
+Only zlib is fully supported. The others will work for the flags' default
+values, but they (1) don't support -cchunksize, only -dchunksize, and (2) don't
+support -resources. See https://github.com/google/wuffs/issues/23 for more
+details.
+
 Installation:
 
 Like any other implemented-in-Go program, to install the ractool program:
