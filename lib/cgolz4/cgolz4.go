@@ -23,9 +23,17 @@ package cgolz4
 
 /*
 #cgo pkg-config: liblz4
+#include "lz4.h"
 #include "lz4frame.h"
 
 #include <stdint.h>
+
+#if (LZ4_VERSION_MAJOR < 1) || (LZ4_VERSION_MINOR < 8)
+void LZ4F_resetDecompressionContext(LZ4F_decompressionContext_t d) {}
+uint32_t cgolz4_have_lz4f_reset_decompression_context() { return 0; }
+#else
+uint32_t cgolz4_have_lz4f_reset_decompression_context() { return 1; }
+#endif
 
 typedef struct {
 	uint32_t ndst;
@@ -33,16 +41,16 @@ typedef struct {
 	uint32_t eof;
 } advances;
 
-LZ4F_cctx* cgolz4_compress_new() {
-	LZ4F_cctx* ret = NULL;
+LZ4F_compressionContext_t cgolz4_compress_new() {
+	LZ4F_compressionContext_t ret = NULL;
 	if (LZ4F_isError(LZ4F_createCompressionContext(&ret, LZ4F_VERSION))) {
 		return NULL;
 	}
 	return ret;
 }
 
-LZ4F_dctx* cgolz4_decompress_new() {
-	LZ4F_dctx* ret = NULL;
+LZ4F_decompressionContext_t cgolz4_decompress_new() {
+	LZ4F_decompressionContext_t ret = NULL;
 	if (LZ4F_isError(LZ4F_createDecompressionContext(&ret, LZ4F_VERSION))) {
 		return NULL;
 	}
@@ -53,7 +61,7 @@ uint64_t cgolz4_compress_min_dst_len(uint32_t srcSize) {
 	return LZ4F_compressBound(srcSize, NULL);
 }
 
-uint64_t cgolz4_compress_begin(LZ4F_cctx* z,
+uint64_t cgolz4_compress_begin(LZ4F_compressionContext_t z,
 		advances* a,
 		uint8_t* dst_ptr,
 		uint32_t dst_len) {
@@ -70,7 +78,7 @@ uint64_t cgolz4_compress_begin(LZ4F_cctx* z,
 	return 0;
 }
 
-uint64_t cgolz4_compress_update(LZ4F_cctx* z,
+uint64_t cgolz4_compress_update(LZ4F_compressionContext_t z,
 		advances* a,
 		uint8_t* dst_ptr,
 		uint32_t dst_len,
@@ -89,7 +97,7 @@ uint64_t cgolz4_compress_update(LZ4F_cctx* z,
 	return 0;
 }
 
-uint64_t cgolz4_compress_end(LZ4F_cctx* z,
+uint64_t cgolz4_compress_end(LZ4F_compressionContext_t z,
 		advances* a,
 		uint8_t* dst_ptr,
 		uint32_t dst_len) {
@@ -106,7 +114,7 @@ uint64_t cgolz4_compress_end(LZ4F_cctx* z,
 	return 0;
 }
 
-uint64_t cgolz4_decompress_update(LZ4F_dctx* z,
+uint64_t cgolz4_decompress_update(LZ4F_decompressionContext_t z,
 		advances* a,
 		uint8_t* dst_ptr,
 		uint32_t dst_len,
@@ -165,7 +173,7 @@ func (e errCode) Error() string {
 //
 // It is not safe to use a ReaderRecycler and a Reader concurrently.
 type ReaderRecycler struct {
-	z      *C.LZ4F_dctx
+	z      C.LZ4F_decompressionContext_t
 	closed bool
 }
 
@@ -198,7 +206,7 @@ type Reader struct {
 
 	recycler *ReaderRecycler
 
-	z *C.LZ4F_dctx
+	z C.LZ4F_decompressionContext_t
 	a C.advances
 }
 
@@ -231,7 +239,8 @@ func (r *Reader) Close() error {
 	r.readErr = nil
 	r.lz4Err = nil
 	if r.z != nil {
-		if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z == nil) {
+		if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z == nil) &&
+			(C.cgolz4_have_lz4f_reset_decompression_context() != 0) {
 			r.recycler.z, r.z = r.z, nil
 		} else {
 			C.LZ4F_freeDecompressionContext(r.z)
@@ -251,7 +260,8 @@ func (r *Reader) Read(p []byte) (int, error) {
 	}
 
 	if r.z == nil {
-		if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z != nil) {
+		if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z != nil) &&
+			(C.cgolz4_have_lz4f_reset_decompression_context() != 0) {
 			r.z, r.recycler.z = r.recycler.z, nil
 			C.LZ4F_resetDecompressionContext(r.z)
 		} else {
@@ -316,7 +326,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 //
 // It is not safe to use a WriterRecycler and a Writer concurrently.
 type WriterRecycler struct {
-	z      *C.LZ4F_cctx
+	z      C.LZ4F_compressionContext_t
 	closed bool
 }
 
@@ -352,7 +362,7 @@ type Writer struct {
 
 	recycler *WriterRecycler
 
-	z *C.LZ4F_cctx
+	z C.LZ4F_compressionContext_t
 	a C.advances
 }
 
