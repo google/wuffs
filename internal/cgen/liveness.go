@@ -44,12 +44,12 @@ package cgen
 // Algorithmically, we walk through a function's statements in two passes. The
 // first pass finds all of the local variables, and assigns an integer index to
 // each one. The second tracks (in a slice indexed by that integer index) each
-// local variable's resumability, one of three possible states: none, weak and
+// local variable's liveness, one of three possible states: none, weak and
 // strong. Strong means that the local variable definitely needs to be kept.
 // Weak means that we have (in the worst case, for branches' and loops'
 // multiple paths) seen a CSP without a write afterwards, so that seeing a read
-// would change the resumability to strong. None means that we have not seen a
-// CSP since the last write.
+// would change the liveness to strong. None means that we have not seen a CSP
+// since the last write.
 //
 // Essentially, the state transitions are: strong is sticky, weak to strong
 // happens on a read, weak to none happens on a write, and none to weak happens
@@ -70,26 +70,26 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-// resumability tracks whether a local variable's value will need to be kept
-// across CSPs (coroutine suspension points).
-type resumability uint32
+// liveness tracks whether a local variable's value will need to be kept across
+// CSPs (coroutine suspension points).
+type liveness uint32
 
 const (
-	resumabilityNone   = resumability(0)
-	resumabilityWeak   = resumability(1)
-	resumabilityStrong = resumability(2)
+	livenessNone   = liveness(0)
+	livenessWeak   = liveness(1)
+	livenessStrong = liveness(2)
 )
 
-// resumabilities is a slice of resumability values, one per local variable.
-type resumabilities []resumability
+// livenesses is a slice of liveness values, one per local variable.
+type livenesses []liveness
 
-func (r resumabilities) clone() resumabilities {
-	return append(resumabilities(nil), r...)
+func (r livenesses) clone() livenesses {
+	return append(livenesses(nil), r...)
 }
 
-func (r resumabilities) reconcile(s resumabilities) (changed bool) {
+func (r livenesses) reconcile(s livenesses) (changed bool) {
 	if len(r) != len(s) {
-		panic("resumabilities have different length")
+		panic("livenesses have different length")
 	}
 	for i := range r {
 		if r[i] < s[i] {
@@ -100,43 +100,43 @@ func (r resumabilities) reconcile(s resumabilities) (changed bool) {
 	return changed
 }
 
-func (r resumabilities) lowerWeakToNone(i int) {
-	if r[i] == resumabilityWeak {
-		r[i] = resumabilityNone
+func (r livenesses) lowerWeakToNone(i int) {
+	if r[i] == livenessWeak {
+		r[i] = livenessNone
 	}
 }
 
-func (r resumabilities) raiseWeakToStrong(i int) {
-	if r[i] == resumabilityWeak {
-		r[i] = resumabilityStrong
+func (r livenesses) raiseWeakToStrong(i int) {
+	if r[i] == livenessWeak {
+		r[i] = livenessStrong
 	}
 }
 
-func (r resumabilities) raiseNoneToWeak() {
+func (r livenesses) raiseNoneToWeak() {
 	for i, x := range r {
-		if x == resumabilityNone {
-			r[i] = resumabilityWeak
+		if x == livenessNone {
+			r[i] = livenessWeak
 		}
 	}
 }
 
-type loopResumable struct {
-	before  resumabilities
-	after   resumabilities
+type loopLivenesses struct {
+	before  livenesses
+	after   livenesses
 	changed bool
 }
 
-type resumabilityHelper struct {
+type livenessHelper struct {
 	tm    *t.Map
-	vars  map[t.ID]int // Maps from local variable name to resumabilities index.
-	loops map[a.Loop]*loopResumable
+	vars  map[t.ID]int // Maps from local variable name to livenesses index.
+	loops map[a.Loop]*loopLivenesses
 }
 
 func (g *gen) findVars() error {
-	h := resumabilityHelper{
+	h := livenessHelper{
 		tm:    g.tm,
 		vars:  map[t.ID]int{},
-		loops: map[a.Loop]*loopResumable{},
+		loops: map[a.Loop]*loopLivenesses{},
 	}
 
 	f := g.currFunk.astFunc
@@ -149,21 +149,21 @@ func (g *gen) findVars() error {
 	}
 
 	if f.Effect().Coroutine() {
-		r := make(resumabilities, len(h.vars))
+		r := make(livenesses, len(h.vars))
 		if err := h.doBlock(r, f.Body(), 0); err != nil {
 			return err
 		}
 
 		g.currFunk.varResumables = map[t.ID]bool{}
 		for i, v := range g.currFunk.varList {
-			g.currFunk.varResumables[v.Name()] = r[i] == resumabilityStrong
+			g.currFunk.varResumables[v.Name()] = r[i] == livenessStrong
 		}
 	}
 
 	return nil
 }
 
-func (h *resumabilityHelper) doBlock(r resumabilities, block []*a.Node, depth uint32) error {
+func (h *livenessHelper) doBlock(r livenesses, block []*a.Node, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
@@ -225,7 +225,7 @@ loop:
 	return nil
 }
 
-func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint32) error {
+func (h *livenessHelper) doAssign(r livenesses, n *a.Assign, depth uint32) error {
 	if n.Operator() == t.IDEqQuestion {
 		if err := h.doExpr1(r, n.RHS(), 0); err != nil {
 			return err
@@ -260,7 +260,7 @@ func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint3
 	return nil
 }
 
-func (h *resumabilityHelper) doExpr(r resumabilities, n *a.Expr) error {
+func (h *livenessHelper) doExpr(r livenesses, n *a.Expr) error {
 	if err := h.doExpr1(r, n, 0); err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (h *resumabilityHelper) doExpr(r resumabilities, n *a.Expr) error {
 	return nil
 }
 
-func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, depth uint32) error {
+func (h *livenessHelper) doExpr1(r livenesses, n *a.Expr, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
@@ -307,7 +307,7 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, depth uint32) 
 	return nil
 }
 
-func (h *resumabilityHelper) doIOBind(r resumabilities, n *a.IOBind, depth uint32) error {
+func (h *livenessHelper) doIOBind(r livenesses, n *a.IOBind, depth uint32) error {
 	if err := h.doExpr(r, n.IO()); err != nil {
 		return err
 	}
@@ -317,9 +317,9 @@ func (h *resumabilityHelper) doIOBind(r resumabilities, n *a.IOBind, depth uint3
 	return h.doBlock(r, n.Body(), depth)
 }
 
-func (h *resumabilityHelper) doIf(r resumabilities, n *a.If, depth uint32) error {
-	scratch := make(resumabilities, len(r))
-	result := make(resumabilities, len(r))
+func (h *livenessHelper) doIf(r livenesses, n *a.If, depth uint32) error {
+	scratch := make(livenesses, len(r))
+	result := make(livenesses, len(r))
 	for ; n != nil; n = n.ElseIf() {
 		if err := h.doExpr(r, n.Condition()); err != nil {
 			return err
@@ -341,7 +341,7 @@ func (h *resumabilityHelper) doIf(r resumabilities, n *a.If, depth uint32) error
 	return nil
 }
 
-func (h *resumabilityHelper) doIterate(r resumabilities, n *a.Iterate, depth uint32) error {
+func (h *livenessHelper) doIterate(r livenesses, n *a.Iterate, depth uint32) error {
 	// TODO: ban jumps, rets and coroutine calls inside an iterate. Also ensure
 	// that the iterate variable values are all pure expressions.
 	for _, o := range n.Assigns() {
@@ -359,7 +359,7 @@ func (h *resumabilityHelper) doIterate(r resumabilities, n *a.Iterate, depth uin
 	return h.doBlock(r, n.Body(), depth)
 }
 
-func (h *resumabilityHelper) doJump(r resumabilities, n *a.Jump, depth uint32) error {
+func (h *livenessHelper) doJump(r livenesses, n *a.Jump, depth uint32) error {
 	l := h.loops[n.JumpTarget()]
 	switch n.Keyword() {
 	case t.IDBreak:
@@ -372,7 +372,7 @@ func (h *resumabilityHelper) doJump(r resumabilities, n *a.Jump, depth uint32) e
 	return nil
 }
 
-func (h *resumabilityHelper) doRet(r resumabilities, n *a.Ret, depth uint32) error {
+func (h *livenessHelper) doRet(r livenesses, n *a.Ret, depth uint32) error {
 	if err := h.doExpr(r, n.Value()); err != nil {
 		return err
 	}
@@ -388,7 +388,7 @@ func (h *resumabilityHelper) doRet(r resumabilities, n *a.Ret, depth uint32) err
 	return nil
 }
 
-func (h *resumabilityHelper) doVar(r resumabilities, n *a.Var, depth uint32) error {
+func (h *livenessHelper) doVar(r livenesses, n *a.Var, depth uint32) error {
 	name := n.Name()
 	if i, ok := h.vars[name]; !ok {
 		return fmt.Errorf("unrecognized variable %q", name.Str(h.tm))
@@ -398,10 +398,10 @@ func (h *resumabilityHelper) doVar(r resumabilities, n *a.Var, depth uint32) err
 	return nil
 }
 
-func (h *resumabilityHelper) doWhile(r resumabilities, n *a.While, depth uint32) error {
-	l := &loopResumable{
-		before:  make(resumabilities, len(r)),
-		after:   make(resumabilities, len(r)),
+func (h *livenessHelper) doWhile(r livenesses, n *a.While, depth uint32) error {
+	l := &loopLivenesses{
+		before:  make(livenesses, len(r)),
+		after:   make(livenesses, len(r)),
 		changed: false,
 	}
 	h.loops[n] = l
