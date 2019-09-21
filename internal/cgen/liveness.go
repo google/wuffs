@@ -14,13 +14,13 @@
 
 package cgen
 
-// This file deals with determining whether local variables need to be kept:
-// saved / loaded when suspending / resuming a coroutine. For simplicity, this
-// is a boolean property of each local variable. The analysis does not
-// determine that a local variable needs saving at some CSPs (coroutine
-// suspension points) but not others.
+// This file deals with liveness analysis, determining whether local variables
+// need to be kept: saved / loaded when suspending / resuming a coroutine. For
+// simplicity, this is a boolean property of each local variable. The analysis
+// does not determine that a local variable needs saving at some CSPs
+// (coroutine suspension points) but not others.
 //
-// Fexample, in this code:
+// For example, in this code:
 //
 //   i = etc
 //   yield foo  // The first CSP.
@@ -29,7 +29,7 @@ package cgen
 //     a[j] = 42
 //     j += 1
 //   }
-//   c = 100 + args.src.read_u8!??()  // The second CSP.
+//   c = args.src.read_u8?()  // The second CSP.
 //   k = a[c]
 //
 // There are two CSPs. The i local variable will need to be kept, as it is
@@ -55,8 +55,9 @@ package cgen
 // happens on a read, weak to none happens on a write, and none to weak happens
 // on a CSP. When reconciling multiple code paths, the strongest wins, where
 // strong > weak and weak > none. Loops are repeated until the reconciliations
-// between the N'th and N+1'th iteration are all no-ops. There can be multiple
-// reconciliations per iteration, due to break and continue statements.
+// between the N'th and N+1'th iteration are all no-ops: a steady state has
+// been reached. There can be multiple reconciliations per iteration, due to
+// break and continue statements.
 //
 // Care is taken with a coroutine call in a statement or expression. Arguments
 // to the coroutine are 'inside' and are before the CSP. The rest of the
