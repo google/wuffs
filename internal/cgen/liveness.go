@@ -70,17 +70,6 @@ import (
 	t "github.com/google/wuffs/lang/token"
 )
 
-// subExprFilter is used, when analyzing an expression containing a coroutine
-// call, for multiple analysis passes: before, during and after that call.
-type subExprFilter uint32
-
-const (
-	subExprFilterNone            = subExprFilter(0)
-	subExprFilterBeforeCoroutine = subExprFilter(1)
-	subExprFilterDuringCoroutine = subExprFilter(2)
-	subExprFilterAfterCoroutine  = subExprFilter(3)
-)
-
 // resumability tracks whether a local variable's value will need to be kept
 // across CSPs (coroutine suspension points).
 type resumability uint32
@@ -238,7 +227,7 @@ loop:
 
 func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint32) error {
 	if n.Operator() == t.IDEqQuestion {
-		if err := h.doExpr1(r, n.RHS(), subExprFilterNone, 0); err != nil {
+		if err := h.doExpr1(r, n.RHS(), 0); err != nil {
 			return err
 		}
 	} else {
@@ -272,57 +261,24 @@ func (h *resumabilityHelper) doAssign(r resumabilities, n *a.Assign, depth uint3
 }
 
 func (h *resumabilityHelper) doExpr(r resumabilities, n *a.Expr) error {
-	if !n.Effect().Coroutine() {
-		return h.doExpr1(r, n, subExprFilterNone, 0)
+	if err := h.doExpr1(r, n, 0); err != nil {
+		return err
 	}
-	for sef := subExprFilterBeforeCoroutine; sef <= subExprFilterAfterCoroutine; sef++ {
-		if err := h.doExpr1(r, n, sef, 0); err != nil {
-			return err
-		}
+	if n.Effect().Coroutine() {
+		r.raiseNoneToWeak()
 	}
 	return nil
 }
 
-func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFilter, depth uint32) error {
+func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, depth uint32) error {
 	if depth > a.MaxBodyDepth {
 		return fmt.Errorf("body recursion depth too large")
 	}
 	depth++
 
-	processOnlySubExprs := false
-	if sef != subExprFilterNone {
-		switch sef {
-		case subExprFilterBeforeCoroutine:
-			if !n.Effect().Coroutine() {
-				return nil
-			}
-			sef = subExprFilterNone
-			processOnlySubExprs = true
-
-		case subExprFilterDuringCoroutine:
-			if n.Effect().Coroutine() {
-				switch n.Operator() {
-				case t.IDOpenParen:
-					r.raiseNoneToWeak()
-				default:
-					return fmt.Errorf("unrecognized ast.Expr coroutine operator")
-				}
-				return nil
-			}
-			panic("TODO: unreachable; delete")
-			processOnlySubExprs = true
-
-		case subExprFilterAfterCoroutine:
-			if n.Effect().Coroutine() {
-				return nil
-			}
-			panic("TODO: unreachable; delete")
-		}
-	}
-
 	for _, o := range n.AsNode().AsRaw().SubNodes() {
 		if o != nil && o.Kind() == a.KExpr {
-			if err := h.doExpr1(r, o.AsExpr(), sef, depth); err != nil {
+			if err := h.doExpr1(r, o.AsExpr(), depth); err != nil {
 				return err
 			}
 		}
@@ -337,12 +293,12 @@ func (h *resumabilityHelper) doExpr1(r resumabilities, n *a.Expr, sef subExprFil
 		default:
 			return fmt.Errorf("unrecognized arg kind")
 		}
-		if err := h.doExpr1(r, e, sef, depth); err != nil {
+		if err := h.doExpr1(r, e, depth); err != nil {
 			return err
 		}
 	}
 
-	if !processOnlySubExprs && n.Operator() == 0 {
+	if n.Operator() == 0 {
 		if i, ok := h.vars[n.Ident()]; ok {
 			r.raiseWeakToStrong(i)
 		}
