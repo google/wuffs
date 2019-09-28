@@ -83,6 +83,8 @@ General Flags:
         whether to decode the input
     -encode
         whether to encode the input
+    -quiet
+        whether to suppress messages
 
 Decode-Related Flags:
 
@@ -105,6 +107,8 @@ Encode-Related Flags:
         the index location, "start" or "end" (default "start")
     -resources
         comma-separated list of resource files, such as shared dictionaries
+    -tmpdir
+        directory (e.g. $TMPDIR) for intermediate work; empty means in-memory
 
 Codecs:
 
@@ -253,11 +257,10 @@ import (
 	"github.com/google/wuffs/lib/raczstd"
 )
 
-// TODO: a flag to use a disk-backed (not memory-backed) TempFile.
-
 var (
 	decodeFlag = flag.Bool("decode", false, "whether to decode the input")
 	encodeFlag = flag.Bool("encode", false, "whether to encode the input")
+	quietFlag  = flag.Bool("quiet", false, "whether to suppress messages")
 
 	// Decode-related flags.
 	drangeFlag = flag.String("drange", "..",
@@ -274,6 +277,8 @@ var (
 		"the index location, \"start\" or \"end\"")
 	resourcesFlag = flag.String("resources", "",
 		"comma-separated list of resource files, such as shared dictionaries")
+	tmpdirFlag = flag.String("tmpdir", "",
+		"directory (e.g. $TMPDIR) for intermediate work; empty means in-memory")
 )
 
 func usage() {
@@ -395,7 +400,7 @@ func parseRange(s string) (i int64, j int64, ok bool) {
 func decode(inFile *os.File) error {
 	i, j, ok := parseRange(*drangeFlag)
 	if !ok {
-		return fmt.Errorf("invalid -drange")
+		return errors.New("invalid -drange")
 	}
 
 	rs := io.ReadSeeker(inFile)
@@ -465,14 +470,20 @@ func decode(inFile *os.File) error {
 }
 
 func encode(r io.Reader) error {
-	indexLocation := rac.IndexLocation(0)
+	indexLocation, tempFile := rac.IndexLocation(0), io.ReadWriter(nil)
 	switch *indexlocationFlag {
-	case "start":
-		indexLocation = rac.IndexLocationAtStart
-	case "end":
-		indexLocation = rac.IndexLocationAtEnd
 	default:
 		return errors.New("invalid -indexlocation")
+	case "end":
+		indexLocation = rac.IndexLocationAtEnd
+	case "start":
+		indexLocation = rac.IndexLocationAtStart
+
+		tf, err := makeTempFile()
+		if err != nil {
+			return err
+		}
+		tempFile = tf
 	}
 
 	cchunksize := parseNumber(*cchunksizeFlag)
@@ -494,21 +505,21 @@ func encode(r io.Reader) error {
 		dchunksize = 65536 // 64 KiB.
 	}
 
-	w := &rac.Writer{
+	rw := &rac.Writer{
 		Writer:        os.Stdout,
 		IndexLocation: indexLocation,
-		TempFile:      &bytes.Buffer{},
+		TempFile:      tempFile,
 		CPageSize:     uint64(cpagesize),
 		CChunkSize:    uint64(cchunksize),
 		DChunkSize:    uint64(dchunksize),
 	}
 	switch *codecFlag {
 	case "lz4":
-		w.CodecWriter = &raclz4.CodecWriter{}
+		rw.CodecWriter = &raclz4.CodecWriter{}
 	case "zlib":
-		w.CodecWriter = &raczlib.CodecWriter{}
+		rw.CodecWriter = &raczlib.CodecWriter{}
 	case "zstd":
-		w.CodecWriter = &raczstd.CodecWriter{}
+		rw.CodecWriter = &raczstd.CodecWriter{}
 	default:
 		return errors.New("unsupported -codec")
 	}
@@ -519,12 +530,71 @@ func encode(r io.Reader) error {
 			if err != nil {
 				return err
 			}
-			w.ResourcesData = append(w.ResourcesData, resource)
+			rw.ResourcesData = append(rw.ResourcesData, resource)
+		}
+	}
+
+	const warn1g = "" +
+		"ractool: encoding 1 GiB or more with -indexlocation=start. Set -tmpdir to\n" +
+		"store intermediate work on disk instead of in memory.\n"
+	w := io.Writer(rw)
+	if !*quietFlag && (*indexlocationFlag == "start") && (*tmpdirFlag == "") {
+		w = &ifNBytesWriter{
+			w: w,
+			n: 1 << 30,
+			f: func() { fmt.Fprintf(os.Stderr, warn1g) },
 		}
 	}
 
 	if _, err := io.Copy(w, r); err != nil {
 		return err
 	}
-	return w.Close()
+	return rw.Close()
+}
+
+// ifNBytesWriter wraps w, calling f once if n or more bytes are written.
+type ifNBytesWriter struct {
+	w io.Writer
+	n int64
+	f func()
+}
+
+func (t *ifNBytesWriter) Write(p []byte) (int, error) {
+	if t.n <= 0 {
+		return t.w.Write(p)
+	}
+	if t.n > int64(len(p)) {
+		t.n -= int64(len(p))
+		return t.w.Write(p)
+	}
+	prefix, suffix := p[:t.n], p[t.n:]
+	t.n = 0
+
+	ret0, err := t.w.Write(prefix)
+	t.f()
+	if err != nil {
+		return ret0, err
+	}
+	ret1, err := t.w.Write(suffix)
+	return ret0 + ret1, err
+}
+
+func makeTempFile() (io.ReadWriter, error) {
+	if *tmpdirFlag == "" {
+		return &bytes.Buffer{}, nil
+	}
+
+	f, err := ioutil.TempFile(*tmpdirFlag, "ractool-")
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete the file while it's still open, so it will be cleaned up on exit.
+	// No other process can find it by name, but that's fine. We can still read
+	// from and write to it.
+	if err := os.Remove(f.Name()); err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }

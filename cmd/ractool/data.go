@@ -82,6 +82,8 @@ General Flags:
         whether to decode the input
     -encode
         whether to encode the input
+    -quiet
+        whether to suppress messages
 
 Decode-Related Flags:
 
@@ -104,6 +106,8 @@ Encode-Related Flags:
         the index location, "start" or "end" (default "start")
     -resources
         comma-separated list of resource files, such as shared dictionaries
+    -tmpdir
+        directory (e.g. $TMPDIR) for intermediate work; empty means in-memory
 
 Codecs:
 
