@@ -210,9 +210,9 @@ pub struct decoder?(
 	frame_rect_y1 base.u32,
 
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
-	dst_x   base.u32,
-	dst_y   base.u32,
-	dirty_y base.range_ie_u32,
+	dst_x            base.u32,
+	dst_y            base.u32,
+	dirty_max_excl_y base.u32,
 
 	// Indexes into the compressed array, defined below.
 	compressed_ri base.u64,
@@ -370,19 +370,11 @@ pub func decoder.num_decoded_frames() base.u64 {
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	// The "foo.min(a:this.width_or_height)" calls clip the nominal frame_rect
 	// to the image_rect.
-	//
-	// TODO: explicitly intersect this with the frame_rect (in the y
-	// direction)? In theory, that should be unnecessary, and could hide bugs,
-	// but it'd be a cheap way to ensure that the dirty_rect is inside the
-	// frame_rect.
-	//
-	// Note that this method is pure, so it cannot set a sticky error bit if
-	// the dirty_rect is too big.
 	return this.util.make_rect_ie_u32(
 		min_incl_x:this.frame_rect_x0.min(a:this.width),
-		min_incl_y:this.dirty_y.get_min_incl(),
+		min_incl_y:this.frame_rect_y0.min(a:this.height),
 		max_excl_x:this.frame_rect_x1.min(a:this.width),
-		max_excl_y:this.dirty_y.get_max_excl())
+		max_excl_y:this.dirty_max_excl_y.min(a:this.height))
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
@@ -411,7 +403,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	var flags            base.u8
 
 	this.ignore_metadata = true
-	this.dirty_y.reset!()
+	this.dirty_max_excl_y = 0
 
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
@@ -1157,9 +1149,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
-			this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
-				min_incl:this.dst_y,
-				max_excl:this.dst_y ~sat+ 1))
+			this.dirty_max_excl_y = this.dirty_max_excl_y.max(a:this.dst_y ~sat+ 1)
 		}
 
 		if this.frame_rect_x1 <= this.dst_x {
@@ -1188,12 +1178,8 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 					replicate_count -= 1
 				}
 
-				replicate_count = (interlace_count[this.interlace] as base.u32) + 1
-				replicate_count = replicate_count ~sat+ this.dst_y
-				replicate_count = replicate_count.min(a:this.frame_rect_y1)
-				this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
-					min_incl:this.dst_y,
-					max_excl:replicate_count))
+				this.dirty_max_excl_y = this.dirty_max_excl_y.max(
+					a:this.dst_y ~sat+ ((interlace_count[this.interlace] as base.u32) + 1))
 			}
 
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32

@@ -3503,7 +3503,7 @@ struct wuffs_gif__decoder__struct {
     uint32_t f_frame_rect_y1;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
-    wuffs_base__range_ie_u32 f_dirty_y;
+    uint32_t f_dirty_max_excl_y;
     uint64_t f_compressed_ri;
     uint64_t f_compressed_wi;
     wuffs_base__pixel_swizzler f_swizzler;
@@ -9123,10 +9123,12 @@ wuffs_gif__decoder__frame_dirty_rect(const wuffs_gif__decoder* self) {
   return wuffs_base__utility__make_rect_ie_u32(
       wuffs_base__u32__min(self->private_impl.f_frame_rect_x0,
                            self->private_impl.f_width),
-      wuffs_base__range_ie_u32__get_min_incl(&self->private_impl.f_dirty_y),
+      wuffs_base__u32__min(self->private_impl.f_frame_rect_y0,
+                           self->private_impl.f_height),
       wuffs_base__u32__min(self->private_impl.f_frame_rect_x1,
                            self->private_impl.f_width),
-      wuffs_base__range_ie_u32__get_max_excl(&self->private_impl.f_dirty_y));
+      wuffs_base__u32__min(self->private_impl.f_dirty_max_excl_y,
+                           self->private_impl.f_height));
 }
 
 // -------- func gif.decoder.workbuf_len
@@ -9223,8 +9225,7 @@ wuffs_gif__decoder__decode_frame_config(wuffs_gif__decoder* self,
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     self->private_impl.f_ignore_metadata = true;
-    (memset(&self->private_impl.f_dirty_y, 0, sizeof(wuffs_base__range_ie_u32)),
-     wuffs_base__make_empty_struct());
+    self->private_impl.f_dirty_max_excl_y = 0;
     if (!self->private_impl.f_end_of_data) {
       if (self->private_impl.f_call_sequence == 0) {
         if (a_src) {
@@ -11152,11 +11153,9 @@ label_0_continue:;
       wuffs_base__u64__sat_add_indirect(&v_src_ri, v_n);
       wuffs_base__u32__sat_add_indirect(&self->private_impl.f_dst_x,
                                         ((uint32_t)((v_n & 4294967295))));
-      self->private_impl.f_dirty_y = wuffs_base__range_ie_u32__unite(
-          &self->private_impl.f_dirty_y,
-          wuffs_base__utility__make_range_ie_u32(
-              self->private_impl.f_dst_y,
-              wuffs_base__u32__sat_add(self->private_impl.f_dst_y, 1)));
+      self->private_impl.f_dirty_max_excl_y = wuffs_base__u32__max(
+          self->private_impl.f_dirty_max_excl_y,
+          wuffs_base__u32__sat_add(self->private_impl.f_dst_y, 1));
     }
     if (self->private_impl.f_frame_rect_x1 <= self->private_impl.f_dst_x) {
       self->private_impl.f_dst_x = self->private_impl.f_frame_rect_x0;
@@ -11179,18 +11178,13 @@ label_0_continue:;
                                                 v_replicate_src);
           v_replicate_count -= 1;
         }
-        v_replicate_count =
-            (((uint32_t)(
-                 wuffs_gif__interlace_count[self->private_impl.f_interlace])) +
-             1);
-        v_replicate_count = wuffs_base__u32__sat_add(
-            v_replicate_count, self->private_impl.f_dst_y);
-        v_replicate_count = wuffs_base__u32__min(
-            v_replicate_count, self->private_impl.f_frame_rect_y1);
-        self->private_impl.f_dirty_y = wuffs_base__range_ie_u32__unite(
-            &self->private_impl.f_dirty_y,
-            wuffs_base__utility__make_range_ie_u32(self->private_impl.f_dst_y,
-                                                   v_replicate_count));
+        self->private_impl.f_dirty_max_excl_y = wuffs_base__u32__max(
+            self->private_impl.f_dirty_max_excl_y,
+            wuffs_base__u32__sat_add(
+                self->private_impl.f_dst_y,
+                (((uint32_t)(wuffs_gif__interlace_count[self->private_impl
+                                                            .f_interlace])) +
+                 1)));
       }
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
