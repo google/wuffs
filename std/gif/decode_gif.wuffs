@@ -368,10 +368,8 @@ pub func decoder.num_decoded_frames() base.u64 {
 }
 
 pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
-	// The "foo.min(x:this.width_or_height)" calls clip the nominal frame_rect
-	// to the image_rect. The "x" argument name doesn't necessarily mean "the x
-	// direction". It's just that, in Wuffs, every function call argument needs
-	// a name, and for the min function, "x" is as good a name as any other.
+	// The "foo.min(a:this.width_or_height)" calls clip the nominal frame_rect
+	// to the image_rect.
 	//
 	// TODO: explicitly intersect this with the frame_rect (in the y
 	// direction)? In theory, that should be unnecessary, and could hide bugs,
@@ -381,9 +379,9 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	// Note that this method is pure, so it cannot set a sticky error bit if
 	// the dirty_rect is too big.
 	return this.util.make_rect_ie_u32(
-		min_incl_x:this.frame_rect_x0.min(x:this.width),
+		min_incl_x:this.frame_rect_x0.min(a:this.width),
 		min_incl_y:this.dirty_y.get_min_incl(),
-		max_excl_x:this.frame_rect_x1.min(x:this.width),
+		max_excl_x:this.frame_rect_x1.min(a:this.width),
 		max_excl_y:this.dirty_y.get_max_excl())
 }
 
@@ -462,10 +460,10 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 		// function call argument needs a name, and for the min function, "x"
 		// is as good a name as any other.
 		args.dst.update!(bounds:this.util.make_rect_ie_u32(
-			min_incl_x:this.frame_rect_x0.min(x:this.width),
-			min_incl_y:this.frame_rect_y0.min(x:this.height),
-			max_excl_x:this.frame_rect_x1.min(x:this.width),
-			max_excl_y:this.frame_rect_y1.min(x:this.height)),
+			min_incl_x:this.frame_rect_x0.min(a:this.width),
+			min_incl_y:this.frame_rect_y0.min(a:this.height),
+			max_excl_x:this.frame_rect_x1.min(a:this.width),
+			max_excl_y:this.frame_rect_y1.min(a:this.height)),
 			duration:this.gc_duration,
 			index:this.num_decoded_frame_configs_value,
 			io_position:this.frame_config_io_position,
@@ -892,8 +890,8 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
 	// more discussion.
 	if (this.call_sequence == 0) and (not this.quirk_enabled_image_bounds_are_strict) {
-		this.width = this.width.max(x:this.frame_rect_x1)
-		this.height = this.height.max(x:this.frame_rect_y1)
+		this.width = this.width.max(a:this.frame_rect_x1)
+		this.height = this.height.max(a:this.frame_rect_y1)
 	}
 }
 
@@ -1031,7 +1029,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			this.compressed_wi = 0
 		}
 		while this.compressed_wi <= (4096 - 255) {
-			n_compressed = block_size.min(x:args.src.available())
+			n_compressed = block_size.min(a:args.src.available())
 			if n_compressed <= 0 {
 				break
 			}
@@ -1192,7 +1190,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 
 				replicate_count = (interlace_count[this.interlace] as base.u32) + 1
 				replicate_count = replicate_count ~sat+ this.dst_y
-				replicate_count = replicate_count.min(x:this.frame_rect_y1)
+				replicate_count = replicate_count.min(a:this.frame_rect_y1)
 				this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
 					min_incl:this.dst_y,
 					max_excl:replicate_count))
@@ -1217,7 +1215,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
 		n = (this.frame_rect_x1 - this.dst_x) as base.u64
-		n = n.min(x:args.src.length() - src_ri)
+		n = n.min(a:args.src.length() - src_ri)
 
 		src_ri ~sat+= n
 		this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
