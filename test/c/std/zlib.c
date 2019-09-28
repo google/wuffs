@@ -227,6 +227,56 @@ const char* test_wuffs_zlib_decode_pi() {
                             UINT64_MAX);
 }
 
+const char* test_wuffs_zlib_decode_sheep() {
+  CHECK_FOCUS(__func__);
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+  wuffs_base__io_buffer src =
+      make_io_buffer_from_string(zlib_sheep_src_ptr, zlib_sheep_src_len);
+
+  wuffs_zlib__decoder dec;
+  const char* status = wuffs_zlib__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+  if (status) {
+    RETURN_FAIL("initialize: %s", status);
+  }
+
+  int i;
+  for (i = 0; i < 3; i++) {
+    status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
+                                                   global_work_slice);
+
+    if (status != wuffs_zlib__warning__dictionary_required) {
+      RETURN_FAIL("decode_io_writer (before dict): got \"%s\", want \"%s\"",
+                  status, wuffs_zlib__warning__dictionary_required);
+    }
+
+    uint32_t dict_id_got = wuffs_zlib__decoder__dictionary_id(&dec);
+    uint32_t dict_id_want = 0x0BE0026E;
+    if (dict_id_got != dict_id_want) {
+      RETURN_FAIL("dictionary_id: got 0x%08" PRIX32 ", want 0x%08x" PRIX32,
+                  dict_id_got, dict_id_want);
+    }
+  }
+
+  wuffs_zlib__decoder__add_dictionary(
+      &dec, ((wuffs_base__slice_u8){
+                .ptr = ((uint8_t*)(zlib_sheep_dict_ptr)),
+                .len = zlib_sheep_dict_len,
+            }));
+
+  status = wuffs_zlib__decoder__decode_io_writer(&dec, &got, &src,
+                                                 global_work_slice);
+  if (status) {
+    RETURN_FAIL("decode_io_writer (after dict): %s", status);
+  }
+
+  wuffs_base__io_buffer want =
+      make_io_buffer_from_string(zlib_sheep_want_ptr, zlib_sheep_want_len);
+  return check_io_buffers_equal("", &got, &want);
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -310,6 +360,7 @@ proc tests[] = {
     test_wuffs_zlib_checksum_verify_good,  //
     test_wuffs_zlib_decode_midsummer,      //
     test_wuffs_zlib_decode_pi,             //
+    test_wuffs_zlib_decode_sheep,          //
 
 #ifdef WUFFS_MIMIC
 

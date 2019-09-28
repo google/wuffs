@@ -15,24 +15,49 @@
 use "std/adler32"
 use "std/deflate"
 
+pub status "@dictionary required"
+
 pub status "#bad checksum"
 pub status "#bad compression method"
 pub status "#bad compression window size"
 pub status "#bad parity check"
-
-pri status "#TODO: unsupported preset dictionary"
+pub status "#incorrect dictionary"
 
 // TODO: reference deflate.decoder_workbuf_len_max_incl_worst_case.
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
 pub struct decoder?(
+	bad_call_sequence base.bool,
+	header_complete   base.bool,
+
+	got_dictionary  base.bool,
+	want_dictionary base.bool,
+
 	ignore_checksum base.bool,
 	checksum        adler32.hasher,
+
+	dict_id_hasher adler32.hasher,
+	dict_id_got    base.u32,
+	dict_id_want   base.u32,
 
 	flate deflate.decoder,
 
 	util base.utility,
 )
+
+pub func decoder.dictionary_id() base.u32 {
+	return this.dict_id_want
+}
+
+pub func decoder.add_dictionary!(dict slice base.u8) {
+	if this.header_complete {
+		this.bad_call_sequence = true
+	} else {
+		this.dict_id_got = this.dict_id_hasher.update!(x:args.dict)
+		this.flate.add_history!(hist:args.dict)
+	}
+	this.got_dictionary = true
+}
 
 pub func decoder.set_ignore_checksum!(ic base.bool) {
 	this.ignore_checksum = args.ic
@@ -51,19 +76,35 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	var checksum_want base.u32
 	var mark          base.u64
 
-	x = args.src.read_u16be?()
-	if ((x >> 8) & 0x0F) <> 0x08 {
-		return "#bad compression method"
+	if this.bad_call_sequence {
+		return base."#bad call sequence"
+	} else if not this.want_dictionary {
+		x = args.src.read_u16be?()
+		if ((x >> 8) & 0x0F) <> 0x08 {
+			return "#bad compression method"
+		}
+		if (x >> 12) > 0x07 {
+			return "#bad compression window size"
+		}
+		if (x % 31) <> 0 {
+			return "#bad parity check"
+		}
+		this.want_dictionary = (x & 0x20) <> 0
+		if this.want_dictionary {
+			this.dict_id_got = 1  // Adler-32 initial value.
+			this.dict_id_want = args.src.read_u32be?()
+			return "@dictionary required"
+		} else if this.got_dictionary {
+			return "#incorrect dictionary"
+		}
+	} else if this.dict_id_got <> this.dict_id_want {
+		if this.got_dictionary {
+			return "#incorrect dictionary"
+		}
+		return "@dictionary required"
 	}
-	if (x >> 12) > 0x07 {
-		return "#bad compression window size"
-	}
-	if (x & 0x20) <> 0 {
-		return "#TODO: unsupported preset dictionary"
-	}
-	if (x % 31) <> 0 {
-		return "#bad parity check"
-	}
+
+	this.header_complete = true
 
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
@@ -81,4 +122,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	if (not this.ignore_checksum) and (checksum_got <> checksum_want) {
 		return "#bad checksum"
 	}
+
+	// TODO: reset state (e.g. want_dictionary), so that we can read concat'ed
+	// zlib streams?
 }

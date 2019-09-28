@@ -3872,10 +3872,12 @@ extern "C" {
 
 // ---------------- Status Codes
 
+extern const char* wuffs_zlib__warning__dictionary_required;
 extern const char* wuffs_zlib__error__bad_checksum;
 extern const char* wuffs_zlib__error__bad_compression_method;
 extern const char* wuffs_zlib__error__bad_compression_window_size;
 extern const char* wuffs_zlib__error__bad_parity_check;
+extern const char* wuffs_zlib__error__incorrect_dictionary;
 
 // ---------------- Public Consts
 
@@ -3907,6 +3909,13 @@ size_t  //
 sizeof__wuffs_zlib__decoder();
 
 // ---------------- Public Function Prototypes
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_zlib__decoder__dictionary_id(const wuffs_zlib__decoder* self);
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_zlib__decoder__add_dictionary(wuffs_zlib__decoder* self,
+                                    wuffs_base__slice_u8 a_dict);
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
 wuffs_zlib__decoder__set_ignore_checksum(wuffs_zlib__decoder* self, bool a_ic);
@@ -3943,13 +3952,20 @@ struct wuffs_zlib__decoder__struct {
     uint32_t magic;
     uint32_t active_coroutine;
 
+    bool f_bad_call_sequence;
+    bool f_header_complete;
+    bool f_got_dictionary;
+    bool f_want_dictionary;
     bool f_ignore_checksum;
+    uint32_t f_dict_id_got;
+    uint32_t f_dict_id_want;
 
     uint32_t p_decode_io_writer[1];
   } private_impl;
 
   struct {
     wuffs_adler32__hasher f_checksum;
+    wuffs_adler32__hasher f_dict_id_hasher;
     wuffs_deflate__decoder f_flate;
 
     struct {
@@ -3988,6 +4004,16 @@ struct wuffs_zlib__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_zlib__decoder__initialize(this, sizeof_star_self,
                                            wuffs_version, initialize_flags);
+  }
+
+  inline uint32_t  //
+  dictionary_id() const {
+    return wuffs_zlib__decoder__dictionary_id(this);
+  }
+
+  inline wuffs_base__empty_struct  //
+  add_dictionary(wuffs_base__slice_u8 a_dict) {
+    return wuffs_zlib__decoder__add_dictionary(this, a_dict);
   }
 
   inline wuffs_base__empty_struct  //
@@ -11692,14 +11718,16 @@ exit:
 
 // ---------------- Status Codes Implementations
 
+const char* wuffs_zlib__warning__dictionary_required =
+    "@zlib: dictionary required";
 const char* wuffs_zlib__error__bad_checksum = "#zlib: bad checksum";
 const char* wuffs_zlib__error__bad_compression_method =
     "#zlib: bad compression method";
 const char* wuffs_zlib__error__bad_compression_window_size =
     "#zlib: bad compression window size";
 const char* wuffs_zlib__error__bad_parity_check = "#zlib: bad parity check";
-const char* wuffs_zlib__error__todo_unsupported_preset_dictionary =
-    "#zlib: TODO: unsupported preset dictionary";
+const char* wuffs_zlib__error__incorrect_dictionary =
+    "#zlib: incorrect dictionary";
 
 // ---------------- Private Consts
 
@@ -11759,6 +11787,15 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
     }
   }
   {
+    wuffs_base__status z = wuffs_adler32__hasher__initialize(
+        &self->private_data.f_dict_id_hasher,
+        sizeof(self->private_data.f_dict_id_hasher), WUFFS_VERSION,
+        initialize_flags);
+    if (z) {
+      return z;
+    }
+  }
+  {
     wuffs_base__status z = wuffs_deflate__decoder__initialize(
         &self->private_data.f_flate, sizeof(self->private_data.f_flate),
         WUFFS_VERSION, initialize_flags);
@@ -11776,6 +11813,44 @@ sizeof__wuffs_zlib__decoder() {
 }
 
 // ---------------- Function Implementations
+
+// -------- func zlib.decoder.dictionary_id
+
+WUFFS_BASE__MAYBE_STATIC uint32_t  //
+wuffs_zlib__decoder__dictionary_id(const wuffs_zlib__decoder* self) {
+  if (!self) {
+    return 0;
+  }
+  if ((self->private_impl.magic != WUFFS_BASE__MAGIC) &&
+      (self->private_impl.magic != WUFFS_BASE__DISABLED)) {
+    return 0;
+  }
+
+  return self->private_impl.f_dict_id_want;
+}
+
+// -------- func zlib.decoder.add_dictionary
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_zlib__decoder__add_dictionary(wuffs_zlib__decoder* self,
+                                    wuffs_base__slice_u8 a_dict) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  if (self->private_impl.f_header_complete) {
+    self->private_impl.f_bad_call_sequence = true;
+  } else {
+    self->private_impl.f_dict_id_got = wuffs_adler32__hasher__update(
+        &self->private_data.f_dict_id_hasher, a_dict);
+    wuffs_deflate__decoder__add_history(&self->private_data.f_flate, a_dict);
+  }
+  self->private_impl.f_got_dictionary = true;
+  return wuffs_base__make_empty_struct();
+}
 
 // -------- func zlib.decoder.set_ignore_checksum
 
@@ -11871,51 +11946,101 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
   switch (coro_susp_point) {
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
-      uint16_t t_0;
-      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 2)) {
-        t_0 = wuffs_base__load_u16be(iop_a_src);
-        iop_a_src += 2;
-      } else {
-        self->private_data.s_decode_io_writer[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
-        while (true) {
-          if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-            status = wuffs_base__suspension__short_read;
-            goto suspend;
+    if (self->private_impl.f_bad_call_sequence) {
+      status = wuffs_base__error__bad_call_sequence;
+      goto exit;
+    } else if (!self->private_impl.f_want_dictionary) {
+      {
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
+        uint16_t t_0;
+        if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 2)) {
+          t_0 = wuffs_base__load_u16be(iop_a_src);
+          iop_a_src += 2;
+        } else {
+          self->private_data.s_decode_io_writer[0].scratch = 0;
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+          while (true) {
+            if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+              status = wuffs_base__suspension__short_read;
+              goto suspend;
+            }
+            uint64_t* scratch =
+                &self->private_data.s_decode_io_writer[0].scratch;
+            uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
+            *scratch >>= 8;
+            *scratch <<= 8;
+            *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
+            if (num_bits_0 == 8) {
+              t_0 = ((uint16_t)(*scratch >> 48));
+              break;
+            }
+            num_bits_0 += 8;
+            *scratch |= ((uint64_t)(num_bits_0));
           }
-          uint64_t* scratch = &self->private_data.s_decode_io_writer[0].scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFF));
-          *scratch >>= 8;
-          *scratch <<= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
-          if (num_bits_0 == 8) {
-            t_0 = ((uint16_t)(*scratch >> 48));
-            break;
-          }
-          num_bits_0 += 8;
-          *scratch |= ((uint64_t)(num_bits_0));
         }
+        v_x = t_0;
       }
-      v_x = t_0;
+      if (((v_x >> 8) & 15) != 8) {
+        status = wuffs_zlib__error__bad_compression_method;
+        goto exit;
+      }
+      if ((v_x >> 12) > 7) {
+        status = wuffs_zlib__error__bad_compression_window_size;
+        goto exit;
+      }
+      if ((v_x % 31) != 0) {
+        status = wuffs_zlib__error__bad_parity_check;
+        goto exit;
+      }
+      self->private_impl.f_want_dictionary = ((v_x & 32) != 0);
+      if (self->private_impl.f_want_dictionary) {
+        self->private_impl.f_dict_id_got = 1;
+        {
+          WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
+          uint32_t t_1;
+          if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
+            t_1 = wuffs_base__load_u32be(iop_a_src);
+            iop_a_src += 4;
+          } else {
+            self->private_data.s_decode_io_writer[0].scratch = 0;
+            WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
+            while (true) {
+              if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
+                status = wuffs_base__suspension__short_read;
+                goto suspend;
+              }
+              uint64_t* scratch =
+                  &self->private_data.s_decode_io_writer[0].scratch;
+              uint32_t num_bits_1 = ((uint32_t)(*scratch & 0xFF));
+              *scratch >>= 8;
+              *scratch <<= 8;
+              *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_1);
+              if (num_bits_1 == 24) {
+                t_1 = ((uint32_t)(*scratch >> 32));
+                break;
+              }
+              num_bits_1 += 8;
+              *scratch |= ((uint64_t)(num_bits_1));
+            }
+          }
+          self->private_impl.f_dict_id_want = t_1;
+        }
+        status = wuffs_zlib__warning__dictionary_required;
+        goto ok;
+      } else if (self->private_impl.f_got_dictionary) {
+        status = wuffs_zlib__error__incorrect_dictionary;
+        goto exit;
+      }
+    } else if (self->private_impl.f_dict_id_got !=
+               self->private_impl.f_dict_id_want) {
+      if (self->private_impl.f_got_dictionary) {
+        status = wuffs_zlib__error__incorrect_dictionary;
+        goto exit;
+      }
+      status = wuffs_zlib__warning__dictionary_required;
+      goto ok;
     }
-    if (((v_x >> 8) & 15) != 8) {
-      status = wuffs_zlib__error__bad_compression_method;
-      goto exit;
-    }
-    if ((v_x >> 12) > 7) {
-      status = wuffs_zlib__error__bad_compression_window_size;
-      goto exit;
-    }
-    if ((v_x & 32) != 0) {
-      status = wuffs_zlib__error__todo_unsupported_preset_dictionary;
-      goto exit;
-    }
-    if ((v_x % 31) != 0) {
-      status = wuffs_zlib__error__bad_parity_check;
-      goto exit;
-    }
+    self->private_impl.f_header_complete = true;
     while (true) {
       v_mark = ((uint64_t)(iop_a_dst - io0_a_dst));
       {
@@ -11925,7 +12050,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
         if (a_src) {
           a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
         }
-        wuffs_base__status t_1 = wuffs_deflate__decoder__decode_io_writer(
+        wuffs_base__status t_2 = wuffs_deflate__decoder__decode_io_writer(
             &self->private_data.f_flate, a_dst, a_src, a_workbuf);
         if (a_dst) {
           iop_a_dst = a_dst->data.ptr + a_dst->meta.wi;
@@ -11933,7 +12058,7 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
         if (a_src) {
           iop_a_src = a_src->data.ptr + a_src->meta.ri;
         }
-        v_status = t_1;
+        v_status = t_2;
       }
       if (!self->private_impl.f_ignore_checksum) {
         v_checksum_got = wuffs_adler32__hasher__update(
@@ -11945,37 +12070,37 @@ wuffs_zlib__decoder__decode_io_writer(wuffs_zlib__decoder* self,
         goto label_0_break;
       }
       status = v_status;
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(3);
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(5);
     }
   label_0_break:;
     {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(4);
-      uint32_t t_2;
+      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(6);
+      uint32_t t_3;
       if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 4)) {
-        t_2 = wuffs_base__load_u32be(iop_a_src);
+        t_3 = wuffs_base__load_u32be(iop_a_src);
         iop_a_src += 4;
       } else {
         self->private_data.s_decode_io_writer[0].scratch = 0;
-        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(5);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT(7);
         while (true) {
           if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
             status = wuffs_base__suspension__short_read;
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_decode_io_writer[0].scratch;
-          uint32_t num_bits_2 = ((uint32_t)(*scratch & 0xFF));
+          uint32_t num_bits_3 = ((uint32_t)(*scratch & 0xFF));
           *scratch >>= 8;
           *scratch <<= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_2);
-          if (num_bits_2 == 24) {
-            t_2 = ((uint32_t)(*scratch >> 32));
+          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_3);
+          if (num_bits_3 == 24) {
+            t_3 = ((uint32_t)(*scratch >> 32));
             break;
           }
-          num_bits_2 += 8;
-          *scratch |= ((uint64_t)(num_bits_2));
+          num_bits_3 += 8;
+          *scratch |= ((uint64_t)(num_bits_3));
         }
       }
-      v_checksum_want = t_2;
+      v_checksum_want = t_3;
     }
     if (!self->private_impl.f_ignore_checksum &&
         (v_checksum_got != v_checksum_want)) {
