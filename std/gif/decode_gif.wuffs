@@ -1096,6 +1096,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	// TODO: don't assume an interleaved pixel format.
 	var dst             slice base.u8
 	var src             slice base.u8
+	var width_in_bytes  base.u64
 	var n               base.u64
 	var src_ri          base.u64
 	var bytes_per_pixel base.u32[..64]
@@ -1120,6 +1121,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		return base."#unsupported option"
 	}
 
+	width_in_bytes = (this.width as base.u64) * (bytes_per_pixel as base.u64)
 	tab = args.pb.plane(p:0)
 	while src_ri < args.src.length() {
 		src = args.src[src_ri:]
@@ -1132,9 +1134,15 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		}
 
 		// First, copy from src to that part of the frame rect that is inside
-		// args.pb's bounds.
+		// args.pb's bounds (clipped to the image bounds).
 
 		dst = tab.row(y:this.dst_y)
+		if this.dst_y >= this.height {
+			dst = dst[:0]
+		} else if width_in_bytes < dst.length() {
+			dst = dst[:width_in_bytes]
+		}
+
 		i = (this.dst_x as base.u64) * (bytes_per_pixel as base.u64)
 		if i < dst.length() {
 			j = (this.frame_rect_x1 as base.u64) * (bytes_per_pixel as base.u64)

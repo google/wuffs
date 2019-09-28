@@ -11104,6 +11104,7 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
                                          wuffs_base__slice_u8 a_src) {
   wuffs_base__slice_u8 v_dst = {0};
   wuffs_base__slice_u8 v_src = {0};
+  uint64_t v_width_in_bytes = 0;
   uint64_t v_n = 0;
   uint64_t v_src_ri = 0;
   uint32_t v_bytes_per_pixel = 0;
@@ -11125,6 +11126,8 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   } else {
     return wuffs_base__error__unsupported_option;
   }
+  v_width_in_bytes = (((uint64_t)(self->private_impl.f_width)) *
+                      ((uint64_t)(v_bytes_per_pixel)));
   v_tab = wuffs_base__pixel_buffer__plane(a_pb, 0);
 label_0_continue:;
   while (v_src_ri < ((uint64_t)(a_src.len))) {
@@ -11136,6 +11139,11 @@ label_0_continue:;
       return wuffs_base__error__too_much_data;
     }
     v_dst = wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
+    if (self->private_impl.f_dst_y >= self->private_impl.f_height) {
+      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, 0);
+    } else if (v_width_in_bytes < ((uint64_t)(v_dst.len))) {
+      v_dst = wuffs_base__slice_u8__subslice_j(v_dst, v_width_in_bytes);
+    }
     v_i = (((uint64_t)(self->private_impl.f_dst_x)) *
            ((uint64_t)(v_bytes_per_pixel)));
     if (v_i < ((uint64_t)(v_dst.len))) {

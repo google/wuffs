@@ -996,8 +996,12 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
                   wuffs_base__pixel_config__height(&ic.pixcfg), height);
     }
 
+    wuffs_base__pixel_config five_by_five = ((wuffs_base__pixel_config){});
+    wuffs_base__pixel_config__set(
+        &five_by_five, wuffs_base__pixel_config__pixel_format(&ic.pixcfg),
+        wuffs_base__pixel_config__pixel_subsampling(&ic.pixcfg), 5, 5);
     wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
-    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+    status = wuffs_base__pixel_buffer__set_from_slice(&pb, &five_by_five,
                                                       global_pixel_slice);
     if (status) {
       RETURN_FAIL("q=%d: set_from_slice: \"%s\"", q, status);
@@ -1053,6 +1057,11 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
       {
         wuffs_base__table_u8 p = wuffs_base__pixel_buffer__plane(&pb, 0);
         uint32_t y, x;
+        for (y = 0; y < 5; y++) {
+          for (x = 0; x < 5; x++) {
+            p.ptr[(y * p.stride) + x] = 0xEE;
+          }
+        }
         for (y = 0; y < height; y++) {
           for (x = 0; x < width; x++) {
             p.ptr[(y * p.stride) + x] = 0;
@@ -1064,6 +1073,20 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
         if (status) {
           RETURN_FAIL("q=%d: decode_frame #%" PRIu32 ": got \"%s\"", q, i,
                       status);
+        }
+
+        for (y = 0; y < 5; y++) {
+          for (x = 0; x < 5; x++) {
+            if ((x < width) && (y < height)) {
+              continue;
+            }
+            if (p.ptr[(y * p.stride) + x] != 0xEE) {
+              RETURN_FAIL("q=%d: decode_frame #%" PRIu32
+                          ": dirty pixel (%" PRIu32 ", %" PRIu32
+                          ") outside of image bounds",
+                          q, i, x, y);
+            }
+          }
         }
 
         wuffs_base__rect_ie_u32 frame_rect =
