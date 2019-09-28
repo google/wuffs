@@ -2965,6 +2965,10 @@ sizeof__wuffs_deflate__decoder();
 
 // ---------------- Public Function Prototypes
 
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_deflate__decoder__add_history(wuffs_deflate__decoder* self,
+                                    wuffs_base__slice_u8 a_hist);
+
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
 wuffs_deflate__decoder__workbuf_len(const wuffs_deflate__decoder* self);
 
@@ -3081,6 +3085,11 @@ struct wuffs_deflate__decoder__struct {
              uint32_t initialize_flags) {
     return wuffs_deflate__decoder__initialize(this, sizeof_star_self,
                                               wuffs_version, initialize_flags);
+  }
+
+  inline wuffs_base__empty_struct  //
+  add_history(wuffs_base__slice_u8 a_hist) {
+    return wuffs_deflate__decoder__add_history(this, a_hist);
   }
 
   inline wuffs_base__range_ii_u64  //
@@ -6373,6 +6382,53 @@ sizeof__wuffs_deflate__decoder() {
 
 // ---------------- Function Implementations
 
+// -------- func deflate.decoder.add_history
+
+WUFFS_BASE__MAYBE_STATIC wuffs_base__empty_struct  //
+wuffs_deflate__decoder__add_history(wuffs_deflate__decoder* self,
+                                    wuffs_base__slice_u8 a_hist) {
+  if (!self) {
+    return wuffs_base__make_empty_struct();
+  }
+  if (self->private_impl.magic != WUFFS_BASE__MAGIC) {
+    return wuffs_base__make_empty_struct();
+  }
+
+  wuffs_base__slice_u8 v_s = {0};
+  uint64_t v_n_copied = 0;
+  uint32_t v_already_full = 0;
+
+  v_s = a_hist;
+  if (((uint64_t)(v_s.len)) >= 32768) {
+    v_s = wuffs_base__slice_u8__suffix(v_s, 32768);
+    wuffs_base__slice_u8__copy_from_slice(
+        wuffs_base__make_slice_u8(self->private_data.f_history, 32768), v_s);
+    self->private_impl.f_history_index = 32768;
+  } else {
+    v_n_copied = wuffs_base__slice_u8__copy_from_slice(
+        wuffs_base__slice_u8__subslice_i(
+            wuffs_base__make_slice_u8(self->private_data.f_history, 32768),
+            (self->private_impl.f_history_index & 32767)),
+        v_s);
+    if (v_n_copied < ((uint64_t)(v_s.len))) {
+      v_s = wuffs_base__slice_u8__subslice_i(v_s, v_n_copied);
+      v_n_copied = wuffs_base__slice_u8__copy_from_slice(
+          wuffs_base__make_slice_u8(self->private_data.f_history, 32768), v_s);
+      self->private_impl.f_history_index =
+          (((uint32_t)((v_n_copied & 32767))) + 32768);
+    } else {
+      v_already_full = 0;
+      if (self->private_impl.f_history_index >= 32768) {
+        v_already_full = 32768;
+      }
+      self->private_impl.f_history_index =
+          ((self->private_impl.f_history_index & 32767) +
+           ((uint32_t)((v_n_copied & 32767))) + v_already_full);
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
 // -------- func deflate.decoder.workbuf_len
 
 WUFFS_BASE__MAYBE_STATIC wuffs_base__range_ii_u64  //
@@ -6417,9 +6473,6 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
 
   uint64_t v_mark = 0;
   wuffs_base__status v_status = NULL;
-  wuffs_base__slice_u8 v_written = {0};
-  uint64_t v_n_copied = 0;
-  uint32_t v_already_full = 0;
 
   uint8_t* iop_a_dst = NULL;
   uint8_t* io0_a_dst WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -6464,37 +6517,9 @@ wuffs_deflate__decoder__decode_io_writer(wuffs_deflate__decoder* self,
         }
         goto ok;
       }
-      v_written = wuffs_base__io__since(
-          v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst);
-      if (((uint64_t)(v_written.len)) >= 32768) {
-        v_written = wuffs_base__slice_u8__suffix(v_written, 32768);
-        wuffs_base__slice_u8__copy_from_slice(
-            wuffs_base__make_slice_u8(self->private_data.f_history, 32768),
-            v_written);
-        self->private_impl.f_history_index = 32768;
-      } else {
-        v_n_copied = wuffs_base__slice_u8__copy_from_slice(
-            wuffs_base__slice_u8__subslice_i(
-                wuffs_base__make_slice_u8(self->private_data.f_history, 32768),
-                (self->private_impl.f_history_index & 32767)),
-            v_written);
-        if (v_n_copied < ((uint64_t)(v_written.len))) {
-          v_written = wuffs_base__slice_u8__subslice_i(v_written, v_n_copied);
-          v_n_copied = wuffs_base__slice_u8__copy_from_slice(
-              wuffs_base__make_slice_u8(self->private_data.f_history, 32768),
-              v_written);
-          self->private_impl.f_history_index =
-              (((uint32_t)((v_n_copied & 32767))) + 32768);
-        } else {
-          v_already_full = 0;
-          if (self->private_impl.f_history_index >= 32768) {
-            v_already_full = 32768;
-          }
-          self->private_impl.f_history_index =
-              ((self->private_impl.f_history_index & 32767) +
-               ((uint32_t)((v_n_copied & 32767))) + v_already_full);
-        }
-      }
+      wuffs_deflate__decoder__add_history(
+          self, wuffs_base__io__since(
+                    v_mark, ((uint64_t)(iop_a_dst - io0_a_dst)), io0_a_dst));
       status = v_status;
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
     }
