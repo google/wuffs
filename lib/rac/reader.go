@@ -95,7 +95,10 @@ type Reader struct {
 	// Bigger values often lead to faster throughput, up to a
 	// hardware-dependent point, but also larger memory requirements.
 	//
-	// Zero means a non-concurrent (single-goroutine) reader.
+	// If positive, then the ReadSeeker must also be an io.ReaderAt.
+	//
+	// Non-positive values (including zero) mean a non-concurrent
+	// (single-goroutine) reader.
 	Concurrency int
 
 	// err is the first error encountered. It is sticky: once a non-nil error
@@ -175,6 +178,12 @@ func (r *Reader) initialize() error {
 	}
 	r.chunkReader.ReadSeeker = r.ReadSeeker
 	r.chunkReader.CompressedSize = r.CompressedSize
+	if r.Concurrency > 0 {
+		if _, ok := r.ReadSeeker.(io.ReaderAt); !ok {
+			r.err = fmt.Errorf("rac: Concurrency > 0 requires the ReadSeeker to be an io.ReaderAt")
+			return r.err
+		}
+	}
 	if err := r.chunkReader.initialize(); err != nil {
 		r.err = err
 		return r.err

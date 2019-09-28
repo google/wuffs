@@ -75,12 +75,13 @@ func racCompress(original []byte, cChunkSize uint64, dChunkSize uint64, resource
 	return buf.Bytes(), nil
 }
 
-func racDecompress(compressed []byte) ([]byte, error) {
+func racDecompress(compressed []byte, concurrency int) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	r := &rac.Reader{
 		ReadSeeker:     bytes.NewReader(compressed),
 		CompressedSize: int64(len(compressed)),
 		CodecReaders:   []rac.CodecReader{&CodecReader{}},
+		Concurrency:    concurrency,
 	}
 	defer r.Close()
 	if _, err := io.Copy(buf, r); err != nil {
@@ -89,8 +90,8 @@ func racDecompress(compressed []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func testReader(tt *testing.T, decoded string, encoded string) {
-	g, err := racDecompress([]byte(encoded))
+func testReader(tt *testing.T, decoded string, encoded string, concurrency int) {
+	g, err := racDecompress([]byte(encoded), concurrency)
 	if err != nil {
 		tt.Fatalf("racDecompress: %v", err)
 	}
@@ -99,8 +100,9 @@ func testReader(tt *testing.T, decoded string, encoded string) {
 	}
 }
 
-func TestReaderSansDictionary(tt *testing.T) { testReader(tt, decodedMore, encodedMore) }
-func TestReaderWithDictionary(tt *testing.T) { testReader(tt, decodedSheep, encodedSheep) }
+func TestReaderSansDictionary(tt *testing.T) { testReader(tt, decodedMore, encodedMore, 0) }
+func TestReaderWithDictionary(tt *testing.T) { testReader(tt, decodedSheep, encodedSheep, 0) }
+func TestConcurrentReader(tt *testing.T)     { testReader(tt, decodedSheep, encodedSheep, 2) }
 
 func TestReaderConcatenation(tt *testing.T) {
 	// Create a RAC file whose decoding is the concatenation of two other RAC
@@ -174,6 +176,7 @@ func TestReaderConcatenation(tt *testing.T) {
 	testReader(tt,
 		decodedSheep+decodedMore,
 		encodedSheep+encodedMore+string(buf[:]),
+		0,
 	)
 }
 
@@ -262,7 +265,7 @@ func TestSharedDictionary(tt *testing.T) {
 		compressedLengths[i] = len(compressed)
 
 		// Decompress.
-		decompressed, err := racDecompress(compressed)
+		decompressed, err := racDecompress(compressed, 0)
 		if err != nil {
 			tt.Fatalf("i=%d: racDecompress: %v", i, err)
 		}
