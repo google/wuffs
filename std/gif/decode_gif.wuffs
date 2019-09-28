@@ -1189,6 +1189,13 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 					replicate_dst.copy_from_slice!(s:replicate_src)
 					replicate_count -= 1
 				}
+
+				replicate_count = (interlace_count[this.interlace] as base.u32) + 1
+				replicate_count = replicate_count ~sat+ this.dst_y
+				replicate_count = replicate_count.min(x:this.frame_rect_y1)
+				this.dirty_y = this.dirty_y.unite(r:this.util.make_range_ie_u32(
+					min_incl:this.dst_y,
+					max_excl:replicate_count))
 			}
 
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32

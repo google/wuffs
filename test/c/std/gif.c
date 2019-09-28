@@ -1324,6 +1324,12 @@ const char* test_wuffs_gif_decode_interlaced_truncated() {
     RETURN_FAIL("final pixel index, after: got 0x%02X, want not 0x%02X",
                 pixel_ptr[num_pixel_indexes - 1], 0xEE);
   }
+
+  wuffs_base__rect_ie_u32 r = wuffs_gif__decoder__frame_dirty_rect(&dec);
+  if (r.max_excl_y != 28) {
+    RETURN_FAIL("frame_dirty_rect max_excl_y: got %" PRIu32 ", want 28",
+                r.max_excl_y);
+  }
   return NULL;
 }
 
@@ -1719,9 +1725,10 @@ const char* test_wuffs_gif_frame_dirty_rect() {
   // The hippopotamus.interlaced.gif image is 28 pixels high. As we decode rows
   // of pixels, interlacing means that we decode rows 0, 8, 16, 24, 4, 12, 20,
   // 2, 6, 10, ..., 22, 26, 1, 3, 5, ..., 25, 27. As we progress, the dirty
-  // rect's max_excl_y should be one more than the highest decoded row so far.
-  // If we haven't decoded any rows yet, max_excl_y should be zero.
-  uint32_t wants[7] = {0, 1, 9, 17, 25, 27, 28};
+  // rect's max_excl_y should be one more than the highest decoded row so far,
+  // until the row is complete, when it is replicated (to a multiple of 8). If
+  // we haven't decoded any rows yet, max_excl_y should be zero.
+  uint32_t wants[9] = {0, 1, 8, 9, 16, 17, 24, 25, 28};
   int i = 0;
 
   while (true) {

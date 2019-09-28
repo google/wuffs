@@ -11179,6 +11179,18 @@ label_0_continue:;
                                                 v_replicate_src);
           v_replicate_count -= 1;
         }
+        v_replicate_count =
+            (((uint32_t)(
+                 wuffs_gif__interlace_count[self->private_impl.f_interlace])) +
+             1);
+        v_replicate_count = wuffs_base__u32__sat_add(
+            v_replicate_count, self->private_impl.f_dst_y);
+        v_replicate_count = wuffs_base__u32__min(
+            v_replicate_count, self->private_impl.f_frame_rect_y1);
+        self->private_impl.f_dirty_y = wuffs_base__range_ie_u32__unite(
+            &self->private_impl.f_dirty_y,
+            wuffs_base__utility__make_range_ie_u32(self->private_impl.f_dst_y,
+                                                   v_replicate_count));
       }
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,
