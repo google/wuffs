@@ -7205,6 +7205,16 @@ wuffs_deflate__decoder__init_huff(wuffs_deflate__decoder* self,
     v_i += 1;
   }
   if (v_remaining != 0) {
+    if ((a_which == 1) && (v_counts[1] == 1) &&
+        (self->private_data.f_code_lengths[a_n_codes0] == 1) &&
+        ((((uint32_t)(v_counts[0])) + a_n_codes0 + 1) == a_n_codes1)) {
+      self->private_impl.f_n_huffs_bits[1] = 1;
+      self->private_data.f_huffs[1][0] =
+          (wuffs_deflate__dcode_magic_numbers[0] | 1);
+      self->private_data.f_huffs[1][1] =
+          (wuffs_deflate__dcode_magic_numbers[31] | 1);
+      return NULL;
+    }
     return wuffs_deflate__error__bad_huffman_code_under_subscribed;
   }
   v_i = 1;

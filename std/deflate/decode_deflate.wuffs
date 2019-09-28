@@ -504,7 +504,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 
 // TODO: make named constants for 15, 19, 319, etc.
 
-pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_codes1 base.u32[..320], base_symbol base.u32) base.status {
+pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..288], n_codes1 base.u32[..320], base_symbol base.u32) base.status {
 	var counts            array[16] base.u16[..320]
 	var i                 base.u32
 	var remaining         base.u32
@@ -594,7 +594,18 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 		i += 1
 	}
 	if remaining <> 0 {
-		// TODO: when is a degenerate Huffman table valid?
+		// As a special case, allow a degenerate H-D Huffman table, with only
+		// one 1-bit code, for the smallest possible distance.
+		if (args.which == 1) and (counts[1] == 1) and
+			(this.code_lengths[args.n_codes0] == 1) and
+			(((counts[0] as base.u32) + args.n_codes0 + 1) == args.n_codes1) {
+
+			this.n_huffs_bits[1] = 1
+			this.huffs[1][0] = dcode_magic_numbers[0] | 1
+			this.huffs[1][1] = dcode_magic_numbers[31] | 1
+			return ok
+		}
+
 		return "#bad Huffman code (under-subscribed)"
 	}
 
@@ -689,7 +700,6 @@ pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..320], n_cod
 			break
 		}
 		if max_cl <= 1 {
-			// TODO: when is a degenerate Huffman table valid?
 			return "#no Huffman codes"
 		}
 		max_cl -= 1
