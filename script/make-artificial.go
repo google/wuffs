@@ -796,10 +796,11 @@ var gifGlobals struct {
 	imageHeight               uint32
 	imageBackgroundColorIndex uint32
 
-	frameLeft   uint32
-	frameTop    uint32
-	frameWidth  uint32
-	frameHeight uint32
+	frameInterlaced bool
+	frameLeft       uint32
+	frameTop        uint32
+	frameWidth      uint32
+	frameHeight     uint32
 
 	globalPalette [][4]uint8
 	localPalette  [][4]uint8
@@ -818,6 +819,11 @@ outer:
 		return stateGif, nil
 
 	case line == "frame {":
+		gifGlobals.frameInterlaced = false
+		gifGlobals.frameLeft = 0
+		gifGlobals.frameTop = 0
+		gifGlobals.frameWidth = 0
+		gifGlobals.frameHeight = 0
 		gifGlobals.localPalette = nil
 		out = append(out, 0x2C)
 		return stateGifFrame, nil
@@ -1011,12 +1017,16 @@ func stateGifFrame(line string) (stateFunc, error) {
 		out = appendU16LE(out, uint16(g.frameTop))
 		out = appendU16LE(out, uint16(g.frameWidth))
 		out = appendU16LE(out, uint16(g.frameHeight))
+		flags := byte(0x00)
+		if g.frameInterlaced {
+			flags |= 0x40
+		}
 		if g.localPalette == nil {
-			out = append(out, 0x00)
+			out = append(out, flags)
 		} else if n := log2(uint32(len(g.localPalette))); n < 2 || 8 < n {
 			return nil, fmt.Errorf("bad len(g.localPalette): %d", len(g.localPalette))
 		} else {
-			out = append(out, 0x80|uint8(n-1))
+			out = append(out, flags|0x80|uint8(n-1))
 		}
 		for _, x := range g.localPalette {
 			out = append(out, x[0], x[1], x[2])
@@ -1029,6 +1039,10 @@ func stateGifFrame(line string) (stateFunc, error) {
 		cmdP     = "palette {"
 	)
 	switch {
+	case line == "interlaced":
+		g.frameInterlaced = true
+		return stateGifFrame, nil
+
 	case strings.HasPrefix(line, cmdFLTWH):
 		s := line[len(cmdFLTWH):]
 		if l, s, ok := parseNum(s); ok {

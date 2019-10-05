@@ -2024,6 +2024,76 @@ const char* test_wuffs_gif_io_position_two_chunks() {
   return do_test_wuffs_gif_io_position(true);
 }
 
+const char* test_wuffs_gif_small_frame_interlaced() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+
+  const char* status =
+      read_file(&src, "test/data/artificial/gif-small-frame-interlaced.gif");
+  if (status) {
+    return status;
+  }
+
+  wuffs_gif__decoder dec;
+  status = wuffs_gif__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED);
+  if (status) {
+    RETURN_FAIL("initialize: \"%s\"", status);
+  }
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
+  if (status) {
+    RETURN_FAIL("decode_image_config: \"%s\"", status);
+  }
+  if (wuffs_base__pixel_config__width(&ic.pixcfg) != 5) {
+    RETURN_FAIL("width: got %" PRIu32 ", want 5",
+                wuffs_base__pixel_config__width(&ic.pixcfg));
+  }
+  if (wuffs_base__pixel_config__height(&ic.pixcfg) != 5) {
+    RETURN_FAIL("height: got %" PRIu32 ", want 5",
+                wuffs_base__pixel_config__height(&ic.pixcfg));
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
+                                                    global_pixel_slice);
+  if (status) {
+    RETURN_FAIL("set_from_slice: \"%s\"", status);
+  }
+
+  wuffs_base__frame_config fc;
+  status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
+  if (status) {
+    RETURN_FAIL("decode_frame_config: \"%s\"", status);
+  }
+
+  wuffs_base__rect_ie_u32 fr = wuffs_base__frame_config__bounds(&fc);
+  if (fr.max_excl_y != 3) {
+    RETURN_FAIL("frame rect max_excl_y: got %" PRIu32 ", want 3",
+                fr.max_excl_y);
+  }
+
+  status = wuffs_gif__decoder__decode_frame(&dec, &pb, &src, global_work_slice,
+                                            NULL);
+  if (status) {
+    RETURN_FAIL("decode_frame: \"%s\"", status);
+  }
+
+  wuffs_base__rect_ie_u32 dr = wuffs_gif__decoder__frame_dirty_rect(&dec);
+  // TODO: it's a bug that the frame rect doesn't contain the dirty rect.
+  if (dr.max_excl_y != 5) {
+    RETURN_FAIL("dirty rect max_excl_y: got %" PRIu32 ", want 5",
+                dr.max_excl_y);
+  }
+
+  return NULL;
+}
+
   // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -2374,6 +2444,7 @@ proc tests[] = {
     test_wuffs_gif_num_decoded_frames,                       //
     test_wuffs_gif_io_position_one_chunk,                    //
     test_wuffs_gif_io_position_two_chunks,                   //
+    test_wuffs_gif_small_frame_interlaced,                   //
 
 #ifdef WUFFS_MIMIC
 
