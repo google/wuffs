@@ -403,26 +403,6 @@ wuffs_base__empty_table_u8() {
   return ret;
 }
 
-// Deprecated: use wuffs_base__empty_slice_u8.
-static inline wuffs_base__slice_u8  //
-wuffs_base__null_slice_u8() {
-  wuffs_base__slice_u8 ret;
-  ret.ptr = NULL;
-  ret.len = 0;
-  return ret;
-}
-
-// Deprecated: use wuffs_base__empty_table_u8.
-static inline wuffs_base__table_u8  //
-wuffs_base__null_table_u8() {
-  wuffs_base__table_u8 ret;
-  ret.ptr = NULL;
-  ret.width = 0;
-  ret.height = 0;
-  ret.stride = 0;
-  return ret;
-}
-
 // wuffs_base__slice_u8__subslice_i returns s[i:].
 //
 // It returns an empty slice if i is out of bounds.
