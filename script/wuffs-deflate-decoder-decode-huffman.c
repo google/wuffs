@@ -126,24 +126,10 @@ typedef struct {
   uint64_t pos;
   bool closed;
 } wuffs_base__io_buffer_meta;
-typedef struct wuffs_base__io_buffer__struct {
+typedef struct {
   wuffs_base__slice_u8 data;
   wuffs_base__io_buffer_meta meta;
 } wuffs_base__io_buffer;
-typedef struct {
-  struct {
-    struct wuffs_base__io_buffer__struct* buf;
-    uint8_t* mark;
-    uint8_t* limit;
-  } private_impl;
-} wuffs_base__io_reader;
-typedef struct {
-  struct {
-    struct wuffs_base__io_buffer__struct* buf;
-    uint8_t* mark;
-    uint8_t* limit;
-  } private_impl;
-} wuffs_base__io_writer;
 typedef struct wuffs_deflate__decoder__struct {
   struct {
     uint32_t magic;
@@ -171,8 +157,8 @@ const char*
 
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src) {
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src) {
   return NULL;
 }
 
@@ -223,19 +209,19 @@ static const uint32_t wuffs_base__width_to_mask_table[33] = {
 // the function name is "wuffs_etc", not "c_wuffs_etc".
 static wuffs_base__status wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src);
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src);
 
 // This is the overriding implementation.
 wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
     wuffs_deflate__decoder* self,
-    wuffs_base__io_writer a_dst,
-    wuffs_base__io_reader a_src) {
+    wuffs_base__io_buffer* a_dst,
+    wuffs_base__io_buffer* a_src) {
   // Avoid the -Werror=unused-function warning for the now-unused
   // overridden wuffs_deflate__decoder__decode_huffman_fast.
   (void)(wuffs_deflate__decoder__decode_huffman_fast);
 
-  if (!a_dst.private_impl.buf || !a_src.private_impl.buf) {
+  if (!a_dst || !a_src) {
     return wuffs_base__error__bad_argument;
   }
   wuffs_base__status status = NULL;
@@ -243,26 +229,16 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   // Load contextual state. Prepare to check that pdst and psrc remain within
   // a_dst's and a_src's bounds.
 
-  uint8_t* pdst =
-      a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->meta.wi;
-  uint8_t* qdst =
-      a_dst.private_impl.buf->data.ptr + a_dst.private_impl.buf->data.len;
-  if (a_dst.private_impl.limit) {
-    qdst = a_dst.private_impl.limit;
-  }
+  uint8_t* pdst = a_dst->data.ptr + a_dst->meta.wi;
+  uint8_t* qdst = a_dst->data.ptr + a_dst->data.len;
   if ((qdst - pdst) < 258) {
     return NULL;
   } else {
     qdst -= 258;
   }
 
-  uint8_t* psrc =
-      a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.ri;
-  uint8_t* qsrc =
-      a_src.private_impl.buf->data.ptr + a_src.private_impl.buf->meta.wi;
-  if (a_src.private_impl.limit) {
-    qsrc = a_src.private_impl.limit;
-  }
+  uint8_t* psrc = a_src->data.ptr + a_src->meta.ri;
+  uint8_t* qsrc = a_src->data.ptr + a_src->meta.wi;
   if ((qsrc - psrc) < 12) {
     return NULL;
   } else {
@@ -277,7 +253,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   uint32_t n_bits = self->private_impl.f_n_bits;
 
   // Initialize other local variables.
-  uint8_t* pdst_mark = a_dst.private_impl.mark ? a_dst.private_impl.mark : pdst;
+  uint8_t* pdst_mark = pdst;
   uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
   uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
 
@@ -495,8 +471,8 @@ end:
   bits &= MASK(n_bits);
 
   // Save contextual state.
-  a_dst.private_impl.buf->meta.wi = pdst - a_dst.private_impl.buf->data.ptr;
-  a_src.private_impl.buf->meta.ri = psrc - a_src.private_impl.buf->data.ptr;
+  a_dst->meta.wi = pdst - a_dst->data.ptr;
+  a_src->meta.ri = psrc - a_src->data.ptr;
   self->private_impl.f_bits = bits;
   self->private_impl.f_n_bits = n_bits;
 
