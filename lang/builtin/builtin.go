@@ -53,8 +53,8 @@ var Statuses = [...]string{
 	`"#too much data"`,
 }
 
-// TODO: a collection of forbidden variable names like and, or, not, as, ref,
-// deref, false, true, in, out, this, u8, u16, etc?
+// TODO: a collection of forbidden variable names like and, or, not, as, false,
+// true, in, out, this, u8, u16, etc?
 
 var Types = []string{
 	// TODO: i8, i16, i32, i64.

@@ -659,17 +659,6 @@ func (q *checker) tcheckExprUnaryOp(n *a.Expr, depth uint32) error {
 		}
 		n.SetMType(typeExprBool)
 		return nil
-
-	case t.IDXUnaryRef:
-		// TODO.
-
-	case t.IDXUnaryDeref:
-		if rTyp.Decorator() != t.IDPtr { // TODO: t.IDNptr?
-			return fmt.Errorf("check: %q is a dereference of a non-pointer type %q",
-				n.Str(q.tm), rTyp.Str(q.tm))
-		}
-		n.SetMType(rTyp.Inner())
-		return nil
 	}
 	return fmt.Errorf("check: unrecognized token (0x%X) for tcheckExprUnaryOp", n.Operator())
 }

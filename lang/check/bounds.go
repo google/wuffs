@@ -1321,8 +1321,6 @@ func (q *checker) bcheckExprUnaryOp(n *a.Expr, depth uint32) (bounds, error) {
 		return bounds{neg(rb[1]), neg(rb[0])}, nil
 	case t.IDXUnaryNot:
 		return bounds{zero, one}, nil
-	case t.IDXUnaryRef, t.IDXUnaryDeref:
-		return q.bcheckTypeExpr(n.MType())
 	}
 
 	return bounds{}, fmt.Errorf("check: unrecognized token (0x%X) for bcheckExprUnaryOp", n.Operator())

@@ -146,8 +146,6 @@ var opStrings = [...]string{
 	t.IDXUnaryPlus:  "+",
 	t.IDXUnaryMinus: "-",
 	t.IDXUnaryNot:   "not ",
-	t.IDXUnaryRef:   "ref ",
-	t.IDXUnaryDeref: "deref ",
 
 	t.IDXBinaryPlus:           " + ",
 	t.IDXBinaryMinus:          " - ",

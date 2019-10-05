@@ -499,8 +499,6 @@ var cOpNames = [...]string{
 	t.IDXUnaryPlus:  " + ",
 	t.IDXUnaryMinus: " - ",
 	t.IDXUnaryNot:   " ! ",
-	t.IDXUnaryRef:   " & ",
-	t.IDXUnaryDeref: " * ",
 
 	t.IDXBinaryPlus:           " + ",
 	t.IDXBinaryMinus:          " - ",

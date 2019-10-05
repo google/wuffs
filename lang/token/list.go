@@ -287,18 +287,12 @@ const (
 	IDNot = ID(0x4A)
 	IDAs  = ID(0x4B)
 
-	// TODO: are these unused? Can we drop them (and their XUnary forms)?
-	IDRef   = ID(0x4C)
-	IDDeref = ID(0x4D)
-
 	// The IDXFoo IDs are not returned by the tokenizer. They are used by the
 	// ast.Node ID-typed fields to disambiguate e.g. unary vs binary plus.
 
 	IDXUnaryPlus  = ID(0x50)
 	IDXUnaryMinus = ID(0x51)
 	IDXUnaryNot   = ID(0x52)
-	IDXUnaryRef   = ID(0x53)
-	IDXUnaryDeref = ID(0x54)
 
 	IDXBinaryPlus           = ID(0x58)
 	IDXBinaryMinus          = ID(0x59)
@@ -669,12 +663,10 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDGreaterEq:   ">=",
 	IDGreaterThan: ">",
 
-	IDAnd:   "and",
-	IDOr:    "or",
-	IDNot:   "not",
-	IDAs:    "as",
-	IDRef:   "ref",
-	IDDeref: "deref",
+	IDAnd: "and",
+	IDOr:  "or",
+	IDNot: "not",
+	IDAs:  "as",
 
 	IDFunc:     "func",
 	IDAssert:   "assert",
@@ -1050,8 +1042,6 @@ var ambiguousForms = [nBuiltInSymbolicIDs]ID{
 	IDXUnaryPlus:  IDPlus,
 	IDXUnaryMinus: IDMinus,
 	IDXUnaryNot:   IDNot,
-	IDXUnaryRef:   IDRef,
-	IDXUnaryDeref: IDDeref,
 
 	IDXBinaryPlus:           IDPlus,
 	IDXBinaryMinus:          IDMinus,
@@ -1117,8 +1107,6 @@ var unaryForms = [nBuiltInSymbolicIDs]ID{
 	IDPlus:  IDXUnaryPlus,
 	IDMinus: IDXUnaryMinus,
 	IDNot:   IDXUnaryNot,
-	IDRef:   IDXUnaryRef,
-	IDDeref: IDXUnaryDeref,
 }
 
 var binaryForms = [nBuiltInSymbolicIDs]ID{
