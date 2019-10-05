@@ -14,8 +14,6 @@
 
 package rac
 
-// TODO: API for shared dictionaries.
-
 import (
 	"io"
 )
