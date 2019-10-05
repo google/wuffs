@@ -8625,7 +8625,7 @@ static const uint8_t               //
 static const uint8_t               //
     wuffs_gif__interlace_count[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
-        0, 0, 1, 3, 7,
+        0, 1, 2, 4, 8,
 };
 
 static const uint8_t              //
@@ -11112,7 +11112,8 @@ wuffs_gif__decoder__copy_to_image_buffer(wuffs_gif__decoder* self,
   wuffs_base__table_u8 v_tab = {0};
   uint64_t v_i = 0;
   uint64_t v_j = 0;
-  uint32_t v_replicate_count = 0;
+  uint32_t v_replicate_y0 = 0;
+  uint32_t v_replicate_y1 = 0;
   wuffs_base__slice_u8 v_replicate_dst = {0};
   wuffs_base__slice_u8 v_replicate_src = {0};
 
@@ -11174,25 +11175,22 @@ label_0_continue:;
       if ((self->private_impl.f_num_decoded_frames_value == 0) &&
           !self->private_impl.f_gc_has_transparent_index &&
           (self->private_impl.f_interlace > 1)) {
-        v_replicate_count = ((uint32_t)(
-            wuffs_gif__interlace_count[self->private_impl.f_interlace]));
         v_replicate_src =
             wuffs_base__table_u8__row(v_tab, self->private_impl.f_dst_y);
-        while (v_replicate_count > 0) {
-          v_replicate_dst = wuffs_base__table_u8__row(
-              v_tab, wuffs_base__u32__sat_add(self->private_impl.f_dst_y,
-                                              v_replicate_count));
+        v_replicate_y0 =
+            wuffs_base__u32__sat_add(self->private_impl.f_dst_y, 1);
+        v_replicate_y1 = wuffs_base__u32__sat_add(
+            self->private_impl.f_dst_y,
+            ((uint32_t)(
+                wuffs_gif__interlace_count[self->private_impl.f_interlace])));
+        while (v_replicate_y0 < v_replicate_y1) {
+          v_replicate_dst = wuffs_base__table_u8__row(v_tab, v_replicate_y0);
           wuffs_base__slice_u8__copy_from_slice(v_replicate_dst,
                                                 v_replicate_src);
-          v_replicate_count -= 1;
+          v_replicate_y0 += 1;
         }
         self->private_impl.f_dirty_max_excl_y = wuffs_base__u32__max(
-            self->private_impl.f_dirty_max_excl_y,
-            wuffs_base__u32__sat_add(
-                self->private_impl.f_dst_y,
-                (((uint32_t)(wuffs_gif__interlace_count[self->private_impl
-                                                            .f_interlace])) +
-                 1)));
+            self->private_impl.f_dirty_max_excl_y, v_replicate_y1);
       }
       wuffs_base__u32__sat_add_indirect(
           &self->private_impl.f_dst_y,

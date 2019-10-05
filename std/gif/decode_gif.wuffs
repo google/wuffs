@@ -118,7 +118,7 @@ pub const quirk_reject_empty_palette base.u32 = (0xF8586 << 10) | 6
 // to that maximum value (and therefore outside the frame rect).
 pri const interlace_start array[5] base.u32 = [0xFFFFFFFF, 1, 2, 4, 0]
 pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
-pri const interlace_count array[5] base.u8 = [0, 0, 1, 3, 7]
+pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
 
 pub struct decoder?(
 	width  base.u32,
@@ -1104,7 +1104,8 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	var tab             table base.u8
 	var i               base.u64
 	var j               base.u64
-	var replicate_count base.u32
+	var replicate_y0    base.u32
+	var replicate_y1    base.u32
 	var replicate_dst   slice base.u8
 	var replicate_src   slice base.u8
 
@@ -1178,16 +1179,16 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 				(not this.gc_has_transparent_index) and
 				(this.interlace > 1) {
 
-				replicate_count = interlace_count[this.interlace] as base.u32
 				replicate_src = tab.row(y:this.dst_y)
-				while replicate_count > 0 {
-					replicate_dst = tab.row(y:this.dst_y ~sat+ replicate_count)
+				replicate_y0 = this.dst_y ~sat+ 1
+				replicate_y1 = this.dst_y ~sat+ (interlace_count[this.interlace] as base.u32)
+				while replicate_y0 < replicate_y1 {
+					assert replicate_y0 < 0xFFFFFFFF via "a < b: a < c; c <= b"(c:replicate_y1)
+					replicate_dst = tab.row(y:replicate_y0)
 					replicate_dst.copy_from_slice!(s:replicate_src)
-					replicate_count -= 1
+					replicate_y0 += 1
 				}
-
-				this.dirty_max_excl_y = this.dirty_max_excl_y.max(
-					a:this.dst_y ~sat+ ((interlace_count[this.interlace] as base.u32) + 1))
+				this.dirty_max_excl_y = this.dirty_max_excl_y.max(a:replicate_y1)
 			}
 
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
