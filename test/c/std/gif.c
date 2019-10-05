@@ -198,14 +198,14 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   const char* status = wuffs_gif__decoder__initialize(
       &dec, sizeof dec, WUFFS_VERSION, wuffs_initialize_flags);
   if (status) {
-    return status;
+    RETURN_FAIL("initialize: \"%s\"", status);
   }
 
   wuffs_base__image_config ic = ((wuffs_base__image_config){});
   wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
   status = wuffs_gif__decoder__decode_image_config(&dec, &ic, src);
   if (status) {
-    return status;
+    RETURN_FAIL("decode_image_config: \"%s\"", status);
   }
 
   wuffs_base__pixel_config__set(&ic.pixcfg, pixfmt,
@@ -217,7 +217,7 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
   status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
                                                     global_pixel_slice);
   if (status) {
-    return status;
+    RETURN_FAIL("set_from_slice: \"%s\"", status);
   }
 
   while (true) {
@@ -225,19 +225,19 @@ const char* wuffs_gif_decode(wuffs_base__io_buffer* dst,
     if (status == wuffs_base__warning__end_of_data) {
       break;
     } else if (status) {
-      return status;
+      RETURN_FAIL("decode_frame_config: \"%s\"", status);
     }
 
     status = wuffs_gif__decoder__decode_frame(&dec, &pb, src, global_work_slice,
                                               NULL);
     if (status) {
-      return status;
+      RETURN_FAIL("decode_frame: \"%s\"", status);
     }
 
     status = copy_to_io_buffer_from_pixel_buffer(
         dst, &pb, wuffs_base__frame_config__bounds(&fc));
     if (status) {
-      return status;
+      RETURN_FAIL("copy_to_io_buffer_from_pixel_buffer: \"%s\"", status);
     }
   }
   return NULL;
@@ -1324,7 +1324,7 @@ const char* test_wuffs_gif_decode_interlaced_truncated() {
   status = wuffs_base__pixel_buffer__set_from_slice(&pb, &ic.pixcfg,
                                                     global_pixel_slice);
   if (status) {
-    return status;
+    RETURN_FAIL("set_from_slice: \"%s\"", status);
   }
   uint8_t* pixel_ptr = wuffs_base__pixel_buffer__plane(&pb, 0).ptr;
   memset(pixel_ptr, 0xEE, num_pixel_indexes);
