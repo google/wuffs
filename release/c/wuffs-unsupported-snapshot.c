@@ -11183,6 +11183,8 @@ label_0_continue:;
             self->private_impl.f_dst_y,
             ((uint32_t)(
                 wuffs_gif__interlace_count[self->private_impl.f_interlace])));
+        v_replicate_y1 = wuffs_base__u32__min(
+            v_replicate_y1, self->private_impl.f_frame_rect_y1);
         while (v_replicate_y0 < v_replicate_y1) {
           v_replicate_dst = wuffs_base__table_u8__row(v_tab, v_replicate_y0);
           wuffs_base__slice_u8__copy_from_slice(v_replicate_dst,

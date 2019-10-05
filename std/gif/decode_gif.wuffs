@@ -1182,6 +1182,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 				replicate_src = tab.row(y:this.dst_y)
 				replicate_y0 = this.dst_y ~sat+ 1
 				replicate_y1 = this.dst_y ~sat+ (interlace_count[this.interlace] as base.u32)
+				replicate_y1 = replicate_y1.min(a:this.frame_rect_y1)
 				while replicate_y0 < replicate_y1 {
 					assert replicate_y0 < 0xFFFFFFFF via "a < b: a < c; c <= b"(c:replicate_y1)
 					replicate_dst = tab.row(y:replicate_y0)

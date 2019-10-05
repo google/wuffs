@@ -2085,9 +2085,8 @@ const char* test_wuffs_gif_small_frame_interlaced() {
   }
 
   wuffs_base__rect_ie_u32 dr = wuffs_gif__decoder__frame_dirty_rect(&dec);
-  // TODO: it's a bug that the frame rect doesn't contain the dirty rect.
-  if (dr.max_excl_y != 5) {
-    RETURN_FAIL("dirty rect max_excl_y: got %" PRIu32 ", want 5",
+  if (dr.max_excl_y != 3) {
+    RETURN_FAIL("dirty rect max_excl_y: got %" PRIu32 ", want 3",
                 dr.max_excl_y);
   }
 
