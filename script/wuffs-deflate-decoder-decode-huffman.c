@@ -253,7 +253,7 @@ wuffs_base__status c_wuffs_deflate__decoder__decode_huffman_fast(
   uint32_t n_bits = self->private_impl.f_n_bits;
 
   // Initialize other local variables.
-  uint8_t* pdst_mark = pdst;
+  uint8_t* pdst_mark = a_dst->data.ptr;
   uint32_t lmask = MASK(self->private_impl.f_n_huffs_bits[0]);
   uint32_t dmask = MASK(self->private_impl.f_n_huffs_bits[1]);
 
