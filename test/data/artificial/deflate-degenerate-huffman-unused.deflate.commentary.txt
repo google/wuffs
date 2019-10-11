@@ -3,7 +3,7 @@ and adding commentary:
 
     offset  xoffset ASCII   hex     binary
     000000  0x0000  .       0x05    0b_...._.101  Dynamic Huffman block, final
-    000000  0x0000  .       0x04    0b_0000_0...  NumLCodes: 257
+    000000  0x0000  .       0x05    0b_0000_0...  NumLCodes: 257
     000001  0x0001  .       0xC0    0b_...0_0000  NumDCodes: 1
     000001  0x0001  .       0xC0    0b_110._....  NumCLCodeLengths: 18
     000002  0x0002  !       0x21    0b_...._...1
