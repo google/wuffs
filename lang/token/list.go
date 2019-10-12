@@ -225,7 +225,6 @@ const (
 	IDExclam   = ID(0x0C)
 	IDQuestion = ID(0x0D)
 	IDColon    = ID(0x0E)
-	IDDollar   = ID(0x0F)
 )
 
 const (
@@ -621,7 +620,6 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDQuestion:  "?",
 	IDColon:     ":",
 	IDSemicolon: ";",
-	IDDollar:    "$",
 
 	IDPlusEq:           "+=",
 	IDMinusEq:          "-=",
@@ -958,7 +956,6 @@ var squiggles = [256]ID{
 	'?': IDQuestion,
 	':': IDColon,
 	';': IDSemicolon,
-	'$': IDDollar,
 }
 
 type suffixLexer struct {
@@ -1191,5 +1188,4 @@ var isTightRight = [...]bool{
 	IDExclam:   true,
 	IDQuestion: true,
 	IDColon:    true,
-	IDDollar:   true,
 }
