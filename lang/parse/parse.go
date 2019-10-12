@@ -432,7 +432,7 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 
 	lhs, mhs := (*a.Expr)(nil), (*a.Expr)(nil)
 	if p.peek1() == t.IDOpenBracket {
-		_, lhs, mhs, err = p.parseBracket(t.IDDotDot)
+		_, lhs, mhs, err = p.parseBracket(t.IDDotDotEq)
 		if err != nil {
 			return nil, err
 		}
@@ -441,8 +441,8 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	return a.NewTypeExpr(0, pkg, name, lhs.AsNode(), mhs, nil), nil
 }
 
-// parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A double dot replaces
-// the colon if sep is t.IDDotDot instead of t.IDColon. If sep is t.IDColon, it
+// parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A "..=" replaces the
+// ":" if sep is t.IDDotDotEq instead of t.IDColon. If sep is t.IDColon, it
 // also parses "[x]". The returned op is sep for a range or refinement and
 // t.IDOpenBracket for an index.
 func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
@@ -934,7 +934,7 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 
 	length := p.peek1()
 	if length.SmallPowerOf2Value() == 0 {
-		return nil, fmt.Errorf(`parse: expected power-of-2 length count in [1..256], got %q at %s:%d`,
+		return nil, fmt.Errorf(`parse: expected power-of-2 length count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(length), p.filename, p.line())
 	}
 	p.src = p.src[1:]
@@ -959,7 +959,7 @@ func (p *parser) parseIterateBlock(label t.ID, assigns []*a.Node) (*a.Iterate, e
 
 	unroll := p.peek1()
 	if unroll.SmallPowerOf2Value() == 0 {
-		return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1..256], got %q at %s:%d`,
+		return nil, fmt.Errorf(`parse: expected power-of-2 unroll count in [1 ..= 256], got %q at %s:%d`,
 			p.tm.ByID(unroll), p.filename, p.line())
 	}
 	p.src = p.src[1:]

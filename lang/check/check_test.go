@@ -66,12 +66,12 @@ func TestCheck(tt *testing.T) {
 		pri func foo.bar() {
 			var x base.u8
 			var y base.i32
-			var z base.u64[..123]
+			var z base.u64[..= 123]
 			var a array[4] base.u8
 			var b base.bool
 
 			var p base.i32
-			var q base.i32[0..8]
+			var q base.i32[0 ..= 8]
 
 			x = 0
 			x = 1 + (x * 0)
@@ -158,11 +158,11 @@ func TestCheck(tt *testing.T) {
 		{"b", "base.bool"},
 		{"coroutine_resumed", "base.bool"},
 		{"p", "base.i32"},
-		{"q", "base.i32[0..8]"},
+		{"q", "base.i32[0 ..= 8]"},
 		{"this", "ptr foo"},
 		{"x", "base.u8"},
 		{"y", "base.i32"},
-		{"z", "base.u64[..123]"},
+		{"z", "base.u64[..= 123]"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		tt.Fatalf("\ngot  %v\nwant %v", got, want)

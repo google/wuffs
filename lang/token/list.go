@@ -201,7 +201,8 @@ const (
 )
 
 const (
-	IDInvalid = ID(0)
+	IDInvalid   = ID(0)
+	IDSemicolon = ID(0x01)
 
 	minOpen = 0x02
 	maxOpen = 0x04
@@ -217,14 +218,14 @@ const (
 	IDCloseBracket = ID(0x06)
 	IDCloseCurly   = ID(0x07)
 
-	IDDot       = ID(0x08)
-	IDDotDot    = ID(0x09)
-	IDComma     = ID(0x0A)
-	IDExclam    = ID(0x0B)
-	IDQuestion  = ID(0x0C)
-	IDColon     = ID(0x0D)
-	IDSemicolon = ID(0x0E)
-	IDDollar    = ID(0x0F)
+	IDDot      = ID(0x08)
+	IDDotDot   = ID(0x09)
+	IDDotDotEq = ID(0x0A)
+	IDComma    = ID(0x0B)
+	IDExclam   = ID(0x0C)
+	IDQuestion = ID(0x0D)
+	IDColon    = ID(0x0E)
+	IDDollar   = ID(0x0F)
 )
 
 const (
@@ -614,6 +615,7 @@ var builtInsByID = [nBuiltInIDs]string{
 
 	IDDot:       ".",
 	IDDotDot:    "..",
+	IDDotDotEq:  "..=",
 	IDComma:     ",",
 	IDExclam:    "!",
 	IDQuestion:  "?",
@@ -971,6 +973,7 @@ type suffixLexer struct {
 // we want to lex greedily, longer suffixes should be earlier in the slice.
 var lexers = [256][]suffixLexer{
 	'.': {
+		{".=", IDDotDotEq},
 		{".", IDDotDot},
 		{"", IDDot},
 	},
@@ -1165,17 +1168,18 @@ var associativeForms = [nBuiltInSymbolicIDs]ID{
 }
 
 var isTightLeft = [...]bool{
+	IDSemicolon: true,
+
 	IDCloseParen:   true,
 	IDOpenBracket:  true,
 	IDCloseBracket: true,
 
-	IDDot:       true,
-	IDDotDot:    true,
-	IDComma:     true,
-	IDExclam:    true,
-	IDQuestion:  true,
-	IDColon:     true,
-	IDSemicolon: true,
+	IDDot:      true,
+	IDDotDot:   true,
+	IDComma:    true,
+	IDExclam:   true,
+	IDQuestion: true,
+	IDColon:    true,
 }
 
 var isTightRight = [...]bool{

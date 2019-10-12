@@ -636,7 +636,7 @@ func NewJump(keyword t.ID, label t.ID) *Jump {
 // MaxTypeExprDepth is an advisory limit for a TypeExpr's recursion depth.
 const MaxTypeExprDepth = 63
 
-// TypeExpr is a type expression, such as "base.u32", "base.u32[..8]", "foo",
+// TypeExpr is a type expression, such as "base.u32", "base.u32[..= 8]", "foo",
 // "pkg.bar", "ptr T", "array[8] T", "slice T" or "table T":
 //  - ID0:   <0|IDArray|IDFunc|IDNptr|IDPtr|IDSlice|IDTable>
 //  - ID1:   <0|pkg>
@@ -662,8 +662,8 @@ const MaxTypeExprDepth = 63
 // A zero ID0 means a (possibly package-qualified) type like "pkg.foo" or
 // "foo". ID1 is the "pkg" or zero, ID2 is the "foo".
 //
-// Numeric types can be refined as "foo[LHS..MHS]". LHS and MHS are Expr's,
-// possibly nil. For example, the LHS for "base.u32[..4095]" is nil.
+// Numeric types can be refined as "foo[LHS ..= MHS]". LHS and MHS are Expr's,
+// possibly nil. For example, the LHS for "base.u32[..= 4095]" is nil.
 //
 // TODO: struct types, list types, nptr vs ptr.
 type TypeExpr Node

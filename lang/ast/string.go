@@ -234,9 +234,15 @@ func (n *TypeExpr) appendStr(buf []byte, tm *t.Map, depth uint32) []byte {
 	}
 	if n.Min() != nil || n.Max() != nil {
 		buf = append(buf, '[')
-		buf = n.Min().appendStr(buf, tm, false, 0)
-		buf = append(buf, ".."...)
-		buf = n.Max().appendStr(buf, tm, false, 0)
+		if n.Min() != nil {
+			buf = n.Min().appendStr(buf, tm, false, 0)
+			buf = append(buf, ' ')
+		}
+		buf = append(buf, "..="...)
+		if n.Max() != nil {
+			buf = append(buf, ' ')
+			buf = n.Max().appendStr(buf, tm, false, 0)
+		}
 		buf = append(buf, ']')
 	}
 	return buf

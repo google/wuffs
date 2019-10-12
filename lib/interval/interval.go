@@ -150,15 +150,15 @@ func (x IntRange) String() string {
 	}
 	buf := []byte(nil)
 	if x[0] == nil {
-		buf = append(buf, "(-∞, "...)
+		buf = append(buf, "(-∞"...)
 	} else {
 		buf = append(buf, '[')
 		buf = x[0].Append(buf, 10)
-		buf = append(buf, ".."...)
 	}
 	if x[1] == nil {
-		buf = append(buf, "+∞)"...)
+		buf = append(buf, " .. +∞)"...)
 	} else {
+		buf = append(buf, " ..= "...)
 		buf = x[1].Append(buf, 10)
 		buf = append(buf, ']')
 	}

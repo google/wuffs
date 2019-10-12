@@ -23,15 +23,15 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 	var bits               base.u32
 	var n_bits             base.u32
 	var table_entry        base.u32
-	var table_entry_n_bits base.u32[..15]
-	var lmask              base.u32[..511]
-	var dmask              base.u32[..511]
-	var redir_top          base.u32[..0xFFFF]
-	var redir_mask         base.u32[..0x7FFF]
-	var length             base.u32[..258]
-	var dist_minus_1       base.u32[..0x7FFF]
+	var table_entry_n_bits base.u32[..= 15]
+	var lmask              base.u32[..= 511]
+	var dmask              base.u32[..= 511]
+	var redir_top          base.u32[..= 0xFFFF]
+	var redir_mask         base.u32[..= 0x7FFF]
+	var length             base.u32[..= 258]
+	var dist_minus_1       base.u32[..= 0x7FFF]
 	var n_copied           base.u32
-	var hlen               base.u32[..0x7FFF]
+	var hlen               base.u32[..= 0x7FFF]
 	var hdist              base.u32
 
 	if (this.n_bits >= 8) or ((this.bits >> (this.n_bits & 7)) <> 0) {

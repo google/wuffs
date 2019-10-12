@@ -71,7 +71,7 @@ pub struct decoder?(
 	history_index base.u32,
 
 	// n_huffs_bits is discussed in the huffs field comment.
-	n_huffs_bits array[2] base.u32[..9],
+	n_huffs_bits array[2] base.u32[..= 9],
 
 	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
 	//
@@ -99,17 +99,19 @@ pub struct decoder?(
 	// less, then more source bytes are read and the table lookup re-tried.
 	//
 	// The table value's bits:
-	//  - bit        31 indicates a literal.
-	//  - bit        30 indicates a base number + extra bits.
-	//  - bit        29 indicates end-of-block.
-	//  - bit        28 indicates a redirect to another part of the table.
-	//  - bit        27 indicates an invalid value.
-	//  - bits 26 .. 24 are zero.
-	//  - bits 23 ..  8 are the redirect offset, literal (in bits 15-8) or base number.
-	//  - bits  7 ..  4 are the redirected table's bits or number of extra bits.
-	//  - bits  3 ..  0 are the number of decoder.bits to consume.
+	//  - bit         31 indicates a literal.
+	//  - bit         30 indicates a base number + extra bits.
+	//  - bit         29 indicates end-of-block.
+	//  - bit         28 indicates a redirect to another part of the table.
+	//  - bit         27 indicates an invalid value.
+	//  - bits 24 ..= 26 are zero.
+	//  - bits  8 ..= 23 are the redirect offset, literal (in bits [8 ..= 15])
+	//                   or base number.
+	//  - bits  4 ..=  7 are the redirected table's size in bits or the number
+	//                   of extra bits.
+	//  - bits  0 ..=  3 are the number of decoder.bits to consume.
 	//
-	// Exactly one of the eight bits 31-24 should be set.
+	// Exactly one of the eight bits [24 ..= 31] should be set.
 	huffs array[2] array[huffs_table_size] base.u32,
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
@@ -135,7 +137,7 @@ pub struct decoder?(
 pub func decoder.add_history!(hist slice base.u8) {
 	var s            slice base.u8
 	var n_copied     base.u64
-	var already_full base.u32[..0x8000]
+	var already_full base.u32[..= 0x8000]
 
 	s = args.hist
 	if s.length() >= 0x8000 {
@@ -201,7 +203,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 	var final  base.u32
-	var b0     base.u32[..255]
+	var b0     base.u32[..= 255]
 	var type   base.u32
 	var status base.status
 
@@ -330,21 +332,21 @@ pri func decoder.init_fixed_huffman!() base.status {
 pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 	var bits               base.u32
 	var n_bits             base.u32
-	var b0                 base.u32[..255]
-	var n_lit              base.u32[..288]
-	var n_dist             base.u32[..32]
-	var n_clen             base.u32[..19]
+	var b0                 base.u32[..= 255]
+	var n_lit              base.u32[..= 288]
+	var n_dist             base.u32[..= 32]
+	var n_clen             base.u32[..= 19]
 	var i                  base.u32
-	var b1                 base.u32[..255]
+	var b1                 base.u32[..= 255]
 	var status             base.status
-	var mask               base.u32[..511]
+	var mask               base.u32[..= 511]
 	var table_entry        base.u32
-	var table_entry_n_bits base.u32[..15]
-	var b2                 base.u32[..255]
-	var n_extra_bits       base.u32[..7]
-	var rep_symbol         base.u8[..15]
+	var table_entry_n_bits base.u32[..= 15]
+	var b2                 base.u32[..= 255]
+	var n_extra_bits       base.u32[..= 7]
+	var rep_symbol         base.u8[..= 15]
 	var rep_count          base.u32
-	var b3                 base.u32[..255]
+	var b3                 base.u32[..= 255]
 
 	bits = this.bits
 	n_bits = this.n_bits
@@ -504,29 +506,29 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 
 // TODO: make named constants for 15, 19, 319, etc.
 
-pri func decoder.init_huff!(which base.u32[..1], n_codes0 base.u32[..288], n_codes1 base.u32[..320], base_symbol base.u32) base.status {
-	var counts            array[16] base.u16[..320]
+pri func decoder.init_huff!(which base.u32[..= 1], n_codes0 base.u32[..= 288], n_codes1 base.u32[..= 320], base_symbol base.u32) base.status {
+	var counts            array[16] base.u16[..= 320]
 	var i                 base.u32
 	var remaining         base.u32
-	var offsets           array[16] base.u16[..320]
-	var n_symbols         base.u32[..320]
-	var count             base.u32[..320]
-	var symbols           array[320] base.u16[..319]
-	var min_cl            base.u32[..9]
-	var max_cl            base.u32[..15]
+	var offsets           array[16] base.u16[..= 320]
+	var n_symbols         base.u32[..= 320]
+	var count             base.u32[..= 320]
+	var symbols           array[320] base.u16[..= 319]
+	var min_cl            base.u32[..= 9]
+	var max_cl            base.u32[..= 15]
 	var initial_high_bits base.u32
-	var prev_cl           base.u32[..15]
+	var prev_cl           base.u32[..= 15]
 	var prev_redirect_key base.u32
-	var top               base.u32[..huffs_table_size]
-	var next_top          base.u32[..huffs_table_size]
+	var top               base.u32[..= huffs_table_size]
+	var next_top          base.u32[..= huffs_table_size]
 	var code              base.u32
 	var key               base.u32
 	var value             base.u32
-	var cl                base.u32[..15]
-	var redirect_key      base.u32[..511]
-	var j                 base.u32[..16]
-	var reversed_key      base.u32[..511]
-	var symbol            base.u32[..319]
+	var cl                base.u32[..= 15]
+	var redirect_key      base.u32[..= 511]
+	var j                 base.u32[..= 16]
+	var reversed_key      base.u32[..= 511]
+	var symbol            base.u32[..= 319]
 	var high_bits         base.u32
 	var delta             base.u32
 

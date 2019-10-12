@@ -63,7 +63,7 @@ index f878c5e..f10dcee 100644
 
 ```
 $ wuffs gen std/gif
-check: expression "(c + 1) as u8" bounds [1..256] is not within bounds [0..255] at
+check: expression "(c + 1) as u8" bounds [1 ..= 256] is not within bounds [0 ..= 255] at
 /home/n/go/src/github.com/google/wuffs/std/lzw/decode_lzw.wuffs:101. Facts:
     n_bits < 8
     c < 256
@@ -250,8 +250,8 @@ Similarly, replacing the line `var n_bits u32` with `var n_bits u32 = 10`
 should fail, as an `n_bits < 8` assertion, a pre-condition, a few lines further
 down again cannot be proven.
 
-Similarly, changing the `4095` in `var prev_code u32[..4095]` either higher or
-lower should fail.
+Similarly, changing the `4095` in `var prev_code u32[..= 4095]` either higher
+or lower should fail.
 
 Try adding `assert false` at various places, which should obviously fail, but
 should also cause `wuffs gen` to print what facts the compiler can prove at
@@ -357,4 +357,4 @@ owned by Google.
 
 ---
 
-Updated on June 2018.
+Updated on October 2019.

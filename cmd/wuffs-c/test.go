@@ -51,11 +51,11 @@ func doBenchTest(args []string, bench bool) error {
 		return fmt.Errorf("bad -focus flag value %q", *focusFlag)
 	}
 	if *iterscaleFlag < cf.IterscaleMin || cf.IterscaleMax < *iterscaleFlag {
-		return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d..%d]",
+		return fmt.Errorf("bad -iterscale flag value %d, outside the range [%d ..= %d]",
 			*iterscaleFlag, cf.IterscaleMin, cf.IterscaleMax)
 	}
 	if *repsFlag < cf.RepsMin || cf.RepsMax < *repsFlag {
-		return fmt.Errorf("bad -reps flag value %d, outside the range [%d..%d]",
+		return fmt.Errorf("bad -reps flag value %d, outside the range [%d ..= %d]",
 			*repsFlag, cf.RepsMin, cf.RepsMax)
 	}
 

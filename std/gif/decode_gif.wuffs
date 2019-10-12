@@ -184,7 +184,7 @@ pub struct decoder?(
 	has_global_palette base.bool,
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
-	interlace base.u8[..4],
+	interlace base.u8[..= 4],
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
@@ -198,7 +198,7 @@ pub struct decoder?(
 	gc_transparent_index     base.u8,
 	gc_disposal              base.u8,
 	// There are 7056000 flicks per centisecond.
-	gc_duration base.u64[..0xFFFF * 7056000],
+	gc_duration base.u64[..= 0xFFFF * 7056000],
 
 	frame_config_io_position        base.u64,
 	num_decoded_frame_configs_value base.u64,
@@ -582,9 +582,9 @@ pri func decoder.decode_header?(src base.io_reader) {
 pri func decoder.decode_lsd?(src base.io_reader) {
 	var flags                  base.u8
 	var background_color_index base.u8
-	var num_palette_entries    base.u32[..256]
+	var num_palette_entries    base.u32[..= 256]
 	var i                      base.u32
-	var j                      base.u32[..1020]
+	var j                      base.u32[..= 1020]
 	var argb                   base.u32
 
 	this.width = args.src.read_u16le_as_u32?()
@@ -828,7 +828,7 @@ pri func decoder.decode_gc?(src base.io_reader) {
 	// Convert the disposal method from GIF's wire format to Wuffs constants.
 	//
 	// The GIF spec discusses the 3-bit flag value being 0, 1, 2 or 3. Values
-	// in the range [4..7] are "to be defined". In practice, some encoders also
+	// in the range [4 ..= 7] are "to be defined". In practice, some encoders also
 	// use 4 for "restore previous". See
 	// https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/image-decoders/gif/gif_image_reader.cc?rcl=5161173c43324da2b13e1aa45bbe69901daa1279&l=625
 	//
@@ -889,8 +889,8 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 
 pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader) {
 	var flags               base.u8
-	var which_palette       base.u8[..1]
-	var num_palette_entries base.u32[..256]
+	var which_palette       base.u8[..= 1]
+	var num_palette_entries base.u32[..= 256]
 	var i                   base.u32
 	var argb                base.u32
 	var dst_palette         slice base.u8
@@ -993,7 +993,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 }
 
 pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
-	var block_size      base.u64[..255]
+	var block_size      base.u64[..= 255]
 	var need_block_size base.bool
 	var n_compressed    base.u64
 	var compressed      slice base.u8
@@ -1099,7 +1099,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	var width_in_bytes  base.u64
 	var n               base.u64
 	var src_ri          base.u64
-	var bytes_per_pixel base.u32[..64]
+	var bytes_per_pixel base.u32[..= 64]
 	var pixfmt_channels base.u32
 	var tab             table base.u8
 	var i               base.u64

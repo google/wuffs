@@ -16,21 +16,21 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	var bits               base.u32
 	var n_bits             base.u32
 	var table_entry        base.u32
-	var table_entry_n_bits base.u32[..15]
-	var lmask              base.u32[..511]
-	var dmask              base.u32[..511]
-	var b0                 base.u32[..255]
-	var redir_top          base.u32[..0xFFFF]
-	var redir_mask         base.u32[..0x7FFF]
-	var b1                 base.u32[..255]
-	var length             base.u32[..258]
-	var b2                 base.u32[..255]
-	var b3                 base.u32[..255]
-	var b4                 base.u32[..255]
-	var dist_minus_1       base.u32[..0x7FFF]
-	var b5                 base.u32[..255]
+	var table_entry_n_bits base.u32[..= 15]
+	var lmask              base.u32[..= 511]
+	var dmask              base.u32[..= 511]
+	var b0                 base.u32[..= 255]
+	var redir_top          base.u32[..= 0xFFFF]
+	var redir_mask         base.u32[..= 0x7FFF]
+	var b1                 base.u32[..= 255]
+	var length             base.u32[..= 258]
+	var b2                 base.u32[..= 255]
+	var b3                 base.u32[..= 255]
+	var b4                 base.u32[..= 255]
+	var dist_minus_1       base.u32[..= 0x7FFF]
+	var b5                 base.u32[..= 255]
 	var n_copied           base.u32
-	var hlen               base.u32[..0x7FFF]
+	var hlen               base.u32[..= 0x7FFF]
 	var hdist              base.u32
 
 	// When editing this function, consider making the equivalent change to the
