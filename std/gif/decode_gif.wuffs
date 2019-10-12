@@ -121,8 +121,8 @@ pri const interlace_delta array[5] base.u8 = [1, 2, 4, 8, 8]
 pri const interlace_count array[5] base.u8 = [0, 1, 2, 4, 8]
 
 pub struct decoder?(
-	width  base.u32,
-	height base.u32,
+	width  : base.u32,
+	height : base.u32,
 
 	// Call sequence states:
 	//  - 0: initial state.
@@ -159,79 +159,79 @@ pub struct decoder?(
 	//  - F   is decode_frame,        implicit means skip_frame
 	//  - FC  is decode_frame_config, implicit means nullptr args.dst
 	//  - IC  is decode_image_config, implicit means nullptr args.dst
-	call_sequence base.u8,
+	call_sequence : base.u8,
 
-	ignore_metadata             base.bool,
-	report_metadata_iccp        base.bool,
-	report_metadata_xmp         base.bool,
-	metadata_fourcc_value       base.u32,
-	metadata_chunk_length_value base.u64,
-	metadata_io_position        base.u64,
+	ignore_metadata             : base.bool,
+	report_metadata_iccp        : base.bool,
+	report_metadata_xmp         : base.bool,
+	metadata_fourcc_value       : base.u32,
+	metadata_chunk_length_value : base.u64,
+	metadata_io_position        : base.u64,
 
-	quirk_enabled_delay_num_decoded_frames                         base.bool,
-	quirk_enabled_first_frame_local_palette_means_black_background base.bool,
-	quirk_enabled_honor_background_color                           base.bool,
-	quirk_enabled_ignore_too_much_pixel_data                       base.bool,
-	quirk_enabled_image_bounds_are_strict                          base.bool,
-	quirk_enabled_reject_empty_frame                               base.bool,
-	quirk_enabled_reject_empty_palette                             base.bool,
+	quirk_enabled_delay_num_decoded_frames                         : base.bool,
+	quirk_enabled_first_frame_local_palette_means_black_background : base.bool,
+	quirk_enabled_honor_background_color                           : base.bool,
+	quirk_enabled_ignore_too_much_pixel_data                       : base.bool,
+	quirk_enabled_image_bounds_are_strict                          : base.bool,
+	quirk_enabled_reject_empty_frame                               : base.bool,
+	quirk_enabled_reject_empty_palette                             : base.bool,
 
-	delayed_num_decoded_frames         base.bool,
-	end_of_data                        base.bool,
-	restarted                          base.bool,
-	previous_lzw_decode_ended_abruptly base.bool,
+	delayed_num_decoded_frames         : base.bool,
+	end_of_data                        : base.bool,
+	restarted                          : base.bool,
+	previous_lzw_decode_ended_abruptly : base.bool,
 
-	has_global_palette base.bool,
+	has_global_palette : base.bool,
 
 	// interlace indexes the interlace_start and interlace_delta arrays.
-	interlace base.u8[..= 4],
+	interlace : base.u8[..= 4],
 
 	// Absent an ANIMEXTS1.0 or NETSCAPE2.0 extension, the implicit number of
 	// animation loops is 1.
-	seen_num_loops base.bool,
-	num_loops      base.u32,
+	seen_num_loops : base.bool,
+	num_loops      : base.u32,
 
-	background_color_u32_argb_premul base.u32,
-	black_color_u32_argb_premul      base.u32,
+	background_color_u32_argb_premul : base.u32,
+	black_color_u32_argb_premul      : base.u32,
 
-	gc_has_transparent_index base.bool,
-	gc_transparent_index     base.u8,
-	gc_disposal              base.u8,
+	gc_has_transparent_index : base.bool,
+	gc_transparent_index     : base.u8,
+	gc_disposal              : base.u8,
 	// There are 7056000 flicks per centisecond.
-	gc_duration base.u64[..= 0xFFFF * 7056000],
+	gc_duration : base.u64[..= 0xFFFF * 7056000],
 
-	frame_config_io_position        base.u64,
-	num_decoded_frame_configs_value base.u64,
-	num_decoded_frames_value        base.u64,
+	frame_config_io_position        : base.u64,
+	num_decoded_frame_configs_value : base.u64,
+	num_decoded_frames_value        : base.u64,
 
-	frame_rect_x0 base.u32,
-	frame_rect_y0 base.u32,
-	frame_rect_x1 base.u32,
-	frame_rect_y1 base.u32,
+	frame_rect_x0 : base.u32,
+	frame_rect_y0 : base.u32,
+	frame_rect_x1 : base.u32,
+	frame_rect_y1 : base.u32,
 
 	// The dst_etc fields are the output cursor during copy_to_image_buffer.
-	dst_x            base.u32,
-	dst_y            base.u32,
-	dirty_max_excl_y base.u32,
+	dst_x            : base.u32,
+	dst_y            : base.u32,
+	dirty_max_excl_y : base.u32,
 
 	// Indexes into the compressed array, defined below.
-	compressed_ri base.u64,
-	compressed_wi base.u64,
+	compressed_ri : base.u64,
+	compressed_wi : base.u64,
 
-	swizzler base.pixel_swizzler,
-	util     base.utility,
+	swizzler : base.pixel_swizzler,
+	util     : base.utility,
 )(
-	compressed array[4096] base.u8,
+	compressed : array[4096] base.u8,
 
 	// palettes[0] and palettes[1] are the Global and Local Color Table.
-	palettes array[2] array[4 * 256] base.u8,
+	palettes : array[2] array[4 * 256] base.u8,
 	// dst_palette is the swizzled color table.
-	dst_palette array[4 * 256] base.u8,
+	dst_palette : array[4 * 256] base.u8,
 
-	lzw lzw.decoder,
+	lzw : lzw.decoder,
 )
 
-pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
+pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 	if this.call_sequence == 0 {
 		if args.quirk == quirk_delay_num_decoded_frames {
 			this.quirk_enabled_delay_num_decoded_frames = args.enabled
@@ -251,7 +251,7 @@ pub func decoder.set_quirk_enabled!(quirk base.u32, enabled base.bool) {
 	}
 }
 
-pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_reader) {
+pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
 	var ffio base.bool
 
 	if this.call_sequence == 0 {
@@ -296,7 +296,7 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	this.call_sequence = 3
 }
 
-pub func decoder.set_report_metadata!(fourcc base.u32, report base.bool) {
+pub func decoder.set_report_metadata!(fourcc: base.u32, report: base.bool) {
 	if args.fourcc == 0x49434350 {  // "ICCP"
 		this.report_metadata_iccp = args.report
 	} else if args.fourcc == 0x584D5020 {  // "XMP "
@@ -304,7 +304,7 @@ pub func decoder.set_report_metadata!(fourcc base.u32, report base.bool) {
 	}
 }
 
-pub func decoder.ack_metadata_chunk?(src base.io_reader) {
+pub func decoder.ack_metadata_chunk?(src: base.io_reader) {
 	if this.call_sequence <> 1 {
 		return base."#bad call sequence"
 	}
@@ -383,7 +383,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
+pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.status {
 	if this.call_sequence == 0 {
 		return base."#bad call sequence"
 	}
@@ -397,7 +397,7 @@ pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.statu
 	return ok
 }
 
-pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_reader) {
+pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
 	var blend            base.u8
 	var background_color base.u32
 	var flags            base.u8
@@ -468,7 +468,7 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 	this.call_sequence = 4
 }
 
-pri func decoder.skip_frame?(src base.io_reader) {
+pri func decoder.skip_frame?(src: base.io_reader) {
 	var flags base.u8
 	var lw    base.u8
 
@@ -496,7 +496,7 @@ pri func decoder.skip_frame?(src base.io_reader) {
 }
 
 // TODO: honor args.opts.
-pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
+pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
 	this.ignore_metadata = true
 	if this.call_sequence <> 4 {
 		this.decode_frame_config?(dst: nullptr, src: args.src)
@@ -522,7 +522,7 @@ pri func decoder.reset_gc!() {
 	this.gc_duration = 0
 }
 
-pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
+pri func decoder.decode_up_to_id_part1?(src: base.io_reader) {
 	var block_type base.u8
 
 	if not this.restarted {
@@ -562,7 +562,7 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 // decode_header reads either "GIF87a" or "GIF89a".
 //
 // See the spec section 17 "Header" on page 7.
-pri func decoder.decode_header?(src base.io_reader) {
+pri func decoder.decode_header?(src: base.io_reader) {
 	var c array[6] base.u8
 	var i base.u32
 
@@ -579,7 +579,7 @@ pri func decoder.decode_header?(src base.io_reader) {
 // decode_lsd reads the Logical Screen Descriptor.
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
-pri func decoder.decode_lsd?(src base.io_reader) {
+pri func decoder.decode_lsd?(src: base.io_reader) {
 	var flags                  base.u8
 	var background_color_index base.u8
 	var num_palette_entries    base.u32[..= 256]
@@ -650,7 +650,7 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 //  - section 24 "Comment Extension" on page 17.
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
-pri func decoder.decode_extension?(src base.io_reader) {
+pri func decoder.decode_extension?(src: base.io_reader) {
 	var label base.u8
 
 	label = args.src.read_u8?()
@@ -666,7 +666,7 @@ pri func decoder.decode_extension?(src base.io_reader) {
 	this.skip_blocks?(src: args.src)
 }
 
-pri func decoder.skip_blocks?(src base.io_reader) {
+pri func decoder.skip_blocks?(src: base.io_reader) {
 	var block_size base.u8
 
 	while true {
@@ -699,7 +699,7 @@ pri const xmpdataxmp array[11] base.u8 = [
 ]
 
 // decode_ae reads an Application Extension.
-pri func decoder.decode_ae?(src base.io_reader) {
+pri func decoder.decode_ae?(src: base.io_reader) {
 	var c           base.u8
 	var block_size  base.u8
 	var is_animexts base.bool
@@ -812,7 +812,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 }
 
 // decode_gc reads a Graphic Control.
-pri func decoder.decode_gc?(src base.io_reader) {
+pri func decoder.decode_gc?(src: base.io_reader) {
 	var c                        base.u8
 	var flags                    base.u8
 	var gc_duration_centiseconds base.u16
@@ -866,7 +866,7 @@ pri func decoder.decode_gc?(src base.io_reader) {
 // (part1 and part2) not out of necessity, just for the general programming
 // principle that smaller functions are easier to understand.
 
-pri func decoder.decode_id_part0?(src base.io_reader) {
+pri func decoder.decode_id_part0?(src: base.io_reader) {
 	this.frame_rect_x0 = args.src.read_u16le_as_u32?()
 	this.frame_rect_y0 = args.src.read_u16le_as_u32?()
 	this.frame_rect_x1 = args.src.read_u16le_as_u32?()
@@ -887,7 +887,7 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	}
 }
 
-pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader) {
+pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader) {
 	var flags               base.u8
 	var which_palette       base.u8[..= 1]
 	var num_palette_entries base.u32[..= 256]
@@ -992,7 +992,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	this.previous_lzw_decode_ended_abruptly = true
 }
 
-pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8) {
+pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
 	var block_size      base.u64[..= 255]
 	var need_block_size base.bool
 	var n_compressed    base.u64
@@ -1092,7 +1092,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 	}
 }
 
-pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.u8) base.status {
+pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice base.u8) base.status {
 	// TODO: don't assume an interleaved pixel format.
 	var dst             slice base.u8
 	var src             slice base.u8

@@ -14,13 +14,13 @@
 
 // TODO: drop the '?' but still generate wuffs_crc32__ieee_hasher__initialize?
 pub struct ieee_hasher?(
-	state base.u32,
+	state : base.u32,
 )
 
 // TODO: should it be ? instead of ! because it's public, and might need a way
 // to signal "initializer not called"? Should the return type, in the generated
 // C code, be "struct{ uint32_t checksum; wuffs_crc32__status status }"?
-pub func ieee_hasher.update!(x slice base.u8) base.u32 {
+pub func ieee_hasher.update!(x: slice base.u8) base.u32 {
 	var s base.u32
 	var p slice base.u8
 

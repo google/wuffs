@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_huffman_slow?(dst: base.io_writer, src: base.io_reader) {
 	var bits               base.u32
 	var n_bits             base.u32
 	var table_entry        base.u32

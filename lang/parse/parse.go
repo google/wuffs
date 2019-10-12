@@ -364,6 +364,11 @@ func (p *parser) parseFieldNode1(flags a.Flags) (*a.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	if x := p.peek1(); x != t.IDColon {
+		got := p.tm.ByID(x)
+		return nil, fmt.Errorf(`parse: expected ":", got %q at %s:%d`, got, p.filename, p.line())
+	}
+	p.src = p.src[1:]
 	typ, err := p.parseTypeExpr()
 	if err != nil {
 		return nil, err

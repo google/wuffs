@@ -31,45 +31,45 @@ pub struct decoder?(
 	// set_literal_width. This is assigned to the literal_width field at the
 	// start of decode_io_writer. During that method, calling set_literal_width
 	// will change set_literal_width_arg but not literal_width.
-	set_literal_width_arg base.u32[..= 9],
+	set_literal_width_arg : base.u32[..= 9],
 
 	// read_from state that does not change during a decode call.
-	literal_width base.u32[..= 8],
-	clear_code    base.u32[..= 256],
-	end_code      base.u32[..= 257],
+	literal_width : base.u32[..= 8],
+	clear_code    : base.u32[..= 256],
+	end_code      : base.u32[..= 257],
 
 	// read_from state that does change during a decode call.
-	save_code base.u32[..= 4096],
-	prev_code base.u32[..= 4095],
-	width     base.u32[..= 12],
-	bits      base.u32,
-	n_bits    base.u32[..= 31],
-	output_ri base.u32[..= 8191],
-	output_wi base.u32[..= 8191],
+	save_code : base.u32[..= 4096],
+	prev_code : base.u32[..= 4095],
+	width     : base.u32[..= 12],
+	bits      : base.u32,
+	n_bits    : base.u32[..= 31],
+	output_ri : base.u32[..= 8191],
+	output_wi : base.u32[..= 8191],
 
 	// read_from return value. The read_from method effectively returns a
 	// base.u32 to show how decode should continue after calling write_to. That
 	// value needs to be saved across write_to's possible suspension, so we
 	// might as well save it explicitly as a decoder field.
-	read_from_return_value base.u32,
+	read_from_return_value : base.u32,
 
 	// read_from per-code state.
-	prefixes array[4096] base.u16[..= 4095],
+	prefixes : array[4096] base.u16[..= 4095],
 
-	util base.utility,
+	util : base.utility,
 )(
 	// read_from per-code state.
-	suffixes array[4096] array[8] base.u8,
+	suffixes : array[4096] array[8] base.u8,
 	// lm1s is the "length minus 1"s of the values for the implicit key-value
 	// table in this decoder. See std/lzw/README.md for more detail.
-	lm1s array[4096] base.u16,
+	lm1s : array[4096] base.u16,
 
 	// output[output_ri:output_wi] is the buffered output, connecting read_from
 	// with write_to and flush.
-	output array[8192 + 7] base.u8,
+	output : array[8192 + 7] base.u8,
 )
 
-pub func decoder.set_literal_width!(lw base.u32[..= 8]) {
+pub func decoder.set_literal_width!(lw: base.u32[..= 8]) {
 	this.set_literal_width_arg = args.lw + 1
 }
 
@@ -77,7 +77,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
 }
 
-pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
+pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var i base.u32[..= 8191]
 
 	// Initialize read_from state.
@@ -123,7 +123,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 }
 
-pri func decoder.read_from!(src base.io_reader) {
+pri func decoder.read_from!(src: base.io_reader) {
 	var clear_code base.u32[..= 256]
 	var end_code   base.u32[..= 257]
 
@@ -330,7 +330,7 @@ pri func decoder.read_from!(src base.io_reader) {
 	this.output_wi = output_wi
 }
 
-pri func decoder.write_to?(dst base.io_writer) {
+pri func decoder.write_to?(dst: base.io_writer) {
 	var s slice base.u8
 	var n base.u64
 

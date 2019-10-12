@@ -24,15 +24,15 @@ pub status "#bad header"
 pub const decoder_workbuf_len_max_incl_worst_case base.u64 = 1
 
 pub struct decoder?(
-	ignore_checksum base.bool,
-	checksum        crc32.ieee_hasher,
+	ignore_checksum : base.bool,
+	checksum        : crc32.ieee_hasher,
 
-	flate deflate.decoder,
+	flate : deflate.decoder,
 
-	util base.utility,
+	util : base.utility,
 )
 
-pub func decoder.set_ignore_checksum!(ic base.bool) {
+pub func decoder.set_ignore_checksum!(ic: base.bool) {
 	this.ignore_checksum = args.ic
 }
 
@@ -42,7 +42,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
+pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var c                   base.u8
 	var flags               base.u8
 	var xlen                base.u16

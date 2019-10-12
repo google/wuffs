@@ -60,7 +60,7 @@ func TestCheck(tt *testing.T) {
 	const filename = "test.wuffs"
 	src := strings.TrimSpace(`
 		pri struct foo(
-			i base.i32,
+			i : base.i32,
 		)
 
 		pri func foo.bar() {

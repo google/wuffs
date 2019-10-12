@@ -284,7 +284,7 @@ func (h *genHelper) genWuffs(dirname string, qualifiedFilenames []string) error 
 					}
 					// TODO: what happens if the XType is from another package?
 					// Similarly for the out-param.
-					fmt.Fprintf(out, "%s %s", field.Name().Str(&h.tm), field.XType().Str(&h.tm))
+					fmt.Fprintf(out, "%s: %s", field.Name().Str(&h.tm), field.XType().Str(&h.tm))
 				}
 				fmt.Fprintf(out, ") ")
 				if o := n.Out(); o != nil {

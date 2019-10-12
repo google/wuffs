@@ -453,7 +453,7 @@ func NewVar(name t.ID, xType *TypeExpr) *Var {
 	}
 }
 
-// Field is a "name type" struct field:
+// Field is a "name : type" struct field:
 //  - FlagsPrivateData is the initializer need not explicitly memset to zero.
 //  - ID2:   name
 //  - LHS:   <TypeExpr>

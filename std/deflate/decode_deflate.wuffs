@@ -64,21 +64,21 @@ pri const huffs_table_mask base.u32 = 1023
 
 pub struct decoder?(
 	// These fields yield src's bits in Least Significant Bits order.
-	bits   base.u32,
-	n_bits base.u32,
+	bits   : base.u32,
+	n_bits : base.u32,
 
 	// history_index indexes the history array, defined below.
-	history_index base.u32,
+	history_index : base.u32,
 
 	// n_huffs_bits is discussed in the huffs field comment.
-	n_huffs_bits array[2] base.u32[..= 9],
+	n_huffs_bits : array[2] base.u32[..= 9],
 
 	// end_of_block is whether decode_huffman_xxx saw an end-of-block code.
 	//
 	// TODO: can decode_huffman_xxx signal this in band instead of out of band?
-	end_of_block base.bool,
+	end_of_block : base.bool,
 
-	util base.utility,
+	util : base.utility,
 )(
 	// huffs and n_huffs_bits are the lookup tables for Huffman decodings.
 	//
@@ -112,7 +112,7 @@ pub struct decoder?(
 	//  - bits  0 ..=  3 are the number of decoder.bits to consume.
 	//
 	// Exactly one of the eight bits [24 ..= 31] should be set.
-	huffs array[2] array[huffs_table_size] base.u32,
+	huffs : array[2] array[huffs_table_size] base.u32,
 
 	// history holds up to the last 32KiB of decoded output, if the decoding
 	// was incomplete (e.g. due to a short read or write). RFC 1951 (DEFLATE)
@@ -125,16 +125,16 @@ pub struct decoder?(
 	//
 	// history[history_index & 0x7FFF] is where the next byte of decoded output
 	// will be written.
-	history array[0x8000] base.u8,  // 32 KiB.
+	history : array[0x8000] base.u8,  // 32 KiB.
 
 	// code_lengths is used to pass out-of-band data to init_huff.
 	//
 	// code_lengths[args.n_codes0 + i] holds the number of bits in the i'th
 	// code.
-	code_lengths array[320] base.u8,
+	code_lengths : array[320] base.u8,
 )
 
-pub func decoder.add_history!(hist slice base.u8) {
+pub func decoder.add_history!(hist: slice base.u8) {
 	var s            slice base.u8
 	var n_copied     base.u64
 	var already_full base.u32[..= 0x8000]
@@ -183,7 +183,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
-pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
+pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
 	var mark   base.u64
 	var status base.status
 
@@ -201,7 +201,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 }
 
-pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_blocks?(dst: base.io_writer, src: base.io_reader) {
 	var final  base.u32
 	var b0     base.u32[..= 255]
 	var type   base.u32
@@ -259,7 +259,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 
 // decode_uncompressed decodes an uncompresed block as per the RFC section
 // 3.2.4.
-pri func decoder.decode_uncompressed?(dst base.io_writer, src base.io_reader) {
+pri func decoder.decode_uncompressed?(dst: base.io_writer, src: base.io_reader) {
 	var length   base.u32
 	var n_copied base.u32
 
@@ -329,7 +329,7 @@ pri func decoder.init_fixed_huffman!() base.status {
 }
 
 // init_dynamic_huffman initializes this.huffs as per the RFC section 3.2.7.
-pri func decoder.init_dynamic_huffman?(src base.io_reader) {
+pri func decoder.init_dynamic_huffman?(src: base.io_reader) {
 	var bits               base.u32
 	var n_bits             base.u32
 	var b0                 base.u32[..= 255]
@@ -506,7 +506,7 @@ pri func decoder.init_dynamic_huffman?(src base.io_reader) {
 
 // TODO: make named constants for 15, 19, 319, etc.
 
-pri func decoder.init_huff!(which base.u32[..= 1], n_codes0 base.u32[..= 288], n_codes1 base.u32[..= 320], base_symbol base.u32) base.status {
+pri func decoder.init_huff!(which: base.u32[..= 1], n_codes0: base.u32[..= 288], n_codes1: base.u32[..= 320], base_symbol: base.u32) base.status {
 	var counts            array[16] base.u16[..= 320]
 	var i                 base.u32
 	var remaining         base.u32

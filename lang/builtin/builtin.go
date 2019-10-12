@@ -88,63 +88,65 @@ var Types = []string{
 }
 
 var Funcs = []string{
-	"u8.high_bits(n u32[..= 8]) u8",
-	"u8.low_bits(n u32[..= 8]) u8",
-	"u8.max(a u8) u8",
-	"u8.min(a u8) u8",
+	"u8.high_bits(n: u32[..= 8]) u8",
+	"u8.low_bits(n: u32[..= 8]) u8",
+	"u8.max(a: u8) u8",
+	"u8.min(a: u8) u8",
 
-	"u16.high_bits(n u32[..= 16]) u16",
-	"u16.low_bits(n u32[..= 16]) u16",
-	"u16.max(a u16) u16",
-	"u16.min(a u16) u16",
+	"u16.high_bits(n: u32[..= 16]) u16",
+	"u16.low_bits(n: u32[..= 16]) u16",
+	"u16.max(a: u16) u16",
+	"u16.min(a: u16) u16",
 
-	"u32.high_bits(n u32[..= 32]) u32",
-	"u32.low_bits(n u32[..= 32]) u32",
-	"u32.max(a u32) u32",
-	"u32.min(a u32) u32",
+	"u32.high_bits(n: u32[..= 32]) u32",
+	"u32.low_bits(n: u32[..= 32]) u32",
+	"u32.max(a: u32) u32",
+	"u32.min(a: u32) u32",
 
-	"u64.high_bits(n u32[..= 64]) u64",
-	"u64.low_bits(n u32[..= 64]) u64",
-	"u64.max(a u64) u64",
-	"u64.min(a u64) u64",
+	"u64.high_bits(n: u32[..= 64]) u64",
+	"u64.low_bits(n: u32[..= 64]) u64",
+	"u64.max(a: u64) u64",
+	"u64.min(a: u64) u64",
 
 	// ---- utility
 
 	"utility.empty_io_reader() io_reader",
 	"utility.empty_io_writer() io_writer",
 	"utility.empty_slice_u8() slice u8",
-	"utility.make_range_ii_u32(min_incl u32, max_incl u32) range_ii_u32",
-	"utility.make_range_ie_u32(min_incl u32, max_excl u32) range_ie_u32",
-	"utility.make_range_ii_u64(min_incl u64, max_incl u64) range_ii_u64",
-	"utility.make_range_ie_u64(min_incl u64, max_excl u64) range_ie_u64",
-	"utility.make_rect_ii_u32(min_incl_x u32, min_incl_y u32, max_incl_x u32, max_incl_y u32) rect_ii_u32",
-	"utility.make_rect_ie_u32(min_incl_x u32, min_incl_y u32, max_excl_x u32, max_excl_y u32) rect_ie_u32",
+	"utility.make_range_ii_u32(min_incl: u32, max_incl: u32) range_ii_u32",
+	"utility.make_range_ie_u32(min_incl: u32, max_excl: u32) range_ie_u32",
+	"utility.make_range_ii_u64(min_incl: u64, max_incl: u64) range_ii_u64",
+	"utility.make_range_ie_u64(min_incl: u64, max_excl: u64) range_ie_u64",
+	"utility.make_rect_ii_u32(" +
+		"min_incl_x: u32, min_incl_y: u32, max_incl_x: u32, max_incl_y: u32) rect_ii_u32",
+	"utility.make_rect_ie_u32(" +
+		"min_incl_x: u32, min_incl_y: u32, max_excl_x: u32, max_excl_y: u32) rect_ie_u32",
 
 	// ---- ranges
 
 	"range_ie_u32.reset!()",
 	"range_ie_u32.get_min_incl() u32",
 	"range_ie_u32.get_max_excl() u32",
-	"range_ie_u32.intersect(r range_ie_u32) range_ie_u32",
-	"range_ie_u32.unite(r range_ie_u32) range_ie_u32",
+	"range_ie_u32.intersect(r: range_ie_u32) range_ie_u32",
+	"range_ie_u32.unite(r: range_ie_u32) range_ie_u32",
 
 	"range_ii_u32.reset!()",
 	"range_ii_u32.get_min_incl() u32",
 	"range_ii_u32.get_max_incl() u32",
-	"range_ii_u32.intersect(r range_ii_u32) range_ii_u32",
-	"range_ii_u32.unite(r range_ii_u32) range_ii_u32",
+	"range_ii_u32.intersect(r: range_ii_u32) range_ii_u32",
+	"range_ii_u32.unite(r: range_ii_u32) range_ii_u32",
 
 	"range_ie_u64.reset!()",
 	"range_ie_u64.get_min_incl() u64",
 	"range_ie_u64.get_max_excl() u64",
-	"range_ie_u64.intersect(r range_ie_u64) range_ie_u64",
-	"range_ie_u64.unite(r range_ie_u64) range_ie_u64",
+	"range_ie_u64.intersect(r: range_ie_u64) range_ie_u64",
+	"range_ie_u64.unite(r: range_ie_u64) range_ie_u64",
 
 	"range_ii_u64.reset!()",
 	"range_ii_u64.get_min_incl() u64",
 	"range_ii_u64.get_max_incl() u64",
-	"range_ii_u64.intersect(r range_ii_u64) range_ii_u64",
-	"range_ii_u64.unite(r range_ii_u64) range_ii_u64",
+	"range_ii_u64.intersect(r: range_ii_u64) range_ii_u64",
+	"range_ii_u64.unite(r: range_ii_u64) range_ii_u64",
 
 	// ---- io_reader
 
@@ -217,77 +219,77 @@ var Funcs = []string{
 	"io_reader.peek_u64le() u64",
 
 	"io_reader.available() u64",
-	"io_reader.count_since(mark u64) u64",
+	"io_reader.count_since(mark: u64) u64",
 	"io_reader.mark() u64",
 	"io_reader.position() u64",
-	"io_reader.since(mark u64) slice u8",
-	"io_reader.take!(n u64) slice u8",
+	"io_reader.since(mark: u64) slice u8",
+	"io_reader.take!(n: u64) slice u8",
 
-	"io_reader.skip?(n u32)",
+	"io_reader.skip?(n: u32)",
 
 	// TODO: this should have explicit pre-conditions "actual <= worst_case"
 	// and "worst_case <= available()". As an implementation restriction, we
 	// also require that worst_case has a constant value. For now, that's all
 	// implicitly checked (i.e. hard coded).
-	"io_reader.skip_fast!(actual u32, worst_case u32)",
+	"io_reader.skip_fast!(actual: u32, worst_case: u32)",
 
 	// ---- io_writer
 
-	"io_writer.write_u8?(a u8)",
-	"io_writer.write_u16be?(a u16)",
-	"io_writer.write_u16le?(a u16)",
-	"io_writer.write_u24be?(a u32[..= 0xFFFFFF])",
-	"io_writer.write_u24le?(a u32[..= 0xFFFFFF])",
-	"io_writer.write_u32be?(a u32)",
-	"io_writer.write_u32le?(a u32)",
-	"io_writer.write_u40be?(a u64[..= 0xFFFFFFFFFF])",
-	"io_writer.write_u40le?(a u64[..= 0xFFFFFFFFFF])",
-	"io_writer.write_u48be?(a u64[..= 0xFFFFFFFFFFFF])",
-	"io_writer.write_u48le?(a u64[..= 0xFFFFFFFFFFFF])",
-	"io_writer.write_u56be?(a u64[..= 0xFFFFFFFFFFFFFF])",
-	"io_writer.write_u56le?(a u64[..= 0xFFFFFFFFFFFFFF])",
-	"io_writer.write_u64be?(a u64)",
-	"io_writer.write_u64le?(a u64)",
+	"io_writer.write_u8?(a: u8)",
+	"io_writer.write_u16be?(a: u16)",
+	"io_writer.write_u16le?(a: u16)",
+	"io_writer.write_u24be?(a: u32[..= 0xFFFFFF])",
+	"io_writer.write_u24le?(a: u32[..= 0xFFFFFF])",
+	"io_writer.write_u32be?(a: u32)",
+	"io_writer.write_u32le?(a: u32)",
+	"io_writer.write_u40be?(a: u64[..= 0xFFFFFFFFFF])",
+	"io_writer.write_u40le?(a: u64[..= 0xFFFFFFFFFF])",
+	"io_writer.write_u48be?(a: u64[..= 0xFFFFFFFFFFFF])",
+	"io_writer.write_u48le?(a: u64[..= 0xFFFFFFFFFFFF])",
+	"io_writer.write_u56be?(a: u64[..= 0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u56le?(a: u64[..= 0xFFFFFFFFFFFFFF])",
+	"io_writer.write_u64be?(a: u64)",
+	"io_writer.write_u64le?(a: u64)",
 
 	// TODO: these should have an explicit pre-condition "available() >= N".
 	// For now, that's implicitly checked (i.e. hard coded).
 	//
 	// The io_writer has write_fast_etc methods, not poke_etc and skip_fast,
 	// because skip_fast could leave uninitialized bytes in the io_buffer.
-	"io_writer.write_fast_u8!(a u8)",
-	"io_writer.write_fast_u16be!(a u16)",
-	"io_writer.write_fast_u16le!(a u16)",
-	"io_writer.write_fast_u24be!(a u32[..= 0xFFFFFF])",
-	"io_writer.write_fast_u24le!(a u32[..= 0xFFFFFF])",
-	"io_writer.write_fast_u32be!(a u32)",
-	"io_writer.write_fast_u32le!(a u32)",
-	"io_writer.write_fast_u40be!(a u64[..= 0xFFFFFFFFFF])",
-	"io_writer.write_fast_u40le!(a u64[..= 0xFFFFFFFFFF])",
-	"io_writer.write_fast_u48be!(a u64[..= 0xFFFFFFFFFFFF])",
-	"io_writer.write_fast_u48le!(a u64[..= 0xFFFFFFFFFFFF])",
-	"io_writer.write_fast_u56be!(a u64[..= 0xFFFFFFFFFFFFFF])",
-	"io_writer.write_fast_u56le!(a u64[..= 0xFFFFFFFFFFFFFF])",
-	"io_writer.write_fast_u64be!(a u64)",
-	"io_writer.write_fast_u64le!(a u64)",
+	"io_writer.write_fast_u8!(a: u8)",
+	"io_writer.write_fast_u16be!(a: u16)",
+	"io_writer.write_fast_u16le!(a: u16)",
+	"io_writer.write_fast_u24be!(a: u32[..= 0xFFFFFF])",
+	"io_writer.write_fast_u24le!(a: u32[..= 0xFFFFFF])",
+	"io_writer.write_fast_u32be!(a: u32)",
+	"io_writer.write_fast_u32le!(a: u32)",
+	"io_writer.write_fast_u40be!(a: u64[..= 0xFFFFFFFFFF])",
+	"io_writer.write_fast_u40le!(a: u64[..= 0xFFFFFFFFFF])",
+	"io_writer.write_fast_u48be!(a: u64[..= 0xFFFFFFFFFFFF])",
+	"io_writer.write_fast_u48le!(a: u64[..= 0xFFFFFFFFFFFF])",
+	"io_writer.write_fast_u56be!(a: u64[..= 0xFFFFFFFFFFFFFF])",
+	"io_writer.write_fast_u56le!(a: u64[..= 0xFFFFFFFFFFFFFF])",
+	"io_writer.write_fast_u64be!(a: u64)",
+	"io_writer.write_fast_u64le!(a: u64)",
 
 	"io_writer.available() u64",
-	"io_writer.count_since(mark u64) u64",
+	"io_writer.count_since(mark: u64) u64",
 	"io_writer.history_available() u64",
 	"io_writer.mark() u64",
 	"io_writer.position() u64",
-	"io_writer.since(mark u64) slice u8",
+	"io_writer.since(mark: u64) slice u8",
 
-	"io_writer.copy_from_slice!(s slice u8) u64",
-	"io_writer.copy_n_from_history!(n u32, distance u32) u32",
-	"io_writer.copy_n_from_reader!(n u32, r io_reader) u32",
-	"io_writer.copy_n_from_slice!(n u32, s slice u8) u32",
+	"io_writer.copy_from_slice!(s: slice u8) u64",
+	"io_writer.copy_n_from_history!(n: u32, distance: u32) u32",
+	"io_writer.copy_n_from_reader!(n: u32, r: io_reader) u32",
+	"io_writer.copy_n_from_slice!(n: u32, s: slice u8) u32",
 
 	// TODO: this should have explicit pre-conditions:
 	//  - n <= this.available()
 	//  - distance > 0
 	//  - distance <= this.since_mark().length()
 	// For now, that's all implicitly checked (i.e. hard coded).
-	"io_writer.copy_n_from_history_fast!(n u32, distance u32) u32",
+	"io_writer.copy_n_from_history_fast!(n: u32, distance: u32) u32",
 
 	// ---- status
 
@@ -306,24 +308,26 @@ var Funcs = []string{
 	"frame_config.index() u64",
 	"frame_config.io_position() u64",
 
-	"frame_config.update!(bounds rect_ie_u32, duration u64[..= 0x7FFFFFFFFFFFFFFF], " +
-		"index u64, io_position u64, blend u8, disposal u8, background_color u32)",
+	"frame_config.update!(bounds: rect_ie_u32, duration: u64[..= 0x7FFFFFFFFFFFFFFF], " +
+		"index: u64, io_position: u64, blend: u8, disposal: u8, background_color: u32)",
 
 	// ---- image_config
 
-	"image_config.set!(pixfmt u32, pixsub u32, width u32, height u32, " +
-		"first_frame_io_position u64, first_frame_is_opaque bool)",
+	"image_config.set!(pixfmt: u32, pixsub: u32, width: u32, height: u32, " +
+		"first_frame_io_position: u64, first_frame_is_opaque: bool)",
 
 	// ---- pixel_buffer
 
 	"pixel_buffer.palette() slice u8",
 	"pixel_buffer.pixel_format() u32",
-	"pixel_buffer.plane(p u32[..= 3]) table u8",
+	"pixel_buffer.plane(p: u32[..= 3]) table u8",
 
 	// ---- pixel_swizzler
 
-	"pixel_swizzler.prepare!(dst_pixfmt u32, dst_palette slice u8, src_pixfmt u32, src_palette slice u8) status",
-	"pixel_swizzler.swizzle_interleaved!(dst slice u8, dst_palette slice u8, src slice u8) u64",
+	"pixel_swizzler.prepare!(" +
+		"dst_pixfmt: u32, dst_palette: slice u8, src_pixfmt: u32, src_palette: slice u8) status",
+	"pixel_swizzler.swizzle_interleaved!(" +
+		"dst: slice u8, dst_palette: slice u8, src: slice u8) u64",
 }
 
 // The "T1" and "T2" types here are placeholders for generic "slice T" or
@@ -339,10 +343,10 @@ const (
 )
 
 var SliceFuncs = []string{
-	"T1.copy_from_slice!(s T1) u64",
+	"T1.copy_from_slice!(s: T1) u64",
 	"T1.length() u64",
-	"T1.prefix(up_to u64) T1",
-	"T1.suffix(up_to u64) T1",
+	"T1.prefix(up_to: u64) T1",
+	"T1.suffix(up_to: u64) T1",
 }
 
 var TableFuncs = []string{
@@ -350,5 +354,5 @@ var TableFuncs = []string{
 	"T2.stride() u64",
 	"T2.width() u64",
 
-	"T2.row(y u32) T1",
+	"T2.row(y: u32) T1",
 }
