@@ -38,8 +38,8 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:decoder_workbuf_len_max_incl_worst_case,
-		max_incl:decoder_workbuf_len_max_incl_worst_case)
+		min_incl: decoder_workbuf_len_max_incl_worst_case,
+		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
@@ -68,12 +68,12 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	}
 	flags = args.src.read_u8?()
 	// TODO: API for returning the header's MTIME field.
-	args.src.skip?(n:6)
+	args.src.skip?(n: 6)
 
 	// Handle FEXTRA.
 	if (flags & 0x04) <> 0 {
 		xlen = args.src.read_u16le?()
-		args.src.skip?(n:xlen as base.u32)
+		args.src.skip?(n: xlen as base.u32)
 	}
 
 	// Handle FNAME.
@@ -102,7 +102,7 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 
 	// Handle FHCRC.
 	if (flags & 0x02) <> 0 {
-		args.src.skip?(n:2)
+		args.src.skip?(n: 2)
 	}
 
 	// Reserved flags bits must be zero.
@@ -113,10 +113,10 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
 		mark = args.dst.mark()
-		status =? this.flate.decode_io_writer?(dst:args.dst, src:args.src, workbuf:args.workbuf)
+		status =? this.flate.decode_io_writer?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x:args.dst.since(mark:mark))
-			decoded_length_got ~mod+= ((args.dst.count_since(mark:mark) & 0xFFFFFFFF) as base.u32)
+			checksum_got = this.checksum.update!(x: args.dst.since(mark: mark))
+			decoded_length_got ~mod+= ((args.dst.count_since(mark: mark) & 0xFFFFFFFF) as base.u32)
 		}
 		if status.is_ok() {
 			break

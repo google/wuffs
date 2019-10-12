@@ -255,13 +255,13 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 	var ffio base.bool
 
 	if this.call_sequence == 0 {
-		this.decode_header?(src:args.src)
-		this.decode_lsd?(src:args.src)
+		this.decode_header?(src: args.src)
+		this.decode_lsd?(src: args.src)
 	} else if this.call_sequence <> 2 {
 		return base."#bad call sequence"
 	}
 
-	this.decode_up_to_id_part1?(src:args.src)
+	this.decode_up_to_id_part1?(src: args.src)
 
 	// TODO: if this.end_of_data, return an error and/or set dst to zero?
 
@@ -285,12 +285,12 @@ pub func decoder.decode_image_config?(dst nptr base.image_config, src base.io_re
 		// TODO: a Wuffs (not just C) name for the
 		// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 		args.dst.set!(
-			pixfmt:0x47040008,
-			pixsub:0,
-			width:this.width,
-			height:this.height,
-			first_frame_io_position:this.frame_config_io_position,
-			first_frame_is_opaque:ffio)
+			pixfmt: 0x47040008,
+			pixsub: 0,
+			width: this.width,
+			height: this.height,
+			first_frame_io_position: this.frame_config_io_position,
+			first_frame_is_opaque: ffio)
 	}
 
 	this.call_sequence = 3
@@ -327,7 +327,7 @@ pub func decoder.ack_metadata_chunk?(src base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_io_position =
 				args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -335,7 +335,7 @@ pub func decoder.ack_metadata_chunk?(src base.io_reader) {
 		}
 
 		// Consume the '\x00' that means a zero-length block.
-		args.src.skip_fast!(actual:1, worst_case:1)
+		args.src.skip_fast!(actual: 1, worst_case: 1)
 	}
 
 	this.call_sequence = 2
@@ -371,16 +371,16 @@ pub func decoder.frame_dirty_rect() base.rect_ie_u32 {
 	// The "foo.min(a:this.width_or_height)" calls clip the nominal frame_rect
 	// to the image_rect.
 	return this.util.make_rect_ie_u32(
-		min_incl_x:this.frame_rect_x0.min(a:this.width),
-		min_incl_y:this.frame_rect_y0.min(a:this.height),
-		max_excl_x:this.frame_rect_x1.min(a:this.width),
-		max_excl_y:this.dirty_max_excl_y.min(a:this.height))
+		min_incl_x: this.frame_rect_x0.min(a: this.width),
+		min_incl_y: this.frame_rect_y0.min(a: this.height),
+		max_excl_x: this.frame_rect_x1.min(a: this.width),
+		max_excl_y: this.dirty_max_excl_y.min(a: this.height))
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:decoder_workbuf_len_max_incl_worst_case,
-		max_incl:decoder_workbuf_len_max_incl_worst_case)
+		min_incl: decoder_workbuf_len_max_incl_worst_case,
+		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.restart_frame!(index base.u64, io_position base.u64) base.status {
@@ -407,12 +407,12 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 
 	if not this.end_of_data {
 		if this.call_sequence == 0 {
-			this.decode_image_config?(dst:nullptr, src:args.src)
+			this.decode_image_config?(dst: nullptr, src: args.src)
 		} else if this.call_sequence <> 3 {
 			if this.call_sequence == 4 {
-				this.skip_frame?(src:args.src)
+				this.skip_frame?(src: args.src)
 			}
-			this.decode_up_to_id_part1?(src:args.src)
+			this.decode_up_to_id_part1?(src: args.src)
 		}
 	}
 
@@ -451,17 +451,17 @@ pub func decoder.decode_frame_config?(dst nptr base.frame_config, src base.io_re
 		// necessarily mean "the x direction". It's just that, in Wuffs, every
 		// function call argument needs a name, and for the min function, "x"
 		// is as good a name as any other.
-		args.dst.update!(bounds:this.util.make_rect_ie_u32(
-			min_incl_x:this.frame_rect_x0.min(a:this.width),
-			min_incl_y:this.frame_rect_y0.min(a:this.height),
-			max_excl_x:this.frame_rect_x1.min(a:this.width),
-			max_excl_y:this.frame_rect_y1.min(a:this.height)),
-			duration:this.gc_duration,
-			index:this.num_decoded_frame_configs_value,
-			io_position:this.frame_config_io_position,
-			blend:blend,
-			disposal:this.gc_disposal,
-			background_color:background_color)
+		args.dst.update!(bounds: this.util.make_rect_ie_u32(
+			min_incl_x: this.frame_rect_x0.min(a: this.width),
+			min_incl_y: this.frame_rect_y0.min(a: this.height),
+			max_excl_x: this.frame_rect_x1.min(a: this.width),
+			max_excl_y: this.frame_rect_y1.min(a: this.height)),
+			duration: this.gc_duration,
+			index: this.num_decoded_frame_configs_value,
+			io_position: this.frame_config_io_position,
+			blend: blend,
+			disposal: this.gc_disposal,
+			background_color: background_color)
 	}
 
 	this.num_decoded_frame_configs_value ~sat+= 1
@@ -475,7 +475,7 @@ pri func decoder.skip_frame?(src base.io_reader) {
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
 	if (flags & 0x80) <> 0 {
-		args.src.skip?(n:(3 as base.u32) << (1 + (flags & 0x07)))
+		args.src.skip?(n: (3 as base.u32) << (1 + (flags & 0x07)))
 	}
 
 	// Process the LZW literal width.
@@ -485,7 +485,7 @@ pri func decoder.skip_frame?(src base.io_reader) {
 	}
 
 	// Skip the blocks of LZW-compressed data.
-	this.skip_blocks?(src:args.src)
+	this.skip_blocks?(src: args.src)
 
 	if this.quirk_enabled_delay_num_decoded_frames {
 		this.delayed_num_decoded_frames = true
@@ -499,14 +499,14 @@ pri func decoder.skip_frame?(src base.io_reader) {
 pub func decoder.decode_frame?(dst ptr base.pixel_buffer, src base.io_reader, workbuf slice base.u8, opts nptr base.decode_frame_options) {
 	this.ignore_metadata = true
 	if this.call_sequence <> 4 {
-		this.decode_frame_config?(dst:nullptr, src:args.src)
+		this.decode_frame_config?(dst: nullptr, src: args.src)
 	}
 	if this.quirk_enabled_reject_empty_frame and
 		((this.frame_rect_x0 == this.frame_rect_x1) or (this.frame_rect_y0 == this.frame_rect_y1)) {
 		return "#bad frame size"
 	}
-	this.decode_id_part1?(dst:args.dst, src:args.src)
-	this.decode_id_part2?(dst:args.dst, src:args.src, workbuf:args.workbuf)
+	this.decode_id_part1?(dst: args.dst, src: args.src)
+	this.decode_id_part2?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 
 	this.num_decoded_frames_value ~sat+= 1
 	this.reset_gc!()
@@ -538,13 +538,13 @@ pri func decoder.decode_up_to_id_part1?(src base.io_reader) {
 	while true {
 		block_type = args.src.read_u8?()
 		if block_type == 0x21 {  // The spec calls 0x21 the "Extension Introducer".
-			this.decode_extension?(src:args.src)
+			this.decode_extension?(src: args.src)
 		} else if block_type == 0x2C {  // The spec calls 0x2C the "Image Separator".
 			if this.delayed_num_decoded_frames {
 				this.delayed_num_decoded_frames = false
 				this.num_decoded_frames_value ~sat+= 1
 			}
-			this.decode_id_part0?(src:args.src)
+			this.decode_id_part0?(src: args.src)
 			break
 		} else if block_type == 0x3B {  // The spec calls 0x3B the "Trailer".
 			if this.delayed_num_decoded_frames {
@@ -592,7 +592,7 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 	flags = args.src.read_u8?()
 	background_color_index = args.src.read_u8?()
 	// Ignore the Pixel Aspect Ratio byte.
-	args.src.skip?(n:1)
+	args.src.skip?(n: 1)
 
 	// Read the optional Global Color Table.
 	i = 0
@@ -600,7 +600,7 @@ pri func decoder.decode_lsd?(src base.io_reader) {
 	if this.has_global_palette {
 		num_palette_entries = (1 as base.u32) << (1 + (flags & 0x07))
 		while i < num_palette_entries {
-			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
+			assert i < 256 via "a < b: a < c; c <= b"(c: num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
 			argb = args.src.read_u24be_as_u32?()
@@ -655,15 +655,15 @@ pri func decoder.decode_extension?(src base.io_reader) {
 
 	label = args.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
-		this.decode_gc?(src:args.src)
+		this.decode_gc?(src: args.src)
 		return ok
 	} else if label == 0xFF {  // The spec calls 0xFF the "Application Extension Label".
-		this.decode_ae?(src:args.src)
+		this.decode_ae?(src: args.src)
 		return ok
 	}
 	// We skip over all other extensions, including 0x01 "Plain Text Label" and
 	// 0xFE "Comment Label".
-	this.skip_blocks?(src:args.src)
+	this.skip_blocks?(src: args.src)
 }
 
 pri func decoder.skip_blocks?(src base.io_reader) {
@@ -674,7 +674,7 @@ pri func decoder.skip_blocks?(src base.io_reader) {
 		if block_size == 0 {
 			return ok
 		}
-		args.src.skip?(n:block_size as base.u32)
+		args.src.skip?(n: block_size as base.u32)
 	}
 }
 
@@ -722,7 +722,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 		//
 		// Other extensions include XMP metadata.
 		if block_size <> 11 {
-			args.src.skip?(n:block_size as base.u32)
+			args.src.skip?(n: block_size as base.u32)
 			break
 		}
 		is_animexts = true
@@ -744,12 +744,12 @@ pri func decoder.decode_ae?(src base.io_reader) {
 			// count.
 			block_size = args.src.read_u8?()
 			if block_size <> 3 {
-				args.src.skip?(n:block_size as base.u32)
+				args.src.skip?(n: block_size as base.u32)
 				break
 			}
 			c = args.src.read_u8?()
 			if c <> 0x01 {
-				args.src.skip?(n:2)
+				args.src.skip?(n: 2)
 				break
 			}
 			this.num_loops = args.src.read_u16le_as_u32?()
@@ -779,7 +779,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 				yield? base."$short read"
 			}
 			this.metadata_chunk_length_value = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			this.metadata_fourcc_value = 0x49434350  // "ICCP"
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
 			this.call_sequence = 1
@@ -798,7 +798,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 				// metadata passed to the caller.
 				this.metadata_chunk_length_value += 1
 			} else {
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 			}
 			this.metadata_fourcc_value = 0x584D5020  // "XMP "
 			this.metadata_io_position = args.src.position() ~sat+ this.metadata_chunk_length_value
@@ -808,7 +808,7 @@ pri func decoder.decode_ae?(src base.io_reader) {
 
 		break
 	}
-	this.skip_blocks?(src:args.src)
+	this.skip_blocks?(src: args.src)
 }
 
 // decode_gc reads a Graphic Control.
@@ -882,8 +882,8 @@ pri func decoder.decode_id_part0?(src base.io_reader) {
 	// test/data/artificial/gif-frame-out-of-bounds.gif.make-artificial.txt for
 	// more discussion.
 	if (this.call_sequence == 0) and (not this.quirk_enabled_image_bounds_are_strict) {
-		this.width = this.width.max(a:this.frame_rect_x1)
-		this.height = this.height.max(a:this.frame_rect_y1)
+		this.width = this.width.max(a: this.frame_rect_x1)
+		this.height = this.height.max(a: this.frame_rect_y1)
 	}
 }
 
@@ -910,7 +910,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 		num_palette_entries = (1 as base.u32) << (1 + (flags & 0x07))
 		i = 0
 		while i < num_palette_entries {
-			assert i < 256 via "a < b: a < c; c <= b"(c:num_palette_entries)
+			assert i < 256 via "a < b: a < c; c <= b"(c: num_palette_entries)
 			// Convert from RGB (in memory order) to ARGB (in native u32 order)
 			// to BGRA (in memory order).
 			argb = args.src.read_u24be_as_u32?()
@@ -932,7 +932,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	} else if this.quirk_enabled_reject_empty_palette and (not this.has_global_palette) {
 		return "#bad palette"
 	} else if this.gc_has_transparent_index {
-		this.palettes[1][..].copy_from_slice!(s:this.palettes[0][..])
+		this.palettes[1][..].copy_from_slice!(s: this.palettes[0][..])
 	} else {
 		which_palette = 0
 	}
@@ -953,10 +953,10 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	// TODO: a Wuffs (not just C) name for the
 	// WUFFS_BASE__PIXEL_FORMAT__INDEXED__BGRA_BINARY magic pixfmt constant.
 	status = this.swizzler.prepare!(
-		dst_pixfmt:args.dst.pixel_format(),
-		dst_palette:dst_palette,
-		src_pixfmt:0x47040008,
-		src_palette:this.palettes[which_palette][..])
+		dst_pixfmt: args.dst.pixel_format(),
+		dst_palette: dst_palette,
+		src_pixfmt: 0x47040008,
+		src_palette: this.palettes[which_palette][..])
 	if not status.is_ok() {
 		return status
 	}
@@ -987,7 +987,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	if lw > 8 {
 		return "#bad literal width"
 	}
-	this.lzw.set_literal_width!(lw:lw as base.u32)
+	this.lzw.set_literal_width!(lw: lw as base.u32)
 
 	this.previous_lzw_decode_ended_abruptly = true
 }
@@ -1021,12 +1021,12 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			this.compressed_wi = 0
 		}
 		while this.compressed_wi <= (4096 - 255) {
-			n_compressed = block_size.min(a:args.src.available())
+			n_compressed = block_size.min(a: args.src.available())
 			if n_compressed <= 0 {
 				break
 			}
-			compressed = args.src.take!(n:n_compressed)
-			this.compressed[this.compressed_wi ..].copy_from_slice!(s:compressed)
+			compressed = args.src.take!(n: n_compressed)
+			this.compressed[this.compressed_wi ..].copy_from_slice!(s: compressed)
 			this.compressed_wi ~sat+= n_compressed
 			block_size ~sat-= n_compressed
 			if block_size > 0 {
@@ -1037,7 +1037,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 				break
 			}
 			block_size = args.src.peek_u8_as_u64()
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 		}
 
 		if decoder_workbuf_len_max_incl_worst_case > args.workbuf.length() {
@@ -1048,16 +1048,16 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "#internal error: inconsistent ri/wi"
 			}
-			io_bind (io:r, data:this.compressed[this.compressed_ri .. this.compressed_wi]) {
+			io_bind (io: r, data: this.compressed[this.compressed_ri .. this.compressed_wi]) {
 				mark = r.mark()
 				lzw_status =? this.lzw.decode_io_writer?(
-					dst:this.util.empty_io_writer(), src:r, workbuf:this.util.empty_slice_u8())
-				this.compressed_ri ~sat+= r.count_since(mark:mark)
+					dst: this.util.empty_io_writer(), src: r, workbuf: this.util.empty_slice_u8())
+				this.compressed_ri ~sat+= r.count_since(mark: mark)
 			}
 
 			uncompressed = this.lzw.flush!()
 			if uncompressed.length() > 0 {
-				copy_status = this.copy_to_image_buffer!(pb:args.dst, src:uncompressed)
+				copy_status = this.copy_to_image_buffer!(pb: args.dst, src: uncompressed)
 				if copy_status.is_error() {
 					return copy_status
 				}
@@ -1068,8 +1068,8 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 
 				// Skip any trailing blocks.
 				if need_block_size or (block_size > 0) {
-					args.src.skip?(n:block_size as base.u32)
-					this.skip_blocks?(src:args.src)
+					args.src.skip?(n: block_size as base.u32)
+					this.skip_blocks?(src: args.src)
 				}
 
 				break.outer
@@ -1123,7 +1123,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	}
 
 	width_in_bytes = (this.width as base.u64) * (bytes_per_pixel as base.u64)
-	tab = args.pb.plane(p:0)
+	tab = args.pb.plane(p: 0)
 	while src_ri < args.src.length() {
 		src = args.src[src_ri ..]
 
@@ -1137,7 +1137,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 		// First, copy from src to that part of the frame rect that is inside
 		// args.pb's bounds (clipped to the image bounds).
 
-		dst = tab.row(y:this.dst_y)
+		dst = tab.row(y: this.dst_y)
 		if this.dst_y >= this.height {
 			dst = dst[.. 0]
 		} else if width_in_bytes < dst.length() {
@@ -1153,12 +1153,12 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 				dst = dst[i ..]
 			}
 			n = this.swizzler.swizzle_interleaved!(
-				dst:dst, dst_palette:this.dst_palette[..], src:src)
+				dst: dst, dst_palette: this.dst_palette[..], src: src)
 
 			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32
 
-			this.dirty_max_excl_y = this.dirty_max_excl_y.max(a:this.dst_y ~sat+ 1)
+			this.dirty_max_excl_y = this.dirty_max_excl_y.max(a: this.dst_y ~sat+ 1)
 		}
 
 		if this.frame_rect_x1 <= this.dst_x {
@@ -1179,17 +1179,17 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 				(not this.gc_has_transparent_index) and
 				(this.interlace > 1) {
 
-				replicate_src = tab.row(y:this.dst_y)
+				replicate_src = tab.row(y: this.dst_y)
 				replicate_y0 = this.dst_y ~sat+ 1
 				replicate_y1 = this.dst_y ~sat+ (interlace_count[this.interlace] as base.u32)
-				replicate_y1 = replicate_y1.min(a:this.frame_rect_y1)
+				replicate_y1 = replicate_y1.min(a: this.frame_rect_y1)
 				while replicate_y0 < replicate_y1 {
-					assert replicate_y0 < 0xFFFFFFFF via "a < b: a < c; c <= b"(c:replicate_y1)
-					replicate_dst = tab.row(y:replicate_y0)
-					replicate_dst.copy_from_slice!(s:replicate_src)
+					assert replicate_y0 < 0xFFFFFFFF via "a < b: a < c; c <= b"(c: replicate_y1)
+					replicate_dst = tab.row(y: replicate_y0)
+					replicate_dst.copy_from_slice!(s: replicate_src)
 					replicate_y0 += 1
 				}
-				this.dirty_max_excl_y = this.dirty_max_excl_y.max(a:replicate_y1)
+				this.dirty_max_excl_y = this.dirty_max_excl_y.max(a: replicate_y1)
 			}
 
 			this.dst_y ~sat+= interlace_delta[this.interlace] as base.u32
@@ -1211,7 +1211,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 
 		// Set n to the number of pixels (i.e. the number of bytes) to skip.
 		n = (this.frame_rect_x1 - this.dst_x) as base.u64
-		n = n.min(a:args.src.length() - src_ri)
+		n = n.min(a: args.src.length() - src_ri)
 
 		src_ri ~sat+= n
 		this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32

@@ -76,10 +76,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -99,7 +99,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 
 		if (table_entry >> 31) <> 0 {
 			// Literal.
-			args.dst.write_fast_u8!(a:((table_entry >> 8) & 0xFF) as base.u8)
+			args.dst.write_fast_u8!(a: ((table_entry >> 8) & 0xFF) as base.u8)
 			continue.loop
 		} else if (table_entry >> 30) <> 0 {
 			// No-op; code continues past the if-else chain.
@@ -115,10 +115,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -137,7 +137,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 
 			if (table_entry >> 31) <> 0 {
 				// Literal.
-				args.dst.write_fast_u8!(a:((table_entry >> 8) & 0xFF) as base.u8)
+				args.dst.write_fast_u8!(a: ((table_entry >> 8) & 0xFF) as base.u8)
 				continue.loop
 			} else if (table_entry >> 30) <> 0 {
 				// No-op; code continues past the if-else chain.
@@ -173,10 +173,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -188,7 +188,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 
 			// The "+ 253" is the same as "- 3", after the "& 0xFF", but the
 			// plus form won't require an underflow check.
-			length = ((length + 253 + bits.low_bits(n:table_entry_n_bits)) & 0xFF) + 3
+			length = ((length + 253 + bits.low_bits(n: table_entry_n_bits)) & 0xFF) + 3
 			bits >>= table_entry_n_bits
 			n_bits -= table_entry_n_bits
 
@@ -200,10 +200,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 		if n_bits < 15 {
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			assert n_bits >= 15
 		} else {
@@ -225,10 +225,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			if n_bits < 15 {
 				assert n_bits >= 0  // TODO: this shouldn't be necessary.
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				bits |= args.src.peek_u8_as_u32() << n_bits
-				args.src.skip_fast!(actual:1, worst_case:1)
+				args.src.skip_fast!(actual: 1, worst_case: 1)
 				n_bits += 8
 				assert n_bits >= 15
 			} else {
@@ -266,21 +266,21 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 		table_entry_n_bits = (table_entry >> 4) & 0x0F
 		// Ensure that we have at least table_entry_n_bits bits of input.
 		if n_bits < table_entry_n_bits {
-			assert n_bits < 15 via "a < b: a < c; c <= b"(c:table_entry_n_bits)
+			assert n_bits < 15 via "a < b: a < c; c <= b"(c: table_entry_n_bits)
 			assert n_bits >= 0  // TODO: this shouldn't be necessary.
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
 			bits |= args.src.peek_u8_as_u32() << n_bits
-			args.src.skip_fast!(actual:1, worst_case:1)
+			args.src.skip_fast!(actual: 1, worst_case: 1)
 			n_bits += 8
-			assert table_entry_n_bits <= n_bits via "a <= b: a <= c; c <= b"(c:16)
+			assert table_entry_n_bits <= n_bits via "a <= b: a <= c; c <= b"(c: 16)
 			assert n_bits >= table_entry_n_bits via "a >= b: b <= a"()
 		}
 		// Once again, redundant but explicit assertions.
 		assert n_bits >= table_entry_n_bits
 
-		dist_minus_1 = (dist_minus_1 + bits.low_bits(n:table_entry_n_bits)) & 0x7FFF
+		dist_minus_1 = (dist_minus_1 + bits.low_bits(n: table_entry_n_bits)) & 0x7FFF
 		bits >>= table_entry_n_bits
 		n_bits -= table_entry_n_bits
 
@@ -300,7 +300,7 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 				hdist = (((dist_minus_1 + 1) as base.u64) - args.dst.history_available()) as base.u32
 				if length > hdist {
 					assert hdist < length via "a < b: b > a"()
-					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c:length)
+					assert hdist < 0x8000 via "a < b: a < c; c <= b"(c: length)
 					length -= hdist
 					hlen = hdist
 				} else {
@@ -331,12 +331,12 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 					// "args.dst.available() >= 258" fact. It should certainly
 					// invalidate any fact that was "<=" instead of ">=".
 					n_copied = args.dst.copy_n_from_slice!(
-						n:hlen, s:this.history[hdist & 0x7FFF ..])
+						n: hlen, s: this.history[hdist & 0x7FFF ..])
 					if hlen <= n_copied {
 						break
 					}
 					hlen -= n_copied
-					args.dst.copy_n_from_slice!(n:hlen, s:this.history[..])
+					args.dst.copy_n_from_slice!(n: hlen, s: this.history[..])
 					break
 				}
 
@@ -356,10 +356,10 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 			// We can therefore prove:
 			assert (dist_minus_1 + 1) > 0
 			assert (length as base.u64) <= 258
-			assert (length as base.u64) <= args.dst.available() via "a <= b: a <= c; c <= b"(c:258)
+			assert (length as base.u64) <= args.dst.available() via "a <= b: a <= c; c <= b"(c: 258)
 
 			// Copy from args.dst.
-			args.dst.copy_n_from_history_fast!(n:length, distance:(dist_minus_1 + 1))
+			args.dst.copy_n_from_history_fast!(n: length, distance: (dist_minus_1 + 1))
 			break
 		}
 	}

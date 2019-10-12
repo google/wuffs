@@ -29,17 +29,17 @@ func TestString(tt *testing.T) {
 		"x",
 
 		"f()",
-		"f(a:i)",
-		"f(a:i, b:j)",
-		"f(a:i, b:j) + 1",
-		"f(a:i, b:j)(c:k)",
-		"f(a:i, b:j)(c:k, d:l, e:m + 2) + 3",
+		"f(a: i)",
+		"f(a: i, b: j)",
+		"f(a: i, b: j) + 1",
+		"f(a: i, b: j)(c: k)",
+		"f(a: i, b: j)(c: k, d: l, e: m + 2) + 3",
 
 		"x[i]",
 		"x[i][j]",
 		"x[i .. j]",
-		"x[i](arg:j)",
-		"x(arg:i)[j]",
+		"x[i](arg: j)",
+		"x(arg: i)[j]",
 
 		"x.y",
 		"x.y.z.a",
@@ -56,7 +56,7 @@ func TestString(tt *testing.T) {
 		"x * ((a / b) - (i / j))",
 
 		"x + y + z",
-		"x + (i * j.k[l] * (-m << 4) * (n & o(o0:p, o1:q[.. r.s + 5]))) + z",
+		"x + (i * j.k[l] * (-m << 4) * (n & o(o0: p, o1: q[.. r.s + 5]))) + z",
 
 		"x as base.bool",
 		"x as base.u32",

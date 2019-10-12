@@ -94,7 +94,7 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 					buf = append(buf, ", "...)
 				}
 				buf = append(buf, tm.ByID(o.AsArg().Name())...)
-				buf = append(buf, ':')
+				buf = append(buf, ": "...)
 				buf = o.AsArg().Value().appendStr(buf, tm, false, depth)
 			}
 			buf = append(buf, ')')

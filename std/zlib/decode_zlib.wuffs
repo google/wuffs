@@ -53,8 +53,8 @@ pub func decoder.add_dictionary!(dict slice base.u8) {
 	if this.header_complete {
 		this.bad_call_sequence = true
 	} else {
-		this.dict_id_got = this.dict_id_hasher.update!(x:args.dict)
-		this.flate.add_history!(hist:args.dict)
+		this.dict_id_got = this.dict_id_hasher.update!(x: args.dict)
+		this.flate.add_history!(hist: args.dict)
 	}
 	this.got_dictionary = true
 }
@@ -65,8 +65,8 @@ pub func decoder.set_ignore_checksum!(ic base.bool) {
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
 	return this.util.make_range_ii_u64(
-		min_incl:decoder_workbuf_len_max_incl_worst_case,
-		max_incl:decoder_workbuf_len_max_incl_worst_case)
+		min_incl: decoder_workbuf_len_max_incl_worst_case,
+		max_incl: decoder_workbuf_len_max_incl_worst_case)
 }
 
 pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workbuf slice base.u8) {
@@ -109,9 +109,9 @@ pub func decoder.decode_io_writer?(dst base.io_writer, src base.io_reader, workb
 	// Decode and checksum the DEFLATE-encoded payload.
 	while true {
 		mark = args.dst.mark()
-		status =? this.flate.decode_io_writer?(dst:args.dst, src:args.src, workbuf:args.workbuf)
+		status =? this.flate.decode_io_writer?(dst: args.dst, src: args.src, workbuf: args.workbuf)
 		if not this.ignore_checksum {
-			checksum_got = this.checksum.update!(x:args.dst.since(mark:mark))
+			checksum_got = this.checksum.update!(x: args.dst.since(mark: mark))
 		}
 		if status.is_ok() {
 			break

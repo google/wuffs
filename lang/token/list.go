@@ -1185,5 +1185,4 @@ var isTightRight = [...]bool{
 	IDDot:      true,
 	IDExclam:   true,
 	IDQuestion: true,
-	IDColon:    true,
 }
