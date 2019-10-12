@@ -64,14 +64,14 @@ func TestCheck(tt *testing.T) {
 		)
 
 		pri func foo.bar() {
-			var x base.u8
-			var y base.i32
-			var z base.u64[..= 123]
-			var a array[4] base.u8
-			var b base.bool
+			var x : base.u8
+			var y : base.i32
+			var z : base.u64[..= 123]
+			var a : array[4] base.u8
+			var b : base.bool
 
-			var p base.i32
-			var q base.i32[0 ..= 8]
+			var p : base.i32
+			var q : base.i32[0 ..= 8]
 
 			x = 0
 			x = 1 + (x * 0)
@@ -206,9 +206,9 @@ func TestConstValues(tt *testing.T) {
 	for s, wantInt64 := range testCases {
 		src := "pri func foo() {\n"
 		if s[0] == 'b' {
-			src += "var b base.bool\n"
+			src += "var b : base.bool\n"
 		} else {
-			src += "var i base.i32\n"
+			src += "var i : base.i32\n"
 		}
 		src += s + "\n}\n"
 

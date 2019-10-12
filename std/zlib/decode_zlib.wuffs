@@ -70,11 +70,11 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-	var x             base.u16
-	var checksum_got  base.u32
-	var status        base.status
-	var checksum_want base.u32
-	var mark          base.u64
+	var x             : base.u16
+	var checksum_got  : base.u32
+	var status        : base.status
+	var checksum_want : base.u32
+	var mark          : base.u64
 
 	if this.bad_call_sequence {
 		return base."#bad call sequence"

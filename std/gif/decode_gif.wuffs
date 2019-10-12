@@ -252,7 +252,7 @@ pub func decoder.set_quirk_enabled!(quirk: base.u32, enabled: base.bool) {
 }
 
 pub func decoder.decode_image_config?(dst: nptr base.image_config, src: base.io_reader) {
-	var ffio base.bool
+	var ffio : base.bool
 
 	if this.call_sequence == 0 {
 		this.decode_header?(src: args.src)
@@ -398,9 +398,9 @@ pub func decoder.restart_frame!(index: base.u64, io_position: base.u64) base.sta
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-	var blend            base.u8
-	var background_color base.u32
-	var flags            base.u8
+	var blend            : base.u8
+	var background_color : base.u32
+	var flags            : base.u8
 
 	this.ignore_metadata = true
 	this.dirty_max_excl_y = 0
@@ -469,8 +469,8 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pri func decoder.skip_frame?(src: base.io_reader) {
-	var flags base.u8
-	var lw    base.u8
+	var flags : base.u8
+	var lw    : base.u8
 
 	// Skip the optional Local Color Table, 3 bytes (RGB) per entry.
 	flags = args.src.read_u8?()
@@ -523,7 +523,7 @@ pri func decoder.reset_gc!() {
 }
 
 pri func decoder.decode_up_to_id_part1?(src: base.io_reader) {
-	var block_type base.u8
+	var block_type : base.u8
 
 	if not this.restarted {
 		if this.call_sequence <> 2 {
@@ -563,8 +563,8 @@ pri func decoder.decode_up_to_id_part1?(src: base.io_reader) {
 //
 // See the spec section 17 "Header" on page 7.
 pri func decoder.decode_header?(src: base.io_reader) {
-	var c array[6] base.u8
-	var i base.u32
+	var c : array[6] base.u8
+	var i : base.u32
 
 	while i < 6 {
 		c[i] = args.src.read_u8?()
@@ -580,12 +580,12 @@ pri func decoder.decode_header?(src: base.io_reader) {
 //
 // See the spec section 18 "Logical Screen Descriptor" on page 8.
 pri func decoder.decode_lsd?(src: base.io_reader) {
-	var flags                  base.u8
-	var background_color_index base.u8
-	var num_palette_entries    base.u32[..= 256]
-	var i                      base.u32
-	var j                      base.u32[..= 1020]
-	var argb                   base.u32
+	var flags                  : base.u8
+	var background_color_index : base.u8
+	var num_palette_entries    : base.u32[..= 256]
+	var i                      : base.u32
+	var j                      : base.u32[..= 1020]
+	var argb                   : base.u32
 
 	this.width = args.src.read_u16le_as_u32?()
 	this.height = args.src.read_u16le_as_u32?()
@@ -651,7 +651,7 @@ pri func decoder.decode_lsd?(src: base.io_reader) {
 //  - section 25 "Plain Text Extension" on page 18.
 //  - section 26 "Application Extension" on page 21.
 pri func decoder.decode_extension?(src: base.io_reader) {
-	var label base.u8
+	var label : base.u8
 
 	label = args.src.read_u8?()
 	if label == 0xF9 {  // The spec calls 0xF9 the "Graphic Control Label".
@@ -667,7 +667,7 @@ pri func decoder.decode_extension?(src: base.io_reader) {
 }
 
 pri func decoder.skip_blocks?(src: base.io_reader) {
-	var block_size base.u8
+	var block_size : base.u8
 
 	while true {
 		block_size = args.src.read_u8?()
@@ -700,12 +700,12 @@ pri const xmpdataxmp array[11] base.u8 = [
 
 // decode_ae reads an Application Extension.
 pri func decoder.decode_ae?(src: base.io_reader) {
-	var c           base.u8
-	var block_size  base.u8
-	var is_animexts base.bool
-	var is_netscape base.bool
-	var is_iccp     base.bool
-	var is_xmp      base.bool
+	var c           : base.u8
+	var block_size  : base.u8
+	var is_animexts : base.bool
+	var is_netscape : base.bool
+	var is_iccp     : base.bool
+	var is_xmp      : base.bool
 
 	// This "while true" always executes exactly once, as it ends with a
 	// "break", but using "break"s throughout simplifies the control flow.
@@ -813,9 +813,9 @@ pri func decoder.decode_ae?(src: base.io_reader) {
 
 // decode_gc reads a Graphic Control.
 pri func decoder.decode_gc?(src: base.io_reader) {
-	var c                        base.u8
-	var flags                    base.u8
-	var gc_duration_centiseconds base.u16
+	var c                        : base.u8
+	var flags                    : base.u8
+	var gc_duration_centiseconds : base.u16
 
 	c = args.src.read_u8?()
 	if c <> 4 {
@@ -888,14 +888,14 @@ pri func decoder.decode_id_part0?(src: base.io_reader) {
 }
 
 pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reader) {
-	var flags               base.u8
-	var which_palette       base.u8[..= 1]
-	var num_palette_entries base.u32[..= 256]
-	var i                   base.u32
-	var argb                base.u32
-	var dst_palette         slice base.u8
-	var status              base.status
-	var lw                  base.u8
+	var flags               : base.u8
+	var which_palette       : base.u8[..= 1]
+	var num_palette_entries : base.u32[..= 256]
+	var i                   : base.u32
+	var argb                : base.u32
+	var dst_palette         : slice base.u8
+	var status              : base.status
+	var lw                  : base.u8
 
 	flags = args.src.read_u8?()
 	if (flags & 0x40) <> 0 {
@@ -993,15 +993,15 @@ pri func decoder.decode_id_part1?(dst: ptr base.pixel_buffer, src: base.io_reade
 }
 
 pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reader, workbuf: slice base.u8) {
-	var block_size      base.u64[..= 255]
-	var need_block_size base.bool
-	var n_compressed    base.u64
-	var compressed      slice base.u8
-	var r               base.io_reader
-	var mark            base.u64
-	var lzw_status      base.status
-	var copy_status     base.status
-	var uncompressed    slice base.u8
+	var block_size      : base.u64[..= 255]
+	var need_block_size : base.bool
+	var n_compressed    : base.u64
+	var compressed      : slice base.u8
+	var r               : base.io_reader
+	var mark            : base.u64
+	var lzw_status      : base.status
+	var copy_status     : base.status
+	var uncompressed    : slice base.u8
 
 	need_block_size = true
 	while.outer true {
@@ -1094,20 +1094,20 @@ pri func decoder.decode_id_part2?(dst: ptr base.pixel_buffer, src: base.io_reade
 
 pri func decoder.copy_to_image_buffer!(pb: ptr base.pixel_buffer, src: slice base.u8) base.status {
 	// TODO: don't assume an interleaved pixel format.
-	var dst             slice base.u8
-	var src             slice base.u8
-	var width_in_bytes  base.u64
-	var n               base.u64
-	var src_ri          base.u64
-	var bytes_per_pixel base.u32[..= 64]
-	var pixfmt_channels base.u32
-	var tab             table base.u8
-	var i               base.u64
-	var j               base.u64
-	var replicate_y0    base.u32
-	var replicate_y1    base.u32
-	var replicate_dst   slice base.u8
-	var replicate_src   slice base.u8
+	var dst             : slice base.u8
+	var src             : slice base.u8
+	var width_in_bytes  : base.u64
+	var n               : base.u64
+	var src_ri          : base.u64
+	var bytes_per_pixel : base.u32[..= 64]
+	var pixfmt_channels : base.u32
+	var tab             : table base.u8
+	var i               : base.u64
+	var j               : base.u64
+	var replicate_y0    : base.u32
+	var replicate_y1    : base.u32
+	var replicate_dst   : slice base.u8
+	var replicate_src   : slice base.u8
 
 	// TODO: a Wuffs (not just C) name for the WUFFS_BASE__PIXEL_FORMAT__ETC
 	// magic pixfmt constants. Also, support more formats.

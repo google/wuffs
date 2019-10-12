@@ -43,15 +43,15 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-	var c                   base.u8
-	var flags               base.u8
-	var xlen                base.u16
-	var mark                base.u64
-	var checksum_got        base.u32
-	var decoded_length_got  base.u32
-	var status              base.status
-	var checksum_want       base.u32
-	var decoded_length_want base.u32
+	var c                   : base.u8
+	var flags               : base.u8
+	var xlen                : base.u16
+	var mark                : base.u64
+	var checksum_got        : base.u32
+	var decoded_length_got  : base.u32
+	var status              : base.status
+	var checksum_want       : base.u32
+	var decoded_length_want : base.u32
 
 	// Read the header.
 	c = args.src.read_u8?()

@@ -22,10 +22,10 @@ pub func hasher.update!(x: slice base.u8) base.u32 {
 	// The Adler-32 checksum's magic 65521 and 5552 numbers are discussed in
 	// this package's README.md.
 
-	var s1        base.u32
-	var s2        base.u32
-	var remaining slice base.u8
-	var p         slice base.u8
+	var s1        : base.u32
+	var s2        : base.u32
+	var remaining : slice base.u8
+	var p         : slice base.u8
 
 	if not this.started {
 		this.started = true

@@ -78,7 +78,7 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
 }
 
 pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, workbuf: slice base.u8) {
-	var i base.u32[..= 8191]
+	var i : base.u32[..= 8191]
 
 	// Initialize read_from state.
 	this.literal_width = 8
@@ -124,23 +124,23 @@ pub func decoder.decode_io_writer?(dst: base.io_writer, src: base.io_reader, wor
 }
 
 pri func decoder.read_from!(src: base.io_reader) {
-	var clear_code base.u32[..= 256]
-	var end_code   base.u32[..= 257]
+	var clear_code : base.u32[..= 256]
+	var end_code   : base.u32[..= 257]
 
-	var save_code base.u32[..= 4096]
-	var prev_code base.u32[..= 4095]
-	var width     base.u32[..= 12]
-	var bits      base.u32
-	var n_bits    base.u32[..= 31]
-	var output_wi base.u32[..= 8191]
+	var save_code : base.u32[..= 4096]
+	var prev_code : base.u32[..= 4095]
+	var width     : base.u32[..= 12]
+	var bits      : base.u32
+	var n_bits    : base.u32[..= 31]
+	var output_wi : base.u32[..= 8191]
 
-	var code       base.u32[..= 4095]
-	var c          base.u32[..= 4095]
-	var o          base.u32[..= 8191]
-	var steps      base.u32
-	var first_byte base.u8
-	var lm1_b      base.u16[..= 4095]
-	var lm1_a      base.u16[..= 4095]
+	var code       : base.u32[..= 4095]
+	var c          : base.u32[..= 4095]
+	var o          : base.u32[..= 8191]
+	var steps      : base.u32
+	var first_byte : base.u8
+	var lm1_b      : base.u16[..= 4095]
+	var lm1_a      : base.u16[..= 4095]
 
 	clear_code = this.clear_code
 	end_code = this.end_code
@@ -331,8 +331,8 @@ pri func decoder.read_from!(src: base.io_reader) {
 }
 
 pri func decoder.write_to?(dst: base.io_writer) {
-	var s slice base.u8
-	var n base.u64
+	var s : slice base.u8
+	var n : base.u64
 
 	while this.output_wi > 0 {
 		if this.output_ri > this.output_wi {
@@ -351,7 +351,7 @@ pri func decoder.write_to?(dst: base.io_writer) {
 }
 
 pub func decoder.flush!() slice base.u8 {
-	var s slice base.u8
+	var s : slice base.u8
 
 	if this.output_ri <= this.output_wi {
 		s = this.output[this.output_ri .. this.output_wi]
