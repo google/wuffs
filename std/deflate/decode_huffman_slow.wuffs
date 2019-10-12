@@ -48,7 +48,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 	lmask = ((1 as base.u32) << this.n_huffs_bits[0]) - 1
 	dmask = ((1 as base.u32) << this.n_huffs_bits[1]) - 1
 
-	while:loop not coroutine_resumed {
+	while.loop not coroutine_resumed {
 		// Decode an lcode symbol from H-L.
 		while true {
 			table_entry = this.huffs[0][bits & lmask]
@@ -67,13 +67,13 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 		if (table_entry >> 31) <> 0 {
 			// Literal.
 			args.dst.write_u8?(a:((table_entry >> 8) & 0xFF) as base.u8)
-			continue:loop
+			continue.loop
 		} else if (table_entry >> 30) <> 0 {
 			// No-op; code continues past the if-else chain.
 		} else if (table_entry >> 29) <> 0 {
 			// End of block.
 			this.end_of_block = true
-			break:loop
+			break.loop
 		} else if (table_entry >> 28) <> 0 {
 			// Redirect.
 			redir_top = (table_entry >> 8) & 0xFFFF
@@ -95,13 +95,13 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 			if (table_entry >> 31) <> 0 {
 				// Literal.
 				args.dst.write_u8?(a:((table_entry >> 8) & 0xFF) as base.u8)
-				continue:loop
+				continue.loop
 			} else if (table_entry >> 30) <> 0 {
 				// No-op; code continues past the if-else chain.
 			} else if (table_entry >> 29) <> 0 {
 				// End of block.
 				this.end_of_block = true
-				break:loop
+				break.loop
 			} else if (table_entry >> 28) <> 0 {
 				return "#internal error: inconsistent Huffman decoder state"
 			} else if (table_entry >> 27) <> 0 {
@@ -259,7 +259,7 @@ pri func decoder.decode_huffman_slow?(dst base.io_writer, src base.io_reader) {
 
 				if length == 0 {
 					// No need to copy from args.dst.
-					continue:loop
+					continue.loop
 				}
 			}
 

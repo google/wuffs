@@ -599,7 +599,7 @@ func (p *parser) parseStatement() (*a.Node, error) {
 }
 
 func (p *parser) parseLabel() (t.ID, error) {
-	if p.peek1() == t.IDColon {
+	if p.peek1() == t.IDDot {
 		p.src = p.src[1:]
 		return p.parseIdent()
 	}

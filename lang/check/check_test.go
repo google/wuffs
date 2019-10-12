@@ -83,13 +83,13 @@ func TestCheck(tt *testing.T) {
 
 			assert true
 
-			while:label p == q,
+			while.label p == q,
 				pre true,
 				inv true,
 				post p <> q,
 			{
 				// Redundant, but shows the labeled jump syntax.
-				continue:label
+				continue.label
 			}
 		}
 	`) + "\n"

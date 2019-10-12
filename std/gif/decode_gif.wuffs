@@ -1004,7 +1004,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 	var uncompressed    slice base.u8
 
 	need_block_size = true
-	while:outer true {
+	while.outer true {
 		if need_block_size {
 			need_block_size = false
 			block_size = args.src.read_u8_as_u64?()
@@ -1044,7 +1044,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			return base."#bad workbuf length"
 		}
 
-		while:inner true {
+		while.inner true {
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "#internal error: inconsistent ri/wi"
 			}
@@ -1072,11 +1072,11 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 					this.skip_blocks?(src:args.src)
 				}
 
-				break:outer
+				break.outer
 			} else if lzw_status == base."$short read" {
-				continue:outer
+				continue.outer
 			} else if lzw_status == base."$short write" {
-				continue:inner
+				continue.inner
 			}
 			return lzw_status
 		}

@@ -38,6 +38,7 @@ faster than Wuffs version 0.1 and about 2x faster than giflib (the C library).
 - Renamed `$(etc)` to `[etc]`.
 - Renamed `[i..j]` to `[i ..= j]`, consistent with Rust syntax.
 - Renamed `[N] T` and `[] T` types to `array[N] T` and `slice T`.
+- Renamed `while:label` to `while.label`.
 - Renamed `u32`, `buf1`, etc to `base.u32`, `base.io_buffer`, etc.
 - Renamed `unread_u8?` to `undo_byte!`; added `can_undo_byte`.
 - Renamed some `decode?` methods to `decode_io_writer?`.

@@ -498,7 +498,7 @@ func NewIOBind(keyword t.ID, io *Expr, arg1 *Expr, body []*Node) *IOBind {
 }
 
 // Iterate is
-// "iterate:ID1 (assigns)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
+// "iterate.ID1 (assigns)(length:ID2, unroll:ID0), List1 { List2 } else RHS":
 //  - FlagsHasBreak    is the iterate has an explicit break
 //  - FlagsHasContinue is the iterate has an explicit continue
 //  - ID0:   unroll
@@ -537,7 +537,7 @@ func NewIterate(label t.ID, assigns []*Node, length t.ID, unroll t.ID, asserts [
 	}
 }
 
-// While is "while:ID1 MHS, List1 { List2 }":
+// While is "while.ID1 MHS, List1 { List2 }":
 //  - FlagsHasBreak    is the while has an explicit break
 //  - FlagsHasContinue is the while has an explicit continue
 //  - ID1:   <0|label>
@@ -613,7 +613,7 @@ func NewRet(keyword t.ID, value *Expr) *Ret {
 	}
 }
 
-// Jump is "break" or "continue", with an optional label, "break:label":
+// Jump is "break" or "continue", with an optional label, "break.label":
 //  - ID0:   <IDBreak|IDContinue>
 //  - ID1:   <0|label>
 type Jump Node

@@ -207,7 +207,7 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 	var type   base.u32
 	var status base.status
 
-	while:outer final == 0 {
+	while.outer final == 0 {
 		while this.n_bits < 3,
 			post this.n_bits >= 3,
 		{
@@ -247,11 +247,11 @@ pri func decoder.decode_blocks?(dst base.io_writer, src base.io_reader) {
 				return status
 			}
 			if this.end_of_block {
-				continue:outer
+				continue.outer
 			}
 			this.decode_huffman_slow?(dst:args.dst, src:args.src)
 			if this.end_of_block {
-				continue:outer
+				continue.outer
 			}
 		}
 	}
