@@ -110,7 +110,9 @@ golden_test deflate_deflate_distance_32768_gt = {
 };
 
 golden_test deflate_deflate_distance_code_31_gt = {
-    .want_filename = "test/data/artificial/0.bytes",
+    .want_filename =
+        "test/data/artificial/"
+        "qdeflate-distance-code-31.deflate.decompressed",
     .src_filename =
         "test/data/artificial/"
         "deflate-distance-code-31.deflate",
