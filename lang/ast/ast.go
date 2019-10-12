@@ -293,7 +293,7 @@ func (n *Raw) SetPackage(tm *t.Map, pkg t.ID) error {
 const MaxExprDepth = 255
 
 // Expr is an expression, such as "i", "+j" or "k + l[m(n, o)].p":
-//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDColon|IDDot>
+//  - ID0:   <0|operator|IDOpenParen|IDOpenBracket|IDDotDot|IDDot>
 //  - ID1:   <0|pkg> (for statuses)
 //  - ID2:   <0|literal|ident>
 //  - LHS:   <nil|Expr>
@@ -318,7 +318,7 @@ const MaxExprDepth = 255
 //
 // For indexes, like "LHS[RHS]", ID0 is IDOpenBracket.
 //
-// For slices, like "LHS[MHS:RHS]", ID0 is IDColon.
+// For slices, like "LHS[MHS .. RHS]", ID0 is IDDotDot.
 //
 // For selectors, like "LHS.ID2", ID0 is IDDot.
 //

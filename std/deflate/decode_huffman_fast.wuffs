@@ -331,12 +331,12 @@ pri func decoder.decode_huffman_fast!(dst base.io_writer, src base.io_reader) ba
 					// "args.dst.available() >= 258" fact. It should certainly
 					// invalidate any fact that was "<=" instead of ">=".
 					n_copied = args.dst.copy_n_from_slice!(
-						n:hlen, s:this.history[hdist & 0x7FFF:])
+						n:hlen, s:this.history[hdist & 0x7FFF ..])
 					if hlen <= n_copied {
 						break
 					}
 					hlen -= n_copied
-					args.dst.copy_n_from_slice!(n:hlen, s:this.history[:])
+					args.dst.copy_n_from_slice!(n:hlen, s:this.history[..])
 					break
 				}
 

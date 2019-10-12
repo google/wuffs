@@ -37,7 +37,7 @@ func TestString(tt *testing.T) {
 
 		"x[i]",
 		"x[i][j]",
-		"x[i:j]",
+		"x[i .. j]",
 		"x[i](arg:j)",
 		"x(arg:i)[j]",
 
@@ -56,7 +56,7 @@ func TestString(tt *testing.T) {
 		"x * ((a / b) - (i / j))",
 
 		"x + y + z",
-		"x + (i * j.k[l] * (-m << 4) * (n & o(o0:p, o1:q[:r.s + 5]))) + z",
+		"x + (i * j.k[l] * (-m << 4) * (n & o(o0:p, o1:q[.. r.s + 5]))) + z",
 
 		"x as base.bool",
 		"x as base.u32",

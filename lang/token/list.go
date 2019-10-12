@@ -1172,7 +1172,6 @@ var isTightLeft = [...]bool{
 	IDCloseBracket: true,
 
 	IDDot:      true,
-	IDDotDot:   true,
 	IDComma:    true,
 	IDExclam:   true,
 	IDQuestion: true,
@@ -1184,7 +1183,6 @@ var isTightRight = [...]bool{
 	IDOpenBracket: true,
 
 	IDDot:      true,
-	IDDotDot:   true,
 	IDExclam:   true,
 	IDQuestion: true,
 	IDColon:    true,

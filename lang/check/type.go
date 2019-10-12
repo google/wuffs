@@ -434,9 +434,9 @@ func (q *checker) tcheckExprOther(n *a.Expr, depth uint32) error {
 		n.SetMType(lTyp.Inner())
 		return nil
 
-	case t.IDColon:
+	case t.IDDotDot:
 		// n is a slice.
-		// TODO: require that the i and j in a[i:j] are *unsigned* (or
+		// TODO: require that the i and j in a[i .. j] are *unsigned* (or
 		// non-negative constants)?
 		if mhs := n.MHS().AsExpr(); mhs != nil {
 			if err := q.tcheckExpr(mhs, depth); err != nil {

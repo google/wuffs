@@ -148,7 +148,7 @@ func (g *gen) writeExprOther(b *buffer, n *a.Expr, depth uint32) error {
 		b.writeb(']')
 		return nil
 
-	case t.IDColon:
+	case t.IDDotDot:
 		// n is a slice.
 		lhs := n.LHS().AsExpr()
 		mhs := n.MHS().AsExpr()

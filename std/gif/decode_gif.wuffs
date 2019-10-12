@@ -932,7 +932,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 	} else if this.quirk_enabled_reject_empty_palette and (not this.has_global_palette) {
 		return "#bad palette"
 	} else if this.gc_has_transparent_index {
-		this.palettes[1][:].copy_from_slice!(s:this.palettes[0][:])
+		this.palettes[1][..].copy_from_slice!(s:this.palettes[0][..])
 	} else {
 		which_palette = 0
 	}
@@ -947,7 +947,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 
 	dst_palette = args.dst.palette()
 	if dst_palette.length() == 0 {
-		dst_palette = this.dst_palette[:]
+		dst_palette = this.dst_palette[..]
 	}
 
 	// TODO: a Wuffs (not just C) name for the
@@ -956,7 +956,7 @@ pri func decoder.decode_id_part1?(dst ptr base.pixel_buffer, src base.io_reader)
 		dst_pixfmt:args.dst.pixel_format(),
 		dst_palette:dst_palette,
 		src_pixfmt:0x47040008,
-		src_palette:this.palettes[which_palette][:])
+		src_palette:this.palettes[which_palette][..])
 	if not status.is_ok() {
 		return status
 	}
@@ -1026,7 +1026,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 				break
 			}
 			compressed = args.src.take!(n:n_compressed)
-			this.compressed[this.compressed_wi:].copy_from_slice!(s:compressed)
+			this.compressed[this.compressed_wi ..].copy_from_slice!(s:compressed)
 			this.compressed_wi ~sat+= n_compressed
 			block_size ~sat-= n_compressed
 			if block_size > 0 {
@@ -1048,7 +1048,7 @@ pri func decoder.decode_id_part2?(dst ptr base.pixel_buffer, src base.io_reader,
 			if (this.compressed_ri > this.compressed_wi) or (this.compressed_wi > 4096) {
 				return "#internal error: inconsistent ri/wi"
 			}
-			io_bind (io:r, data:this.compressed[this.compressed_ri:this.compressed_wi]) {
+			io_bind (io:r, data:this.compressed[this.compressed_ri .. this.compressed_wi]) {
 				mark = r.mark()
 				lzw_status =? this.lzw.decode_io_writer?(
 					dst:this.util.empty_io_writer(), src:r, workbuf:this.util.empty_slice_u8())
@@ -1125,7 +1125,7 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 	width_in_bytes = (this.width as base.u64) * (bytes_per_pixel as base.u64)
 	tab = args.pb.plane(p:0)
 	while src_ri < args.src.length() {
-		src = args.src[src_ri:]
+		src = args.src[src_ri ..]
 
 		if this.dst_y >= this.frame_rect_y1 {
 			if this.quirk_enabled_ignore_too_much_pixel_data {
@@ -1139,21 +1139,21 @@ pri func decoder.copy_to_image_buffer!(pb ptr base.pixel_buffer, src slice base.
 
 		dst = tab.row(y:this.dst_y)
 		if this.dst_y >= this.height {
-			dst = dst[:0]
+			dst = dst[.. 0]
 		} else if width_in_bytes < dst.length() {
-			dst = dst[:width_in_bytes]
+			dst = dst[.. width_in_bytes]
 		}
 
 		i = (this.dst_x as base.u64) * (bytes_per_pixel as base.u64)
 		if i < dst.length() {
 			j = (this.frame_rect_x1 as base.u64) * (bytes_per_pixel as base.u64)
 			if (i <= j) and (j <= dst.length()) {
-				dst = dst[i:j]
+				dst = dst[i .. j]
 			} else {
-				dst = dst[i:]
+				dst = dst[i ..]
 			}
 			n = this.swizzler.swizzle_interleaved!(
-				dst:dst, dst_palette:this.dst_palette[:], src:src)
+				dst:dst, dst_palette:this.dst_palette[..], src:src)
 
 			src_ri ~sat+= n
 			this.dst_x ~sat+= (n & 0xFFFFFFFF) as base.u32

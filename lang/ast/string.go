@@ -105,12 +105,18 @@ func (n *Expr) appendStr(buf []byte, tm *t.Map, parenthesize bool, depth uint32)
 			buf = n.rhs.AsExpr().appendStr(buf, tm, false, depth)
 			buf = append(buf, ']')
 
-		case t.IDColon:
+		case t.IDDotDot:
 			buf = n.lhs.AsExpr().appendStr(buf, tm, true, depth)
 			buf = append(buf, '[')
-			buf = n.mhs.AsExpr().appendStr(buf, tm, false, depth)
-			buf = append(buf, ':')
-			buf = n.rhs.AsExpr().appendStr(buf, tm, false, depth)
+			if n.mhs != nil {
+				buf = n.mhs.AsExpr().appendStr(buf, tm, false, depth)
+				buf = append(buf, ' ')
+			}
+			buf = append(buf, ".."...)
+			if n.rhs != nil {
+				buf = append(buf, ' ')
+				buf = n.rhs.AsExpr().appendStr(buf, tm, false, depth)
+			}
 			buf = append(buf, ']')
 
 		case t.IDDot:

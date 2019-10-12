@@ -870,7 +870,7 @@ func (q *checker) bcheckExprOther(n *a.Expr, depth uint32) (bounds, error) {
 			return bounds{}, err
 		}
 
-	case t.IDColon:
+	case t.IDDotDot:
 		lhs := n.LHS().AsExpr()
 		if _, err := q.bcheckExpr(lhs, depth); err != nil {
 			return bounds{}, err

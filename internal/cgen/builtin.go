@@ -434,7 +434,7 @@ func (g *gen) writeBuiltinSlice(b *buffer, recv *a.Expr, method t.ID, args []*a.
 
 // writeBuiltinSliceCopyFromSlice8 writes an optimized version of:
 //
-// foo[fIndex:fIndex + 8].copy_from_slice!(s:bar[bIndex:bIndex + 8])
+// foo[fIndex .. fIndex + 8].copy_from_slice!(s:bar[bIndex .. bIndex + 8])
 func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.ID, args []*a.Node, depth uint32) error {
 	if method != t.IDCopyFromSlice || len(args) != 1 {
 		return errOptimizationNotApplicable
@@ -475,10 +475,10 @@ func (g *gen) writeBuiltinSliceCopyFromSlice8(b *buffer, recv *a.Expr, method t.
 	return nil
 }
 
-// matchFooIndexIndexPlus8 matches n with "foo[index:index + 8]" or "foo[:8]".
-// It returns a nil foo if there isn't a match.
+// matchFooIndexIndexPlus8 matches n with "foo[index .. index + 8]" or "foo[..
+// 8]". It returns a nil foo if there isn't a match.
 func matchFooIndexIndexPlus8(n *a.Expr) (foo *a.Expr, index *a.Expr) {
-	if n.Operator() != t.IDColon {
+	if n.Operator() != t.IDDotDot {
 		return nil, nil
 	}
 	foo = n.LHS().AsExpr()

@@ -254,7 +254,7 @@ pri func decoder.read_from!(src base.io_reader) {
 				// The final "8" is redundant semantically, but helps the
 				// wuffs-c code generator recognize that both slices have the
 				// same constant length, and hence produce efficient C code.
-				this.output[o:o + 8].copy_from_slice!(s:this.suffixes[c][:8])
+				this.output[o .. o + 8].copy_from_slice!(s:this.suffixes[c][.. 8])
 
 				if steps <= 0 {
 					break
@@ -338,7 +338,7 @@ pri func decoder.write_to?(dst base.io_writer) {
 		if this.output_ri > this.output_wi {
 			return "#internal error: inconsistent I/O"
 		}
-		s = this.output[this.output_ri:this.output_wi]
+		s = this.output[this.output_ri .. this.output_wi]
 		n = args.dst.copy_from_slice!(s:s)
 		if n == s.length() {
 			this.output_ri = 0
@@ -354,7 +354,7 @@ pub func decoder.flush!() slice base.u8 {
 	var s slice base.u8
 
 	if this.output_ri <= this.output_wi {
-		s = this.output[this.output_ri:this.output_wi]
+		s = this.output[this.output_ri .. this.output_wi]
 	}
 	this.output_ri = 0
 	this.output_wi = 0

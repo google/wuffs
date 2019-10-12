@@ -144,12 +144,12 @@ pub func decoder.add_history!(hist slice base.u8) {
 		// If s is longer than the ringbuffer, we can ignore the previous value
 		// of history_index, as we will overwrite the whole ringbuffer.
 		s = s.suffix(up_to:0x8000)
-		this.history[:].copy_from_slice!(s:s)
+		this.history[..].copy_from_slice!(s:s)
 		this.history_index = 0x8000
 	} else {
 		// Otherwise, append s to the history ringbuffer starting at the
 		// previous history_index (modulo 0x8000).
-		n_copied = this.history[this.history_index & 0x7FFF:].copy_from_slice!(s:s)
+		n_copied = this.history[this.history_index & 0x7FFF ..].copy_from_slice!(s:s)
 		if n_copied < s.length() {
 			// a_slice.copy_from(s:b_slice) returns the minimum of the two
 			// slice lengths. If that value is less than b_slice.length(), then
@@ -158,8 +158,8 @@ pub func decoder.add_history!(hist slice base.u8) {
 			// In terms of the history ringbuffer, that means that we have to
 			// wrap around and copy the remainder of s over the start of the
 			// history ringbuffer.
-			s = s[n_copied:]
-			n_copied = this.history[:].copy_from_slice!(s:s)
+			s = s[n_copied ..]
+			n_copied = this.history[..].copy_from_slice!(s:s)
 			// Set history_index (modulo 0x8000) to the length of this
 			// remainder. The &0x7FFF is redundant, but proves to the compiler
 			// that the conversion to u32 will not overflow. The +0x8000 is to

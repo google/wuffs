@@ -36,10 +36,10 @@ pub func hasher.update!(x slice base.u8) base.u32 {
 	s2 = this.state.high_bits(n:16)
 
 	while args.x.length() > 0 {
-		remaining = args.x[:0]
+		remaining = args.x[.. 0]
 		if args.x.length() > 5552 {
-			remaining = args.x[5552:]
-			args.x = args.x[:5552]
+			remaining = args.x[5552 ..]
+			args.x = args.x[.. 5552]
 		}
 
 		iterate (p = args.x)(length:1, unroll:8) {

@@ -441,10 +441,10 @@ func (p *parser) parseTypeExpr() (*a.TypeExpr, error) {
 	return a.NewTypeExpr(0, pkg, name, lhs.AsNode(), mhs, nil), nil
 }
 
-// parseBracket parses "[i:j]", "[i:]", "[:j]" and "[:]". A "..=" replaces the
-// ":" if sep is t.IDDotDotEq instead of t.IDColon. If sep is t.IDColon, it
-// also parses "[x]". The returned op is sep for a range or refinement and
-// t.IDOpenBracket for an index.
+// parseBracket parses "[i .. j]", "[i ..]", "[.. j]" and "[..]". A "..="
+// replaces the ".." if sep is t.IDDotDotEq instead of t.IDDotDot. If sep is
+// t.IDDotDot, it also parses "[x]". The returned op is sep for a range or
+// refinement and t.IDOpenBracket for an index.
 func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err error) {
 	if x := p.peek1(); x != t.IDOpenBracket {
 		got := p.tm.ByID(x)
@@ -463,13 +463,13 @@ func (p *parser) parseBracket(sep t.ID) (op t.ID, ei *a.Expr, ej *a.Expr, err er
 	case x == sep:
 		p.src = p.src[1:]
 
-	case x == t.IDCloseBracket && sep == t.IDColon:
+	case x == t.IDCloseBracket && sep == t.IDDotDot:
 		p.src = p.src[1:]
 		return t.IDOpenBracket, nil, ei, nil
 
 	default:
 		extra := ``
-		if sep == t.IDColon {
+		if sep == t.IDDotDot {
 			extra = ` or "]"`
 		}
 		got := p.tm.ByID(x)
@@ -1177,7 +1177,7 @@ func (p *parser) parseOperand() (*a.Expr, error) {
 			lhs = a.NewExpr(flags, t.IDOpenParen, 0, 0, lhs.AsNode(), nil, nil, args)
 
 		case t.IDOpenBracket:
-			id0, mhs, rhs, err := p.parseBracket(t.IDColon)
+			id0, mhs, rhs, err := p.parseBracket(t.IDDotDot)
 			if err != nil {
 				return nil, err
 			}
