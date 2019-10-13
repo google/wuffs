@@ -55,8 +55,8 @@ pri func decoder.decode_huffman_fast!(dst: base.io_writer, src: base.io_reader) 
 	// RFC section 3.2.5. Compressed blocks (length and distance codes).
 	//
 	// For reading, strictly speaking, we only need 6 bytes (48 bits) of
-	// available input, because the H-L length/literal code is up to 15 bits
-	// plus up to 5 extra bits, the H-D distance code is up to 15 bits plus up
+	// available input, because the H-L Literal/Length code is up to 15 bits
+	// plus up to 5 extra bits, the H-D Distance code is up to 15 bits plus up
 	// to 13 extra bits and 15 + 5 + 15 + 13 == 48. However,
 	// args.src.available() assertions are made in terms of bytes, not bits.
 	//

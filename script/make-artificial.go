@@ -245,7 +245,7 @@ var deflateGlobals struct {
 
 	// Dynamic Huffman state.
 	whichHuffman uint32
-	// 0=Unused, 1=CodeLength, 2=Length/Literal, 3=Distance.
+	// 0=Unused, 1=CodeLength, 2=Literal/Length, 3=Distance.
 	huffmans [4]deflateHuffmanTable
 
 	// DHH (Dynamic Huffman, inside a Huffman table) state.
@@ -325,7 +325,7 @@ func deflateGlobalsWriteDynamicHuffmanTables() error {
 		}
 	}
 
-	// Write the Huffman tables for Length/Literal and Distance.
+	// Write the Huffman tables for Literal/Length and Distance.
 	{
 		numZeroes := uint32(0)
 		for i := uint32(0); i < numLCodes+numDCodes; i++ {
@@ -419,7 +419,7 @@ func parseDeflateWhichHuffman(s string) (num uint32, remaining string, ok bool) 
 	switch s {
 	case "CodeLength":
 		return 1, remaining, true
-	case "Length/Literal":
+	case "Literal/Length":
 		return 2, remaining, true
 	case "Distance":
 		return 3, remaining, true

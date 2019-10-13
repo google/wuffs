@@ -10,7 +10,7 @@ blockDynamicHuffman (final) {
 		18 11
 	}
 
-	huffman Length/Literal {
+	huffman Literal/Length {
 		# 102='f', 111='o', 256=EOB
 		111 0
 		102 10
