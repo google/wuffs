@@ -1021,14 +1021,12 @@ func (g *gen) writeInitializerImpl(b *buffer, n *a.Struct) error {
 	b.writes("  #pragma GCC diagnostic pop\n")
 	b.writes("  #endif\n")
 	b.writes("} else {\n")
-	b.writes("  void* p = &(self->private_impl);\n")
-	b.writes("  size_t n = sizeof(self->private_impl);\n")
 	b.writes("  if ((initialize_flags & WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {\n")
-	b.writes("    p = self;\n")
-	b.writes("    n = sizeof(*self);\n")
+	b.writes("    memset(self, 0, sizeof(*self));\n")
 	b.writes("    initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;\n")
+	b.writes("  } else {\n")
+	b.writes("    memset(&(self->private_impl), 0, sizeof(self->private_impl));\n")
 	b.writes("  }\n")
-	b.writes("  memset(p, 0, n);\n")
 	b.writes("}\n\n")
 
 	// Call any ctors on sub-structs.

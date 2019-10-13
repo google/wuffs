@@ -5035,15 +5035,13 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6047,15 +6045,13 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6342,15 +6338,13 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8102,15 +8096,13 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8699,15 +8691,13 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
@@ -11264,15 +11254,13 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
@@ -11747,15 +11735,13 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
