@@ -57,8 +57,11 @@ pri const dcode_magic_numbers array[32] base.u32 = [
 	0x401000B0, 0x401800B0, 0x402000C0, 0x403000C0, 0x404000D0, 0x406000D0, 0x08000000, 0x08000000,
 ]
 
-// TODO: replace the magic "big enough" 1024 with something more principled,
-// perhaps discovered via an exhaustive search.
+// huffs_table_size is the smallest power of 2 that is greater than or equal to
+// the worst-case size of the Huffman tables. See
+// script/print-deflate-huff-table-size.go which calculates that, for a 9-bit
+// primary table, the worst-case size is 852 for the Lit/Len table and 592 for
+// the Distance table.
 pri const huffs_table_size base.u32 = 1024
 pri const huffs_table_mask base.u32 = 1023
 

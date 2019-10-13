@@ -3,10 +3,6 @@
 make deflate
 
 blockDynamicHuffman (final) {
-	numLCodes 257
-	numDCodes 1
-	numCLCodeLengths 18
-
 	huffman CodeLength {
 		1  00
 		2  01

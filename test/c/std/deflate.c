@@ -118,6 +118,15 @@ golden_test deflate_deflate_distance_code_31_gt = {
         "deflate-distance-code-31.deflate",
 };
 
+golden_test deflate_deflate_huffman_primlen_9_gt = {
+    .want_filename =
+        "test/data/artificial/"
+        "deflate-huffman-primlen-9.deflate.decompressed",
+    .src_filename =
+        "test/data/artificial/"
+        "deflate-huffman-primlen-9.deflate",
+};
+
 golden_test deflate_midsummer_gt = {
     .want_filename = "test/data/midsummer.txt",    //
     .src_filename = "test/data/midsummer.txt.gz",  //
@@ -214,6 +223,63 @@ const char* test_wuffs_deflate_decode_deflate_distance_code_31() {
     RETURN_FAIL("got \"%s\", want \"%s\"", got,
                 wuffs_deflate__error__bad_huffman_code);
   }
+  return NULL;
+}
+
+const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
+  CHECK_FOCUS(__func__);
+
+  // First, treat this like any other compare-to-golden test.
+  const char* status = do_test_io_buffers(wuffs_deflate_decode,
+                                          &deflate_deflate_huffman_primlen_9_gt,
+                                          UINT64_MAX, UINT64_MAX);
+  if (status) {
+    return status;
+  }
+
+  // Second, check that the decoder's huffman table sizes match those predicted
+  // by the script/print-deflate-huff-table-size.go program.
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = global_src_slice,
+  });
+  wuffs_base__io_buffer got = ((wuffs_base__io_buffer){
+      .data = global_got_slice,
+  });
+
+  golden_test* gt = &deflate_deflate_huffman_primlen_9_gt;
+  status = read_file(&src, gt->src_filename);
+  if (status) {
+    return status;
+  }
+
+  wuffs_deflate__decoder dec;
+  status = wuffs_deflate__decoder__initialize(
+      &dec, sizeof dec, WUFFS_VERSION, WUFFS_INITIALIZE__DEFAULT_OPTIONS);
+  if (status) {
+    RETURN_FAIL("initialize: \"%s\"", status);
+  }
+  status = wuffs_deflate__decoder__decode_io_writer(&dec, &got, &src,
+                                                    global_work_slice);
+  if (status) {
+    RETURN_FAIL("decode_io_writer: \"%s\"", status);
+  }
+
+  int i;
+  for (i = 0; i < 2; i++) {
+    // Find the first unused (i.e. zero) entry in the i'th huffs table.
+    int got = wuffs_deflate__huffs_table_size;
+    while ((got > 0) && (dec.private_data.f_huffs[i][got - 1] == 0)) {
+      got--;
+    }
+
+    // See script/print-deflate-huff-table-size.go with primLen = 9 for how
+    // these expected values are derived.
+    int want = (i == 0) ? 852 : 592;
+    if (got != want) {
+      RETURN_FAIL("i=%d: got %d, want %d", i, got, want);
+    }
+  }
+
   return NULL;
 }
 
@@ -682,6 +748,13 @@ const char* test_mimic_deflate_decode_deflate_distance_code_31() {
   return NULL;
 }
 
+const char* test_mimic_deflate_decode_deflate_huffman_primlen_9() {
+  CHECK_FOCUS(__func__);
+  return do_test_io_buffers(mimic_deflate_decode,
+                            &deflate_deflate_huffman_primlen_9_gt, UINT64_MAX,
+                            UINT64_MAX);
+}
+
 const char* test_mimic_deflate_decode_midsummer() {
   CHECK_FOCUS(__func__);
   return do_test_io_buffers(mimic_deflate_decode, &deflate_midsummer_gt,
@@ -803,6 +876,7 @@ proc tests[] = {
     test_wuffs_deflate_decode_deflate_degenerate_huffman_unused,  //
     test_wuffs_deflate_decode_deflate_distance_32768,             //
     test_wuffs_deflate_decode_deflate_distance_code_31,           //
+    test_wuffs_deflate_decode_deflate_huffman_primlen_9,          //
     test_wuffs_deflate_decode_midsummer,                          //
     test_wuffs_deflate_decode_pi_just_one_read,                   //
     test_wuffs_deflate_decode_pi_many_big_reads,                  //
@@ -822,6 +896,7 @@ proc tests[] = {
     test_mimic_deflate_decode_deflate_degenerate_huffman_unused,  //
     test_mimic_deflate_decode_deflate_distance_32768,             //
     test_mimic_deflate_decode_deflate_distance_code_31,           //
+    test_mimic_deflate_decode_deflate_huffman_primlen_9,          //
     test_mimic_deflate_decode_midsummer,                          //
     test_mimic_deflate_decode_pi_just_one_read,                   //
     test_mimic_deflate_decode_pi_many_big_reads,                  //
