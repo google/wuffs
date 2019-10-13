@@ -488,3 +488,8 @@ values indexed by 0xDC (or 220 in decimal, and recall that the GCT maps color
 Indeed, opening `test/data/bricks-nodither.gif` in an image editor should
 verify that the top left pixel's RGB is {0x0F, 0xA7, 0xF6}, and likewise the
 bottom right pixel's RGB is {0x01, 0x24, 0x63}.
+
+
+# More Wire Format Examples
+
+See `test/data/artificial/gif-*.commentary.txt`

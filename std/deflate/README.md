@@ -538,3 +538,8 @@ The decoding is:
     0b111111101 256 (end of block)
 
 In other words, the block ends with "counsel?\n".
+
+
+# More Wire Format Examples
+
+See `test/data/artificial/deflate-*.commentary.txt`

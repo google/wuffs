@@ -268,3 +268,8 @@ Again, these four bytes contain three 9-bit codes:
 
 See `std/gif/README.md` for a complete worked example of LSB-first encoded LZW
 data, including a varying B width.
+
+
+# More Wire Format Examples
+
+See `test/data/artificial/gif-*.commentary.txt`
