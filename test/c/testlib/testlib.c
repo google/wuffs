@@ -57,9 +57,10 @@ wuffs_base__slice_u8 global_pixel_slice = ((wuffs_base__slice_u8){
 
 char fail_msg[65536] = {0};
 
-#define RETURN_FAIL(...)                               \
-  snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__); \
-  return fail_msg
+#define RETURN_FAIL(...)                                            \
+  return (snprintf(fail_msg, sizeof(fail_msg), ##__VA_ARGS__) >= 0) \
+             ? fail_msg                                             \
+             : "unknown failure (snprintf-related)"
 #define INCR_FAIL(msg, ...) \
   msg += snprintf(msg, sizeof(fail_msg) - (msg - fail_msg), ##__VA_ARGS__)
 
