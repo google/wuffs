@@ -14,6 +14,13 @@
 
 // ----------------
 
+// This program does not work (as of October 2019), because the upstream
+// https://github.com/Geal/gif.rs library does not build.
+//
+// See https://github.com/Geal/gif.rs/issues/5
+
+// ----------------
+
 // This program exercises the Rust GIF decoder at
 // https://github.com/Geal/gif.rs
 //
