@@ -15,17 +15,14 @@
 // ----------------
 
 // This program exercises the Rust GIF decoder at
-// https://github.com/PistonDevelopers/image-gif
+// https://github.com/image-rs/image-gif
+// which is the top result for https://crates.io/search?q=gif
 //
 // Wuffs' C code doesn't depend on Rust per se, but this program gives some
 // performance data for specific Rust GIF implementations. The equivalent Wuffs
-// benchmarks (on the same test image) are run via:
+// benchmarks (on the same test images) are run via:
 //
 // wuffs bench std/gif
-//
-// The Wuffs benchmark reports megabytes per second. This program reports
-// megapixels per second. The two concepts should be equivalent, since GIF
-// images' pixel data are always 1 byte per pixel indices into a color palette.
 //
 // To run this program, do "cargo run --release" from the parent directory (the
 // directory containing the Cargo.toml file).
@@ -37,6 +34,7 @@
 
 extern crate gif;
 
+use gif::SetParameter;
 use std::time::Instant;
 
 const ITERSCALE: u64 = 10;
@@ -48,79 +46,65 @@ fn main() {
     for _ in 0..REPS {
         bench(
             "1k_bw",
-            &mut dst[..32 * 32],
+            &mut dst[..],
             include_bytes!("../../../test/data/pjw-thumbnail.gif"),
             2000, // iters_unscaled
-            32, // width
-            32, // height
-            1, // first_pixel
-            1, // last_pixel
         );
 
         bench(
             "1k_color",
-            &mut dst[..36 * 28],
+            &mut dst[..],
             include_bytes!("../../../test/data/hippopotamus.regular.gif"),
             1000, // iters_unscaled
-            36, // width
-            28, // height
-            82, // first_pixel
-            225, // last_pixel
+        );
+
+        bench(
+            "10k_bgra",
+            &mut dst[..],
+            include_bytes!("../../../test/data/hat.gif"),
+            100, // iters_unscaled
         );
 
         bench(
             "10k_indexed",
-            &mut dst[..90 * 112],
+            &mut dst[..],
             include_bytes!("../../../test/data/hat.gif"),
             100, // iters_unscaled
-            90, // width
-            112, // height
-            0, // first_pixel
-            0, // last_pixel
         );
 
         bench(
             "20k",
-            &mut dst[..160 * 120],
+            &mut dst[..],
             include_bytes!("../../../test/data/bricks-gray.gif"),
             50, // iters_unscaled
-            160, // width
-            120, // height
-            85, // first_pixel
-            6, // last_pixel
         );
 
         bench(
             "100k_artificial",
-            &mut dst[..312 * 442],
+            &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.primitive.gif"),
             15, // iters_unscaled
-            312, // width
-            442, // height
-            102, // first_pixel
-            102, // last_pixel
         );
 
         bench(
             "100k_realistic",
-            &mut dst[..312 * 442],
+            &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.regular.gif"),
             10, // iters_unscaled
-            312, // width
-            442, // height
-            0, // first_pixel
-            0, // last_pixel
         );
 
         bench(
             "1000k",
-            &mut dst[..1165 * 859],
+            &mut dst[..],
             include_bytes!("../../../test/data/harvesters.gif"),
             1, // iters_unscaled
-            1165, // width
-            859, // height
-            0, // first_pixel
-            1, // last_pixel
+        );
+
+        bench(
+            "anim_screencap",
+            &mut dst[..],
+            include_bytes!("../../../test/data/gifplayer-muybridge.gif"),
+            1, // iters_unscaled
         );
     }
 }
@@ -130,53 +114,41 @@ fn bench(
     dst: &mut [u8], // Destination buffer.
     src: &[u8], // Source data.
     iters_unscaled: u64, // Base number of iterations.
-    width: u64, // Image width in pixels.
-    height: u64, // Image height in pixels.
-    first_pixel: u8, // Top left pixel's palette index.
-    last_pixel: u8, // Bottom right pixel's palette index.
 ) {
-    let start = Instant::now();
-
     let iters = iters_unscaled * ITERSCALE;
+    let output_32_bit_color = name.ends_with("_bgra");
+    let mut num_bytes = 0u64;
+
+    let start = Instant::now();
     for _ in 0..iters {
-        decode(&mut dst[..], src, width, height, first_pixel, last_pixel);
+        num_bytes += decode(&mut dst[..], src, output_32_bit_color);
     }
-
     let elapsed = start.elapsed();
-    let elapsed_nanos = elapsed.as_secs() * 1_000_000_000 + (elapsed.subsec_nanos() as u64);
 
-    let total_pixels: u64 = iters * width * height;
-    let kp_per_s: u64 = total_pixels * 1_000_000 / elapsed_nanos;
-
+    let elapsed_nanos = (elapsed.as_secs() * 1_000_000_000) + (elapsed.subsec_nanos() as u64);
+    let kb_per_s: u64 = num_bytes * 1_000_000 / elapsed_nanos;
     print!(
         "Benchmarkrust_gif_decode_{:16}   {:8}   {:12} ns/op   {:3}.{:03} MB/s\n",
         name,
         iters,
         elapsed_nanos / iters,
-        kp_per_s / 1_000,
-        kp_per_s % 1_000
+        kb_per_s / 1_000,
+        kb_per_s % 1_000
     );
 }
 
-fn decode(dst: &mut [u8], src: &[u8], width: u64, height: u64, first_pixel: u8, last_pixel: u8) {
-    // GIF images are 1 byte per pixel.
-    let num_bytes = (width * height * 1) as usize;
-
-    // Set up the hard-coded sanity check, executed below.
-    dst[0] = 0xFE;
-    dst[num_bytes - 1] = 0xFE;
-
-    let mut reader = gif::Decoder::new(src).read_info().unwrap();
-    reader.next_frame_info().unwrap().unwrap();
-
-    if reader.buffer_size() != num_bytes {
-        panic!("wrong num_bytes")
+// decode returns the number of bytes processed.
+fn decode(dst: &mut [u8], src: &[u8], output_32_bit_color: bool) -> u64 {
+    let mut decoder = gif::Decoder::new(src);
+    if output_32_bit_color {
+        decoder.set(gif::ColorOutput::RGBA);
     }
 
-    reader.read_into_buffer(dst).unwrap();
-
-    // A hard-coded sanity check that we decoded the pixel data correctly.
-    if (dst[0] != first_pixel) || (dst[num_bytes - 1] != last_pixel) {
-        panic!("wrong dst pixels")
+    let mut num_bytes = 0u64;
+    let mut reader = decoder.read_info().unwrap();
+    while let Some(_) = reader.next_frame_info().unwrap() {
+        num_bytes += reader.buffer_size() as u64;
+        reader.read_into_buffer(dst).unwrap();
     }
+    num_bytes
 }
