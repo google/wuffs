@@ -163,7 +163,7 @@ The `full_init` vs `part_init` suffixes are whether
 is unset or set.
 
 The libgif library doesn't export any API for decode-to-BGRA or decode-to-RGBA,
-so there are mimic numbers to compare to for the `bgra` suffix.
+so there are no mimic numbers to compare to for the `bgra` suffix.
 
     name                                             speed     vs_mimic
 
@@ -229,7 +229,7 @@ To reproduce these numbers:
 
 For comparison, here are Rust 1.37.0's numbers, using the
 [image-rs/image-gif](https://github.com/image-rs/image-gif) crate, easily the
-top result for [crates.io 'gif'](https://crates.io/search?q=gif).
+top `crates.io` result for ["gif"](https://crates.io/search?q=gif).
 
     name                                             speed     vs_mimic
 
