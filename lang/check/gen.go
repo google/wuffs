@@ -30,31 +30,6 @@ import (
 	"strings"
 )
 
-var reasons = [...]string{
-	"a < b: b > a",
-	"a < b: a < c; c < b",
-	"a < b: a < c; c == b",
-	"a < b: a == c; c < b",
-	"a < b: a < c; c <= b",
-	"a < b: a <= c; c < b",
-
-	"a > b: b < a",
-
-	"a <= b: b >= a",
-	"a <= b: a <= c; c <= b",
-	"a <= b: a <= c; c == b",
-	"a <= b: a == c; c <= b",
-
-	"a >= b: b <= a",
-
-	"a < (b + c): a < c; 0 <= b",
-	"a < (b + c): a < (b0 + c0); b0 <= b; c0 <= c",
-
-	"a <= (a + b): 0 <= b",
-
-	"(a + b) <= c: a <= (c - b)",
-}
-
 func main() {
 	if err := main1(); err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
@@ -64,6 +39,10 @@ func main() {
 
 func main1() error {
 	out.WriteString(header)
+	reasons, err := loadReasons()
+	if err != nil {
+		return err
+	}
 	for _, reason := range reasons {
 		nextTmp = 0
 		names = map[string]bool{}
@@ -78,6 +57,36 @@ func main1() error {
 		return err
 	}
 	return ioutil.WriteFile("data.go", formatted, 0644)
+}
+
+func loadReasons() ([]string, error) {
+	s, err := ioutil.ReadFile("axioms.md")
+	if err != nil {
+		return nil, err
+	}
+	dashes := []byte("\n\n---\n\n")
+	if i := bytes.Index(s, dashes); i < 0 {
+		return nil, fmt.Errorf("could not parse axioms.md")
+	} else {
+		s = s[i+len(dashes):]
+	}
+	ret := []string(nil)
+	lquotes := []byte("`\"")
+	rquotes := []byte("\"`")
+	for {
+		if i := bytes.Index(s, lquotes); i < 0 {
+			break
+		} else {
+			s = s[i+len(lquotes):]
+		}
+		if i := bytes.Index(s, rquotes); i < 0 {
+			break
+		} else {
+			ret = append(ret, string(s[:i]))
+			s = s[i+len(rquotes):]
+		}
+	}
+	return ret, nil
 }
 
 var (
