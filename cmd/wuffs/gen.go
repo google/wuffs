@@ -43,17 +43,23 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	langsFlag := flags.String("langs", langsDefault, langsUsage)
 	skipgendepsFlag := flags.Bool("skipgendeps", skipgendepsDefault, skipgendepsUsage)
 
+	ccompilersFlag := (*string)(nil)
 	skipgenFlag := (*bool)(nil)
-	if genlib {
-		skipgenFlag = flags.Bool("skipgen", skipgenDefault, skipgenUsage)
-	}
 	versionFlag := (*string)(nil)
-	if !genlib {
+	if genlib {
+		ccompilersFlag = flags.String("ccompilers", cf.CcompilersDefault, cf.CcompilersUsage)
+		skipgenFlag = flags.Bool("skipgen", skipgenDefault, skipgenUsage)
+	} else {
 		versionFlag = flags.String("version", cf.VersionDefault, cf.VersionUsage)
 	}
 
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	if genlib {
+		if !cf.IsAlphaNumericIsh(*ccompilersFlag) {
+			return fmt.Errorf("bad -ccompilers flag value %q", *ccompilersFlag)
+		}
 	}
 	if !cf.IsAlphaNumericIsh(*cformatterFlag) {
 		return fmt.Errorf("bad -cformatter flag value %q", *cformatterFlag)
@@ -78,6 +84,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	h := genHelper{
 		wuffsRoot:   wuffsRoot,
 		langs:       langs,
+		ccompilers:  *ccompilersFlag,
 		cformatter:  *cformatterFlag,
 		genlinenum:  *genlinenumFlag,
 		skipgen:     genlib && *skipgenFlag,
@@ -107,6 +114,7 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 type genHelper struct {
 	wuffsRoot   string
 	langs       []string
+	ccompilers  string
 	cformatter  string
 	genlinenum  bool
 	skipgen     bool
@@ -321,6 +329,9 @@ func (h *genHelper) genlibAffected() error {
 		args := []string{"genlib"}
 		args = append(args, "-dstdir", filepath.Join(h.wuffsRoot, "gen", "lib", lang))
 		args = append(args, "-srcdir", filepath.Join(h.wuffsRoot, "gen", lang))
+		if lang == "c" {
+			args = append(args, fmt.Sprintf("-ccompilers=%s", h.ccompilers))
+		}
 		args = append(args, h.affected...)
 		cmd := exec.Command(command, args...)
 		cmd.Stdout = os.Stdout
