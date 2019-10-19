@@ -5,3 +5,4 @@ authors = ["Nigel Tao <nigeltao@golang.org>"]
 
 [dependencies]
 gif     = "*"
+rustc_version_runtime = "*"

@@ -33,6 +33,7 @@
 // handle duplicate names (https://github.com/rust-lang/cargo/issues/1311).
 
 extern crate gif;
+extern crate rustc_version_runtime;
 
 use gif::SetParameter;
 use std::time::Instant;
@@ -41,6 +42,18 @@ const ITERSCALE: u64 = 10;
 const REPS: u64 = 5;
 
 fn main() {
+    let version = rustc_version_runtime::version();
+    print!(
+        "# Rust {}.{}.{}\n",
+        version.major,
+        version.minor,
+        version.patch
+    );
+    print!("#\n");
+    print!("# The output format, including the \"Benchmark\" prefixes, is compatible with the\n");
+    print!("# https://godoc.org/golang.org/x/perf/cmd/benchstat tool. To install it, first\n");
+    print!("# install Go, then run \"go get golang.org/x/perf/cmd/benchstat\".\n");
+
     let mut dst = vec![0u8; 64 * 1024 * 1024];
 
     for _ in 0..REPS {
