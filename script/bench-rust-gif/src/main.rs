@@ -16,7 +16,7 @@
 
 // This program exercises the Rust GIF decoder at
 // https://github.com/image-rs/image-gif
-// which is the top result for https://crates.io/search?q=gif
+// which is the top result for https://crates.io/search?q=gif&sort=downloads
 //
 // Wuffs' C code doesn't depend on Rust per se, but this program gives some
 // performance data for specific Rust GIF implementations. The equivalent Wuffs
