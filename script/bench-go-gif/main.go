@@ -117,7 +117,7 @@ func main1() error {
 			if err != nil {
 				return err
 			}
-			for i := uint64(1); i < iters; i++ {
+			for j := uint64(1); j < iters; j++ {
 				decode(src, bgra)
 			}
 
