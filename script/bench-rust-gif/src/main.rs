@@ -63,6 +63,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/pjw-thumbnail.gif"),
             i == 0, // warm_up
+            32 * 32 * 1, // want_num_bytes
             2000, // iters_unscaled
         );
 
@@ -71,6 +72,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/hippopotamus.regular.gif"),
             i == 0, // warm_up
+            36 * 28 * 1, // want_num_bytes
             1000, // iters_unscaled
         );
 
@@ -79,6 +81,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/hat.gif"),
             i == 0, // warm_up
+            90 * 112 * 4, // want_num_bytes
             100, // iters_unscaled
         );
 
@@ -87,6 +90,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/hat.gif"),
             i == 0, // warm_up
+            90 * 112 * 1, // want_num_bytes
             100, // iters_unscaled
         );
 
@@ -95,6 +99,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/bricks-gray.gif"),
             i == 0, // warm_up
+            160 * 120 * 1, // want_num_bytes
             50, // iters_unscaled
         );
 
@@ -103,6 +108,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.primitive.gif"),
             i == 0, // warm_up
+            312 * 442 * 1, // want_num_bytes
             15, // iters_unscaled
         );
 
@@ -111,6 +117,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.regular.gif"),
             i == 0, // warm_up
+            312 * 442 * 1, // want_num_bytes
             10, // iters_unscaled
         );
 
@@ -119,6 +126,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/harvesters.gif"),
             i == 0, // warm_up
+            1165 * 859, // want_num_bytes
             1, // iters_unscaled
         );
 
@@ -127,6 +135,7 @@ fn main() {
             &mut dst[..],
             include_bytes!("../../../test/data/gifplayer-muybridge.gif"),
             i == 0, // warm_up
+            4652198, // want_num_bytes
             1, // iters_unscaled
         );
     }
@@ -137,20 +146,25 @@ fn bench(
     dst: &mut [u8], // Destination buffer.
     src: &[u8], // Source data.
     warm_up: bool, // Whether this is a warm up rep.
+    want_num_bytes: u64, // Expected num_bytes per iteration.
     iters_unscaled: u64, // Base number of iterations.
 ) {
     let iters = iters_unscaled * ITERSCALE;
     let output_32_bit_color = name.ends_with("_bgra");
-    let mut num_bytes = 0u64;
+    let mut total_num_bytes = 0u64;
 
     let start = Instant::now();
     for _ in 0..iters {
-        num_bytes += decode(&mut dst[..], src, output_32_bit_color);
+        let n = decode(&mut dst[..], src, output_32_bit_color);
+        if n != want_num_bytes {
+            panic!("num_bytes: got {}, want {}", n, want_num_bytes);
+        }
+        total_num_bytes += n;
     }
     let elapsed = start.elapsed();
 
     let elapsed_nanos = (elapsed.as_secs() * 1_000_000_000) + (elapsed.subsec_nanos() as u64);
-    let kb_per_s: u64 = num_bytes * 1_000_000 / elapsed_nanos;
+    let kb_per_s: u64 = total_num_bytes * 1_000_000 / elapsed_nanos;
 
     if warm_up {
         return;
@@ -168,12 +182,12 @@ fn bench(
 
 // decode returns the number of bytes processed.
 fn decode(dst: &mut [u8], src: &[u8], output_32_bit_color: bool) -> u64 {
+    let mut num_bytes = 0u64;
     let mut decoder = gif::Decoder::new(src);
     if output_32_bit_color {
         decoder.set(gif::ColorOutput::RGBA);
     }
 
-    let mut num_bytes = 0u64;
     let mut reader = decoder.read_info().unwrap();
     while let Some(_) = reader.next_frame_info().unwrap() {
         num_bytes += reader.buffer_size() as u64;
