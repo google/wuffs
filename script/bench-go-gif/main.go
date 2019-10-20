@@ -44,47 +44,55 @@ const (
 
 type testCase = struct {
 	benchname     string
-	filename      string
+	src           []byte
 	itersUnscaled uint32
 }
 
 var testCases = []testCase{{
 	benchname:     "go_gif_decode_1k_bw",
-	filename:      "test/data/pjw-thumbnail.gif",
+	src:           mustLoad("test/data/pjw-thumbnail.gif"),
 	itersUnscaled: 2000,
 }, {
 	benchname:     "go_gif_decode_1k_color",
-	filename:      "test/data/hippopotamus.regular.gif",
+	src:           mustLoad("test/data/hippopotamus.regular.gif"),
 	itersUnscaled: 1000,
 }, {
 	benchname:     "go_gif_decode_10k_bgra",
-	filename:      "test/data/hat.gif",
+	src:           mustLoad("test/data/hat.gif"),
 	itersUnscaled: 100,
 }, {
 	benchname:     "go_gif_decode_10k_indexed",
-	filename:      "test/data/hat.gif",
+	src:           mustLoad("test/data/hat.gif"),
 	itersUnscaled: 100,
 }, {
 	benchname:     "go_gif_decode_20k",
-	filename:      "test/data/bricks-gray.gif",
+	src:           mustLoad("test/data/bricks-gray.gif"),
 	itersUnscaled: 50,
 }, {
 	benchname:     "go_gif_decode_100k_artificial",
-	filename:      "test/data/hibiscus.primitive.gif",
+	src:           mustLoad("test/data/hibiscus.primitive.gif"),
 	itersUnscaled: 15,
 }, {
 	benchname:     "go_gif_decode_100k_realistic",
-	filename:      "test/data/hibiscus.regular.gif",
+	src:           mustLoad("test/data/hibiscus.regular.gif"),
 	itersUnscaled: 10,
 }, {
 	benchname:     "go_gif_decode_1000k",
-	filename:      "test/data/harvesters.gif",
+	src:           mustLoad("test/data/harvesters.gif"),
 	itersUnscaled: 1,
 }, {
 	benchname:     "go_gif_decode_anim_screencap",
-	filename:      "test/data/gifplayer-muybridge.gif",
+	src:           mustLoad("test/data/gifplayer-muybridge.gif"),
 	itersUnscaled: 1,
 }}
+
+func mustLoad(filename string) []byte {
+	src, err := ioutil.ReadFile("../../" + filename)
+	if err != nil {
+		panic(err.Error())
+	}
+	return src
+}
 
 func main() {
 	if err := main1(); err != nil {
@@ -102,23 +110,18 @@ func main1() error {
 
 	for i := -1; i < reps; i++ {
 		for _, tc := range testCases {
-			src, err := ioutil.ReadFile("../../" + tc.filename)
-			if err != nil {
-				return err
-			}
-
 			runtime.GC()
 
 			start := time.Now()
 
 			iters := uint64(tc.itersUnscaled) * iterscale
 			bgra := strings.HasSuffix(tc.benchname, "_bgra")
-			numBytes, err := decode(src, bgra)
+			numBytes, err := decode(tc.src, bgra)
 			if err != nil {
 				return err
 			}
 			for j := uint64(1); j < iters; j++ {
-				decode(src, bgra)
+				decode(tc.src, bgra)
 			}
 
 			elapsedNanos := time.Since(start)
