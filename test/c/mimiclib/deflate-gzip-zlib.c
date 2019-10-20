@@ -64,13 +64,16 @@ const char* mimic_deflate_zlib_decode(wuffs_base__io_buffer* dst,
 
 const char* mimic_deflate_decode(wuffs_base__io_buffer* dst,
                                  wuffs_base__io_buffer* src,
+                                 uint32_t wuffs_initialize_flags,
                                  uint64_t wlimit,
                                  uint64_t rlimit) {
-  return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, true);
+  return mimic_deflate_zlib_decode(dst, src, wuffs_initialize_flags, wlimit,
+                                   rlimit, true);
 }
 
 const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
   return "miniz does not implement gzip";
@@ -78,9 +81,11 @@ const char* mimic_gzip_decode(wuffs_base__io_buffer* dst,
 
 const char* mimic_zlib_decode(wuffs_base__io_buffer* dst,
                               wuffs_base__io_buffer* src,
+                              uint32_t wuffs_initialize_flags,
                               uint64_t wlimit,
                               uint64_t rlimit) {
-  return mimic_deflate_zlib_decode(dst, src, wlimit, rlimit, false);
+  return mimic_deflate_zlib_decode(dst, src, wuffs_initialize_flags, wlimit,
+                                   rlimit, false);
 }
 
 const char* mimic_zlib_decode_with_dictionary(wuffs_base__io_buffer* got,
