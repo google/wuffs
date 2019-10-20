@@ -56,11 +56,13 @@ fn main() {
 
     let mut dst = vec![0u8; 64 * 1024 * 1024];
 
-    for _ in 0..REPS {
+    // The various magic constants below are copied from test/c/std/gif.c
+    for i in 0..(1 + REPS) {
         bench(
             "1k_bw",
             &mut dst[..],
             include_bytes!("../../../test/data/pjw-thumbnail.gif"),
+            i == 0, // warm_up
             2000, // iters_unscaled
         );
 
@@ -68,6 +70,7 @@ fn main() {
             "1k_color",
             &mut dst[..],
             include_bytes!("../../../test/data/hippopotamus.regular.gif"),
+            i == 0, // warm_up
             1000, // iters_unscaled
         );
 
@@ -75,6 +78,7 @@ fn main() {
             "10k_bgra",
             &mut dst[..],
             include_bytes!("../../../test/data/hat.gif"),
+            i == 0, // warm_up
             100, // iters_unscaled
         );
 
@@ -82,6 +86,7 @@ fn main() {
             "10k_indexed",
             &mut dst[..],
             include_bytes!("../../../test/data/hat.gif"),
+            i == 0, // warm_up
             100, // iters_unscaled
         );
 
@@ -89,6 +94,7 @@ fn main() {
             "20k",
             &mut dst[..],
             include_bytes!("../../../test/data/bricks-gray.gif"),
+            i == 0, // warm_up
             50, // iters_unscaled
         );
 
@@ -96,6 +102,7 @@ fn main() {
             "100k_artificial",
             &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.primitive.gif"),
+            i == 0, // warm_up
             15, // iters_unscaled
         );
 
@@ -103,6 +110,7 @@ fn main() {
             "100k_realistic",
             &mut dst[..],
             include_bytes!("../../../test/data/hibiscus.regular.gif"),
+            i == 0, // warm_up
             10, // iters_unscaled
         );
 
@@ -110,6 +118,7 @@ fn main() {
             "1000k",
             &mut dst[..],
             include_bytes!("../../../test/data/harvesters.gif"),
+            i == 0, // warm_up
             1, // iters_unscaled
         );
 
@@ -117,6 +126,7 @@ fn main() {
             "anim_screencap",
             &mut dst[..],
             include_bytes!("../../../test/data/gifplayer-muybridge.gif"),
+            i == 0, // warm_up
             1, // iters_unscaled
         );
     }
@@ -126,6 +136,7 @@ fn bench(
     name: &str, // Benchmark name.
     dst: &mut [u8], // Destination buffer.
     src: &[u8], // Source data.
+    warm_up: bool, // Whether this is a warm up rep.
     iters_unscaled: u64, // Base number of iterations.
 ) {
     let iters = iters_unscaled * ITERSCALE;
@@ -140,6 +151,11 @@ fn bench(
 
     let elapsed_nanos = (elapsed.as_secs() * 1_000_000_000) + (elapsed.subsec_nanos() as u64);
     let kb_per_s: u64 = num_bytes * 1_000_000 / elapsed_nanos;
+
+    if warm_up {
+        return;
+    }
+
     print!(
         "Benchmarkrust_gif_decode_{:16}   {:8}   {:12} ns/op   {:3}.{:03} MB/s\n",
         name,
