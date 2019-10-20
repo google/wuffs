@@ -20,7 +20,7 @@
 //
 // Wuffs' C code doesn't depend on Rust per se, but this program gives some
 // performance data for specific Rust Deflate implementations. The equivalent
-// Wuffs benchmarks (on the same test images) are run via:
+// Wuffs benchmarks (on the same test files) are run via:
 //
 // wuffs bench std/deflate
 //
