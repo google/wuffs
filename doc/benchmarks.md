@@ -148,6 +148,63 @@ is unset or set.
     mimic_deflate_decode_100k_many_big_reads          256MB/s  1.00x
 
 
+## Deflate (C, miniz)
+
+For comparison, here are [miniz](https://github.com/richgel999/miniz) 2.1.0's
+numbers.
+
+    name                                             speed     vs_mimic
+
+    miniz_deflate_decode_1k/clang8                    174MB/s  0.80x
+    miniz_deflate_decode_10k/clang8                   245MB/s  0.91x
+    miniz_deflate_decode_100k_just_one_read/clang8    309MB/s  0.94x
+
+    miniz_deflate_decode_1k/gcc9                      158MB/s  0.73x
+    miniz_deflate_decode_10k/gcc9                     221MB/s  0.82x
+    miniz_deflate_decode_100k_just_one_read/gcc9      250MB/s  0.76x
+
+To reproduce these numbers, look in `test/c/mimiclib/deflate-gzip-zlib.c`.
+
+
+## Deflate (Go)
+
+For comparison, here are Go 1.12.10's numbers, using Go's standard library's
+`compress/flate` package.
+
+    name                                             speed     vs_mimic
+
+    go_deflate_decode_1k                             45.4MB/s  0.21x
+    go_deflate_decode_10k                            82.5MB/s  0.31x
+    go_deflate_decode_100k                           94.0MB/s  0.29x
+
+To reproduce these numbers:
+
+    git clone https://github.com/google/wuffs.git
+    cd wuffs/script/bench-go-deflate/
+    go run main.go
+
+
+## Deflate (Rust)
+
+For comparison, here are Rust 1.37.0's numbers, using the
+[alexcrichton/flate2-rs](https://github.com/alexcrichton/flate2-rs) and
+[Frommi/miniz_oxide](https://github.com/Frommi/miniz_oxide) crates, which [this
+file](https://github.com/sile/libflate/blob/77a1004edf6518a0badab7ce8837bc5338ff9bc3/README.md#an-informal-benchmark)
+suggests is the fastest pure-Rust Deflate decoder.
+
+    name                                             speed     vs_mimic
+
+    rust_deflate_decode_1k                            104MB/s  0.48x
+    rust_deflate_decode_10k                           202MB/s  0.75x
+    rust_deflate_decode_100k                          218MB/s  0.66x
+
+To reproduce these numbers:
+
+    git clone https://github.com/google/wuffs.git
+    cd wuffs/script/bench-rust-deflate/
+    cargo run --release
+
+
 # GIF
 
 The `1k`, `10k`, etc. numbers are approximately how many pixels there are in
