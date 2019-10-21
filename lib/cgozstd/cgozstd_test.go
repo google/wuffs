@@ -62,7 +62,10 @@ func TestRoundTrip(tt *testing.T) {
 
 		// Compress.
 		{
-			w.Reset(buf, nil, 0)
+			if err := w.Reset(buf, nil, 0); err != nil {
+				w.Close()
+				tt.Fatalf("i=%d: Reset: %v", i, err)
+			}
 			if _, err := w.Write([]byte(uncompressedMore)); err != nil {
 				w.Close()
 				tt.Fatalf("i=%d: Write: %v", i, err)
@@ -80,7 +83,10 @@ func TestRoundTrip(tt *testing.T) {
 
 		// Uncompress.
 		{
-			r.Reset(strings.NewReader(compressed), nil)
+			if err := r.Reset(strings.NewReader(compressed), nil); err != nil {
+				r.Close()
+				tt.Fatalf("i=%d: Reset: %v", i, err)
+			}
 			gotBytes, err := ioutil.ReadAll(r)
 			if err != nil {
 				r.Close()
@@ -93,6 +99,67 @@ func TestRoundTrip(tt *testing.T) {
 			if err := r.Close(); err != nil {
 				tt.Fatalf("i=%d: Close: %v", i, err)
 			}
+		}
+	}
+}
+
+func TestDictionary(tt *testing.T) {
+	if !cgoEnabled {
+		tt.Skip("cgo is not enabled")
+	}
+
+	const (
+		abc          = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		uncompressed = abc + "123"
+	)
+
+	for _, withDict := range []bool{false, true} {
+		buf := &bytes.Buffer{}
+		dictionary, name := []byte(nil), "sans dictionary"
+		if withDict {
+			dictionary, name = []byte(abc), "with dictionary"
+		}
+
+		w := &Writer{}
+		if err := w.Reset(buf, dictionary, 0); err != nil {
+			w.Close()
+			tt.Fatalf("%s: Reset: %v", name, err)
+		}
+		if _, err := w.Write([]byte(uncompressed)); err != nil {
+			w.Close()
+			tt.Fatalf("%s: Write: %v", name, err)
+		}
+		if err := w.Close(); err != nil {
+			tt.Fatalf("%s: Close: %v", name, err)
+		}
+
+		compressed := buf.String()
+		if withDict {
+			if n := buf.Len(); n >= 30 {
+				tt.Fatalf("%s: compressed length: got %d, want < 30", name, n)
+			}
+		} else {
+			if n := buf.Len(); n < 50 {
+				tt.Fatalf("%s: compressed length: got %d, want >= 50", name, n)
+			}
+		}
+
+		r := &Reader{}
+		if err := r.Reset(strings.NewReader(compressed), dictionary); err != nil {
+			r.Close()
+			tt.Fatalf("%s: Reset: %v", name, err)
+		}
+		gotBytes, err := ioutil.ReadAll(r)
+		if err != nil {
+			r.Close()
+			tt.Fatalf("%s: ReadAll: %v", name, err)
+		}
+		if got, want := string(gotBytes), uncompressed; got != want {
+			r.Close()
+			tt.Fatalf("%s:\ngot  %q\nwant %q", name, got, want)
+		}
+		if err := r.Close(); err != nil {
+			tt.Fatalf("%s: Close: %v", name, err)
 		}
 	}
 }
