@@ -184,6 +184,13 @@ func (e errCode) Error() string {
 	return "cgozstd: unknown error"
 }
 
+func slicePointer(s []uint8) unsafe.Pointer {
+	if len(s) == 0 {
+		return nil
+	}
+	return unsafe.Pointer(&s[0])
+}
+
 // ReaderRecycler can lessen the new memory allocated when calling Reader.Reset
 // on a bound Reader.
 //
@@ -217,8 +224,6 @@ type Reader struct {
 	i, j uint32
 	r    io.Reader
 
-	dictionary []byte
-
 	readErr error
 	zstdErr error
 
@@ -243,8 +248,29 @@ func (r *Reader) Reset(reader io.Reader, dictionary []byte) error {
 		dictionary = dictionary[len(dictionary)-maxLen:]
 	}
 
+	z := (*C.ZSTD_DCtx)(nil)
+	if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z != nil) {
+		z, r.recycler.z = r.recycler.z, nil
+	} else {
+		z = C.ZSTD_createDStream()
+		if z == nil {
+			return errOutOfMemory
+		}
+	}
+
+	if e := errCode(C.cgozstd_decompress_start(z,
+		(*C.uint8_t)(slicePointer(dictionary)),
+		(C.uint32_t)(len(dictionary)),
+	)); e != 0 {
+		C.ZSTD_freeDCtx(z)
+		if e < 0 {
+			return errZstdVersionTooSmall
+		}
+		return e
+	}
+
 	r.r = reader
-	r.dictionary = dictionary
+	r.z = z
 	return nil
 }
 
@@ -279,37 +305,6 @@ func (r *Reader) Read(p []byte) (int, error) {
 	}
 	if r.r == nil {
 		return 0, errMissingResetCall
-	}
-
-	if r.z == nil {
-		if (r.recycler != nil) && !r.recycler.closed && (r.recycler.z != nil) {
-			r.z, r.recycler.z = r.recycler.z, nil
-		} else {
-			r.z = C.ZSTD_createDStream()
-			if r.z == nil {
-				return 0, errOutOfMemory
-			}
-		}
-
-		e := errCode(0)
-		if len(r.dictionary) == 0 {
-			e = errCode(C.cgozstd_decompress_start(r.z,
-				(*C.uint8_t)(nil),
-				(C.uint32_t)(0),
-			))
-		} else {
-			e = errCode(C.cgozstd_decompress_start(r.z,
-				(*C.uint8_t)(unsafe.Pointer(&r.dictionary[0])),
-				(C.uint32_t)(len(r.dictionary)),
-			))
-		}
-		if e < 0 {
-			r.zstdErr = errZstdVersionTooSmall
-			return 0, r.zstdErr
-		} else if e != 0 {
-			r.zstdErr = e
-			return 0, r.zstdErr
-		}
 	}
 
 	if len(p) > maxLen {
@@ -393,12 +388,9 @@ func (c *WriterRecycler) Close() error {
 //
 // The zero value is not usable until Reset is called.
 type Writer struct {
-	buf   [65536]byte
-	j     uint32
-	w     io.Writer
-	level compression.Level
-
-	dictionary []byte
+	buf [65536]byte
+	j   uint32
+	w   io.Writer
 
 	writeErr error
 
@@ -408,8 +400,8 @@ type Writer struct {
 	a C.advances
 }
 
-func (w *Writer) zstdCompressionLevel() int32 {
-	return w.level.Interpolate(1, 2, 3, 15, 22)
+func zstdCompressionLevel(level compression.Level) int32 {
+	return level.Interpolate(1, 2, 3, 15, 22)
 }
 
 // Reset implements compression.Writer.
@@ -425,9 +417,30 @@ func (w *Writer) Reset(writer io.Writer, dictionary []byte, level compression.Le
 		dictionary = dictionary[len(dictionary)-maxLen:]
 	}
 
+	z := (*C.ZSTD_CCtx)(nil)
+	if (w.recycler != nil) && !w.recycler.closed && (w.recycler.z != nil) {
+		z, w.recycler.z = w.recycler.z, nil
+	} else {
+		z = C.ZSTD_createCStream()
+		if z == nil {
+			return errOutOfMemory
+		}
+	}
+
+	if e := errCode(C.cgozstd_compress_start(z,
+		(*C.uint8_t)(slicePointer(dictionary)),
+		(C.uint32_t)(len(dictionary)),
+		C.int(zstdCompressionLevel(level)),
+	)); e != 0 {
+		C.ZSTD_freeCCtx(z)
+		if e < 0 {
+			return errZstdVersionTooSmall
+		}
+		return e
+	}
+
 	w.w = writer
-	w.level = level
-	w.dictionary = dictionary
+	w.z = z
 	return nil
 }
 
@@ -510,39 +523,6 @@ func (w *Writer) Write(p []byte) (int, error) {
 func (w *Writer) write(p []byte, final bool) error {
 	if len(p) > maxLen {
 		panic("unreachable")
-	}
-
-	if w.z == nil {
-		if (w.recycler != nil) && !w.recycler.closed && (w.recycler.z != nil) {
-			w.z, w.recycler.z = w.recycler.z, nil
-		} else {
-			w.z = C.ZSTD_createCStream()
-			if w.z == nil {
-				return errOutOfMemory
-			}
-		}
-
-		e := errCode(0)
-		if len(w.dictionary) == 0 {
-			e = errCode(C.cgozstd_compress_start(w.z,
-				(*C.uint8_t)(nil),
-				(C.uint32_t)(0),
-				C.int(w.zstdCompressionLevel()),
-			))
-		} else {
-			e = errCode(C.cgozstd_compress_start(w.z,
-				(*C.uint8_t)(unsafe.Pointer(&w.dictionary[0])),
-				(C.uint32_t)(len(w.dictionary)),
-				C.int(w.zstdCompressionLevel()),
-			))
-		}
-		if e < 0 {
-			w.writeErr = errZstdVersionTooSmall
-			return w.writeErr
-		} else if e != 0 {
-			w.writeErr = e
-			return w.writeErr
-		}
 	}
 
 	for (len(p) > 0) || final {
