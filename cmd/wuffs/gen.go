@@ -84,11 +84,13 @@ func doGenGenlib(wuffsRoot string, args []string, genlib bool) error {
 	h := genHelper{
 		wuffsRoot:   wuffsRoot,
 		langs:       langs,
-		ccompilers:  *ccompilersFlag,
 		cformatter:  *cformatterFlag,
 		genlinenum:  *genlinenumFlag,
 		skipgen:     genlib && *skipgenFlag,
 		skipgendeps: *skipgendepsFlag,
+	}
+	if genlib {
+		h.ccompilers = *ccompilersFlag
 	}
 
 	for _, arg := range args {
