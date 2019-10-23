@@ -119,12 +119,11 @@ extern "C" {
 // wuffs_foo__bar__initialize will initialize the entire struct value to zeroes
 // (unless WUFFS_INITIALIZE__ALREADY_ZEROED is set).
 //
-// Setting this bit gives a small absolute improvement on micro-benchmarks, but
-// this can be a large relative effect, up to 2x faster, when the actual work
-// to be done is also small, such as decompressing small input. See git commit
-// 438fc105 "Move some struct fields to private_data" for some numbers and a
-// discussion, noting that its commit message was written before this
-// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED option was defined.
+// Setting this bit (avoiding a fixed-size cost) gives a small absolute
+// improvement on micro-benchmarks, mostly noticable (in relative terms) only
+// when the actual work to do (i.e. the input) is also small. Look for
+// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED in
+// https://github.com/google/wuffs/blob/master/doc/benchmarks.md for numbers.
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
