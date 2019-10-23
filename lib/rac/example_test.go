@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash/adler32"
+	"hash/crc32"
 	"io"
 	"log"
 	"os"
@@ -106,17 +107,23 @@ func Example_indexLocationAtStart() {
 	}
 
 	dict := []byte(" sheep.\n")
-	hasher := adler32.New()
-	hasher.Write(dict)
-	if len(dict) > 0xFFFF {
+	if len(dict) >= (1 << 30) {
 		log.Fatal("len(dict) is too large")
 	}
 	encodedDict := []byte{
 		uint8(len(dict) >> 0),
 		uint8(len(dict) >> 8),
+		uint8(len(dict) >> 16),
+		uint8(len(dict) >> 24),
 	}
 	encodedDict = append(encodedDict, dict...)
-	encodedDict = hasher.Sum(encodedDict)
+	checksum := crc32.ChecksumIEEE(dict)
+	encodedDict = append(encodedDict,
+		uint8(checksum>>0),
+		uint8(checksum>>8),
+		uint8(checksum>>16),
+		uint8(checksum>>24),
+	)
 	fmt.Printf("Encoded dictionary resource:\n%s\n", hex.Dump(encodedDict))
 
 	dictResource, err := w.AddResource(encodedDict)
@@ -180,17 +187,17 @@ func Example_indexLocationAtStart() {
 		// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
 		dict := []byte(nil)
 		if secondary := encoded[chunk.CSecondary[0]:chunk.CSecondary[1]]; len(secondary) > 0 {
-			if len(secondary) < 6 {
+			if len(secondary) < 8 {
 				log.Fatalf("invalid secondary data")
 			}
-			dictLen := int(binary.LittleEndian.Uint16(secondary))
-			secondary = secondary[2:]
-			if (dictLen + 4) > len(secondary) {
+			dictLen := int(binary.LittleEndian.Uint32(secondary))
+			secondary = secondary[4:]
+			if (dictLen >= (1 << 30)) || ((dictLen + 4) > len(secondary)) {
 				log.Fatalf("invalid secondary data")
 			}
-			checksum := binary.BigEndian.Uint32(secondary[dictLen:])
+			checksum := binary.LittleEndian.Uint32(secondary[dictLen:])
 			dict = secondary[:dictLen]
-			if checksum != adler32.Checksum(dict) {
+			if checksum != crc32.ChecksumIEEE(dict) {
 				log.Fatalf("invalid checksum")
 			}
 		}
@@ -222,7 +229,7 @@ func Example_indexLocationAtStart() {
 
 	// Output:
 	// Encoded dictionary resource:
-	// 00000000  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e        |.. sheep.....n|
+	// 00000000  08 00 00 00 20 73 68 65  65 70 2e 0a d0 8d 7a 47  |.... sheep....zG|
 	//
 	// Encoded chunk #0:
 	// 00000000  78 f9 0b e0 02 6e f2 cf  4b 85 31 01 01 00 00 ff  |x....n..K.1.....|
@@ -237,16 +244,17 @@ func Example_indexLocationAtStart() {
 	// 00000010  00 ff ff 21 6e 04 66                              |...!n.f|
 	//
 	// RAC file:
-	// 00000000  72 c3 63 04 71 b5 00 ff  00 00 00 00 00 00 00 ff  |r.c.q...........|
+	// 00000000  72 c3 63 04 37 39 00 ff  00 00 00 00 00 00 00 ff  |r.c.79..........|
 	// 00000010  0b 00 00 00 00 00 00 ff  16 00 00 00 00 00 00 ff  |................|
 	// 00000020  23 00 00 00 00 00 00 01  50 00 00 00 00 00 01 ff  |#.......P.......|
-	// 00000030  5e 00 00 00 00 00 01 00  73 00 00 00 00 00 01 00  |^.......s.......|
-	// 00000040  88 00 00 00 00 00 01 00  9f 00 00 00 00 00 01 04  |................|
-	// 00000050  08 00 20 73 68 65 65 70  2e 0a 0b e0 02 6e 78 f9  |.. sheep.....nx.|
-	// 00000060  0b e0 02 6e f2 cf 4b 85  31 01 01 00 00 ff ff 17  |...n..K.1.......|
-	// 00000070  21 03 90 78 f9 0b e0 02  6e 0a 29 cf 87 31 01 01  |!..x....n.)..1..|
-	// 00000080  00 00 ff ff 18 0c 03 a8  78 f9 0b e0 02 6e 0a c9  |........x....n..|
-	// 00000090  28 4a 4d 85 71 00 01 00  00 ff ff 21 6e 04 66     |(JM.q......!n.f|
+	// 00000030  60 00 00 00 00 00 01 00  75 00 00 00 00 00 01 00  |`.......u.......|
+	// 00000040  8a 00 00 00 00 00 01 00  a1 00 00 00 00 00 01 04  |................|
+	// 00000050  08 00 00 00 20 73 68 65  65 70 2e 0a d0 8d 7a 47  |.... sheep....zG|
+	// 00000060  78 f9 0b e0 02 6e f2 cf  4b 85 31 01 01 00 00 ff  |x....n..K.1.....|
+	// 00000070  ff 17 21 03 90 78 f9 0b  e0 02 6e 0a 29 cf 87 31  |..!..x....n.)..1|
+	// 00000080  01 01 00 00 ff ff 18 0c  03 a8 78 f9 0b e0 02 6e  |..........x....n|
+	// 00000090  0a c9 28 4a 4d 85 71 00  01 00 00 ff ff 21 6e 04  |..(JM.q......!n.|
+	// 000000a0  66                                                |f|
 	//
 	// Decoded:
 	// [ 0, 11): One sheep.

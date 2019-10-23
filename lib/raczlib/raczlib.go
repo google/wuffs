@@ -25,10 +25,10 @@ import (
 	"bytes"
 	"compress/zlib"
 	"errors"
-	"hash/adler32"
 	"io"
 
 	"github.com/google/wuffs/lib/compression"
+	"github.com/google/wuffs/lib/internal/racdict"
 	"github.com/google/wuffs/lib/rac"
 	"github.com/google/wuffs/lib/zlibcut"
 )
@@ -43,11 +43,11 @@ func u32BE(b []byte) uint32 {
 	return (uint32(b[0]) << 24) | (uint32(b[1]) << 16) | (uint32(b[2]) << 8) | (uint32(b[3]))
 }
 
-// suffix32K returns the last 32 KiB of b, or if b is shorter than that, it
+// refine returns the last 32 KiB of b, or if b is shorter than that, it
 // returns just b.
 //
 // The Zlib format only supports up to 32 KiB of history or shared dictionary.
-func suffix32K(b []byte) []byte {
+func refine(b []byte) []byte {
 	const n = 32 * 1024
 	if len(b) > n {
 		return b[len(b)-n:]
@@ -64,12 +64,8 @@ type CodecReader struct {
 	// lim provides a limited view of a RAC file.
 	lim io.LimitedReader
 
-	// These fields contain the most recently used shared dictionary.
-	cachedDictionary       []byte
-	cachedDictionaryCRange rac.Range
-
-	// buf is a scratch buffer.
-	buf [2]byte
+	// dictLoader loads shared dictionaries.
+	dictLoader racdict.Loader
 }
 
 // Close implements rac.CodecReader.
@@ -89,7 +85,7 @@ func (r *CodecReader) Clone() rac.CodecReader {
 
 // MakeDecompressor implements rac.CodecReader.
 func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (io.Reader, error) {
-	dict, err := r.loadDictionary(racFile, chunk)
+	dict, err := r.dictLoader.Load(racFile, chunk)
 	if err != nil {
 		return nil, err
 	}
@@ -101,77 +97,15 @@ func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (
 	return r.makeDecompressor(&r.lim, dict)
 }
 
-func (r *CodecReader) loadDictionary(rs io.ReadSeeker, chunk rac.Chunk) ([]byte, error) {
-	// For a description of the RAC+Zlib secondary-data format, see
-	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
-
-	if !chunk.CTertiary.Empty() {
-		return nil, errInvalidDictionary
-	}
-	if chunk.CSecondary.Empty() {
-		return nil, nil
-	}
-	cRange := chunk.CSecondary
-
-	// Load from the MRU cache, if it was loaded from the same cRange.
-	if (cRange == r.cachedDictionaryCRange) && !cRange.Empty() {
-		return r.cachedDictionary, nil
-	}
-
-	// Check the cRange size and the tTag.
-	if (cRange.Size() < 6) || (chunk.TTag != 0xFF) {
-		return nil, errInvalidDictionary
-	}
-
-	// Read the dictionary size.
-	if _, err := rs.Seek(cRange[0], io.SeekStart); err != nil {
-		return nil, errInvalidDictionary
-	}
-	if _, err := io.ReadFull(rs, r.buf[:2]); err != nil {
-		return nil, errInvalidDictionary
-	}
-	dictSize := int64(r.buf[0]) | (int64(r.buf[1]) << 8)
-
-	// Check the size. The +6 is for the 2 byte prefix (dictionary size) and
-	// the 4 byte suffix (checksum).
-	if (dictSize + 6) > cRange.Size() {
-		return nil, errInvalidDictionary
-	}
-
-	// Allocate or re-use the cachedDictionary buffer.
-	buffer := []byte(nil)
-	if n := dictSize + 4; int64(cap(r.cachedDictionary)) >= n {
-		buffer = r.cachedDictionary[:n]
-		// Invalidate the cached dictionary, as we are re-using its memory.
-		r.cachedDictionaryCRange = rac.Range{}
-	} else {
-		buffer = make([]byte, n)
-	}
-
-	// Read the dictionary and checksum.
-	if _, err := io.ReadFull(rs, buffer); err != nil {
-		return nil, errInvalidDictionary
-	}
-
-	// Verify the checksum.
-	dict, checksum := buffer[:dictSize], buffer[dictSize:]
-	if u32BE(checksum) != adler32.Checksum(dict) {
-		return nil, errInvalidDictionary
-	}
-
-	// Save to the MRU cache and return.
-	r.cachedDictionary = dict
-	r.cachedDictionaryCRange = cRange
-	return dict, nil
-}
-
 // CodecWriter specializes a rac.Writer to encode Zlib-compressed chunks.
 type CodecWriter struct {
 	// These fields help reduce memory allocation by re-using previous byte
 	// buffers or the zlib.Writer.
 	compressed   bytes.Buffer
 	cachedWriter *zlib.Writer
-	stash        []byte
+
+	// dictSaver saves shared dictionaries.
+	dictSaver racdict.Saver
 }
 
 // Close implements rac.CodecWriter.
@@ -187,51 +121,10 @@ func (w *CodecWriter) Clone() rac.CodecWriter {
 // Compress implements rac.CodecWriter.
 func (w *CodecWriter) Compress(p []byte, q []byte, resourcesData [][]byte) (
 	codec rac.Codec, compressed []byte, secondaryResource int, tertiaryResource int, retErr error) {
-
-	secondaryResource = rac.NoResourceUsed
-
-	// Compress p+q without any shared dictionary.
-	baseline, err := w.compress(p, q, nil)
-	if err != nil {
-		return 0, nil, 0, 0, err
-	}
-	// If there aren't any potential shared dictionaries, or if the baseline
-	// compressed form is small, just return the baseline.
-	const minBaselineSizeToConsiderDictionaries = 256
-	if (len(resourcesData) == 0) || (len(baseline) < minBaselineSizeToConsiderDictionaries) {
-		return rac.CodecZlib, baseline, secondaryResource, rac.NoResourceUsed, nil
-	}
-
-	// w.stash keeps a copy of the best compression so far. Every call to
-	// w.compress can clobber the bytes previously returned by w.compress.
-	w.stash = append(w.stash[:0], baseline...)
-	compressed = w.stash
-
-	// Only use a shared dictionary if it results in something smaller than
-	// 98.4375% (an arbitrary heuristic threshold) of the baseline. Otherwise,
-	// it's arguably not worth the additional complexity.
-	threshold := (len(baseline) / 64) * 63
-
-	for i, data := range resourcesData {
-		candidate, err := w.compress(p, q, suffix32K(data))
-		if err != nil {
-			return 0, nil, 0, 0, err
-		}
-		if n := len(candidate); (n >= threshold) || (n >= len(compressed)) {
-			continue
-		}
-		secondaryResource = i
-
-		// As an optimization, if the final candidate is the winner, we don't
-		// have to copy its contents to w.stash.
-		if i == len(resourcesData)-1 {
-			compressed = candidate
-		} else {
-			w.stash = append(w.stash[:0], candidate...)
-			compressed = w.stash
-		}
-	}
-	return rac.CodecZlib, compressed, secondaryResource, rac.NoResourceUsed, nil
+	return w.dictSaver.Compress(
+		p, q, resourcesData,
+		rac.CodecZlib, w.compress, refine,
+	)
 }
 
 func (w *CodecWriter) compress(p []byte, q []byte, dict []byte) ([]byte, error) {
@@ -289,17 +182,5 @@ func (w *CodecWriter) Cut(codec rac.Codec, encoded []byte, maxEncodedLen int) (e
 
 // WrapResource implements rac.CodecWriter.
 func (w *CodecWriter) WrapResource(raw []byte) ([]byte, error) {
-	// For a description of the RAC+Zlib secondary-data format, see
-	// https://github.com/google/wuffs/blob/master/doc/spec/rac-spec.md#rac--zlib
-	raw = suffix32K(raw)
-	wrapped := make([]byte, len(raw)+6)
-	wrapped[0] = uint8(len(raw) >> 0)
-	wrapped[1] = uint8(len(raw) >> 8)
-	copy(wrapped[2:], raw)
-	a := adler32.Checksum(raw)
-	wrapped[len(wrapped)-4] = uint8(a >> 24)
-	wrapped[len(wrapped)-3] = uint8(a >> 16)
-	wrapped[len(wrapped)-2] = uint8(a >> 8)
-	wrapped[len(wrapped)-1] = uint8(a >> 0)
-	return wrapped, nil
+	return w.dictSaver.WrapResource(raw, refine)
 }
