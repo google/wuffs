@@ -28,19 +28,33 @@ import (
 
 	"github.com/google/wuffs/lib/cgozstd"
 	"github.com/google/wuffs/lib/compression"
+	"github.com/google/wuffs/lib/internal/racdict"
 	"github.com/google/wuffs/lib/rac"
 )
 
 var (
-	errCannotCut    = errors.New("raczstd: cannot cut")
-	errInvalidCodec = errors.New("raczstd: invalid codec")
+	errCannotCut = errors.New("raczstd: cannot cut")
 )
+
+func refine(b []byte) []byte {
+	if len(b) > racdict.MaxInclLength {
+		return b[len(b)-racdict.MaxInclLength:]
+	}
+	return b
+}
 
 // CodecReader specializes a rac.Reader to decode Zstd-compressed chunks.
 type CodecReader struct {
+	// cachedReader lets us re-use the memory allocated for a zstd reader, when
+	// decompressing multiple chunks.
 	cachedReader compression.Reader
 	recycler     cgozstd.ReaderRecycler
-	lim          io.LimitedReader
+
+	// lim provides a limited view of a RAC file.
+	lim io.LimitedReader
+
+	// dictLoader loads shared dictionaries.
+	dictLoader racdict.Loader
 }
 
 // Close implements rac.CodecReader.
@@ -60,6 +74,10 @@ func (r *CodecReader) Clone() rac.CodecReader {
 
 // MakeDecompressor implements rac.CodecReader.
 func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (io.Reader, error) {
+	dict, err := r.dictLoader.Load(racFile, chunk)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := racFile.Seek(chunk.CPrimary[0], io.SeekStart); err != nil {
 		return nil, err
 	}
@@ -71,7 +89,7 @@ func (r *CodecReader) MakeDecompressor(racFile io.ReadSeeker, chunk rac.Chunk) (
 		r.cachedReader = zr
 		r.recycler.Bind(zr)
 	}
-	if err := r.cachedReader.Reset(&r.lim, nil); err != nil {
+	if err := r.cachedReader.Reset(&r.lim, dict); err != nil {
 		return nil, err
 	}
 	return r.cachedReader, nil
@@ -82,6 +100,9 @@ type CodecWriter struct {
 	compressed   bytes.Buffer
 	cachedWriter compression.Writer
 	recycler     cgozstd.WriterRecycler
+
+	// dictSaver saves shared dictionaries.
+	dictSaver racdict.Saver
 }
 
 // Close implements rac.CodecWriter.
@@ -97,13 +118,10 @@ func (w *CodecWriter) Clone() rac.CodecWriter {
 // Compress implements rac.CodecWriter.
 func (w *CodecWriter) Compress(p []byte, q []byte, resourcesData [][]byte) (
 	codec rac.Codec, compressed []byte, secondaryResource int, tertiaryResource int, retErr error) {
-
-	// Compress p+q without any shared dictionary.
-	baseline, err := w.compress(p, q, nil)
-	if err != nil {
-		return 0, nil, 0, 0, err
-	}
-	return rac.CodecZstandard, baseline, rac.NoResourceUsed, rac.NoResourceUsed, nil
+	return w.dictSaver.Compress(
+		p, q, resourcesData,
+		rac.CodecZstandard, w.compress, refine,
+	)
 }
 
 func (w *CodecWriter) compress(p []byte, q []byte, dict []byte) ([]byte, error) {
@@ -148,5 +166,5 @@ func (w *CodecWriter) Cut(codec rac.Codec, encoded []byte, maxEncodedLen int) (e
 
 // WrapResource implements rac.CodecWriter.
 func (w *CodecWriter) WrapResource(raw []byte) ([]byte, error) {
-	return nil, nil
+	return w.dictSaver.WrapResource(raw, refine)
 }
