@@ -27,6 +27,8 @@ package cgozstd
 // --------
 #if (ZSTD_VERSION_MAJOR < 1) || (ZSTD_VERSION_MINOR < 3)
 
+// For zstd version 1.2 and below, dictionaries simply aren't supported.
+
 int32_t cgozstd_compress_start(ZSTD_CCtx* z,
 		uint8_t* dict_ptr,
 		uint32_t dict_len,
@@ -46,9 +48,15 @@ int32_t cgozstd_decompress_start(ZSTD_DCtx* z,
 	return ZSTD_getErrorCode(ZSTD_initDStream(z));
 }
 
-#else
+#elif (ZSTD_VERSION_MAJOR < 1) || (ZSTD_VERSION_MINOR < 4)
 
-// TODO: don't use the unsupported ZSTD_initFoo_usingDict API.
+// For zstd version 1.3 (but not 1.4 and above), the ZSTD_initFoo_usingDict
+// functions are present in the dynamic library, but not part of the stable
+// zstd API. We have to explicitly write their function prototypes (or #define
+// ZSTD_STATIC_LINKING_ONLY) so that cgo knows about them.
+//
+// For example, Ubuntu "bionic" 18.04 LTS ships zstd version 1.3.3.
+
 ZSTDLIB_API size_t ZSTD_initCStream_usingDict(
 		ZSTD_CCtx* z,
 		const void* dict_ptr,
@@ -72,6 +80,47 @@ int32_t cgozstd_decompress_start(ZSTD_DCtx* z,
 		uint32_t dict_len) {
 	return ZSTD_getErrorCode(ZSTD_initDStream_usingDict(
 			z, dict_ptr, dict_len));
+}
+
+#else
+
+// For zstd version 1.4 and above, the ZSTD_initFoo_usingDict functions are
+// deprecated, and their replacements are part of the stable zstd API.
+
+int32_t cgozstd_compress_start(ZSTD_CCtx* z,
+		uint8_t* dict_ptr,
+		uint32_t dict_len,
+		int compression_level) {
+	ZSTD_ErrorCode e;
+	e = ZSTD_getErrorCode(ZSTD_CCtx_reset(z, ZSTD_reset_session_only));
+	if (e) {
+		return e;
+	}
+	e = ZSTD_getErrorCode(ZSTD_CCtx_setParameter(
+			z, ZSTD_c_compressionLevel, compression_level));
+	if (e) {
+		return e;
+	}
+	e = ZSTD_getErrorCode(ZSTD_CCtx_loadDictionary(z, dict_ptr, dict_len));
+	if (e) {
+		return e;
+	}
+	return 0;
+}
+
+int32_t cgozstd_decompress_start(ZSTD_DCtx* z,
+		uint8_t* dict_ptr,
+		uint32_t dict_len) {
+	ZSTD_ErrorCode e;
+	e = ZSTD_getErrorCode(ZSTD_DCtx_reset(z, ZSTD_reset_session_only));
+	if (e) {
+		return e;
+	}
+	e = ZSTD_getErrorCode(ZSTD_DCtx_loadDictionary(z, dict_ptr, dict_len));
+	if (e) {
+		return e;
+	}
+	return 0;
 }
 
 #endif
