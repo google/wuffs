@@ -12,7 +12,8 @@ expressions `a`, `b` and
 
 This file is not just documentation. It is
 [parsed](https://github.com/google/wuffs/blob/master/lang/check/gen.go) to give
-the list of axioms built into the Wuffs compiler.
+the list of axioms built into the Wuffs compiler. Run `go generate` after
+editing this list.
 
 ---
 
