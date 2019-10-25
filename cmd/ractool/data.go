@@ -133,46 +133,49 @@ Extended Example:
     $ wget http://mattmahoney.net/dc/enwik8.zip
     $ unzip enwik8.zip
 
-    $ # Also zstd-encode it, as a reference point.
-    $ zstd enwik8
+    $ # Also zstd-encode it, as a reference point. Using compression level 15,
+    $ # instead of the default of 3, matches what ractool uses.
+    $ zstd -15 enwik8
 
-    $ # Create a shared dictionary. The dictionary_generator program
-    $ # comes from https://github.com/google/brotli
-    $ dictionary_generator --chunk_len=64k dict.dat enwik8
+    $ # Create a shared dictionary. Using zstd-the-program produces a
+    $ # dictionary that is especially useful for zstd-the-format, but it can
+    $ # also be used by other formats as a 'raw' prefix dictionary.
+    $ zstd -15 --train -B64K --maxdict=32K -o dict.dat enwik8
 
     $ # RAC-encode it with various codecs, with and without that dictionary.
     $ ractool -encode -codec=zlib -resources=dict.dat enwik8 > zlib.withdict.rac
     $ ractool -encode -codec=zlib                     enwik8 > zlib.sansdict.rac
+    $ ractool -encode -codec=zstd -resources=dict.dat enwik8 > zstd.withdict.rac
     $ ractool -encode -codec=zstd                     enwik8 > zstd.sansdict.rac
     $ ractool -encode -codec=lz4                      enwik8 > lz4.sansdict.rac
 
-    $ # The size overhead (comparing RAC+Zlib to zip) is about 2.4% or 4.8%,
-    $ # depending on whether we used a shared dictionary.
+    $ # The size overhead (comparing RAC+Xxx to Xxx) is about 0.2% (with) or
+    $ # 4.8% (sans) for zlib/zip and about 13% (with) or 28% (sans) for zstd,
+    $ # depending on whether we used a shared dictionary (with or sans).
     $ ls -l
-    total 336216
-    -rw-r--r-- 1 tao tao     16384 Sep 15 15:12 dict.dat
-    -rw-r--r-- 1 tao tao 100000000 Jun  2  2011 enwik8
-    -rw-r--r-- 1 tao tao  36445475 Sep  2  2011 enwik8.zip
-    -rw-r--r-- 1 tao tao  35664580 Jun  2  2011 enwik8.zst
-    -rw-r--r-- 1 tao tao  58813316 Sep 15 15:12 lz4.sansdict.rac
-    -rw-r--r-- 1 tao tao  38185178 Sep 15 15:12 zlib.sansdict.rac
-    -rw-r--r-- 1 tao tao  37320896 Sep 15 15:12 zlib.withdict.rac
-    -rw-r--r-- 1 tao tao  37820491 Sep 15 15:12 zstd.sansdict.rac
+    total 362080
+    -rw-r----- 1 tao tao     32768 Oct 25 10:10 dict.dat
+    -rw-r----- 1 tao tao 100000000 Jun  2  2011 enwik8
+    -rw-r----- 1 tao tao  36445475 Sep  2  2011 enwik8.zip
+    -rw-r----- 1 tao tao  29563109 Jun  2  2011 enwik8.zst
+    -rw-r----- 1 tao tao  58813316 Oct 25 10:17 lz4.sansdict.rac
+    -rw-r----- 1 tao tao  38185178 Oct 25 10:16 zlib.sansdict.rac
+    -rw-r----- 1 tao tao  36505786 Oct 25 10:16 zlib.withdict.rac
+    -rw-r----- 1 tao tao  37820491 Oct 25 10:17 zstd.sansdict.rac
+    -rw-r----- 1 tao tao  33386395 Oct 25 10:17 zstd.withdict.rac
 
     $ # Check that the decompressed forms all match.
-    $ cat enwik8                        | sha256sum
+    $ cat enwik8                            | sha256sum
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ unzip -p enwik8.zip               | sha256sum
+    $ unzip -p enwik8.zip                   | sha256sum
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ unzstd --stdout enwik8.zst        | sha256sum
+    $ unzstd --stdout enwik8.zst            | sha256sum
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ ractool -decode zlib.withdict.rac | sha256sum
+    $ for f in *.rac; do ractool -decode $f | sha256sum; done
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ ractool -decode zlib.sansdict.rac | sha256sum
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ ractool -decode zstd.sansdict.rac | sha256sum
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
-    $ ractool -decode lz4.sansdict.rac  | sha256sum
+    2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
     2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8  -
 
     $ # Compare how long it takes to produce 8 bytes from the middle of
@@ -180,59 +183,62 @@ Extended Example:
     $ time unzip -p enwik8.zip | dd if=/dev/stdin status=none \
     >     iflag=skip_bytes,count_bytes skip=50000000 count=8
     Business
-    real    0m0.392s
-    user    0m0.407s
-    sys     0m0.118s
+    real    0m0.379s
+    user    0m0.410s
+    sys     0m0.080s
     $ time unzstd --stdout enwik8.zst | dd if=/dev/stdin status=none \
     >     iflag=skip_bytes,count_bytes skip=50000000 count=8
     Business
-    real    0m0.183s
-    user    0m0.133s
-    sys     0m0.133s
-    $ time ractool -decode -drange=50000000..50000008 zlib.withdict.rac
+    real    0m0.172s
+    user    0m0.141s
+    sys     0m0.103s
+    $ time ractool -decode -drange=50000000..50000008 zstd.withdict.rac
     Business
-    real    0m0.006s
-    user    0m0.003s
-    sys     0m0.003s
+    real    0m0.004s
+    user    0m0.005s
+    sys     0m0.001s
 
     $ # A RAC file's chunks can be decoded in parallel, unlike ZIP,
     $ # substantially reducing the real (wall clock) time taken even
     $ # though both of these files use DEFLATE (RFC 1951) compression.
+    $ #
+    $ # Comparing the -singlethreaded time suggests that zlib-the-library's
+    $ # DEFLATE implementation is faster than unzip's.
     $ time unzip -p                        enwik8.zip        > /dev/null
-    real    0m0.737s
-    user    0m0.713s
-    sys     0m0.025s
+    real    0m0.711s
+    user    0m0.690s
+    sys     0m0.021s
     $ time ractool -decode -singlethreaded zlib.withdict.rac > /dev/null
-    real    0m0.523s
-    user    0m0.508s
-    sys     0m0.028s
+    real    0m0.519s
+    user    0m0.513s
+    sys     0m0.017s
     $ time ractool -decode                 zlib.withdict.rac > /dev/null
     real    0m0.052s
-    user    0m0.657s
-    sys     0m0.049s
+    user    0m0.678s
+    sys     0m0.036s
 
     $ # A similar comparison can be made for Zstandard.
     $ time unzstd --stdout                 enwik8.zst        > /dev/null
-    real    0m0.213s
-    user    0m0.201s
-    sys     0m0.012s
-    $ time ractool -decode -singlethreaded zstd.sansdict.rac > /dev/null
-    real    0m0.181s
-    user    0m0.164s
-    sys     0m0.020s
-    $ time ractool -decode                 zstd.sansdict.rac > /dev/null
-    real    0m0.034s
-    user    0m0.316s
-    sys     0m0.057s
+    real    0m0.203s
+    user    0m0.187s
+    sys     0m0.016s
+    $ time ractool -decode -singlethreaded zstd.withdict.rac > /dev/null
+    real    0m0.235s
+    user    0m0.206s
+    sys     0m0.033s
+    $ time ractool -decode                 zstd.withdict.rac > /dev/null
+    real    0m0.037s
+    user    0m0.374s
+    sys     0m0.080s
 
     $ # For reference, LZ4 numbers.
     $ time ractool -decode -singlethreaded lz4.sansdict.rac  > /dev/null
-    real    0m0.068s
+    real    0m0.072s
     user    0m0.053s
-    sys     0m0.017s
+    sys     0m0.021s
     $ time ractool -decode                 lz4.sansdict.rac  > /dev/null
-    real    0m0.022s
-    user    0m0.090s
-    sys     0m0.036s
+    real    0m0.024s
+    user    0m0.097s
+    sys     0m0.034s
     --------
 `
