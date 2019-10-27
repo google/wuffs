@@ -17,10 +17,10 @@ copy the elements. It has O(1) algorithmic complexity. Assigning to an
 array-typed variable copies the elements. It has O(length) algorithmic
 complexity.
 
-Both `s[i:j]` and `a[i:j]` refer to slices, ranging from the `i`'th element
-(inclusive) to the `j`'th element (exclusive). `i` can be omitted, implicitly
-equalling zero. `j` can be omitted, implicitly equalling the length. For
-example, `s[:5]` contains the first five elements of `s`.
+Both `s[i .. j]` and `a[i .. j]` refer to slices, ranging from the `i`'th
+element (inclusive) to the `j`'th element (exclusive). `i` can be omitted,
+implicitly equalling zero. `j` can be omitted, implicitly equalling the length.
+For example, `s[.. 5]` contains the first five elements of `s`.
 
 
 ## Tables
@@ -51,9 +51,9 @@ even when an element occupies multiple bytes.
 
 ## Bounds Checking
 
-An expression like `x[i:j]` is invalid unless the compiler can prove that `((0
-<= i) and (i <= j) and (j <= x.length()))`. For example, the expression `x[:]`
-is always valid because the implicit `i` and `j` values are `0` and
+An expression like `x[i .. j]` is invalid unless the compiler can prove that
+`((0 <= i) and (i <= j) and (j <= x.length()))`. For example, the expression
+`x[..]` is always valid because the implicit `i` and `j` values are `0` and
 `x.length()`, and a slice or array cannot have negative length.
 
 Similarly, an expression like `x[i]` is invalid unless there is a compile-time

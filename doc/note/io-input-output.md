@@ -102,21 +102,22 @@ Wuffs library) code to rewind the indexes (e.g. by compaction).
 
 Even though `ri` can not drop below its initial value, Wuffs code can still
 read the contents of the slice before `ri` (in sub-slice notation,
-`data[0:ri]`) and it should still contain  the `(pos + 0)`th, `(pos + 1)`th,
+`data[0 .. ri]`) and it should still contain  the `(pos + 0)`th, `(pos + 1)`th,
 etc. byte of the stream.
 
-The contents of the slice after `wi` (in sub-slice notation, `data[wi:len]`)
+The contents of the slice after `wi` (in sub-slice notation, `data[wi .. len]`)
 are undefined, and code should not rely on its values. When passing an
 `io_buffer` into a function, that function is free to modify anything in
-`data[wi:len]`, for either value of `wi` before or after the function returns.
+`data[wi .. len]`, for either value of `wi` before or after the function
+returns.
 
 
 ## Compaction
 
-Compacting an `io_buffer` moves any written but unread bytes (those in
-`data[ri:wi]`) to the start of the buffer, and updates the metadata fields
-`ri`, `wi` and `pos`. Equivalently, it moves the sliding window that is the
-`io_buffer` as far forward as possible along the stream.
+Compacting an `io_buffer` moves any written but unread bytes (those in `data[ri
+.. wi]`) to the start of the buffer, and updates the metadata fields `ri`, `wi`
+and `pos`. Equivalently, it moves the sliding window that is the `io_buffer` as
+far forward as possible along the stream.
 
 This generally increases `(len - wi)`, the number of bytes available for
 writing, allowing for re-using the allocated buffer memory (the data slice).
