@@ -57,12 +57,13 @@ An expression like `x[i .. j]` is invalid unless the compiler can prove that
 `x.length()`, and a slice or array cannot have negative length.
 
 Similarly, an expression like `x[i]` is invalid unless there is a compile-time
-proof that `i` is in bounds: that ((0 <= i) and (i < x.length()))`. Proofs can
+proof that `i` is in bounds: that `((0 <= i) and (i < x.length()))`. Proofs can
 involve natural bounds (e.g. if `i` has type `base.u8` then `(0 <= i)` is
 trivially true since a `base.u8` is unsigned), refinements (e.g. if `i`has type
-`base.u32[..100]` then 100 is an upper bound for `i`) and interval arithmetic
-(e.g. for an expression like `x[m + n]`, the upper bound for `m + n` is the sum
-of the upper bounds of `m` and `n`).
+`base.u32[..100]` then 100 is an upper bound for `i`) and [interval
+arithmetic](/doc/note/interval-arithmetic.md) (e.g. for an expression like
+`x[m + n]`, the upper bound for `m + n` is the sum of the upper bounds of `m`
+and `n`).
 
 For example, if `a` is an `array[1024] base.u8`, and `expr` is some expression
 of type `base.u32`, then `a[expr & 1023]` is valid, because the bitwise-and
