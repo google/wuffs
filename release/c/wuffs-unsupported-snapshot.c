@@ -485,36 +485,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
 
 // ---------------- Ranges and Rects
 
-// Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
-// high end. Both the "ii" and "ie" flavors are useful in practice.
-//
-// The "ei" and "ee" flavors also exist in theory, but aren't widely used. In
-// Wuffs, the low end is always inclusive.
-//
-// The "ii" (closed interval) flavor is useful when refining e.g. "the set of
-// all uint32_t values" to a contiguous subset: "uint32_t values in the closed
-// interval [M, N]", for uint32_t values M and N. An unrefined type (in other
-// words, the set of all uint32_t values) is not representable in the "ie"
-// flavor because if N equals ((1<<32) - 1) then (N + 1) will overflow.
-//
-// On the other hand, the "ie" (half-open interval) flavor is recommended by
-// Dijkstra's "Why numbering should start at zero" at
-// http://www.cs.utexas.edu/users/EWD/ewd08xx/EWD831.PDF and a further
-// discussion of motivating rationale is at
-// https://www.quora.com/Why-are-Python-ranges-half-open-exclusive-instead-of-closed-inclusive
-//
-// For example, with "ie", the number of elements in "uint32_t values in the
-// half-open interval [M, N)" is equal to max(0, N-M). Furthermore, that number
-// of elements (in one dimension, a length, in two dimensions, a width or
-// height) is itself representable as a uint32_t without overflow, again for
-// uint32_t values M and N. In the contrasting "ii" flavor, the length of the
-// closed interval [0, (1<<32) - 1] is 1<<32, which cannot be represented as a
-// uint32_t. In Wuffs, because of this potential overflow, the "ie" flavor has
-// length / width / height methods, but the "ii" flavor does not.
-//
-// It is valid for min > max (for range_ii) or for min >= max (for range_ie),
-// in which case the range is empty. There are multiple representations of an
-// empty range.
+// See https://github.com/google/wuffs/blob/master/doc/note/ranges-and-rects.md
 
 typedef struct wuffs_base__range_ii_u32__struct {
   uint32_t min_incl;
@@ -982,15 +953,6 @@ wuffs_base__range_ie_u64::length() const {
 
 // --------
 
-// wuffs_base__rect_ii_u32 is a rectangle (a 2-dimensional range) on the
-// integer grid. The "ii" means that the bounds are inclusive on the low end
-// and inclusive on the high end. It contains all points (x, y) such that
-// ((min_incl_x <= x) && (x <= max_incl_x)) and likewise for y.
-//
-// It is valid for min > max, in which case the rectangle is empty. There are
-// multiple representations of an empty rectangle.
-//
-// The X and Y axes increase right and down.
 typedef struct wuffs_base__rect_ii_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
@@ -1116,16 +1078,6 @@ wuffs_base__rect_ii_u32::contains_rect(wuffs_base__rect_ii_u32 s) const {
 
 // --------
 
-// wuffs_base__rect_ie_u32 is a rectangle (a 2-dimensional range) on the
-// integer grid. The "ie" means that the bounds are inclusive on the low end
-// and exclusive on the high end. It contains all points (x, y) such that
-// ((min_incl_x <= x) && (x < max_excl_x)) and likewise for y.
-//
-// It is valid for min >= max, in which case the rectangle is empty. There are
-// multiple representations of an empty rectangle, including a value with all
-// fields zero.
-//
-// The X and Y axes increase right and down.
 typedef struct wuffs_base__rect_ie_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
