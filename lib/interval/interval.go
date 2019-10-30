@@ -42,6 +42,13 @@ var (
 	one = big.NewInt(1)
 )
 
+func bigIntClone(i *big.Int) *big.Int {
+	if i != nil {
+		return big.NewInt(0).Set(i)
+	}
+	return nil
+}
+
 func bigIntMul(i *big.Int, j *big.Int) *big.Int { return big.NewInt(0).Mul(i, j) }
 func bigIntQuo(i *big.Int, j *big.Int) *big.Int { return big.NewInt(0).Quo(i, j) }
 
@@ -275,6 +282,69 @@ func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bo
 	pos[1] = x[1]
 
 	return neg, pos, neg.Empty(), x.ContainsZero(), pos.Empty()
+}
+
+// Unite returns z = x ∪ y, the union of two intervals.
+func (x IntRange) Unite(y IntRange) (z IntRange) {
+	if x.Empty() {
+		return IntRange{
+			bigIntClone(y[0]),
+			bigIntClone(y[1]),
+		}
+	}
+	if y.Empty() {
+		return IntRange{
+			bigIntClone(x[0]),
+			bigIntClone(x[1]),
+		}
+	}
+
+	if (x[0] != nil) && (y[0] != nil) {
+		if x[0].Cmp(y[0]) < 0 {
+			z[0] = big.NewInt(0).Set(x[0])
+		} else {
+			z[0] = big.NewInt(0).Set(y[0])
+		}
+	}
+
+	if (x[1] != nil) && (y[1] != nil) {
+		if x[1].Cmp(y[1]) > 0 {
+			z[1] = big.NewInt(0).Set(x[1])
+		} else {
+			z[1] = big.NewInt(0).Set(y[1])
+		}
+	}
+
+	return z
+}
+
+// Intersect returns z = x ∩ y, the intersection of two intervals.
+func (x IntRange) Intersect(y IntRange) (z IntRange) {
+	if x.Empty() || y.Empty() {
+		return empty()
+	}
+
+	if x[0] == nil {
+		z[0] = bigIntClone(y[0])
+	} else if y[0] == nil {
+		z[0] = bigIntClone(x[0])
+	} else if x[0].Cmp(y[0]) < 0 {
+		z[0] = big.NewInt(0).Set(y[0])
+	} else {
+		z[0] = big.NewInt(0).Set(x[0])
+	}
+
+	if x[1] == nil {
+		z[1] = bigIntClone(y[1])
+	} else if y[1] == nil {
+		z[1] = bigIntClone(x[1])
+	} else if x[1].Cmp(y[1]) < 0 {
+		z[1] = big.NewInt(0).Set(x[1])
+	} else {
+		z[1] = big.NewInt(0).Set(y[1])
+	}
+
+	return z
 }
 
 // Add returns z = x + y.

@@ -418,6 +418,8 @@ func testOp1(s string) error {
 }
 
 var intOperators = map[string]func(IntRange, IntRange) (IntRange, bool){
+	"∪":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Unite(y), true },
+	"∩":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Intersect(y), true },
 	"+":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Add(y), true },
 	"-":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Sub(y), true },
 	"*":  func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Mul(y), true },
@@ -435,6 +437,50 @@ func init() {
 		intOperatorsKeys = append(intOperatorsKeys, k)
 	}
 	sort.Strings(intOperatorsKeys)
+}
+
+func TestOpUnite(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   ∪  [  -5,   -5]  ==  [  -5,    3]",
+		"[   3,    3]   ∪  [   0,    0]  ==  [   0,    3]",
+		"[   0,    0]   ∪  [  -7,    7]  ==  [  -7,    7]",
+		"[   0,    2]   ∪  [   0,    5]  ==  [   0,    5]",
+		"[   3,    6]   ∪  [  10,   15]  ==  [   3,   15]",
+		"[   3,   +∞)   ∪  [  -4,   -2]  ==  [  -4,   +∞)",
+		"[   3,   +∞)   ∪  [  10,   15]  ==  [   3,   +∞)",
+		"[   3,   +∞)   ∪  (  -∞,   15]  ==  (  -∞,   +∞)",
+		"[   3,    6]   ∪  (  -∞,   15]  ==  (  -∞,   15]",
+		"[   3,    6]   ∪  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   ∪  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   ∪  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   ∪  [   0,    0]  ==  (  -∞,   +∞)",
+		"[   3,    6]   ∪  [...empty..]  ==  [   3,    6]",
+		"[...empty..]   ∪  [  10,   15]  ==  [  10,   15]",
+		"[...empty..]   ∪  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   ∪  [...empty..]  ==  (  -∞,   +∞)",
+	)
+}
+
+func TestOpIntersect(tt *testing.T) {
+	testOp(tt,
+		"[   3,    3]   ∩  [  -5,   -5]  ==  [...empty..]",
+		"[   3,    3]   ∩  [   0,    0]  ==  [...empty..]",
+		"[   0,    0]   ∩  [  -7,    7]  ==  [   0,    0]",
+		"[   0,    2]   ∩  [   0,    5]  ==  [   0,    2]",
+		"[   3,    6]   ∩  [  10,   15]  ==  [...empty..]",
+		"[   3,   +∞)   ∩  [  -4,   -2]  ==  [...empty..]",
+		"[   3,   +∞)   ∩  [  10,   15]  ==  [  10,   15]",
+		"[   3,   +∞)   ∩  (  -∞,   15]  ==  [   3,   15]",
+		"[   3,    6]   ∩  (  -∞,   15]  ==  [   3,    6]",
+		"[   3,    6]   ∩  (  -∞,   +∞)  ==  [   3,    6]",
+		"(  -∞,   +∞)   ∩  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   ∩  [   1,    2]  ==  [   1,    2]",
+		"(  -∞,   +∞)   ∩  [   0,    0]  ==  [   0,    0]",
+		"[   3,    6]   ∩  [...empty..]  ==  [...empty..]",
+		"[...empty..]   ∩  [  10,   15]  ==  [...empty..]",
+		"[...empty..]   ∩  [...empty..]  ==  [...empty..]",
+		"(  -∞,   +∞)   ∩  [...empty..]  ==  [...empty..]",
+	)
 }
 
 func TestOpAdd(tt *testing.T) {

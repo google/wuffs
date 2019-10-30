@@ -412,23 +412,58 @@ func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {
 	jMin, jMax := enumerate(y)
 	result := radialOutPair{}
 	first := true
+	merge := func(k radialOutPair) {
+		if first {
+			result = k
+			first = false
+			return
+		}
+		if result[0] > k[0] {
+			result[0] = k[0]
+		}
+		if result[1] < k[1] {
+			result[1] = k[1]
+		}
+	}
 
-	for i := iMin; i <= iMax; i++ {
+	switch opKey {
+	case "∪":
+		if iMinC, iMaxC := iMin.canonicalize(), iMax.canonicalize(); iMinC <= iMaxC {
+			merge(radialOutPair{iMinC, iMaxC})
+		}
+		if jMinC, jMaxC := jMin.canonicalize(), jMax.canonicalize(); jMinC <= jMaxC {
+			merge(radialOutPair{jMinC, jMaxC})
+		}
+		if result[0] < -riRadius {
+			result[0] = -roRadius - 1
+		}
+		if result[1] > +riRadius {
+			result[1] = +roRadius + 1
+		}
+
+	case "∩":
+		iMinC, iMaxC := iMin.canonicalize(), iMax.canonicalize()
 		for j := jMin; j <= jMax; j++ {
-			k := op(i, j)
-			if k[0] == radialNaN || k[1] == radialNaN {
-				return IntRange{}, false
+			jC := j.canonicalize()
+			if (iMinC <= jC) && (jC <= iMaxC) {
+				merge(radialOutPair{jC, jC})
 			}
-			if first {
-				result = k
-				first = false
-				continue
-			}
-			if result[0] > k[0] {
-				result[0] = k[0]
-			}
-			if result[1] < k[1] {
-				result[1] = k[1]
+		}
+		if result[0] < -riRadius {
+			result[0] = -roRadius - 1
+		}
+		if result[1] > +riRadius {
+			result[1] = +roRadius + 1
+		}
+
+	default:
+		for i := iMin; i <= iMax; i++ {
+			for j := jMin; j <= jMax; j++ {
+				k := op(i, j)
+				if k[0] == radialNaN || k[1] == radialNaN {
+					return IntRange{}, false
+				}
+				merge(k)
 			}
 		}
 	}
