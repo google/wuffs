@@ -36,14 +36,14 @@ package interval
 //  - radialOutput has a radius R of 16 << 16 (which equals 1048576).
 //
 // If x and y are "small" radialInput values or one of the two "smallest large"
-// radialInput values, i.e. x and y are in the range [-16, +16], then (x op y)
-// will always be a "small" radialOutput value, for the common binary
+// radialInput values, i.e. x and y are in the range [-16 ..= +16], then (x op
+// y) will always be a "small" radialOutput value, for the common binary
 // operators: add, subtract, multiply, divide, left-shift, right-shift, and,
 // or.
 //
 // Both of these radialInput and radialOutput types are encoded as an int32:
 //  - math.MinInt32 (which equals -1 << 31) encodes a NaN.
-//  - "small" numbers (within the interval [-R, +R]) encode themselves.
+//  - "small" numbers (within the interval [-R ..= +R]) encode themselves.
 //  - any other negative int32 encodes "less than -R".
 //  - any other positive int32 encodes "greater than +R".
 //
@@ -51,10 +51,10 @@ package interval
 // integers greater than +15.
 //
 // Binary operators take two radialInput values and produce a pair of
-// radialOutput values: either a [min, max] interval, or [NaN, NaN]. For
+// radialOutput values: either a [min ..= max] interval, or [NaN ..= NaN]. For
 // example, adding the "-3" box to the "greater than +15" box would produce the
-// radialOutPair ["13", "greater than +16 << 16"], or in more conventional
-// notation, the half-open interval [13, +∞).
+// radialOutPair ["13" ..= "greater than +16 << 16"], or in more conventional
+// notation, the half-open interval [13 ..= +∞].
 //
 // These radial number types are not exported by package interval, as the
 // radius values (15 and 16 << 16) are somewhat arbitrary and not so generally

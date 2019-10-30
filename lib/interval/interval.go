@@ -17,17 +17,19 @@
 // Package interval provides interval arithmetic on big integers. Big means
 // arbitrary-precision, as per the standard math/big package.
 //
-// For example, if x is in the interval [3, 6] and y is in the interval [10,
-// 15] then x+y is in the interval [13, 21].
+// For example, if x is in the interval [3 ..= 6] and y is in the interval [10
+// ..= 15] then x+y is in the interval [13 ..= 21].
 //
-// Such intervals may have infinite bounds. For example, if x is in the
-// interval [3, +∞) and y is in the interval [-4, -2], then x*y is in the
-// interval (-∞, -6].
+// As in Rust, the [m ..= n] syntax means all integers i such that (m <= i) and
+// (i <= n). Unlike Rust, neither bound can be omitted, but they may be
+// infinite. For example, if x is in the interval [3 ..= +∞] and y is in the
+// interval [-4 ..= -2], then x*y is in the interval [-∞ ..= -6].
 //
 // As a motivating example, if a compiler knows that the integer-typed
-// variables i and j are in the intervals [0, 255] and [0, 3], and that the
-// array a has 1024 elements, then it can prove that the array-index expression
-// a[4*i + j] is memory-safe without needing an at-runtime bounds check.
+// variables i and j are in the intervals [0 ..= 255] and [0 ..= 3], and that
+// the array a has 1024 elements, then it can prove that the array-index
+// expression a[4*i + j] is memory-safe without needing an at-runtime bounds
+// check.
 //
 // This package depends only on the standard math/big package.
 package interval
@@ -146,19 +148,19 @@ type IntRange [2]*big.Int
 // String returns a string representation of x.
 func (x IntRange) String() string {
 	if x.Empty() {
-		return "<empty>"
+		return "[empty]"
 	}
 	buf := []byte(nil)
 	if x[0] == nil {
-		buf = append(buf, "(-∞"...)
+		buf = append(buf, "[-∞ ..= "...)
 	} else {
 		buf = append(buf, '[')
 		buf = x[0].Append(buf, 10)
+		buf = append(buf, " ..= "...)
 	}
 	if x[1] == nil {
-		buf = append(buf, " .. +∞)"...)
+		buf = append(buf, "+∞]"...)
 	} else {
-		buf = append(buf, " ..= "...)
 		buf = x[1].Append(buf, 10)
 		buf = append(buf, ']')
 	}
@@ -243,7 +245,7 @@ func (x IntRange) Empty() bool {
 	return x[0] != nil && x[1] != nil && x[0].Cmp(x[1]) > 0
 }
 
-// justZero returns whether x is the [0, 0] interval, containing exactly one
+// justZero returns whether x is the [0 ..= 0] interval, containing exactly one
 // element: the integer zero.
 func (x IntRange) justZero() bool {
 	return x[0] != nil && x[1] != nil && x[0].Sign() == 0 && x[1].Sign() == 0
