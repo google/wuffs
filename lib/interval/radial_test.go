@@ -350,17 +350,17 @@ func (x radialInput) And(y radialInput) radialOutPair {
 	ox := x.canonicalize()
 	oy := y.canonicalize()
 
-	if ox <= +riRadius {
-		if oy <= +riRadius {
-			return radialOutPair{ox & oy, ox & oy}
+	if ox > +riRadius {
+		if oy > +riRadius {
+			return radialOutPair{0, roLargePos}
 		} else {
-			return radialOutPair{0, ox}
+			return radialOutPair{0, oy}
 		}
 	} else {
-		if oy <= +riRadius {
-			return radialOutPair{0, oy}
+		if oy > +riRadius {
+			return radialOutPair{0, ox}
 		} else {
-			return radialOutPair{0, roLargePos}
+			return radialOutPair{ox & oy, ox & oy}
 		}
 	}
 }
@@ -380,17 +380,17 @@ func (x radialInput) Or(y radialInput) radialOutPair {
 	// digit, and that digit is not shared with any "small" value <= riRadius.
 	const r = riRadius + 1
 
-	if ox <= +riRadius {
-		if oy <= +riRadius {
-			return radialOutPair{ox | oy, ox | oy}
+	if ox > +riRadius {
+		if oy > +riRadius {
+			return radialOutPair{r, roLargePos}
 		} else {
-			return radialOutPair{ox | r, roLargePos}
+			return radialOutPair{oy | r, roLargePos}
 		}
 	} else {
-		if oy <= +riRadius {
-			return radialOutPair{oy | r, roLargePos}
+		if oy > +riRadius {
+			return radialOutPair{ox | r, roLargePos}
 		} else {
-			return radialOutPair{r, roLargePos}
+			return radialOutPair{ox | oy, ox | oy}
 		}
 	}
 }
