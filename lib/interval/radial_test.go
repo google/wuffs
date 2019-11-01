@@ -440,18 +440,18 @@ func (x radialInput) Or(y radialInput) radialOutPair {
 	return radialOutPair{ox | oy, ox | oy}
 }
 
-var riOperators = map[string]func(radialInput, radialInput) radialOutPair{
-	"+":  radialInput.Add,
-	"-":  radialInput.Sub,
-	"*":  radialInput.Mul,
-	"/":  radialInput.Quo,
-	"<<": radialInput.Lsh,
-	">>": radialInput.Rsh,
-	"&":  radialInput.And,
-	"|":  radialInput.Or,
+var riOperators = map[rune]func(radialInput, radialInput) radialOutPair{
+	'+': radialInput.Add,
+	'-': radialInput.Sub,
+	'*': radialInput.Mul,
+	'/': radialInput.Quo,
+	'«': radialInput.Lsh,
+	'»': radialInput.Rsh,
+	'&': radialInput.And,
+	'|': radialInput.Or,
 }
 
-func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {
+func bruteForce(x IntRange, y IntRange, opKey rune) (z IntRange, ok bool) {
 	op := riOperators[opKey]
 	iMin, iMax := enumerate(x)
 	jMin, jMax := enumerate(y)
@@ -472,7 +472,7 @@ func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {
 	}
 
 	switch opKey {
-	case "∪":
+	case '∪':
 		if iMinC, iMaxC := iMin.canonicalize(), iMax.canonicalize(); iMinC <= iMaxC {
 			merge(radialOutPair{iMinC, iMaxC})
 		}
@@ -486,7 +486,7 @@ func bruteForce(x IntRange, y IntRange, opKey string) (z IntRange, ok bool) {
 			result[1] = +roRadius + 1
 		}
 
-	case "∩":
+	case '∩':
 		iMinC, iMaxC := iMin.canonicalize(), iMax.canonicalize()
 		for j := jMin; j <= jMax; j++ {
 			jC := j.canonicalize()
