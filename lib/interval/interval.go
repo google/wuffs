@@ -42,14 +42,32 @@ var (
 	one = big.NewInt(1)
 )
 
+var smallBitMasks = [...]*big.Int{
+	big.NewInt(0x00),
+	big.NewInt(0x01),
+	big.NewInt(0x03),
+	big.NewInt(0x07),
+	big.NewInt(0x0F),
+	big.NewInt(0x1F),
+	big.NewInt(0x3F),
+	big.NewInt(0x7F),
+	big.NewInt(0xFF),
+}
+
 // bitMask returns ((1<<n) - 1), where n is the largest of n0 and n1.
 func bitMask(n0 int, n1 int) *big.Int {
 	n := n0
 	if n < n1 {
 		n = n1
 	}
-	if n > (1 << 30) {
+	if n < 0 {
+		panic("unreachable")
+	} else if n > (1 << 30) {
 		panic("interval: input is too large")
+	}
+
+	if n < len(smallBitMasks) {
+		return smallBitMasks[n]
 	}
 	z := big.NewInt(1)
 	z = z.Lsh(z, uint(n))
