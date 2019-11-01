@@ -392,6 +392,42 @@ func (x IntRange) Unite(y IntRange) (z IntRange) {
 	return z
 }
 
+func (x *IntRange) inPlaceUnite(y IntRange) {
+	if y.Empty() {
+		return
+	}
+
+	if x.Empty() {
+		if y[0] == nil {
+			x[0] = nil
+		} else {
+			x[0].Set(y[0])
+		}
+
+		if y[1] == nil {
+			x[1] = nil
+		} else {
+			x[1].Set(y[1])
+		}
+	}
+
+	if x[0] != nil {
+		if y[0] == nil {
+			x[0] = nil
+		} else if x[0].Cmp(y[0]) > 0 {
+			x[0].Set(y[0])
+		}
+	}
+
+	if x[1] != nil {
+		if y[1] == nil {
+			x[1] = nil
+		} else if x[1].Cmp(y[1]) < 0 {
+			x[1].Set(y[1])
+		}
+	}
+}
+
 // Intersect returns z = x ∩ y, the intersection of two intervals.
 func (x IntRange) Intersect(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
@@ -721,21 +757,21 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 				bigIntNewNot(yNeg[1]),
 				bigIntNewNot(yNeg[0]),
 			})
-			z = z.Unite(IntRange{
+			z.inPlaceUnite(IntRange{
 				bigIntNewNot(w[1]),
 				bigIntNewNot(w[0]),
 			})
 		}
 		if hasYNon {
-			z = z.Unite(andOneNegOneNonNeg(xNeg, yNon))
+			z.inPlaceUnite(andOneNegOneNonNeg(xNeg, yNon))
 		}
 	}
 	if hasXNon {
 		if hasYNeg {
-			z = z.Unite(andOneNegOneNonNeg(yNeg, xNon))
+			z.inPlaceUnite(andOneNegOneNonNeg(yNeg, xNon))
 		}
 		if hasYNon {
-			z = z.Unite(andBothNonNeg(xNon, yNon))
+			z.inPlaceUnite(andBothNonNeg(xNon, yNon))
 		}
 	}
 	return z, true
@@ -830,21 +866,21 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 				bigIntNewNot(yNeg[1]),
 				bigIntNewNot(yNeg[0]),
 			})
-			z = z.Unite(IntRange{
+			z.inPlaceUnite(IntRange{
 				bigIntNewNot(w[1]),
 				bigIntNewNot(w[0]),
 			})
 		}
 		if hasYNon {
-			z = z.Unite(orOneNegOneNonNeg(xNeg, yNon))
+			z.inPlaceUnite(orOneNegOneNonNeg(xNeg, yNon))
 		}
 	}
 	if hasXNon {
 		if hasYNeg {
-			z = z.Unite(orOneNegOneNonNeg(yNeg, xNon))
+			z.inPlaceUnite(orOneNegOneNonNeg(yNeg, xNon))
 		}
 		if hasYNon {
-			z = z.Unite(orBothNonNeg(xNon, yNon))
+			z.inPlaceUnite(orBothNonNeg(xNon, yNon))
 		}
 	}
 	return z, true
