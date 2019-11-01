@@ -42,9 +42,31 @@ var (
 	one = big.NewInt(1)
 )
 
-func bigIntClone(i *big.Int) *big.Int {
+// bitMask returns ((1<<n) - 1), where n is the largest of n0 and n1.
+func bitMask(n0 int, n1 int) *big.Int {
+	n := n0
+	if n < n1 {
+		n = n1
+	}
+	if n > (1 << 30) {
+		panic("interval: input is too large")
+	}
+	z := big.NewInt(1)
+	z = z.Lsh(z, uint(n))
+	z = z.Sub(z, one)
+	return z
+}
+
+func bigIntNewSet(i *big.Int) *big.Int {
 	if i != nil {
 		return big.NewInt(0).Set(i)
+	}
+	return nil
+}
+
+func bigIntNewNot(i *big.Int) *big.Int {
+	if i != nil {
+		return big.NewInt(0).Not(i)
 	}
 	return nil
 }
@@ -263,6 +285,35 @@ func (x IntRange) justZero() bool {
 	return x[0] != nil && x[1] != nil && x[0].Sign() == 0 && x[1].Sign() == 0
 }
 
+// split2Ways splits x into negative and non-negative sub-intervals. The
+// IntRange values returned may be empty, which means that x does not contain
+// any negative or non-negative elements.
+func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
+	if x.Empty() {
+		return empty(), empty()
+	}
+	if x[0] != nil && x[0].Sign() >= 0 {
+		return empty(), x
+	}
+	if x[1] != nil && x[1].Sign() < 0 {
+		return x, empty()
+	}
+
+	neg[0] = x[0]
+	neg[1] = big.NewInt(-1)
+	if x[1] != nil && x[1].Cmp(neg[1]) < 0 {
+		neg[1] = x[1]
+	}
+
+	nonNeg[0] = big.NewInt(0)
+	if x[0] != nil && x[0].Cmp(nonNeg[0]) > 0 {
+		nonNeg[0] = x[0]
+	}
+	nonNeg[1] = x[1]
+
+	return neg, nonNeg
+}
+
 // split splits x into negative, zero and positive sub-intervals. The IntRange
 // values returned may be empty, which means that x does not contain any
 // negative or positive elements.
@@ -293,14 +344,14 @@ func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bo
 func (x IntRange) Unite(y IntRange) (z IntRange) {
 	if x.Empty() {
 		return IntRange{
-			bigIntClone(y[0]),
-			bigIntClone(y[1]),
+			bigIntNewSet(y[0]),
+			bigIntNewSet(y[1]),
 		}
 	}
 	if y.Empty() {
 		return IntRange{
-			bigIntClone(x[0]),
-			bigIntClone(x[1]),
+			bigIntNewSet(x[0]),
+			bigIntNewSet(x[1]),
 		}
 	}
 
@@ -330,9 +381,9 @@ func (x IntRange) Intersect(y IntRange) (z IntRange) {
 	}
 
 	if x[0] == nil {
-		z[0] = bigIntClone(y[0])
+		z[0] = bigIntNewSet(y[0])
 	} else if y[0] == nil {
-		z[0] = bigIntClone(x[0])
+		z[0] = bigIntNewSet(x[0])
 	} else if x[0].Cmp(y[0]) < 0 {
 		z[0] = big.NewInt(0).Set(y[0])
 	} else {
@@ -340,9 +391,9 @@ func (x IntRange) Intersect(y IntRange) (z IntRange) {
 	}
 
 	if x[1] == nil {
-		z[1] = bigIntClone(y[1])
+		z[1] = bigIntNewSet(y[1])
 	} else if y[1] == nil {
-		z[1] = bigIntClone(x[1])
+		z[1] = bigIntNewSet(x[1])
 	} else if x[1].Cmp(y[1]) < 0 {
 		z[1] = big.NewInt(0).Set(x[1])
 	} else {
@@ -627,15 +678,54 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 //
 // ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
 // one negative value. Otherwise, ok is true.
-//
-// TODO: implement bit-wise operations (with tight bounds) on negative
-// integers. In that case, we could drop the "ok" return value.
 func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return empty(), true
 	}
-	if x.ContainsNegative() || y.ContainsNegative() {
-		return IntRange{}, false
+	if !x.ContainsNegative() && !y.ContainsNegative() {
+		return andBothNonNeg(x, y), true
+	}
+
+	xNeg, xNon := x.split2Ways()
+	yNeg, yNon := y.split2Ways()
+	hasXNeg := !xNeg.Empty()
+	hasXNon := !xNon.Empty()
+	hasYNeg := !yNeg.Empty()
+	hasYNon := !yNon.Empty()
+
+	z = empty()
+	if hasXNeg {
+		if hasYNeg {
+			w := orBothNonNeg(IntRange{
+				bigIntNewNot(xNeg[1]),
+				bigIntNewNot(xNeg[0]),
+			}, IntRange{
+				bigIntNewNot(yNeg[1]),
+				bigIntNewNot(yNeg[0]),
+			})
+			z = z.Unite(IntRange{
+				bigIntNewNot(w[1]),
+				bigIntNewNot(w[0]),
+			})
+		}
+		if hasYNon {
+			z = z.Unite(andOneNegOneNonNeg(xNeg, yNon))
+		}
+	}
+	if hasXNon {
+		if hasYNeg {
+			z = z.Unite(andOneNegOneNonNeg(yNeg, xNon))
+		}
+		if hasYNon {
+			z = z.Unite(andBothNonNeg(xNon, yNon))
+		}
+	}
+	return z, true
+}
+
+func andBothNonNeg(x IntRange, y IntRange) (z IntRange) {
+	if x.Empty() || x.ContainsNegative() || y.Empty() || y.ContainsNegative() {
+		panic("pre-condition failure")
 	}
 
 	zMax := (*big.Int)(nil)
@@ -643,13 +733,13 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 		if y[1] != nil {
 			zMax = x.andMax(y)
 		} else {
-			return IntRange{big.NewInt(0), big.NewInt(0).Set(x[1])}, true
+			return IntRange{big.NewInt(0), big.NewInt(0).Set(x[1])}
 		}
 	} else {
 		if y[1] != nil {
-			return IntRange{big.NewInt(0), big.NewInt(0).Set(y[1])}, true
+			return IntRange{big.NewInt(0), big.NewInt(0).Set(y[1])}
 		} else {
-			return IntRange{big.NewInt(0), nil}, true
+			return IntRange{big.NewInt(0), nil}
 		}
 	}
 
@@ -665,22 +755,86 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 	zMin := notX.orMax(notY)
 	zMin.Not(zMin)
 
-	return IntRange{zMin, zMax}, true
+	return IntRange{zMin, zMax}
+}
+
+func andOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
+	if neg.Empty() || neg.ContainsZero() || neg.ContainsPositive() || non.Empty() || non.ContainsNegative() {
+		panic("pre-condition failure")
+	}
+
+	if neg[0] == nil {
+		return IntRange{big.NewInt(0), bigIntNewSet(non[1])}
+	} else if non[1] == nil {
+		mask := bitMask(neg[0].BitLen(), non[0].BitLen())
+		biasedNeg := IntRange{
+			big.NewInt(0).And(mask, neg[0]),
+			big.NewInt(0).And(mask, neg[1]),
+		}
+		w := andBothNonNeg(biasedNeg, IntRange{non[0], mask})
+		return IntRange{w[0], nil}
+	} else {
+		mask := bitMask(neg[0].BitLen(), non[1].BitLen())
+		biasedNeg := IntRange{
+			big.NewInt(0).And(mask, neg[0]),
+			big.NewInt(0).And(mask, neg[1]),
+		}
+		return andBothNonNeg(biasedNeg, non)
+	}
 }
 
 // Or returns z = x | y.
 //
 // ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
 // one negative value. Otherwise, ok is true.
-//
-// TODO: implement bit-wise operations (with tight bounds) on negative
-// integers. In that case, we could drop the "ok" return value.
 func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return empty(), true
 	}
-	if x.ContainsNegative() || y.ContainsNegative() {
-		return IntRange{}, false
+	if !x.ContainsNegative() && !y.ContainsNegative() {
+		return orBothNonNeg(x, y), true
+	}
+
+	xNeg, xNon := x.split2Ways()
+	yNeg, yNon := y.split2Ways()
+	hasXNeg := !xNeg.Empty()
+	hasXNon := !xNon.Empty()
+	hasYNeg := !yNeg.Empty()
+	hasYNon := !yNon.Empty()
+
+	z = empty()
+	if hasXNeg {
+		if hasYNeg {
+			w := andBothNonNeg(IntRange{
+				bigIntNewNot(xNeg[1]),
+				bigIntNewNot(xNeg[0]),
+			}, IntRange{
+				bigIntNewNot(yNeg[1]),
+				bigIntNewNot(yNeg[0]),
+			})
+			z = z.Unite(IntRange{
+				bigIntNewNot(w[1]),
+				bigIntNewNot(w[0]),
+			})
+		}
+		if hasYNon {
+			z = z.Unite(orOneNegOneNonNeg(xNeg, yNon))
+		}
+	}
+	if hasXNon {
+		if hasYNeg {
+			z = z.Unite(orOneNegOneNonNeg(yNeg, xNon))
+		}
+		if hasYNon {
+			z = z.Unite(orBothNonNeg(xNon, yNon))
+		}
+	}
+	return z, true
+}
+
+func orBothNonNeg(x IntRange, y IntRange) (z IntRange) {
+	if x.Empty() || x.ContainsNegative() || y.Empty() || y.ContainsNegative() {
+		panic("pre-condition failure")
 	}
 
 	zMax := (*big.Int)(nil)
@@ -698,10 +852,10 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 		// value is contained in the other interval. For example, if both xx
 		// and yy can be x[0], then (x[0] | x[0]) is simply x[0].
 		if x.ContainsInt(y[0]) {
-			return IntRange{big.NewInt(0).Set(y[0]), nil}, true
+			return IntRange{big.NewInt(0).Set(y[0]), nil}
 		}
 		if y.ContainsInt(x[0]) {
-			return IntRange{big.NewInt(0).Set(x[0]), nil}, true
+			return IntRange{big.NewInt(0).Set(x[0]), nil}
 		}
 		if x[1] == nil && y[1] == nil {
 			panic("unreachable")
@@ -738,7 +892,21 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 	zMin := notX.andMax(notY)
 	zMin.Not(zMin)
 
-	return IntRange{zMin, zMax}, true
+	return IntRange{zMin, zMax}
+}
+
+func orOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
+	w := andOneNegOneNonNeg(IntRange{
+		bigIntNewNot(non[1]),
+		bigIntNewNot(non[0]),
+	}, IntRange{
+		bigIntNewNot(neg[1]),
+		bigIntNewNot(neg[0]),
+	})
+	return IntRange{
+		bigIntNewNot(w[1]),
+		bigIntNewNot(w[0]),
+	}
 }
 
 // The andMax and orMax algorithms are tricky.
@@ -999,7 +1167,7 @@ func (x IntRange) orMax(y IntRange) *big.Int {
 //  - Etc.
 func bitFillRight(i *big.Int) {
 	if s := i.Sign(); s < 0 {
-		panic("TODO: implement bit-wise operations on negative integers")
+		panic("pre-condition failure")
 	} else if s == 0 {
 		return
 	}

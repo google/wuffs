@@ -24,6 +24,36 @@ import (
 	"testing"
 )
 
+var fromNeg7ToPos7 = []*big.Int{
+	big.NewInt(-7),
+	big.NewInt(-6),
+	big.NewInt(-5),
+	big.NewInt(-4),
+	big.NewInt(-3),
+	big.NewInt(-2),
+	big.NewInt(-1),
+	big.NewInt(+0),
+	big.NewInt(+1),
+	big.NewInt(+2),
+	big.NewInt(+3),
+	big.NewInt(+4),
+	big.NewInt(+5),
+	big.NewInt(+6),
+	big.NewInt(+7),
+	nil,
+}
+
+var fromNeg3ToPos3 = []*big.Int{
+	big.NewInt(-3),
+	big.NewInt(-2),
+	big.NewInt(-1),
+	big.NewInt(+0),
+	big.NewInt(+1),
+	big.NewInt(+2),
+	big.NewInt(+3),
+	nil,
+}
+
 // TestMotivatingExample tests the "motivating example" given in the package
 // doc comment.
 func TestMotivatingExample(tt *testing.T) {
@@ -311,33 +341,13 @@ func testBruteForceAgrees(x IntRange, y IntRange, opKey string) error {
 }
 
 func TestBruteForceAgreesSystematically(tt *testing.T) {
-	ints := []*big.Int{
-		big.NewInt(-7),
-		big.NewInt(-6),
-		big.NewInt(-5),
-		big.NewInt(-4),
-		big.NewInt(-3),
-		big.NewInt(-2),
-		big.NewInt(-1),
-		big.NewInt(+0),
-		big.NewInt(+1),
-		big.NewInt(+2),
-		big.NewInt(+3),
-		big.NewInt(+4),
-		big.NewInt(+5),
-		big.NewInt(+6),
-		big.NewInt(+7),
-		nil,
-	}
-
 	for _, opKey := range intOperatorsKeys {
-
-		for _, x0 := range ints {
-			for _, x1 := range ints {
+		for _, x0 := range fromNeg7ToPos7 {
+			for _, x1 := range fromNeg7ToPos7 {
 				x := IntRange{x0, x1}
 
-				for _, y0 := range ints {
-					for _, y1 := range ints {
+				for _, y0 := range fromNeg7ToPos7 {
+					for _, y1 := range fromNeg7ToPos7 {
 						y := IntRange{y0, y1}
 
 						if err := testBruteForceAgrees(x, y, opKey); err != nil {
@@ -422,7 +432,7 @@ func testOp1(s string) error {
 
 	got, gotOK := intOperators[opKey](x, y)
 	if !got.Eq(want) || gotOK != wantOK {
-		return fmt.Errorf("package code: got %v, %t, want %v, %t", got, gotOK, want, wantOK)
+		return fmt.Errorf("got %v, %t, want %v, %t", got, gotOK, want, wantOK)
 	}
 	return nil
 }
@@ -755,46 +765,46 @@ func TestOpRsh(tt *testing.T) {
 
 func TestOpAnd(tt *testing.T) {
 	testOp(tt,
-		"[   3,    3]   &  [  -5,   -5]  ==  invalid",
+		"[   3,    3]   &  [  -5,   -5]  ==  [   3,    3]",
 		"[   3,    3]   &  [   0,    0]  ==  [   0,    0]",
-		"[   0,    0]   &  [  -7,    7]  ==  invalid",
+		"[   0,    0]   &  [  -7,    7]  ==  [   0,    0]",
 		"[   0,    2]   &  [   0,    5]  ==  [   0,    2]",
 		"[   3,    6]   &  [  10,   15]  ==  [   0,    6]",
-		"[   3,   +∞)   &  [  -4,   -2]  ==  invalid",
+		"[   3,   +∞)   &  [  -4,   -2]  ==  [   0,   +∞)",
 		"[   3,   +∞)   &  [  10,   15]  ==  [   0,   15]",
-		"[   3,   +∞)   &  (  -∞,   15]  ==  invalid",
-		"[   3,    6]   &  (  -∞,   15]  ==  invalid",
-		"[   3,    6]   &  (  -∞,   +∞)  ==  invalid",
-		"(  -∞,   +∞)   &  (  -∞,   +∞)  ==  invalid",
-		"(  -∞,   +∞)   &  [   1,    2]  ==  invalid",
-		"(  -∞,   +∞)   &  [   0,    0]  ==  invalid",
+		"[   3,   +∞)   &  (  -∞,   15]  ==  [   0,   +∞)",
+		"[   3,    6]   &  (  -∞,   15]  ==  [   0,    6]",
+		"[   3,    6]   &  (  -∞,   +∞)  ==  [   0,    6]",
+		"(  -∞,   +∞)   &  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   &  [   1,    2]  ==  [   0,    2]",
+		"(  -∞,   +∞)   &  [   0,    0]  ==  [   0,    0]",
 		"[   3,    6]   &  [...empty..]  ==  [...empty..]",
 		"[...empty..]   &  [  10,   15]  ==  [...empty..]",
 		"[...empty..]   &  [...empty..]  ==  [...empty..]",
 		"(  -∞,   +∞)   &  [...empty..]  ==  [...empty..]",
 
-		"[   1,    4]   &  [ -11,  -10]  ==  invalid",
+		"[   1,    4]   &  [ -11,  -10]  ==  [   0,    4]",
 
-		"[   1,    4]   &  [  -6,    2]  ==  invalid",
+		"[   1,    4]   &  [  -6,    2]  ==  [   0,    4]",
 
-		"[  -3,   -1]   &  [   0,    3]  ==  invalid",
-		"[  -1,    4]   &  [   0,    3]  ==  invalid",
+		"[  -3,   -1]   &  [   0,    3]  ==  [   0,    3]",
+		"[  -1,    4]   &  [   0,    3]  ==  [   0,    3]",
 		"[   0,    4]   &  [   0,    3]  ==  [   0,    3]",
 		"[   1,    4]   &  [   0,    3]  ==  [   0,    3]",
 
-		"[  -3,   -1]   &  [   2,    3]  ==  invalid",
-		"[  -1,    4]   &  [   2,    3]  ==  invalid",
+		"[  -3,   -1]   &  [   2,    3]  ==  [   0,    3]",
+		"[  -1,    4]   &  [   2,    3]  ==  [   0,    3]",
 		"[   0,    4]   &  [   2,    3]  ==  [   0,    3]",
 		"[   1,    4]   &  [   2,    3]  ==  [   0,    3]",
 
-		"[  -9,   +∞)   &  [   2,   +∞)  ==  invalid",
-		"[  -1,   +∞)   &  [   2,   +∞)  ==  invalid",
+		"[  -9,   +∞)   &  [   2,   +∞)  ==  [   0,   +∞)",
+		"[  -1,   +∞)   &  [   2,   +∞)  ==  [   0,   +∞)",
 		"[   0,   +∞)   &  [   2,   +∞)  ==  [   0,   +∞)",
 		"[   1,   +∞)   &  [   2,   +∞)  ==  [   0,   +∞)",
 		"[   7,   +∞)   &  [   2,   +∞)  ==  [   0,   +∞)",
-		"[  -1,    1]   &  (  -∞,   +∞)  ==  invalid",
-		"[   0,    0]   &  (  -∞,   +∞)  ==  invalid",
-		"[   1,    1]   &  (  -∞,   +∞)  ==  invalid",
+		"[  -1,    1]   &  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"[   0,    0]   &  (  -∞,   +∞)  ==  [   0,    0]",
+		"[   1,    1]   &  (  -∞,   +∞)  ==  [   0,    1]",
 
 		"[   1,    3]   &  [   4,    9]  ==  [   0,    3]",
 		"[   3,    4]   &  [   5,    6]  ==  [   1,    4]",
@@ -816,51 +826,54 @@ func TestOpAnd(tt *testing.T) {
 		"[   5,    9]   &  [   9,   +∞)  ==  [   0,    9]",
 		"[   5,    6]   &  [  12,   +∞)  ==  [   0,    6]",
 		"[   5,    9]   &  [  12,   +∞)  ==  [   0,    9]",
+
+		"(  -∞,   -3]   &  [  -3,   -2]  ==  (  -∞,   -3]",
+		"[   2,   +∞)   &  [   1,    2]  ==  [   0,    2]",
 	)
 }
 
 func TestOpOr(tt *testing.T) {
 	testOp(tt,
-		"[   3,    3]   |  [  -5,   -5]  ==  invalid",
+		"[   3,    3]   |  [  -5,   -5]  ==  [  -5,   -5]",
 		"[   3,    3]   |  [   0,    0]  ==  [   3,    3]",
-		"[   0,    0]   |  [  -7,    7]  ==  invalid",
+		"[   0,    0]   |  [  -7,    7]  ==  [  -7,    7]",
 		"[   0,    2]   |  [   0,    5]  ==  [   0,    7]",
 		"[   3,    6]   |  [  10,   15]  ==  [  11,   15]",
-		"[   3,   +∞)   |  [  -4,   -2]  ==  invalid",
+		"[   3,   +∞)   |  [  -4,   -2]  ==  [  -4,   -1]",
 		"[   3,   +∞)   |  [  10,   15]  ==  [  10,   +∞)",
-		"[   3,   +∞)   |  (  -∞,   15]  ==  invalid",
-		"[   3,    6]   |  (  -∞,   15]  ==  invalid",
-		"[   3,    6]   |  (  -∞,   +∞)  ==  invalid",
-		"(  -∞,   +∞)   |  (  -∞,   +∞)  ==  invalid",
-		"(  -∞,   +∞)   |  [   1,    2]  ==  invalid",
-		"(  -∞,   +∞)   |  [   0,    0]  ==  invalid",
+		"[   3,   +∞)   |  (  -∞,   15]  ==  (  -∞,   +∞)",
+		"[   3,    6]   |  (  -∞,   15]  ==  (  -∞,   15]",
+		"[   3,    6]   |  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   |  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   |  [   1,    2]  ==  (  -∞,   +∞)",
+		"(  -∞,   +∞)   |  [   0,    0]  ==  (  -∞,   +∞)",
 		"[   3,    6]   |  [...empty..]  ==  [...empty..]",
 		"[...empty..]   |  [  10,   15]  ==  [...empty..]",
 		"[...empty..]   |  [...empty..]  ==  [...empty..]",
 		"(  -∞,   +∞)   |  [...empty..]  ==  [...empty..]",
 
-		"[   1,    4]   |  [ -11,  -10]  ==  invalid",
+		"[   1,    4]   |  [ -11,  -10]  ==  [ -11,   -9]",
 
-		"[   1,    4]   |  [  -6,    2]  ==  invalid",
+		"[   1,    4]   |  [  -6,    2]  ==  [  -6,    6]",
 
-		"[  -3,   -1]   |  [   0,    3]  ==  invalid",
-		"[  -1,    4]   |  [   0,    3]  ==  invalid",
+		"[  -3,   -1]   |  [   0,    3]  ==  [  -3,   -1]",
+		"[  -1,    4]   |  [   0,    3]  ==  [  -1,    7]",
 		"[   0,    4]   |  [   0,    3]  ==  [   0,    7]",
 		"[   1,    4]   |  [   0,    3]  ==  [   1,    7]",
 
-		"[  -3,   -1]   |  [   2,    3]  ==  invalid",
-		"[  -1,    4]   |  [   2,    3]  ==  invalid",
+		"[  -3,   -1]   |  [   2,    3]  ==  [  -2,   -1]",
+		"[  -1,    4]   |  [   2,    3]  ==  [  -1,    7]",
 		"[   0,    4]   |  [   2,    3]  ==  [   2,    7]",
 		"[   1,    4]   |  [   2,    3]  ==  [   2,    7]",
 
-		"[  -9,   +∞)   |  [   2,   +∞)  ==  invalid",
-		"[  -1,   +∞)   |  [   2,   +∞)  ==  invalid",
+		"[  -9,   +∞)   |  [   2,   +∞)  ==  [  -9,   +∞)",
+		"[  -1,   +∞)   |  [   2,   +∞)  ==  [  -1,   +∞)",
 		"[   0,   +∞)   |  [   2,   +∞)  ==  [   2,   +∞)",
 		"[   1,   +∞)   |  [   2,   +∞)  ==  [   2,   +∞)",
 		"[   7,   +∞)   |  [   2,   +∞)  ==  [   7,   +∞)",
-		"[  -1,    1]   |  (  -∞,   +∞)  ==  invalid",
-		"[   0,    0]   |  (  -∞,   +∞)  ==  invalid",
-		"[   1,    1]   |  (  -∞,   +∞)  ==  invalid",
+		"[  -1,    1]   |  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"[   0,    0]   |  (  -∞,   +∞)  ==  (  -∞,   +∞)",
+		"[   1,    1]   |  (  -∞,   +∞)  ==  (  -∞,   +∞)",
 
 		"[   1,    3]   |  [   4,    9]  ==  [   5,   11]",
 		"[   3,    4]   |  [   5,    6]  ==  [   5,    7]",
@@ -882,5 +895,82 @@ func TestOpOr(tt *testing.T) {
 		"[   5,    9]   |  [   9,   +∞)  ==  [   9,   +∞)",
 		"[   5,    6]   |  [  12,   +∞)  ==  [  13,   +∞)",
 		"[   5,    9]   |  [  12,   +∞)  ==  [  12,   +∞)",
+
+		"(  -∞,   -3]   |  [  -3,   -2]  ==  [  -3,   -1]",
+		"[   2,   +∞)   |  [   1,    2]  ==  [   2,   +∞)",
 	)
+}
+
+func TestOpAndWithMinusOne(tt *testing.T) {
+	minusOne := IntRange{big.NewInt(-1), big.NewInt(-1)}
+	for _, x0 := range fromNeg3ToPos3 {
+		for _, x1 := range fromNeg3ToPos3 {
+			x := IntRange{x0, x1}
+			want := x
+
+			if got, _ := x.And(minusOne); !got.Eq(want) {
+				tt.Fatalf("%v & -1: got %v, want %v", x, got, want)
+			}
+			if got, _ := minusOne.And(x); !got.Eq(want) {
+				tt.Fatalf("-1 & %v: got %v, want %v", x, got, want)
+			}
+		}
+	}
+}
+
+func TestOpAndWithZero(tt *testing.T) {
+	zero := IntRange{big.NewInt(+0), big.NewInt(+0)}
+	for _, x0 := range fromNeg3ToPos3 {
+		for _, x1 := range fromNeg3ToPos3 {
+			x := IntRange{x0, x1}
+			want := zero
+			if x.Empty() {
+				want = empty()
+			}
+
+			if got, _ := x.And(zero); !got.Eq(want) {
+				tt.Fatalf("%v & +0: got %v, want %v", x, got, want)
+			}
+			if got, _ := zero.And(x); !got.Eq(want) {
+				tt.Fatalf("+0 & %v: got %v, want %v", x, got, want)
+			}
+		}
+	}
+}
+
+func TestOpOrWithMinusOne(tt *testing.T) {
+	minusOne := IntRange{big.NewInt(-1), big.NewInt(-1)}
+	for _, x0 := range fromNeg3ToPos3 {
+		for _, x1 := range fromNeg3ToPos3 {
+			x := IntRange{x0, x1}
+			want := minusOne
+			if x.Empty() {
+				want = empty()
+			}
+
+			if got, _ := x.Or(minusOne); !got.Eq(want) {
+				tt.Fatalf("%v | -1: got %v, want %v", x, got, want)
+			}
+			if got, _ := minusOne.Or(x); !got.Eq(want) {
+				tt.Fatalf("-1 | %v: got %v, want %v", x, got, want)
+			}
+		}
+	}
+}
+
+func TestOpOrWithZero(tt *testing.T) {
+	zero := IntRange{big.NewInt(+0), big.NewInt(+0)}
+	for _, x0 := range fromNeg3ToPos3 {
+		for _, x1 := range fromNeg3ToPos3 {
+			x := IntRange{x0, x1}
+			want := x
+
+			if got, _ := x.Or(zero); !got.Eq(want) {
+				tt.Fatalf("%v | +0: got %v, want %v", x, got, want)
+			}
+			if got, _ := zero.Or(x); !got.Eq(want) {
+				tt.Fatalf("+0 | %v: got %v, want %v", x, got, want)
+			}
+		}
+	}
 }

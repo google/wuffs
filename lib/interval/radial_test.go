@@ -83,7 +83,8 @@ import (
 const (
 	radialNaN = -1 << 31
 
-	// Note that radialInput.Or requires that (riRadius + 1) is a power of 2.
+	// Note that radialInput.And and radialInput.Or require that (riRadius + 1)
+	// is a power of 2.
 	riRadius = 15
 	roRadius = 16 << 16
 
@@ -343,34 +344,54 @@ func (x radialInput) And(y radialInput) radialOutPair {
 	if x == radialNaN || y == radialNaN {
 		return radialOutPair{radialNaN, radialNaN}
 	}
-	if x < 0 || y < 0 {
-		// TODO: handle negative numbers.
-		return radialOutPair{radialNaN, radialNaN}
-	}
 	ox := x.canonicalize()
 	oy := y.canonicalize()
 
-	if ox > +riRadius {
-		if oy > +riRadius {
+	// r is a power of 2, so that its binary representation contains one "1"
+	// digit, and that digit is not shared with any "small" value <= riRadius.
+	const r = riRadius + 1
+
+	if ox < -riRadius {
+		if oy < -riRadius {
+			return radialOutPair{roLargeNeg, -r}
+		} else if oy > +riRadius {
 			return radialOutPair{0, roLargePos}
+		} else if oy < 0 {
+			return radialOutPair{roLargeNeg, -r}
 		} else {
 			return radialOutPair{0, oy}
 		}
-	} else {
-		if oy > +riRadius {
-			return radialOutPair{0, ox}
+	} else if ox > +riRadius {
+		if oy < -riRadius {
+			return radialOutPair{0, roLargePos}
+		} else if oy > +riRadius {
+			return radialOutPair{0, roLargePos}
+		} else if oy < 0 {
+			return radialOutPair{+r, roLargePos}
 		} else {
-			return radialOutPair{ox & oy, ox & oy}
+			return radialOutPair{0, oy}
 		}
 	}
+
+	if oy < -riRadius {
+		if ox < 0 {
+			return radialOutPair{roLargeNeg, -r}
+		} else {
+			return radialOutPair{0, ox}
+		}
+	} else if oy > +riRadius {
+		if ox < 0 {
+			return radialOutPair{+r, roLargePos}
+		} else {
+			return radialOutPair{0, ox}
+		}
+	}
+
+	return radialOutPair{ox & oy, ox & oy}
 }
 
 func (x radialInput) Or(y radialInput) radialOutPair {
 	if x == radialNaN || y == radialNaN {
-		return radialOutPair{radialNaN, radialNaN}
-	}
-	if x < 0 || y < 0 {
-		// TODO: handle negative numbers.
 		return radialOutPair{radialNaN, radialNaN}
 	}
 	ox := x.canonicalize()
@@ -380,19 +401,43 @@ func (x radialInput) Or(y radialInput) radialOutPair {
 	// digit, and that digit is not shared with any "small" value <= riRadius.
 	const r = riRadius + 1
 
-	if ox > +riRadius {
-		if oy > +riRadius {
-			return radialOutPair{r, roLargePos}
+	if ox < -riRadius {
+		if oy < -riRadius {
+			return radialOutPair{roLargeNeg, -1}
+		} else if oy > +riRadius {
+			return radialOutPair{roLargeNeg, -1}
+		} else if oy < 0 {
+			return radialOutPair{oy, -1}
 		} else {
-			return radialOutPair{oy | r, roLargePos}
+			return radialOutPair{roLargeNeg, oy | -r}
 		}
-	} else {
-		if oy > +riRadius {
-			return radialOutPair{ox | r, roLargePos}
+	} else if ox > +riRadius {
+		if oy < -riRadius {
+			return radialOutPair{roLargeNeg, -1}
+		} else if oy > +riRadius {
+			return radialOutPair{+r, roLargePos}
+		} else if oy < 0 {
+			return radialOutPair{oy, -1}
 		} else {
-			return radialOutPair{ox | oy, ox | oy}
+			return radialOutPair{oy | +r, roLargePos}
 		}
 	}
+
+	if oy < -riRadius {
+		if ox < 0 {
+			return radialOutPair{ox, -1}
+		} else {
+			return radialOutPair{roLargeNeg, ox | -r}
+		}
+	} else if oy > +riRadius {
+		if ox < 0 {
+			return radialOutPair{ox, -1}
+		} else {
+			return radialOutPair{ox | +r, roLargePos}
+		}
+	}
+
+	return radialOutPair{ox | oy, ox | oy}
 }
 
 var riOperators = map[string]func(radialInput, radialInput) radialOutPair{
