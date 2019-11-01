@@ -138,6 +138,11 @@ func (x *biggerIntPair) fromIntRange(y IntRange) {
 // The zero value (zero in the Go sense, not in the integer sense) is a valid,
 // infinitely sized interval, unbounded at both ends.
 //
+// IntRange's operator-like methods (Add, Mul, etc) return an IntRange whose
+// *big.Int pointer values (if non-nil) are always distinct from its inputs'
+// *big.Int pointer values. Specifically, after "z = x.Add(y)", mutating
+// "*z[0]" will not affect "*x[0]", "*x[1]", "*y[0]" or "*y[1]".
+//
 // A subtle point is that an interval's minimum or maximum can be infinite, but
 // if an integer value i is known to be within such an interval, i's possible
 // values are arbitrarily large but not infinite. Specifically, 0*i is
@@ -638,11 +643,11 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 		if y[1] != nil {
 			zMax = x.andMax(y)
 		} else {
-			return IntRange{big.NewInt(0), x[1]}, true
+			return IntRange{big.NewInt(0), big.NewInt(0).Set(x[1])}, true
 		}
 	} else {
 		if y[1] != nil {
-			return IntRange{big.NewInt(0), y[1]}, true
+			return IntRange{big.NewInt(0), big.NewInt(0).Set(y[1])}, true
 		} else {
 			return IntRange{big.NewInt(0), nil}, true
 		}
@@ -693,10 +698,10 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 		// value is contained in the other interval. For example, if both xx
 		// and yy can be x[0], then (x[0] | x[0]) is simply x[0].
 		if x.ContainsInt(y[0]) {
-			return IntRange{y[0], nil}, true
+			return IntRange{big.NewInt(0).Set(y[0]), nil}, true
 		}
 		if y.ContainsInt(x[0]) {
-			return IntRange{x[0], nil}, true
+			return IntRange{big.NewInt(0).Set(x[0]), nil}, true
 		}
 		if x[1] == nil && y[1] == nil {
 			panic("unreachable")
@@ -804,7 +809,7 @@ func (x IntRange) andMax(y IntRange) *big.Int {
 		if x[1].Cmp(y[1]) > 0 {
 			min = y[1]
 		}
-		return min
+		return big.NewInt(0).Set(min)
 	}
 
 	// Otherwise, x and y don't overlap. Four examples:

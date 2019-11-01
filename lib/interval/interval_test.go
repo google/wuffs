@@ -291,9 +291,19 @@ func TestContainsEtc(tt *testing.T) {
 	}
 }
 
+func shareBigIntPointers(x IntRange, y IntRange) bool {
+	return ((x[0] == y[0]) && (x[0] != nil)) ||
+		((x[0] == y[1]) && (x[0] != nil)) ||
+		((x[1] == y[0]) && (x[1] != nil)) ||
+		((x[1] == y[1]) && (x[1] != nil))
+}
+
 func testBruteForceAgrees(x IntRange, y IntRange, opKey string) error {
 	brute, bruteOK := bruteForce(x, y, opKey)
 	got, gotOK := intOperators[opKey](x, y)
+	if shareBigIntPointers(got, x) || shareBigIntPointers(got, y) {
+		return fmt.Errorf("*big.Int pointers (pointing to mutable state) were re-used")
+	}
 	if !got.Eq(brute) || gotOK != bruteOK {
 		return fmt.Errorf("got %v, %t, brute force gave %v, %t", got, gotOK, brute, bruteOK)
 	}
