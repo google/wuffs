@@ -60,15 +60,15 @@ extern "C" {
 // each major.minor branch, the commit count should increase monotonically.
 //
 // WUFFS_VERSION was overridden by "wuffs gen -version" based on revision
-// b0f18dacbd3cc446673d213acfb7a9317153a9ce committed on 2019-10-05.
+// 498b7138f3d7e1a63e8db78357ad355a43a84d0e committed on 2019-11-02.
 #define WUFFS_VERSION ((uint64_t)0x0000000000020000)
 #define WUFFS_VERSION_MAJOR ((uint64_t)0x00000000)
 #define WUFFS_VERSION_MINOR ((uint64_t)0x0002)
 #define WUFFS_VERSION_PATCH ((uint64_t)0x0000)
-#define WUFFS_VERSION_PRE_RELEASE_LABEL "rc.1"
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 1942
-#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20191005
-#define WUFFS_VERSION_STRING "0.2.0-rc.1+1942.20191005"
+#define WUFFS_VERSION_PRE_RELEASE_LABEL "rc.2"
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_COUNT 2005
+#define WUFFS_VERSION_BUILD_METADATA_COMMIT_DATE 20191102
+#define WUFFS_VERSION_STRING "0.2.0-rc.2+2005.20191102"
 
 // Define WUFFS_CONFIG__STATIC_FUNCTIONS to make all of Wuffs' functions have
 // static storage. The motivation is discussed in the "ALLOW STATIC
@@ -120,12 +120,11 @@ extern "C" {
 // wuffs_foo__bar__initialize will initialize the entire struct value to zeroes
 // (unless WUFFS_INITIALIZE__ALREADY_ZEROED is set).
 //
-// Setting this bit gives a small absolute improvement on micro-benchmarks, but
-// this can be a large relative effect, up to 2x faster, when the actual work
-// to be done is also small, such as decompressing small input. See git commit
-// 438fc105 "Move some struct fields to private_data" for some numbers and a
-// discussion, noting that its commit message was written before this
-// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED option was defined.
+// Setting this bit (avoiding a fixed-size cost) gives a small absolute
+// improvement on micro-benchmarks, mostly noticable (in relative terms) only
+// when the actual work to do (i.e. the input) is also small. Look for
+// WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED in
+// https://github.com/google/wuffs/blob/master/doc/benchmarks.md for numbers.
 #define WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED \
   ((uint32_t)0x00000002)
 
@@ -487,36 +486,7 @@ wuffs_base__slice_u8__subslice_ij(wuffs_base__slice_u8 s,
 
 // ---------------- Ranges and Rects
 
-// Ranges are either inclusive ("range_ii") or exclusive ("range_ie") on the
-// high end. Both the "ii" and "ie" flavors are useful in practice.
-//
-// The "ei" and "ee" flavors also exist in theory, but aren't widely used. In
-// Wuffs, the low end is always inclusive.
-//
-// The "ii" (closed interval) flavor is useful when refining e.g. "the set of
-// all uint32_t values" to a contiguous subset: "uint32_t values in the closed
-// interval [M, N]", for uint32_t values M and N. An unrefined type (in other
-// words, the set of all uint32_t values) is not representable in the "ie"
-// flavor because if N equals ((1<<32) - 1) then (N + 1) will overflow.
-//
-// On the other hand, the "ie" (half-open interval) flavor is recommended by
-// Dijkstra's "Why numbering should start at zero" at
-// http://www.cs.utexas.edu/users/EWD/ewd08xx/EWD831.PDF and a further
-// discussion of motivating rationale is at
-// https://www.quora.com/Why-are-Python-ranges-half-open-exclusive-instead-of-closed-inclusive
-//
-// For example, with "ie", the number of elements in "uint32_t values in the
-// half-open interval [M, N)" is equal to max(0, N-M). Furthermore, that number
-// of elements (in one dimension, a length, in two dimensions, a width or
-// height) is itself representable as a uint32_t without overflow, again for
-// uint32_t values M and N. In the contrasting "ii" flavor, the length of the
-// closed interval [0, (1<<32) - 1] is 1<<32, which cannot be represented as a
-// uint32_t. In Wuffs, because of this potential overflow, the "ie" flavor has
-// length / width / height methods, but the "ii" flavor does not.
-//
-// It is valid for min > max (for range_ii) or for min >= max (for range_ie),
-// in which case the range is empty. There are multiple representations of an
-// empty range.
+// See https://github.com/google/wuffs/blob/master/doc/note/ranges-and-rects.md
 
 typedef struct wuffs_base__range_ii_u32__struct {
   uint32_t min_incl;
@@ -984,15 +954,6 @@ wuffs_base__range_ie_u64::length() const {
 
 // --------
 
-// wuffs_base__rect_ii_u32 is a rectangle (a 2-dimensional range) on the
-// integer grid. The "ii" means that the bounds are inclusive on the low end
-// and inclusive on the high end. It contains all points (x, y) such that
-// ((min_incl_x <= x) && (x <= max_incl_x)) and likewise for y.
-//
-// It is valid for min > max, in which case the rectangle is empty. There are
-// multiple representations of an empty rectangle.
-//
-// The X and Y axes increase right and down.
 typedef struct wuffs_base__rect_ii_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
@@ -1118,16 +1079,6 @@ wuffs_base__rect_ii_u32::contains_rect(wuffs_base__rect_ii_u32 s) const {
 
 // --------
 
-// wuffs_base__rect_ie_u32 is a rectangle (a 2-dimensional range) on the
-// integer grid. The "ie" means that the bounds are inclusive on the low end
-// and exclusive on the high end. It contains all points (x, y) such that
-// ((min_incl_x <= x) && (x < max_excl_x)) and likewise for y.
-//
-// It is valid for min >= max, in which case the rectangle is empty. There are
-// multiple representations of an empty rectangle, including a value with all
-// fields zero.
-//
-// The X and Y axes increase right and down.
 typedef struct wuffs_base__rect_ie_u32__struct {
   uint32_t min_incl_x;
   uint32_t min_incl_y;
@@ -2895,10 +2846,6 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 #define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                       //
-    wuffs_deflate__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
@@ -3092,10 +3039,6 @@ extern const char* wuffs_lzw__error__bad_code;
 
 #define WUFFS_LZW__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
 
-static const uint64_t                                   //
-    wuffs_lzw__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 0;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
@@ -3271,52 +3214,20 @@ extern const char* wuffs_gif__error__bad_palette;
 
 #define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                   //
-    wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 #define WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES 1041635328
-
-static const uint32_t                          //
-    wuffs_gif__quirk_delay_num_decoded_frames  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
 
 #define WUFFS_GIF__QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND \
   1041635329
 
-static const uint32_t                                                  //
-    wuffs_gif__quirk_first_frame_local_palette_means_black_background  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
-
 #define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635330
-
-static const uint32_t                        //
-    wuffs_gif__quirk_honor_background_color  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
 #define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635331
 
-static const uint32_t                            //
-    wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
-
 #define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635332
-
-static const uint32_t                         //
-    wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
 
-static const uint32_t                    //
-    wuffs_gif__quirk_reject_empty_frame  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
-
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635334
-
-static const uint32_t                      //
-    wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635334;
 
 // ---------------- Struct Declarations
 
@@ -3677,10 +3588,6 @@ extern const char* wuffs_gzip__error__bad_header;
 
 #define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                    //
-    wuffs_gzip__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
@@ -3839,10 +3746,6 @@ extern const char* wuffs_zlib__error__incorrect_dictionary;
 // ---------------- Public Consts
 
 #define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
-
-static const uint64_t                                    //
-    wuffs_zlib__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -5036,15 +4939,13 @@ wuffs_adler32__hasher__initialize(wuffs_adler32__hasher* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -5139,10 +5040,11 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
-// ---------------- Status Codes Implementations
+  // ---------------- Status Codes Implementations
 
-// ---------------- Private Consts
+  // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                 //
     wuffs_crc32__ieee_table[16][256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6011,6 +5913,7 @@ static const uint32_t                 //
             225524183,
         },
 };
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -6048,15 +5951,13 @@ wuffs_crc32__ieee_hasher__initialize(wuffs_crc32__ieee_hasher* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -6213,12 +6114,15 @@ const char* wuffs_deflate__error__internal_error_inconsistent_n_bits =
 
 // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_deflate__code_order[19]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_deflate__reverse8[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6242,7 +6146,9 @@ static const uint8_t              //
         119, 247, 15,  143, 79,  207, 47,  175, 111, 239, 31,  159, 95,  223,
         63,  191, 127, 255,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__lcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6253,7 +6159,9 @@ static const uint32_t                       //
         1073774672, 1073782864, 1073791056, 1073799248, 1073807104, 134217728,
         134217728,  134217728,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__dcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6264,14 +6172,15 @@ static const uint32_t                       //
         1074790576, 1075314864, 1075839168, 1076887744, 1077936336, 1080033488,
         134217728,  134217728,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
-static const uint32_t                //
-    wuffs_deflate__huffs_table_size  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1024;
+#ifdef WUFFS_IMPLEMENTATION
+#define WUFFS_DEFLATE__HUFFS_TABLE_SIZE 1024
+#endif  // WUFFS_IMPLEMENTATION
 
-static const uint32_t                //
-    wuffs_deflate__huffs_table_mask  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1023;
+#ifdef WUFFS_IMPLEMENTATION
+#define WUFFS_DEFLATE__HUFFS_TABLE_MASK 1023
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -6343,15 +6252,13 @@ wuffs_deflate__decoder__initialize(wuffs_deflate__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8103,15 +8010,13 @@ wuffs_lzw__decoder__initialize(wuffs_lzw__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   self->private_impl.magic = WUFFS_BASE__MAGIC;
@@ -8567,47 +8472,61 @@ const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
 
 // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t              //
     wuffs_gif__interlace_start[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         4294967295, 1, 2, 4, 0,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_delta[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         1, 2, 4, 8, 8,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_count[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0, 1, 2, 4, 8,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__animexts1dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         65, 78, 73, 77, 69, 88, 84, 83, 49, 46, 48,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__netscape2dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t            //
     wuffs_gif__iccrgbg1012[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         73, 67, 67, 82, 71, 66, 71, 49, 48, 49, 50,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t           //
     wuffs_gif__xmpdataxmp[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         88, 77, 80, 32, 68, 97, 116, 97, 88, 77, 80,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -8700,15 +8619,13 @@ wuffs_gif__decoder__initialize(wuffs_gif__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
@@ -11265,15 +11182,13 @@ wuffs_gzip__decoder__initialize(wuffs_gzip__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
@@ -11748,15 +11663,13 @@ wuffs_zlib__decoder__initialize(wuffs_zlib__decoder* self,
 #pragma GCC diagnostic pop
 #endif
   } else {
-    void* p = &(self->private_impl);
-    size_t n = sizeof(self->private_impl);
     if ((initialize_flags &
          WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED) == 0) {
-      p = self;
-      n = sizeof(*self);
+      memset(self, 0, sizeof(*self));
       initialize_flags |= WUFFS_INITIALIZE__ALREADY_ZEROED;
+    } else {
+      memset(&(self->private_impl), 0, sizeof(self->private_impl));
     }
-    memset(p, 0, n);
   }
 
   {
