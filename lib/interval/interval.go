@@ -338,15 +338,18 @@ func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange, hasNeg bool, hasP
 	return neg, nonNeg, true, true
 }
 
-// split splits x into negative, zero and positive sub-intervals. The IntRange
-// values returned may be empty, which means that x does not contain any
-// negative or positive elements.
-func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bool, posEmpty bool) {
+// split3Ways splits x into negative, zero and positive sub-intervals. The
+// IntRange values returned may be empty, which means that x does not contain
+// any negative or positive elements.
+func (x IntRange) split3Ways() (neg IntRange, pos IntRange, hasNeg bool, hasZero bool, hasPos bool) {
+	if x.Empty() {
+		return sharedEmptyRange, sharedEmptyRange, false, false, false
+	}
 	if x[0] != nil && x[0].Sign() > 0 {
-		return sharedEmptyRange, x, true, false, x.Empty()
+		return sharedEmptyRange, x, false, false, true
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, sharedEmptyRange, x.Empty(), false, true
+		return x, sharedEmptyRange, true, false, false
 	}
 
 	neg[0] = x[0]
@@ -361,7 +364,7 @@ func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bo
 	}
 	pos[1] = x[1]
 
-	return neg, pos, neg.Empty(), x.ContainsZero(), pos.Empty()
+	return neg, pos, !neg.Empty(), x.ContainsZero(), !pos.Empty()
 }
 
 // Unite returns z = x ∪ y, the union of two intervals.
@@ -524,18 +527,18 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 	ret := newBiggerIntPair()
 
 	// Split x and y into negative, zero and positive parts.
-	negX, posX, negXEmpty, zeroX, posXEmpty := x.split()
-	negY, posY, negYEmpty, zeroY, posYEmpty := y.split()
+	negX, posX, hasNegX, hasZeroX, hasPosX := x.split3Ways()
+	negY, posY, hasNegY, hasZeroY, hasPosY := y.split3Ways()
 
-	if zeroY && shift {
+	if hasZeroY && shift {
 		ret.fromIntRange(x)
-	} else if (zeroY && !shift) || zeroX {
+	} else if (hasZeroY && !shift) || hasZeroX {
 		ret[0] = biggerInt{i: big.NewInt(0)}
 		ret[1] = biggerInt{i: big.NewInt(0)}
 	}
 
-	if !negXEmpty {
-		if !negYEmpty {
+	if hasNegX {
+		if hasNegY {
 			// x is negative and y is negative, so x op y is positive.
 			//
 			// If op is << instead of * then we have previously checked that y
@@ -548,7 +551,7 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 			}
 		}
 
-		if !posYEmpty {
+		if hasPosY {
 			// x is negative and y is positive, so x op y is negative.
 			if negX[0] == nil || posY[1] == nil {
 				ret.lowerMin(biggerInt{extra: -1})
@@ -559,8 +562,8 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 		}
 	}
 
-	if !posXEmpty {
-		if !negYEmpty {
+	if hasPosX {
+		if hasNegY {
 			// x is positive and y is negative, so x op y is negative.
 			//
 			// If op is << instead of * then we have previously checked that y
@@ -573,7 +576,7 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 			ret.raiseMax(biggerInt{i: combine(posX[0], negY[1])})
 		}
 
-		if !posYEmpty {
+		if hasPosY {
 			// x is positive and y is positive, so x op y is positive.
 			ret.lowerMin(biggerInt{i: combine(posX[0], posY[0])})
 			if posX[1] == nil || posY[1] == nil {
@@ -606,16 +609,16 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 	ret := newBiggerIntPair()
 
 	// Split x and y into negative, zero and positive parts.
-	negX, posX, negXEmpty, zeroX, posXEmpty := x.split()
-	negY, posY, negYEmpty, _, posYEmpty := y.split()
+	negX, posX, hasNegX, hasZeroX, hasPosX := x.split3Ways()
+	negY, posY, hasNegY, _, hasPosY := y.split3Ways()
 
-	if zeroX {
+	if hasZeroX {
 		ret[0] = biggerInt{i: big.NewInt(0)}
 		ret[1] = biggerInt{i: big.NewInt(0)}
 	}
 
-	if !negXEmpty {
-		if !negYEmpty {
+	if hasNegX {
+		if hasNegY {
 			// x is negative and y is negative, so x / y is non-negative.
 			if negX[0] == nil {
 				ret.raiseMax(biggerInt{extra: +1})
@@ -629,7 +632,7 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 			}
 		}
 
-		if !posYEmpty {
+		if hasPosY {
 			// x is negative and y is positive, so x / y is non-positive.
 			if negX[0] == nil {
 				ret.lowerMin(biggerInt{extra: -1})
@@ -644,8 +647,8 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 		}
 	}
 
-	if !posXEmpty {
-		if !negYEmpty {
+	if hasPosX {
+		if hasNegY {
 			// x is positive and y is negative, so x / y is non-positive.
 			if posX[1] == nil {
 				ret.lowerMin(biggerInt{extra: -1})
@@ -659,7 +662,7 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 			}
 		}
 
-		if !posYEmpty {
+		if hasPosY {
 			// x is positive and y is positive, so x / y is non-negative.
 			if posX[1] == nil {
 				ret.raiseMax(biggerInt{extra: +1})
@@ -696,14 +699,14 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 	ret := newBiggerIntPair()
 
 	// Split x and y into negative and zero-or-positive parts.
-	negX, posX, negXEmpty, zeroX, posXEmpty := x.split()
+	negX, posX, hasNegX, hasZeroX, hasPosX := x.split3Ways()
 
-	if zeroX {
+	if hasZeroX {
 		ret[0] = biggerInt{i: big.NewInt(0)}
 		ret[1] = biggerInt{i: big.NewInt(0)}
 	}
 
-	if !negXEmpty {
+	if hasNegX {
 		// x is negative and y is positive, so x >> y is non-positive.
 		if negX[0] == nil {
 			ret.lowerMin(biggerInt{extra: -1})
@@ -717,7 +720,7 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 		}
 	}
 
-	if !posXEmpty {
+	if hasPosX {
 		// x is positive and y is positive, so x >> y is non-negative.
 		if y[1] == nil {
 			ret.lowerMin(biggerInt{i: big.NewInt(0)})

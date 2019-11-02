@@ -303,7 +303,8 @@ func TestContainsEtc(tt *testing.T) {
 	}
 
 	for _, x := range eqTestCases {
-		neg, pos, negEmpty, hasZero, posEmpty := x.split()
+		neg, pos, hasNeg, hasZero, hasPos := x.split3Ways()
+		negEmpty, posEmpty := !hasNeg, !hasPos
 		if got, want := neg.Empty(), negEmpty; got != want {
 			tt.Errorf("%v: neg.Empty() == %t, negEmpty == %t", x, got, want)
 		}
