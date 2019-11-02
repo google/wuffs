@@ -39,7 +39,13 @@ import (
 )
 
 var (
-	one = big.NewInt(1)
+	minusOne = big.NewInt(-1)
+	one      = big.NewInt(+1)
+
+	// sharedEmptyRange is an emtpy IntRange. Users should not modify it. It is
+	// not exported, directly or indirectly (by another function returning its
+	// elements).
+	sharedEmptyRange = IntRange{one, minusOne}
 )
 
 var smallBitMasks = [...]*big.Int{
@@ -308,13 +314,13 @@ func (x IntRange) justZero() bool {
 // any negative or non-negative elements.
 func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
 	if x.Empty() {
-		return makeEmptyRange(), makeEmptyRange()
+		return sharedEmptyRange, sharedEmptyRange
 	}
 	if x[0] != nil && x[0].Sign() >= 0 {
-		return makeEmptyRange(), x
+		return sharedEmptyRange, x
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, makeEmptyRange()
+		return x, sharedEmptyRange
 	}
 
 	neg[0] = x[0]
@@ -337,10 +343,10 @@ func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
 // negative or positive elements.
 func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bool, posEmpty bool) {
 	if x[0] != nil && x[0].Sign() > 0 {
-		return makeEmptyRange(), x, true, false, x.Empty()
+		return sharedEmptyRange, x, true, false, x.Empty()
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, makeEmptyRange(), x.Empty(), false, true
+		return x, sharedEmptyRange, x.Empty(), false, true
 	}
 
 	neg[0] = x[0]
