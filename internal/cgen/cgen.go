@@ -713,21 +713,28 @@ func (g *gen) gatherScalarConsts(b *buffer, n *a.Const) error {
 }
 
 func (g *gen) writeConst(b *buffer, n *a.Const) error {
-	if n.Public() {
-		if cv := n.Value().ConstValue(); cv != nil {
-			b.printf("#define %s %v\n\n", strings.ToUpper(g.pkgPrefix+n.QID()[1].Str(g.tm)), cv)
-		}
+	if !n.Public() {
+		b.writes("#ifdef WUFFS_IMPLEMENTATION\n")
 	}
 
-	b.writes("static const ")
-	if err := g.writeCTypeName(b, n.XType(), "//\n"+g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
-		return err
+	if cv := n.Value().ConstValue(); cv != nil {
+		b.printf("#define %s %v\n", strings.ToUpper(g.pkgPrefix+n.QID()[1].Str(g.tm)), cv)
+	} else {
+		b.writes("static const ")
+		if err := g.writeCTypeName(b, n.XType(), "//\n"+g.pkgPrefix, n.QID()[1].Str(g.tm)); err != nil {
+			return err
+		}
+		b.writes("//\n WUFFS_BASE__POTENTIALLY_UNUSED = ")
+		if err := g.writeConstList(b, n.Value()); err != nil {
+			return err
+		}
+		b.writes(";\n")
 	}
-	b.writes("//\n WUFFS_BASE__POTENTIALLY_UNUSED = ")
-	if err := g.writeConstList(b, n.Value()); err != nil {
-		return err
+
+	if !n.Public() {
+		b.writes("#endif  // WUFFS_IMPLEMENTATION\n")
 	}
-	b.writes(";\n\n")
+	b.writeb('\n')
 	return nil
 }
 

@@ -300,7 +300,7 @@ const char* play() {
 
   if (quirk_honor_background_color_flag) {
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_honor_background_color, true);
+        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, true);
   }
 
   wuffs_base__io_buffer src;

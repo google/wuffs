@@ -267,7 +267,7 @@ const char* test_wuffs_deflate_decode_deflate_huffman_primlen_9() {
   int i;
   for (i = 0; i < 2; i++) {
     // Find the first unused (i.e. zero) entry in the i'th huffs table.
-    int got = wuffs_deflate__huffs_table_size;
+    int got = WUFFS_DEFLATE__HUFFS_TABLE_SIZE;
     while ((got > 0) && (dec.private_data.f_huffs[i][got - 1] == 0)) {
       got--;
     }

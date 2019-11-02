@@ -776,7 +776,7 @@ const char* test_wuffs_gif_decode_delay_num_frames_decoded() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_delay_num_decoded_frames, q);
+        &dec, WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES, q);
 
     while (true) {
       status = wuffs_gif__decoder__decode_frame_config(&dec, NULL, &src);
@@ -817,7 +817,7 @@ const char* test_wuffs_gif_decode_empty_palette() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_reject_empty_palette, q);
+        &dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
@@ -888,7 +888,7 @@ const char* test_wuffs_gif_decode_background_color() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_honor_background_color, q);
+        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, q);
 
     wuffs_base__frame_config fc = ((wuffs_base__frame_config){});
     status = wuffs_gif__decoder__decode_frame_config(&dec, &fc, &src);
@@ -929,7 +929,7 @@ const char* test_wuffs_gif_decode_first_frame_is_opaque() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_honor_background_color, q);
+        &dec, WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
@@ -971,7 +971,7 @@ const char* test_wuffs_gif_decode_frame_out_of_bounds() {
       RETURN_FAIL("q=%d: initialize: \"%s\"", q, status);
     }
     wuffs_gif__decoder__set_quirk_enabled(
-        &dec, wuffs_gif__quirk_image_bounds_are_strict, q);
+        &dec, WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT, q);
 
     wuffs_base__image_config ic = ((wuffs_base__image_config){});
     status = wuffs_gif__decoder__decode_image_config(&dec, &ic, &src);
@@ -1150,12 +1150,12 @@ const char* test_wuffs_gif_decode_zero_width_frame() {
       case 1:
         want = NULL;
         wuffs_gif__decoder__set_quirk_enabled(
-            &dec, wuffs_gif__quirk_ignore_too_much_pixel_data, true);
+            &dec, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, true);
         break;
       case 2:
         want = wuffs_gif__error__bad_frame_size;
         wuffs_gif__decoder__set_quirk_enabled(
-            &dec, wuffs_gif__quirk_reject_empty_frame, true);
+            &dec, WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME, true);
         break;
     }
 
@@ -1709,7 +1709,7 @@ const char* test_wuffs_gif_decode_pixel_data_too_much_with_quirk() {
   }
 
   return do_test_wuffs_gif_decode_expecting(
-      src, wuffs_gif__quirk_ignore_too_much_pixel_data, NULL, false);
+      src, WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA, NULL, false);
 }
 
 const char* test_wuffs_gif_frame_dirty_rect() {

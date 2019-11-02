@@ -2845,10 +2845,6 @@ extern const char* wuffs_deflate__error__no_huffman_codes;
 
 #define WUFFS_DEFLATE__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                       //
-    wuffs_deflate__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_deflate__decoder__struct wuffs_deflate__decoder;
@@ -3042,10 +3038,6 @@ extern const char* wuffs_lzw__error__bad_code;
 
 #define WUFFS_LZW__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0
 
-static const uint64_t                                   //
-    wuffs_lzw__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 0;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_lzw__decoder__struct wuffs_lzw__decoder;
@@ -3221,52 +3213,20 @@ extern const char* wuffs_gif__error__bad_palette;
 
 #define WUFFS_GIF__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                   //
-    wuffs_gif__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 #define WUFFS_GIF__QUIRK_DELAY_NUM_DECODED_FRAMES 1041635328
-
-static const uint32_t                          //
-    wuffs_gif__quirk_delay_num_decoded_frames  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635328;
 
 #define WUFFS_GIF__QUIRK_FIRST_FRAME_LOCAL_PALETTE_MEANS_BLACK_BACKGROUND \
   1041635329
 
-static const uint32_t                                                  //
-    wuffs_gif__quirk_first_frame_local_palette_means_black_background  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635329;
-
 #define WUFFS_GIF__QUIRK_HONOR_BACKGROUND_COLOR 1041635330
-
-static const uint32_t                        //
-    wuffs_gif__quirk_honor_background_color  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635330;
 
 #define WUFFS_GIF__QUIRK_IGNORE_TOO_MUCH_PIXEL_DATA 1041635331
 
-static const uint32_t                            //
-    wuffs_gif__quirk_ignore_too_much_pixel_data  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635331;
-
 #define WUFFS_GIF__QUIRK_IMAGE_BOUNDS_ARE_STRICT 1041635332
-
-static const uint32_t                         //
-    wuffs_gif__quirk_image_bounds_are_strict  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635332;
 
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_FRAME 1041635333
 
-static const uint32_t                    //
-    wuffs_gif__quirk_reject_empty_frame  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635333;
-
 #define WUFFS_GIF__QUIRK_REJECT_EMPTY_PALETTE 1041635334
-
-static const uint32_t                      //
-    wuffs_gif__quirk_reject_empty_palette  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1041635334;
 
 // ---------------- Struct Declarations
 
@@ -3627,10 +3587,6 @@ extern const char* wuffs_gzip__error__bad_header;
 
 #define WUFFS_GZIP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
 
-static const uint64_t                                    //
-    wuffs_gzip__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
-
 // ---------------- Struct Declarations
 
 typedef struct wuffs_gzip__decoder__struct wuffs_gzip__decoder;
@@ -3789,10 +3745,6 @@ extern const char* wuffs_zlib__error__incorrect_dictionary;
 // ---------------- Public Consts
 
 #define WUFFS_ZLIB__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1
-
-static const uint64_t                                    //
-    wuffs_zlib__decoder_workbuf_len_max_incl_worst_case  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1;
 
 // ---------------- Struct Declarations
 
@@ -5087,10 +5039,11 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
-// ---------------- Status Codes Implementations
+  // ---------------- Status Codes Implementations
 
-// ---------------- Private Consts
+  // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                 //
     wuffs_crc32__ieee_table[16][256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -5959,6 +5912,7 @@ static const uint32_t                 //
             225524183,
         },
 };
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -6159,12 +6113,15 @@ const char* wuffs_deflate__error__internal_error_inconsistent_n_bits =
 
 // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_deflate__code_order[19]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_deflate__reverse8[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6188,7 +6145,9 @@ static const uint8_t              //
         119, 247, 15,  143, 79,  207, 47,  175, 111, 239, 31,  159, 95,  223,
         63,  191, 127, 255,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__lcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6199,7 +6158,9 @@ static const uint32_t                       //
         1073774672, 1073782864, 1073791056, 1073799248, 1073807104, 134217728,
         134217728,  134217728,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__dcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6210,14 +6171,15 @@ static const uint32_t                       //
         1074790576, 1075314864, 1075839168, 1076887744, 1077936336, 1080033488,
         134217728,  134217728,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
-static const uint32_t                //
-    wuffs_deflate__huffs_table_size  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1024;
+#ifdef WUFFS_IMPLEMENTATION
+#define WUFFS_DEFLATE__HUFFS_TABLE_SIZE 1024
+#endif  // WUFFS_IMPLEMENTATION
 
-static const uint32_t                //
-    wuffs_deflate__huffs_table_mask  //
-        WUFFS_BASE__POTENTIALLY_UNUSED = 1023;
+#ifdef WUFFS_IMPLEMENTATION
+#define WUFFS_DEFLATE__HUFFS_TABLE_MASK 1023
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -8509,47 +8471,61 @@ const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
 
 // ---------------- Private Consts
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t              //
     wuffs_gif__interlace_start[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         4294967295, 1, 2, 4, 0,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_delta[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         1, 2, 4, 8, 8,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_count[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0, 1, 2, 4, 8,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__animexts1dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         65, 78, 73, 77, 69, 88, 84, 83, 49, 46, 48,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__netscape2dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t            //
     wuffs_gif__iccrgbg1012[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         73, 67, 67, 82, 71, 66, 71, 49, 48, 49, 50,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
+#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t           //
     wuffs_gif__xmpdataxmp[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         88, 77, 80, 32, 68, 97, 116, 97, 88, 77, 80,
 };
+#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
