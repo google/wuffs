@@ -312,15 +312,15 @@ func (x IntRange) justZero() bool {
 // split2Ways splits x into negative and non-negative sub-intervals. The
 // IntRange values returned may be empty, which means that x does not contain
 // any negative or non-negative elements.
-func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
+func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange, hasNeg bool, hasPos bool) {
 	if x.Empty() {
-		return sharedEmptyRange, sharedEmptyRange
+		return sharedEmptyRange, sharedEmptyRange, false, false
 	}
 	if x[0] != nil && x[0].Sign() >= 0 {
-		return sharedEmptyRange, x
+		return sharedEmptyRange, x, false, true
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, sharedEmptyRange
+		return x, sharedEmptyRange, true, false
 	}
 
 	neg[0] = x[0]
@@ -335,7 +335,7 @@ func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
 	}
 	nonNeg[1] = x[1]
 
-	return neg, nonNeg
+	return neg, nonNeg, true, true
 }
 
 // split splits x into negative, zero and positive sub-intervals. The IntRange
@@ -746,12 +746,8 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 		return andBothNonNeg(x, y), true
 	}
 
-	xNeg, xNon := x.split2Ways()
-	yNeg, yNon := y.split2Ways()
-	hasXNeg := !xNeg.Empty()
-	hasXNon := !xNon.Empty()
-	hasYNeg := !yNeg.Empty()
-	hasYNon := !yNon.Empty()
+	xNeg, xNon, hasXNeg, hasXNon := x.split2Ways()
+	yNeg, yNon, hasYNeg, hasYNon := y.split2Ways()
 
 	z = makeEmptyRange()
 	if hasXNeg {
@@ -855,12 +851,8 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 		return orBothNonNeg(x, y), true
 	}
 
-	xNeg, xNon := x.split2Ways()
-	yNeg, yNon := y.split2Ways()
-	hasXNeg := !xNeg.Empty()
-	hasXNon := !xNon.Empty()
-	hasYNeg := !yNeg.Empty()
-	hasYNon := !yNon.Empty()
+	xNeg, xNon, hasXNeg, hasXNon := x.split2Ways()
+	yNeg, yNon, hasYNeg, hasYNon := y.split2Ways()
 
 	z = makeEmptyRange()
 	if hasXNeg {
