@@ -312,7 +312,7 @@ func (x IntRange) justZero() bool {
 // split2Ways splits x into negative and non-negative sub-intervals. The
 // IntRange values returned may be empty, which means that x does not contain
 // any negative or non-negative elements.
-func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange, hasNeg bool, hasPos bool) {
+func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange, hasNeg bool, hasNonNeg bool) {
 	if x.Empty() {
 		return sharedEmptyRange, sharedEmptyRange, false, false
 	}
@@ -749,34 +749,34 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 		return andBothNonNeg(x, y), true
 	}
 
-	xNeg, xNon, hasXNeg, hasXNon := x.split2Ways()
-	yNeg, yNon, hasYNeg, hasYNon := y.split2Ways()
+	negX, nonX, hasNegX, hasNonX := x.split2Ways()
+	negY, nonY, hasNegY, hasNonY := y.split2Ways()
 
 	z = makeEmptyRange()
-	if hasXNeg {
-		if hasYNeg {
+	if hasNegX {
+		if hasNegY {
 			w := orBothNonNeg(IntRange{
-				bigIntNewNot(xNeg[1]),
-				bigIntNewNot(xNeg[0]),
+				bigIntNewNot(negX[1]),
+				bigIntNewNot(negX[0]),
 			}, IntRange{
-				bigIntNewNot(yNeg[1]),
-				bigIntNewNot(yNeg[0]),
+				bigIntNewNot(negY[1]),
+				bigIntNewNot(negY[0]),
 			})
 			z.inPlaceUnite(IntRange{
 				bigIntNewNot(w[1]),
 				bigIntNewNot(w[0]),
 			})
 		}
-		if hasYNon {
-			z.inPlaceUnite(andOneNegOneNonNeg(xNeg, yNon))
+		if hasNonY {
+			z.inPlaceUnite(andOneNegOneNonNeg(negX, nonY))
 		}
 	}
-	if hasXNon {
-		if hasYNeg {
-			z.inPlaceUnite(andOneNegOneNonNeg(yNeg, xNon))
+	if hasNonX {
+		if hasNegY {
+			z.inPlaceUnite(andOneNegOneNonNeg(negY, nonX))
 		}
-		if hasYNon {
-			z.inPlaceUnite(andBothNonNeg(xNon, yNon))
+		if hasNonY {
+			z.inPlaceUnite(andBothNonNeg(nonX, nonY))
 		}
 	}
 	return z, true
@@ -854,34 +854,34 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 		return orBothNonNeg(x, y), true
 	}
 
-	xNeg, xNon, hasXNeg, hasXNon := x.split2Ways()
-	yNeg, yNon, hasYNeg, hasYNon := y.split2Ways()
+	negX, nonX, hasNegX, hasNonX := x.split2Ways()
+	negY, nonY, hasNegY, hasNonY := y.split2Ways()
 
 	z = makeEmptyRange()
-	if hasXNeg {
-		if hasYNeg {
+	if hasNegX {
+		if hasNegY {
 			w := andBothNonNeg(IntRange{
-				bigIntNewNot(xNeg[1]),
-				bigIntNewNot(xNeg[0]),
+				bigIntNewNot(negX[1]),
+				bigIntNewNot(negX[0]),
 			}, IntRange{
-				bigIntNewNot(yNeg[1]),
-				bigIntNewNot(yNeg[0]),
+				bigIntNewNot(negY[1]),
+				bigIntNewNot(negY[0]),
 			})
 			z.inPlaceUnite(IntRange{
 				bigIntNewNot(w[1]),
 				bigIntNewNot(w[0]),
 			})
 		}
-		if hasYNon {
-			z.inPlaceUnite(orOneNegOneNonNeg(xNeg, yNon))
+		if hasNonY {
+			z.inPlaceUnite(orOneNegOneNonNeg(negX, nonY))
 		}
 	}
-	if hasXNon {
-		if hasYNeg {
-			z.inPlaceUnite(orOneNegOneNonNeg(yNeg, xNon))
+	if hasNonX {
+		if hasNegY {
+			z.inPlaceUnite(orOneNegOneNonNeg(negY, nonX))
 		}
-		if hasYNon {
-			z.inPlaceUnite(orBothNonNeg(xNon, yNon))
+		if hasNonY {
+			z.inPlaceUnite(orBothNonNeg(nonX, nonY))
 		}
 	}
 	return z, true
