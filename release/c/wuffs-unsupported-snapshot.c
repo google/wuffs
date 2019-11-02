@@ -5039,11 +5039,10 @@ wuffs_adler32__hasher__update(wuffs_adler32__hasher* self,
 
 #if !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__CRC32)
 
-  // ---------------- Status Codes Implementations
+// ---------------- Status Codes Implementations
 
-  // ---------------- Private Consts
+// ---------------- Private Consts
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                 //
     wuffs_crc32__ieee_table[16][256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -5912,7 +5911,6 @@ static const uint32_t                 //
             225524183,
         },
 };
-#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -6113,15 +6111,12 @@ const char* wuffs_deflate__error__internal_error_inconsistent_n_bits =
 
 // ---------------- Private Consts
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_deflate__code_order[19]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_deflate__reverse8[256]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6145,9 +6140,7 @@ static const uint8_t              //
         119, 247, 15,  143, 79,  207, 47,  175, 111, 239, 31,  159, 95,  223,
         63,  191, 127, 255,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__lcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6158,9 +6151,7 @@ static const uint32_t                       //
         1073774672, 1073782864, 1073791056, 1073799248, 1073807104, 134217728,
         134217728,  134217728,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t                       //
     wuffs_deflate__dcode_magic_numbers[32]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
@@ -6171,15 +6162,10 @@ static const uint32_t                       //
         1074790576, 1075314864, 1075839168, 1076887744, 1077936336, 1080033488,
         134217728,  134217728,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 #define WUFFS_DEFLATE__HUFFS_TABLE_SIZE 1024
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 #define WUFFS_DEFLATE__HUFFS_TABLE_MASK 1023
-#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
@@ -8471,61 +8457,47 @@ const char* wuffs_gif__error__internal_error_inconsistent_ri_wi =
 
 // ---------------- Private Consts
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint32_t              //
     wuffs_gif__interlace_start[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         4294967295, 1, 2, 4, 0,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_delta[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         1, 2, 4, 8, 8,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t               //
     wuffs_gif__interlace_count[5]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         0, 1, 2, 4, 8,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__animexts1dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         65, 78, 73, 77, 69, 88, 84, 83, 49, 46, 48,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t              //
     wuffs_gif__netscape2dot0[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t            //
     wuffs_gif__iccrgbg1012[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         73, 67, 67, 82, 71, 66, 71, 49, 48, 49, 50,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
-#ifdef WUFFS_IMPLEMENTATION
 static const uint8_t           //
     wuffs_gif__xmpdataxmp[11]  //
     WUFFS_BASE__POTENTIALLY_UNUSED = {
         88, 77, 80, 32, 68, 97, 116, 97, 88, 77, 80,
 };
-#endif  // WUFFS_IMPLEMENTATION
 
 // ---------------- Private Initializer Prototypes
 
