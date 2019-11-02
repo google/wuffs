@@ -241,6 +241,18 @@ func (x IntRange) ContainsNegative() bool {
 	return x[1] == nil || x[0].Cmp(x[1]) <= 0
 }
 
+// ContainsNonNegative returns whether x contains at least one non-negative
+// value.
+func (x IntRange) ContainsNonNegative() bool {
+	if x[1] == nil {
+		return true
+	}
+	if x[1].Sign() < 0 {
+		return false
+	}
+	return x[0] == nil || x[0].Cmp(x[1]) <= 0
+}
+
 // ContainsPositive returns whether x contains at least one positive value.
 func (x IntRange) ContainsPositive() bool {
 	if x[1] == nil {
@@ -818,7 +830,7 @@ func andBothNonNeg(x IntRange, y IntRange) (z IntRange) {
 }
 
 func andOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
-	if neg.Empty() || neg.ContainsZero() || neg.ContainsPositive() || non.Empty() || non.ContainsNegative() {
+	if neg.Empty() || neg.ContainsNonNegative() || non.Empty() || non.ContainsNegative() {
 		panic("pre-condition failure")
 	}
 
