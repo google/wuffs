@@ -1384,7 +1384,7 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 			return bounds{}, fmt.Errorf("check: divide/modulus op argument %q is possibly non-positive", rhs.Str(q.tm))
 		}
 		if op == t.IDXBinarySlash {
-			nb, _ := lb.Quo(rb)
+			nb, _ := lb.TryQuo(rb)
 			return nb, nil
 		}
 		return bounds{
@@ -1413,14 +1413,14 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 
 		switch op {
 		case t.IDXBinaryShiftL:
-			nb, _ := lb.Lsh(rb)
+			nb, _ := lb.TryLsh(rb)
 			return nb, nil
 		case t.IDXBinaryTildeModShiftL:
-			nb, _ := lb.Lsh(rb)
+			nb, _ := lb.TryLsh(rb)
 			nb[1] = min(nb[1], typeBounds[1])
 			return nb, nil
 		case t.IDXBinaryShiftR:
-			nb, _ := lb.Rsh(rb)
+			nb, _ := lb.TryRsh(rb)
 			return nb, nil
 		}
 
@@ -1435,11 +1435,9 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 		}
 		switch op {
 		case t.IDXBinaryAmp:
-			nb, _ := lb.And(rb)
-			return nb, nil
+			return lb.And(rb), nil
 		case t.IDXBinaryPipe:
-			nb, _ := lb.Or(rb)
-			return nb, nil
+			return lb.Or(rb), nil
 		case t.IDXBinaryHat:
 			z := max(lb[1], rb[1])
 			// Return [0, z rounded up to the next power-of-2-minus-1]. This is

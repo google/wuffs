@@ -189,6 +189,13 @@ func (x *biggerIntPair) fromIntRange(y IntRange) {
 // *big.Int pointer values. Specifically, after "z = x.Add(y)", mutating
 // "*z[0]" will not affect "*x[0]", "*x[1]", "*y[0]" or "*y[1]".
 //
+// Those operator-like methods come in two forms: Foo and TryFoo. The TryFoo
+// forms return (z IntRange, ok bool). The bool indicates success, as
+// operations like dividing by zero or shifting by a negative value can fail.
+// When TryFoo can never fail, there is also a Foo method that omits the
+// always-true bool. For example, there are Add, TryAdd and TryLsh methods, but
+// no Lsh method.
+//
 // A subtle point is that an interval's minimum or maximum can be infinite, but
 // if an integer value i is known to be within such an interval, i's possible
 // values are arbitrarily large but not infinite. Specifically, 0*i is
@@ -413,6 +420,11 @@ func (x IntRange) Unite(y IntRange) (z IntRange) {
 	return z
 }
 
+// TryUnite returns (x.Unite(y), true).
+func (x IntRange) TryUnite(y IntRange) (z IntRange, ok bool) {
+	return x.Unite(y), true
+}
+
 func (x *IntRange) inPlaceUnite(y IntRange) {
 	if y.Empty() {
 		return
@@ -478,6 +490,11 @@ func (x IntRange) Intersect(y IntRange) (z IntRange) {
 	return z
 }
 
+// TryIntersect returns (x.Intersect(y), true).
+func (x IntRange) TryIntersect(y IntRange) (z IntRange, ok bool) {
+	return x.Intersect(y), true
+}
+
 // Add returns z = x + y.
 func (x IntRange) Add(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
@@ -490,6 +507,11 @@ func (x IntRange) Add(y IntRange) (z IntRange) {
 		z[1] = big.NewInt(0).Add(x[1], y[1])
 	}
 	return z
+}
+
+// TryAdd returns (x.Add(y), true).
+func (x IntRange) TryAdd(y IntRange) (z IntRange, ok bool) {
+	return x.Add(y), true
 }
 
 // Sub returns z = x - y.
@@ -506,17 +528,27 @@ func (x IntRange) Sub(y IntRange) (z IntRange) {
 	return z
 }
 
+// TrySub returns (x.Sub(y), true).
+func (x IntRange) TrySub(y IntRange) (z IntRange, ok bool) {
+	return x.Sub(y), true
+}
+
 // Mul returns z = x * y.
 func (x IntRange) Mul(y IntRange) (z IntRange) {
 	return x.mulLsh(y, false)
 }
 
-// Lsh returns z = x << y.
+// TryMul returns (x.Mul(y), true).
+func (x IntRange) TryMul(y IntRange) (z IntRange, ok bool) {
+	return x.Mul(y), true
+}
+
+// TryLsh returns z = x << y.
 //
 // ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
 // contains at least one negative value, as it's invalid to shift by a negative
 // number. Otherwise, ok is true.
-func (x IntRange) Lsh(y IntRange) (z IntRange, ok bool) {
+func (x IntRange) TryLsh(y IntRange) (z IntRange, ok bool) {
 	if !x.Empty() && y.ContainsNegative() {
 		return IntRange{}, false
 	}
@@ -602,12 +634,12 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 	return ret.toIntRange()
 }
 
-// Quo returns z = x / y. Like the big.Int.Quo method (and unlike the
+// TryQuo returns z = x / y. Like the big.Int.Quo method (and unlike the
 // big.Int.Div method), it truncates towards zero.
 //
 // ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
 // contains zero, as it's invalid to divide by zero. Otherwise, ok is true.
-func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
+func (x IntRange) TryQuo(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return makeEmptyRange(), true
 	}
@@ -692,12 +724,12 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 	return ret.toIntRange(), true
 }
 
-// Rsh returns z = x >> y.
+// TryRsh returns z = x >> y.
 //
 // ok is false (and z will be IntRange{nil, nil}) if x is non-empty and y
 // contains at least one negative value, as it's invalid to shift by a negative
 // number. Otherwise, ok is true.
-func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
+func (x IntRange) TryRsh(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
 		return makeEmptyRange(), true
 	}
@@ -750,15 +782,12 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 }
 
 // And returns z = x & y.
-//
-// ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
-// one negative value. Otherwise, ok is true.
-func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
+func (x IntRange) And(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return makeEmptyRange(), true
+		return makeEmptyRange()
 	}
 	if !x.ContainsNegative() && !y.ContainsNegative() {
-		return andBothNonNeg(x, y), true
+		return andBothNonNeg(x, y)
 	}
 
 	negX, nonX, hasNegX, hasNonX := x.split2Ways()
@@ -791,7 +820,12 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 			z.inPlaceUnite(andBothNonNeg(nonX, nonY))
 		}
 	}
-	return z, true
+	return z
+}
+
+// TryAnd returns (x.And(y), true).
+func (x IntRange) TryAnd(y IntRange) (z IntRange, ok bool) {
+	return x.And(y), true
 }
 
 func andBothNonNeg(x IntRange, y IntRange) (z IntRange) {
@@ -855,15 +889,12 @@ func andOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
 }
 
 // Or returns z = x | y.
-//
-// ok is false (and z will be IntRange{nil, nil}) if x or y contains at least
-// one negative value. Otherwise, ok is true.
-func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
+func (x IntRange) Or(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return makeEmptyRange(), true
+		return makeEmptyRange()
 	}
 	if !x.ContainsNegative() && !y.ContainsNegative() {
-		return orBothNonNeg(x, y), true
+		return orBothNonNeg(x, y)
 	}
 
 	negX, nonX, hasNegX, hasNonX := x.split2Ways()
@@ -896,7 +927,12 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 			z.inPlaceUnite(orBothNonNeg(nonX, nonY))
 		}
 	}
-	return z, true
+	return z
+}
+
+// TryOr returns (x.Or(y), true).
+func (x IntRange) TryOr(y IntRange) (z IntRange, ok bool) {
+	return x.Or(y), true
 }
 
 func orBothNonNeg(x IntRange, y IntRange) (z IntRange) {

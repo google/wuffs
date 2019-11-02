@@ -441,16 +441,16 @@ func testOp1(s string) error {
 }
 
 var intOperators = map[rune]func(IntRange, IntRange) (IntRange, bool){
-	'∪': func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Unite(y), true },
-	'∩': func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Intersect(y), true },
-	'+': func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Add(y), true },
-	'-': func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Sub(y), true },
-	'*': func(x IntRange, y IntRange) (z IntRange, ok bool) { return x.Mul(y), true },
-	'/': IntRange.Quo,
-	'«': IntRange.Lsh,
-	'»': IntRange.Rsh,
-	'&': IntRange.And,
-	'|': IntRange.Or,
+	'∪': IntRange.TryUnite,
+	'∩': IntRange.TryIntersect,
+	'+': IntRange.TryAdd,
+	'-': IntRange.TrySub,
+	'*': IntRange.TryMul,
+	'/': IntRange.TryQuo,
+	'«': IntRange.TryLsh,
+	'»': IntRange.TryRsh,
+	'&': IntRange.TryAnd,
+	'|': IntRange.TryOr,
 }
 
 var intOperatorsKeys []rune
@@ -913,10 +913,10 @@ func TestOpAndWithMinusOne(tt *testing.T) {
 			x := IntRange{x0, x1}
 			want := x
 
-			if got, _ := x.And(minusOne); !got.Eq(want) {
+			if got := x.And(minusOne); !got.Eq(want) {
 				tt.Fatalf("%v & -1: got %v, want %v", x, got, want)
 			}
-			if got, _ := minusOne.And(x); !got.Eq(want) {
+			if got := minusOne.And(x); !got.Eq(want) {
 				tt.Fatalf("-1 & %v: got %v, want %v", x, got, want)
 			}
 		}
@@ -933,10 +933,10 @@ func TestOpAndWithZero(tt *testing.T) {
 				want = sharedEmptyRange
 			}
 
-			if got, _ := x.And(zero); !got.Eq(want) {
+			if got := x.And(zero); !got.Eq(want) {
 				tt.Fatalf("%v & +0: got %v, want %v", x, got, want)
 			}
-			if got, _ := zero.And(x); !got.Eq(want) {
+			if got := zero.And(x); !got.Eq(want) {
 				tt.Fatalf("+0 & %v: got %v, want %v", x, got, want)
 			}
 		}
@@ -953,10 +953,10 @@ func TestOpOrWithMinusOne(tt *testing.T) {
 				want = sharedEmptyRange
 			}
 
-			if got, _ := x.Or(minusOne); !got.Eq(want) {
+			if got := x.Or(minusOne); !got.Eq(want) {
 				tt.Fatalf("%v | -1: got %v, want %v", x, got, want)
 			}
-			if got, _ := minusOne.Or(x); !got.Eq(want) {
+			if got := minusOne.Or(x); !got.Eq(want) {
 				tt.Fatalf("-1 | %v: got %v, want %v", x, got, want)
 			}
 		}
@@ -970,10 +970,10 @@ func TestOpOrWithZero(tt *testing.T) {
 			x := IntRange{x0, x1}
 			want := x
 
-			if got, _ := x.Or(zero); !got.Eq(want) {
+			if got := x.Or(zero); !got.Eq(want) {
 				tt.Fatalf("%v | +0: got %v, want %v", x, got, want)
 			}
-			if got, _ := zero.Or(x); !got.Eq(want) {
+			if got := zero.Or(x); !got.Eq(want) {
 				tt.Fatalf("+0 | %v: got %v, want %v", x, got, want)
 			}
 		}
