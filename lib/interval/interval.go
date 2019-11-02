@@ -153,7 +153,7 @@ func (x *biggerIntPair) raiseMax(y biggerInt) {
 
 func (x *biggerIntPair) toIntRange() IntRange {
 	if x[0].extra > 0 || x[1].extra < 0 {
-		return empty()
+		return makeEmptyRange()
 	}
 	return IntRange{x[0].i, x[1].i}
 }
@@ -219,8 +219,8 @@ func (x IntRange) String() string {
 	return string(buf)
 }
 
-// empty returns an empty IntRange: one that contains no elements.
-func empty() IntRange {
+// makeEmptyRange returns an empty IntRange: one that contains no elements.
+func makeEmptyRange() IntRange {
 	return IntRange{big.NewInt(+1), big.NewInt(-1)}
 }
 
@@ -308,13 +308,13 @@ func (x IntRange) justZero() bool {
 // any negative or non-negative elements.
 func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
 	if x.Empty() {
-		return empty(), empty()
+		return makeEmptyRange(), makeEmptyRange()
 	}
 	if x[0] != nil && x[0].Sign() >= 0 {
-		return empty(), x
+		return makeEmptyRange(), x
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, empty()
+		return x, makeEmptyRange()
 	}
 
 	neg[0] = x[0]
@@ -337,10 +337,10 @@ func (x IntRange) split2Ways() (neg IntRange, nonNeg IntRange) {
 // negative or positive elements.
 func (x IntRange) split() (neg IntRange, pos IntRange, negEmpty bool, hasZero bool, posEmpty bool) {
 	if x[0] != nil && x[0].Sign() > 0 {
-		return empty(), x, true, false, x.Empty()
+		return makeEmptyRange(), x, true, false, x.Empty()
 	}
 	if x[1] != nil && x[1].Sign() < 0 {
-		return x, empty(), x.Empty(), false, true
+		return x, makeEmptyRange(), x.Empty(), false, true
 	}
 
 	neg[0] = x[0]
@@ -431,7 +431,7 @@ func (x *IntRange) inPlaceUnite(y IntRange) {
 // Intersect returns z = x ∩ y, the intersection of two intervals.
 func (x IntRange) Intersect(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return empty()
+		return makeEmptyRange()
 	}
 
 	if x[0] == nil {
@@ -460,7 +460,7 @@ func (x IntRange) Intersect(y IntRange) (z IntRange) {
 // Add returns z = x + y.
 func (x IntRange) Add(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return empty()
+		return makeEmptyRange()
 	}
 	if x[0] != nil && y[0] != nil {
 		z[0] = big.NewInt(0).Add(x[0], y[0])
@@ -474,7 +474,7 @@ func (x IntRange) Add(y IntRange) (z IntRange) {
 // Sub returns z = x - y.
 func (x IntRange) Sub(y IntRange) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return empty()
+		return makeEmptyRange()
 	}
 	if x[0] != nil && y[1] != nil && (x[1] != nil || y[0] != nil) {
 		z[0] = big.NewInt(0).Sub(x[0], y[1])
@@ -504,7 +504,7 @@ func (x IntRange) Lsh(y IntRange) (z IntRange, ok bool) {
 
 func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 	if x.Empty() || y.Empty() {
-		return empty()
+		return makeEmptyRange()
 	}
 	if x.justZero() || (!shift && y.justZero()) {
 		return IntRange{big.NewInt(0), big.NewInt(0)}
@@ -588,7 +588,7 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 // contains zero, as it's invalid to divide by zero. Otherwise, ok is true.
 func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
-		return empty(), true
+		return makeEmptyRange(), true
 	}
 	if y.ContainsZero() {
 		return IntRange{}, false
@@ -678,7 +678,7 @@ func (x IntRange) Quo(y IntRange) (z IntRange, ok bool) {
 // number. Otherwise, ok is true.
 func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
-		return empty(), true
+		return makeEmptyRange(), true
 	}
 	if y.ContainsNegative() {
 		return IntRange{}, false
@@ -734,7 +734,7 @@ func (x IntRange) Rsh(y IntRange) (z IntRange, ok bool) {
 // one negative value. Otherwise, ok is true.
 func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
-		return empty(), true
+		return makeEmptyRange(), true
 	}
 	if !x.ContainsNegative() && !y.ContainsNegative() {
 		return andBothNonNeg(x, y), true
@@ -747,7 +747,7 @@ func (x IntRange) And(y IntRange) (z IntRange, ok bool) {
 	hasYNeg := !yNeg.Empty()
 	hasYNon := !yNon.Empty()
 
-	z = empty()
+	z = makeEmptyRange()
 	if hasXNeg {
 		if hasYNeg {
 			w := orBothNonNeg(IntRange{
@@ -843,7 +843,7 @@ func andOneNegOneNonNeg(neg IntRange, non IntRange) (z IntRange) {
 // one negative value. Otherwise, ok is true.
 func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 	if x.Empty() || y.Empty() {
-		return empty(), true
+		return makeEmptyRange(), true
 	}
 	if !x.ContainsNegative() && !y.ContainsNegative() {
 		return orBothNonNeg(x, y), true
@@ -856,7 +856,7 @@ func (x IntRange) Or(y IntRange) (z IntRange, ok bool) {
 	hasYNeg := !yNeg.Empty()
 	hasYNon := !yNon.Empty()
 
-	z = empty()
+	z = makeEmptyRange()
 	if hasXNeg {
 		if hasYNeg {
 			w := andBothNonNeg(IntRange{

@@ -514,7 +514,7 @@ func bruteForce(x IntRange, y IntRange, opKey rune) (z IntRange, ok bool) {
 	}
 
 	if first {
-		return empty(), true
+		return makeEmptyRange(), true
 	}
 	return IntRange{result[0].bigInt(), result[1].bigInt()}, true
 }

@@ -244,7 +244,7 @@ func TestContainsEtc(tt *testing.T) {
 	// eqTestCases is appended to throughout the "range testCases" loop, but it
 	// always contains exactly one empty IntRange.
 	eqTestCases := []IntRange{
-		empty(),
+		makeEmptyRange(),
 	}
 
 	for _, tc := range testCases {
@@ -283,8 +283,8 @@ func TestContainsEtc(tt *testing.T) {
 			tt.Errorf("%s.Empty(): got %t, want %t", tc.s, got, want)
 		} else if !got {
 			eqTestCases = append(eqTestCases, x)
-		} else if !x.Eq(empty()) {
-			tt.Errorf("%v eq %v: got %t, want %t", x, empty(), got, want)
+		} else if !x.Eq(makeEmptyRange()) {
+			tt.Errorf("%v eq %v: got %t, want %t", x, makeEmptyRange(), got, want)
 		}
 
 		if got, want := x.justZero(), tc.s == "[ 0,  0]"; got != want {
@@ -929,7 +929,7 @@ func TestOpAndWithZero(tt *testing.T) {
 			x := IntRange{x0, x1}
 			want := zero
 			if x.Empty() {
-				want = empty()
+				want = makeEmptyRange()
 			}
 
 			if got, _ := x.And(zero); !got.Eq(want) {
@@ -949,7 +949,7 @@ func TestOpOrWithMinusOne(tt *testing.T) {
 			x := IntRange{x0, x1}
 			want := minusOne
 			if x.Empty() {
-				want = empty()
+				want = makeEmptyRange()
 			}
 
 			if got, _ := x.Or(minusOne); !got.Eq(want) {
